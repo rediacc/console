@@ -93,11 +93,11 @@ def _gate_module() -> Any:
     return _CACHE["subject"]
 
 
-def _run(root, *args):
+def _run(root, *args, env=None):
     return harness.run(
         [sys.executable, str(GATE), *args],
         cwd=paths.repo_root(),
-        env={ROOT_ENV: str(root)},
+        env={ROOT_ENV: str(root), **(env or {})},
     )
 
 
@@ -272,8 +272,39 @@ def test_the_root_override_outside_the_temp_directory_is_ignored(gate):
     modules, sites = _counts(result.combined)
     if modules < MIN_MODULES or sites < MIN_SITES:
         gate.log_fail("the real tree was not scanned: %d module(s), %d site(s)" % (modules, sites))
-    gate.assert_contains(result.combined, "is outside the temp directory", "says it ignored it")
+    gate.assert_contains(
+        result.combined, "is not a private scratch path in the temp directory", "says it ignored it"
+    )
     with harness.temp_dir() as tmp:
         refused = _run(pathlib.Path(tmp))
         gate.assert_exit(1, refused, "CONTROL: an empty tree inside the temp directory refuses")
     gate.log_pass("the seam is bounded to the temp directory")
+
+
+def test_the_root_override_under_a_tmpdir_moved_onto_the_repository_is_ignored(gate):
+    """Finding a66ada74.2: TMPDIR pointed at a directory in the checkout, the override an empty tree inside it. `tempfile.gettempdir()` calls that directory temp; the bound does not, so the repository is still scanned. CONTROL: a world-writable directory under /tmp is refused the same way, and the private mkdtemp tree beside it still reaches the gate."""
+    gate.log_test(
+        "SEAM BOUND: TMPDIR moved onto the repository does not widen PY_CONTROL_PLANTS_ROOT"
+    )
+    fake = paths.repo_root() / ".ci" / "cache" / "py-control-plants-fake-tmpdir"
+    (fake / "scan").mkdir(parents=True, exist_ok=True)
+    result = _run(fake / "scan", env={"TMPDIR": str(fake)})
+    gate.assert_exit(0, result, "the override was ignored and the real tree is green")
+    modules, sites = _counts(result.combined)
+    if modules < MIN_MODULES or sites < MIN_SITES:
+        gate.log_fail("the real tree was not scanned: %d module(s), %d site(s)" % (modules, sites))
+    gate.assert_contains(result.combined, "TMPDIR is not consulted", "names why it ignored it")
+    with harness.temp_dir() as tmp:
+        shared = pathlib.Path(tmp) / "shared"
+        shared.mkdir()
+        shared.chmod(0o777)
+        try:
+            planted = _run(shared)
+        finally:
+            shared.chmod(0o700)
+        gate.assert_exit(0, planted, "a world-writable tree under /tmp is ignored")
+        gate.assert_contains(planted.combined, "group- or other-writable", "names why")
+        gate.assert_exit(
+            1, _run(pathlib.Path(tmp)), "CONTROL: the private tree still reaches the gate"
+        )
+    gate.log_pass("TMPDIR and a shared /tmp directory leave the seam bounded")

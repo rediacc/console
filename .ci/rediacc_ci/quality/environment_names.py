@@ -25,34 +25,16 @@ from __future__ import annotations
 import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 
 from rediacc_ci import controls
+from rediacc_ci.quality import seams
 
 REAL_ROOT = Path(__file__).resolve().parents[3]
 
 
-def _seam_root(raw: str | None) -> Path | None:
-    """The `ENV_NAMES_ROOT` scratch tree, or None when the variable is unset or points outside the temp directory.
-
-    The seam is a test hook for scratch trees. Honoured anywhere, any process setting it would make a plain gate run scan a tree of its own choosing and pass; outside the temp directory it is ignored with a note on stderr, so a plain run always scans the repository.
-    """
-    if not raw:
-        return None
-    root = Path(raw).resolve()
-    bases = {Path(tempfile.gettempdir()).resolve(), Path("/tmp").resolve()}
-    if any(root.is_relative_to(base) for base in bases):
-        return root
-    print(
-        "NOTE: ENV_NAMES_ROOT=%s is outside the temp directory, so it and ENV_NAMES_MIN are "
-        "ignored and the repository is scanned." % raw,
-        file=sys.stderr,
-    )
-    return None
-
-
-_SEAM = _seam_root(os.environ.get("ENV_NAMES_ROOT"))
+# The scratch-tree seam is bounded by `seams.scratch_root` (a private directory under the system temp base, TMPDIR not consulted): honoured anywhere, any process setting it would make a plain gate run scan a tree of its own choosing and pass. Ignored, it says so on stderr and ENV_NAMES_MIN goes with it.
+_SEAM = seams.scratch_root("ENV_NAMES_ROOT", os.environ.get("ENV_NAMES_ROOT"))
 ROOT = _SEAM or REAL_ROOT
 WORKFLOWS = ROOT / ".github" / "workflows"
 # Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity. ENV_NAMES_MIN lowers it only together with a scratch-tree ENV_NAMES_ROOT: on the repository the floor is always 20.

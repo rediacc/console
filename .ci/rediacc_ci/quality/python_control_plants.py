@@ -50,6 +50,7 @@ import sys
 import tempfile
 
 from rediacc_ci.controls import Controls
+from rediacc_ci.quality import seams
 
 SELF = os.path.basename(__file__)
 
@@ -328,7 +329,8 @@ def selftest(verbose: bool = False) -> int:
         1,
     )
     # THE TWO REFUSALS, driven against real starved trees rather than asserted. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` cannot reach these: its fixture copies `.ci/rediacc_ci` wholesale, so it hands this gate its real inputs and the gate correctly exits 0. Claiming a diagnostic there that cannot fire would be a false entry in a hand-verified registry, so the coverage lives here.
-    with tempfile.TemporaryDirectory() as tmp:
+    # Under the system temp base, not `tempfile.gettempdir()`: the seam ignores a TMPDIR-moved temp, and these controls must reach `main()` through it under any TMPDIR.
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         empty = pathlib.Path(tmp)
         mods, sites, _ = scan(empty)
         c.check("an empty tree discovers no module", mods, 0)
@@ -381,27 +383,11 @@ def _root() -> pathlib.Path:
     THE ANTI-VACUITY REFUSALS ARE UNTESTABLE OTHERWISE, and untested refusals are the thing this gate exists to object to. A module-level constant cannot be pointed at a starved tree from a control, so the two refusals below would have been asserted by nothing -- exactly the shape `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` looks for, and it cannot reach them itself because
     its fixture copies `.ci/rediacc_ci` wholesale and therefore feeds this gate its real inputs.
     """
-    env = os.environ.get("PY_CONTROL_PLANTS_ROOT")
-    if env:
-        override = pathlib.Path(env).resolve()
-        if _under_tmp(override):
-            return override
-        print(
-            "NOTE: PY_CONTROL_PLANTS_ROOT=%s is outside the temp directory, so it is ignored "
-            "and the repository is scanned. The override is a test seam for scratch trees only."
-            % env,
-            file=sys.stderr,
-        )
-    return pathlib.Path(__file__).resolve().parents[2].parent
-
-
-def _under_tmp(path: pathlib.Path) -> bool:
-    """True when `path` lies inside the temp directory, the only place a scratch tree for a control lives.
-
-    The seam stays bounded to that: any process setting the variable to a tree of its own choosing would otherwise make a plain gate run scan that tree and pass.
-    """
-    bases = {pathlib.Path(tempfile.gettempdir()).resolve(), pathlib.Path("/tmp").resolve()}
-    return any(path.is_relative_to(base) for base in bases)
+    override = seams.scratch_root(
+        "PY_CONTROL_PLANTS_ROOT", os.environ.get("PY_CONTROL_PLANTS_ROOT")
+    )
+    # Bounded by `seams.scratch_root` to a private directory under the system temp base (TMPDIR not consulted): any process setting the variable to a tree of its own choosing would otherwise make a plain gate run scan that tree and pass. An ignored override is named on stderr.
+    return override or pathlib.Path(__file__).resolve().parents[2].parent
 
 
 def main(argv: list[str]) -> int:

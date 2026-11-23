@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -41,7 +42,7 @@ def test_scratch_root_ignores_a_path_outside_temp_and_says_so(capsys):
     assert seams.scratch_root("X_ROOT", str(outside)) is None
     err = capsys.readouterr().err
     assert "X_ROOT" in err
-    assert "outside the temp directory" in err
+    assert "not a private scratch path in the temp directory" in err
 
 
 @pytest.mark.parametrize("raw", [None, ""])
@@ -54,6 +55,81 @@ def test_scratch_root_refuses_a_symlink_that_escapes_temp(tmp_path):
     link = tmp_path / "link"
     link.symlink_to(_outside_temp())
     assert seams.scratch_root("X_ROOT", str(link)) is None
+
+
+def _repo_tmpdir() -> pathlib.Path:
+    """A directory inside the repository to point TMPDIR at: the move findings a66ada74.1 and a66ada74.2 name."""
+    fake = REPO / ".ci" / "cache" / "seams-fake-tmpdir"
+    (fake / "scan").mkdir(parents=True, exist_ok=True)
+    return fake
+
+
+def test_scratch_root_ignores_tmpdir_moved_onto_the_repository(monkeypatch, capsys):
+    """TMPDIR names a directory in the repository and the seam points inside it: `tempfile.gettempdir()` would call that temp, the system base does not."""
+    fake = _repo_tmpdir()
+    monkeypatch.setenv("TMPDIR", os.fspath(fake))
+    # tempfile caches its answer; drop it so TMPDIR is read.
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    assert pathlib.Path(tempfile.gettempdir()).resolve() == fake.resolve(), (
+        "the plant did not move tempfile's temp"
+    )
+    assert seams.scratch_root("X_ROOT", os.fspath(fake / "scan")) is None
+    assert "X_ROOT" in capsys.readouterr().err
+
+
+def test_scratch_root_ignores_a_world_writable_directory_under_temp(tmp_path, capsys):
+    """/tmp is world-writable, so a tree another user could plant is refused: the seam itself, and a seam below such a directory."""
+    shared = tmp_path / "shared"
+    (shared / "below").mkdir(parents=True)
+    shared.chmod(0o777)
+    try:
+        assert seams.scratch_root("X_ROOT", os.fspath(shared)) is None
+        assert seams.scratch_root("X_ROOT", os.fspath(shared / "below")) is None
+        err = capsys.readouterr().err
+        assert "group- or other-writable" in err
+    finally:
+        shared.chmod(0o700)
+
+
+def test_scratch_root_ignores_a_directory_owned_by_another_uid(tmp_path, monkeypatch, capsys):
+    """A directory under temp whose owner is not the current uid is refused; the other owner is simulated by an `os.stat` that reports uid + 1 for it."""
+    planted = tmp_path / "planted"
+    planted.mkdir()
+    real_stat = os.stat
+    target = planted.resolve()
+
+    def fake_stat(path, *args, **kwargs):
+        info = real_stat(path, *args, **kwargs)
+        if pathlib.Path(path) == target:
+            fields = list(info)
+            fields[4] = os.getuid() + 1  # st_uid
+            return os.stat_result(fields)
+        return info
+
+    monkeypatch.setattr(os, "stat", fake_stat)
+    assert seams.scratch_root("X_ROOT", os.fspath(planted)) is None
+    assert "owned by uid" in capsys.readouterr().err
+
+
+def test_scratch_root_honours_a_private_mkdtemp_directory(capsys):
+    """CONTROL: a 0700 `mkdtemp` directory under /tmp, the shape every fixture has, is honoured, and so are a file and a not-yet-created path inside it."""
+    made = pathlib.Path(tempfile.mkdtemp(dir="/tmp"))
+    try:
+        assert (made.stat().st_mode & 0o777) == 0o700
+        assert seams.scratch_root("X_ROOT", os.fspath(made)) == made.resolve()
+        (made / "baseline.txt").write_text("x\n", encoding="utf-8")
+        assert seams.scratch_root("X_ROOT", os.fspath(made / "baseline.txt")) is not None
+        assert seams.scratch_root("X_ROOT", os.fspath(made / "not" / "yet")) is not None
+        assert capsys.readouterr().err == ""
+    finally:
+        (made / "baseline.txt").unlink(missing_ok=True)
+        made.rmdir()
+
+
+def test_scratch_root_ignores_the_temp_base_itself(capsys):
+    """/tmp itself is the shared base, never a private scratch root."""
+    assert seams.scratch_root("X_ROOT", "/tmp") is None
+    assert "X_ROOT" in capsys.readouterr().err
 
 
 def test_floor_default_without_override():
@@ -129,7 +205,16 @@ def test_a_root_seam_outside_temp_is_ignored_on_a_plain_run(module, attr, seam):
     value, err = _attr(module, attr, {seam: os.fspath(_outside_temp())})
     assert value == str(REPO), "%s still scans %s" % (module, value)
     assert seam in err
-    assert "outside the temp directory" in err
+    assert "not a private scratch path in the temp directory" in err
+
+
+@pytest.mark.parametrize(("module", "attr", "seam"), ROOT_SEAMS)
+def test_a_root_seam_under_a_moved_tmpdir_is_ignored_on_a_plain_run(module, attr, seam):
+    """TMPDIR set to a repository directory does not make a seam inside it honoured (finding 321c4189.1, the a66ada74 class)."""
+    fake = _repo_tmpdir()
+    value, err = _attr(module, attr, {"TMPDIR": os.fspath(fake), seam: os.fspath(fake / "scan")})
+    assert value == str(REPO), "%s still scans %s" % (module, value)
+    assert seam in err
 
 
 @pytest.mark.parametrize(
