@@ -71,8 +71,8 @@ MUTANTS = [
     ("a live main-checkout task ignored", "    if live_main_bg:\n", "    if False:\n"),
     (
         "a lease writer counted as a main-checkout task",
-        '            main_tree_agent = meta is not None and not meta.get("worktree")',
-        "            main_tree_agent = meta is not None",
+        '        main_tree_agent = meta is not None and not meta.get("worktree")',
+        "        main_tree_agent = meta is not None",
     ),
     (
         "the landing tree judged as a development tree",

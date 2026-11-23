@@ -228,25 +228,55 @@ def _local_common_main(common):
     return main if theirs is not None and theirs[0] == theirs[1] == common else None
 
 
-def _local_landing_record(tree):
-    """Self-contained twin of wl_core.landing_record. Keep in lockstep."""
+# The twin of wl_core's landing read: commit_policy validates, once per record version. Keep in lockstep.
+_LANDING_READS: dict[tuple[str, int, int], tuple[dict | None, str]] = {}
+
+
+def _local_commit_policy():
+    """Self-contained twin of wl_core._commit_policy. Keep in lockstep."""
+    import importlib.util
+
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    from rediacc_hooks import commit_policy
+
+    return commit_policy
+
+
+def _local_read_landing_record(tree):
+    """Self-contained twin of wl_core.read_landing_record. Keep in lockstep."""
     dirs = _local_git_dirs(pathlib.Path(tree))
     if dirs is None:
-        return None
+        return None, ""
+    where = dirs[1] / LANDING_RECORD_NAME
     try:
-        data = json.loads((dirs[1] / LANDING_RECORD_NAME).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(data, dict) or sorted(data) != ["branch", "path"]:
-        return None
-    path, branch = data["path"], data["branch"]
-    if not isinstance(path, str) or not isinstance(branch, str) or not os.path.isabs(path):
-        return None
-    land = pathlib.Path(path)
-    theirs = _local_git_dirs(land) if (land / ".git").is_file() else None
-    if theirs is None or theirs[1] != dirs[1]:
-        return None
-    return {"path": path, "branch": branch}
+        st = os.lstat(where)
+    except FileNotFoundError:
+        return None, ""
+    except OSError as exc:
+        return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
+    key = (str(where), st.st_mtime_ns, st.st_size)
+    if key not in _LANDING_READS:
+        try:
+            policy = _local_commit_policy()
+        except (ImportError, OSError, SyntaxError) as exc:
+            return (
+                None,
+                "commit_policy, the landing record's validator, could not be loaded (%s: %s)"
+                % (type(exc).__name__, exc),
+            )
+        _LANDING_READS[key] = policy.read_landing_record(str(tree))
+    return _LANDING_READS[key]
+
+
+def _local_landing_record(tree):
+    """Self-contained twin of wl_core.landing_record. Keep in lockstep."""
+    return _local_read_landing_record(tree)[0]
 
 
 def _local_landing_main(tree):

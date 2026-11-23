@@ -264,6 +264,8 @@ def mutant(tmp, main, name, old, new):
 TWINS = {
     "_common_main": "_local_common_main",
     "landing_record": "_local_landing_record",
+    "read_landing_record": "_local_read_landing_record",
+    "_commit_policy": "_local_commit_policy",
     "landing_main": "_local_landing_main",
 }
 

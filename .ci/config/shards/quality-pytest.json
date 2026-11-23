@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T09:31:05.703Z",
+  "generatedAt": "2026-11-23T09:57:44.674Z",
   "legs": [
     {
       "index": 1,
@@ -317,6 +317,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_fallback.py",
         "pytest:.claude/rediacc_hooks/tests/test_push_elsewhere.py",
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
+        "pytest:.claude/rediacc_hooks/tests/test_sf7_cd_done.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_clone_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_writes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py",
@@ -326,6 +327,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_facts.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_stack.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_preflight.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_settings.py",
@@ -494,6 +496,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_push_receipt_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_rebase_standdown.py",
         "pytest:.claude/rediacc_hooks/tests/test_refresh_pr_body_plan_call.py",
+        "pytest:.claude/rediacc_hooks/tests/test_resprofile_trust.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_stop_hook_edit_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
@@ -508,6 +511,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_landing_loop.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lessons.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_messaging_removed.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_core.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_deps.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planrec_prompt_stdin.py",
@@ -851,6 +855,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_lineage.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_message_catalogue.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_migrate.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_git.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_tracked_enumeration.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planfile_match.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_pr_scope_stop.py",

@@ -3291,6 +3291,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
     released = int(getattr(state, "landing_released", 0) or 0)
     if role == wl_prscope.DEVELOPMENT and released > 0:
         notice = wl_stack.notify_line(own_tree(), "cd-done", pr=released)
+        if not notice and wl_stack.notify_problem(own_tree()):
+            note_read_failure("cd-done-message", RuntimeError(wl_stack.notify_problem(own_tree())))
         if notice:
             pending = branch_writer_boxes(root)
             if pending is None:
@@ -3438,7 +3440,10 @@ def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cide
         if not notice:
             note_read_failure(
                 "cd-done-message",
-                RuntimeError("the cd-done message came back empty, so it is retried next stop"),
+                RuntimeError(
+                    "%s, so it is retried next stop"
+                    % (wl_stack.notify_problem(own) or "the cd-done message came back empty")
+                ),
             )
             return step.text, step.blocks
         state_doc["landing"] = {"cd_done": step.sha}
@@ -6111,6 +6116,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         note_read_failure("bg-sweep", exc)
         _bg_find = []
+    if getattr(_bg_find, "unread", ""):
+        note_read_failure("bg-sweep", RuntimeError(_bg_find.unread))
     if _bg_find:
         _bg_rows = [
             M.V_BG_ORPHAN_ROW
