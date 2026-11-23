@@ -47,6 +47,14 @@ export const ENVELOPE_VERSION = 3;
  */
 export const LEGACY_ENVELOPE_VERSION = 2;
 
+/**
+ * Envelope v4 (D56, config-key.ts): the blob is sealed under a per-config content key wrapped under
+ * the CEK. `selectiveEncrypt` writes it when handed the config's content key, and every reader opens
+ * it. It becomes `ENVELOPE_VERSION` once the CLI, the executor and the web pass the content key on
+ * every push (PLAN-rmcp-policy-record.md SK3) and the server refuses v3 (SK2).
+ */
+export const CONFIG_KEY_ENVELOPE_VERSION = 4;
+
 /** HMAC info */
 export const HMAC_ALGORITHM = 'SHA-256';
 

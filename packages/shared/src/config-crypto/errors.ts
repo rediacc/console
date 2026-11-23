@@ -3,7 +3,7 @@
  * config and version" apart from "the session layer would not open" without matching message text.
  */
 
-import { ENVELOPE_VERSION, LEGACY_ENVELOPE_VERSION } from './constants.js';
+import { CONFIG_KEY_ENVELOPE_VERSION, LEGACY_ENVELOPE_VERSION } from './constants.js';
 
 /**
  * The CEK layer refused the blob: its GCM tag does not verify under this CEK and the envelope's
@@ -26,7 +26,7 @@ export class ConfigIntegrityError extends Error {
 export class ConfigEnvelopeTooNewError extends Error {
   constructor(public readonly envelopeVersion: number) {
     super(
-      `Written by a newer rdc (envelope v${envelopeVersion}); this build reads v${LEGACY_ENVELOPE_VERSION} and v${ENVELOPE_VERSION}. Upgrade rdc.`
+      `Written by a newer rdc (envelope v${envelopeVersion}); this build reads v${LEGACY_ENVELOPE_VERSION} to v${CONFIG_KEY_ENVELOPE_VERSION}. Upgrade rdc.`
     );
     this.name = 'ConfigEnvelopeTooNewError';
   }

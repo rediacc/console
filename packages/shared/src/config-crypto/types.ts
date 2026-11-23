@@ -23,13 +23,22 @@ import type { FieldCommitments } from './commitments.js';
  * previously-stored envelope's `commitments.fields`.
  */
 export interface ConfigEnvelope {
-  envelopeVersion: 2 | 3;
+  envelopeVersion: 2 | 3 | 4;
   id: string;
   version: number;
   teamId?: string;
   orgId?: string;
   lastModified?: string;
   sdkEpoch: number;
+  /**
+   * Envelope v4 only (config-key.ts): the config's content key wrapped under the CEK, bound to
+   * (storeId, configId, teamId, configKeyVersion, cekGeneration).
+   */
+  wrappedConfigKey?: string;
+  /** Envelope v4 only: the content key's version; part of the wrap AAD and of the blob AAD. */
+  configKeyVersion?: number;
+  /** Envelope v4 only: the CEK generation the content key is wrapped under. */
+  cekGeneration?: number;
   /**
    * Per-field commitment HMACs. Always present (v2 and v3). The server rejects any
    * push that is not v3 with HTTP 400 `unsupported_envelope_version`.

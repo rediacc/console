@@ -40,8 +40,17 @@ export {
   generateFckSalt,
   verifyCommitment,
 } from './commitments.js';
+// Per-config content keys (envelope v4, D56)
+export type { ConfigContentKey, ConfigKeyBinding } from './config-key.js';
+export {
+  configKeyWrapAad,
+  generateConfigKey,
+  unwrapConfigKey,
+  wrapConfigKey,
+} from './config-key.js';
 // Constants
 export {
+  CONFIG_KEY_ENVELOPE_VERSION,
   ENVELOPE_FIELDS,
   ENVELOPE_VERSION,
   HKDF_INFO,
@@ -81,8 +90,15 @@ export { buildRecoveryKit, checkRecoveryKitSaved, KIT_CHECK_LENGTH } from './rec
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
 // Selective encryption
-export type { PriorEnvelope } from './selective.js';
-export { envelopeAad, selectiveDecrypt, selectiveEncrypt } from './selective.js';
+export type { PriorEnvelope, SelectiveEncryptOptions } from './selective.js';
+export {
+  envelopeAad,
+  envelopeAadV4,
+  selectiveDecrypt,
+  selectiveDecryptWithConfigKey,
+  selectiveEncrypt,
+  unwrapEnvelopeConfigKey,
+} from './selective.js';
 // CEK key slots (passkey / recovery-code) and machine secrets (D46)
 export type {
   MachineSecretKdfParams,

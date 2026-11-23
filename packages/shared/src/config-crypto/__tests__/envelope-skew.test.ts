@@ -59,18 +59,29 @@ describe('envelope skew', () => {
     ).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 
-  it('a v4 envelope names the gap, not the slot key', async () => {
+  it('a v5 envelope names the gap, not the slot key', async () => {
     const { sdkKey, cek, payload } = await sealed();
-    const v4 = {
+    const v5 = {
       ...payload,
-      envelope: { ...payload.envelope, envelopeVersion: 4 as unknown as 3 },
+      envelope: { ...payload.envelope, envelopeVersion: 5 as unknown as 3 },
     };
-    const err = await selectiveDecrypt(v4, cek, sdkKey, bindingOf(v4)).catch((e: unknown) => e);
+    const err = await selectiveDecrypt(v5, cek, sdkKey, bindingOf(v5)).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ConfigEnvelopeTooNewError);
     expect(err).not.toBeInstanceOf(ConfigIntegrityError);
     expect((err as Error).message).toBe(
-      'Written by a newer rdc (envelope v4); this build reads v2 and v3. Upgrade rdc.'
+      'Written by a newer rdc (envelope v5); this build reads v2 to v4. Upgrade rdc.'
     );
+  });
+
+  it('a v3 blob relabelled v4 fails closed with the integrity error', async () => {
+    const { sdkKey, cek, payload } = await sealed();
+    const relabelled = {
+      ...payload,
+      envelope: { ...payload.envelope, envelopeVersion: 4 as const },
+    };
+    await expect(
+      selectiveDecrypt(relabelled, cek, sdkKey, bindingOf(relabelled))
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 
   it('an envelope older than v2 keeps the generic unsupported-version error', async () => {
