@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-22T17:04:20.963Z",
+  "generatedAt": "2026-11-23T01:19:44.002Z",
   "legs": [
     {
       "index": 1,
@@ -480,6 +480,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
         "pytest:.claude/rediacc_hooks/tests/test_proc.py",
+        "pytest:.claude/rediacc_hooks/tests/test_rebase_standdown.py",
         "pytest:.claude/rediacc_hooks/tests/test_refresh_pr_body_plan_call.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_stop_hook_edit_check.py",
