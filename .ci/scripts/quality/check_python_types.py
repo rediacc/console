@@ -8,7 +8,13 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/p
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import python_types
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_python_types.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+    )
     raise SystemExit(python_types.main(sys.argv[1:]))

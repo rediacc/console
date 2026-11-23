@@ -8,7 +8,13 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/s
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import swallowed_failures
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_swallowed_failures.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json", "--help", "-h"),
+    )
     raise SystemExit(swallowed_failures.main(sys.argv[1:]))

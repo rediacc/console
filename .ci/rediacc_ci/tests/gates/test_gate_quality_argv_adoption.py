@@ -20,7 +20,6 @@ CALL = "_gate_args.parse("
 
 # Entry points that refuse an unknown argument through their own code, with where. They are RUN below like every other script.
 REFUSES_ITSELF = {
-    "check_cli_contract": "`unknown = [a for a in args if a != NO_BUILD]`, rc 2",
     "check_config_server_key_constant": "own argument check, rc 2",
     "check_gh_retry_reads": "argparse in gh_retry_reads.main",
     "check_hooks_resolvable": "argparse",
@@ -31,29 +30,19 @@ REFUSES_ITSELF = {
     "check_lint_rule_liveness": "argparse",
     "check_lint_scope_coverage": "argparse",
     "check_model_invocable_commands": "argparse in model_invocable_commands.main",
-    "check_operator_rulings": "own argument check, rc 2",
-    "check_plan_bindings": "own argument check, rc 2",
-    "check_plan_feedback": "own argument check, rc 2",
     "check_plan_live_proof": "argparse",
-    "check_prose_duplication": "`if args: print(USAGE); return 2`",
-    "check_python_types": "`unknown = [...]` over its two flags, rc 2",
-    "check_region_consistency": "`unknown = [a for a in args if a != '--live']`, rc 2",
     "check_runner_advice": "argparse",
     "check_scope_completeness": "argparse",
     "check_scope_mirrors": "`if rest or ...: print(USAGE); return 2`",
     "check_secret_reachability": "argparse",
     "check_settings_registry": "own argument check, rc 2",
-    "check_silent_failure_patterns": "`unknown argument` refusal, rc 2",
-    "check_swallowed_failures": "`log.error('unknown argument')`, rc 2",
     "check_worker_observability_budget": "own argument check, rc 2",
 }
 # Left out of the run on purpose, and named in the output.
-FIXED_ELSEWHERE = {
-    "check_record_paths": "parse_args landed in 45da438dd0, which this tip does not hold yet",
-}
+FIXED_ELSEWHERE: dict[str, str] = {}
 # Fewer than this and the scan is not seeing the tree.
 MIN_SCRIPTS = 174
-MIN_ADOPTED = 147
+MIN_ADOPTED = 158
 
 
 def everything() -> list[str]:

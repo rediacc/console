@@ -8,7 +8,9 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/c
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import cli_contract
 
 if __name__ == "__main__":
+    _gate_args.parse("check_cli_contract.py", sys.argv[1:], switches=("--selftest", "--no-build"))
     raise SystemExit(cli_contract.main(sys.argv[1:]))

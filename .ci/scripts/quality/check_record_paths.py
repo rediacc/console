@@ -43,6 +43,7 @@ import tokenize
 from typing import Any
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.policy_paths import policy_rel
@@ -1867,4 +1868,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_record_paths.py", sys.argv[1:], switches=SWITCHES, valued=VALUED)
     sys.exit(main(sys.argv[1:]))

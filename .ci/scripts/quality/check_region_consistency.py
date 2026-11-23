@@ -20,7 +20,14 @@ why: Each per-target fact is written in regions.json, two wrangler tomls and a b
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import region_consistency
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_region_consistency.py",
+        sys.argv[1:],
+        switches=("--selftest", "--live"),
+        valued=("--root",),
+    )
     raise SystemExit(region_consistency.main(sys.argv[1:]))

@@ -1163,6 +1163,9 @@ def selftest() -> int:
 
 
 def main(argv: list[str]) -> int:
+    # `--selftest` is declared to the shared parser, so it is honoured here: it used to be accepted and ignored, running the whole tree scan (check:ci-gate-argv found it, 2026-11-23).
+    if "--selftest" in argv:
+        return 1 if selftest() else 0
     update = "--update" in argv
     if refusal := controls.controls_first("plan checkbox ledger", selftest):
         return refusal

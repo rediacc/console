@@ -8,7 +8,13 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/s
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import silent_failure_patterns
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_silent_failure_patterns.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json", "--help", "-h"),
+    )
     raise SystemExit(silent_failure_patterns.main(sys.argv[1:]))

@@ -20,8 +20,12 @@ why: CLAUDE.md, /pr-babysit, the pr-babysitter agent and /pr-merge are what an a
 
 import sys
 
+import _gate_args
 from _cipath import CI_DIR
 from rediacc_ci.quality import prose_duplication
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_prose_duplication.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(prose_duplication.main(sys.argv[1:], root=CI_DIR.parent))
