@@ -56,7 +56,11 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    if hookio.grep_q(VERB_AND_PATH, scan) or fed_by_stdin(cmd) or names_by_run(cmd, cwd):
+    if (
+        hookio.grep_q(VERB_AND_PATH, scan)
+        or fed_by_stdin(cmd)
+        or names_by_run(cmd, cwd, shellscan.event_write_records(ev))
+    ):
         ev.warn(MESSAGE)
         return hookio.DENY
     return hookio.ALLOW
@@ -391,61 +395,71 @@ def _assigned(run_, word):
     return None if "$" in out else out
 
 
-def _unset_ref(run_, word):
-    """Is `word` a lone `$NAME`/`${NAME}` the walk knows is unset (`unset NAME` earlier in the command)? Bash drops such a word from the expanded argv, as it drops an empty one, so it holds no position in `xargv` (an unknown name keeps one, as an unresolved placeholder)."""
-    m = _PLAIN_REF.fullmatch(word)
-    if not m:
+# THE OPERANDS ARE THE WALK'S RECORDS (PLAN-tooling-code-reduction CR5). `shellscan.write_records` lists every operand of an `rm` ("remove") and every pathspec of a destructive git verb ("git"), each as typed and as bash expands it, joined onto the verb's `-C`, with what xargs feeds the run and, for a `find -exec` run, find's starting points in a `{}`'s place (neither is taken here, `_held`); a word the walk cannot expand is an "unknown" record holding its
+# unexpanded parts as `_UNRESOLVED` markers, which this guard reads as a backtick span, "any text" to `_wildcarded`. An unknown record that is no word of the run (a redirect target, `index` None) is not an operand either. A typed word whose every `$NAME` this command assigned is judged as that value, and only when bash's own expansion of it (an expanded record of the same run) IS that value (review acc34f73.1): `'$D/..'` stays `$D/..` there and `"\$D/.."` is unknown, and both name a literal `$D` directory, so they keep the typed text.
+# A word bash drops (`unset X; rm $X ...`, `X=; rm $X ...`) holds no position the value could be lent from, since the test is the value among the expanded records, never a position (reviews d95ab97d.1, 335d582f.1); a typed word that bash also hands over as written (`'$D/../.claude'` beside `$D/../.claude`, one record for both texts) keeps its literal reading (review a62c7d11.1).
+def _held(write):
+    """Is `write` read from a word its run holds itself (its argv or its expanded argv, at the record's index)? A word xargs feeds (`index` None) and a find start standing in a `{}`'s place are not: what reaches the command on stdin is `fed_by_stdin`'s, read from the feed's own text, and a find start is no operand of the rm (`find . -name '*.pyc' -exec rm -rf {} +` removes what the find matched, never the tree it walks)."""
+    if write.index is None:
         return False
-    name = m.group(1) or m.group(2)
-    held = (run_.vars or {}).get(name)
-    return name not in run_.loop_vars and isinstance(held, tuple) and held[0] is None
+    return any(
+        held is not None and write.index < len(held) and held[write.index] == write.word
+        for held in (write.run.argv, write.run.xargv)
+    )
 
 
-def _operand_words(run_):
-    """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
-    # A typed word is read as its assigned value only when bash's own expansion of it (`xargv`, aligned by position) IS that value: `'$D/..'` stays `$D/..` there and `"\$D/.."` is unresolved, and both name a literal `$D` directory, so they keep the typed text (review acc34f73.1).
-    # `xargv` drops a word that expands to nothing (`E=; rm $E x`), so `rm $E $D/..` must still read `$D` as its value while `'$D/..'` (bash leaves it `$D/..`) stays typed (review 335d582f.1).
-    # The two lists are walked in step (review a62c7d11.1): a typed word matches only the expanded word at its own position, and a word whose assigned value is empty consumes none, so another word that happens to expand to the same value can never lend it.
-    xargv = run_.xargv
-    words = []
-    j = 0
-    for a in run_.argv:
-        value = _assigned(run_, a)
-        seen = False
-        if xargv is not None:
-            if j < len(xargv) and value is not None and value == xargv[j]:
-                seen = True
-                j += 1
-            elif value != "" and not _unset_ref(run_, a):
-                j += 1
-        words.append((seen and value) or a)
-    # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
-    words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
+def _operands_by_run(records):
+    """`[(run, [word, ...]), ...]` in walk order: the operand records of each run (`_held`, and every git pathspec, which carries the verb's `-C`), an unknown word read with its unexpanded parts as backtick spans."""
+    runs: dict[int, tuple] = {}
+    for write in records:
+        if write.how == "git" or (write.how == "remove" and _held(write)):
+            word = write.word
+        elif write.how == "unknown" and _held(write):
+            word = write.word.replace(shellscan._UNRESOLVED, "`_`")
+        else:
+            continue
+        runs.setdefault(id(write.run), (write.run, []))[1].append(word)
+    return list(runs.values())
+
+
+def _operand_words(run_, words):
+    """Every word an operand of `run_` could be: its operand records `words`, a typed word whose assigned value is one of them dropped in its favour unless the expanded argv holds the typed text too (`_assigned`), and each word of a `for` list a `$NAME` in the argv names."""
+    held = set(words)
+    literal = set(run_.xargv or ())
+    out = []
+    for word in words:
+        value = _assigned(run_, word)
+        if value is not None and value != word and value in held and word not in literal:
+            continue
+        out.append(word)
     for name, values in run_.loop_vars.items():
         ref = re.compile(r"\$\{?%s\b" % re.escape(name))
         if any(ref.search(a) for a in run_.argv):
-            words += values
-    return words
+            out += values
+    return out
 
 
-def names_by_run(cmd, cwd):
-    """True when a walked `rm` or destructive git verb names a protected file, or recursively removes a directory holding one."""
+def names_by_run(cmd, cwd, records=None):
+    """True when a walked `rm` or destructive git verb names a protected file, or recursively removes a directory holding one. `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
     here_root = posixpath.normpath(str(cwd) if cwd else "/")
     try:
         root = posixpath.normpath(str(hookio.repo_root()))
     except RuntimeError:
         root = here_root
-    for run_ in shellscan.every_run(cmd):
+    if records is None:
+        records = shellscan.write_records(cmd, here_root)
+    for run_, words in _operands_by_run(records):
         destructive, git_verb = _destructive(run_)
         if not destructive:
             continue
-        here = run_.git_dir if git_verb else run_.cwd
-        base = _resolve(here, here_root) if here else here_root
+        # A git pathspec record already carries the verb's `-C`, so every word resolves from the directory the run executes in; the directory git runs in (`git_dir`) is where a pathspec `x/..` folds to.
+        base = _resolve(run_.cwd, here_root) if run_.cwd else here_root
+        run_dir = _resolve(run_.git_dir, here_root) if git_verb and run_.git_dir else base
         # `rm -r` and `git rm -r` remove what a directory holds; a restore or checkout of a directory is block_destructive_git_restore's to judge.
         recursive = (not git_verb or run_.git_sub == "rm") and any(
             a == "--recursive" or re.match(r"^-[A-Za-z]*[rR]", a) for a in run_.argv
         )
-        for word in _operand_words(run_):
+        for word in _operand_words(run_, words):
             if word.startswith("-") or word == "":
                 continue
             if ("$(" in word or "`" in word) and _names_protected_text(word, base, root, recursive):
@@ -458,7 +472,7 @@ def names_by_run(cmd, cwd):
             # normalises the pathspec `x/..` to the run's directory, so a recursive `git rm` of such a word is refused when that directory holds a protected file.
             pattern_text = _wildcarded(word)
             if pattern_text is not None and _wild_path(pattern_text, base)[2]:
-                if git_verb and recursive and _holds_protected(base, root):
+                if git_verb and recursive and _holds_protected(run_dir, root):
                     return True
                 continue
             path = _resolve(word, base)

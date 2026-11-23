@@ -294,3 +294,63 @@ def test_a_copy_is_listed_as_typed_and_as_expanded(tmp_path):
     got = _hows("F=c.txt; cp /etc/hostname $F", tmp_path)
     assert ("<CWD>/c.txt", "copy") in got, got
     assert ("<CWD>/$F", "copy") in got, got
+
+
+def test_a_word_the_walk_cannot_expand_is_an_unknown_record(tmp_path):
+    """Unknown is never dropped: `rm "$D"x.txt` with D unknown removes a file no path here names, so its expanded word is an "unknown" record (path "", the word with its unexpanded part marked, the argv index kept). Before CR5 step 2 it was left out."""
+    got = [
+        (w.path, w.how, w.word, w.index)
+        for w in shellscan.write_records('rm "$D"x.txt', str(tmp_path))
+        if w.how == "unknown"
+    ]
+    assert got == [("", "unknown", shellscan._UNRESOLVED + "x.txt", 0)], got
+
+
+def test_an_expanded_word_is_no_unknown_record(tmp_path):
+    """SILENT CONTROL: a word the walk expands is a record of its reading, never an unknown one."""
+    records = shellscan.write_records("D=sub; rm $D/x.txt", str(tmp_path))
+    assert [w.how for w in records] == ["remove", "remove"], records
+
+
+def test_a_git_pathspec_is_read_as_typed_too(tmp_path):
+    """A git pathspec is read over the typed and the expanded words, as every other word reading is: the typed `$(echo d)/g.py` keeps the substitution's text, which the expanded word (unknown) has lost."""
+    got = [
+        (w.how, w.word)
+        for w in shellscan.write_records("git restore $(echo d)/g.py", str(tmp_path))
+    ]
+    assert ("git", "$(echo d)/g.py") in got, got
+    assert ("unknown", shellscan._UNRESOLVED + "/g.py") in got, got
+
+
+_PROTECTED = __import__("rediacc_hooks.guards.block_protected_files", fromlist=["_"])
+
+
+@pytest.mark.parametrize(
+    ("cmd", "refused"),
+    [
+        ('rm "$D"settings*', True),
+        ('git rm "$D"settings.json', True),
+        ('rm "$D"x.txt', False),
+    ],
+)
+def test_protected_files_judges_an_unknown_word_as_a_pattern(tmp_path, cmd, refused):
+    """block_protected_files reads its operands from the records, and an unknown record is load-bearing: the typed `"$D"settings*` is `$Dsettings*` after quote removal (a variable named `Dsettings`), so only the unknown record keeps the boundary bash sees (review 094dea3b.4). The plant drops the unknown records and the refusals turn allowed; the allowed row stays allowed either way."""
+    records = shellscan.write_records(cmd, str(tmp_path))
+    assert _PROTECTED.names_by_run(cmd, str(tmp_path), records) is refused
+    dropped = [w for w in records if w.how != "unknown"]
+    assert _PROTECTED.names_by_run(cmd, str(tmp_path), dropped) is False
+
+
+@pytest.mark.parametrize(
+    ("cmd", "refused"),
+    [
+        ("find . -name '*.pyc' -exec rm -rf {} +", False),
+        ("find . -name x.tmp | xargs rm -rf", False),
+        ("rm -rf .claude", True),
+        ("git -C . restore .claude/settings.json", True),
+    ],
+)
+def test_protected_files_takes_only_the_words_a_run_holds(cmd, refused):
+    """A find start in a `{}`'s place and a word xargs feeds are records (`write_records` over-reads them on purpose) but no operand of the rm: the find removes what it matched, and the feed is `fed_by_stdin`'s, read from its own text. Taking them refused both innocent cleanups from the repository root (measured while moving the guard onto the records). The refusals are the controls: a recursive rm of a directory holding a protected file, and a git pathspec joined onto its `-C` (no word of the run, still taken)."""
+    root = str(hookio.repo_root())
+    assert _PROTECTED.names_by_run(cmd, root) is refused
