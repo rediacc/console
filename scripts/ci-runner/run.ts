@@ -113,6 +113,7 @@ import {
   type GateResult,
   type PoolLease,
   planAdmission,
+  releasedGrant,
   runPool,
   type Sched,
 } from './pool';
@@ -1397,6 +1398,102 @@ function startCpuSampler(): {
   };
 }
 
+/** The /proc fields one busy-sampler tick reads per process: its process group and its CPU ticks, own and reaped children. */
+function readProcGroups(): { ticks: Map<number, number>; group: Map<number, number> } | undefined {
+  let pids: string[];
+  try {
+    pids = fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d));
+  } catch {
+    return undefined;
+  }
+  const ticksOf = new Map<number, number>();
+  const group = new Map<number, number>();
+  for (const pid of pids) {
+    let stat: string;
+    try {
+      stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+    } catch {
+      continue; // exited between the listing and the read
+    }
+    // The comm field may hold spaces and parentheses, so the fields after it are split from the LAST ')'.
+    const rest = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+    // rest[0] is field 3 (state): pgrp is field 5, utime..cstime are fields 14-17.
+    const pgrp = Number(rest[2]);
+    const ticks = Number(rest[11]) + Number(rest[12]) + Number(rest[13]) + Number(rest[14]);
+    if (!Number.isFinite(pgrp) || !Number.isFinite(ticks)) continue;
+    ticksOf.set(Number(pid), ticks);
+    group.set(Number(pid), pgrp);
+  }
+  return { ticks: ticksOf, group };
+}
+
+/**
+ * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group. The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
+ */
+function startBusySampler(elasticIds: ReadonlySet<string>): {
+  stop: () => void;
+  busyCores: (id: string, fromMs: number, toMs: number) => number | undefined;
+} {
+  let clkTck = 100;
+  try {
+    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim()) || 100;
+  } catch {
+    /* 100 is the Linux default */
+  }
+  const prev = new Map<number, number>();
+  const series = new Map<string, { t: number; ms: number }[]>();
+  const take = (): void => {
+    const live = liveGates().filter((g) => elasticIds.has(g.id));
+    if (live.length === 0) {
+      prev.clear();
+      return;
+    }
+    const snap = readProcGroups();
+    if (snap === undefined) return;
+    const t = Date.now();
+    const rise = new Map<number, number>();
+    for (const [pid, ticks] of snap.ticks) {
+      const grp = snap.group.get(pid);
+      if (grp === undefined) continue;
+      rise.set(grp, (rise.get(grp) ?? 0) + Math.max(0, ticks - (prev.get(pid) ?? 0)));
+    }
+    prev.clear();
+    for (const [pid, ticks] of snap.ticks) prev.set(pid, ticks);
+    for (const g of live) {
+      const s = series.get(g.id) ?? [];
+      const last = s.at(-1)?.ms ?? 0;
+      // The first tick of a gate has no previous reading of its processes, so it only anchors the series.
+      s.push({ t, ms: s.length === 0 ? 0 : last + ((rise.get(g.pgid) ?? 0) * 1000) / clkTck });
+      series.set(g.id, s);
+    }
+  };
+  const timer = setInterval(take, 1000);
+  timer.unref();
+  return {
+    stop: () => clearInterval(timer),
+    busyCores: (id, fromMs, toMs) => {
+      const s = series.get(id);
+      if (s === undefined) return undefined;
+      // The newest reading at or before each end; a window whose start predates the series, or whose end is more than one tick and a half stale, is not covered.
+      const before = (at: number): { t: number; ms: number } | undefined => {
+        let hit: { t: number; ms: number } | undefined;
+        for (const p of s) if (p.t <= at) hit = p;
+        return hit;
+      };
+      const a = before(fromMs);
+      const b = before(toMs);
+      if (a === undefined || b === undefined || toMs - b.t > 1500) return undefined;
+      // A window inside one tick reads the rate of the tick span that holds it.
+      if (b.t <= a.t) {
+        const next = s.find((p) => p.t > a.t);
+        if (next === undefined) return undefined;
+        return ((next.ms - a.ms) / (next.t - a.t)) * (toMs - fromMs);
+      }
+      return ((b.ms - a.ms) / (b.t - a.t)) * (toMs - fromMs);
+    },
+  };
+}
+
 /** What a gate's /proc sampler capture says: peak summed RSS and the largest summed CPU any one tick saw. */
 function readCapture(file: string, runId: string | undefined): { rssMb?: number; cpuMs?: number } {
   let text: string;
@@ -1845,6 +1942,162 @@ const SELFTEST_REQUIRE_FLOOR = 150;
  * rather than passed. If any leg does not fire, the runner's green means
  * nothing, so this refuses to proceed.
  */
+/**
+ * W12 (agent/plans/PLAN-ciquick-cpu.md): core release through the real pool loop. Budget C 24 with no epsilon; an elastic gate (min 2, max 18) that the area rule grants 18 beside a queued fixed 15-core gate, so 18 + 15 > 24 holds the second until cores come back. The busy reader is the seam run.ts fills from /proc (`startBusySampler`); here it reports a constant width. Returns the failures, empty when every case holds.
+ */
+async function coreReleaseSelftest(): Promise<string[]> {
+  const failures: string[] = [];
+  const WIDE = 'selftest:release-wide';
+  const QUEUED = 'selftest:release-queued';
+  const scenario = async (
+    busyWidth: number | undefined
+  ): Promise<{ queuedAt: number; wideEnd: number; results: GateResult[] }> => {
+    const t0 = Date.now();
+    const at = new Map<string, number>();
+    let wideEnd = Number.NaN;
+    const results = await runPool(
+      [
+        { ...syntheticSpec(WIDE, 'true'), cores: { min: 2, max: 18 } },
+        syntheticSpec(QUEUED, 'true'),
+      ],
+      {
+        jobs: 24,
+        heavyLimit: 1,
+        failFast: false,
+        durations: new Map([
+          [WIDE, 60_000],
+          [QUEUED, 1_000],
+        ]),
+        sched: 'cores',
+        budget: { cores: 24, epsilon: 0, maxProcs: 48, memMb: 64 * 1024 },
+        costs: new Map<string, GateCost>([
+          [WIDE, { cpuMs: 1_080_000, wallMs: 60_000, perCore: 1 }],
+          [QUEUED, { cpuMs: 15_000, wallMs: 1_000 }],
+        ]),
+        busyCores:
+          busyWidth === undefined
+            ? () => undefined
+            : (id, from, to) => (id === WIDE ? busyWidth * (to - from) : undefined),
+        releaseWindowMs: 100,
+        releasePollMs: 10,
+        exec: async (spec) => {
+          at.set(spec.id, Date.now() - t0);
+          if (spec.id === WIDE) {
+            await new Promise((r) => setTimeout(r, 700));
+            wideEnd = Date.now() - t0;
+          }
+          return { code: 0, stdout: '', stderr: '', ms: 1 };
+        },
+      }
+    );
+    return { queuedAt: at.get(QUEUED) ?? Number.NaN, wideEnd, results };
+  };
+
+  const drop = await scenario(4);
+  const dropWide = drop.results.find((r) => r.id === WIDE);
+  if (
+    !(drop.queuedAt < drop.wideEnd) ||
+    dropWide?.grantedCores !== 18 ||
+    dropWide.released?.from !== 18 ||
+    dropWide.released.to !== 5 ||
+    drop.results.find((r) => r.id === QUEUED)?.blockedBy !== 'cpu'
+  )
+    failures.push(
+      `an elastic gate granted 18 of 24 that drops to 4 busy workers must release to 5 and let the queued 15-core gate start before it ends, got queued at ${drop.queuedAt} ms, wide ended ${drop.wideEnd} ms, granted ${dropWide?.grantedCores}, released ${JSON.stringify(dropWide?.released)}`
+    );
+
+  const busy = await scenario(18);
+  if (!(busy.queuedAt >= busy.wideEnd) || busy.results.find((r) => r.id === WIDE)?.released)
+    failures.push(
+      `CONTROL: a gate whose 18 workers stay busy must keep its grant, so the 15-core gate waits for its end, got queued at ${busy.queuedAt} ms, wide ended ${busy.wideEnd} ms, released ${JSON.stringify(busy.results.find((r) => r.id === WIDE)?.released)}`
+    );
+
+  const blind = await scenario(undefined);
+  if (!(blind.queuedAt >= blind.wideEnd) || blind.results.find((r) => r.id === WIDE)?.released)
+    failures.push(
+      `CONTROL: a reader that covers no window must never release a core, got queued at ${blind.queuedAt} ms, wide ended ${blind.wideEnd} ms`
+    );
+
+  // The pure rule's edges: too young releases nothing; a low bucket among busy ones is a pause, not a tail; a fixed-width gate is never released.
+  const el = {
+    id: 'g',
+    slots: 18,
+    cores: 18,
+    memMb: 0,
+    estMs: 1,
+    heavy: false,
+    mutex: [],
+    reads: [],
+    cpuMs: 1,
+    elastic: { min: 2, max: 18, workMs: 1, perCore: 1, measured: true },
+  };
+  const low = (): number => 4 * 2_000;
+  if (releasedGrant(el, 0, 10_000, low) !== 5)
+    failures.push('releasedGrant: 4 busy cores over a full 10 s window must keep 5 of 18');
+  if (releasedGrant(el, 1, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a gate younger than the window must release nothing');
+  if (releasedGrant(el, 0, 10_000, (f) => (f >= 8_000 ? 18 * 2_000 : 4 * 2_000)) !== undefined)
+    failures.push('CONTROL releasedGrant: one busy bucket in the window must hold the whole grant');
+  if (releasedGrant({ ...el, elastic: undefined }, 0, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a fixed-width gate must never be released');
+  if (releasedGrant({ ...el, cores: 5 }, 0, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a gate already at its kept width must not release again');
+  return failures;
+}
+
+/**
+ * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads what its own `times` says it averaged (an independent instrument: RUSAGE_CHILDREN, not /proc) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
+ */
+async function busySamplerSelftest(): Promise<string[]> {
+  if (process.platform !== 'linux') {
+    process.stderr.write(
+      `ci-runner: busy-sampler probe not run on ${process.platform} (/proc only)\n`
+    );
+    return [];
+  }
+  const BUSY = 'selftest:busy-two';
+  const IDLE = 'selftest:busy-idle';
+  const sampler = startBusySampler(new Set([BUSY, IDLE]));
+  const opts = { cwd: REPO_ROOT, mergeOutput: false };
+  const t0 = Date.now();
+  const gates = Promise.all([
+    execGate(
+      syntheticSpec(
+        BUSY,
+        'yes >/dev/null & a=$!; yes >/dev/null & b=$!; sleep 2.8; kill $a $b; wait 2>/dev/null; true'
+      ),
+      opts
+    ),
+    execGate(syntheticSpec(IDLE, 'sleep 2.8'), opts),
+  ]);
+  await new Promise((r) => setTimeout(r, Math.max(0, 2_400 - (Date.now() - t0))));
+  const now = Date.now();
+  const busy = sampler.busyCores(BUSY, now - 1_000, now);
+  const idle = sampler.busyCores(IDLE, now - 1_000, now);
+  const [busyRun] = await gates;
+  sampler.stop();
+  const failures: string[] = [];
+  // The gate's average width over its life, from `times`; the window is most of that life and `yes` does not phase, so the two agree within half.
+  const avg = (busyRun.cpuMs ?? 0) / Math.max(1, busyRun.ms);
+  const read = busy === undefined ? undefined : busy / 1_000;
+  // The floor is low on purpose: at load 67 on 24 cores the two workers averaged 0.34, and the comparison with `times` still tells a reader from a dead one well below that.
+  if (avg < 0.05)
+    failures.push(
+      `busy sampler: the probe's two yes workers averaged ${avg.toFixed(2)} cores by times, too few to tell busy from idle (a machine this loaded cannot run the probe)`
+    );
+  else if (read === undefined || read < avg * 0.5 || read > avg * 1.5 + 0.2)
+    failures.push(
+      `busy sampler: a gate running two yes workers must read near its own times average of ${avg.toFixed(2)} cores, read ${read === undefined ? 'no window' : read.toFixed(2)}`
+    );
+  if (idle === undefined || idle / 1_000 > Math.min(0.3, avg / 3))
+    failures.push(
+      `CONTROL busy sampler: a gate running sleep must read about 0 busy cores, read ${idle === undefined ? 'no window' : (idle / 1_000).toFixed(2)}`
+    );
+  if (sampler.busyCores('selftest:never-ran', now - 1_000, now) !== undefined)
+    failures.push('CONTROL busy sampler: a gate it never saw must cover no window');
+  return failures;
+}
+
 async function selftest(): Promise<number> {
   // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
   const processCheck = runnerProcessSelftest();
@@ -3078,6 +3331,9 @@ async function selftest(): Promise<number> {
       mine === 0,
       `the lone gate's tokens must be released when the pool drains, ${mine} held`
     );
+    // CORE RELEASE (W12, pool.ts releasedGrant): an elastic gate granted 18 of 24 cores whose workers drop to 4 busy gives cores back, and a queued 15-core gate starts BEFORE it ends; a gate whose workers stay busy keeps its grant, and so does one the reader cannot see.
+    const releaseFailures = [...(await coreReleaseSelftest()), ...(await busySamplerSelftest())];
+    require_(releaseFailures.length === 0, releaseFailures.join('\n'));
     // The borrow through the real pool loop, and the reading (both in sim.ts, so they run with the scheduler's other cases).
     for (const failure of await reclaimLoopSelftest()) require_(false, failure);
   }
@@ -4882,6 +5138,11 @@ async function runGraph(
     }, 50);
   };
   const cpuSampler = startCpuSampler();
+  // W12: each elastic gate's own busy cores, so the pool can release what its tail no longer uses. `cores` only, like the release itself.
+  const busySampler =
+    sched === 'cores'
+      ? startBusySampler(new Set(graph.filter((s) => s.cores !== undefined).map((s) => s.id)))
+      : undefined;
   let pooled: GateResult[];
   try {
     pooled = await runPool(graph, {
@@ -4897,6 +5158,7 @@ async function runGraph(
       // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
+      busyCores: busySampler?.busyCores,
       exec: async (spec, grant: Grant) =>
         softenLocalWarn(
           spec,
@@ -4961,6 +5223,7 @@ async function runGraph(
       },
     });
   } finally {
+    busySampler?.stop();
     lease?.close();
   }
   // A SIGNAL CUT THIS RUN SHORT: its last gate may settle before the handler's exit, and finishing from here would print a footer and a --json document over a run that has no verdict. The handler exits the process; this only stops the run from finishing first.
@@ -4983,6 +5246,12 @@ async function runGraph(
     if (r.overLease !== undefined)
       humanOut(
         `ci-runner: ${r.id} ran on ${r.overLease.granted} core(s) holding ${r.overLease.held} lease token(s): its lease hold reached its bound\n`
+      );
+  // A core release (W12) changes what the pool budgeted mid-gate, so each one is named with when it happened.
+  for (const r of results)
+    if (r.released !== undefined)
+      humanOut(
+        `ci-runner: core release: ${r.id} ${r.released.from} -> ${r.released.to} core(s) at ${Math.round((r.released.at - started) / 1000)} s (its workers went idle; ${r.released.from - r.released.to} core(s) back to the pool)\n`
       );
   return { results, exitCode, wallMs: meta.wallMs, util, startedAt: started, ranking };
 }

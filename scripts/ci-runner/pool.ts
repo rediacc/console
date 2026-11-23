@@ -129,6 +129,8 @@ export interface GateResult {
   borrowed?: number;
   /** The nice value the gate launched at (exec.ts gateSpawnArgv); absent when the executor did not report one. */
   niceness?: number;
+  /** Set when the pool released part of an elastic gate's grant while it ran (`releasedGrant`): the cores budgeted at launch, the cores it kept, and when, epoch ms. The process keeps its CI_RUNNER_CORES; only the pool's accounting (and the lease tokens) shrank. */
+  released?: { from: number; to: number; at: number };
 }
 
 /**
@@ -201,6 +203,12 @@ export interface PoolOptions {
   idleCoreMs?: IdleReader;
   /** How often a pool with a gate held by the budget re-reads the idle, ms (default RECLAIM_POLL_MS). The selftest shortens it. */
   reclaimPollMs?: number;
+  /** Busy core-ms of a running gate's own process tree (run.ts, over /proc). Absent means no grant is ever released, as before it existed; honoured by `cores` only. */
+  busyCores?: BusyReader;
+  /** The window a running elastic gate's busy cores must stay low over before cores are released, ms (default RELEASE_WINDOW_MS). The selftest shortens it. */
+  releaseWindowMs?: number;
+  /** How often a pool with a held gate beside a running elastic gate re-reads the busy cores, ms (default RELEASE_POLL_MS). The selftest shortens it. */
+  releasePollMs?: number;
 }
 
 /**
@@ -316,6 +324,49 @@ export function reclaimableCores(
   let holding = 0;
   for (const b of borrows) if (b.to === undefined) holding += b.cores;
   return Math.max(0, least / Math.max(1, runs) - RECLAIM_HEADROOM - holding);
+}
+
+/**
+ * CORE RELEASE (agent/plans/PLAN-ciquick-cpu.md W12, operator /ask 2026-11-22). An elastic gate is sized once, at admission, and kept that width to its end; check:ci-pytest was granted 18 of 24 cores and held all 18 while its last xdist workers finished, so account-server and lint queued about 130 s behind cores nobody used. The borrow above cannot reach that tail: it admits only a gate predicted to end inside BORROW_WALL_MS, and a 15-core gate is not one.
+ *
+ * So the pool re-reads each running elastic gate's OWN busy cores (its process tree, not the machine), and when they stay low over the whole window it shrinks the gate's budgeted width to what it is using plus headroom. The cores come back to the budget and the lease, and a queued gate may start before the elastic gate ends.
+ *
+ *   RELEASE_WINDOW_MS, in five buckets: the gate's busy cores must stay low in EVERY bucket, so a pause between two phases (collection, then the run) does not read as a finished tail. A gate younger than the window releases nothing: its ramp-up is not its tail.
+ *   RELEASE_HEADROOM: one core over the busiest bucket, for the next worker a tool spawns and the sampling's own error. The kept width is floored at one core, not at the declared `min`, which bounds the grant a gate STARTS on.
+ *   A release is ONE-WAY. The gate's process keeps its CI_RUNNER_CORES (an environment cannot be changed under a running process), so a release never grows back; a tool that does wake wider runs on CFS beside its neighbours for what is left of it, which is the trade the borrow already makes.
+ *   RELEASE_POLL_MS: a gate that goes quiet raises no event, so a pool with a held gate beside a releasable one re-reads on this timer.
+ *
+ * Returns the width to keep, or undefined when nothing is released: not elastic, a borrow (which holds no budget), too young, a window the reading does not cover (no reading never reads as idle), or a release of less than one core.
+ */
+export const RELEASE_WINDOW_MS = 10_000;
+const RELEASE_BUCKETS = 5;
+export const RELEASE_HEADROOM = 1;
+export const RELEASE_POLL_MS = 2_000;
+
+/** Busy core-ms one running gate's process tree spent over [fromMs, toMs]; undefined when no reading covers it, which never releases a core. */
+export type BusyReader = (id: string, fromMs: number, toMs: number) => number | undefined;
+
+export function releasedGrant(
+  gate: Candidate,
+  startedAt: number,
+  now: number,
+  busy: (fromMs: number, toMs: number) => number | undefined,
+  windowMs: number = RELEASE_WINDOW_MS
+): number | undefined {
+  const el = gate.elastic;
+  if (el === undefined || gate.borrowed !== undefined) return undefined;
+  if (now - startedAt < windowMs) return undefined;
+  const bucket = windowMs / RELEASE_BUCKETS;
+  let peak = 0;
+  for (let i = 0; i < RELEASE_BUCKETS; i++) {
+    const to = now - i * bucket;
+    const ms = busy(to - bucket, to);
+    if (ms === undefined || !Number.isFinite(ms)) return undefined;
+    peak = Math.max(peak, ms / bucket);
+  }
+  // Floored at one core, not at the declared `min`: `min` is the narrowest grant the gate agrees to START on, and a tail measured at 4 busy workers is using 4 whatever it started with.
+  const keep = Math.max(1, Math.ceil(peak + RELEASE_HEADROOM - FIT_TOLERANCE));
+  return keep + 1 - FIT_TOLERANCE <= gate.cores ? keep : undefined;
 }
 
 /** An elastic declaration as admit() sees it: `max` resolved (`'all'` is Infinity), and what it knows of the gate's work. */
@@ -1277,6 +1328,41 @@ export async function runPool(
   // Every borrow still inside the reading's window; a finished one leaves when it ages out of it.
   const borrows = new Map<string, BorrowSpan>();
   const reclaimPollMs = opts.reclaimPollMs ?? RECLAIM_POLL_MS;
+  // CORE RELEASE (releasedGrant): `cores` only, and only with a reader of each gate's own busy cores.
+  const busyCores = sched === 'cores' ? opts.busyCores : undefined;
+  const releaseWindowMs = opts.releaseWindowMs ?? RELEASE_WINDOW_MS;
+  const releasePollMs = opts.releasePollMs ?? RELEASE_POLL_MS;
+  const released = new Map<string, { from: number; to: number; at: number }>();
+  // Shrink every running elastic gate whose own busy cores stayed low over the window; true when any core came back.
+  const releaseIdle = (now: number): boolean => {
+    if (busyCores === undefined) return false;
+    let freed = false;
+    for (const [id, r] of inFlight) {
+      const since = startAt.get(id);
+      if (since === undefined) continue;
+      const keep = releasedGrant(
+        r.gate,
+        since,
+        now,
+        (f, t) => busyCores(id, f, t),
+        releaseWindowMs
+      );
+      if (keep === undefined) continue;
+      released.set(id, { from: released.get(id)?.from ?? r.gate.cores, to: keep, at: now });
+      inFlight.set(id, { ...r, gate: { ...r.gate, cores: keep, slots: keep } });
+      freed = true;
+    }
+    return freed;
+  };
+  // Whether a running elastic gate could still release a core: the pool then re-reads on RELEASE_POLL_MS while something is held.
+  const releasable = (): boolean =>
+    busyCores !== undefined &&
+    [...inFlight.values()].some(
+      (r) =>
+        r.gate.elastic !== undefined &&
+        r.gate.borrowed === undefined &&
+        r.gate.cores >= 2 - FIT_TOLERANCE
+    );
 
   // `gate` is the candidate admit() launched, carrying its grant. The lease is drawn here, at launch (fitToLease): a short acquire narrows an elastic gate to what was actually got, and below its `min` the tokens go back and the gate waits with `lease`, whether or not anything runs. Only a gate admit() launched past the lease starts on more than it got, and that is recorded.
   const launch = async (spec: GateSpec, admitted: Candidate): Promise<boolean> => {
@@ -1342,6 +1428,10 @@ export async function runPool(
     const now = Date.now();
     for (const spec of ready) if (!readyAt.has(spec.id)) readyAt.set(spec.id, now);
 
+    // Released cores go back to the lease before it is read, so this pass and every neighbour see them free.
+    if (ready.length > 0 && releaseIdle(now) && lease !== undefined)
+      await lease.reconcile(coresInUse());
+
     const pending = [...unstarted].map(candidate);
     const view =
       lease !== undefined && sched === 'cores' && ready.length > 0
@@ -1402,10 +1492,15 @@ export async function runPool(
     if (running.size === 0) continue;
 
     // A running gate that goes quiet raises no event, so a pool with work the budget holds re-reads the idle on a timer of its own (RECLAIM_POLL_MS).
-    const reclaiming =
-      reading !== undefined &&
-      pass.held.some(([, why]) => why === 'cpu' || why === 'reservation' || why === 'lease');
-    const tick = reclaiming ? Math.min(nap ?? Number.POSITIVE_INFINITY, reclaimPollMs) : nap;
+    const budgetHeld = pass.held.some(
+      ([, why]) => why === 'cpu' || why === 'reservation' || why === 'lease'
+    );
+    const reclaiming = reading !== undefined && budgetHeld;
+    // The same for a running elastic gate that may go quiet (releasedGrant): re-read its busy cores on a timer while the budget holds something.
+    const releasing = budgetHeld && releasable();
+    let tick = nap;
+    if (reclaiming) tick = Math.min(tick ?? Number.POSITIVE_INFINITY, reclaimPollMs);
+    if (releasing) tick = Math.min(tick ?? Number.POSITIVE_INFINITY, releasePollMs);
     let timer: NodeJS.Timeout | undefined;
     const settledOrTick = await Promise.race([
       ...running.values(),
@@ -1450,6 +1545,7 @@ export async function runPool(
       timedOutMs: outcome.timedOutMs,
       borrowed: settled?.gate.borrowed,
       niceness: outcome.niceness,
+      released: released.get(id),
     });
     if (failed && opts.failFast) stopped = true;
   }
