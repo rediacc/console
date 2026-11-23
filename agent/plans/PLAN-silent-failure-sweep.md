@@ -180,16 +180,17 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   Depends on: 8cd21a2a34 and 83f2247313 on 1121-1; SF3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_stack.py` rc 0 and `python3 .claude/hooks/stop/test-landing-stack.py` rc 0. One test feeds an unreadable landing record and asserts the cd-done step names the record's problem. Baseline rows deleted as in SF4.
     (ticked) 2026-11-23T10:02:16Z by ace763dd: commit:f30d6eb86e SF7 wl_stack/wl_bgsweep reads named, wl_checks naming in 1cd8870276; test_wl_named_reads_stack.py and test_sf7_cd_done.py passed, test-landing-stack.py rc 0 on the landed tree
-- [ ] SF8 [writer] The class A gate, check:ci-gate-argv (D4). The entry point `.ci/scripts/quality/check_gate_argv.py` uses `gate_args` itself and is registered through its `---- gate ----` header and `npm run gate:bind`. The module is `.ci/rediacc_ci/quality/gate_argv.py`. If SF1's commits already carry this gate, tick SF8 with SF1's sha.
+- [x] SF8 [writer] The class A gate, check:ci-gate-argv (D4). The entry point `.ci/scripts/quality/check_gate_argv.py` uses `gate_args` itself and is registered through its `---- gate ----` header and `npm run gate:bind`. The module is `.ci/rediacc_ci/quality/gate_argv.py`. If SF1's commits already carry this gate, tick SF8 with SF1's sha.
   Owns: .ci/scripts/quality/check_gate_argv.py, .ci/rediacc_ci/quality/gate_argv.py, .ci/rediacc_ci/tests/test_quality_gate_argv.py, .ci/rediacc_ci/tests/gates/test_gate_gate_argv.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
   Depends on: SF1.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_quality_gate_argv.py .ci/rediacc_ci/tests/gates/test_gate_gate_argv.py` rc 0. The controls:
   - planted red cases: `if "--x" in sys.argv`, a `main()` that never reads argv, `parse_known_args`, and a registered call passing an undeclared flag
   - planted green cases: the shared parser and plain argparse
   - a floor control: a run scanning fewer than 150 entry points is refused
+    (ticked) 2026-11-23T11:04:07Z by ace763dd: commit:19ad55ffbe SF8 check:ci-gate-argv landed (2b76917be4 adoption, 19ad55ffbe gate, 4764ac841b seams, 2dddccde35 parser-from-package); 176 entry points: 158 shared parser, 16 argparse, 2 named own-refusal, 0 bypass; gate tests 21 passed and npm run check:ci-gate-argv rc 0 on the landed tree
 
   Also: the new gate-argv gate rc 0 on the tree, and `npm run check:ci-gates-lock` and `npm run check:ci-parity` rc 0.
-- [ ] SF9 [writer] The class B regression gate (D7). check:ci-swallowed-failures gains its Python mode over `.claude/hooks/stop/*.py` with the Context 6 rule, the existing `# swallowed-failure-ok:` waiver held to `validate_reason`, a scan-seam environment variable, a 60-module floor, and the ratchet `.ci/policy/swallowed-except-baseline.json` seeded with the counts left by whichever of SF4-SF7 have not landed. The shell mode's verdict does not change.
+- [x] SF9 [writer] The class B regression gate (D7). check:ci-swallowed-failures gains its Python mode over `.claude/hooks/stop/*.py` with the Context 6 rule, the existing `# swallowed-failure-ok:` waiver held to `validate_reason`, a scan-seam environment variable, a 60-module floor, and the ratchet `.ci/policy/swallowed-except-baseline.json` seeded with the counts left by whichever of SF4-SF7 have not landed. The shell mode's verdict does not change.
   Owns: .ci/rediacc_ci/quality/swallowed_failures.py, .ci/scripts/quality/check_swallowed_failures.py, .ci/policy/swallowed-except-baseline.json, .ci/rediacc_ci/tests/test_quality_swallowed_failures.py, .ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py
   Depends on: SF2, SF3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_quality_swallowed_failures.py .ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py` rc 0. The controls:
@@ -199,6 +200,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   - ratchet: a file above its baseline row is red, and a file below its row is red with a "lower the row" message
   - a run scanning fewer than 60 modules is refused
   - the existing shell controls are unchanged
+    (ticked) 2026-11-23T11:04:08Z by ace763dd: commit:3982781b66 SF9 Python mode of check:ci-swallowed-failures under a shrink-only baseline (.ci/config/swallowed-except-baseline.json, wl_cli/worklist rows drained in 2dddccde35); swallowed tests 75+ passed and python3 -m rediacc_ci.quality.swallowed_failures rc 0 on the landed tree
 
   Also: `npm run -s check:ci-swallowed-failures` rc 0 on the tree.
 - [ ] SF10 [lead] Measure both classes after SF1-SF9.
