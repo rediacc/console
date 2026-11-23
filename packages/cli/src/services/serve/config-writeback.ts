@@ -256,6 +256,58 @@ export class SessionConfigStore implements ConfigWriteback {
     return this.storedVersion;
   }
 
+  /**
+   * Bring the document up to the store's current version (Design 5 of
+   * PLAN-rmcp-executor-hardening). One listing read, which the account server
+   * answers from its metadata with no blob, names the config's current
+   * version; a mismatch re-pulls, so a push from another device is visible to
+   * the next command of a warm session. Serialized with the writes, so it never
+   * re-seats the document under a push in flight. A refused or unanswered read
+   * throws: a command never runs on a copy that could not be checked.
+   */
+  revalidate(): Promise<RdcConfig> {
+    return this.queue.run(async () => {
+      try {
+        return await this.revalidateUnlocked();
+      } catch (error) {
+        if (error instanceof SessionError) throw error;
+        // A spent chain, a refused re-mint or an unanswered request: refused like a failed first pull, before any host call.
+        const reason =
+          error instanceof ChainExhaustedError ? error.message : describeFetchError(error);
+        throw new SessionError(`The executor could not check the config version: ${reason}.`);
+      }
+    });
+  }
+
+  private async revalidateUnlocked(): Promise<RdcConfig> {
+    const op: ChainOperation = { sessionId: this.options.sessionId, reminted: false };
+    const { chain, target } = this.options;
+    const listing = await chain.request('/account/api/v1/configs', {}, op);
+    if (listing.status >= 400) {
+      throw new SessionError(
+        `The executor could not check the config version: ${storeReason(listing, 'the config listing')}.`
+      );
+    }
+    const configs = Array.isArray(listing.body.configs)
+      ? (listing.body.configs as { configId?: unknown; teamId?: unknown; version?: unknown }[])
+      : [];
+    const current = configs.find(
+      (entry) =>
+        entry.configId === target.configId && (entry.teamId ?? null) === target.teamId
+    );
+    if (!current || typeof current.version !== 'number') {
+      throw new SessionError(
+        `The executor could not check the config version: config storage no longer lists config "${target.configId}".`
+      );
+    }
+    if (current.version === this.storedVersion) return this.document;
+    const refused = await this.pull(op);
+    if (refused) {
+      throw new SessionError(`The executor could not fetch the config: ${refused}.`);
+    }
+    return this.document;
+  }
+
   /** Save `edit`, serialized with every other write of this session's config. */
   write(edit: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     return this.queue.run(() => this.pushWithReplay(edit));

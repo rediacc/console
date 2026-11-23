@@ -286,6 +286,21 @@ describe('container-tier config loading', () => {
       // Checked BEFORE the generic /configs/ pull: the literal path is a prefix match.
       if (href.includes('/configs/executor-token')) return mintCall(init);
 
+      // The version check a warm session makes before each later command (Design 5 of PLAN-rmcp-executor-hardening). The stored version never moves here, so it never re-pulls; the counts below filter on '/configs/' and leave it out.
+      if (href.endsWith('/configs')) {
+        return json({
+          newServerToken: 'rct_rotated',
+          configs: [
+            {
+              configId: CONFIG_ID,
+              teamId: null,
+              version: payload.envelope.version,
+              lastModified: '',
+            },
+          ],
+        });
+      }
+
       if (href.includes('/configs/')) {
         // The executor must present the token it was just minted, not its own.
         expect((init?.headers as Record<string, string>)['X-Config-Token']).toBe(
@@ -659,9 +674,10 @@ describe('container-tier config loading', () => {
     const afterSecond = accountCalls.filter((u) => u.includes('/configs/')).length;
 
     expect(executed).toHaveLength(2);
-    // Exactly one mint + one pull, for two commands.
+    // Exactly one mint + one pull, for two commands; the second pays one metadata listing and no pull.
     expect(afterFirst).toBe(2);
     expect(afterSecond).toBe(2);
+    expect(accountCalls.filter((u) => u.endsWith('/configs'))).toHaveLength(1);
   });
 
   it('drops the decrypted config when the session goes, so it never outlives its key', async () => {

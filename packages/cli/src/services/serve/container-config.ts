@@ -47,10 +47,16 @@ export interface ContainerConfigLoaderOptions {
 /**
  * Build the `loadConfig` the container tier injects into ServeDeps.
  *
- * The decrypted config is cached PER SESSION, which is the entire economic
- * argument for a warm container: the second command in a session pays no pull,
- * no decrypt, and no round trip. It is dropped when the session is, so a config
- * never outlives the key that opened it.
+ * The decrypted config is cached PER (SESSION, TEAM), which is the entire
+ * economic argument for a warm container: the second command in a session pays
+ * no pull and no decrypt. The team is part of the key because one user's
+ * session can serve requests under two teams, and each team has its own config
+ * (Design 4 of PLAN-rmcp-executor-hardening): keyed by session alone, a team-B
+ * request would run against team A's config. Every request after the first
+ * revalidates the cached version against the store with one metadata read and
+ * re-pulls on a mismatch (Design 5), so another device's push is seen on the
+ * next command. It is dropped when the session is, so a config never outlives
+ * the key that opened it.
  *
  * The config it returns is bound to the session's writeback
  * (config-writeback.ts): a command dispatched against it pushes its config
@@ -64,22 +70,25 @@ export function createContainerConfigLoader(
   const { sessions, executorToken } = options;
 
   /**
-   * sessionId -> the session's config store (the decrypted config and its
-   * writeback, config-writeback.ts). RAM only; never serialized, never written.
-   * The promise is cached, so concurrent first requests of a session share one
-   * pull and one store, and with it one write serialization.
+   * storeKey(sessionId, teamId) -> that session's config store for that team
+   * (the decrypted config and its writeback, config-writeback.ts). RAM only;
+   * never serialized, never written. The promise is cached, so concurrent first
+   * requests share one pull and one store, and with it one write serialization.
    */
   const stores = new Map<string, Promise<SessionConfigStore>>();
+  const storeKey = (sessionId: string, teamId: string | null): string =>
+    `${sessionId}\u0000${teamId ?? ''}`;
   /** `${userId}\0${teamId}` -> the one config-token chain this container holds for that user and team. */
   const chains = new Map<string, ConfigChain>();
 
   /** Drop cached configs whose session has gone. Nothing decrypted outlives its key. */
   const pruneDeadSessions = (): void => {
-    for (const sessionId of stores.keys()) {
+    for (const key of stores.keys()) {
+      const sessionId = key.slice(0, key.indexOf('\u0000'));
       try {
         sessions.principal(sessionId);
       } catch {
-        stores.delete(sessionId);
+        stores.delete(key);
       }
     }
   };
@@ -134,15 +143,18 @@ export function createContainerConfigLoader(
     // Touches the session (keeping it alive) and fails loudly if the key is gone.
     const cek = sessions.requireCek(sessionId);
 
-    let store = stores.get(sessionId);
-    if (!store) {
-      store = openStore(principal, sessionId, cek);
-      stores.set(sessionId, store);
-      // A failed open is not cached: the next request tries again.
-      store.catch(() => {
-        if (stores.get(sessionId) === store) stores.delete(sessionId);
-      });
+    const key = storeKey(sessionId, principal.teamId);
+    const cached = stores.get(key);
+    if (cached) {
+      // A warm store is checked against the store's current version first; a push from another device re-pulls here.
+      return (await cached).revalidate();
     }
+    const store = openStore(principal, sessionId, cek);
+    stores.set(key, store);
+    // A failed open is not cached: the next request tries again.
+    store.catch(() => {
+      if (stores.get(key) === store) stores.delete(key);
+    });
     // The store's current document, bound to its writeback: a request scope built around it pushes its writes back to config storage.
     return (await store).config;
   };

@@ -205,6 +205,15 @@ describe('config cache', () => {
           })
         );
       }
+      if (href.endsWith('/configs')) {
+        // The warm hit's version check; the version never moves, so nothing re-pulls.
+        return Promise.resolve(
+          Response.json({
+            newServerToken: 'rct2',
+            configs: [{ configId, teamId: null, version: 1, lastModified: '' }],
+          })
+        );
+      }
       return Promise.resolve(
         Response.json({
           newServerToken: 'rct2',

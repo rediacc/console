@@ -111,6 +111,8 @@ export interface FakeConfigStore {
   version(): number;
   puts: PutRecord[];
   pulls: number;
+  /** GET /configs listings, the version check a warm session makes before each command. */
+  listings: number;
   /** Bodies of every executor-token mint. */
   mints: { userId: string; sessionId: string; write?: boolean }[];
   /** Push an edit as another device would, bumping the version. */
@@ -273,8 +275,23 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
   const configCall = (href: string, init?: RequestInit): Promise<Response> => {
     const claimed = claim((init?.headers as Record<string, string>)['X-Config-Token']);
     if (claimed instanceof Response) return Promise.resolve(claimed);
-    const call = `${init?.method ?? 'GET'} ${href.endsWith('/configs/session') ? 'session' : 'config'}`;
+    const kind = href.endsWith('/configs/session')
+      ? 'session'
+      : href.endsWith('/configs')
+        ? 'list'
+        : 'config';
+    const call = `${init?.method ?? 'GET'} ${kind}`;
     switch (call) {
+      case 'GET list':
+        fake.listings += 1;
+        return Promise.resolve(
+          json({
+            ...claimed.rotated,
+            configs: [
+              { configId: CONFIG_ID, teamId: null, version: stored.version, lastModified: '' },
+            ],
+          })
+        );
       case 'PUT config':
         return put(claimed.rotated, claimed.writable, init?.body as string);
       case 'POST session':
@@ -318,7 +335,7 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
     }
     if (href.includes('/configs/executor-grant')) return Promise.resolve(recordGrant(raw));
     if (href.includes('/configs/executor-token')) return Promise.resolve(mint(raw));
-    if (href.includes('/configs/')) return configCall(href, init);
+    if (href.includes('/configs/') || href.endsWith('/configs')) return configCall(href, init);
     throw new Error(`unexpected account call: ${href}`);
   }) as typeof fetch;
 
@@ -329,6 +346,7 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
     version: () => stored.version,
     puts: [],
     pulls: 0,
+    listings: 0,
     mints: [],
     rotate: true,
     mintSpent: false,

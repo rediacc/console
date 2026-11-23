@@ -166,14 +166,10 @@ describe('WB3: conflict replay and chain exhaustion', () => {
 
     // From here every minted token is born spent: the re-mint cannot cure the refusal.
     store.mintSpent = true;
-    const created = await executor.command(
-      'repo create',
-      { machine: 'm1', size: '1G' },
-      { name: 'fresh' }
-    );
-
-    expect(created.result.success).toBe(false);
-    expect(created.result.errorCode).toBe('CONFIG_WRITE_FAILED');
+    // The warm session's version check (PLAN-rmcp-executor-hardening Design 5) is the chain's first request now, so the spent chain is met there and the command is refused before it is dispatched.
+    await expect(
+      executor.command('repo create', { machine: 'm1', size: '1G' }, { name: 'fresh' })
+    ).rejects.toThrow(/could not check the config version.*token_exhausted/);
     expect(renet.calls).toEqual([]);
     // The spent session token, then the spent re-mint: two refusals, one re-mint, no third try.
     expect(store.exhausted).toBe(2);
