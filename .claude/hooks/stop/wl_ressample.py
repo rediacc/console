@@ -418,6 +418,20 @@ def selftest() -> int:
     return check.failures
 
 
+def fold_rollup() -> bool:
+    """Fold the exit records into the per-shape rollup (wl_resprofile.fold), once the watched tree has exited.
+
+    THE FOLD MOVED HERE FROM THE STOP HOOK (agent/plans/PLAN-tooling-speed.md D3): the sampler starts for every gate of a local CI run, so the rollup is refreshed several times a day while no stop pays for it. Concurrent samplers serialize on the rollup lock, and the loser skips; it never raises, because a sampler bug must cost a fold, never the run.
+    """
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import wl_resprofile
+
+        return wl_resprofile.fold() is not None
+    except Exception:
+        return False
+
+
 def main(argv: list[str]) -> int:
     if "--selftest" in argv:
         n = selftest()
@@ -438,6 +452,7 @@ def main(argv: list[str]) -> int:
         rid = argv[argv.index("--run") + 1] if "--run" in argv else ""
         t0 = int(argv[argv.index("--t0") + 1]) if "--t0" in argv else None
         run = watch(pid, out, interval_ms=ms, run_id=rid, t0_ms=t0)
+        fold_rollup()
         print(
             json.dumps(
                 {

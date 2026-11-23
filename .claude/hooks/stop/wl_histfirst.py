@@ -59,7 +59,12 @@ MIN_OVERLAP = 2
 
 
 def _git(root, *args):
-    """Stdout, or "" on any failure. A diagnostic must never wedge a stop."""
+    """Stdout, or "" on any failure. A diagnostic must never wedge a stop. A query wl_core.git_cacheable admits is answered from the HEAD-keyed cache."""
+    import wl_core
+
+    if wl_core.git_cacheable(args):
+        got = wl_core.git_run(root, args, timeout=15)
+        return wl_core.git_text(got[1]) if got is not None and got[0] == 0 else ""
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), *args],

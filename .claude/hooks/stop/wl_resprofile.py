@@ -259,16 +259,53 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
         roll = {}
     if roll.get("format") not in (None, 1):
         return None  # a future format is refused by name, never reinterpreted
+    if _stop_process():
+        # OFF THE STOP PATH (agent/plans/PLAN-tooling-speed.md D3): the Stop hook reads the rollup as it stands; the sampler (wl_ressample --watch, started for every gate of a local CI run) does the folding.
+        return roll
+    import fcntl
+
+    try:
+        # tree-write: safe t1 is the rollup under stats_root(), ~/.claude/resprofile/<slug> or $RESPROFILE_ROOT, outside every checkout
+        with open(str(t1) + ".lock", "w") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return roll  # another fold holds the lock and folds these lines
+            return _fold_locked(roll, t0, t1)
+    except OSError:
+        return None
+
+
+def _stop_process() -> bool:
+    """True when this process is worklist.py running a Stop (its `_RUN["stop"]` flag)."""
+    run = getattr(sys.modules.get("__main__"), "_RUN", None)
+    return isinstance(run, dict) and bool(run.get("stop"))
+
+
+def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
+    """The fold itself, under the rollup lock. Reads from the stored BYTE cursor to the last complete line, so a fold costs the new records only, never the whole day's stream."""
     shapes = roll.setdefault("shapes", {})
     n_lines = 0
-    cursors = roll.setdefault("cursor", {})
+    cursors = roll.setdefault("cursor_bytes", {})
+    if str(t0) not in cursors and str(t0) in roll.get("cursor", {}):
+        # A rollup folded by the LINE cursor: its position in today's stream becomes a byte offset once, so no record is folded twice.
+        lines_done = int(roll["cursor"][str(t0)])
+        with contextlib.suppress(OSError), open(t0, "rb") as fh:
+            cursors[str(t0)] = sum(len(next(fh, b"")) for _ in range(lines_done))
     start = int(cursors.get(str(t0), 0))
     try:
-        lines = t0.read_text(encoding="utf-8").splitlines() if t0.exists() else []
+        with open(t0, "rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            if start > size:
+                start = 0  # the stream was replaced under the cursor: fold it from the top
+            fh.seek(start)
+            data = fh.read(size - start)
     except OSError:
-        lines = []
-    cursors[str(t0)] = len(lines)
-    for ln in lines[start:]:
+        data = b""
+    end = data.rfind(b"\n") + 1
+    cursors[str(t0)] = start + end
+    roll.pop("cursor", None)
+    for ln in data[:end].decode("utf-8", "replace").splitlines():
         try:
             rec = json.loads(ln)
         except ValueError:
@@ -290,11 +327,13 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
     roll["refreshed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     roll["folded_lines"] = n_lines
     try:
+        # tree-write: safe t1 is the rollup under stats_root(), ~/.claude/resprofile/<slug> or $RESPROFILE_ROOT, outside every checkout
         fd, tmp = tempfile.mkstemp(dir=str(t1.parent), prefix=t1.name)
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(roll, fh, indent=1, sort_keys=True)
+        # tree-write: safe the same rollup, replaced atomically beside itself
         os.replace(tmp, t1)
-        # NOT truncated any more: the day folder IS the corpus (operator ruling, see stats_root). The rollup remembers how far it has folded via `cursor`.
+        # NOT truncated any more: the day folder IS the corpus (operator ruling, see stats_root). The rollup remembers how far it has folded via `cursor_bytes`.
     except OSError:
         return None
     return roll
@@ -410,8 +449,8 @@ def selftest() -> int:
             paths[0].exists()
             and paths[0].stat().st_size > 0
             and roll is not None
-            and roll["cursor"].get(str(paths[0])) == 7,
-            str((roll or {}).get("cursor")),
+            and roll["cursor_bytes"].get(str(paths[0])) == paths[0].stat().st_size,
+            str((roll or {}).get("cursor_bytes")),
         )
         # A second fold with an EMPTY tier 0 must not disturb the rollup.
         n_before = ent.get("n")

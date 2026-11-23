@@ -3,8 +3,10 @@
 Stdlib-only, no sibling imports, no I/O beyond what each helper documents. Everything here is used by at least two sibling modules; single-consumer logic lives with its consumer. WHY comments for each check stay with the check, not here.
 """
 
+import contextlib
 import datetime
 import glob
+import hashlib
 import json
 import os
 import pathlib
@@ -568,18 +570,252 @@ def commit_only_env(args):
 
 
 def _git(root, *args):
+    got = git_run(root, args, timeout=20)
+    if got is None:
+        return ""
+    rc, out = got
+    return git_text(out).strip() if rc == 0 else ""
+
+
+# ---- GIT ANSWERS KEYED ON HEAD (agent/plans/PLAN-tooling-speed.md D2) ---------
+#
+# A Stop run started 15-25 git processes for answers that change only when HEAD, a ref, the index or the config moves. git_run answers a READ-ONLY query (git_cacheable) from a cache keyed on that state, read from the git directory's own files without a process: the HEAD text, the sha its branch ref names, the mtime and size of the index, packed-refs,
+# FETCH_HEAD and the config files, the mtime of every directory under refs/ (a ref update is a lock-file rename, which moves its directory's mtime) and any rebase, merge or cherry-pick in progress. The answers persist across processes in `<git-dir>/rediacc-gitcache.json`, written once at exit, so a second stop on an unchanged HEAD starts no git process for them. A
+# working-tree query (status, diff without --cached, ls-files) is never cached, nor one whose answer moves with the clock (--since, relative dates). A miss runs git once. A GIT_* variable that changes which repository git reads (_GIT_REPO_ENV), or WORKLIST_READ_MEMO=off, turns the cache off; the GIT_CONFIG* variables join the key.
+GIT_CACHE_NAME = "rediacc-gitcache.json"
+GIT_CACHE_STATS = {"hit": 0, "miss": 0}
+GIT_CACHE_MAX_ANSWERS = 512
+GIT_CACHE_MAX_ANSWER_BYTES = 1 << 20
+_GIT_CACHEABLE = frozenset(
+    {
+        "rev-parse",
+        "symbolic-ref",
+        "log",
+        "rev-list",
+        "merge-base",
+        "show",
+        "cat-file",
+        "for-each-ref",
+        "describe",
+        "ls-tree",
+        "name-rev",
+        "config",
+    }
+)
+_GIT_REFLOG_ARGS = frozenset({"-g", "--walk-reflogs", "reflog"})
+_GIT_CLOCK_WORDS = (
+    "--since",
+    "--until",
+    "--after",
+    "--before",
+    "relative",
+    "ago",
+    "now",
+    "%cr",
+    "%ar",
+    "%gr",
+)
+# The environment variables that change WHICH repository, index, objects or refs git reads; any of them set turns the cache off. GIT_EDITOR, GIT_PAGER and the like change nothing git answers, and are ignored.
+_GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_NAMESPACE",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_NO_REPLACE_OBJECTS",
+    "GIT_GRAFT_FILE",
+    "GIT_SHALLOW_FILE",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+)
+_GIT_DIRS: dict[str, tuple | None] = {}
+_GIT_CACHE: dict[str, dict] = {}
+_GIT_ATEXIT = {"on": False}
+
+
+def git_text(out):
+    """Text of git stdout bytes, as `text=True` would give it (newlines universal); undecodable bytes become U+FFFD rather than raising."""
+    if isinstance(out, str):
+        return out
+    return out.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def git_cacheable(args):
+    """True for a read-only git query whose answer is fixed by the repository state git_state_key reads."""
+    if not args:
+        return False
+    args = [str(a) for a in args]
+    sub = args[0]
+    # Not `submodule status --cached`: its describe text reads the SUBMODULE's refs, which no key of this repository covers.
+    if sub not in _GIT_CACHEABLE:
+        return False
+    if sub == "config" and not any(a in ("--get", "--get-all", "--get-regexp") for a in args[1:]):
+        return False
+    for a in args[1:]:
+        if a in _GIT_REFLOG_ARGS or "@{" in a:
+            return False
+        if any(w in a for w in _GIT_CLOCK_WORDS):
+            return False
+    return True
+
+
+def _repo_git_dirs(root):
+    """(git dir, common dir) of the repository holding `root` (the nearest `.git` at or above it, read by _git_dirs without a process), or None when there is none or it has no HEAD. Memoized per process."""
+    key = str(root)
+    if key in _GIT_DIRS:
+        return _GIT_DIRS[key]
+    dirs = None
+    with contextlib.suppress(OSError, ValueError, RuntimeError):
+        here = pathlib.Path(root).resolve()
+        for base in (here, *here.parents):
+            if (base / ".git").exists():
+                dirs = _git_dirs(base)
+                break
+    if dirs is not None and not (dirs[0] / "HEAD").is_file():
+        dirs = None
+    _GIT_DIRS[key] = dirs
+    return dirs
+
+
+def _stat_sig(path):
     try:
-        r = subprocess.run(
-            ["git", "-C", str(root), *args],
+        st = os.stat(path)
+    except OSError:
+        return None
+    return [st.st_mtime_ns, st.st_size]
+
+
+def git_reads_index(args):
+    """True for a cacheable query whose answer comes from the index (a `:path` or `:<stage>:path` object name)."""
+    args = [str(a) for a in args]
+    return bool(args) and any(a.startswith(":") for a in args[1:])
+
+
+def git_state_key(root, index=False):
+    """The repository state a cacheable answer depends on, as a JSON-able list, or None when there is no readable git directory. The index's mtime and size join the key only for a query that reads the index (`index=True`): `git status` rewrites a racy index on most stops, and a key holding it would expire every ref answer with it."""
+    if any(k in os.environ for k in _GIT_REPO_ENV):
+        return None
+    dirs = _repo_git_dirs(root)
+    if dirs is None:
+        return None
+    gd, cd = dirs
+    try:
+        head = (gd / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    key = [str(gd), head]
+    if head.startswith("ref: "):
+        ref = head[5:].strip()
+        try:
+            key.append((cd / ref).read_text(encoding="utf-8").strip())
+        except OSError:
+            key.append(None)
+    files = (
+        cd / "packed-refs",
+        cd / "FETCH_HEAD",
+        cd / "config",
+        gd / "config.worktree",
+        gd / "rebase-merge",
+        gd / "rebase-apply",
+        gd / "MERGE_HEAD",
+        gd / "CHERRY_PICK_HEAD",
+        pathlib.Path(os.environ.get("GIT_CONFIG_GLOBAL") or os.path.expanduser("~/.gitconfig")),
+        pathlib.Path(os.path.expanduser("~/.config/git/config")),
+    )
+    key.extend(_stat_sig(p) for p in files)
+    # GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM and GIT_CONFIG_COUNT/KEY_n/VALUE_n change what `config --get` answers, so their values are part of the state.
+    key.append(sorted([k, v] for k, v in os.environ.items() if k.startswith("GIT_CONFIG")))
+    key.extend([dirpath, _stat_sig(dirpath)] for dirpath, _d, _f in os.walk(cd / "refs"))
+    if index:
+        key.append(["index", _stat_sig(gd / "index")])
+    return key
+
+
+def _key_hash(key):
+    return hashlib.sha1(json.dumps(key).encode("utf-8")).hexdigest()[:16]
+
+
+def _git_cache_for(gd):
+    """The answer table of git dir `gd`, loaded from disk once per process: {answer key: [rc, stdout, state hash]}."""
+    entry = _GIT_CACHE.get(str(gd))
+    if entry is None:
+        entry = {"answers": {}, "dirty": False}
+        with contextlib.suppress(OSError, ValueError):
+            disk = json.loads((gd / GIT_CACHE_NAME).read_text(encoding="utf-8"))
+            if (
+                isinstance(disk, dict)
+                and disk.get("v") == 2
+                and isinstance(disk.get("answers"), dict)
+            ):
+                entry["answers"] = disk["answers"]
+        _GIT_CACHE[str(gd)] = entry
+    return entry
+
+
+def flush_git_cache():
+    """Write each git dir's answers once (tmp + rename). The last writer wins, and every answer carries the hash of the state it was read at, so a merged-away answer costs one git call, never a stale one."""
+    for gd, entry in list(_GIT_CACHE.items()):
+        if not entry.get("dirty"):
+            continue
+        entry["dirty"] = False
+        path = pathlib.Path(gd) / GIT_CACHE_NAME
+        with contextlib.suppress(OSError, ValueError):
+            fd, tmp = tempfile.mkstemp(dir=gd, prefix=GIT_CACHE_NAME)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump({"v": 2, "answers": entry["answers"]}, fh)
+            os.replace(tmp, path)
+
+
+def git_run(root, args, timeout=20, opts=()):
+    """(returncode, stdout bytes) of `git <opts> -C root <args>`, or None when git could not run or timed out. A cacheable query on a readable repository is answered from the HEAD-keyed cache when the state it was read at still holds."""
+    args = [str(a) for a in args]
+    cached = read_memo_on() and git_cacheable(args)
+    index = git_reads_index(args)
+    key = git_state_key(root, index=index) if cached else None
+    entry, akey, kh = None, None, None
+    if key is not None:
+        entry = _git_cache_for(_repo_git_dirs(root)[0])
+        akey = json.dumps([os.path.realpath(str(root)), args])
+        kh = _key_hash(key)
+        hit = entry["answers"].get(akey)
+        if isinstance(hit, list) and len(hit) == 3 and hit[2] == kh:
+            GIT_CACHE_STATS["hit"] += 1
+            return int(hit[0]), str(hit[1]).encode("utf-8", "surrogateescape")
+    try:
+        proc = subprocess.run(
+            ["git", *opts, "-C", str(root), *args],
             capture_output=True,
-            text=True,
-            timeout=20,
+            timeout=timeout,
             check=False,
             env=commit_only_env(args),
         )
-        return r.stdout.strip() if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return None
+    GIT_CACHE_STATS["miss"] += 1
+    if (
+        entry is not None
+        and len(proc.stdout) <= GIT_CACHE_MAX_ANSWER_BYTES
+        and git_state_key(root, index=index) == key
+    ):
+        answers = entry["answers"]
+        if len(answers) >= GIT_CACHE_MAX_ANSWERS:
+            # Full: keep only the answers read at the current state.
+            for k in [
+                k for k, v in answers.items() if not (isinstance(v, list) and v[-1:] == [kh])
+            ]:
+                del answers[k]
+        if len(answers) < GIT_CACHE_MAX_ANSWERS:
+            answers[akey] = [proc.returncode, proc.stdout.decode("utf-8", "surrogateescape"), kh]
+            entry["dirty"] = True
+            if not _GIT_ATEXIT["on"]:
+                import atexit
+
+                atexit.register(flush_git_cache)
+                _GIT_ATEXIT["on"] = True
+    return proc.returncode, proc.stdout
 
 
 AGENT_BRANCH_RE = re.compile(r"[^A-Za-z0-9._-]+")

@@ -277,6 +277,13 @@ def git(repo, *args, stdin=None, timeout=30):
     """(rc, stdout) of one git call; rc 127 when git could not run.
 
     `--no-optional-locks` is load-bearing: every call here is a read, and a plain `git status` (branch_state asks one on every Stop hook, push guard and `--status`) opportunistically rewrites `.git/index` when its stat data is stale, which takes `.git/index.lock`. A `git cherry-pick a b` or a `git commit` of the lead running at that moment dies with `Unable to create '.git/index.lock': File exists` (worklist #65b47fef). The reviewer and the post-bash trigger issue no index-taking call, so this closes the one that is left."""
+    if stdin is None:
+        import wl_core
+
+        if wl_core.git_cacheable(args):
+            # GIT ANSWERS KEYED ON HEAD (wl_core.git_run): branch_state asks the same read-only questions on every stop.
+            got = wl_core.git_run(repo, args, timeout=timeout, opts=("--no-optional-locks",))
+            return (127, "") if got is None else (got[0], wl_core.git_text(got[1]))
     try:
         done = subprocess.run(
             ["git", "--no-optional-locks", "-C", str(repo), *args],

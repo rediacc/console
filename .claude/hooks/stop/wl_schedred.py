@@ -833,8 +833,12 @@ def freshness_path(worklist):
 
 
 def _git_out(root, args, stdin=None):
-    """stdout of `git -C root <args>` (bytes), or None when git fails. Read-only verbs only."""
+    """stdout of `git -C root <args>` (bytes), or None when git fails. Read-only verbs only. A query C.git_cacheable admits is answered from the HEAD-keyed cache."""
     import subprocess
+
+    if stdin is None and C.git_cacheable(args):
+        got = C.git_run(root, args, timeout=20)
+        return got[1] if got is not None and got[0] == 0 else None
 
     try:
         proc = subprocess.run(

@@ -34,7 +34,12 @@ GIT_TIMEOUT_S = 20
 
 
 def _git(root, *args):
-    """stdout of one read-only git command in `root`, or "" on any failure."""
+    """stdout of one read-only git command in `root`, or "" on any failure. A query wl_core.git_cacheable admits is answered from the HEAD-keyed cache."""
+    import wl_core
+
+    if wl_core.git_cacheable(args):
+        got = wl_core.git_run(root, args, timeout=GIT_TIMEOUT_S)
+        return wl_core.git_text(got[1]) if got is not None and got[0] == 0 else ""
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), *args],
@@ -112,12 +117,13 @@ def scan_transcript(root, transcript_path, state_doc, now=None):
     if start >= size:
         state_doc["uc_cursor"] = start
         return first
-    try:
-        with open(transcript_path, "rb") as handle:
-            handle.seek(start)
-            data = handle.read(size - start)
-    except OSError:
+    # ONE TRANSCRIPT READ PER STOP (wl_core.tail_bytes): the delta from the cursor is served from the bytes the Stop run already read.
+    import wl_core
+
+    got = wl_core.tail_bytes(transcript_path, start=start)
+    if got is None:
         return False
+    size, start, data = got
     if first and start > 0:
         # A bounded catch-up lands mid-line: the partial first line is skipped.
         cut = data.find(b"\n") + 1

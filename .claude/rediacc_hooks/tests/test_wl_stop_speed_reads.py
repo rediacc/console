@@ -65,7 +65,6 @@ PROBE = textwrap.dedent(
 # READERS THAT OPEN THE TRANSCRIPT THEMSELVES, outside SP1's file set, each with the reason it is not served yet. Every entry must still open the transcript on the fixture stop (test_every_named_reader_still_opens), so a reader moved onto `wl_core.tail_bytes` fails the suite until its entry is deleted: this list can only shrink.
 UNSERVED_TRANSCRIPT_READERS = {
     "wl_admit.py:turn_tools": "BLOCKER: wl_admit.py is outside PLAN-tooling-speed.md's Owns; turn_tools opens the transcript itself instead of calling wl_core.tail_bytes",
-    "wl_uncommitted.py:scan_transcript": "BLOCKER: wl_uncommitted.py is SP2's file; scan_transcript moves onto wl_core.tail_bytes there",
 }
 
 
