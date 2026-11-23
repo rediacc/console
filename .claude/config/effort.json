@@ -69,6 +69,10 @@
       "block": "smart",
       "advise": "low"
     },
+    "writers-now-due": {
+      "block": "high",
+      "advise": "smart"
+    },
     "plan-unimplemented": {
       "block": "low",
       "advise": "low"

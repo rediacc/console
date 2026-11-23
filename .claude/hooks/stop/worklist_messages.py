@@ -3156,6 +3156,14 @@ V_WISDOM_DUE = (
     "check. It fires here and not in the late band because the late band leaves about %(late)s "
     "tokens, too few for the briefs."
 )
+# `writers-now-due` (wl_writersnow.due, agent/plans/PLAN-writers-now-cadence.md WN2): no /writers-now round of this session in the last hour while Promoted boxes are open. Fields from wl_writersnow.due_fields: last, open, window, who (the session prefix). The first sentence names the whole remedy.
+V_WRITERS_NOW_DUE = (
+    "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last "
+    "%(window)d minutes (last: %(last)s) and the Promoted queue holds %(open)d open box(es). "
+    "Step 0 of the round records it (`worklist.py --writers-now-start %(who)s <survey path>`), "
+    "which clears this check for %(window)d minutes; the round's seeds file carries what this "
+    "session's own records surfaced since its previous round."
+)
 
 # Appended to a STATE.md demand the concurrency-saturated wait KEPT because compaction is imminent.
 N_CONC_WAIT_COMPACTION = (

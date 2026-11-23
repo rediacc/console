@@ -581,7 +581,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_uncommitted.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
 | .claude/hooks/stop/wl_wake.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_worktrees.py | (none) | via .claude/hooks/stop/test-landing-scope.py | py |
-| .claude/hooks/stop/wl_writersnow.py | (none) | via .claude/hooks/stop/wl_cli.py | py |
+| .claude/hooks/stop/wl_writersnow.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/worklist.py | Stop, TeammateIdle | settings.json | py |
 | .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |

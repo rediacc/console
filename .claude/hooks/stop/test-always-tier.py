@@ -112,6 +112,8 @@ HYGIENE_KEYS = frozenset(
         "plan-box-owed",
         # The weekly lessons cadence (PLAN-weekly-lessons.md D4): a calendar duty, one claim holder, parked in the landing tree. Housekeeping on purpose, so asked-for work outranks it.
         "lessons-weekly",
+        # The hourly /writers-now cadence (PLAN-writers-now-cadence.md WN2): a clock duty like lessons-weekly, parked in the landing tree and the merge phase. Hygiene on purpose, so a red CI, a dead writer or an unread report is answered before the next round starts.
+        "writers-now-due",
     }
 )
 

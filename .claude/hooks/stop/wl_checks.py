@@ -6886,6 +6886,27 @@ def _stop_store_freshness(ns):
         _lw = ""
     if _lw:
         vadd("lessons-weekly", False, _lw)
+    # ---- THE WRITERS-NOW CADENCE (agent/plans/PLAN-writers-now-cadence.md WN2, operator ruling #ac2de21f): no /writers-now round of this session in the last 60 minutes while the Promoted queue has an open box. effort.json blocks it at `high` and advises at `smart`; it stands down in the landing tree and the merge phase (wl_writersnow.stand_down). A read that fails goes to the read-failure note, never to a silent pass.
+    try:
+        import wl_writersnow
+
+        _wn_fires, _wn_facts = wl_writersnow.due(
+            wl_writersnow.read_rounds(ns["root"]),
+            ns["session_id"],
+            C.utcnow(),
+            # A stood-down tree skips the QUEUE.md read; `due` names the stand-down either way.
+            0 if wl_writersnow.stand_down(ns["_loop"]) else wl_writersnow.promoted_open(ns["root"]),
+            ns["_loop"],
+        )
+    except Exception as exc:
+        note_read_failure("writers-now-due", exc)
+        _wn_fires = False
+    if _wn_fires:
+        vadd(
+            "writers-now-due",
+            False,
+            M.V_WRITERS_NOW_DUE % wl_writersnow.due_fields(_wn_facts, me8),
+        )
 
 
 def _stop_store_fold(ns):

@@ -217,3 +217,110 @@ def test_the_skill_hands_the_seeds_file_to_the_survey() -> None:
     assert "<branch>-<UTC stamp>-seeds.md" in text
     assert "classify EVERY seed" in text
     assert "`## Seeds`" in text
+
+
+# ---- WN2: the cadence check ----------------------------------------------------
+
+PS = wlfix.import_wl("wl_prscope")
+E = wlfix.import_wl("wl_effort")
+DEV = PS.LoopState(kind=PS.LIVE, role=PS.DEVELOPMENT)
+
+
+def rounds_at(tmp_path, *minutes_ago, session=ME8):
+    for m in minutes_ago:
+        WN.append_round(tmp_path, session, "/tmp/s.md", NOW - datetime.timedelta(minutes=m))
+    return WN.read_rounds(tmp_path)
+
+
+def test_due_fires_with_no_round_and_with_a_61_minute_old_round(tmp_path) -> None:
+    fires, facts = WN.due([], ME8, NOW, 4, DEV)
+    assert fires
+    assert facts["last"] is None
+    fires, facts = WN.due(rounds_at(tmp_path, 61), ME8, NOW, 4, DEV)
+    assert fires
+    assert int(facts["age"]) == 61
+
+
+def test_due_is_silent_inside_the_window_and_for_a_peer_round_it_still_fires(tmp_path) -> None:
+    assert WN.due(rounds_at(tmp_path, 59), ME8, NOW, 4, DEV)[0] is False
+    peer = tmp_path / "peer"
+    assert WN.due(rounds_at(peer, 5, session="bbbb2222"), ME8, NOW, 4, DEV)[0] is True
+
+
+def test_due_stands_down_in_the_landing_tree_its_babysit_phase_and_the_merge_phase() -> None:
+    landing = PS.LoopState(kind=PS.LIVE, role=PS.LANDING)
+    fires, facts = WN.due([], ME8, NOW, 4, landing)
+    assert not fires
+    assert facts["why"] == "the landing tree"
+    # The babysit phase is the landing tree working its open PR (L-CI, L-FIX, L-REVIEW): the role decides.
+    babysit = PS.LoopState(kind=PS.LIVE, role=PS.LANDING, pr=7, branch="1121-1")
+    assert WN.due([], ME8, NOW, 4, babysit)[0] is False
+    merged = PS.LoopState(kind=PS.MERGED, role=PS.DEVELOPMENT)
+    fires, facts = WN.due([], ME8, NOW, 4, merged)
+    assert not fires
+    assert facts["why"] == "the merge phase"
+
+
+def test_due_is_silent_with_an_empty_promoted_queue() -> None:
+    assert WN.due([], ME8, NOW, 0, DEV)[0] is False
+    # Control: one open box and the same world fires.
+    assert WN.due([], ME8, NOW, 1, DEV)[0] is True
+
+
+def test_the_restated_loop_names_match_wl_prscope() -> None:
+    assert WN.LANDING_ROLE == PS.LANDING
+    assert WN.MERGED_KIND == PS.MERGED
+
+
+def test_the_effort_row_blocks_at_high_and_advises_at_smart() -> None:
+    table, _problems = E.load()
+    assert table["checks"]["writers-now-due"] == {"block": "high", "advise": "smart"}
+    assert E.verdict("writers-now-due", "high") == E.BLOCK
+    assert E.verdict("writers-now-due", "smart") == E.ADVISE
+    assert E.verdict("writers-now-due", "low") == E.OFF
+
+
+def plant_promoted(wl, boxes="- [ ] B1 [writer] one open box\n"):
+    plan = wl.proj / "agent" / "plans" / "PLAN-wn-fixture.md"
+    plan.write_text(
+        "# PLAN: wn fixture\nStatus: approved\n\n## Boxes\n\n" + boxes, encoding="utf-8"
+    )
+    queue = wl.proj / "agent" / "plans" / "QUEUE.md"
+    text = queue.read_text(encoding="utf-8")
+    queue.write_text(
+        text.replace("## Promoted\n", "## Promoted\n\n1. agent/plans/PLAN-wn-fixture.md\n", 1),
+        encoding="utf-8",
+    )
+
+
+def test_promoted_open_counts_the_fixture_queue(wl) -> None:
+    plant_promoted(wl, "- [ ] B1 open\n- [x] B2 done\n- [ ] B3 open\n")
+    assert WN.promoted_open(wl.proj) == 2
+
+
+def test_stop_hook_blocks_at_high_with_no_round(wl) -> None:
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    plant_promoted(wl)
+    got = wl.run()
+    assert got.decision == "block", got.out[:600]
+    assert "WRITERS-NOW DUE" in got.out, got.out[:1200]
+    assert "--writers-now-start %s" % wlfix.ME in got.out
+
+
+def test_stop_hook_control_a_round_ten_minutes_ago_is_silent(wl) -> None:
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    plant_promoted(wl)
+    WN.append_round(wl.proj, wlfix.ME, "/tmp/s.md", WN.C.utcnow() - datetime.timedelta(minutes=10))
+    wl.check_quiet("WRITERS-NOW DUE", "a round inside the hour")
+
+
+def test_stop_hook_control_no_promoted_box_is_silent(wl) -> None:
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    plant_promoted(wl, "- [x] B1 done\n")
+    wl.check_quiet("WRITERS-NOW DUE", "every Promoted box ticked")

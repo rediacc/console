@@ -1,6 +1,8 @@
-"""wl_writersnow: the /writers-now round record and the self-review seeds a repeat round hands its survey (agent/plans/PLAN-writers-now-cadence.md WN1, WN3, operator ruling #ac2de21f).
+"""wl_writersnow: the /writers-now round record, its hourly cadence check and the self-review seeds a repeat round hands its survey (agent/plans/PLAN-writers-now-cadence.md WN1-WN3, operator ruling #ac2de21f).
 
 THE ROUND RECORD (WN1). `worklist.py --writers-now-start <me> <survey>` appends one JSON line to `agent/ledgers/writers-now-rounds.jsonl` at the start of every round: the round id, the session, the UTC start, the survey path, the seeds path and the seed count. Nothing else writes the ledger, and nothing rewrites a line.
+
+THE CADENCE (WN2). `writers-now-due` (effort.json: blocks at `high`, advises at `smart`) fires when this session's newest round is WINDOW_MIN minutes old or older, or absent, while the Promoted queue holds an open box. It stands down in the landing tree, whose babysit and merge phases work the one open PR and read no queue, in the merge phase of the development tree (the loop state `merged`, where the hook names the next branch first), and inside the window.
 
 THE SEEDS (WN3). A repeat round re-surveys the same plan text, so work that surfaced only in this session's own records stays invisible to it. `collect_seeds` lists, since the previous round of this session (or LOOKBACK_H hours without one): the open items this session added or updated (not the ones a worker holds), the `BLOCKED_BY:` items whose every blocker is now closed (at any age), the per-commit review findings still open that were reviewed in the window, and the "owed", "outside Owns" and "for the lead" lines of the sub-agent reports `wl_report` captured for this session in the window. `--writers-now-start` writes them to `<survey stem>-seeds.md`, and the skill hands that file to the survey agent, which classifies every seed.
 """
@@ -17,6 +19,11 @@ import secrets
 import wl_core as C
 
 LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
+# The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f: at least once per hour).
+WINDOW_MIN = 60
+# The loop states the cadence stands down in (wl_prscope.LANDING and wl_prscope.MERGED, restated so this module imports no loop resolver).
+LANDING_ROLE = "landing"
+MERGED_KIND = "merged"
 # How far back the seeds reach when this session has no earlier round.
 LOOKBACK_H = 12
 # Bounds on the seeds file, so one chatty report cannot bury the rest, and one source cannot bury the other two: past KIND_MAX a source gives one `more` seed naming how many it held back and where they are read.
@@ -66,8 +73,13 @@ def read_rounds(root) -> list[dict]:
 
 
 def last_round(rows, session) -> dict | None:
-    """The newest row of `session` (prefix-matched either way, wl_core.same_session), or None."""
-    mine = [r for r in rows if C.same_session(str(r.get("session")), str(session))]
+    """The newest row of `session`, or None. A row counts when its session prefix-matches either way (wl_core.same_session) or names a proven pre-compaction id of this session (wl_core.owned_by_me), so a compaction does not make the hour's round vanish."""
+    mine = [
+        r
+        for r in rows
+        if C.same_session(str(r["session"]), str(session))
+        or C.owned_by_me(str(r["session"]), str(session))
+    ]
     return max(mine, key=lambda r: C.parse_stamp(r["at"])) if mine else None
 
 
@@ -98,6 +110,52 @@ def append_round(root, session, survey, now, round_id=None, **extra) -> dict:
     finally:
         os.close(fd)
     return row
+
+
+# ---- the cadence check (WN2) ------------------------------------------------------
+
+
+def stand_down(loop) -> str:
+    """Why the cadence is silent for this loop state (a wl_prscope.LoopState or None), or "": the landing tree, or the merge phase."""
+    if loop is None:
+        return ""
+    if getattr(loop, "role", "") == LANDING_ROLE:
+        return "the landing tree"
+    if getattr(loop, "kind", "") == MERGED_KIND:
+        return "the merge phase"
+    return ""
+
+
+def due(rows, session, now, open_boxes, loop=None) -> tuple[bool, dict]:
+    """(fires, facts) for `writers-now-due`: fires when `open_boxes` (the Promoted queue's open boxes) is above zero, no stand-down applies, and this session's newest round is absent or WINDOW_MIN minutes old or older. `facts` carries the last round, its age in minutes (None without one), the open count and the stand-down reason."""
+    last = last_round(rows, session)
+    age = None if last is None else (now - C.parse_stamp(last["at"])).total_seconds() / 60.0
+    facts = {"last": last, "age": age, "open": int(open_boxes), "why": stand_down(loop)}
+    if facts["why"] or open_boxes <= 0:
+        return False, facts
+    return (age is None or age >= WINDOW_MIN), facts
+
+
+def promoted_open(root) -> int:
+    """The open boxes of the Promoted entries of agent/plans/QUEUE.md, each plan counted once (wl_planqueue.promoted_progress). A plan whose counts cannot be read adds nothing; a QUEUE.md that cannot be read raises."""
+    import wl_planqueue as PQ
+
+    text = (pathlib.Path(root) / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    seen: dict[str, int] = {}
+    for row in PQ.promoted_progress(root, text):
+        if not row.why:
+            seen.setdefault(row.rel, row.opened)
+    return sum(seen.values())
+
+
+def due_fields(facts, me8) -> dict:
+    """The fields of worklist_messages.V_WRITERS_NOW_DUE for a firing `due`."""
+    last = facts["last"]
+    if last is None:
+        shown = "none this session"
+    else:
+        shown = "round %s at %s, %d min ago" % (last.get("round"), last["at"], int(facts["age"]))
+    return {"last": shown, "open": facts["open"], "window": WINDOW_MIN, "who": me8}
 
 
 # ---- the seeds (WN3) --------------------------------------------------------------
