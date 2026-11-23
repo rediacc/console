@@ -45,6 +45,12 @@ FIRES = [
         "find sub -name '*.py' -exec sed -i 's/a/b/' {} +",
         ("<CWD>/sub", "in-place"),
     ),
+    ("dd's of= is an output key", "dd if=/dev/zero of=z.bin count=1", ("<CWD>/z.bin", "option")),
+    ("truncate", "truncate -s 0 t.log", ("<CWD>/t.log", "truncate")),
+    ("an expanded truncate operand", "F=x.log; truncate -s 0 $F", ("<CWD>/x.log", "truncate")),
+    ("an rm operand", "rm -f gone.txt", ("<CWD>/gone.txt", "remove")),
+    ("an xargs-fed rm", "echo fed.txt | xargs rm", ("<CWD>/fed.txt", "remove")),
+    ("a find -exec rm lands under find's start", "find sub -exec rm {} +", ("<CWD>/sub", "remove")),
 ]
 
 
@@ -66,12 +72,93 @@ SILENT = [
     ("a heredoc's prose naming a path", "cat <<'EOF'\nthen run: echo x > q.txt\nEOF"),
     ("git add writes the index, not the file", "git add a.py"),
     ("a python program that only reads", "python3 -c \"print(open('r.txt').read())\""),
+    ("an rm only echoed", "echo rm -f gone.txt"),
+    ("an rm quoted in a search", "grep -rn 'rm -f gone.txt' src/"),
 ]
 
 
 @pytest.mark.parametrize(("label", "cmd"), SILENT, ids=[c[0] for c in SILENT])
 def test_writes_is_silent(tmp_path, label, cmd):
     assert _hows(cmd, tmp_path) == [], label
+
+
+def test_truncate_reads_its_size_and_reference_as_values_not_files(tmp_path):
+    """SILENT CONTROL for the truncate reading: `-s SIZE` and `-r REF` are values; only the operand is resized."""
+    got = _hows("truncate -r ref.txt -s 0 t.txt", tmp_path)
+    assert got == [("<CWD>/t.txt", "truncate")], got
+
+
+def _records(cmd, cwd):
+    return [
+        (w.path.replace(str(cwd), "<CWD>"), w.how, w.word, w.index, w.append)
+        for w in shellscan.write_records(cmd, str(cwd))
+    ]
+
+
+RECORDS = [
+    (
+        "a redirect is no word of the run",
+        "echo hi > o.txt",
+        ("<CWD>/o.txt", "redirect", "o.txt", None, False),
+    ),
+    (
+        "an append keeps the file",
+        "echo hi >> o.txt",
+        ("<CWD>/o.txt", "append", "o.txt", None, True),
+    ),
+    ("tee -a keeps the file", "printf x | tee -a t.txt", ("<CWD>/t.txt", "tee", "t.txt", 1, True)),
+    (
+        "tee --append keeps the file",
+        "printf x | tee --append t.txt",
+        ("<CWD>/t.txt", "tee", "t.txt", 1, True),
+    ),
+    ("a plain tee replaces it", "printf x | tee t.txt", ("<CWD>/t.txt", "tee", "t.txt", 0, False)),
+    (
+        "the typed word of an expanded redirect",
+        "F=y.md; echo hi > $F",
+        ("<CWD>/$F", "redirect", "$F", None, False),
+    ),
+    (
+        "the expanded word of an expanded redirect",
+        "F=y.md; echo hi > $F",
+        ("<CWD>/y.md", "redirect", "y.md", None, False),
+    ),
+    (
+        "an rm operand carries its argv index",
+        "rm -f a.txt b.txt",
+        ("<CWD>/b.txt", "remove", "b.txt", 2, False),
+    ),
+    (
+        "dd of= is indexed at the operand carrying it",
+        "dd if=a of=z.bin",
+        ("<CWD>/z.bin", "option", "z.bin", 1, False),
+    ),
+    (
+        "a word placed under the run's cd keeps its typed word",
+        "cd sub && rm x.md",
+        ("<CWD>/sub/x.md", "remove", "x.md", 0, False),
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "cmd", "want"), RECORDS, ids=[c[0] for c in RECORDS])
+def test_write_records_carry_word_index_and_append(tmp_path, label, cmd, want):
+    (tmp_path / "sub").mkdir()
+    got = _records(cmd, tmp_path)
+    assert want in got, (label, got)
+
+
+def test_writes_is_the_pair_view_of_write_records(tmp_path):
+    """`writes` is derived, never a second walk: the pairs of `write_records`, each once, in order. A typed and an expanded word landing on one path are two records and one pair."""
+    cmd = "F=a.txt; echo x > a.txt; echo y > $F; rm a.txt; printf z | tee -a a.txt"
+    records = shellscan.write_records(cmd, str(tmp_path))
+    pairs = shellscan.writes(cmd, str(tmp_path))
+    want = []
+    for w in records:
+        if (w.path, w.how) not in want:
+            want.append((w.path, w.how))
+    assert pairs == want
+    assert len(records) > len(pairs)
 
 
 def test_an_unreadable_program_is_unknown_not_silent(tmp_path):
@@ -127,3 +214,25 @@ def test_a_new_event_reads_the_disk_again(tmp_path, monkeypatch):
 def test_event_writes_with_no_command_is_empty(tmp_path):
     ev = hookio.Event(json.dumps({"tool_input": {"file_path": "x"}, "cwd": str(tmp_path)}))
     assert ev.writes() == []
+    assert shellscan.event_write_records(ev) == []
+
+
+def test_event_write_records_walks_once_per_event(tmp_path, monkeypatch):
+    """The record cache: a guard that asks twice pays once, and a new Event walks again (the records read the disk, as `Event.writes` does). Without the hold the count is 3."""
+    calls = []
+    real = shellscan.write_records
+
+    def counting(cmd, cwd):
+        calls.append(cmd)
+        return real(cmd, cwd)
+
+    monkeypatch.setattr(shellscan, "write_records", counting)
+    ev = _event("rm -f a.txt", tmp_path)
+    first = shellscan.event_write_records(ev)
+    assert [(w.path, w.how, w.word) for w in first] == [
+        (str(tmp_path / "a.txt"), "remove", "a.txt")
+    ]
+    assert shellscan.event_write_records(ev) is first
+    assert len(calls) == 1
+    shellscan.event_write_records(_event("rm -f a.txt", tmp_path))
+    assert len(calls) == 2

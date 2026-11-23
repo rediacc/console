@@ -9145,16 +9145,70 @@ def _program_writes(run, cmd, cwd):
     return list(dict.fromkeys(found)), False
 
 
-def writes(cmd, cwd):
-    """Every file `cmd` may write, as `(path, how)` in walk order, each pair once; `path` is absolute (relative words placed under `cwd` and the run's own `cd`).
+class Write(typing.NamedTuple):
+    """One file a command may write (`write_records`).
 
-    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, or any word of a command the tables do not list), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (`("", "unknown")`: a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points. A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target and an output word are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`).
+    path    absolute and normalized ("" for the one "unknown" record)
+    how     the reading that found it (`writes` lists them)
+    word    the word as the command hands it over: the typed form, or the form bash expands it to, whichever this record was read from; a guard naming the write in a message or judging the word lexically reads this, never `path`
+    run     the walked run that writes it (None for "unknown")
+    index   the position of the run's own word it was read from (`_word_index`: in `run.argv`, else `run.xargv`; a `{}` that stands for find's starts keeps the `{}`'s position), or None when it is no word of the run (a redirect target, a fed word)
+    append  True when the write keeps what the file holds (`>>`, `&>>`, `tee -a`/`--append`); every other write may replace it
+    """
+
+    path: str
+    how: str
+    word: str
+    run: typing.Any
+    index: int | None
+    append: bool
+
+
+# Options of `truncate` whose value is a size or a reference file it only READS (`-r REF`): the value is not a file it writes.
+_TRUNCATE_VALUED = frozenset(("-s", "--size", "-r", "--reference"))
+
+
+def _truncate_operands(words):
+    """The files `truncate` resizes: its operands, the value of `-s`/`-r` (attached or next) left out."""
+    out, skip = [], False
+    for word in words:
+        if skip:
+            skip = False
+            continue
+        if word in _TRUNCATE_VALUED:
+            skip = True
+            continue
+        if word.startswith("-") and len(word) > 1:
+            continue
+        out.append(word)
+    return out
+
+
+def _word_index(run, word):
+    """The position of the run's own word `word` was read from: the word itself, else an operand carrying it after a first `=` (`dd of=F`, `--output=F`), in `run.argv` and then `run.xargv`; None for a word the run does not hold."""
+    for held in (run.argv, run.xargv):
+        if held is None:
+            continue
+        words = list(held)
+        if word in words:
+            return words.index(word)
+        for i, w in enumerate(words):
+            if "=" in w and w.split("=", 1)[1] == word:
+                return i
+    return None
+
+
+def write_records(cmd, cwd):
+    """Every file `cmd` may write, as `Write` records in walk order; `writes` is the `(path, how)` view of the same list.
+
+    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, `dd of=` among them, or any word of a command the tables do not list), "truncate" (an operand of `truncate`, its `-s`/`-r` values left out), "remove" (an operand of `rm`), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (path "": a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points, and what an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`, which over-reads the feed and never under-reads it). A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target and an output word are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`), each its own record with its own `word`.
     """
     analysis = _analyse(cmd)
     appends = {target for op, target in analysis_redirects(analysis) if op in (">>", "&>>")}
-    out: list[tuple[str, str]] = []
+    out: list[Write] = []
+    seen: set[tuple[str, str, str, bool, int]] = set()
 
-    def put(word, run, how):
+    def put(word, run, how, append=False):
         if (
             not word
             or _UNRESOLVED in word
@@ -9166,27 +9220,35 @@ def writes(cmd, cwd):
         starts = (
             run.launch.starts if run.launch is not None and run.launch.launcher == "find" else ()
         )
+        index = _word_index(run, word)
         for named in starts if starts and "{}" in word else (word,):
             placed = named
             if not os.path.isabs(named):
                 directory = write_directory(run.cwd, cwd) if run.cwd is not None else ""
                 placed = os.path.join(cwd, directory, named)
-            pair = (os.path.normpath(placed), how)
-            if pair not in out:
-                out.append(pair)
+            record = Write(os.path.normpath(placed), how, named, run, index, append)
+            key = (record.path, how, named, append, id(run))
+            if key not in seen:
+                seen.add(key)
+                out.append(record)
 
     for run in _every_run(analysis):
         base = _base(run.name)
+        typed = run.xargv if run.xargv is not None else run.argv
+        variants = (
+            (run.argv, run.xargv)
+            if run.xargv is not None and list(run.xargv) != list(run.argv)
+            else (run.argv,)
+        )
         for target in redirect_targets(run):
             if not re.match(r"^(\d+|-)$", target):
-                put(target, run, "append" if target in appends else "redirect")
+                appending = target in appends
+                put(target, run, "append" if appending else "redirect", appending)
         # What an xargs feeds a tee or an in-place edit is a file it writes (`xargs_fed_operands`: each fed word alone and in each marker's place), so `echo F | xargs sed -i ...` lists F. It over-reads the feed's own words (the producer's argv), never under-reads.
         if base == "tee":
-            typed = run.xargv if run.xargv is not None else run.argv
-            for word in xargs_fed_operands(
-                run, [w for w in typed if not (w.startswith("-") and len(w) > 1)]
-            ):
-                put(word, run, "tee")
+            appending = "-a" in typed or "--append" in typed
+            for word in xargs_fed_operands(run, plain_operands(typed)):
+                put(word, run, "tee", appending)
         edit = in_place_edit(run)
         if edit is not None:
             for word in xargs_fed_operands(run, edit[1]):
@@ -9194,19 +9256,44 @@ def writes(cmd, cwd):
         for path, _into in copy_landings(run, cwd):
             put(path, run, "copy")
         # The typed words and, where bash expands them differently, the expanded ones (`_Run.xargv`): `F=<path>; touch $F` and `sort -o $F` write `<path>`, which the typed `$F` never names (`copy_landings` reads the expanded words by default).
-        for words in (
-            (run.argv, run.xargv)
-            if run.xargv is not None and list(run.xargv) != list(run.argv)
-            else (run.argv,)
-        ):
+        for words in variants:
             for word, how in output_landings(run, words, cwd=cwd):
                 put(word, run, how)
+        # `truncate` and `rm` are left out of the output table on purpose (`_LANDS_ELSEWHERE`, `_NON_WRITERS`), so their operands are read here, over the typed and the expanded words.
+        if base in ("truncate", "rm"):
+            for words in variants:
+                ops = _truncate_operands(words) if base == "truncate" else plain_operands(words)
+                for word in xargs_fed_operands(run, ops):
+                    put(word, run, "truncate" if base == "truncate" else "remove")
         if base == "git":
             for word in _git_pathspecs(run):
                 put(word, run, "git")
         literals, unknown = _program_writes(run, cmd, cwd)
-        if unknown and ("", "unknown") not in out:
-            out.append(("", "unknown"))
+        if unknown and not any(w.how == "unknown" for w in out):
+            out.append(Write("", "unknown", "", run, None, False))
         for word in literals:
             put(word, run, "interpreter")
+    return out
+
+
+def event_write_records(ev):
+    """`write_records` over a hook Event's command, computed once per Event and held on it; [] for an event with no command. A guard reads the records of the chain's one walk through this, as `hookio.Event.writes` serves the `(path, how)` view.
+
+    PER EVENT, NOT PER COMMAND TEXT, for `Event.writes`' reason: the parse is already memoized by the command string (`_analyse`), and what the records add reads the disk (whether a copy's destination is a directory, a script passed by path), so a memo keyed on the text would answer a long-lived process from a world that has since changed. The paths are placed from the payload's `cwd` when it carries one, else from the event's own directory.
+    """
+    held = getattr(ev, "_write_records", None)
+    if held is None:
+        cmd = ev.field("tool_input", "command")
+        held = write_records(cmd, ev.field("cwd") or ev.cwd) if cmd else []
+        ev._write_records = held
+    return held
+
+
+def writes(cmd, cwd):
+    """Every file `cmd` may write, as `(path, how)` in walk order, each pair once: the view of `write_records` for a caller that asks only where and how. `path` is absolute (relative words placed under `cwd` and the run's own `cd`); the `how` names and what each reading covers are `write_records`'."""
+    out: list[tuple[str, str]] = []
+    for record in write_records(cmd, cwd):
+        pair = (record.path, record.how)
+        if pair not in out:
+            out.append(pair)
     return out
