@@ -112,6 +112,12 @@ SHELL_CASES = [
     ("rm it", "rm -f " + L, True),
     ("touch it", "touch " + L, True),
     ("sort -o onto it", "sort -o %s %s" % (L, L), True),
+    # CR5: the shell half reads `Event.writes()`, whose output words were the typed ones only; `$F` names the ledger only as bash expands it.
+    ("sort -o onto it through an expanded variable", "F=%s; sort -o $F /tmp/x" % L, True),
+    ("touch of it through an expanded variable", "F=%s; touch $F" % L, True),
+    ("tee of it fed by xargs", "echo %s | xargs tee" % L, True),
+    ("sed -i of it fed by xargs", "echo %s | xargs sed -i s/a/b/" % L, True),
+    ("sed -i of it fed by xargs into a marker", "echo %s | xargs -I{} sed -i s/a/b/ {}" % L, True),
     ("append from inside the directory", "cd agent/ledgers && echo x >> live-proof.jsonl", True),
     ("append through a variable", "F=%s; echo x >> $F" % L, True),
     ("append through a glob", "echo x >> agent/ledgers/live-pr*.jsonl", True),

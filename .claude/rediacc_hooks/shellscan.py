@@ -9148,7 +9148,7 @@ def _program_writes(run, cmd, cwd):
 def writes(cmd, cwd):
     """Every file `cmd` may write, as `(path, how)` in walk order, each pair once; `path` is absolute (relative words placed under `cwd` and the run's own `cd`).
 
-    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, or any word of a command the tables do not list), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (`("", "unknown")`: a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points. A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target is listed as typed and, where bash expands it differently, as expanded (`redirect_targets`).
+    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, or any word of a command the tables do not list), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (`("", "unknown")`: a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points. A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target and an output word are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`).
     """
     analysis = _analyse(cmd)
     appends = {target for op, target in analysis_redirects(analysis) if op in (">>", "&>>")}
@@ -9180,18 +9180,27 @@ def writes(cmd, cwd):
         for target in redirect_targets(run):
             if not re.match(r"^(\d+|-)$", target):
                 put(target, run, "append" if target in appends else "redirect")
+        # What an xargs feeds a tee or an in-place edit is a file it writes (`xargs_fed_operands`: each fed word alone and in each marker's place), so `echo F | xargs sed -i ...` lists F. It over-reads the feed's own words (the producer's argv), never under-reads.
         if base == "tee":
-            for word in run.xargv if run.xargv is not None else run.argv:
-                if not (word.startswith("-") and len(word) > 1):
-                    put(word, run, "tee")
+            typed = run.xargv if run.xargv is not None else run.argv
+            for word in xargs_fed_operands(
+                run, [w for w in typed if not (w.startswith("-") and len(w) > 1)]
+            ):
+                put(word, run, "tee")
         edit = in_place_edit(run)
         if edit is not None:
-            for word in edit[1]:
+            for word in xargs_fed_operands(run, edit[1]):
                 put(word, run, "in-place")
         for path, _into in copy_landings(run, cwd):
             put(path, run, "copy")
-        for word, how in output_landings(run, cwd=cwd):
-            put(word, run, how)
+        # The typed words and, where bash expands them differently, the expanded ones (`_Run.xargv`): `F=<path>; touch $F` and `sort -o $F` write `<path>`, which the typed `$F` never names (`copy_landings` reads the expanded words by default).
+        for words in (
+            (run.argv, run.xargv)
+            if run.xargv is not None and list(run.xargv) != list(run.argv)
+            else (run.argv,)
+        ):
+            for word, how in output_landings(run, words, cwd=cwd):
+                put(word, run, how)
         if base == "git":
             for word in _git_pathspecs(run):
                 put(word, run, "git")

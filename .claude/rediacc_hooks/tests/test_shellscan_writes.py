@@ -24,6 +24,10 @@ FIRES = [
     ("perl in place", "perl -pi -e 's/a/b/' p.pl", ("<CWD>/p.pl", "in-place")),
     ("a copy", "cp /etc/hostname c.txt", ("<CWD>/c.txt", "copy")),
     ("a listed output option", "sort -o sorted.txt in.txt", ("<CWD>/sorted.txt", "option")),
+    ("an expanded output option", "F=e.txt; sort -o $F in.txt", ("<CWD>/e.txt", "option")),
+    ("an expanded word of an unlisted command", "F=u.txt; touch $F", ("<CWD>/u.txt", "unread")),
+    ("an xargs-fed tee", "echo f.txt | xargs tee", ("<CWD>/f.txt", "tee")),
+    ("an xargs-fed in-place edit", "echo i.py | xargs sed -i s/a/b/", ("<CWD>/i.py", "in-place")),
     ("a git pathspec", "git checkout -- g.py", ("<CWD>/g.py", "git")),
     ("a git -C pathspec", "git -C repo restore h.py", ("<CWD>/repo/h.py", "git")),
     (
