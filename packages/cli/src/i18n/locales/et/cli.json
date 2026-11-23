@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "{{name}} katkestatud",
+        "descriptionShort": "Katkestab käimasoleva varukoopia kaugmasinal",
         "description": "Katkestab käimasoleva varukoopia kaugmasinal",
         "notRunning": "Strateegia \"{{name}}\" varukoopia pole käimas"
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "Halda varukoopiaid",
       "drNudge": "Config-hoidla ei ole seadistatud: sinu hoidla mandaadid (LUKS-paroolifraasid) asuvad ainult siin masinas, seega bare-metal taastamine ei suuda neid taastada. Seadista see käsuga \"rdc config remote enable\", et sünkroonida need krüpteeritud config-blobi sisse.",
       "list": {
+        "descriptionShort": "Loetle varukoopia artefaktid masinal",
         "description": "Loetle varukoopia artefaktid masinal.",
         "examples": {
           "basic": "Loetle masina jaoks salvestatud varukoopiad.",
@@ -42,6 +44,7 @@
         "placementRequired": "Määra -m <machine>, et nimetada masin, mille varukoopiaid soovid loetleda."
       },
       "manifests": {
+        "descriptionShort": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",
         "description": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",
         "empty": "Varukoopia manifeste ei leitud.",
         "fetching": "Varukoopia manifestide toomine...",
@@ -59,6 +62,7 @@
         "deployed": "\"{{name}}\" juurutatud masinal {{machine}}",
         "deployFailed": "Taastatud \"{{name}}\" juurutamine ebaõnnestus",
         "deploying": "\"{{name}}\" juurutamine masinal {{machine}}...",
+        "descriptionShort": "Muuda varukoopia artefakt töötavaks hoidlaks",
         "description": "Muuda varukoopia artefakt töötavaks hoidlaks. Asukoht määratakse siin.",
         "examples": {
           "asNewRepo": "Taasta varukoopia uue hoidlana ja käivita see.",
@@ -123,9 +127,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "Eemalda määratud poliitika, nii et uuesti kehtib paketi või serveri vaikeväärtus",
           "description": "Eemalda määratud poliitika, nii et uuesti kehtib paketi või serveri vaikeväärtus."
         },
         "cleared": "{{name}} säilitamispoliitika eemaldati. Nüüdsest kehtib paketi või serveri vaikeväärtus.",
+        "descriptionShort": "Näita serveri jõustatavat hetktõmmiste säilitamispoliitikat",
         "description": "Näita serveri jõustatavat hetktõmmiste säilitamispoliitikat.",
         "empty": "Säilitamispoliitikat ei ole määratud, seega kehtib paketi või serveri vaikeväärtus.",
         "knobNotAnInteger": "{{flag}} vajab säilitatavate hetktõmmiste täisarvu, mitte \"{{value}}\".",
@@ -137,6 +143,7 @@
         "optionKeepWeekly": "Säilita iga selle arvu nädala kohta uusim hetktõmmis",
         "optionKeepYearly": "Säilita iga selle arvu aasta kohta uusim hetktõmmis",
         "set": {
+          "descriptionShort": "Määra, mitu hetktõmmist säilitada",
           "description": "Määra, mitu hetktõmmist säilitada. Iga säte asendatakse tervikuna, mitte ei liideta.",
           "success": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus.",
           "pending": "Muudatus säilitab vähem, seega ootab see edasilükatud kustutamise akent ja jõustub hoidla \"{{name}}\" jaoks {{when}} (UTC). Kuvatud poliitika kehtib selle ajani."
@@ -144,6 +151,7 @@
         "effective": "{{name}} kehtiv säilitus: {{source}}",
         "optionStream": "Rakenda ainult sellele varunduse voole (voo ID); ilma selleta kehtib kogu hoidla vaikeväärtus",
         "preview": {
+          "descriptionShort": "Näitab, milliseid hetktõmmiseid järgmine puhastus kustutaks ja kui palju ruumi vabastaks",
           "description": "Näitab, milliseid hetktõmmiseid järgmine puhastus kustutaks ja kui palju ruumi vabastaks.",
           "nothing": "Järgmine puhastus ei kustuta hoidlast {{name}} midagi.",
           "summary": "Järgmine puhastus kustutab hoidla {{name}} {{count}} hetktõmmist, jätab alles {{kept}} ja vabastab {{bytes}}.",
@@ -163,12 +171,14 @@
         "pendingClear": "Hoidla \"{{name}}\" poliitika eemaldamine ootab edasilükatud kustutamise akent ja jõustub {{when}} (UTC). Kehtiv poliitika kehtib selle ajani edasi."
       },
       "run": {
+        "descriptionShort": "Käivita varundus kohe",
         "description": "Käivitab varukoopia kohe kaugmasinal",
         "examples": {
           "basic": "Käivita varunduse strateegia kohe."
         }
       },
       "schedule": {
+        "descriptionShort": "Juuruta varukoopia ajakava kaugmasinasse (systemd taimerid)",
         "description": "Juuruta varukoopia ajakava kaugmasinasse (systemd taimerid)",
         "optionDryRun": "Näitab genereeritud üksusi ilma neid juurutamata",
         "optionForce": "Jätkab ka siis, kui varukoopia on parasjagu käimas (uus üksus rakendub järgmisel käivitumisel; käiv käivitus kasutab vana üksust)",
@@ -176,6 +186,7 @@
         "success": "Varukoopia ajakava juurutatud masinasse {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
         "bwlimitInvalid": "--bwlimit peab olema kiirus, näiteks 100Mbps või 12.5M, aga saadi \"{{value}}\".",
         "completed": "Hetktõmmis salvestatud hoidlale {{name}}",
         "description": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
@@ -206,11 +217,13 @@
         "optionAcceptIdentityChange": "Võta see kujutis uueks aluseks, kui selle LUKS-i identiteet muutus või see vähenes; laadib üles täieliku hetktõmmise"
       },
       "status": {
+        "descriptionShort": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal",
         "description": "Näitab varukoopia olekut ja taimeri olekut kaugmasinal"
       },
       "strategy": {
         "bandwidthUnconvertible": "Ribalaiuse piiri \"{{value}}\" ei saa teisendada ({{reason}}). Kasuta baite sekundis (12500000), kümnendbaite (12.5M), kahendbaite (12Mi) või bitte (100Mbps).",
         "bind": {
+          "descriptionShort": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks",
           "alreadyBound": "Varundusstrateegia \"{{strategy}}\" on juba seotud masinaga \"{{machine}}\"",
           "bound": "Varundusstrateegia \"{{strategy}}\" seoti masinaga \"{{machine}}\"",
           "description": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks",
@@ -218,10 +231,12 @@
         },
         "description": "Halda nimelist varundusstrateegiat (hot/cold režiimid, sihtkohad, ajakava)",
         "list": {
+          "descriptionShort": "Loetle kõik varundusstrateegiad",
           "description": "Loetle kõik varundusstrateegiad"
         },
         "readBandwidthUnconvertible": "Lugemise ribalaiuse piiri \"{{value}}\" ei saa teisendada ({{reason}}). Kasuta baite sekundis (50000000), kümnendbaite (50M), kahendbaite (48Mi), bitte (400Mbps) või 0 piirangu puudumiseks.",
         "remove": {
+          "descriptionShort": "Eemalda varundusstrateegia või sihtkoht",
           "bound": "Varundusstrateegiat \"{{strategy}}\" ei saa eemaldada: seda seob veel {{count}} masinat: {{machines}}.",
           "boundNext": "Lahuta see esmalt nendest masinatest või eemalda see koos sidumistega.",
           "description": "Eemalda varundusstrateegia või sihtkoht",
@@ -241,6 +256,7 @@
           "syncFailed": "Replikatsioonireegleid ei õnnestunud sünkroonida: {{reason}}"
         },
         "set": {
+          "descriptionShort": "Loo või uuenda varundusstrateegiat",
           "description": "Loo või uuenda varundusstrateegiat",
           "examples": {
             "configure": "Seadista varundusstrateegia ajakava ja režiim.",
@@ -291,11 +307,13 @@
           "dryRun": "Proovijooksutus: strateegia \"{{strategy}}\" muutuks ({{changes}}). Midagi ei kirjutatud."
         },
         "show": {
+          "descriptionShort": "Kuva varundussettrateegia üksikasjad",
           "description": "Kuva varundussettrateegia üksikasjad",
           "notConfigured": "Varundusstrateegiad ei ole seadistatud",
           "notFound": "Varundusstrateegiat \"{{name}}\" ei leitud"
         },
         "unbind": {
+          "descriptionShort": "Tühista varundusstrateegia sidumine masinaga",
           "description": "Tühista varundusstrateegia sidumine masinaga",
           "notBound": "Varundusstrateegia \"{{strategy}}\" ei ole seotud masinaga \"{{machine}}\"",
           "unbound": "Varundusstrateegia \"{{strategy}}\" sidumine masinaga \"{{machine}}\" tühistati"
@@ -303,6 +321,7 @@
       },
       "reconcile": {
         "checkSkipped": "Vahele jäetud liine ei kontrollitud: {{lineages}}",
+        "descriptionShort": "Lähtestab hoidla salvestatud baitide registri selleks, mida hoidla tegelikult sisaldab (ühtegi tükki ei kustutata kunagi)",
         "description": "Lähtestab hoidla salvestatud baitide registri selleks, mida hoidla tegelikult sisaldab (ühtegi tükki ei kustutata kunagi)",
         "argRepoRef": "Ühtlustatav hoidla (vaikimisi kõik loa ulatuses olevad)",
         "optionDryRun": "Näita arve registrit muutmata",
@@ -332,6 +351,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "Näita varukoopia salvestuskvooti, salvestatud baite ja kasutust hoidla kohta",
         "description": "Näita varukoopia salvestuskvooti, salvestatud baite ja kasutust hoidla kohta",
         "empty": "Hoidla kohta pole veel varukoopia salvestuskasutust registreeritud.",
         "fetching": "Varukoopia salvestuskasutuse toomine...",
@@ -341,6 +361,7 @@
         "throttled": "Ootel salvestusruum on üle muutlikkuse piiri {{cap}}: tunnist kiirem varundusvoog lükatakse tagasi, kuni see tühjeneb."
       },
       "verify": {
+        "descriptionShort": "Kinnita hoidla varukoopia ankur chunk-hoidla vastu",
         "completed": "Varukoopia kinnitatud hoidlale {{name}}",
         "description": "Kinnita hoidla varukoopia ankur chunk-hoidla vastu",
         "failed": "Varukoopia kinnitamine ebaõnnestus hoidlale {{name}}",
@@ -367,6 +388,7 @@
         "description": "Halda salvestatud hetktõmmiseid",
         "snapshotIdArgument": "Hetktõmmise ID (vt rdc backup manifests)",
         "delete": {
+          "descriptionShort": "Kustutab ühe salvestatud hetktõmmise. Selle ainuomased andmed vabastab järgmine prügikoristus",
           "description": "Kustutab ühe salvestatud hetktõmmise. Selle ainuomased andmed vabastab järgmine prügikoristus.",
           "notInRepo": "Hetktõmmist {{snapshot}} pole hoidla {{name}} salvestatud ajaloos. ID-sid saab vaadata käsuga: rdc backup manifests {{name}}",
           "success": "Hoidla {{name}} {{count}} hetktõmmist kustutati, sh {{snapshot}}.",
@@ -440,6 +462,7 @@
         "confirmLineage": "See kustutab liini {{name}} kõik {{count}} salvestatud hetktõmmist ({{bytes}}) ja seda ei saa tagasi võtta. Kinnitamiseks sisesta liini ID:"
       },
       "check": {
+        "descriptionShort": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",
         "description": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",
         "needsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saa selle loendit avada.",
         "noIndex": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud loendit, seega ei saa seda nii kontrollida. See pole tõendatud.",
@@ -449,6 +472,7 @@
       },
       "repair": {
         "affected": "Hetktõmmised, mis viitavad neile tükkidele: {{snapshots}}",
+        "descriptionShort": "Laeb salvestuses kadunud või valed tükid uuesti üles selle masina ankrust",
         "description": "Laeb salvestuses kadunud või valed tükid uuesti üles selle masina ankrust",
         "dryRunDamage": "Leiti {{count}} kahjustatud tükki; proovikäivitus ei muutnud midagi.",
         "optionDryRun": "Teatab, mis kustutataks ja uuesti üles laaditaks; ei muuda midagi"
@@ -456,6 +480,7 @@
       "tocKey": {
         "description": "Halda hoidla sirvimisloendi võtit",
         "sync": {
+          "descriptionShort": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti",
           "description": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti",
           "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
           "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)"
@@ -492,11 +517,13 @@
       "immutability": {
         "description": "Näita või sea salvestatud varukoopiate edasilükatud kustutamise akent",
         "show": {
+          "descriptionShort": "Näita kehtivat edasilükatud kustutamise akent",
           "description": "Näita kehtivat edasilükatud kustutamise akent",
           "window": "Edasilükatud kustutamine: kustutus, täielik eemaldus või väiksem säilitus ootab {{days}} päeva ja seda saab selle ajani tagasi võtta.",
           "off": "Edasilükatud kustutamine on väljas: kustutused jõustuvad kohe."
         },
         "set": {
+          "descriptionShort": "Sea edasilükatud kustutamise aken päevades (0 kuni 30)",
           "description": "Sea edasilükatud kustutamise aken päevades (0 kuni 30)",
           "daysArgument": "Mitu päeva kustutus ootab enne jõustumist (0 kuni 30)",
           "applied": "Edasilükatud kustutamise aken on nüüd {{days}} päeva.",
@@ -506,6 +533,7 @@
         "pending": "Aken lüheneb {{when}} (UTC) {{days}} päevale. Seni kehtib {{current}} päeva."
       },
       "undelete": {
+        "descriptionShort": "Tühista hetktõmmise edasilükatud kustutus enne jõustumist",
         "description": "Tühista hetktõmmise edasilükatud kustutus enne jõustumist",
         "success": "Hetktõmmis {{snapshot}} säilib: selle kustutus tühistati.",
         "notWaiting": "Hetktõmmis {{snapshot}} ei oodanud kustutamist."
@@ -629,6 +657,7 @@
         "emptyRangeFlag": "{{flag}} vajab vähemalt ühte CIDR-i, kuid väärtus on tühi",
         "keyNotFound": "Juurdepääsuvõtit \"{{key}}\" ei leitud",
         "list": {
+          "descriptionShort": "Loetle konfiguratsiooni juurdepääsuvõtmed",
           "description": "Loetle konfiguratsiooni juurdepääsuvõtmed",
           "noKeys": "Selles konfiguratsioonis pole juurdepääsuvõtmeid. Lisa üks käsuga 'config access add'"
         },
@@ -646,6 +675,7 @@
           "success": "Konfiguratsiooni lähtevahemikud määratud: {{ranges}}"
         },
         "remove": {
+          "descriptionShort": "Eemalda juurdepääsuvõti konfiguratsioonist",
           "description": "Eemalda juurdepääsuvõti konfiguratsioonist",
           "pushHint": "Selle read jäävad alles: {{machines}}, kuni seal käivitatakse 'machine access push'",
           "success": "Juurdepääsuvõti \"{{key}}\" eemaldatud"
@@ -654,15 +684,18 @@
       "audit": {
         "description": "Vaata konfiguratsiooni auditilogi (räsiaheldatud JSONL asukohas ~/.config/rediacc/audit.log.jsonl)",
         "log": {
+          "descriptionShort": "Trüki hiljutised auditikirjed JSON-ina",
           "description": "Trüki hiljutised auditikirjed JSON-ina",
           "optionActor": "Filtreeri osaleja liigi järgi (human|agent)",
           "optionPath": "Filtreeri JSON-osuti globi järgi (nt /credentials/*)",
           "optionSince": "Kuva ainult kirjed, mis on uuemad (nt '24h', '7d', ISO ajatempel)"
         },
         "tail": {
+          "descriptionShort": "Voogedasta uued auditikirjed kirjutamisel (Ctrl+C peatamiseks)",
           "description": "Voogedasta uued auditikirjed kirjutamisel (Ctrl+C peatamiseks)"
         },
         "verify": {
+          "descriptionShort": "Kinnita SHA-256 räsiahela terviklikkus kõigi auditikirjete üleselt",
           "chainBroken": "Ahel katkeb real {{line}}: fail on rikutud või võltsitud.",
           "chainOk": "Ahela terviklikkus kinnitatud {{count}} kirje üleselt.",
           "description": "Kinnita SHA-256 räsiahela terviklikkus kõigi auditikirjete üleselt"
@@ -688,20 +721,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "Tühjenda vaikeväärtused (kõik või konkreetne võti)",
         "allCleared": "Kõik vaikeväärtused tühjendatud",
         "description": "Tühjenda vaikeväärtused (kõik või konkreetne võti)",
         "keyCleared": "\"{{key}}\" tühjendatud"
       },
       "current": {
+        "descriptionShort": "Näita aktiivset konfiguratsiooni: nimi, fail, lahendatud server ja kanal, tõendi olek",
         "description": "Näita aktiivset konfiguratsiooni: nimi, fail, lahendatud server ja kanal, tõendi olek"
       },
       "delete": {
+        "descriptionShort": "Kustuta konfiguratsioonifail",
         "description": "Kustuta konfiguratsioonifail",
         "success": "Konfiguratsioon \"{{name}}\" kustutatud"
       },
       "description": "Halda konfiguratsioonifaile: loomine, vahetamine, muutmine, oleku tasakaalustamine ja läbivad tugifunktsioonid (väljad, audit, SSH-võtmed, kaugsünkroonimine).",
       "descriptionShort": "Halda konfiguratsioonifaile",
       "edit": {
+        "descriptionShort": "Ava aktiivne konfiguratsioon $EDITOR-is maskeeritud JSONC-projektsioonina",
         "abortAfterRetries": "Katkestamine pärast {{count}} ebaõnnestunud katset. Mustand säilitatud asukohas: {{path}}",
         "applied": "Rakendati {{path}}",
         "bannerRedacted": "Tundlikud väljad kuvatakse <redacted:KIND>:DIGEST asendajatena, mis ringreisivad turvaliselt.",
@@ -727,23 +764,27 @@
         "description": "Osutiga adresseeritud konfiguratsioonivälja toimingud (get/set/unset/rotate/list). JSON-osutid (RFC 6901) nagu /credentials/cfDnsApiToken.",
         "descriptionShort": "Osutiga adresseeritud konfiguratsioonivälja toimingud",
         "get": {
+          "descriptionShort": "Loe üks konfiguratsiooni väärtus JSON-osuti kaudu",
           "description": "Loe üks konfiguratsiooni väärtus JSON-osuti kaudu. Tundlikud väljad on peidetud, välja arvatud --reveal (ainult inimestele).",
           "optionDigest": "Trüki SHA-256 räsi väärtuse asemel (ohutu agentidega jagamiseks)",
           "optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
           "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivne TTY; auditeeritakse)"
         },
         "list": {
+          "descriptionShort": "Loetle kõik registreeritud tundlikkusosuti mallid koos liigi ja kinnitamis/krüpteerimispoliitikaga",
           "description": "Loetle kõik registreeritud tundlikkusosuti mallid koos liigi ja kinnitamis/krüpteerimispoliitikaga.",
           "optionOutput": "Väljundvorming (json|table)",
           "optionSensitive": "Kuva ainult tundlikud (mitte-avalikud) mallid"
         },
         "rotate": {
+          "descriptionShort": "Pööra tundlik väärtus ilma --current liputa",
           "description": "Pööra tundlik väärtus ilma --current liputa. Ainult interaktiivne TTY; auditeeritakse häälekalt.",
           "optionNew": "Uus väärtus",
           "optionPointer": "JSON-osuti tundlikule väljale (nt /credentials/cfDnsApiToken)",
           "success": "Pööratud {{pointer}}"
         },
         "set": {
+          "descriptionShort": "Kirjuta konfiguratsiooni väärtus JSON-osutil",
           "description": "Kirjuta konfiguratsiooni väärtus JSON-osutil. Tundlikud teed nõuavad --current (teadmisvärav).",
           "optionCurrent": "Praegune lihttekstiline väärtus, nõutav tundlike teede mutatsioonide jaoks (teadmisvärava tõend)",
           "optionNew": "Uus väärtus (parsitakse JSON-ina, kui näeb välja nagu JSON: {, [, \", true/false/null/number)",
@@ -751,6 +792,7 @@
           "success": "Seati {{pointer}}"
         },
         "unset": {
+          "descriptionShort": "Kustuta konfiguratsiooni väärtus JSON-osutil",
           "description": "Kustuta konfiguratsiooni väärtus JSON-osutil. Tundlikud teed nõuavad --current.",
           "optionCurrent": "Praegune lihttekstiline väärtus, nõutav tundlike teede kustutamiseks",
           "optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
@@ -770,6 +812,7 @@
         }
       },
       "init": {
+        "descriptionShort": "Loo uus nimeline konfiguratsioonifail",
         "alreadyExists": "Konfiguratsioon \"{{name}}\" on juba olemas",
         "bareForm": "Vaikimisi konfiguratsioon luuakse automaatselt; kasuta 'config init <name>' nimega konfiguratsiooni jaoks, või anna lipp (--ssh-key, --server, ...), et seada vaikeväärtusele valik.",
         "description": "Loo uus nimeline konfiguratsioonifail",
@@ -783,6 +826,7 @@
         "success": "Konfiguratsioon \"{{name}}\" lähtestatud"
       },
       "list": {
+        "descriptionShort": "Loetle kõik konfiguratsioonifailid",
         "description": "Loetle kõik konfiguratsioonifailid",
         "noConfigs": "Konfiguratsioonifaile ei leitud. Loo üks käsuga: rdc config init"
       },
@@ -825,6 +869,7 @@
         "droppedGoneMachineState": "{{count}} käituskirjet, mis viitavad konfiguratsioonist puuduvale masinale, {{verb}} eemaldatud:"
       },
       "reconcile": {
+        "descriptionShort": "Ehita töötamisaegne olek uuesti masina tõe põhjal",
         "acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita.",
         "description": "Ehita töötamisaegne olek uuesti masina tõe põhjal. Parandab aegunud ühendus- ja marsruutimisandmed.",
         "optionAcceptObserved": "Kirjuta deklareeritud asukoht ümber vastavaks image'i tegelikule asukohale, kuid ainult siis, kui see on ühemõtteline (täheldatud täpselt ühel masinal). Duplikaadid jäävad konfliktideks.",
@@ -833,6 +878,7 @@
         "listFailed": "renet list all ebaõnnestus (väljumiskood {{exitCode}})."
       },
       "recover": {
+        "descriptionShort": "Taasta konfiguratsioon varukoopifailist (.bak)",
         "confirm": "Taasta konfiguratsioon \"{{name}}\" varukoopiast?",
         "description": "Taasta konfiguratsioon varukoopifailist (.bak)",
         "failed": "Konfiguratsiooni \"{{name}}\" taastamine varukoopiast ebaõnnestus",
@@ -844,6 +890,7 @@
         "preconditionFailed": "Konfiguratsioon „{{config}}“: server lükkas tagasi muudatuse, mis eemaldab {{paths}}, sest see seade ei suutnud tõestada, et nägi salvestatud väärtusi. Värskendage käsuga „rdc config remote refresh“ ja käivitage käsk uuesti.",
         "description": "Halda kaugsalvestuse konfiguratsiooniühendust",
         "disable": {
+          "descriptionShort": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
           "description": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
           "optionLocal": "Eemalda seos ainult selles seadmes, vahemälus olevast koopiast ja serveriga ühendust võtmata",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
@@ -867,6 +914,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: selle seadme konfiguratsioonihoidla võtit hoitakse failis {{path}} (režiim 0600) ja seda kaitsevad ainult failiõigused."
         },
         "enable": {
+          "descriptionShort": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba kaugsalvestusega seotud ja see seade saab selle avada, seega pole midagi lubada. Seose eemaldamiseks käivita: rdc config remote disable",
           "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "expired": "Seadmekood aegus. Proovi uuesti.",
@@ -927,6 +975,7 @@
         "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"rdc config remote refresh\", kui server on kättesaadav, et vahemälu täita.",
         "passkeySecretMissing": "Sellel seadmel ei ole enam konfiguratsioonihoidla võtit (Linuxis tühjendatakse kerneli võtmerõngas igal taaskäivitusel). Registreeri seade uuesti käsuga: rdc config remote enable",
         "refresh": {
+          "descriptionShort": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
           "pulled": "Konfiguratsioon toodud",
@@ -936,6 +985,7 @@
         },
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
         "status": {
+          "descriptionShort": "Kuva kaugühenduse olek",
           "description": "Kuva kaugühenduse olek",
           "deviceKeyMissing": "See seade ei saa enam selle konfiguratsiooni kaugsalvestust avada: seadme võti on kadunud (taaskäivitus võib võtmehoidla tühjendada). Registreeri seade uuesti käsuga: rdc config remote enable",
           "deviceCannotOpen": "See seade ei saa selle konfiguratsiooni kaugsalvestust avada: seadme registreering lükati tagasi, näiteks pärast võtme roteerimist. Registreeri seade uuesti käsuga: rdc config remote enable"
@@ -971,6 +1021,7 @@
         },
         "pushVisibility": "konfiguratsioon {{config}}: v{{from}} → v{{to}} saadetud käsuga \"{{command}}\": {{changes}}",
         "versions": {
+          "descriptionShort": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",
           "description": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",
           "optionExplain": "Näita JSON-viiteid, mida iga versioon muutis, serveris hoitavate versioonide põhjal",
           "explainUnreadable": "(ei õnnestu lugeda: {{reason}})",
@@ -978,6 +1029,7 @@
           "empty": "Server ei hoia konfiguratsiooni \"{{config}}\" varasemaid versioone."
         },
         "restore": {
+          "descriptionShort": "Avalda selle konfiguratsiooni varasem versioon selle uusima versioonina",
           "description": "Avalda selle konfiguratsiooni varasem versioon selle uusima versioonina",
           "argVersion": "Taastatav versioon (vaata rdc config remote versions)",
           "confirm": "Kas avaldada konfiguratsiooni \"{{config}}\" versiooni {{version}} sisu uue versioonina versiooni {{current}} peale? Iga seade saab selle järgmisel allalaadimisel.",
@@ -990,6 +1042,7 @@
         "localEditsUnverifiable": "Konfiguratsioon \"{{config}}\": kohalik fail erineb serveri versioonist {{server}} ({{changes}}) ja versiooni {{cached}}, millest see vahemällu võeti, ei õnnestunud lugeda ({{reason}}), seega ei saa kohalikku muudatust serveri muudatusest eristada. Midagi ei kirjutatud üle. Kopeeri muudatused kõrvale, käivita \"rdc config remote refresh\", et võtta versioon {{server}} (see asendab kohaliku faili), ja rakenda need uuesti."
       },
       "rotateCek": {
+        "descriptionShort": "Rotatsioon organisatsiooni konfiguratsiooni krüpteerimisvõtme jaoks",
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",
         "confirm": "Rotatsioon konfiguratsiooni krüpteerimisvõtme jaoks nüüd?",
         "waiting": "Ootan, kuni rotatsioon brauseris lõpeb (peatamiseks vajutage Ctrl+C)...",
@@ -1006,10 +1059,12 @@
         "warning": "See roteerib võtme, millega kogu organisatsiooni konfiguratsioon on krüpteeritud. Iga teine seade peab pärast uuesti liituma."
       },
       "set": {
+        "descriptionShort": "Määra vaikeväärtus (meeskond, piirkond, sild)",
         "description": "Määra vaikeväärtus (meeskond, piirkond, sild)",
         "success": "\"{{key}}\" seati väärtusele \"{{value}}\""
       },
       "show": {
+        "descriptionShort": "Kuva praeguse konfiguratsiooni üksikasjad",
         "description": "Kuva praeguse konfiguratsiooni üksikasjad",
         "noConfig": "Aktiivne konfiguratsioon puudub. Loo üks käsuga: rdc config init",
         "optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivselt)"
@@ -1017,11 +1072,13 @@
       "ssh": {
         "description": "Halda SSH-võtme konfiguratsiooni",
         "remove": {
+          "descriptionShort": "Eemalda SSH-võti praegusest konfiguratsioonist",
           "description": "Eemalda SSH-võti praegusest konfiguratsioonist",
           "noKey": "SSH-võtit ei ole seadistatud",
           "success": "SSH-võti eemaldatud"
         },
         "set": {
+          "descriptionShort": "Määra SSH-võti praeguse konfiguratsiooni jaoks",
           "description": "Määra SSH-võti praeguse konfiguratsiooni jaoks",
           "invalidKey": "Fail ei sisalda kehtivat SSH-privaatvõtit",
           "keyNotFound": "SSH-võtmefaili ei leitud: {{path}}",
@@ -1030,6 +1087,7 @@
           "success": "SSH-võti seadistatud"
         },
         "show": {
+          "descriptionShort": "Kuva praegune SSH-võtme konfiguratsioon",
           "description": "Kuva praegune SSH-võtme konfiguratsioon",
           "noKey": "SSH-võtit ei ole seadistatud"
         }
@@ -1225,6 +1283,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "Tühista töötav eraldiseisev töö",
         "alreadyFinished": "Töö {{jobId}} on juba {{state}}; pole midagi tühistada.",
         "confirm": "Tühistada masinas {{machine}} töö {{jobId}} ({{function}})? Toiming peatatakse.",
         "description": "Tühista töötav eraldiseisev töö",
@@ -1239,6 +1298,7 @@
         "succeeded": "Töö {{jobId}} õnnestus."
       },
       "gc": {
+        "descriptionShort": "Eemalda lõpetatud tööd ja nende logid",
         "confirm": "Eemaldada masinas {{machine}} tööd, mis lõppesid rohkem kui {{hours}}h tagasi? Nende logid kustutatakse.",
         "description": "Eemalda lõpetatud tööd ja nende logid",
         "invalidOlderThan": "--older-than peab olema tundide arv, nt 168 või 168h (saadi \"{{value}}\")",
@@ -1247,6 +1307,7 @@
       },
       "idOption": "Töö ID",
       "list": {
+        "descriptionShort": "Kuva masina eraldiseisvad tööd, uuemad eespool",
         "description": "Kuva masina eraldiseisvad tööd, uuemad eespool",
         "empty": "Masinas {{machine}} pole ühtegi tööd.",
         "examples": {
@@ -1257,6 +1318,7 @@
         "allOption": "Kuva ka aegunud ja hüljatud piletid"
       },
       "logs": {
+        "descriptionShort": "Taasesita või jälgi eraldiseisva töö sündmuslogi",
         "description": "Taasesita või jälgi eraldiseisva töö sündmuslogi",
         "detached": "Katkestati ühendus tööga {{jobId}}. See töötab endiselt masinas {{machine}} ja seda EI TÜHISTATUD. Uuesti ühendumiseks: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1269,6 +1331,7 @@
       },
       "machineOption": "Sihtmasina nimi",
       "status": {
+        "descriptionShort": "Kuva eraldiseisva töö olek",
         "description": "Kuva eraldiseisva töö olek",
         "examples": {
           "basic": "Kuva ühe töö olek."
@@ -1279,6 +1342,7 @@
       "machineRequired": "Selles konfiguratsioonis pole tööle {{jobId}} piletit. Anna valikuga -m <machine> teada, kus see töötab.",
       "ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
       "wait": {
+        "descriptionShort": "Jätka töö jälgimist selle pileti alusel, kinnita see ja lõpeta töö väljumiskoodiga",
         "description": "Jätka töö jälgimist selle pileti alusel, kinnita see ja lõpeta töö väljumiskoodiga",
         "timeoutOption": "Lõpeta ootamine selle aja järel (30s, 5m, 2h; üksik arv tähendab sekundeid). Töö jätkab tööd.",
         "invalidTimeout": "--timeout peab olema kestus nagu 30s, 5m või 2h (saadi \"{{value}}\")",
@@ -1332,6 +1396,7 @@
         "success": "Masin \"{{name}}\" lisatud ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "Hävitab pilves ettevalmistatud masina ja eemaldab konfiguratsioonist",
         "completed": "Masin {{name}} hävitatud ja konfiguratsioonist eemaldatud",
         "confirm": "See hävitab masina \"{{name}}\" ja kõik selle andmed jäädavalt. Jätkad?",
         "deactivateFailed": "Kontol oleva aktiveerimiskoht masinale {{name}} jäi vabastamata: {{reason}}. Koht vabaneb ise 5 tundi pärast viimast tegevust.",
@@ -1350,6 +1415,7 @@
       "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja tervisediagnostika. Ainult lugemiseks; repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: status (täisolek, kitsendatav lippudega --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Halda kaugmasinaid (olek, tervis, loetlemine, lisamine, eemaldamine, seadistamine, koristamine)",
       "health": {
+        "descriptionShort": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks",
         "containersSection": "\nKonteinerid:",
         "containersSummary": "  {{running}}/{{total}} töötab ({{healthy}} terved, {{unhealthy}} ebaterved)",
         "description": "Kontrollib masina seisundit CI/CD torujuhtmete jaoks",
@@ -1416,19 +1482,23 @@
         "cert": {
           "clear": {
             "cleared": "Sertifikaadi vahemälu tühjendatud",
+            "descriptionShort": "Eemalda sertifikaadi vahemälu",
             "description": "Eemalda sertifikaadi vahemälu",
             "noCache": "Puhastamiseks ei ole sertifikaadi vahemälu"
           },
           "description": "Halda vahemällu salvestatud TLS-sertifikaate",
           "pull": {
+            "descriptionShort": "Laadi TLS-sertifikaadid masinalt alla ja vahemällu",
             "description": "Laadi TLS-sertifikaadid masinalt alla ja vahemällu",
             "optionNoPrune": "Jäta vanade võrgu-ID sertifikaatide puhastamine vahele"
           },
           "push": {
+            "descriptionShort": "Laadi vahemällu salvestatud TLS-sertifikaadid masinale üles",
             "description": "Laadi vahemällu salvestatud TLS-sertifikaadid masinale üles"
           },
           "status": {
             "certCount": "{{count}} sertifikaat(i), {{size}} pakitult",
+            "descriptionShort": "Kuva vahemällu salvestatud sertifikaatide inventuur",
             "description": "Kuva vahemällu salvestatud sertifikaatide inventuur",
             "header": "Domeeni {{baseDomain}} sertifikaadi vahemälu",
             "noCache": "Sertifikaadi vahemälu ei ole salvestatud",
@@ -1455,11 +1525,13 @@
           "success": "Masina \"{{name}}\" infrastruktuuri konfiguratsioon uuendatud"
         },
         "show": {
+          "descriptionShort": "Kuva masina infrastruktuuri konfiguratsioon",
           "description": "Kuva masina infrastruktuuri konfiguratsioon",
           "noInfra": "Masinal \"{{name}}\" ei ole infrastruktuuri konfiguratsiooni seadistatud"
         }
       },
       "list": {
+        "descriptionShort": "Loetleb masinaid",
         "description": "Loetleb masinaid",
         "examples": {
           "basic": "Loetle kõik registreeritud masinad.",
@@ -1469,6 +1541,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "Lisa pilveteenusepakkuja",
           "description": "Lisa pilveteenusepakkuja",
           "optionImage": "Vaikimisi OS-kujutis",
           "optionImageAttr": "Kohandatud: OS-kujutise atribuudi nimi",
@@ -1492,15 +1565,18 @@
         },
         "description": "Halda pilveteenusepakkujaid masinate automaatprovisionimiseks",
         "list": {
+          "descriptionShort": "Loetle seadistatud pilveteenusepakkujad",
           "description": "Loetle seadistatud pilveteenusepakkujad",
           "noProviders": "Pilveteenusepakkujaid ei ole seadistatud. Lisa käsuga: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "Eemalda pilveteenusepakkuja konfiguratsioon",
           "description": "Eemalda pilveteenusepakkuja konfiguratsioon",
           "success": "Pilveteenusepakkuja \"{{name}}\" eemaldatud"
         }
       },
       "provision": {
+        "descriptionShort": "Juurutab uue masina pilveseadmel OpenTofu abil",
         "completed": "Masin {{name}} ettevalmistatud ja valmis ({{ip}})",
         "configuringInfra": "Infrastruktuuri konfigureerimine (puhverserver + DNS) masina {{name}} jaoks...",
         "description": "Juurutab uue masina pilveseadmel OpenTofu abil",
@@ -1578,6 +1654,7 @@
         "clusterMember": "Masinat \"{{name}}\" ei saa eemaldada: see kuulub klastrisse \"{{cluster}}\".",
         "clusterMemberNext": "Eemalda sõlm esmalt selle klastrist.",
         "confirm": "Eemaldada masin \"{{name}}\" konfiguratsioonist?",
+        "descriptionShort": "Eemalda masin seadistusest",
         "description": "Eemalda masin praegusest konfiguratsioonist",
         "forceDangling": "Masin \"{{name}}\" eemaldati, kuigi sellel oli veel {{count}} hoidla asukoht(a): {{repos}}. Need asukohad ripuvad nüüd. Suuna need ümber käsuga \"rdc repo migrate\" või kustuta käsuga \"rdc repo delete\".",
         "forceOption": "Eemalda masin ka siis, kui sellel on veel hoidlaid või sellega on seotud varundusstrateegiaid, jättes need viited ripakile.",
@@ -1609,6 +1686,7 @@
       },
       "scanKeys": {
         "completed": "Skannitud {{count}}/{{total}} masinat",
+        "descriptionShort": "Skanni SSH-hostivõtmeid praeguse konfiguratsiooni masinatele",
         "description": "Skanni SSH-hostivõtmeid praeguse konfiguratsiooni masinatele",
         "keysScanned": "Hostivõtmed skannitud masina \"{{name}}\" jaoks",
         "noKeys": "Masina \"{{name}}\" hostivõtmeid ei suudetud skannida",
@@ -1693,6 +1771,7 @@
           "unchanged": "Masina \"{{name}}\" juurdepääsuvõtmed on juba ajakohased ({{path}})"
         },
         "remove": {
+          "descriptionShort": "Eemalda juurdepääsuvõtme seos masinaga",
           "description": "Eemalda juurdepääsuvõtme seos masinaga. Järgmine 'machine access push' eemaldab selle rea",
           "success": "Juurdepääsuvõtme \"{{key}}\" seos masinaga \"{{name}}\" eemaldatud. Eemalda selle rida käsuga 'machine access push {{name}}'"
         },
@@ -1704,6 +1783,7 @@
           "success": "Juurdepääsuvõti \"{{key}}\" seotud masinaga \"{{name}}\". Rakenda käsuga 'machine access push {{name}}'"
         },
         "show": {
+          "descriptionShort": "Näita masinaga seotud juurdepääsuvõtmeid ja vahemikke, mis igaühele seal kehtivad",
           "description": "Näita masinaga seotud juurdepääsuvõtmeid ja vahemikke, mis igaühele seal kehtivad",
           "noKeys": "Masinaga \"{{name}}\" pole seotud ühtegi juurdepääsuvõtit",
           "path": "Kasutaja {{user}} authorized_keys fail masinas \"{{name}}\" (~/.ssh/authorized_keys)"
@@ -1714,6 +1794,7 @@
       "description": "Paljastab CLI-i mudeli kontekstiprotokollina (MCP) AI agentidega integreerimiseks. Server pakib CLI komandod MCP tööriistadeks struktureeritud JSON-sisendi/väljundiga. Peamine alamkomando: serve (käivitab stdio-põhise MCP serveri).",
       "descriptionShort": "Mudeli kontekstiprotokolli server AI agentidele",
       "serve": {
+        "descriptionShort": "Käivitab MCP serveri (stdio transport)",
         "configOption": "Konfiguratsioonifaili nimi kõigi komandode jaoks",
         "description": "Käivitab MCP serveri (stdio transport)",
         "timeoutOption": "Vaikimisi komando aegumine millisekundites"
@@ -1721,6 +1802,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "Kontrollib virtualiseerimise eeltingimusi",
         "allPassed": "Kõik eeltingimused täidetud",
         "description": "Kontrollib virtualiseerimise eeltingimusi",
         "hasMissing": "{{count}} eeltingimust puudub",
@@ -1730,12 +1812,14 @@
       "description": "Kohalik VM-i ettevalmistamine ja haldamine KVM/QEMU/Hyper-V abil (platvorm tuvastatakse automaatselt). Mitte kaugmasinate jaoks. Kasuta nende jaoks `machine`. Peamised alamkomandod: up (käivitab VM-id), down (peatab), status (loetleb töötavad VM-id), ssh (ühendab VM-iga), setup (installib eeltingimused), check (kontrollib hosti valmisolekut).",
       "descriptionShort": "Kohalikud VM-toimingud (ettevalmistamine, haldamine, hävitamine)",
       "down": {
+        "descriptionShort": "Hävitab VM-klastri",
         "completed": "VM-klaster hävitatud edukalt",
         "description": "Hävitab VM-klastri",
         "failed": "VM-klastri hävitamine ebaõnnestus",
         "starting": "VM-klastrit hävitatakse..."
       },
       "setup": {
+        "descriptionShort": "Installib virtualiseerimise eeltingimused",
         "brewFailed": "Homebrew installimine ebaõnnestus",
         "completed": "Eeltingimused installitud edukalt",
         "description": "Installib virtualiseerimise eeltingimused",
@@ -1746,15 +1830,18 @@
         "windows": "Hyper-V eeltingimuste seadistamine..."
       },
       "ssh": {
+        "descriptionShort": "SSH-ühendus VM-iga",
         "connecting": "Ühendamine VM-iga {{id}}...",
         "description": "SSH-ühendus VM-iga",
         "vmNotFound": "VM ID-ga {{id}} ei leitud või pole töötav"
       },
       "status": {
+        "descriptionShort": "Näitab VM-klastri olekut",
         "description": "Näitab VM-klastri olekut",
         "noVMs": "VM-e ei leitud"
       },
       "up": {
+        "descriptionShort": "Ettevalmistab VM-klastri kohalikult",
         "completed": "VM-klaster ettevalmistatud edukalt",
         "description": "Ettevalmistab VM-klastri kohalikult",
         "failed": "VM-klastri ettevalmistamine ebaõnnestus",
@@ -1816,16 +1903,19 @@
         "archive": {
           "description": "Arhiveeritud hoidla kirjete haldus.",
           "list": {
+            "descriptionShort": "Loetle arhiveeritud hoidlakirjed",
             "description": "Loetle arhiveeritud hoidla mandaadid",
             "noArchived": "Arhiveeritud hoidlad puuduvad"
           },
           "purge": {
             "confirm": "Puhastada kõik aegunud arhiveeritud kirjed?",
+            "descriptionShort": "Kustuta arhiveeritud kirjed jäädavalt",
             "description": "Kustuta kõik arhiveeritud mandaadid jäädavalt",
             "noArchived": "Puhastamiseks ei ole arhiveeritud hoidlaid",
             "success": "Puhastati {{count}} arhiveeritud mandaat(i)"
           },
           "restore": {
+            "descriptionShort": "Taasta arhiveeritud kirje seadistusse",
             "description": "Taasta arhiveeritud hoidla mandaat",
             "success": "Taastati \"{{name}}\" ({{guid}})"
           }
@@ -1833,6 +1923,7 @@
         "orphan": {
           "description": "Masinas olevad hoidlate kujutised, mida ükski konfiguratsioon ei nimeta.",
           "list": {
+            "descriptionShort": "Näitab masina hoidlate kujutisi ja seda, kas iga kujutis on omanikuta ehk ükski konfiguratsioon seda ei nimeta",
             "description": "Näitab masina hoidlate kujutisi ja seda, kas iga kujutis on omanikuta ehk ükski konfiguratsioon seda ei nimeta.",
             "none": "Masinas {{machine}} pole hoidlate kujutisi"
           },
@@ -1854,6 +1945,7 @@
         "autostart": {
           "description": "Halda hoidla automaatset käivitamist buutimisel",
           "disable": {
+            "descriptionShort": "Keela hoidla autostart (jäta nimi välja, et keelata kõigile)",
             "completed": "Autostart keelatud",
             "completedAll": "Autostart keelatud kõigile hoidlatele",
             "description": "Keela hoidla autostart (jäta nimi välja, et keelata kõigile)",
@@ -1863,6 +1955,7 @@
             "startingAll": "Autostarti keelamine kõigile hoidlatele masinal \"{{machine}}\"..."
           },
           "enable": {
+            "descriptionShort": "Luba hoidla autostart (jäta nimi välja, et lubada kõigile)",
             "completed": "Autostart lubatud",
             "completedAll": "Autostart lubatud kõigile hoidlatele",
             "description": "Luba hoidla autostart (jäta nimi välja, et lubada kõigile)",
@@ -1872,6 +1965,7 @@
             "startingAll": "Autostarti lubamine kõigile hoidlatele masinal \"{{machine}}\"..."
           },
           "list": {
+            "descriptionShort": "Loetle hoidlad, millel on autostart lubatud",
             "description": "Loetle hoidlad, millel on autostart lubatud",
             "empty": "Hoidlal \"{{machine}}\" pole autostart-lubatud repositooriume",
             "failed": "Autostarti hoidlate loetlemine ebaõnnestus",
@@ -1968,6 +2062,7 @@
         "weightOption": "Protsent liiklusest, mis suunatakse canary'le (täisarv 0-100; 0 = pime, 100 = täielik üleminek)"
       },
       "cat": {
+        "descriptionShort": "Loe hoidlas oleva faili piiratud lõik stdout'i (diagnostika läheb stderr'i)",
         "description": "Loe piiratud aken failist hoidla sees ja kirjuta see stdout-i (piiramine toimub serveripoolselt; diagnostika läheb stderr-i)",
         "examples": {
           "basic": "Prindi fail hoidla seest."
@@ -2000,6 +2095,7 @@
         "messageOption": "Commit'i sõnum"
       },
       "create": {
+        "descriptionShort": "Loo uus hoidla",
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
         "completed": "Hoidla loodud",
         "datastoreNotAttached": "andmehoidla \"{{datastore}}\" ei ole ühegi masinaga ühendatud. Ühenda see: rdc datastore attach {{datastore}} --to <machine>. Kui see on juba ühendatud, aga konfiguratsioon ei tea seda, käivita rdc config reconcile.",
@@ -2148,6 +2244,7 @@
         "nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad"
       },
       "list": {
+        "descriptionShort": "Loetle masina hoidlad",
         "completed": "Loetlemine lõpetatud",
         "datastoreOption": "Loetle selle andmehoidla hoidlad (lahendatud selle masina järgi, mis seda praegu hoiab)",
         "description": "Loetle masina hoidlad",
@@ -2428,12 +2525,14 @@
         "valueOption": "Saladuse väärtus. Anna `-`, et lugeda stdin-ist (väldib kesta ajaloo paljastamist)."
       },
       "status": {
+        "descriptionShort": "Hangi hoidla olek (haakimisseisund, Docker-daemoni töötamine, konteinerite arv, kettakasutus)",
         "completed": "Olek hangitud",
         "description": "Hangi hoidla olek (haakimisseisund, Docker-daemoni töötamine, konteinerite arv, kettakasutus)",
         "failed": "Oleku kontrollimine ebaõnnestus",
         "starting": "Hoidla \"{{repository}}\" oleku pärimine masinal \"{{machine}}\"..."
       },
       "health": {
+        "descriptionShort": "Käivita hoidla Rediaccfile'i health() kontrollid ja välju koodiga 0 (korras), 1 (hoiatus) või 2 (viga)",
         "description": "Käivita hoidla Rediaccfile'i health() kontrollid ja välju koodiga 0 (korras), 1 (hoiatus) või 2 (viga)",
         "header": "\nHoidla {{repository}} seisund:",
         "levelOk": "✓ Korras",
@@ -2660,6 +2759,7 @@
         "helpOffline": "Võrguühenduseta keskkond: koosta pakett võrgus käsuga rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> kontrollib paketti, laadib proxy kujutise, seadistab masina ilma võrguta ega pöördu millegi välise poole. Paigaldus peatub litsentsi sammu juures ja kirjutab päringu: väljasta sertifikaat võrgus (käsk rdc server licence mint) ja käivita siis uuesti võtmega --cert."
       },
       "status": {
+        "descriptionShort": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",
         "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",
         "certRefused": "KEELATUD ({{reason}}) kell {{at}}",
         "certRefusedRun": "käivita: rdc server licence {{domain}}",
@@ -2667,6 +2767,7 @@
         "certExpiring": "Litsentsisertifikaat aegub {{days}} päeva pärast; uuenda seda (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
         "description": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
         "optionOut": "Kirjuta pakett stdout'i asemel sellesse faili (režiim 0600)",
         "written": "Taastepakett kirjutati faili {{file}} (režiim 0600)",
@@ -2690,6 +2791,7 @@
         "templateNoBaseline": "Selles masinas ei ole malli kontrollsummasid salvestatud, seega ei saa kohalikke muudatusi tuvastada; rakendan uuema malli"
       },
       "licence": {
+        "descriptionShort": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
         "description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
         "done": "{{domain}} on litsentsitud tellimuse {{subscription}} alusel",
         "certUnreadable": "Sertifikaadifaili {{file}} ei saa lugeda",
@@ -2711,6 +2813,7 @@
         "noUpstreamKey": "Serveril puudub UPSTREAM_PUBLIC_KEY, seega ta ei saa ühtegi sertifikaati kontrollida ja uus sertifikaat ei aita. Määra UPSTREAM_PUBLIC_KEY domeeni {{domain}} saladustes ning käivita `rdc server upgrade {{domain}}`.",
         "bootRefusalStays": "Sertifikaat rakendati, kuid server teatab endiselt käivituse keeldumisest ({{reason}}); kontrolli serveri logisid",
         "mint": {
+          "descriptionShort": "Anna välja litsentsisertifikaat võrguta masina päringu jaoks (käivita võrgus ja sisse logituna)",
           "description": "Anna välja litsentsisertifikaat võrguta masina päringu jaoks (käivita võrgus ja sisse logituna)",
           "done": "Sertifikaat kirjutati faili {{file}} (kehtib kuni {{until}}); vii see masinasse ja paigalda valikuga --cert",
           "optionOut": "Fail, kuhu sertifikaat kirjutatakse",
@@ -2889,6 +2992,7 @@
       "description": "Halda litsentsimist ja tellimuse tokeneid. Logi sisse käsuga login, uuri olekut käsuga status, väljasta litsentsid uuesti käsuga refresh.",
       "descriptionShort": "Haldab masina litsentsimist ja tellimust",
       "login": {
+        "descriptionShort": "Autentimine brauseri või API tokeni kaudu",
         "backupNeedsTwoFactor": "Sisse logitud ilma varundusruumi haldamiseta. Lülita seadetes aadressil {{url}} sisse kaheastmeline autentimine ja logi uuesti sisse.",
         "channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
         "description": "Autentimine brauseri või API tokeni kaudu",
@@ -2923,20 +3027,24 @@
         "waitingApproval": "Brauseri autoriseerimist oodatakse..."
       },
       "register": {
+        "descriptionShort": "Loo brauseris konto (e-post eeltäidetud) ja logi sisse",
         "description": "Loo brauseris konto (e-post eeltäidetud) ja logi sisse",
         "optionEmail": "E-posti aadress, mis registreerimislehel eeltäidetakse",
         "invalidEmail": "Sisesta kehtiv e-posti aadress."
       },
       "logout": {
+        "descriptionShort": "Kustutab salvestatud tellimuse tokeni",
         "description": "Kustutab salvestatud tellimuse tokeni",
         "success": "Tellimuse token eemaldatud"
       },
       "proxyToken": {
+        "descriptionShort": "Väljasta selle seadme sisselogimisest lühiajaline proxy:exec-tõend, mida kasutatakse lipuga --proxy",
         "description": "Väljasta selle seadme sisselogimisest lühiajaline proxy:exec-tõend, mida kasutatakse lipuga --proxy",
         "jsonOption": "Prindi JSON, milles on tõend ja selle expiresAt",
         "noToken": "Kontoserver ei tagastanud proksitõendit."
       },
       "refresh": {
+        "descriptionShort": "Värskenda litsentsid kontoserverist",
         "account": {
           "failed": "Konto olekut ei õnnestunud kontoserverist lugeda.",
           "refreshed": "Konto olek värskendatud",
@@ -2984,6 +3092,7 @@
         }
       },
       "status": {
+        "descriptionShort": "Näita tellimust ja masina litsentsi olekut",
         "description": "Näita tellimust ja masina litsentsi olekut.",
         "issuanceLimitReached": "Praeguse UTC kalendrikuu repositooriumi litsentside igakuine väljastamise limiit saavutatud.",
         "issuanceUsageHigh80": "Igakuised repositooriumi litsentside väljastamised ületavad 80% praegusest UTC limiidist.",
@@ -3034,6 +3143,7 @@
         "needsYes": "Litsentsi tagastamine nõuab kinnitust ja stdin ei ole terminal. Kinnitamiseks lisa --yes.",
         "confirm": "Kas tagastada hoidla {{name}} litsents ({{guid}}, {{state}})? Uuendamine ei too seda tagasi.",
         "success": "Litsents tagastatud: {{name}}",
+        "descriptionShort": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest",
         "description": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest.",
         "argGuid": "Hoidla GUID või vähemalt 8 märki konto aruandes olevast litsentsist",
         "optionForce": "Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud",
@@ -3051,6 +3161,7 @@
         "optionExpired": "Tagastab kõik lõplikult aegunud litsentsid kustutatud hoidlatelt ja hoidlatelt, mida selles konfiguratsioonis pole"
       },
       "notices": {
+        "descriptionShort": "Näitab konto teateid: litsentside aegumine, varukoopiate seisukord, pikendused, sertifikaadid ja tingimused",
         "description": "Näitab konto teateid: litsentside aegumine, varukoopiate seisukord, pikendused, sertifikaadid ja tingimused.",
         "optionAll": "Kaasab suletud teated ja kõik leheküljed, mitte ainult viimased 30 päeva",
         "optionUnread": "Ainult lugemata teated",
@@ -3103,6 +3214,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "Ava shell masinal, või hoidla sees koos selle Dockeri seadistusega",
         "description": "Ava shell masinal, või hoidla sees koos selle Dockeri seadistusega.",
         "examples": {
           "machine": "Ava SSH-terminal masinasse.",
@@ -3158,6 +3270,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "Kontrollib VS Code installimist ja konfiguratsiooni",
         "activeConnections": "Aktiivsed ühendused: {{count}}",
         "configuration": "\nKonfiguratsioon:",
         "configured": "  Konfigureeritud: {{status}}",
@@ -3178,12 +3291,14 @@
         "yes": "Jah"
       },
       "cleanup": {
+        "descriptionShort": "Eemaldab VS Code SSH-konfiguratsioonid",
         "cleaned": "Koristatud: {{connection}}",
         "cleanedAll": "{{count}} VS Code SSH-ühendust koristatud.",
         "description": "Eemaldab VS Code SSH-konfiguratsioonid",
         "removedKeys": "Kõik salvestatud SSH-võtmed eemaldatud."
       },
       "connect": {
+        "descriptionShort": "Ava VS Code masinal või hoidla sees",
         "browserUrl": "Ava VS Code brauseris: {{url}}",
         "configuringSSH": "SSH konfigureerimine...",
         "configuringVSCode": "VS Code seadete konfigureerimine...",
@@ -3212,6 +3327,7 @@
       "description": "Avab VS Code koos Remote SSH-ga masina või repositooriumiga, koos iga repositooriumi isoleeritud keskkonnaga. Sama SSH-ühendus nagu `term`, kuid käivitab VS Code. Peamised alamkomandod: connect (või positsiooniline otsetee), list (näitab konfigureeritud ühendusi), cleanup (eemaldab SSH-konfiguratsiooni kirjed), check (kontrollib VS Code installimist).",
       "descriptionShort": "Avab VS Code Remote SSH masina või repositooriumiga",
       "list": {
+        "descriptionShort": "Loetleb konfigureeritud VS Code SSH-ühendusi",
         "configFile": "\nKonfiguratsioonifail: {{path}}",
         "description": "Loetleb konfigureeritud VS Code SSH-ühendusi",
         "header": "Konfigureeritud VS Code SSH-ühendused:\n",
@@ -3222,11 +3338,13 @@
       "serve": {
         "description": "Halda repositooriumi liivakastis töötavat brauseri VS Code serverit",
         "status": {
+          "descriptionShort": "Kuva, kas brauseri VS Code server töötab",
           "description": "Kuva, kas brauseri VS Code server töötab",
           "running": "{{provider}} töötab (pid {{pid}}, port {{port}})",
           "stopped": "{{provider}} ei tööta"
         },
         "stop": {
+          "descriptionShort": "Peata brauseri VS Code server",
           "description": "Peata brauseri VS Code server",
           "notRunning": "{{provider}} ei töötanud",
           "stopped": "{{provider}} peatatud"
@@ -3287,6 +3405,35 @@
       "notAccepted": "Nõustutud: ei ole nõustutud",
       "terms": "Kasutustingimused: versioon {{version}}, kehtib alates {{effective}}",
       "upcoming": "Tulev versioon {{version}} jõustub {{effective}}"
+    },
+    "proxyBlocked": {
+      "backupCheck": "loeb loendit ja taastab faili hoidla mandaadiga, mis jääb sinna, kus seadistus asub",
+      "backupChurn": "kliendipoolne uuringute tsükkel, mis võib kesta tunde ja peab lõppedes oma baasi unustama",
+      "backupDownload": "Kopeerib hoidla kujutise kliendipoolse rsync'iga kohalikku kataloogi; kaugtäitja kirjutaks kujutise oma kettale. Käivita see ilma --proxy-ta.",
+      "localTooling": "Kohalikud tööriistad, mis ei jõua kunagi masinani, seega pole midagi proksi kaudu saata. Käivita see ilma --proxy-ta.",
+      "backupRepair": "Kustutab konto vigased tükid kutsuja backup:manage-tokeniga ja laeb need seejärel masinast uuesti üles; kaugtäitjal pole ei tokenit ega kutsuja seadistust. Käivita see ilma --proxy-ta.",
+      "localConfig": "Töötab täielikult kohaliku seadistuse peal ega jõua kunagi masinani, seega pole midagi proksi kaudu saata. Käivita see ilma --proxy-ta.",
+      "backupTocKeySync": "tuletab avaliku võtme hoidla mandaadist, mis jääb sinna, kus seadistus asub",
+      "backupUpload": "Saadab kohaliku kujutisefaili kliendipoolse rsync'iga ja registreerib hoidla kohalikus seadistuses; kaugtäitja ei näe faili. Käivita see ilma --proxy-ta.",
+      "clusterKubeconfig": "Salvestab kubeconfigi vahemällu kohalikku 0600-faili ja prindib selle tee; kaugtäitja kirjutaks faili oma kettale. Käivita see ilma --proxy-ta.",
+      "interactive": "Vajab terminali või ei lõpe iseenesest (interaktiivne kest, redaktor, tunnel, voog või deemon), seega ei saa peata täitja seda käivitada. Käivita see ilma --proxy-ta.",
+      "configReconcile": "Päringud tehakse igale masinale, kuid tulemus kirjutatakse KUTSUJA kohalikku olekuhoidlasse; kaugtäitja ehitaks uuesti üles oma oleku ja kutsuja ei saaks sellest midagi teada. Käivita see ilma --proxy-ta.",
+      "machineAccessPush": "Kirjutab KUTSUJA juurdepääsuvõtmete põhjal ümber, kes masinasse sisse logida tohib; täitja ei kirjuta kunagi ümber juurdepääsu, millega ta ise ühendub, ja saadaks oma seadistuse võtmed. Käivita see ilma --proxy-ta.",
+      "machineConverge": "Taaskäivitab iga hoidla deemoni KUTSUJA seadistuse keskkonnasaladustega; kaugtäitja taaskäivitaks need oma koopiaga või ilma. Käivita see ilma --proxy-ta.",
+      "machineInfraCertPull": "Selle mõju on masina acme.json'i kirjutamine kutsuja kohalikku seadistusse; kaugtäitja kirjutaks selle enda omasse. Käivita see ilma --proxy-ta.",
+      "machinePrune": "Valikuga --orphaned-repos või --prune-unknown hindab see iga kujutist kõigi seadistuste vastu, mida KUTSUJA saab lugeda; kaugtäitja hindaks oma seadistuste vastu ja kustutaks kutsuja hoidlad. Käivita see ilma --proxy-ta.",
+      "machineScanKeys": "Käivitab ssh-keyscani kutsuja võrgupositsioonilt ja salvestab knownHosts'i kutsuja kohalikku seadistusse; kaugtäitja skaneeriks enda positsioonilt ja jätaks tulemuse endale. Käivita see ilma --proxy-ta.",
+      "repoAdminOrphanDelete": "Keeldub GUID-ist, mida mõni KUTSUJA loetav seadistus veel nimetab; kaugtäitja kontrolliks oma seadistusi ja võiks kustutada kujutise, mida kutsuja seadistus nimetab. Käivita see ilma --proxy-ta.",
+      "repoAdminOrphanList": "Hindab iga kujutist kõigi seadistuste vastu, mida KUTSUJA saab lugeda; kaugtäitja hindaks oma seadistuste vastu ja märkiks kutsuja hoidlad orbudeks. Käivita see ilma --proxy-ta.",
+      "repoSyncDownload": "Laeb rsync'i/SFTP-ga alla kohalikku failisüsteemi; kaugtäitja kirjutaks failid oma kettale. Käivita see ilma --proxy-ta.",
+      "repoSyncStatus": "Võrdleb masinat kohaliku failisüsteemiga kliendipoolse rsync'iga; kaugtäitjal pole kohaliku puu koopiat. Käivita see ilma --proxy-ta.",
+      "repoSyncUpload": "Laeb rsync'i/SFTP-ga üles kohalikust failisüsteemist; kaugtäitja ei näe lähterajasid. Käivita see ilma --proxy-ta.",
+      "serverBackup": "Kirjutab taastepaketi (serveri võtmed) kutsuja terminali või faili; täitja kaudu läbiksid võtmed teist masinat. Käivita see ilma --proxy-ta.",
+      "serverBundle": "Käivitab kutsuja kohaliku dockeri (pull ja save) ning kirjutab komplekti kutsuja kettale; kaugtäitja kirjutaks selle enda kettale. Käivita see ilma --proxy-ta.",
+      "serverLicence": "Väljastab sertifikaadi kutsuja sisselogimisega ja salvestab selle kutsuja kohalikku paigaldusjärjendisse; kaugtäitjal pole ei üht ega teist. Käivita see ilma --proxy-ta.",
+      "serverLicenceMint": "Väljastab sertifikaadi kutsuja sisselogimisega ja kirjutab selle kutsuja faili; kaugtäitjal pole ei üht ega teist. Käivita see ilma --proxy-ta.",
+      "serverStatus": "Leiab serveri kutsuja kohaliku paigaldusjärjendi kaudu; kaugtäitjal seda pole. Käivita see ilma --proxy-ta.",
+      "serverUpgrade": "Juhib alamkäske ja kutsuja kohalikku paigaldusjärjendit (ning valikuga --local-image kutsuja Dockerit); kaugtäitja tegutseks enda omadest. Käivita see ilma --proxy-ta."
     }
   },
   "docs": {
