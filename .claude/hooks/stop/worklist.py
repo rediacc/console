@@ -1674,15 +1674,24 @@ CLI_TICK_FORMS = (
     "'<evidence> nocommit:no-tracked-change|research|operator-deferred'"
 )
 CLI_TICK_COMMIT_REF_DETAIL = {
-    "unresolved": " commit:%s is not a commit reachable from HEAD in the console or any submodule.",
+    "unresolved": (
+        " commit:%s is not a commit reachable from HEAD in the console or any submodule, nor from "
+        "origin/main or the landing branch, and HEAD holds neither its patch nor a "
+        "`(cherry picked from commit <sha>)` line naming it."
+    ),
     "reason": " nocommit:%s is not one of the three reasons.",
+    # A probe that failed is named, never read as `not landed` and never as a pass (R20261123.6).
+    "probe": " commit:%s could not be checked, so the reference is not accepted.",
 }
+# The refs a `commit:<sha>` may be an ancestor of besides HEAD (R20261123.6): main, where an operator hotfix lands. The landing record's branch joins per call in `_commit_ref_tips`.
+COMMIT_REF_EXTRA_REFS = ("refs/remotes/origin/main",)
+COMMIT_REF_PICKED_LINE = "(cherry picked from commit %s)"
 
 
 def commit_ref_problem(root, text, transcript=None):
     """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
 
-    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
+    `commit:<sha>` must name a commit of `root` or one of its submodules that `_commit_ref_landed` reads as landed: an ancestor of HEAD, `refs/remotes/origin/main` or the landing record's branch, a patch-equivalent of a commit on HEAD (`git cherry`), or a commit a `(cherry picked from commit <sha>)` line on HEAD names (R20261123.6: a rebase, the landing tree and an operator hotfix each moved a real commit off HEAD). A fabricated or foreign sha is still refused, and a probe that fails refuses as ("probe", "<sha>: <why>") rather than being read either way. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
 
     An `ASKED:<minute>Z` that `CK._asked_in_transcript` verifies against `transcript` (the lead's) also stands in, the way a door does (R20261101.2): an operator ruling has no commit, and the answer is stronger evidence than an unrelated sha. A malformed or unmatched ASKED stands for nothing, and a `nocommit:` word outside the three reasons is still refused."""
     import wl_git
@@ -1697,19 +1706,92 @@ def commit_ref_problem(root, text, transcript=None):
     for reason in reasons:
         if reason not in NOCOMMIT_REASONS:
             return ("reason", reason)
-    repos = [str(root), *(os.path.join(str(root), p) for p, _b in wl_git.submodules(str(root)))]
+    # A submodule path with no `.git` is not checked out and holds no commit to name; git run inside it would answer for the console instead.
+    repos = [str(root)]
+    repos += [
+        os.path.join(str(root), p)
+        for p, _b in wl_git.submodules(str(root))
+        if os.path.exists(os.path.join(str(root), p, ".git"))
+    ]
+    landing = _local_landing_record(root)
+    branch = landing["branch"] if landing else ""
     for sha in shas:
         found = False
         for repo in repos:
-            rc, _out, _err = wl_git.run_git(
-                ["rev-parse", "--verify", "--quiet", "%s^{commit}" % sha], cwd=repo
-            )
-            if rc == 0 and wl_git.is_ancestor(repo, sha, "HEAD"):
+            landed, why = _commit_ref_landed(wl_git, repo, sha, branch)
+            if why:
+                return ("probe", "%s: %s" % (sha, why))
+            if landed:
                 found = True
                 break
         if not found:
             return ("unresolved", sha)
     return None
+
+
+def _commit_ref_tips(wl_git, repo, branch):
+    """([ref], "") naming every tip a commit of `repo` may be an ancestor of: HEAD, then `COMMIT_REF_EXTRA_REFS` and `refs/heads/<branch>` (the landing record's branch, "" for none) where `repo` holds them. A ref `show-ref` says is absent (exit 1) is skipped, since a repository with no origin/main or no landing branch holds nothing there; any other failing exit is ([], why)."""
+    tips = ["HEAD"]
+    wanted = [*COMMIT_REF_EXTRA_REFS, *(["refs/heads/%s" % branch] if branch else [])]
+    for ref in wanted:
+        rc, _out, err = wl_git.run_git(["show-ref", "--verify", "--quiet", ref], cwd=repo)
+        if rc == 0:
+            tips.append(ref)
+        elif rc != 1:
+            return [], "git show-ref %s in %s exited %d: %s" % (ref, repo, rc, err[:200])
+    return tips, ""
+
+
+def _commit_ref_landed(wl_git, repo, sha, branch):
+    """(landed, why) for `sha` in `repo`, the R20261123.6 routes tried cheapest first. `why` is "" unless a probe failed, and then names the git call, where it ran, its exit code and its stderr; the caller refuses on it and never reads it as `not landed`.
+
+    `rev-parse --verify --quiet` exits 1 for an object `repo` does not hold (the sha lives in another repository, or nowhere), which is an answer; every other failing exit is a failed probe."""
+    rc, full, err = wl_git.run_git(
+        ["rev-parse", "--verify", "--quiet", "%s^{commit}" % sha], cwd=repo
+    )
+    if rc == 1:
+        return False, ""
+    if rc != 0 or not full:
+        return False, "git rev-parse %s in %s exited %d: %s" % (sha, repo, rc, err[:200])
+    tips, why = _commit_ref_tips(wl_git, repo, branch)
+    if why:
+        return False, why
+    for tip in tips:
+        held = wl_git.is_ancestor(repo, full, tip)
+        if held:
+            return True, ""
+        if held is None:
+            return False, "git merge-base --is-ancestor %s %s in %s could not run" % (
+                full[:12],
+                tip,
+                repo,
+            )
+    rc, out, err = wl_git.run_git(
+        ["log", "-F", "--grep=" + COMMIT_REF_PICKED_LINE % full, "--format=%H", "-n", "1", "HEAD"],
+        cwd=repo,
+    )
+    if rc != 0:
+        return False, "git log --grep for its cherry-picked line in %s exited %d: %s" % (
+            repo,
+            rc,
+            err[:200],
+        )
+    if out:
+        return True, ""
+    # `git cherry HEAD <sha> <parent>` judges this one commit: `- <sha>` when HEAD holds its patch, `+ <sha>` when it does not. A root commit has no parent to limit by, and its history is then itself alone.
+    rc, parents, err = wl_git.run_git(["rev-list", "--parents", "-n", "1", full], cwd=repo)
+    if rc != 0 or not parents:
+        return False, "git rev-list --parents %s in %s exited %d: %s" % (
+            full[:12],
+            repo,
+            rc,
+            err[:200],
+        )
+    limit = parents.split()[1:2]
+    rc, out, err = wl_git.run_git(["cherry", "HEAD", full, *limit], cwd=repo)
+    if rc != 0:
+        return False, "git cherry HEAD %s in %s exited %d: %s" % (full[:12], repo, rc, err[:200])
+    return ("- %s" % full) in out.splitlines(), ""
 
 
 def citable_tick_evidence(root, text):

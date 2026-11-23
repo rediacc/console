@@ -320,3 +320,139 @@ def test_r1_control_an_issue_beside_a_commit_ticks(wl):
     )
     assert got.rc == 0, got.err[:400]
     assert state_of(wl, item) == "closed"
+
+
+# ---- R20261123.6: a commit landed elsewhere, or landed as a copy, is a real commit ---------------
+
+
+def _commit(fix, rel: str, text: str, message: str = "c") -> str:
+    (fix.proj / rel).write_text(text, encoding="utf-8")
+    fix.git("add", "--", rel)
+    done = fix.git("commit", "-qm", message)
+    assert done.returncode == 0, done.stderr[:300]
+    return head(fix.proj)
+
+
+def _side_commit(fix, rel: str, text: str) -> str:
+    """A commit on a throwaway branch, then back on the starting branch: real, and no ancestor of HEAD."""
+    base = fix.git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    done = fix.git("checkout", "-q", "-b", "side-%s" % rel.replace(".", "-"))
+    assert done.returncode == 0, done.stderr[:300]
+    sha = _commit(fix, rel, text)
+    fix.git("checkout", "-q", base)
+    assert head(fix.proj) != sha
+    return sha
+
+
+def _landing_tree(fix, branch: str = "1104-1"):
+    """A linked tree on `branch` holding one commit HEAD does not, as `./run.sh worktree landing` leaves it."""
+    land = fix.base / "landing"
+    done = fix.git("worktree", "add", "-q", "-b", branch, str(land), "HEAD")
+    assert done.returncode == 0, done.stderr[:300]
+    (land / "landed.txt").write_text("l\n", encoding="utf-8")
+    for args in (("add", "--", "landed.txt"), ("commit", "-qm", "landing work")):
+        subprocess.run(["git", *args], cwd=str(land), check=True, capture_output=True)
+    return land, head(land)
+
+
+def _tick_commit(fix, sha: str):
+    item = added(fix)
+    return item, fix.cli("--tick", wlfix.ME, item, "commit:%s pytest rc=0" % sha)
+
+
+def test_r6_a_landing_only_commit_ticks(wl):
+    """#876420de: a commit in the landing tree, on the landing record's branch, not yet on HEAD."""
+    wl.reg_repo()
+    land, sha = _landing_tree(wl)
+    (wl.proj / ".git" / "rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-1", "path": str(land)}), encoding="utf-8"
+    )
+    item, got = _tick_commit(wl, sha)
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"
+
+
+def test_r6_inverse_a_landing_commit_with_no_landing_record_is_refused(wl):
+    """CONTROL: the same branch with no landing record binding it accepts nothing."""
+    wl.reg_repo()
+    _land, sha = _landing_tree(wl)
+    _item, got = _tick_commit(wl, sha)
+    assert got.rc != 0, got.out[:300]
+    assert last_refusal(wl)["why"] == "no-commit-ref"
+
+
+def test_r6_a_main_only_hotfix_ticks(wl):
+    """#9a4823c8: the operator's hotfix on origin/main, which the development branch does not hold."""
+    wl.reg_repo()
+    sha = _side_commit(wl, "hotfix.txt", "h\n")
+    wl.git("update-ref", "refs/remotes/origin/main", sha)
+    item, got = _tick_commit(wl, sha)
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"
+
+
+def test_r6_a_pre_rebase_commit_ticks_by_its_patch_equivalent(wl):
+    """#b07162cf: the sha a rebase rewrote; HEAD holds the same patch under a new sha."""
+    wl.reg_repo()
+    old = _side_commit(wl, "rebased.txt", "r\n")
+    _commit(wl, "unrelated.txt", "u\n")
+    done = wl.git("cherry-pick", old)
+    assert done.returncode == 0, done.stderr[:300]
+    assert head(wl.proj) != old
+    item, got = _tick_commit(wl, old)
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"
+
+
+def test_r6_a_commit_named_by_a_cherry_picked_line_on_head_ticks(wl):
+    """A pick resolved by hand differs in patch, so only its `-x` line names the original."""
+    wl.reg_repo()
+    _commit(wl, "a.txt", "base\n")
+    old = _side_commit(wl, "a.txt", "lease\n")
+    _commit(wl, "a.txt", "other\n")
+    _commit(wl, "a.txt", "resolved\n", "pick\n\n(cherry picked from commit %s)" % old)
+    item, got = _tick_commit(wl, old)
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"
+
+
+def test_r6_inverse_a_line_naming_another_sha_lands_nothing(wl):
+    """CONTROL: the `-x` line must name THIS commit; a resolved pick of a different patch is still refused."""
+    wl.reg_repo()
+    _commit(wl, "a.txt", "base\n")
+    old = _side_commit(wl, "a.txt", "lease\n")
+    _commit(wl, "a.txt", "other\n", "pick\n\n(cherry picked from commit %s)" % ("f" * 40))
+    _item, got = _tick_commit(wl, old)
+    assert got.rc != 0, got.out[:300]
+    assert "commit:%s is not a commit reachable from HEAD" % old in got.err, got.err[:400]
+
+
+def test_r6_inverse_a_random_sha_still_fails_with_every_route_present(wl):
+    """CONTROL: origin/main, a landing branch and a `-x` line all exist, and a random 40-hex sha still fails."""
+    wl.reg_repo()
+    wl.git("update-ref", "refs/remotes/origin/main", _side_commit(wl, "hotfix.txt", "h\n"))
+    land, _sha = _landing_tree(wl)
+    (wl.proj / ".git" / "rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-1", "path": str(land)}), encoding="utf-8"
+    )
+    _commit(wl, "x.txt", "x\n", "pick\n\n(cherry picked from commit %s)" % ("e" * 40))
+    fake = "3c1f9a0e7b2d4c6a8e0f1b3d5c7a9e1f2b4d6c8a"
+    _item, got = _tick_commit(wl, fake)
+    assert got.rc != 0, got.out[:300]
+    assert "commit:%s is not a commit reachable from HEAD" % fake in got.err, got.err[:400]
+    assert last_refusal(wl)["why"] == "no-commit-ref"
+
+
+def test_r6_a_probe_that_cannot_run_is_named_never_read_as_absent(wl):
+    """A ref git lists but cannot walk (origin/main naming a missing object): the check refuses and names the failed probe, rather than reading the failure as `not landed` or folding it into a pass."""
+    wl.reg_repo()
+    off = _side_commit(wl, "off.txt", "o\n")
+    ref = wl.proj / ".git" / "refs" / "remotes" / "origin" / "main"
+    ref.parent.mkdir(parents=True, exist_ok=True)
+    ref.write_text("%s\n" % ("1" * 40), encoding="utf-8")
+    item, got = _tick_commit(wl, off)
+    assert got.rc != 0, got.out[:300]
+    assert "could not be checked" in got.err, got.err[:600]
+    assert "refs/remotes/origin/main" in got.err, got.err[:600]
+    assert last_refusal(wl)["why"] == "no-commit-ref"
+    assert state_of(wl, item) == "open"
