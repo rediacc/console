@@ -40,3 +40,7 @@
 {"at": "2026-11-22T08:51:08Z", "band": "early", "ev": "tracked", "item": "b63f151f", "session": "ace763dd"}
 {"agent": "ab915bcf07b703610", "at": "2026-11-22T11:24:33Z", "band": "early", "ev": "dispatched", "item": "b63f151f", "session": "ace763dd"}
 {"at": "2026-11-22T11:39:41Z", "band": "early", "ev": "saved", "item": "b63f151f", "plan": "agent/plans/PLAN-stop-hook-retro-20261122.md", "session": "ace763dd", "tasks_open": 3, "tasks_total": 3}
+{"at": "2026-11-23T03:24:35Z", "band": "late", "epoch": 2, "ev": "ordered", "from_off": 13815810, "session": "ace763dd", "state_md_at": "2026-11-23T03:24:31Z", "threshold": 967000, "to_off": 46126102, "transcript": "/home/developer/.claude/projects/-home-developer-console/ace763dd-04fa-45b1-aa44-0da57b775268.jsonl", "usage": 949531}
+{"at": "2026-11-23T03:24:48Z", "band": "late", "ev": "tracked", "item": "3b9c59de", "session": "ace763dd"}
+{"at": "2026-11-23T03:33:52Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "fee07197", "state_md_at": "2026-11-23T03:33:51Z", "threshold": 967000, "to_off": 8447420, "transcript": "/home/developer/.claude/projects/-home-developer-console/fee07197-2605-4070-bc9b-20daa3d2b318.jsonl", "usage": 763647}
+{"at": "2026-11-23T03:34:02Z", "band": "early", "ev": "tracked", "item": "a09c08fd", "session": "fee07197"}

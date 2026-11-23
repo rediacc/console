@@ -52,7 +52,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 64 plans done, 1105 of 1415 boxes done (78%).
+Promoted: 6 of 65 plans done, 1105 of 1423 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -120,6 +120,7 @@ Promoted: 6 of 64 plans done, 1105 of 1415 boxes done (78%).
 | 62 | PLAN-weekly-lessons.md | 1/8 | 7 open |
 | 63 | PLAN-tooling-speed.md | 0/8 | 8 open |
 | 64 | PLAN-tooling-code-reduction.md | 1/11 | 10 open |
+| 65 | PLAN-stop-hook-retro-20261123.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -186,6 +187,7 @@ Promoted: 6 of 64 plans done, 1105 of 1415 boxes done (78%).
 62. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
 63. agent/plans/PLAN-tooling-speed.md -- operator /ask 2026-11-22 (#bc8eb843): two tooling plans, speed first; Stop hook reads once, run_stop registry, profiler fixes, in-process lifecycle members, watchdog repeat-failure rule, wrangler-dev-e2e CI lane
 64. agent/plans/PLAN-tooling-code-reduction.md -- operator /ask 2026-11-22 (#bc8eb843): migration scaffolding removal, one declaration per gate (first), one env registry, gate tables, hook write analyser and rule tables, guard fire ledger and retirement report; replaces PLAN-deletion-budget.md
+65. agent/plans/PLAN-stop-hook-retro-20261123.md -- standing procedure PLAN-stop-hook-continuity.md P3.1 (band late, session ace763dd): landing-stack blocks while promote refuses, hooks of the onto base during a rebase, STATE.md voiding push receipts, commit-ref reachability, landing-cut leases
 
 ## Generated
 
