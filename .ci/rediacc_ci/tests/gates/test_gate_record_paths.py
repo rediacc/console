@@ -552,3 +552,31 @@ def test_a_session_hand_over_commit_advances_the_receipt(monkeypatch, tmp_path):
     assert "outside the record set" in (worlds["before"]["refusal"] or ""), worlds["before"]
     assert STATE_PATH in worlds["before"]["refusal"]
     assert "outside the record set" in (worlds["root-state"]["refusal"] or ""), worlds["root-state"]
+
+
+@pytest.mark.parametrize(
+    "args", [("--update",), ("--records-only", "--write-baseline"), ("--policy",)]
+)
+def test_an_unknown_or_incomplete_argument_is_refused_by_name(args):
+    """`npm run check:ci-record-paths -- --update` once exited 0 and did nothing: the script has no --update. An argument the gate does not know is a usage error (rc 2) naming the argument and the flags it accepts, never a silent green."""
+    result = _gate(*args)
+    assert result.rc == 2, harness.render_output(result)
+    offending = args[-1]
+    assert offending in result.err, harness.render_output(result)
+    for accepted in (
+        "--selftest",
+        "--records-only",
+        "--widths-only",
+        "--policy",
+        "--lock",
+        "--widths",
+    ):
+        assert accepted in result.err, harness.render_output(result)
+    assert "record-paths: OK" not in result.out, harness.render_output(result)
+
+
+def test_the_bare_run_still_passes_on_the_real_tree():
+    """The silent control for the refusal above: the no-argument run, as package.json drives it, judges both modes and passes."""
+    result = _gate()
+    assert result.rc == 0, harness.render_output(result)
+    assert "record-paths: OK" in result.out, harness.render_output(result)

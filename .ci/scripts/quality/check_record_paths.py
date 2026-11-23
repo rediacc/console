@@ -17,7 +17,7 @@ This still OVER-counts on purpose. A false reader costs one extra gate at an adv
 THE SECOND MODE (PF9): FIXED WIDTHS. The 2026-10-05 ruling removed every static worker count: a parallel tool sizes itself from the cores granted at launch. What remains fixed is request concurrency against a remote API (`xargs -P 8` of R2 copies, eight `gh api` calls), which is not a core count. Each such width is listed in .ci/policy/fixed-widths.json with the remote limit it respects, and this mode refuses a literal width that is not listed, a
 listed width that is gone or changed, and any core cap (`min(8, os.cpu_count())`) at all: a core cap is never an I/O width, so it cannot be listed.
 
-Exit 0 clean, 1 on a finding, 2 when a control fails or the gate cannot see its inputs (zero gates, zero records, zero scanned files).
+Exit 0 clean, 1 on a finding, 2 when a control fails, the gate cannot see its inputs (zero gates, zero records, zero scanned files), or an argument is unknown or lacks its value.
 
 ---- gate ----
 kind: step
@@ -1556,6 +1556,21 @@ def selftest() -> int:
         python_widths("a.py", 'DEFAULT_VM_WORKERS = "11"\n'),
         [],
     )
+    tally.check(
+        "args: --update is refused by name",
+        "'--update'" in parse_args(["--update"])[2],
+        True,
+    )
+    tally.check(
+        "args: a valued flag with no path is refused",
+        "--lock needs a path" in parse_args(["--records-only", "--lock"])[2],
+        True,
+    )
+    tally.check(
+        "args: the known flags parse",
+        parse_args(["--records-only", "--policy", "p.json"]),
+        ({"--records-only"}, {"--policy": "p.json"}, ""),
+    )
     tally.check("width: jq -n is not a width", python_widths("a.py", 'A = ["jq", "-n", "2"]\n'), [])
     tally.check(
         "width: width 1 (serial) is not a width",
@@ -1777,16 +1792,38 @@ def run_widths(root: pathlib.Path, widths_path: pathlib.Path) -> int:
     return 0
 
 
-def _flag(argv: list[str], name: str) -> str | None:
-    if name in argv:
-        k = argv.index(name)
-        if k + 1 < len(argv):
-            return argv[k + 1]
-    return None
+# Every argument this gate takes. Anything else is a usage error (rc 2), never ignored: `npm run check:ci-record-paths -- --update` once exited 0 having done nothing, since the gate has no --update.
+SWITCHES = ("--selftest", "--records-only", "--widths-only")
+VALUED = ("--policy", "--lock", "--widths")
+
+
+def parse_args(argv: list[str]) -> tuple[set[str], dict[str, str], str]:
+    """`(switches, values, problem)`: the switches present, each valued flag mapped to its value, and `problem` names the first unknown argument or valued flag with no value, "" when the arguments parse."""
+    accepted = "accepted: %s, and %s <path>" % (", ".join(SWITCHES), " <path>, ".join(VALUED))
+    switches: set[str] = set()
+    values: dict[str, str] = {}
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg in SWITCHES:
+            switches.add(arg)
+        elif arg in VALUED:
+            if k + 1 >= len(argv) or argv[k + 1].startswith("--"):
+                return switches, values, "%s needs a path (%s)" % (arg, accepted)
+            k += 1
+            values[arg] = argv[k]
+        else:
+            return switches, values, "unknown argument %r (%s)" % (arg, accepted)
+        k += 1
+    return switches, values, ""
 
 
 def main(argv: list[str]) -> int:
-    if "--selftest" in argv:
+    switches, values, problem = parse_args(argv)
+    if problem:
+        print("record-paths: %s" % problem, file=sys.stderr)
+        return 2
+    if "--selftest" in switches:
         return selftest()
     # CONTROLS FIRST, every run: for a `.py` gate the registry runs the bare path (scripts/lib/gate-header.ts `derivedRun`), so a `--selftest &&` leg in package.json is not where the controls live. An instrument that cannot fire exits 2 before it judges the tree.
     if selftest() != 0:
@@ -1797,11 +1834,11 @@ def main(argv: list[str]) -> int:
         return 2
     root = paths.repo_root()
     # `--policy`, `--lock` and `--widths` exist for the gate test's real-tree controls, which plant into COPIES of these files rather than into the shared tree.
-    policy_path = pathlib.Path(_flag(argv, "--policy") or root / POLICY_REL)
-    lock_path = pathlib.Path(_flag(argv, "--lock") or root / LOCK_REL)
-    widths_path = pathlib.Path(_flag(argv, "--widths") or root / WIDTHS_REL)
-    rc_records = 0 if "--widths-only" in argv else run_records(root, policy_path, lock_path)
-    rc_widths = 0 if "--records-only" in argv else run_widths(root, widths_path)
+    policy_path = pathlib.Path(values.get("--policy") or root / POLICY_REL)
+    lock_path = pathlib.Path(values.get("--lock") or root / LOCK_REL)
+    widths_path = pathlib.Path(values.get("--widths") or root / WIDTHS_REL)
+    rc_records = 0 if "--widths-only" in switches else run_records(root, policy_path, lock_path)
+    rc_widths = 0 if "--records-only" in switches else run_widths(root, widths_path)
     return max(rc_records, rc_widths)
 
 
