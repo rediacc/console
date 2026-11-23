@@ -241,7 +241,7 @@ def stratified_sample(cases):
 
     The pick is the stratum's lowest payload, so it is the same on every run and every host, and a payload added to the suite moves the sample only when it sorts first in its stratum. Returned in stratum order.
     """
-    strata = {}
+    strata: dict[tuple[str, str], tuple] = {}
     for row in cases:
         guard, payload, _label, rc = row[:4]
         key = (guard, rc)

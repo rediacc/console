@@ -534,7 +534,7 @@ def controls(ws: Any, cp) -> list[str]:
         saved_gh = sys.modules.get("wl_gh")
         gh_answer: list = [(None, "")]
         fake_gh = type(sys)("wl_gh")
-        fake_gh.call = lambda *_a, **_k: gh_answer[0]
+        fake_gh.__dict__["call"] = lambda *_a, **_k: gh_answer[0]
         sys.modules["wl_gh"] = fake_gh
         try:
             outcomes: list = []

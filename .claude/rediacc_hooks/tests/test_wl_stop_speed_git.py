@@ -365,15 +365,22 @@ def rec(n):
     return {"v": 1, "shape": "py:x", "cpu_ms": n, "rss_kb": n}
 
 
+def fold(prof) -> dict:
+    """`wl_resprofile.fold`, asserting it folded: `None` means the store was unreachable, which fails the test rather than reading as an empty rollup."""
+    roll = wl_resprofile.fold(prof)
+    assert roll is not None
+    return roll
+
+
 def test_the_fold_reads_from_its_byte_cursor(prof):
     t0, _t1 = prof
     for n in range(3):
         wl_resprofile.append(rec(n), prof)
-    roll = wl_resprofile.fold(prof)
+    roll = fold(prof)
     assert roll["shapes"]["py:x"]["n"] == 3
     assert roll["cursor_bytes"][str(t0)] == t0.stat().st_size
     wl_resprofile.append(rec(9), prof)
-    roll = wl_resprofile.fold(prof)
+    roll = fold(prof)
     assert roll["shapes"]["py:x"]["n"] == 4
     assert roll["folded_lines"] == 1
 
@@ -383,11 +390,11 @@ def test_a_torn_last_line_waits_for_the_next_fold(prof):
     wl_resprofile.append(rec(1), prof)
     with t0.open("ab") as fh:
         fh.write(b'{"v":1,"shape":"py:x"')
-    roll = wl_resprofile.fold(prof)
+    roll = fold(prof)
     assert roll["shapes"]["py:x"]["n"] == 1
     with t0.open("ab") as fh:
         fh.write(b',"cpu_ms":2,"rss_kb":2}\n')
-    assert wl_resprofile.fold(prof)["shapes"]["py:x"]["n"] == 2
+    assert fold(prof)["shapes"]["py:x"]["n"] == 2
 
 
 def test_a_line_cursor_converts_without_folding_twice(prof):
@@ -398,7 +405,7 @@ def test_a_line_cursor_converts_without_folding_twice(prof):
         json.dumps({"format": 1, "shapes": {"py:x": {"n": 2}}, "cursor": {str(t0): 2}}),
         encoding="utf-8",
     )
-    roll = wl_resprofile.fold(prof)
+    roll = fold(prof)
     assert roll["shapes"]["py:x"]["n"] == 4
     assert "cursor" not in roll
 
