@@ -22,3 +22,4 @@ commands.repo.prune.class.  # BLOCKER: repo-prune.ts renders t(`commands.repo.pr
 
 docs.  # BLOCKER: the docs.* namespace is the www cli-docs generator's private vocabulary (packages/www/scripts/generate-cli-docs.js), not CLI t(); it reads docs.frontmatter directly and emits docs.* via runtime-built {{t:cli.docs.*}} the committed markdown may not fully enumerate, so a static CLI scan cannot see these references.
 
+commands.proxyBlocked.  # BLOCKER: generate-cli-contract.ts resolves proxyBlockedReasonKey at generation time from PROXY_EXCLUSIONS and the plane reasons, so the leaves are never static t() literals (CS4, 2026-11-23)
