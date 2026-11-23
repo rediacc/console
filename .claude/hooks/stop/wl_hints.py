@@ -335,12 +335,16 @@ def pending_note(session_id, rows):
     """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan). The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
     me8 = S.agent_session_slug(session_id)
     epoch = 0
+    epoch_problem = ""
     try:
         import wl_retro
 
         epoch = int(wl_retro.ctx().load_state(session_id).get("epoch") or 0)
-    except Exception:
-        epoch = 0
+    except Exception as exc:
+        epoch_problem = " The context epoch could not be read (%s: %s), so epoch 0 is assumed." % (
+            type(exc).__name__,
+            exc,
+        )
     ready = clusters(rows)
     note = M.N_HINT_PROPOSALS_PENDING % {
         "n": len(rows),
@@ -353,4 +357,4 @@ def pending_note(session_id, rows):
             "k": len(ready),
             "families": ", ".join("%s (%d)" % (fam, len(ids)) for fam, ids in ready),
         }
-    return note
+    return note + epoch_problem

@@ -127,8 +127,13 @@ def lease_of(record: dict) -> str:
     return answer[len(LEASE_PREFIX) :] if answer.startswith(LEASE_PREFIX) else ""
 
 
+# Why a lease's state could not be read, by lease id: lease_landed records it, `stop_findings` names it in the land text it already emits. Per process, which is per stop.
+UNREADABLE: dict[str, str] = {}
+
+
 def lease_landed(root, lease_id: str) -> bool | None:
     """True when the lease holds nothing to land (its record stays but `worktree gc` removed the tree, which GC does only for a landed one; or no dirty path and no unlanded commit), False when it does, None when it cannot be read or no such lease is known. Read through wl_worktrees, the reading the `worktree-unlanded` check uses."""
+    UNREADABLE.pop(lease_id, None)
     try:
         import wl_worktrees
 
@@ -145,7 +150,8 @@ def lease_landed(root, lease_id: str) -> bool | None:
         if "doubt" in got:
             return None
         return not (got.get("dirty") or got.get("commits"))
-    except Exception:
+    except Exception as exc:
+        UNREADABLE[lease_id] = "%s: %s" % (type(exc).__name__, exc)
         return None
 
 
@@ -165,9 +171,13 @@ def stop_findings(records: dict[str, dict], role: str, landed=None, me8: str = "
             lease = lease_of(rec)
             if not lease:
                 continue
-            if landed is not None and landed(lease) is True:
+            state = landed(lease) if landed is not None else False
+            if state is True:
                 continue
-            out.append((KEY_LAND, True, land_text(rec, lease, me8)))
+            text = land_text(rec, lease, me8)
+            if state is None and lease in UNREADABLE:
+                text += "\n  (the lease's state could not be read: %s)" % UNREADABLE[lease]
+            out.append((KEY_LAND, True, text))
     return out
 
 

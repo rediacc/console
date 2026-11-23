@@ -87,15 +87,18 @@ def next_plan(root, nxt=None, exclude=(), order_ctx=None):
         position = "prerequisite of %s" % needs if needs else "prerequisite"
     if order_ctx is None:
         order_ctx = PO.context(root)[0]
+    count_problem = ""
     try:
         n_open = len(R.open_boxes(text))
-    except Exception:
+    except Exception as exc:
         n_open = 0
+        count_problem = "%s: %s" % (type(exc).__name__, exc)
     return (
         {
             "rel": nxt,
             "status": status.group(1) if status else "",
             "open": n_open,
+            "count_problem": count_problem,
             "position": position,
             "first": E.first_box(root, nxt),
             "tag": PO.plan_tag(order_ctx, nxt),
@@ -126,6 +129,11 @@ def render(candidate, reason, stats):
         "  First box: %s" % box,
         "  It starts after the live PR merges (one plan per PR); loop-next names the commands then.",
     ]
+    if candidate.get("count_problem"):
+        lines.append(
+            "  Its open boxes could not be counted (%s), so the 0 above is unknown."
+            % candidate["count_problem"]
+        )
     if candidate.get("problem"):
         lines.append("  Its dependencies: %s" % candidate["problem"])
     lines.append(

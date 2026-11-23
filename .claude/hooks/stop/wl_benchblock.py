@@ -17,6 +17,7 @@ Advisory: always exits 0 and never blocks the tool call that already ran.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import json
 import pathlib
@@ -182,6 +183,7 @@ def render(text):
 def main(stdin=None, stdout=None, src=None):
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
+    raw = ""
     try:
         raw = stdin.read()
         if not _maybe(raw):
@@ -213,8 +215,18 @@ def main(stdin=None, stdout=None, src=None):
         lines = notes(cmd, out, src)
         if lines:
             stdout.write(render("\n".join(lines)))
-    except Exception:
-        pass
+    except Exception as exc:
+        # A hook never raises into the tool call, but a bench-shaped output (the same prefilter every arm above uses) that the hint failed on is named, not dropped.
+        if _maybe(raw):
+            with contextlib.suppress(Exception):
+                stdout.write(
+                    render(
+                        "bench-block: a bench refusal may be in this output, but the hint failed "
+                        "(%s: %s). A bench 403 is the IP allowlist or the API's own refusal, never a "
+                        "rate limit; see .ci/rediacc_ci/ops/bench_access.py."
+                        % (type(exc).__name__, exc)
+                    )
+                )
     return 0
 
 
