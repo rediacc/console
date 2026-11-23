@@ -4659,6 +4659,22 @@
         "f8de6e03"
       ]
     },
+    "agent/plans/PLAN-writers-now-cadence.md": {
+      "status": "approved",
+      "owner": "ace763dd",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "0b762e5b",
+        "4ee421d9",
+        "6371c3a2",
+        "bde91ce4",
+        "c0044c0c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-www-bundle-determinism.md": {
       "status": "compacted",
       "owner": "74de73ca",
