@@ -1179,22 +1179,22 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 1,
+      "open": 4,
+      "done": 7,
       "open_sigs": [
-        "2ce1fc59",
-        "34e14845",
         "70fb8afa",
-        "92222a65",
-        "acade276",
         "c0384c17",
-        "d279e26a",
         "d4e548d5",
-        "f73618ef",
-        "f99c01b1"
+        "f73618ef"
       ],
       "done_sigs": [
-        "131deecd"
+        "131deecd",
+        "2ce1fc59",
+        "34e14845",
+        "92222a65",
+        "acade276",
+        "d279e26a",
+        "f99c01b1"
       ]
     },
     "agent/plans/PLAN-console-contract-semantics.md": {
@@ -2090,27 +2090,27 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 2,
+      "open": 11,
+      "done": 5,
       "open_sigs": [
         "017dfba2",
         "01dc1449",
-        "1edaa80d",
         "31075514",
-        "3387434e",
         "3ef51f1f",
         "48debf88",
         "63d70a6e",
         "6b737485",
         "764a387b",
         "8c5557a5",
-        "95f3be45",
         "bca87be6",
         "c0384c17"
       ],
       "done_sigs": [
+        "1edaa80d",
         "1f9a8391",
-        "45257dd1"
+        "3387434e",
+        "45257dd1",
+        "95f3be45"
       ]
     },
     "agent/plans/PLAN-free-license.md": {

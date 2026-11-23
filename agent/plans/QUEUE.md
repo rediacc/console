@@ -41,21 +41,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 622 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 26 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
+  - epic 79b7e92e, no plan, 635 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 28 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 1 live (session ace763dd): worker:a66503ee9496e45ae.
-- Leased items: 2: #73b32419 (worker:bad7z4t8h, ace763dd), #e764b2a8 (worker:a66503ee9496e45ae, ace763dd).
+- Writers: 5 live (session ace763dd): worker:a5c9739899b8ccae2, worker:a5c03c0406038b51a, worker:a9dadf9d6b93f1e2c, worker:a009fd200f7f1a872, worker:a0bdbe36d055f71a6.
+- Leased items: 7: #3172f6b3 (worker:a009fd200f7f1a872, ace763dd), #6ac78a2f (worker:afb93bcd5c198652d, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #921c7c4e (worker:a5c9739899b8ccae2, ace763dd), #bdd23e50 (worker:afb93bcd5c198652d, ace763dd), #da3e7457 (worker:a0bdbe36d055f71a6, ace763dd), #e205396a (worker:a5c03c0406038b51a, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 98 plans done, 1241 of 1872 boxes done (66%).
+Promoted: 10 of 98 plans done, 1250 of 1872 boxes done (66%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -126,7 +126,7 @@ Promoted: 10 of 98 plans done, 1241 of 1872 boxes done (66%).
 | 65 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 66 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
 | 67 | PLAN-console-contract-semantics.md | 10/15 | 5 open |
-| 68 | PLAN-console-confirm-stepup.md | 1/11 | 10 open |
+| 68 | PLAN-console-confirm-stepup.md | 7/11 | 4 open |
 | 69 | PLAN-console-audit-r2.md | 1/13 | 12 open |
 | 70 | PLAN-console-run-index.md | 1/15 | 14 open |
 | 71 | PLAN-console-command-line.md | 3/16 | 13 open |
@@ -149,7 +149,7 @@ Promoted: 10 of 98 plans done, 1241 of 1872 boxes done (66%).
 | 88 | PLAN-rmcp-docs.md | 1/20 | 19 open |
 | 89 | PLAN-stripe-disable.md | 4/8 | 4 open |
 | 90 | PLAN-forensics-capture.md | 7/13 | 6 open |
-| 91 | PLAN-forensics-shipping.md | 2/16 | 14 open |
+| 91 | PLAN-forensics-shipping.md | 5/16 | 11 open |
 | 92 | PLAN-forensics-detection.md | 5/15 | 10 open |
 | 93 | PLAN-forensics-investigation.md | 0/17 | 17 open |
 | 94 | PLAN-forensics-alerts-notices.md | 1/15 | 14 open |

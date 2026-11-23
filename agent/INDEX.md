@@ -512,7 +512,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 119 | 12 | 1 | 20785 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
-| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 116 | 10 | 1 | 21354 |
+| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 122 | 4 | 7 | 22218 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 132 | 5 | 10 | 25878 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68133 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19237 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 131 | 17 | 0 | 30060 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
-| `agent/plans/PLAN-forensics-shipping.md` | approved | 129 | 14 | 2 | 32801 |
+| `agent/plans/PLAN-forensics-shipping.md` | approved | 132 | 11 | 5 | 33786 |
 | `agent/plans/PLAN-free-license.md` | approved | 126 | 2 | 11 | 31547 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-ghcr-registry-cleanup.md` | proposed | 54 | 7 | 0 | 13059 |
