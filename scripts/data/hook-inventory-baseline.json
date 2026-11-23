@@ -10,6 +10,7 @@
   ".claude/rediacc_hooks/dispatch.py",
   ".claude/rediacc_hooks/guards/__init__.py",
   ".claude/rediacc_hooks/guards/_backup_push.py",
+  ".claude/rediacc_hooks/guards/_harness.py",
   ".claude/rediacc_hooks/guards/_hookpath.py",
   ".claude/rediacc_hooks/guards/_push_receipts.py",
   ".claude/rediacc_hooks/guards/_repo_scope.py",
