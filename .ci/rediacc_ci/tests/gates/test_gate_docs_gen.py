@@ -212,6 +212,42 @@ def test_a_perturbed_row_is_reported_as_drift(gate):
     gate.log_pass("B. verify on the real tree is unaffected and still green")
 
 
+def test_an_untracked_new_file_under_a_provider_scope_is_reported_as_drift(gate):
+    """B2. Finding 9009b27c: verify was green while a new file was untracked and red once it was staged.
+
+    The commit-policy hook renders against the commit's own tree, where a new file is staged, so verify must give the same answer for an untracked file. The control plants one untracked, ignored-by-nothing hook file (a row of the hook-closure table), requires DRIFT naming `doc-registry.md`, and removes it in a `finally`. The generator has no seam for another ROOT (it derives ROOT from its own location), so this is the one case that briefly adds a file to the real tree; the file is asserted gone afterwards.
+    """
+    require_inputs(gate)
+    probe = ROOT / ".claude" / "hooks" / "context" / "zz_untracked_probe.py"
+    if probe.exists():
+        gate.log_fail("%s already exists; the control would be about someone else's file" % probe)
+    probe.write_text("# untracked probe planted by test_gate_docs_gen\n", encoding="utf-8")
+    try:
+        result = gen()
+    finally:
+        probe.unlink()
+    if result.rc == 0:
+        gate.log_fail(
+            "CONTROL DID NOT FIRE: verify passed while an untracked hook file was on disk"
+        )
+    gate.assert_contains(
+        result.err, "DRIFT", "verify failed but never said DRIFT: %s" % result.err.strip()
+    )
+    gate.assert_contains(
+        result.err, "doc-registry.md", "the drift report did not name doc-registry.md"
+    )
+    gate.assert_contains(
+        result.err, "zz_untracked_probe.py", "the drift report did not name the untracked file"
+    )
+    gate.log_pass("B2. an untracked new file under a provider's scope is reported as DRIFT")
+    if probe.exists():
+        gate.log_fail("the probe file was not removed")
+    restored = gen()
+    if restored.rc != 0:
+        gate.log_fail("verify is red after the probe was removed: %s" % restored.err.strip())
+    gate.log_pass("B2. verify is green again once the probe is gone")
+
+
 def test_two_write_runs_are_byte_identical(gate):
     """C. Determinism AND idempotence, in one measurement.
 
