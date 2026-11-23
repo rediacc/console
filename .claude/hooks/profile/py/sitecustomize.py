@@ -14,7 +14,7 @@ cwd is outside the repo. `WORKLIST_PROFILE=off` disables it. A root that resolve
 
 ONE RECORD PER PROCESS, ONE PER CHILD. `_WL_SITEPROFILE` names the pid of the process that armed it: `<pid>` when this file armed it, `super:<pid>` when wl_resprofile (the richer recorder a hook process imports through wl_core) took it over. The environment is inherited, so a marker naming ANOTHER pid is a parent's and arms this process anew; the marker stands this process down only when it names this pid. A marker without a pid made every child of a profiled Python skip its row (agent/plans/PLAN-tooling-speed.md D6).
 
-TWO WAYS IN. `bash_env.sh` prepends this directory to PYTHONPATH, and a command that sets its own PYTHONPATH (`PYTHONPATH=.ci python3 -m ...`) replaces it. So the same setup also writes a `.pth` loader into the user site directory (`../pth_setup.sh`, `../pth_loader.py`), which runs this file by path for a cwd under a registered repo. A process reached both ways is armed once: the second arrival finds its own pid in the marker.
+TWO WAYS IN. `bash_env.sh` prepends this directory to PYTHONPATH, and a command that sets its own PYTHONPATH (`PYTHONPATH=.ci python3 -m ...`) replaces it. So the same file also writes a `.pth` loader into the user site directory (`../pth_loader.py`), which runs this file by path for a cwd under a registered repo. A process reached both ways is armed once: the second arrival finds its own pid in the marker.
 """
 
 import atexit

@@ -19,12 +19,62 @@
     [[ $- == *x* ]] && __bashcov_x=1
     set +x
 } 2>/dev/null
-# THE .pth LOADER, before the supervisor: a `PYTHONPATH=...` command replaces the
-# path exported below, and the user-site .pth reaches python3 anyway. Its own
-# supervisor-free condition, since a shell with no bashcov-sup still runs python3.
-# The re-exec'd child (__BASHCOV_SUP is its parent) finds it done already.
-if [[ ${WORKLIST_PROFILE:-} != off && $- != *i* && ${__BASHCOV_SUP:-} != "$PPID" && -r ${BASH_SOURCE[0]%/bash_env.sh}/pth_setup.sh ]]; then
-    source "${BASH_SOURCE[0]%/bash_env.sh}/pth_setup.sh" "${BASH_SOURCE[0]%/.claude/hooks/profile/bash_env.sh}"
+# THE .pth LOADER (agent/plans/PLAN-tooling-speed.md D6), before the supervisor: a
+# `PYTHONPATH=...` command replaces the path exported below, and a .pth file in the
+# user site directory reaches python3 anyway. This writes one there, beside a copy
+# of pth_loader.py, and appends this repo to ~/.claude/resprofile/pth-roots, the
+# only roots the loader acts for (pth_loader.py says why it never walks up from the
+# cwd instead). Its own supervisor-free condition, since a shell with no bashcov-sup
+# still runs python3; the re-exec'd child (__BASHCOV_SUP is its parent) finds it
+# done already. Inline rather than a sourced file: these trees are Python, and this
+# file is the one bash shim BASH_ENV needs (.language-policy-allowlist).
+#
+# COST, because every non-interactive bash runs this. The steady state is three
+# `read`s and no fork: the user site path is cached in ~/.claude/resprofile/pth-site,
+# and the loader is copied only when its version line differs. python3 runs once,
+# to learn the user site path, and only while no cached path names an existing
+# directory; it is the user site of whichever python3 was on PATH then. Every
+# read and write puts `2>/dev/null` BEFORE its own redirect, since bash reports a
+# failed open on the stderr in force when it opens, and a file is tested with -f,
+# since a directory in its place reads as a read error.
+if [[ ${WORKLIST_PROFILE:-} != off && $- != *i* && ${__BASHCOV_SUP:-} != "$PPID" ]]; then
+    __rp_repo=${BASH_SOURCE[0]%/.claude/hooks/profile/bash_env.sh}
+    __rp_dir="$HOME/.claude/resprofile"
+    __rp_src="$__rp_repo/.claude/hooks/profile/pth_loader.py"
+    if [[ -n $__rp_repo && -r $__rp_src ]]; then
+        __rp_have=0
+        if [[ -f $__rp_dir/pth-roots ]]; then
+            while IFS= read -r __rp_line; do
+                [[ $__rp_line == "$__rp_repo" ]] && {
+                    __rp_have=1
+                    break
+                }
+            done 2>/dev/null <"$__rp_dir/pth-roots"
+        fi
+        if ((!__rp_have)); then
+            mkdir -p "$__rp_dir" 2>/dev/null && printf '%s\n' "$__rp_repo" 2>/dev/null >>"$__rp_dir/pth-roots"
+        fi
+        __rp_site=''
+        [[ -f $__rp_dir/pth-site ]] && IFS= read -r __rp_site 2>/dev/null <"$__rp_dir/pth-site"
+        if [[ -z $__rp_site || ! -d $__rp_site ]]; then
+            __rp_site=$(WORKLIST_PROFILE=off python3 -c 'import site; print(site.getusersitepackages() if site.ENABLE_USER_SITE else "")' 2>/dev/null)
+            if [[ -n $__rp_site ]] && mkdir -p "$__rp_site" "$__rp_dir" 2>/dev/null; then
+                printf '%s\n' "$__rp_site" 2>/dev/null >"$__rp_dir/pth-site"
+            fi
+        fi
+        if [[ -n $__rp_site && -d $__rp_site ]]; then
+            __rp_want='' __rp_got=''
+            IFS= read -r __rp_want 2>/dev/null <"$__rp_src"
+            [[ -f $__rp_site/rediacc_resprofile_loader.py ]] && IFS= read -r __rp_got 2>/dev/null <"$__rp_site/rediacc_resprofile_loader.py"
+            if [[ $__rp_want != "$__rp_got" ]]; then
+                cp -f "$__rp_src" "$__rp_site/rediacc_resprofile_loader.py.$$" 2>/dev/null &&
+                    mv -f "$__rp_site/rediacc_resprofile_loader.py.$$" "$__rp_site/rediacc_resprofile_loader.py" 2>/dev/null
+            fi
+            [[ -f $__rp_site/rediacc_resprofile.pth ]] ||
+                printf 'import rediacc_resprofile_loader\n' 2>/dev/null >"$__rp_site/rediacc_resprofile.pth"
+        fi
+    fi
+    unset __rp_repo __rp_dir __rp_src __rp_have __rp_line __rp_site __rp_want __rp_got
 fi
 if [[ ${WORKLIST_PROFILE:-} == off ]]; then
     :

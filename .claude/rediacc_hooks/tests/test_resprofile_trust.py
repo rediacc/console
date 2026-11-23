@@ -24,7 +24,7 @@ import wl_resprofile as R
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 PROFILE = REPO / ".claude" / "hooks" / "profile"
-# The interpreter the commands run and pth_setup.sh asks for its user site: python3 on PATH, never this suite's own (a tool venv, where no user site is read).
+# The interpreter the commands run and bash_env.sh asks for its user site: python3 on PATH, never this suite's own (a tool venv, where no user site is read).
 PY = shutil.which("python3") or "python3"
 
 
@@ -114,10 +114,11 @@ def test_a_child_of_a_hook_process_records_its_own_row(tmp_path):
 # ---- the .pth loader ------------------------------------------------------------
 
 
-def setup_pth(tmp, repo=REPO):
+def setup_pth(tmp):
+    """bash_env.sh's setup, the way the harness reaches it: BASH_ENV on a non-interactive bash. HOME carries no bashcov-sup, so the shell is not re-exec'd."""
     return subprocess.run(
-        ["bash", str(PROFILE / "pth_setup.sh"), str(repo)],
-        env=child_env(tmp),
+        ["bash", "-c", "true"],
+        env=child_env(tmp, BASH_ENV=str(PROFILE / "bash_env.sh")),
         capture_output=True,
         text=True,
         timeout=60,
@@ -172,6 +173,43 @@ def test_bash_env_writes_the_loader(tmp_path):
     assert (site / "rediacc_resprofile_loader.py").is_file()
     roots = (tmp_path / "home" / ".claude" / "resprofile" / "pth-roots").read_text()
     assert roots.splitlines() == [str(REPO)]
+
+
+def test_an_unwritable_home_prints_nothing(tmp_path):
+    """bash_env.sh never prints: a write the setup cannot make fails silently and the shell's own command still runs."""
+    (tmp_path / "home" / ".claude").mkdir(parents=True)
+    (tmp_path / "home" / ".claude").chmod(0o500)
+    try:
+        got = subprocess.run(
+            ["bash", "-c", "echo body"],
+            env=child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh")),
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    finally:
+        (tmp_path / "home" / ".claude").chmod(0o700)
+    assert got.returncode == 0
+    assert got.stdout == "body\n"
+    assert got.stderr == ""
+
+
+def test_a_directory_where_a_file_belongs_prints_nothing(tmp_path):
+    """A directory in place of pth-roots or pth-site: no read error and no failed write reaches stderr."""
+    for name in ("pth-roots", "pth-site"):
+        (tmp_path / "home" / ".claude" / "resprofile" / name).mkdir(parents=True)
+    got = subprocess.run(
+        ["bash", "-c", "echo body"],
+        env=child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh")),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert got.returncode == 0
+    assert got.stdout == "body\n"
+    assert got.stderr == ""
 
 
 def test_the_setup_is_idempotent_and_off_switch_holds(tmp_path):
