@@ -82,3 +82,5 @@
 {"at":"2026-11-22T22:40:10Z","kind":"repair","source":"local-machine-hostinger","code":"renet.binary.replaced","action":"restart-repo-supervisors","class":"auto-safe","result":"refused","before":"warning","after":"present"}
 {"at":"2026-11-22T23:12:41Z","kind":"repair","source":"local-machine-hostinger","code":"renet.binary.replaced","action":"restart-repo-supervisors","class":"auto-safe","result":"refused","before":"warning","after":"present"}
 {"at":"2026-11-22T23:42:41Z","kind":"repair","source":"local-machine-hostinger","code":"renet.binary.replaced","action":"restart-repo-supervisors","class":"auto-safe","result":"refused","before":"warning","after":"present"}
+{"at":"2026-11-23T00:55:47Z","kind":"repair","source":"local-machine-hostinger","code":"renet.binary.replaced","action":"restart-repo-supervisors","class":"auto-safe","result":"failed","before":"warning","after":"present"}
+{"at":"2026-11-23T01:26:36Z","kind":"repair","source":"local-machine-hostinger","code":"renet.binary.replaced","action":"restart-repo-supervisors","class":"auto-safe","result":"refused","before":"warning","after":"present"}
