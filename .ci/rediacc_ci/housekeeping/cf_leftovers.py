@@ -2,7 +2,7 @@
 
 PLAN-cloudflare-spend-guard T7, widened for PLAN-product-domain-rename L11. Every listing is a GET, nothing is deleted or changed:
 
-  script     a Workers script named by no `workers/*/wrangler*.toml` (nor `private/account/wrangler.toml`) and not a PR preview (`pr-<n>`, which the PR-close cleanup owns)
+  script     a Workers script named by no `workers/*/wrangler*.toml` (nor `private/account/wrangler.toml`) and not a PR preview (`pr-<n>`, or the word-named `pv-<w>-<w>-<w>` and its `-signer`, which the PR-close cleanup and `cleanup_versions` Phase 5b own)
   d1         a D1 database matching `edge-*`, `*-bench` or the jurisdictional `*-bench-j` that no config binds as `database_name`
   route      a Workers route in any zone whose script is absent from the account, or that names no script
   domain     a Workers custom domain whose service is absent from the account
@@ -39,6 +39,7 @@ import urllib.parse
 
 from rediacc_ci import paths
 from rediacc_ci.core import https
+from rediacc_ci.deploy import preview_name
 from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
@@ -503,7 +504,9 @@ def find_leftovers(
             ),
         )
         for name in sorted(live_set)
-        if name not in known_scripts and not PR_SCRIPT_RE.match(name)
+        if name not in known_scripts
+        and not PR_SCRIPT_RE.match(name)
+        and not preview_name.is_preview_worker(name)
     )
 
     for db in inv.d1:

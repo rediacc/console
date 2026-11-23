@@ -22,6 +22,7 @@ disposable scratch git repository outside this checkout.
 from __future__ import annotations
 
 import ast
+import base64
 import datetime
 import inspect
 import json
@@ -37,6 +38,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect, ghx
+from rediacc_ci.deploy import preview_name
 from rediacc_ci.housekeeping import cleanup_versions as cv
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
@@ -4445,3 +4447,119 @@ def test_gh_read_does_not_retry_a_4xx(monkeypatch, capsys) -> None:
     assert cv.gh_read(["api", "x"])[0] == 1
     assert script.calls == 1
     assert "still failing" not in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- WORD-NAMED PREVIEWS (PLAN-preview-signer N3). Port only: the twin predates the `pv-<w>-<w>-<w>` names, so there is no golden to compare and each case asserts the port's call log directly. ---------------------------------------------------------------------------
+
+# base64 of 32 bytes of "A"; authenticates nothing.
+PREVIEW_KEY = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE="
+
+
+def _pv(pr: int) -> str:
+    return preview_name.preview_name(pr, base64.b64decode(PREVIEW_KEY))
+
+
+def _port(phase: str, fixture: dict, env: dict, argv: tuple[str, ...] = ()):
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        return _run("python", phase, argv, fixture, dict(env), base)
+
+
+def _workers_fixture(open_prs: list[int], names: list[str]) -> dict:
+    return {
+        "gh": [rule("pr", "list", json_body=[{"number": n} for n in open_prs])],
+        "curl": [
+            rule("-X DELETE", json_body={"success": True}),
+            rule(
+                "workers/scripts",
+                json_body={"success": True, "result": [{"id": n} for n in names]},
+            ),
+        ],
+    }
+
+
+def _deleted_workers(calls: list[str]) -> list[str]:
+    urls = [
+        c for argv in calls_of(calls, "curl") if "DELETE" in argv for c in argv if "/scripts/" in c
+    ]
+    return sorted(u.split("/scripts/")[1].split("?")[0] for u in urls)
+
+
+def test_phase_5b_deletes_a_word_named_preview_no_open_pr_derives_and_keeps_the_live_one() -> None:
+    live, dead = _pv(7), _pv(3)
+    names = [live, live + "-signer", dead, dead + "-signer", "signer-bench-eu", "signer-eu"]
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([7], names),
+        cf_env(PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    assert _deleted_workers(result[3]) == sorted([dead, dead + "-signer"])
+    err = result[2].decode()
+    assert "Deleted Worker: %s (no open PR derives it)" % dead in err
+    assert "Workers: 6 script(s) seen, 2 orphan(s) deleted" in err
+
+
+def test_phase_5b_keeps_every_word_named_preview_without_the_key() -> None:
+    """Fails closed: without PREVIEW_NAME_KEY no name can be proved an orphan, so none is deleted and the line says why."""
+    dead = _pv(3)
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([], [dead, "pr-4"]),
+        cf_env(PREVIEW_NAME_KEY=""),
+    )
+    assert _deleted_workers(result[3]) == ["pr-4"]
+    assert "KEEP Worker %s: PREVIEW_NAME_KEY is required" % dead in result[2].decode()
+
+
+def test_phase_5b_without_a_word_named_preview_needs_no_key() -> None:
+    """The control: the pr-N path is unchanged, and no key is read when no Worker has the word shape."""
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([], ["pr-4", "signer-bench-eu"]),
+        cf_env(PREVIEW_NAME_KEY=""),
+    )
+    err = result[2].decode()
+    assert "KEEP" not in err
+    assert "Deleted Worker: pr-4 (PR #4 closed)" in err
+    assert _deleted_workers(result[3]) == ["pr-4"]
+
+
+def test_phase_8b_reaps_a_word_named_channel_no_open_pr_derives_and_keeps_the_live_one() -> None:
+    live, dead = _pv(7), _pv(3)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line(live + "/") + pre_line(dead + "/"),
+            ),
+            rule("--prefix cli/%s/" % live, raw="%s\n" % ago(1.5)),
+            rule("--prefix cli/%s/" % dead, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", json_body=[{"number": 7}]), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    err = result[2].decode()
+    assert ("Deleted s3://%s/cli/%s/ (no open PR derives it)" % (RELEASES_BUCKET, dead)) in err
+    assert "8b: deleted 1 PR channel prefix(es)" in err
+    rms = [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]]
+    assert [c[2] for c in rms] == ["s3://%s/cli/%s/" % (RELEASES_BUCKET, dead)]
+    assert len([c for c in calls_of(result[3], "gh") if c[:2] == ["pr", "list"]]) == 1, (
+        "listed once"
+    )
+
+
+def test_phase_8b_keeps_a_word_named_channel_when_the_open_pr_list_is_unreadable() -> None:
+    dead = _pv(3)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line(dead + "/")),
+            rule("--prefix cli/%s/" % dead, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", rc=1), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    assert "KEEP R2 prefix %s: the open PR list is unreadable" % dead in result[2].decode()
+    assert [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]] == []
