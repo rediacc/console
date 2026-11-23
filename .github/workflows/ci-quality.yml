@@ -398,13 +398,13 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_python
       - name: Operator rulings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_operator_rulings.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.operator_rulings
       - name: Pathspec scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.pathspec_scope
       - name: Plan bindings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_plan_bindings.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_bindings
       - name: Plan feedback links
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_plan_feedback.py
@@ -431,7 +431,7 @@ jobs:
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_python_gate_deps.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_gate_deps
       - name: Python lint + format (ruff)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness
@@ -490,7 +490,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.vendored_blocker_derivation
       - name: Worker observability budget
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_worker_observability_budget.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.worker_observability_budget
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
@@ -1092,7 +1092,7 @@ jobs:
       - name: Every source file reaches a linter
         id: gate_check_ci_lint_scope_coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: .ci/scripts/quality/check_lint_scope_coverage.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_scope_coverage
       - name: Fetch retry
         id: gate_check_ci_fetch_retry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}

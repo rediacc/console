@@ -4952,9 +4952,10 @@
   },
   {
     "id": "check:ci-worker-observability-budget",
-    "run": "npm run check:ci-worker-observability-budget",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.worker_observability_budget",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/worker_observability_budget.py",
       ".ci/config/cf-spend-guard.json",
       ".ci/scripts/quality/**",
       ".npmrc",
@@ -4963,7 +4964,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_worker_observability_budget.py"
+      ".ci/rediacc_ci/quality/worker_observability_budget.py"
     ],
     "ci": {
       "kind": "step",
@@ -5256,9 +5257,10 @@
   },
   {
     "id": "check:ci-plan-bindings",
-    "run": "npm run check:ci-plan-bindings",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_bindings",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/plan_bindings.py",
       "agent/plans/**",
       "agent/INDEX.md",
       "agent/worklist/**",
@@ -5271,7 +5273,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_bindings.py"
+      ".ci/rediacc_ci/quality/plan_bindings.py"
     ],
     "ci": {
       "kind": "step",
@@ -5350,16 +5352,17 @@
   },
   {
     "id": "check:ci-operator-rulings",
-    "run": "npm run check:ci-operator-rulings",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.operator_rulings",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/operator_rulings.py",
       "agent/RULES.md",
       ".ci/scripts/quality/check_operator_rulings.py",
       ".claude/hooks/stop/wl_ruling.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_operator_rulings.py"
+      ".ci/rediacc_ci/quality/operator_rulings.py"
     ],
     "ci": {
       "kind": "step",
@@ -5784,9 +5787,10 @@
   },
   {
     "id": "check:ci-python-gate-deps",
-    "run": "npm run check:ci-python-gate-deps",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_gate_deps",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/python_gate_deps.py",
       ".ci/rediacc_ci/__init__.py",
       ".ci/rediacc_ci/deploy/console_executor.py",
       ".ci/rediacc_ci/deploy/deploy_record.py",
@@ -5833,7 +5837,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_python_gate_deps.py"
+      ".ci/rediacc_ci/quality/python_gate_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -6575,10 +6579,11 @@
   },
   {
     "id": "check:ci-lint-scope-coverage",
-    "run": "npm run check:ci-lint-scope-coverage",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_scope_coverage",
     "slow": true,
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/lint_scope_coverage.py",
       "**/*.js",
       "**/*.cjs",
       "**/*.mjs",
@@ -6592,7 +6597,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_lint_scope_coverage.py"
+      ".ci/rediacc_ci/quality/lint_scope_coverage.py"
     ],
     "ci": {
       "kind": "step",

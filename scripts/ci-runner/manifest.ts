@@ -4750,9 +4750,10 @@ export const GATES: readonly GateSpec[] = [
   {
     // PLAN-cloudflare-spend-guard T5. Every enabled logs or traces signal of every workers/*/wrangler*.toml carries an explicit head_sampling_rate at or under the ceiling in .ci/config/cf-spend-guard.json (named exemptions judged against their own rate) and never persists in Cloudflare; a dropped rate runs at the platform default of 1 and reads like nothing in review.
     id: 'check:ci-worker-observability-budget',
-    run: 'npm run check:ci-worker-observability-budget',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.worker_observability_budget',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/worker_observability_budget.py',
       '.ci/config/cf-spend-guard.json',
       '.ci/scripts/quality/**',
       '.npmrc',
@@ -4760,7 +4761,7 @@ export const GATES: readonly GateSpec[] = [
       'workers/**',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_worker_observability_budget.py'],
+    leaves: ['.ci/rediacc_ci/quality/worker_observability_budget.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5033,9 +5034,10 @@ export const GATES: readonly GateSpec[] = [
     // WHAT STILL HOLDS A CLOSED PLAN (agent/plans/PLAN-plan-compaction-bindings.md CB4). A plan under _done/ or _removed/, or whose Status is finished, parked, moved or removed, with a live binding (an own open box, an open worklist item of any session citing it, an unfinished dependent, another plan's open box citing one of its boxes) is a finding. The decision is
     // wl_planbind.bindings, shared with the compaction verbs and check_plan_folders --move/--sweep, which is why it and the modules it reads are in `paths`; agent/worklist/** is there because an item opened or ticked changes the verdict. Lane quality-static: it needs no merge-base, and that job carries a gate-bind region, so the step is emitted from the gate header.
     id: 'check:ci-plan-bindings',
-    run: 'npm run check:ci-plan-bindings',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_bindings',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/plan_bindings.py',
       'agent/plans/**',
       'agent/INDEX.md',
       'agent/worklist/**',
@@ -5047,7 +5049,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/stop/wl_store.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_bindings.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_bindings.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5127,16 +5129,17 @@ export const GATES: readonly GateSpec[] = [
   {
     // The operator-ruling ledger (agent/rulings/*.jsonl) and the block it renders into agent/RULES.md, held byte-equal (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2). The render is wl_ruling.render_section, shared with the `worklist.py --rule` writer, which is why the hook module is in `paths`. Lane quality-branch beside the rest of the agent-tree family, hand-written for the same reason (no `- id: setup` in that job).
     id: 'check:ci-operator-rulings',
-    run: 'npm run check:ci-operator-rulings',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.operator_rulings',
     gate: true,
     // No 'agent/rulings/**' glob: the ledger directory holds no tracked file until the first `worklist.py --rule`, so the glob matched nothing and could only exclude (check:ci-paths-origin, check:ci-gate-manifest). `--rule` rewrites agent/RULES.md in the same locked write, so a recorded ruling still selects this gate through the RULES.md path.
     paths: [
+      '.ci/rediacc_ci/quality/operator_rulings.py',
       'agent/RULES.md',
       '.ci/scripts/quality/check_operator_rulings.py',
       '.claude/hooks/stop/wl_ruling.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_operator_rulings.py'],
+    leaves: ['.ci/rediacc_ci/quality/operator_rulings.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5537,9 +5540,10 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 12
   {
     id: 'check:ci-python-gate-deps',
-    run: 'npm run check:ci-python-gate-deps',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_gate_deps',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/python_gate_deps.py',
       '.ci/rediacc_ci/__init__.py',
       '.ci/rediacc_ci/deploy/console_executor.py',
       '.ci/rediacc_ci/deploy/deploy_record.py',
@@ -5585,7 +5589,7 @@ export const GATES: readonly GateSpec[] = [
       'workers',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_python_gate_deps.py'],
+    leaves: ['.ci/rediacc_ci/quality/python_gate_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6258,12 +6262,13 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-lint-scope-coverage',
-    run: 'npm run check:ci-lint-scope-coverage',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_scope_coverage',
     slow: true, // 163.0s measured
     gate: true,
     // Its corpus is every tracked js/ts file, so the five extension globs are load-bearing rather than decorative: a NEW source file under a directory no lint root reaches is exactly the failure this gate exists to catch. package.json carries the lint commands whose
     // arguments it inspects; biome.json carries the allowlist and the ignore half.
     paths: [
+      '.ci/rediacc_ci/quality/lint_scope_coverage.py',
       '**/*.js',
       '**/*.cjs',
       '**/*.mjs',
@@ -6276,7 +6281,7 @@ export const GATES: readonly GateSpec[] = [
       'tsconfig.json',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_lint_scope_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/lint_scope_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
