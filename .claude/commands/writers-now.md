@@ -8,7 +8,7 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
-- Writer cap and effort: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^(writer_cap|effort):' || echo '(no Settings section)'`
+- Effort: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^effort:' || echo '(no Settings section)'`
 - Promoted progress (generated): !`sed -n '/queue:progress:begin/,/queue:progress:end/p' agent/plans/QUEUE.md`
 - Live writer leases (every session's; the tag after the title names the owner): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | grep -E '^\s*- \[>\]' | head -20 | grep . || echo '(none)'`
 - Last survey (the baseline of the round's report): !`ls -t /tmp/writers-now/*.md 2>/dev/null | grep -v -- '-evidence-' | head -1 | grep . || echo '(none)'`
@@ -71,7 +71,7 @@ Each box's signature and label are read together from the box parser, `wl_planre
 
 One writer per startable cluster of the survey, never thirds of a plan: boxes sharing a file go to one writer, and a plan with only live boxes gets no writer. A brief's `Owns` names those files even past the plan's own `Owns:` line, because a box outside that line otherwise goes undone. Boxes of different plans that share a file go to one writer under the plan holding the most of them. A blocked cluster is queued (section 6) behind the box that blocks it.
 
-**The roster budget**, read before the wave: the harness runs at most 20 concurrent subagents, and `.ci/rediacc_ci/dev/worktree_lease.py` holds at most 25 trees on disk (finished trees count, so each is collected by `--id` as its report lands). Live runners hold no tree but take harness slots. The wave takes, in this order: up to four live runners (section 5), one review-findings writer per file cluster of open findings (section 4, at most two), then CODE writers in the slots left, bounded by `writer_cap`. Free slots are the smaller limit minus the running agents and the trees still on disk (`./run.sh worktree leases`).
+**The roster**, read before the wave: there is no writer limit and no tree limit (agent/plans/PLAN-unlimited-writers.md), so the harness's own concurrent-subagent ceiling (20 when last measured) is the only bound. Live runners hold no tree but count against that ceiling. The wave takes, in this order: up to four live runners (section 5), one review-findings writer per file cluster of open findings (section 4, at most two), then one CODE writer per remaining cluster. Each finished tree is collected by `--id` as its report lands (`./run.sh worktree leases`).
 
 The route is `isolation: "worktree"` on the Agent call, which reaches a lease through the harness's create hook: a detached tree under `.claude/worktrees/<id>` at the development branch's tip (the branch of the tree the session runs in, stacked on the landing branch when a landing tree exists), submodules at their gitlinks, dependencies seeded. Uncommitted work in the main checkout is not in it. Which writer gets a lease is not asked (`block_settled_questions`). Separate leases cannot corrupt each other: `block_plan_concurrency` turns an `Owns` overlap into a note for an isolated spawn (an exclusive plan's mutex still refuses an isolated spawn whose Owns overlap it), and a clash surfaces as a cherry-pick conflict at landing, where the lead re-reads the file whole and matches its hunks to each report.
 
@@ -181,13 +181,13 @@ each box not run with the reason (load, a missing permit, a predecessor that fai
     close: worklist.py --plan-tick <me> <plan> <sig> '<live-proof line, or command rc=0 log=<path>>' --write
 ```
 
-A runner holds a real lease (`worker:<agent-id>`), never `worker:queue`, since `queue-slot` trips on `worker:queue` beside a free slot. When a runner reports, its next boxes are the runner's own to continue: the lead resumes it with `SendMessage` while its list has startable boxes, rather than ending the target's queue with the first report.
+A runner holds a real lease (`worker:<agent-id>`), never `worker:queue`, since `queue-slot` trips on a `worker:queue` lease no live plan holds. When a runner reports, its next boxes are the runner's own to continue: the lead resumes it with `SendMessage` while its list has startable boxes, rather than ending the target's queue with the first report.
 
 ### 6. One thing at a time on the local machine; a refused spawn is queued
 
 Writers, or gates, or a fleet `vm:check` or e2e run, never two of them: writers beside gates made load 70-90 and false timeouts. Before a wave, `uptime` is read against `nproc`, and a wave waits while load is above it. The order on this host is writers, landing, one gate run, then the fleet runner's heavy half. Bench, hostinger and production runs work on remote machines and are exempt, except `release:local`, which builds here and counts as a gate.
 
-A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:queue` with the refusal in the note. A spawn refused by `block_plan_concurrency` stays an open item, and `--update <me> <id> queued: refused by block_plan_concurrency behind <plan> (#<holding item>)` records the exact refusal. The brief is kept verbatim in the item's text or the round log, so the retry is a copy. When an agent reports, the queue is retried in roster order before anything new starts.
+A spawn refused by `block_plan_concurrency` gets its item leased to `worker:queue`, which the lease verb admits only while a live plan holds the item and stamps `HELD_BY:<plan>`, and `--update <me> <id> queued: refused by block_plan_concurrency behind <plan> (#<holding item>)` records the exact refusal. No count of writers refuses a spawn. The brief is kept verbatim in the item's text or the round log, so the retry is a copy. When an agent reports, the queue is retried in roster order before anything new starts.
 
 ### 7. Evidence, ticks and the push receipt
 
