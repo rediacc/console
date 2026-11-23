@@ -224,6 +224,14 @@
     "./job-poll/*": {
       "types": "./dist/job-poll/*.d.ts",
       "default": "./dist/job-poll/*.js"
+    },
+    "./command-line": {
+      "types": "./dist/command-line/index.d.ts",
+      "default": "./dist/command-line/index.js"
+    },
+    "./command-line/*": {
+      "types": "./dist/command-line/*.d.ts",
+      "default": "./dist/command-line/*.js"
     }
   },
   "files": [

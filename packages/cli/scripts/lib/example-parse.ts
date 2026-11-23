@@ -1,11 +1,13 @@
 /**
  * Curated-example parsing for the CLI contract generator.
  *
- * Split out of generate-cli-contract.ts: the tokenizer and the parse-and-gate
- * pass are a self-contained unit that only needs the live path keys and a
- * problem sink, and keeping them here leaves the generator itself readable.
+ * Split out of generate-cli-contract.ts: the parse-and-gate pass is a
+ * self-contained unit that only needs the live path keys and a problem sink,
+ * and keeping it here leaves the generator itself readable. Tokenizing is the
+ * shared command-line core's (packages/shared/src/command-line/tokenize.ts).
  */
 import type { ContractOption, ContractPositional } from '../../../shared/src/cli-contract/types.js';
+import { tokenize, unclosedQuote } from '../../../shared/src/command-line/tokenize.js';
 
 /** What the parser needs from the generator: the live tree, and where to report. */
 export interface ExampleParseContext {
@@ -20,39 +22,6 @@ const GLOBAL_SHORT_TO_LONG = new Map<string, string>([
   ['-o', '--output'],
   ['-l', '--lang'],
 ]);
-
-/** Split an example command line into shell-ish tokens (quote-aware). */
-export function tokenizeExampleCommand(command: string): string[] | null {
-  const tokens: string[] = [];
-  let current = '';
-  let hasCurrent = false;
-  let quote: '"' | "'" | null = null;
-
-  for (const ch of command) {
-    if (quote) {
-      if (ch === quote) quote = null;
-      else current += ch;
-      continue;
-    }
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      hasCurrent = true;
-      continue;
-    }
-    if (ch === ' ' || ch === '\t') {
-      if (hasCurrent || current.length > 0) {
-        tokens.push(current);
-        current = '';
-        hasCurrent = false;
-      }
-      continue;
-    }
-    current += ch;
-  }
-  if (quote) return null;
-  if (hasCurrent || current.length > 0) tokens.push(current);
-  return tokens;
-}
 
 /**
  * Parse one curated example against the command's OWN declared surface and
@@ -80,8 +49,9 @@ export function parseExampleValues(
     return {};
   };
 
-  const tokens = tokenizeExampleCommand(exampleCommand);
-  if (!tokens) return fail('unterminated quote');
+  const spans = tokenize(exampleCommand);
+  if (unclosedQuote(spans)) return fail('unterminated quote');
+  const tokens = spans.map((t) => t.text);
   if (tokens[0] !== 'rdc') return fail('must start with "rdc"');
 
   // Longest-prefix pathKey match: the tokens after `rdc` must resolve to THIS command, so an example filed under the wrong key cannot slip through.
