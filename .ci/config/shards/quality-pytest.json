@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T08:08:59.003Z",
+  "generatedAt": "2026-11-23T08:24:58.259Z",
   "legs": [
     {
       "index": 1,
@@ -502,6 +502,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_first_touch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_hookreport.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_landing_loop.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lessons.py",
