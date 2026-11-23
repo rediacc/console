@@ -1,0 +1,41 @@
+# A preview's own licence signer (agent/plans/PLAN-preview-signer.md S2, D1, D2), one Worker per preview: `<name>-signer`.
+# Rendered by .ci/rediacc_ci/deploy/preview_signer.py into the gitignored .generated/wrangler.<name>-signer.toml; every at-sign-delimited token is replaced and a token left over is refused. Never deployed from this file.
+#
+# NO ROUTE. There is no `routes` entry, no workers.dev host and no preview URL: the only way in is a service binding naming the LicenseSigner entrypoint. The deploy module refuses a rendered config that grows a route, an [env.*] table, a second D1 binding or a CENTRAL_SIGNER binding other than the one below.
+# The preview's fresh key pair arrives as secrets through `wrangler secret bulk` on stdin, never in this file, and the production private key is never bound here: a Worker holding both private keys builds no signer.
+
+name = "@WORKER@"
+main = "../src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+REGION = "@REGION@"
+PREVIEW_NAME = "@PREVIEW_NAME@"
+# The preview's one host: the only renewal host a licence this signer signs may name.
+SHARED_HOSTS = "@PREVIEW_HOST@"
+# A certificate is requested per preview subscription for seven days (the central ceiling) and refreshed below five days left.
+CERT_VALIDITY_DAYS = "7"
+CERT_MAX_TOTAL_ISSUANCES = "500"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+# The preview's own account database: its subscriptions, read, and the delegation_certs cache, written.
+[[d1_databases]]
+binding = "SHARED"
+database_name = "@SHARED_DB@"
+database_id = "@SHARED_DB_ID@"
+
+# The central signer, bound with this preview's identity as deploy-time props.
+[[services]]
+binding = "CENTRAL_SIGNER"
+service = "@CENTRAL_SIGNER@"
+entrypoint = "LicenseSigner"
+props = { tier = "preview", name = "@PREVIEW_NAME@", host = "@PREVIEW_HOST@", region = "@REGION@" }
