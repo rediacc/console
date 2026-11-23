@@ -274,6 +274,20 @@ describe('container-tier config loading', () => {
       });
     };
 
+    /** GET /configs: the one config at the version it was sealed under. */
+    const listingAnswer = (): Response =>
+      json({
+        newServerToken: 'rct_rotated',
+        configs: [
+          {
+            configId: CONFIG_ID,
+            teamId: null,
+            version: payload.envelope.version,
+            lastModified: '',
+          },
+        ],
+      });
+
     /** Every account call but the grant record, which stays out of accountCalls so the pull/mint counts below measure what they say. */
     const countedCall = (href: string, init?: RequestInit): Response => {
       accountCalls.push(href);
@@ -285,21 +299,6 @@ describe('container-tier config loading', () => {
 
       // Checked BEFORE the generic /configs/ pull: the literal path is a prefix match.
       if (href.includes('/configs/executor-token')) return mintCall(init);
-
-      // The version check a warm session makes before each later command (Design 5 of PLAN-rmcp-executor-hardening). The stored version never moves here, so it never re-pulls; the counts below filter on '/configs/' and leave it out.
-      if (href.endsWith('/configs')) {
-        return json({
-          newServerToken: 'rct_rotated',
-          configs: [
-            {
-              configId: CONFIG_ID,
-              teamId: null,
-              version: payload.envelope.version,
-              lastModified: '',
-            },
-          ],
-        });
-      }
 
       if (href.includes('/configs/')) {
         // The executor must present the token it was just minted, not its own.
@@ -324,6 +323,11 @@ describe('container-tier config loading', () => {
 
     const accountFetch = vi.fn((url: string | URL, init?: RequestInit) => {
       const href = String(url);
+      // The version check a warm session makes before each later command (Design 5 of PLAN-rmcp-executor-hardening). The stored version never moves here, so it never re-pulls; the counts below filter on '/configs/' and leave it out.
+      if (href.endsWith('/configs')) {
+        accountCalls.push(href);
+        return listingAnswer();
+      }
       return href.includes('/configs/executor-grant')
         ? recordGrantCall(init)
         : countedCall(href, init);

@@ -275,11 +275,9 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
   const configCall = (href: string, init?: RequestInit): Promise<Response> => {
     const claimed = claim((init?.headers as Record<string, string>)['X-Config-Token']);
     if (claimed instanceof Response) return Promise.resolve(claimed);
-    const kind = href.endsWith('/configs/session')
-      ? 'session'
-      : href.endsWith('/configs')
-        ? 'list'
-        : 'config';
+    let kind = 'config';
+    if (href.endsWith('/configs/session')) kind = 'session';
+    else if (href.endsWith('/configs')) kind = 'list';
     const call = `${init?.method ?? 'GET'} ${kind}`;
     switch (call) {
       case 'GET list':

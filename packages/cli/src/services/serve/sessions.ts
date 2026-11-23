@@ -207,18 +207,29 @@ export class SessionStore {
     const granted = this.grantsByUser.get(key);
     if (!granted) return undefined;
 
+    const newest = this.newestLiveGrant(granted, principal);
+    if (granted.size === 0) this.grantsByUser.delete(key);
+    return newest?.id;
+  }
+
+  /** The most recently granted session in `granted` that still holds a key and belongs to `principal`; drops the key-less ones. */
+  private newestLiveGrant(
+    granted: Set<string>,
+    principal: SessionPrincipal
+  ): SessionEntry | undefined {
     let newest: SessionEntry | undefined;
     for (const sessionId of granted) {
       const session = this.sessions.get(sessionId);
       if (!session?.cek) {
         granted.delete(sessionId);
-        continue;
+      } else if (
+        ownedBy(session, principal) &&
+        (session.grantedAt ?? 0) >= (newest?.grantedAt ?? 0)
+      ) {
+        newest = session;
       }
-      if (!ownedBy(session, principal)) continue;
-      if (!newest || (session.grantedAt ?? 0) > (newest.grantedAt ?? 0)) newest = session;
     }
-    if (granted.size === 0) this.grantsByUser.delete(key);
-    return newest?.id;
+    return newest;
   }
 
   /**

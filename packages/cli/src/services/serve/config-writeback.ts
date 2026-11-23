@@ -292,8 +292,7 @@ export class SessionConfigStore implements ConfigWriteback {
       ? (listing.body.configs as { configId?: unknown; teamId?: unknown; version?: unknown }[])
       : [];
     const current = configs.find(
-      (entry) =>
-        entry.configId === target.configId && (entry.teamId ?? null) === target.teamId
+      (entry) => entry.configId === target.configId && (entry.teamId ?? null) === target.teamId
     );
     if (!current || typeof current.version !== 'number') {
       throw new SessionError(

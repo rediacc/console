@@ -237,9 +237,9 @@ describe('container config revalidation', () => {
     const store = await fakeStore(cek);
     const sessions = new SessionStore();
     const sessionId = await grantedSession(sessions, TEAM_A, cek);
-    let listingDown = false;
+    const down = new Set<string>();
     const fetchImpl = ((url: string | URL, init?: RequestInit) =>
-      listingDown && String(url).endsWith('/configs')
+      down.has('listing') && String(url).endsWith('/configs')
         ? Promise.resolve(Response.json({ error: 'unavailable' }, { status: 503 }))
         : store.fetchImpl(url, init)) as typeof fetch;
     const load = createContainerConfigLoader({
@@ -250,7 +250,7 @@ describe('container config revalidation', () => {
     });
 
     await load(TEAM_A, sessionId);
-    listingDown = true;
+    down.add('listing');
     const refusal = await load(TEAM_A, sessionId).catch((error: unknown) => error);
     expect(refusal).toBeInstanceOf(SessionError);
     expect((refusal as Error).message).toMatch(/could not check the config version.*503/);
