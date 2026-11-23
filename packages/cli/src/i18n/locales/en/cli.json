@@ -3884,6 +3884,7 @@
       "vscode": "VS Code Integration",
       "term": "SSH Terminal Access",
       "shortcuts": "Quick Commands (Shortcuts)",
+      "preview": "PR Previews",
       "update": "CLI Updates",
       "credits": "Third-Party Credits",
       "doctor": "System Diagnostics",

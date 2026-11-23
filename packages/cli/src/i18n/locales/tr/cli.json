@@ -1797,6 +1797,56 @@
         "starting": "VM kümesi oluşturma başlatılıyor..."
       }
     },
+    "preview": {
+      "description": "Bu yapılandırmayı bir çekme isteğinin önizlemesine geçirir: rdc ve rdc'nin dokunduğu her sunucudaki renet önizlemenin derlemelerine geçer, `rdc preview leave` ise yayımlanmış sürümlere döndürür. Size verilen adla `rdc preview use <name>` komutunu çalıştırın.",
+      "descriptionShort": "Bir PR derlemesini kendi makinelerinizde deneyin ve geri dönün",
+      "leave": {
+        "description": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşturulan depoları gerçek hesabınızdan yeniden lisanslar. Erişilemeyen bir sunucu listede kalır; daha sonra --machine ile tamamlayın.",
+        "descriptionShort": "Yayımlanmış rdc ve renet'e dön",
+        "machine": "Yalnızca bu sunucuyu geri al"
+      },
+      "msg": {
+        "banner": "{{name}} önizlemesi etkin (lisansları {{date}} tarihinde bitiyor). Yayımlanmış rdc ve renet'e dönmek için `rdc preview leave` komutunu çalıştırın.",
+        "binaryNotRestored": "rdc geri yüklenmedi. Önceki kanal ({{channel}}) başarısız oldu, saklanan kopya ({{copy}}) da öyle. rdc'yi yayımlanmış kanaldan yeniden kurun; saklanan bir kopya hâlâ {{path}} konumunda olabilir.",
+        "binaryRestored": "rdc v{{version}} geri yüklendi.",
+        "binaryRestoredFromCopy": "rdc v{{version}}, önizlemeden önce saklanan kopyadan geri yüklendi ({{reason}}).",
+        "confirmSwitchBack": "{{count}} sunucu, önizlemeden önceki renet'e geri alınsın mı?",
+        "emergencyExit": "Önizlemenin CLI'ı çalışmazsa saklanan kopyayla çıkın: {{command}}",
+        "expiryMessage": "Bu makine, bir düzeltmenin test derlemesi olan {{name}} önizlemesinde. Lisansları {{date}} tarihinde bitiyor ve yalnızca önizleme var olduğu sürece yenileniyor. Sonrasında çalışan uygulamalar çalışmaya devam eder, durdurulup başlatılabilir; ancak yeni depolar, fork'lar, yeniden boyutlandırmalar ve yedeklemeler reddedilir. {{server}} sunucusuna ve yayımlanmış rdc ile renet'e dönmek için `rdc preview leave` komutunu çalıştırın; önizlemede oluşturulan depolar bundan sonra gerçek hesaptan, planı dahilinde lisanslanır.",
+        "formatChange": "Bu önizleme diskteki bir biçimi değiştiriyor ({{formats}}): {{reason}}. Geri dönüldüğünde önizlemenin yazdığı veriler okunamayabilir.",
+        "formatChangeConfirm": "Yine de bu önizlemeye geçilsin mi ({{formats}})?",
+        "leaveDone": "{{name}} önizlemesinden çıkıldı. Bu yapılandırma yeniden {{server}} üzerinde.",
+        "leavePending": "{{name}} önizlemesi, tüm sunucular geri dönene kadar etkin kalır: {{machines}}. Erişilebilir olduklarında `rdc preview leave` komutunu yeniden çalıştırın.",
+        "licenceNotIssued": "hesap sunucusu lisans vermedi",
+        "licenceRefused": "{{machine}} üzerindeki {{repo}}, {{server}} üzerinden lisanslanmadı: {{reason}}. Çalışmaya devam eder, durdurulup başlatılabilir; plan izin verene kadar büyümesi reddedilir.",
+        "licencesFailed": "{{machine}} üzerindeki lisanslar gerçek hesaba taşınmadı: {{detail}}. Şunu çalıştırın: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: {{server}} üzerinden yeniden lisanslandı: {{repos}}.",
+        "notActive": "Bu yapılandırma bir önizlemede değil.",
+        "reprovisionFailed": "sabitlenmiş renet yuvası {{slot}} ve yeniden hazırlama başarısız oldu: {{detail}}",
+        "statusName": "{{host}} üzerindeki {{name}} önizlemesi",
+        "statusNoServers": "Henüz hiçbir sunucu önizlemenin renet'ini çalıştırmıyor.",
+        "statusPrevious": "Önizlemeden önce: {{server}} üzerinde rdc v{{version}}.",
+        "statusServer": "  {{machine}}: renet v{{version}}, {{slot}} içinde saklanıyor",
+        "statusServers": "{{count}} sunucu önizlemenin renet'ini çalıştırıyor:",
+        "statusSince": "{{date}} tarihinde geçildi; lisanslar {{end}} tarihinde bitiyor.",
+        "switchedBack": "{{machine}} yeniden renet v{{version}} üzerinde.",
+        "touchedHeader": "{{name}} önizlemesinin renet'indeki sunucular:",
+        "touchedLine": "  {{machine}}: renet şu an v{{current}}, önizlemeden önce v{{recorded}}",
+        "unreachable": "{{machine}} geri alınamadı ({{detail}}); listede kalıyor. Şununla tamamlayın: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "erişilemiyor",
+        "useDone": "{{name}} önizlemesine geçildi (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Etkin önizlemeyi, lisanslarının bitiş tarihini, renet'indeki sunucuları ve geri dönüş yolunu gösterir.",
+        "descriptionShort": "Etkin önizlemeyi göster"
+      },
+      "use": {
+        "acceptFormatChange": "Bu önizlemenin diskteki bir biçimi değiştirdiği uyarısını sormadan kabul et",
+        "description": "Önizlemenin CLI derlemesini iki kaynağına karşı denetler, mevcut CLI'ı rdc.pre-preview olarak saklar, önizlemenin CLI'ını kurar ve bu yapılandırmayı önizleme sunucusuna yöneltir. Bir sunucu, önizlemenin renet'ini yalnızca CLI onu ilk kez hazırladığında alır.",
+        "descriptionShort": "Bir önizlemeye geç",
+        "nameArgument": "Önizleme adı, örneğin pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Makine Yönetimi",
       "mcp": "MCP Sunucusu",
       "ops": "Yerel VM İşlemleri",
+      "preview": "PR Önizlemeleri",
       "repo": "Depo Yaşam Döngüsü",
       "serve": "Yürütücü hizmeti",
       "shortcuts": "Hızlı Komutlar (Kısayollar)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "\"{{name}}\" bir önizleme adı değil. Önizleme adı, pv- ve ardından küçük harfli üç sözcükten oluşur, örneğin pv-amber-river-stone.",
       "alreadyActive": "Bu yapılandırma zaten {{name}} önizlemesinde. Önce o önizlemeden çıkın.",
-      "serversPending": "{{name}} önizlemesinin renet'inde hâlâ {{count}} sunucu var: {{machines}}. Önizleme kaldırılmadan önce bunları geri alın."
+      "serversPending": "{{name}} önizlemesinin renet'inde hâlâ {{count}} sunucu var: {{machines}}. Önizleme kaldırılmadan önce bunları geri alın.",
+      "noBuild": "{{name}} önizlemesi hiçbir derleme döndürmüyor, bu yüzden ona geçilemez. Adı ve önizlemenin hâlâ var olup olmadığını kontrol edin.",
+      "badBuild": "{{name}} önizlemesi okunamayan bir derleme döndürüyor ({{detail}}).",
+      "noBinary": "{{name}} önizlemesinin {{platform}} için CLI derlemesi yok.",
+      "versionMismatch": "{{name}} önizlemesi: sürüm bildirimi v{{manifest}}, önizleme sunucusu v{{server}} diyor. Hiçbir şey kurulmadı.",
+      "hashMismatch": "{{name}} önizlemesi: sürüm bildirimindeki {{platform}} sağlama toplamı, önizleme sunucusununkinden farklı. Hiçbir şey kurulmadı.",
+      "notSea": "Bir önizleme kurulu rdc ikili dosyasının yerini alır, bu yüzden paketlenmiş rdc gerekir (npm veya kaynak koddan çalıştırma olmaz).",
+      "unsupportedPlatform": "Bu platformun önizleme derlemesi yok.",
+      "formatChangeDeclined": "{{name}} önizlemesine geçilmedi: diskteki biçim değişikliği kabul edilmedi.",
+      "leaveDeclined": "{{name}} önizlemesinden çıkılmadı: sunucuların geri alınması onaylanmadı.",
+      "machineNotTouched": "{{machine}}, {{name}} önizlemesinin renet'inde değil.",
+      "machineUnnamed": "{{name}} önizlemesi etkin ve bu çağrı yapılandırmadaki hiçbir makineyi belirtmiyor (\"{{machine}}\"); bu yüzden değiştirilecek renet kaydedilemedi. Hiçbir şey değiştirilmedi."
     }
   },
   "feedback": {

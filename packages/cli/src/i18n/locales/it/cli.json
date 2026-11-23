@@ -1797,6 +1797,56 @@
         "starting": "Avvio provisioning cluster VM in corso..."
       }
     },
+    "preview": {
+      "description": "Passa questa configurazione a un'anteprima di una pull request: rdc e il renet di ogni server che rdc tocca passano alle build dell'anteprima, e `rdc preview leave` torna a quelle pubblicate. Esegui `rdc preview use <name>` con il nome che ti è stato dato.",
+      "descriptionShort": "Prova la build di una PR sulle tue macchine e torna indietro",
+      "leave": {
+        "description": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dal tuo account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine.",
+        "descriptionShort": "Torna a rdc e renet pubblicati",
+        "machine": "Riporta indietro solo questo server"
+      },
+      "msg": {
+        "banner": "L'anteprima {{name}} è attiva (le sue licenze terminano il {{date}}). Esegui `rdc preview leave` per tornare a rdc e renet pubblicati.",
+        "binaryNotRestored": "rdc non è stato ripristinato. Il canale precedente ({{channel}}) è fallito, come la copia conservata ({{copy}}). Reinstalla rdc dal canale pubblicato; una copia conservata potrebbe ancora esistere in {{path}}.",
+        "binaryRestored": "rdc v{{version}} ripristinato.",
+        "binaryRestoredFromCopy": "rdc v{{version}} ripristinato dalla copia conservata prima dell'anteprima ({{reason}}).",
+        "confirmSwitchBack": "Riportare {{count}} server al renet che avevano prima dell'anteprima?",
+        "emergencyExit": "Se la CLI dell'anteprima non riesce a partire, esci con la copia conservata: {{command}}",
+        "expiryMessage": "Questa macchina è sull'anteprima {{name}}, una build di prova di una correzione. Le sue licenze terminano il {{date}} e si rinnovano solo finché l'anteprima esiste. Dopo, le app in esecuzione continuano a funzionare e possono essere fermate e avviate, ma nuovi repository, fork, ridimensionamenti e backup vengono rifiutati. Esegui `rdc preview leave` per tornare a {{server}} e a rdc e renet pubblicati; i repository creati nell'anteprima vengono poi licenziati dall'account reale, entro i limiti del suo piano.",
+        "formatChange": "Questa anteprima modifica un formato su disco ({{formats}}): {{reason}}. Tornando indietro potrebbe non essere possibile leggere i dati scritti dall'anteprima.",
+        "formatChangeConfirm": "Passare comunque a questa anteprima ({{formats}})?",
+        "leaveDone": "Sei uscito dall'anteprima {{name}}. Questa configurazione è tornata su {{server}}.",
+        "leavePending": "L'anteprima {{name}} resta attiva finché tutti i server non sono tornati: {{machines}}. Esegui di nuovo `rdc preview leave` quando saranno raggiungibili.",
+        "licenceNotIssued": "il server degli account non ha emesso alcuna licenza",
+        "licenceRefused": "{{repo}} su {{machine}} non è stato licenziato da {{server}}: {{reason}}. Continua a funzionare e può essere fermato e avviato; la crescita viene rifiutata finché il piano non la consente.",
+        "licencesFailed": "Le licenze su {{machine}} non sono state spostate sull'account reale: {{detail}}. Esegui: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: rilicenziato da {{server}}: {{repos}}.",
+        "notActive": "Questa configurazione non è su un'anteprima.",
+        "reprovisionFailed": "lo slot renet fissato è {{slot}} e il nuovo provisioning è fallito: {{detail}}",
+        "statusName": "Anteprima {{name}} su {{host}}",
+        "statusNoServers": "Nessun server usa ancora il renet dell'anteprima.",
+        "statusPrevious": "Prima dell'anteprima: rdc v{{version}} su {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} conservato in {{slot}}",
+        "statusServers": "{{count}} server usano il renet dell'anteprima:",
+        "statusSince": "Attivata il {{date}}; le licenze terminano il {{end}}.",
+        "switchedBack": "{{machine}} è di nuovo su renet v{{version}}.",
+        "touchedHeader": "Server sul renet dell'anteprima {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} ora, v{{recorded}} prima dell'anteprima",
+        "unreachable": "Non è stato possibile riportare indietro {{machine}} ({{detail}}); resta in elenco. Completa con: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "irraggiungibile",
+        "useDone": "Passato all'anteprima {{name}} (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Mostra l'anteprima attiva, la data di fine delle sue licenze, i server sul suo renet e la via del ritorno.",
+        "descriptionShort": "Mostra l'anteprima attiva"
+      },
+      "use": {
+        "acceptFormatChange": "Accetta senza chiedere l'avviso che questa anteprima modifica un formato su disco",
+        "description": "Verifica la build della CLI dell'anteprima su entrambe le sue origini, conserva la CLI attuale come rdc.pre-preview, installa la CLI dell'anteprima e punta questa configurazione al server dell'anteprima. Un server riceve il renet dell'anteprima solo la prima volta che la CLI lo predispone.",
+        "descriptionShort": "Passa a un'anteprima",
+        "nameArgument": "Il nome dell'anteprima, ad esempio pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Gestione delle macchine",
       "mcp": "Server MCP",
       "ops": "Operazioni VM locali",
+      "preview": "Anteprime delle PR",
       "repo": "Ciclo di vita del repository",
       "serve": "Servizio executor",
       "shortcuts": "Comandi rapidi (scorciatoie)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "«{{name}}» non è un nome di anteprima. Un nome di anteprima è pv- seguito da tre parole minuscole, ad esempio pv-amber-river-stone.",
       "alreadyActive": "Questa configurazione usa già l'anteprima {{name}}. Esci prima da quell'anteprima.",
-      "serversPending": "L'anteprima {{name}} ha ancora {{count}} server sul proprio renet: {{machines}}. Riportali indietro prima di rimuovere l'anteprima."
+      "serversPending": "L'anteprima {{name}} ha ancora {{count}} server sul proprio renet: {{machines}}. Riportali indietro prima di rimuovere l'anteprima.",
+      "noBuild": "L'anteprima {{name}} non risponde con alcuna build, quindi non è possibile passarvi. Controlla il nome e che l'anteprima esista ancora.",
+      "badBuild": "L'anteprima {{name}} risponde con una build illeggibile ({{detail}}).",
+      "noBinary": "L'anteprima {{name}} non ha una build della CLI per {{platform}}.",
+      "versionMismatch": "Anteprima {{name}}: il manifest della release indica v{{manifest}} e il server dell'anteprima indica v{{server}}. Non è stato installato nulla.",
+      "hashMismatch": "Anteprima {{name}}: il checksum {{platform}} nel manifest della release differisce da quello del server dell'anteprima. Non è stato installato nulla.",
+      "notSea": "Un'anteprima sostituisce il binario rdc installato, quindi serve il rdc in pacchetto (non un'esecuzione da npm o dai sorgenti).",
+      "unsupportedPlatform": "Questa piattaforma non ha una build di anteprima.",
+      "formatChangeDeclined": "Non si è passati all'anteprima {{name}}: la modifica del formato su disco non è stata accettata.",
+      "leaveDeclined": "Non si è usciti dall'anteprima {{name}}: il ritorno dei server non è stato confermato.",
+      "machineNotTouched": "{{machine}} non è sul renet dell'anteprima {{name}}.",
+      "machineUnnamed": "L'anteprima {{name}} è attiva e questa chiamata non indica alcuna macchina della configurazione (\"{{machine}}\"), quindi il renet da sostituire non è stato registrato. Non è stato sostituito nulla."
     }
   },
   "feedback": {

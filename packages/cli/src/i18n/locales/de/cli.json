@@ -1797,6 +1797,56 @@
         "starting": "VM-Cluster-Bereitstellung wird gestartet..."
       }
     },
+    "preview": {
+      "description": "Diese Konfiguration auf eine Vorschau eines Pull Requests umstellen: rdc und das renet auf jedem Server, den rdc anfasst, wechseln zu den Builds der Vorschau, und `rdc preview leave` führt zu den veröffentlichten zurück. `rdc preview use <name>` mit dem Namen ausführen, den du erhalten hast.",
+      "descriptionShort": "Einen PR-Build auf den eigenen Maschinen testen und wieder zurückwechseln",
+      "leave": {
+        "description": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die in der Vorschau erstellten Repositories über dein echtes Konto neu lizenzieren. Ein nicht erreichbarer Server bleibt aufgelistet; später mit --machine abschließen.",
+        "descriptionShort": "Zu den veröffentlichten rdc und renet zurückkehren",
+        "machine": "Nur diesen Server zurückwechseln"
+      },
+      "msg": {
+        "banner": "Vorschau {{name}} ist aktiv (ihre Lizenzen enden am {{date}}). Mit `rdc preview leave` geht es zurück zu den veröffentlichten rdc und renet.",
+        "binaryNotRestored": "rdc wurde nicht wiederhergestellt. Der vorherige Kanal ({{channel}}) ist fehlgeschlagen, ebenso die aufbewahrte Kopie ({{copy}}). rdc aus dem veröffentlichten Kanal neu installieren; unter {{path}} liegt eventuell noch eine aufbewahrte Kopie.",
+        "binaryRestored": "rdc v{{version}} wiederhergestellt.",
+        "binaryRestoredFromCopy": "rdc v{{version}} aus der vor der Vorschau aufbewahrten Kopie wiederhergestellt ({{reason}}).",
+        "confirmSwitchBack": "{{count}} Server auf das renet zurückwechseln, das sie vor der Vorschau hatten?",
+        "emergencyExit": "Wenn die CLI der Vorschau nicht läuft, mit der aufbewahrten Kopie verlassen: {{command}}",
+        "expiryMessage": "Diese Maschine läuft auf der Vorschau {{name}}, einem Test-Build für einen Fix. Ihre Lizenzen enden am {{date}} und werden nur verlängert, solange die Vorschau existiert. Danach laufen Apps weiter und lassen sich stoppen und starten, aber neue Repositories, Forks, Größenänderungen und Backups werden abgelehnt. Mit `rdc preview leave` geht es zurück zu {{server}} und den veröffentlichten rdc und renet; in der Vorschau erstellte Repositories werden dann im Rahmen des Tarifs über das echte Konto lizenziert.",
+        "formatChange": "Diese Vorschau ändert ein Format auf dem Datenträger ({{formats}}): {{reason}}. Nach dem Zurückwechseln lassen sich von der Vorschau geschriebene Daten eventuell nicht mehr lesen.",
+        "formatChangeConfirm": "Trotzdem zu dieser Vorschau wechseln ({{formats}})?",
+        "leaveDone": "Vorschau {{name}} verlassen. Diese Konfiguration ist wieder auf {{server}}.",
+        "leavePending": "Vorschau {{name}} bleibt aktiv, bis alle Server zurück sind: {{machines}}. `rdc preview leave` erneut ausführen, sobald sie erreichbar sind.",
+        "licenceNotIssued": "der Konto-Server hat keine Lizenz ausgestellt",
+        "licenceRefused": "{{repo}} auf {{machine}} wurde nicht über {{server}} lizenziert: {{reason}}. Es läuft weiter und lässt sich stoppen und starten; Wachstum wird abgelehnt, bis der Tarif es zulässt.",
+        "licencesFailed": "Die Lizenzen auf {{machine}} wurden nicht auf das echte Konto übertragen: {{detail}}. Ausführen: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: über {{server}} neu lizenziert: {{repos}}.",
+        "notActive": "Diese Konfiguration nutzt keine Vorschau.",
+        "reprovisionFailed": "der angeheftete renet-Slot ist {{slot}} und die erneute Einrichtung ist fehlgeschlagen: {{detail}}",
+        "statusName": "Vorschau {{name}} auf {{host}}",
+        "statusNoServers": "Noch kein Server nutzt das renet der Vorschau.",
+        "statusPrevious": "Vor der Vorschau: rdc v{{version}} auf {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} abgelegt in {{slot}}",
+        "statusServers": "{{count}} Server nutzen das renet der Vorschau:",
+        "statusSince": "Umgestellt am {{date}}; Lizenzen enden {{end}}.",
+        "switchedBack": "{{machine}} läuft wieder auf renet v{{version}}.",
+        "touchedHeader": "Server mit dem renet der Vorschau {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} jetzt, v{{recorded}} vor der Vorschau",
+        "unreachable": "{{machine}} konnte nicht zurückgewechselt werden ({{detail}}); der Server bleibt aufgelistet. Abschließen mit: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "nicht erreichbar",
+        "useDone": "Auf Vorschau {{name}} gewechselt (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Die aktive Vorschau, ihr Lizenzende, die Server mit ihrem renet und den Weg zurück anzeigen.",
+        "descriptionShort": "Die aktive Vorschau anzeigen"
+      },
+      "use": {
+        "acceptFormatChange": "Die Warnung, dass diese Vorschau ein Format auf dem Datenträger ändert, ohne Rückfrage akzeptieren",
+        "description": "Den Build der Vorschau-CLI gegen beide Herkunftsorte prüfen, die aktuelle CLI als rdc.pre-preview aufbewahren, die CLI der Vorschau installieren und diese Konfiguration auf den Vorschau-Server ausrichten. Ein Server erhält das renet der Vorschau erst, wenn die CLI ihn zum ersten Mal einrichtet.",
+        "descriptionShort": "Zu einer Vorschau wechseln",
+        "nameArgument": "Der Vorschauname, zum Beispiel pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Maschinenverwaltung",
       "mcp": "MCP-Server",
       "ops": "Lokale VM-Operationen",
+      "preview": "PR-Vorschauen",
       "repo": "Repository-Lebenszyklus",
       "serve": "Executor-Dienst",
       "shortcuts": "Schnellbefehle (Shortcuts)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "„{{name}}“ ist kein Vorschauname. Ein Vorschauname besteht aus pv- und drei kleingeschriebenen Wörtern, zum Beispiel pv-amber-river-stone.",
       "alreadyActive": "Diese Konfiguration nutzt bereits die Vorschau {{name}}. Diese Vorschau zuerst verlassen.",
-      "serversPending": "Auf dem renet der Vorschau {{name}} laufen noch {{count}} Server: {{machines}}. Zurückschalten, bevor die Vorschau entfernt wird."
+      "serversPending": "Auf dem renet der Vorschau {{name}} laufen noch {{count}} Server: {{machines}}. Zurückschalten, bevor die Vorschau entfernt wird.",
+      "noBuild": "Vorschau {{name}} antwortet mit keinem Build, daher kann nicht zu ihr gewechselt werden. Den Namen prüfen und ob die Vorschau noch existiert.",
+      "badBuild": "Vorschau {{name}} antwortet mit einem nicht lesbaren Build ({{detail}}).",
+      "noBinary": "Vorschau {{name}} hat keinen CLI-Build für {{platform}}.",
+      "versionMismatch": "Vorschau {{name}}: Das Release-Manifest nennt v{{manifest}}, der Vorschau-Server v{{server}}. Es wurde nichts installiert.",
+      "hashMismatch": "Vorschau {{name}}: Die Prüfsumme für {{platform}} im Release-Manifest weicht von der des Vorschau-Servers ab. Es wurde nichts installiert.",
+      "notSea": "Eine Vorschau ersetzt die installierte rdc-Binärdatei und braucht daher das gepackte rdc (kein npm- oder Quellcode-Lauf).",
+      "unsupportedPlatform": "Für diese Plattform gibt es keinen Vorschau-Build.",
+      "formatChangeDeclined": "Nicht zu Vorschau {{name}} gewechselt: Die Änderung des Formats auf dem Datenträger wurde nicht akzeptiert.",
+      "leaveDeclined": "Vorschau {{name}} nicht verlassen: Das Zurückwechseln der Server wurde nicht bestätigt.",
+      "machineNotTouched": "{{machine}} nutzt nicht das renet der Vorschau {{name}}.",
+      "machineUnnamed": "Vorschau {{name}} ist aktiv, und dieser Aufruf nennt keine Konfigurationsmaschine (\"{{machine}}\"), daher ließ sich das zu ersetzende renet nicht festhalten. Es wurde nichts ersetzt."
     }
   },
   "feedback": {

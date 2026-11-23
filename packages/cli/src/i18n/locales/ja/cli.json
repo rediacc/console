@@ -1797,6 +1797,56 @@
         "starting": "VM クラスターのプロビジョニングを開始しています..."
       }
     },
+    "preview": {
+      "description": "この設定をプルリクエストのプレビューに切り替えます。rdc と、rdc が操作する各サーバー上の renet がプレビューのビルドに移り、`rdc preview leave` で公開版に戻ります。渡された名前を指定して `rdc preview use <name>` を実行してください。",
+      "descriptionShort": "PRのビルドを自分のマシンで試し、元に戻す",
+      "leave": {
+        "description": "プレビューの renet で動いているサーバーを一覧表示し、確認したうえで、それらだけを元に戻します。その後、以前の rdc を復元し、プレビューで作成したリポジトリを本来のアカウントで再ライセンスします。到達できないサーバーは一覧に残るので、後で --machine を付けて完了してください。",
+        "descriptionShort": "公開版の rdc と renet に戻る",
+        "machine": "このサーバーだけを元に戻す"
+      },
+      "msg": {
+        "banner": "プレビュー {{name}} が有効です（ライセンスは {{date}} に終了します）。公開版の rdc と renet に戻るには `rdc preview leave` を実行してください。",
+        "binaryNotRestored": "rdc を復元できませんでした。以前のチャンネル（{{channel}}）も、保持されたコピー（{{copy}}）も失敗しました。公開チャンネルから rdc を再インストールしてください。保持されたコピーが {{path}} に残っている可能性があります。",
+        "binaryRestored": "rdc v{{version}} を復元しました。",
+        "binaryRestoredFromCopy": "プレビュー前に保持していたコピーから rdc v{{version}} を復元しました（{{reason}}）。",
+        "confirmSwitchBack": "{{count}} 台のサーバーを、プレビュー前の renet に戻しますか?",
+        "emergencyExit": "プレビューのCLIが起動できない場合は、保持されたコピーで終了してください: {{command}}",
+        "expiryMessage": "このマシンはプレビュー {{name}}（修正のテストビルド）を使用しています。ライセンスは {{date}} に終了し、更新されるのはプレビューが存在する間だけです。その後も、実行中のアプリは動き続け、停止と起動もできますが、新しいリポジトリ、フォーク、サイズ変更、バックアップは拒否されます。`rdc preview leave` を実行すると {{server}} と公開版の rdc と renet に戻ります。プレビューで作成したリポジトリは、その後、本来のアカウントのプランの範囲内でライセンスされます。",
+        "formatChange": "このプレビューはディスク上の形式（{{formats}}）を変更します: {{reason}}。元に戻すと、プレビューが書き込んだデータを読めない場合があります。",
+        "formatChangeConfirm": "それでもこのプレビューに切り替えますか（{{formats}}）?",
+        "leaveDone": "プレビュー {{name}} を終了しました。この設定は {{server}} に戻りました。",
+        "leavePending": "すべてのサーバーが戻るまで、プレビュー {{name}} は有効のままです: {{machines}}。到達できるようになったら、もう一度 `rdc preview leave` を実行してください。",
+        "licenceNotIssued": "アカウントサーバーがライセンスを発行しませんでした",
+        "licenceRefused": "{{machine}} 上の {{repo}} は {{server}} からライセンスされませんでした: {{reason}}。実行は続き、停止と起動もできますが、プランが認めるまで増強は拒否されます。",
+        "licencesFailed": "{{machine}} のライセンスを本来のアカウントに移せませんでした: {{detail}}。次を実行してください: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: {{server}} から再ライセンスしました: {{repos}}。",
+        "notActive": "この設定はプレビューを使用していません。",
+        "reprovisionFailed": "固定された renet スロットは {{slot}} で、再プロビジョニングに失敗しました: {{detail}}",
+        "statusName": "プレビュー {{name}}（{{host}}）",
+        "statusNoServers": "プレビューの renet で動いているサーバーはまだありません。",
+        "statusPrevious": "プレビュー前: {{server}} 上の rdc v{{version}}。",
+        "statusServer": "  {{machine}}: renet v{{version}} を {{slot}} に保持",
+        "statusServers": "{{count}} 台のサーバーがプレビューの renet で動いています:",
+        "statusSince": "{{date}} に切り替え。ライセンスは {{end}} に終了します。",
+        "switchedBack": "{{machine}} は renet v{{version}} に戻りました。",
+        "touchedHeader": "プレビュー {{name}} の renet 上のサーバー:",
+        "touchedLine": "  {{machine}}: 現在 renet v{{current}}、プレビュー前は v{{recorded}}",
+        "unreachable": "{{machine}} を元に戻せませんでした（{{detail}}）。一覧に残ります。次のコマンドで完了してください: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "到達不可",
+        "useDone": "プレビュー {{name}} に切り替えました（rdc v{{version}}）。"
+      },
+      "status": {
+        "description": "有効なプレビュー、ライセンスの終了日、その renet で動いているサーバー、元に戻す方法を表示します。",
+        "descriptionShort": "有効なプレビューを表示する"
+      },
+      "use": {
+        "acceptFormatChange": "このプレビューがディスク上の形式を変更するという警告を、確認なしで受け入れる",
+        "description": "プレビューのCLIビルドを2つの配布元で照合し、現在のCLIを rdc.pre-preview として保持し、プレビューのCLIをインストールして、この設定をプレビューのサーバーに向けます。サーバーがプレビューの renet を受け取るのは、CLIが初めてそのサーバーをプロビジョニングするときだけです。",
+        "descriptionShort": "プレビューに切り替える",
+        "nameArgument": "プレビュー名（例: pv-amber-river-stone）"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
       "ops": "ローカル VM 操作",
+      "preview": "PRプレビュー",
       "repo": "リポジトリライフサイクル",
       "serve": "エグゼキューターサービス",
       "shortcuts": "クイックコマンド（ショートカット）",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "「{{name}}」はプレビュー名ではありません。プレビュー名は pv- に小文字の単語3つが続く形式です。例: pv-amber-river-stone",
       "alreadyActive": "この設定はすでにプレビュー {{name}} を使用しています。先にそのプレビューを終了してください。",
-      "serversPending": "プレビュー {{name}} の renet 上にサーバーが {{count}} 台残っています: {{machines}}。プレビューを削除する前に元に戻してください。"
+      "serversPending": "プレビュー {{name}} の renet 上にサーバーが {{count}} 台残っています: {{machines}}。プレビューを削除する前に元に戻してください。",
+      "noBuild": "プレビュー {{name}} がビルドを返さないため、切り替えられません。名前と、プレビューがまだ存在するかを確認してください。",
+      "badBuild": "プレビュー {{name}} が読み取れないビルドを返しました（{{detail}}）。",
+      "noBinary": "プレビュー {{name}} には {{platform}} 用のCLIビルドがありません。",
+      "versionMismatch": "プレビュー {{name}}: リリースマニフェストは v{{manifest}}、プレビューサーバーは v{{server}} を示しています。何もインストールしていません。",
+      "hashMismatch": "プレビュー {{name}}: リリースマニフェストの {{platform}} 用チェックサムが、プレビューサーバーのものと異なります。何もインストールしていません。",
+      "notSea": "プレビューはインストール済みの rdc バイナリを置き換えるため、パッケージ版の rdc が必要です（npm やソースからの実行は不可）。",
+      "unsupportedPlatform": "このプラットフォーム向けのプレビュービルドはありません。",
+      "formatChangeDeclined": "プレビュー {{name}} には切り替えませんでした: ディスク上の形式の変更が承認されませんでした。",
+      "leaveDeclined": "プレビュー {{name}} は終了しませんでした: サーバーを元に戻す操作が確認されませんでした。",
+      "machineNotTouched": "{{machine}} はプレビュー {{name}} の renet 上にありません。",
+      "machineUnnamed": "プレビュー {{name}} は有効ですが、この呼び出しは設定内のマシンを指定していません（\"{{machine}}\"）。置き換える renet を記録できなかったため、何も置き換えていません。"
     }
   },
   "feedback": {

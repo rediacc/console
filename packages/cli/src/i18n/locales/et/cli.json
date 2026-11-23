@@ -1797,6 +1797,56 @@
         "starting": "VM-klastri ettevalmistamine..."
       }
     },
+    "preview": {
+      "description": "Lülita see konfiguratsioon pull requesti eelvaatele: rdc ja renet igas serveris, mida rdc puudutab, lähevad üle eelvaate järkudele ning `rdc preview leave` toob tagasi avaldatud järgud. Käivita `rdc preview use <name>` sulle antud nimega.",
+      "descriptionShort": "Testi PR-i järgu oma masinatel ja lülitu tagasi",
+      "leave": {
+        "description": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti sinu päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine.",
+        "descriptionShort": "Naase avaldatud rdc ja renet juurde",
+        "machine": "Lülita tagasi ainult see server"
+      },
+      "msg": {
+        "banner": "Eelvaade {{name}} on aktiivne (selle litsentsid lõpevad {{date}}). Käivita `rdc preview leave`, et naasta avaldatud rdc ja renet juurde.",
+        "binaryNotRestored": "rdc-d ei taastatud. Eelmine kanal ({{channel}}) ebaõnnestus ja säilitatud koopia ({{copy}}) samuti. Paigalda rdc uuesti avaldatud kanalist; säilitatud koopia võib endiselt asuda asukohas {{path}}.",
+        "binaryRestored": "rdc v{{version}} taastatud.",
+        "binaryRestoredFromCopy": "rdc v{{version}} taastatud enne eelvaadet säilitatud koopiast ({{reason}}).",
+        "confirmSwitchBack": "Kas lülitada {{count}} serverit tagasi renet'i, mis neil enne eelvaadet oli?",
+        "emergencyExit": "Kui eelvaate CLI ei käivitu, lahku säilitatud koopiaga: {{command}}",
+        "expiryMessage": "See masin on eelvaatel {{name}}, mis on paranduse testjärk. Selle litsentsid lõpevad {{date}} ja uuenevad ainult seni, kuni eelvaade eksisteerib. Pärast seda töötavad käimasolevad rakendused edasi ning neid saab peatada ja käivitada, kuid uued hoidlad, forkid, suuruse muutmised ja varukoopiad lükatakse tagasi. Käivita `rdc preview leave`, et naasta serveri {{server}} ning avaldatud rdc ja renet juurde; eelvaates loodud hoidlad litsentsitakse seejärel päris kontolt, selle paketi piires.",
+        "formatChange": "See eelvaade muudab kettal olevat vormingut ({{formats}}): {{reason}}. Tagasilülitamisel ei pruugi eelvaate kirjutatud andmeid enam lugeda.",
+        "formatChangeConfirm": "Kas lülituda sellele eelvaatele ikkagi ({{formats}})?",
+        "leaveDone": "Eelvaatest {{name}} lahkutud. See konfiguratsioon on taas serveris {{server}}.",
+        "leavePending": "Eelvaade {{name}} jääb aktiivseks, kuni kõik serverid on tagasi: {{machines}}. Käivita `rdc preview leave` uuesti, kui need on kättesaadavad.",
+        "licenceNotIssued": "konto server ei väljastanud litsentsi",
+        "licenceRefused": "{{repo}} masinas {{machine}} ei litsentsitud serverist {{server}}: {{reason}}. See töötab edasi ning seda saab peatada ja käivitada; kasv lükatakse tagasi, kuni pakett seda lubab.",
+        "licencesFailed": "Masina {{machine}} litsentse ei viidud üle päris kontole: {{detail}}. Käivita: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: litsentsitud uuesti serverist {{server}}: {{repos}}.",
+        "notActive": "See konfiguratsioon ei ole eelvaatel.",
+        "reprovisionFailed": "kinnitatud renet'i pesa on {{slot}} ja uuesti ettevalmistamine ebaõnnestus: {{detail}}",
+        "statusName": "Eelvaade {{name}} aadressil {{host}}",
+        "statusNoServers": "Ükski server ei kasuta veel eelvaate renet'i.",
+        "statusPrevious": "Enne eelvaadet: rdc v{{version}} serveris {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} hoitud asukohas {{slot}}",
+        "statusServers": "{{count}} serverit kasutavad eelvaate renet'i:",
+        "statusSince": "Sisse lülitatud {{date}}; litsentsid lõpevad {{end}}.",
+        "switchedBack": "{{machine}} on taas renet v{{version}} peal.",
+        "touchedHeader": "Serverid eelvaate {{name}} renet'is:",
+        "touchedLine": "  {{machine}}: renet v{{current}} praegu, v{{recorded}} enne eelvaadet",
+        "unreachable": "{{machine}} tagasilülitamine ebaõnnestus ({{detail}}); see jääb loetellu. Lõpeta käsuga: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "kättesaamatu",
+        "useDone": "Lülitutud eelvaatele {{name}} (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Näitab aktiivset eelvaadet, selle litsentside lõppkuupäeva, selle renet'is olevaid servereid ja teed tagasi.",
+        "descriptionShort": "Näita aktiivset eelvaadet"
+      },
+      "use": {
+        "acceptFormatChange": "Nõustu hoiatusega, et see eelvaade muudab kettal olevat vormingut, küsimata",
+        "description": "Kontrollib eelvaate CLI järku mõlema päritolu vastu, hoiab praegust CLI-d nime all rdc.pre-preview, paigaldab eelvaate CLI ja suunab selle konfiguratsiooni eelvaate serverile. Server saab eelvaate renet'i alles siis, kui CLI seda esimest korda ette valmistab.",
+        "descriptionShort": "Lülitu eelvaatele",
+        "nameArgument": "Eelvaate nimi, näiteks pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Masina haldus",
       "mcp": "MCP-server",
       "ops": "Kohalikud VM-toimingud",
+      "preview": "PR-i eelvaated",
       "repo": "Repositooriumi elutsükkel",
       "serve": "Käitaja teenus",
       "shortcuts": "Kiirkäsud (otseteed)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "„{{name}}“ ei ole eelvaate nimi. Eelvaate nimi on pv- ja kolm väiketähelist sõna, näiteks pv-amber-river-stone.",
       "alreadyActive": "See konfiguratsioon kasutab juba eelvaadet {{name}}. Lahku kõigepealt sellest eelvaatest.",
-      "serversPending": "Eelvaate {{name}} renetis on veel {{count}} serverit: {{machines}}. Lülita need enne eelvaate eemaldamist tagasi."
+      "serversPending": "Eelvaate {{name}} renetis on veel {{count}} serverit: {{machines}}. Lülita need enne eelvaate eemaldamist tagasi.",
+      "noBuild": "Eelvaade {{name}} ei vasta ühegi järguga, seega ei saa sellele lülituda. Kontrolli nime ja seda, et eelvaade veel eksisteerib.",
+      "badBuild": "Eelvaade {{name}} vastab loetamatu järguga ({{detail}}).",
+      "noBinary": "Eelvaatel {{name}} pole CLI järku platvormile {{platform}}.",
+      "versionMismatch": "Eelvaade {{name}}: väljalaskemanifest ütleb v{{manifest}}, eelvaate server aga v{{server}}. Midagi ei paigaldatud.",
+      "hashMismatch": "Eelvaade {{name}}: platvormi {{platform}} kontrollsumma väljalaskemanifestis erineb eelvaate serveri omast. Midagi ei paigaldatud.",
+      "notSea": "Eelvaade asendab paigaldatud rdc binaarfaili, seega vajab see pakendatud rdc-d (mitte npm-i ega lähtekoodi käivitust).",
+      "unsupportedPlatform": "Sellel platvormil pole eelvaate järku.",
+      "formatChangeDeclined": "Eelvaatele {{name}} ei lülitutud: kettal oleva vormingu muutust ei aktsepteeritud.",
+      "leaveDeclined": "Eelvaatest {{name}} ei lahutud: serverite tagasilülitamist ei kinnitatud.",
+      "machineNotTouched": "{{machine}} ei ole eelvaate {{name}} renet'is.",
+      "machineUnnamed": "Eelvaade {{name}} on aktiivne ja see kutse ei nimeta ühtegi konfiguratsiooni masinat (\"{{machine}}\"), seega ei saanud asendatavat renet'i salvestada. Midagi ei asendatud."
     }
   },
   "feedback": {

@@ -1797,6 +1797,56 @@
         "starting": "A iniciar provisionamento do cluster de VMs..."
       }
     },
+    "preview": {
+      "description": "Mude esta configuração para uma pré-visualização de um pull request: o rdc e o renet de cada servidor que o rdc toca passam para as compilações da pré-visualização, e `rdc preview leave` volta às publicadas. Execute `rdc preview use <name>` com o nome que lhe foi dado.",
+      "descriptionShort": "Teste a compilação de um PR nas suas próprias máquinas e volte atrás",
+      "leave": {
+        "description": "Listar os servidores que executam o renet da pré-visualização, pedir confirmação e devolver exatamente esses; depois restaurar o rdc anterior e voltar a licenciar, a partir da sua conta real, os repositórios criados na pré-visualização. Um servidor inacessível continua na lista; conclua-o mais tarde com --machine.",
+        "descriptionShort": "Voltar ao rdc e ao renet publicados",
+        "machine": "Devolver apenas este servidor"
+      },
+      "msg": {
+        "banner": "A pré-visualização {{name}} está ativa (as suas licenças terminam em {{date}}). Execute `rdc preview leave` para voltar ao rdc e ao renet publicados.",
+        "binaryNotRestored": "O rdc não foi restaurado. O canal anterior ({{channel}}) falhou, tal como a cópia guardada ({{copy}}). Reinstale o rdc a partir do canal publicado; ainda pode existir uma cópia guardada em {{path}}.",
+        "binaryRestored": "rdc v{{version}} restaurado.",
+        "binaryRestoredFromCopy": "rdc v{{version}} restaurado a partir da cópia guardada antes da pré-visualização ({{reason}}).",
+        "confirmSwitchBack": "Devolver {{count}} servidor(es) ao renet que tinham antes da pré-visualização?",
+        "emergencyExit": "Se a CLI da pré-visualização não conseguir executar, saia com a cópia guardada: {{command}}",
+        "expiryMessage": "Esta máquina está na pré-visualização {{name}}, uma compilação de teste de uma correção. As suas licenças terminam em {{date}} e só são renovadas enquanto a pré-visualização existir. Depois disso, as aplicações em execução continuam a funcionar e podem ser paradas e iniciadas, mas novos repositórios, forks, redimensionamentos e cópias de segurança são recusados. Execute `rdc preview leave` para voltar a {{server}} e ao rdc e renet publicados; os repositórios criados na pré-visualização passam então a ser licenciados a partir da conta real, dentro do respetivo plano.",
+        "formatChange": "Esta pré-visualização altera um formato em disco ({{formats}}): {{reason}}. Ao voltar atrás, pode não ser possível ler os dados que a pré-visualização escreve.",
+        "formatChangeConfirm": "Mudar mesmo assim para esta pré-visualização ({{formats}})?",
+        "leaveDone": "Saiu da pré-visualização {{name}}. Esta configuração voltou a {{server}}.",
+        "leavePending": "A pré-visualização {{name}} continua ativa até todos os servidores voltarem: {{machines}}. Execute `rdc preview leave` outra vez quando estiverem acessíveis.",
+        "licenceNotIssued": "o servidor de contas não emitiu nenhuma licença",
+        "licenceRefused": "{{repo}} em {{machine}} não foi licenciado a partir de {{server}}: {{reason}}. Continua em execução e pode ser parado e iniciado; o crescimento é recusado até o plano o admitir.",
+        "licencesFailed": "As licenças em {{machine}} não foram movidas para a conta real: {{detail}}. Execute: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: licenciado novamente a partir de {{server}}: {{repos}}.",
+        "notActive": "Esta configuração não está numa pré-visualização.",
+        "reprovisionFailed": "o slot de renet fixado é {{slot}} e o novo aprovisionamento falhou: {{detail}}",
+        "statusName": "Pré-visualização {{name}} em {{host}}",
+        "statusNoServers": "Ainda nenhum servidor executa o renet da pré-visualização.",
+        "statusPrevious": "Antes da pré-visualização: rdc v{{version}} em {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} guardado em {{slot}}",
+        "statusServers": "{{count}} servidor(es) executam o renet da pré-visualização:",
+        "statusSince": "Ativada em {{date}}; as licenças terminam em {{end}}.",
+        "switchedBack": "{{machine}} voltou ao renet v{{version}}.",
+        "touchedHeader": "Servidores no renet da pré-visualização {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} agora, v{{recorded}} antes da pré-visualização",
+        "unreachable": "Não foi possível devolver {{machine}} ({{detail}}); continua na lista. Conclua com: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "inacessível",
+        "useDone": "Mudou para a pré-visualização {{name}} (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Mostrar a pré-visualização ativa, a data de fim das suas licenças, os servidores no seu renet e o caminho de volta.",
+        "descriptionShort": "Mostrar a pré-visualização ativa"
+      },
+      "use": {
+        "acceptFormatChange": "Aceitar, sem perguntar, o aviso de que esta pré-visualização altera um formato em disco",
+        "description": "Verificar a compilação da CLI da pré-visualização nas duas origens, guardar a CLI atual como rdc.pre-preview, instalar a CLI da pré-visualização e apontar esta configuração para o servidor da pré-visualização. Um servidor só recebe o renet da pré-visualização na primeira vez que a CLI o aprovisiona.",
+        "descriptionShort": "Mudar para uma pré-visualização",
+        "nameArgument": "O nome da pré-visualização, por exemplo pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Gestão de Máquinas",
       "mcp": "Servidor MCP",
       "ops": "Operações de VM Locais",
+      "preview": "Pré-visualizações de PR",
       "repo": "Ciclo de Vida do Repositório",
       "serve": "Serviço executor",
       "shortcuts": "Comandos Rápidos (Atalhos)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "\"{{name}}\" não é um nome de pré-visualização. Um nome de pré-visualização é pv- seguido de três palavras em minúsculas, por exemplo pv-amber-river-stone.",
       "alreadyActive": "Esta configuração já está na pré-visualização {{name}}. Saia primeiro dessa pré-visualização.",
-      "serversPending": "A pré-visualização {{name}} ainda tem {{count}} servidor(es) no seu renet: {{machines}}. Volte-os antes de remover a pré-visualização."
+      "serversPending": "A pré-visualização {{name}} ainda tem {{count}} servidor(es) no seu renet: {{machines}}. Volte-os antes de remover a pré-visualização.",
+      "noBuild": "A pré-visualização {{name}} não responde com nenhuma compilação, por isso não é possível mudar para ela. Verifique o nome e se a pré-visualização ainda existe.",
+      "badBuild": "A pré-visualização {{name}} responde com uma compilação ilegível ({{detail}}).",
+      "noBinary": "A pré-visualização {{name}} não tem compilação da CLI para {{platform}}.",
+      "versionMismatch": "Pré-visualização {{name}}: o manifesto da versão indica v{{manifest}} e o servidor da pré-visualização indica v{{server}}. Nada foi instalado.",
+      "hashMismatch": "Pré-visualização {{name}}: a soma de verificação de {{platform}} no manifesto da versão difere da do servidor da pré-visualização. Nada foi instalado.",
+      "notSea": "Uma pré-visualização substitui o binário rdc instalado, por isso precisa do rdc empacotado (não de uma execução via npm ou a partir do código-fonte).",
+      "unsupportedPlatform": "Esta plataforma não tem compilação de pré-visualização.",
+      "formatChangeDeclined": "Não se mudou para a pré-visualização {{name}}: a alteração do formato em disco não foi aceite.",
+      "leaveDeclined": "Não se saiu da pré-visualização {{name}}: a devolução dos servidores não foi confirmada.",
+      "machineNotTouched": "{{machine}} não está no renet da pré-visualização {{name}}.",
+      "machineUnnamed": "A pré-visualização {{name}} está ativa e esta chamada não indica nenhuma máquina da configuração (\"{{machine}}\"), por isso não foi possível registar o renet que seria substituído. Nada foi substituído."
     }
   },
   "feedback": {

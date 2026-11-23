@@ -1797,6 +1797,56 @@
         "starting": "Iniciando aprovisionamiento del clúster de VM..."
       }
     },
+    "preview": {
+      "description": "Cambiar esta configuración a una vista previa de un pull request: rdc y el renet de cada servidor que rdc toca pasan a las compilaciones de la vista previa, y `rdc preview leave` vuelve a las publicadas. Ejecute `rdc preview use <name>` con el nombre que le dieron.",
+      "descriptionShort": "Probar la compilación de un PR en tus propias máquinas y volver atrás",
+      "leave": {
+        "description": "Listar los servidores que ejecutan el renet de la vista previa, preguntar y devolver exactamente esos; después restaurar el rdc anterior y volver a licenciar, desde su cuenta real, los repositorios creados en la vista previa. Un servidor inaccesible sigue en la lista; termínelo después con --machine.",
+        "descriptionShort": "Volver a rdc y renet publicados",
+        "machine": "Devolver solo este servidor"
+      },
+      "msg": {
+        "banner": "La vista previa {{name}} está activa (sus licencias terminan el {{date}}). Ejecute `rdc preview leave` para volver a rdc y renet publicados.",
+        "binaryNotRestored": "No se restauró rdc. Falló el canal anterior ({{channel}}) y también la copia conservada ({{copy}}). Reinstale rdc desde el canal publicado; puede que aún exista una copia conservada en {{path}}.",
+        "binaryRestored": "rdc v{{version}} restaurado.",
+        "binaryRestoredFromCopy": "rdc v{{version}} restaurado desde la copia conservada antes de la vista previa ({{reason}}).",
+        "confirmSwitchBack": "¿Devolver {{count}} servidor(es) al renet que tenían antes de la vista previa?",
+        "emergencyExit": "Si la CLI de la vista previa no se ejecuta, salga con la copia conservada: {{command}}",
+        "expiryMessage": "Esta máquina está en la vista previa {{name}}, una compilación de prueba de una corrección. Sus licencias terminan el {{date}} y solo se renuevan mientras la vista previa exista. Después, las aplicaciones en ejecución siguen funcionando y se pueden detener e iniciar, pero se rechazan los repositorios nuevos, las bifurcaciones, los cambios de tamaño y las copias de seguridad. Ejecute `rdc preview leave` para volver a {{server}} y a rdc y renet publicados; los repositorios creados en la vista previa se licencian entonces desde la cuenta real, dentro de su plan.",
+        "formatChange": "Esta vista previa cambia un formato en disco ({{formats}}): {{reason}}. Al volver atrás puede que no se lean los datos que escriba la vista previa.",
+        "formatChangeConfirm": "¿Cambiar a esta vista previa de todos modos ({{formats}})?",
+        "leaveDone": "Ha salido de la vista previa {{name}}. Esta configuración vuelve a estar en {{server}}.",
+        "leavePending": "La vista previa {{name}} sigue activa hasta que todos los servidores hayan vuelto: {{machines}}. Ejecute `rdc preview leave` de nuevo cuando estén accesibles.",
+        "licenceNotIssued": "el servidor de cuentas no emitió ninguna licencia",
+        "licenceRefused": "{{repo}} en {{machine}} no se licenció desde {{server}}: {{reason}}. Sigue en ejecución y se puede detener e iniciar; el crecimiento se rechaza hasta que el plan lo admita.",
+        "licencesFailed": "Las licencias de {{machine}} no se movieron a la cuenta real: {{detail}}. Ejecute: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: licenciado de nuevo desde {{server}}: {{repos}}.",
+        "notActive": "Esta configuración no está en una vista previa.",
+        "reprovisionFailed": "la ranura de renet fijada es {{slot}} y falló el reaprovisionamiento: {{detail}}",
+        "statusName": "Vista previa {{name}} en {{host}}",
+        "statusNoServers": "Todavía ningún servidor ejecuta el renet de la vista previa.",
+        "statusPrevious": "Antes de la vista previa: rdc v{{version}} en {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} guardado en {{slot}}",
+        "statusServers": "{{count}} servidor(es) ejecutan el renet de la vista previa:",
+        "statusSince": "Activada el {{date}}; las licencias terminan el {{end}}.",
+        "switchedBack": "{{machine}} vuelve a estar en renet v{{version}}.",
+        "touchedHeader": "Servidores con el renet de la vista previa {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} ahora, v{{recorded}} antes de la vista previa",
+        "unreachable": "No se pudo devolver {{machine}} ({{detail}}); sigue en la lista. Termínelo con: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "inaccesible",
+        "useDone": "Cambiado a la vista previa {{name}} (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Mostrar la vista previa activa, la fecha de fin de sus licencias, los servidores con su renet y el camino de vuelta.",
+        "descriptionShort": "Mostrar la vista previa activa"
+      },
+      "use": {
+        "acceptFormatChange": "Aceptar sin preguntar la advertencia de que esta vista previa cambia un formato en disco",
+        "description": "Comprobar la compilación de la CLI de la vista previa contra sus dos orígenes, conservar la CLI actual como rdc.pre-preview, instalar la CLI de la vista previa y apuntar esta configuración al servidor de la vista previa. Un servidor recibe el renet de la vista previa solo la primera vez que la CLI lo aprovisiona.",
+        "descriptionShort": "Cambiar a una vista previa",
+        "nameArgument": "El nombre de la vista previa, por ejemplo pv-amber-river-stone"
+      }
+    },
     "repo": {
       "admin": {
         "archive": {
@@ -3331,6 +3381,7 @@
       "machine": "Gestión de Máquinas",
       "mcp": "Servidor MCP",
       "ops": "Operaciones locales de VM",
+      "preview": "Vistas previas de PR",
       "repo": "Ciclo de vida de repositorios",
       "serve": "Servicio ejecutor",
       "shortcuts": "Comandos Rápidos (Atajos)",
@@ -3660,7 +3711,18 @@
     "preview": {
       "invalidName": "«{{name}}» no es un nombre de vista previa. Un nombre de vista previa es pv- seguido de tres palabras en minúsculas, por ejemplo pv-amber-river-stone.",
       "alreadyActive": "Esta configuración ya usa la vista previa {{name}}. Salga primero de esa vista previa.",
-      "serversPending": "La vista previa {{name}} aún tiene {{count}} servidor(es) en su renet: {{machines}}. Vuelva a cambiarlos antes de eliminar la vista previa."
+      "serversPending": "La vista previa {{name}} aún tiene {{count}} servidor(es) en su renet: {{machines}}. Vuelva a cambiarlos antes de eliminar la vista previa.",
+      "noBuild": "La vista previa {{name}} no devuelve ninguna compilación, así que no se puede cambiar a ella. Compruebe el nombre y que la vista previa siga existiendo.",
+      "badBuild": "La vista previa {{name}} devuelve una compilación ilegible ({{detail}}).",
+      "noBinary": "La vista previa {{name}} no tiene compilación de la CLI para {{platform}}.",
+      "versionMismatch": "Vista previa {{name}}: el manifiesto de la versión indica v{{manifest}} y el servidor de la vista previa indica v{{server}}. No se instaló nada.",
+      "hashMismatch": "Vista previa {{name}}: la suma de comprobación de {{platform}} del manifiesto de la versión difiere de la del servidor de la vista previa. No se instaló nada.",
+      "notSea": "Una vista previa reemplaza el binario de rdc instalado, así que necesita el rdc empaquetado (no una ejecución desde npm o desde el código fuente).",
+      "unsupportedPlatform": "Esta plataforma no tiene compilación de vista previa.",
+      "formatChangeDeclined": "No se cambió a la vista previa {{name}}: no se aceptó el cambio de formato en disco.",
+      "leaveDeclined": "No se salió de la vista previa {{name}}: no se confirmó devolver los servidores.",
+      "machineNotTouched": "{{machine}} no está en el renet de la vista previa {{name}}.",
+      "machineUnnamed": "La vista previa {{name}} está activa y esta llamada no nombra ninguna máquina de la configuración (\"{{machine}}\"), así que no se pudo registrar el renet que reemplazaría. No se reemplazó nada."
     }
   },
   "feedback": {
