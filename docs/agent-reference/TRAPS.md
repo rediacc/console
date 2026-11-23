@@ -2034,7 +2034,6 @@ A citation of a bare file name resolves against nothing once the file moves or a
 Trap-Id: no-cacheprovider-vs-strict-config
 Enforced-By: shape:no-cacheprovider-vs-strict-config
 Residue: the note follows a Bash call that ran pytest with `-p no:cacheprovider` and printed the empty run; a nested run inside a script or a gate whose output the session never reads is not seen, and nothing refuses the flag up front.
-Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
 Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
 Shape: post ^(?:\S*/)?(?:pytest|python[0-9.]*\s.*-m\s*pytest)\b.*\s-p\s*no:cacheprovider(?:\s|$)
 Shape-Output: no tests ran|Unknown config option: cache_dir
