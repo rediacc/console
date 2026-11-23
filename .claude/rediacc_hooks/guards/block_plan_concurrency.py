@@ -259,7 +259,7 @@ def run(event):
             return hookio.ALLOW
         # RULE 7: a handover fix in a landing-cut lease, briefed with no plan line, shares no tree with a live plan here.
         handover_why = ""
-        handover_lease = ""
+        admitted_lease = ""
         if HANDOVER_LINE.search(text):
             if X.spawn_plans(text):
                 handover_why = "the brief also names a plan, which the plan rules judge"
@@ -276,7 +276,7 @@ def run(event):
                             str(exc)[:160],
                         ),
                     )
-                handover_lease = lease
+                admitted_lease = lease
         declared = X.declared_owns(text)
         owns_problem = X.owns_line_problem(text) if declared is None else None
         # A brief `Owns: none -- <reason>` (the grammar refuses a bare `none`, which reads as None above) is a runner: it holds no plan, as `live_plans` already treats such an agent once it is live, so it serves none here and claims nothing (#79b7e92e).
@@ -324,7 +324,7 @@ def run(event):
                 root=root,
                 isolated=isolated,
             )
-        if not verdict.allow and handover_lease:
+        if not verdict.allow and admitted_lease:
             # Rule 7: a landing-cut tree shares no file with a plan of this checkout, and a planless spawn meets only file rules here (an exclusive plan's mutex is over its files), so none refuses it; the writer cap still does, and the claim row is still appended.
             verdict = X.Verdict(True, "handover", (), verdict.note)
         if not verdict.allow:
@@ -346,10 +346,10 @@ def run(event):
             (*verdict.lines, OWNS_UNREAD % owns_problem),
             verdict.note,
         )
-    if handover_lease and verdict.allow:
+    if admitted_lease and verdict.allow:
         event.warn_raw(
             "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so no file rule refuses it (the writer cap still applies).\n"
-            % (kind, handover_lease)
+            % (kind, admitted_lease)
         )
     if handover_why:
         event.warn_raw(
