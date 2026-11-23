@@ -17,15 +17,15 @@ Operator /ask, 2026-11-23: "One plan this branch but start in parallel immediate
 
 Class A: quality scripts ignore an unknown argument.
 
-1. The trigger: `npm run check:ci-record-paths -- --update` exited 0 and did nothing. At the tip, `main` in `.ci/scripts/quality/check_record_paths.py:1788` reads argv through `_flag`, which only looks up the names it knows. Lease commit 45da438dd0 (not on 1121-1 yet) adds `SWITCHES`, `VALUED` and a `parse_args`. That function exits 2 naming the argument and the accepted flags, and it comes with three selftest controls.
+1. The trigger: `npm run check:ci-record-paths -- --update` exited 0 and did nothing. At the tip, `main` in `.ci/scripts/quality/check_record_paths.py:1788` reads argv through `_flag`, which only looks up the names it knows. Lease commit f5f6574e60 (not on 1121-1 yet) adds `SWITCHES`, `VALUED` and a `parse_args`. That function exits 2 naming the argument and the accepted flags, and it comes with three selftest controls.
 2. The counts. The sweep found 146 scripts that read `sys.argv`: 8 refuse an unknown argument and 138 ignore it. A static re-read of the tip finds 175 entry points: the 174 `check_*.py` files plus `shape_cluster_diff.py` (`_cipath.py` is the path shim, not an entry point). 25 of them refuse:
    - 14 use argparse, and none of them uses `parse_known_args`.
    - 8 hand argv to a module `main` that refuses: cli_contract, gh_retry_reads, inline_suppressions, model_invocable_commands, python_types, region_consistency, silent_failure_patterns and swallowed_failures (for example `.ci/rediacc_ci/quality/swallowed_failures.py:455-470`).
-   - 3 refuse inline: `check_operator_rulings.py:150-158`, `check_plan_feedback.py:282-285` and `check_plan_bindings.py:353-356`. The last two refuse only unknown arguments that start with `--`.
+   - 3 refuse inline: `.ci/scripts/quality/check_operator_rulings.py:150-158`, `.ci/scripts/quality/check_plan_feedback.py:282-285` and `.ci/scripts/quality/check_plan_bindings.py:353-356`. The last two refuse only unknown arguments that start with `--`.
 
-   That leaves about 150 that ignore an unknown argument. 132 read argv loosely. 18 never read it at all, so every argument is dropped (for example `check_docker_npm_pins.py:295` and `check_hint_corpus.py:431`, where `main()` takes no argv). The sweep's 138 missed those 18 and counted five delegators that do refuse. SF10 measures with the count from SF8's gate, not with either hand count.
+   That leaves about 150 that ignore an unknown argument. 132 read argv loosely. 18 never read it at all, so every argument is dropped (for example `.ci/scripts/quality/check_docker_npm_pins.py:295` and `.ci/scripts/quality/check_hint_corpus.py:431`, where `main()` takes no argv). The sweep's 138 missed those 18 and counted five delegators that do refuse. SF10 measures with the count from SF8's gate, not with either hand count.
 3. Where the argument handling lives. 105 entry points are shims of the form `raise SystemExit(<module>.main(sys.argv[1:]))` into `.ci/rediacc_ci` (`.ci/scripts/quality/_cipath.py` explains why the shim exists). For these, the argument handling is the module's `main`. For example, `.ci/rediacc_ci/quality/npmrc.py:245-252` catches `--selftest` and ignores everything else. Adoption therefore has to edit module mains as well as entry points.
-4. Shared helpers. Shared CI Python lives in `.ci/rediacc_ci`: `rediacc_ci/controls.py` is the counted-controls runner, and `rediacc_ci/core/allowlist.py:533` holds `validate_reason`. Neither `.ci/scripts/lib` (only `toolchain.sh`) nor `.ci/scripts/quality/lib` (only `check_sanctioned_registry.py`) is a Python helper package.
+4. Shared helpers. Shared CI Python lives in `.ci/rediacc_ci`: `rediacc_ci/controls.py` is the counted-controls runner, and `.ci/rediacc_ci/core/allowlist.py:533` holds `validate_reason`. Neither `.ci/scripts/lib` (only `toolchain.sh`) nor `.ci/scripts/quality/lib` (only `check_sanctioned_registry.py`) is a Python helper package.
 5. Callers pass arguments today. `package.json` registers three quality gates with arguments: check:ci-turnstile-drift, check:ci-region-consistency and check:ci-tutorial-healthcheck-headroom. `scripts/ci-runner/manifest.ts`, the workflows and the hooks call others. If a caller passes a flag that a script ignores today, that call goes red on the day the script starts refusing it.
 
 Class B: Stop hook handlers that return an empty value without naming the failure.
@@ -41,11 +41,11 @@ Class B: Stop hook handlers that return an empty value without naming the failur
    The sweep's 80 sites in 23 files (wl_checks 36) used a narrower rule. A stricter rule, counting only handlers that make no call at all, gives 89 in 26 files (wl_checks 34). SF9's rule is the one counted before and after.
 7. Examples:
    - `.claude/hooks/stop/wl_checks.py:84`: a failed `import wl_ruling` becomes `None`.
-   - `wl_checks.py:3946-3955`: three liveness reads become `[]`, `[]` and `{}`, and the stop then certifies a pure wait.
-   - `wl_checks.py:690`: a failed fold becomes `""`.
-8. The cd-done latch. `wl_checks.py:3393-3395` writes `state_doc["landing"] = {"cd_done": sha}` before it checks whether the notice is empty. `wl_stack.notify_line` (`.claude/hooks/stop/wl_stack.py:479-483`) returns `""` when the landing record read raises. So one failed read uses up the latch for that sha, and the development session is never sent the cd-done message.
+   - `.claude/hooks/stop/wl_checks.py:3946-3955`: three liveness reads become `[]`, `[]` and `{}`, and the stop then certifies a pure wait.
+   - `.claude/hooks/stop/wl_checks.py:690`: a failed fold becomes `""`.
+8. The cd-done latch. `.claude/hooks/stop/wl_checks.py:3393-3395` writes `state_doc["landing"] = {"cd_done": sha}` before it checks whether the notice is empty. `wl_stack.notify_line` (`.claude/hooks/stop/wl_stack.py:479-483`) returns `""` when the landing record read raises. So one failed read uses up the latch for that sha, and the development session is never sent the cd-done message.
 9. `wl_core.landing_record` (`.claude/hooks/stop/wl_core.py:398-417`) turns an unreadable or malformed record into `None`, the same answer as having no record. The unreadable case is the `(OSError, ValueError)` handler at :405-406, and the malformed case is the shape checks at :407-415. `commit_policy.read_landing_record` (`.claude/rediacc_hooks/commit_policy.py:297`) already returns `(record, problem)`. This site is not in the count in item 6 because its handler is narrow.
-10. Already fixed. wl_stack.py and landing_promote.py were fixed by 549e8a9642 and 9418b52d91 (lease commits, not on 1121-1 yet), after f2893b51ee, the fix for review e943d92e.1 (on 1121-1). The pattern: a typed `StackReadError` is raised by the reader and answered as an advisory under the existing `landing-stack` key, and nothing new blocks. Two broad handlers in the fixed wl_stack.py are still silent:
+10. Already fixed. wl_stack.py and landing_promote.py were fixed by 8cd21a2a34 and 83f2247313 (lease commits, not on 1121-1 yet), after f2893b51ee, the fix for review e943d92e.1 (on 1121-1). The pattern: a typed `StackReadError` is raised by the reader and answered as an advisory under the existing `landing-stack` key, and nothing new blocks. Two broad handlers in the fixed wl_stack.py are still silent:
     - `main_checkout_tasks` (`except Exception: return []`)
     - `notify_line` (`return ""`), which causes item 8
 11. Existing gates.
@@ -53,13 +53,13 @@ Class B: Stop hook handlers that return an empty value without naming the failur
     - check:ci-swallowed-failures (`.ci/rediacc_ci/quality/swallowed_failures.py`) catches the opposite case: a probe failure folded into a value that looks the same as an empty result. It scans shell gates (`DEFAULT_SCAN_DIRS` at :142) and accepts a `# swallowed-failure-ok: <reason>` waiver (`WAIVER_RE` at :174), held to `validate_reason`. Its bash twin was deleted in 3d027a717f, so changing its verdict breaks no shadow ledger.
 
     Class B is the swallowed-failures class, written in Python.
-12. The advisory channel is `outq_add` (`wl_checks.py:1279`). Every key it queues needs an entry in `.claude/config/effort.json`, enforced by the effort-table rule of `npm run check:ci-plan-record`.
+12. The advisory channel is `outq_add` (`.claude/hooks/stop/wl_checks.py:1279`). Every key it queues needs an entry in `.claude/config/effort.json`, enforced by the effort-table rule of `npm run check:ci-plan-record`.
 
 ## Design
 
 D1. **One parser.** A shared module sits beside `controls.py` under `.ci/rediacc_ci/`. This plan calls it `gate_args`; SF1 fixes the name.
 - Signature: `parse(argv, prog, switches=(), valued=(), positional=None)`. The accepted flags are literal tuples, so a gate can read them without running the script.
-- An unknown argument, or a valued flag with no value, prints one stderr line naming the argument and the accepted set, then exits 2 before any work. The message follows the shape of 45da438dd0.
+- An unknown argument, or a valued flag with no value, prints one stderr line naming the argument and the accepted set, then exits 2 before any work. The message follows the shape of f5f6574e60.
 - `--help` and `-h` print the accepted set and exit 0.
 - A script that takes no arguments still calls `parse` with nothing declared, so any argument is refused.
 
@@ -67,7 +67,7 @@ D2. **Where the call goes.** `parse` is the first statement of the function that
 
 D3. **Callers before refusal.** Before a script starts refusing, every call to it is read: `package.json`, `scripts/ci-runner/manifest.ts`, `.github/workflows`, the `.claude` hooks and other scripts. Each argument a caller passes is either declared by the script or fixed at the caller in the same commit.
 
-D4. **The class A gate.** check:ci-gate-argv is added through a `---- gate ----` header and `npm run gate:bind`. It checks every entry point under `.ci/scripts/quality`:
+D4. **The class A gate.** the new gate-argv gate is added through a `---- gate ----` header and `npm run gate:bind`. It checks every entry point under `.ci/scripts/quality`:
 - The function that owns argv must reach `gate_args.parse`, or argparse without `parse_known_args`.
 - It refuses:
   - a `sys.argv` read anywhere except the shim's `main(sys.argv[1:])`
@@ -100,8 +100,8 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
 - SF4 waits on PLAN-tooling-speed.md SP1 (wl_store.py, wl_core.py).
 - SF5 waits on SP2 (wl_review.py, wl_schedred.py, wl_histfirst.py) and SP5 (wl_resprofile.py).
 - SF6 waits on SP3 (worklist.py).
-- SF7 waits for 549e8a9642 and 9418b52d91 to land on 1121-1.
-- SF1 rebases over 45da438dd0, which edits check_record_paths.py.
+- SF7 waits for 8cd21a2a34 and 83f2247313 to land on 1121-1.
+- SF1 rebases over f5f6574e60, which edits check_record_paths.py.
 - Several SF2 files are also owned by other plans:
   - wl_reggate.py: PLAN-tooling-speed.md SP2 and PLAN-reggate-debt-collection.md
   - wl_hints.py: PLAN-weekly-lessons.md W2
@@ -120,7 +120,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
 
 ## Tasks
 
-- [ ] SF1 [writer] Class A parser and adoption (D1-D3). The `gate_args` module is adopted by every entry point under `.ci/scripts/quality` that ignores an unknown argument, and by the module `main` each shim hands argv to. Callers' arguments are read first and declared or fixed. check_record_paths keeps the refusal and the three controls from 45da438dd0, now through `gate_args`.
+- [ ] SF1 [writer] Class A parser and adoption (D1-D3). The `gate_args` module is adopted by every entry point under `.ci/scripts/quality` that ignores an unknown argument, and by the module `main` each shim hands argv to. Callers' arguments are read first and declared or fixed. check_record_paths keeps the refusal and the three controls from f5f6574e60, now through `gate_args`.
   In flight: writer started 2026-11-23 on the operator's "start in parallel immediately"; tick when its commits land on 1121-1 with the Accept evidence.
   Owns: .ci/rediacc_ci/gate_args.py, .ci/scripts/quality/**, .ci/rediacc_ci/quality/** (module mains only), .ci/rediacc_ci/tests/test_gate_args*.py
   Depends on: none.
@@ -141,7 +141,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   - one silent control per file, showing that a clean read adds no text
 
   Also: the whole `test_wl_*` family passes; `npm run check:ci-plan-record` rc 0; `git diff` adds no `block` entry to `.claude/config/effort.json`. Once SF9 has landed, its count over these 17 files is 0, or each survivor carries a waiver.
-- [ ] SF3 [writer] Class B (D5, D6) in wl_checks.py: all 38 sites by the Context 6 rule (36 by the sweep's rule), plus the cd-done latch at `wl_checks.py:3393-3395`, which is written only when the notice is not empty. When the notice is empty, the landing step names that it could not be built, and the next stop tries again.
+- [ ] SF3 [writer] Class B (D5, D6) in wl_checks.py: all 38 sites by the Context 6 rule (36 by the sweep's rule), plus the cd-done latch at `.claude/hooks/stop/wl_checks.py:3393-3395`, which is written only when the notice is not empty. When the notice is empty, the landing step names that it could not be built, and the next stop tries again.
   In flight: writer started 2026-11-23 on the operator's "start in parallel immediately"; tick when its commits land on 1121-1 with the Accept evidence.
   Owns: .claude/hooks/stop/wl_checks.py, .claude/rediacc_hooks/tests/test_wl_named_reads_checks.py
   Depends on: none.
@@ -150,7 +150,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   - a cd-done test: with `notify_line` returning `""`, the latch is not written and the step text names the missing notice; the control shows a real notice is latched once and not repeated
 
   Also: the whole `test_wl_*` family passes, and `npm run check:ci-plan-record` rc 0.
-- [ ] SF4 [writer] Class B (D5, D6) in wl_store.py (5 sites) and wl_core.py (1 site at :938). `landing_record` (`wl_core.py:398-417`) reads through `commit_policy.read_landing_record`: a missing file stays `None`, and a defective record hands its problem to the caller, which names it once.
+- [ ] SF4 [writer] Class B (D5, D6) in wl_store.py (5 sites) and wl_core.py (1 site at :938). `landing_record` (`.claude/hooks/stop/wl_core.py:398-417`) reads through `commit_policy.read_landing_record`: a missing file stays `None`, and a defective record hands its problem to the caller, which names it once.
   Owns: .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_core.py, .claude/rediacc_hooks/tests/test_wl_named_reads_core.py
   Depends on: PLAN-tooling-speed.md SP1.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_core.py` rc 0, with:
@@ -167,11 +167,11 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   Owns: .claude/hooks/stop/worklist.py, .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py
   Depends on: PLAN-tooling-speed.md SP3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py` rc 0; baseline row deleted as in SF4.
-- [ ] SF7 [writer] Class B (D5, D6) in the two wl_stack.py handlers left after the lease fix, and in wl_bgsweep.py (2 sites, at `wl_bgsweep.py:443` and `:531` at the tip).
+- [ ] SF7 [writer] Class B (D5, D6) in the two wl_stack.py handlers left after the lease fix, and in wl_bgsweep.py (2 sites, at `.claude/hooks/stop/wl_bgsweep.py:443` and `:531` at the tip).
   - `main_checkout_tasks` stops returning `[]` on a raise.
   - `notify_line` returns its reason, which SF3's landing text names.
   Owns: .claude/hooks/stop/wl_stack.py, .claude/hooks/stop/wl_bgsweep.py, .claude/rediacc_hooks/tests/test_wl_named_reads_stack.py
-  Depends on: 549e8a9642 and 9418b52d91 on 1121-1; SF3.
+  Depends on: 8cd21a2a34 and 83f2247313 on 1121-1; SF3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_stack.py` rc 0 and `python3 .claude/hooks/stop/test-landing-stack.py` rc 0. One test feeds an unreadable landing record and asserts the cd-done step names the record's problem. Baseline rows deleted as in SF4.
 - [ ] SF8 [writer] The class A gate, check:ci-gate-argv (D4). The entry point `.ci/scripts/quality/check_gate_argv.py` uses `gate_args` itself and is registered through its `---- gate ----` header and `npm run gate:bind`. The module is `.ci/rediacc_ci/quality/gate_argv.py`. If SF1's commits already carry this gate, tick SF8 with SF1's sha.
   Owns: .ci/scripts/quality/check_gate_argv.py, .ci/rediacc_ci/quality/gate_argv.py, .ci/rediacc_ci/tests/test_quality_gate_argv.py, .ci/rediacc_ci/tests/gates/test_gate_gate_argv.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
@@ -181,7 +181,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   - planted green cases: the shared parser and plain argparse
   - a floor control: a run scanning fewer than 150 entry points is refused
 
-  Also: `npm run -s check:ci-gate-argv` rc 0 on the tree, and `npm run check:ci-gates-lock` and `npm run check:ci-parity` rc 0.
+  Also: the new gate-argv gate rc 0 on the tree, and `npm run check:ci-gates-lock` and `npm run check:ci-parity` rc 0.
 - [ ] SF9 [writer] The class B regression gate (D7). check:ci-swallowed-failures gains its Python mode over `.claude/hooks/stop/*.py` with the Context 6 rule, the existing `# swallowed-failure-ok:` waiver held to `validate_reason`, a scan-seam environment variable, a 60-module floor, and the ratchet `.ci/policy/swallowed-except-baseline.json` seeded with the counts left by whichever of SF4-SF7 have not landed. The shell mode's verdict does not change.
   Owns: .ci/rediacc_ci/quality/swallowed_failures.py, .ci/scripts/quality/check_swallowed_failures.py, .ci/policy/swallowed-except-baseline.json, .ci/rediacc_ci/tests/test_quality_swallowed_failures.py, .ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py
   Depends on: SF2, SF3.
@@ -195,10 +195,9 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
 
   Also: `npm run -s check:ci-swallowed-failures` rc 0 on the tree.
 - [ ] SF10 [lead] Measure both classes after SF1-SF9.
-  Class A, before: 138 by the sweep, about 150 by the static read in Context 2.
-  Class B, before: 80 by the sweep, 104 by the Context 6 rule.
+  Before: class A 138 by the sweep and about 150 by the static read in Context 2; class B 80 by the sweep and 104 by the Context 6 rule.
   Accept:
-  - `npm run -s check:ci-gate-argv` rc 0, reporting 0 entry points that bypass the parser.
+  - the new gate-argv gate rc 0, reporting 0 entry points that bypass the parser.
   - This loop prints no SURVIVOR line, or every SURVIVOR is named here with its reason: `for f in .ci/scripts/quality/check_*.py .ci/scripts/quality/shape_cluster_diff.py; do err=$(timeout 60 python3 "$f" --sf-no-such-flag 2>&1 >/dev/null); rc=$?; { [ "$rc" = 2 ] && printf '%s' "$err" | grep -q -- --sf-no-such-flag; } || echo "SURVIVOR $f rc=$rc"; done`
   - `npm run -s check:ci-swallowed-failures` rc 0 with `.ci/policy/swallowed-except-baseline.json` equal to `{}`.
   - The after counts (target 0 and 0) are quoted in the tick evidence, with every waived handler listed by file:line and reason.

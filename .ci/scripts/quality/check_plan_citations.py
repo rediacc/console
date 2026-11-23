@@ -824,7 +824,8 @@ _BOX_RE = re.compile(r"^\s*[-*+] \[[ xX?>]\]")
 
 def _bare(tok):
     """A correction token without the markdown and sentence punctuation around it."""
-    return tok.strip("`'\".,;:()")
+    # A leading `.` belongs to the path (`.ci/`, `.claude/`), so only quotes and brackets come off the front; sentence punctuation comes off the end.
+    return tok.strip("`'\"()").rstrip(".,;:")
 
 
 def corrections_for(lines, idx):
@@ -1206,6 +1207,8 @@ def selftest(root, drift=False):
             json.dumps({"scripts": {"check:ci-real-zzz": "true"}}), encoding="utf-8"
         )
         (fx / "lib.txt").write_text("a\nb\n", encoding="utf-8")
+        (fx / ".ci").mkdir(exist_ok=True)
+        (fx / ".ci" / "lib.txt").write_text("a\nb\n", encoding="utf-8")
 
         def fx_problems(plan_lines):
             (fx / "agent" / "plans").mkdir(parents=True, exist_ok=True)
@@ -1235,6 +1238,12 @@ def selftest(root, drift=False):
             "a `(corrected ...) X now at Y` line beneath a TICKED box excuses X when Y resolves",
             fx_problems([tick, gone_fix, line_fix]) == []
             and fx_all([tick, gone_fix, line_fix]) == [],
+        )
+        dot_tick = "- [x] T2: see `.ci/lib.txt:99`"
+        dot_fix = "    (corrected 2026-11-23, fx) `.ci/lib.txt:99` now at `.ci/lib.txt:2`"
+        ck(
+            "a correction of a dot-leading path (.ci/, .claude/) excuses it: the leading dot is part of the path, not punctuation",
+            len(fx_problems([dot_tick])) == 1 and fx_problems([dot_tick, dot_fix]) == [],
         )
         ck(
             "CONTROL: a correction whose replacement does NOT resolve excuses nothing",

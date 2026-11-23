@@ -15,7 +15,7 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2652,
+ "count": 2650,
  "files": 662,
  "by_rule": {
   "R1": 1419,
@@ -23,8 +23,8 @@
   "R14": 1,
   "R18": 12,
   "R19": 55,
-  "R2": 597,
-  "R7": 432
+  "R2": 596,
+  "R7": 431
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1723,7 +1723,6 @@
     "ddb7d8c4bdfcf550"
    ],
    "R2": [
-    "00d171f884eb5096",
     "b8bcc1522f9c368c"
    ]
   },
@@ -1795,9 +1794,6 @@
     "34fc151617a9aad6",
     "806e7f7bc911e0cb",
     "c7b262027375f801"
-   ],
-   "R7": [
-    "045651a3b6e9611b"
    ]
   },
   ".claude/rediacc_hooks/hookio.py": {

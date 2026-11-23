@@ -19,7 +19,7 @@ ENVS: list = [
         {"CI_RETRIGGER_NO_RUN_FOR": "1111111"},
         {"git": _GIT_STUB, "gh": "#!/bin/sh\necho 3\n"},
     ),
-    # Fails CLOSED: "I could not check" must never read as "there is no run".
+    # Fails CLOSED: a check that could not run must never read as "there is no run".
     ("claim-api-fails", {"CI_RETRIGGER_NO_RUN_FOR": "1111111"}, {"git": _GIT_STUB}),
     # A sha that is not HEAD proves nothing, so the claim is a CHECK not a flag.
     ("claim-not-head", {"CI_RETRIGGER_NO_RUN_FOR": "deadbeef"}, {"git": _GIT_STUB}),
