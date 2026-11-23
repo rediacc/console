@@ -3,7 +3,9 @@
  * the account Worker, the verifier script and the Go shipper's vectors.
  */
 export {
+  BATCH_LEVELS,
   BATCH_SCHEMA,
+  type BatchLevel,
   BatchFormatError,
   type BatchHeader,
   BatchHeaderSchema,
@@ -20,6 +22,7 @@ export {
   GENESIS_HASH,
   type HeaderDecode,
   importSpoolPublicKey,
+  MACHINE_SECTION,
   MAX_BATCH_BYTES,
   MAX_SECTIONS,
   SECTION_KINDS,
