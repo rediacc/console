@@ -87,7 +87,7 @@ describe('WB8: audit fails closed for mutating commands', () => {
     }));
     const auditAttempts: string[] = [];
     // The audit route never answers; every other account call reaches the fake store.
-    const unreachableAudit = ((url: string | URL, init?: RequestInit) => {
+    const unreachableAudit = ((_url: string | URL, init?: RequestInit) => {
       auditAttempts.push(String(init?.body));
       return Promise.reject(
         Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNREFUSED' } })
@@ -104,7 +104,11 @@ describe('WB8: audit fails closed for mutating commands', () => {
     return { store, renet, auditAttempts };
   }
 
-  function post(pathKey: string, params: Record<string, unknown>, positionals: Record<string, unknown>) {
+  function post(
+    pathKey: string,
+    params: Record<string, unknown>,
+    positionals: Record<string, unknown>
+  ) {
     return fetch(`${executor!.baseUrl}${PROXY_ROUTES.command}`, {
       method: 'POST',
       headers: { authorization: `Bearer ${OWNER_TOKEN}`, 'content-type': 'application/json' },
@@ -137,6 +141,8 @@ describe('WB8: audit fails closed for mutating commands', () => {
 
     expect(result.result.success).toBe(true);
     expect(renet.calls).toHaveLength(1);
-    expect(result.stderr).toMatch(/WARNING: "rdc repo list" ran WITHOUT an audit record: .*ECONNREFUSED/);
+    expect(result.stderr).toMatch(
+      /WARNING: "rdc repo list" ran WITHOUT an audit record: .*ECONNREFUSED/
+    );
   });
 });

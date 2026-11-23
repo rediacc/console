@@ -110,7 +110,9 @@ describe('WB9: the terminal audit event is idempotent across executor restarts',
 
     expect(shipped).toHaveLength(2);
     expect(shipped[1]?.idempotencyKey).toBe(shipped[0]?.idempotencyKey);
-    expect(shipped[0]?.idempotencyKey).toBe(uuidV5('6f1d7c2e-3b4a-4e8f-9c05-1a2b3c4d5e6f', `job:${JOB_ID}:terminal`));
+    expect(shipped[0]?.idempotencyKey).toBe(
+      uuidV5('6f1d7c2e-3b4a-4e8f-9c05-1a2b3c4d5e6f', `job:${JOB_ID}:terminal`)
+    );
   });
 
   it('control: an event that is not a job terminal gets a fresh key each time', () => {

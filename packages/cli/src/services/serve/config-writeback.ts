@@ -165,27 +165,34 @@ export class ConfigChain {
   ): Promise<StoreAnswer> {
     if (!this.token) await this.mintUnlocked(op.sessionId);
     for (;;) {
-      const response = await this.fetch(`${this.accountUrl}${path}`, {
-        method: init.method ?? 'GET',
-        headers: {
-          'X-Config-Token': this.token ?? '',
-          'x-config-envelope': String(ENVELOPE_VERSION),
-          ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
-        },
-        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-      });
-      const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-      // The store rotated the token before it answered, error or not: the old one is spent.
-      if (typeof body.newServerToken === 'string') this.token = body.newServerToken;
-      const reason = typeof body.code === 'string' ? body.code : '';
-      if (response.status === 401 && REMINT_REASONS.has(reason)) {
-        if (op.reminted) throw new ChainExhaustedError(reason);
-        op.reminted = true;
-        await this.mintUnlocked(op.sessionId);
-        continue;
-      }
-      return { status: response.status, body };
+      const answer = await this.send(path, init);
+      const reason = typeof answer.body.code === 'string' ? answer.body.code : '';
+      if (answer.status !== 401 || !REMINT_REASONS.has(reason)) return answer;
+      if (op.reminted) throw new ChainExhaustedError(reason);
+      op.reminted = true;
+      await this.mintUnlocked(op.sessionId);
     }
+  }
+
+  /** One request with the chain's current token; keeps the token the store rotated to. */
+  private async send(
+    path: string,
+    init: { method?: string; body?: unknown }
+  ): Promise<StoreAnswer> {
+    const json = init.body === undefined ? undefined : JSON.stringify(init.body);
+    const response = await this.fetch(`${this.accountUrl}${path}`, {
+      method: init.method ?? 'GET',
+      headers: {
+        'X-Config-Token': this.token ?? '',
+        'x-config-envelope': String(ENVELOPE_VERSION),
+        ...(json === undefined ? {} : { 'content-type': 'application/json' }),
+      },
+      ...(json === undefined ? {} : { body: json }),
+    });
+    const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    // The store rotated the token before it answered, error or not: the old one is spent.
+    if (typeof body.newServerToken === 'string') this.token = body.newServerToken;
+    return { status: response.status, body };
   }
 }
 
@@ -233,7 +240,9 @@ export class SessionConfigStore implements ConfigWriteback {
       refused = error instanceof Error ? error.message : String(error);
     }
     if (refused) {
-      throw new SessionError(`The executor could not fetch the config: ${refused.replace(/\.$/, '')}.`);
+      throw new SessionError(
+        `The executor could not fetch the config: ${refused.replace(/\.$/, '')}.`
+      );
     }
     return store;
   }
@@ -317,14 +326,10 @@ export class SessionConfigStore implements ConfigWriteback {
     if (answer.status === 409 && answer.body.code === undefined) return 'conflict';
     if (answer.status >= 400) throw this.refusal(answer);
     const stored = typeof answer.body.version === 'number' ? answer.body.version : version;
-    this.replace(
-      { ...next, version: stored },
-      stored,
-      {
-        envelopeVersion: encrypted.envelope.envelopeVersion,
-        fckSalt: encrypted.envelope.commitments.fckSalt,
-      }
-    );
+    this.replace({ ...next, version: stored }, stored, {
+      envelopeVersion: encrypted.envelope.envelopeVersion,
+      fckSalt: encrypted.envelope.commitments.fckSalt,
+    });
     return this.document;
   }
 

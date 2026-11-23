@@ -177,27 +177,36 @@ export function createExecutorAudit(
   const fetchImpl = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
 
+  /** One delivery: undefined when accepted, else why not and whether a retry could help. */
+  const deliver = async (body: string): Promise<{ reason: string; retry: boolean } | undefined> => {
+    try {
+      const response = await fetchImpl(`${accountUrl}/account/api/v1/licenses/audit-events`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${options.executorToken}`,
+          'content-type': 'application/json',
+        },
+        body,
+      });
+      if (response.ok) return undefined;
+      return {
+        reason: `the account server rejected the audit event (${response.status})`,
+        retry: response.status >= 500 || response.status === 429,
+      };
+    } catch (error) {
+      return { reason: describeFetchError(error), retry: true };
+    }
+  };
+
   return async (event: ExecutorAuditEvent): Promise<void> => {
     const body = JSON.stringify({ events: [buildExecutorAuditEvent(event)] });
-    let reason = '';
+    let failed: { reason: string; retry: boolean } | undefined;
     for (let attempt = 1; attempt <= AUDIT_DELIVERY_ATTEMPTS; attempt++) {
-      try {
-        const response = await fetchImpl(`${accountUrl}/account/api/v1/licenses/audit-events`, {
-          method: 'POST',
-          headers: {
-            authorization: `Bearer ${options.executorToken}`,
-            'content-type': 'application/json',
-          },
-          body,
-        });
-        if (response.ok) return;
-        reason = `the account server rejected the audit event (${response.status})`;
-        if (response.status < 500 && response.status !== 429) break;
-      } catch (error) {
-        reason = describeFetchError(error);
-      }
+      failed = await deliver(body);
+      if (!failed?.retry) break;
     }
-    const failure = new AuditUnavailableError(reason);
+    if (!failed) return;
+    const failure = new AuditUnavailableError(failed.reason);
     options.onFailure?.(failure, event);
     throw failure;
   };

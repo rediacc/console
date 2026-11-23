@@ -126,67 +126,77 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const { principal, jobId, machine, config } = admitted;
     const started = Date.now();
     const destructive = getCommand('job cancel')?.destructive ?? true;
-    const cancelEvent = (outcome: { success: boolean; exitCode: number; started?: true }) => ({
+    const cancelEvent = (success: boolean, outcome?: 'started'): ExecutorAuditEvent => ({
       principal,
       commandPath: 'job cancel',
       machineName: machine,
       params: { id: jobId },
-      success: outcome.success,
-      exitCode: outcome.exitCode,
-      durationMs: outcome.started ? 0 : Date.now() - started,
+      success,
+      exitCode: success ? 0 : 1,
+      durationMs: outcome ? 0 : Date.now() - started,
       destructive,
-      ...(outcome.started ? { outcome: 'started' as const } : {}),
+      ...(outcome ? { outcome } : {}),
     });
     // A cancel changes a machine: it is recorded before it runs, and refused when that record cannot be delivered (PLAN-rmcp-writeback.md Design 8).
-    try {
-      await deps.audit?.(cancelEvent({ success: true, exitCode: 0, started: true }));
-    } catch (error) {
-      if (!(error instanceof AuditUnavailableError)) throw error;
+    const unrecorded = await undeliveredAudit(deps, cancelEvent(true, 'started'));
+    if (unrecorded) {
       return c.json(
         {
-          error: `The executor refuses "rdc job cancel": its audit record could not be delivered (${error.message}), and a change it cannot record is not made.`,
+          error: `The executor refuses "rdc job cancel": its audit record could not be delivered (${unrecorded}), and a change it cannot record is not made.`,
           code: AUDIT_UNAVAILABLE,
         },
         503
       );
     }
     return withRouteSpan('job-cancel', principal, async () => {
-      let status: Awaited<ReturnType<typeof cancelJob>>;
-      try {
-        status = await helpers.withRequestConfig(config, async () => {
-          const conn = await connectForJobs(machine, 'read-only');
-          try {
-            return await cancelJob(conn, jobId);
-          } finally {
-            conn.lease.release();
-          }
-        });
-      } catch (error) {
-        const auditFailed = await auditAfter(deps, cancelEvent({ success: false, exitCode: 1 }));
-        return c.json(
-          {
-            error: error instanceof Error ? error.message : 'The cancel failed.',
-            ...(auditFailed ? { audit_failed: auditFailed } : {}),
-          },
-          500
+      const outcome = await helpers
+        .withRequestConfig(config, () => cancelOnMachine(machine, jobId))
+        .then(
+          (status) => ({ status }),
+          (error: unknown) => ({ error })
         );
-      }
-      const auditFailed = await auditAfter(deps, cancelEvent({ success: true, exitCode: 0 }));
-      return c.json({
-        state: status.state,
-        ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
-        ...(auditFailed ? { audit_failed: auditFailed } : {}),
-      });
+      const auditFailed = await undeliveredAudit(deps, cancelEvent(!('error' in outcome)));
+      const answer = cancelAnswer(outcome, auditFailed);
+      return c.json(answer.body, answer.status);
     });
   });
 }
 
+type CancelStatus = Awaited<ReturnType<typeof cancelJob>>;
+
+/** The cancel route's answer: the job's state, or the failure; `audit_failed` when its record was not delivered. */
+function cancelAnswer(
+  outcome: { status: CancelStatus } | { error: unknown },
+  auditFailed: string | undefined
+): { body: Record<string, unknown>; status: 200 | 500 } {
+  const audit = auditFailed ? { audit_failed: auditFailed } : {};
+  if ('error' in outcome) {
+    const message = outcome.error instanceof Error ? outcome.error.message : 'The cancel failed.';
+    return { body: { error: message, ...audit }, status: 500 };
+  }
+  const { state, exit_code: exitCode } = outcome.status;
+  return { body: { state, ...(exitCode == null ? {} : { exitCode }), ...audit }, status: 200 };
+}
+
+/** `renet job cancel` on the job's machine, over a pooled connection. */
+async function cancelOnMachine(machine: string, jobId: string) {
+  const conn = await connectForJobs(machine, 'read-only');
+  try {
+    return await cancelJob(conn, jobId);
+  } finally {
+    conn.lease.release();
+  }
+}
+
 /**
- * Ship an event for something that already happened. Its result stands whether
- * or not the record is delivered; the reason it was not is returned for the
- * response's `audit_failed`, undefined when it was delivered.
+ * Ship one audit event. Undefined when it was delivered, otherwise why not: the
+ * caller refuses a change whose record it could not ship before, and reports
+ * `audit_failed` for one already made.
  */
-async function auditAfter(deps: ServeDeps, event: ExecutorAuditEvent): Promise<string | undefined> {
+async function undeliveredAudit(
+  deps: ServeDeps,
+  event: ExecutorAuditEvent
+): Promise<string | undefined> {
   try {
     await deps.audit?.(event);
     return undefined;

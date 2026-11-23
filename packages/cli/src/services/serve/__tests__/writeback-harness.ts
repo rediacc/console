@@ -179,104 +179,145 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
     return true;
   };
 
-  /** Claim one use of the presented token; the rotated token, or a 401 answer. */
-  const claim = (token: string): { next: string } | Response => {
+  /** Claim one use of the presented token: the answer's rotation field and whether it may write, or a 401 answer. */
+  const claim = (
+    token: string
+  ): { rotated: Record<string, string>; writable: boolean } | Response => {
     const entry = tokens.get(token);
-    if (!entry) return json({ error: 'Config auth failed: invalid_token', code: 'invalid_token' }, 401);
+    if (!entry)
+      return json({ error: 'Config auth failed: invalid_token', code: 'invalid_token' }, 401);
     if (entry.uses >= TOKEN_MAX_USES) {
       fake.exhausted += 1;
       return json({ error: 'Config auth failed: token_exhausted', code: 'token_exhausted' }, 401);
     }
     entry.uses += 1;
-    return { next: fake.rotate ? issue(entry.writable) : token };
+    return {
+      rotated: fake.rotate ? { newServerToken: issue(entry.writable) } : {},
+      writable: entry.writable,
+    };
   };
 
-  const configCall = async (href: string, init?: RequestInit): Promise<Response> => {
-    const headers = (init?.headers ?? {}) as Record<string, string>;
-    const claimed = claim(headers['X-Config-Token'] ?? '');
-    if (claimed instanceof Response) return claimed;
-    const rotated = fake.rotate ? { newServerToken: claimed.next } : {};
-    const method = init?.method ?? 'GET';
-    const writable = tokens.get(headers['X-Config-Token'] ?? '')?.writable === true;
+  /** The stored document replaced by an accepted push; the server keeps neither tombstones nor the v2 key map. */
+  const store = (body: { version: number; encryptedBlob: string; envelope: StoredEnvelope }) => {
+    const { removed: _removed, migrated: _migrated, ...kept } = body.envelope.commitments;
+    stored = {
+      version: body.version,
+      encryptedBlob: body.encryptedBlob,
+      envelope: { ...body.envelope, commitments: kept },
+      hmac: null,
+    };
+  };
 
-    if (href.endsWith('/configs/session') && method === 'POST') {
-      return json({ ...rotated, server_secret: toBase64(new Uint8Array(32)), sdk_derived: sdkDerivedB64, sdkEpoch });
+  /** The 409 a push meets: a lost compare-and-swap, or a dropped key without its tombstone. */
+  const casRefusal = (
+    body: { version: number; envelope: StoredEnvelope },
+    rotated: Record<string, string>
+  ): Response | undefined => {
+    if (body.version !== stored.version + 1) {
+      return json({ ...rotated, error: 'Version conflict' }, 409);
     }
-    if (method === 'GET') {
-      fake.pulls += 1;
-      return json({
-        ...rotated,
-        sdk_derived: sdkDerivedB64,
-        configData: stored.encryptedBlob,
-        envelope: stored.envelope,
-        hmac: stored.hmac,
-      });
+    if (!tombstonesProve(body.envelope.commitments)) {
+      return json(
+        { ...rotated, error: 'precondition', code: 'precondition_failed', mismatchedPaths: [] },
+        409
+      );
     }
-    if (method === 'PUT') {
-      if (!writable) {
-        return json({ ...rotated, error: 'This config token is read-only.', code: 'read_only_token' }, 403);
-      }
-      await fake.beforePut?.();
-      const body = JSON.parse(init?.body as string) as {
-        version: number;
-        encryptedBlob: string;
-        envelope: StoredEnvelope;
-      };
-      const removedKeys = Object.keys(body.envelope.commitments.removed ?? {});
-      if (body.version !== stored.version + 1) {
-        fake.puts.push({ version: body.version, status: 409, removedKeys });
-        return json({ ...rotated, error: 'Version conflict' }, 409);
-      }
-      if (!tombstonesProve(body.envelope.commitments)) {
-        fake.puts.push({ version: body.version, status: 409, removedKeys });
-        return json({ ...rotated, error: 'precondition', code: 'precondition_failed', mismatchedPaths: [] }, 409);
-      }
-      fake.puts.push({ version: body.version, status: 200, removedKeys });
-      const { removed: _removed, migrated: _migrated, ...kept } = body.envelope.commitments;
-      stored = {
-        version: body.version,
-        encryptedBlob: body.encryptedBlob,
-        envelope: { ...body.envelope, commitments: kept },
-        hmac: null,
-      };
-      return json({ ...rotated, version: body.version, sdkEpoch });
+    return undefined;
+  };
+
+  /** POST /configs/session and GET /configs/:id answers. */
+  const sessionAnswer = (rotated: Record<string, string>): Response =>
+    json({
+      ...rotated,
+      server_secret: toBase64(new Uint8Array(32)),
+      sdk_derived: sdkDerivedB64,
+      sdkEpoch,
+    });
+  const pullAnswer = (rotated: Record<string, string>): Response => {
+    fake.pulls += 1;
+    return json({
+      ...rotated,
+      sdk_derived: sdkDerivedB64,
+      configData: stored.encryptedBlob,
+      envelope: stored.envelope,
+      hmac: stored.hmac,
+    });
+  };
+
+  /** PUT /configs/:id: read-only refusal, compare-and-swap, the tombstone rule, then the store. */
+  const put = async (
+    rotated: Record<string, string>,
+    writable: boolean,
+    raw: string
+  ): Promise<Response> => {
+    if (!writable) {
+      return json(
+        { ...rotated, error: 'This config token is read-only.', code: 'read_only_token' },
+        403
+      );
     }
-    throw new Error(`unexpected config call: ${method} ${href}`);
+    await fake.beforePut?.();
+    const body = JSON.parse(raw) as {
+      version: number;
+      encryptedBlob: string;
+      envelope: StoredEnvelope;
+    };
+    const removedKeys = Object.keys(body.envelope.commitments.removed ?? {});
+    const refusal = casRefusal(body, rotated);
+    fake.puts.push({ version: body.version, status: refusal ? 409 : 200, removedKeys });
+    if (refusal) return refusal;
+    store(body);
+    return json({ ...rotated, version: body.version, sdkEpoch });
+  };
+
+  const configCall = (href: string, init?: RequestInit): Promise<Response> => {
+    const claimed = claim((init?.headers as Record<string, string>)['X-Config-Token']);
+    if (claimed instanceof Response) return Promise.resolve(claimed);
+    const call = `${init?.method ?? 'GET'} ${href.endsWith('/configs/session') ? 'session' : 'config'}`;
+    switch (call) {
+      case 'PUT config':
+        return put(claimed.rotated, claimed.writable, init?.body as string);
+      case 'POST session':
+        return Promise.resolve(sessionAnswer(claimed.rotated));
+      case 'GET config':
+        return Promise.resolve(pullAnswer(claimed.rotated));
+      default:
+        throw new Error(`unexpected config call: ${call} ${href}`);
+    }
+  };
+
+  /** POST /configs/executor-grant: the grantor is the presented bearer's creator. */
+  const recordGrant = (raw: string): Response => {
+    const body = JSON.parse(raw) as { sessionId: string; token: string };
+    const grantor = (PRINCIPALS[body.token] as { createdByUserId?: string } | undefined)
+      ?.createdByUserId;
+    if (!grantor) return json({ error: 'refused' }, 403);
+    grants.set(body.sessionId, grantor);
+    return json({ ok: true });
+  };
+
+  /** POST /configs/executor-token: minted only for the recorded grantor of the session. */
+  const mint = (raw: string): Response => {
+    const body = JSON.parse(raw) as { userId: string; sessionId: string; write?: boolean };
+    fake.mints.push(body);
+    if (grants.get(body.sessionId) !== body.userId) return json({ error: 'not granted' }, 403);
+    return json({
+      token: issue(body.write === true, fake.mintSpent),
+      storeId: STORE_ID,
+      serverSecret: toBase64(new Uint8Array(32)),
+      configs: [{ configId: CONFIG_ID, teamId: null, version: stored.version }],
+    });
   };
 
   const accountFetch = ((url: string | URL, init?: RequestInit) => {
     const href = String(url);
+    const raw = init?.body as string;
     if (href.includes('/proxy/introspect')) {
-      const body = JSON.parse(init?.body as string) as { token: string };
+      const body = JSON.parse(raw) as { token: string };
       return Promise.resolve(json(PRINCIPALS[body.token] ?? { active: false }));
     }
-    if (href.includes('/configs/executor-grant')) {
-      const body = JSON.parse(init?.body as string) as { sessionId: string; token: string };
-      const grantor = (PRINCIPALS[body.token] as { createdByUserId?: string } | undefined)
-        ?.createdByUserId;
-      if (!grantor) return Promise.resolve(json({ error: 'refused' }, 403));
-      grants.set(body.sessionId, grantor);
-      return Promise.resolve(json({ ok: true }));
-    }
-    if (href.includes('/configs/executor-token')) {
-      const body = JSON.parse(init?.body as string) as {
-        userId: string;
-        sessionId: string;
-        write?: boolean;
-      };
-      fake.mints.push(body);
-      if (grants.get(body.sessionId) !== body.userId) {
-        return Promise.resolve(json({ error: 'not granted' }, 403));
-      }
-      return Promise.resolve(
-        json({
-          token: issue(body.write === true, fake.mintSpent),
-          storeId: STORE_ID,
-          serverSecret: toBase64(new Uint8Array(32)),
-          configs: [{ configId: CONFIG_ID, teamId: null, version: stored.version }],
-        })
-      );
-    }
+    if (href.includes('/configs/executor-grant')) return Promise.resolve(recordGrant(raw));
+    if (href.includes('/configs/executor-token')) return Promise.resolve(mint(raw));
     if (href.includes('/configs/')) return configCall(href, init);
     throw new Error(`unexpected account call: ${href}`);
   }) as typeof fetch;
@@ -349,7 +390,13 @@ function buf(data: Uint8Array): ArrayBuffer {
 /** The result line of a /v1/command response. */
 export interface CommandResultLine {
   kind: 'result';
-  result: { success: boolean; exitCode: number; error?: string; errorCode?: string; jobId?: string };
+  result: {
+    success: boolean;
+    exitCode: number;
+    error?: string;
+    errorCode?: string;
+    jobId?: string;
+  };
   stdout?: string;
   stderr?: string;
 }
@@ -370,7 +417,7 @@ export interface ContainerExecutor {
 }
 
 /** The real serve app in container mode, over real HTTP, against `store`. */
-export async function bootContainerExecutor(
+export function bootContainerExecutor(
   store: FakeConfigStore,
   executor: Executor,
   overrides: Partial<ServeDeps> = {}
@@ -398,7 +445,7 @@ export async function bootContainerExecutor(
       fetchImpl: store.fetch,
     }),
     authorize,
-    audit: async () => {},
+    audit: () => Promise.resolve(),
     // The fake renet answers each call synchronously; no job spool.
     detach: () => false,
     ...overrides,
@@ -406,7 +453,7 @@ export async function bootContainerExecutor(
   const server = serve({ fetch: createServeApp(deps).fetch, port: 0 });
   const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
-  return {
+  return Promise.resolve({
     baseUrl,
     sessions,
     async grantKey() {
@@ -457,5 +504,5 @@ export async function bootContainerExecutor(
       return result as CommandResultLine;
     },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
-  };
+  });
 }

@@ -68,7 +68,10 @@ function addMachine(name: string) {
     ...config,
     resources: {
       ...config.resources,
-      machines: { ...config.resources.machines, [name]: { ip: '10.9.9.9', user: 'root', port: 22 } },
+      machines: {
+        ...config.resources.machines,
+        [name]: { ip: '10.9.9.9', user: 'root', port: 22 },
+      },
     },
   });
 }
@@ -98,7 +101,10 @@ describe('WB3: conflict replay and chain exhaustion', () => {
     expect(store.puts.map((put) => put.status)).toEqual([409, 200]);
     const stored = await store.current();
     // The other device's machine and this command's archive are both in the store.
-    expect(Object.keys(stored.resources.machines).sort()).toEqual(['laptop-added', 'm1']);
+    expect(Object.keys(stored.resources.machines).sort((x, y) => x.localeCompare(y))).toEqual([
+      'laptop-added',
+      'm1',
+    ]);
     expect(Object.keys(stored.resources.repositories)).toEqual(['b']);
     expect(stored.resources.deletedRepositories?.[0]?.repositoryGuid).toBe(
       '00000000-0000-4000-8000-000000000001'
@@ -123,10 +129,9 @@ describe('WB3: conflict replay and chain exhaustion', () => {
     expect(store.puts.map((put) => put.status)).toEqual(
       Array.from({ length: MAX_CONFLICT_REPLAYS + 1 }, () => 409)
     );
-    expect(Object.keys((await store.current()).resources.repositories).sort()).toEqual([
-      'a',
-      'b',
-    ]);
+    expect(
+      Object.keys((await store.current()).resources.repositories).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['a', 'b']);
   });
 
   it('a token at its third use is replaced by one fresh mint', async () => {

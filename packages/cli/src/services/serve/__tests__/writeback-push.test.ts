@@ -138,9 +138,8 @@ describe('WB1: a dispatched write is pushed back to config storage', () => {
     expect(deleted.result.success).toBe(false);
     expect(deleted.result.errorCode).toBe('CONFIG_WRITE_FAILED');
     expect(store.version()).toBe(5);
-    expect(Object.keys((await store.current()).resources.repositories).sort()).toEqual([
-      'keep',
-      'shop',
-    ]);
+    expect(
+      Object.keys((await store.current()).resources.repositories).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['keep', 'shop']);
   });
 });

@@ -539,7 +539,8 @@ export class RemoteResourceState implements ResourceState {
       (view) => {
         const fresh = loadLocalState(view);
         let rebased = fresh;
-        for (const bucket of mutated) rebased = rebaseBucket(bucket, rebased, this.base, this.state);
+        for (const bucket of mutated)
+          rebased = rebaseBucket(bucket, rebased, this.base, this.state);
         this.state = rebased;
         this.base = structuredClone(fresh);
       }
