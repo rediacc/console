@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import types
 
 import pytest
@@ -251,3 +252,48 @@ def test_the_retro_brief_ends_with_the_report(monkeypatch):
     monkeypatch.setitem(wl_retro._CTX, "mod", ctx)
     text = wl_retro.brief("/tmp/none.md", "/tmp", "deadbeef", "early", "abc123")
     assert text.rstrip().endswith("HOOK REPORT FIXTURE")
+
+
+def test_rotation_rolls_an_oversize_ledger_and_the_report_still_reads_it(tree):
+    """CR9: over the cap the live ledger is renamed whole; the history is the archives plus the live file."""
+    root, rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+    archive, deleted = H.rotate(root, max_bytes=10, now=NOW)
+    assert archive is not None
+    assert archive.name == "chains-%s.jsonl" % NOW.strftime("%Y%m%dT%H%M%SZ")
+    assert deleted == []
+    assert not live.exists()
+    assert len(H.read_ledger(root)) == len(rows), "rotation lost rows from the report's view"
+    live.write_text(json.dumps(rows[0]) + "\n", encoding="utf-8")
+    assert len(H.read_ledger(root)) == len(rows) + 1
+
+
+def test_rotation_keeps_a_small_ledger_and_drops_only_old_archives(tree):
+    """The control: under the cap nothing moves; an archive past keep_days goes and a fresh one stays."""
+    root, _rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+    old, fresh = (
+        live.with_name("chains-20200101T000000Z.jsonl"),
+        live.with_name("chains-20261122T000000Z.jsonl"),
+    )
+    for p in (old, fresh):
+        p.write_text("{}\n", encoding="utf-8")
+    os.utime(old, (NOW.timestamp() - 40 * 86400,) * 2)
+    os.utime(fresh, (NOW.timestamp() - 86400,) * 2)
+    archive, deleted = H.rotate(root, now=NOW)
+    assert archive is None
+    assert live.exists()
+    assert deleted == [old]
+    assert fresh.exists()
+    assert not old.exists()
+
+
+def test_rotation_refuses_to_overwrite_an_archive(tree):
+    root, _rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+    live.with_name("chains-%s.jsonl" % NOW.strftime("%Y%m%dT%H%M%SZ")).write_text(
+        "", encoding="utf-8"
+    )
+    with pytest.raises(H.ReportError):
+        H.rotate(root, max_bytes=10, now=NOW)
+    assert live.exists()

@@ -6,6 +6,7 @@
     python3 .claude/hooks/stop/wl_hookreport.py --check-snapshot    the freshness check of that snapshot
     python3 .claude/hooks/stop/wl_hookreport.py --check-budgets     the budgets of .ci/policy/hook-exec-baseline.json, both directions
     python3 .claude/hooks/stop/wl_hookreport.py --write-budgets     lower and add those budgets from the tree (never raises one)
+    python3 .claude/hooks/stop/wl_hookreport.py --rotate            roll the ledger over a size cap into chains-<stamp>.jsonl, drop archives past their age
     python3 .claude/hooks/stop/wl_hookreport.py --confirm <stem>    record a confirmed true positive of a guard or trapguard rule
 
 agent/plans/PLAN-tooling-code-reduction.md CR8, design D6 second half. CR7 made `dispatch.run_chain` append one line per guard chain run to `.ci/cache/hook-ledger/chains.jsonl` (`{chain, refused_by, rc, ms, slow, crashed, session, ts}`). This module reads it, with the trapguard fire ledgers and the ci:quick gate receipts, and answers the questions the loop needs to retire and merge:
@@ -103,6 +104,53 @@ def read_jsonl(path):
         if isinstance(row, dict):
             rows.append(row)
     return rows
+
+
+# --------------------------------------------------------------------------- rotation (CR9, D7)
+
+ROTATE_BYTES = 8 * 1024 * 1024
+ROTATE_KEEP_DAYS = 30
+ARCHIVE_GLOB = "chains-*.jsonl"
+
+
+def ledger_paths(root=CHECKOUT):
+    """The archives oldest first, then the live ledger: every file one read of the history covers."""
+    live = pathlib.Path(root).joinpath(*LEDGER_REL)
+    return [*sorted(live.parent.glob(ARCHIVE_GLOB)), live]
+
+
+def read_ledger(root=CHECKOUT):
+    """Rows of the archives and the live ledger, in file order."""
+    rows = []
+    for path in ledger_paths(root):
+        rows.extend(read_jsonl(path))
+    return rows
+
+
+def rotate(root=CHECKOUT, max_bytes=ROTATE_BYTES, keep_days=ROTATE_KEEP_DAYS, now=None):
+    """Roll the live ledger over `max_bytes` into `chains-<stamp>.jsonl` and delete archives older than `keep_days`. Returns (archive or None, [deleted]).
+
+    A RENAME, not a rewrite: dispatch opens the ledger per call with O_APPEND|O_CREAT, so an append racing the rename lands whole in the archive and the next call starts a fresh file. A rewrite in place would lose whatever a peer appended between its read and its replace. An existing archive of the same second is a refusal, never an overwrite.
+    """
+    live = pathlib.Path(root).joinpath(*LEDGER_REL)
+    stamp = now or datetime.datetime.now(datetime.UTC)
+    archive = None
+    try:
+        size = live.stat().st_size
+    except FileNotFoundError:
+        size = 0
+    if size > max_bytes:
+        archive = live.with_name("chains-%s.jsonl" % stamp.strftime("%Y%m%dT%H%M%SZ"))
+        if archive.exists():
+            raise ReportError("%s already exists; refusing to overwrite an archive" % archive)
+        live.rename(archive)
+    cutoff = stamp.timestamp() - keep_days * 86400
+    deleted = []
+    for path in sorted(live.parent.glob(ARCHIVE_GLOB)):
+        if path != archive and path.stat().st_mtime < cutoff:
+            path.unlink()
+            deleted.append(path)
+    return archive, deleted
 
 
 def _read_json(path, what):
@@ -274,7 +322,7 @@ def report(root=CHECKOUT, rows=None, trap_base=None, receipts=None, now=None):
     """The report text over the ledger, the trapguard ledgers and the receipts at `root`."""
     root = pathlib.Path(root)
     ledger = root.joinpath(*LEDGER_REL)
-    rows = read_jsonl(ledger) if rows is None else rows
+    rows = read_ledger(root) if rows is None else rows
     inv = inventory(root)
     trap_base = trap_base or wl_trapfires.state_dir()
     receipts = read_receipts(root) if receipts is None else receipts
@@ -567,7 +615,7 @@ def main(argv, root=CHECKOUT):
             print(report(root))
             return 0
         if argv == ["--snapshot"]:
-            rows = read_jsonl(root.joinpath(*LEDGER_REL))
+            rows = read_ledger(root)
             doc = snapshot(rows, inventory(root))
             path = root.joinpath(*SNAPSHOT_REL)
             path.write_text(json.dumps(doc, indent=2, sort_keys=False) + "\n", encoding="utf-8")
@@ -580,6 +628,19 @@ def main(argv, root=CHECKOUT):
                     len(doc["chains"]),
                     len(doc["guards"]),
                     len(doc["overlaps"]),
+                )
+            )
+            return 0
+        if argv == ["--rotate"]:
+            archive, deleted = rotate(root)
+            print(
+                "hook ledger: %s, %d archive(s) past %d days deleted"
+                % (
+                    "rolled into %s" % archive.name
+                    if archive
+                    else "under %d bytes, kept" % ROTATE_BYTES,
+                    len(deleted),
+                    ROTATE_KEEP_DAYS,
                 )
             )
             return 0
