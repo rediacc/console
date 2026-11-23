@@ -11,6 +11,7 @@ THE FIX, one case per behaviour, each with its silent control (no operation in p
   the Stop hook                  blocks once and writes no tracked byte; allows on `stop_hook_active`
   wl_review.trigger / run_review starts no reviewer, and a running one records nothing
   githooks pre-commit            mid-rebase, judges the commit's index, not an unstaged input
+  block_rebase_over_foreign_dirt refuses to START a main-checkout rebase onto a base whose wl_git.py lacks the stand-down (box R20261123.3)
 """
 
 from __future__ import annotations
@@ -604,3 +605,134 @@ def test_pre_commit_mid_rebase_control_the_same_edit_staged_is_refused(tmp_path)
     proc = _hand_commit(t)
     assert proc.returncode != 0
     assert tmod.STALE in proc.stderr
+
+
+# --------------------------------------------------------------------------- the guard on a base without the stand-down (box R20261123.3)
+
+DISPATCH = REPO_ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"
+STANDDOWN_MARK = "would rebase the main checkout onto"
+WL_GIT_REL = ".claude/hooks/stop/wl_git.py"
+
+
+def standdown_repo(tmp_path):
+    """A clean main checkout on BRANCH whose own wl_git.py lacks the stand-down, with `refs/remotes/origin/old` (a base without it) and `refs/remotes/origin/main` (a base with it)."""
+    repo = tmp_path / "console"
+    git(tmp_path, "init", "-q", "-b", BRANCH, str(repo))
+    write(repo, WL_GIT_REL, "def rebase_state(root):\n    return None\n")
+    write(repo, "f.txt", "base\n")
+    old = commit_all(repo, "chore: base without the stand-down")
+    write(repo, WL_GIT_REL, "def operation_in_progress(root):\n    return ''\n")
+    fixed = commit_all(repo, "fix: the stand-down")
+    git(repo, "update-ref", "refs/remotes/origin/old", old)
+    git(repo, "update-ref", "refs/remotes/origin/main", fixed)
+    git(repo, "reset", "-q", "--hard", old)
+    write(repo, "f.txt", "topic\n")
+    commit_all(repo, "feat: topic")
+    assert git(repo, "status", "--porcelain").stdout == "", "the fixture tree is not clean"
+    return repo
+
+
+def guard(cmd, project, cwd=None):
+    """The live guard through the real dispatcher process: `(rc, stderr)`."""
+    env = _env()
+    env["CLAUDE_PROJECT_DIR"] = str(project)
+    proc = subprocess.run(
+        [sys.executable, str(DISPATCH), "block_rebase_over_foreign_dirt"],
+        input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(cwd or project),
+        env=env,
+        check=False,
+        timeout=120,
+    )
+    return proc.returncode, proc.stderr
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git rebase origin/old",
+        "git rebase -i origin/old",
+        "git rebase --onto origin/old origin/main",
+        "git rebase --keep-base origin/old",
+        "sh -c 'git rebase origin/old'",
+    ],
+)
+def test_guard_refuses_a_main_checkout_rebase_onto_a_base_without_the_standdown(tmp_path, cmd):
+    repo = standdown_repo(tmp_path)
+    rc, err = guard(cmd, repo)
+    assert rc == 2, (cmd, err)
+    assert STANDDOWN_MARK in err, err
+    assert "landing tree" in err
+    assert "git branch -f" in err
+    assert "git submodule update --init" in err
+    assert "def operation_in_progress" in err
+
+
+def test_guard_judges_an_unreadable_onto_against_origin_main(tmp_path):
+    """`"origin/${BASE:-main}"` (branch-rebase.md step 3) is judged against origin/main, the base the refusal expires against: allowed while it carries the stand-down, refused once it does not."""
+    repo = standdown_repo(tmp_path)
+    cmd = 'git rebase "origin/${BASE:-main}"'
+    rc, err = guard(cmd, repo)
+    assert rc == 0, err
+    old = git(repo, "rev-parse", "refs/remotes/origin/old").stdout.strip()
+    git(repo, "update-ref", "refs/remotes/origin/main", old)
+    rc, err = guard(cmd, repo)
+    assert rc == 2, err
+    assert STANDDOWN_MARK in err
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "git rebase origin/main",
+        "git rebase --onto origin/main origin/old",
+        "git rebase --continue",
+        "git rebase --abort",
+        "git rebase --quit",
+        "git rebase no-such-ref",
+        "git rebase",
+        "git pull --ff-only",
+    ],
+)
+def test_guard_control_a_base_with_the_standdown_or_a_control_verb_is_allowed(tmp_path, cmd):
+    """The base carries `def operation_in_progress`, or the command starts no rebase onto a base git can resolve: allowed. An unknown ref and `git rebase` with no upstream configured are git's to refuse."""
+    repo = standdown_repo(tmp_path)
+    rc, err = guard(cmd, repo)
+    assert rc == 0, (cmd, err)
+
+
+def test_guard_control_continue_and_abort_pass_mid_rebase_onto_the_old_base(tmp_path):
+    """Halted mid-rebase onto a base without the stand-down, finishing or undoing it is never refused."""
+    repo = standdown_repo(tmp_path)
+    git(repo, "checkout", "-q", "--detach", "refs/remotes/origin/old")
+    write(repo, "f.txt", "upstream\n")
+    upstream = commit_all(repo, "feat: upstream")
+    git(repo, "checkout", "-q", BRANCH)
+    assert git(repo, "rebase", upstream, check=False).returncode != 0
+    assert "rebase-merge" in markers(repo)
+    for cmd in ("git rebase --continue", "git rebase --abort"):
+        rc, err = guard(cmd, repo)
+        assert rc == 0, (cmd, err)
+
+
+def test_guard_control_a_linked_tree_is_not_probed(tmp_path):
+    """The landing tree is the route the refusal names: a rebase there onto the old base is allowed, while the same command in the main checkout is refused."""
+    repo = standdown_repo(tmp_path)
+    linked = tmp_path / "landing"
+    git(repo, "worktree", "add", "-q", "--detach", str(linked))
+    rc, err = guard("git rebase origin/old", linked)
+    assert rc == 0, err
+    rc, err = guard("git rebase origin/old", repo)
+    assert rc == 2, err
+
+
+def test_guard_dirt_is_still_named_first(tmp_path):
+    """A peer's modified file refuses with the dirt message, whatever the base holds."""
+    repo = standdown_repo(tmp_path)
+    write(repo, "f.txt", "peer edit\n")
+    rc, err = guard("git rebase origin/main", repo)
+    assert rc == 2, err
+    assert "would start over uncommitted tracked work" in err
+    assert STANDDOWN_MARK not in err

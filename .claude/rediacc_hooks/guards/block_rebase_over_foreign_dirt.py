@@ -14,6 +14,8 @@ THE EXEMPTION IS NOT A PROMISE. git itself refuses a rebase while ANY tracked fi
 
 NOT REFUSED: `--continue`, `--abort`, `--quit` (they finish or undo a rebase already started), `git merge --ff-only` and `git pull --ff-only` (a fast-forward cannot conflict, and git refuses it on its own when a modified file is in the way; pr-merge step 7 runs `git pull --ff-only` on `main`), and any repository outside this checkout, `--skip` included, whenever this checkout can be named.
 
+A REBASE OF THE MAIN CHECKOUT ONTO A BASE WITHOUT THE HOOK STAND-DOWN IS REFUSED, on a clean tree too (box R20261123.3 of agent/plans/PLAN-stop-hook-retro-20261123.md, decision D3). Every hook is read from `$CLAUDE_PROJECT_DIR/.claude/...`, the main checkout's working tree, and while a rebase is halted there that tree is `<onto>` plus the steps replayed so far. The stand-down that keeps the hooks from writing tracked records mid-operation (`wl_git.operation_in_progress`, worklist #b07162cf) is therefore absent until its own step replays whenever `<onto>` lacks it: on 2026-11-23 a 273-step rebase halted at step 26, the old hooks dirtied the tree, `git rebase --continue` refused with git's merge-conflict message, and 44 minutes went before the rebase was redone in the landing tree. The probe reads `git show <onto>:.claude/hooks/stop/wl_git.py` for `def operation_in_progress` (STANDDOWN_PROBE), so the refusal expires by itself once the base carries the function, and reopens only if a future stand-down moves the probe. The onto is `--onto`, else the upstream operand, else `@{upstream}`; under `--keep-base` it is the merge-base git replays onto. An onto git cannot resolve is allowed (git refuses that rebase itself and changes nothing), and an onto the walk cannot read (`"origin/${BASE:-main}"`, a command substitution) is judged against `origin/main`, the base the refusal expires against. A linked tree (the landing tree, a lease, an operator's worktree) is never probed: its hooks are not the ones the main checkout's sessions run, which is why the landing tree is the route the refusal names.
+
 FAIL CLOSED: a status probe that fails, a command that moves git's idea of the work tree (`--git-dir`, `--work-tree`, `GIT_DIR=`, `GIT_WORK_TREE=` on the command line), and a project directory that cannot be named (`CLAUDE_PROJECT_DIR` unset and the hook outside every checkout) are refused, because the tree the guard would read is not known to be the tree the rebase would touch. With no project directory, "outside this checkout" cannot be decided either (`git -C /tmp ...` and `git -C <the checkout> ...` look alike to a guard that does not know where the checkout is), so then EVERY rebase, pull or merge that would start, and every `git rebase --skip`, is refused wherever it points (review 30573c81.4). Every other command is still allowed.
 """
 
@@ -34,6 +36,22 @@ DEFECT = (
 )
 # Planted, the bound trees are the session root alone, so a rebase, pull or merge typed in the sibling bound tree goes unjudged again (box LT11).
 TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+# Each planted, the stand-down probe stops refusing: `carried` answers the base carries the stand-down whatever it holds, `main` reads every tree as linked, so a rebase of the main checkout onto a base without it goes through (box R20261123.3).
+MUTANTS = {
+    "standdown-carried": (
+        '    return STANDDOWN_PROBE[1] in (text or "")\n',
+        "    return True\n",
+    ),
+    "standdown-main": (
+        "    return bool(main) and os.path.realpath(main) == top\n",
+        "    return False\n",
+    ),
+}
+
+# The file and the definition a base must carry for its hooks to stand down mid-rebase (worklist #b07162cf). The refusal ends by itself once the onto base holds them.
+STANDDOWN_PROBE = (".claude/hooks/stop/wl_git.py", "def operation_in_progress")
+# The base an onto the walk cannot read is judged against: the one whose stand-down ends the refusal.
+STANDDOWN_DEFAULT_ONTO = "origin/main"
 
 # The subcommand flags that continue or undo an integration already in progress, and so start nothing. `skip` is among them, and is refused on its own (SKIP) because what it finishes it finishes by dropping a commit.
 REBASE_CONTROL = ("continue", "abort", "skip", "quit", "edit-todo", "show-current-patch")
@@ -82,6 +100,33 @@ SKIP = (
     "\n"
     "Operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids a "
     "guard refuses."
+)
+
+STANDDOWN = (
+    "BLOCKED: `%(verb)s` would rebase the main checkout onto %(onto)s (%(sha)s), whose "
+    "%(probe)s has no `%(needle)s`.\n"
+    "\n"
+    "Every hook runs from the main checkout's working tree, and while a rebase is halted there "
+    "that tree is the onto base plus the steps replayed so far. This base predates the hook "
+    "stand-down (worklist #b07162cf), so at a halted step the Stop hook, the per-commit reviewer "
+    "and the ledgers write tracked files again, and `git rebase --continue` then refuses with "
+    "git's merge-conflict message while `git ls-files -u` is empty. On 2026-11-23 that halted a "
+    "273-step rebase at step 26 and cost 44 minutes.\n"
+    "\n"
+    "Run the rebase where the hooks are not read from, the route that worked:\n"
+    "  1. In the landing tree while it is idle on main (`./run.sh worktree landing` prints its "
+    "path), detached at the development tip: rebase there onto the same base.\n"
+    "  2. Then from the main checkout, with its tree clean, move the development branch to the "
+    "rebased tip: `git switch -q --detach <rebased tip>`, `git branch -f <dev branch> <rebased "
+    "tip>`, `git switch -q <dev branch>` (git refuses `branch -f` on the branch a tree has "
+    "checked out).\n"
+    "  3. Never run `git submodule update --init` in the landing tree: it rewrote the main "
+    "checkout's `private/account` gitdir pointer (hint 2026-11-23T00:41:52Z).\n"
+    "A lease tree is no route: block_lease_boundary refuses every rebase in one.\n"
+    "\n"
+    "This refusal ends by itself once the onto base carries `%(needle)s` in %(probe)s "
+    "(origin/main, once the branch carrying the stand-down merges). Box R20261123.3 of "
+    "agent/plans/PLAN-stop-hook-retro-20261123.md; .claude/commands/branch-rebase.md step 3."
 )
 
 # The `why` of a BLIND refusal when the project directory itself cannot be named.
@@ -272,6 +317,69 @@ def dirty_paths(repo):
     return _wl_git().dirty_paths(repo)
 
 
+def rebase_onto(args):
+    """`(onto, keep_base_upstream)` for the words after `git rebase`: the base it would replay onto (`--onto`, else the upstream operand, else `@{upstream}`), and, under `--keep-base`, the upstream whose merge-base with HEAD is the real base. `(None, None)` for `--root` with no `--onto`, which replays onto nothing."""
+    parsed = shellscan.git_args("rebase", args)
+    upstream = parsed.operands[0] if parsed.operands else None
+    onto = parsed.last("onto")
+    if parsed.on("keep-base"):
+        return None, upstream or "@{upstream}"
+    if onto is not None:
+        return onto, None
+    if upstream is not None:
+        return upstream, None
+    if parsed.on("root"):
+        return None, None
+    return "@{upstream}", None
+
+
+def is_main_checkout(repo):
+    """Whether `repo` sits at the top of its repository's MAIN checkout (the tree holding the common `.git`), the tree whose `.claude/` every hook is read from. A linked tree and a submodule answer False."""
+    top = os.path.realpath(commit_policy.toplevel(repo) or repo)
+    main = commit_policy.main_checkout(repo)
+    return bool(main) and os.path.realpath(main) == top
+
+
+def carries_standdown(text):
+    """Whether a base's copy of STANDDOWN_PROBE[0] (`text`, None when the base has no such file) defines the stand-down."""
+    return STANDDOWN_PROBE[1] in (text or "")
+
+
+def standdown_refusal(repo, args, verb):
+    """The STANDDOWN fields when `git rebase <args>` in `repo` would replay the main checkout onto a base without the hook stand-down, else None."""
+    if not is_main_checkout(repo):
+        return None
+    onto, keep = rebase_onto(args)
+    if onto is None and keep is None:
+        return None
+    word = onto if onto is not None else keep
+    named = word
+    if shellscan.unresolved(word):
+        word = named = STANDDOWN_DEFAULT_ONTO
+    sha = commit_policy.git(
+        ["rev-parse", "--verify", "--quiet", "--end-of-options", "%s^{commit}" % word],
+        cwd=repo,
+        foreign=True,
+    )
+    if not sha:
+        return None
+    if keep is not None:
+        sha = commit_policy.git(["merge-base", sha, "HEAD"], cwd=repo, foreign=True)
+        if not sha:
+            return None
+        named = "the merge-base of %s and HEAD" % named
+    text = commit_policy.git(["show", "%s:%s" % (sha, STANDDOWN_PROBE[0])], cwd=repo, foreign=True)
+    if carries_standdown(text):
+        return None
+    return {
+        "verb": verb,
+        "onto": named,
+        "sha": sha[:10],
+        "probe": STANDDOWN_PROBE[0],
+        "needle": STANDDOWN_PROBE[1],
+    }
+
+
 def _blind(run, globs):
     """Why the tree this command would touch is not the one the guard reads, or ""."""
     for opt in TREE_OPTIONS:
@@ -322,12 +430,15 @@ def refusal(cmd, root, base):
         if paths is None:
             return BLIND, {"verb": verb, "why": "`git status` failed in %s" % where}
         real = [p for p in paths if not exempt(p)]
-        if not real:
-            continue
-        listed = ["  %s" % p for p in real[:SHOWN]]
-        if len(real) > SHOWN:
-            listed.append("  ... and %d more" % (len(real) - SHOWN))
-        return MESSAGE, {"verb": verb, "where": where, "paths": "\n".join(listed)}
+        if real:
+            listed = ["  %s" % p for p in real[:SHOWN]]
+            if len(real) > SHOWN:
+                listed.append("  ... and %d more" % (len(real) - SHOWN))
+            return MESSAGE, {"verb": verb, "where": where, "paths": "\n".join(listed)}
+        # A clean tree still refuses a rebase whose halted steps would run hooks without the stand-down (box R20261123.3).
+        stale = standdown_refusal(repo, args, verb) if sub == "rebase" else None
+        if stale:
+            return STANDDOWN, stale
     return None
 
 
