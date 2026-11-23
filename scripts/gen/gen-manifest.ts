@@ -786,9 +786,16 @@ function gates(argv: string[]): number {
   for (const [label, rc] of verdicts)
     console.log(`  ${rc === 0 ? 'PASS' : 'FAIL'}  ${label}${rc === 0 ? '' : ` (rc=${rc})`}`);
   if (checkVerdict(verdicts) !== 0) {
-    console.error(
-      'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
-    );
+    if (red.some(([label]) => label.startsWith('selftest: '))) {
+      console.error(
+        'gen:gates --check: a leg script failed its own selftest, so its check cannot be trusted. Run the named script with --selftest and fix the control it reports; regenerating does not help.'
+      );
+    }
+    if (red.some(([label]) => !label.startsWith('selftest: '))) {
+      console.error(
+        'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
+      );
+    }
     return 1;
   }
   return 0;
