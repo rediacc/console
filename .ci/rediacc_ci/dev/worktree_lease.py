@@ -1030,6 +1030,8 @@ class World(NamedTuple):
     listed: dict
     records: dict
     policy: object
+    holds: dict
+    items: list | None
 
 
 class Facts(NamedTuple):
@@ -1087,6 +1089,7 @@ def _read_records(root):
 def _read_world(root):
     """Stores, pins, linked trees and records. A store git cannot read refuses the whole run, since a pin not seen is a pin not judged."""
     watch = _hook_module("wl_worktrees")
+    holds = watch.read_holds(root / ".git")
     stores = dict(watch.stores(root / ".git"))
     pins: dict = {}
     listed = {}
@@ -1108,7 +1111,33 @@ def _read_world(root):
         listed=listed,
         records=_read_records(root),
         policy=spike.load_commit_policy(),
+        holds=holds,
+        items=_read_items(root) if holds else [],
     )
+
+
+def _read_items(root):
+    """The worklist's folded items, or None when they cannot be read (a hold then keeps its tree, since its reason cannot be checked)."""
+    core = _hook_module("wl_core")
+    try:
+        worklist = core.worklist_for(core.project_start({"cwd": str(root)}))
+        return list(_hook_module("wl_store").load(worklist, sync=False).items)
+    except ROSTER_ERRORS:
+        return None
+
+
+def _hold_problem(world, lease_id):
+    """The phrase a hold keeps its tree by, or "" for no hold or a hold whose item is closed (a hold cannot outlive its reason)."""
+    hold = world.holds.get(lease_id)
+    if hold is None:
+        return ""
+    if hold.get("broken"):
+        return "its hold record could not be read"
+    if world.items is None:
+        return "held for #%s: %s (the worklist could not be read)" % (hold["item"], hold["reason"])
+    if _hook_module("wl_worktrees").find_open_item(world.items, hold["item"]):
+        return "held for #%s: %s" % (hold["item"], hold["reason"])
+    return ""
 
 
 def _is_moved_gitlink(row):
@@ -1533,6 +1562,9 @@ def _judge(world, live, lease_id):
         return GcRow(lease_id, str(path), [place], [], "outside")
     facts = _lease_facts(world, lease_id, path, record)
     why = _in_use(world, live, lease_id, path, record)
+    held = _hold_problem(world, lease_id)
+    if held:
+        why = [held, *why]
     kind = "tree" if os.path.lexists(path) else "gone"
     return GcRow(
         lease_id, str(path), [*why, *facts.problems], facts.subs if kind == "tree" else [], kind
@@ -2098,9 +2130,23 @@ def lease_rows(root):
                     key: entry["commits"] for key, entry in facts.repos.items() if entry["commits"]
                 },
                 "problems": facts.problems,
+                "hold": _hold_row(world, lease_id),
             }
         )
     return rows
+
+
+def _hold_row(world, lease_id):
+    """{"item", "reason", "open"} for a lease with a hold, else None. A hold that could not be read has an empty item."""
+    hold = world.holds.get(lease_id)
+    if hold is None:
+        return None
+    if hold.get("broken"):
+        return {"item": "", "reason": "unreadable", "open": False}
+    still = world.items is None or bool(
+        _hook_module("wl_worktrees").find_open_item(world.items, hold["item"])
+    )
+    return {"item": hold["item"], "reason": hold["reason"], "open": still}
 
 
 def _lease_line(row):
@@ -2110,6 +2156,10 @@ def _lease_line(row):
     )
     base = str(row["base"].get(CONSOLE) or "unknown")[:SHA_SHOWN]
     tree = "" if row["exists"] else "  (no tree on disk)"
+    hold = row.get("hold")
+    if hold:
+        state = "" if hold["open"] else " (item closed, no longer held)"
+        tree += "  held for #%s: %s%s" % (hold["item"], hold["reason"], state)
     return "  %-24s owner %-10s base %-12s dirty %d  unlanded: %s%s" % (
         row["id"],
         row["owner"] or "unknown",
@@ -2134,6 +2184,123 @@ def cmd_leases(args):
     else:
         sys.stdout.write("".join(_lease_line(row) + "\n" for row in rows) or "no leases\n")
     sys.stdout.flush()
+    return 0
+
+
+HOLD_HELP = """\
+Usage: ./run.sh worktree hold <id> --item <worklist id> --reason <text>
+
+Park a finished lease on purpose: its commits must not land until the open
+worklist item's work exists. The Stop hook then reports the lease as one
+advisory line (held for #<item>: <reason>) instead of blocking, and `gc` keeps
+the tree. The hold ends the moment the item is ticked or gone, and the lease
+blocks again. Refused for an unknown lease, an item that is not open and an
+empty reason. `./run.sh worktree unhold <id>` removes it.
+"""
+UNHOLD_HELP = """\
+Usage: ./run.sh worktree unhold <id>
+
+Remove the hold of a lease, so the Stop hook blocks on its unlanded commits
+again and `gc` judges the tree by its rules.
+"""
+
+
+def _hold_file(root, lease_id):
+    return root / ".git" / RECORD_DIR / (lease_id + _hook_module("wl_worktrees").HOLD_SUFFIX)
+
+
+def _known_lease(root, world, lease_id):
+    return bool(ID_RE.match(lease_id)) and lease_id in {*world.records, *_holder_entries(root)}
+
+
+def run_hold(root, lease_id, item, reason):
+    """Write `<id>.hold` beside the lease records. Returns the line to print; raises LeaseRefusedError."""
+    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(_holding_checkout(root) or root)
+    reason = reason.strip()
+    if not reason:
+        message = "hold needs a non-empty --reason"
+        raise LeaseRefusedError(message)
+    with _project_env(root):
+        world = _read_world(root)
+        if not _known_lease(root, world, lease_id):
+            message = "no lease named %s" % lease_id
+            raise LeaseRefusedError(message)
+        items = _read_items(root)
+    if items is None:
+        message = "the worklist could not be read, so the item cannot be checked"
+        raise LeaseRefusedError(message)
+    found = _hook_module("wl_worktrees").find_open_item(items, item)
+    if not found:
+        message = "#%s is not an open worklist item" % item.lstrip("#")
+        raise LeaseRefusedError(message)
+    record = {
+        "item": str(found["id"]),
+        "reason": reason,
+        "held_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    target = _hold_file(root, lease_id)
+    with _locked(target.parent):
+        partial = target.with_name(".%s.partial" % target.name)
+        partial.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        partial.replace(target)
+    return "%s held for #%s: %s" % (lease_id, record["item"], reason)
+
+
+def run_unhold(root, lease_id):
+    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(_holding_checkout(root) or root)
+    target = _hold_file(root, lease_id) if ID_RE.match(lease_id) else None
+    if target is None or not target.is_file():
+        message = "%s has no hold" % lease_id
+        raise LeaseRefusedError(message)
+    target.unlink()
+    return "%s released; the Stop hook blocks on its unlanded commits again" % lease_id
+
+
+def _parse_hold(args):
+    """`(id, item, reason)`, or None after an error line."""
+    rest, lease_id, item, reason = list(args), "", None, None
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--item" and rest:
+            item = rest.pop(0)
+        elif arg == "--reason" and rest:
+            reason = rest.pop(0)
+        elif not arg.startswith("-") and not lease_id:
+            lease_id = arg
+        else:
+            log.error("Unknown or incomplete option: %s" % arg)
+            return None
+    if not lease_id or item is None or reason is None:
+        log.error("hold needs <id> --item <worklist id> --reason <text>")
+        return None
+    return lease_id, item, reason
+
+
+def cmd_hold(args):
+    parsed = _parse_hold(args)
+    if parsed is None:
+        return 1
+    try:
+        line = run_hold(paths.repo_root(), *parsed)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write(line + "\n")
+    return 0
+
+
+def cmd_unhold(args):
+    if len(args) != 1 or args[0].startswith("-"):
+        log.error("unhold needs exactly <id>")
+        return 1
+    try:
+        line = run_unhold(paths.repo_root(), args[0])
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write(line + "\n")
     return 0
 
 

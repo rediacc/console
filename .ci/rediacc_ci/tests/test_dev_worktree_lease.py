@@ -3164,3 +3164,96 @@ def test_seed_public_keys_controls(tmp_path):
     (live / SEED_KEYS).write_text(KEYS_SOURCE, encoding="utf-8")
     assert "no private/account in this tree" in _seed_public_keys(live, lease)
     assert not (lease / SEED_KEYS).exists()
+
+
+# --------------------------------------------------------------------------- hold ---------------------------------------------------------------------------
+#
+# A lease the lead parks on purpose (`hold`): gc keeps it, `leases` shows it, and the Stop hook's side lives in test-wl_worktrees.py. A hold is only as long as its worklist item is open.
+
+
+def worklist_verb(root, *args):
+    done = subprocess.run(
+        [sys.executable, str(WORKLIST), *args],
+        env={**gc_env(root), "WORKLIST_SESSION_ID": GC_SESSION},
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout
+
+
+def open_item(root, text="preview signer waits on its dependencies"):
+    added = worklist_verb(root, "--add", GC_SESSION[:8], text)
+    return added.split("#", 1)[1].split()[0].strip(":,.)")
+
+
+def hold_file(repo, name):
+    return repo.root / ".git" / lease.RECORD_DIR / ("%s.hold" % name)
+
+
+@pytest.fixture
+def unlanded_tree(gc_repo):
+    tree = make_tree(gc_repo, "parked")
+    gc_commit(tree, "work.txt")
+    return gc_repo
+
+
+def test_hold_writes_a_record_and_gc_keeps_the_tree_naming_item_and_reason(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    before = run_gc(repo.root)
+    assert "held for" not in row_of(before.stdout, "parked"), (
+        "control: an unheld tree names no hold"
+    )
+    done = run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "waits on N2")
+    assert done.returncode == 0, done.stderr
+    record = json.loads(hold_file(repo, "parked").read_text(encoding="utf-8"))
+    assert record["item"].startswith(item)
+    assert record["reason"] == "waits on N2"
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert row.split()[0] == "KEEP", row
+    assert "held for #%s: waits on N2" % record["item"] in row, row
+    written = run_gc(repo.root, "--write", "--id", "parked")
+    assert written.returncode == 1, written.stdout
+    assert (repo.root / spike.HOLDER / "parked").is_dir()
+    shown = run_verb(repo.root, "leases").stdout
+    assert "held for #%s: waits on N2" % record["item"] in shown, shown
+
+
+def test_hold_ends_with_its_item_and_unhold_removes_it(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    assert run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "r").returncode == 0
+    worklist_verb(repo.root, "--tick", GC_SESSION[:8], item, "exit 0 nocommit:no-tracked-change")
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert "held for" not in row, "a ticked item no longer holds the tree: %s" % row
+    assert "(item closed" in run_verb(repo.root, "leases").stdout
+    again = run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "r")
+    assert again.returncode == 1
+    assert "not an open worklist item" in again.stderr
+    released = run_verb(repo.root, "unhold", "parked")
+    assert released.returncode == 0, released.stderr
+    assert not hold_file(repo, "parked").exists()
+    assert run_verb(repo.root, "unhold", "parked").returncode == 1
+
+
+@pytest.mark.parametrize(
+    ("lease_id", "item", "reason", "message"),
+    [
+        ("nosuch", "open", "why", "no lease named nosuch"),
+        ("parked", "open", "   ", "non-empty --reason"),
+        ("parked", "deadbeef", "why", "not an open worklist item"),
+    ],
+)
+def test_hold_refuses_unknown_lease_empty_reason_and_closed_item(
+    unlanded_tree, lease_id, item, reason, message
+):
+    repo = unlanded_tree
+    real = open_item(repo.root)
+    given = real if item == "open" else item
+    done = run_verb(repo.root, "hold", lease_id, "--item", given, "--reason", reason)
+    assert done.returncode == 1, done.stdout
+    assert message in done.stderr, done.stderr
+    assert not hold_file(repo, lease_id).exists()
