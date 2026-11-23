@@ -581,6 +581,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_uncommitted.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
 | .claude/hooks/stop/wl_wake.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_worktrees.py | (none) | via .claude/hooks/stop/test-landing-scope.py | py |
+| .claude/hooks/stop/wl_writersnow.py | (none) | via .claude/hooks/stop/wl_cli.py | py |
 | .claude/hooks/stop/worklist.py | Stop, TeammateIdle | settings.json | py |
 | .claude/hooks/stop/worklist_messages.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/trapguard/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
@@ -1043,6 +1044,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_waiter_controls.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_wake.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_wisdom.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_writersnow.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_writer_commit_verbs.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-landing-scope.py | py |
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |

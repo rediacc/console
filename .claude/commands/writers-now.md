@@ -1,7 +1,7 @@
 ---
 description: Drain the Promoted plans in agent/plans/QUEUE.md. One read-only survey sorts every open box into nine groups and writes the code clusters by file and the live run order per target. The lead ticks the PRESENT boxes first, in one batch. One wave then starts the code writers in leases, a standing review-findings writer, and one live runner per target (bench, hostinger, VM fleet, production) in the main checkout. Runners record evidence without committing; the lead commits the ticks in one batch right before the single gate run. GITHUB and TIME boxes are named once and carried through the PR, operator questions go in one batched ask, and the round ends with a numeric report. Free text after the command narrows it to matching plans.
 argument-hint: "[ask] [filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan; 'ask' asks for risk/permit rulings that unblock stuck boxes]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --live-proof:*), Bash(.claude/hooks/stop/worklist.py --box-audit:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --add-many:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(.claude/hooks/stop/worklist.py --review-mark:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(ls:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(uptime:*), Bash(nproc:*), Bash(python3 -c:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --writers-now-start:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --live-proof:*), Bash(.claude/hooks/stop/worklist.py --box-audit:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --add-many:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(.claude/hooks/stop/worklist.py --review-mark:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(ls:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(uptime:*), Bash(nproc:*), Bash(python3 -c:*)
 ---
 
 ## The queue, gathered
@@ -21,6 +21,10 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 **Drain, do not report.** The operator types this instead of a long prompt, and one invocation is measured by boxes ticked and commits landed. The rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
 
 Why the round is shaped this way, measured on 2026-11-16 after many rounds: 25 of 75 Promoted plans done, 1162 of 1397 boxes. Of the 235 open boxes, 25 were code, 9 were already present in the tree, 29 were GITHUB, TIME or OPERATOR boxes, and 172 (73%) were live runs: 63 bench, 25 VM fleet, 53 hostinger, 31 production. Earlier rounds staffed writers and left the live queue as a paragraph nobody ran, so the round now staffs a runner per live target in the same wave as the writers, and the work a lease cannot do is no longer the work nobody does.
+
+### 0. Record the round
+
+Before the survey starts, pick its path, `/tmp/writers-now/<branch>-<UTC stamp>.md`, and record the round with that path: `.claude/hooks/stop/worklist.py --writers-now-start <me> <survey path>`. It appends one row to `agent/ledgers/writers-now-rounds.jsonl` and prints the round id. The row rides the round's tick batch (section 7); the verb commits nothing.
 
 ### 1. Survey first, in the required format
 

@@ -756,6 +756,17 @@ CLI_QUEUE_SET_USAGE = (
 
 CLI_QUEUE_SET_REFUSED = "REFUSED: %s. agent/plans/QUEUE.md is unchanged.\n"
 
+# `--writers-now-start` (agent/plans/PLAN-writers-now-cadence.md WN1): usage (static) and the started line (round, at, survey).
+CLI_WRITERS_NOW_USAGE = (
+    "usage: --writers-now-start <me> <survey-path>\n"
+    "Records the start of a /writers-now round: one row in "
+    "agent/ledgers/writers-now-rounds.jsonl (round id, session, UTC start, survey path), "
+    "and prints the round id. The skill runs it as step 0 with the path its survey will "
+    "write. Nothing is committed.\n"
+)
+
+CLI_WRITERS_NOW_STARTED = "writers-now round %(round)s started at %(at)s; survey %(survey)s"
+
 N_PHANTOM_IDENTITY = (
     "PHANTOM IDENTITY IN THE STORE (%d). These prefixes WRITE here and have "
     "never stopped -- no .lastevent-<prefix>.json exists for any of them, and "
@@ -2452,6 +2463,10 @@ Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
                                 with its unfinished prerequisites pulled in
                                 ahead of it (the check:ci-plan-record RQ-DEPS
                                 repair); one atomic write, nothing committed
+  --writers-now-start <me> <survey-path>
+                                record the start of a /writers-now round in
+                                agent/ledgers/writers-now-rounds.jsonl and
+                                print its round id; nothing committed
 
 Maintenance:
   --compact                     drop tombstones and fold the event log

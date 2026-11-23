@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T17:19:06.167Z",
+  "generatedAt": "2026-11-23T19:18:51.669Z",
   "legs": [
     {
       "index": 1,
@@ -137,6 +137,7 @@
         "pytest:.ci/rediacc_ci/tests/test_spikes_do_policy_spike.py",
         "pytest:.ci/rediacc_ci/tests/test_sqlite_tracking.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_onprem_scenarios.py",
         "pytest:.ci/rediacc_ci/tests/test_tmp_capacity.py",
         "pytest:.ci/rediacc_ci/tests/test_vm_check_list_evidence.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_start_account_tree.py",
@@ -305,6 +306,7 @@
         "pytest:.ci/rediacc_ci/tests/test_setup_install_cli_global.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_port.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_account_e2e.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_onprem_stack.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_backup_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_version_detect_bump_type.py",
         "pytest:.claude/rediacc_hooks/tests/test_commit_policy_landing.py",
@@ -441,6 +443,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_dns.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench_region.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_executor_orphans.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_free_to_registered.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_login_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_portal_captcha.py",
@@ -840,6 +843,7 @@
         "pytest:.ci/rediacc_ci/tests/test_security_workflow_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_signal_create_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_install_methods.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_onprem_image.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
         "pytest:.ci/rediacc_ci/tests/test_version_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_version_resolve_version.py",
@@ -957,6 +961,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",
+        "pytest:.ci/rediacc_ci/tests/test_onprem_suite_writeback.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_meter_replay.py",
@@ -1027,7 +1032,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_diff.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_history.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_writersnow.py"
       ]
     }
   ]

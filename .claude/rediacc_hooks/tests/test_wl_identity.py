@@ -534,6 +534,12 @@ def drive_l1(fix) -> L1Drive:
         ("--add-many", "--add-many @WHO@", "REFUSED: line 2"),
         # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.
         ("--promote", "--promote @WHO@ PLAN-l1-absent.md l1-note", "does not exist"),
+        # Appends a round row to the fixture's agent/ledgers/writers-now-rounds.jsonl (agent/plans/PLAN-writers-now-cadence.md WN1), so a foreign `<me>` must be refused before the write.
+        (
+            "--writers-now-start",
+            "--writers-now-start @WHO@ %s" % (fix.base / "l1-writers-now.md"),
+            "writers-now round",
+        ),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),

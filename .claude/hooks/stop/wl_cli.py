@@ -2828,6 +2828,21 @@ def _queue_set_cli(argv):
     print("git add %s" % PQ.QUEUE_REL)
 
 
+def _writers_now_start_cli(argv):
+    """`--writers-now-start <me> <survey-path>`: record the start of a /writers-now round (agent/plans/PLAN-writers-now-cadence.md WN1). Appends one row to agent/ledgers/writers-now-rounds.jsonl and prints the round id. Never commits: the ledger is a record the lead commits with the round's tick batch."""
+    if len(argv) != 3 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(M.CLI_WRITERS_NOW_USAGE)
+        sys.exit(2)
+    me, survey = argv[1], argv[2]
+    _identity_or_die(me, _die2)
+    import wl_writersnow as WN
+
+    root = pathlib.Path(C.project_root(C.project_start()) or os.getcwd())
+    row = WN.append_round(root, me, survey, C.utcnow())
+    print(M.CLI_WRITERS_NOW_STARTED % {"round": row["round"], "at": row["at"], "survey": survey})
+    print("ledger: %s" % WN.LEDGER_REL)
+
+
 def _print_resolved(pq, root, text):
     """The resolved settings, one `key: value (source)` line each in KNOWN_KEYS order, then what the level does to the checks (agent/plans/PLAN-stop-hook-effort.md) and any problem. `pq` is wl_planqueue, which carries wl_effort."""
     effort = pq.wl_effort
@@ -3582,6 +3597,9 @@ def main():
         return True
     if sys.argv[1:2] == ["--promote"]:
         _promote_cli(sys.argv[1:])
+        return True
+    if sys.argv[1:2] == ["--writers-now-start"]:
+        _writers_now_start_cli(sys.argv[1:])
         return True
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
