@@ -72,7 +72,8 @@ Worklist: #14adbaec, PR-TASK 5eb69cff
   Accept: live-proof bench account-smoke
 
 ### Wave 3: production eu (after B6; no fixed window per the operator ruling)
-- [ ] P0 [live] Read-only `d1_relocate plan` for account-eu, sized against B6; the R2 jurisdiction audit of production eu buckets (with and without `--jurisdiction eu`); the API rename probe. Accept: `d1_relocate plan --from account-eu --to account-eu-j --jurisdiction eu` rc 0, plus `r2_bucket_copy --inventory --jurisdiction eu` rc 0 and `r2_bucket_copy --inventory` rc 0
+- [x] P0 [live] Read-only `d1_relocate plan` for account-eu, sized against B6; the R2 jurisdiction audit of production eu buckets (with and without `--jurisdiction eu`); the API rename probe. Accept: `d1_relocate plan --from account-eu --to account-eu-j --jurisdiction eu` rc 0, plus `r2_bucket_copy --inventory --jurisdiction eu` rc 0 and `r2_bucket_copy --inventory` rc 0
+    (ticked) 2026-11-23T08:32:08Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/d1_relocate.py:1 -- production live run 2026-11-23: d1_relocate plan rc 0 (account-eu 97 tables, region EEUR, no jurisdiction; account-eu-j absent; fence table present and empty; no live leases); r2_bucket_copy --inventory rc 0 with and without --jurisdiction eu
 - [ ] P1 [live] `create account-eu-j --jurisdiction eu`; the API must show jurisdiction eu. Accept: `d1_relocate create --from account-eu --to account-eu-j --jurisdiction eu --write` rc 0
 - [ ] P2 [live] `region_smoke --region eu --record-baseline`, `fence --on account-eu`, drain, `bookmark`, `copy`. Accept: `d1_relocate verify --from account-eu --to account-eu-j` rc 0, and `.ci/state/d1-relocate/account-eu.json` carries the bookmark
 - [ ] P3 [writer] The repoint commit on the pushed branch: wrangler.eu.toml `database_name`/`database_id`, regions.json `eu.d1.name`. Accept: `npm run check:ci-region-consistency` rc 0

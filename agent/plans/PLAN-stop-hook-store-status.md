@@ -171,11 +171,12 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     - `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_core_blocking.py .claude/rediacc_hooks/tests/test_wl_remaining_bank.py .claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py .claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py .claude/rediacc_hooks/tests/test_wl_continuity_surface.py` exits 0;
     - the case at .claude/rediacc_hooks/tests/test_wl_core_blocking.py:173 is inverted: an omitted task id no longer blocks. Its control: a missing `## Remaining` heading on a changed item set still blocks with `no-remaining`, whose text lists no item;
     - `python3 .ci/scripts/quality/check_plan_record.py --effort-table` exits 0, and `out-of-sync` appears in neither `checks` nor `tuned`.
-- [ ] D1 [writer] CLAUDE.md and the loop prompt describe the D6 message contract and the hook-rendered table, in place of "base the `## Remaining` section on that guide" and "naming every open task by id"
+- [x] D1 [writer] CLAUDE.md and the loop prompt describe the D6 message contract and the hook-rendered table, in place of "base the `## Remaining` section on that guide" and "naming every open task by id"
     Owns: CLAUDE.md, docs/agent-reference/loop-prompt.md
     Depends on: J1.
     Needs: none
     Accept: CLAUDE.md:64-65 and docs/agent-reference/loop-prompt.md:30 name `worklist.py --status <me>` and the D6 contract. `grep -n "every open task by id" CLAUDE.md docs/agent-reference/loop-prompt.md` prints nothing. CLAUDE.md:102-103 (what may appear under `## Remaining`) is unchanged.
+    (ticked) 2026-11-23T08:11:47Z by ace763dd: commit:008ae77f91 fileline:docs/agent-reference/loop-prompt.md:30 -- CLAUDE.md:66 and docs/agent-reference/loop-prompt.md:30 name worklist.py --status <me> and the D6 message contract; grep "every open task by id" prints nothing; check:ci-prose-style, doc-region-parity, scope-mirrors rc 0
 - [ ] X1 [lead] Record in PLAN-stop-hook-retro-20261117.md that J1 replaces R20261117.1, keeping the box line byte-identical
     Owns: agent/plans/PLAN-stop-hook-retro-20261117.md
     Depends on: J1.

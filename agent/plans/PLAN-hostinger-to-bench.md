@@ -38,9 +38,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 ## Boxes
 
 ### Wave 0: read-only
-- [ ] P0 [live] Inventory through eu-bench or SSH: each repo's installed renewalUrl origin (`./rdc.sh --config eu-bench machine status hostinger --licenses -o json`), `repo list -m hostinger -o json` mapping all GUIDs to names, datastore free space, bench `subscription status -o json` and `backup usage -o json`, `bench_access list`, the bench HTTP code from hostinger over IPv4 and IPv6, and the last run of hostinger's backup timer from its journal.
+- [x] P0 [live] Inventory through eu-bench or SSH: each repo's installed renewalUrl origin (`./rdc.sh --config eu-bench machine status hostinger --licenses -o json`), `repo list -m hostinger -o json` mapping all GUIDs to names, datastore free space, bench `subscription status -o json` and `backup usage -o json`, `bench_access list`, the bench HTTP code from hostinger over IPv4 and IPv6, and the last run of hostinger's backup timer from its journal.
   Local-route: hostinger -- every read runs through eu-bench and term connect; the backup run is hostinger's own systemd timer, read from journalctl.
   Accept: `npm run login:bench` rc 0 plus every read rc 0, recorded in this plan.
+    (ticked) 2026-11-23T08:36:33Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/ops_health.py:1 -- hostinger live run 2026-11-23 through eu-bench: inventory: 17 repos with valid licences all renewing from bench-eu.rediacc.cloud, datastore 62 percent full (138G free), bench-eu answers 302 over IPv4 and IPv6, nightly-hot ran 02:00-02:31Z; evidence /tmp/writers-now/1121-1-20261123T0756Z-evidence-hostinger.md
 
 ### Wave 1: writers
 - [x] W1 [writer] The bench production guard (Design 3): `bench_production.py`, `bench-production.json`, reset_bench refusals, drill cleanup refusals.

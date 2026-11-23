@@ -473,7 +473,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 799 | 3 | 48 | 116026 |
-| `agent/plans/PLAN-backup-download-from-store.md` | approved | 58 | 1 | 8 | 12672 |
+| `agent/plans/PLAN-backup-download-from-store.md` | approved | 59 | 0 | 9 | 13031 |
 | `agent/plans/PLAN-backup-integrity.md` | approved | 509 | 5 | 51 | 81386 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 459 | 2 | 12 | 58536 |
@@ -508,7 +508,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56949 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 71 | 12 | 0 | 13631 |
-| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 93 | 19 | 3 | 20803 |
+| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 94 | 18 | 4 | 21159 |
 | `agent/plans/PLAN-d1-scaling.md` | approved | 219 | 12 | 19 | 45816 |
 | `agent/plans/PLAN-datastore-migrate-correctness.md` | proposed | 80 | 13 | 0 | 17584 |
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1068 | 8 | 33 | 195366 |
@@ -517,7 +517,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
-| `agent/plans/PLAN-email-sender-separation.md` | approved | 266 | 7 | 11 | 48047 |
+| `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 218 | 8 | 26 | 41080 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 480 | 21 | 26 | 66426 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | done | 487 | 0 | 18 | 66043 |
@@ -539,8 +539,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 85 | 1 | 13 | 30265 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 711 | 17 | 64 | 132236 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 111 | 9 | 13 | 24409 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 712 | 16 | 65 | 132506 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 112 | 8 | 14 | 24831 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
@@ -599,7 +599,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 146 | 26 | 0 | 36546 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32669 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 73 | 16 | 0 | 17437 |
-| `agent/plans/PLAN-root-api-token.md` | approved | 318 | 6 | 9 | 43168 |
+| `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 324 | 11 | 8 | 34599 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
@@ -611,7 +611,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
 | `agent/plans/PLAN-silent-failure-sweep.md` | approved | 213 | 7 | 3 | 27003 |
-| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 185 | 5 | 7 | 39052 |
+| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 186 | 4 | 8 | 39535 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
@@ -623,7 +623,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
 | `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13916 |
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 214 | 1 | 7 | 28773 |
-| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 204 | 6 | 3 | 25563 |
+| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 205 | 5 | 4 | 25900 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |

@@ -39,20 +39,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (4 epic(s)):
-  - epic 79b7e92e, no plan, 372 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+- Work outside the PR's plans (5 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 79b7e92e, no plan, 383 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a0376a6fb0e874e59, worker:aebddcd2382176dfe, worker:af3aad60b45145571.
-- Leased items: 5: #35afe1a8 (worker:a0376a6fb0e874e59, ace763dd), #3b82cf28 (worker:by2bf46u1, ace763dd), #46e48311 (worker:aebddcd2382176dfe, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #bb047a7c (worker:af3aad60b45145571, ace763dd).
+- Writers: 15 live of writer_cap 25 (session ace763dd): worker:a0376a6fb0e874e59, worker:aebddcd2382176dfe, worker:a7c4ac0f1f4e51db4, worker:a3fc1039ee1e08f05, worker:a06841e9ff2c7fb69, worker:ab59cc2d48cfd64ae, worker:af268160b495d8c65, worker:a8d935b9332ecc51f, worker:acec86b6e7282ddc4, worker:a408b9ba30b15a551, worker:ae287ab31c62de73f, worker:a3b1347ef0c66c2e6, and 3 more.
+- Leased items: 17: #1c49f047 (worker:a7d5b5387bc707bcb, ace763dd), #3519ab06 (worker:ae287ab31c62de73f, ace763dd), #35afe1a8 (worker:a0376a6fb0e874e59, ace763dd), #3b82cf28 (worker:af268160b495d8c65, ace763dd), #46e48311 (worker:aebddcd2382176dfe, ace763dd), #6e4045d4 (worker:a408b9ba30b15a551, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #78d0743f (worker:a4a2e0ad0296b23b6, ace763dd), #7c512c42 (worker:a3b1347ef0c66c2e6, ace763dd), #894fca15 (worker:a7c4ac0f1f4e51db4, ace763dd), #9f0ac523 (worker:a8d935b9332ecc51f, ace763dd), #a0aa181d (worker:af268160b495d8c65, ace763dd), and 5 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 66 plans done, 1132 of 1433 boxes done (78%).
+Promoted: 7 of 66 plans done, 1143 of 1433 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -72,7 +73,7 @@ Promoted: 6 of 66 plans done, 1132 of 1433 boxes done (78%).
 | 14 | PLAN-backup-local-image.md | 12/14 | 2 open |
 | 15 | PLAN-backup-plane-shared-bucket-hardening.md | 6/7 | 1 open |
 | 16 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
-| 17 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
+| 17 | PLAN-backup-download-from-store.md | 9/9 | done |
 | 18 | PLAN-free-license.md | 11/13 | 2 open |
 | 19 | PLAN-backup-integrity.md | 51/56 | 5 open |
 | 20 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
@@ -81,7 +82,7 @@ Promoted: 6 of 66 plans done, 1132 of 1433 boxes done (78%).
 | 23 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 24 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
 | 25 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
-| 26 | PLAN-health-checks-local.md | 64/81 | 17 open |
+| 26 | PLAN-health-checks-local.md | 65/81 | 16 open |
 | 27 | PLAN-backup-multi-target.md | 18/21 | 3 open |
 | 28 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
 | 29 | PLAN-renet-executor-tiered-license-check.md | 3/4 | 1 open |
@@ -102,20 +103,20 @@ Promoted: 6 of 66 plans done, 1132 of 1433 boxes done (78%).
 | 44 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 45 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 46 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
-| 47 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
-| 48 | PLAN-hostinger-to-bench.md | 13/22 | 9 open |
+| 47 | PLAN-d1-eu-jurisdiction.md | 4/22 | 18 open |
+| 48 | PLAN-hostinger-to-bench.md | 14/22 | 8 open |
 | 49 | PLAN-multi-region-bench.md | 14/23 | 9 open |
-| 50 | PLAN-root-api-token.md | 9/15 | 6 open |
+| 50 | PLAN-root-api-token.md | 13/15 | 2 open |
 | 51 | PLAN-site-entry-points.md | 7/11 | 4 open |
 | 52 | PLAN-root-grants.md | 8/19 | 11 open |
 | 53 | PLAN-push-decoupling.md | 18/23 | 5 open |
-| 54 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
+| 54 | PLAN-stop-hook-store-status.md | 4/9 | 5 open |
 | 55 | PLAN-rdc-feedback.md | 18/21 | 3 open |
 | 56 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
-| 57 | PLAN-email-sender-separation.md | 11/18 | 7 open |
+| 57 | PLAN-email-sender-separation.md | 12/18 | 6 open |
 | 58 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
 | 59 | PLAN-two-track-merge-dev.md | 38/44 | 6 open |
-| 60 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
+| 60 | PLAN-simple-two-tree-loop.md | 8/12 | 4 open |
 | 61 | PLAN-preview-signer.md | 14/37 | 23 open |
 | 62 | PLAN-weekly-lessons.md | 2/8 | 6 open |
 | 63 | PLAN-tooling-speed.md | 3/8 | 5 open |
