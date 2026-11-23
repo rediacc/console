@@ -8,7 +8,6 @@ Both directions, because a one-sided control is satisfiable by a broken hook: on
                                          planted; this MUST fail, which is the proof the suite can
 """
 
-import ast
 import importlib
 import importlib.util
 import json
@@ -18,7 +17,7 @@ import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite, _harness
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
@@ -171,23 +170,7 @@ def via_dispatch(cmd):
     return p.returncode, p.stdout + p.stderr
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def defect_runner():

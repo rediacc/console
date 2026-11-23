@@ -18,6 +18,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unproven_bulk_transform"]
@@ -1193,51 +1194,7 @@ for (message, want), got in zip(PROOF_CASES, json.loads(proof_proc.stdout), stri
         )
     )
 
-# ---- A REDIRECT TARGET IS READ AS TYPED AND AS BASH EXPANDS IT (#7b3f34ae) --
-# `names` (the top-level assignments before the commit) expands a typed target, and `if true; then D=src; fi` is not top-level: `D=other` stayed the value there, `echo x > $D/a.md` read as `other/a.md`, and the clause that writes `src/a.md` under the pathspec was not named (`[]` at e76fe1061). The expanded form (`shellscan.redirect_targets`) names it. Each ROW is (label, command, writers wanted); the MUTANT plants the typed-only read and must turn the first row.
-REDIRECT_ROWS = [
-    (
-        "an assignment inside an if, redirect through the variable",
-        "D=other; if true; then D=src; fi; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "a top-level assignment, redirect into the pathspec",
-        "D=src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "a variable holding another directory (control)",
-        "D=other; echo x > $D/a.md; git commit -m x -- src",
-        False,
-    ),
-    (
-        "a variable the walk cannot know stays a writer",
-        "echo x > $UNSET_DIR/a.md; git commit -m x -- src",
-        True,
-    ),
-    # #97ed76a7: each was `[]` at 434eb6c5f, because the lexical `NAME=value` lookup read `other` where bash assigned `src` (`for`, `read`, `printf -v`); the walk leaves the value unknown, so the clause counts as a writer.
-    (
-        "a for loop assigns the variable",
-        "D=other; for D in src; do echo x > $D/a.md; done; git commit -m x -- src",
-        True,
-    ),
-    (
-        "read assigns the variable",
-        "D=other; read D <<< src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "printf -v assigns the variable",
-        "D=other; printf -v D src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "printf -v of another name keeps the value (control)",
-        "D=other; printf -v E src; echo x > $D/a.md; git commit -m x -- src",
-        False,
-    ),
-]
+REDIRECT_ROWS = load_table("block_unproven_bulk_transform", "REDIRECT_ROWS")
 REDIRECT_CHILD = """
 import importlib.util, json, sys
 guard, repo, path = sys.argv[1:4]

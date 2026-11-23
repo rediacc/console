@@ -25,6 +25,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
@@ -289,17 +290,7 @@ for stem in GUARDS:
 
 # THE PLANTS. Each must flip every row it names, or the rows are not held by the line it plants on.
 SCOPE_OFF = [("_repo_scope.elsewhere(", "False and _repo_scope.elsewhere(")]
-# Both scope checks come out together: the in-tree check (any target inside this tree is ours) and the common-dir comparison (a repository sharing this checkout's common dir is ours). Either alone still refuses this checkout and the submodule, so the plant must take both to flip those rows.
-COMPARE_OFF = [
-    (
-        "if commit_policy.is_inside(target, root):",
-        "if False and commit_policy.is_inside(target, root):",
-    ),
-    (
-        "if common and (not ours or commit_policy.is_inside(common, ours)):",
-        "if common and not ours:",
-    ),
-]
+COMPARE_OFF = load_table("_repo_scope", "COMPARE_OFF")
 # The common-dir comparison alone: a target the in-tree check does not place (a directory outside the tree whose `.git` file names this checkout's common dir) is ours only by its common dir, so only that row flips.
 COMMON_OFF = [COMPARE_OFF[1]]
 WALK_OFF = {

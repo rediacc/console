@@ -6,5 +6,19 @@
     ["record-paths-only-is-admitted", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'docs: notes' -- agent/reviews/1120-1/r.md"}}],
     ["focus-fix-on-no-item-is-frozen", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'feat: x focus-fix:#abcdef12' -- a.py"}}],
     ["not-a-commit", {"tool_name": "Bash", "tool_input": {"command": "git status"}}]
+  ],
+  "CASES": [
+    {"//": "(name, command, expect_blocked)"},
+    ["feat refused", "git commit -m 'feat(ci): a new thing' -- f.txt", true],
+    ["chore(pins) refused", "git commit -m 'chore(pins): bump npm' -- f.txt", true],
+    ["fix admitted", "git commit -m 'fix(ci): a fix' -- f.txt", false],
+    ["test admitted", "git commit -m 'test(ci): a test' -- f.txt", false],
+    ["chore(reviews) admitted", "git commit -m 'chore(reviews): records' -- f.txt", false],
+    ["chore(plans) admitted", "git commit -m 'chore(plans): tick' -- f.txt", false],
+    ["record paths only admitted", "git commit -m 'feat(ci): records' -- agent/reviews/1120-1/clean.jsonl", false],
+    ["heredoc -F - feat refused", "git commit -F - -- f.txt <<'EOF'\nfeat(ci): from a heredoc\nEOF", true],
+    ["heredoc -F - fix admitted", "git commit -F - -- f.txt <<'EOF'\nfix(ci): from a heredoc\nEOF", false],
+    ["not a commit", "git status", false],
+    ["prose about a commit is not a commit", "echo 'git commit -m feat(x): y'", false]
   ]
 }

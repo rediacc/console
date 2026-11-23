@@ -16,7 +16,6 @@ ISOLATION (W12 of the lease plan). An overlap from a spawn the harness isolates 
 SAME-MESSAGE SPAWNS (W13, #105d59a7). `SEQUENCES` drives several spawns against one world with nothing between them, so only the claim file can carry a sibling. `CLAIM_READ_DEFECT` removes the read and the 2026-11-04 shape must stop being refused.
 """
 
-import ast
 import atexit
 import datetime
 import fcntl
@@ -35,7 +34,7 @@ import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite, _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_concurrency.py"
@@ -1078,23 +1077,7 @@ CLAIM_READ_DEFECT = ("pending = X.unconsumed(claims, metas, session_id)", "pendi
 LOCK_BUDGET_PLANT = ("LOCK_WAIT_S = 30", "LOCK_WAIT_S = 0.2")
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def main():

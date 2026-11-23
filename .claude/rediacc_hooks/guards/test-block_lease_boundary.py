@@ -20,6 +20,7 @@ import sys
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
@@ -267,29 +268,7 @@ REFUSED_ELSEWHERE = [
     ("cd into its submodule tree", "cd %s && git switch main" % SUBPATH, LEASE),
 ]
 
-ALLOWED = [
-    ("the pathspec commit", "git commit -F m -- src/x.ts"),
-    ("git status", "git status"),
-    ("git log", "git log"),
-    ("git diff", "git diff"),
-    ("git add", "git add -- src/x.ts"),
-    ("git rev-parse", "git rev-parse HEAD"),
-    ("a checkout of a path", "git checkout -- src/x.ts"),
-    ("a checkout of a path from a tree", "git checkout HEAD -- src/x.ts"),
-    ("a checkout of a lone path", "git checkout src/x.ts"),
-    ("a bare checkout", "git checkout"),
-    ("git branch, listing", "git branch --list"),
-    ("git branch, the current one", "git branch --show-current"),
-    ("git symbolic-ref, a read", "git symbolic-ref -q HEAD"),
-    ("git fetch", "git fetch origin"),
-    ("gh run list", "gh run list"),
-    ("gh api, reading", "gh api repos/o/r/pulls"),
-    ("gh pr --help", "gh pr --help"),
-    ("git push in prose", "echo git push origin HEAD:1104-1"),
-    ("git switch in a heredoc", "cat > n.md <<'EOF'\ngit switch main\nEOF"),
-    ("no git at all", "ls -la"),
-    ("an empty command", ""),
-]
+ALLOWED = load_table("block_lease_boundary", "ALLOWED")
 
 ALLOWED_ELSEWHERE = [
     ("a pathspec beside a staged agent path", "git commit -F m -- src/x.ts", STAGED_AGENT),

@@ -20,6 +20,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -75,71 +76,7 @@ def report(name, want, got, detail=""):
 
 # --------------------------------------------------------------------------- 1. the guard ---------------------------------------------------------------------------
 
-GUARD_CASES = [
-    # (name, command, expect_blocked)
-    ("commit --no-verify", "git commit --no-verify -m x -- a", True),
-    ("commit -n", "git commit -n -m x -- a", True),
-    ("a bundled -n", "git commit -anm x", True),
-    ("-c core.hooksPath=/dev/null", "git -c core.hooksPath=/dev/null commit -m x -- a", True),
-    ("-c with the key in another case", "git -c core.hookspath=/x commit -m x -- a", True),
-    ("config core.hooksPath <value>", "git config core.hooksPath /tmp/x", True),
-    ("config --local core.hooksPath <value>", "git config --local core.hooksPath x", True),
-    ("config --unset core.hooksPath", "git config --unset core.hooksPath", True),
-    ("config unset core.hooksPath", "git config unset core.hooksPath", True),
-    ("push --no-verify", "git push --no-verify origin 0923-1", True),
-    ("merge --no-verify", "git merge --no-verify x", True),
-    # git's own parse (#9de9a8e9), each row measured on git 2.53.0 with every hook writing a marker.
-    ("am -n is --no-verify", "git am -n x.patch", True),
-    ("a bundled am -3n", "git am -3n x.patch", True),
-    ("a unique prefix --no-veri", "git push --no-veri origin 0923-1", True),
-    ("rebase --no-veri", "git rebase --no-veri main", True),
-    ("--verify after --no-verify runs the hooks", "git push --no-verify --verify origin x", False),
-    ("--no-no-verify runs the hooks", "git commit --no-verify --no-no-verify -m x -- a", False),
-    ("merge -n is --no-stat", "git merge -n x", False),
-    ("rebase -n is --no-stat", "git rebase -n main", False),
-    ("cherry-pick has no --no-verify (git exits 129)", "git cherry-pick --no-verify HEAD", False),
-    ("an ambiguous --no-ver runs nothing (git exits 129)", "git push --no-ver origin x", False),
-    (
-        "after --end-of-options it is a pathspec",
-        "git commit -m x --end-of-options --no-verify",
-        False,
-    ),
-    # `git config` read the way git reads it (#e8be3092), each measured on git 2.53.0: every one of these rewrote or removed core.hooksPath.
-    ("config --unset-a (a unique prefix)", "git config --unset-a core.hooksPath", True),
-    ("config -f <file> <key> <value>", "git config -f .git/config core.hooksPath /x", True),
-    ("config set -f <file> <key> <value>", "git config set -f .git/config core.hooksPath /y", True),
-    ("config --type path <key> <value>", "git config --type path core.hooksPath /z", True),
-    ("config --repl (a unique prefix)", "git config --repl core.hooksPath /w", True),
-    (
-        "config unset --file <file> <key>",
-        "git config unset --file .git/config core.hooksPath",
-        True,
-    ),
-    ("config remove-section core removes it too", "git config remove-section core", True),
-    ("config --remove-section core removes it too", "git config --remove-section core", True),
-    ("config -f <file> --get is a read", "git config -f .git/config --get core.hooksPath", False),
-    ("config get --type path is a read", "git config get --type path core.hooksPath", False),
-    ("the override on a commit", "COMMIT_POLICY_OK=1 git commit -m x -- a", True),
-    ("the override exported", "export COMMIT_POLICY_OK=1; git push", True),
-    ("config by environment", "GIT_CONFIG_PARAMETERS=\"'core.hooksPath'='/x'\" git commit", True),
-    ("config --get is a read", "git config --get core.hooksPath", False),
-    ("config with no value is a read", "git config core.hooksPath", False),
-    ("log -n is not a commit", "git log -n 5", False),
-    ("push -n is a dry run", "git push -n origin 0923-1", False),
-    ("an ordinary commit", "git commit -F m -- a", False),
-    ("prose naming the flag", "echo 'never git commit --no-verify'", False),
-    (
-        "the release-run record set by an agent",
-        "REDIACC_RELEASE_RUN=.ci/cache/release/run-1.json git push origin main",
-        True,
-    ),
-    ("the release-run record exported", "export REDIACC_RELEASE_RUN=/tmp/r.json; git push", True),
-    ("the release-run record through env(1)", "env REDIACC_RELEASE_RUN=/tmp/r.json git push", True),
-    ("prose naming the release-run variable", "echo 'set REDIACC_RELEASE_RUN=x'", False),
-    ("a release-run variable read, not set", 'echo "$REDIACC_RELEASE_RUN"', False),
-    ("prose naming the override", "echo 'the override is COMMIT_POLICY_OK=1'", False),
-    ("an empty command", "", False),
-]
+GUARD_CASES = load_table("block_git_hook_bypass", "GUARD_CASES")
 
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"

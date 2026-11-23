@@ -55,6 +55,33 @@ def outside_defect(src: str, *names: str) -> str:
     )
 
 
+def transcript(answer_ts, run_tmp):
+    """A lead transcript under `run_tmp` holding one AskUserQuestion and its answer at `answer_ts`, as a path (the four push and release suites shared this copy)."""
+    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=run_tmp)) / "lead.jsonl"
+    records = [
+        {
+            "type": "assistant",
+            "timestamp": "2026-01-01T00:00:10Z",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
+                ]
+            },
+        },
+        {
+            "type": "user",
+            "timestamp": answer_ts,
+            "message": {
+                "content": [
+                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
+                ]
+            },
+        },
+    ]
+    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    return str(path)
+
+
 _SCRATCH: list[pathlib.Path] = []
 
 

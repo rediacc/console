@@ -5,5 +5,16 @@
     ["a plain command is not a target", "ls -la"],
     ["gh pr view is not a write", "gh pr view 1"],
     ["git log is not git commit", "git log --grep \"shape_cluster_diff.py\""]
+  ],
+  "REDIRECT_ROWS": [
+    ["an assignment inside an if, redirect through the variable", "D=other; if true; then D=src; fi; echo x > $D/a.md; git commit -m x -- src", true],
+    ["a top-level assignment, redirect into the pathspec", "D=src; echo x > $D/a.md; git commit -m x -- src", true],
+    ["a variable holding another directory (control)", "D=other; echo x > $D/a.md; git commit -m x -- src", false],
+    ["a variable the walk cannot know stays a writer", "echo x > $UNSET_DIR/a.md; git commit -m x -- src", true],
+    {"//": "#97ed76a7: each was `[]` at 434eb6c5f, because the lexical `NAME=value` lookup read `other` where bash assigned `src` (`for`, `read`, `printf -v`); the walk leaves the value unknown, so the clause counts as a writer."},
+    ["a for loop assigns the variable", "D=other; for D in src; do echo x > $D/a.md; done; git commit -m x -- src", true],
+    ["read assigns the variable", "D=other; read D <<< src; echo x > $D/a.md; git commit -m x -- src", true],
+    ["printf -v assigns the variable", "D=other; printf -v D src; echo x > $D/a.md; git commit -m x -- src", true],
+    ["printf -v of another name keeps the value (control)", "D=other; printf -v E src; echo x > $D/a.md; git commit -m x -- src", false]
   ]
 }

@@ -22,6 +22,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
@@ -696,18 +697,7 @@ CODE_TEXT = [
     ("shell", 'echo "absent from the worktree"; git add -A\n', True),
 ]
 
-# (operand, directory, trees on disk, does it name a lease)
-HELPER = [
-    ("w2", "", ["w2", "w9"], True),
-    ("worktrees/w2", "", ["w2"], True),
-    (".claude/worktrees/w2", "", [], True),
-    ("x", ".claude/worktrees", [], True),
-    ("w3", "", ["w2", "w9"], False),
-    ("rktrees/w2", "", ["w2"], False),
-    ("/tmp/w2", "", ["w2"], False),
-    (".", "", ["w2"], False),
-    ("w2", "/tmp", [], False),
-]
+HELPER = load_table("block_worktree_add", "HELPER")
 
 
 def _payload(command, cwd=ROOT):

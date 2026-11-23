@@ -25,6 +25,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _edit_suite
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_vm_unverified_push"
@@ -168,29 +172,7 @@ TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
 
 def transcript(answer_ts):
     """A lead transcript holding one AskUserQuestion and its answer at `answer_ts`."""
-    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=RUN_TMP)) / "lead.jsonl"
-    records = [
-        {
-            "type": "assistant",
-            "timestamp": "2026-01-01T00:00:10Z",
-            "message": {
-                "content": [
-                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
-                ]
-            },
-        },
-        {
-            "type": "user",
-            "timestamp": answer_ts,
-            "message": {
-                "content": [
-                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
-                ]
-            },
-        },
-    ]
-    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
-    return str(path)
+    return _edit_suite.transcript(answer_ts, RUN_TMP)
 
 
 ANSWERED = transcript("2026-01-01T00:00:30Z")

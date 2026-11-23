@@ -16,7 +16,6 @@ THE LIVE-PROOF LINE (agent/plans/PLAN-tested-on-bench.md V3). A new plan whose O
 THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases are always refused: the X fields are mandatory (T11). The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
 """
 
-import ast
 import atexit
 import importlib.util
 import json
@@ -29,7 +28,7 @@ import tempfile
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite, _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_without_depends.py"
@@ -133,23 +132,7 @@ INDEX = (
 )
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def tree():

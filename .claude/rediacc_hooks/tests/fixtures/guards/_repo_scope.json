@@ -1,0 +1,6 @@
+{
+  "COMPARE_OFF": [
+    ["if commit_policy.is_inside(target, root):", "if False and commit_policy.is_inside(target, root):"],
+    ["if common and (not ours or commit_policy.is_inside(common, ours)):", "if common and not ours:"]
+  ]
+}

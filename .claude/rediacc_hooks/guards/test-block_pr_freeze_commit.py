@@ -15,6 +15,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_pr_freeze_commit"]
@@ -94,32 +95,7 @@ def run(repo, store, cmd, cwd=None, extra_env=None):
     return p.returncode != 0, p.stdout + p.stderr
 
 
-CASES = [
-    # (name, command, expect_blocked)
-    ("feat refused", "git commit -m 'feat(ci): a new thing' -- f.txt", True),
-    ("chore(pins) refused", "git commit -m 'chore(pins): bump npm' -- f.txt", True),
-    ("fix admitted", "git commit -m 'fix(ci): a fix' -- f.txt", False),
-    ("test admitted", "git commit -m 'test(ci): a test' -- f.txt", False),
-    ("chore(reviews) admitted", "git commit -m 'chore(reviews): records' -- f.txt", False),
-    ("chore(plans) admitted", "git commit -m 'chore(plans): tick' -- f.txt", False),
-    (
-        "record paths only admitted",
-        "git commit -m 'feat(ci): records' -- agent/reviews/1120-1/clean.jsonl",
-        False,
-    ),
-    (
-        "heredoc -F - feat refused",
-        "git commit -F - -- f.txt <<'EOF'\nfeat(ci): from a heredoc\nEOF",
-        True,
-    ),
-    (
-        "heredoc -F - fix admitted",
-        "git commit -F - -- f.txt <<'EOF'\nfix(ci): from a heredoc\nEOF",
-        False,
-    ),
-    ("not a commit", "git status", False),
-    ("prose about a commit is not a commit", "echo 'git commit -m feat(x): y'", False),
-]
+CASES = load_table("block_pr_freeze_commit", "CASES")
 
 
 def main():

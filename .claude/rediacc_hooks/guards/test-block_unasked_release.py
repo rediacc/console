@@ -20,7 +20,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks import guards
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite, _harness
 from rediacc_hooks.wellknown import GH_REPO, IMAGE_REGISTRY
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -42,29 +42,7 @@ RUN_TMP = runtmp.run_dir("guard-unasked-release-")
 
 def transcript(answer_ts):
     """A lead transcript holding one AskUserQuestion and its answer at `answer_ts`."""
-    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=RUN_TMP)) / "lead.jsonl"
-    records = [
-        {
-            "type": "assistant",
-            "timestamp": "2026-01-01T00:00:10Z",
-            "message": {
-                "content": [
-                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
-                ]
-            },
-        },
-        {
-            "type": "user",
-            "timestamp": answer_ts,
-            "message": {
-                "content": [
-                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
-                ]
-            },
-        },
-    ]
-    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
-    return str(path)
+    return _edit_suite.transcript(answer_ts, RUN_TMP)
 
 
 def workspace_fixture(prefix="npm-ws-"):
