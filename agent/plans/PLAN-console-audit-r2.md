@@ -80,34 +80,40 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
   Owns: private/account/src/routes/console.ts, private/account/src/routes/license.ts, private/account/src/services/config.service.ts, private/account/tests/integration/console-audit-emit.test.ts
   Depends on: AU2, PLAN-console-confirm-stepup.md#CF3.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-emit.test.ts)` rc 0 with cases: a destructive run records target and method and no `params`, a `repo secret set` value never appears in any object, a result joins its run by `requestId`, a config push row carries the org id.
-- [ ] AU6 [writer] The executor sets `requestId` from the command request on its audit event in packages/cli/src/services/serve/audit.ts.
+- [x] AU6 [writer] The executor sets `requestId` from the command request on its audit event in packages/cli/src/services/serve/audit.ts.
   Owns: packages/cli/src/services/serve/audit.ts, packages/cli/src/services/serve/__tests__/audit*.test.ts
   Depends on: AU1.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/audit)` rc 0.
+    (ticked) 2026-11-23T22:01:30Z by ace763dd: commit:0f119d6430 AU6: executor audit event carries requestId
 - [ ] AU7 [writer] Mirror `config.policy.updated` as `console.policy.saved` (store, config, team, actor, version, never content) in config-policy.service.ts.
   Owns: private/account/src/services/config-policy.service.ts, private/account/tests/integration/console-audit-policy.test.ts
   Depends on: AU2, PLAN-rmcp-policy-record.md#A1.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-policy.test.ts)` rc 0.
-- [ ] AU8 [writer] Compaction per D5 and D6: `audit-compaction.service.ts`, the `audit_compaction_state` migration, the 03:00 and hourly cron hooks, and `private/account/scripts/audit-verify.ts`.
+- [x] AU8 [writer] Compaction per D5 and D6: `audit-compaction.service.ts`, the `audit_compaction_state` migration, the 03:00 and hourly cron hooks, and `private/account/scripts/audit-verify.ts`.
   Owns: private/account/src/services/audit-compaction.service.ts, private/account/src/db/schema.ts, private/account/drizzle/**, private/account/src/entry/cloudflare.ts, private/account/scripts/audit-verify.ts, private/account/tests/integration/console-audit-compaction.test.ts
   Depends on: AU2.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-compaction.test.ts)` rc 0 with cases: two days chain with the first day's hash, an empty day skipped, a crash before read-back keeps the per-event objects, a byte flipped in a day file makes the verifier exit 1, a bounded run resumes on the next.
-- [ ] AU9 [writer] Visibility and retention per D7 to D9: `organizations.audit_visible_from` and `audit_paid_seen_at`, `audit-visibility.service.ts`, the paid-seen refresh and the non-paid R2 sweep in the 03:00 sweeps, and `purgeExpired` per plan.
+    (ticked) 2026-11-23T22:01:31Z by ace763dd: commit:0f119d6430 AU8: compaction service, migration, cron hooks, audit-verify landed in account aa35dba
+- [x] AU9 [writer] Visibility and retention per D7 to D9: `organizations.audit_visible_from` and `audit_paid_seen_at`, `audit-visibility.service.ts`, the paid-seen refresh and the non-paid R2 sweep in the 03:00 sweeps, and `purgeExpired` per plan.
   Owns: private/account/src/services/audit-visibility.service.ts, private/account/src/services/event-log.service.ts, private/account/src/db/schema.ts, private/account/drizzle/**, private/account/src/entry/cloudflare.ts, private/account/tests/integration/event-log-retention.test.ts, private/account/tests/integration/console-audit-retention.test.ts
   Depends on: AU8.
   Accept: `(cd private/account && npx vitest run tests/integration/event-log-retention.test.ts tests/integration/console-audit-retention.test.ts)` rc 0 with cases: a trial ENTERPRISE org is not paid, a paid org keeps a 400-day D1 row, a free org loses it at 91 days, a downgrade 20 days ago keeps 100-day files, 31 days ago deletes them, a re-upgrade inside grace shows them.
-- [ ] AU10 [writer] Read API and admin field: `routes/console-audit.ts` (`GET /console/audit` for paid owners and admins, `GET /console/audit/teaser`), `POST /admin/customers/:id/audit-visible-from` on the root.ts pattern, logged.
+    (ticked) 2026-11-23T22:02:05Z by ace763dd: commit:0f119d6430 AU9: visibility and retention landed; verified at 0f119d6430 (account tsc, typecheck:web, account and web vitest rc 0)
+- [x] AU10 [writer] Read API and admin field: `routes/console-audit.ts` (`GET /console/audit` for paid owners and admins, `GET /console/audit/teaser`), `POST /admin/customers/:id/audit-visible-from` on the root.ts pattern, logged.
   Owns: private/account/src/routes/console-audit.ts, private/account/src/routes/index.ts, private/account/src/routes/root.ts, private/account/src/dto/console-audit.dto.ts, private/account/tests/integration/console-audit-read.test.ts
   Depends on: AU9.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-read.test.ts)` rc 0 with cases: member 403, non-paid owner 403 on the list and 200 on the teaser, `audit_visible_from` opens a free org from that date only, a broken chain day reports `broken`, the admin route needs elevation.
-- [ ] AU11 [writer] Web: `pages/console/Audit.tsx` (list, filters by type and actor, chain status), the teaser with an upgrade link for non-paid orgs, the route and one nav item, and the "show audit starting from" field on CustomerDetail; English keys in en/console.json, en/admin.json and en/nav.json.
+    (ticked) 2026-11-23T22:02:05Z by ace763dd: commit:0f119d6430 AU10: read API and admin field landed; verified at 0f119d6430 (account tsc, typecheck:web, account and web vitest rc 0)
+- [x] AU11 [writer] Web: `pages/console/Audit.tsx` (list, filters by type and actor, chain status), the teaser with an upgrade link for non-paid orgs, the route and one nav item, and the "show audit starting from" field on CustomerDetail; English keys in en/console.json, en/admin.json and en/nav.json.
   Owns: private/account/web/src/pages/console/Audit.tsx, private/account/web/src/pages/console/__tests__/audit-page.test.tsx, private/account/web/src/pages/admin/CustomerDetail.tsx, private/account/web/src/router.tsx, private/account/web/src/lib/nav-config.ts, private/account/web/src/api/endpoints.ts, private/account/web/src/i18n/locales/en/console.json, private/account/web/src/i18n/locales/en/admin.json, private/account/web/src/i18n/locales/en/nav.json
   Depends on: AU10.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/audit-page.test.tsx)` rc 0; `(cd private/account && npm run typecheck:web)` rc 0.
-- [ ] AU12 [writer] Translate AU11's new keys into the 12 other locales through the naturalization pipeline (writers on sonnet), then lock the hashes.
+    (ticked) 2026-11-23T22:02:06Z by ace763dd: commit:0f119d6430 AU11: audit page and teaser landed; verified at 0f119d6430 (account tsc, typecheck:web, account and web vitest rc 0)
+- [x] AU12 [writer] Translate AU11's new keys into the 12 other locales through the naturalization pipeline (writers on sonnet), then lock the hashes.
   Owns: private/account/web/src/i18n/locales/*/console.json, private/account/web/src/i18n/locales/*/admin.json, private/account/web/src/i18n/locales/*/nav.json
   Depends on: AU11.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-23T22:01:33Z by ace763dd: commit:0f119d6430 AU12: audit strings in 12 locales landed
 - [ ] LP-bench [live] Deploy the branch to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), run a destructive console command, a config save and a step-up, trigger the compaction through the cron path, and read the day file back with `audit-verify.ts`; a `./rdc.sh --config eu-bench --proxy` run (cli-bench) is additional verification of the executor's `requestId`.
   Accept: live-proof bench account-smoke
 

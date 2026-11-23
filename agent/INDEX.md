@@ -510,7 +510,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 92 | 10 | 0 | 15420 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 134 | 13 | 2 | 22322 |
 | `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
-| `agent/plans/PLAN-console-audit-r2.md` | approved | 119 | 12 | 1 | 20785 |
+| `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 122 | 4 | 7 | 22218 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 132 | 5 | 10 | 25878 |
@@ -612,10 +612,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 65 | 9 | 0 | 12110 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 88 | 9 | 0 | 14787 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
-| `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 94 | 21 | 0 | 24660 |
+| `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 54 | 6 | 2 | 9466 |
-| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 152 | 21 | 5 | 37439 |
+| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 158 | 15 | 11 | 38500 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 93 | 9 | 8 | 20133 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |

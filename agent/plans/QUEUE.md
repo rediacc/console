@@ -41,21 +41,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 635 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 28 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
+  - epic 79b7e92e, no plan, 648 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 43 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 5 live (session ace763dd): worker:a5c9739899b8ccae2, worker:a5c03c0406038b51a, worker:a9dadf9d6b93f1e2c, worker:a009fd200f7f1a872, worker:a0bdbe36d055f71a6.
-- Leased items: 7: #3172f6b3 (worker:a009fd200f7f1a872, ace763dd), #6ac78a2f (worker:afb93bcd5c198652d, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #921c7c4e (worker:a5c9739899b8ccae2, ace763dd), #bdd23e50 (worker:afb93bcd5c198652d, ace763dd), #da3e7457 (worker:a0bdbe36d055f71a6, ace763dd), #e205396a (worker:a5c03c0406038b51a, ace763dd).
+- Writers: 2 live (session ace763dd): worker:a0c4c180fcceafe94, worker:a24c61c9694292d07.
+- Leased items: 5: #6ac78a2f (worker:a0c4c180fcceafe94, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #921c7c4e (worker:a0c4c180fcceafe94, ace763dd), #da3e7457 (worker:a24c61c9694292d07, ace763dd), #e205396a (worker:a0c4c180fcceafe94, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 98 plans done, 1250 of 1872 boxes done (66%).
+Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -127,15 +127,15 @@ Promoted: 10 of 98 plans done, 1250 of 1872 boxes done (66%).
 | 66 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
 | 67 | PLAN-console-contract-semantics.md | 10/15 | 5 open |
 | 68 | PLAN-console-confirm-stepup.md | 7/11 | 4 open |
-| 69 | PLAN-console-audit-r2.md | 1/13 | 12 open |
+| 69 | PLAN-console-audit-r2.md | 7/13 | 6 open |
 | 70 | PLAN-console-run-index.md | 1/15 | 14 open |
 | 71 | PLAN-console-command-line.md | 3/16 | 13 open |
 | 72 | PLAN-console-ia.md | 0/10 | 10 open |
 | 73 | PLAN-console-animations.md | 0/9 | 9 open |
-| 74 | PLAN-rmcp-policy-record.md | 5/26 | 21 open |
+| 74 | PLAN-rmcp-policy-record.md | 11/26 | 15 open |
 | 75 | PLAN-rmcp-decide.md | 0/9 | 9 open |
 | 76 | PLAN-rmcp-writeback.md | 8/17 | 9 open |
-| 77 | PLAN-rmcp-executor-hardening.md | 0/21 | 21 open |
+| 77 | PLAN-rmcp-executor-hardening.md | 12/21 | 9 open |
 | 78 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
 | 79 | PLAN-console-ai-providers.md | 2/15 | 13 open |
 | 80 | PLAN-console-ai-assistant.md | 0/15 | 15 open |
