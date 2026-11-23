@@ -15,7 +15,7 @@ if __name__ == "__main__":
     _gate_args.parse(
         "check_gh_retry_reads.py",
         sys.argv[1:],
-        switches=("--selftest", "--quiet-writes", "--init-baseline"),
-        valued=("--root", "--shell-root", "--write-baseline"),
+        switches=("--selftest", "--quiet-writes", "--init-baseline", "--write-baseline"),
+        valued=("--root", "--shell-root"),
     )
     raise SystemExit(gh_retry_gate.main(sys.argv[1:]))

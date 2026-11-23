@@ -21,7 +21,6 @@ CALL = "_gate_args.parse("
 # Entry points that refuse an unknown argument through their own code, with where. They are RUN below like every other script.
 REFUSES_ITSELF = {
     "check_config_server_key_constant": "own argument check, rc 2",
-    "check_gh_retry_reads": "argparse in gh_retry_reads.main",
     "check_hooks_resolvable": "argparse",
     "check_i18n_value_types": "argparse",
     "check_inline_python": "argparse",
