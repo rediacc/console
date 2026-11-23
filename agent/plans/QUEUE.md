@@ -41,20 +41,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (6 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 528 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 544 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 2 live of writer_cap 25 (session ace763dd): worker:a0825792c3982bf4f, worker:a1150de86ff43a7a6.
-- Leased items: 4: #3b82cf28 (worker:bm4cib5pd, ace763dd), #43361b03 (worker:a1150de86ff43a7a6, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #da3e7457 (worker:a0825792c3982bf4f, ace763dd).
+- Writers: 5 live of writer_cap 25 (session ace763dd): worker:a102e8e179de146f3, worker:ae0a5c89585f83955, worker:a471a5a92df2a663c, worker:a7264a703cd93ac7d, worker:aeff8447143d352d5.
+- Leased items: 11: #0831560e (worker:a14b0ebcce827dd67, 9b22c347), #1678682b (worker:a102e8e179de146f3, ace763dd), #2ecc51d0 (worker:aeff8447143d352d5, ace763dd), #3b82cf28 (worker:a1150de86ff43a7a6, ace763dd), #4e63fb38 (worker:a471a5a92df2a663c, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #772cfd55 (worker:ae8f528c1b9882ca8, 9b22c347), #895c4d31 (worker:a472a72d87a838a0d, ace763dd), #9398f02e (worker:ae0a5c89585f83955, ace763dd), #bdd23e50 (worker:a2c20e76d194a9769, ace763dd), #d0ad9f20 (worker:a7264a703cd93ac7d, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 88 plans done, 1175 of 1750 boxes done (67%).
+Promoted: 10 of 89 plans done, 1175 of 1758 boxes done (66%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -146,6 +146,7 @@ Promoted: 10 of 88 plans done, 1175 of 1750 boxes done (67%).
 | 86 | PLAN-rmcp-orphan-recovery.md | 0/8 | 8 open |
 | 87 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
 | 88 | PLAN-rmcp-docs.md | 0/20 | 20 open |
+| 89 | PLAN-stripe-disable.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -236,6 +237,7 @@ Promoted: 10 of 88 plans done, 1175 of 1750 boxes done (67%).
 86. agent/plans/PLAN-rmcp-orphan-recovery.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
 87. agent/plans/PLAN-rmcp-remote-worker.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
 88. agent/plans/PLAN-rmcp-docs.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+89. agent/plans/PLAN-stripe-disable.md -- operator /ask 2026-11-23 (#0831560e): one server-enforced BILLING_STRIPE flag, default off, disables checkout, portal, plan switching, webhook and admin Stripe pages on deploy
 
 ## Generated
 

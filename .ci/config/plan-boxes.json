@@ -3972,6 +3972,25 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stripe-disable.md": {
+      "status": "approved",
+      "owner": "9b22c347",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "0bfa0623",
+        "2624faf1",
+        "28f87597",
+        "5fced6ed",
+        "97a9c407",
+        "b282bdd7",
+        "b823b7bb",
+        "f2db8fd0"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-subagent-idle-detection.md": {
       "status": "compacted",
       "owner": "0ad063bf",
