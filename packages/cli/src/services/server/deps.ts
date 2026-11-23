@@ -145,6 +145,12 @@ async function resolveHost(host: string): Promise<string[]> {
   return [...v4, ...v6];
 }
 
+/** A registered account's login: anonymous use (the FREE licence) holds no subscription token. */
+function hasAccountLogin(): boolean {
+  const state = getSubscriptionTokenState();
+  return state.kind === 'ready' && Boolean(state.token.subscriptionId);
+}
+
 async function issueCert(delegatedPublicKey: string): Promise<IssueOutcome> {
   const state = getSubscriptionTokenState();
   if (state.kind !== 'ready' || !state.token.subscriptionId) return { kind: 'no-login' };
@@ -181,9 +187,6 @@ function issueRefusal(error: AccountFetchError): IssueOutcome {
   if (error.status === 403 && /Missing required scope/i.test(error.message)) {
     return { kind: 'missing-scope' };
   }
-  if (error.code === 'PLAN_DISALLOWS_DELEGATION_CERT') {
-    return { kind: 'plan-disallows', message: error.message };
-  }
   if (error.status === 409) {
     const certId = String(error.details?.existingCertId ?? '');
     return { kind: 'other-key', certId, message: error.message };
@@ -211,6 +214,7 @@ export function liveServerDeps(): ServerDeps {
     writeDns,
     bwsList,
     bwsWrite,
+    hasAccountLogin,
     issueCert,
     local: (command, args) =>
       new Promise((resolve) => {

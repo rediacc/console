@@ -1,13 +1,15 @@
 /**
- * The licence step (R6). In order of preference:
+ * The licence step (R6). Every install ends with a delegation cert:
  *
  *   --cert <file>   an offline cert; it must name the key the box generated (Q13).
  *   auto            the logged-in config mints the cert and its auto-renew token through
- *                   `POST /delegation/issue`. With no login, or a plan without delegation, the
- *                   server starts on the free tier. An older login without `delegation:issue` is
- *                   told to log in again, or offered the free tier on a terminal.
- *   --licence free  no cert: the server reports `tier: free` and serves each repo licence through
- *                   its `/onprem/free-license` relay.
+ *                   `POST /delegation/issue`; every plan a registered account holds (COMMUNITY and
+ *                   up) may hold one. An older login without `delegation:issue` is told to log in
+ *                   again.
+ *
+ * No path falls back to the free tier: an on-premise server takes a registered account, never the
+ * anonymous FREE licence (operator ruling 2026-11-23). The install refuses an anonymous run before
+ * any machine change; the refusals here only catch a login that vanished between plan and step.
  *
  * A cert reaches the box through its cert inbox (box-scripts.ts `INBOX_DROP`), the one path the
  * account server validates and applies every new cert by (private/account
@@ -23,7 +25,6 @@ import {
   type SignedDelegationCert,
 } from '@rediacc/shared/subscription';
 import { t } from '../../i18n/index.js';
-import type { ServerPrompts } from '../../utils/server-prompts.js';
 import { outputService } from '../core/output.js';
 import { type RepoOnBox, runOnBox, ServerError } from './box.js';
 import {
@@ -40,23 +41,18 @@ import { API, loginOwner } from './http.js';
 import { loadOwner, ownerFile } from './state.js';
 import type { BoxTarget, IssuedCert, IssueOutcome, LicenceMode, ServerDeps } from './types.js';
 
-export type LicenceResult =
-  | {
-      kind: 'cert';
-      subscriptionId: string;
-      signed: SignedDelegationCert;
-      /** The auto-renew settings for secrets.env (`UPSTREAM_URL`, `UPSTREAM_API_KEY`); may be empty. */
-      env: Record<string, string>;
-    }
-  | { kind: 'free'; reason: 'asked' | 'no-login' | 'plan' | 'declined-relogin' };
+export interface LicenceResult {
+  kind: 'cert';
+  subscriptionId: string;
+  signed: SignedDelegationCert;
+  /** The auto-renew settings for secrets.env (`UPSTREAM_URL`, `UPSTREAM_API_KEY`); may be empty. */
+  env: Record<string, string>;
+}
 
 export interface LicenceOptions {
   mode: LicenceMode;
   certFile?: string;
   boxPublicKey: string;
-  /** Whether a terminal is there to offer the free tier on a login without the scope. */
-  interactive: boolean;
-  prompts?: ServerPrompts;
 }
 
 /** A cert from a file, checked against the box's key. */
@@ -94,8 +90,10 @@ export async function obtainLicence(
   opts: LicenceOptions
 ): Promise<LicenceResult> {
   if (opts.certFile) return certFromFile(deps, opts.certFile, opts.boxPublicKey);
-  if (opts.mode === 'free') return { kind: 'free', reason: 'asked' };
-  return fromIssue(await deps.issueCert(opts.boxPublicKey), opts);
+  if (opts.mode === 'free') {
+    throw new ServerError(t('commands.server.errors.licenceFreeRefused'));
+  }
+  return fromIssue(await deps.issueCert(opts.boxPublicKey), opts.boxPublicKey);
 }
 
 function issued(cert: IssuedCert, boxPublicKey: string): LicenceResult {
@@ -112,36 +110,18 @@ function issued(cert: IssuedCert, boxPublicKey: string): LicenceResult {
   return { kind: 'cert', subscriptionId: payload.subscriptionId, signed, env };
 }
 
-/** A login without `delegation:issue`: the free tier when a terminal accepts it, else the relogin refusal. */
-async function missingScope(opts: LicenceOptions): Promise<LicenceResult> {
-  if (opts.interactive && opts.prompts) {
-    outputService.warn(t('commands.server.licence.missingScope'));
-    if (await opts.prompts.confirm(t('commands.server.licence.offerFree'), true)) {
-      return { kind: 'free', reason: 'declined-relogin' };
-    }
-  }
-  throw new ServerError(t('commands.server.licence.missingScope'));
-}
-
-function fromIssue(
-  outcome: IssueOutcome,
-  opts: LicenceOptions
-): Promise<LicenceResult> | LicenceResult {
+function fromIssue(outcome: IssueOutcome, boxPublicKey: string): LicenceResult {
   switch (outcome.kind) {
     case 'issued':
-      return issued(outcome.cert, opts.boxPublicKey);
+      return issued(outcome.cert, boxPublicKey);
     case 'no-login':
-      outputService.info(t('commands.server.licence.noLogin'));
-      return { kind: 'free', reason: 'no-login' };
-    case 'plan-disallows':
-      outputService.warn(t('commands.server.licence.planDisallows', { error: outcome.message }));
-      return { kind: 'free', reason: 'plan' };
+      throw new ServerError(t('commands.server.errors.accountRequired'));
     case 'other-key':
       throw new ServerError(
         t('commands.server.licence.otherKey', { certId: outcome.certId, error: outcome.message })
       );
     case 'missing-scope':
-      return missingScope(opts);
+      throw new ServerError(t('commands.server.licence.missingScope'));
   }
 }
 

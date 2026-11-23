@@ -1,10 +1,10 @@
 /**
  * `rdc server install` (PLAN-enterprise-tenants C7) against a scripted box: the machine step
  * (by name, by --ip), the preflight refusals, the TTY rules and prompt order, the DNS wait and the
- * owned-zone write, the three licence paths, the bws backup, and the one-time recovery bundle.
+ * owned-zone write, the licence paths and the registered-account refusal, the bws backup, and the one-time recovery bundle.
  */
 
-import { rmSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -39,7 +39,7 @@ vi.mock('../../machine/add-existing.js', () => ({ addExistingMachine: m.addExist
 
 import type { MachineAnswer, ServerPrompts } from '../../../utils/server-prompts.js';
 import { ServerInstall } from '../install.js';
-import { serverStateDir } from '../state.js';
+import { ensureStateDir, recordFile, serverStateDir } from '../state.js';
 import { BOX_KEY, certFor, type FakeOptions, makeFake } from './fakes.js';
 
 const BASE = { domain: 'acme.example.com', owner: 'owner@example.com', dnsWait: false };
@@ -290,27 +290,28 @@ describe('licence', () => {
     await expect(result).rejects.toThrow(/^owner: .*confirmMismatch/);
   });
 
-  it('auto with no login starts on the free tier and drops nothing', async () => {
-    const { fake, result } = run({ machine: 'm1' }, { issue: { kind: 'no-login' } });
-    const out = await result;
-    expect(out.tier).toBe('free');
-    expect(fake.drops).toHaveLength(0);
-    expect(fake.calls).not.toContain('ssh m1 inbox-result');
-    expect(fake.setEnv.some((e) => 'DELEGATION_CERT_BASE64' in e)).toBe(false);
-  });
-
   it('auto with a login lacking the scope refuses off a terminal, naming the relogin', async () => {
     const { result } = run({ machine: 'm1' }, { issue: { kind: 'missing-scope' } });
     await expect(result).rejects.toThrow(/missingScope/);
   });
 
-  it('--licence free never asks the account server and probes the relay', async () => {
-    const { fake, result } = run({ machine: 'm1', licence: 'free' });
-    await result;
-    expect(fake.calls).not.toContain('issue');
-    expect(fake.calls).toContain('https POST /account/api/v1/onprem/free-license');
+  it('a login lacking the scope is refused on a terminal too, with no free tier offered', async () => {
+    const asked: string[] = [];
+    const p = prompts({
+      confirm: (message) => {
+        asked.push(message);
+        return Promise.resolve(true);
+      },
+    });
+    const { fake, result } = run(
+      { machine: 'm1' },
+      { tty: true, issue: { kind: 'missing-scope' } },
+      p
+    );
+    await expect(result).rejects.toThrow(/^licence: .*missingScope/);
+    expect(asked).toEqual([]);
+    expect(fake.drops).toHaveLength(0);
   });
-
   it('--cert for another key than the box generated is refused', async () => {
     const files = { '/c.json': certFor('some-other-key') };
     const { result } = run({ machine: 'm1', cert: '/c.json' }, { files });
@@ -331,6 +332,97 @@ describe('licence', () => {
     await expect(run({ machine: 'm1', cert: '/c.json' }, { files }).result).rejects.toThrow(
       /owner: .*raced/
     );
+  });
+});
+
+describe('a registered account (operator ruling 2026-11-23)', () => {
+  /** Nothing reached the machine, the box or the account server. */
+  const untouched = (fake: ReturnType<typeof makeFake>) => {
+    expect(fake.calls).toEqual([]);
+    expect(fake.setEnv).toEqual([]);
+    expect(fake.drops).toEqual([]);
+    expect(m.addExisting).not.toHaveBeenCalled();
+  };
+
+  it('refuses an install with no account login before any machine call, naming the login', async () => {
+    const { fake, result } = run({ machine: 'm1' }, { loggedIn: false });
+    await expect(result).rejects.toThrow(/errors\.accountRequired/);
+    untouched(fake);
+  });
+
+  it('refuses before registering a brought machine, too', async () => {
+    const { fake, result } = run(
+      { ip: '192.168.111.11', user: 'ops', name: 'lab-brought' },
+      { loggedIn: false }
+    );
+    await expect(result).rejects.toThrow(/errors\.accountRequired/);
+    untouched(fake);
+  });
+
+  it('refuses --licence free before any machine call, logged in or not', async () => {
+    for (const loggedIn of [true, false]) {
+      const { fake, result } = run({ machine: 'm1', licence: 'free' }, { loggedIn });
+      await expect(result).rejects.toThrow(/errors\.licenceFreeRefused/);
+      untouched(fake);
+    }
+  });
+
+  it('a registered account on Community proceeds to a cert, as before', async () => {
+    const issue = {
+      kind: 'issued' as const,
+      cert: { certBase64: certFor(BOX_KEY, 'sub-1', 'COMMUNITY'), subscriptionId: 'sub-1' },
+    };
+    const { fake, result } = run({ machine: 'm1' }, { loggedIn: true, issue });
+    const out = await result;
+    expect(fake.calls).toContain('issue');
+    expect(fake.drops).toHaveLength(1);
+    expect(out.tier).toBe('licensed');
+    expect(out.subscriptionId).toBe('sub-1');
+    expect(fake.calls).not.toContain('https POST /account/api/v1/onprem/free-license');
+  });
+
+  it('--cert proceeds without a login: the cert names its subscription', async () => {
+    const files = { '/c.json': certFor(BOX_KEY, 'sub-1') };
+    const { fake, result } = run({ machine: 'm1', cert: '/c.json' }, { files, loggedIn: false });
+    const out = await result;
+    expect(fake.calls).not.toContain('issue');
+    expect(out.tier).toBe('licensed');
+  });
+
+  it('a rerun of an unfinished install recorded on the free tier redoes the licence step', async () => {
+    ensureStateDir();
+    writeFileSync(
+      recordFile(BASE.domain),
+      JSON.stringify({
+        domain: BASE.domain,
+        machine: 'm1',
+        repo: 'elite',
+        licence: 'free',
+        steps: { preflight: 'x', licence: 'x' },
+      })
+    );
+    const { fake, result } = run({ machine: 'm1' });
+    const out = await result;
+    expect(fake.calls).toContain('issue');
+    expect(fake.drops).toHaveLength(1);
+    expect(out.tier).toBe('licensed');
+  });
+
+  it('a finished free-tier install is pointed at rdc server licence', async () => {
+    ensureStateDir();
+    writeFileSync(
+      recordFile(BASE.domain),
+      JSON.stringify({
+        domain: BASE.domain,
+        machine: 'm1',
+        repo: 'elite',
+        licence: 'free',
+        steps: { licence: 'x', owner: 'x' },
+      })
+    );
+    const { fake, result } = run({ machine: 'm1' });
+    await expect(result).rejects.toThrow(/errors\.freeTierInstalled/);
+    untouched(fake);
   });
 });
 

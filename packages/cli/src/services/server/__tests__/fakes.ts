@@ -53,6 +53,8 @@ export interface FakeOptions {
   templateVersion?: number;
   resolveSequence?: string[][];
   issue?: IssueOutcome;
+  /** Whether the config holds a registered account's login; by default, unless `issue` is `no-login`. */
+  loggedIn?: boolean;
   health?: number;
   sans?: string[];
   freeProbe?: number;
@@ -327,6 +329,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       bwsWrites.push(request);
       return Promise.resolve();
     },
+    hasAccountLogin: () => opts.loggedIn ?? opts.issue?.kind !== 'no-login',
     issueCert(key) {
       calls.push('issue');
       return Promise.resolve(

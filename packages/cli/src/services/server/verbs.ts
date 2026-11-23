@@ -304,16 +304,11 @@ export async function serverLicence(
       t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
     );
   }
-  const live = await readLiveCert(deps, where);
-  const result = await obtainLicence(deps, {
-    mode: 'auto',
-    certFile,
-    boxPublicKey: boxKey,
-    interactive: false,
-  });
-  if (result.kind !== 'cert') {
+  if (!certFile && !deps.hasAccountLogin()) {
     throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
   }
+  const live = await readLiveCert(deps, where);
+  const result = await obtainLicence(deps, { mode: 'auto', certFile, boxPublicKey: boxKey });
   const tier = (cert: { planCode?: string } | undefined) => cert?.planCode ?? DEFAULT_TIER;
 
   const certId = await delegationCertId(result.signed);

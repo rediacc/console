@@ -2491,7 +2491,7 @@ Install the self-hosted account server on an existing machine: check the machine
 - `--tls-cert <file>`: Certificate file in PEM form (with --tls byo), covering both domains
 - `--tls-key <file>`: Private key file of that certificate (with --tls byo)
 - `--tls-ca <file>`: CA certificate the server's certificate chains to, used for the health check
-- `--licence <mode>`: auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier
+- `--licence <mode>`: auto (the default): a delegation certificate from the logged-in registered account. free is refused: an on-premise server needs a registered account (rdc subscription login)
 - `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
 - `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling

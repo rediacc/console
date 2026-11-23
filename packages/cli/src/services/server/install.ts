@@ -22,8 +22,15 @@
  *   bws        only with `--bws-project <id>` (Rediacc's own installs): the secrets copied to that
  *              Bitwarden Secrets Manager project under opaque names; otherwise nothing leaves the box.
  *   licence    `--cert <file>` (must name the box's key), else the logged-in config's
- *              `POST /delegation/issue`, else the free tier. A cert is dropped into the box's cert
- *              inbox; the server decides it at its first boot, before `/health` answers.
+ *              `POST /delegation/issue`. A cert is dropped into the box's cert inbox; the server
+ *              decides it at its first boot, before `/health` answers.
+ *
+ * A REGISTERED ACCOUNT, before anything else: an on-premise server never runs on the anonymous FREE
+ * licence (operator ruling 2026-11-23). Without `--cert` or `--offline`, a config with no account
+ * login is refused before the machine is touched, naming `rdc subscription login` (a registered
+ * account holds COMMUNITY or higher); `--licence free` is refused the same way. A rerun of an
+ * unfinished install recorded on the free tier redoes its licence step; a finished one is pointed
+ * at `rdc server licence <domain>`.
  *   settings   the domains, the image ref, ROOT_EMAIL and ON_PREMISE_MODE into secrets.env.
  *   image      pull inside the repo's daemon, or ship `--image-file` into images/.
  *   up         `repo up`.
@@ -86,7 +93,7 @@ import {
   TEMPLATE_NAME,
 } from './common.js';
 import { dnsRecords, printDnsRecords, waitForDns, writeOwnedRecords } from './dns.js';
-import { createOwner, probeFreeTier, waitHealthy } from './http.js';
+import { createOwner, waitHealthy } from './http.js';
 import {
   INSTALL_STEPS,
   type InstallOptions,
@@ -183,6 +190,16 @@ export class ServerInstall {
         })
       );
     }
+    if (earlier?.licence === 'free') {
+      if (earlier.steps.owner) {
+        throw new ValidationError(
+          t('commands.server.errors.freeTierInstalled', { domain: this.plan.domain })
+        );
+      }
+      // An unfinished install recorded on the free tier: its licence step runs again, for a cert.
+      delete earlier.steps.licence;
+      delete earlier.licence;
+    }
     this.record = earlier ?? {
       domain: this.plan.domain,
       storeDomain: this.plan.storeDomain,
@@ -234,7 +251,20 @@ export class ServerInstall {
 
   // ── values, asked in order: machine, domain, store domain, TLS, owner ─────────────────────
 
+  /** The anonymous FREE licence never runs an on-premise server: refused before any machine change. */
+  private assertRegisteredAccount(): void {
+    if (this.opts.licence === 'free') {
+      throw new ValidationError(t('commands.server.errors.licenceFreeRefused'));
+    }
+    // A cert names its subscription, and an offline run carries one minted online by an account.
+    if (this.opts.cert || this.opts.offline) return;
+    if (!this.deps.hasAccountLogin()) {
+      throw new ValidationError(t('commands.server.errors.accountRequired'));
+    }
+  }
+
   private async resolvePlan(): Promise<Plan> {
+    this.assertRegisteredAccount();
     assertOfflineOptions(this.opts);
     if (this.opts.offline && this.opts.bundle) {
       this.manifest = await verifyBundle(this.deps, this.opts.bundle);
@@ -251,9 +281,6 @@ export class ServerInstall {
       this.prompts.text(t('commands.server.prompts.owner'), d)
     );
     if (!owner) throw promptRequiresTTY('--owner');
-    if (this.opts.cert && this.opts.licence === 'free') {
-      throw new ValidationError(t('commands.server.errors.certAndFree'));
-    }
     return {
       machine,
       machineConfig,
@@ -490,20 +517,13 @@ export class ServerInstall {
         mode: this.plan.licence,
         certFile: this.opts.cert,
         boxPublicKey: this.boxKey,
-        interactive: this.interactive,
-        prompts: this.prompts,
       });
-      if (this.licenceResult.kind === 'cert') {
-        this.pendingDrop = await dropCert(this.deps, await this.box(), this.licenceResult.signed);
-        if (Object.keys(this.licenceResult.env).length > 0) {
-          await setBoxEnv(this.deps, await this.box(), this.licenceResult.env);
-        }
-        this.record.licence = 'cert';
-        this.record.subscriptionId = this.licenceResult.subscriptionId;
-      } else {
-        this.record.licence = 'free';
-        delete this.record.subscriptionId;
+      this.pendingDrop = await dropCert(this.deps, await this.box(), this.licenceResult.signed);
+      if (Object.keys(this.licenceResult.env).length > 0) {
+        await setBoxEnv(this.deps, await this.box(), this.licenceResult.env);
       }
+      this.record.licence = 'cert';
+      this.record.subscriptionId = this.licenceResult.subscriptionId;
     },
     settings: async () => {
       await setBoxEnv(this.deps, await this.box(), {
@@ -551,19 +571,15 @@ export class ServerInstall {
       await this.deps.writePrivate(ownerFile(this.plan.domain), `${JSON.stringify(creds)}\n`);
       const target = await this.target();
       await createOwner(this.deps, target, creds, this.record.subscriptionId);
-      if (this.record.licence === 'cert') {
-        // A rerun that skipped the licence step confirms the cert the box holds on disk.
-        const certId =
-          this.pendingDrop?.certId ?? (await readLiveCert(this.deps, await this.box()))?.certId;
-        if (!certId) {
-          throw new ServerError(
-            t('commands.server.licence.confirmMismatch', { expected: '-', actual: '-' })
-          );
-        }
-        await confirmCertId(this.deps, target, this.plan.domain, certId);
-      } else if ((await probeFreeTier(this.deps, target)) === false) {
-        outputService.warn(t('commands.server.licence.freeProbeHoldsCert'));
+      // A rerun that skipped the licence step confirms the cert the box holds on disk.
+      const certId =
+        this.pendingDrop?.certId ?? (await readLiveCert(this.deps, await this.box()))?.certId;
+      if (!certId) {
+        throw new ServerError(
+          t('commands.server.licence.confirmMismatch', { expected: '-', actual: '-' })
+        );
       }
+      await confirmCertId(this.deps, target, this.plan.domain, certId);
     },
   };
 
@@ -575,9 +591,6 @@ export class ServerInstall {
   /** The one-time recovery print on a terminal; otherwise the line that names `server backup`. */
   private async closing(): Promise<void> {
     outputService.success(t('commands.server.install.done', { domain: this.plan.domain }));
-    if (this.record.licence !== 'cert') {
-      outputService.info(t('commands.server.install.freeTier', { domain: this.plan.domain }));
-    }
     const printable = this.deps.isTTY() && this.opts.machineReadable !== true;
     if (this.record.steps.bundle || !printable) {
       outputService.info(

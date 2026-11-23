@@ -3,6 +3,7 @@
  * flags reach ServerInstall under their names, and `install --help` carries the step list.
  */
 
+import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -171,6 +172,24 @@ describe('rdc server', () => {
     install?.outputHelp();
     expect(help).toContain('commands.server.install.help');
     expect(help).toContain('--bws-project');
+  });
+
+  it('install --help offers no anonymous path: a registered account or --cert (ruling 2026-11-23)', () => {
+    const en = JSON.parse(
+      readFileSync(new URL('../../i18n/locales/en/cli.json', import.meta.url), 'utf-8')
+    ) as { commands: { server: Record<string, Record<string, string>> } };
+    const { install, licence, errors } = en.commands.server;
+    for (const text of [install.help, install.optionLicence, install.description]) {
+      expect(text).not.toMatch(/free tier|start on the free/i);
+    }
+    expect(install.help).toContain('rdc subscription login');
+    expect(install.optionLicence).toMatch(/free is refused/);
+    expect(licence.missingScope).not.toContain('--licence free');
+    for (const gone of ['freeTier', 'offerFree', 'noLogin', 'planDisallows']) {
+      expect(install[gone] ?? licence[gone]).toBeUndefined();
+    }
+    expect(errors.accountRequired).toContain('rdc subscription login');
+    expect(errors.licenceFreeRefused).toContain('rdc subscription login');
   });
 
   it('passes the locator flags to status', async () => {

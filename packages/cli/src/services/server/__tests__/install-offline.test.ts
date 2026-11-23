@@ -208,7 +208,7 @@ describe('what an offline install refuses', () => {
     expect(fake.calls).toEqual([]);
   };
 
-  it('--licence free', () => refused({ licence: 'free' }, /offline\.noFree/));
+  it('--licence free', () => refused({ licence: 'free' }, /errors\.licenceFreeRefused/));
   it('--offline without --bundle', () => refused({ bundle: undefined }, /offline\.needsBundle/));
   it('a Let us Encrypt or Cloudflare TLS method', () =>
     refused({ tls: 'letsencrypt' }, /offline\.tlsByoOnly/));

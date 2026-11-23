@@ -15736,7 +15736,7 @@
           ],
           "tier": "common",
           "descriptionKey": "commands.server.install.optionLicence",
-          "label": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier"
+          "label": "auto (the default): a delegation certificate from the logged-in registered account. free is refused: an on-premise server needs a registered account (rdc subscription login)"
         },
         {
           "flags": "--cert <file>",
