@@ -11,6 +11,9 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import re
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_review_file_edit", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
@@ -32,74 +35,6 @@ MESSAGE = (
     "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z\n"
     "  re-review:        python3 .claude/hooks/stop/wl_review.py --run <sha> --branch <branch>\n"
 )
-
-EDGE_CASES = [
-    (
-        "a Write over a review file",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/agent/reviews/1231-9/%s.md" % ("a" * 40),
-                "content": "x",
-            },
-        },
-    ),
-    (
-        "an Edit of a review file",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "agent/reviews/1231-9/x.md",
-                "old_string": "[high]",
-                "new_string": "[low]",
-            },
-        },
-    ),
-    (
-        "an Edit of the clean ledger",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "agent/reviews/1231-9/clean.jsonl",
-                "old_string": "x",
-                "new_string": "y",
-            },
-        },
-    ),
-    (
-        "a MultiEdit of a review file",
-        {
-            "tool_name": "MultiEdit",
-            "tool_input": {"file_path": "agent/reviews/b/x.md", "edits": []},
-        },
-    ),
-    (
-        "a NotebookEdit naming a review path",
-        {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": "agent/reviews/b/x.md"}},
-    ),
-    (
-        "a plan that mentions the directory",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "agent/plans/PLAN-x.md", "content": "agent/reviews/"},
-        },
-    ),
-    (
-        "a sibling directory with a similar name",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "agent/reviews-old/x.md", "content": "x"},
-        },
-    ),
-    (
-        "a file called reviews elsewhere",
-        {
-            "tool_name": "Edit",
-            "tool_input": {"file_path": "docs/agent/reviewsx.md", "new_string": "x"},
-        },
-    ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}}),
-]
 
 
 def run(ev):

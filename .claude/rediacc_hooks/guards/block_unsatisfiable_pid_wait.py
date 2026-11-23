@@ -28,6 +28,9 @@ import os
 import re
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_unsatisfiable_pid_wait", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -84,97 +87,6 @@ A fallback to 0 is NOT blocked (/proc/0 never exists, so it is an honest
 "not yet started" default), and neither is a fallback the guard cannot
 resolve statically (a variable rather than a literal).
 """
-
-EDGE_CASES = [
-    # The incident's own shape.
-    (
-        "the incident's own shape",
-        (
-            'until grep -q "ci-dead-bash" out.log && [ "$(tail -c 200 out.log | wc -c)" -gt 0 ] '
-            "&& ! [ -e /proc/$(cat out.log.pid 2>/dev/null || echo 1) ]; do sleep 5; done"
-        ),
-    ),
-    (
-        "minimal fire, unnegated",
-        "until [ -e /proc/$(cat x.pid 2>/dev/null || echo 1) ]; do sleep 5; done",
-    ),
-    ("$$ fallback", "until ! [ -e /proc/$(cat x.pid 2>/dev/null || echo $$) ]; do sleep 5; done"),
-    (
-        "quoted path form",
-        'until ! [ -e "/proc/$(cat x.pid 2>/dev/null || echo 1)" ]; do sleep 5; done',
-    ),
-    ("-d instead of -e", "until ! [ -d /proc/$(cat x.pid || echo 1) ]; do sleep 5; done"),
-    (
-        "while form fires the same as until",
-        "while ! [ -e /proc/$(cat x.pid 2>/dev/null || echo 1) ]; do sleep 5; done",
-    ),
-    # CONTROL: the safe literal.
-    (
-        "CONTROL: a fallback of 0 is safe",
-        "until ! [ -e /proc/$(cat x.pid 2>/dev/null || echo 0) ]; do sleep 5; done",
-    ),
-    # CONTROL: an arbitrary other literal is a documented gap, not a finding.
-    (
-        "CONTROL: an arbitrary literal PID is a documented gap",
-        "until ! [ -e /proc/$(cat x.pid || echo 54321) ]; do sleep 5; done",
-    ),
-    # CONTROL: an unexaminable variable fallback.
-    (
-        "CONTROL: a variable fallback is unexaminable",
-        'until ! [ -e /proc/$(cat x.pid 2>/dev/null || echo "$FALLBACK_PID") ]; do sleep 5; done',
-    ),
-    # CONTROL: not a loop at all.
-    (
-        "CONTROL: a one-shot check is out of scope",
-        "if [ -e /proc/$(cat x.pid 2>/dev/null || echo 1) ]; then echo dead; fi",
-    ),
-    # CONTROL: a `;`-joined echo is a different idiom (always runs, not a fallback).
-    (
-        "CONTROL: a semicolon join is a different bug",
-        "until [ -e /proc/$(cat x.pid 2>/dev/null; echo 1) ]; do sleep 5; done",
-    ),
-    # CONTROL: an `&&`-joined echo only runs on success, not a fallback at all.
-    (
-        "CONTROL: an && join is not a fallback",
-        "until [ -e /proc/$(cat x.pid 2>/dev/null && echo 1) ]; do sleep 5; done",
-    ),
-    # Correct remedy #1: no fallback at all.
-    (
-        "CONTROL: the pidfile-first remedy",
-        "until [ -s out.pid ] && ! [ -e /proc/$(cat out.pid) ]; do sleep 5; done",
-    ),
-    # Correct remedy #2: missing pidfile means keep waiting.
-    (
-        "CONTROL: the not-started-yet remedy",
-        "until [ ! -s out.pid ] || ! [ -e /proc/$(cat out.pid) ]; do sleep 5; done",
-    ),
-    # CONTROL: kill -0 is the same mechanism, different string -- a named v1 gap.
-    (
-        "CONTROL: kill -0 form is a documented v1 gap",
-        "until ! kill -0 $(cat x.pid 2>/dev/null || echo 1) 2>/dev/null; do sleep 5; done",
-    ),
-    # CONTROL: the ordinary default-value idiom, no /proc/ at all.
-    (
-        "CONTROL: a non-proc default is not this bug",
-        "until [ -e $(cat config_path.txt 2>/dev/null || echo default.conf) ]; do sleep 2; done",
-    ),
-    # CONTROL: prose mention, not a real loop.
-    (
-        "CONTROL: prose mention is not the trap",
-        'echo "never write /proc/$(cat x.pid || echo 1) into a wait loop"',
-    ),
-    # CONTROL: unbalanced substitution is not a verdict.
-    (
-        "CONTROL: an unparseable substitution",
-        "until ! [ -e /proc/$(cat x.pid || echo 1 ; do sleep 5; done",
-    ),
-    # CONTROL: a pipeline on the left is a different, more ambiguous shape.
-    (
-        "CONTROL: a pipeline on the left is not a bare cat",
-        "until ! [ -e /proc/$(cat x.pid | grep -q 1 || echo 1) ]; do sleep 5; done",
-    ),
-    ("a loop with no /proc/ check at all", "until [ -s out.txt ]; do sleep 5; done"),
-]
 
 
 # THE TEST IS THE BUG ITSELF: only a fallback provably alive for the whole time the loop could run counts. "1" (init) is the incident's own literal; "$$" (the waiting shell's own PID) is the same defect and arguably the single most common way this actually gets written by an agent -- both caught here. Any OTHER literal integer, INCLUDING 0, is NOT provably always-alive by

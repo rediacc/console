@@ -20,6 +20,9 @@ Here the registry is imported into this interpreter instead, so there is no argu
 import importlib.util
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_adhoc_sanctioned", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 32
@@ -31,21 +34,6 @@ DEFECT = ("shellscan._strip_heredocs(cmd)", "shellscan.scan_target(cmd)")
 LIB = hookio.repo_root() / ".claude" / "hooks" / "lib"
 
 _REGISTRY = []
-
-EDGE_CASES = [
-    ("the banned watch verb", "gh run watch 123 --exit-status --interval 100"),
-    (
-        "a hand-rolled poll, whose banned half lives INSIDE quotes",
-        'until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do',
-    ),
-    # The counters from the registry's own rows: a legitimately different command that must NOT match.
-    ("reading a run once is not watching it", "gh run view 123 --json conclusion,jobs"),
-    ("the sanctioned tool itself", ".ci/scripts/ci/ci-trace.py --wait"),
-    # A heredoc body is DATA, so a note quoting a banned recipe is allowed...
-    ("a heredoc body is data", "cat > note.md <<'EOF'\ngh run watch 123\nEOF"),
-    # ...while the quoted residue is refused, knowingly (operator ruling).
-    ("quoted prose is still refused, and that is the ruling", "echo 'gh run watch 123'"),
-]
 
 
 def _registry():

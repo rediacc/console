@@ -75,8 +75,10 @@ import sys
 import time
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _cases
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
+
+__getattr__ = _cases.lazy("block_push_to_protected_branch", "EDGE_CASES", "ENVS")
 
 # The hook's own gh read budget (`_gh_json`), the same two attempts and 2 s pause every guard's retried read uses.
 GH_READ_ATTEMPTS = 2
@@ -90,14 +92,6 @@ ORDER = 38
 # `run` reaching the branch check is the whole reason this guard exists for the IMPLICIT forms; the header records why the check itself must fire on "main" rather than skip it.
 DEFECT = ('if branch == "main":', "if False:")
 
-# THE THREE GIT WORLDS THE IMPLICIT FORMS DISTINGUISH, same reasoning as block_merge_with_unpushed.py's own ENVS: run against THIS checkout (whatever feature branch a session happens to be on) a bare `git push` always takes the "not main" branch of the fallback logic, so the corpus alone proves nothing about the branch check -- and the defect above would pass
-# silently planted, exactly as it did before this was added (test_the_differential_can_fail caught it live on 2026-09-22).
-ENVS = [
-    ("main-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
-    ("feature-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
-    # A FROZEN clone of this checkout rather than the live one, for the reason block_merge_with_unpushed.py:31 records: a shared tree's branch moves under a running differential. Same snapshot, built once per session.
-    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
-]
 
 GIT_AT_CMD = hookio.rx(
     r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+"
@@ -163,44 +157,6 @@ MESSAGE = (
     "\n"
     "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout (on any branch: the PR is read from the source, not the checkout), where the commit is the branch's pushed tip AND its open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its plan (`Plan: agent/plans/PLAN-<slug>.md`; several under `turbo: on` in agent/plans/QUEUE.md at that commit) with every box ticked, or carries an `Operational-Reason:` line. In a submodule the same push is admitted from its own directory (`git -C private/<sm> push origin <branch or sha>:main`) when the commit is its pushed tip and a fast-forward, the submodule PR for that branch is OPEN with that head, CLEAN and with no unresolved review thread, and the console PR for the same branch is OPEN."
 )
-
-EDGE_CASES = [
-    ("the incident's own shape", "git push origin HEAD:main"),
-    ("a bare destination name", "git push origin main"),
-    ("an explicit source, destination main", "git push origin 0914-1:main"),
-    ("the refs-qualified long form", "git push origin refs/heads/main"),
-    ("the empty-source delete form", "git push origin :main"),
-    ("the flagged delete form", "git push origin --delete main"),
-    ("--all pushes every branch, main included", "git push --all origin"),
-    ("a bare push with no refspec at all", "git push"),
-    ("a remote with no refspec", "git push origin"),
-    ("HEAD with no colon aliases the current branch's own name", "git push origin HEAD"),
-    ("a wrapper payload is still scanned", 'eval "git push origin main"'),
-    # Controls: none of these are this guard's business.
-    ("an ordinary push to a feature branch", "git push origin 0914-1"),
-    ("a branch merely prefixed with main", "git push origin main-2"),
-    ("a branch merely suffixed onto main", "git push origin not-main"),
-    ("an explicit non-main destination overrides ambiguity", "git push origin feature-x"),
-    ("a dry run publishes nothing", "git push --dry-run origin main"),
-    ("tags only, no branch ref moves", "git push --tags origin"),
-    ("prose about pushing is not a push", "echo 'never push straight to main'"),
-    ("git pull is not git push", "git pull --rebase"),
-    (
-        "cd into a submodule pushing its own feature branch",
-        "cd private/renet && git push origin 0914-1",
-    ),
-    # Global options before `push` (measured rc 0 on 2026-10-02), and a dry run beside a real push.
-    ("-C before push, destination main", "git -C . push origin HEAD:main"),
-    ("-c before push, destination main", "git -c a=b push origin main"),
-    ("a dry run beside a real push", "git push --dry-run origin x; git push origin HEAD:main"),
-    # M2: the fallback's shape refused before any gh read (no PR world here, so every spelling refuses).
-    ("M2 the fallback shape with --force", "git push --force origin 0914-1:main"),
-    ("M2 the fallback shape with two refspecs", "git push origin 0914-1:main 0914-1"),
-    # The GitLab mirror push: no fixture here carries a `gitlab` remote, so every spelling refuses; the admitted worlds are in this guard's own suite.
-    ("mirror the 6b spelling", "git push gitlab refs/heads/main:refs/heads/main --follow-tags"),
-    ("mirror with --force", "git push --force gitlab main:main"),
-    ("mirror a bare --mirror push", "git push --mirror gitlab"),
-]
 
 
 # THE LANDING TREE IS THIS CHECKOUT TOO (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the main checkout and the landing tree are both bound (`commit_policy.bound_trees`): a push typed in either is judged from either root (`commit_policy.foreign_only` reads both as this checkout, box LT11), and the mirror push and the fast-forward fallback are admitted from either tree's own toplevel (`_console_tree`). Before this a push in the landing tree from the development root was skipped as a scratch repository's, every spelling of `main` included, and the admitted fallback typed there from the landing root's sibling was refused. Planted, the admission reads the session root alone again; the scope half is planted in the suite as a `bound_trees` mutant, since it lives in commit_policy.

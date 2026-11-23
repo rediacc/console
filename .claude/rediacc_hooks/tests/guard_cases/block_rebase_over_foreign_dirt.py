@@ -1,0 +1,143 @@
+"""The test tables of `block_rebase_over_foreign_dirt`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+
+import subprocess
+
+
+def _fixture_git(cwd, *args):
+    """`git` for the fixture builders, with the ambient config shut out."""
+    subprocess.run(
+        ["git", *args],
+        cwd=str(cwd),
+        check=True,
+        capture_output=True,
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin",
+            "HOME": "/nonexistent",
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+        },
+    )
+
+
+# Every path the worlds below commit, so each world differs from the others only in what it then modifies.
+_SEEDED = (
+    "src/app.ts",
+    "agent/d00dfeed/STATE.md",
+    "agent/ledgers/judge.jsonl",
+    "agent/worklist/d00dfeed.jsonl",
+    "agent/plans/QUEUE.md",
+    "agent/reviews/0831-1/clean.jsonl",
+    "agent/reggate/0831-1.jsonl",
+    "agent/plans/PLAN-x.md",
+)
+
+
+def _seeded(path):
+    path.mkdir(parents=True)
+    _fixture_git(path, "init", "-q", "--initial-branch=main")
+    for rel in _SEEDED:
+        (path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (path / rel).write_text("v1\n", encoding="utf-8")
+    _fixture_git(path, "add", "-A")
+    _fixture_git(path, "commit", "-qm", "seed")
+    _fixture_git(path, "checkout", "-q", "-b", "0831-1")
+    return path
+
+
+def _clean(path):
+    """Nothing modified, one untracked file: untracked work is not what a rebase touches."""
+    _seeded(path)
+    (path / "notes.txt").write_text("untracked\n", encoding="utf-8")
+    return path
+
+
+def _volatile(path):
+    """Only the hook's own session state is modified: allowed here, though git itself still refuses."""
+    _seeded(path)
+    for rel in _SEEDED:
+        if rel.startswith("agent/") and rel != "agent/plans/PLAN-x.md":
+            (path / rel).write_text("v2\n", encoding="utf-8")
+    return path
+
+
+def _dirty(path):
+    """A peer's modified source file and a modified plan beside the volatile state: the two real paths are named, the volatile ones are not."""
+    _volatile(path)
+    (path / "src/app.ts").write_text("peer edit\n", encoding="utf-8")
+    (path / "agent/plans/PLAN-x.md").write_text("v2\n", encoding="utf-8")
+    return path
+
+
+def _staged(path):
+    """Staged and not committed is uncommitted too: `git rebase` refuses a dirty index as well."""
+    _seeded(path)
+    (path / "src/app.ts").write_text("staged\n", encoding="utf-8")
+    _fixture_git(path, "add", "src/app.ts")
+    return path
+
+
+def _gitlink(path):
+    """Only a STAGED submodule pointer moved: git's up-front check passes it and the rebase then stops partway, so it refuses (worklist #dbbed0b6). `--ignore-submodules=all` hid it from the old probe."""
+    _seeded(path)
+    _fixture_git(path, "update-index", "--add", "--cacheinfo", "160000,%s,private/sub" % ("1" * 40))
+    _fixture_git(path, "commit", "-qm", "pin a submodule")
+    _fixture_git(path, "update-index", "--cacheinfo", "160000,%s,private/sub" % ("2" * 40))
+    return path
+
+
+FIXTURES = {
+    "rebase-clean": _clean,
+    "rebase-volatile": _volatile,
+    "rebase-dirty": _dirty,
+    "rebase-staged": _staged,
+    "rebase-gitlink": _gitlink,
+}
+
+
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
+    (name, {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in sorted(FIXTURES)
+]
+
+
+EDGE_CASES = [
+    # Refused in `rebase-dirty`, `rebase-staged` and `rebase-gitlink`, allowed in `rebase-clean` and `rebase-volatile`: the worlds are the two directions.
+    ("a rebase onto origin/main", "git rebase origin/main"),
+    ("an interactive rebase", "git rebase -i origin/main"),
+    ("a rebase with --onto", "git rebase --onto origin/main HEAD~3"),
+    ("a rebase with no upstream named", "git rebase"),
+    ("a pull --rebase", "git pull --rebase"),
+    ("a pull -r", "git pull -r origin main"),
+    ("a plain pull merges", "git pull"),
+    ("a merge of a ref", "git merge origin/main"),
+    ("a fetch then a rebase", "git fetch origin && git rebase origin/main"),
+    ("a rebase behind a cd into the tree", "cd . && git rebase origin/main"),
+    ("a rebase under -C .", "git -C . rebase origin/main"),
+    ("a rebase in a wrapper payload", "sh -c 'git rebase origin/main'"),
+    # Never refused: continuing or undoing, a fast-forward, prose, and other commands.
+    ("control: --continue", "git rebase --continue"),
+    ("control: --abort", "git rebase --abort"),
+    # Refused in every world, clean included: `--skip` drops the commit being replayed (worklist #dbbed0b6).
+    ("refused: --skip drops the replayed commit", "git rebase --skip"),
+    ("refused: --skip by unique prefix", "git rebase --sk"),
+    ("refused: --skip behind a wrapper", "sh -c 'git rebase --skip'"),
+    ("control: --skip outside this checkout", "git -C /tmp rebase --skip"),
+    ("control: --quit", "git rebase --quit"),
+    ("control: merge --abort", "git merge --abort"),
+    ("control: merge --continue", "git merge --continue"),
+    ("control: merge --ff-only", "git merge --ff-only origin/main"),
+    ("control: pull --ff-only", "git pull --ff-only"),
+    ("control: prose about a rebase", "echo 'git rebase origin/main later'"),
+    ("control: a quoted commit message", 'git commit -m "rebase onto main" -- x'),
+    ("control: a fetch", "git fetch origin --prune"),
+    ("control: a rebase outside this checkout", "git -C /tmp rebase origin/main"),
+    # Fail closed in every world: a tree the guard cannot read.
+    ("blind: --work-tree moves the tree", "git --work-tree=. rebase origin/main"),
+    ("blind: GIT_DIR on the command line", "GIT_DIR=.git git rebase origin/main"),
+    ("blind: --git-dir", "git --git-dir=.git merge origin/main"),
+]

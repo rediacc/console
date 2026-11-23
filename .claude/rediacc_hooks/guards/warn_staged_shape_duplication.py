@@ -47,7 +47,10 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_prose_style_commit as PSC
+
+__getattr__ = _cases.lazy("warn_staged_shape_duplication", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -394,14 +397,3 @@ def run(ev):
 
 # The `-a` arm, which is the one branch that speaks on a tree with nothing staged. Planting it proves the differential can see this guard at all, exactly as the same substitution does for `warn_stale_index`.
 DEFECT = ("if _takes_working_tree(cmd, scan):", "if False:")
-
-EDGE_CASES = [
-    ("the plain commit", "git commit -m x"),
-    ("the sanctioned pathspec form", "git commit -F /tmp/msg.txt -- scripts/gates/check-x.ts"),
-    ("-a takes the working tree", "git commit -a -m x"),
-    ("--all takes the working tree", "git commit --all -m x"),
-    ("a commit after &&", "git add -A && git commit -m x"),
-    ("quoted prose is not a command", "echo 'do not run git commit here'"),
-    ("a different git verb", "git status"),
-    ("a plain command is not a target", "ls -la"),
-]

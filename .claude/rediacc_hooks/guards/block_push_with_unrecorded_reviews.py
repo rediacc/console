@@ -23,10 +23,19 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 
 import os
 import pathlib
-import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_unverified_push as PUSH
+
+__getattr__ = _cases.lazy(
+    "block_push_with_unrecorded_reviews",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "_branch_world",
+    "_fixture_env",
+)
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -50,92 +59,6 @@ TAIL = (
     "Wait for a reviewer in flight with:  python3 .claude/hooks/stop/wl_review.py --status\n"
     "Record finished reviews with:        .claude/hooks/stop/worklist.py --review-commit <me>\n"
 )
-
-
-def _fixture_env():
-    return dict(
-        os.environ,
-        GIT_AUTHOR_NAME="Fixture",
-        GIT_AUTHOR_EMAIL="fixture@example.invalid",
-        GIT_COMMITTER_NAME="Fixture",
-        GIT_COMMITTER_EMAIL="fixture@example.invalid",
-        GIT_CONFIG_GLOBAL="/dev/null",
-        GIT_CONFIG_SYSTEM="/dev/null",
-    )
-
-
-def _branch_world(path, reviewed):
-    """A checkout on branch 0930-1 with one commit past `origin/main`, and, when `reviewed`, a clean committed review of it.
-
-    The review file is written in the reviewer's own format through `wl_review.render`, so the world needs no model. Without these worlds every edge case would be judged against whatever this shared tree holds when the suite runs, and the guard's DEFECT could not be shown to change any answer.
-    """
-    path = pathlib.Path(path)
-    origin = path.parent / (path.name + "-origin.git")
-    env = _fixture_env()
-
-    def git(*args):
-        subprocess.run(["git", "-C", str(path), *args], check=True, capture_output=True, env=env)
-
-    path.mkdir(parents=True)
-    subprocess.run(
-        ["git", "init", "-q", "--bare", str(origin)], check=True, capture_output=True, env=env
-    )
-    git("init", "-q", "--initial-branch=main")
-    (path / "seed.txt").write_text("seed\n", encoding="utf-8")
-    git("add", "seed.txt")
-    git("commit", "-q", "-m", "seed")
-    git("remote", "add", "origin", str(origin))
-    git("push", "-q", "origin", "main")
-    git("checkout", "-q", "-b", "0930-1")
-    (path / "f.py").write_text("a = 1\n", encoding="utf-8")
-    git("add", "f.py")
-    git("commit", "-q", "-m", "fix(x): y")
-    if reviewed:
-        rv = _load_reviewer()
-        sha = subprocess.run(
-            ["git", "-C", str(path), "rev-parse", "HEAD"],
-            check=True,
-            capture_output=True,
-            text=True,
-            env=env,
-        ).stdout.strip()
-        if not sha:
-            raise RuntimeError("git rev-parse HEAD printed nothing in the fixture repo")
-        review = rv.Review(
-            sha=sha,
-            subject="fix(x): y",
-            branch="0930-1",
-            reviewed_at="2026-10-02T00:00:00Z",
-            model="m",
-        )
-        target = rv.review_path(path, "0930-1", sha)
-        rv.write_atomic(target, rv.render(review))
-        git("add", "--", str(target.relative_to(path)))
-        git("commit", "-q", "-m", "chore(reviews): record")
-    return path
-
-
-FIXTURES = {
-    "push-unreviewed": lambda p: _branch_world(p, reviewed=False),
-    "push-reviewed": lambda p: _branch_world(p, reviewed=True),
-}
-
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    (name, {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in sorted(FIXTURES)
-]
-
-EDGE_CASES = [
-    ("a plain push", "git push"),
-    ("a push with a refspec", "git push origin 0930-1"),
-    ("a push in a submodule", "git -C private/account push origin 0930-1"),
-    ("a dry run publishes nothing", "git push --dry-run"),
-    ("a delete-only push", "git push origin --delete old-branch"),
-    ("prose naming a push", "echo 'git push later'"),
-    ("not a push", "git status"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    ("a push launched by npx -c", "npx -c 'git push origin 0930-1'"),
-    ("prose naming a launched push", "echo npx -c git push origin 0930-1"),
-]
 
 
 # A LANDING PUSH IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the session root and the landing tree are both this checkout (`commit_policy.bound_trees`), and review records stay with the branch's tree, so a push in either tree, or in a submodule of either, is judged against the tree that holds it (`_owning_tree`). Before this a push typed in the landing tree from the development root was skipped as a scratch repository's. Planted, the bound trees are the session root's alone again.

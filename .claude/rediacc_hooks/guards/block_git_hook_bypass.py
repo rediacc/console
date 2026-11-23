@@ -23,6 +23,9 @@ WHICH LAYER RULES. This pre-bash layer stays authoritative for agents, because o
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_git_hook_bypass", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -58,31 +61,6 @@ ENV_BYPASS = re.compile(
     r"^(%s|%s|GIT_CONFIG_PARAMETERS|GIT_CONFIG_COUNT|GIT_CONFIG_KEY_[0-9]+)\+?="
     % (commit_policy.OVERRIDE_ENV, RELEASE_RUN_ENV)
 )
-
-EDGE_CASES = [
-    ("commit --no-verify", "git commit --no-verify -m x -- a"),
-    ("commit -n", "git commit -n -m x -- a"),
-    ("a bundled -n", "git commit -anm x"),
-    ("-c core.hooksPath", "git -c core.hooksPath=/dev/null commit -m x -- a"),
-    ("config core.hooksPath", "git config core.hooksPath /tmp/x"),
-    ("config --unset", "git config --unset core.hooksPath"),
-    ("push --no-verify", "git push --no-verify origin 0923-1"),
-    ("the override set by an agent", "COMMIT_POLICY_OK=1 git commit -m x -- a"),
-    (
-        "the release-run record set by an agent",
-        "REDIACC_RELEASE_RUN=.ci/cache/release/run-1.json git push origin main",
-    ),
-    ("config --get is a read", "git config --get core.hooksPath"),
-    ("config with no value is a read", "git config core.hooksPath"),
-    ("log -n is not a commit", "git log -n 5"),
-    ("push -n is a dry run", "git push -n origin 0923-1"),
-    ("an ordinary commit", "git commit -F m -- a"),
-    ("prose naming the flag", "echo 'never git commit --no-verify'"),
-    ("the last of --no-verify and --verify wins", "git push --no-verify --verify origin 0923-1"),
-    ("am -n is --no-verify", "git am -3n x.patch"),
-    ("a unique prefix is the option", "git rebase --no-veri main"),
-    ("cherry-pick has no --no-verify", "git cherry-pick --no-verify HEAD"),
-]
 
 
 def _config_write(args):

@@ -600,6 +600,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/git/release_run.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/_backup_push.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
+| .claude/rediacc_hooks/guards/_cases.py | (none) | via .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | py |
 | .claude/rediacc_hooks/guards/_harness.py | (none) | via .claude/rediacc_hooks/guards/test-_repo_scope.py | py |
 | .claude/rediacc_hooks/guards/_hookpath.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
 | .claude/rediacc_hooks/guards/_push_receipts.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
@@ -765,6 +766,91 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/conftest.py | (none) | via .claude/rediacc_hooks/tests/__init__.py | py |
 | .claude/rediacc_hooks/tests/corpus.py | (none) | via .claude/hooks/context/onboard.py | py |
 | .claude/rediacc_hooks/tests/goldenio.py | (none) | via .claude/rediacc_hooks/tests/test_block_commit_meta_env_expand.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_adhoc_sanctioned.py | (none) | via .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_admin_merge.py | (none) | via .claude/hooks/stop/wl_review.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_agent_browser_repo_output.py | (none) | via .claude/rediacc_hooks/guards/block_agent_browser_repo_output.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_agent_cap.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_agent_state_shape.py | (none) | via .claude/hooks/stop/wl_store.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_away_questions.py | (none) | via .claude/hooks/stop/wl_away.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_backup_unverified_push.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_bash_write_to_running_script.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_binary_deploy.py | (none) | via .claude/rediacc_hooks/guards/block_binary_deploy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_blanket_git_add.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_ci_polling.py | (none) | via .claude/rediacc_hooks/guards/block_ci_polling.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_ci_reverse_poll.py | (none) | via .claude/rediacc_hooks/guards/block_ci_polling.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_ci_skip_token.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_cli_bundle.py | (none) | via .claude/rediacc_hooks/guards/block_cli_bundle.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_commit_meta.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_commit_of_live_writer_file.py | (none) | via .claude/hooks/stop/wl_roster.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_commit_on_main.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_compacted_plan_edit.py | (none) | via .claude/rediacc_hooks/guards/block_compacted_plan_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_destructive_git_restore.py | (none) | via .claude/rediacc_hooks/guards/block_destructive_git_restore.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_edit_of_running_script.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_git_amend.py | (none) | via .claude/rediacc_hooks/dispatch.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_git_empty_commit.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_git_force_push.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_git_hook_bypass.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_host_toolchain_run.py | (none) | via .claude/rediacc_hooks/guards/block_host_toolchain_run.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_inline_python.py | (none) | via .claude/rediacc_hooks/guards/block_inline_python.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_inline_workflow_run.py | (none) | via .claude/rediacc_hooks/guards/block_inline_workflow_run.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_landing_one_way.py | (none) | via .claude/hooks/stop/wl_stack.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_lease_boundary.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_long_sleep.py | (none) | via .claude/hooks/lib/sanctioned.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_merge_with_unpushed.py | (none) | via .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_missing_npm_script.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_no_review_ineligible.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_nondraft_pr_create.py | (none) | via .claude/hooks/stop/test-review-existence.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_nonstandard_branch_name.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_origin_clone.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_pathspecless_git_commit.py | (none) | via .claude/rediacc_hooks/dispatch.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_plan_box_rewrite.py | (none) | via .claude/rediacc_hooks/guards/block_plan_box_rewrite.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_plan_without_depends.py | (none) | via .claude/hooks/stop/wl_plandeps.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_plan_without_tasks.py | (none) | via .claude/rediacc_hooks/guards/block_plan_without_tasks.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_pr_freeze_commit.py | (none) | via .claude/rediacc_hooks/guards/block_pr_freeze_commit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_premature_ready.py | (none) | via .claude/rediacc_hooks/guards/block_premature_ready.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_prose_style_commit.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_prose_style_edit.py | (none) | via .claude/rediacc_hooks/guards/__init__.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_protected_files.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_protected_files_edit.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_push_to_protected_branch.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_push_with_unrecorded_reviews.py | (none) | via .claude/hooks/stop/wl_review.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_raw_ci_read.py | (none) | via .claude/hooks/lib/sanctioned.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_raw_pr_body_edit.py | (none) | via .claude/rediacc_hooks/guards/block_admin_merge.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_rebase_over_foreign_dirt.py | (none) | via .claude/hooks/stop/wl_git.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_renet_untested_push.py | (none) | via .claude/hooks/stop/wl_renettests.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_review_file_edit.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_review_file_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_roundlog_truncate.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_truncate.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_roundlog_write.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_second_open_pr.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_self_matching_pgrep.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_shape_lessons.py | (none) | via .claude/hooks/trapguard/dispatch.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_short_wake_timeout.py | (none) | via .claude/rediacc_hooks/guards/block_short_wake_timeout.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_ssh_docker.py | (none) | via .claude/rediacc_hooks/guards/block_ssh_docker.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_ssh_file_write.py | (none) | via .claude/rediacc_hooks/guards/block_ssh_file_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_suppressions.py | (none) | via .claude/rediacc_hooks/guards/block_suppressions.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_suppressions_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_suppressions.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unasked_release.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unlinked_commit_author.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unproven_bulk_transform.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unpushed_submodule_pin.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unsatisfiable_pid_wait.py | (none) | via .claude/rediacc_hooks/guards/block_unsatisfiable_pid_wait.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unscoped_formatter_run.py | (none) | via .claude/rediacc_hooks/guards/block_unscoped_formatter_run.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_untagged_commit.py | (none) | via .claude/hooks/stop/wl_epic.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unverified_push.py | (none) | via .claude/hooks/stop/test-review-mark.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_review_file_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_vm_unverified_push.py | (none) | via .claude/hooks/stop/wl_boxready.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_worktree_add.py | (none) | via .claude/hooks/stop/test-landing-stack.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_hook_change.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_remote_drift.py | (none) | via .claude/rediacc_hooks/guards/warn_remote_drift.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_staged_shape_duplication.py | (none) | via .claude/hooks/stop/wl_shapedup.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_stale_index.py | (none) | via .claude/rediacc_hooks/guards/warn_staged_shape_duplication.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_submodule_deletions.py | (none) | via .claude/rediacc_hooks/guards/warn_submodule_deletions.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/warn_writer_brief.py | (none) | via .claude/hooks/stop/wl_reviewclass.py | py |
 | .claude/rediacc_hooks/tests/guardcorpus.py | (none) | via .claude/rediacc_hooks/tests/corpus.py | py |
 | .claude/rediacc_hooks/tests/hookblocks.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_fixtures.py | py |
 | .claude/rediacc_hooks/tests/hookcases.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
@@ -795,6 +881,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_githook_release_run.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_golden_drift.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_guard_cases.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_chained_state.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_event_cwd.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py | (none) | via pytest (testpaths) | py |
@@ -947,7 +1034,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | run.sh | WorktreeCreate, WorktreeRemove | settings.json | sh |
 
-501 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+588 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

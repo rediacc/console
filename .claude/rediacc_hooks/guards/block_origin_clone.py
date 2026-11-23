@@ -26,8 +26,13 @@ import re
 import shlex
 import urllib.parse
 
-from rediacc_hooks import commit_policy, hookio, shellscan, wellknown
+from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_worktree_add as programs
+
+__getattr__ = _cases.lazy(
+    "block_origin_clone", "EDGE_CASES", "_CONSOLE", "_GHO", "_MIRROR", "_RENET"
+)
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -840,34 +845,6 @@ def _walk_text(cmd, world, depth):
             if why:
                 return why
     return _by_path_reason(cmd, world, depth)
-
-
-_GHO = wellknown.GH_ORIGIN
-_CONSOLE = wellknown.GH_REPO
-_RENET = wellknown.RENET_REPO
-_MIRROR = githooks.MIRROR_HOST
-EDGE_CASES = [
-    ("the origin", f"git clone {_GHO}/{_CONSOLE}.git /tmp/x"),
-    ("a submodule", f"git clone git@github.com:{_RENET}.git /tmp/x"),
-    ("the mirror", f"git clone https://{_MIRROR}/rediacc-org/github/console.git /tmp/x"),
-    ("gh", f"gh repo clone {_CONSOLE}"),
-    ("a wrapper", f"sh -c 'git clone {_GHO}/{_CONSOLE} /tmp/x'"),
-    (
-        "init and fetch",
-        f"git init /tmp/x && git -C /tmp/x fetch {_GHO}/{_CONSOLE}.git",
-    ),
-    (
-        "program text",
-        f"python3 -c \"import os; os.system('git clone {_GHO}/{_CONSOLE} /x')\"",
-    ),
-    ("control: a fixture", "git clone /tmp/fixture /tmp/y"),
-    ("control: an unrelated url", "git clone https://example.invalid/a.git /tmp/y"),
-    ("control: prose", f"echo git clone {_GHO}/{_CONSOLE}.git /tmp/x"),
-    (
-        "control: a heredoc body",
-        f"cat > n.md <<'EOF'\ngit clone {_GHO}/{_CONSOLE}.git /tmp/x\nEOF",
-    ),
-]
 
 
 def run(ev):

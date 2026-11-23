@@ -13,6 +13,9 @@ grep a single empty record and the other giving it none.
 """
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_ci_reverse_poll", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 12
@@ -30,22 +33,6 @@ MESSAGE = (
     "superseded run are both handled structurally. Do NOT use gh run watch -- it has "
     "dropped silently on terminal runs (observed 4/4)."
 )
-
-EDGE_CASES = [
-    (
-        "the pinned prose ruling: a heredoc still fires",
-        "cat <<EOF\ngh run view 1 --jq .x && sleep 30\nEOF",
-    ),
-    (
-        "quoted prose still fires, by the same ruling",
-        "echo 'gh run view 1 --jq .status && sleep 30'",
-    ),
-    ("a plain run view is not polling", "gh run view 123 --json status"),
-    ("--jq with no wait after it", "gh run view 123 --jq .status"),
-    ("a separator between them is not the && shape", "gh run view 1 --jq .s; sleep 30"),
-    # The case the planted defect needs, and it is a real shape rather than a test-shaped one: reading a run and then doing something that is not a wait. Without it nothing in the whole corpus could tell the pattern with its `sleep` tail from the pattern without it, and the anti-vacuity control said so on the first run rather than at review time.
-    ("--jq then a command that is not a wait", "gh run view 1 --jq .status && echo done"),
-]
 
 
 def run(ev):

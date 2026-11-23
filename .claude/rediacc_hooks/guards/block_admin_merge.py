@@ -40,7 +40,10 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_REPO, RENET_REPO
+from rediacc_hooks.guards import _cases
+from rediacc_hooks.wellknown import GH_REPO
+
+__getattr__ = _cases.lazy("block_admin_merge", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 26
@@ -122,44 +125,6 @@ REST_MERGE_MESSAGE = (
     "verify any of that against a raw REST call. The sanctioned path: 'gh pr ready' "
     "once CI Complete is green, then 'gh pr merge --rebase --auto'."
 )
-
-EDGE_CASES = [
-    ("the banned flag", "gh pr merge 42 --admin"),
-    # Over-blocking is the safe direction, so every flag SHAPE counts.
-    ("the flag with a value", "gh pr merge 42 --admin=true"),
-    ("the flag inside a wrapper payload", "sh -c 'gh pr merge --admin'"),
-    ("the flag inside an assignment", 'X="--admin"; gh pr merge 42 $X'),
-    # A commit message MENTIONING the banned command must not trip the ban.
-    ("prose naming the banned command", "git commit -m '...gh pr merge --admin...'"),
-    ("an ordinary merge", "gh pr merge 42 --rebase --auto"),
-    ("an immediate merge with no selector", "gh pr merge --rebase"),
-    ("a merge on a submodule repo", ("gh pr merge 7 --repo " + RENET_REPO + " --rebase")),
-    # The round-46 cross-attribution: fields belong to ONE invocation.
-    (
-        "a sibling view must not donate its repo",
-        ("gh pr view 94 --repo " + RENET_REPO + "; gh pr merge 66 --repo " + ACCOUNT_REPO),
-    ),
-    ("a foreign repo is not policed", "gh pr merge 42 --repo someone/other"),
-    # 2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it.
-    ("-R=<foreign> is not policed either", "gh pr merge 42 -R=someone/other"),
-    ("the REST merge spelled -XPUT", "gh api repos/o/r/pulls/5/merge -XPUT"),
-    ("the REST merge spelled --method=PUT", "gh api repos/o/r/pulls/5/merge --method=PUT"),
-    ("a different pr subcommand", "gh pr view 42"),
-    # REST parity: the same mutation reached through `gh api` instead of `gh pr merge`.
-    (
-        "the REST merge bypass",
-        "gh api repos/o/r/pulls/589/merge -X PUT -f merge_method=squash",
-    ),
-    (
-        "the REST merge bypass with flags reordered",
-        "gh api repos/o/r/pulls/589/merge -f merge_method=squash -X PUT",
-    ),
-    ("a GET on the merge endpoint is not a merge", "gh api repos/o/r/pulls/589/merge"),
-    (
-        "prose naming the REST bypass",
-        "git commit -m '...gh api repos/o/r/pulls/589/merge -X PUT...'",
-    ),
-]
 
 
 # THE PR'S OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). Review records stay with the branch's tree, so with a landing record the review precondition and the plan gate read the tree that holds the PR's head branch (`_pr_tree`), not the session root: a merge of the landing PR typed in the development tree read the development tree's `agent/reviews/<head>/`, which never holds them. Planted, every head is judged in the root again.

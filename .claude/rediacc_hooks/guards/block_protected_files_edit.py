@@ -16,7 +16,10 @@ import pathlib
 import subprocess
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_protected_files as PF
+
+__getattr__ = _cases.lazy("block_protected_files_edit", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
@@ -34,50 +37,6 @@ MESSAGE = (
     "the file is allowed; to undo a change, edit the value back. If the file genuinely has to be\n"
     "emptied or restored, hand the exact command to the operator to run with the `!` prefix.\n"
 )
-
-# The cases that need no world on disk; the restore cases need a checkout and live in the harness.
-EDGE_CASES = [
-    (
-        "a Write emptying the settings file",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.json", "content": ""},
-        },
-    ),
-    (
-        "a Write blanking the pre-commit script",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/scripts/pre-commit-check.sh", "content": "\n \n"},
-        },
-    ),
-    (
-        "a NotebookEdit naming the settings file",
-        {
-            "tool_name": "NotebookEdit",
-            "tool_input": {"notebook_path": "/r/.claude/settings.json", "new_source": "x"},
-        },
-    ),
-    (
-        "a Write of new settings text",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.json", "content": '{"hooks": {}}\n'},
-        },
-    ),
-    (
-        "a Write emptying an ordinary file",
-        {"tool_name": "Write", "tool_input": {"file_path": "/r/docs/x.md", "content": ""}},
-    ),
-    (
-        "a Write emptying the local settings file",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.local.json", "content": ""},
-        },
-    ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": ""}}),
-]
 
 
 def _result_text(doc, path):

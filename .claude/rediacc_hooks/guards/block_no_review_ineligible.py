@@ -8,6 +8,9 @@ CHECKED TWICE: here, at commit time, against the pathspec (or the index when the
 """
 
 from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_no_review_ineligible", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -20,19 +23,6 @@ DEFECT = (
 )
 # Planted, the bound trees are the session root alone, so a commit typed in the sibling bound tree goes unjudged again (box LT11).
 TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
-
-EDGE_CASES = [
-    ("a code path", 'git commit -m "feat: x [no-review]" -- src/a.ts'),
-    ("an agent program", 'git commit -m "docs: x [no-review]" -- .claude/commands/x.md'),
-    ("policy", 'git commit -m "docs: x [no-review]" -- CLAUDE.md'),
-    ("writing only", 'git commit -m "docs: x [no-review]" -- agent/plans/x.md docs/y.md'),
-    (
-        "a hotfix is always reviewed",
-        'git commit -m "docs: x [hotfix] [no-review]\n\nHotfix-Evidence: 12345678" -- docs/y.md',
-    ),
-    ("an untagged code commit", 'git commit -m "feat: x" -- src/a.ts'),
-    ("prose naming the tag", "echo 'tag it [no-review]'"),
-]
 
 
 def _refuse(ev, what):

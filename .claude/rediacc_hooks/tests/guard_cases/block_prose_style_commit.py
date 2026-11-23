@@ -1,0 +1,58 @@
+"""The test tables of `block_prose_style_commit`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+
+EDGE_CASES = [
+    # The shapes this guard exists for.
+    ("a commit subject addressing the reader", 'git commit -m "Did you run the tests?"'),
+    ("a commit message saying I", 'git commit -m "fix: the thing" -m "I think this is right."'),
+    ("the attached -m form", 'git commit -m"Did you run the tests?"'),
+    ("the long --message form", 'git commit --message="Did you run the tests?"'),
+    ("an amend", 'git commit --amend -m "Did you run the tests?"'),
+    ("a heredoc body", "git commit -F - <<'EOF'\nfix: the thing\n\nI think this is right.\nEOF"),
+    ("a gh pr body", 'gh pr create --title "fix: x" --body "Did you run the tests?"'),
+    (
+        "the sanctioned gh api PATCH form for a PR body",
+        'gh api repos/o/r/pulls/589 -X PATCH -F body="Did you run the tests?"',
+    ),
+    ("a gh pr comment", 'gh pr comment 1 --body "I already told you!"'),
+    # CONTROLS. Every one of these must pass untouched.
+    (
+        "a house-convention imperative subject is EXEMPT",
+        'git commit -m "fix(ci): widen the trigger"',
+    ),
+    (
+        "the rewritten message passes",
+        'git commit -m "fix: the thing" -m "Have the tests been run?"',
+    ),
+    (
+        "the ownership exception is allowed",
+        'git commit -m "fix: the thing" -m "My mistake; a fix is on the way."',
+    ),
+    ("a backticked pronoun is code", 'git commit -m "docs: rename the `you` placeholder"'),
+    ("a commit with no message flag at all", "git commit"),
+    ("git log is not git commit", 'git log --grep "Did you run it?"'),
+    ("a plain command is not a target", "ls -la"),
+    ("an echo mentioning commit is not a commit", 'echo "git commit -m \\"Did you run it?\\""'),
+    ("a gh pr view is not a write", "gh pr view 1"),
+    ("a warning-only absolute does not block", 'git commit -m "fix: x" -m "That will never work."'),
+    (
+        "a commit on the second line of a multi-line command is still a target",
+        'set -e\ngit commit -m "Did you run the tests?"',
+    ),
+    (
+        "a chained commit+pr scopes each message to its OWN command, not the last one seen",
+        'git commit -m "fix: x" -m "%s" && gh pr create --title "fix: x" --body "short body"'
+        % ("x" * 400),
+    ),
+    (
+        "a cat heredoc quoting a commit+pr example as prose is not a target",
+        "cat > /tmp/note.md <<'EOF'\nExample: git commit -m \"fix: x\" && gh pr create --title x --body y\nEOF",
+    ),
+    (
+        "a python heredoc chained before a commit is not the commit's message",
+        "python3 - <<'EOF'\nI think this is right.\nEOF\ngit commit -F /nonexistent/msg -- p",
+    ),
+    (
+        "a heredoc piped into commit -F - is the message",
+        "cat <<'EOF' | git commit -F -\nI think this is right.\nEOF",
+    ),
+]

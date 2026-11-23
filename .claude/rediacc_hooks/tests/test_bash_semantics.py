@@ -1281,7 +1281,7 @@ _SSH_DOCKER_GROUPS = (
 
 
 def test_ssh_docker_edge_case_headings_match_verdicts():
-    path = HOOKS / "guards" / "block_ssh_docker.py"
+    path = HOOKS / "tests" / "guard_cases" / "block_ssh_docker.py"
     src = path.read_text()
     lines = src.splitlines()
     tree = ast.parse(src)

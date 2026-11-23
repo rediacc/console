@@ -21,6 +21,9 @@ import os
 import pathlib
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_missing_npm_script", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -34,43 +37,6 @@ DYNAMIC = ("$", "`", "{")
 VALUE_FLAGS = frozenset(("--prefix", "-C", "-w", "--workspace", "--loglevel", "--script-shell"))
 ALL_WORKSPACES = frozenset(("--workspaces", "-ws", "--ws"))
 
-EDGE_CASES = [
-    ("a name no package.json defines", "npm run does-not-exist-example"),
-    ("run-script is the same verb", "npm run-script does-not-exist-example"),
-    ("a manifest id that is not a root script", "npm run test:write-once-guard"),
-    ("a flag before the name is skipped", "npm run --silent does-not-exist-example"),
-    ("a cd carries the package", "cd packages/cli && npm run check:ci-python-lint"),
-    ("--prefix names the package", "npm --prefix packages/cli run check:ci-python-lint"),
-    # CONTROLS: every one of these must pass.
-    ("a real root script", "npm run check:ci-python-lint"),
-    ("a real script in the cd'd package", "cd packages/cli && npm run test"),
-    ("a real script under --prefix", "npm --prefix packages/cli run test"),
-    ("a real script under -w", "npm -w packages/cli run test"),
-    ("a real script under -w by package name", "npm -w @rediacc/cli run test"),
-    ("a computed name fails open", 'npm run "$GATE"'),
-    ("a brace name fails open", "npm run {a,b}"),
-    ("a computed directory fails open", 'cd "$D" && npm run does-not-exist-example'),
-    ("a missing directory fails open", "cd /nonexistent/dir && npm run does-not-exist-example"),
-    ("--if-present exits 0 on a miss", "npm run --if-present does-not-exist-example"),
-    ("--workspaces fails open", "npm run --workspaces does-not-exist-example"),
-    ("a bare npm run only lists", "npm run"),
-    ("prose is not a run", "echo 'npm run does-not-exist-example'"),
-    ("a remote operand is not this tree", "ssh host 'npm run does-not-exist-example'"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    ("an npm run launched by npx -c", "npx -c 'npm run does-not-exist-example'"),
-    (
-        "find -exec runs npm in its own cwd",
-        r"find packages -maxdepth 1 -name cli -exec npm run does-not-exist-example \;",
-    ),
-    (
-        "find -execdir runs npm elsewhere, open",
-        r"find packages -maxdepth 1 -name cli -execdir npm run does-not-exist-example \;",
-    ),
-    (
-        "npx -w runs npm in another package, open",
-        "npx -w packages/cli -c 'npm run does-not-exist-example'",
-    ),
-]
 
 MESSAGE = """BLOCKED: `npm run %(name)s` names a script that %(file)s does not define.
 

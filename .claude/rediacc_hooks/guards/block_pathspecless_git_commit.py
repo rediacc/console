@@ -39,7 +39,9 @@ unreachable rather than dropped, and the differential drives both sides with the
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _repo_scope
+from rediacc_hooks.guards import _cases, _repo_scope
+
+__getattr__ = _cases.lazy("block_pathspecless_git_commit", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 # Re-keyed from 43 to 44 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
@@ -81,22 +83,6 @@ MESSAGE = (
     "is not blocked. `-a` is: it stages every modified tracked file in a tree that holds "
     "other sessions' work."
 )
-
-EDGE_CASES = [
-    ("the bare form", "git commit"),
-    ("a message with no pathspec", 'git commit -m "x"'),
-    ("-a stages every modified tracked file", 'git commit -a -m "x"'),
-    ("a trailing -- with nothing after it", 'git commit -m "x" --'),
-    ("the advertised escape", "git commit -F msg.txt -- a/b.ts"),
-    ("several named paths", "git commit -q -F - -- .ci/x.sh agent/y.md"),
-    ("an amend chooses no new content", "git commit --amend --no-edit"),
-    ("a git add is another guard's business", "git add -- a.ts"),
-    ("the sealing commit of a throwaway fixture repo", "git init -q && git commit -qm seed"),
-    ("a commit inside /tmp is never this checkout", "cd /tmp/fx/r1; git commit -qm seed"),
-    ("git -C into a scratch repo", "git -C /tmp/fx/r1 commit -qm seed"),
-    # A /tmp MESSAGE FILE is not a /tmp repo, so this one is still refused.
-    ("a message file under /tmp is not a scratch repo", "git commit -F /tmp/msg.txt"),
-]
 
 
 def run(ev):

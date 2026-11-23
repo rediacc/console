@@ -27,7 +27,10 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_live_proof_ledger_write as EDIT
+
+__getattr__ = _cases.lazy("block_live_proof_ledger_shell_write", "EDGE_CASES", "LEDGER_REL")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -36,7 +39,6 @@ ORDER = 64
 # The landing test is the whole guard: with it gone no word is ever the ledger.
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")
 
-LEDGER_REL = EDIT.LEDGER_REL
 LEDGER_PATH = EDIT.LEDGER_PATH
 LEDGER_NAME = "live-proof.jsonl"
 INTERPRETERS = shellscan.INTERPRETER_NAMES
@@ -81,22 +83,6 @@ MESSAGE = (
     "  record a receipt:  " + EDIT.RECORDER + "\n"
     "  judge the ledger:  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify\n"
 )
-
-EDGE_CASES = [
-    ("append a row", "echo '{}' >> " + LEDGER_REL),
-    # #4e20f8c5: the refused PLAN edit. The ledger's path is text being replaced inside the PLAN, and the PLAN is the file written.
-    (
-        "python edits a PLAN line naming the ledger",
-        "python3 - <<'PY'\nimport pathlib\np = pathlib.Path('agent/plans/PLAN-backup-program.md')\n"
-        "s = p.read_text()\ns = s.replace('Owns: x, "
-        + LEDGER_REL
-        + "', 'Owns: x')\np.write_text(s)\nPY",
-    ),
-    ("the recorder", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --write"),
-    ("read the ledger", "jq . " + LEDGER_REL),
-    ("tee the ledger", "printf x | tee -a " + LEDGER_REL),
-    ("stage the ledger", "git add -- " + LEDGER_REL),
-]
 
 
 def _base(where, cwd):

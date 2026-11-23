@@ -18,6 +18,9 @@ NO ENVIRONMENT READ. This file is a sealed module in `.ci/policy/worklist-env-re
 import pathlib
 
 from rediacc_hooks import hookio, syspath
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_agent_cap", "EDGE_CASES")
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
@@ -26,27 +29,6 @@ ORDER = 3
 # The planted defect for the differential: a guard that stops exempting read-only spawns tries to count them, and speaks where it used to stay silent.
 DEFECT = ("if kind in read_only:", "if False:")
 
-# The payload shapes the differential feeds this guard beyond the cross-fed corpus. A session id that resolves to no session directory is the "cannot count" branch; the Explore spawn is the read-only exemption.
-EDGE_CASES = [
-    (
-        "writer-spawn-uncountable",
-        {
-            "tool_name": "Agent",
-            "session_id": "zz-no-such-session",
-            "cwd": "/nonexistent-agent-cap-fixture",
-            "tool_input": {"subagent_type": "general-purpose", "description": "x"},
-        },
-    ),
-    (
-        "reader-spawn",
-        {
-            "tool_name": "Agent",
-            "session_id": "zz-no-such-session",
-            "cwd": "/nonexistent-agent-cap-fixture",
-            "tool_input": {"subagent_type": "Explore", "description": "x"},
-        },
-    ),
-]
 
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
 

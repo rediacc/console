@@ -12,6 +12,9 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import re
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _cases
+
+__getattr__ = _cases.lazy("block_live_proof_ledger_write", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
@@ -35,50 +38,6 @@ MESSAGE = (
     "  record a receipt:  " + RECORDER + "\n"
     "  judge the ledger:  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify\n"
 )
-
-EDGE_CASES = [
-    (
-        "a Write over the ledger",
-        {"tool_name": "Write", "tool_input": {"file_path": LEDGER_REL, "content": "{}\n"}},
-    ),
-    (
-        "an Edit of a row",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "/r/" + LEDGER_REL,
-                "old_string": '"status":"FAILED"',
-                "new_string": '"status":"VERIFIED"',
-            },
-        },
-    ),
-    (
-        "a MultiEdit of the ledger",
-        {"tool_name": "MultiEdit", "tool_input": {"file_path": LEDGER_REL, "edits": []}},
-    ),
-    (
-        "another ledger",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "agent/ledgers/effort-outcomes.jsonl", "content": "x"},
-        },
-    ),
-    (
-        "a plan that names the ledger",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "agent/plans/PLAN-x.md", "content": LEDGER_REL},
-        },
-    ),
-    (
-        "a sibling with a similar name",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "agent/ledgers/live-proof.jsonl.bak", "content": "x"},
-        },
-    ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}}),
-]
 
 
 def run(ev):

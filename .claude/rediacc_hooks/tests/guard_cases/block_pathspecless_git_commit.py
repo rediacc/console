@@ -1,0 +1,17 @@
+"""The test tables of `block_pathspecless_git_commit`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+
+EDGE_CASES = [
+    ("the bare form", "git commit"),
+    ("a message with no pathspec", 'git commit -m "x"'),
+    ("-a stages every modified tracked file", 'git commit -a -m "x"'),
+    ("a trailing -- with nothing after it", 'git commit -m "x" --'),
+    ("the advertised escape", "git commit -F msg.txt -- a/b.ts"),
+    ("several named paths", "git commit -q -F - -- .ci/x.sh agent/y.md"),
+    ("an amend chooses no new content", "git commit --amend --no-edit"),
+    ("a git add is another guard's business", "git add -- a.ts"),
+    ("the sealing commit of a throwaway fixture repo", "git init -q && git commit -qm seed"),
+    ("a commit inside /tmp is never this checkout", "cd /tmp/fx/r1; git commit -qm seed"),
+    ("git -C into a scratch repo", "git -C /tmp/fx/r1 commit -qm seed"),
+    # A /tmp MESSAGE FILE is not a /tmp repo, so this one is still refused.
+    ("a message file under /tmp is not a scratch repo", "git commit -F /tmp/msg.txt"),
+]
