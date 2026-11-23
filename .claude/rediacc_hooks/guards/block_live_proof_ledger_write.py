@@ -9,10 +9,7 @@ THE SHELL HALF is `block_live_proof_ledger_shell_write` (pre-bash): redirections
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_live_proof_ledger_write.py` beside it and against its own DEFECT, never against a golden.
 """
 
-import re
-
-from rediacc_hooks import hookio
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_live_proof_ledger_write", "EDGE_CASES")
 
@@ -20,34 +17,16 @@ CHAIN = "pre-edit"
 OWN_SUITE = True
 ORDER = 17
 
-# The path test is the whole guard: with it gone the ledger is editable by hand.
-DEFECT = ("if LEDGER_PATH.search(path) is None:", "if True:")
+# The row is the whole guard: with the row no path matches, the ledger is editable by hand.
+DEFECT = ('RULE = _write_rules.ROWS["live_proof_ledger"]', "RULE = _write_rules.NOTHING")
 
+# The path, the refusal and the recorder are one row of `_write_rules.ROWS`, shared with the shell half.
+RULE = _write_rules.ROWS["live_proof_ledger"]
 LEDGER_REL = "agent/ledgers/live-proof.jsonl"
-LEDGER_PATH = re.compile(r"(\A|/)agent/ledgers/live-proof\.jsonl\Z")
-
-RECORDER = "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger --check <id> --write"
-
-MESSAGE = (
-    "BLOCKED: %s of the live-proof ledger (%s).\n"
-    "\n"
-    "CI trusts agent/ledgers/live-proof.jsonl without re-running anything, so a row is written\n"
-    "only by the recorder, after the live run it describes; a hand-written row with a recomputed\n"
-    "id is the forgery this guard exists to stop.\n"
-    "\n"
-    "  record a receipt:  " + RECORDER + "\n"
-    "  judge the ledger:  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify\n"
-)
+LEDGER_PATH = RULE.path
+RECORDER = _write_rules.LEDGER_RECORDER
+MESSAGE = RULE.message[0]
 
 
 def run(ev):
-    given = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    if not given or given == "null":
-        return hookio.ALLOW
-    # Judged where the write LANDS (`hookio.landing`, the reading every pre-edit guard shares): a symlink to the ledger, or `agent/x/../ledgers/live-proof.jsonl`, is the ledger.
-    landed, judged, shown = hookio.landing(given, ev.field("cwd") or None)
-    path = judged if LEDGER_PATH.search(judged) else landed
-    if LEDGER_PATH.search(path) is None:
-        return hookio.ALLOW
-    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", shown))
-    return hookio.DENY
+    return _write_rules.edit_run(ev, RULE)

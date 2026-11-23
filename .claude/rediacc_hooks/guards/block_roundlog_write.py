@@ -27,11 +27,7 @@ PORT NOTE ON WHY THIS GUARD NEEDS A FIXTURE AT ALL. Its last test is `[ -e "$FIL
 literally. The builder below therefore writes to a DETERMINISTIC directory under the system temp dir rather than to the random one the harness offers, and `ENVS` names it through a variable this guard never reads -- the variable's only job is to make the harness build the world before the cases run.
 """
 
-import os
-import re
-
-from rediacc_hooks import hookio
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables(
     "block_roundlog_write",
@@ -48,49 +44,20 @@ __getattr__ = tables(
 CHAIN = "pre-edit"
 ORDER = 9
 
-# CREATING one is not truncating one, and without this line the two halves of the contract deadlock. Walking the documented path hit it head-on on 2026-08-27: `worklist.py --roundlog` refuses to create a log ("This verb REPLACES a STATUS block, it does not create a round log ... Write the wave header first"), and this guard then refused the write it had just been told to make.
+# CREATING one is not truncating one, and without `exists_only` the two halves of the contract deadlock. Walking the documented path hit it head-on on 2026-08-27: `worklist.py --roundlog` refuses to create a log ("This verb REPLACES a STATUS block, it does not create a round log ... Write the wave header first"), and this guard then refused the write it had just been told to make.
 # There was no third door.
 DEFECT = (
-    "if not os.path.exists(file_path):\n        return hookio.ALLOW",
-    "if False:\n        return hookio.ALLOW",
+    "return _write_rules.edit_run(ev, RULE, exists_only=True, raw=False)",
+    "return _write_rules.edit_run(ev, RULE, exists_only=False, raw=False)",
 )
 
-# Targeted edits cannot silently truncate; only whole-file writes can.
-TARGETED_TOOLS = ("Edit", "MultiEdit")
-
-ROUND_LOG = r"(\A|/)reports/pr-babysit-[^/]+\.md\Z"
-
-MESSAGE = (
-    "❌ BLOCKED: a whole-file write to a pr-babysit round log. Its STATUS block is spliced "
-    "in place, and the obvious splice (text[:i] + new) deletes the entire round history "
-    "below it -- which is what happened on 2026-08-19, silently, to a file with no backup. "
-    "To refresh STATUS use the verb, which replaces ONLY that block and reports the bytes "
-    "it kept above and below:  .claude/hooks/stop/worklist.py --roundlog <branch> <<'EOF' "
-    "... EOF   The tool writes the '## STATUS (round N, <utc>)' heading itself: the round "
-    "auto-increments, and the stamp is machine-written because a watchdog reads it to "
-    "decide whether this loop is wedged. To append to the history or amend the wave "
-    "header, use Edit -- targeted edits are deliberately allowed, because they cannot "
-    "swallow an appendix they never named."
-)
+# The path, the briefing exemption, the passed tools (Edit and MultiEdit: targeted edits cannot silently truncate; only whole-file writes can) and the refusal are one row of `_write_rules.ROWS`, shared with the shell half.
+RULE = _write_rules.ROWS["roundlog"]
+TARGETED_TOOLS = RULE.passes
+ROUND_LOG = RULE.path.pattern
+MESSAGE = RULE.message[0]
 
 
 def run(ev):
-    # The path is judged where the write LANDS: `hookio.landing` resolves symlinks, then `..`, as the kernel does (#bc7d998c, review 9c6817f3.1-.4, .8).
-    typed = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    file_path, judged, _shown = hookio.landing(typed, ev.field("cwd") or None)
-    tool = ev.field("tool_name")
-
-    # Targeted edits cannot silently truncate; only whole-file writes can.
-    if hookio.case_glob(tool, *TARGETED_TOOLS):
-        return hookio.ALLOW
-    if hookio.case_glob(judged, "*-briefing.md"):
-        return hookio.ALLOW
-    if re.search(ROUND_LOG, judged) is None:
-        return hookio.ALLOW
-
-    # CREATING one is not truncating one. A file that does not exist has no appendix to swallow, and the failure this guard prevents is specifically the SILENT LOSS of an existing history.
-    if not os.path.exists(file_path):
-        return hookio.ALLOW
-
-    ev.warn(MESSAGE)
-    return hookio.DENY
+    # The path is judged where the write LANDS: `hookio.landing` resolves symlinks, then `..`, as the kernel does (#bc7d998c, review 9c6817f3.1-.4, .8). CREATING one is not truncating one: a file that does not exist has no appendix to swallow, and the failure this guard prevents is specifically the SILENT LOSS of an existing history.
+    return _write_rules.edit_run(ev, RULE, exists_only=True, raw=False)

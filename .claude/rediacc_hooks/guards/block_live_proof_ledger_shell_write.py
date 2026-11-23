@@ -7,6 +7,7 @@ WHAT COUNTS AS A WRITE, read by the lexer (`shellscan`) and never by a regex ove
   - an output redirection (`>`, `>>`, `>|`) whose target lands on the ledger, as typed and as bash expands it;
   - `tee`, an in-place `sed`/`perl`, `truncate`, `dd of=` or `rm` naming it, and a copier (`cp`, `mv`, `install`, `rsync`, `ln`) whose destination lands on it (`shellscan.copy_landings`, so a copy into `agent/ledgers/` of a file named `live-proof.jsonl` counts);
   - any other command's output word (`shellscan.output_landings`): an output option of a listed reader (`sort -o`), or any word of a command that table does not list as a reader (`touch`, `rm`);
+  the redirect, tee, in-place, copy and output-word readings are `Event.writes()` (`shellscan.writes`, parsed once per Event and shared with every guard of the chain), each tested where it lands; truncate, `dd of=`, `rm` and interpreter code are this guard's own readings;
   - interpreter code: a Python program whose write targets, or whose appending calls (`append_lines`, `.write`, `json.dump`), name the ledger, a call of `ledger_path`, or the `LEDGER` constant; other interpreters, and Python that does not parse, by a line that names the ledger beside write code. A program that imports the recorder and passes `write=True`,
     or calls its `_judge_and_write`, is refused too: an in-process `record(..., world=World(run=<fake>))` would append a VERIFIED row for steps that never ran.
 
@@ -27,8 +28,7 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import block_live_proof_ledger_write as EDIT
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_live_proof_ledger_shell_write", "EDGE_CASES", "LEDGER_REL")
 
@@ -39,7 +39,9 @@ ORDER = 64
 # The landing test is the whole guard: with it gone no word is ever the ledger.
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")
 
-LEDGER_PATH = EDIT.LEDGER_PATH
+# The path, the refusal and the recorder are one row of `_write_rules.ROWS`, shared with the edit half.
+RULE = _write_rules.ROWS["live_proof_ledger"]
+LEDGER_PATH = RULE.path
 LEDGER_NAME = "live-proof.jsonl"
 INTERPRETERS = shellscan.INTERPRETER_NAMES
 _PATH_MAX = shellscan.PATH_MAX
@@ -73,16 +75,7 @@ _TWO_PATH_CALLS = frozenset(
 RECORDER_MODULE = re.compile(r"\blive_proof\b")
 RECORDER_WRITE = re.compile(r"\bwrite\s*=\s*True\b|_judge_and_write|\bjsonl_append\b")
 
-MESSAGE = (
-    "BLOCKED: this command writes the live-proof ledger by hand (%s).\n"
-    "\n"
-    "CI trusts agent/ledgers/live-proof.jsonl without re-running anything, so a row is written\n"
-    "only by the recorder, after the live run it describes; a hand-written row with a recomputed\n"
-    "id is the forgery this guard exists to stop.\n"
-    "\n"
-    "  record a receipt:  " + EDIT.RECORDER + "\n"
-    "  judge the ledger:  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify\n"
-)
+MESSAGE = RULE.message[1]
 
 
 _base = shellscan.run_base
@@ -113,11 +106,6 @@ _operands = shellscan.plain_operands
 def _operand_write(run, name, argv, base):
     """A description of the ledger write `run` makes through one of its own operands (tee, sed/perl -i, truncate, dd of=, rm), or ""."""
     operands = shellscan.xargs_fed_operands(run, _operands(argv))
-    if name == "tee" and any(_is_ledger(a, base) for a in operands):
-        return "tee into the ledger"
-    edit = shellscan.in_place_edit(run)
-    if edit is not None and any(_is_ledger(f, base) for f in [*edit[1], *operands]):
-        return "%s -i on the ledger" % name
     if name == "truncate" and any(_is_ledger(a, base) for a in operands):
         return "truncate of the ledger"
     if name == "dd" and any(a.startswith("of=") and _is_ledger(a[3:], base) for a in argv):
@@ -753,19 +741,27 @@ def _code_writes_ledger(code, program):
     return "code that writes the ledger" if verdict else ""
 
 
-def _offending(cmd, cwd):
-    """A short description of the first hand write to the ledger in `cmd`, or ""."""
-    root = _base(None, cwd)
-    hits = [t for t in shellscan.write_targets(cmd) if _is_ledger(t, root)]
-    if hits:
-        return "redirect into %s" % hits[0]
+# How each `shellscan.writes` reading is named in the refusal. Two readings are not taken: a pathspec of a restoring verb (this guard never judged restores of the ledger; the restore guards do), and "interpreter", whose Python targets are followed through bindings without scope, so a parameter or a match capture shadowing a module ledger name read as a ledger write (five scope controls of this suite, #b4bb4a4e and 53e8d8aa.2); `_code_writes_ledger` judges programs by scope.
+_HOW = {
+    "redirect": "redirect into %s",
+    "append": "redirect into %s",
+    "tee": "tee into %s",
+    "in-place": "in-place edit of %s",
+    "copy": "copy onto %s",
+    "option": "a command writing %s through its own output option",
+    "unread": "a command naming %s, which this guard does not read as a reader",
+}
+
+
+def _offending(cmd, cwd, writes=()):
+    """A short description of the first hand write to the ledger in `cmd`, or "". `writes` is `Event.writes()`, the walk's shared readings (`shellscan.writes`), each tested where it lands (`_is_ledger` from "/", so a glob in the absolute path is expanded); the run loop keeps this guard's own readings, which `writes` leaves to other guards or reads without scope: truncate, `dd of=`, rm (`_operand_write`, over the typed and the expanded words) and interpreter code."""
+    for path, how in writes:
+        if how in _HOW and _is_ledger(path, "/"):
+            return _HOW[how] % path
     for run in shellscan.every_run(cmd):
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
         base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
-        for target in shellscan.redirect_targets(run):
-            if _is_ledger(target, base):
-                return "redirect into %s" % target
         variants = [argv]
         if run.xargv is not None and list(run.xargv) != argv:
             variants.append(list(run.xargv))
@@ -773,19 +769,6 @@ def _offending(cmd, cwd):
             what = _operand_write(run, name, words, base)
             if what:
                 return what
-            # `copy_landings` answers absolute paths already joined to the run's own `cd`, so "/" resolves each on disk as it stands (`cd agent/ledgers && cp f live-proof.jsonl` is pinned by the tests, review 22b7a40c.1).
-            if any(
-                _is_ledger(p, "/") for p, _into in shellscan.copy_landings(run, cwd, argv=words)
-            ):
-                return "%s onto the ledger" % name
-            for word, how in shellscan.output_landings(run, words, cwd):
-                if _is_ledger(word, base):
-                    return (
-                        "%s writing %s through its own output option" % (name, word)
-                        if how == "option"
-                        else "%s naming %s, and %s is not a command this guard reads as a reader"
-                        % (name, word, name)
-                    )
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
             name = shebang
@@ -832,7 +815,7 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    what = _offending(cmd, cwd)
+    what = _offending(cmd, cwd, ev.writes())
     if not what:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % what)

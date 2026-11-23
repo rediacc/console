@@ -20,7 +20,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import pathlib
 
 from rediacc_hooks import hookio, model_invocation
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_user_only_command", "EDGE_CASES", "_C", "_FM")
 
@@ -55,33 +55,6 @@ MESSAGE = (
 )
 
 
-def _result_text(doc, path):
-    """The text the tool call would leave at `path`, or None when the call fails on its own and there is nothing to judge."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None
-    if doc.get("tool_name") == "NotebookEdit":
-        return str(tin.get("new_source") or "")
-    if "content" in tin:
-        return str(tin.get("content") or "")
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text
-
-
 def run(ev):
     doc = ev.doc
     if not isinstance(doc, dict):
@@ -104,7 +77,7 @@ def run(ev):
         return hookio.DENY
     if not model_invocation.in_scope(path.as_posix()):
         return hookio.ALLOW
-    text = _result_text(doc, path)
+    text, _why = _write_rules.result_text(doc, path)
     if text is None:
         return hookio.ALLOW
     rel, exceptions = model_invocation.exceptions_for(path)

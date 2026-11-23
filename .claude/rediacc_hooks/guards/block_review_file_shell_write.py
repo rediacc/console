@@ -25,7 +25,7 @@ import shlex
 import types
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_review_file_shell_write", "EDGE_CASES", "R")
 
@@ -55,18 +55,9 @@ _LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*
 # How deep a command handed to a shell from inside a program is followed; a program that runs a program that runs a shell is two.
 MAX_DEPTH = 4
 
-MESSAGE = (
-    "BLOCKED: this command writes a per-commit review record by hand (%s).\n"
-    "\n"
-    "Review files are written by the reviewer and closed only through the verb, which checks\n"
-    "the fix before it records it. A hand edit is how a high finding disappears without a fix.\n"
-    "\n"
-    "  close a finding:  .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> fixed <sha>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> not-a-bug <evidence path:line>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z\n"
-    "  re-review:        python3 .claude/hooks/stop/wl_review.py --run <sha> --branch <branch>\n"
-    "  record them:      .claude/hooks/stop/worklist.py --review-commit <me>\n"
-)
+# The refusal (and the edit half's path test and message) are one row of `_write_rules.ROWS`; the shell half keeps its own word test, REVIEW_WORD, since a directory word without the trailing slash is a review target here.
+RULE = _write_rules.ROWS["review_file"]
+MESSAGE = RULE.message[1]
 
 
 def _is_review(word, cwd=None, base=None):
@@ -468,24 +459,18 @@ def _globs_reviews(cmd, cwd):
     return False
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = functools.partial(_write_rules.literals, pattern=_LITERAL)
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). A literal that spells the directory is the precise readings' to judge; `shellscan.code_writes_through_disk` reads the rest."""
-    return shellscan.code_writes_through_disk(
+    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). The shared reading, `_write_rules.code_writes_through_disk`, with this guard's spelling and landing tests."""
+    return _write_rules.code_writes_through_disk(
         code,
-        lambda value: (
-            isinstance(value, str)
-            and not REVIEW_WORD.search(value)
-            and _lands_in_reviews(value, base)
-        ),
-        WRITE_CODE,
-        _LITERAL,
-        program,
+        spells=REVIEW_WORD.search,
+        lands=lambda value: _lands_in_reviews(value, base),
+        write_code=WRITE_CODE,
+        literal=_LITERAL,
+        program=program,
     )
 
 

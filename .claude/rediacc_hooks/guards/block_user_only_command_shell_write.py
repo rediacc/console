@@ -22,11 +22,12 @@ Read through `model_invocation.exceptions_for`, the one loader the edit half and
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_user_only_command.py` (the shared harness for both halves) and against its own DEFECT.
 """
 
+import functools
 import os
 import re
 
 from rediacc_hooks import hookio, model_invocation, shellscan
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_user_only_command_shell_write", "EDGE_CASES", "_C", "_K")
 
@@ -154,26 +155,22 @@ def _reaches_scope(cmd, cwd):
 _LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = functools.partial(_write_rules.literals, pattern=_LITERAL)
+
+
+def _names_scope_or_list(value):
+    return model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2). A literal that spells the directory or the list is the precise readings' to judge; `shellscan.code_writes_through_disk` reads the rest."""
-    return shellscan.code_writes_through_disk(
+    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2). The shared reading, `_write_rules.code_writes_through_disk`, with this guard's spelling and landing tests."""
+    return _write_rules.code_writes_through_disk(
         code,
-        lambda value: (
-            isinstance(value, str)
-            and not (
-                model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
-            )
-            and _in_scope_on_disk(value, base)
-        ),
-        WRITE_CODE,
-        _LITERAL,
-        program,
+        spells=_names_scope_or_list,
+        lands=lambda value: _in_scope_on_disk(value, base),
+        write_code=WRITE_CODE,
+        literal=_LITERAL,
+        program=program,
     )
 
 

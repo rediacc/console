@@ -16,8 +16,8 @@ import pathlib
 import subprocess
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _write_rules, tables
 from rediacc_hooks.guards import block_protected_files as PF
-from rediacc_hooks.guards import tables
 
 __getattr__ = tables("block_protected_files_edit", "EDGE_CASES")
 
@@ -37,31 +37,6 @@ MESSAGE = (
     "the file is allowed; to undo a change, edit the value back. If the file genuinely has to be\n"
     "emptied or restored, hand the exact command to the operator to run with the `!` prefix.\n"
 )
-
-
-def _result_text(doc, path):
-    """The text the call leaves at `path`, or None when the tool itself would fail and nothing changes (the `block_user_only_command` reading)."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None
-    if "content" in tin:
-        return str(tin.get("content") or "")
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text
 
 
 def _head_text(path):
@@ -102,7 +77,7 @@ def run(ev):
         ev.warn_raw(MESSAGE % (tool, "replace", shown))
         return hookio.DENY
     path = pathlib.Path(absolute)
-    after = _result_text(doc, path)
+    after, _why = _write_rules.result_text(doc, path)
     if after is None:
         return hookio.ALLOW
     if not after.strip():

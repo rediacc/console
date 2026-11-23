@@ -8,10 +8,7 @@ THE SHELL HALF is `block_review_file_shell_write` (pre-bash): redirections, `tee
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_review_file_edit.py` beside it and against its own DEFECT, never against a golden.
 """
 
-import re
-
-from rediacc_hooks import hookio
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_review_file_edit", "EDGE_CASES")
 
@@ -19,31 +16,14 @@ CHAIN = "pre-edit"
 OWN_SUITE = True
 ORDER = 14
 
-# The path test is the whole guard: with it gone every review file is editable by hand.
-DEFECT = ("if REVIEW_PATH.search(path) is None:", "if True:")
+# The row is the whole guard: with the row no path matches, every review file is editable by hand.
+DEFECT = ('RULE = _write_rules.ROWS["review_file"]', "RULE = _write_rules.NOTHING")
 
-REVIEW_PATH = re.compile(r"(\A|/)agent/reviews/")
-
-MESSAGE = (
-    "BLOCKED: %s of a per-commit review record (%s).\n"
-    "\n"
-    "Review files are written by the reviewer and closed only through the verb, which checks\n"
-    "the fix before it records it. A hand edit is how a high finding disappears without a fix.\n"
-    "\n"
-    "  close a finding:  .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> fixed <sha>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> not-a-bug <evidence path:line>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z\n"
-    "  re-review:        python3 .claude/hooks/stop/wl_review.py --run <sha> --branch <branch>\n"
-)
+# The path, the refusal and the sanctioned writers are one row of `_write_rules.ROWS`, shared with the shell half.
+RULE = _write_rules.ROWS["review_file"]
+REVIEW_PATH = RULE.path
+MESSAGE = RULE.message[0]
 
 
 def run(ev):
-    given = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    if not given or given == "null":
-        return hookio.ALLOW
-    # Judged where the write LANDS (review 3f53e99e.1 sweep): `agent/x/../reviews/...` and a directory symlink into the review directory were allowed as typed, and `agent/reviews/../notes/a.md` was refused. `hookio.landing` is the one reading every pre-edit guard shares (9c6817f3.8).
-    path = hookio.landing(given, ev.field("cwd") or None)[0]
-    if REVIEW_PATH.search(path) is None:
-        return hookio.ALLOW
-    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", given))
-    return hookio.DENY
+    return _write_rules.edit_run(ev, RULE)

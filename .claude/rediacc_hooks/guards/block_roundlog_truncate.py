@@ -46,8 +46,8 @@ import types
 from typing import NamedTuple
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _write_rules, tables
 from rediacc_hooks.guards import block_worktree_add as WT
-from rediacc_hooks.guards import tables
 
 __getattr__ = tables("block_roundlog_truncate", "EDGE_CASES")
 
@@ -67,17 +67,8 @@ TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&"))
 RL = r"pr-babysit-[A-Za-z0-9._-]+\.md"
 BRIEFING = r"pr-babysit-[A-Za-z0-9._-]+-briefing\.md"
 
-MESSAGE = (
-    "❌ BLOCKED: this Bash command can replace a pr-babysit round log wholesale. That is "
-    "how the round history was destroyed on 2026-08-19: a python heredoc doing "
-    "p.write_text(s[:i] + new), which replaces from the STATUS heading to END OF FILE and "
-    "takes the entire appendix with it, silently, on a file with no backup. To refresh "
-    "STATUS use the verb, which replaces ONLY that block and prints the bytes it kept "
-    "above and below:  .claude/hooks/stop/worklist.py --roundlog <branch> <<'EOF' ... EOF   "
-    "To add to the history appendix, append instead ('>>' and 'tee -a' are deliberately "
-    "allowed, since they cannot truncate). To amend the wave header, use the Edit tool -- "
-    "targeted edits are allowed for the same reason."
-)
+# The refusal is the shell slot of the round-log row in `_write_rules.ROWS`, shared with block_roundlog_write; the walk below reads round logs by basename (RL, BRIEFING), since a truncation names its target in shapes a landing test never sees.
+MESSAGE = _write_rules.ROWS["roundlog"].message[1]
 
 
 def _is_log(path):

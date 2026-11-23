@@ -26,7 +26,7 @@ import re
 import sys
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import tables
+from rediacc_hooks.guards import _write_rules, tables
 
 __getattr__ = tables("block_plan_without_depends", "EDGE_CASES", "_ABS")
 
@@ -321,31 +321,6 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     return out
 
 
-def _result_text(doc, path):
-    """(text, reason) for the document the tool call would leave, or (None, why) when it cannot be computed (the tool itself would fail, so there is nothing to judge)."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None, "no tool_input"
-    if "content" in tin:
-        return str(tin.get("content") or ""), ""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return None, "the file does not exist, so the Edit fails on its own"
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None, "an edit is not an object"
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None, "old_string is absent, so the Edit fails on its own"
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text, ""
-
-
 def run(ev):
     doc = ev.doc
     if not isinstance(doc, dict):
@@ -360,7 +335,7 @@ def run(ev):
     tree = path.parents[2]
     rel = "agent/plans/%s" % path.name
 
-    text, _why = _result_text(doc, path)
+    text, _why = _write_rules.result_text(doc, path)
     if text is None:
         return hookio.ALLOW
 
