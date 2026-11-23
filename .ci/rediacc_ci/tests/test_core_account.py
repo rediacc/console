@@ -1,8 +1,8 @@
 """`rediacc_ci.core.account` against the transcripts frozen from the retired `.ci/lib/account.sh` (`goldens/twins/lib.account.jsonl`).
 
-ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modules, and the twin is deleted. While `account.sh` existed this file drove it for real through THREE techniques, and the bash side of the first two is now the golden:
+EVERY FUNCTION OF THE TWIN STILL IN USE HAS A PYTHON PORT (`account_stripe_auto` was deleted with the Stripe integration), split across two modules, and the twin is deleted. While `account.sh` existed this file drove it for real through THREE techniques, and the bash side of the first two is now the golden:
   * `rediacc_ci.tests.harness_account` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer.
-  * `rediacc_ci.tests.harness_account_lifecycle` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the resulting tree.
+  * `rediacc_ci.tests.harness_account_lifecycle` (pair `w7p5b-account-lifecycle`): the eleven side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the resulting tree.
   * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section). Only the port side of those still runs.
 The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
@@ -213,7 +213,6 @@ LIFECYCLE_FUNCTIONS = {
     "account_spawn": "spawn_background",
     "account_cleanup": "cleanup",
     "account_docker_ghost_clean": "docker_ghost_clean",
-    "account_stripe_auto": "stripe_auto",
     "account_dev": "dev",
     "account_dev_credentials": "dev_credentials",
     "account_test": "test",
@@ -234,9 +233,9 @@ DELETED_FUNCTIONS = (
 
 
 def test_every_function_the_twin_defined_is_classified() -> None:
-    """Twenty-four, split twelve and twelve. The twin's own definition count was checked against these tables while `account.sh` existed; what is kept is that the two tables partition the twenty-four and name no function twice."""
+    """Twenty-three, split twelve and eleven. The twin's own definition count was checked against these tables while `account.sh` existed; what is kept is that the two tables partition the twenty-three and name no function twice."""
     assert not set(PORTED_FUNCTIONS) & set(LIFECYCLE_FUNCTIONS)
-    assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 24
+    assert len(PORTED_FUNCTIONS) + len(LIFECYCLE_FUNCTIONS) == 23
 
 
 def test_the_env_writers_are_gone_from_the_port() -> None:
@@ -252,7 +251,7 @@ def test_the_env_writers_are_gone_from_the_port() -> None:
 
 
 def test_every_twin_function_has_exactly_one_python_home() -> None:
-    """Each of the twenty-one is a callable in ONE of the two modules, never both.
+    """Each of the twenty-three is a callable in ONE of the two modules, never both.
 
     A function in both would be two implementations of one bash function, which is how `check_node_version` came to have two copies that needed a test to keep them agreeing.
     """
@@ -1060,34 +1059,24 @@ LIFECYCLE_FLOOR = {
     "helpers": 60,
     "reset": 60,
     "seed": 60,
-    "stripe": 60,
     "test": 20,
 }
 
 _LIFECYCLE_CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
 
-# RULE T: the lifecycle cases whose WHOLE transcript the port intentionally changed (`test_delta_l*`), per scenario. Everything else is compared byte for byte.
+# RULE T: the lifecycle cases whose WHOLE transcript the port intentionally changed (`test_delta_l*`), per scenario. Everything else is compared byte for byte. The `dev` and `e2e` goldens are NOT twin recordings any more: the Stripe deletion moved every case of those two, so both were re-recorded from the port (`rediacc_ci.tests.regolden --source port`), and their earlier deltas (`dev` state-missing-key, `e2e` install-fails and state-file) are pinned by the direct `test_delta_*` and `test_e2e_refuses_*` tests alone.
 LIFECYCLE_DELTA_CASES = {
     "credentials": {"seed-null", "seed-not-json", "hostname-fails"},
-    "dev": {"state-missing-key"},
-    # state-file: the fixture state carries a gateway port and no lockfile hash, which the port now refuses as a gateway it cannot show fresh (worklist #c9037d2f); test_e2e_refuses_* below pin the refusal and the pass.
-    "e2e": {"install-fails", "state-file"},
     "helpers": {"state-port-equals"},
     "seed": {"state-without-port", "curl-fails"},
-    "stripe": {"sync-fails"},
 }
-
-# L7: the state file's `pids=` line is comma separated now. The twin wrote spaces, so this one spelling is normalised on both sides.
-_PIDS_LINE = re.compile(r"(state pids=)([N,]+)")
 
 # RULE T, worklist #3a8d1f46: two argv shapes the twin used and the port no longer does, each rewritten from the twin's spelling onto the port's (idempotent on the port's own lines). The dev logins' JSON body reaches curl on stdin, `--data @-`, where the twin wrote `-d <payload>`; docker reads the RustFS keys from its environment, `-e NAME`, where the twin wrote `-e NAME=VALUE`. The body no longer shows in a call transcript, so `test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin` pins what reaches stdin, and `test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv` proves both rewrites still meet a twin line.
 _CURL_BODY_ARG = re.compile(r"( -H Content-Type:\\ application/json) -d \S+$")
-_DOCKER_ENV_VALUE = re.compile(r"(-e AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))=\S+")
 
 
 def _argv_delta_3a8d1f46(line: str) -> str:
-    line = _CURL_BODY_ARG.sub(lambda m: m.group(1) + " --data @-", line)
-    return _DOCKER_ENV_VALUE.sub(lambda m: m.group(1), line)
+    return _CURL_BODY_ARG.sub(lambda m: m.group(1) + " --data @-", line)
 
 
 # The port records the lockfile hashes in the state file (the stale-Vite guard); the twin has no such lines, so both spellings are dropped on both sides.
@@ -1132,8 +1121,7 @@ def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
             continue
         if _LOCK_SHA_LINE.search(line) or _ROOT_PARTNER_LINE.search(line):
             continue
-        delta = _argv_delta_3a8d1f46(line)
-        kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), delta))
+        kept.append(_argv_delta_3a8d1f46(line))
     return _build_delta_89015bba(kept)
 
 
@@ -1278,8 +1266,8 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
     for needle in (
         "obs previous-instance call#1| kill -9 4194303",
         "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:%d" % ACCOUNT_DEV_PORT,
-        "obs no-docker-with-stripe side#16| state pids=N N N",
-        "obs no-docker-with-stripe bg| npx --no-install astro dev --port 4802 --host 192.0.2.10",
+        "obs no-docker side#15| state pids=N,N",
+        "obs no-docker bg| npx --no-install astro dev --port 4802 --host 192.0.2.10",
         "obs gateway-fails rc=3",
         "obs astro-never rc=1",
         "obs state-missing-key rc=1",
@@ -1310,7 +1298,6 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
 LIFECYCLE_PLANTS = (
     ("helpers", "cleanup-kills-foreign", "os.kill(pid, signal.SIGTERM)", "pid and None"),
     ("seed", "http-500-json", 'if http_code != "200":', 'if http_code not in ("200", "500"):'),
-    ("stripe", "happy", "secret[:12]", "secret[:11]"),
     ("dev", "previous-instance", "for offset in (0, 1, 2):", "for offset in (0, 1):"),
     ("dev", "reuse-rustfs", '",".join(str(p) for p in pids)', '";".join(str(p) for p in pids)'),
 )
@@ -1581,53 +1568,6 @@ def _drive_credentials(monkeypatch, *, seed: str, hostname: tuple[int, str]) -> 
     assert account_lifecycle.dev_credentials("4800") == 0
 
 
-def test_delta_l5_a_failing_stripe_sync_says_so(monkeypatch, capsys, tmp_path) -> None:
-    """Defect L5, fixed: a failing `stripe-sync.ts` still ends the run with npx's status, but now names what failed, where the twin died with only the tail of npx's own output."""
-    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "sk_test_x")
-    monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
-    monkeypatch.setattr(account_lifecycle.shutil, "which", lambda _name: "/bin/true")
-    monkeypatch.setattr(account_lifecycle, "_capture", lambda _argv, **_kw: (1, ""))
-
-    def failing_tail(_argv, _count, **_kw):
-        raise account_lifecycle.ErrexitError(3, "npx exited 3")
-
-    monkeypatch.setattr(account_lifecycle, "_tail", failing_tail)
-    with pytest.raises(account_lifecycle.ErrexitError) as excinfo:
-        account_lifecycle.stripe_auto()
-    assert excinfo.value.code == 3
-    assert "Stripe product sync failed" in capsys.readouterr().err
-
-
-def test_stripe_listen_takes_its_key_from_the_environment(monkeypatch, tmp_path) -> None:
-    """Review a98fe53d.5, worklist #773eccc5. A real `stripe` on PATH (a recording script) is spawned the way the port spawns it: the key is in its environment as STRIPE_API_KEY and nowhere on its argv, and its webhook secret is still read back."""
-    key = "sk_test_" + "k" * 24
-    record = tmp_path / "stripe.record"
-    bindir = tmp_path / "bin"
-    bindir.mkdir()
-    fake = bindir / "stripe"
-    fake.write_text(
-        "#!/bin/sh\n"
-        'printf "argv=%%s\\n" "$*" >"%s"\n'
-        'printf "env=%%s\\n" "$STRIPE_API_KEY" >>"%s"\n'
-        "echo 'Ready! Your webhook signing secret is whsec_0123456789abcdef'\n" % (record, record),
-        encoding="utf-8",
-    )
-    fake.chmod(0o755)
-    monkeypatch.setenv("PATH", "%s:%s" % (bindir, os.environ["PATH"]))
-    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", key)
-    monkeypatch.delenv("STRIPE_API_KEY", raising=False)
-    # setenv, not delenv: stripe_auto writes os.environ["STRIPE_SANDBOX_WEBHOOK_SECRET"] itself, and a delenv of an absent name registers no undo, so the secret outlived this test and broke deploy_bench's half-set-pair check in a later module (ci:quick 2026-11-12, test_ops_units).
-    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
-    monkeypatch.setattr(account_lifecycle, "_capture", lambda _argv, **_kw: (1, ""))
-    monkeypatch.setattr(account_lifecycle, "_tail", lambda *_a, **_kw: None)
-    monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: __import__("time").sleep(0.05))
-    assert account_lifecycle.stripe_auto() == 0
-    lines = record.read_text(encoding="utf-8").splitlines()
-    assert lines[0].startswith("argv=listen --forward-to "), lines
-    assert key not in lines[0], "the stripe key reached the listener's argv"
-    assert lines[1] == "env=%s" % key, "the listener did not get the key in its environment"
-
-
 def _recording_run(calls: list[tuple[list[str], object, dict | None]]):
     """A `subprocess.run` that records argv, stdin and environment, and answers the few programs `dev_credentials` and `start_rustfs` read."""
 
@@ -1722,29 +1662,27 @@ def test_start_rustfs_makes_its_own_log_directory(monkeypatch, tmp_path, capsys)
 
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv() -> None:
-    """The control on `_argv_delta_3a8d1f46`: the frozen twin transcripts still spell both shapes the twin's way, the port's spell them the new way, and the rewrite is what makes them meet. A golden re-recorded from the port would fail the first two assertions."""
-    _, old_dev, _ = drive_lifecycle("old", "dev")
-    _, new_dev, _ = drive_lifecycle("new", "dev")
-    assert "-e AWS_SECRET_ACCESS_KEY=configadmin" in old_dev
-    assert ' -d \\{\\"email\\"' in old_dev
-    assert "-e AWS_SECRET_ACCESS_KEY=" not in new_dev
-    assert " -d \\{" not in new_dev
-    assert "application/json --data @-" in new_dev
-    twin_line = next(line for line in old_dev.splitlines() if "ensure-login" in line)
+    """The control on `_argv_delta_3a8d1f46`: the frozen twin transcript of the `credentials` scenario still spells the curl body the twin's way, the port's spells it the new way, and the rewrite is what makes them meet. A golden re-recorded from the port would fail the first assertion. The `dev` golden is port-native since the Stripe deletion, so the docker `-e NAME=VALUE` spelling has no twin witness left and its rewrite was dropped."""
+    _, old_cred, _ = drive_lifecycle("old", "credentials")
+    _, new_cred, _ = drive_lifecycle("new", "credentials")
+    assert ' -d \\{\\"email\\"' in old_cred
+    assert " -d \\{" not in new_cred
+    assert "application/json --data @-" in new_cred
+    twin_line = next(line for line in old_cred.splitlines() if "ensure-login" in line)
     assert _argv_delta_3a8d1f46(twin_line) != twin_line
 
 
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 def test_delta_89015bba_the_build_is_two_staged_calls_in_the_port() -> None:
     """The control on `_build_delta_89015bba`: the frozen twin transcript still carries the single `npm run build:packages`, the port's carries the staged shared build plus the provisioning build, and the rewrite is what makes them meet."""
-    _, old_dev, _ = drive_lifecycle("old", "dev")
-    _, new_dev, _ = drive_lifecycle("new", "dev")
+    _, old_dev, _ = drive_lifecycle("old", "test")
+    _, new_dev, _ = drive_lifecycle("new", "test")
     assert "| npm run build:packages" in old_dev
     assert "npm run build -w @rediacc/shared -- --outDir" in new_dev
     assert "npm run build -w @rediacc/provisioning" in new_dev
     assert "| npm run build:packages" not in new_dev
-    comparable_new = _lifecycle_comparable(new_dev.splitlines(), "dev")
-    comparable_old = _lifecycle_comparable(old_dev.splitlines(), "dev")
+    comparable_new = _lifecycle_comparable(new_dev.splitlines(), "test")
+    comparable_old = _lifecycle_comparable(old_dev.splitlines(), "test")
     assert "npm run build -w @rediacc/shared" not in "\n".join(comparable_new)
     assert "npm run build -w @rediacc/provisioning" not in "\n".join(comparable_new)
     # The rewrite is what makes them meet: the port's comparable lines hold the twin's single build line, at the twin's counter.
@@ -1812,15 +1750,6 @@ def test_every_lifecycle_delta_case_still_diverges(scenario: str) -> None:
 
 
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
-def test_the_pids_normaliser_is_still_needed() -> None:
-    """L7: both sides write a `state pids=` line, and they differ only in the separator."""
-    _, old_out, _ = drive_lifecycle("old", "dev")
-    _, new_out, _ = drive_lifecycle("new", "dev")
-    assert "state pids=N N" in old_out
-    assert "state pids=N,N" in new_out
-    assert "state pids=N,N" not in old_out
-
-
 def test_the_pinned_ports_sit_below_the_default_ephemeral_range():
     """A pinned port inside 32768-60999 can be held by any outbound connection's source port (45331, 2026-10-05)."""
     low, high = harness_account.PINNED_SPAN

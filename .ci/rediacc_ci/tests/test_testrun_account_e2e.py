@@ -95,7 +95,6 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
     (account / "package.json").write_text("{}")
     for name, body in {
         "01-auth/a.spec.ts": "x",
-        "10-stripe/s.spec.ts": "y",
         "20-webauthn/w.spec.ts": "@webauthn",
     }.items():
         target = account / "e2e" / "tests" / name
@@ -324,39 +323,6 @@ def test_shard_files_are_appended(tmp_path: pathlib.Path, reap: list[int | None]
     assert argv[-1] == "01-auth/a.spec.ts"
     assert old.out.code == new.out.code == 0
     assert norm_calls(old) == norm_calls(new)
-
-
-def test_stripe_listen_is_started_for_the_stripe_leg(
-    tmp_path: pathlib.Path, reap: list[int | None]
-) -> None:
-    env = {
-        "STRIPE_SANDBOX_SECRET_KEY": "sk_test_x",
-        "FAKE_OUT_STRIPE": "Ready! signing secret is whsec_fake123",
-    }
-    old = drive(tmp_path, "bash", [], env, tools=("npx", "npm", "stripe"))
-    new = drive(tmp_path, "py", [], env, tools=("npx", "npm", "stripe"))
-    reap.extend([old.orphan, new.orphan])
-    assert old.out.code == new.out.code == 0, (old.out.err, new.out.err)
-    stripe_calls = [c for c in norm_calls(old) if c[0] == "stripe"]
-    assert stripe_calls
-    assert any(c[1][:2] == ["tsx", "scripts/stripe-sync.ts"] for c in norm_calls(old)), (
-        "the sandbox sync ran before listening"
-    )
-    # Deliberate delta: the twin passed the key as `--api-key <key>`, visible to every user through `ps`; the port hands it to the Stripe CLI in STRIPE_API_KEY instead. Every other call is unchanged.
-    twin_calls = norm_calls(old)
-    port_calls = norm_calls(new)
-    twin_stripe = [c for c in twin_calls if c[0] == "stripe"]
-    assert all("--api-key" in c[1] for c in twin_stripe), (
-        "control: the twin really passed --api-key"
-    )
-    expected = [
-        (c[0], [a for a in c[1] if a not in ("--api-key", "sk_test_x")], *c[2:])
-        if c[0] == "stripe"
-        else c
-        for c in twin_calls
-    ]
-    assert port_calls == expected
-    assert not any("sk_test_x" in a for c in port_calls for a in c[1]), "the key reached an argv"
 
 
 def test_test_failure_is_exit_one(tmp_path: pathlib.Path, reap: list[int | None]) -> None:
@@ -736,6 +702,6 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
     run.e2e_port = "5173"
     run.account_dir = pathlib.Path()
     with pytest.raises(StopHereError):
-        run.start_backend("")
+        run.start_backend()
     assert seen["TEST_MODE"] == "true"
     assert seen["TERMS_GATE"] == "false"

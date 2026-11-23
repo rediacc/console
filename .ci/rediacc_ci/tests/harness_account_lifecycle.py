@@ -18,9 +18,9 @@ WHAT A CASE PRINTS
     obs <case> foreign alive=<0|1>  the same for a process the DRIVER owns, so the side cannot `wait` it away
     obs <case> tree| <entry>        every path under the sandbox, with a content hash for files
 
-THE BACKGROUND CALLS ARE SORTED, AND THAT IS THE ONE PLACE ORDER IS GIVEN UP. `account_dev` starts Astro and Vite with `&` and `account_stripe_auto` starts `stripe listen` the same way, and each of those races the foreground's own probes into one transcript. A background program (`stripe` always, `npx` in the `dev` cases) is therefore stubbed UNLOGGED and records its argv into a separate file, printed sorted, so the comparison
+THE BACKGROUND CALLS ARE SORTED, AND THAT IS THE ONE PLACE ORDER IS GIVEN UP. `account_dev` starts Astro and Vite with `&`, and each of those races the foreground's own probes into one transcript. A background program (`npx` in the `dev` cases) is therefore stubbed UNLOGGED and records its argv into a separate file, printed sorted, so the comparison
 still sees every argument of every call and does not see which process the scheduler ran first.
-TWO HANDSHAKES REMOVE THE OTHER RACES rather than sorting them away. The `stripe listen` stub waits for the foreground's first `sleep 1` before it prints its `whsec_` line, so exactly one sleep is ever logged on the happy path; and the dev gateway stub waits until the forked `account_dev_credentials` job has made its LAST logged call (`hostname -I`), so the credentials banner lands before the gateway returns.
+ONE HANDSHAKE REMOVES THE OTHER RACE rather than sorting it away: the dev gateway stub waits until the forked `account_dev_credentials` job has made its LAST logged call (`hostname -I`), so the credentials banner lands before the gateway returns.
 
 STUBBED AND LOGGED: `docker`, `curl`, `npm`, `npx` (outside `dev`), `lsof`, `pgrep`, `kill` (the PROGRAM, which the twin reaches through `xargs`), `sleep`, `ss` (how `rediacc_ci.core.ports` probes, on both sides), `openssl`, `hostname`, and the `build-packages.sh` path stub. STUBBED, NOT LOGGED: `node` (`-v` and the cpu-features buildcheck answered, everything else passed to the real node), `date` (`+%s` frozen), and in the `reset` cases `python3`, a tripwire whose two
 `bws_env` rows (`store-from-env`, `cache-to`) would record themselves on the side channel with the LENGTH of each key they were handed, never a value; reset() calls neither since agent/plans/PLAN-production-key-only.md K3. Everything else is the real program.
@@ -29,13 +29,12 @@ STUBBED AND LOGGED: `docker`, `curl`, `npm`, `npx` (outside `dev`), `lsof`, `pgr
 THE SCENARIOS
 -----------------------------------------------------------------------------
   helpers      `account_load_defaults` (the shell wins, an absent file, an unreadable one), `account_state_gateway_port` over five state-file shapes, `account_docker_ghost_clean` at every early return and with ids to remove, and `account_cleanup` propagating an exit code and killing a REAL child it was handed.
-  stripe       `account_stripe_auto` with no key, no CLI, the happy path, stale listeners to kill, a thirty-sleep timeout, and a failing product sync (twin behaviour 5).
   credentials  `account_dev_credentials` never healthy, healthy late, an existing store, no store, a failed provisioning call, the silent deaths on an unreadable seed answer (twin behaviour 3) and a failing `hostname -I` (4), a JSON array answer, and a failing `openssl`.
   seed         `account_seed_demo`'s refusals, the four ways it finds a port, a non-200 answer with and without a JSON body, the dead "Could not reach" branch (twin behaviour 1), and no `jq`.
   reset        `account_reset`, DB-only since agent/plans/PLAN-production-key-only.md K3: whole, no database files, and an old node it no longer checks. No case reaches Bitwarden.
   test         `account_test` passing arguments through, vitest failing, and no node.
-  e2e          `account_test_e2e` finding its port three ways and not at all, a gateway that is not up, the webhook and sandbox switches, a failing install, and a failing Playwright run.
-  dev          `account_dev` end to end: reusing a live RustFS, stopping a previous instance, no Docker with Stripe on, starting RustFS, RustFS never answering, Astro never starting, a pinned port that is busy, stale installs, a failing gateway, and a state file missing its key.
+  e2e          `account_test_e2e` finding its port three ways and not at all, a gateway that is not up, a failing install, and a failing Playwright run.
+  dev          `account_dev` end to end: reusing a live RustFS, stopping a previous instance, no Docker, starting RustFS, RustFS never answering, Astro never starting, a pinned port that is busy, stale installs, a failing gateway, and a state file missing its key.
 """
 
 from __future__ import annotations
@@ -57,7 +56,6 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.core import account_lifecycle as lifecycle
 from rediacc_ci.core.stubfarm import Farm
-from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 if TYPE_CHECKING:  # annotation-only import
     from collections.abc import Mapping
@@ -80,14 +78,13 @@ LOGGED = (
     "openssl",
     "hostname",
 )
-BACKGROUND = ("stripe",)
+BACKGROUND: tuple[str, ...] = ()
 
 FN = {
     "load-defaults": "account_load_defaults",
     "state-gateway-port": "account_state_gateway_port",
     "cleanup": "account_cleanup",
     "docker-ghost-clean": "account_docker_ghost_clean",
-    "stripe-auto": "account_stripe_auto",
     "dev-credentials": "account_dev_credentials",
     "seed-demo": "account_seed_demo",
     "reset": "account_reset",
@@ -151,17 +148,8 @@ WAIT_FOR_JOB = (
     'for i in $(seq 200); do grep -q "^hostname" "$STUB_LOG" && break; "$SHADOW_REAL_SLEEP" 0.05; done; '
     '"$SHADOW_REAL_SLEEP" 0.3; '
 )
-STRIPE_READY = (
-    'for i in $(seq 200); do [ -f "$STUB_ROOT/go" ] && break; "$SHADOW_REAL_SLEEP" 0.05; done; '
-    "printf 'Ready! Your webhook signing secret is whsec_shadowsecret0123456789 (^C to quit)\\n'; "
-    ': >"$STUB_ROOT/written"'
-)
 # A job whose program leaves a long-lived CHILD behind it and waits: the pid file names the child, so `child_alive()` reports whether the cleanup reached past the pid it tracks.
 TREE_JOB = '"$SHADOW_REAL_SLEEP" 30 & printf "%s\\n" "$!" >"$STUB_ROOT/child.pid.tmp"; mv "$STUB_ROOT/child.pid.tmp" "$STUB_ROOT/child.pid"; wait'
-SLEEP_HANDSHAKE = (
-    ': >"$STUB_ROOT/go"; for i in $(seq 200); do [ -f "$STUB_ROOT/written" ] && break; '
-    '"$SHADOW_REAL_SLEEP" 0.05; done; "$SHADOW_REAL_SLEEP" 0.1'
-)
 NPM_ROOT_INSTALL = (
     "mkdir -p node_modules/.bin node_modules/@rediacc node_modules/cpu-features; "
     "printf '#!/bin/sh\\n' > node_modules/.bin/tsx; chmod +x node_modules/.bin/tsx; "
@@ -188,15 +176,11 @@ GATEWAY_ENV = (
     "PORT",
     "DATABASE_PATH",
     "CI_MODE",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET",
 )
 E2E_ENV = (
     "E2E_PORT",
     "E2E_BASE_URL",
     "ROOT_EMAIL",
-    "E2E_WEBHOOK_SECRET",
-    "STRIPE_SANDBOX_SECRET_KEY",
-    "STRIPE_E2E_WEBHOOK_SECRET",
 )
 KEY_NAMES = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
@@ -245,7 +229,6 @@ def gateway(rc: int = 0) -> dict:
 
 DEV_ENV = {"REDIACC_BWS_PROFILES": "account-dev"}
 E2E_ENV_BASE = {"REDIACC_BWS_PROFILES": "account-e2e"}
-STRIPE_ENV = {"STRIPE_SANDBOX_SECRET_KEY": "sk_test_shadow", "GATEWAY_PORT": str(ACCOUNT_DEV_PORT)}
 
 
 # ------------------------------------------------------------------ fixtures, by name, built identically for both sides
@@ -264,6 +247,7 @@ def _touch_dir(path: pathlib.Path, mtime: int) -> None:
     os.utime(path, (mtime, mtime))
 
 
+# FROZEN BYTES: every lifecycle golden lists the sandbox tree with a content hash of this file, so a change here moves the hash in every scenario. The last line is a leftover constant the port no longer reads.
 DEFAULTS = (
     "# shadow fixture: the committed dev constants\n"
     "PORT=3000\n"
@@ -406,69 +390,6 @@ SCENARIOS: dict[str, list[Case]] = {
             setup=("state_port",),
             pre="tree",
             rows=[row("npx", "tree-job", sh=TREE_JOB)],
-        ),
-    ],
-    "stripe": [
-        Case("no-key", "stripe-auto", env={"GATEWAY_PORT": str(ACCOUNT_DEV_PORT)}, pids=True),
-        Case(
-            "no-cli",
-            "stripe-auto",
-            env=STRIPE_ENV,
-            unstub=("stripe",),
-            hidden=("stripe",),
-            pids=True,
-        ),
-        Case(
-            "happy",
-            "stripe-auto",
-            env=STRIPE_ENV,
-            rows=[
-                row(
-                    "npx",
-                    "--no-install tsx scripts/stripe-sync.ts",
-                    out="".join("sync %d\n" % i for i in range(7)),
-                ),
-                row("stripe", "listen *", sh=STRIPE_READY),
-                row("sleep", "1", sh=SLEEP_HANDSHAKE),
-            ],
-            show=("STRIPE_SANDBOX_WEBHOOK_SECRET",),
-            pids=True,
-        ),
-        Case(
-            "stale-listeners",
-            "stripe-auto",
-            env=STRIPE_ENV,
-            rows=[
-                row("pgrep", "*", out="111\n222\n"),
-                row("sleep", "1", times=1),
-                row("stripe", "listen *", sh=STRIPE_READY),
-                row("sleep", "1", sh=SLEEP_HANDSHAKE),
-            ],
-            show=("STRIPE_SANDBOX_WEBHOOK_SECRET",),
-            pids=True,
-        ),
-        Case(
-            "no-secret",
-            "stripe-auto",
-            env=STRIPE_ENV,
-            rows=[row("stripe", "listen *", out="Getting ready...\n")],
-            show=("STRIPE_SANDBOX_WEBHOOK_SECRET",),
-            pids=True,
-        ),
-        Case(
-            "sync-fails",
-            "stripe-auto",
-            env=STRIPE_ENV,
-            rows=[
-                row(
-                    "npx",
-                    "--no-install tsx scripts/stripe-sync.ts",
-                    rc=3,
-                    out="a\nb\n",
-                    err="sync broke\n",
-                )
-            ],
-            pids=True,
         ),
     ],
     "credentials": [
@@ -636,17 +557,6 @@ SCENARIOS: dict[str, list[Case]] = {
         Case("no-port", "test-e2e", env=E2E_ENV_BASE),
         Case("not-running", "test-e2e", env={**E2E_ENV_BASE, "GATEWAY_PORT": "4844"}),
         Case(
-            "sandbox-on",
-            "test-e2e",
-            env={
-                **E2E_ENV_BASE,
-                "GATEWAY_PORT": "4855",
-                "STRIPE_SANDBOX_SECRET_KEY": "sk_test_shadow",
-                "STRIPE_E2E_WEBHOOK_SECRET": "whsec_from_shell",
-            },
-            rows=[*busy(4855), row("npx", "--no-install playwright *", sh=envdump(*E2E_ENV))],
-        ),
-        Case(
             "install-fails",
             "test-e2e",
             env={**E2E_ENV_BASE, "GATEWAY_PORT": "4811"},
@@ -668,14 +578,14 @@ SCENARIOS: dict[str, list[Case]] = {
             "reuse-rustfs",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
         ),
         Case(
             "previous-instance",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             setup=("state_previous",),
             rows=[
                 row("lsof", "-ti:4700", out="4194303\n"),
@@ -691,7 +601,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "previous-owned",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             pre="state-owned",
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
         ),
@@ -699,7 +609,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "previous-foreign",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             pre="state-foreign",
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
         ),
@@ -707,15 +617,15 @@ SCENARIOS: dict[str, list[Case]] = {
             "previous-unstamped",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             pre="state-unstamped",
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
         ),
         Case(
-            "no-docker-with-stripe",
+            "no-docker",
             "dev",
-            env={**DEV_ENV, **STRIPE_ENV, "REDIACC_DEV_BIND": "192.0.2.10"},
-            background=("stripe", "npx"),
+            env={**DEV_ENV, "REDIACC_DEV_BIND": "192.0.2.10"},
+            background=("npx",),
             unstub=("docker",),
             hidden=("docker",),
             rows=[
@@ -723,15 +633,13 @@ SCENARIOS: dict[str, list[Case]] = {
                 *DEV_JOB,
                 gateway(),
                 *HEX,
-                row("stripe", "listen *", sh=STRIPE_READY),
-                row("sleep", "1", sh=SLEEP_HANDSHAKE),
             ],
         ),
         Case(
             "start-rustfs",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[
                 row("curl", RUSTFS_PROBE, out="000", rc=7, times=1),
                 ALIVE_RUSTFS,
@@ -748,7 +656,7 @@ SCENARIOS: dict[str, list[Case]] = {
             "rustfs-never",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[
                 row("curl", RUSTFS_PROBE, out="000", rc=7),
                 row("docker", "compose up *", rc=1, err="ghost container\n"),
@@ -762,21 +670,21 @@ SCENARIOS: dict[str, list[Case]] = {
             "astro-never",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[ALIVE_RUSTFS],
         ),
         Case(
             "pinned-busy",
             "dev",
             env={**DEV_ENV, "REDIACC_DEV_PORT_BASE": "4900"},
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[*busy(4901)],
         ),
         Case(
             "stale-installs",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             setup=("stale_installs",),
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(), *HEX],
         ),
@@ -784,14 +692,14 @@ SCENARIOS: dict[str, list[Case]] = {
             "gateway-fails",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             rows=[ALIVE_RUSTFS, *DEV_PORTS, *DEV_JOB, gateway(rc=3), *HEX],
         ),
         Case(
             "state-missing-key",
             "dev",
             env=DEV_ENV,
-            background=("stripe", "npx"),
+            background=("npx",),
             setup=("state_no_port",),
         ),
     ],
@@ -965,7 +873,6 @@ INNER = {
     "state-gateway-port": _inner_state_port,
     "cleanup": _inner_cleanup,
     "docker-ghost-clean": lambda lc, _: lc.docker_ghost_clean(),
-    "stripe-auto": lambda lc, _: lc.stripe_auto(),
     "dev-credentials": lambda lc, a: lc.dev_credentials(a[0]),
     "seed-demo": lambda lc, a: lc.seed_demo(a),
     "reset": lambda lc, _: lc.reset(),

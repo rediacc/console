@@ -1,14 +1,14 @@
 """The SIDE-EFFECTING half of `.ci/lib/account.sh`, ported function for function.
 
-PORTED FROM `.ci/lib/account.sh`, the twelve functions `rediacc_ci.core.account` left out because each one starts, stops or talks to real infrastructure: `account_load_defaults`, `account_state_gateway_port`, `account_spawn` (as `spawn_background()`), `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev`, `account_dev_credentials`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo`.
-With `rediacc_ci.core.account` this covers all twenty-two of the twin's functions. The twin, `.ci/lib/account.sh`, is DELETED (PLAN-retire-bash-oracles B3); its lifecycle transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl`.
+PORTED FROM `.ci/lib/account.sh`, the eleven functions `rediacc_ci.core.account` left out because each one starts, stops or talks to real infrastructure: `account_load_defaults`, `account_state_gateway_port`, `account_spawn` (as `spawn_background()`), `account_cleanup`, `account_docker_ghost_clean`, `account_dev`, `account_dev_credentials`, `account_test`, `account_test_e2e`, `account_reset` and `account_seed_demo`.
+With `rediacc_ci.core.account` this covers every function of the twin still in use. The twin, `.ci/lib/account.sh`, is DELETED (PLAN-retire-bash-oracles B3); its lifecycle transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl`.
 
 A SIBLING MODULE AND NOT MORE OF `account.py`, because that file is the deterministic half with its own K=5 ledger (`w7p5b-account`) and its own driver; this half is proved a different way, by `tests/harness_account_lifecycle.py` under the pair `w7p5b-account-lifecycle`.
 
 --------------------------------------------------------------------------
 HOW IT IS PROVED: A STUB-FARM TRANSCRIPT, NOT A LIVE STACK
 --------------------------------------------------------------------------
-`core/stubfarm.py` puts a directory of scripted programs first on PATH for BOTH sides (`docker`, `curl`, `npx`, `npm`, `stripe`, `lsof`, `pgrep`, `kill`, `sleep`, `ss`, `openssl`, `hostname`, and `python3` as a tripwire in the reset cases, which call no Bitwarden verb since agent/plans/PLAN-production-key-only.md K3), each appending its argv to one transcript. The driver compares rc, both streams, the ordered transcript and the files left behind, so this port has to make the same calls with the same arguments in the same order as the twin.
+`core/stubfarm.py` puts a directory of scripted programs first on PATH for BOTH sides (`docker`, `curl`, `npx`, `npm`, `lsof`, `pgrep`, `kill`, `sleep`, `ss`, `openssl`, `hostname`, and `python3` as a tripwire in the reset cases, which call no Bitwarden verb since agent/plans/PLAN-production-key-only.md K3), each appending its argv to one transcript. The driver compares rc, both streams, the ordered transcript and the files left behind, so this port has to make the same calls with the same arguments in the same order as the twin.
 That is why it calls PROGRAMS where a Python programmer would reach for a library: `sleep`, `kill` (where the twin reaches it through `xargs`), `date +%s` and `jq` are the twin's calls, and a scenario answers them through the stubs. `kill` the BUILTIN (a bare `kill "$pid"`) has no program behind it, so those stay `os.kill`.
 
 THE SHELL ENVIRONMENT IS `os.environ`. Every `export` in the twin is an assignment to it, and every child inherits it, which is what a bash child inherits. `ACCOUNT_PIDS` is `PIDS` below.
@@ -19,14 +19,14 @@ ERREXIT
 Every sourcer of the twin arms `set -euo pipefail`, so a bare command that fails ENDS THE PROCESS with its status rather than returning. `ErrexitError` is that: it carries the status, `main()` exits with it, and `dev()`'s cleanup maps it to the exit code its EXIT trap would have seen. `rediacc_ci.core.local_common.LocalCommonError` and `rediacc_ci.core.account.AccountError` are the same thing raised by the functions this module borrows, and `code_of()` reads all three.
 
 --------------------------------------------------------------------------
-RULE T: SIX TWIN DEFECTS FIXED, ONE KEPT (PLAN-retire-bash-oracles, task B4)
+RULE T: FIVE TWIN DEFECTS FIXED, ONE KEPT (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
 Each is an INTENTIONAL DELTA from `.ci/lib/account.sh`, which still has the defect. `test_core_account.py` pins the port's behaviour in its `test_delta_l*` cases and excludes exactly those cases from the live differential.
   L1. `account_seed_demo`'s "Could not reach the account gateway" branch was DEAD CODE (a bare `body=$(curl ...)` died under errexit first). It is reachable now: the message, and exit 1.
   L2. `account_seed_demo`, `account_dev` and `account_stop` read the state file with a bare `grep | cut`, so a state file missing the key was a SILENT exit 1. A missing key is an empty value.
   L3. `account_dev_credentials` died SILENTLY when the seed-config-store answer was not JSON node can read (a `read` at end of file inside `{ ... } < <(node ...)`), and the login banner was never printed. The banner is printed with the recovery code unavailable.
   L4. `account_dev_credentials` died silently when `hostname -I` failed (macOS). The Network rows are left out and the banner is printed.
-  L5. `account_stripe_auto` died with npx's status and no explanation of its own. It still ends with that status, and now says "Stripe product sync failed".
+  L5. (retired with `account_stripe_auto`, which was deleted together with the Stripe integration.)
   L6. A failing `npm install` showed only `tail -1` of its log. A non-zero status keeps up to `FAILURE_TAIL` lines; a success keeps the twin's count.
   L7. `account_dev` wrote `pids=` SPACE-separated, because `${ACCOUNT_PIDS[*]// /,}` substitutes per element. `pids_line()` writes the commas it was written for; both readers split on commas and whitespace.
 
@@ -37,7 +37,6 @@ WHAT THE DIFFERENTIAL DOES NOT REACH, SAID HERE RATHER THAN LEFT TO A READER
   * The account-dev and account-e2e `bws_exec()` re-execution. Every scenario runs with the profile already hydrated (`REDIACC_BWS_PROFILES`), because the other branch replaces the process with a live Bitwarden read; `rediacc_ci.core.account` records how that function is real-run verified instead.
   * A NON-NUMERIC port in bash arithmetic (`$((old_gateway + offset))`) or in `is-port-in-use`: the twin evaluates the first as a variable name and prints a Python traceback for the second. Both raise `ErrexitError(1)` here, silently; no scenario feeds either.
   * The dev servers' OWN descendants beyond one level. `cleanup()` signals each job's whole process group, which the `cleanup-kills-tree` case proves for a job with a grandchild; a server that moves a child into a new session of its own would still escape both sides alike.
-  * `account_stripe_auto` with `GATEWAY_PORT` unset, which the twin survives only by accident (the unbound variable kills two subshells, not the function). `stripe_auto()` reads it as empty. Every real caller sets it.
 """
 
 from __future__ import annotations
@@ -53,7 +52,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 import threading
 
 from rediacc_ci import log
@@ -84,9 +82,6 @@ RUSTFS_GHOST_HINT = (
     "docker run -d --name rediacc-config-rustfs-dev -p 9100:9000 -e RUSTFS_VOLUMES=/data -e RUSTFS_ADDRESS=0.0.0.0:9000 "
     "-e RUSTFS_ACCESS_KEY=configadmin -e RUSTFS_SECRET_KEY=configadmin rustfs/rustfs:latest"
 )
-
-# `grep -oE 'whsec_[^[:space:]]+'`. `[:space:]` in the C locale is exactly these six bytes, which Python's `\s` is not.
-WEBHOOK_SECRET_RE = re.compile(r"whsec_[^ \t\n\v\f\r]+")
 
 
 class ErrexitError(Exception):
@@ -368,85 +363,6 @@ def docker_ghost_clean() -> int:
     )
     if ids:
         _run(["docker", "rm", "-f", *ids.split()], quiet_out=True, quiet_err=True)
-    return 0
-
-
-# --------------------------------------------------------------------------- stripe ---------------------------------------------------------------------------
-
-
-def stripe_auto() -> int:
-    """`account_stripe_auto`, `.ci/lib/account.sh:257-319`. Always 0 unless errexit ends it.
-
-    Starts `stripe listen` in the background, remembered in `PIDS` like every other job `account_dev` starts, and waits up to thirty one-second `sleep`s for its `whsec_` line; the secret is exported as `STRIPE_SANDBOX_WEBHOOK_SECRET`.
-    """
-    key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY", "")
-    if not key:
-        return 0
-    if shutil.which("stripe") is None:
-        log.warn("STRIPE_SANDBOX_SECRET_KEY is set but stripe CLI not found")
-        log.info("Install from: https://docs.stripe.com/stripe-cli")
-        log.info("Continuing without webhook forwarding")
-        return 0
-
-    log.step("Setting up Stripe sandbox...")
-    gateway_port = os.environ.get("GATEWAY_PORT", "")
-    _, stale = _capture(
-        ["pgrep", "-f", "stripe listen.*--forward-to http://localhost:%s/" % gateway_port],
-        quiet_err=True,
-    )
-    if stale:
-        log.info("Cleaning up stale stripe listen (PIDs: %s)" % stale)
-        _run(["kill", *stale.split()], quiet_err=True)
-        _sleep(1)
-
-    log.info("Syncing Stripe products/prices...")
-    try:
-        _tail(
-            ["npx", "--no-install", "tsx", "scripts/stripe-sync.ts"],
-            5,
-            cwd=account.account_dir(),
-            extra_env={"STRIPE_SECRET_KEY": key},
-        )
-    except ErrexitError as exc:
-        # Rule T fix L5: the twin ended here with npx's status and only the tail of npx's own output to explain it.
-        log.error("Stripe product sync failed (exit %d): scripts/stripe-sync.ts" % exc.code)
-        raise
-
-    fd, stripe_log = tempfile.mkstemp()
-    os.close(fd)
-    spawn_background(
-        [
-            "stripe",
-            "listen",
-            "--forward-to",
-            "http://localhost:%s/account/api/v1/webhooks/stripe" % gateway_port,
-            # Stripe CLI 1.52 refuses to start without an event selector ("must specify events to forward using --events, --all-snapshot, or --all-thin"); --all-snapshot is the forwarding older CLIs did by default.
-            "--all-snapshot",
-        ],
-        log_path=stripe_log,
-        # STRIPE_API_KEY, not `--api-key`: the listener lives for the whole session, and its argv is readable through `ps` by every user for all of it (worklist #773eccc5; `testrun/account_e2e.py` made the same move).
-        extra_env={"STRIPE_API_KEY": key},
-    )
-
-    secret = ""
-    elapsed = 0
-    while elapsed < 30:
-        with contextlib.suppress(OSError):
-            text = pathlib.Path(stripe_log).read_text(encoding="utf-8", errors="surrogateescape")
-            secret = "\n".join(WEBHOOK_SECRET_RE.findall(text))
-        if secret:
-            break
-        _sleep(1)
-        elapsed += 1
-    with contextlib.suppress(FileNotFoundError):
-        os.remove(stripe_log)
-
-    if not secret:
-        log.warn("stripe listen did not output webhook secret within 30s")
-        log.info("Stripe features may not work -- check stripe CLI auth")
-        return 0
-    os.environ["STRIPE_SANDBOX_WEBHOOK_SECRET"] = secret
-    log.info("Stripe webhook forwarding active (secret: %s...)" % secret[:12])
     return 0
 
 
@@ -902,8 +818,6 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     if not account.wait_port(vite_port, "Vite", 60, vite_pid, sleep=_sleep):
         raise ErrexitError(1, "Vite did not start")
 
-    stripe_auto()
-
     _, started = _capture(["date", "+%s"])
     lines = [
         "gateway_port=%d" % gateway_port,
@@ -1062,17 +976,6 @@ def test_e2e(args: list[str]) -> int:
     os.environ["E2E_PORT"] = gateway_port
     os.environ["E2E_BASE_URL"] = "http://localhost:%s/account/" % gateway_port
     os.environ["ROOT_EMAIL"] = os.environ.get("ROOT_EMAIL", "")
-
-    webhook = os.environ.get("STRIPE_E2E_WEBHOOK_SECRET", "")
-    if webhook:
-        os.environ["E2E_WEBHOOK_SECRET"] = webhook
-        log.info("Webhook simulation: enabled (STRIPE_E2E_WEBHOOK_SECRET)")
-    else:
-        log.warn("Webhook simulation: disabled (STRIPE_E2E_WEBHOOK_SECRET not set)")
-    if os.environ.get("STRIPE_SANDBOX_SECRET_KEY", ""):
-        log.info("Stripe sandbox E2E: enabled")
-    else:
-        log.warn("Stripe sandbox E2E: disabled (STRIPE_SANDBOX_SECRET_KEY not set)")
 
     local_common.ensure_packages_built()
 

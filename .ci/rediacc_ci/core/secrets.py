@@ -102,7 +102,7 @@ _PUBLIC = frozenset({"PUBLIC", "PUB"})
 def looks_secret(name: str) -> bool:
     """Whether a VARIABLE NAME denotes something that must not be printed.
 
-    A HEURISTIC OVER NAMES, and never a substitute for `redact`. It cannot see that `STRIPE_E2E_WEBHOOK_SECRET` is a fixture (`.ci/lib/account.sh:290` says so in a comment this function cannot read) and it cannot see that a variable called `NOTES` is holding a pasted password. It exists to decide which of a mapping's values to feed to `redact`, where a false positive costs a masked
+    A HEURISTIC OVER NAMES, and never a substitute for `redact`. It cannot see that a variable such as `E2E_FIXTURE_SECRET` holds a committed fixture (only a comment beside its definition says so, which this function cannot read) and it cannot see that a variable called `NOTES` is holding a pasted password. It exists to decide which of a mapping's values to feed to `redact`, where a false positive costs a masked
     port number and a false negative costs a credential -- so it leans conservative, on purpose.
     """
     segments = set(name.upper().split("_"))

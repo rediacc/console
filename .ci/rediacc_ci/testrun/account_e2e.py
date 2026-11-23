@@ -1,15 +1,14 @@
-"""Port of `.ci/scripts/test/run-account-e2e.sh`: start a backend API (SQLite), optionally `stripe listen`, install Playwright browsers, run the account portal suite, prove the `@webauthn` tests ran, and clean up.
+"""Port of `.ci/scripts/test/run-account-e2e.sh`: start a backend API (SQLite), install Playwright browsers, run the account portal suite, prove the `@webauthn` tests ran, and clean up.
 
 Phases and every environment variable handed to the backend are the twin's. The paths come from `paths.repo_root()`, so a fixture tree selected with `$REDIACC_CI_ROOT` exercises the whole script without touching `private/account`.
 
 Deliberate differences from the twin (Rule T), each with a test that fails on the bash behaviour:
 
   1. UNKNOWN AND MALFORMED ARGUMENTS. The twin's `parse_args` ignored anything it did not know (`--proejcts firefox` ran chromium) and read `--skip-setup <word>` as the value `<word>`, which is not `true`, so setup ran. Unknown flags are refused (exit 2) and `--skip-setup` is a plain switch.
-  2. REQUIRED SECRETS ARE CHECKED FIRST. `${ACCOUNT_ED25519_PRIVATE_KEY:?}` and its siblings were expanded only when the backend's environment array was built, AFTER `stripe listen` had been started and the sandbox synced. A missing secret is refused before anything starts. A half-supplied X25519 pair is refused too; the twin died on an unbound variable.
-  3. THE BACKEND'S WHOLE PROCESS TREE IS STOPPED. `npx` forks, so `kill $BACKEND_PID` ended the wrapper and left the tsx server holding the port. The backend (and `stripe listen`) lead their own sessions and the group is signalled.
+  2. REQUIRED SECRETS ARE CHECKED FIRST. `${ACCOUNT_ED25519_PRIVATE_KEY:?}` and its siblings were expanded only when the backend's environment array was built, AFTER the twin's `stripe listen` (a step since removed with the Stripe integration) had been started. A missing secret is refused before anything starts. A half-supplied X25519 pair is refused too; the twin died on an unbound variable.
+  3. THE BACKEND'S WHOLE PROCESS TREE IS STOPPED. `npx` forks, so `kill $BACKEND_PID` ended the wrapper and left the tsx server holding the port. The backend leads its own session and the group is signalled.
   4. A MISSING `private/account` IS A FAILURE UNDER CI. The twin logged a warning and exited 0, so a job that forgot `submodules: true` passed having run no test. Outside CI it still skips with exit 0.
-  5. `stripe listen` PRINTING SEVERAL `whsec_` TOKENS NO LONGER CORRUPTS THE SECRET: the first is taken (the twin kept a multi-line string).
-  6. THE REAL-PROVIDER SPEC IS PROVEN TO HAVE RUN. The twin predates it. A spec file tagged `@real-provider` drives a real passkey provider (the pinned Bitwarden extension against a throwaway Vaultwarden vault), and a leg that holds one must report at least one such chromium test as `expected` and none skipped or failed. Whether a leg holds one is read from the files themselves, so a tree without the spec behaves exactly as the twin did.
+  5. THE REAL-PROVIDER SPEC IS PROVEN TO HAVE RUN. The twin predates it. A spec file tagged `@real-provider` drives a real passkey provider (the pinned Bitwarden extension against a throwaway Vaultwarden vault), and a leg that holds one must report at least one such chromium test as `expected` and none skipped or failed. Whether a leg holds one is read from the files themselves, so a tree without the spec behaves exactly as the twin did.
 """
 
 import contextlib
@@ -18,11 +17,9 @@ import json
 import os
 import pathlib
 import re
-import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 import typing
 import urllib.error
@@ -36,8 +33,6 @@ from rediacc_ci.testrun import shard
 MIN_WEBAUTHN_TESTS = 20
 REAL_PROVIDER_TAG = "@real-provider"
 MIN_REAL_PROVIDER_TESTS = 1
-LISTEN_TIMEOUT = 90
-DEFAULT_WEBHOOK_FIXTURE = "whsec_e2e_test_webhook_secret_for_simulation_only"
 USAGE = 'usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e [--projects "chromium firefox"] [--grep TAG] [--skip-setup] [--workers N] [--shard-manifest PATH --shard I/N]'
 REQUIRED_SECRETS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
@@ -215,17 +210,11 @@ def grep_has(path: pathlib.Path, needle: str) -> bool:
         return False
 
 
-def leg_flags(files: list[str], tests_dir: pathlib.Path) -> tuple[bool, bool]:
-    """`(has stripe files, has webauthn files)`: everything when unsharded, else derived from the leg's own files."""
+def has_webauthn_files(files: list[str], tests_dir: pathlib.Path) -> bool:
+    """Whether the leg holds an `@webauthn` spec: always when unsharded, else derived from the leg's own files."""
     if not files:
-        return True, True
-    stripe = webauthn = False
-    for name in files:
-        if name.startswith("10-stripe/") or grep_has(tests_dir / name, "@stripe-e2e"):
-            stripe = True
-        if grep_has(tests_dir / name, "@webauthn"):
-            webauthn = True
-    return stripe, webauthn
+        return True
+    return any(grep_has(tests_dir / name, "@webauthn") for name in files)
 
 
 def has_real_provider(files: list[str], tests_dir: pathlib.Path) -> bool:
@@ -315,8 +304,6 @@ class Run:
     def __init__(self, opts: Options) -> None:
         self.opts = opts
         self.backend: subprocess.Popen | None = None
-        self.stripe: subprocess.Popen | None = None
-        self.tmp: str | None = None
         root = paths.repo_root()
         self.root = root
         self.account_dir = root / "private" / "account"
@@ -336,9 +323,6 @@ class Run:
 
     def cleanup(self) -> None:
         log.step("Cleaning up...")
-        if self.stripe is not None and self.stripe.poll() is None:
-            log.info(f"Stopping stripe listen (PID {self.stripe.pid})")
-            self._stop(self.stripe)
         if self.backend is not None and self.backend.poll() is None:
             log.info(f"Stopping backend API (PID {self.backend.pid})")
             self._stop(self.backend)
@@ -347,8 +331,6 @@ class Run:
             log.info("Removing E2E database...")
             for suffix in ("", "-wal", "-shm"):
                 pathlib.Path(str(db) + suffix).unlink(missing_ok=True)
-        if self.tmp:
-            shutil.rmtree(self.tmp, ignore_errors=True)
         log.info("Cleanup complete")
 
     def install_dependencies(self) -> None:
@@ -359,63 +341,6 @@ class Run:
                 and subprocess.run(["npm", "ci"], cwd=directory, check=False).returncode != 0
             ):
                 raise RefusedError(f"npm ci failed in {directory}")
-
-    def start_stripe_listen(self, secret_key: str) -> str:
-        log.step("Syncing Stripe products/prices to sandbox...")
-        subprocess.run(
-            ["npx", "--no-install", "tsx", "scripts/stripe-sync.ts"],
-            cwd=self.account_dir,
-            env={**os.environ, "STRIPE_SECRET_KEY": secret_key},
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
-        log.step("Starting stripe listen for real Stripe webhook forwarding...")
-        # A pid-stamped directory removed by cleanup: the log carries the webhook signing secret.
-        namespace = "0"
-        with contextlib.suppress(OSError):
-            namespace = str(os.stat("/proc/self/ns/pid").st_ino)
-        self.tmp = tempfile.mkdtemp(
-            prefix=f"rediacc-sh-{os.getpid()}-n{namespace}-account-e2e-",
-            dir=os.environ.get("TMPDIR") or "/tmp",
-        )
-        listen_log = pathlib.Path(self.tmp) / "stripe-listen.log"
-        with open(listen_log, "wb") as sink:
-            self.stripe = subprocess.Popen(
-                # The key goes in STRIPE_API_KEY, which the Stripe CLI reads, not `--api-key`: an argument is visible to every user through `ps` for as long as `stripe listen` runs.
-                [
-                    "stripe",
-                    "listen",
-                    "--forward-to",
-                    f"http://localhost:{self.api_port}/account/api/v1/webhooks/stripe",
-                    "--all-snapshot",
-                ],
-                stdout=sink,
-                stderr=subprocess.STDOUT,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
-                env={**os.environ, "STRIPE_API_KEY": secret_key},
-            )
-        secret = ""
-        for _ in range(LISTEN_TIMEOUT):
-            # Whether it exited is read BEFORE the log, so output written just before an exit is never missed.
-            exited = self.stripe.poll() is not None
-            match = re.search(r"whsec_\S+", listen_log.read_text(errors="replace"))
-            if match:
-                secret = match.group(0)
-                break
-            if exited:
-                break
-            time.sleep(1)
-        if not secret:
-            log.error(
-                f"stripe listen produced no webhook secret within {LISTEN_TIMEOUT}s; the real-Stripe e2e tests need its forwarding. Its output:"
-            )
-            sys.stderr.write(listen_log.read_text(errors="replace"))
-            self._stop(self.stripe)
-            self.stripe = None
-            raise RefusedError("")
-        log.info("stripe listen ready (webhook secret captured)")
-        return secret
 
     def x25519_pair(self) -> tuple[str, str]:
         private = os.environ.get("ACCOUNT_X25519_PRIVATE_KEY") or ""
@@ -438,7 +363,7 @@ class Run:
         pair = json.loads(done.stdout)
         return pair["private"], pair["public"]
 
-    def start_backend(self, listen_secret: str) -> None:
+    def start_backend(self) -> None:
         x_private, x_public = self.x25519_pair()
         log.step(f"Starting backend API on port {self.api_port}...")
         env = {
@@ -462,15 +387,6 @@ class Run:
             # The Terms gate (private/account src/middleware/terms.ts, on by default) answers 403 TERMS_ACCEPTANCE_REQUIRED to every signed-in call of a user who has not accepted the Terms, and the e2e users never do; TERMS_GATE=false is honoured only under TEST_MODE, as in tests/integration/helpers/test-db.ts.
             "TERMS_GATE": "false",
         }
-        if listen_secret:
-            env["STRIPE_WEBHOOK_SECRET"] = listen_secret
-        # The server verifies against the same fixture the signer uses; the NAME is a runtime slot, the VALUE a fixture.
-        env["STRIPE_SANDBOX_WEBHOOK_SECRET"] = (
-            os.environ.get("STRIPE_E2E_WEBHOOK_SECRET") or DEFAULT_WEBHOOK_FIXTURE
-        )
-        sandbox_key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY")
-        if sandbox_key:
-            env["STRIPE_SANDBOX_SECRET_KEY"] = sandbox_key
         self.backend = subprocess.Popen(
             ["npx", "--no-install", "tsx", "src/entry/node.ts"],
             cwd=self.account_dir,
@@ -533,13 +449,7 @@ class Run:
         if self.opts.grep:
             cmd += ["--grep", self.opts.grep]
         cmd += files
-        # The signer uses the FIXTURE, not a stored credential: the tests sign a simulated webhook and the server verifies it, so a stored secret that had expired would pass exactly as well.
-        env = {
-            **os.environ,
-            "VITE_API_URL": f"http://localhost:{self.api_port}",
-            "E2E_WEBHOOK_SECRET": os.environ.get("STRIPE_E2E_WEBHOOK_SECRET")
-            or DEFAULT_WEBHOOK_FIXTURE,
-        }
+        env = {**os.environ, "VITE_API_URL": f"http://localhost:{self.api_port}"}
         return subprocess.run(cmd, cwd=self.e2e_dir, env=env, check=False).returncode == 0
 
 
@@ -567,7 +477,7 @@ def main(argv: list[str]) -> int:
         except shard.ShardError as exc:
             print(exc, file=sys.stderr)
             return 1
-    has_stripe, has_webauthn = leg_flags(files, run.e2e_dir / "tests")
+    has_webauthn = has_webauthn_files(files, run.e2e_dir / "tests")
     real_provider = has_real_provider(files, run.e2e_dir / "tests")
 
     if not (run.account_dir / "package.json").is_file():
@@ -592,11 +502,7 @@ def main(argv: list[str]) -> int:
                 raise RefusedError(f"{', '.join(missing)} must be set")
         run.install_dependencies()
         if not opts.skip_setup:
-            sandbox_key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY")
-            listen_secret = ""
-            if sandbox_key and shutil.which("stripe") and has_stripe:
-                listen_secret = run.start_stripe_listen(sandbox_key)
-            run.start_backend(listen_secret)
+            run.start_backend()
         run.install_browsers(projects)
         if not run.run_tests(projects, files):
             log.error("Account Portal E2E tests failed")

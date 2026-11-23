@@ -1214,7 +1214,6 @@
       "E2E_JSON_REPORT_FILE",
       "E2E_PORT",
       "E2E_SSH_USER",
-      "E2E_WEBHOOK_SECRET",
       "ENABLE_HTTPS",
       "ENTERPRISE_PROOF_BWS_PROJECT",
       "ENTERPRISE_PROOF_CONFIG",
@@ -1297,7 +1296,6 @@
       "SSH_USER",
       "SSTOOLS_POWERSHELL",
       "STOPHOOK_CHILD",
-      "STRIPE_E2E_WEBHOOK_SECRET",
       "TEST_CLUSTER_PROJECT_ID",
       "TEST_PROVIDER_TOKEN",
       "TF_CLI_CONFIG_FILE",
@@ -1763,9 +1761,7 @@
         "GATEWAY_PORT",
         "REDIACC_ACCOUNT_SERVER",
         "REDIACC_DEV_BIND",
-        "ROOT_EMAIL",
-        "STRIPE_E2E_WEBHOOK_SECRET",
-        "STRIPE_SANDBOX_SECRET_KEY"
+        "ROOT_EMAIL"
       ],
       ".ci/rediacc_ci/core/advisory.py": [
         "CI"
@@ -3090,10 +3086,7 @@
         "ACCOUNT_X25519_PRIVATE_KEY",
         "ACCOUNT_X25519_PUBLIC_KEY",
         "E2E_PORT",
-        "ROOT_EMAIL",
-        "STRIPE_E2E_WEBHOOK_SECRET",
-        "STRIPE_SANDBOX_SECRET_KEY",
-        "TMPDIR"
+        "ROOT_EMAIL"
       ],
       ".ci/rediacc_ci/testrun/e2e.py": [
         "GITHUB_ACTIONS",
