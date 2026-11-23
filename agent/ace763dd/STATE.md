@@ -1,21 +1,20 @@
-## SESSION ace763dd 2026-11-23T15:35:42Z
+## SESSION ace763dd 2026-11-23T17:41:47Z
 
-# STATE ace763dd (2026-11-23 ~15:40Z)
+# STATE ace763dd (2026-11-23 ~17:45Z)
 
 ## Big pieces
-- 1121-1 NOT pushed; effort high. CLI build red from K1 (dce2177575) until K2-K4 land; review dce21775.1 open until then.
-- Landed this hour: WB0-WB3, WB7, WB8 (87c7ff686f..9ca5b97d5a, ticks 5a0505b38a, WB11 added), land --ticks quoting fix 438bb998a4, scoped save() replay fix bb676ad085 (closed 6b10a50c.1).
-- Operator /ask 15:15Z: SES key ID commits "keep as it is" (#141daea9), so backup-ref sync and the push need the operator's one `! COMMIT_POLICY_OK=1 ...`; eu-bench creds left (#58102977).
-- HELD trees: agent-a8d935b9332ecc51f (preview, #ac6a4f6b); agent-a2c20e76d194a9769 (W1 portal policy editor, #bdd23e50): after K2-K4, swap inline seal/types for S1 shared policy-record, land.
-- Peer 9b22c347 (console-e6) promoted breach-forensics (QUEUE 90-96) and stripe-disable (89); writes plans only.
+- 1121-1 NOT pushed; effort high. CLI, account and web typecheck green since K2-K4 + K3 landed (59eb187d1c); ./rdc.sh runs again.
+- Operator rulings today: writer limits removed entirely (#3ca908ee, PLAN-unlimited-writers.md QUEUE 97, writer a3edb3067830dd551 running); D43 amended: requirePasskey keeps each member's recovery slot (#57f2ac6a, code owed); bench store recovery code captured by the SESSION via browser on the current bench before any deploy carrying migration 0095 (#155d7e7c, hold #f78a0020); SES key ID commits kept (push needs operator COMMIT_POLICY_OK).
+- Landed this window: CS1-CS8 + CS11 code, CS6/CS7 locales, CR1, CR5 part, SD1, ciquick L1/L3, signer S2/T1 part, CL-S1..S4 shared modules, rmcp-docs DO10/DO11, on-prem harness EHOP1/2/4 + WB-OP1 + OR1/OR2, master-password sweep, email-sender H1-H4 live on hostinger.
+- HELD: CL-K renet detection (#f7e74262, 138 hardcoded strings need typed codes); preview old lease agent-a8d935b9332ecc51f (#ac6a4f6b, holds N2 first half 1ec56d689a and D1 ba2e5f59e0).
 
 ## Delegated
-- ae22165c142f59698 K2/K3/K4 + S1 schema half (#40138a55); owns packages/cli/src, private/account src/tests/web/drizzle, shared config-schema. Told about bb676ad085 touching config-file-storage.ts and request-context.ts.
-- af0757b416537be7a forensics FN8 + FN9 (#a9d67407); owns www security.txt, two docs pages x13 locales, docs/legal/cra-incident-intake.md.
-- afd9c3548f7f787a4 /writers-now survey (#dec8816f) -> /tmp/writers-now/1121-1-20261123T1535Z.md.
+- a3edb3067830dd551 PLAN-unlimited-writers U1-U4 (hooks, guards, lease tool, docs).
+- a74d32afb3455f3a0 forensics-capture waves 1-2 (renet ebpf/netaudit/list; no clang on host for FC1/FC3).
+- a7f511c739e4aa739 stripe-disable (SD1 landed 95803b3b12; SD2/SD3 owed).
 
 ## Next action
-1. Survey returns: PRESENT batch (investigate + tick), then one wave: CODE writers in free slots (cap 4; clusters on cli/account blocked behind K2-K4), live runners bench/hostinger/VM/prod in the main checkout.
-2. K2-K4 reports: land (account picks then gitlink), accept, `--review-mark ace763dd dce21775.1 fixed <sha>`; then #889cb685 (WB6, serve.ts msg, WB11, WB9 account) and W1.
-3. FN8/FN9 reports: land, tick.
-4. One tick-batch commit, one vm:check, one ci:quick, hand the operator the COMMIT_POLICY_OK push command.
+1. Land reports as they arrive (account/renet first, then console, then gitlink); collect trees with worktree gc --write --id.
+2. Tick batch for landed boxes from the writers' TICK lines (CS6 f337529b, CS7 aa551beb, CS8 32e5ed31, CL-S1..S4, DO10, OR1/OR2, ciquick L1 b32de811 / L3 d4495ac9, S2 b83673bc, SD1 2624faf1, SD4 5fced6ed, policy-record S1 af7eb301 K2 2d18b009 K2b 1405c796 K4 fee5a0be, hostinger H1-H4 from /tmp/writers-now/1121-1-20261123T1600Z-evidence-hostinger.md), one commit.
+3. Spawn: D43 requirePasskey + two-slot accept writer (#57f2ac6a); bench recovery-code browser capture runner (#155d7e7c); sweep follow-ups (#00de68cd); CL-M, CL-S5, X-clusters from /tmp/writers-now/1121-1-20261123T1535Z.md.
+4. Then one vm:check, one ci:quick; hand the operator the COMMIT_POLICY_OK push command.
