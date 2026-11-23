@@ -236,3 +236,33 @@ def test_fixture_control_the_same_writer_without_its_report_stays_quiet(wl):
     wl.say("working\n\n## Remaining\n- the stripe-disable report")
     got = wl.run()
     assert "STUCK SHELL-WAITER" not in got.out, got.out[:3000]
+
+
+# ---- a long report written while the agent still waits on its own shell is not final -------------
+
+ARMED_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_report as RPT
+import wl_stuckshell as S
+n = RPT.RELAY_FLOOR + 400
+print(json.dumps([
+    S.is_final({"bytes": n, "armed": "bdy2q4ke7"}),
+    S.is_final({"bytes": n}),
+    S.is_final({"bytes": n, "armed": "bdy2q4ke7", "boxes": ["PLAN-x.md#abcd1234"]}),
+]))
+"""
+
+
+def test_a_long_report_with_an_armed_shell_is_not_final() -> None:
+    """2026-11-23: the hostinger runner wrote a long "waiting on restart-services" message while its shell ran; it is not finished.
+
+    Controls: the same size with nothing armed at capture is a closing summary, and a TICK block still wins.
+    """
+    proc = subprocess.run(
+        [sys.executable, "-c", ARMED_SNIPPET, str(wlfix.STOP_DIR)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(proc.stdout) == [False, True, True]

@@ -55,6 +55,7 @@ def is_final(entry):
         not entry.get("silent")
         and not entry.get("relay")
         and not entry.get("interim")
+        and not entry.get("armed")
         and int(entry.get("bytes") or 0) >= RPT.RELAY_FLOOR
     )
 

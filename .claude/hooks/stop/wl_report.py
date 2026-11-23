@@ -1000,6 +1000,8 @@ def capture(
             "tx": tx,
             # The shell a SILENT capture's agent ended its turn to wait on (agent/plans/PLAN-stop-hook-retro-20260924.md R.7); `unread` holds such an entry while that wait lasts. Only a silent capture carries it: a report with substance is never held.
             **({"interim": interim} if interim and silent else {}),
+            # A report WITH substance whose agent still had a shell or Monitor armed at capture is a mid-wait message ("waiting on X"), not a closing summary; wl_stuckshell reads this so it never calls such an agent finished (2026-11-23 hostinger runner false positive).
+            **({"armed": interim} if interim and not silent else {}),
             "title": title,
             "transcript": str(transcript or ""),
             "src": source,
