@@ -245,10 +245,11 @@ A fork preview never gets a signer. `deploy-preview` gains `github.event.pull_re
   Depends on: C1, A1.
   Accept: `cd packages/cli && npx vitest run src/services/preview/__tests__/licences.test.ts` rc 0, including a repo with both a master and a preview file left with only the master one, a preview-only repo re-licensed, and a full plan reported per repo with nothing deleted.
     (ticked) 2026-11-23T08:57:18Z by ace763dd: commit:b39ca1b035 fileline:packages/cli/src/services/preview/licences.ts:1 -- leave relicenses preview-only repos from the real account and drops preview files only after a real one is listed; D11 expiry text on a preview; vitest licences and licence-guidance pass
-- [ ] I1 [lead] The other twelve CLI locales for C2's and C4's strings through the naturalization pipeline (docs/i18n/CONVENTIONS.md), then `npm run i18n:generate-hashes`.
+- [x] I1 [lead] The other twelve CLI locales for C2's and C4's strings through the naturalization pipeline (docs/i18n/CONVENTIONS.md), then `npm run i18n:generate-hashes`.
   Owns: packages/cli/src/i18n/locales/**.
   Depends on: C2, C4.
   Accept: `npm run -s check:i18n` rc 0.
+    (ticked) 2026-11-23T09:14:12Z by ace763dd: commit:c6e89f9d76 fileline:packages/www/scripts/lib/cli-reference-catalog.js:1 -- 52 preview keys in all 12 CLI locales (plus cli.docs.sectionTitles.preview), hashes regenerated, LOCAL_GROUPS preview, www CLI docs and search index regenerated; check:ci-i18n-hashes, i18n-completeness, i18n-www-cli-docs, search-index, test-www (404) rc 0
 - [ ] T1 [writer] The preview seed gives the smoke organisation a `pv-` subscription (D3), and the smoke test's three licence checks return (`PREVIEW_HAS_SIGNER = true`), removing the skip of 0226e1bd7, and verify the embedded cert chains to the production public key.
   Owns: .ci/scripts/test/smoke-test-preview.ts.
   Depends on: N2, S2.

@@ -131,11 +131,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 48,
+      "open": 2,
+      "done": 49,
       "open_sigs": [
         "34760cc9",
-        "3a4d5f78",
         "fb72dffd"
       ],
       "done_sigs": [
@@ -156,6 +155,7 @@
         "2c91c0ea",
         "33f0286f",
         "3a1418b5",
+        "3a4d5f78",
         "45d7320f",
         "4ccee1c0",
         "50fd7d67",
@@ -214,13 +214,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 51,
+      "open": 4,
+      "done": 52,
       "open_sigs": [
         "06623ce1",
         "3bf5d6ea",
         "4ad3cc4c",
-        "6e90bb98",
         "b472cb77"
       ],
       "done_sigs": [
@@ -251,6 +250,7 @@
         "5f90e71c",
         "6489acd9",
         "68e34166",
+        "6e90bb98",
         "6fe60f0b",
         "9137238e",
         "96346216",
@@ -1101,8 +1101,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 4,
+      "open": 17,
+      "done": 5,
       "open_sigs": [
         "0096bfeb",
         "02ef454f",
@@ -1113,7 +1113,6 @@
         "57f565f1",
         "741ec9c2",
         "7a79f65c",
-        "7b8e0ac7",
         "7ce163ad",
         "7d2ab038",
         "7ef4ac8e",
@@ -1126,6 +1125,7 @@
       "done_sigs": [
         "22c8a4e5",
         "4fee2ae7",
+        "7b8e0ac7",
         "ae8e12f8",
         "ca5f18a8"
       ]
@@ -1355,15 +1355,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 26,
+      "open": 7,
+      "done": 27,
       "open_sigs": [
         "0a6e5712",
         "0fbd62dc",
         "15f5537a",
         "3c1ed10a",
         "6f74d0b7",
-        "a8892e0c",
         "cc583290",
         "f4b49503"
       ],
@@ -1386,6 +1385,7 @@
         "80516a88",
         "859c4aee",
         "8dc87613",
+        "a8892e0c",
         "b2fa5c1a",
         "b343464b",
         "bb7fdaa6",
@@ -1401,8 +1401,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 21,
-      "done": 26,
+      "open": 20,
+      "done": 27,
       "open_sigs": [
         "11388dba",
         "16e3eb8a",
@@ -1410,7 +1410,6 @@
         "20b452fc",
         "43672502",
         "4d22e145",
-        "502fb3f5",
         "5f5ca7ff",
         "639f303a",
         "7adc0235",
@@ -1435,6 +1434,7 @@
         "412e9087",
         "49c93654",
         "4eee1c0d",
+        "502fb3f5",
         "623a5a05",
         "640ffad5",
         "6c55fe31",
@@ -2085,15 +2085,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 14,
+      "open": 8,
+      "done": 15,
       "open_sigs": [
         "0e4aa275",
         "3f19e559",
         "4265bd6d",
         "93dc39be",
         "9be3963c",
-        "de4dee89",
         "e6e27c9f",
         "f1efbccd",
         "f8c4c1ae"
@@ -2112,6 +2111,7 @@
         "b8971b7f",
         "d2c27cea",
         "dd455101",
+        "de4dee89",
         "eb0471f9"
       ]
     },
@@ -2312,14 +2312,13 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 17,
+      "open": 19,
+      "done": 18,
       "open_sigs": [
         "0e91f452",
         "1f5fa160",
         "2df4a7f5",
         "457c03cd",
-        "4f13c7e5",
         "584d0048",
         "670b139b",
         "72df99e4",
@@ -2341,6 +2340,7 @@
         "2ecf2128",
         "3e1e6f13",
         "3fdc8639",
+        "4f13c7e5",
         "4f43737d",
         "5385f4d6",
         "54a98585",
@@ -3297,20 +3297,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 8,
+      "open": 8,
+      "done": 11,
       "open_sigs": [
         "034d49bb",
         "19f12699",
         "2f1ee9f8",
         "866cf845",
-        "a40c2f96",
         "b60cc939",
         "c0ccd0b5",
-        "cded8305",
         "e2f0eb0f",
-        "e605e494",
-        "fe733d0b"
+        "e605e494"
       ],
       "done_sigs": [
         "0134b972",
@@ -3318,9 +3315,12 @@
         "3cf9ef43",
         "5f011fc7",
         "657ec9be",
+        "a40c2f96",
         "ad2b28f2",
         "bb5c2422",
-        "d7fa53c2"
+        "cded8305",
+        "d7fa53c2",
+        "fe733d0b"
       ]
     },
     "agent/plans/PLAN-runtime-caller-identity.md": {

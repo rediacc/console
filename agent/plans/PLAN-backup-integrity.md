@@ -420,10 +420,11 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 Every H box uses the branch-built `rdc` and renet while edge and stable are on hold (corrected ASKED:2026-11-05T07:06Z, it read as the released ones), and `backup schedule` goes through `eu-remote` as H3 says. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
 
-- [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
+- [x] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
   (corrected 2026-11-11, R2) Local-route: bench-cli -- build the branch CLI and run backup strategy list through eu-bench; a release is not needed to read it.
+    (ticked) 2026-11-23T09:15:52Z by ace763dd: H1 via eu-bench with the branch CLI: backup strategy list -o json rc 0 with the nightly-hot row; --version is 0.0.0-dev, release clause waived by the box Local-route correction; /tmp/bench-live4/h1-list.out
 - [x] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
     (ticked) 2026-11-12T04:15:47Z by d778be9d: 2026-11-12 hostinger via eu-bench (bench/hostinger-only proof): rdc backup toc-key sync <repo>@hostinger --dry-run -o json rc 0 for all 11 repos (mautic demo-heartbeat mail hermes marketing observability erpnext gitlab nextcloud demo-stackoverflow miscellaneous; miscellaneous rc 1 ECONNRESET once then rc 0), machineKeyEqual true outcome unchanged, no overwrite
