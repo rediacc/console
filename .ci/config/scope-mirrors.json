@@ -73,7 +73,7 @@
           "mode": "terms"
         },
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         },
         {
@@ -83,7 +83,7 @@
       ]
     },
     "pr.ff-fallback": {
-      "sha": "57f855cd6b80",
+      "sha": "fcc878d51e11",
       "atoms": [
         ":main`",
         "CI Complete",
@@ -98,7 +98,7 @@
           "mode": "terms"
         },
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         }
       ]
@@ -113,7 +113,7 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         },
         {
@@ -147,7 +147,7 @@
           "mode": "terms"
         },
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         },
         {
@@ -157,16 +157,17 @@
       ]
     },
     "pr.queued-plan-start": {
-      "sha": "151b9e20c538",
+      "sha": "ddfc8176c1d4",
       "atoms": [
-        "starts only when the hook names it"
+        "starts only when the hook names it",
+        "`loop-next`"
       ],
       "sentinels": [
         "starts only when the hook names it"
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         },
         {
@@ -189,7 +190,7 @@
           "mode": "terms"
         },
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "terms"
         },
         {
@@ -221,7 +222,7 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "ref"
         }
       ]
@@ -238,14 +239,14 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "ref"
         }
       ]
     },
     "pr.submodule-branch-name": {
       "canonical": ".claude/agents/pr-babysitter.md",
-      "sha": "1d0babff57bd",
+      "sha": "0eaed17156e5",
       "atoms": [
         "named exactly like the console branch",
         "Submodule Branches"
@@ -255,7 +256,7 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "ref"
         }
       ]
@@ -273,13 +274,13 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-merge.md",
+          "path": ".claude/commands/landing.md",
           "mode": "ref"
         }
       ]
     },
     "pr.review-answer": {
-      "canonical": ".claude/commands/pr-merge.md",
+      "canonical": ".claude/commands/landing.md",
       "sha": "8dda3d47e460",
       "atoms": [
         "The PR review is waited on, then answered",

@@ -1,9 +1,9 @@
 r"""check:ci-scope-mirrors: CLAUDE.md's PR-scope rules and their hand-written mirrors agree.
 
-WHY THIS EXISTS (agent/plans/PLAN-scope-mirrors.md). CLAUDE.md is the one place the PR-scope rules are written down, and at least seven other files restate them in their own words: the output style, the pr-epics skill, /pr-babysit, /pr-merge, the pr-babysitter agent, the `MESSAGE` of `block_settled_questions.py` and the QUEUE.md header. Those copies are what an agent actually reads mid-task. Commit 8ed69711c copied one sentence into
+WHY THIS EXISTS (agent/plans/PLAN-scope-mirrors.md). CLAUDE.md is the one place the PR-scope rules are written down, and at least seven other files restate them in their own words: the output style, the pr-epics skill, /landing (which /pr-babysit and /pr-merge point to since PLAN-simple-two-tree-loop B9), the pr-babysitter agent, the `MESSAGE` of `block_settled_questions.py` and the QUEUE.md header. Those copies are what an agent actually reads mid-task. Commit 8ed69711c copied one sentence into
 six places by hand; earlier changes missed copies, and nothing checked that the copies agree.
 
-THE CONTRACT (plan D1). The canonical text is prose in a CANONICAL FILE, wrapped inline. That file is CLAUDE.md unless the clause names another one (agent/plans/PLAN-pr-loop-single-source.md D2: a loop-only clause is canonical in the agent file or pr-merge.md, and its other places point there):
+THE CONTRACT (plan D1). The canonical text is prose in a CANONICAL FILE, wrapped inline. That file is CLAUDE.md unless the clause names another one (agent/plans/PLAN-pr-loop-single-source.md D2: a loop-only clause is canonical in the agent file or landing.md, and its other places point there):
 
     <!-- scope: pr.push-cadence -->Pushes happen at an epic milestone ... commits.<!-- /scope -->
 

@@ -43,7 +43,7 @@ COPY = (
 TRAILERS = ".claude/skills/pr-epics/trailers.md"
 STANDING = ".claude/output-styles/standing-orders.md"
 BABYSITTER = ".claude/agents/pr-babysitter.md"
-PR_MERGE = ".claude/commands/pr-merge.md"
+LANDING = ".claude/commands/landing.md"
 SKILL = ".claude/skills/pr-epics/SKILL.md"
 GUARD = ".claude/rediacc_hooks/guards/block_settled_questions.py"
 QUEUE_PY = ".claude/hooks/stop/wl_planqueue.py"
@@ -185,7 +185,7 @@ def test_t2_the_8ed69711c_miss_names_only_the_drifted_mirror(gate):
             True,
             "T2: a finding names %s and pr.push-cadence; got %r" % (TRAILERS, found),
         )
-        for quiet in (STANDING, GUARD, BABYSITTER, PR_MERGE):
+        for quiet in (STANDING, GUARD, BABYSITTER, LANDING):
             gate.assert_eq(
                 [f for f in found if quiet in f],
                 [],
