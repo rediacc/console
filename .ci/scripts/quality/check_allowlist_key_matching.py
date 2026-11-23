@@ -32,6 +32,8 @@ import re
 import subprocess
 import sys
 
+import _gate_args
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 # A loop variable holding an allowlist KEY, and a variable holding a line of TEXT.
@@ -224,4 +226,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_allowlist_key_matching.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main(sys.argv))

@@ -16,7 +16,9 @@ why: a secret deleted from Bitwarden lingers in .ci/config/bws-secret-map.json u
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import bws_map_live
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bws_map_live.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(bws_map_live.main(sys.argv[1:]))

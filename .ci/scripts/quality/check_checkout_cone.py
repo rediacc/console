@@ -49,6 +49,7 @@ import tempfile
 from collections import deque
 from typing import Any
 
+import _gate_args
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -853,4 +854,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_checkout_cone.py", sys.argv[1:], switches=("--selftest",), valued=("--workflows",)
+    )
     sys.exit(main(sys.argv[1:]))

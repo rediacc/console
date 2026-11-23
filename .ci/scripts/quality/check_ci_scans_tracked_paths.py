@@ -32,7 +32,9 @@ INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import ci_scans_tracked_paths
 
 if __name__ == "__main__":
+    _gate_args.parse("check_ci_scans_tracked_paths.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(ci_scans_tracked_paths.main(sys.argv[1:]))

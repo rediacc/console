@@ -32,7 +32,9 @@ why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import ci_job_aggregation
 
 if __name__ == "__main__":
+    _gate_args.parse("check_ci_job_aggregation.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(ci_job_aggregation.main(sys.argv[1:]))

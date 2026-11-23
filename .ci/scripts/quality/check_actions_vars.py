@@ -19,7 +19,9 @@ why: every vars.NAME a workflow reads must be declared in .ci/config/actions-var
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import actions_vars
 
 if __name__ == "__main__":
+    _gate_args.parse("check_actions_vars.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(actions_vars.main(sys.argv[1:]))

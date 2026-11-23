@@ -58,7 +58,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import agent_browser_exit
 
 if __name__ == "__main__":
+    _gate_args.parse("check_agent_browser_exit.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(agent_browser_exit.main(sys.argv[1:]))

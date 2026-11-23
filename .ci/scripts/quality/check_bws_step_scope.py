@@ -17,7 +17,9 @@ why: a production signing key fetched at job start through bws-secrets lands in
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import bws_step_scope
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bws_step_scope.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(bws_step_scope.main(sys.argv[1:]))

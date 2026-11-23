@@ -53,6 +53,7 @@ import subprocess
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.core import bws_env
@@ -457,4 +458,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bws_rotation_notice.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main(sys.argv[1:]))

@@ -18,7 +18,14 @@ why: one account-wide R2 key once reached the public bench Worker through a
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import backup_credential_isolation
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_backup_credential_isolation.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root",),
+    )
     raise SystemExit(backup_credential_isolation.main(sys.argv[1:]))

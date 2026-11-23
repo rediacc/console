@@ -32,6 +32,7 @@ import sys
 from pathlib import Path
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls
 from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
@@ -203,4 +204,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_actions_allowlist.py", sys.argv[1:], switches=("--refresh",))
     sys.exit(main(sys.argv[1:]))

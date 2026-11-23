@@ -118,6 +118,7 @@ import tempfile
 from pathlib import Path
 
 import _cipath
+import _gate_args
 from rediacc_ci import workflows
 
 # IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields `bws_env` declares are the fields the `account-dev` and `legal-entity` profiles actually bind, and a second copy of the ten names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
@@ -1899,4 +1900,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bws_map.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main())

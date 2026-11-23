@@ -16,7 +16,9 @@ why: account.sh reached 22 of 22 ported functions on 2026-09-24 by a hand count;
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import bash_lib_migration_complete
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bash_lib_ported.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(bash_lib_migration_complete.main(sys.argv[1:]))

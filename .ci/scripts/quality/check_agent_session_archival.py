@@ -68,6 +68,7 @@ import time
 from typing import TypedDict, Unpack
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.core import gh_retry
@@ -711,4 +712,12 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_agent_session_archival.py",
+        sys.argv[1:],
+        # `--move` is a switch plus a bare name on purpose: main() reads the target itself and refuses a missing one with its own message ("needs a session directory name"), which test_gate_agent_session_archival pins.
+        switches=("--selftest", "--status", "--prune-reviews", "--write", "--force", "--move"),
+        valued=("--label",),
+        positional="<session-dir>",
+    )
     sys.exit(main(sys.argv[1:]))

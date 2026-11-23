@@ -18,7 +18,11 @@ why: every R2 read and write runs the aws CLI, and until 2026-10-19 each of
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import aws_resolver
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_aws_resolver.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(aws_resolver.main(sys.argv[1:]))

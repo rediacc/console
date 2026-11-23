@@ -17,7 +17,11 @@ why: private/account/.env is retired in favour of Bitwarden profiles, so no trac
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import account_env_retired
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_account_env_retired.py", sys.argv[1:], switches=("--selftest", "--write-baseline")
+    )
     raise SystemExit(account_env_retired.main(sys.argv[1:]))
