@@ -451,6 +451,10 @@ function evaluateRetryEligibility({
       };
 }
 
+// The failure annotations GitHub writes for every failed or cancelled step, which name no cause.
+const GENERIC_FAILURE_LINE_RE =
+  /^(Process completed with exit code \d+\.?|The operation was canceled\.?|The job was canceled\b.*|The runner has received a shutdown signal\b.*)$/;
+
 /**
  * The signature of one failed job: the name of its first failed step and the
  * first line of its first failure annotation (a job id is its check-run id, and
@@ -459,13 +463,41 @@ function evaluateRetryEligibility({
  */
 function failureSignature(job, annotations) {
   const step = ((job && job.steps) || []).find((s) => s && s.conclusion === 'failure');
+  // GitHub's own closing lines say nothing about WHY: "Process completed with exit code 1." follows nearly every failed step (it is the only annotation on Renet (Full) in nightly 44882769573), so two unrelated failures of one step would read as a repeat. They are skipped; a job whose only failure annotations are generic has no first error line, and is never a repeat.
   const first = (annotations || []).find(
-    (a) => a && a.annotation_level === 'failure' && String(a.message || '').trim() !== ''
+    (a) =>
+      a &&
+      a.annotation_level === 'failure' &&
+      String(a.message || '').trim() !== '' &&
+      !GENERIC_FAILURE_LINE_RE.test(String(a.message).trim().split('\n')[0].trim())
   );
   return {
     step: step ? String(step.name) : null,
     firstError: first ? String(first.message).trim().split('\n')[0].trim() : null,
   };
+}
+
+/**
+ * The first error line of a job log excerpt, for a job whose failure
+ * annotations name no cause: the first `##[error]` line when it says more than
+ * GitHub's generic closing line, else the last real output line before it
+ * (what a script printed as it failed: on Renet (Full) the BPF mismatch sits
+ * there, above "##[error]Process completed with exit code 1."). Null when the
+ * excerpt has no error marker. A line carrying a duration, a path or a pid can
+ * differ between attempts, which costs a missed repeat (a retry), never a
+ * false one. Pure.
+ */
+function firstErrorFromLog(text) {
+  const lines = String(text || '').split('\n');
+  const at = lines.findIndex((l) => l.startsWith('##[error]'));
+  if (at < 0) return null;
+  const marker = lines[at].slice('##[error]'.length).trim();
+  if (marker && !GENERIC_FAILURE_LINE_RE.test(marker)) return marker;
+  for (let i = at - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    if (line && !line.startsWith('##[')) return line;
+  }
+  return null;
 }
 
 /**
@@ -1735,11 +1767,16 @@ const monitor = async ({ github, context, core }) => {
       const prev = (data.jobs || []).find(
         (j) => j.name === job.name && (j.conclusion === 'failure' || j.conclusion === 'timed_out')
       );
-      if (prev) previous = failureSignature(prev, await failureAnnotations(prev));
+      if (prev) {
+        previous = failureSignature(prev, await failureAnnotations(prev));
+        // Annotations naming no cause: read the cause from that attempt's own log (fetched by its job id, never through getLogTail's by-name cache, which holds THIS attempt's job).
+        if (!previous.firstError) previous.firstError = firstErrorFromLog(await fetchJobLogs(prev));
+      }
     } catch (e) {
       console.log(`[repeat] could not read attempt ${Number(attempt) - 1}'s jobs (${e.message})`);
     }
     const current = failureSignature(job, await failureAnnotations(job));
+    if (!current.firstError) current.firstError = firstErrorFromLog(await getLogTail(job));
     const verdict = evaluateRepeatFailure({ current, previous, attempt: Number(attempt) });
     console.log(`[repeat] "${job.name}": ${verdict.reason}`);
     return verdict;
@@ -2383,6 +2420,47 @@ function selftest() {
     attempt: 2,
   });
   check('CONTROL: an unknown first error line is never a repeat', unknown.repeat === false, unknown.reason);
+  const generic = [{ annotation_level: 'failure', message: 'Process completed with exit code 1.' }];
+  const genericRepeat = evaluateRepeatFailure({
+    current: failureSignature(bpfJob(2), generic),
+    previous: failureSignature(bpfJob(1), generic),
+    attempt: 2,
+  });
+  check(
+    "CONTROL: GitHub's generic 'Process completed with exit code 1.' is not a first error line, so it never makes a repeat",
+    genericRepeat.repeat === false && failureSignature(bpfJob(2), generic).firstError === null,
+    genericRepeat.reason
+  );
+  const bpfLog = (n) =>
+    [
+      '##[group]Run make -C renet bpf-verify',
+      'clang -O2 -target bpf -c bpf/sock.c -o /tmp/sock.o',
+      'error: bpf/sock.o differs from a clean clang rebuild; run make bpf and commit',
+      '##[endgroup]',
+      `##[error]Process completed with exit code ${n}.`,
+    ].join('\n');
+  check(
+    'firstErrorFromLog reads the cause above a generic ##[error] marker',
+    firstErrorFromLog(bpfLog(1)) ===
+      'error: bpf/sock.o differs from a clean clang rebuild; run make bpf and commit',
+    String(firstErrorFromLog(bpfLog(1)))
+  );
+  const fromLogs = evaluateRepeatFailure({
+    current: { step: 'Renet BPF rebuild check', firstError: firstErrorFromLog(bpfLog(1)) },
+    previous: { step: 'Renet BPF rebuild check', firstError: firstErrorFromLog(bpfLog(1)) },
+    attempt: 2,
+  });
+  check('two attempts with the same logged cause are a repeat', fromLogs.repeat === true, fromLogs.reason);
+  check(
+    'CONTROL: a specific ##[error] marker is its own first error line, and an excerpt with no marker has none',
+    firstErrorFromLog('step output\n##[error]Docker pull failed: TLS handshake timeout') ===
+      'Docker pull failed: TLS handshake timeout' && firstErrorFromLog('all good\n') === null
+  );
+  check(
+    'the specific failure line is read past a generic one that precedes it',
+    failureSignature(bpfJob(2), [...generic, ...bpfAnnotations]).firstError ===
+      'bpf object out of date: run make bpf'
+  );
   check(
     'CONTROL: a non-allowlisted job with the classifier out still fails fast (the outage widens nothing)',
     evaluateRetryEligibility({ ...outage, jobName: 'Build (Docker) / CLI', repeat: first }).retry === false
@@ -2425,6 +2503,7 @@ module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.failureSignature = failureSignature;
 module.exports.evaluateRepeatFailure = evaluateRepeatFailure;
 module.exports.classifierOutageNote = classifierOutageNote;
+module.exports.firstErrorFromLog = firstErrorFromLog;
 module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;
 module.exports.evaluateBudget = evaluateBudget;
