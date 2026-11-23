@@ -11,7 +11,7 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 - Effort: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^effort:' || echo '(no Settings section)'`
 - Promoted progress (generated): !`sed -n '/queue:progress:begin/,/queue:progress:end/p' agent/plans/QUEUE.md`
 - Live writer leases (every session's; the tag after the title names the owner): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | grep -E '^\s*- \[>\]' | head -20 | grep . || echo '(none)'`
-- Last survey (the baseline of the round's report): !`ls -t /tmp/writers-now/*.md 2>/dev/null | grep -v -- '-evidence-' | head -1 | grep . || echo '(none)'`
+- Last survey (the baseline of the round's report): !`ls -t /tmp/writers-now/*.md 2>/dev/null | grep -v -e '-evidence-' -e '-seeds\.md$' | head -1 | grep . || echo '(none)'`
 - Filter: `$ARGUMENTS`
 
 ## What to do
@@ -24,11 +24,11 @@ Why the round is shaped this way, measured on 2026-11-16 after many rounds: 25 o
 
 ### 0. Record the round
 
-Before the survey starts, pick its path, `/tmp/writers-now/<branch>-<UTC stamp>.md`, and record the round with that path: `.claude/hooks/stop/worklist.py --writers-now-start <me> <survey path>`. It appends one row to `agent/ledgers/writers-now-rounds.jsonl` and prints the round id. The row rides the round's tick batch (section 7); the verb commits nothing.
+Before the survey starts, pick its path, `/tmp/writers-now/<branch>-<UTC stamp>.md`, and record the round with that path: `.claude/hooks/stop/worklist.py --writers-now-start <me> <survey path>`. It appends one row to `agent/ledgers/writers-now-rounds.jsonl`, prints the round id, and writes the round's self-review seeds beside the survey path, `/tmp/writers-now/<branch>-<UTC stamp>-seeds.md`, printing that path and the seed count. The seeds are what this session's own records surfaced since its previous round and the plan text alone does not show: the open items it added or updated, the `BLOCKED_BY:` items whose blockers have all closed, the per-commit review findings still open, and the "owed", "outside Owns" and "for the lead" lines of its sub-agents' reports (`wl_writersnow.collect_seeds`). A repeat round that re-surveyed only the plan text found no new work; the seeds are how it finds what the previous round missed. The row rides the round's tick batch (section 7); the verb commits nothing.
 
 ### 1. Survey first, in the required format
 
-The round is every Promoted plan whose row is not `done`, in table order, narrowed by the filter. One background `general-purpose` agent (model `sonnet`, read-only) sorts every open box of the round and writes `/tmp/writers-now/<branch>-<UTC stamp>.md`. It returns the path and the per-group counts. Nothing else starts until it has returned, except the PRESENT batch of a previous survey (section 2); a survey that fails or stalls is restarted once, and then the lead reads the boxes itself.
+The round is every Promoted plan whose row is not `done`, in table order, narrowed by the filter. One background `general-purpose` agent (model `sonnet`, read-only) sorts every open box of the round and writes `/tmp/writers-now/<branch>-<UTC stamp>.md`. Its brief names the seeds file of step 0 and orders it to classify EVERY seed as CODE, LIVE (with its target), PRESENT or closed, in a `## Seeds` table beside the plan boxes (`seed | class | plan box or new item | evidence`); a seed that is real work no box covers is listed for the lead to add as a worklist item. It returns the path, the per-group counts and the seed count it classified, which must equal the count step 0 printed. Nothing else starts until it has returned, except the PRESENT batch of a previous survey (section 2); a survey that fails or stalls is restarted once, and then the lead reads the boxes itself.
 
 | Group | Meaning | Who takes it |
 |---|---|---|
@@ -62,6 +62,7 @@ A plan whose `Depends-On:` prerequisite is unfinished stays in the round when th
 6. `## GITHUB` and `## TIME`: the signatures, each with what settles it (the run, the merge, the window and its date).
 7. `## OPERATOR items (verbatim)`: the box text quoted, plus the probed items that turned out not to be operator-only.
 8. `## Findings`: stale box text, measured gate results, and the PRESENT signatures in one line.
+9. `## Seeds`: one row per seed of the seeds file, classified as above; a seed with no row is a survey defect, and the lead restarts the survey with the missing seed ids named.
 
 ### 2. PRESENT boxes and corrections first: the lead, one batch
 

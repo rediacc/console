@@ -2829,7 +2829,7 @@ def _queue_set_cli(argv):
 
 
 def _writers_now_start_cli(argv):
-    """`--writers-now-start <me> <survey-path>`: record the start of a /writers-now round (agent/plans/PLAN-writers-now-cadence.md WN1). Appends one row to agent/ledgers/writers-now-rounds.jsonl and prints the round id. Never commits: the ledger is a record the lead commits with the round's tick batch."""
+    """`--writers-now-start <me> <survey-path>`: record the start of a /writers-now round (agent/plans/PLAN-writers-now-cadence.md WN1, WN3). Writes this session's self-review seeds since its previous round to `<survey stem>-seeds.md`, appends one row to agent/ledgers/writers-now-rounds.jsonl, and prints the round id and the seeds path. Never commits: the ledger is a record the lead commits with the round's tick batch."""
     if len(argv) != 3 or not C.PREFIX_RE.match(argv[1]):
         sys.stderr.write(M.CLI_WRITERS_NOW_USAGE)
         sys.exit(2)
@@ -2837,9 +2837,20 @@ def _writers_now_start_cli(argv):
     _identity_or_die(me, _die2)
     import wl_writersnow as WN
 
-    root = pathlib.Path(C.project_root(C.project_start()) or os.getcwd())
-    row = WN.append_round(root, me, survey, C.utcnow())
+    start = C.project_start()
+    root = pathlib.Path(C.project_root(start) or os.getcwd())
+    items = S.load(C.worklist_for(start), sync=False).items
+    row, _text = WN.start_round(
+        root,
+        me,
+        survey,
+        C.utcnow(),
+        items,
+        WN.gather_reviews(root),
+        lambda since: WN.gather_reports(start, me, since),
+    )
     print(M.CLI_WRITERS_NOW_STARTED % {"round": row["round"], "at": row["at"], "survey": survey})
+    print(M.CLI_WRITERS_NOW_SEEDS % {"n": row["seed_count"], "path": row["seeds"]})
     print("ledger: %s" % WN.LEDGER_REL)
 
 

@@ -759,13 +759,19 @@ CLI_QUEUE_SET_REFUSED = "REFUSED: %s. agent/plans/QUEUE.md is unchanged.\n"
 # `--writers-now-start` (agent/plans/PLAN-writers-now-cadence.md WN1): usage (static) and the started line (round, at, survey).
 CLI_WRITERS_NOW_USAGE = (
     "usage: --writers-now-start <me> <survey-path>\n"
-    "Records the start of a /writers-now round: one row in "
-    "agent/ledgers/writers-now-rounds.jsonl (round id, session, UTC start, survey path), "
-    "and prints the round id. The skill runs it as step 0 with the path its survey will "
-    "write. Nothing is committed.\n"
+    "Records the start of a /writers-now round: writes this session's self-review seeds "
+    "since its previous round to <survey stem>-seeds.md, appends one row to "
+    "agent/ledgers/writers-now-rounds.jsonl (round id, session, UTC start, survey path, "
+    "seeds path, seed count), and prints the round id and the seeds path. The skill runs it "
+    "as step 0 with the path its survey will write. Nothing is committed.\n"
 )
 
 CLI_WRITERS_NOW_STARTED = "writers-now round %(round)s started at %(at)s; survey %(survey)s"
+
+CLI_WRITERS_NOW_SEEDS = (
+    "seeds: %(n)d in %(path)s -- hand this file to the survey agent, which classifies every "
+    "seed (CODE, LIVE, PRESENT or closed) beside the plan boxes"
+)
 
 N_PHANTOM_IDENTITY = (
     "PHANTOM IDENTITY IN THE STORE (%d). These prefixes WRITE here and have "
@@ -2465,8 +2471,10 @@ Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
                                 repair); one atomic write, nothing committed
   --writers-now-start <me> <survey-path>
                                 record the start of a /writers-now round in
-                                agent/ledgers/writers-now-rounds.jsonl and
-                                print its round id; nothing committed
+                                agent/ledgers/writers-now-rounds.jsonl, write
+                                the round's self-review seeds beside the
+                                survey (<survey stem>-seeds.md) and print the
+                                round id and seeds path; nothing committed
 
 Maintenance:
   --compact                     drop tombstones and fold the event log
