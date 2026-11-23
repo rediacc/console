@@ -409,15 +409,21 @@ def _module_file(argv: tuple[str, ...]) -> Path | None:
     return None
 
 
-def test_the_real_registry_names_exactly_the_two_live_artifacts():
+def test_the_real_registry_names_exactly_the_three_live_artifacts():
     entries = fr.load_registry(REAL_ROOT)
     assert [e.artifact for e in entries] == [
         ".ci/config/lane-durations.json",
         ".ci/config/gate-costs.json",
+        ".ci/config/hook-ledger.json",
     ]
     for e in entries:
         assert (REAL_ROOT / e.artifact).is_file(), e.artifact
-        assert set(e.cadence) == {"pr", "nightly"}, "both are bound per PR since 7c845cf3b"
+        if e.artifact == ".ci/config/hook-ledger.json":
+            # LOCAL data (the gitignored guard chain ledger, CR8): a PR run cannot refresh it, so it is nightly only and reads no network.
+            assert e.cadence == ("nightly",), e
+            assert e.network is False, e
+        else:
+            assert set(e.cadence) == {"pr", "nightly"}, "both are bound per PR since 7c845cf3b"
         for argv in (e.check, *e.producers):
             target = _module_file(argv)
             assert target is not None, "%s: %s names no module or script" % (e.artifact, argv)

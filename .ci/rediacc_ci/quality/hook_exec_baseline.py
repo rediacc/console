@@ -247,6 +247,33 @@ def compare(baseline, result, unmatched):
     return findings
 
 
+def _load_hookreport():
+    """`wl_hookreport` from `.claude/hooks/stop`, the budgets' one implementation (PLAN-tooling-code-reduction.md CR8), through the same instrument-anchored `.claude` as the counter."""
+    paths.on_sys_path(str(_HOOK_PKG["parent"] / "hooks" / "stop"))
+    try:
+        import wl_hookreport
+    except ModuleNotFoundError as exc:
+        raise RefusalError(
+            "the budget reader .claude/hooks/stop/wl_hookreport.py is not importable (%s)" % exc
+        ) from exc
+    return wl_hookreport
+
+
+def budget_findings(baseline, root):
+    """The two-way budgets of `baseline["budgets"]` measured at `root`. A missing block is a refusal."""
+    budgets = baseline.get("budgets")
+    if not isinstance(budgets, dict):
+        raise RefusalError(
+            "the baseline has no `budgets` block, so lines, test seconds and chain latency per "
+            "guard would go unheld; see PLAN-tooling-code-reduction.md CR8"
+        )
+    hookreport = _load_hookreport()
+    try:
+        return hookreport.budget_findings(budgets, hookreport.measure(root, baseline))
+    except hookreport.ReportError as exc:
+        raise RefusalError(str(exc)) from exc
+
+
 def run(root=None):
     """Measure the tree at `root` and return (findings, result, baseline)."""
     execcount = _load_counter()
@@ -273,6 +300,7 @@ def main(argv=None):
         return rc
     try:
         findings, result, baseline = run()
+        findings += budget_findings(baseline, paths.repo_root())
     except RefusalError as exc:
         log.error("hook exec baseline: %s" % exc)
         return 1
@@ -281,7 +309,9 @@ def main(argv=None):
             log.error("  %s" % finding)
         log.error(
             "%d finding(s). The counter is `python3 .claude/rediacc_hooks/execcount.py`; "
-            "repin with its `--json` output in .ci/policy/%s." % (len(findings), BASELINE_NAME)
+            "repin with its `--json` output in .ci/policy/%s. A budget finding is read by "
+            "`python3 .claude/hooks/stop/wl_hookreport.py --check-budgets`."
+            % (len(findings), BASELINE_NAME)
         )
         return 1
     target = baseline.get("target", {})
@@ -514,7 +544,40 @@ def selftest():
         _load_counter().parse_entries is not None,
     )
 
+    hookreport = _load_hookreport()
+    held = {"slack": 0.2, "max": {"block_x": 100}}
+    budgets = {t: dict(held) for t in hookreport.TABLES}
+    measured = {t: {"block_x": 95} for t in hookreport.TABLES}
+    check(
+        "CONTROL: a guard inside every budget is clean",
+        hookreport.budget_findings(budgets, measured) == [],
+    )
+    measured["guardLines"] = {"block_x": 101}
+    check(
+        "PLANT: a guard's line count past its budget reds, and says GREW",
+        any("guardLines block_x GREW" in f for f in hookreport.budget_findings(budgets, measured)),
+    )
+    measured["guardLines"] = {"block_x": 70}
+    check(
+        "PLANT: a guard shrunk past the slack ALSO reds, and says SHRANK",
+        any(
+            "guardLines block_x SHRANK" in f for f in hookreport.budget_findings(budgets, measured)
+        ),
+    )
+    check(
+        "VACUITY: a baseline with no budgets block is a REFUSAL",
+        _budget_refuses({}),
+    )
+
     return not check.ok
+
+
+def _budget_refuses(baseline):
+    try:
+        budget_findings(baseline, paths.repo_root())
+    except RefusalError:
+        return True
+    return False
 
 
 def _refuses(root):

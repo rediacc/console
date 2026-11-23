@@ -18,7 +18,11 @@
     "that section's own refreshed_at (that script's module docstring, RETIRED INTO). It runs",
     "FIRST: budget_report --refresh then rewrites the same section's numbers from the sample",
     "budget_report --check judges, so the check that follows a refresh is green by construction",
-    "(the reverse order left any-status main runs in the file and reddened drift:job-max)."
+    "(the reverse order left any-status main runs in the file and reddened drift:job-max).",
+    "hook-ledger.json is the one entry fed by LOCAL data: its producer folds the ignored guard",
+    "chain ledger (.ci/cache/hook-ledger/chains.jsonl, written by dispatch.run_chain), so --refresh",
+    "runs on a checkout that ran hooks and fails loud in CI, and its nightly check refuses a snapshot",
+    "past 14 days or out of step with the guards on disk (PLAN-tooling-code-reduction.md CR8)."
   ],
   "artifacts": [
     {
@@ -37,6 +41,13 @@
       "check": ["python3", "-m", "rediacc_ci.ci.gate_costs", "--check"],
       "network": true,
       "cadence": ["pr", "nightly"]
+    },
+    {
+      "artifact": ".ci/config/hook-ledger.json",
+      "producers": [["python3", ".claude/hooks/stop/wl_hookreport.py", "--snapshot"]],
+      "check": ["python3", ".claude/hooks/stop/wl_hookreport.py", "--check-snapshot"],
+      "network": false,
+      "cadence": ["nightly"]
     }
   ]
 }
