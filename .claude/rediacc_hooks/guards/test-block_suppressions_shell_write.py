@@ -72,19 +72,24 @@ def _own_cases(shared):
     ]
 
 
+# The expanded forms (#7b3f34ae) are `shellscan.write_records`' now (CR5): a record per typed and per expanded word, each with its own `append`. These plants put the typed-only reading back into the guard's use of the records.
 MUTANTS = [
     (
         "a redirect's append flag read as typed (#7b3f34ae)",
         (
-            'appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}',
-            'appends = {target for op, target in analysis.writes if op in (">>", "&>>")}',
+            "                    if write.append\n",
+            "                    if write.append and write.word in run.writes\n",
         ),
     ),
     (
         "a run's redirect targets read as typed (#7b3f34ae)",
         (
-            "targets = shellscan.redirect_targets(run) + (",
-            "targets = list(run.writes) + (",
+            "            target = write.word\n",
+            (
+                "            target = write.word\n"
+                "            if target not in [*run.writes, *run.argv]:\n"
+                "                continue\n"
+            ),
         ),
     ),
 ]

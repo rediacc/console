@@ -23,7 +23,6 @@ IT FAILS OPEN, LOUDLY, as its edit sibling does: a scanner that cannot be import
 
 import importlib
 import io
-import os
 import pathlib
 import re
 import sys
@@ -104,17 +103,6 @@ def _language(engine, target, content):
     return engine.language_for(target, head)
 
 
-def _abs(target, run_cwd, cwd):
-    # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), so the baseline counted is the file the write replaces.
-    run_cwd = shellscan.write_directory(run_cwd, cwd)
-    base = (
-        cwd
-        if run_cwd is None
-        else (run_cwd if os.path.isabs(run_cwd) else os.path.join(cwd, run_cwd))
-    )
-    return target if os.path.isabs(target) else os.path.normpath(os.path.join(base, target))
-
-
 def _disk_counts(engine, path, language):
     try:
         with open(path, encoding="utf-8", errors="surrogateescape") as handle:
@@ -160,15 +148,16 @@ def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
 
-_redirects = shellscan.analysis_redirects
+# The `shellscan.write_records` readings whose content is the run's text: an output redirect (`>`, `>>`) and a `tee`. A record's `path` is where the write lands (a kept `<name>/..` pair placed where the disk resolves it, review 2925782e.1), so the baseline counted is the file the write replaces, and its `append` says whether the file's own markers stay.
+_TEXT_WRITES = frozenset(("redirect", "append", "tee"))
 
 
-def _offending(engine, cmd, cwd):
-    """A one-line description of the first marker-adding write in `cmd`, or ""."""
-    analysis = shellscan._analyse(cmd)
+def _offending(engine, cmd, cwd, records=None):
+    """A one-line description of the first marker-adding write in `cmd`, or "". `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
+    if records is None:
+        records = shellscan.write_records(cmd, cwd)
     # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
     bodies = shellscan.heredoc_bodies(cmd)
-    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.
     runs = shellscan.every_run(cmd)
@@ -182,8 +171,10 @@ def _offending(engine, cmd, cwd):
         written = shellscan.writer_text(run, cmd) if pure else ""
         # A pure writer's text carries its own heredoc or feed; any other redirect (`python3 gen.py > a.py`) is read with every heredoc in the command, as before.
         content = (written or "") if pure else "\n".join(bodies)
-        targets = shellscan.redirect_targets(run) + (_operands(argv) if name == "tee" else [])
-        for target in targets:
+        for write in records:
+            if write.run is not run or write.how not in _TEXT_WRITES:
+                continue
+            target = write.word
             language = _language(engine, target, content)
             if language is not None and pure and written is None:
                 return "a write of text this hook cannot read into %s (%s)" % (
@@ -192,11 +183,10 @@ def _offending(engine, cmd, cwd):
                 )
             if language is not None:
                 new = engine.count_markers(content, language)
-                appending = target in appends or (name == "tee" and "-a" in argv)
                 old = (
                     engine.count_markers("", language)
-                    if appending
-                    else _disk_counts(engine, _abs(target, run.cwd, cwd), language)
+                    if write.append
+                    else _disk_counts(engine, write.path, language)
                 )
                 grew = engine.growth(old, new)
                 if grew:
@@ -291,7 +281,9 @@ def run(ev):
     except (ImportError, OSError, RuntimeError, SyntaxError) as exc:
         ev.warn(UNEXAMINED % exc)
         return hookio.ALLOW
-    what = _offending(engine, cmd, ev.default(("cwd",), str(root)))
+    what = _offending(
+        engine, cmd, ev.default(("cwd",), str(root)), shellscan.event_write_records(ev)
+    )
     if not what:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % (what, cmd.split("\n", 1)[0][:160]))
