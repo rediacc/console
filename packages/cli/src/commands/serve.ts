@@ -29,6 +29,7 @@ import { outputService } from '../services/core/output.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { createExecutorAudit } from '../services/serve/audit.js';
 import { AuthVerifier, resolvePinnedOrgId } from '../services/serve/auth.js';
+import { resolveServeBind, serveListenOptions } from '../services/serve/bind.js';
 import {
   createContainerConfigLoader,
   createExecutorGrantRecorder,
@@ -42,8 +43,10 @@ import { handleError, ValidationError } from '../utils/errors.js';
 
 interface ServeOptions {
   port: string;
-  host: string;
+  host?: string;
   mode: 'daemon' | 'container';
+  tlsCert?: string;
+  tlsKey?: string;
 }
 
 export function registerServeCommand(program: Command): void {
@@ -52,7 +55,10 @@ export function registerServeCommand(program: Command): void {
     .summary(t('commands.serve.summary'))
     .description(t('commands.serve.description'))
     .option('-p, --port <port>', t('commands.serve.optionPort'), '8080')
-    .option('--host <host>', t('commands.serve.optionHost'), '0.0.0.0')
+    // No Commander default: the default depends on --mode (services/serve/bind.ts DEFAULT_HOST).
+    .option('--host <host>', t('commands.serve.optionHost'))
+    .option('--tls-cert <path>', t('commands.serve.optionTlsCert'))
+    .option('--tls-key <path>', t('commands.serve.optionTlsKey'))
     .addOption(
       new Option('--mode <mode>', t('commands.serve.optionMode'))
         .choices(['daemon', 'container'])
@@ -70,6 +76,8 @@ export function registerServeCommand(program: Command): void {
         }
 
         const pinnedOrgId = resolvePinnedOrgId(options.mode, process.env);
+        // Refused here, before anything listens: a daemon off loopback without TLS would carry bearer tokens in the clear.
+        const bind = resolveServeBind(options);
 
         const accountUrl = getSubscriptionServerUrl();
 
@@ -109,10 +117,15 @@ export function registerServeCommand(program: Command): void {
         const app = createServeApp(deps);
         const port = Number.parseInt(options.port, 10);
 
-        const server = honoServe({ fetch: app.fetch, port, hostname: options.host });
+        const server = honoServe({ fetch: app.fetch, port, ...serveListenOptions(bind) });
 
         outputService.info(
-          t('commands.serve.listening', { host: options.host, port, mode: options.mode })
+          t('commands.serve.listening', {
+            scheme: bind.tls ? 'https' : 'http',
+            host: bind.hostname,
+            port,
+            mode: options.mode,
+          })
         );
         outputService.info(t('commands.serve.hint'));
 

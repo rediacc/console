@@ -2704,11 +2704,18 @@
         "customPort": "Yürütücü sunucusunu belirli bir portta başlat."
       },
       "hint": "Bir istemciyi şununla yönlendirin: rdc --proxy <url> <command>",
-      "listening": "Yürütücü http://{{host}}:{{port}} adresinde dinliyor (mod: {{mode}})",
-      "optionHost": "Bağlanılacak adres",
+      "listening": "Yürütücü {{scheme}}://{{host}}:{{port}} adresinde dinliyor (mod: {{mode}})",
+      "optionHost": "Bağlanılacak adres (daemon için varsayılan 127.0.0.1, konteynerde 0.0.0.0)",
+      "optionTlsCert": "PEM sertifika dosyası; --tls-key ile birlikte HTTPS sunar",
+      "optionTlsKey": "--tls-cert için PEM özel anahtar dosyası",
       "optionMode": "Konum: daemon (müşteri sunucusu) veya container",
       "optionPort": "Dinlenecek port",
-      "summary": "Uzak istemciler için yürütücü olarak çalıştır"
+      "summary": "Uzak istemciler için yürütücü olarak çalıştır",
+      "errors": {
+        "tlsRequired": "{{host}} üzerindeki bir daemon yürütücü, bearer token'ları şifrelenmemiş HTTP üzerinden taşırdı. Loopback'e bağlayın (varsayılan 127.0.0.1) ya da HTTPS sunmak için --tls-cert ve --tls-key verin.",
+        "tlsPairIncomplete": "--tls-cert ve --tls-key birlikte kullanılır: ikisini de verin ya da hiçbirini vermeyin.",
+        "tlsUnreadable": "{{path}} okunamadı: {{reason}}"
+      }
     },
     "server": {
       "summary": "Kendi sunucunuzda barındırılan Rediacc hesap sunucusunu kurun ve çalıştırın",

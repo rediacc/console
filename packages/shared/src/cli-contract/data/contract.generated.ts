@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'ca260f75ebcb1302';
+export const CLI_CONTRACT_VERSION = '0033255de727860c';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "ca260f75ebcb1302",
+  "version": "0033255de727860c",
   "languages": [
     "ar",
     "de",
@@ -16187,10 +16187,32 @@ export const CLI_CONTRACT: CliContract = {
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
-          "defaultValue": "0.0.0.0",
+          "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.serve.optionHost",
-          "label": "Address to bind"
+          "label": "Address to bind (default 127.0.0.1 for a daemon, 0.0.0.0 in a container)"
+        },
+        {
+          "flags": "--tls-cert <path>",
+          "long": "tls-cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.serve.optionTlsCert",
+          "label": "PEM certificate file; with --tls-key, serve HTTPS"
+        },
+        {
+          "flags": "--tls-key <path>",
+          "long": "tls-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.serve.optionTlsKey",
+          "label": "PEM private key file for --tls-cert"
         },
         {
           "flags": "--mode <mode>",

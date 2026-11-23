@@ -2704,11 +2704,18 @@
         "customPort": "Den Executor-Server auf einem bestimmten Port starten."
       },
       "hint": "Einen Client damit verbinden: rdc --proxy <url> <command>",
-      "listening": "Executor lauscht auf http://{{host}}:{{port}} (Modus: {{mode}})",
-      "optionHost": "Adresse, an die gebunden werden soll",
+      "listening": "Executor lauscht auf {{scheme}}://{{host}}:{{port}} (Modus: {{mode}})",
+      "optionHost": "Adresse, an die gebunden wird (Standard: 127.0.0.1 für einen Daemon, 0.0.0.0 in einem Container)",
+      "optionTlsCert": "PEM-Zertifikatsdatei; zusammen mit --tls-key wird HTTPS bereitgestellt",
+      "optionTlsKey": "PEM-Datei mit dem privaten Schlüssel zu --tls-cert",
       "optionMode": "Platzierung: daemon (Kundenhost) oder container",
       "optionPort": "Port, auf dem gelauscht werden soll",
-      "summary": "Als Executor für Remote-Clients ausführen"
+      "summary": "Als Executor für Remote-Clients ausführen",
+      "errors": {
+        "tlsRequired": "Ein Daemon-Executor auf {{host}} würde Bearer-Tokens über unverschlüsseltes HTTP übertragen. Binde an Loopback (Standard: 127.0.0.1) oder gib --tls-cert und --tls-key an, um HTTPS bereitzustellen.",
+        "tlsPairIncomplete": "--tls-cert und --tls-key gehören zusammen: beide angeben oder keines von beiden.",
+        "tlsUnreadable": "{{path}} konnte nicht gelesen werden: {{reason}}"
+      }
     },
     "server": {
       "summary": "Den selbst gehosteten Rediacc-Account-Server installieren und betreiben",

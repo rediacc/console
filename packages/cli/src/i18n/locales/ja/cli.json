@@ -2704,11 +2704,18 @@
         "customPort": "特定のポートでエグゼキューターサーバーを起動する"
       },
       "hint": "次のコマンドでクライアントを接続してください: rdc --proxy <url> <command>",
-      "listening": "エグゼキューターが http://{{host}}:{{port}} で待ち受け中（モード: {{mode}}）",
-      "optionHost": "バインドするアドレス",
+      "listening": "エグゼキューターが {{scheme}}://{{host}}:{{port}} で待ち受け中（モード: {{mode}}）",
+      "optionHost": "バインドするアドレス（デーモンでは既定で 127.0.0.1、コンテナでは 0.0.0.0）",
+      "optionTlsCert": "PEM 証明書ファイル。--tls-key と併用すると HTTPS で提供します",
+      "optionTlsKey": "--tls-cert に対応する PEM 秘密鍵ファイル",
       "optionMode": "配置先: daemon（顧客ホスト）または container",
       "optionPort": "待ち受けるポート",
-      "summary": "リモートクライアント向けのエグゼキューターとして実行"
+      "summary": "リモートクライアント向けのエグゼキューターとして実行",
+      "errors": {
+        "tlsRequired": "{{host}} のデーモンエグゼキューターは、ベアラートークンを暗号化されていない HTTP で送ることになります。ループバック（既定の 127.0.0.1）にバインドするか、--tls-cert と --tls-key を指定して HTTPS で提供してください。",
+        "tlsPairIncomplete": "--tls-cert と --tls-key はセットで指定します。両方指定するか、どちらも指定しないでください。",
+        "tlsUnreadable": "{{path}} を読み取れませんでした: {{reason}}"
+      }
     },
     "server": {
       "summary": "セルフホストの Rediacc アカウントサーバーをインストールして実行する",

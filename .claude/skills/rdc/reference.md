@@ -2476,7 +2476,9 @@ Run this process as an executor so clients can run commands through it instead o
 **Options:**
 
 - `-p, --port <port>`: Port to listen on (default: 8080)
-- `--host <host>`: Address to bind (default: 0.0.0.0)
+- `--host <host>`: Address to bind (default 127.0.0.1 for a daemon, 0.0.0.0 in a container)
+- `--tls-cert <path>`: PEM certificate file; with --tls-key, serve HTTPS
+- `--tls-key <path>`: PEM private key file for --tls-cert
 - `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.

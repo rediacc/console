@@ -2704,11 +2704,18 @@
         "customPort": "在指定端口启动执行器服务。"
       },
       "hint": "使用以下命令连接客户端：rdc --proxy <url> <command>",
-      "listening": "执行器正在 http://{{host}}:{{port}} 上监听（模式：{{mode}}）",
-      "optionHost": "绑定地址",
+      "listening": "执行器正在 {{scheme}}://{{host}}:{{port}} 上监听（模式：{{mode}}）",
+      "optionHost": "绑定地址（守护进程默认 127.0.0.1，容器中默认 0.0.0.0）",
+      "optionTlsCert": "PEM 证书文件；与 --tls-key 一起使用时提供 HTTPS",
+      "optionTlsKey": "与 --tls-cert 配套的 PEM 私钥文件",
       "optionMode": "部署位置：daemon（客户主机）或 container",
       "optionPort": "监听端口",
-      "summary": "作为执行器运行，供远程客户端使用"
+      "summary": "作为执行器运行，供远程客户端使用",
+      "errors": {
+        "tlsRequired": "{{host}} 上的守护进程执行器会通过未加密的 HTTP 传输 Bearer 令牌。请绑定到回环地址（默认 127.0.0.1），或提供 --tls-cert 和 --tls-key 以提供 HTTPS。",
+        "tlsPairIncomplete": "--tls-cert 和 --tls-key 必须同时提供：要么都提供，要么都不提供。",
+        "tlsUnreadable": "无法读取 {{path}}：{{reason}}"
+      }
     },
     "server": {
       "summary": "安装并运行自托管的 Rediacc 账户服务器",

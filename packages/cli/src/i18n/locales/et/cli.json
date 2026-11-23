@@ -2704,11 +2704,18 @@
         "customPort": "Käivita täituri server kindlal pordil."
       },
       "hint": "Suuna klient sinna kasutades: rdc --proxy <url> <command>",
-      "listening": "Täitur kuulab aadressil http://{{host}}:{{port}} (režiim: {{mode}})",
-      "optionHost": "Aadress, millega siduda",
+      "listening": "Täitur kuulab aadressil {{scheme}}://{{host}}:{{port}} (režiim: {{mode}})",
+      "optionHost": "Aadress, millega siduda (vaikimisi 127.0.0.1 deemonil, 0.0.0.0 konteineris)",
+      "optionTlsCert": "PEM-sertifikaadi fail; koos --tls-key-ga pakutakse HTTPS-i",
+      "optionTlsKey": "PEM-privaatvõtme fail --tls-cert jaoks",
       "optionMode": "Paiknemine: daemon (kliendi host) või container",
       "optionPort": "Port, mida kuulata",
-      "summary": "Käivita täiturina kaugklientide jaoks"
+      "summary": "Käivita täiturina kaugklientide jaoks",
+      "errors": {
+        "tlsRequired": "Deemontäitur aadressil {{host}} saadaks kandjalubasid krüpteerimata HTTP kaudu. Seo loopback-aadressiga (vaikimisi 127.0.0.1) või anna HTTPS-i jaoks --tls-cert ja --tls-key.",
+        "tlsPairIncomplete": "--tls-cert ja --tls-key käivad koos: anna mõlemad või mitte kumbagi.",
+        "tlsUnreadable": "Faili {{path}} ei õnnestunud lugeda: {{reason}}"
+      }
     },
     "server": {
       "summary": "Paigalda ja käivita ise majutatav Rediacci kontoserver",

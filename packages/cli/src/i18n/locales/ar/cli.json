@@ -2704,11 +2704,18 @@
         "customPort": "تشغيل خادم المنفِّذ على منفذ معيَّن."
       },
       "hint": "وجّه العميل إليه باستخدام: rdc --proxy <url> <command>",
-      "listening": "المنفّذ يستمع على http://{{host}}:{{port}} (الوضع: {{mode}})",
-      "optionHost": "العنوان الذي يتم الربط به",
+      "listening": "المنفّذ يستمع على {{scheme}}://{{host}}:{{port}} (الوضع: {{mode}})",
+      "optionHost": "العنوان الذي يتم الربط به (الافتراضي 127.0.0.1 للخدمة الخلفية، و0.0.0.0 داخل الحاوية)",
+      "optionTlsCert": "ملف شهادة PEM؛ مع --tls-key يُقدَّم الاتصال عبر HTTPS",
+      "optionTlsKey": "ملف المفتاح الخاص PEM المقابل لـ --tls-cert",
       "optionMode": "الموضع: daemon (مضيف العميل) أو container",
       "optionPort": "المنفذ الذي يتم الاستماع عليه",
-      "summary": "التشغيل كمنفّذ للعملاء عن بُعد"
+      "summary": "التشغيل كمنفّذ للعملاء عن بُعد",
+      "errors": {
+        "tlsRequired": "المنفّذ الخلفي على {{host}} سينقل رموز bearer عبر HTTP غير مشفّر. اربطه بعنوان الاسترجاع (الافتراضي 127.0.0.1)، أو مرّر --tls-cert و--tls-key لتقديم HTTPS.",
+        "tlsPairIncomplete": "يُستخدم --tls-cert و--tls-key معًا: مرّر كليهما أو لا تمرّر أيًّا منهما.",
+        "tlsUnreadable": "تعذّرت قراءة {{path}}: {{reason}}"
+      }
     },
     "server": {
       "summary": "تثبيت خادم حسابات Rediacc المستضاف ذاتيًا وتشغيله",
