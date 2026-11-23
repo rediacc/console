@@ -212,12 +212,12 @@ def test_a_perturbed_row_is_reported_as_drift(gate):
     gate.log_pass("B. verify on the real tree is unaffected and still green")
 
 
-def test_an_untracked_new_file_under_a_provider_scope_is_reported_as_drift(gate):
-    """B2. Finding 9009b27c: verify was green while a new file was untracked and red once it was staged.
+def test_an_untracked_file_under_a_provider_scope_is_not_drift(gate):
+    """The record is the TRACKED tree: an untracked file under a provider's scope must not read as drift.
 
-    The commit-policy hook renders against the commit's own tree, where a new file is staged, so verify must give the same answer for an untracked file. The control plants one untracked, ignored-by-nothing hook file (a row of the hook-closure table), requires DRIFT naming `doc-registry.md`, and removes it in a `finally`. The generator has no seam for another ROOT (it derives ROOT from its own location), so this is the one case that briefly adds a file to the real tree; the file is asserted gone afterwards.
+    This checkout is shared; another session's scratch files (its .ci/state/, for one) sit untracked under provider globs, and counting them made every session's verify red (5b34d5aeb2, reverted forward). A new file joins the record when it is staged, and the commit-policy hook renders against the commit's own tree, so it reports the drift then.
     """
-    require_inputs(gate)
+    gate.log_test("B2. an untracked file under a provider's scope is not drift")
     probe = ROOT / ".claude" / "hooks" / "context" / "zz_untracked_probe.py"
     if probe.exists():
         gate.log_fail("%s already exists; the control would be about someone else's file" % probe)
@@ -226,26 +226,12 @@ def test_an_untracked_new_file_under_a_provider_scope_is_reported_as_drift(gate)
         result = gen()
     finally:
         probe.unlink()
-    if result.rc == 0:
-        gate.log_fail(
-            "CONTROL DID NOT FIRE: verify passed while an untracked hook file was on disk"
-        )
-    gate.assert_contains(
-        result.err, "DRIFT", "verify failed but never said DRIFT: %s" % result.err.strip()
-    )
-    gate.assert_contains(
-        result.err, "doc-registry.md", "the drift report did not name doc-registry.md"
-    )
-    gate.assert_contains(
-        result.err, "zz_untracked_probe.py", "the drift report did not name the untracked file"
-    )
-    gate.log_pass("B2. an untracked new file under a provider's scope is reported as DRIFT")
+    if result.rc != 0:
+        gate.log_fail("verify read an untracked file as drift: %s" % result.err.strip())
+    gate.assertions += 1
     if probe.exists():
         gate.log_fail("the probe file was not removed")
-    restored = gen()
-    if restored.rc != 0:
-        gate.log_fail("verify is red after the probe was removed: %s" % restored.err.strip())
-    gate.log_pass("B2. verify is green again once the probe is gone")
+    gate.log_pass("B2. an untracked new file under a provider's scope leaves verify green")
 
 
 def test_two_write_runs_are_byte_identical(gate):

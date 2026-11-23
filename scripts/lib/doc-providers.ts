@@ -27,15 +27,13 @@
  * refuse an empty or malformed file outright, where a broken TypeScript import would surface as
  * a module-load stack trace somewhere else entirely.
  *
- * ENUMERATION IS FROM `git ls-files` over the INDEX PLUS the untracked-but-not-ignored files
- * (`--others --exclude-standard`), with one guard. Section 5b of the driver contract records
+ * ENUMERATION IS FROM `git ls-files`, i.e. the INDEX, with one guard. Section 5b of the driver contract records
  * check-shell-declared-commands.ts crashing on six unstaged deletions: the index listed files
  * the worktree no longer had. Every provider here therefore filters to paths that are regular
- * files on disk and reports the rest as `missing` rather than throwing. Untracked files are
- * listed because the commit-policy hook renders against the commit's own tree, where a new file
- * is staged: a tracked-only enumeration made `--check` green while the file was untracked and
- * red the moment `git add` ran (finding 9009b27c, guards/_edit_suite.py, 2026-11-23). Staged
- * and untracked now give the same answer, and ignored files stay out.
+ * files on disk and reports the rest as `missing` rather than throwing. An UNTRACKED file is not
+ * part of the record: listing untracked files made every session's stray scratch files (another
+ * session's .ci/state/, for one) read as drift in this shared tree (5b34d5aeb2, reverted forward).
+ * The commit-policy hook renders against the commit's own tree, where a new file is staged.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -140,7 +138,7 @@ const underAny = (rel: string, dirs: readonly string[]): boolean =>
   dirs.some((d) => d !== '' && rel.startsWith(`${d}/`));
 
 /**
- * Tracked and untracked-not-ignored paths under `paths`, with SUBMODULE GITLINKS dropped.
+ * Tracked paths under `paths`, with SUBMODULE GITLINKS dropped.
  *
  * `git ls-files` reports a submodule as a single entry whose mode is 160000, and that entry is a
  * DIRECTORY on disk. A naive "is this a regular file" filter therefore reports `private/renet`,
@@ -148,16 +146,7 @@ const underAny = (rel: string, dirs: readonly string[]): boolean =>
  * Four false alarms every run is how a report teaches its reader to skip it, so the mode is read
  * and the gitlinks are excluded before anything is judged.
  */
-const lsFiles = (root: string, ...paths: string[]): string[] => [
-  ...lsFilesIndexed(root, paths),
-  ...execFileSync(
-    'git',
-    ['-C', root, 'ls-files', '-z', '--others', '--exclude-standard', '--', ...paths],
-    { encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 }
-  )
-    .split('\0')
-    .filter((f) => f !== ''),
-];
+const lsFiles = (root: string, ...paths: string[]): string[] => lsFilesIndexed(root, paths);
 
 const lsFilesIndexed = (root: string, paths: string[]): string[] =>
   execFileSync('git', ['-C', root, 'ls-files', '-s', '-z', '--', ...paths], {
