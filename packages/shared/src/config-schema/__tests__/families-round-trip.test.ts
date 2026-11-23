@@ -66,10 +66,11 @@ const CARRIED_SECTIONS = [
   'resources',
   'access',
   'infra',
-  'policy',
   'state',
 ] as const;
 const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath', 'preview'] as const;
+/** Sections only a local-file config may carry: RdcConfigSchema refuses them beside `remote` (the policy ceiling, D24). */
+const LOCAL_FILE_ONLY_SECTIONS = ['policy'] as const;
 
 /**
  * A config populating EVERY resource family (schema-validated below, so a
@@ -110,7 +111,6 @@ function allFamiliesConfig(): RdcConfig {
       },
     },
     state: { datastores: { ds1: { mounted: true } } },
-    policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
     access: {
       sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
       keys: {
@@ -245,8 +245,10 @@ describe('resource families round trip', () => {
       `fixture must populate every schema family; missing: ${missing.join(', ')}`
     ).toEqual([]);
 
+    const localFileOnly: readonly string[] = LOCAL_FILE_ONLY_SECTIONS;
     const missingSections = Object.keys(RdcConfigSchema.shape).filter(
-      (key) => (config as Record<string, unknown>)[key] === undefined
+      (key) =>
+        !localFileOnly.includes(key) && (config as Record<string, unknown>)[key] === undefined
     );
     expect(
       missingSections,
@@ -254,8 +256,13 @@ describe('resource families round trip', () => {
     ).toEqual([]);
   });
 
-  it('every top-level section is classified envelope, carried, or host-local', () => {
-    const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
+  it('every top-level section is classified envelope, carried, host-local, or local-file only', () => {
+    const classified = [
+      ...ENVELOPE_SECTIONS,
+      ...CARRIED_SECTIONS,
+      ...HOST_LOCAL_SECTIONS,
+      ...LOCAL_FILE_ONLY_SECTIONS,
+    ];
     // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
     expect(
       [...Object.keys(RdcConfigSchema.shape)].sort((a, b) => Number(a > b) - Number(a < b))
@@ -286,7 +293,6 @@ describe('resource families round trip', () => {
     expect(rebuilt.account?.accountServer).toBeUndefined();
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
-    expect(rebuilt.policy).toEqual(original.policy);
     expect(rebuilt.access).toEqual(original.access);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);

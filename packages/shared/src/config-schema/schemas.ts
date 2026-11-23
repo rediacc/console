@@ -588,18 +588,26 @@ export const RdcConfigSchema = z
     renetPath: z.string().optional(),
     state: StateSchema.optional(),
     /**
-     * Authorization rules the EXECUTOR enforces (`rdc serve`).
-     *
-     * It lives inside the config, which means it lives inside the encrypted
-     * blob, which means Rediacc cannot read an organization's rules. It is also
-     * field-committed (see sensitivity.ts '/policy'), so the server rejects a
-     * push that rewrites it without knowing the current value. That matters more
-     * than secrecy here: the threat is not someone READING the rules, it is
-     * someone quietly REWRITING them to grant themselves access.
+     * The local-file ceiling on what the EXECUTOR may run (D24). Only a config
+     * with no `remote` block carries it: a remote config's policy is its own
+     * encrypted record, written by owners, admins and team admins through
+     * `PUT /configs/:id/policy` (PLAN-rmcp-policy-record.md Design 1), and a
+     * `policy` field beside `remote` fails the parse below, so a member cannot
+     * plant one in a pushed blob.
      */
     policy: PolicyDocumentSchema.optional(),
   })
-  .loose();
+  .loose()
+  .superRefine((config, ctx) => {
+    if (config.remote !== undefined && config.policy !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['policy'],
+        message:
+          'A remote config carries no policy field; its policy is the separate record behind PUT /configs/:id/policy.',
+      });
+    }
+  });
 
 // =============================================================================
 // Types

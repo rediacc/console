@@ -78,33 +78,4 @@ describe('explicit undefined keys', () => {
 
     expect(pathsToCommit(rebuilt)).toEqual(pathsToCommit(configWithSsh({ privateKey: 'k' })));
   });
-
-  // ── The same trap, one level up: a whole top-level section ───────────
-
-  it('an undefined-valued /policy key commits a pointer an absent one does not', () => {
-    // The third place this bug tried to land. `policy` now rides inside the ciphertext, so every path that rebuilds a config from a pull (the remote adapter, the CEK rotation, the container executor) has to restore it — and a careless `policy: full.policy` on a config that never had one would commit '/policy' against a blob that cannot back it.
-    const withUndefined = pathsToCommit(configWithPolicy(undefined, true));
-    const withAbsent = pathsToCommit(configWithPolicy(undefined, false));
-
-    expect(withUndefined).toContain('/policy');
-    expect(withAbsent).not.toContain('/policy');
-    expect(withUndefined).not.toEqual(withAbsent);
-  });
 });
-
-/**
- * A config whose `policy` key is either explicitly undefined or genuinely absent.
- * The two are indistinguishable to a reader and different to the walker.
- */
-function configWithPolicy(policy: unknown, keyPresent: boolean): RdcConfig {
-  const config: RdcConfig = {
-    schemaVersion: 3,
-    id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
-    version: 1,
-    defaults: { language: 'en', datastoreSize: '95%' },
-    encryption: { mode: 'plaintext' },
-  };
-
-  if (keyPresent) (config as { policy?: unknown }).policy = policy;
-  return config;
-}

@@ -14,7 +14,8 @@
  * Invariant: every primitive leaf in schemas.ts MUST resolve to a template
  * entry here (exact, wildcard, or a registered ancestor container), except the
  * envelope fields the coverage gate explicitly excludes (schemaVersion, id,
- * version, encryption). The CI gate `check:ci-schema-coverage`
+ * version, encryption) and the local-only `policy` ceiling a remote config
+ * refuses (coverage.ts LOCAL_ONLY_EXCLUSIONS). The CI gate `check:ci-schema-coverage`
  * (scripts/gates/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
  * any Zod leaf introduced without a registry entry — and on any registry entry
  * whose template no longer matches a schema node (stale residue).
@@ -85,12 +86,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
 
-  // ── Authorization policy (executor-enforced) ───────────────────────────── Registered as a single leaf: the whole document is one committed value, so ANY edit to ANY rule changes the commitment and a push that rewrites the rules without knowing the current value is rejected by the server.
-  //
-  // Not 'public' (public fields are excluded from pathsToCommit, which would leave the rules tamper-able) and not 'secret' either: the threat here is not someone reading the rules, it is someone quietly rewriting them.
-  '/policy': { kind: 'identifier' },
-
-  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree, for the reason '/policy' is: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
+  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
   '/access': { kind: 'identifier' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
