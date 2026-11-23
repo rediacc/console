@@ -385,7 +385,7 @@ function evaluateRetryEligibility({
   guardForced = false,
   repeat = null,
 }) {
-  if (repeat && repeat.repeat) {
+  if (repeat?.repeat) {
     return {
       retry: false,
       repeat: true,
@@ -462,7 +462,7 @@ const GENERIC_FAILURE_LINE_RE =
  * rerun). Either half is null when the job does not say. Pure.
  */
 function failureSignature(job, annotations) {
-  const step = ((job && job.steps) || []).find((s) => s && s.conclusion === 'failure');
+  const step = (job?.steps || []).find((s) => s && s.conclusion === 'failure');
   // GitHub's own closing lines say nothing about WHY: "Process completed with exit code 1." follows nearly every failed step (it is the only annotation on Renet (Full) in nightly 44882769573), so two unrelated failures of one step would read as a repeat. They are skipped; a job whose only failure annotations are generic has no first error line, and is never a repeat.
   const first = (annotations || []).find(
     (a) =>
@@ -515,10 +515,11 @@ function evaluateRepeatFailure({ current, previous, attempt }) {
   if (!previous) {
     return { repeat: false, reason: 'no failed previous attempt of this job to compare against' };
   }
-  if (!current || !current.step || !current.firstError || !previous.step || !previous.firstError) {
+  if (!current?.step || !current.firstError || !previous.step || !previous.firstError) {
     return {
       repeat: false,
-      reason: 'the failed step or the first error line is unknown on one attempt, so a repeat is not shown',
+      reason:
+        'the failed step or the first error line is unknown on one attempt, so a repeat is not shown',
     };
   }
   if (current.step === previous.step && current.firstError === previous.firstError) {
@@ -2342,7 +2343,12 @@ function selftest() {
     'utf8'
   );
   const m = /WATCHDOG_RETRY_ALLOWLIST_PATTERNS:\s*'([^']*)'/.exec(wf);
-  const allowlist = m ? m[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const allowlist = m
+    ? m[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
   let failures = 0;
   const check = (label, ok, detail = '') => {
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}${ok || !detail ? '' : `: ${detail}`}`);
@@ -2354,7 +2360,11 @@ function selftest() {
     'no WATCHDOG_RETRY_ALLOWLIST_PATTERNS in the workflow'
   );
   const e2e = 'Tests + Infra / E2E Ceph';
-  check('the fixture job is on the real allowlist', matchesPatterns(e2e, allowlist), allowlist.join(','));
+  check(
+    'the fixture job is on the real allowlist',
+    matchesPatterns(e2e, allowlist),
+    allowlist.join(',')
+  );
 
   const bpfJob = (attempt) => ({
     id: 1000 + attempt,
@@ -2373,12 +2383,17 @@ function selftest() {
   const sig1 = failureSignature(bpfJob(1), bpfAnnotations);
   check(
     'failureSignature reads the failed step and the FIRST LINE of the first failure annotation',
-    sig1.step === 'Renet BPF rebuild check' && sig1.firstError === 'bpf object out of date: run make bpf',
+    sig1.step === 'Renet BPF rebuild check' &&
+      sig1.firstError === 'bpf object out of date: run make bpf',
     JSON.stringify(sig1)
   );
   const sig2 = failureSignature(bpfJob(2), bpfAnnotations);
   const repeat = evaluateRepeatFailure({ current: sig2, previous: sig1, attempt: 2 });
-  check('two attempts on the same step and line are a repeat', repeat.repeat === true, repeat.reason);
+  check(
+    'two attempts on the same step and line are a repeat',
+    repeat.repeat === true,
+    repeat.reason
+  );
 
   const base = {
     jobName: e2e,
@@ -2386,14 +2401,28 @@ function selftest() {
     threshold: 0.8,
     retryAllowlistPatterns: allowlist,
   };
-  const outage = { ...base, classification: 'transient', confidence: 0, classifierAvailable: false };
-  const transient = { ...base, classification: 'transient', confidence: 0.9, classifierAvailable: true };
+  const outage = {
+    ...base,
+    classification: 'transient',
+    confidence: 0,
+    classifierAvailable: false,
+  };
+  const transient = {
+    ...base,
+    classification: 'transient',
+    confidence: 0.9,
+    classifierAvailable: true,
+  };
   for (const [label, args] of [
     ['a classifier HTTP 402 outage', outage],
     ['a confident transient verdict', transient],
   ]) {
     const v = evaluateRetryEligibility({ ...args, repeat });
-    check(`a repeat is NOT retried under ${label}`, v.retry === false && v.repeat === true, v.reason);
+    check(
+      `a repeat is NOT retried under ${label}`,
+      v.retry === false && v.repeat === true,
+      v.reason
+    );
   }
 
   // CONTROLS: the other direction, so the rule cannot pass by refusing everything.
@@ -2405,13 +2434,16 @@ function selftest() {
     firstVerdict.reason
   );
   const other = evaluateRepeatFailure({
-    current: failureSignature(bpfJob(2), [{ annotation_level: 'failure', message: 'ssh: connect timed out' }]),
+    current: failureSignature(bpfJob(2), [
+      { annotation_level: 'failure', message: 'ssh: connect timed out' },
+    ]),
     previous: sig1,
     attempt: 2,
   });
   check(
     'CONTROL: the same step with a different first error line is not a repeat, and keeps its retry',
-    other.repeat === false && evaluateRetryEligibility({ ...transient, repeat: other }).retry === true,
+    other.repeat === false &&
+      evaluateRetryEligibility({ ...transient, repeat: other }).retry === true,
     other.reason
   );
   const unknown = evaluateRepeatFailure({
@@ -2419,7 +2451,11 @@ function selftest() {
     previous: sig1,
     attempt: 2,
   });
-  check('CONTROL: an unknown first error line is never a repeat', unknown.repeat === false, unknown.reason);
+  check(
+    'CONTROL: an unknown first error line is never a repeat',
+    unknown.repeat === false,
+    unknown.reason
+  );
   const generic = [{ annotation_level: 'failure', message: 'Process completed with exit code 1.' }];
   const genericRepeat = evaluateRepeatFailure({
     current: failureSignature(bpfJob(2), generic),
@@ -2450,7 +2486,11 @@ function selftest() {
     previous: { step: 'Renet BPF rebuild check', firstError: firstErrorFromLog(bpfLog(1)) },
     attempt: 2,
   });
-  check('two attempts with the same logged cause are a repeat', fromLogs.repeat === true, fromLogs.reason);
+  check(
+    'two attempts with the same logged cause are a repeat',
+    fromLogs.repeat === true,
+    fromLogs.reason
+  );
   check(
     'CONTROL: a specific ##[error] marker is its own first error line, and an excerpt with no marker has none',
     firstErrorFromLog('step output\n##[error]Docker pull failed: TLS handshake timeout') ===
@@ -2463,11 +2503,13 @@ function selftest() {
   );
   check(
     'CONTROL: a non-allowlisted job with the classifier out still fails fast (the outage widens nothing)',
-    evaluateRetryEligibility({ ...outage, jobName: 'Build (Docker) / CLI', repeat: first }).retry === false
+    evaluateRetryEligibility({ ...outage, jobName: 'Build (Docker) / CLI', repeat: first })
+      .retry === false
   );
   check(
     'an HTTP 402 is named as a classifier OUTAGE',
-    /OUTAGE.*402/.test(classifierOutageNote([402, 500])) && !/OUTAGE/.test(classifierOutageNote([500])),
+    /OUTAGE.*402/.test(classifierOutageNote([402, 500])) &&
+      !/OUTAGE/.test(classifierOutageNote([500])),
     classifierOutageNote([402, 500])
   );
   return failures;
@@ -2479,7 +2521,9 @@ if (require.main === module) {
     console.log(`${n === 0 ? '✓' : '✗'} watchdog-monitor selftest: ${n} failure(s)`);
     process.exit(n === 0 ? 0 : 1);
   }
-  console.error('usage: node .ci/scripts/ci/watchdog-monitor.cjs --selftest (the monitor itself runs through actions/github-script)');
+  console.error(
+    'usage: node .ci/scripts/ci/watchdog-monitor.cjs --selftest (the monitor itself runs through actions/github-script)'
+  );
   process.exit(2);
 }
 

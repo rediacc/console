@@ -277,6 +277,31 @@ export interface LicenceUpgradeResult {
   via: 'inbox' | 'already-current';
 }
 
+type BootRefusal = Awaited<ReturnType<typeof readBootRejected>>;
+
+/** A boot refusal naming the missing upstream key stops the upgrade; any other is warned about. */
+function reportBootRefusal(refused: BootRefusal, domain: string): void {
+  if (refused?.reason === NO_UPSTREAM_KEY) {
+    throw new ServerError(t('commands.server.licence.noUpstreamKey', { domain }));
+  }
+  if (refused) {
+    outputService.warn(
+      t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
+    );
+  }
+}
+
+/** After the cert is applied, a boot refusal that is still recorded means the cert did not clear it. */
+async function assertBootRefusalGone(
+  deps: ServerDeps,
+  where: Parameters<typeof readBootRejected>[1]
+): Promise<void> {
+  const still = await readBootRejected(deps, where);
+  if (still) {
+    throw new ServerError(t('commands.server.licence.bootRefusalStays', { reason: still.reason }));
+  }
+}
+
 /**
  * From the free tier to a cert, or to a newer one: the logged-in config mints one for the box's key
  * (or `--cert` brings it), it goes into the box's cert inbox, and the running server validates and
@@ -296,14 +321,7 @@ export async function serverLicence(
   if (!boxKey) throw new ServerError(t('commands.server.errors.keygenNoKey'));
 
   const refused = await readBootRejected(deps, where);
-  if (refused?.reason === NO_UPSTREAM_KEY) {
-    throw new ServerError(t('commands.server.licence.noUpstreamKey', { domain: record.domain }));
-  }
-  if (refused) {
-    outputService.warn(
-      t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
-    );
-  }
+  reportBootRefusal(refused, record.domain);
   if (!certFile && !deps.hasAccountLogin()) {
     throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
   }
@@ -327,14 +345,7 @@ export async function serverLicence(
   outputService.info(t('commands.server.licence.droppedCert', { certId: drop.certId }));
   await awaitInboxResult(deps, where, drop.requestId);
   await confirmCertId(deps, await boxTarget(deps, record), record.domain, drop.certId);
-  if (refused) {
-    const still = await readBootRejected(deps, where);
-    if (still) {
-      throw new ServerError(
-        t('commands.server.licence.bootRefusalStays', { reason: still.reason })
-      );
-    }
-  }
+  if (refused) await assertBootRefusalGone(deps, where);
   if (Object.keys(result.env).length > 0) await setBoxEnv(deps, where, result.env);
   outputService.info(t('commands.server.licence.viaInbox'));
 

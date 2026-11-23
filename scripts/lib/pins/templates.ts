@@ -502,7 +502,9 @@ export function readTemplateFiles(
     throw new Error(
       `only ${out.size} template compose file(s) found under ${TREES.map((t) => t.root).join(', ')} (floor ${floor}): a scan root moved or is empty`
     );
-  const absent = [...(cited ?? [])].filter((f) => !out.has(f)).sort();
+  const absent = [...(cited ?? [])]
+    .filter((f) => !out.has(f))
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   if (absent.length > 0)
     throw new Error(
       `${absent.length} cited template compose file(s) are not under ${root}: ${absent.slice(0, 5).join(', ')}${absent.length > 5 ? ', ...' : ''}`

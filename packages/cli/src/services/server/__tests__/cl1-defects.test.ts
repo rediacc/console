@@ -14,12 +14,13 @@ vi.mock('../../core/output.js', () => ({
   outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn(), print: vi.fn() },
 }));
 
+import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
 import { rdcMust, stderrTail } from '../box.js';
 import { imageListText } from '../bundle/manifest.js';
 import { placeImage } from '../common.js';
 import { makeFake } from './fakes.js';
 
-const REF = 'ghcr.io/rediacc/server:1.2';
+const REF = `${WK_IMAGE_REGISTRY}/server:1.2`;
 const WHERE = { repo: 'elite', machine: 'box1', dockerSocket: '/var/run/x.sock' } as never;
 
 describe('--image-file manifest', () => {

@@ -57,7 +57,6 @@ import { t } from '../../i18n/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { promptRequiresTTY, type ServerPrompts } from '../../utils/server-prompts.js';
-import { LOGIN_EMAIL_ENV } from '../account/subscription-password-auth.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { addExistingMachine } from '../machine/add-existing.js';
@@ -100,6 +99,7 @@ import {
   type InstallResult,
   type InstallStep,
 } from './install-options.js';
+import { defaultMachineName, loggedInEmail, type Plan } from './install-plan.js';
 import {
   awaitInboxResult,
   confirmCertId,
@@ -123,31 +123,6 @@ import { applyTls } from './tls.js';
 import type { LicenceMode, ServerDeps, TlsMethod } from './types.js';
 
 const DEFAULT_LICENCE: LicenceMode = 'auto';
-
-/** The resolved values, every one known before the first step runs. */
-interface Plan {
-  machine: string;
-  machineConfig: MachineConfig;
-  domain: string;
-  storeDomain: string;
-  repo: string;
-  size: string;
-  owner: string;
-  tls: TlsMethod;
-  licence: LicenceMode;
-  image: string;
-}
-
-function loggedInEmail(): string | undefined {
-  return process.env[LOGIN_EMAIL_ENV]?.trim() || undefined;
-}
-
-function defaultMachineName(ip: string): string {
-  return `server-${ip
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}`;
-}
 
 export class ServerInstall {
   private record!: ServerRecord;
@@ -181,40 +156,7 @@ export class ServerInstall {
   async run(): Promise<InstallResult> {
     this.plan = await this.resolvePlan();
     ensureStateDir();
-    const earlier = loadRecord(this.plan.domain);
-    if (earlier && earlier.machine !== this.plan.machine) {
-      throw new ValidationError(
-        t('commands.server.errors.otherMachine', {
-          domain: this.plan.domain,
-          machine: earlier.machine,
-        })
-      );
-    }
-    if (earlier?.licence === 'free') {
-      if (earlier.steps.owner) {
-        throw new ValidationError(
-          t('commands.server.errors.freeTierInstalled', { domain: this.plan.domain })
-        );
-      }
-      // An unfinished install recorded on the free tier: its licence step runs again, for a cert.
-      delete earlier.steps.licence;
-      delete earlier.licence;
-    }
-    this.record = earlier ?? {
-      domain: this.plan.domain,
-      storeDomain: this.plan.storeDomain,
-      machine: this.plan.machine,
-      repo: this.plan.repo,
-      steps: {},
-    };
-    Object.assign(this.record, {
-      storeDomain: this.plan.storeDomain,
-      repo: this.plan.repo,
-      owner: this.plan.owner,
-      tls: this.plan.tls,
-      image: this.plan.image,
-      ...(this.opts.tlsCa ? { tlsCa: this.opts.tlsCa } : {}),
-    });
+    this.record = this.openRecord(loadRecord(this.plan.domain));
     await this.save();
 
     for (const step of INSTALL_STEPS) {
@@ -240,6 +182,44 @@ export class ServerInstall {
       image: this.plan.image,
       tls: this.plan.tls,
     };
+  }
+
+  /** The record this run continues (or starts), refused on another machine or a finished free-tier install. */
+  private openRecord(earlier: ServerRecord | undefined): ServerRecord {
+    if (earlier && earlier.machine !== this.plan.machine) {
+      throw new ValidationError(
+        t('commands.server.errors.otherMachine', {
+          domain: this.plan.domain,
+          machine: earlier.machine,
+        })
+      );
+    }
+    if (earlier?.licence === 'free') {
+      if (earlier.steps.owner) {
+        throw new ValidationError(
+          t('commands.server.errors.freeTierInstalled', { domain: this.plan.domain })
+        );
+      }
+      // An unfinished install recorded on the free tier: its licence step runs again, for a cert.
+      delete earlier.steps.licence;
+      delete earlier.licence;
+    }
+    const record = earlier ?? {
+      domain: this.plan.domain,
+      storeDomain: this.plan.storeDomain,
+      machine: this.plan.machine,
+      repo: this.plan.repo,
+      steps: {},
+    };
+    Object.assign(record, {
+      storeDomain: this.plan.storeDomain,
+      repo: this.plan.repo,
+      owner: this.plan.owner,
+      tls: this.plan.tls,
+      image: this.plan.image,
+      ...(this.opts.tlsCa ? { tlsCa: this.opts.tlsCa } : {}),
+    });
+    return record;
   }
 
   private async save(): Promise<void> {

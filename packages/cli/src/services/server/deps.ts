@@ -14,7 +14,7 @@ import type { TLSSocket } from 'node:tls';
 import { type AccountFetchError, accountServerFetch } from '../account/account-client.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
-import { writeStdout } from '../core/request-context.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { certToBase64, parseSignedCert } from './cert.js';
 import { offlineDeps } from './deps-offline.js';
@@ -44,7 +44,7 @@ function runRdc(argv: string[]): Promise<ProcResult> {
     let stderr = '';
     // Shown as it arrives and kept (bounded) so a failure can name its cause.
     child.stderr.on('data', (chunk: Buffer) => {
-      process.stderr.write(chunk);
+      writeStderr(chunk);
       stderr = `${stderr}${chunk.toString('utf-8')}`.slice(-STDERR_KEEP);
     });
     child.stdout.on('data', (chunk: Buffer) => {
