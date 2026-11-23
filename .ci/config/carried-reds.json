@@ -38,14 +38,6 @@
       "gate": "check:ci-plan-bindings",
       "findings": "*",
       "reason": "Three finished plans (PLAN-console-executor-multi-org, PLAN-executor-durable-object-policy, PLAN-signer-bench-stop-binding-reattach) are cited by the open live box 0e4aa275 (R2) of PLAN-multi-region-bench, whose bench work 357547f9 and 8ec6bd76 is still owed; the box cannot be ticked before that run and rewording an open box changes its signature (check:ci-plan-boxes reads it as deleted). Lift: drop this entry once R2 runs on bench and is ticked, after which the three plans move to agent/plans/_done."
-    },
-    {
-      "gate": "check:ci-plan-implementation",
-      "findings": [
-        "P-A2:no-evidence:agent/plans/PLAN-preview-signer.md#d19eccab",
-        "P-A2:no-row:agent/plans/PLAN-preview-signer.md#d19eccab"
-      ],
-      "reason": "A0 (d19eccab) needs a retroactive investigation row naming its implementing commit b69748d25e (private/account 76fb934), which is on origin/main but not an ancestor of 1121-1 until landing --promote rebases it; promotion waits on this push (R3's live CI run). Lift: write the row right after promotion (worklist #ce9966d1) and drop this entry."
     }
   ]
 }
