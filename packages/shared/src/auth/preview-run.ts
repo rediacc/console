@@ -10,14 +10,15 @@ interface PreviewCapable {
 }
 
 /**
- * The preview flag given for polarity `opt-in` (`--dry-run`), or absent for
- * `default` (the command previews unless `--apply`). Only a boolean `true`
- * counts as the flag being given: any other value reaches the executor as a
- * plain value, so it never excuses a run.
+ * A run is a preview only when it cannot act, so every doubtful value reads as an action:
+ * - polarity `opt-in` (`--dry-run`): a preview only when the flag is exactly `true`; any other value never excuses a run.
+ * - polarity `default` (previews unless `--apply`): a preview only when the act flag is absent or exactly `false`; any
+ *   other value (`'true'`, `1`, `'yes'`) may reach the executor as an apply, so it counts as acting and keeps step-up.
  */
 export function isPreviewRun(entry: PreviewCapable, params: Record<string, unknown>): boolean {
   const preview = entry.preview;
   if (!preview) return false;
-  const given = params[preview.flag] === true;
-  return preview.polarity === 'opt-in' ? given : !given;
+  const value = params[preview.flag];
+  if (preview.polarity === 'opt-in') return value === true;
+  return value === undefined || value === false;
 }

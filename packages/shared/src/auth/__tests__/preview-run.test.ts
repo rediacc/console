@@ -22,8 +22,12 @@ describe('isPreviewRun', () => {
     expect(isPreviewRun(DEFAULT, { apply: true })).toBe(false);
   });
 
-  it('a non-boolean value is never the flag being given', () => {
+  it('a doubtful value always reads as acting, never as a preview (review 0ff6b868.1)', () => {
+    // opt-in: a non-boolean dry-run is not a preview.
     expect(isPreviewRun(OPT_IN, { 'dry-run': 'true' })).toBe(false);
-    expect(isPreviewRun(DEFAULT, { apply: 'true' })).toBe(true);
+    // default: a non-boolean apply may reach the executor as an apply, so it is not a preview and keeps step-up.
+    expect(isPreviewRun(DEFAULT, { apply: 'true' })).toBe(false);
+    expect(isPreviewRun(DEFAULT, { apply: 1 })).toBe(false);
+    expect(isPreviewRun(DEFAULT, { apply: '' })).toBe(false);
   });
 });
