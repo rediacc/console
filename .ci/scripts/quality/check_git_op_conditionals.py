@@ -45,7 +45,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import git_op_conditionals
 
 if __name__ == "__main__":
+    _gate_args.parse("check_git_op_conditionals.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(git_op_conditionals.main(sys.argv[1:]))

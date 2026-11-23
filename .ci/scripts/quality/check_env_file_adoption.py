@@ -21,7 +21,9 @@ why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import env_file_adoption
 
 if __name__ == "__main__":
+    _gate_args.parse("check_env_file_adoption.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(env_file_adoption.main(sys.argv[1:]))

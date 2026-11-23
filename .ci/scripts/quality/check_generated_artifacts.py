@@ -35,6 +35,8 @@ import shlex
 import subprocess
 import sys
 
+import _gate_args
+
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 HOOK_MODULE_REL = ".claude/rediacc_hooks/git/artifacts.py"
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
@@ -618,4 +620,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_generated_artifacts.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main(sys.argv[1:]))

@@ -57,7 +57,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import host_toolchain_coverage
 
 if __name__ == "__main__":
+    _gate_args.parse("check_host_toolchain_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(host_toolchain_coverage.main(sys.argv[1:]))

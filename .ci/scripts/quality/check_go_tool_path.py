@@ -39,7 +39,9 @@ why: Console's own scripts already use the right shape -- toolchain.sh installs
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import go_tool_path
 
 if __name__ == "__main__":
+    _gate_args.parse("check_go_tool_path.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(go_tool_path.main(sys.argv[1:]))

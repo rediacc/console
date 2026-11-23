@@ -97,6 +97,7 @@ def _tree(tmp_path: pathlib.Path, slow_source: str, workflow: str = _WORKFLOW) -
     quality.mkdir(parents=True)
     shutil.copy(GATE, quality / GATE.name)
     shutil.copy(QUALITY / "_cipath.py", quality / "_cipath.py")
+    shutil.copy(QUALITY / "_gate_args.py", quality / "_gate_args.py")
     (tmp_path / ".ci" / "rediacc_ci").symlink_to(CI_PKG)
     (tmp_path / "scripts" / "ci-runner").mkdir(parents=True)
     (tmp_path / "scripts" / "ci-runner" / "gates.lock.json").write_text(_LOCK)

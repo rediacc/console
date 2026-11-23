@@ -46,7 +46,11 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import greenlight_closures
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_greenlight_closures.py", sys.argv[1:], switches=("--selftest", "--scan")
+    )
     raise SystemExit(greenlight_closures.main(sys.argv[1:]))

@@ -21,7 +21,9 @@ why: an environment variable is an undeclared input, and nothing in this tree co
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import env_manifest
 
 if __name__ == "__main__":
+    _gate_args.parse("check_env_manifest.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(env_manifest.main(sys.argv[1:]))

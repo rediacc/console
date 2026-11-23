@@ -81,7 +81,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import hook_integrity
 
 if __name__ == "__main__":
+    _gate_args.parse("check_hook_integrity.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(hook_integrity.main(sys.argv[1:]))

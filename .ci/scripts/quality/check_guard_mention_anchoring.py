@@ -47,6 +47,7 @@ from pathlib import Path
 from typing import Any
 
 import _cipath
+import _gate_args
 from rediacc_ci import core_lease
 
 # ALIASED: `proc` is the name this file's own code reaches for when it holds a completed process, and it did until these call sites were routed. Keeping the
@@ -1550,4 +1551,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_guard_mention_anchoring.py", sys.argv[1:], switches=())
     sys.exit(main())

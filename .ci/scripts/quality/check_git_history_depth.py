@@ -48,6 +48,7 @@ import subprocess
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls
 
 try:
@@ -297,4 +298,5 @@ def main():
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_git_history_depth.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main())

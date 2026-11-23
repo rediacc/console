@@ -39,6 +39,7 @@ import sys
 from collections.abc import Callable, Sequence
 
 import _cipath
+import _gate_args
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.quality.gh_retry_shell import run_blocks
 
@@ -873,4 +874,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_inner_timeout_reachable.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

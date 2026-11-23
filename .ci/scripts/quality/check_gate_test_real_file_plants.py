@@ -86,6 +86,8 @@ import subprocess
 import sys
 import tempfile
 
+import _gate_args
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 # Both test corpora that drive real gates. `.ci/rediacc_ci/tests` is recursive because the hazard this gate exists for was sitting one level above the only directory the original scan looked at. `.claude/rediacc_hooks/tests` is in scope for the same reason it would be if it were the one with the plant: nothing about the hazard is specific to a package, and a hook test can write
@@ -624,6 +626,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_gate_test_real_file_plants.py", sys.argv[1:], switches=("--selftest",))
     if "--selftest" in sys.argv:
         controls()
         print("%s✓%s selftest" % (GREEN, NC))

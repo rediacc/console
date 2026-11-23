@@ -18,7 +18,15 @@ why: .claude/rediacc_hooks has exactly one platform seam today and nothing was
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import hook_cross_os
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_hook_cross_os.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root",),
+        equals=("--root",),
+    )
     raise SystemExit(hook_cross_os.main(sys.argv[1:]))

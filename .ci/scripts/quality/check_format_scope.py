@@ -34,6 +34,7 @@ import sys
 from pathlib import Path
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("FORMAT_SCOPE_ROOT") or Path(__file__).resolve().parents[3])
@@ -177,4 +178,5 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_format_scope.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main(sys.argv[1:]))

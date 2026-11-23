@@ -64,7 +64,9 @@ slow: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import go_deps
 
 if __name__ == "__main__":
+    _gate_args.parse("check_go_deps.py", sys.argv[1:], switches=("--selftest", "--json"))
     raise SystemExit(go_deps.main(sys.argv[1:]))
