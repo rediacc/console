@@ -64,6 +64,7 @@ CORE = frozenset(
         "cl-owner",
         # Two live writers already breaking a plan mutex or sharing files (agent/plans/PLAN-plan-priority-concurrency.md section 5c): waiting does not resolve it.
         "roster-concurrency",
+        "stuck-shell",
         "ladder-gone",
         "ladder-idle",
         # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7): an open high finding or a hand-edited record protects the PR, and waiting on writers resolves neither, so both profiles keep them.

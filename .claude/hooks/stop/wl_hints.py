@@ -291,6 +291,7 @@ SOURCE_FAMILIES = {
     "plan-tick": "plan-tick",
     "plan-tick-clause1": "plan-tick",
     "roster-concurrency": "roster",
+    "stuck-shell": "roster",
     "roster-unleased": "roster",
     "roster-dead": "roster",
     "lease-dead": "dead-lease",
