@@ -1,8 +1,19 @@
 """check:ci-region-consistency: the seven account targets (stable and edge in eu, us, asia, plus bench) are one shape.
 
-The entry point is .ci/scripts/quality/check_region_consistency.py. This module only dispatches: the offline checks and the target model are in `region_consistency_offline`, the Cloudflare half (`--live`) in `region_consistency_live`, and the planted controls (`--selftest`) in `region_consistency_controls`. Read the offline module's docstring for what each class means.
+This module is the entry (`python3 -m rediacc_ci.quality.region_consistency`) and only dispatches: the offline checks and the target model are in `region_consistency_offline`, the Cloudflare half (`--live`) in `region_consistency_live`, and the planted controls (`--selftest`) in `region_consistency_controls`. Read the offline module's docstring for what each class means.
 
 Usage: [--root DIR] [--live] | --selftest. Exit 0 consistent, 1 drift, 2 no verdict (an unreadable input, or with --live a listing that could not be read).
+
+---- gate ----
+step: Region consistency
+run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency
+selftest: true
+needs: none
+lane: quality-static
+why: Each per-target fact is written in regions.json, two wrangler tomls and a bws profile, and the seven targets
+     were grown one at a time; a target missing what the other six have, or naming another target's bucket, key
+     or Worker, is invisible to every single-file gate.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -95,3 +106,7 @@ def main(argv: list[str]) -> int:
         )
     )
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

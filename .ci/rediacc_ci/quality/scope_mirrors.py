@@ -66,6 +66,19 @@ BLIND SPOTS (plan D9), also printed on every green:
   * C9 sees only its corpus, and skips fenced blocks (config examples, not restatements).
 
 Exit codes: 0 clean, 1 finding or refused write, 2 broken controls or usage error.
+
+---- gate ----
+step: PR scope rules agree with their CLAUDE.md source
+needs: none
+lane: quality-content
+selftest: true
+why: CLAUDE.md is the one written source of the PR-scope rules, and seven other files
+     restate them by hand; a copy nobody re-reads drifts silently. The canonical spans
+     are anchored and pinned by sha, every registered mirror is located and judged
+     (verbatim or terms), quotes of CLAUDE.md must still be quotes, and an unregistered
+     restatement or anchor is red. No `paths`, deliberately: an edit to CLAUDE.md, any
+     mirror, or a guard constant can each break agreement, so the gate runs on every change.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -2075,3 +2088,7 @@ __all__ = [
     "span_sha",
     "write_baseline",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

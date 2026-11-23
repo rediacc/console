@@ -28,6 +28,18 @@ ANTI-VACUITY. A missing family file, a missing or unreadable registry, or a fami
 BLIND SPOTS (`BLIND_SPOTS`, printed on every green): a paraphrase (the scope-mirrors C9 sentinels cover registered clauses), files outside the family, and shared passages under the threshold.
 
 Exit codes: 0 clean, 1 finding, 2 broken controls, usage error or a gate that could not see its inputs.
+
+---- gate ----
+step: PR loop docs carry no duplicated passage
+needs: none
+lane: quality-content
+selftest: true
+why: CLAUDE.md, /pr-babysit, the pr-babysitter agent and /pr-merge are what an agent
+     reads to drive the PR loop, and a passage copied between two of them drifts when
+     only one is edited. Each rule keeps one home and the other files point at it; a
+     shared run of 25 or more normalized words outside code, gen-docs regions and
+     registered scope spans is red.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -687,3 +699,7 @@ __all__ = [
     "selftest",
     "shared_runs",
 ]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
