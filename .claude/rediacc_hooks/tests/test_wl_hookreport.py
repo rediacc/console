@@ -163,12 +163,29 @@ def test_the_snapshot_check_refuses_age_drift_and_emptiness(tree):
     root, rows, _trap = tree
     inv = H.inventory(root)
     doc = H.snapshot(rows, inv, now=NOW - datetime.timedelta(days=15))
-    assert any("more than 14 days old" in f for f in H.check_snapshot(doc, inv, now=NOW))
+    assert [k for k, _t in H.check_snapshot(doc, inv, now=NOW)] == ["hook-ledger:stale"]
     doc = H.snapshot(rows, inv, now=NOW)
     inv2 = dict(inv, block_new={"chain": "pre-bash", "lines": 3})
-    assert any("block_new is on disk" in f for f in H.check_snapshot(doc, inv2, now=NOW))
+    assert [k for k, _t in H.check_snapshot(doc, inv2, now=NOW)] == [
+        "hook-ledger:unsnapshotted:block_new"
+    ]
     with pytest.raises(H.ReportError):
         H.snapshot([], inv)
+
+
+def test_the_snapshot_check_prints_freshness_finding_keys(tree, capsys):
+    """The CLI prints one `::finding::` key per finding and exits 1, the shape freshness --check carries; a fresh snapshot prints none and exits 0."""
+    root, rows, _trap = tree
+    path = root.joinpath(*H.SNAPSHOT_REL)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stale = H.snapshot(rows, H.inventory(root), now=NOW - datetime.timedelta(days=30))
+    path.write_text(json.dumps(stale), encoding="utf-8")
+    assert H.main(["--check-snapshot"], root) == 1
+    assert "::finding::hook-ledger:stale" in capsys.readouterr().out
+    fresh = H.snapshot(rows, H.inventory(root))
+    path.write_text(json.dumps(fresh), encoding="utf-8")
+    assert H.main(["--check-snapshot"], root) == 0
+    assert "::finding::" not in capsys.readouterr().out
 
 
 def budgets(ceiling=100, slack=0.2):

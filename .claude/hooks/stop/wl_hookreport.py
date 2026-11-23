@@ -65,6 +65,8 @@ OVERLAP_JACCARD = 0.5
 GATE_MIN_RUNS = 5
 SNAPSHOT_MAX_DAYS = 14
 ROWS_SHOWN = 15
+# rediacc_ci.log.FINDING_PREFIX, the line freshness --check reads a finding key from; spelled here because a hook module takes no `.ci` import.
+FINDING_PREFIX = "::finding::"
 TEST_FLOOR_MS = 1000
 STOP_TIMING_OWED = (
     "UNMEASURED: per-check Stop durations come from PLAN-tooling-speed.md SP3 (the registry "
@@ -393,30 +395,46 @@ def snapshot(rows, inv, now=None):
 
 
 def check_snapshot(doc, inv, now=None, max_days=SNAPSHOT_MAX_DAYS):
-    """Every finding against a committed snapshot, as strings. Pure."""
+    """Every finding against a committed snapshot, as (key, text) pairs. Pure.
+
+    The key is `hook-ledger:<class>[:<stem>]`, the freshness registry's finding-key shape (rediacc_ci.ci.freshness, FINDING KEYS): no count, date or duration in it, so a carried key names one finding and a new one is refused.
+    """
     findings = []
     win = doc.get("window") or {}
     if not isinstance(win.get("rows"), int) or win["rows"] <= 0:
-        findings.append("the snapshot window holds no rows, so it measures nothing")
+        findings.append(
+            ("hook-ledger:empty", "the snapshot window holds no rows, so it measures nothing")
+        )
     stamp = _parse_ts(doc.get("refreshed_at"))
     now = now or datetime.datetime.now(datetime.UTC)
     if stamp is None:
-        findings.append("refreshed_at %r is not an ISO8601Z stamp" % doc.get("refreshed_at"))
+        findings.append(
+            (
+                "hook-ledger:bad-stamp",
+                "refreshed_at %r is not an ISO8601Z stamp" % doc.get("refreshed_at"),
+            )
+        )
     elif now - stamp > datetime.timedelta(days=max_days):
         findings.append(
-            "refreshed_at %s is more than %d days old" % (doc["refreshed_at"], max_days)
+            (
+                "hook-ledger:stale",
+                "refreshed_at %s is more than %d days old" % (doc["refreshed_at"], max_days),
+            )
         )
     guards = doc.get("guards") or {}
     findings.extend(
-        "guard %s is on disk and missing from the snapshot" % s
+        (
+            "hook-ledger:unsnapshotted:%s" % s,
+            "guard %s is on disk and missing from the snapshot" % s,
+        )
         for s in sorted(set(inv) - set(guards))
     )
     findings.extend(
-        "guard %s is in the snapshot and no longer on disk" % s
+        ("hook-ledger:gone:%s" % s, "guard %s is in the snapshot and no longer on disk" % s)
         for s in sorted(set(guards) - set(inv))
     )
     if not doc.get("chains"):
-        findings.append("the snapshot carries no chain latencies")
+        findings.append(("hook-ledger:no-chains", "the snapshot carries no chain latencies"))
     return findings
 
 
@@ -569,8 +587,10 @@ def main(argv, root=CHECKOUT):
             doc = _read_json(root.joinpath(*SNAPSHOT_REL), "the hook ledger snapshot")
             inv = inventory(root)
             findings = check_snapshot(doc, inv)
-            for f in findings:
-                print("  " + f, file=sys.stderr)
+            for _key, text in findings:
+                print("  " + text)
+            for key in dict.fromkeys(key for key, _text in findings):
+                print("%s%s" % (FINDING_PREFIX, key))
             if findings:
                 print(
                     "hook ledger snapshot: %d finding(s). Refresh: python3 "
