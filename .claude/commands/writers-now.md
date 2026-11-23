@@ -8,13 +8,15 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
-- Writer cap and turbo settings: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^(writer_cap|turbo|turbo_push|batch_size|plan_concurrency|effort):' || echo '(no Settings section)'`
+- Writer cap and effort: !`sed -n '/^## Settings/,/^## /p' agent/plans/QUEUE.md | grep -E '^(writer_cap|effort):' || echo '(no Settings section)'`
 - Promoted progress (generated): !`sed -n '/queue:progress:begin/,/queue:progress:end/p' agent/plans/QUEUE.md`
 - Live writer leases (every session's; the tag after the title names the owner): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | grep -E '^\s*- \[>\]' | head -20 | grep . || echo '(none)'`
 - Last survey (the baseline of the round's report): !`ls -t /tmp/writers-now/*.md 2>/dev/null | grep -v -- '-evidence-' | head -1 | grep . || echo '(none)'`
 - Filter: `$ARGUMENTS`
 
 ## What to do
+
+**This is the development tree's default order.** The development tree (the main checkout) always builds: the Stop hook names this command when Promoted plans have open boxes, and the round below is how they drain. It never waits on the landing tree, which babysits the one open PR, and pushes only as a backup.
 
 **Drain, do not report.** The operator types this instead of a long prompt, and one invocation is measured by boxes ticked and commits landed. The rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
 

@@ -84,6 +84,29 @@ So **its reports are the principal's only window.** In delegated mode they trave
 - **After the drain, `git add -A` is banned.** Every fix commit is staged by name and diffed against the round log's "files touched this round" list; anything staged that was not touched this round is another party's work leaking in, unstaged and flagged. (A round-7 `git add -A` once swept an npm-pruned lockfile into a fix commit.)
 - New work absorbed mid-run arrives as an explicit message naming the paths. Nothing is absorbed by inference.
 
+## Landing states and the long-red rules
+
+The landing Stop hook reads one state from the world on every stop (the PR, its checks, the merge, main's runs) and names the one next step. No event stores the state, so a restart resumes where the world is.
+
+| State | Entered when | The step it names | Leaves to |
+|---|---|---|---|
+| L-CI | the landing PR is open and its checks are pending | watch through the ci-watch skill | L-FIX on a red, L-REVIEW on `CI Complete` SUCCESS |
+| L-FIX | a required check is red | diagnose and fix in the landing tree (fix-only freeze), push | L-CI |
+| L-REVIEW | `CI Complete` SUCCESS on the head | per-commit reviews clean, the PR review answered with `wl_prreview.py`, threads resolved, open live boxes run | L-MERGE |
+| L-MERGE | every box ticked, `CI Complete` SUCCESS, reviews clean | `gh pr merge --rebase --auto`, submodules first | L-RELEASE |
+| L-RELEASE | the PR merged | watch Console CI on main and the CD edge deploy at the merged sha | L-HOTFIX on a main-only red; on green the `cd-done` notice and L-IDLE |
+| L-HOTFIX | a main-only failure | the tree on detached `origin/main`, a `[hotfix]` commit with `Hotfix-Evidence:`, the operator pushes main | L-RELEASE |
+| L-IDLE | no open landing PR | a quiet stop; nothing blocks | L-CI when promote opens the next PR |
+
+Every push, rerun or watchdog retry on the landing PR appends one row to `agent/ledgers/landing-rounds.jsonl` (`wl_longred.py` writes it, never by hand). The long-red rules read the ledger and give one verdict per stop:
+
+- **Outage** (an outside signature: GitHub 5xx, registry 429, no runner): rerun with gaps of 10, 20, 40 and 80 minutes, then every 2 hours, and ask the operator once 24 hours of outage rounds have passed.
+- **Operator-only** (HTTP 401, an expired secret, a billing refusal): ask at once, because no retry fixes it.
+- **Stuck** (one check still red after 3 rounds whose fix targeted it): hand it to the development session with the ledger rows as evidence, `worklist.py --handover <me> stuck <check> <evidence...>`. The development session answers with `--handover-answer <me> <id> lease:<lease-id>|keep|change|undo|done`, and a lease answer is a writer in a tree cut with `./run.sh worktree lease --tree landing` that the landing session lands once.
+- **Churn** (fixes regress a previously green check in 2 of the last 4 rounds): pause and consult the development session with `--handover <me> churn`, which answers keep, change or undo.
+- **Wall** (72 hours since the PR opened): ask the operator with the DEFAULT "keep fixing".
+- **Lesson**: a small CI-only failure fixed in the landing tree is handed over as `--handover <me> lesson <check> <evidence...>`, so the development session can extend the local quick checks to catch that class where that is cheap. It advises and never blocks.
+
 ## The per-PR loop: one plan, one PR, one live branch per tree
 
 Operator rulings 2026-10-02 (agent/plans/PLAN-plan-per-pr-loop.md) and 2026-11-21 (agent/plans/PLAN-simple-two-tree-loop.md). The numbered loop below is the CI half of this cycle:
