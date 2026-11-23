@@ -1,6 +1,6 @@
-"""wl_boxready: which open `[writer]` boxes a writer could start right now, and the IDLE CAPACITY block that names them when writer slots sit free (agent/plans/PLAN-idle-writer-capacity.md D1, D4, D5).
+"""wl_boxready: which open `[writer]` boxes a writer could start right now, and the IDLE CAPACITY block that names them (agent/plans/PLAN-idle-writer-capacity.md D1, D4, D5). There is no writer limit (agent/plans/PLAN-unlimited-writers.md), so the block counts no slots.
 
-WHY. On 2026-11-09 the Stop hook printed "no queued plan is eligible for a free writer slot" for hours while 17 of 25 writer slots were free and PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take. The plan picker of the time worked in whole plans and its ceiling counted live-only plans; nothing looked at boxes. The operator ruled (2026-11-09, R1-R4): a block that names the ready boxes and the spawn command, never an auto-spawn; only boxes explicitly tagged `[writer]` count; a box's own `Depends on:` line judges it, and a plan-level edge gates only the boxes that state none.
+WHY. On 2026-11-09 the Stop hook printed that no queued plan was eligible for a free writer for hours while 17 of the then 25 writers' worth of capacity sat idle and PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take. The plan picker of the time worked in whole plans and its ceiling counted live-only plans; nothing looked at boxes. The operator ruled (2026-11-09, R1-R4): a block that names the ready boxes and the spawn command, never an auto-spawn; only boxes explicitly tagged `[writer]` count; a box's own `Depends on:` line judges it, and a plan-level edge gates only the boxes that state none.
 
 THE TAG GRAMMAR LIVES HERE, ONCE. The first bracketed tag after a box's id (`S2 [writer] ...`, `V1 [live, post-merge] ...`), split into lowercase words. `plan_gate.writer_startable` reads the same functions, so the two readings of "a writer can do this box" cannot drift. The grammar functions import nothing outside the standard library; `post_merge` imports `wl_planenforce` on first use and calls its `after_merge(line)`.
 
@@ -469,8 +469,6 @@ def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None, probe=Non
 def idle_capacity_text(
     root,
     *,
-    free,
-    cap,
     phase,
     plans=None,
     live_plans=(),
@@ -478,9 +476,8 @@ def idle_capacity_text(
     me8="",
     graph=None,
 ) -> str:
-    """The IDLE CAPACITY block (D5), "" when it stands down: no free writer slot, a babysit or merge phase (`phase`), or no ready box."""
-    free = int(free or 0)
-    if phase or free < 1:
+    """The IDLE CAPACITY block (D5), "" when it stands down: a babysit or merge phase (`phase`), or no ready box."""
+    if phase:
         return ""
     ready, _skipped = ready_boxes(root, plans, live_plans, items, graph)
     if not ready:
@@ -495,8 +492,6 @@ def idle_capacity_text(
         rows.append(M.IDLE_CAPACITY_MORE % (len(ready) - LIST_MAX))
     order = list(dict.fromkeys(pathlib.Path(b.rel).name for b in ready))
     return M.V_IDLE_CAPACITY % {
-        "free": int(free),
-        "cap": int(cap),
         "n": len(ready),
         "boxes": "\n".join(rows),
         "spawn": "\n".join(M.IDLE_CAPACITY_SPAWN % base for base in order),

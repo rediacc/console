@@ -839,7 +839,7 @@ def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
 
 
 def test_the_fail_safe_settings_carry_no_batch_keys():
-    """The stand-in for an unimportable wl_planqueue carries only the keys something still reads; the batch loop's keys went with it (agent/plans/PLAN-simple-two-tree-loop.md B4), and writer_cap and commit_remind_min left the settings for constants in code (B5)."""
+    """The stand-in for an unimportable wl_planqueue carries only the keys something still reads; the batch loop's keys went with it (agent/plans/PLAN-simple-two-tree-loop.md B4), and commit_remind_min left the settings for a constant in code (B5), as the writer limit later left the code entirely (agent/plans/PLAN-unlimited-writers.md)."""
     got = vars(plan_gate._default_settings())
     assert got["effort"] == "high"
     assert set(got) == {

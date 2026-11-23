@@ -2,7 +2,7 @@
 
 THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
-  CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
+  CONC_WAIT  every queued item is held by a live plan's mutex or Owns and nothing this session could start (operator 2026-09-24, first given for a full writer cap: stand the order down while nothing can start, with "exceptions like 2% compaction"; agent/plans/PLAN-stop-hook-cap-saturated-wait.md, narrowed to file-clash queues when the writer limit was removed, agent/plans/PLAN-unlimited-writers.md). `wl_roster.concurrency_wait` decides it, because it needs the roster's queue holds.
 
 THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): it turns each check into a block, an advisory or nothing, and these profiles then park what remains. The FLOOR that blocks at every level lives in wl_floor, beside CORE, and is sealed the same way.
 
@@ -10,7 +10,7 @@ THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): i
 
   LANDING_TREE  the stop runs in the landing tree (agent/plans/PLAN-simple-two-tree-loop.md B2). The landing tree's job is to land the one PR, so it keeps the PR protection (_PR_GUARD) plus the loop's duties (the landing state machine's step rides `loop-next`) and parks the checks that start new work.
 
-`profile_for` picks one: LANDING_TREE by the tree role first, then CAP_WAIT over PR_LOOP, the narrower declaration. The development tree always builds. The phase verb and its FOCUS profile were deleted with agent/plans/PLAN-simple-two-tree-loop.md B10; the tree role replaced them.
+`profile_for` picks one: LANDING_TREE by the tree role first, then CONC_WAIT over PR_LOOP, the narrower declaration. The development tree always builds. The phase verb and its FOCUS profile were deleted with agent/plans/PLAN-simple-two-tree-loop.md B10; the tree role replaced them.
 
 SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_PR_TTL_S` is pinned as a literal. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
 
@@ -30,7 +30,7 @@ class Profile(NamedTuple):
     compaction_keys: frozenset  # kept only when compaction is imminent
 
 
-# The pr-babysit finish line. PR_LOOP and LANDING_TREE keep it outright; CAP_WAIT keeps only its always-tier HOOK BUG branch (a blind finish line must say so even in a cap wait).
+# The pr-babysit finish line. PR_LOOP and LANDING_TREE keep it outright; CONC_WAIT keeps only its always-tier HOOK BUG branch (a blind finish line must say so even in a concurrency wait).
 _PR_FINISH = "pr-finish"
 
 # Shared by both profiles: what the lead CAN and MUST act on even while told to wait.
@@ -54,8 +54,7 @@ CORE = frozenset(
         "found-not-fixed",
         "deferred-finding",
         "deflected-finding",
-        # The roster: each means a slot is free, a lease is on nobody, or a running writer owes liveness.
-        "roster-cap",
+        # The roster: each means a lease is on nobody, or a running writer owes liveness.
         "roster-silent",
         "roster-unleased",
         "roster-dead",
@@ -84,10 +83,10 @@ COMPACTION_KEYS = frozenset(
     }
 )
 
-# An expired `[?]` DEFAULT is an order to execute it: both the cap wait and the PR loop keep it.
+# An expired `[?]` DEFAULT is an order to execute it: both the concurrency wait and the PR loop keep it.
 _DEFER_EXPIRED = "defer-expired"
-# The cap wait's own additions: a queue lease with a free slot, and deferrals that must execute.
-_CAP_WAIT_ONLY = frozenset(
+# The concurrency wait's own additions: a queue lease nothing holds any more, and deferrals that must execute.
+_CONC_WAIT_ONLY = frozenset(
     {
         "queue-slot",
         _DEFER_EXPIRED,
@@ -113,7 +112,7 @@ _LOOP_DUTIES = frozenset(
     {
         "open-items",
         "loop-next",
-        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. CAP_WAIT still parks it, as its plan's hygiene table lists it.
+        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. CONC_WAIT still parks it, as its plan's hygiene table lists it.
         "bg-orphan",
     }
 ) | {_DEFER_EXPIRED}
@@ -129,8 +128,8 @@ _BUILD_ONLY = frozenset(
 # The PR loop's own additions: the loop's duties, the PR plan's own pushes and the build checks.
 _PR_LOOP_ONLY = _LOOP_DUTIES | _BUILD_ONLY
 
-CAP_WAIT = Profile(
-    "cap-wait", CORE | _CAP_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
+CONC_WAIT = Profile(
+    "concurrency-wait", CORE | _CONC_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
 )
 # STATE.md freshness is a loop duty at every band (ruling 1d), so the compaction keys are full keeps here rather than late-band ones.
 PR_LOOP = Profile(
@@ -148,18 +147,18 @@ LANDING_TREE = Profile(
     frozenset(),
     frozenset(),
 )
-PROFILES = (CAP_WAIT, PR_LOOP, LANDING_TREE)
+PROFILES = (CONC_WAIT, PR_LOOP, LANDING_TREE)
 # The tree roles of wl_prscope, repeated here because this module imports nothing.
 ROLE_LANDING = "landing"
 ROLE_DEVELOPMENT = "development"
 
 
-def profile_for(role, cap_wait, on_loop):
-    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE. Then the cap wait, then the PR loop."""
+def profile_for(role, conc_wait, on_loop):
+    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE. Then the concurrency wait, then the PR loop."""
     if role == ROLE_LANDING:
         return LANDING_TREE
-    if cap_wait:
-        return CAP_WAIT
+    if conc_wait:
+        return CONC_WAIT
     return PR_LOOP if on_loop else None
 
 

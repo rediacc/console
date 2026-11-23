@@ -1,6 +1,6 @@
 """The ready `[writer]` boxes and the IDLE CAPACITY block (agent/plans/PLAN-idle-writer-capacity.md I2, I3; operator rulings R1-R4 of 2026-11-09).
 
-On 2026-11-09 17 of 25 writer slots sat free for hours while PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take, and no check said so. `wl_boxready.ready_boxes` lists those boxes, and `idle_capacity_text` is the block the Stop hook raises when free slots and ready boxes meet.
+On 2026-11-09 most of the then writer capacity sat idle for hours while PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take, and no check said so. `wl_boxready.ready_boxes` lists those boxes, and `idle_capacity_text` is the block the Stop hook raises when ready boxes have no writer; with no writer limit (agent/plans/PLAN-unlimited-writers.md) it counts no slots.
 """
 
 from __future__ import annotations
@@ -11,8 +11,6 @@ import json
 import os
 import pathlib
 import subprocess
-
-import pytest
 
 from rediacc_hooks import plan_gate, syspath
 from rediacc_hooks.tests.test_plan_gate import _plan_root, _t
@@ -195,8 +193,6 @@ def test_the_given_plan_set_is_read_only(tmp_path):
 
 def _text(root, **kw):
     args = {
-        "free": 3,
-        "cap": 25,
         "phase": False,
         "plans": None,
         "live_plans": (),
@@ -214,17 +210,15 @@ def test_the_block_names_boxes_and_the_spawn_command(tmp_path):
     assert text.startswith("IDLE CAPACITY")
     assert "PLAN-ent.md#%s" % sig in text
     assert "/writers-now PLAN-ent.md" in text
-    assert "3 free writer slot(s) of 25" in text
-    assert "2 ready" in text
+    assert "IDLE CAPACITY: 2 ready `[writer]` box(es)" in text
+    assert "slot" not in text
 
 
-@pytest.mark.parametrize(
-    "kw",
-    [{"free": 0}, {"free": -2}, {"phase": True}],
-)
-def test_the_block_stands_down(tmp_path, kw):
+def test_the_block_stands_down_in_a_babysit_or_merge_phase(tmp_path):
     root = _root(tmp_path, {"ent": ENT}, ["ent"])
-    assert _text(root, **kw) == ""
+    assert _text(root, phase=True) == ""
+    # CONTROL: the same root outside the phase names its boxes.
+    assert _text(root).startswith("IDLE CAPACITY")
 
 
 def test_the_block_is_silent_with_no_ready_box(tmp_path):

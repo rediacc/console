@@ -103,7 +103,7 @@ def _identity_or_die(me, die):
 
 
 def _plan_hold(fold, item_id, session_id):
-    """([holder plan, ...], reason) when the plan-concurrency spawn guard would refuse a writer for this item right now (agent/plans/PLAN-plan-priority-concurrency.md section 5b); ([], "") when it would not, or when the live plans cannot be read (the ordinary free-slot refusal then stands)."""
+    """([holder plan, ...], reason) when the plan-concurrency spawn guard would refuse a writer for this item right now (agent/plans/PLAN-plan-priority-concurrency.md section 5b); ([], "") when it would not, or when the live plans cannot be read (the queue lease is then refused, with the read failure on stderr)."""
     rec = fold.by_id.get(item_id)
     if rec is None:
         return [], ""
@@ -1972,62 +1972,21 @@ def _item_cli(argv, worklist):
                 "%s is not one worker id; a lease names exactly one (worker:<id>, letters, digits, "
                 "'.', '_' or '-'). Two writers on one piece of work need one item each." % wm
             )
-        _hold = ""
         _held_by: list[str] = []
         if wm == "worker:queue":
-            # QUEUED BEHIND THE CAP, accepted only when the cap really is full: otherwise the queue would be an escape hatch for work that could start now.
-            import wl_roster
-
-            _hold = wl_roster.hold_target({"lease_note": " ".join(argv[4:])})
-            if _hold:
-                # ONE BOUNDED RESERVATION (agent/plans/PLAN-stop-hook-retro-20260924.md R.5, operator default 2026-09-24): at most one per session, naming an open or in-flight item the session owns, and expiring with this lease. The lead needed exactly this at 13:34 and was forced to fill the slot instead.
-                _sid = C.resolve_session_id() or me
-                if not wl_roster.hold_valid(_hold, fold.by_id, _sid):
-                    die(
-                        "HOLD_FOR:#%s names no open or in-flight item this session owns; a slot "
-                        "can only be held for live work of this session" % _hold
-                    )
-                _holders = [
-                    r
-                    for r in fold.items
-                    if r["id"] != item_id
-                    and r["state"] == ">"
-                    and r.get("worker") == wl_roster.QUEUE_WORKER
-                    and C.owned_by_me(r.get("owner"), _sid)
-                    and C.lease_state(r.get("line") or "") == "fresh"
-                    and wl_roster.hold_target(r)
-                ]
-                if len(_holders) >= wl_roster.HOLD_MAX:
-                    die(
-                        "a slot is already held (%s); at most %d HOLD_FOR reservation per "
-                        "session. Release that lease first"
-                        % (", ".join("#" + r["id"] for r in _holders), wl_roster.HOLD_MAX)
-                    )
-            _qsid = C.resolve_session_id() or me
-            busy = wl_roster.live_writers_estimate(os.getcwd(), me)
-            _writer_cap = wl_roster.writer_cap(C.project_root(C.project_start()))
-            # HELD BY A LIVE PLAN (agent/plans/PLAN-plan-priority-concurrency.md section 5b, T9): the spawn guard refuses this item's writer while a live exclusive plan runs, or a live plan owns the same files, and its refusal text says to queue the work here. So a free slot does not refuse the lease then: the note is stamped HELD_BY:<plan>, and queue-slot names the item once the holder finishes.
-            if not _hold and (busy is None or len(busy) < _writer_cap):
-                _held_by, _held_why = _plan_hold(fold, item_id, _qsid)
-                if _held_by:
-                    print(
-                        "queued beside a free writer slot: %s. queue-slot names #%s once %s "
-                        "finishes." % (_held_why, item_id, ", ".join(_held_by)),
-                        file=sys.stderr,
-                    )
-            if not _hold and not _held_by and (busy is None or len(busy) < _writer_cap):
-                # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
+            # QUEUED BEHIND A LIVE PLAN (agent/plans/PLAN-plan-priority-concurrency.md section 5b, T9; agent/plans/PLAN-unlimited-writers.md): the spawn guard refuses this item's writer while a live exclusive plan runs, or a live plan owns the same files, and its refusal text says to queue the work here. That hold is the only thing a queue lease waits on: the note is stamped HELD_BY:<plan>, and queue-slot names the item once the holder finishes. With nothing holding it the work starts now, so the lease is refused.
+            _held_by, _held_why = _plan_hold(fold, item_id, C.resolve_session_id() or me)
+            if not _held_by:
                 die(
-                    "#%s stays OPEN (not leased): worker:queue is only for writer work the cap forbids starting, and %s of %d "
-                    "writer slots are busy: start the work instead. If the free slot is meant for "
-                    "a writer about to be spawned, spawn that writer first; the cap is then full "
-                    "and this lease is accepted"
-                    % (
-                        item_id,
-                        "an unknown number" if busy is None else len(busy),
-                        _writer_cap,
-                    )
+                    "#%s stays OPEN (not leased): worker:queue is only for writer work a live plan's "
+                    "mutex or Owns refuses (block_plan_concurrency), and no live plan holds it: "
+                    "start the work instead" % item_id
                 )
+            print(
+                "queued behind a live plan: %s. queue-slot names #%s once %s finishes."
+                % (_held_why, item_id, ", ".join(_held_by)),
+                file=sys.stderr,
+            )
         if wm == "worker:" + LH.LEAD_WORKER:
             # worker:lead (P2.1): the lead drives the item inline. Covered at stop time only while a background task of this session is live, and capped, so it cannot become a way to park work.
             _held = [
@@ -2047,7 +2006,7 @@ def _item_cli(argv, worklist):
                 )
         note = " ".join(a for a in argv[4:] if not a.startswith("worker:")).strip()
         if wm == "worker:queue" and _held_by:
-            # The stamp says WHY a queue lease sits beside a free slot, for anyone reading the store.
+            # The stamp says WHY the work is queued, for anyone reading the store.
             note = (note + " " + " ".join("HELD_BY:" + p for p in _held_by)).strip()
         if C.lease_state("until:%s" % until) != "fresh":
             die(

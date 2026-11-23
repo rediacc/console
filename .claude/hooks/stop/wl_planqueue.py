@@ -94,7 +94,7 @@ def ordered(text: str) -> list[str]:
 # ------------------------------------------------------------ the settings block
 # `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value.
 #
-# agent/plans/PLAN-simple-two-tree-loop.md B5 (ruling 11): the block takes ONE key, `effort`, and refuses every other line by name with the line to delete. The level's bundle in .claude/config/effort.json (`wl_effort.bundle`) decides judge, cadence, agent_hint and agent_pushback, and nothing in the fence overrides them. writer_cap (wl_roster.WRITER_CAP) and commit_remind_min (wl_checks.COMMIT_REMIND_MIN) are fixed in code. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
+# agent/plans/PLAN-simple-two-tree-loop.md B5 (ruling 11): the block takes ONE key, `effort`, and refuses every other line by name with the line to delete. The level's bundle in .claude/config/effort.json (`wl_effort.bundle`) decides judge, cadence, agent_hint and agent_pushback, and nothing in the fence overrides them. commit_remind_min (wl_checks.COMMIT_REMIND_MIN) is fixed in code, and there is no writer limit to set (agent/plans/PLAN-unlimited-writers.md). A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
 
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
@@ -1205,10 +1205,9 @@ def render_inflight(inf: InFlight) -> str:
     else:
         ids = ["worker:%s" % w for w in inf.writers]
         out.append(
-            "- Writers: %d live of writer_cap %d (session %s)%s"
+            "- Writers: %d live (session %s)%s"
             % (
                 len(ids),
-                importlib.import_module("wl_roster").WRITER_CAP,
                 inf.session or "?",
                 ": %s." % _more(ids) if ids else ".",
             )

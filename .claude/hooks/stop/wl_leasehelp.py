@@ -18,7 +18,7 @@ import wl_plandeps as PD
 
 # The in-session lead's own worker name. Not a background task id, so the roster never counts it as a writer.
 LEAD_WORKER = "lead"
-# The placeholder worker of a queued item: writer work the cap forbids starting (wl_roster.QUEUE_WORKER re-exports it). Here so wl_store.classify_items can tell a queued item waiting on a BLOCKED_BY blocker from a dead lease without importing the roster.
+# The placeholder worker of a queued item: writer work a live plan's mutex or Owns refuses (wl_roster.QUEUE_WORKER re-exports it). Here so wl_store.classify_items can tell a queued item waiting on a BLOCKED_BY blocker from a dead lease without importing the roster.
 QUEUE_WORKER = "queue"
 # How many items the lead may hold inline at once. A sealed literal: more than this is not "driving it inline", it is a parking bay.
 LEAD_MAX = 3

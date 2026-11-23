@@ -3046,17 +3046,7 @@ CLI_PLANREC_REVIVED = (
 
 # ---- the parallel-writer roster (wl_roster; agent/plans/PLAN-parallel-writer-roster.md) ----------
 #
-# Every remedy below is an action the session completes ALONE, so no roster block can deadlock: stop an agent, message it, lease, release, tick, or read it with --status. The cap and the 20-minute ping are the operator's numbers, and no variable changes either one.
-
-V_ROSTER_CAP = (
-    "PARALLEL-WRITER CAP EXCEEDED: %d writer agent(s) are live and the cap is %d "
-    "(operator, 2026-09-24; there is no override). The writer roster, oldest first:\n"
-    "%s\n"
-    "  Stop the newest excess writer(s) now, TaskStop %s, then release or re-lease the "
-    "items they held:\n"
-    "    .claude/hooks/stop/worklist.py --lease %s <id> release\n"
-    "  Read-only work belongs to Plan or Explore agents, which the cap does not count."
-)
+# Every remedy below is an action the session completes ALONE, so no roster block can deadlock: stop an agent, message it, lease, release, tick, or read it with --status. The 20-minute ping is the operator's number, and no variable changes it. There is no writer limit (agent/plans/PLAN-unlimited-writers.md).
 
 V_ROSTER_SILENT = (
     "SILENT WORKER: %d supervised agent(s) have shown no evidence for %d minutes or more: no "
@@ -3086,13 +3076,11 @@ V_ROSTER_DEAD = (
     "    .claude/hooks/stop/worklist.py --lease %s <id> release"
 )
 
-# agent/plans/PLAN-stop-hook-retro-20260924.md R.5: only the K oldest queued items are named, K being the free writer slots less a HOLD_FOR reservation. R20260925.5: an item waiting on an open BLOCKED_BY blocker is skipped, and the last line names that token as the remedy.
+# A queued item no live plan holds any more is named here to start (agent/plans/PLAN-unlimited-writers.md: a queue lease exists only for work block_plan_concurrency refuses). R20260925.5: an item waiting on an open BLOCKED_BY blocker is skipped, and the last line names that token as the remedy.
 V_QUEUE_SLOT = (
-    "QUEUED WORK AND A FREE WRITER SLOT: %(free)d slot(s) free, %(queued)d queued: start "
-    "%(ids)s. Spawn a writer for each and move its lease onto it:\n"
+    "QUEUED WORK NOTHING HOLDS: %(startable)d of %(queued)d queued item(s) are held by no live "
+    "plan any more: start %(ids)s. Spawn a writer for each and move its lease onto it:\n"
     "    .claude/hooks/stop/worklist.py --lease %(me)s <id> +60 worker:<agent-id>\n"
-    "  The other queued items stay covered behind the cap. A slot meant for one named item is "
-    "held by leasing ONE queued item with HOLD_FOR:#<id> in its note.\n"
     "  Waiting on another item? A queued item whose BLOCKED_BY blocker is still open is skipped "
     "here and never fails closed:\n"
     "    .claude/hooks/stop/worklist.py --update %(me)s <id> 'BLOCKED_BY:#<blocker>'"
@@ -3118,14 +3106,9 @@ N_LEASE_FAILED_CLOSED = (
     ".claude/hooks/stop/worklist.py --update %s %s 'BLOCKED_BY:#<blocker>'"
 )
 
-# The allow line of a cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md): live writers / cap, their short ids, the queued count, how many work-order checks stood down, and when the next status is owed.
-N_CAP_WAIT = (
-    "CAP-SATURATED WAIT: %d/%d writer slots live (%s); %d item(s) queued behind the cap; "
-    "%d work-order check(s) stood down until a slot frees. Next status due %s."
-)
-# The concurrency-saturated variant (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a writer slot is free, but every queued item is held by a live plan. Live writers / cap, their short ids, the queued count, the holder plans, the stood-down count, the next status due.
-N_CAP_WAIT_CONC = (
-    "CONCURRENCY-SATURATED WAIT: %d/%d writer slots live (%s); all %d queued item(s) are held by "
+# The allow line of a concurrency-saturated wait (agent/plans/PLAN-plan-priority-concurrency.md section 5c): every queued item is held by a live plan's mutex or Owns. Live writers, their short ids, the queued count, the holder plans, the stood-down count, the next status due.
+N_CONC_WAIT = (
+    "CONCURRENCY-SATURATED WAIT: %d writer(s) live (%s); all %d queued item(s) are held by "
     "a live plan (%s); %d work-order check(s) stood down until the holder finishes. Next status "
     "due %s."
 )
@@ -3142,10 +3125,10 @@ V_WISDOM_DUE = (
     "tokens, too few for the briefs."
 )
 
-# Appended to a STATE.md demand the cap-saturated wait KEPT because compaction is imminent.
-N_CAP_WAIT_COMPACTION = (
-    "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
-    "and the recovery document must be current before it is summarised.)"
+# Appended to a STATE.md demand the concurrency-saturated wait KEPT because compaction is imminent.
+N_CONC_WAIT_COMPACTION = (
+    "(Kept although every queued item waits on a live plan: the context is in its last band before "
+    "auto-compact, and the recovery document must be current before it is summarised.)"
 )
 # THE ONE-PLAN-PER-PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE is the one queued line every stop on the loop carries, on blocks and allows alike, because a reader with no memory of the ruling learns it from this line: who (one PR_SCOPE_WHO_* rendered), the queued item count, the other queued plan count, the next plan, the stood-down checks (PR_SCOPE_STOOD or ""), the session prefix.
 N_PR_SCOPE = (
@@ -3262,9 +3245,9 @@ LOOP_NEXT_BRANCH_UNKNOWN = (
     "<MMDD-(MAX+1)>   (gh could not list today's PR heads: compute MAX as pr-merge step 7 does)"
 )
 LOOP_NEXT_NO_BOX = "(no open box found in its text)"
-# IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready writer-tagged boxes meet. Keys: free, cap, n, boxes (IDLE_CAPACITY_BOX rows), spawn (IDLE_CAPACITY_SPAWN rows), who (the session prefix).
+# IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): ready writer-tagged boxes with no writer on them. There is no writer limit (agent/plans/PLAN-unlimited-writers.md), so no slot count. Keys: n, boxes (IDLE_CAPACITY_BOX rows), spawn (IDLE_CAPACITY_SPAWN rows), who (the session prefix).
 V_IDLE_CAPACITY = (
-    "IDLE CAPACITY: %(free)d free writer slot(s) of %(cap)d, and %(n)d ready `[writer]` box(es): "
+    "IDLE CAPACITY: %(n)d ready `[writer]` box(es): "
     "no worklist item tracks them, their dependencies are met, and their Owns overlap no work in "
     "flight (agent/plans/PLAN-idle-writer-capacity.md):\n"
     "%(boxes)s\n"
@@ -3357,9 +3340,9 @@ CLI_HANDOVER_DONE = "handover #%s recorded (%s on %s); the development tree's st
 CLI_HANDOVER_ANSWERED = "handover #%s answered: %s."
 
 N_ROSTER_HONEST = (
-    "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "
-    "leased to a live worker, so the pushes a supervised wait would draw stand down; the cap "
-    "and the status ping still apply.\n"
+    "ROSTER HONEST: %d writer(s), %d reader(s), next status due %s. Every item in flight is "
+    "leased to a live worker, so the pushes a supervised wait would draw stand down; the status "
+    "ping still applies.\n"
     "%s"
 )
 

@@ -913,7 +913,7 @@ both_arms(
 MSG_69B1 = """\
 chore(plans): lift the 2026-09-26 holds and run-alone markers that turbo cannot see past
 
-With turbo on and writer_cap 10, plan_gate.next_turbo picked one plan out of the whole queue. Two temporary rulings from 2026-09-26 stood in the way:
+With turbo on and a writer cap of 10, plan_gate.next_turbo picked one plan out of the whole queue. Two temporary rulings from 2026-09-26 stood in the way:
 - 30 plans read "Status: held -- ... held until CI is green".
 - 40 plans read "Concurrency: exclusive -- ... every plan runs alone while the token budget is limited (for the next few days)".
 

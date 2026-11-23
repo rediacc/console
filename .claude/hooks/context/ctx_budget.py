@@ -484,7 +484,7 @@ RETRO_REARM_DAYS = 7
 RETRO_ORDER = (
     "Stop-hook retro due (standing procedure PLAN-stop-hook-continuity.md P3.1, operator order 2026-09-24; band %(band)s, session %(me8)s). STATE.md was rewritten at %(state_at)s, after this band was crossed, so the recovery document is safe; this session's stop-hook experience is still in context and on disk.\n"
     "  1. Print the brief:  python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s %(band)s\n"
-    "  2. Dispatch ONE Agent with subagent_type Plan and run_in_background true, with that brief as its prompt. Plan agents are read-only and do not count toward the writer cap.\n"
+    "  2. Dispatch ONE Agent with subagent_type Plan and run_in_background true, with that brief as its prompt. Plan agents are read-only, so no spawn guard refuses them.\n"
     "  3. Save what it returns verbatim to agent/plans/PLAN-stop-hook-retro-%(date)s.md (update the file if it exists).\n"
     "The tracking item is created at your next stop and auto-leased to the agent from the #id in its brief. Ledger: agent/ledgers/stop-hook-retros.jsonl. Emitted once per session per band, again after "
     + str(RETRO_REARM_DAYS)

@@ -2526,7 +2526,7 @@ PRIORITY_LADDER = (
                 "plan-unimplemented",
                 # The loop after a merge: the next branch, plan and PR do not exist yet (Design 7).
                 "loop-next",
-                # Free writer slots and ready `[writer]` boxes (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
+                # Ready `[writer]` boxes no writer serves (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
                 "idle-capacity",
                 "defer-expired",
                 "undefaulted",
@@ -2569,8 +2569,7 @@ PRIORITY_LADDER = (
                 "ladder-idle",
                 "ladder-resolve",
                 "unconfirmed",
-                # The parallel-writer roster (wl_roster), placed here by the operator's own order: a writer over the cap, a worker owing its 20-minute status, and a worker gone silent are supervision owed while other agents edit the tree.
-                "roster-cap",
+                # The parallel-writer roster (wl_roster), placed here by the operator's own order: a worker owing its 20-minute status, and a worker gone silent are supervision owed while other agents edit the tree.
                 "roster-silent",
                 # A scheduled workflow red on main that this session claimed, or ticked without evidence (wl_schedred): the party owed is the release pipeline (promote-stable counts only green scheduled runs), which cannot see this session stop.
                 "scheduled-red",
@@ -2615,7 +2614,7 @@ PRIORITY_LADDER = (
                 # The roster's integrity half: a live writer nothing leases, and a lease on a worker with no live agent in its lineage. Both are claims about in-flight work that the store and the harness contradict.
                 "roster-unleased",
                 "roster-dead",
-                # Queued writer work with a writer slot free (agent/plans/PLAN-stop-hook-retro-20260924.md R.5): split out of roster-dead, because a queue is not a finished worker.
+                # Queued writer work that nothing holds any longer (agent/plans/PLAN-stop-hook-retro-20260924.md R.5): split out of roster-dead, because a queue is not a finished worker.
                 "queue-slot",
                 # The Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers already serving plans that break a mutex or share files, which the pre-agent guard missed or was bypassed for. Same roster family as roster-unleased/roster-dead above.
                 "roster-concurrency",
@@ -3570,7 +3569,7 @@ def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cide
 
 # The keys whose block outranks the idle-capacity arm: bug, red-CI and hook-integrity blocks come first, so fixes do. Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts. `pr-finish` and `loop-next` are the merge offer: a box started then would reopen the set the merge waits on.
 IDLE_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
-# The idle-capacity arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait still parks it: with no free slot nothing new starts.
+# The idle-capacity arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The concurrency wait still parks it: with every queued item held, nothing new starts.
 IDLE_KEEPS = frozenset({"idle-capacity"})
 # A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as IDLE_KEEPS does.
 WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
@@ -3634,9 +3633,8 @@ def _stop_setup(ns):
     root = C.project_root(C.project_start(event))
     # The session's own checkout: `root` of the landing tree is the main checkout (LT14), so the branch, role and PR reads below start here.
     own = own_tree(event)
-    # THE SWITCHBOARD (agent/plans/QUEUE.md `## Settings`), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: the effort level and the judge, cadence and agent hint it resolves come from here. The writer cap is wl_roster.WRITER_CAP and the commit reminder COMMIT_REMIND_MIN, both fixed in code.
+    # THE SWITCHBOARD (agent/plans/QUEUE.md `## Settings`), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: the effort level and the judge, cadence and agent hint it resolves come from here. The commit reminder is COMMIT_REMIND_MIN, fixed in code; there is no writer limit (agent/plans/PLAN-unlimited-writers.md).
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
-    _writer_cap = wl_roster.writer_cap(root)
     # THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), active for every outq_add of this stop; each violation is weighed against it once, below, before the stand-down profiles.
     wl_effort.activate(_cfg.effort)
 
@@ -3798,31 +3796,24 @@ def _stop_setup(ns):
         state_doc["waiting_plans"] = {
             r["id"]: list(r["waiting_plans"]) for r in fold.items if r.get("waiting_plans")
         }
-    # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the cap must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
+    # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the roster must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
     # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
     _roster = None
     with contextlib.suppress(Exception):
         _roster = wl_roster.roster(
             event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
         )
-    # QUEUE LEASES RENEW WHILE THE CAP IS FULL (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 2). A queue lease is bounded by its own expiry, and an expired one fails closed into an OPEN item; with every writer slot live, that turned a queue the lead could not start into a stream of "open items" every two hours. Renewed only while saturated, only when under
-    # LEAD_RENEW_BELOW_MIN is left (or already expired), and never a HOLD_FOR reservation, whose expiry bounds the slot it reserves (R.5). A roster that could not be computed renews nothing.
-    # A QUEUE LEASE HELD BY A LIVE PLAN renews on the same terms while the slot is free (agent/plans/PLAN-plan-priority-concurrency.md section 5c): it is waiting on the holder, not on the lead, so letting it expire into an open item would demand a start the spawn guard refuses.
+    # A QUEUE LEASE HELD BY A LIVE PLAN RENEWS (agent/plans/PLAN-plan-priority-concurrency.md section 5c): it is waiting on the holder, not on the lead, so letting it expire into an open item would demand a start the spawn guard refuses. Renewed only when under LEAD_RENEW_BELOW_MIN is left (or already expired). A roster that could not be computed renews nothing.
     with contextlib.suppress(Exception):
         _conc_held_ids = {i for i, _why in (_roster or {}).get("queue_conc_held") or ()}
-        if (
-            _roster
-            and not _roster.get("blind")
-            and (len(_roster.get("writers") or ()) >= _writer_cap or _conc_held_ids)
-        ):
-            _cap_full = len(_roster.get("writers") or ()) >= _writer_cap
+        if _roster and not _roster.get("blind") and _conc_held_ids:
             _renewed = 0
             for _r in fold.items:
                 if _r.get("state") != ">" or not C.owned_by_me(_r.get("owner"), session_id):
                     continue
-                if _r.get("worker") != wl_roster.QUEUE_WORKER or wl_roster.hold_target(_r):
+                if _r.get("worker") != wl_roster.QUEUE_WORKER:
                     continue
-                if not _cap_full and _r["id"] not in _conc_held_ids:
+                if _r["id"] not in _conc_held_ids:
                     continue
                 _age = C.stamp_age_min(_r.get("until") or "")
                 if _age is None or -_age < wl_leasehelp.LEAD_RENEW_BELOW_MIN:
@@ -3832,9 +3823,7 @@ def _stop_setup(ns):
                         _r["id"],
                         C.stamp_ahead(C.MAX_LEASE_MIN)[:16] + "Z",
                         wl_roster.QUEUE_WORKER,
-                        "auto-renew: writer cap full"
-                        if _cap_full
-                        else "auto-renew: held by a live plan",
+                        "auto-renew: held by a live plan",
                         worker_verified=False,
                     )
                     _renewed += 1
@@ -3944,7 +3933,6 @@ def _stop_setup(ns):
                 "_queued_recs",
                 "_roster",
                 "_wakers",
-                "_writer_cap",
                 "b",
                 "counter",
                 "deferred",
@@ -4318,18 +4306,18 @@ def _stop_bg_wait(ns):
         # stop back and fired the check-in immediately -- precisely the "you started waiting, report" behaviour the seed above exists to prevent, and the reason a session that flickers in and out of waiting saw the roster demand over and over. Dropping the key re-seeds it silently.
         state_doc.pop("bgwait", None)
 
-    # THE CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md). A sibling of the pure wait, not a widening of it: pure wait owns the shell/teammate check-in clock and never reads the roster, while this state needs the verified roster and stands down far more (the judge, report shape, hygiene). Every writer slot live and nothing this session could start:
-    # the work orders stand down, and only the keys in wl_standdown.CAP_WAIT still block.
-    _in_cap_wait = False
+    # THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md, narrowed by agent/plans/PLAN-unlimited-writers.md to file-clash queues). A sibling of the pure wait, not a widening of it: pure wait owns the shell/teammate check-in clock and never reads the roster, while this state needs the verified roster and stands down far more (the judge, report shape, hygiene). Every queued item held by a live plan and nothing this session could start:
+    # the work orders stand down, and only the keys in wl_standdown.CONC_WAIT still block.
+    _in_conc_wait = False
     with contextlib.suppress(Exception):
-        _cap_tasks = (
+        _conc_tasks = (
             _bg_actionable
             if _in_pure_wait
             else C.actionable_tasks(session_id, event.get("transcript_path"))
         )
-        _in_cap_wait = wl_roster.cap_saturated_wait(_roster, open_items, _cap_tasks)
-    # THE CAP-SATURATED WAIT skips every paid judge call and counts as supervision for the stuck detector.
-    _in_standdown = _in_cap_wait
+        _in_conc_wait = wl_roster.concurrency_wait(_roster, open_items, _conc_tasks)
+    # THE CONCURRENCY-SATURATED WAIT skips every paid judge call and counts as supervision for the stuck detector.
+    _in_standdown = _in_conc_wait
 
     # STUCK DETECTION. Runs before the others so the count advances on every stop, including the ones where something else already fired: a session blocked three times running on the same check has also moved nothing.
     # SUPERVISED = a live background task AND an in-flight item the session is still
@@ -4365,7 +4353,7 @@ def _stop_bg_wait(ns):
         tasks,
         C._git(root, "rev-parse", "HEAD"),
         bool(live_bg),
-        # A cap-saturated wait is supervision by construction (every slot is a verified-live writer); counting it as unsupervised made the 3x overrun fire on the first stop after the wait ended.
+        # A concurrency-saturated wait is supervision by construction (every queued item waits on a verified-live holder); counting it as unsupervised made the 3x overrun fire on the first stop after the wait ended.
         supervised=_supervised or _in_standdown,
         own_stamp=_own_stamp,
     )
@@ -4375,7 +4363,7 @@ def _stop_bg_wait(ns):
             (
                 "_age",
                 "_bg_actionable",
-                "_in_cap_wait",
+                "_in_conc_wait",
                 "_in_standdown",
                 "_mates_fresh",
                 "bg_facts",
@@ -4688,7 +4676,6 @@ def _stop_roster(ns):
     """Segment "roster" of run_stop (wl_stopregistry.REGISTRY): the lines are the ones that sat inline, reading the earlier segments' locals from `ns` and leaving the ones later segments read."""
     _loop = ns["_loop"]
     _roster = ns["_roster"]
-    _writer_cap = ns["_writer_cap"]
     event = ns["event"]
     fold = ns["fold"]
     me8 = ns["me8"]
@@ -4697,22 +4684,9 @@ def _stop_roster(ns):
     state_doc = ns["state_doc"]
     vadd = ns["vadd"]
     worklist = ns["worklist"]
-    # ---- THE PARALLEL-WRITER ROSTER'S DEFECTS (wl_roster), in the ALWAYS tier: never rotated away, and they defeat the cadence pause (guard A). The cap and the 20-minute ping are checked in EVERY roster state; honesty only decides what is suppressed further down. Every remedy printed is an action the session completes alone.
+    # ---- THE PARALLEL-WRITER ROSTER'S DEFECTS (wl_roster), in the ALWAYS tier: never rotated away, and they defeat the cadence pause (guard A). The 20-minute ping is checked in EVERY roster state; honesty only decides what is suppressed further down. Every remedy printed is an action the session completes alone.
     if _roster is not None:
         _rrows = wl_roster.defect_rows(_roster)
-        if _roster["over_cap"]:
-            vadd(
-                "roster-cap",
-                True,
-                M.V_ROSTER_CAP
-                % (
-                    len(_roster["writers"]),
-                    _writer_cap,
-                    _rrows["cap"],
-                    " ".join(_roster["over_cap"]),
-                    me8,
-                ),
-            )
         # ONE KEY FOR "NO EVIDENCE" (operator ruling 2026-09-24, "Evidence counts as status"): the roster reads transcript growth and in-flight tool calls as status itself, so a worker still owing one after that is exactly a silent worker. `roster-status` is gone.
         _no_evidence = set(_roster["silent"]) | set(_roster["status_due"])
         if _no_evidence:
@@ -4740,14 +4714,14 @@ def _stop_roster(ns):
                 True,
                 M.V_QUEUE_SLOT
                 % {
-                    "free": _roster["queue_free"],
+                    "startable": len(_roster["queue_start"]),
                     "queued": _roster["queued"],
                     "ids": ", ".join("#" + i for i in _roster["queue_start"]),
                     "me": me8,
                     "held": queue_held_lines(_roster, fold, root),
                 },
             )
-        # THE STOP-SIDE BACKSTOP OF block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans break a mutex or share files, counted from the authoritative event. The two-layer shape of block_agent_cap / roster-cap.
+        # THE STOP-SIDE BACKSTOP OF block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans break a mutex or share files, counted from the authoritative event.
         if _roster.get("plan_conflicts"):
             vadd(
                 "roster-concurrency",
@@ -6398,7 +6372,6 @@ def _stop_idle_capacity(ns):
     _loop = ns["_loop"]
     _on_loop = ns["_on_loop"]
     _roster = ns["_roster"]
-    _writer_cap = ns["_writer_cap"]
     aage = ns["aage"]
     astate = ns["astate"]
     ci_report = ns["ci_report"]
@@ -6419,13 +6392,11 @@ def _stop_idle_capacity(ns):
     vadd = ns["vadd"]
     violations = ns["violations"]
     worklist = ns["worklist"]
-    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Runs in every phase (the call passes `phase=False`: a babysit or merge phase no longer stands it down); outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
+    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): ready `[writer]` boxes no writer serves. Names the boxes and the `/writers-now` line, never spawns. Runs in every phase (the call passes `phase=False`: a babysit or merge phase no longer stands it down); outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
     if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
         try:
             _ic_text = wl_boxready.idle_capacity_text(
                 root,
-                free=int(_writer_cap) - len(_roster.get("writers") or ()),
-                cap=int(_writer_cap),
                 phase=False,
                 plans=tuple(_loop.plans or ()),
                 live_plans=sorted((_roster.get("plan_holders") or {}).keys()),
@@ -7228,7 +7199,7 @@ def _stop_verdict(ns):
     _bg_actionable = ns["_bg_actionable"]
     _cfg = ns["_cfg"]
     _compaction_due = ns["_compaction_due"]
-    _in_cap_wait = ns["_in_cap_wait"]
+    _in_conc_wait = ns["_in_conc_wait"]
     _intent = ns["_intent"]
     _loop = ns["_loop"]
     _loop_err = ns["_loop_err"]
@@ -7240,7 +7211,6 @@ def _stop_verdict(ns):
     _ss_reason = ns["_ss_reason"]
     _ss_system = ns["_ss_system"]
     _tree_parks = ns["_tree_parks"]
-    _writer_cap = ns["_writer_cap"]
     actionable_remains = ns["actionable_remains"]
     astate = ns["astate"]
     if "b" in ns:
@@ -7289,7 +7259,7 @@ def _stop_verdict(ns):
     # Saved EAGERLY. The state doc is bookkeeping that must survive every exit below, several of which emit without saving -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
     S.save_state(worklist, session_id, state_doc)
     # ---- THE ROSTER'S HONEST SUPPRESSION (wl_roster.ROSTER_SUPPRESSES), in ONE place, just ahead of the cadence gate so every check has had its say. An HONEST roster means every item in flight is leased to a live worker the hook verified itself, so the pushes that exist to ask "is the waiting real" have their answer. Only those keys drop: CI red, pr-finish, the
-    # judge tier and every integrity check still block, and the roster's own cap and ping keys were added above in every state. `agent-state` drops only for `stale`; `bg-report` only when no task outside the roster (a shell the OS did not confirm, a teammate) is running and no harness task is actionable, because those keep their 15-minute check-in.
+    # judge tier and every integrity check still block, and the roster's own ping keys were added above in every state. `agent-state` drops only for `stale`; `bg-report` only when no task outside the roster (a shell the OS did not confirm, a teammate) is running and no harness task is actionable, because those keep their 15-minute check-in.
     _guide_pre_roster, _guide_empty_pre_roster = guide, guide_empty
     if _roster is not None and _roster["state"] == "HONEST":
         _outside = [
@@ -7320,18 +7290,17 @@ def _stop_verdict(ns):
             # The allow carries the roster in place of a push, AHEAD of the guide, so the session can see what it is being trusted with and when the next status is owed.
             _honest = M.N_ROSTER_HONEST % (
                 len(_roster["writers"]),
-                _writer_cap,
                 len(_roster["readers"]),
                 wl_roster.next_status_due(_roster),
                 "\n".join(wl_roster.summary_lines(_roster)),
             )
             guide = _honest + ("\n\n" + guide if guide else "")
             guide_empty = False
-    # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6), whose keep-list lives in wl_standdown. The STATE.md demand
+    # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the concurrency-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6, narrowed to file-clash queues by agent/plans/PLAN-unlimited-writers.md), whose keep-list lives in wl_standdown. The STATE.md demand
     # survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
     # THE PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4) is the third profile, applied when neither narrower declaration holds: the live PR's plan set, its CI and reviews, its epic's items and the loop's duties block; everything else is parked and named in the N_PR_SCOPE line.
     # THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2) stands down by its tree role: wl_standdown.profile_for picks LANDING_TREE there.
-    _profile = wl_standdown.profile_for(getattr(_loop, "role", ""), _in_cap_wait, _on_loop)
+    _profile = wl_standdown.profile_for(getattr(_loop, "role", ""), _in_conc_wait, _on_loop)
     _pr_scope_stood: dict[str, int] = {}
     if _profile is not None:
 
@@ -7345,7 +7314,7 @@ def _stop_verdict(ns):
         _dropped = sorted({v[0] for v in violations if not _keeps(v)})
         violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
-            _cnote = M.N_CAP_WAIT_COMPACTION
+            _cnote = M.N_CONC_WAIT_COMPACTION
             violations = [
                 (k, a, t + "\n" + _cnote) if k in _profile.compaction_keys else (k, a, t)
                 for k, a, t in violations
@@ -7353,7 +7322,7 @@ def _stop_verdict(ns):
         if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
             bgwait_due = False  # stood down, not delivered
         if _profile in (wl_standdown.PR_LOOP, wl_standdown.LANDING_TREE):
-            state_doc.pop("capwait", None)
+            state_doc.pop("concwait", None)
             _ps = state_doc.get("prscope")
             if not isinstance(_ps, dict) or not isinstance(_ps.get("parked"), dict):
                 _ps = {"parked": {}}
@@ -7363,41 +7332,28 @@ def _stop_verdict(ns):
             _ps["parked_now"] = len(_dropped)
             state_doc["prscope"] = _ps
         else:
-            state_doc["capwait"] = {
+            state_doc["concwait"] = {
                 "at": C.stamp_now(),
                 "dropped": _dropped,
                 "astate": astate,
                 "compaction_due": _compaction_due,
             }
             if not violations:
-                _rv = (
-                    _roster or {}
-                )  # never empty here: cap_saturated_wait is False without a roster
-                if len(_rv.get("writers") or ()) >= _writer_cap:
-                    _note = M.N_CAP_WAIT % (
-                        len(_rv.get("writers") or ()),
-                        _writer_cap,
-                        ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
-                        int(_rv.get("queued") or 0),
-                        len(_dropped),
-                        wl_roster.next_status_due(_rv),
-                    )
-                else:
-                    # THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a slot is free, but every queued item is held by a live plan, so there is nothing to start.
-                    _note = M.N_CAP_WAIT_CONC % (
-                        len(_rv.get("writers") or ()),
-                        _writer_cap,
-                        ", ".join(str(w)[:8] for w in _rv.get("writers") or ()) or "none",
-                        int(_rv.get("queued") or 0),
-                        ", ".join(wl_roster.queue_holder_plans(_rv)) or "?",
-                        len(_dropped),
-                        wl_roster.next_status_due(_rv),
-                    )
+                # THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-plan-priority-concurrency.md section 5c): every queued item is held by a live plan, so there is nothing to start.
+                _rv = _roster or {}  # never empty here: concurrency_wait is False without a roster
+                _note = M.N_CONC_WAIT % (
+                    len(_rv.get("writers") or ()),
+                    ", ".join(str(w)[:8] for w in _rv.get("writers") or ()) or "none",
+                    int(_rv.get("queued") or 0),
+                    ", ".join(wl_roster.queue_holder_plans(_rv)) or "?",
+                    len(_dropped),
+                    wl_roster.next_status_due(_rv),
+                )
                 _base = "" if _guide_empty_pre_roster else _guide_pre_roster
                 guide = _note + ("\n\n" + _base if _base else "")
                 guide_empty = False
     else:
-        state_doc.pop("capwait", None)
+        state_doc.pop("concwait", None)
     # THE ONE QUEUED LINE (M.N_PR_SCOPE), on every stop on the loop: it rides the allow's guide and every block's extras, so a reader with no memory of the ruling learns it from the hook's own text.
     _pr_scope_line = ""
     if _loop is not None and _on_loop:
@@ -7791,7 +7747,7 @@ def _stop_judge(ns):
     S.save_state(worklist, session_id, state_doc)
     audit_note = ""
     judge_cached = False
-    # THE JUDGE STANDS DOWN IN A CAP-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 7). Its orders ("Do the next action", SWEEP THE CLASS, PROOF OBLIGATION) cannot be acted on with every writer slot full; on 2026-09-24 it blocked twice with a reason that itself called the wait legitimate. Unsettled regression fix-sets are not lost: the marker advances
+    # THE JUDGE STANDS DOWN IN A CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 7). Its orders ("Do the next action", SWEEP THE CLASS, PROOF OBLIGATION) cannot be acted on while every queued item waits on a live holder; on 2026-09-24 it blocked twice with a reason that itself called the wait legitimate. Unsettled regression fix-sets are not lost: the marker advances
     # only when a fix-set settles, so the next unsaturated stop asks again.
     if (something_remains or reg_signals) and not wl_judge.disabled(_cfg) and not _in_standdown:
         streak = int(counter.read_text()) if counter.exists() else 0

@@ -13,12 +13,12 @@ ONE VERDICT FROM THREE SOURCES THE LEAD CANNOT EDIT. The Stop event (the harness
   UNKNOWN    anything the roster cannot judge (a teammate leased by name, a suspect shell, an
              open item, a store it cannot see). UNKNOWN changes nothing: the battery runs as before.
 
-THE CAP AND THE PING ARE COMPUTED IN EVERY STATE. Honesty only decides whether some pushes are dropped; it never turns enforcement off.
+THE PING IS COMPUTED IN EVERY STATE. Honesty only decides whether some pushes are dropped; it never turns enforcement off.
 
 NO ESCAPE HATCHES, and this module is where that is enforced. It reads NO environment variable, and every threshold is a module-level literal. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`, so an environment read added here is CI red that registering the variable cannot clear. Thresholds borrowed from `wl_liveness` would inherit its `WORKLIST_*` overrides, so
 the few this module needs are restated here as literals rather than imported: `FINISHED_QUIET_S` stands in for `IDLE_EDGE_EPSILON_S`, and every tail read passes an explicit byte bound instead of `TEAMMATE_TAIL_BYTES`. An override that made no transcript ever "proven finished" would turn every dead lease into a covered one, which is an escape hatch by another name.
 
-WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 transcripts (plan F6), so their type is enough. Every other type is a writer, and so is ANY agent whose transcript shows an edit tool call, whatever its type claims. A reader promoted by evidence is never demoted again, which is the conservative direction for a cap.
+WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 transcripts (plan F6), so their type is enough. Every other type is a writer, and so is ANY agent whose transcript shows an edit tool call, whatever its type claims. A reader promoted by evidence is never demoted again, which is the conservative direction for supervision.
 """
 
 import datetime
@@ -37,19 +37,11 @@ import wl_leasehelp as LH
 
 # ---- the sealed constants ---------------------------------------------------
 
-# The operator's number, fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11): no QUEUE.md line, no variable. A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`), and the lease verb caps the trees on disk with it (.ci/rediacc_ci/dev/worktree_lease.py).
-WRITER_CAP = 25
-
-
-def writer_cap(root) -> int:
-    """The writer cap in force at `root`: always WRITER_CAP. `root` stays in the signature for the guards and the lease verb that call it; nothing under it is read."""
-    del root
-    return WRITER_CAP
-
+# NO WRITER LIMIT (operator ruling #3ca908ee, 2026-11-23; agent/plans/PLAN-unlimited-writers.md): the roster counts writers to supervise them, never to refuse one. The harness's own concurrent-subagent ceiling is the only bound, and file ownership (block_plan_concurrency) still decides who edits what.
 
 # The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
 STATUS_PING_MIN = 20
-# A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
+# A lease on `worker:queue` holds writer work block_plan_concurrency refuses (a live plan's mutex or Owns). It is covered ONLY while such a hold exists; the moment the holder finishes it is a defect naming the item to start, so it can never park work nothing holds.
 QUEUE_WORKER = LH.QUEUE_WORKER
 # The tool calls that prove an agent writes, whatever its declared type says.
 EDIT_TOOLS = frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"})
@@ -60,7 +52,6 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
 # The defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status"). `roster-concurrency` is the Stop-side backstop of the plan-concurrency spawn guard (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans already break a mutex or share files.
 ROSTER_KEYS = (
-    "roster-cap",
     "roster-silent",
     "roster-unleased",
     "roster-dead",
@@ -68,22 +59,21 @@ ROSTER_KEYS = (
     "roster-concurrency",
 )
 
-# THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs the writer cap.
+# THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md, narrowed to file-clash queues by agent/plans/PLAN-unlimited-writers.md). Its keep-list lives in wl_standdown.CONC_WAIT beside the focus profile that generalises it; the predicate stays here because it needs the roster's queue holds.
 
 
-def cap_saturated_wait(verdict, open_items, actionable_tasks):
-    """True when every writer slot is verified live, or every queued item is held by a live plan, and this session has nothing it could start.
+def concurrency_wait(verdict, open_items, actionable_tasks):
+    """True when every queued item is held by a live plan and this session has nothing it could start.
 
-    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CAP_WAIT), so an exception arrives as one focused block rather than the whole battery.
+    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CONC_WAIT), so an exception arrives as one focused block rather than the whole battery.
     """
     if not verdict or verdict.get("blind") or open_items or actionable_tasks:
         return False
-    cap = verdict.get("writer_cap", WRITER_CAP)
-    return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)
+    return concurrency_saturated(verdict)
 
 
 def concurrency_saturated(verdict):
-    """True when a slot is free but EVERY queued item is held by a live plan's mutex or Owns (agent/plans/PLAN-plan-priority-concurrency.md section 5c): the concurrency-saturated wait. A queued item that is waiting on a blocker, or reserved by HOLD_FOR, is not held, so one of those keeps the ordinary battery."""
+    """True when EVERY queued item is held by a live plan's mutex or Owns (agent/plans/PLAN-plan-priority-concurrency.md section 5c). A queued item that is waiting on a blocker is not held, so one of those keeps the ordinary battery."""
     held = verdict.get("queue_conc_held") or ()
     return (
         bool(held)
@@ -107,25 +97,6 @@ STATUS_TEXT_MAX = 600
 SUMMARY_ROWS_MAX = 8
 
 
-# A `worker:queue` lease whose note carries `HOLD_FOR:#<id>` holds ONE free writer slot for that item (agent/plans/PLAN-stop-hook-retro-20260924.md R.5, operator default 2026-09-24): at most one per session, it must name an open or in-flight item the session owns, and it lasts exactly as long as its own lease (at most 120 minutes).
-HOLD_FOR = re.compile(r"\bHOLD_FOR:#?([0-9a-f]{6,})\b")
-HOLD_MAX = 1
-
-
-def hold_target(rec):
-    """The item id a queue lease reserves a slot for, or ""."""
-    m = HOLD_FOR.search(str((rec or {}).get("lease_note") or ""))
-    return m.group(1) if m else ""
-
-
-def hold_valid(target, by_id, session_id):
-    """True when `target` is an open or in-flight item this session owns: the only thing a slot may be held for."""
-    rec = by_id.get(target)
-    if not isinstance(rec, dict):
-        return False
-    return rec.get("state") in (" ", ">") and C.owned_by_me(rec.get("owner"), session_id)
-
-
 def queue_order(rec):
     """The queue's AGE term: oldest queue lease first, then id. `roster` ranks by `wl_planorder.item_key` with this as its age (agent/plans/PLAN-plan-priority-concurrency.md section 2: dependencies, operator priority, AI priority, then this), and falls back to it alone when the plans cannot be read."""
     return (_epoch(rec.get("lease_at")) or 0, rec["id"])
@@ -137,7 +108,7 @@ def queue_waiting(rec, by_id, _session_id):
     return "waiting on %s" % ", ".join("#" + b for b in blockers) if blockers else ""
 
 
-# The reasons a queued item is NOT startable although a slot is free, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path: `roster` appends `queue_held_skip(...)`, which needs this stop's live plans.
+# The reasons a queued item is NOT startable, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path: `roster` appends `queue_held_skip(...)`, which needs this stop's live plans.
 QUEUE_SKIPS = (queue_waiting,)
 
 
@@ -165,36 +136,25 @@ def queue_held_skip(live, xinfo, held):
     return skip
 
 
-def queue_pick(queued, free, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
+def queue_pick(queued, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
     """Which queued items to start now. THE QUEUE IS NOT A FINISHED WORKER.
 
-    agent/plans/PLAN-stop-hook-retro-20260924.md R.5: every queued item used to read as `leased_dead` the moment one slot was free, so 15 "start it" lines were printed for 1 free slot. Only the first K startable items are named, K being the free slots less at most one HOLD_FOR reservation; the rest stay covered behind the cap.
+    With no writer limit (agent/plans/PLAN-unlimited-writers.md) a queue lease exists only for work a `skips` predicate still refuses: a live plan's mutex or Owns, or an open BLOCKED_BY blocker. Every queued item no predicate refuses is named to start; a refused one stays covered, waiting rather than dead or open (R20260925.5, agent/plans/PLAN-stop-hook-retro-20260925.md).
 
-    R20260925.5 (agent/plans/PLAN-stop-hook-retro-20260925.md): an item a `skips` predicate refuses is never named, and the NEXT startable one takes its slot. On 2026-09-24 queue-slot twice named an item the lead could not start because another writer held what it needed (#bea10927 waiting on A3), and each naming was overridden by hand.
-
-    Returns {"start": [id], "free": K, "hold": rec or None, "covered": [id], "skipped": [(id, reason)]}. A skipped item stays covered: it is waiting, not dead and not open.
+    Returns {"start": [id], "covered": [id], "skipped": [(id, reason)]}, each in queue order.
     """
     order_key = order_key or queue_order
-    ordered = sorted(queued, key=order_key)
-    hold = next((r for r in ordered if hold_valid(hold_target(r), by_id, session_id)), None)
-    slots = max(0, max(0, free) - (HOLD_MAX if hold is not None else 0))
     start: list[str] = []
     covered: list[str] = []
     skipped: list[tuple[str, str]] = []
-    for r in ordered:
-        if r is hold:
-            continue
+    for r in sorted(queued, key=order_key):
         reason = next((why for why in (fn(r, by_id, session_id) for fn in skips) if why), "")
         if reason:
             skipped.append((r["id"], reason))
             covered.append(r["id"])
-        elif len(start) < slots:
-            start.append(r["id"])
         else:
-            covered.append(r["id"])
-    if hold is not None:
-        covered.append(hold["id"])
-    return {"start": start, "free": slots, "hold": hold, "covered": covered, "skipped": skipped}
+            start.append(r["id"])
+    return {"start": start, "covered": covered, "skipped": skipped}
 
 
 # ---- locating the session's agents -------------------------------------------
@@ -236,13 +196,13 @@ def load_metas(sub_dir):
     """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop.
 
     Each meta carries `type`, `parent` (the `parentAgentId`, or ""), `depth`, `desc`, `name`, the `jsonl` path and `spawned`: the meta file's mtime, which is the agent's last (re)START rather than its first spawn. Measured 2026-09-24: an agent listed in a 07:16Z Stop event carried a meta mtime of 08:05Z, because the harness rewrites the meta when an agent is resumed. That is the right clock for both
-    consumers -- the newest (re)started writer is the excess the cap names, and an agent (re)started after the last Stop event is exactly one that event cannot list.
+    consumers -- the newest (re)started writer is the last row the roster lists, and an agent (re)started after the last Stop event is exactly one that event cannot list.
     """
     out: dict[Any, Any] = {}
     if sub_dir is None:
         return out
     try:
-        # WORKFLOW AGENTS TOO (agent/plans/PLAN-stop-hook-continuity.md P1.9): a workflow's agents write under `subagents/workflows/<runId>/`, and a workflow agent that edits is a writer the cap must count.
+        # WORKFLOW AGENTS TOO (agent/plans/PLAN-stop-hook-continuity.md P1.9): a workflow's agents write under `subagents/workflows/<runId>/`, and a workflow agent that edits is a writer the roster must supervise.
         paths = list(sub_dir.glob("agent-*.meta.json")) + list(
             sub_dir.glob("workflows/*/agent-*.meta.json")
         )
@@ -402,7 +362,7 @@ def interrupted(rec):
 def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     """True only when the transcript's last record ENDED THE TURN and nothing was written after.
 
-    The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the cap.
+    The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the roster.
     """
     import wl_liveness as L
 
@@ -412,7 +372,7 @@ def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     rec = last_record(jsonl)
     if L._record_is_idle(rec) or interrupted(rec):
         return now - mtime >= FINISHED_QUIET_S
-    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still held nine writer slots at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
+    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still counted as nine live writers at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
     if not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60:
         return True
     if name:
@@ -566,14 +526,14 @@ _SHELL_END = re.compile(rb"\[(?:killed|exited with code -?\d+)\]\s*$")
 def shell_ended(jsonl, sid):
     """True when shell `sid`'s own output stream ends with the harness's terminal marker.
 
-    THE STREAM IS THE AUTHORITY, not the agent's transcript. A shell that ends after its agent already finished never gets its `<task-id>` notification into that transcript, so `armed_shells` read it as armed forever and the agent held a writer slot: on 2026-09-25 the finished harness writer a9fb71e0 (quiet 67 minutes) blocked a spawn at 4 of 4 on `br7n2v42t`, whose stream read `[killed]`. The stream sits at `<tmp>/claude-<uid>/<project>/<session>/tasks/<id>.output`, and the agent transcript at `<projects>/<project>/<session>/subagents/agent-<id>.jsonl` names both segments. A stream that cannot be found or read proves nothing, so the shell stays armed (the safe side for a cap).
+    THE STREAM IS THE AUTHORITY, not the agent's transcript. A shell that ends after its agent already finished never gets its `<task-id>` notification into that transcript, so `armed_shells` read it as armed forever and the agent counted as a live writer: on 2026-09-25 the finished harness writer a9fb71e0 (quiet 67 minutes) blocked a spawn at 4 of 4 on `br7n2v42t`, whose stream read `[killed]`. The stream sits at `<tmp>/claude-<uid>/<project>/<session>/tasks/<id>.output`, and the agent transcript at `<projects>/<project>/<session>/subagents/agent-<id>.jsonl` names both segments. A stream that cannot be found or read proves nothing, so the shell stays armed (the safe side for a cap).
     """
     try:
         path = pathlib.Path(jsonl)
         session, project = path.parents[1].name, path.parents[2].name
     except (IndexError, TypeError):
         return False
-    # No environment override, on purpose: this module is sealed against env reads (test_r6b), so no knob can free a writer slot.
+    # No environment override, on purpose: this module is sealed against env reads (test_r6b), so no knob can hide a live writer.
     bases = [
         os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), project, session, "tasks"),
         os.path.join(tempfile.gettempdir(), project, session, "tasks"),
@@ -617,7 +577,6 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     cwd = cwd or event.get("cwd") or ""
     start = C.project_start({"cwd": cwd})
     root = C.project_root(start)
-    cap = writer_cap(root)
     sub_dir = session_subagents_dir(cwd, session_id)
     blind = sub_dir is None
     metas = load_metas(sub_dir)
@@ -703,7 +662,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         ls = C.lease_state(r.get("line") or "")
         w = _worker_of(r)
         if w == LH.LEAD_WORKER:
-            # worker:lead (P2.1) is no agent and fills no writer slot; it is covered exactly while a task of this session is live, the same fact classify_items reads.
+            # worker:lead (P2.1) is no agent and counts as no writer; it is covered exactly while a task of this session is live, the same fact classify_items reads.
             if verdicts is None:
                 import wl_liveness as L
 
@@ -778,15 +737,12 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     queued = list(leases.get(QUEUE_WORKER, ()))
     pick = queue_pick(
         queued,
-        cap - len(writers),
         by_id,
         session_id,
         order_key=order_key,
         skips=(*QUEUE_SKIPS, queue_held_skip(plan_holders, xinfo, conc_held)),
     )
     queue_start = pick["start"]
-    slots = pick["free"]
-    hold = pick["hold"]
     covered.extend((i, QUEUE_WORKER, QUEUE_WORKER) for i in pick["covered"])
     for w, recs in leases.items():
         if w == LH.LEAD_WORKER:
@@ -819,7 +775,6 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
     # A writer is leased when it, or any ancestor, holds one of the session's leases.
     unleased = [a for a in writers if not any(x in leases for x in [a, *ancestors(a, metas)])]
-    over_cap = writers[cap:] if len(writers) > cap else []
 
     # Status time, per leased worker, over its whole lineage.
     statuses = getattr(fold, "statuses", None) or {}
@@ -871,7 +826,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         return best, src
 
     status_due, status_rows = [], {}
-    # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while the cap is full, so its own lease expiry bounds it.
+    # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while a live plan holds it, so its own lease expiry bounds it.
     # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
     for w in sorted({w for _i, w, _c in covered} - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
         at, src = status_at(w)
@@ -908,9 +863,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     }
     verified = sorted((({c for _i, _w, c in covered if c} | leased_live) - owing) | fresh_readers)
 
-    defects = bool(
-        unleased or leased_dead or over_cap or status_due or silent or queue_start or plan_conflicts
-    )
+    defects = bool(unleased or leased_dead or status_due or silent or queue_start or plan_conflicts)
     if defects:
         state = "DISHONEST"
     elif blind or open_ids or unknown or not covered:
@@ -948,21 +901,17 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "blind": blind,
         "rows": live,
         "writers": writers,
-        "writer_cap": cap,
         "readers": readers,
         "finished": sorted(finished),
         "unleased": unleased,
         "leased_dead": leased_dead,
         "queue_start": queue_start,
-        "queue_free": slots,
-        "queue_held": hold["id"] if hold is not None else "",
         "queue_skipped": pick["skipped"],
         "queue_conc_held": [(i, conc_held[i]) for i, _why in pick["skipped"] if i in conc_held],
         "plan_holders": plan_holders,
         "plan_conflicts": plan_conflicts,
         "plan_error": plan_error,
         "queued": len(queued),
-        "over_cap": over_cap,
         "status_due": status_due,
         "status_rows": status_rows,
         "silent": silent,
@@ -1791,7 +1740,7 @@ def live_estimate(cwd, session_id, now=None):
         elif aid not in types and aid not in waiters:
             # WAITING SINCE THE EVENT: the last Stop event may already call it completed while the shell it armed after that event still runs. Its own transcript says so.
             wshell = transcript_waiting(m["jsonl"], now)
-            # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, holding a writer slot the Stop hook already saw free (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
+            # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, counting a writer the Stop hook already saw finished (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
             mt_agent = _mtime(m["jsonl"])
             if wshell and since is not None and (mt_agent is None or mt_agent <= since):
                 wshell = ""
@@ -1858,7 +1807,7 @@ def _done_after(done_at, meta):
 
 
 def live_writers_estimate(cwd, session_id, now=None):
-    """The live WRITER rows the PreToolUse guard counts, or None when it cannot count. See `live_estimate`."""
+    """The live WRITER rows a verb with no Stop event estimates (the QUEUE.md in-flight block), or None when it cannot count. See `live_estimate`."""
     rows, _metas = live_estimate(cwd, session_id, now=now)
     if rows is None:
         return None
@@ -2111,7 +2060,7 @@ def item_box_citations(text, entries, store):
 
 
 def defect_rows(verdict):
-    """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
+    """{"writers", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
 
     def lines(ids):
@@ -2139,7 +2088,7 @@ def defect_rows(verdict):
         if w not in silent_ids
     ]
     return {
-        "cap": lines(verdict.get("writers") or []),
+        "writers": lines(verdict.get("writers") or []),
         "silent": "\n".join(silent_rows) or "    (none)",
         "unleased": lines(verdict.get("unleased") or []),
         "dead": "\n".join(dead) or "    (none)",
@@ -2186,11 +2135,10 @@ def explain_lastevent(prefix):
     state_doc = S.load_state(worklist, sid)
     v = roster(event, fold, sid, state_doc=state_doc, cwd=event.get("cwd") or str(start))
     lines = [
-        "ROSTER %s: %d writer(s)/%d, %d reader(s), %d finished-but-listed, %d open item(s), from %s"
+        "ROSTER %s: %d writer(s), %d reader(s), %d finished-but-listed, %d open item(s), from %s"
         % (
             v["state"],
             len(v["writers"]),
-            v["writer_cap"],
             len(v["readers"]),
             len(v["finished"]),
             len(v["open"]),
@@ -2199,7 +2147,6 @@ def explain_lastevent(prefix):
     ]
     lines.extend(summary_lines(v, limit=len(v["rows"]) or 1))
     for label, items in (
-        ("over cap", v["over_cap"]),
         ("unleased writers", v["unleased"]),
         ("silent or no evidence", sorted(set(v["silent"]) | set(v["status_due"]))),
     ):

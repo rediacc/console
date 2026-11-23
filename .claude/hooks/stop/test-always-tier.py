@@ -51,16 +51,15 @@ ALWAYS_KEYS = frozenset(
         "bg-report",
         "agent-pushback",
         "giveup-claim",
-        # I3 -- the parallel-writer roster (wl_roster). The operator asked for a hard cap and a 20-minute ping with "no escape hatches", and a rotating or pausable key IS a hatch: the cadence and the rotation would hand the stop back while a fifth writer edits the tree. Each is a verdict about live workers whose silence would read as a pass.
-        "roster-cap",
+        # I3 -- the parallel-writer roster (wl_roster). The operator asked for a 20-minute ping with "no escape hatches", and a rotating or pausable key IS a hatch: the cadence and the rotation would hand the stop back while a silent writer edits the tree. Each is a verdict about live workers whose silence would read as a pass.
         "roster-silent",
         "roster-unleased",
         "roster-dead",
         # I3 -- a background wait with no wake-up timer (wl_wake): silence would read as "the wait will end", which is exactly the deadlock.
         "wake-timer",
-        # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work beside a free slot is the same roster verdict, and a rotating key would let the queue park work the cap allows.
+        # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work no live plan holds any more is the same roster verdict, and a rotating key would let the queue park work that could start.
         "queue-slot",
-        # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-cap/-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.
+        # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.
         "roster-concurrency",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",

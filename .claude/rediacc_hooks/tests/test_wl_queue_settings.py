@@ -45,7 +45,6 @@ RETIRED = (
     "turbo_push: batch-end",
     "batch_size: 3",
     "plan_concurrency: 5",
-    "writer_cap: 4",
     "commit_remind_min: 15",
     "backup_push_h: 4",
     "judge: core",
@@ -325,7 +324,7 @@ def test_set_settings_creates_the_section_above_promoted():
     ("updates", "note"),
     [
         ({"turbo": "on"}, None),
-        ({"writer_cap": "4"}, None),
+        ({"plan_concurrency": "5"}, None),
         ({"cadence": "off"}, None),
         ({"effort": "ultra"}, None),
         ({"effort": "low"}, "two\nlines"),
@@ -346,7 +345,7 @@ def test_set_settings_refuses_a_structurally_broken_block():
 
 
 def test_sources_name_where_each_value_comes_from():
-    got = PQ.sources(block("effort: smart\nwriter_cap: 9"))
+    got = PQ.sources(block("effort: smart\nplan_concurrency: 9"))
     assert got == {
         "effort": "QUEUE.md",
         "judge": "effort smart",
@@ -423,7 +422,7 @@ def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):
     [
         ["effort=medium"],
         ["effort=low", "turbo=on"],  # one good pair must not be written when another is refused
-        ["writer_cap=25"],
+        ["plan_concurrency=25"],
         ["effort=ultra"],
         ["effort"],
         ["effort=low", "effort=smart"],
@@ -474,14 +473,16 @@ def test_queue_set_checks_the_identity_like_the_other_verbs(wl):
 
 
 def test_queue_set_bare_prints_values_sources_and_problems(wl):
-    plant(wl, block("turbo: on -- operator test\nwriter_cap: 4"))
+    plant(wl, block("turbo: on -- operator test\nplan_concurrency: 4"))
     got = wl.cli("--queue-set", wlfix.ME)
     assert got.rc == 0, got.err
     lines = got.out.splitlines()
     assert "judge: full (effort high)" in lines
     assert "effort: high (default)" in lines
     assert any(line.startswith("PROBLEM") and "'turbo' is not a setting" in line for line in lines)
-    assert any(line.startswith("PROBLEM") and "`writer_cap: 4`" in line for line in lines), got.out
+    assert any(line.startswith("PROBLEM") and "`plan_concurrency: 4`" in line for line in lines), (
+        got.out
+    )
     assert any(line.startswith("checks at effort high: ") for line in lines), got.out
     assert [
         ln.split(":")[0] for ln in lines if not ln.startswith(("PROBLEM", "checks at effort"))
@@ -569,7 +570,7 @@ def assert_mode_matches(text: str, settings) -> None:
     )
 
 
-def test_inflight_names_the_level_its_switches_and_the_fixed_writer_cap():
+def test_inflight_names_the_level_its_switches_and_the_live_writers_with_no_limit():
     settings = PQ.settings(block("effort: smart"))[0]
     inf = inflight(
         settings=settings,
@@ -583,9 +584,7 @@ def test_inflight_names_the_level_its_switches_and_the_fixed_writer_cap():
     assert_mode_matches(text, settings)
     body = PQ.inflight_text(text)
     assert "- Mode: effort smart; judge core; cadence on; agent_hint on; agent_pushback on." in body
-    assert (
-        "- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a1e6524bd31efbbcd." in body
-    )
+    assert "- Writers: 1 live (session d778be9d): worker:a1e6524bd31efbbcd." in body
 
 
 def test_inflight_carries_no_phase_line():

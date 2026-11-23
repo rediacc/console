@@ -135,12 +135,12 @@ def test_w6_a_rewrite_past_the_line_carrying_the_earlier_section_does_not_clear_
     assert NEEDLE not in got.out, got.out[:1500]
 
 
-def test_w5_the_cap_saturated_wait_keeps_it(wl):
-    """Every writer slot live and the rest queued stands the battery down (test_wl_cap_wait c1); wisdom-due is in wl_standdown.CORE, so it still blocks."""
+def test_w5_the_concurrency_saturated_wait_keeps_it(wl):
+    """Every queued item held by a live plan stands the battery down (test_wl_cap_wait c1); wisdom-due is in wl_standdown.CORE, so it still blocks."""
     saturated(wl)
     capturing_judge(wl, CONTINUE)
     wl.plant_state(UNDELEGATED)
-    wl.say("all four writer slots are live; the rest is queued\n\n## Remaining\n- queued")
+    wl.say("every queued item waits on PLAN-e.md\n\n## Remaining\n- queued")
     got = wl.runj(band(wl, 920_000))
     assert got.decision == "block", wl.why("w5", "block", got, NEEDLE)
     assert NEEDLE in got.out, got.out[:1500]

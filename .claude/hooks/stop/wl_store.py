@@ -1355,7 +1355,7 @@ def _fold_events(events, statuses=None):
                 # The lease's OWN time, kept apart from `upd`: the roster counts a lease as a fresh status, and `upd` also moves on an --update, which is prose from the lead and deliberately not a status.
                 rec["lease_at"] = at
                 note = str(ev.get("note", "")).strip()
-                # The CURRENT lease's own note, kept apart from `lastnote` (which an --update overwrites): a `HOLD_FOR:#<id>` slot reservation is read from it (wl_roster, agent/plans/PLAN-stop-hook-retro-20260924.md R.5).
+                # The CURRENT lease's own note, kept apart from `lastnote` (which an --update overwrites): the queue lease's `HELD_BY:<plan>` stamp rides it (wl_cli `--lease`, agent/plans/PLAN-plan-priority-concurrency.md section 5b).
                 rec["lease_note"] = note or str(ev.get("lnote", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -1933,7 +1933,7 @@ def snapshot_events(fold, by="compact"):
                     "by": by,
                     "until": r.get("until", ""),
                     "worker": r.get("worker", ""),
-                    # `lnote`, not `note`: the lease's own note survives compaction (a HOLD_FOR reservation lives in it) without the fold re-appending it to `text` or overwriting a later `lastnote`.
+                    # `lnote`, not `note`: the lease's own note survives compaction (a queue lease's HELD_BY stamp lives in it) without the fold re-appending it to `text` or overwriting a later `lastnote`.
                     **({"lnote": r["lease_note"]} if r.get("lease_note") else {}),
                 }
             )

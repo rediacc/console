@@ -291,13 +291,13 @@ def test_profile_landing_tree_by_role():
 
 def test_profile_development_tree_builds():
     assert SD.profile_for("development", False, True) is SD.PR_LOOP
-    assert SD.profile_for("development", True, True) is SD.CAP_WAIT
+    assert SD.profile_for("development", True, True) is SD.CONC_WAIT
     assert SD.profile_for("development", False, False) is None
 
 
 def test_control_profile_no_record_follows_the_loop():
     assert SD.profile_for("", False, True) is SD.PR_LOOP
-    assert SD.profile_for("", True, True) is SD.CAP_WAIT
+    assert SD.profile_for("", True, True) is SD.CONC_WAIT
     assert SD.profile_for("", False, False) is None
     assert not hasattr(SD, "FOCUS"), "the FOCUS profile went with the phase verb (B10)"
 

@@ -421,7 +421,7 @@ def test_epic_reader_without_plan_epics_is_empty(monkeypatch):
 
 
 def test_a_live_pr_carries_its_one_plan_and_never_takes_a_queued_one(world):
-    """Four queued plans and a live PR naming the first: the set is that plan alone, the next plan is the second, and it waits for the next branch. The batch fields that once named queued plans for free writer slots are gone from the state."""
+    """Four queued plans and a live PR naming the first: the set is that plan alone, the next plan is the second, and it waits for the next branch. The batch fields that once named queued plans for idle writers are gone from the state."""
     world.plans(a=_plan(), b=_plan(), c=_plan(), d=_plan())
     world.queue("a", "b", "c", "d")
     world.branch("1003-1")

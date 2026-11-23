@@ -290,7 +290,6 @@ SOURCE_FAMILIES = {
     "commit-review-note": "commit-review",
     "plan-tick": "plan-tick",
     "plan-tick-clause1": "plan-tick",
-    "roster-cap": "roster",
     "roster-concurrency": "roster",
     "roster-unleased": "roster",
     "roster-dead": "roster",

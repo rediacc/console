@@ -418,7 +418,7 @@ def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):
 
 
 def test_sc5_a_missing_state_doc_blocks_at_the_early_band(wl):
-    """STATE.md freshness is a loop duty at every band (ruling 1d): kept in full by PR_LOOP, where the cap wait keeps it only in the late band (test_wl_cap_wait c3)."""
+    """STATE.md freshness is a loop duty at every band (ruling 1d): kept in full by PR_LOOP, where the concurrency wait keeps it only in the late band (test_wl_cap_wait c3)."""
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
@@ -431,7 +431,7 @@ def test_sc5_dropped_checks_stand_down_and_are_named(wl):
     """Every key the full battery raises off the loop and the PR_LOOP profile does not keep is absent on the loop and named in the Stood down phrase."""
     std = wlfix.import_wl("wl_standdown")
     loop_world(wl, branch="feature-x")
-    # A deferral with no DEFAULT raises `undefaulted`, which only the cap wait keeps.
+    # A deferral with no DEFAULT raises `undefaulted`, which only the concurrency wait keeps.
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
             json.dumps(

@@ -735,7 +735,7 @@ def ladder(fold, session_id, event, state_doc):
             continue  # expired leases are open items already
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
-        # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind the writer cap, which wl_roster reports (`queue-slot` names it when a slot frees), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while the cap was full.
+        # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind a live plan's mutex or Owns, which wl_roster reports (`queue-slot` names it once the holder finishes), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while it waited.
         if wid and (wid in roster_ids or wid == queue_w):
             continue
         # GONE means DROPPED, not merely unconfirmable. A worker only counts as gone if the harness could see it when the lease was taken and cannot see it now. An Agent leased by NAME never appears in a background-task list at all, and reporting that as "finished or stopped" sent this session chasing a worker that was actively writing files. Unverifiable workers fall through to
