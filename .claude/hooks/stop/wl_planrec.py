@@ -2582,11 +2582,6 @@ INVESTIGATION_MEMO_STATS = {"hit": 0, "miss": 0}
 _INVESTIGATION_MEMO: dict[tuple, list] = {}
 
 
-def clear_investigation_memo():
-    _INVESTIGATION_MEMO.clear()
-    INVESTIGATION_MEMO_STATS.update(hit=0, miss=0)
-
-
 def read_investigations(root):
     """[row] from the ledger, oldest first. [] when it does not exist.
 

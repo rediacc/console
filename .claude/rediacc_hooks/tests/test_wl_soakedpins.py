@@ -161,7 +161,13 @@ RUN_STOP_ARGS = ("worklist", "session_id", "state_doc")
 
 def test_run_stop_calls_the_soaked_pins_report() -> None:
     source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
-    assert _calls_in(source, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+    # run_stop's segments are `_stop_<key>(ns)` functions (PLAN-tooling-speed.md SP3), so the call may sit in run_stop or in one of them.
+    holders = ["run_stop"] + [
+        n.name
+        for n in ast.parse(source).body
+        if isinstance(n, ast.FunctionDef) and n.name.startswith("_stop_")
+    ]
+    assert any(_calls_in(source, fn, "_soaked_pins_report", RUN_STOP_ARGS) for fn in holders)
 
 
 def test_the_call_finder_reads_the_enclosing_function_not_the_text() -> None:

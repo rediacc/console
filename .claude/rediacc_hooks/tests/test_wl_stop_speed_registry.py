@@ -62,21 +62,21 @@ def inventory_problems(source: str) -> list[str]:
 
 
 def derived_tiers(source: str) -> dict[str, str]:
-    """{segment: always|rotating|quiet} from the vadd calls between each mark and the next."""
-    marks = marks_of(source)
-    calls: dict[str, list[object]] = {m[2]: [] for m in marks}
-    for node in ast.walk(_run_stop(source)):
-        if (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id == "vadd"
-        ):
-            owner = None
-            for line, _method, key in marks:
-                if line <= node.lineno:
-                    owner = key
-            flag = node.args[1] if len(node.args) > 1 else None
-            calls[owner].append(flag.value if isinstance(flag, ast.Constant) else "unreadable")
+    """{segment: always|rotating|quiet} from the vadd calls inside each segment's `_stop_<key>` function (the lifted body of that segment)."""
+    tree = ast.parse(source)
+    calls: dict[str, list[object]] = {m[2]: [] for m in marks_of(source)}
+    for fn in tree.body:
+        if not (isinstance(fn, ast.FunctionDef) and fn.name.startswith("_stop_")):
+            continue
+        key = fn.name.removeprefix("_stop_").replace("_", "-")
+        for node in ast.walk(fn):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "vadd"
+            ):
+                flag = node.args[1] if len(node.args) > 1 else None
+                calls[key].append(flag.value if isinstance(flag, ast.Constant) else "unreadable")
     out = {}
     for key, flags in calls.items():
         if any(f is True or f == "unreadable" for f in flags):
@@ -86,6 +86,27 @@ def derived_tiers(source: str) -> dict[str, str]:
         else:
             out[key] = "quiet"
     return out
+
+
+def test_every_segment_is_its_own_function_called_once_in_order():
+    """SP3's lift: run_stop calls one `_stop_<key>(ns)` per mark, in registry order, and holds no vadd of its own."""
+    source = WL_CHECKS.read_text(encoding="utf-8")
+    body = _run_stop(source)
+    called = [
+        n.func.id
+        for n in ast.walk(body)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Name)
+        and n.func.id.startswith("_stop_")
+    ]
+    want = ["_stop_" + s.key.replace("-", "_") for s in R.REGISTRY]
+    assert called == want
+    defined = {n.name for n in ast.parse(source).body if isinstance(n, ast.FunctionDef)}
+    assert set(want) <= defined
+    assert not any(
+        isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "vadd"
+        for n in ast.walk(body)
+    )
 
 
 def test_the_marks_and_the_registry_name_the_same_segments_in_order():
@@ -122,8 +143,8 @@ def test_control_a_tier_that_disagrees_is_seen():
     """The rule above is not vacuous: a planted always-tier vadd in an advisory segment changes what it derives."""
     source = WL_CHECKS.read_text(encoding="utf-8")
     planted = source.replace(
-        '    R.begin("next-plan")\n',
-        '    R.begin("next-plan")\n    vadd("planted", True, "x")\n',
+        "def _stop_next_plan(ns):\n",
+        'def _stop_next_plan(ns):\n    vadd("planted", True, "x")\n',
         1,
     )
     assert derived_tiers(source)["next-plan"] == "quiet"

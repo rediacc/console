@@ -209,13 +209,18 @@ def test_the_probe_counts_every_reader_with_the_memo_off(wl, tmp_path):
     ], got["opens"]
 
 
+def _clear_memo():
+    R._INVESTIGATION_MEMO.clear()
+    R.INVESTIGATION_MEMO_STATS.update(hit=0, miss=0)
+
+
 @pytest.fixture
 def memo(wl, monkeypatch):
     monkeypatch.delenv("WORKLIST_READ_MEMO", raising=False)
-    R.clear_investigation_memo()
+    _clear_memo()
     world(wl)
     yield wl
-    R.clear_investigation_memo()
+    _clear_memo()
 
 
 def _append(fix: wlfix.Fixture, row: dict) -> None:

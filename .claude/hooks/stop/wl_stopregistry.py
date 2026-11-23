@@ -113,3 +113,8 @@ def durations(clock=time.monotonic):
     open_key = _CLOCK["open"]
     ms[open_key] = ms.get(open_key, 0.0) + (now - _CLOCK["since"]) * 1000.0
     return {s.key: round(ms[s.key]) for s in REGISTRY if s.key in ms}
+
+
+def exports(local_names, names):
+    """{name: value} for each of `names` that is bound in `local_names` (a segment function's `locals()`). A name a segment binds only on some paths is simply absent, so the next segment's load of it stays unbound, exactly as it was when the segments shared one function's locals."""
+    return {n: local_names[n] for n in names if n in local_names}
