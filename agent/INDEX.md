@@ -632,7 +632,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48532 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
-| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 103 | 8 | 3 | 23737 |
+| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 105 | 6 | 5 | 24144 |
 | `agent/plans/PLAN-tooling-speed.md` | approved | 94 | 4 | 4 | 16720 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
