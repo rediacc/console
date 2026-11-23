@@ -1246,6 +1246,14 @@ w, t0, t1 = carry_world(
     carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
 )
 CARRY_WORLDS.append(("G3: an added carry entry is refused", 2, w))
+added_out = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "WIDENS" in added_out and "adds a carry for %s" % OTHER_GATE in added_out,
+        "G3: the added-entry refusal says WIDENS and names the gate",
+    )
+)
 # R20261123.5: the same added entry with NO advance names the widening and says whole lane.
 w, t0 = adv_world(
     "carry-add-entry-no-advance", carried_doc=carry_doc(keyed(K1)), policy=CARRY_POLICY
@@ -1282,14 +1290,6 @@ cases.append(
         True,
         "ci:quick will advance (record-only)." in _err and "widened" not in _err,
         "R20261123.5 CONTROL: a removal-only carry edit with no advance says advance",
-    )
-)
-added_out = drive(w, ADV_PUSH)[1]
-cases.append(
-    (
-        True,
-        "WIDENS" in added_out and "adds a carry for %s" % OTHER_GATE in added_out,
-        "G3: the added-entry refusal says WIDENS and names the gate",
     )
 )
 
