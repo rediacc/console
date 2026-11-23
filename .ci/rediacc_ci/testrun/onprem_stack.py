@@ -8,7 +8,7 @@
 
   1. RustFS (`account_lifecycle.start_rustfs`), the config blob store. A RustFS that already answers is refused: `down` stops what `up` started, and a store this run did not start is not its to stop.
   2. The account server on the ON-PREMISE entry, as the `rediacc-server-onprem:dev` image (default; `rediacc_ci.ops.build_server onprem` builds it) or from source with `--from-source` (`tsx src/entry/on-premise.ts`, for fast iteration), with `TEST_MODE` on. The on-premise route factory mounts no `/test/*` seams (`private/account/src/routes/on-premise-index.ts`), so the seeding of step 3 needs them from somewhere: `--entry node --from-source` runs the full-route entry (`src/entry/node.ts`) as the stand-in until the on-premise factory serves the seams under TEST_MODE. Seeding against a server that 404s a seam is refused naming the seam.
-  3. Seeding through the TEST_MODE seams `start_account` already drives (`/test/ensure-login`, `/test/ensure-subscription`, a minted API token) plus `/test/seed-config-store` with `emptyStore`, which returns the machine secret that enrolls a headless host (D46). Three tokens come out: the daemon's own `proxy:exec` token, an enrolment token, and the `proxy:exec` token of a second org, which the `daemon` suite presents to the daemon to prove the org pin refuses it.
+  3. Seeding through the TEST_MODE seams `start_account` already drives (`/test/ensure-login`, `/test/ensure-subscription`, a minted API token) plus `/test/seed-config-store` with `emptyStore`, which returns the machine secret that enrolls a headless host (D46). Three tokens come out: the daemon's own `proxy:exec` token, an enrolment token, and the `proxy:exec` token of a second org, which the `daemon` suite presents to the daemon to prove the org pin refuses it. The machine secret is written beside them (a suite that needs a second device enrols it with the same secret) and the env file names its id, its file and the state file.
   4. The machines: `--machines container` runs one sshd container (alpine, a throwaway key pair, published on 127.0.0.1 only), `--machines vm` runs `./rdc.sh ops up --basic` and names the bridge address and worker.
   5. The daemon's config: a named local config with the stack's machine added, enrolled with `rdc config remote enable --machine-secret <id>` (the secret travels in `REDIACC_MACHINE_SECRET`, never argv), which seeds the empty store from that config.
   6. `rdc serve --mode daemon` on 127.0.0.1 (Design 9) with the executor token, answering `/v1/server-info` as `daemon`.
@@ -146,6 +146,10 @@ class Runtime:
             )
         self._children[proc.pid] = proc
         return proc.pid
+
+    def signal_group(self, pgid: int, sig: int) -> None:
+        """Send `sig` to a process group; a group that is gone raises ProcessLookupError."""
+        os.killpg(pgid, sig)
 
     def kill_group(self, pgid: int) -> None:
         """SIGTERM the group, wait, then SIGKILL what is left; a group that is already gone is done."""
@@ -411,6 +415,9 @@ class Stack:
             "ONPREM_EXECUTOR_TOKEN_FILE": str(self.layout.token_file("executor")),
             "ONPREM_ENROLL_TOKEN_FILE": str(self.layout.token_file("enroll")),
             "ONPREM_OTHER_TOKEN_FILE": str(self.layout.token_file("other")),
+            "ONPREM_MACHINE_SECRET_ID": seeded.machine_secret_id,
+            "ONPREM_MACHINE_SECRET_FILE": str(self.layout.token_file("machine-secret")),
+            "ONPREM_STATE_FILE": str(self.layout.state_file),
             "ONPREM_MACHINES": opts.machines,
             "ONPREM_MACHINE_NAME": MACHINE_NAME,
             **machine,
@@ -504,9 +511,15 @@ class Stack:
         executor = self.rt.seed(port, EMAIL, "onprem-executor", ["proxy:exec"])
         enroll = self.rt.seed(port, EMAIL, "onprem-enroll", ["config:enroll"])
         other = self.rt.seed(port, OTHER_EMAIL, "onprem-other", ["proxy:exec"])
-        for name, token in (("executor", executor), ("enroll", enroll), ("other", other)):
-            self.write_token(name, token)
         store = self.rt.seed_store(port, EMAIL)
+        # A suite that needs a second device enrols it with the same machine secret, so it is a file like the tokens.
+        for name, token in (
+            ("executor", executor),
+            ("enroll", enroll),
+            ("other", other),
+            ("machine-secret", str(store["machineSecret"])),
+        ):
+            self.write_token(name, token)
         return Seeded(
             executor, enroll, other, str(store["machineSecretId"]), str(store["machineSecret"])
         )

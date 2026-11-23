@@ -83,12 +83,15 @@ class Context:
             raise KeyError("the stack env file does not name %s" % key)
         return self.env[key]
 
+    def secret(self, key: str) -> str:
+        """The content of the file the env value `key` names; remembered so a verdict never carries it."""
+        value = pathlib.Path(self.value(key)).read_text(encoding="utf-8").strip()
+        self._secrets.append(value)
+        return value
+
     def token(self, name: str) -> str:
-        """The token whose file the env names (`executor`, `enroll` or `other`); remembered so a verdict never carries it."""
-        path = pathlib.Path(self.value("ONPREM_%s_TOKEN_FILE" % name.upper()))
-        token = path.read_text(encoding="utf-8").strip()
-        self._secrets.append(token)
-        return token
+        """The token whose file the env names (`executor`, `enroll` or `other`)."""
+        return self.secret("ONPREM_%s_TOKEN_FILE" % name.upper())
 
     def scrub(self, text: str) -> str:
         for secret in self._secrets:
@@ -109,11 +112,11 @@ class Context:
                 argv, TIMEOUT_RC, "", "timed out after %ss" % timeout
             )
 
-    def cli_env(self, token: str | None = None) -> dict[str, str]:
+    def cli_env(self, token: str | None = None, home: str | None = None) -> dict[str, str]:
         """The environment of an `rdc` call: on the stack, its own config home and account server; against bench, the ambient one."""
         env = dict(os.environ)
         if self.target == "onprem":
-            env["XDG_CONFIG_HOME"] = self.value("ONPREM_DAEMON_HOME")
+            env["XDG_CONFIG_HOME"] = home or self.value("ONPREM_DAEMON_HOME")
             env["REDIACC_ACCOUNT_SERVER"] = self.value("ONPREM_ACCOUNT_URL")
         if token is not None:
             env["REDIACC_TOKEN"] = token
@@ -127,14 +130,17 @@ class Context:
         *args: str,
         token: str | None = None,
         proxy: str | None = None,
+        home: str | None = None,
+        extra_env: dict[str, str] | None = None,
         timeout: float = COMMAND_TIMEOUT_S,
     ) -> subprocess.CompletedProcess[str]:
-        """`./rdc.sh --config <name> [--proxy <url>] <args>`; `token` becomes REDIACC_TOKEN."""
+        """`./rdc.sh --config <name> [--proxy <url>] <args>`; `token` becomes REDIACC_TOKEN, `home` another device's XDG config home, `extra_env` more variables."""
         argv = [str(self.root / "rdc.sh"), "--config", self.config_name()]
         if proxy:
             argv += ["--proxy", proxy]
         argv += list(args)
-        return self.exec(argv, env=self.cli_env(token), timeout=timeout)
+        env = {**self.cli_env(token, home), **(extra_env or {})}
+        return self.exec(argv, env=env, timeout=timeout)
 
     # ── HTTP, ports and the serve command ───────────────────────────────────
 
@@ -162,6 +168,22 @@ class Context:
             self.rt.sleep(0.5)
             waited += 0.5
         return None, pgid
+
+    def group_pgid(self, name: str) -> int:
+        """The process group id the stack recorded for the piece `name` (`account` or `daemon`)."""
+        state = json.loads(
+            pathlib.Path(self.value("ONPREM_STATE_FILE")).read_text(encoding="utf-8")
+        )
+        for entry in state.get("groups", []):
+            if entry.get("name") == name:
+                return int(entry["pgid"])
+        raise KeyError(
+            "the stack state names no process group %s (an image-run account server has none)"
+            % name
+        )
+
+    def signal_group(self, pgid: int, sig: int) -> None:
+        self.rt.signal_group(pgid, sig)
 
     def exited(self, pgid: int) -> int | None:
         return self.rt.exited(pgid)
