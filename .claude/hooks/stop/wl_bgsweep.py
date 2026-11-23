@@ -221,6 +221,14 @@ class Finding(NamedTuple):
     note: str  # the target file's state, or the agent's quiet time; "" when nothing is known
 
 
+class Findings(list):
+    """findings()'s answer: the [Finding] list, plus `unread`, which names a read the sweep could not make ("" when every read answered). A list, so a caller that only iterates reads it as before; the stop names `unread` in its read-failure advisory (agent/plans/PLAN-silent-failure-sweep.md SF7)."""
+
+    def __init__(self, rows=(), unread: str = ""):
+        super().__init__(rows)
+        self.unread = unread
+
+
 # Legitimately long work, by command shape. Each entry names its exemption; see the module docstring. A tool name counts only as a WORD (`_W`): never inside a path or a file name, so `until [ -s /tmp/ms-render-ar.log ]` or a probe under `/tmp/pytest-of-<user>/` stays a poll (the first draft matched both).
 _W = r"(?<![\w/.-])%s(?![\w-])"
 LONG_WORK = (
@@ -364,14 +372,17 @@ def findings(
     pgid_of=_pgid,
     target_note=_target_note,
 ):
-    """[Finding] for this session's harness: undeclared orphans, and the declared shapes no declaration excuses (module docstring). [] when the anchor cannot be resolved.
+    """Findings ([Finding]) for this session's harness: undeclared orphans, and the declared shapes no declaration excuses (module docstring). Empty when the anchor cannot be resolved (a refusal, by design); empty with `unread` set when the process table cannot be read, and `unread` names a failed owner read while the other findings stand.
 
     `owners` is a callable `owners({task id: age seconds}) -> ({task id: agent id}, {finished agent ids}, {agent id: quiet minutes})`, `owner_context` bound to the event in the hook. It is called only when a declared, non-loop, non-LONG_WORK task is old enough to matter, so a quiet stop reads no transcript. A row with age=None (unreadable start time) is an orphan "age unknown" when undeclared, never treated as 0 or as infinite; the declared kinds need a known age.
     """
     if table_with_age is None:
         table_with_age = proc_table_with_age()
     if not table_with_age:
-        return []
+        # This hook is itself a process, so an empty table is a failed read, never a clean one.
+        return Findings(
+            unread="the process table read came back empty, so no background shell was checked"
+        )
     anchor_source = (
         anchor_table
         if anchor_table is not None
@@ -437,11 +448,17 @@ def findings(
         task = task_of.get(pid)
         if task and age is not None and age >= limit and not long_work(cmd):
             candidates.append((pid, age, cmdline, task))
+    unread = ""
     if candidates and owners is not None:
         try:
             owner_of, finished, quiet = owners({t: a for _p, a, _c, t in candidates})
-        except Exception:
+        except Exception as exc:
+            # The undeclared orphans and wait loops above stand on their own reads, so they are still reported; only the finished-agent judgement of these candidates is lost, and that loss is named.
             owner_of, finished, quiet = {}, set(), {}
+            unread = (
+                "the owner read failed (%s: %s), so %d declared shell(s) past %d min were not checked for a finished sub-agent"
+                % (type(exc).__name__, exc, len(candidates), BGSWEEP_AGE_MIN)
+            )
         for pid, age, cmdline, task in candidates:
             agent = (owner_of or {}).get(task)
             if agent and agent in (finished or ()):
@@ -463,7 +480,7 @@ def findings(
             emit(pid, age, cmdline, WAIT_LOOP, target, target_note(target))
         elif age is not None and newest.get(target, age) < age:
             emit(pid, age, cmdline, DUPLICATE_WAIT, target, target_note(target))
-    return out
+    return Findings(out, unread)
 
 
 def sweep(table_with_age=None, anchor_table=None, live_ids=None, stdout_task=_stdout_task):
@@ -478,55 +495,52 @@ def sweep(table_with_age=None, anchor_table=None, live_ids=None, stdout_task=_st
 
 
 def owner_context(event, cwd, session_id, task_ages, now=None):
-    """({task id: agent id}, {finished agent ids}, {agent id: quiet minutes}) for the shells in `task_ages` ({task id: age seconds}). Never raises; any failure is ({}, set(), {}).
+    """({task id: agent id}, {finished agent ids}, {agent id: quiet minutes}) for the shells in `task_ages` ({task id: age seconds}). Raises on a failed read (wl_roster, a transcript); findings() catches it, keeps every other finding and names the loss in `unread`.
 
     The link is the `"backgroundTaskId":"<id>"` an agent's transcript records when it launches a shell (wl_roster.shell_waiters reads the same). Only transcripts written since the oldest of these shells could have started are read. FINISHED: the event does not list the agent as running, `wl_roster.proven_finished` holds, and the transcript has been quiet BGSWEEP_AGE_MIN.
     """
-    try:
-        import wl_roster as R
+    import wl_roster as R
 
-        task_ids = {str(t) for t in task_ages or () if t}
-        if not task_ids:
-            return {}, set(), {}
-        now = time.time() if now is None else now
-        metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
-        running = {
-            str(b.get("id") or "")
-            for b in (event.get("background_tasks") or [])
-            if isinstance(b, dict) and b.get("type") == "subagent" and b.get("status") == "running"
-        }
-        # A transcript last written before the oldest shell started cannot have launched it.
-        since = now - max(float(a or 0) for a in task_ages.values()) - 60
-        owners: dict[str, str] = {}
-        finished: set[str] = set()
-        quiet: dict[str, int] = {}
-        for aid, m in metas.items():
-            jsonl = m.get("jsonl")
-            try:
-                mtime = jsonl.stat().st_mtime
-            except (OSError, AttributeError):
-                continue
-            if mtime < since:
-                continue
-            try:
-                data = jsonl.read_bytes()
-            except OSError:
-                continue
-            hit = False
-            for mm in re.finditer(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"', data):
-                sid = mm.group(1).decode()
-                if sid in task_ids:
-                    owners[sid] = aid
-                    hit = True
-            if not hit:
-                continue
-            quiet[aid] = int((now - mtime) / 60)
-            if (
-                aid not in running
-                and now - mtime >= BGSWEEP_AGE_MIN * 60
-                and R.proven_finished(jsonl, now, m.get("name", ""), cwd, session_id)
-            ):
-                finished.add(aid)
-        return owners, finished, quiet
-    except Exception:
+    task_ids = {str(t) for t in task_ages or () if t}
+    if not task_ids:
         return {}, set(), {}
+    now = time.time() if now is None else now
+    metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
+    running = {
+        str(b.get("id") or "")
+        for b in (event.get("background_tasks") or [])
+        if isinstance(b, dict) and b.get("type") == "subagent" and b.get("status") == "running"
+    }
+    # A transcript last written before the oldest shell started cannot have launched it.
+    since = now - max(float(a or 0) for a in task_ages.values()) - 60
+    owners: dict[str, str] = {}
+    finished: set[str] = set()
+    quiet: dict[str, int] = {}
+    for aid, m in metas.items():
+        jsonl = m.get("jsonl")
+        try:
+            mtime = jsonl.stat().st_mtime
+        except (OSError, AttributeError):
+            continue
+        if mtime < since:
+            continue
+        try:
+            data = jsonl.read_bytes()
+        except OSError:
+            continue
+        hit = False
+        for mm in re.finditer(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"', data):
+            sid = mm.group(1).decode()
+            if sid in task_ids:
+                owners[sid] = aid
+                hit = True
+        if not hit:
+            continue
+        quiet[aid] = int((now - mtime) / 60)
+        if (
+            aid not in running
+            and now - mtime >= BGSWEEP_AGE_MIN * 60
+            and R.proven_finished(jsonl, now, m.get("name", ""), cwd, session_id)
+        ):
+            finished.add(aid)
+    return owners, finished, quiet

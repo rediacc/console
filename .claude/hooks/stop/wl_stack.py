@@ -99,7 +99,8 @@ def _hooks_pkg():
     return commit_policy
 
 
-def _git(cwd, *args) -> tuple[int, str]:
+def _git_full(cwd, *args) -> tuple[int, str, str]:
+    """`(rc, stdout, stderr)` of `git -C <cwd> <args>`; rc 1 with the exception text as stderr when git cannot run."""
     try:
         r = subprocess.run(
             ["git", "-C", str(cwd), *args],
@@ -108,9 +109,14 @@ def _git(cwd, *args) -> tuple[int, str]:
             timeout=GIT_TIMEOUT_S,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):
-        return 1, ""
-    return r.returncode, r.stdout.strip()
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 1, "", "%s: %s" % (type(exc).__name__, exc)
+    return r.returncode, r.stdout.strip(), r.stderr.strip()
+
+
+def _git(cwd, *args) -> tuple[int, str]:
+    rc, out, _err = _git_full(cwd, *args)
+    return rc, out
 
 
 def _resolves(root, ref: str) -> bool:
@@ -360,22 +366,21 @@ def _named(items) -> str:
 
 
 def main_checkout_tasks(root, live_bg, metas) -> list[str]:
-    """The descriptions of this session's live background tasks that run in the main checkout; [] when `root` (the session's own tree) is not the main checkout. A shell task runs in the session's tree; a subagent does when its meta (`metas`, wl_roster.load_metas) records no tree of its own. A teammate or a workflow, whose tree the event does not say, is not counted, so an unknown keeps the block. Never raises."""
-    try:
-        main = _development_path(root)
-        if not main or os.path.realpath(str(root)) != os.path.realpath(main):
-            return []
-        out = []
-        for b in live_bg or ():
-            kind = b.get("type")
-            tid = str(b.get("id") or "")
-            meta = (metas or {}).get(tid)
-            main_tree_agent = meta is not None and not meta.get("worktree")
-            if kind == "shell" or (kind == "subagent" and main_tree_agent):
-                out.append(str(b.get("description") or b.get("command") or tid or "?")[:80])
-        return out
-    except Exception:
+    """The descriptions of this session's live background tasks that run in the main checkout; [] when `root` (the session's own tree) is not the main checkout. A shell task runs in the session's tree; a subagent does when its meta (`metas`, wl_roster.load_metas) records no tree of its own. A teammate or a workflow, whose tree the event does not say, is not counted, so an unknown keeps the block.
+
+    Raises StackReadError when git cannot list the trees of a repository: "not the main checkout" and "could not tell" are different answers, and the stop names the second beside the landing-stack text (wl_checks, `landing-stack-tasks`)."""
+    main = _development_path(root)
+    if not main or os.path.realpath(str(root)) != os.path.realpath(main):
         return []
+    out = []
+    for b in live_bg or ():
+        kind = b.get("type")
+        tid = str(b.get("id") or "")
+        meta = (metas or {}).get(tid)
+        main_tree_agent = meta is not None and not meta.get("worktree")
+        if kind == "shell" or (kind == "subagent" and main_tree_agent):
+            out.append(str(b.get("description") or b.get("command") or tid or "?")[:80])
+    return out
 
 
 def _unread_text(exc: BaseException) -> str:
@@ -500,30 +505,52 @@ def stack_report(root, released=True, **kw) -> str:
 
 
 def _development_path(root) -> str:
-    """The main checkout, the development tree: the first entry of `git worktree list --porcelain`."""
-    rc, out = _git(root, "worktree", "list", "--porcelain")
-    if rc != 0:
+    """The main checkout, the development tree: the first entry of `git worktree list --porcelain`, "" when git says `root` is in no repository (an answer: no checkout). Raises StackReadError when git fails any other way or lists no tree, so a caller never mistakes an unread answer for a tree."""
+    rc, out, err = _git_full(root, "worktree", "list", "--porcelain")
+    if rc != 0 and "not a git repository" in err:
         return ""
+    if rc != 0:
+        raise StackReadError(
+            "git could not list the trees of %s (git worktree list exited %d: %s)"
+            % (root, rc, (err.splitlines() or ["no stderr"])[0][:160])
+        )
     for line in out.splitlines():
         if line.startswith("worktree "):
             return line[len("worktree ") :]
-    return ""
+    raise StackReadError("git listed no tree for %s" % root)
+
+
+def _record(root) -> tuple[dict | None, str]:
+    """`(record, problem)`: the validated landing record, or None with "" when there is none, or None with the reason it binds nothing (a defective record, or commit_policy that cannot be loaded)."""
+    try:
+        cp = _hooks_pkg()
+    except (ImportError, OSError, SyntaxError) as exc:
+        return None, "commit_policy, the landing record's reader, could not be loaded (%s: %s)" % (
+            type(exc).__name__,
+            exc,
+        )
+    record, problem = cp.read_landing_record(str(root))
+    return record, ("the landing record binds nothing: %s" % problem if problem else "")
+
+
+def notify_problem(root) -> str:
+    """Why notify_line has no message for a reason other than "there is no record": the record's defect or the unloadable reader, "" when the record reads (or is simply absent). A caller that gets an empty message asks this and names the answer, so a failed read is never latched as a sent message (agent/plans/PLAN-silent-failure-sweep.md D6)."""
+    return _record(root)[1]
 
 
 def notify_line(root, event: str, pr: int | None = None, sha: str = "") -> str:
-    """The cross-session message the landing session sends the development session, "" with no valid record or an unknown event.
+    """The cross-session message the landing session sends the development session, "" with no valid record or an unknown event. An empty message with a record that fails to read is not "nothing to send": notify_problem names it.
 
     WHEN. `push`: after each `git push` of the landing branch from the landing tree exits 0 (the post-bash side). `merged`: once `gh pr merge` of the landing PR reads MERGED (/pr-merge, after the merge is confirmed). `cd-done`: once the release at the merged sha (`sha`) is fully green, Console CI on main and the edge deploy both SUCCESS (agent/plans/PLAN-simple-two-tree-loop.md D1 L-RELEASE to L-IDLE): the landing stop names it once per merged sha, and promote is the development session's next step once every plan on its branch is code-complete (D3). The sending itself is the landing session's SendMessage; this is the text.
     """
-    try:
-        cp = _hooks_pkg()
-        record = cp.landing_record(str(root))
-    except Exception:
-        return ""
+    record, _problem = _record(root)
     if record is None:
         return ""
     landing = record["branch"]
-    where = _development_path(root) or "the main checkout"
+    try:
+        where = _development_path(root)
+    except StackReadError as exc:
+        where = "the main checkout (%s)" % exc
     if event == "push":
         rc, sha = _git(root, "rev-parse", "--short", "refs/heads/" + landing)
         tip = sha if rc == 0 and sha else "its new tip"
