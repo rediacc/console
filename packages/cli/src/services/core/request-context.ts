@@ -155,6 +155,13 @@ export interface RequestConfigScope {
    * reads the code from here to put it on the served result.
    */
   writeFailure?: string;
+  /**
+   * A private copy of the config as last read or written, taken when the scope is
+   * built and after every write. A whole-document save is replayed as the edit
+   * between this copy and the document saved, so a caller that mutated `config`
+   * in place still has its edit seen.
+   */
+  readCopy?: RdcConfig;
 }
 
 /**
@@ -177,7 +184,8 @@ export function bindConfigWriteback(config: RdcConfig, writeback: ConfigWritebac
 /** A fresh request-scoped config holder around `config`, with the writeback bound to it, if any. */
 export function createRequestConfigScope(config: RdcConfig): RequestConfigScope {
   const writeback = writebacks.get(config);
-  return writeback ? { config, writeback } : { config };
+  const readCopy = structuredClone(config);
+  return writeback ? { config, writeback, readCopy } : { config, readCopy };
 }
 
 /**

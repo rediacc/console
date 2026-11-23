@@ -15,6 +15,7 @@ import {
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { getSubscriptionTokenFile } from '../services/account/subscription-auth.js';
+import { replaySavedEdit } from '../services/core/config-delta.js';
 import {
   CONFIG_WRITE_UNAVAILABLE,
   ConfigWriteUnavailableError,
@@ -98,6 +99,7 @@ async function writeScoped(
   }
   // The memoized resource view was built from the previous config.
   scope.resourceState = undefined;
+  scope.readCopy = structuredClone(scope.config);
   return scope.config;
 }
 
@@ -375,7 +377,9 @@ export class ConfigFileStorage {
   async save(config: RdcConfig, name: string = DEFAULT_CONFIG_NAME): Promise<void> {
     const scoped = currentRequestConfig();
     if (scoped) {
-      await writeScoped(scoped, () => config, 'spec');
+      // The caller saves a whole document built from the copy it read; replay only its edit, so a replay after a lost compare-and-swap keeps what another device wrote.
+      const read = scoped.readCopy ?? structuredClone(scoped.config);
+      await writeScoped(scoped, (newest) => replaySavedEdit(newest, read, config), 'spec');
       return;
     }
     await this.withLock(name, async () => {
