@@ -59,6 +59,7 @@ import wl_roundlog
 import wl_rules
 import wl_schedred
 import wl_shapedup
+import wl_snapshot
 import wl_stack
 import wl_standdown
 import wl_stopregistry as R
@@ -6822,6 +6823,16 @@ def _stop_store_freshness(ns):
         vadd("wl-stale", False, wl_storestatus.render_stale(_ss_rows, me8))
 
 
+def _stop_store_fold(ns):
+    """Segment "store-fold" of run_stop (wl_stopregistry.REGISTRY): the once-per-24-hours snapshot fold and hook-ledger rotation (PLAN-tooling-code-reduction.md CR9). A stop inside the window pays one stat; a failure goes to the read-failure note, which the ci-waiting segment names as one advisory, and never blocks."""
+    worklist = ns["worklist"]
+    me8 = ns["me8"]
+    for _site, _exc in wl_snapshot.housekeeping(
+        worklist, worklist.with_suffix(".housekeeping-stamp"), me=me8
+    ).items():
+        note_read_failure(_site, _exc)
+
+
 def _stop_ci_waiting(ns):
     """Segment "ci-waiting" of run_stop (wl_stopregistry.REGISTRY): the lines are the ones that sat inline, reading the earlier segments' locals from `ns` and leaving the ones later segments read."""
     if "b" in ns:
@@ -8441,6 +8452,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     _stop_ladder_rungs(ns)
     R.begin("store-freshness")
     _stop_store_freshness(ns)
+    R.begin("store-fold")
+    _stop_store_fold(ns)
     R.begin("ci-waiting")
     _stop_ci_waiting(ns)
     R.begin("plan-fidelity")

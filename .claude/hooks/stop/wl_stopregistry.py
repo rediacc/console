@@ -64,6 +64,7 @@ REGISTRY = (
     Segment("idle-detect", "rotating"),
     Segment("ladder-rungs", "always"),
     Segment("store-freshness", "rotating"),
+    Segment("store-fold", "advisory"),
     Segment("ci-waiting", "rotating"),
     Segment("plan-fidelity", "advisory"),
     Segment("trapguard", "always"),

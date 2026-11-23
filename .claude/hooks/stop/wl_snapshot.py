@@ -13,14 +13,18 @@ THE SELECTION IS wl_store.compact_store's, spelled out here so `--plan` can prin
 
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import sys
+import time
 
 import wl_core as C
+import wl_hookreport
 import wl_store as S
 
 SIDECARS = frozenset({"epics"})
+HOUSEKEEPING_SECONDS = 24 * 3600
 
 
 def finished_logs(worklist, root=None, me=None, projects_dir=None):
@@ -49,6 +53,53 @@ def finished_logs(worklist, root=None, me=None, projects_dir=None):
     return out
 
 
+def fold(worklist, root=None, me=None, projects_dir=None):
+    """Fold the finished logs when at least one qualifies and return them; with none, change nothing (compact_store rewrites its own file every call, which is not paid for nothing)."""
+    found = finished_logs(worklist, root, me, projects_dir)
+    if found:
+        S.compact_store(worklist, root=root, me=me, projects_dir=projects_dir)
+    return found
+
+
+def _fold_quiet(worklist, root, me, projects_dir):
+    """fold with compact_store's report lines sent to stderr: a Stop's stdout is the hook's JSON answer, and a line printed there makes it unparseable."""
+    with contextlib.redirect_stdout(sys.stderr):
+        return fold(worklist, root, me, projects_dir)
+
+
+def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=None, rotate=None):
+    """The Stop hook's once-per-24-hours run (`_stop_store_fold`): the snapshot fold, then the hook-ledger rotation.
+
+    Returns {site: exception} for each step that failed, {} for a clean run or a fresh stamp. A normal stop pays one stat. The stamp is touched BEFORE the work, so a failing step is named once per day by the caller and never retried on every stop; a step's failure does not stop the other step, and nothing here raises."""
+    stamp = pathlib.Path(stamp)
+    now = time.time() if now is None else now
+    try:
+        if now - stamp.stat().st_mtime < HOUSEKEEPING_SECONDS:
+            return {}
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        return {"snapshot-stamp": exc}
+    failures = {}
+    try:
+        stamp.touch()
+        os.utime(stamp, (now, now))
+    except OSError as exc:
+        failures["snapshot-stamp"] = exc
+    steps = (
+        ("snapshot-fold", lambda: _fold_quiet(worklist, root, me, projects_dir)),
+        ("hook-ledger-rotate", rotate or wl_hookreport.rotate),
+    )
+    for site, step in steps:
+        try:
+            step()
+        except (
+            Exception
+        ) as exc:  # a failed housekeeping step is named, never allowed to take a stop down
+            failures[site] = exc
+    return failures
+
+
 def main(argv, worklist=None, root=None, me=None, projects_dir=None):
     if argv not in (["--plan"], ["--write"]):
         print(__doc__.split("\n\n", 1)[0], file=sys.stderr)
@@ -67,7 +118,7 @@ def main(argv, worklist=None, root=None, me=None, projects_dir=None):
     if not found:
         print("nothing to fold: no finished session log")
         return 0
-    S.compact_store(worklist, root=root, me=me, projects_dir=projects_dir)
+    fold(worklist, root, me, projects_dir)
     return 0
 
 

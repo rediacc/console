@@ -139,3 +139,51 @@ def test_nothing_finished_changes_nothing(store, capsys):
 def test_an_unknown_flag_is_usage(store, capsys):
     assert W.main(["--bogus"], worklist=store.wl, root=store.root) == 2
     assert "wl_snapshot" in capsys.readouterr().err
+
+
+def hk(s, stamp, now, rotate=None):
+    return W.housekeeping(
+        s.wl,
+        stamp,
+        root=s.root,
+        me="cafe0003",
+        projects_dir=s.tmp / "no-transcripts",
+        now=now,
+        rotate=rotate or (lambda: None),
+    )
+
+
+def test_housekeeping_runs_when_the_stamp_is_missing_or_stale_and_skips_when_fresh(store):
+    stamp = store.tmp / "stamp"
+    calls = []
+    assert hk(store, stamp, 1000.0, lambda: calls.append("rotate")) == {}
+    assert calls == ["rotate"]
+    assert not (store.d / "dead0001.jsonl").exists(), "the fold did not run"
+    assert stamp.stat().st_mtime == 1000.0
+    # Control: inside 24 h nothing runs, the stamp is not moved.
+    assert hk(store, stamp, 1000.0 + 3600, lambda: calls.append("again")) == {}
+    assert calls == ["rotate"]
+    assert stamp.stat().st_mtime == 1000.0
+    # Past 24 h it runs again.
+    hk(store, stamp, 1000.0 + 25 * 3600, lambda: calls.append("later"))
+    assert calls == ["rotate", "later"]
+
+
+def test_housekeeping_names_a_failed_step_and_does_not_raise_or_skip_the_other(store):
+    def boom():
+        raise RuntimeError("ledger unreadable")
+
+    failures = hk(store, store.tmp / "stamp", 1000.0, boom)
+    assert set(failures) == {"hook-ledger-rotate"}
+    assert "ledger unreadable" in str(failures["hook-ledger-rotate"])
+    assert not (store.d / "dead0001.jsonl").exists(), "a rotate failure skipped the fold"
+    # Control: a clean run names nothing, and a failed one is not retried inside the window.
+    assert hk(store, store.tmp / "stamp2", 1000.0) == {}
+    assert hk(store, store.tmp / "stamp", 1001.0, boom) == {}
+
+
+def test_housekeeping_fold_writes_nothing_to_stdout(store, capsys):
+    hk(store, store.tmp / "stamp", 1000.0)
+    cap = capsys.readouterr()
+    assert cap.out == "", "a Stop's stdout is the hook's JSON answer"
+    assert "compacted 1 file(s)" in cap.err
