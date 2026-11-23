@@ -7,6 +7,8 @@ THE SET IS THE DIRECTORY, not "the scripts that carry the call". A set derived f
 An adopted script must refuse in the shared format on stderr (`<gate>.py: unknown argument '<arg>' (accepted: ...)`) with nothing on stdout. A script that refuses on its own is only required to exit 2: three of them print a usage text that does not name the flag, and that is their message to keep.
 """
 
+import ast
+import pathlib
 import sys
 
 import pytest
@@ -154,3 +156,39 @@ def test_a_headed_module_run_with_dash_m_refuses_an_unknown_flag(gate, mod):
     )
     gate.assert_exit_code(2, result.rc, "rediacc_ci.quality.%s must refuse %s" % (mod, BOGUS))
     gate.log_pass("rediacc_ci.quality.%s refuses %s with rc 2" % (mod, BOGUS))
+
+
+def runpy_entries(quality: pathlib.Path) -> list[str]:
+    """Entry scripts under `quality` that run their module through `runpy`: check:ci-gate-argv cannot follow that hop to the module's parse, so such a shim reads as a bypass (CR2 batch B shipped nine and rewrote them to call `main(argv)` in 54a54fd570 and db09591e07)."""
+    hits = []
+    for script in sorted(quality.glob("check_*.py")):
+        tree = ast.parse(script.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names = []
+            if isinstance(node, ast.Import):
+                names = [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                names = [node.module or ""]
+            if any(n == "runpy" or n.startswith("runpy.") for n in names):
+                hits.append(script.stem)
+                break
+    return hits
+
+
+def test_no_entry_runs_its_module_through_runpy(gate, tmp_path):
+    gate.log_test("no quality entry script runs its module through runpy")
+    # CONTROL: a planted runpy shim is seen, and a main(argv) shim beside it is not.
+    (tmp_path / "check_planted.py").write_text(
+        'import runpy\nif __name__ == "__main__":\n    runpy.run_module("rediacc_ci.quality.x", run_name="__main__")\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "check_clean.py").write_text(
+        'import sys\nfrom rediacc_ci.quality import x\nif __name__ == "__main__":\n    raise SystemExit(x.main(sys.argv[1:]))\n',
+        encoding="utf-8",
+    )
+    gate.assert_eq(
+        runpy_entries(tmp_path), ["check_planted"], "the planted runpy shim, and only it, is found"
+    )
+    found = runpy_entries(QUALITY)
+    gate.assert_eq(found, [], "entry scripts that run their module through runpy")
+    gate.log_pass("no runpy entry under .ci/scripts/quality")
