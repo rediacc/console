@@ -410,7 +410,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_feedback
       - name: Policy inventory
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_policy_inventory.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.policy_inventory
       - name: Pool-registered tests do not write the real tree
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.pool_writer_safety
@@ -713,7 +713,7 @@ jobs:
 
       - name: Resource profile (previous run's captures)
         if: ${{ !cancelled() }}
-        run: npm run check:ci-resprofile
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.resprofile
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 

@@ -3801,10 +3801,10 @@ export const GATES: readonly GateSpec[] = [
       GITHUB_BASE_REF: '${{ github.base_ref }}',
     },
     noProfile: true,
-    run: 'npm run check:ci-resprofile',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.resprofile',
     // Judges the PREVIOUS run's process-tree captures (rotated by this runner at start), so it never reads a torn file. Pristine until the baseline is seeded.
     gate: true,
-    leaves: ['.ci/scripts/quality/check_resprofile.py'],
+    leaves: ['.ci/rediacc_ci/quality/resprofile.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4663,9 +4663,9 @@ export const GATES: readonly GateSpec[] = [
     // W4 P4b. Four directions over the policy directory, because a one-way check reads a DELETED list as "nothing is suppressed": nothing on disk outside POLICY_FILES, nothing in POLICY_FILES missing from disk, Python and TypeScript agreeing on both the names and POLICY_DIR, and no literal policy-path join outside the two seams. Its honest control is a run against 19c45c78e, the
     // commit whose drift this estate actually suffered; it reds there naming exactly `.language-policy-allowlist`.
     id: 'check:ci-policy-inventory',
-    run: 'npm run check:ci-policy-inventory',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.policy_inventory',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_policy_inventory.py'],
+    leaves: ['.ci/rediacc_ci/quality/policy_inventory.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

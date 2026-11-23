@@ -3969,10 +3969,10 @@
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
     },
     "noProfile": true,
-    "run": "npm run check:ci-resprofile",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.resprofile",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_resprofile.py"
+      ".ci/rediacc_ci/quality/resprofile.py"
     ],
     "ci": {
       "kind": "step",
@@ -4858,10 +4858,10 @@
   },
   {
     "id": "check:ci-policy-inventory",
-    "run": "npm run check:ci-policy-inventory",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.policy_inventory",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_policy_inventory.py"
+      ".ci/rediacc_ci/quality/policy_inventory.py"
     ],
     "ci": {
       "kind": "step",

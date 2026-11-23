@@ -173,7 +173,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -394,7 +394,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -590,7 +590,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -778,7 +778,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -2414,7 +2414,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -2600,7 +2600,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
         {
           "id": "check:ci-retired-commands",
@@ -2854,7 +2854,7 @@
         },
         {
           "id": "check:ci-resprofile",
-          "evidence": ".ci/scripts/quality/check_resprofile.py:131 (cite) agent/plans/PLAN-resprofile-wave2.md"
+          "evidence": ".ci/rediacc_ci/quality/resprofile.py:129 (cite) agent/plans/PLAN-resprofile-wave2.md"
         },
         {
           "id": "check:ci-retired-commands",

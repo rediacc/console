@@ -71,8 +71,8 @@ def test_walkers_walk_tree_goes_red_without_the_prune_entry(tree, monkeypatch):
     assert reports_marker(unpruned)
 
 
-def test_walkers_policy_inventory_fallback_walk_skips_the_lease(tree, monkeypatch):
-    entry = load_entry(monkeypatch, "check_policy_inventory")
+def test_walkers_policy_inventory_fallback_walk_skips_the_lease(tree):
+    entry = importlib.import_module("rediacc_ci.quality.policy_inventory")
     found, how = entry.source_files(tree)
     assert how == "filesystem walk"
     assert not reports_marker(found)
