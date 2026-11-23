@@ -16,20 +16,18 @@ import { busy, CliExitError } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
-import {
-  computeSha256,
-  getEmbeddedRenetBinary,
-  isSEA,
-  type RenetArch,
-} from '../core/embedded-assets.js';
+import { computeSha256, isSEA, type RenetArch } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { currentRequestContext } from '../core/request-context.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import type { SwitchBackOutcome } from '../preview/slot.js';
+import { pinAndRecordTouch, runSwitchBack } from '../preview/slot-ops.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
   recordProvisionVerified,
 } from './provision-state.js';
+import { resolveRenetBinary } from './renet-binary-source.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
 import { reportDaemonUpgrade, upgradeDaemons } from './renet-daemons.js';
 import {
@@ -208,7 +206,7 @@ class RenetProvisionerService {
 
     return withSharedOrPooledSftp(sharedSftp, config, async (sftp) => {
       const arch = await this.resolveArch(sftp, cacheKey);
-      const { binary, sourcePath } = await this.resolveBinary(arch, options?.localBinaryPath);
+      const { binary, sourcePath } = await resolveRenetBinary(arch, options?.localBinaryPath);
       const localHash = await this.computeLocalHash(arch, binary, sourcePath);
       const paths = { slot: REMOTE_INSTALL_PATH, current: REMOTE_CURRENT_PATH };
       const { result, bothMatch } = classifyInspect(
@@ -304,6 +302,40 @@ class RenetProvisionerService {
     );
   }
 
+  /** The first replacement of a server's renet while a preview is active: pinned and recorded before any upload (D9, preview/slot-ops.ts). */
+  private async pinAndRecordPreviewTouch(
+    sftp: SFTPClient,
+    options: ProvisionOptions | undefined,
+    slot: { hash: string | null; version: string | null },
+    current: { hash: string | null; version: string | null },
+    context: ProvisionContext
+  ): Promise<void> {
+    if (!options?.previewTouch) return;
+    await pinAndRecordTouch(sftp, options.previewTouch.machine, {
+      running: current.hash ? current : slot,
+      localHash: context.localHash,
+      binaryPath: current.hash ? REMOTE_CURRENT_PATH : context.remoteInstallPath,
+    });
+  }
+
+  /**
+   * Point `current` back at a pinned slot (the other half of D9), under the same host lock as an install,
+   * then move the router and daemons onto it as after any install.
+   */
+  async switchBackToPinnedSlot(
+    sftp: SFTPClient,
+    pinned: { slotDir: string; sha256: string }
+  ): Promise<SwitchBackOutcome> {
+    const outcome = await runSwitchBack(sftp, pinned, {
+      currentDir: REMOTE_CURRENT_DIR,
+      currentPath: REMOTE_CURRENT_PATH,
+      lockPath: REMOTE_LOCK_PATH,
+      flockTimeoutExit: REMOTE_FLOCK_TIMEOUT_EXIT,
+    });
+    if (outcome === 'switched') await this.refreshRouter(sftp, `${pinned.slotDir}/renet`);
+    return outcome;
+  }
+
   private async provisionInternal(
     config: SFTPClientConfig,
     options?: ProvisionOptions,
@@ -345,6 +377,7 @@ class RenetProvisionerService {
     });
     const versionRejected = this.buildVersionRejectedResult(config.host, remote, current, context);
     if (versionRejected) return versionRejected;
+    await this.pinAndRecordPreviewTouch(sftp, options, remote, current, context);
 
     const stagingPath = this.buildStagingPath();
     if (remote.hash !== context.localHash) {
@@ -399,7 +432,7 @@ class RenetProvisionerService {
     const remoteInstallPath = REMOTE_INSTALL_PATH;
     const cacheKey = this.buildCacheKey(config);
     const arch = await this.resolveArch(sftp, cacheKey);
-    const { binary, sourcePath } = await this.resolveBinary(arch, localBinaryPath);
+    const { binary, sourcePath } = await resolveRenetBinary(arch, localBinaryPath);
     return {
       arch,
       binary,
@@ -515,43 +548,6 @@ class RenetProvisionerService {
     }
 
     outputService.info(`Remote renet already current on ${host}`);
-  }
-
-  /**
-   * Get the binary data from either embedded assets or a local file.
-   * On non-Linux platforms, resolves the cross-compiled Linux binary
-   * (e.g. renet-linux-amd64) instead of the local platform binary.
-   * Returns the resolved source path (null for embedded SEA assets) so
-   * the hash memo can be keyed by file identity.
-   */
-  private async resolveBinary(
-    arch: RenetArch,
-    localBinaryPath?: string
-  ): Promise<{ binary: Buffer; sourcePath: string | null }> {
-    if (isSEA()) {
-      return { binary: getEmbeddedRenetBinary('linux', arch), sourcePath: null };
-    }
-
-    if (localBinaryPath) {
-      // localBinaryPath is the HOST binary (e.g. private/renet/bin/renet). It is only the right thing to send when the remote runs the host's own arch: on a non-Linux host it never is (the host binary is mac/win, not the linux binary a VM needs), and on a Linux host only when the remote arch matches. Otherwise use the cross-compiled renet-linux-<arch> staged next to it by ./rdc.sh
-      // / build.sh dev. This is what lets an amd64 workstation provision an arm64 machine (and vice-versa) without building the SEA.
-      const hostArch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-      if (process.platform !== 'linux' || arch !== hostArch) {
-        const dir = path.dirname(localBinaryPath);
-        const linuxBinaryPath = path.join(dir, `renet-linux-${arch}`);
-        try {
-          return { binary: await fs.readFile(linuxBinaryPath), sourcePath: linuxBinaryPath };
-        } catch {
-          throw new Error(
-            `Cross-compiled Linux binary not found at ${linuxBinaryPath}. ` +
-              'Rebuild renet with ./rdc.sh or ./build.sh dev to generate Linux binaries.'
-          );
-        }
-      }
-      return { binary: await fs.readFile(localBinaryPath), sourcePath: localBinaryPath };
-    }
-
-    throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
   }
 
   /**

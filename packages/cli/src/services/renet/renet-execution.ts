@@ -19,6 +19,7 @@ import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import type { ExtraMachine } from '../executor/types.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { previewTouchOption } from '../preview/touch.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
   assertRenetSourceClean,
@@ -281,6 +282,7 @@ export async function acquireRemoteRenet(
       restartServices,
       deferRouterRefresh: options.deferRouterRefresh,
       debug: options.debug,
+      ...previewTouchOption(options.machineName),
       ...(selection?.guarded === true && {
         uploadGuard: () => assertRenetSourceClean(selection.localBinaryPath, machine),
       }),
