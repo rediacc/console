@@ -3254,7 +3254,7 @@ V_IDLE_CAPACITY = (
 IDLE_CAPACITY_BOX = "    %s#%s  %s"
 IDLE_CAPACITY_SPAWN = "    /writers-now %s"
 IDLE_CAPACITY_MORE = "    ... and %d more"
-# agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3: appended to JUDGE_PROMPT while a vm:check run holds its lock on this tree. Key: run.
+# agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3: appended to JUDGE_PROMPT while an unpinned vm:check run holds its lock on this tree (a pinned one builds from the kept clone and never appends it). Key: run.
 JUDGE_RECEIPT_IN_FLIGHT = """
 RECEIPT IN FLIGHT: a %(run)s run is building its receipt on this tree right now
 (the hook read its lock). A commit or an edit in the main checkout voids the
@@ -3361,7 +3361,8 @@ V_WORKTREE_UNLANDED = (
 N_WORKTREE_REPORT = "LEASE TREES (nothing blocks on these):\n%s"
 
 N_WORKTREE_VMCHECK = (
-    "UNLANDED LEASE, held for the running vm:check (its fleet lock is taken): landing a CLI or "
+    "UNLANDED LEASE, held for the running vm:check (its fleet lock is taken and names no pinned "
+    "commit, so it builds from this checkout): landing a CLI or "
     "renet commit now would change the tree it rebuilds from on every rdc call. Land these once "
     "it ends:\n%s"
 )

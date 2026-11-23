@@ -2705,8 +2705,21 @@ def vm_check_holder(raw, proc="/proc"):
     return pid > 0 and argv_runs(words, VM_CHECK_ARGV)
 
 
+# A pinned vm:check (`--commit <sha>`, agent/plans/PLAN-push-decoupling.md D1.4) names its commit in the lock payload as a full sha; a short or non-hex value is no pin.
+VM_CHECK_PIN = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+
+
+def vm_check_pin(raw):
+    """The full commit sha a pinned vm:check names in its lock payload (`"commit"`), else "". A pinned run builds from the kept clone at that commit with its own renet, CLI and gateway record, so a landing in the main checkout cannot change what it judges (D1.3, box R7). An empty, malformed or non-object payload, and a `commit` that is absent, not a string or not a full sha, read "": unpinned, so the hold stays."""
+    try:
+        got = json.loads(raw.decode("utf-8", "replace")).get("commit")
+    except (ValueError, AttributeError):
+        return ""
+    return got if isinstance(got, str) and VM_CHECK_PIN.match(got) else ""
+
+
 def vm_check_running(path=None):
-    """True only when a vm:check run holds the fleet lock (vm_check_holder names it); a missing file, an unreadable one, a free lock or a holder that is not vm:check reads as not running, so a blind reading never stands a check down."""
+    """True only when an UNPINNED vm:check run holds the fleet lock (vm_check_holder names it and vm_check_pin reads no commit): that run rebuilds the CLI from this checkout on each rdc call, so a landing or a commit here changes what it judges. A pinned run (D1.3, box R7) builds from the kept clone and reads False, as do a missing file, an unreadable one, a free lock and a holder that is not vm:check; a payload whose pin cannot be read counts as unpinned, so the hold stays."""
     import fcntl
 
     path = path or vm_check_lock_path()
@@ -2718,9 +2731,10 @@ def vm_check_running(path=None):
         fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
     except BlockingIOError:
         try:
-            return vm_check_holder(os.pread(fd, 4096, 0))
+            raw = os.pread(fd, 4096, 0)
         except OSError:
             return False
+        return vm_check_holder(raw) and not vm_check_pin(raw)
     except OSError:
         return False
     else:
@@ -2859,7 +2873,7 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
         return
     state_doc["worktrees"] = got["cache"]
     if got["unlanded"] and vm_check_running():
-        # Landing a CLI or renet commit while a vm:check runs changes the tree it rebuilds from on every rdc call (a run of 2026-11-06 failed V1.1 that way), so the lease waits for the run: reported, not blocked.
+        # Landing a CLI or renet commit while an unpinned vm:check runs changes the tree it rebuilds from on every rdc call (a run of 2026-11-06 failed V1.1 that way), so the lease waits for the run: reported, not blocked. A pinned run builds from the kept clone, so vm_check_running reads False and the landing goes ahead.
         outq_add(
             worklist,
             session_id,
@@ -3129,7 +3143,7 @@ def _first_box_text(root, rel):
 
 
 def _judge_receipt_run():
-    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while a vm:check run holds the fleet lock, else None. The same reading that holds the unlanded-lease block; a failed read is None. A ci:quick run never holds: it judges a pinned clone and its receipt advances to the tree after a record-only commit."""
+    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while an unpinned vm:check run holds the fleet lock, else None. The same reading that holds the unlanded-lease block; a failed read is None. A ci:quick run never holds, and neither does a pinned vm:check (`--commit`, PLAN-push-decoupling.md R7): each judges a kept clone, not this checkout."""
     try:
         if vm_check_running():
             return "vm:check"

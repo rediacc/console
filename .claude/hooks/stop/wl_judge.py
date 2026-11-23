@@ -892,7 +892,7 @@ def run_judge(
 
     `with_riders` False (`judge: core`, wl_judge.riders) asks no class sweep, proof obligation or brave-default question, fresh or outstanding: the judge answers whether stopping is honest and nothing else. `closed` is the session's recently closed items as (id, text, evidence) rows (`closed_items`): the prompt names them with their tick evidence, and a `continue` whose only order names one of them is read as stop (`settle_closed_reraise`), so finished work is not ordered again.
 
-    `receipt_run` is `"vm:check"` while a vm:check run is building a receipt on this tree (wl_checks.vm_check_running), else None (a ci:quick run judges a pinned clone, so it no longer holds): the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
+    `receipt_run` is `"vm:check"` while an unpinned vm:check run is building a receipt on this tree (wl_checks.vm_check_running), else None (a ci:quick run and a pinned vm:check each judge a kept clone, so neither holds): the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
 
     `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `tracked`, `freshness`, `changes`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7), and one that only demands a status table next (`settle_status_demand`, agent/plans/PLAN-stop-hook-store-status.md D5).
 

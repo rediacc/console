@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""release_local_running: a live release:local of THIS checkout holds the unlanded-lease block; another checkout's, an absent one or an unreadable /proc do not."""
+"""release_local_running: a live release:local of THIS checkout holds the unlanded-lease block; another checkout's, an absent one or an unreadable /proc do not.
+
+pinned_vm_check_cases (agent/plans/PLAN-push-decoupling.md R7): a real child process named as a vm:check run holds a real fleet lock file; a payload naming a pinned commit keeps a landing order, one with no pin (or an unreadable pin) rewrites it as before."""
 
 import importlib
 import os
@@ -97,6 +99,123 @@ def worktree_check_cases():
     check("...and queues no hold note", notes, [])
 
 
+# The child holds the lock the way vm_check.Lock.acquire does: an exclusive flock, then the payload written at offset 0. It prints "held" once the payload is on disk and sleeps until killed. Its file name ends in drills/vm_check.py, so wl_checks.argv_runs reads it as a vm:check run.
+HOLDER_SRC = """
+import fcntl, os, sys, time
+fd = os.open(sys.argv[1], os.O_RDWR | os.O_CREAT, 0o600)
+fcntl.flock(fd, fcntl.LOCK_EX)
+os.ftruncate(fd, 0)
+os.pwrite(fd, sys.argv[2].replace("PID", str(os.getpid())).encode(), 0)
+print("held", flush=True)
+time.sleep(120)
+"""
+
+
+def pinned_vm_check_cases(tmp):
+    """R7: the receipt-in-flight hold stands down for a pinned vm:check and stays for an unpinned one, read end to end from a held lock through `_judge_receipt_run` into `wl_judge.sanitize_next_action`, and through `worktree_check`'s routing."""
+    import subprocess
+    import types
+    from unittest import mock
+
+    import wl_judge
+    import wl_worktrees
+    import worklist_messages as M
+
+    script = os.path.join(tmp, "drills", "vm_check.py")
+    os.makedirs(os.path.dirname(script))
+    with open(script, "w") as f:
+        f.write(HOLDER_SRC)
+    order = "land the two pending commits in the main checkout now"
+    sha = "a" * 40
+
+    def under_lock(payload, label):
+        """Hold a fresh lock with `payload` (PID is the child's pid) and answer (receipt_run, next_action after the sanitiser, worktree_check's notes, its blocks)."""
+        path = os.path.join(tmp, "%s.lock" % label)
+        child = subprocess.Popen(
+            [sys.executable, script, path, payload], stdout=subprocess.PIPE, text=True
+        )
+        try:
+            if child.stdout.readline().strip() != "held":
+                FAILURES.append("%s: the holder child never took the lock" % label)
+                return None, order, [], []
+            with mock.patch.object(wl_checks, "vm_check_lock_path", stub(path)):
+                run = wl_checks._judge_receipt_run()
+                out = wl_judge.sanitize_next_action({"next_action": order}, receipt_run=run)
+                notes, blocks = [], []
+                with (
+                    mock.patch.object(
+                        wl_worktrees, "survey", stub({"unlanded": [{"id": "l"}], "cache": {}})
+                    ),
+                    mock.patch.object(wl_worktrees, "report_lines", stub("")),
+                    mock.patch.object(wl_worktrees, "unlanded_lines", stub("l")),
+                    mock.patch.object(wl_checks, "release_local_running", stub(False)),
+                    mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(False)),
+                    mock.patch.object(
+                        wl_checks,
+                        "outq_add",
+                        lambda _w, _s, _st, _k, text, _p, **_kw: notes.append(text),
+                    ),
+                ):
+                    wl_checks.worktree_check(
+                        None,
+                        "s",
+                        {},
+                        types.SimpleNamespace(items={}),
+                        None,
+                        {"cwd": tmp},
+                        lambda key, *_a, **_kw: blocks.append(key),
+                    )
+            return run, out["next_action"], notes, blocks
+        finally:
+            child.kill()
+            child.wait()
+
+    run, action, notes, blocks = under_lock(
+        '{"pid": PID, "session": "s", "commit": "%s"}' % sha, "pinned"
+    )
+    check("a pinned vm:check sets no receipt_run", run, None)
+    check("...and the landing order is kept", action, order)
+    check("...and the unlanded lease is not held for it (it blocks)", blocks, ["worktree-unlanded"])
+    check("...with no vm:check note", notes, [])
+
+    run, action, notes, blocks = under_lock('{"pid": PID, "session": "s"}', "unpinned")
+    check("control: an unpinned vm:check sets receipt_run", run, "vm:check")
+    check(
+        "...and the landing order is rewritten as before",
+        action,
+        M.V_JUDGE_RECEIPT_ORDER_REJECTED % ("vm:check", order[:120]),
+    )
+    check(
+        "...and the unlanded lease is held with the vm:check note",
+        notes,
+        [M.N_WORKTREE_VMCHECK % "l"],
+    )
+    check("...and blocks nothing", blocks, [])
+
+    for label, value in (("short", '"abc1234"'), ("number", "42"), ("upper", '"%s"' % ("A" * 40))):
+        run, action, _notes, _blocks = under_lock(
+            '{"pid": PID, "commit": %s}' % value, "pin-" + label
+        )
+        check("an unreadable pin (%s) counts as unpinned" % label, run, "vm:check")
+
+    for raw, label in (
+        (b"", "empty"),
+        (b"not json", "garbage"),
+        (b"[1]", "list"),
+        (b'{"commit": 7}', "number"),
+    ):
+        check(
+            "vm_check_pin: an unreadable payload (%s) reads no pin" % label,
+            wl_checks.vm_check_pin(raw),
+            "",
+        )
+    check(
+        "vm_check_pin: a full sha reads as the pin",
+        wl_checks.vm_check_pin(('{"commit": "%s"}' % sha).encode()),
+        sha,
+    )
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         root = os.path.join(tmp, "console")
@@ -137,6 +256,8 @@ def main():
         )
 
     worktree_check_cases()
+    with tempfile.TemporaryDirectory() as tmp:
+        pinned_vm_check_cases(tmp)
 
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))
