@@ -62,7 +62,7 @@
  * .ci/config/tracked-credentials-baseline.json would leave this gate reading an EMPTY
  * frozen set in CI and reporting both known fixtures as brand-new findings -- red on
  * main, for nothing. It is not declared as a manifest `leaf`, because that field mirrors
- * what package.json resolves to and check:ci-parity enforces the mirror.
+ * what package.json resolves to and check:ci-gen-gates enforces the mirror.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';

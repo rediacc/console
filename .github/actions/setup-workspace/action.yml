@@ -51,7 +51,7 @@ inputs:
       CONTAINER_LANES). setup-node is skipped, and the node
       on PATH is asserted to be the image's own ($NVM_DIR/current/bin/node)
       with npm at the pinned NPM_VERSION, so the salt's `pinned:<image>` term
-      names the toolchain the gates really run on. check:ci-gate-bind refuses
+      names the toolchain the gates really run on. check:ci-gen-gates refuses
       this input on a job that is not a container lane.
     required: false
     default: 'false'

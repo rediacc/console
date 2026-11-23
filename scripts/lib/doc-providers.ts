@@ -15,7 +15,7 @@
  *
  * NO PROVIDER IMPORTS scripts/ci-runner/manifest.ts, AND THAT IS A RULE RATHER THAN A TASTE.
  * The gate catalogue reads `scripts/ci-runner/gates.lock.json`, the committed JSON projection
- * of the manifest that `check:ci-gates-lock` keeps faithful in both directions. An earlier
+ * of the manifest that `check:ci-gen-gates` keeps faithful in both directions. An earlier
  * draft of this file imported the typed `GATES` export instead. That was reversed for the
  * reason docs/ci-overhaul/08-driver-contract.md gives: `manifest.ts` is a single-writer file
  * behind the root driver's merge queue for the whole program, and every additional reader of it
@@ -269,7 +269,7 @@ const gateWhere = (g: LockEntry): string => {
 
 export const gatesProvider: Provider = {
   id: 'gates',
-  scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gates-lock\` keeps faithful`,
+  scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gen-gates\` keeps faithful`,
   columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow'],
   rows: (root) =>
     readGatesLock(root)

@@ -686,7 +686,7 @@ def apply_defer_audit(rows, batch):
 # NOT A MODEL CALL, and it runs whether or not the judge does. A stop message that says `check:<x> passed` for an id no registry defines is reporting a gate that cannot have run: `npm run <missing>` exits 1, so the "pass" was read off something else (TRAPS.md, manifest-id-is-not-an-npm-script, met here a second time at a different layer). The judge already sees the session's
 # citations; this is the narrow deterministic slice of that review (plan section 5), a backstop to the pre-bash guard block_missing_npm_script rather than the mechanism.
 #
-# REGISTERED MEANS the ci-runner manifest (`scripts/ci-runner/gates.lock.json`, the projection of manifest.ts GATES that check:ci-gates-lock keeps faithful) OR a root package.json script: an aggregate like `check:i18n` is a real npm script with no manifest entry, and calling its pass a phantom would be the false positive that teaches sessions to skim this check. With neither file readable it says nothing.
+# REGISTERED MEANS the ci-runner manifest (`scripts/ci-runner/gates.lock.json`, the projection of manifest.ts GATES that check:ci-gen-gates keeps faithful) OR a root package.json script: an aggregate like `check:i18n` is a real npm script with no manifest entry, and calling its pass a phantom would be the false positive that teaches sessions to skim this check. With neither file readable it says nothing.
 CLAIMED_GATE = re.compile(
     r"(?<![\w:/-])((?:check|gate-test):[A-Za-z0-9][A-Za-z0-9:._-]*[A-Za-z0-9])`?"
     r"[^\n]{0,40}?\b(pass(?:ed|es)?|green|rc\s*=?\s*0|exit(?:ed|s)?\s*(?:code\s*)?0)\b",

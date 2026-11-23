@@ -20,7 +20,7 @@ was lost, and it only works if it was recorded first.
 <!-- readers were drained onto the lock the same day this provider was switched onto it. The -->
 <!-- swap was proved a no-op on content: same row set, same count, no duplicates either side. -->
 
-Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manifest that `check:ci-gates-lock` keeps faithful.
+Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manifest that `check:ci-gen-gates` keeps faithful.
 
 | Gate | Runs in CI as | Is gate | Slow |
 |---|---|---|---|

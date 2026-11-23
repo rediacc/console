@@ -16,7 +16,7 @@ For defects visible without running the product: wiring, source invariants, cont
 
 ## Proof
 
-- `npm run check:ci-parity` — the local set and the CI surface agree BOTH ways
+- `npm run gen:gates -- --check` (check:ci-gen-gates) — the local set and the CI surface agree BOTH ways
 - `.ci/scripts/quality/check_gate_reachability_coverage.py` — no registration is unreachable
 - `npx tsx scripts/ci-runner/run.ts --list | grep <key>` — it is in the set that actually runs
 - **plant the defect**: re-introduce the bug, run the gate, require exit 1
