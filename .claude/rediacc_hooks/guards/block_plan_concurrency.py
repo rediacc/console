@@ -21,7 +21,7 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
 
 NO WRITER LIMIT (operator ruling #3ca908ee, 2026-11-23; agent/plans/PLAN-unlimited-writers.md): any number of writers may run, so no count refuses a spawn here; only the file rules above do.
 
-SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so two racing spawns cannot both miss each other's claim. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 5, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
+SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so two racing spawns cannot both miss each other's claim. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 4, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
 
 THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11): a missing Owns fails closed as `**` and a spawn for such a plan is refused.
 
@@ -42,7 +42,7 @@ from rediacc_hooks.guards import tables
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
-ORDER = 4
+ORDER = 3
 
 __getattr__ = tables("block_plan_concurrency", "FIXTURES", "ENVS", "EDGE_CASES")
 

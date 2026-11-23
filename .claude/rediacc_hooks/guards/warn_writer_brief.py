@@ -22,7 +22,7 @@ IT NEVER REFUSES. A brief line is advice, the review history is a heuristic, and
 
 STDOUT IS EXCLUSIVE ON THIS CHAIN, the same arrangement `warn_staged_shape_duplication` documents for pre-bash: no other pre-agent guard writes to stdout (block_plan_concurrency speaks on stderr only), so the chain's concatenated stdout is this guard's one JSON document or nothing. A second stdout speaker on this chain would make both unparseable; the suite runs the whole chain and parses its stdout to catch that.
 
-LAST IN THE CHAIN (ORDER 5), behind block_plan_concurrency (ORDER 4). A refused spawn never reaches this guard, so no line is computed for a writer that does not start, and block_plan_concurrency stays the last guard that can refuse.
+LAST IN THE CHAIN (ORDER 4), behind block_plan_concurrency (ORDER 3). A refused spawn never reaches this guard, so no line is computed for a writer that does not start, and block_plan_concurrency stays the last guard that can refuse.
 
 NO ENVIRONMENT READ here; `wl_core` resolves the root from the payload as it does for block_plan_concurrency.
 
@@ -44,7 +44,7 @@ __getattr__ = tables(
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
-ORDER = 5
+ORDER = 4
 
 # The planted defect: with the lines dropped the guard is silent on every spawn, and the suite's firing cases must turn red.
 DEFECT = ("lines = p1 + p4", "lines = []")
