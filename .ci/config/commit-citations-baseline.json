@@ -353,10 +353,6 @@
       "path": ".ci/rediacc_ci/quality/gh_retry_shell.py",
       "sha": "ec583bbda"
     },
-    "bd2499268f619053": {
-      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-      "sha": "8ba9169be"
-    },
     "c2a19de05a5cc2c5": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py",
       "sha": "73bd8f7ec"
@@ -436,10 +432,6 @@
     "e34320ef0e883ea9": {
       "path": ".claude/rediacc_hooks/tests/hookcases.py",
       "sha": "8ae5b3706"
-    },
-    "ee7b9c431dad3e39": {
-      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-      "sha": "4a6641bf2"
     },
     "efb6970a9a714828": {
       "path": "scripts/gates/check-external-links.ts",

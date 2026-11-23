@@ -3444,11 +3444,9 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 7,
+      "open": 1,
+      "done": 9,
       "open_sigs": [
-        "538bfc58",
-        "6e0c83e2",
         "e498feca"
       ],
       "done_sigs": [
@@ -3456,6 +3454,8 @@
         "0f7ddaf4",
         "15383c8b",
         "18eba573",
+        "538bfc58",
+        "6e0c83e2",
         "9611b663",
         "cd67ca86",
         "ce31990e"

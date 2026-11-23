@@ -16,11 +16,6 @@ THE ROUTES, and each is a different way a file actually executes:
              `python_files`, or a `conftest.py`, both read out of
              `pyproject.toml` rather than typed here. 235 files today have no
              registration at all and are perfectly alive through this route.
-  shadow     Named as the NEW side of a `.ci/shadow/*.jsonl` record whose
-             verdict is EQUIVALENT and WHOSE BASH TWIN STILL EXISTS ON DISK.
-             This route EXPIRES when the twin is deleted, which is the whole
-             value of the gate: at that moment route `wired` must have taken
-             over, and if it has not, the port is a file nothing runs.
   glob       Discovered by a directory glob inside the program itself. Declared
              BY NAME below with the code that does the globbing, never inferred:
              a glob built at runtime is not decidable from the source.
@@ -45,17 +40,10 @@ WHICH ROUTES ARE LOAD-BEARING TODAY, measured by ablation on 2026-09-08 rather t
           inventory` is a weaker one that happens to hold; and the day that
           inventory stops listing them, this route is what stops 44 live guards
           from being reported dead in a single run.
-  shadow  also changes no verdict today, and the reason is a drift in the plan
-          box that asked for it: all five pre-cutover ports named in the ledgers
-          are ALSO registered, so the stronger route claims them first. Its value
-          is entirely the EXPIRY finding, which is exercised by controls rather
-          than by the tree, and the shape line prints the route's count so the day
-          it starts carrying files is visible.
   manual  load-bearing, exactly once: `.claude/rediacc_hooks/run_tests.py` has no
           other route at all.
 
-ANTI-VACUITY. There are 11 refusals, all of them the same shape: the gate would rather say "I cannot see my subject" than emit a green nobody can act on. Zero Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML, an empty `testpaths` or `python_files`, a missing wiring file, zero files admitted by `wired`, zero collected by `pytest`, a shadow ledger whose
-records will not parse, a shadow directory that yields zero records at all, and a declared glob root that no longer exists.
+ANTI-VACUITY. There are 9 refusals, all of them the same shape: the gate would rather say "I cannot see my subject" than emit a green nobody can act on. Zero Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML, an empty `testpaths` or `python_files`, a missing wiring file, zero files admitted by `wired`, zero collected by `pytest`, and a declared glob root that no longer exists.
 
 THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own AST, counts the `RefusalError` raise sites and compares them against the digit in the paragraph above, because the first draft said "nine" while the code had eleven. A docstring that miscounts its own refusals is how a reader concludes a condition is covered when it is not.
 
@@ -102,8 +90,8 @@ WIRING_FILES = (
 )
 WIRING_DIRS = (".github/workflows/",)
 
-# Prose. A plan, a brief, a design doc and a status report all name Python paths by the hundred and execute none of them. `.ci/shadow/` is excluded here and handled as its own route SO THAT THE ROUTE CAN EXPIRE: a ledger entry is a permanent record of a comparison that happened once, so admitting it as an ordinary mention would keep a deleted twin's port alive forever.
-PROSE_PREFIXES = ("agent/", "docs/", ".ci/shadow/")
+# Prose. A plan, a brief, a design doc and a status report all name Python paths by the hundred and execute none of them.
+PROSE_PREFIXES = ("agent/", "docs/")
 PROSE_SUFFIXES = (".md", ".txt")
 
 # Roots a dotted module name is resolved against, in the order the running programs really use them. `.ci` and `.claude` are on sys.path via `pyproject.toml`'s `pythonpath` and via `_cipath`; the repository root and `scripts/` are how the flat script directories reach their neighbours.
@@ -179,16 +167,14 @@ GLOB_ROOTS = {
 # THE NEW ROUTE IS WEAKER THAN THE ONE IT REPLACED, and a future reader should know it: the exemption was unconditional, while the registry lists this module only for as long as it reads an environment variable. If that stops being true the file goes DEAD again with no exemption standing, and the answer then is to re-add an entry here with a fresh reason, not to assume the old one
 # still applies.
 MANUAL_ENTRY_POINTS: dict[str, str] = {
-    # `.ci/rediacc_ci/version/resolve_version.py` was named here until W7P4-b's second family, with the reason "remove the entry the moment a real route lands". One landed: `.github/workflows/cd-v2.yml` calls the module, and `.ci/shadow/w7p4b-resolve-version.observations.jsonl` names it on the new side of ten rows. The gate reported the exemption as no longer true, in the direction
+    # `.ci/rediacc_ci/version/resolve_version.py` was named here until W7P4-b's second family, with the reason "remove the entry the moment a real route lands". One landed: `.github/workflows/cd-v2.yml` calls the module. The gate reported the exemption as no longer true, in the direction
     # that is easy to leave unchecked, and this is that report being obeyed.
     # `.ci/rediacc_ci/ci_signal/create_complete.py` was named here with the reason "remove the entry the moment a real route lands". One landed: eight `ct-tests.yml` jobs call the module, and the greenlight closure that used to name the bash twin now names this file, so the gate reported the exemption as no longer true. The table is empty, which is the state it is
     # supposed to reach; an entry is added back only with a fresh reason of its own.
 }
 
-_PY_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.py")
 # A port invoked as `python3 -m rediacc_ci.<pkg>.<mod>`, the form the workflow flips use, names no `.py` path.
 _MODULE_TOKEN = re.compile(r"-m\s+rediacc_ci\.([\w.]+)")
-_SH_TOKEN = re.compile(r"[\w.\-/]*[\w\-]\.sh")
 
 
 class RefusalError(RuntimeError):
@@ -201,8 +187,6 @@ class Report:
     findings: list[dict] = field(default_factory=list)
     corpus: list[str] = field(default_factory=list)
     referrers: int = 0
-    expired: dict[str, str] = field(default_factory=dict)
-    shadow_records: int = 0
     manual: dict[str, str] = field(default_factory=dict)
     glob_roots: dict[str, int] = field(default_factory=dict)
 
@@ -282,71 +266,6 @@ def collected_by_pytest(
         if any(g.match(base) for g in globs):
             out.add(rel)
     return out
-
-
-def shadow_admissions(
-    root: pathlib.Path, pyset: frozenset[str]
-) -> tuple[dict[str, str], dict[str, str], int]:
-    """(admitted, expired, records): the new side of every EQUIVALENT shadow record.
-
-    ADMITTED means the twin named on the old side is still on disk. EXPIRED means it is not, and that is the finding this route exists to produce: the shadow protocol lands the port first and deletes the twin later, so the window between them is exactly when a forgotten port stops being run by anything and nothing else in the tree notices.
-    """
-    admitted: dict[str, str] = {}
-    expired: dict[str, str] = {}
-    records = 0
-    shadow_dir = root / ".ci" / "shadow"
-    if not shadow_dir.is_dir():
-        return admitted, expired, records
-    ledgers = sorted(shadow_dir.glob("*.jsonl"))
-    for ledger in ledgers:
-        for lineno, line in enumerate(ledger.read_text(encoding="utf-8").splitlines(), 1):
-            if not line.strip():
-                continue
-            try:
-                rec = json.loads(line)
-            except json.JSONDecodeError as exc:
-                raise RefusalError(
-                    "%s:%d does not parse as JSON (%s); the shadow route would silently "
-                    "admit nothing and every pre-cutover port would read as dead"
-                    % (ledger.relative_to(root), lineno, exc)
-                ) from exc
-            records += 1
-            if rec.get("verdict") != "EQUIVALENT":
-                continue
-            new_cmd = (rec.get("new") or {}).get("cmd", "")
-            old_cmd = (rec.get("old") or {}).get("cmd", "")
-            ports = [m for m in _PY_TOKEN.findall(new_cmd) if m in pyset]
-            ports += [
-                mod_path
-                for mod in _MODULE_TOKEN.findall(new_cmd)
-                for mod_path in (".ci/rediacc_ci/%s.py" % mod.replace(".", "/"),)
-                if mod_path in pyset
-            ]
-            if not ports:
-                continue
-            twins = re.findall(_SH_TOKEN, old_cmd)
-            live = [t for t in twins if (root / t).is_file()]
-            for port in ports:
-                if live:
-                    admitted[port] = "%s (twin %s)" % (
-                        ledger.name,
-                        ", ".join(sorted(live)),
-                    )
-                elif port not in admitted:
-                    expired[port] = "%s (twin %s is gone)" % (
-                        ledger.name,
-                        ", ".join(twins) or "unnamed",
-                    )
-    if ledgers and records == 0:
-        raise RefusalError(
-            "%d shadow ledger(s) under .ci/shadow/ yielded ZERO records; the shadow "
-            "route is empty for a parsing reason, not a real one" % len(ledgers)
-        )
-    # A port whose twin is alive in one record and gone in another is ADMITTED: one live twin is enough to keep the pre-cutover window open.
-    for port in list(expired):
-        if port in admitted:
-            del expired[port]
-    return admitted, expired, records
 
 
 def suffix_index(paths: list[str]) -> dict[str, list[str]]:
@@ -513,7 +432,7 @@ def scan(
     for rel in wiring:
         for hit in mentioned_paths(texts.get(rel, ""), index):
             admit(hit, "wired")
-        # The module form a caller switch writes, `python3 -m rediacc_ci.<pkg>.<mod>`, names no .py path. Until 2026-10-01 only the shadow ledger read it, so a workflow that ran `-m rediacc_ci.testrun.unit` left testrun/unit.py reported DEAD.
+        # The module form a caller switch writes, `python3 -m rediacc_ci.<pkg>.<mod>`, names no .py path. A workflow that runs `-m rediacc_ci.testrun.unit` would otherwise leave testrun/unit.py reported DEAD.
         for mod in _MODULE_TOKEN.findall(texts.get(rel, "")):
             base = ".ci/rediacc_ci/%s" % mod.replace(".", "/")
             for candidate in (base + ".py", base + "/__main__.py"):
@@ -535,11 +454,6 @@ def scan(
         )
     for rel in sorted(collected):
         admit(rel, "pytest")
-
-    # -- shadow --------------------------------------------------------------
-    admitted, expired, records = shadow_admissions(root, pyset)
-    for rel in sorted(admitted):
-        admit(rel, "shadow")
 
     # -- glob ----------------------------------------------------------------
     for rel in sorted(glob_discovered(corpus, root, glob_roots)):
@@ -621,15 +535,6 @@ def scan(
             "from something that runs, or declare its discovery glob in "
             "rediacc_ci.quality.dead_python.GLOB_ROOTS with the site that globs it" % rel
         )
-        if rel in expired:
-            why = (
-                "its shadow admission EXPIRED: %s, and nothing else runs it, so the "
-                "port is a file the cutover left behind" % expired[rel]
-            )
-            fix = (
-                "register %s the way its twin was registered (package.json, the "
-                "manifest and a workflow step), or delete it" % rel
-            )
         findings.append({"file": rel, "why": why, "fix": fix})
 
     return Report(
@@ -637,8 +542,6 @@ def scan(
         findings=findings,
         corpus=corpus,
         referrers=len(referrers),
-        expired=expired,
-        shadow_records=records,
         manual=manual_live,
         glob_roots={
             groot: sum(1 for r in routes if routes[r] == "glob" and r.startswith(groot))
@@ -818,49 +721,6 @@ def selftest(verbose: bool = False) -> int:
             [".ci/scripts/quality/check_orphan.py"],
         )
 
-        # -- the shadow route, and its expiry ---------------------------------
-        ledger = json.dumps(
-            {
-                "verdict": "EQUIVALENT",
-                "old": {"cmd": "bash .ci/scripts/quality/check-orphan.sh"},
-                "new": {"cmd": "python3 .ci/scripts/quality/check_orphan.py"},
-            }
-        )
-        root = _fixture(tmp / "shadow", orphan)
-        _write(root, ".ci/shadow/w7p2-orphan.observations.jsonl", ledger + "\n")
-        _write(root, ".ci/scripts/quality/check-orphan.sh", "#!/bin/bash\ntrue\n")
-        c.check(
-            "route shadow: an EQUIVALENT port whose twin lives is not dead", _findings(root), []
-        )
-        c.check(
-            "and it is attributed to `shadow`, not to the ledger's text",
-            scan(root, glob_roots={}, manual={}).routes[".ci/scripts/quality/check_orphan.py"],
-            "shadow",
-        )
-
-        # The module-name form a workflow flip uses: `python3 -m rediacc_ci.<pkg>.<mod>` names no .py path, so the route must read the module.
-        modroot = _fixture(
-            tmp / "shadow-module", {".ci/rediacc_ci/quality/orphan_mod.py": "X = 1\n"}
-        )
-        _write(
-            modroot,
-            ".ci/shadow/w7p4b-orphan-mod.observations.jsonl",
-            json.dumps(
-                {
-                    "verdict": "EQUIVALENT",
-                    "old": {"cmd": "bash .ci/scripts/quality/check-orphan.sh"},
-                    "new": {"cmd": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.orphan_mod"},
-                }
-            )
-            + "\n",
-        )
-        _write(modroot, ".ci/scripts/quality/check-orphan.sh", "#!/bin/bash\ntrue\n")
-        c.check(
-            "route shadow: a port named by `-m rediacc_ci.<mod>` in the ledger is not dead",
-            _findings(modroot),
-            [],
-        )
-
         wiredroot = _fixture(
             tmp / "wired-module",
             {
@@ -880,31 +740,6 @@ def selftest(verbose: bool = False) -> int:
             "route wired CONTROL: the same module with no caller is still dead",
             _findings(unwired),
             [".ci/rediacc_ci/testrun/orphan_run.py"],
-        )
-
-        (root / ".ci/scripts/quality/check-orphan.sh").unlink()
-        expired = scan(root, glob_roots={}, manual={}).findings
-        c.check(
-            "EXPIRY: deleting the twin makes the port a finding",
-            [f["file"] for f in expired],
-            [".ci/scripts/quality/check_orphan.py"],
-        )
-        c.truthy(
-            "and the finding says the admission EXPIRED rather than 'no route'",
-            "EXPIRED" in expired[0]["why"],
-        )
-
-        root = _fixture(tmp / "shadow-diff", orphan)
-        _write(
-            root,
-            ".ci/shadow/w7p2-orphan.observations.jsonl",
-            plant(ledger, '"EQUIVALENT"', '"DIVERGENT"') + "\n",
-        )
-        _write(root, ".ci/scripts/quality/check-orphan.sh", "#!/bin/bash\ntrue\n")
-        c.check(
-            "a DIVERGENT record admits nothing",
-            _findings(root),
-            [".ci/scripts/quality/check_orphan.py"],
         )
 
         # -- the glob route ----------------------------------------------------
@@ -1003,10 +838,6 @@ def selftest(verbose: bool = False) -> int:
             plant(_FIXTURE_PYPROJECT, 'testpaths = ["tests"]', 'testpaths = ["nowhere"]'),
         )
         c.truthy("a testpaths that collects nothing is a REFUSAL", _refuses(root))
-
-        root = _fixture(tmp / "bad-ledger", orphan)
-        _write(root, ".ci/shadow/broken.observations.jsonl", "{not json\n")
-        c.truthy("a shadow ledger that will not parse is a REFUSAL", _refuses(root))
 
         # -- the fast scanner equals the spelling it replaced --------------------
         index = suffix_index(
@@ -1110,12 +941,11 @@ def main(argv: list[str] | None = None) -> int:
     routes = report.by_route()
     log.info(
         "dead Python: %d file(s) scanned, every one reached -- %s; read out of "
-        "%d non-prose referrer file(s) and %d shadow record(s); %d exempt by name"
+        "%d non-prose referrer file(s); %d exempt by name"
         % (
             len(report.corpus),
             ", ".join("%d %s" % (routes[k], k) for k in sorted(routes)),
             report.referrers,
-            report.shadow_records,
             len(report.manual),
         )
     )

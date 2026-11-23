@@ -666,8 +666,6 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_account.py",
         "pytest:.ci/rediacc_ci/tests/test_twin_goldens.py",
         "pytest:.ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
-        "pytest:.ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-        "pytest:.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py",
         "pytest:.ci/rediacc_ci/tests/test_wl_proc.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py",
         "pytest:.ci/rediacc_ci/tests/test_workflows.py",
