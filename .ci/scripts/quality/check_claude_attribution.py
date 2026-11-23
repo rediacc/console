@@ -9,12 +9,9 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-claude-attribution.sh` carries none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a
 different change from moving which file the step runs.
 
-THE TWIN IS GONE. W7 P5 batch G1 deleted `.ci/scripts/quality/check-claude-attribution.sh` after `.ci/shadow/w7p2-claude-attribution.observations.jsonl` asserted equivalence over five distinct trees; its recorded output lives in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha it was captured from.
+THE TWIN IS GONE. W7 P5 batch G1 deleted `.ci/scripts/quality/check-claude-attribution.sh` after the shadow ledger (deleted in commit:99a4de363d) asserted equivalence over five distinct trees; its recorded output lives in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha it was captured from.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-claude-attribution --assert --k 5
-    -> equivalence holds over 5 distinct trees
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08 with the shadow gate (deleted in commit:bf054adcd4): equivalence holds over 5 distinct trees.
 """
 
 import sys
