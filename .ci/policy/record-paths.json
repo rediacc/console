@@ -68,6 +68,10 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:40 (cite) agent/reviews/<branch>/"
         },
         {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
           "id": "check:ci-fetch-integrity",
           "evidence": "scripts/ci-runner/gates.lock.json:8878 (declared) names **"
         },
@@ -212,10 +216,6 @@
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
         },
         {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
-        },
-        {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:170 (cite) agent/reviews/"
         }
@@ -228,10 +228,6 @@
         {
           "id": "check:ci-runner-selftest",
           "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         },
         {
           "id": "check:ci-release-bump-skip",
@@ -299,6 +295,10 @@
         {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (cite) agent/worklist/"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -427,10 +427,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
@@ -441,10 +437,6 @@
         {
           "id": "check:ci-runner-selftest",
           "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (the runner gates also import scripts/ci-runner/run.ts, whose citations of the record globs are planAdvance selftest fixtures); the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings, a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         },
         {
           "id": "check:ci-commit-citations",
@@ -503,6 +495,10 @@
         {
           "id": "check:ci-dockerfile-mirror-resilience",
           "evidence": "scripts/ci-runner/gates.lock.json:5718 (declared) names **"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -623,17 +619,9 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
-        },
         {
           "id": "check:ci-operator-rulings",
           "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
@@ -697,7 +685,7 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (cite) agent/ledgers/"
         },
         {
-          "id": "check:ci-env-manifest",
+          "id": "check:ci-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
@@ -819,10 +807,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
@@ -1042,20 +1026,20 @@
           "reason": "It imports wl_planbind.py and the hook modules it reaches; the .ci/config/carried-reds.json the derivation cites at wl_checks.py:4913 is a comment on the Stop hook's carried-CI branch, and this gate never calls that branch: the verdict is computed over agent/plans and agent/worklist."
         },
         {
-          "id": "check:ci-env-manifest",
-          "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from .ci/config/python-env-registry.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py:98 reads the registry for env names, and no file under this record is read."
-        },
-        {
-          "id": "check:ci-python-env-registry",
-          "reason": "Its only citation of this record is the opaque env-read key '*n' in the .ci/config/python-env-registry.json it owns (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; python_env_registry.py:96 compares env reads against that registry, and no file under this record is read."
-        },
-        {
           "id": "check:ci-pytest",
           "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
         },
         {
           "id": "check:ci-hook-exec-baseline",
           "reason": "The only citation the derivation finds is the bare glob '*.json' at .claude/hooks/stop/wl_hookreport.py:308, `Path(root).joinpath(*RECEIPTS_REL).glob('*.json')`, a listing of the ci:quick receipts under .ci/cache/receipts (RECEIPTS_REL); the receiver names that directory, so no file under .ci/config is read. It imports wl_hookreport for the hook-exec ledger report and its verdict is computed over those receipts and the hook ledger."
+        },
+        {
+          "id": "check:ci-env-registry",
+          "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from the python_reads section of .ci/config/env-manifest.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py and python_env_registry.py read that section for env names, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-secret-supply",
+          "reason": "Its only citation of this record is the opaque env-read key '*n' in the python_reads section of .ci/config/env-manifest.json, the file secret_supply.py:146 loads for its `shards` section (the shellscan.py entry for a computed variable name), which the derivation reads as a glob ending in n; secret_supply.py reads the secret shard's names from it, and no file under this record is read."
         }
       ]
     },
@@ -1112,6 +1096,10 @@
         {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:45 (cite) agent/plans/"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -1270,10 +1258,6 @@
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
         },
         {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
-        },
-        {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:156 (cite) agent/plans/PLAN-lint-rule-matrix-probe.md"
         }
@@ -1290,10 +1274,6 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
         },
         {
           "id": "check:ci-prose-duplication",
@@ -1344,6 +1324,10 @@
         {
           "id": "check:ci-dockerfile-mirror-resilience",
           "evidence": "scripts/ci-runner/gates.lock.json:5718 (declared) names **"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -1490,10 +1474,6 @@
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
         },
         {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
-        },
-        {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:51 (glob) agent/**/*.{md,mdx}"
         }
@@ -1506,10 +1486,6 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
         }
       ]
     },
@@ -1707,20 +1683,20 @@
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts), a string the selftest feeds its own matcher; the real run reads the translation JSON and the www and CLI sources."
         },
         {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-python-env-registry",
-          "reason": "Its only citation of this record is the opaque env-read key '*n' in the .ci/config/python-env-registry.json it owns (the shellscan.py entry for a computed variable name), which the derivation reads as a file glob; it scans Python sources for env reads and never opens .ci/config/plan-boxes.json."
-        },
-        {
           "id": "check:ci-pytest",
           "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
         },
         {
           "id": "check:ci-hook-exec-baseline",
           "reason": "The only citation the derivation finds is the bare glob '*.json' at .claude/hooks/stop/wl_hookreport.py:308, `Path(root).joinpath(*RECEIPTS_REL).glob('*.json')`, a listing of the ci:quick receipts under .ci/cache/receipts (RECEIPTS_REL); the receiver names that directory, so no file under .ci/config is read. It imports wl_hookreport for the hook-exec ledger report and its verdict is computed over those receipts and the hook ledger."
+        },
+        {
+          "id": "check:ci-env-registry",
+          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in the python_reads section of .ci/config/env-manifest.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
+        },
+        {
+          "id": "check:ci-secret-supply",
+          "reason": "Its only citation of this record is the opaque env-read key '*n' in the python_reads section of .ci/config/env-manifest.json, the file secret_supply.py:146 loads for its `shards` section (the shellscan.py entry for a computed variable name), which the derivation reads as a glob ending in n; secret_supply.py reads the secret shard's names from it, and no file under this record is read."
         }
       ]
     },
@@ -1770,6 +1746,10 @@
         {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -1886,10 +1866,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
@@ -1900,10 +1876,6 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
         },
         {
           "id": "check:ci-operator-rulings",
@@ -1963,6 +1935,10 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
         },
         {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
           "id": "check:ci-fetch-integrity",
           "evidence": "scripts/ci-runner/gates.lock.json:8878 (declared) names **"
         },
@@ -2077,10 +2053,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
@@ -2091,10 +2063,6 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
         },
         {
           "id": "check:ci-operator-rulings",
@@ -2152,6 +2120,10 @@
         {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
           "id": "check:ci-fetch-integrity",
@@ -2268,10 +2240,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": [
@@ -2282,10 +2250,6 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
-        },
-        {
-          "id": "check:ci-env-manifest",
-          "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
         },
         {
           "id": "check:ci-operator-rulings",
@@ -2353,7 +2317,7 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
         },
         {
-          "id": "check:ci-env-manifest",
+          "id": "check:ci-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
@@ -2479,10 +2443,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": []
@@ -2543,7 +2503,7 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
         },
         {
-          "id": "check:ci-env-manifest",
+          "id": "check:ci-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
@@ -2669,10 +2629,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         }
       ],
       "notReaders": []
@@ -2745,7 +2701,7 @@
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:33 (cite) agent/programs/<slug>/state/reports/"
         },
         {
-          "id": "check:ci-env-manifest",
+          "id": "check:ci-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (cite) agent/"
         },
         {
@@ -2951,10 +2907,6 @@
         {
           "id": "check:ci-typecheck-scope-coverage",
           "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
-        },
-        {
-          "id": "check:ci-worklist-env-registry",
-          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (cite) agent/"
         },
         {
           "id": "check:cli-docs",

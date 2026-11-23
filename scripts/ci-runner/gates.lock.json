@@ -3980,21 +3980,6 @@
     }
   },
   {
-    "id": "check:ci-env-manifest",
-    "run": "npm run check:ci-env-manifest",
-    "gate": true,
-    "slow": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/env_manifest.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Env manifest"
-    }
-  },
-  {
     "id": "check:ci-env-file-adoption",
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_file_adoption",
     "gate": true,
@@ -4085,21 +4070,6 @@
     }
   },
   {
-    "id": "check:ci-python-env-registry",
-    "slow": true,
-    "run": "npm run check:ci-python-env-registry",
-    "gate": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/python_env_registry.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Python env registry"
-    }
-  },
-  {
     "id": "check:ci-secret-supply",
     "run": "npm run check:ci-secret-supply",
     "gate": true,
@@ -4111,21 +4081,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Secret supply"
-    }
-  },
-  {
-    "id": "check:ci-worklist-env-registry",
-    "run": "npm run check:ci-worklist-env-registry",
-    "slow": true,
-    "gate": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/worklist_env_registry.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Worklist env registry"
     }
   },
   {
@@ -5486,7 +5441,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: a writer, not a validation. CI judges the registries it edits through check:ci-env-manifest and check:ci-worklist-env-registry; a step here would claim CI registers names on the author's behalf."
+      "blocker": "BLOCKER: a writer, not a validation. CI judges the registry it edits through check:ci-env-registry; a step here would claim CI registers names on the author's behalf."
     }
   },
   {
@@ -12805,6 +12760,21 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Turnstile widget drift"
+    }
+  },
+  {
+    "id": "check:ci-env-registry",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/env_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Env registry"
     }
   },
   {

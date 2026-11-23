@@ -3812,21 +3812,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // W8 P2. Every environment variable this repo reads or supplies, classified by who supplies the value and who may read it. Five readers derive the corpus from tracked files on EVERY run and no count is written down anywhere: the box quoted 1,014, its own design note re-measured 745 then 721 then 777, and the swing was one developer's .env.pre-rename.bak. Four set-arithmetic
-    // clauses hold the derived set against an eight-shard classification; the eighth shard is tombstones, so "a dead name came back" and "a new name is unclassified" are one assertion rather than two mechanisms to keep in sync.
-    id: 'check:ci-env-manifest',
-    run: 'npm run check:ci-env-manifest',
-    gate: true,
-    slow: true, // 24.8 s CI step p90 (lane-durations refresh 2026-11-01), over the 20 s pre-push ceiling
-    leaves: ['.ci/rediacc_ci/quality/env_manifest.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Env manifest',
-    },
-  },
-  {
     // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell, on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. The replacement is rediacc_ci.core.env (the bash shim scripts/lib/env-file.sh left in W7P5-c); this sweeps for the pattern returning, proves the module's export verb lets a planted shell value win, and drives a real `set -a; source` on the same fixture demanding the OPPOSITE answer --
     // without which that proof would pass just as happily against a loader that read nothing at all.
     id: 'check:ci-env-file-adoption',
@@ -3904,22 +3889,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // W8 P6. 445 module:NAME pairs across 164 tracked Python modules, derived from the AST and frozen as a shrink-only SET. Set equality BOTH ways is what makes the baseline untrimmable: deleting an entry whose read persists reds as NEW, banking one no read backs reds as STALE. A blanket `--write` `-baseline` (written split: the shrink-only gate's offerer scan is a text grep, so
-    // quoting the flag whole makes this comment an offender) is refused whenever it would ADD a pair, so a trimmer cannot reseed past it; additions are typed with --allow-new, which is itself checked against the derived set so it cannot pre-bank. 124 read sites hold the name in a variable, so constant resolution recovers 87 pairs a literal scan cannot see -- it is load-bearing,
-    // not polish.
-    id: 'check:ci-python-env-registry',
-    slow: true, // 20.0s in the idle pre-push pool, 5.1s alone (AST-scans 1217 Python files); 2026-09-26
-    run: 'npm run check:ci-python-env-registry',
-    gate: true,
-    leaves: ['.ci/rediacc_ci/quality/python_env_registry.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Python env registry',
-    },
-  },
-  {
     id: 'check:ci-secret-supply',
     run: 'npm run check:ci-secret-supply',
     gate: true,
@@ -3929,20 +3898,6 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-static',
       step: 'Secret supply',
-    },
-  },
-  {
-    // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set equality both ways. Derived from the AST rather than grep, which is why it is 133 and not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
-    id: 'check:ci-worklist-env-registry',
-    run: 'npm run check:ci-worklist-env-registry',
-    slow: true, // ~21s measured in a clean clone (2026-09-26): scans every worklist env read across the tree
-    gate: true,
-    leaves: ['.ci/rediacc_ci/quality/worklist_env_registry.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Worklist env registry',
     },
   },
   {
@@ -5262,7 +5217,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        "BLOCKER: a writer, not a validation. CI judges the registries it edits through check:ci-env-manifest and check:ci-worklist-env-registry; a step here would claim CI registers names on the author's behalf.",
+        "BLOCKER: a writer, not a validation. CI judges the registry it edits through check:ci-env-registry; a step here would claim CI registers names on the author's behalf.",
     },
   },
   {
@@ -12049,6 +12004,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // >>> gen-gates: header-declared gates (npm run gen:gates -- --write; do not edit)
+  {
+    id: 'check:ci-env-registry',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry',
+    slow: true,
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/env_registry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Env registry',
+    },
+  },
   {
     id: 'check:ci-gen-gates',
     run: 'tsx scripts/gen/gen-manifest.ts --gates --check',

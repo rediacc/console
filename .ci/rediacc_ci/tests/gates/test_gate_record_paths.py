@@ -182,6 +182,7 @@ PLAN_READERS = frozenset(
         "check:ci-decision-ids",
         "check:ci-dockerfile-mirror-resilience",
         "check:ci-durable-paths-tracked",
+        "check:ci-env-registry",
         "check:ci-fetch-integrity",
         "check:ci-fetch-retry",
         "check:ci-gate-reachability-coverage",
@@ -225,7 +226,6 @@ PLAN_READERS = frozenset(
         "check:ci-trap-registry",
         "check:ci-tree-shape",
         "check:ci-typecheck-scope-coverage",
-        "check:ci-worklist-env-registry",
         "check:cli-examples",
     }
 )

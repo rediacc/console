@@ -345,9 +345,9 @@ jobs:
       - name: Env file adoption
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_file_adoption
-      - name: Env manifest
+      - name: Env registry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_manifest
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.environment_names
@@ -426,9 +426,6 @@ jobs:
       - name: Python control plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_python_control_plants.py
-      - name: Python env registry
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_env_registry
       - name: Python gate deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
@@ -506,9 +503,6 @@ jobs:
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           .ci/scripts/quality/check_workflow_submodule_deps.py
-      - name: Worklist env registry
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.worklist_env_registry
       - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
