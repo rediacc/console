@@ -15,8 +15,8 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2653,
- "files": 663,
+ "count": 2652,
+ "files": 662,
  "by_rule": {
   "R1": 1419,
   "R11": 136,
@@ -24,7 +24,7 @@
   "R18": 12,
   "R19": 55,
   "R2": 597,
-  "R7": 433
+  "R7": 432
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -5816,11 +5816,6 @@
    ],
    "R7": [
     "79e623bc4c48ceb7"
-   ]
-  },
-  "scripts/gen/gen-manifest.ts": {
-   "R7": [
-    "fa3f1f369f8db38e"
    ]
   },
   "scripts/gen/i18n-backfill-commits.ts": {
