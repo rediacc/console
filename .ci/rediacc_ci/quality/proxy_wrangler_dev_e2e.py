@@ -70,7 +70,7 @@ import typing
 import urllib.error
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Checker, controls_first
+from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.core import https
 from rediacc_ci.deploy import executor_artifacts
 from rediacc_ci.quality import proxy_image_smoke
@@ -818,25 +818,27 @@ def selftest() -> bool:
     for label, broken in (
         (
             "a workflow without the named job is a finding",
-            lane.replace("  %s:\n" % CI_JOB, "  renamed:\n"),
+            plant(lane, "  %s:\n" % CI_JOB, "  renamed:\n"),
         ),
         (
             "the lane on a slim runner is a finding",
-            lane.replace("runs-on: %s" % CI_RUNNER, "runs-on: ubuntu-slim"),
+            plant(lane, "runs-on: %s" % CI_RUNNER, "runs-on: ubuntu-slim"),
         ),
         (
             "a renamed job display is a finding",
-            lane.replace("name: Proxy Wrangler Dev", "name: Wrangler"),
+            plant(lane, "name: Proxy Wrangler Dev", "name: Wrangler"),
         ),
         (
             "a renamed gate step is a finding",
-            lane.replace(
-                "      - name: %s\n        if" % CI_STEP, "      - name: Wrangler e2e\n        if"
+            plant(
+                lane,
+                "      - name: %s\n        if" % CI_STEP,
+                "      - name: Wrangler e2e\n        if",
             ),
         ),
         (
             "a step running something else is a finding",
-            lane.replace("run: %s" % CI_RUN, "run: npm run check:ci-proxy-image-smoke"),
+            plant(lane, "run: %s" % CI_RUN, "run: npm run check:ci-proxy-image-smoke"),
         ),
     ):
         check(label, len(ci_lane_findings(broken)) == 1)
