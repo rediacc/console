@@ -34,8 +34,7 @@
  *   tsx scripts/gates/check-locale-config-divergence.ts [--root <dir>] [--selftest]
  *
  * ---- gate ----
- * kind: shared-step
- * step: i18n cross-locale
+ * step: Locale config divergence
  * needs: node, submodules
  * lane: quality-i18n
  * ---- end gate ----

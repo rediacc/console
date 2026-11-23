@@ -47,7 +47,6 @@
  *   tsx scripts/gates/check-i18n-cross-locale.ts [--root <dir>] [--selftest]
  *
  * ---- gate ----
- * kind: shared-step
  * step: i18n cross-locale
  * needs: node, submodules
  * id: check:ci-i18n-cross-locale-core
@@ -502,7 +501,7 @@ function main(): void {
   const argv = process.argv.slice(2);
   if (argv.includes('--selftest')) return selftest();
 
-  // CONTROL FIRST, ALWAYS. This selftest plants German inside a French file and requires the detector to report it. It used to run only behind --selftest, and NOTHING invoked that flag: `check:ci-i18n-cross-locale` runs this file bare, so the one proof that this gate can FIRE was dead code. A gate whose fire-proof never runs is indistinguishable from a gate that always passes,
+  // CONTROL FIRST, ALWAYS. This selftest plants German inside a French file and requires the detector to report it. It used to run only behind --selftest, and NOTHING invoked that flag: the gate's CI step ran this file bare, so the one proof that this gate can FIRE was dead code. A gate whose fire-proof never runs is indistinguishable from a gate that always passes,
   // which is exactly the defect class this file was written to catch.
   //
   // Running it inline turns "did the control fire" into "did the gate exit 0", which CI already checks. Same shape as scripts/gates/check-schema-coverage.ts. Cost is a few temp files and milliseconds.

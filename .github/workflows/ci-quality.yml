@@ -2160,15 +2160,21 @@ jobs:
       - name: Docs structure parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-docs-structure-parity
-      - name: i18n command parity
+      - name: i18n cross-locale
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-i18n-command-parity
+        run: npm run check:ci-i18n-cross-locale-core
       - name: i18n placeholders
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-i18n-placeholders
       - name: i18n untranslated
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-i18n-untranslated
+      - name: Locale config divergence
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-locale-config-divergence
+      - name: Locale German contamination
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-locale-de-contamination
       - name: Locale sources
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-locale-sources
@@ -2182,10 +2188,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-search-index
       # <<< gate-bind
-
-      - name: i18n cross-locale
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-i18n-cross-locale
 
   quality-www-build:
     name: Built-www Gates

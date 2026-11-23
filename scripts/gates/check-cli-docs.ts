@@ -21,11 +21,17 @@
  *   npx tsx scripts/gates/check-cli-docs.ts            # report violations, exit 1 if any
  *   npx tsx scripts/gates/check-cli-docs.ts --fix      # apply curated renames, then report
  *
+ * `--locales-only` runs only the two i18n checks (English absolute and per-locale command
+ * parity) for a readable answer by hand. CI runs the full gate, which includes both, inside the
+ * shared `i18n` step; the `--locales-only` registration was retired as a subset alias
+ * (agent/plans/PLAN-tooling-code-reduction.md D4).
+ *
  * ---- gate ----
- * step: i18n command parity
+ * kind: shared-step
+ * step: i18n
  * needs: node
- * id: check:ci-i18n-command-parity
- * run: tsx scripts/gates/check-cli-docs.ts --locales-only
+ * id: check:cli-docs
+ * run: tsx scripts/gates/check-cli-docs.ts
  * lane: quality-i18n
  * ---- end gate ----
  */
