@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-06T04:46:37.970Z",
+  "generatedAt": "2026-11-23T17:37:05.034Z",
   "legs": [
     {
       "index": 1,
@@ -96,6 +96,10 @@
         "github.com/rediacc/renet/pkg/license",
         "github.com/rediacc/renet/pkg/list",
         "github.com/rediacc/renet/pkg/loop",
+        "github.com/rediacc/renet/pkg/netaudit",
+        "github.com/rediacc/renet/pkg/netaudit/internal/atomicfile",
+        "github.com/rediacc/renet/pkg/netaudit/spool",
+        "github.com/rediacc/renet/pkg/netaudit/trigger",
         "github.com/rediacc/renet/pkg/orchestration",
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",
