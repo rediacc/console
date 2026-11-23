@@ -484,7 +484,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tracked_sidecars
       - name: Tree shape
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_tree_shape.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tree_shape_gate
       - name: Turnstile widget drift
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_turnstile_drift.py --selftest
@@ -1538,7 +1538,7 @@ jobs:
         run: npm run check:ci-baseline-key-semantics
       - name: Behavioral hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_hint_corpus.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.hint_corpus
       - name: Check content for AI slop patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.content_quality

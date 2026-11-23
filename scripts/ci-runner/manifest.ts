@@ -2453,7 +2453,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.npmrc',
     gate: true,
     // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python. The leaf is the Python entry point now, not check-npmrc.sh. The twin is NOT deleted (invariant 5 forbids that in the porting change; deletion is W7 P5) -- what changed is only which of the two the registry invokes. Condition for cutting over is the one the sibling entry points name in their own docstrings:
-    // the differential ledger says the port kept its verdict. `shadow-gate --pair w7p2-npmrc --assert --k 5` reports equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical stdout AND stderr.
+    // the differential ledger says the port kept its verdict. The shadow gate (commit:bf054adcd4) reported equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical stdout AND stderr.
     paths: [
       '.ci/**',
       '.gitmodules',
@@ -2890,10 +2890,10 @@ export const GATES: readonly GateSpec[] = [
     // WHERE A FILE MAY BE, at the repository root and under agent/. Two defects in one week were the same missing rule rather than two bugs: debris from the retired bash worklist suites sat untracked at the root, and a second reggate ledger appeared under .claude/hooks/stop/agent/ because a fallback root was cwd-relative. The classes are data in .ci/policy/tree-shape.json. Lane
     // quality-static for the reason its neighbours are there: the verdict reads the git index and a handful of Python sources, never a merge-base, so it reaches the same answer on a push and on a PR. No `paths`: the subject is the WHOLE listing, and a half-populated path table would drop the gate from --changed exactly when a stray had just been added.
     id: 'check:ci-tree-shape',
-    run: 'npm run check:ci-tree-shape',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tree_shape_gate',
     gate: true,
     slow: true, // 20.9s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
-    leaves: ['.ci/scripts/quality/check_tree_shape.py'],
+    leaves: ['.ci/rediacc_ci/quality/tree_shape_gate.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3459,7 +3459,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
       '.ci/scripts/quality/lib',
       '.ci/scripts/security',
-      '.ci/shadow',
       '.claude',
       '.claude/agents',
       '.claude/commands',
@@ -4523,8 +4522,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/tests/test_version_resolve_version.py',
       '.ci/rediacc_ci/tests/test_vitest_cache_isolation.py',
       '.ci/rediacc_ci/tests/test_vm_check_list_evidence.py',
-      '.ci/rediacc_ci/tests/test_w7p4b_ledgers.py',
-      '.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py',
       '.ci/rediacc_ci/tests/test_wl_proc.py',
       '.ci/rediacc_ci/tests/test_workflow_called_permissions.py',
       '.ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py',
@@ -4688,7 +4685,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // U4. The Python twin of the dead-bash instrument. SIX execution routes, not three: wired, pytest, shadow, glob, imported, mentioned. Prose is deliberately NOT a route -- `agent/`, `docs/`, `*.md` and `.ci/shadow/` are excluded, the last so the shadow route can EXPIRE when its bash twin goes rather than vouching for itself forever.
+    // U4. The Python twin of the dead-bash instrument. SIX execution routes, not three: wired, pytest, shadow, glob, imported, mentioned. Prose is deliberately NOT a route -- `agent/`, `docs/`, `*.md` and the ledger directory (deleted in commit:936280cd35) are excluded, the last so the shadow route can EXPIRE when its bash twin goes rather than vouching for itself forever.
     id: 'check:ci-dead-python',
     run: 'npm run check:ci-dead-python',
     gate: true,
@@ -4725,10 +4722,11 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       'agent/plans/**',
       '.ci/config/plan-boxes.json',
+      '.ci/rediacc_ci/quality/plan_boxes.py',
       '.ci/scripts/quality/check_plan_boxes.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_boxes.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_boxes.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4749,7 +4747,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     slow: true, // 296.6s measured in CI (lane-durations refresh b9e561ec9)
     // ONE LEAF, not two, and the config is deliberately absent. check:ci-parity asserts `leaves` equals what package.json actually RESOLVES to, so naming `.ci/config/plan-implementation.json` here is a hygiene finding rather than extra safety. The config still cannot be edited unnoticed: this entry declares no `paths`, so it is always selected.
-    leaves: ['.ci/scripts/quality/check_plan_implementation.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_implementation.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4981,9 +4979,14 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-plan-citations',
     slow: true, // ~30s: resolves every citation added across ~34,000 plan lines
     gate: true,
-    paths: ['agent/plans/**', 'agent/INDEX.md', '.ci/scripts/quality/check_plan_citations.py'],
+    paths: [
+      'agent/plans/**',
+      'agent/INDEX.md',
+      '.ci/rediacc_ci/quality/plan_citations.py',
+      '.ci/scripts/quality/check_plan_citations.py',
+    ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_citations.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_citations.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5031,11 +5034,12 @@ export const GATES: readonly GateSpec[] = [
       'agent/INDEX.md',
       '.ci/config/plan-lifecycle.json',
       '.ci/config/plan-boxes.json',
+      '.ci/rediacc_ci/quality/plan_folders.py',
       '.ci/scripts/quality/check_plan_folders.py',
       '.ci/rediacc_ci/quality/plan_lifecycle.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_folders.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_folders.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5133,7 +5137,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-agent-session-archival',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_agent_session_archival.py'],
+    leaves: ['.ci/rediacc_ci/quality/agent_session_archival_gate.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5601,7 +5605,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/deploy',
       '.ci/rediacc_ci/release',
       '.ci/rediacc_ci/setup',
-      '.ci/shadow',
       '.ci/tutorials',
       '.claude',
       '.claude/hooks/stop',
@@ -6062,7 +6065,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-hint-corpus',
-    run: 'npm run check:ci-hint-corpus',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.hint_corpus',
     gate: true,
     paths: [
       '.ci/**',
@@ -6077,7 +6080,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_hint_corpus.py'],
+    leaves: ['.ci/rediacc_ci/quality/hint_corpus.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6688,7 +6691,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
       '.ci/scripts/quality/lib',
       '.ci/scripts/security',
-      '.ci/shadow',
       'scripts',
       'scripts/__tests__',
       'scripts/ci',
@@ -6929,7 +6931,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci',
       '.ci/rediacc_ci/security',
       '.ci/scripts',
-      '.ci/shadow',
       '.ci/tutorials',
     ],
     pathsOrigin: 'traced',

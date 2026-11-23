@@ -3011,11 +3011,11 @@
   },
   {
     "id": "check:ci-tree-shape",
-    "run": "npm run check:ci-tree-shape",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.tree_shape_gate",
     "gate": true,
     "slow": true,
     "leaves": [
-      ".ci/scripts/quality/check_tree_shape.py"
+      ".ci/rediacc_ci/quality/tree_shape_gate.py"
     ],
     "ci": {
       "kind": "step",
@@ -3609,7 +3609,6 @@
       ".ci/scripts/quality",
       ".ci/scripts/quality/lib",
       ".ci/scripts/security",
-      ".ci/shadow",
       ".claude",
       ".claude/agents",
       ".claude/commands",
@@ -4705,8 +4704,6 @@
       ".ci/rediacc_ci/tests/test_version_resolve_version.py",
       ".ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
       ".ci/rediacc_ci/tests/test_vm_check_list_evidence.py",
-      ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-      ".ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py",
       ".ci/rediacc_ci/tests/test_wl_proc.py",
       ".ci/rediacc_ci/tests/test_workflow_called_permissions.py",
       ".ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py",
@@ -4920,11 +4917,12 @@
     "paths": [
       "agent/plans/**",
       ".ci/config/plan-boxes.json",
+      ".ci/rediacc_ci/quality/plan_boxes.py",
       ".ci/scripts/quality/check_plan_boxes.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_boxes.py"
+      ".ci/rediacc_ci/quality/plan_boxes.py"
     ],
     "ci": {
       "kind": "step",
@@ -4942,7 +4940,7 @@
     "gate": true,
     "slow": true,
     "leaves": [
-      ".ci/scripts/quality/check_plan_implementation.py"
+      ".ci/rediacc_ci/quality/plan_implementation.py"
     ],
     "ci": {
       "kind": "step",
@@ -5206,11 +5204,12 @@
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",
+      ".ci/rediacc_ci/quality/plan_citations.py",
       ".ci/scripts/quality/check_plan_citations.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_citations.py"
+      ".ci/rediacc_ci/quality/plan_citations.py"
     ],
     "ci": {
       "kind": "step",
@@ -5255,12 +5254,13 @@
       "agent/INDEX.md",
       ".ci/config/plan-lifecycle.json",
       ".ci/config/plan-boxes.json",
+      ".ci/rediacc_ci/quality/plan_folders.py",
       ".ci/scripts/quality/check_plan_folders.py",
       ".ci/rediacc_ci/quality/plan_lifecycle.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_folders.py"
+      ".ci/rediacc_ci/quality/plan_folders.py"
     ],
     "ci": {
       "kind": "step",
@@ -5357,7 +5357,7 @@
     "run": "npm run check:ci-agent-session-archival",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_agent_session_archival.py"
+      ".ci/rediacc_ci/quality/agent_session_archival_gate.py"
     ],
     "ci": {
       "kind": "step",
@@ -5850,7 +5850,6 @@
       ".ci/rediacc_ci/deploy",
       ".ci/rediacc_ci/release",
       ".ci/rediacc_ci/setup",
-      ".ci/shadow",
       ".ci/tutorials",
       ".claude",
       ".claude/hooks/stop",
@@ -6374,7 +6373,7 @@
   },
   {
     "id": "check:ci-hint-corpus",
-    "run": "npm run check:ci-hint-corpus",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.hint_corpus",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -6390,7 +6389,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_hint_corpus.py"
+      ".ci/rediacc_ci/quality/hint_corpus.py"
     ],
     "ci": {
       "kind": "step",
@@ -7024,7 +7023,6 @@
       ".ci/scripts/quality",
       ".ci/scripts/quality/lib",
       ".ci/scripts/security",
-      ".ci/shadow",
       "scripts",
       "scripts/__tests__",
       "scripts/ci",
@@ -7306,7 +7304,6 @@
       ".ci/rediacc_ci",
       ".ci/rediacc_ci/security",
       ".ci/scripts",
-      ".ci/shadow",
       ".ci/tutorials"
     ],
     "pathsOrigin": "traced",
