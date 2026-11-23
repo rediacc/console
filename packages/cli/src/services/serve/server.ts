@@ -435,7 +435,12 @@ function requestScopedConfig(deps: ServeDeps, config: RdcConfig): RdcConfig | un
   return deps.mode === 'container' ? config : undefined;
 }
 
-/** Run `fn` under a request-scoped config when there is one. */
+/**
+ * Run `fn` under a request-scoped config when there is one. The scope carries
+ * the writeback bound to the loader's config (createRequestConfigScope), so a
+ * job route's settle steps (a failed create's rollback, an identity refresh)
+ * push their config writes exactly as a dispatched command does.
+ */
 function withRequestConfig<T>(config: RdcConfig | undefined, fn: () => Promise<T>): Promise<T> {
   if (!config) return fn();
   return runInRequestContext(
