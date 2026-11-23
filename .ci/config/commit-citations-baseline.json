@@ -109,10 +109,6 @@
       "path": "agent/plans/PLAN-cli-em-dash-lint-gate.md",
       "sha": "82def0b11"
     },
-    "3fd1c239d84632b9": {
-      "path": ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
-      "sha": "c129f44d1"
-    },
     "42aff67f91fdee8f": {
       "path": ".claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
       "sha": "9b557ab0e"
