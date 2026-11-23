@@ -30,8 +30,10 @@ So the fixtures are written out LITERALLY, exactly as the twin writes them, and 
 scoping breaking -- a `.sh` file appearing beside these ports, or the walker widening to `*.py` -- turns that control red HERE, by name, instead of reddening the gate for the next session.
 """
 
+import json
 import os
 import re
+import shutil
 import sys
 
 from rediacc_ci import paths
@@ -645,3 +647,77 @@ def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
         "reports it scanned nothing there, and its default scope names no python tree"
         % (len(modules), HERE_REL)
     )
+
+
+# --------------------------------------------------------------------------- THE PYTHON MODE (PLAN-silent-failure-sweep.md SF9). Driven through the registered entry point, over a COPY of the real hook modules and the real baseline, so the plant below lands in the real corpus rather than in a hand-written one. ---------------------------------------------------------------------------
+
+PY_BASELINE_REL = ".ci/config/swallowed-except-baseline.json"
+PLANT = "\n\ndef _sf9_planted():\n    try:\n        return 1\n    except Exception:\n        return []\n"
+
+
+def _hook_copy(dst):
+    """`.claude/hooks/stop` and the ratchet copied under `dst`, for the Python seam."""
+    (dst / ".claude" / "hooks").mkdir(parents=True)
+    shutil.copytree(paths.from_root(".claude", "hooks", "stop"), dst / ".claude" / "hooks" / "stop")
+    (dst / ".ci" / "config").mkdir(parents=True)
+    shutil.copy(paths.from_root(*PY_BASELINE_REL.split("/")), dst / ".ci" / "config")
+    return dst
+
+
+def run_py(gate, root) -> harness.RunResult:
+    runner = require_gate(gate)
+    return harness.run(
+        [runner, os.fspath(GATE)],
+        cwd=paths.repo_root(),
+        env={"SWALLOWED_PY_SCAN_ROOT": os.fspath(root)},
+    )
+
+
+def test_python_mode_is_green_on_the_real_hooks_and_prints_its_shape(gate):
+    runner = require_gate(gate)
+    result = harness.run([runner, os.fspath(GATE)], cwd=paths.repo_root())
+    gate.assert_exit_code(0, result.rc, "check:ci-swallowed-failures on the real tree")
+    gate.assert_contains(result.combined, "Swallowed exceptions (Python)", "the Python mode ran")
+    gate.assert_contains(
+        result.combined, "hook module(s) scanned in .claude/hooks/stop", "with its shape"
+    )
+    gate.log_pass("the Python mode is green over the real hook modules")
+
+
+def test_python_plant_in_a_copy_of_the_real_hooks_is_red(gate):
+    with harness.temp_dir() as d:
+        root = _hook_copy(d)
+        clean = run_py(gate, root)
+        gate.assert_exit_code(
+            0, clean.rc, "the unplanted copy is green, so the plant is what turns it red"
+        )
+        target = root / ".claude" / "hooks" / "stop" / "wl_hints.py"
+        target.write_text(target.read_text(encoding="utf-8") + PLANT, encoding="utf-8")
+        red = run_py(gate, root)
+        gate.assert_exit_code(1, red.rc, "one new swallowing handler is red")
+        gate.assert_contains(red.combined, "in _sf9_planted()", "the planted handler is named")
+        gate.assert_contains(red.combined, "Do not add it to the baseline", "and the fix says so")
+    gate.log_pass("a planted swallow in a copy of the real hooks turns the gate red")
+
+
+def test_python_baseline_row_above_its_count_is_red(gate):
+    with harness.temp_dir() as d:
+        root = _hook_copy(d)
+        base = root / ".ci" / "config" / "swallowed-except-baseline.json"
+        doc = json.loads(base.read_text(encoding="utf-8"))
+        name = min(doc["files"])
+        doc["files"][name] += 1
+        base.write_text(json.dumps(doc), encoding="utf-8")
+        red = run_py(gate, root)
+        gate.assert_exit_code(1, red.rc, "a row above its module's count is red")
+        gate.assert_contains(red.combined, "Lower the row", "and tells the author to lower it")
+    gate.log_pass("the ratchet only shrinks")
+
+
+def test_python_mode_refuses_a_collapsed_hook_tree(gate):
+    with harness.temp_dir() as d:
+        (d / ".claude" / "hooks" / "stop").mkdir(parents=True)
+        result = run_py(gate, d)
+        gate.assert_exit_code(1, result.rc, "zero hook modules is a refusal")
+        gate.assert_contains(result.combined, "floor 60", "naming the floor")
+    gate.log_pass("vacuity refused")

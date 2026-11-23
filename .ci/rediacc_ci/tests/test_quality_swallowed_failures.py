@@ -5,6 +5,7 @@ WHY A DIFFERENTIAL. This gate is one 150-line awk program with four rules, a two
 The whole gate is covered by `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` over five distinct trees.
 """
 
+import json
 import pathlib
 import subprocess
 
@@ -306,3 +307,116 @@ def test_a_one_liner_if_does_not_absorb_the_following_line() -> None:
 # `window_has_escalation` (WINDOW = 12 logical lines) finds the escalation
 # anyway in the simple shape, so the absorption is masked at the verdict level. Making it visible needs a boundary-crossing construction where the absorbed line falls outside that window; 89b2e140's author verified one, and I did not reproduce it rather than ship an assertion I had not confirmed. The branch_of-level claim above is the durable guard: it pins the defect itself
 # instead of one downstream consequence of it.
+
+
+# ---------------------------------------------------------------------------
+# the Python mode (PLAN-silent-failure-sweep.md SF9): the Context 6 rule over the Stop hook modules
+# ---------------------------------------------------------------------------
+
+
+def _handler(body: str, caught: str = "Exception") -> str:
+    return "def f():\n    try:\n        g()\n    except %s:\n%s" % (caught, body)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        _handler("        return []\n"),
+        "try:\n    g()\nexcept:\n    pass\n",
+        _handler("        return None\n", "Exception as exc"),
+        _handler("        continue\n", "BaseException"),
+        _handler("        x = {}\n", "(ValueError, Exception)"),
+    ],
+    ids=["return-empty-list", "bare-except-pass", "binds-exc-unused", "continue", "assign-empty"],
+)
+def test_python_swallowing_handlers_are_findings(text: str) -> None:
+    rows = mod.py_scan_text(text, "m.py")
+    assert [r.kind for r in rows] == ["FINDING"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        _handler("        raise\n"),
+        _handler('        return "read failed: %s" % exc\n', "Exception as exc"),
+        _handler('        return "unknown (the store could not be read)"\n'),
+        _handler("        return []\n", "OSError"),
+        _handler("        log(1)\n"),
+    ],
+    ids=["re-raise", "uses-exc-in-text", "non-empty-sentinel", "narrow-type", "ends-in-a-call"],
+)
+def test_python_handlers_that_name_or_narrow_are_not_findings(text: str) -> None:
+    assert mod.py_scan_text(text, "m.py") == []
+
+
+def test_python_waiver_sits_directly_above_the_except() -> None:
+    reason = "the default is the conservative answer when the probe is unreachable"
+    waived = _handler("        return []\n").replace(
+        "    except", "    # swallowed-failure-ok: %s\n    except" % reason
+    )
+    rows = mod.py_scan_text(waived, "m.py")
+    assert [(r.kind, r.reason) for r in rows] == [("WAIVER", reason)]
+    too_high = _handler("        return []\n").replace(
+        "    try:", "    # swallowed-failure-ok: %s\n    try:" % reason
+    )
+    assert [r.kind for r in mod.py_scan_text(too_high, "m.py")] == ["FINDING"]
+
+
+def test_a_short_python_waiver_reason_is_refused() -> None:
+    assert validate("fine") is False
+    assert validate("the default is the conservative answer when the probe is unreachable")
+
+
+def _hook_tree(
+    root: pathlib.Path, swallows: int, row: int | None, modules: int = mod.PY_FLOOR
+) -> None:
+    hooks = root / mod.DEFAULT_PY_DIR
+    hooks.mkdir(parents=True, exist_ok=True)
+    for k in range(modules):
+        body = _handler("        return []\n") * swallows if k == 0 and swallows else "x = 1\n"
+        (hooks / ("m%02d.py" % k)).write_text(body, encoding="utf-8")
+    base = root / mod.PY_BASELINE_REL
+    base.parent.mkdir(parents=True, exist_ok=True)
+    if row is None:
+        base.unlink(missing_ok=True)
+    else:
+        base.write_text(
+            json.dumps({"files": {mod.DEFAULT_PY_DIR + "/m00.py": row}}), encoding="utf-8"
+        )
+
+
+@pytest.mark.parametrize(
+    ("swallows", "row", "rc", "needle"),
+    [
+        (1, 1, 0, "OK: no hook module"),
+        (2, 1, 1, "baseline allows 1"),
+        (1, 2, 1, "Lower the row to 1"),
+        (1, None, 1, "baseline allows 0"),
+        (0, None, 0, "OK: no hook module"),
+    ],
+    ids=["at-row", "above-row", "below-row", "no-row-allows-0", "clean"],
+)
+def test_python_ratchet(tmp_path, monkeypatch, capsys, swallows, row, rc, needle) -> None:
+    _hook_tree(tmp_path, swallows, row)
+    monkeypatch.setenv(mod.PY_ROOT_ENV, str(tmp_path))
+    assert mod.py_mode() == rc
+    captured = capsys.readouterr()
+    assert needle in captured.out + captured.err
+
+
+def test_python_mode_refuses_below_the_module_floor(tmp_path, monkeypatch, capsys) -> None:
+    _hook_tree(tmp_path, 0, None, modules=mod.PY_FLOOR - 1)
+    monkeypatch.setenv(mod.PY_ROOT_ENV, str(tmp_path))
+    assert mod.py_mode() == 1
+    assert "The scan is not seeing the hook tree" in capsys.readouterr().err
+
+
+def test_a_malformed_python_baseline_is_refused_not_read_as_empty(tmp_path, monkeypatch) -> None:
+    _hook_tree(tmp_path, 0, None)
+    (tmp_path / mod.PY_BASELINE_REL).write_text('{"files": {"a.py": "two"}}', encoding="utf-8")
+    monkeypatch.setenv(mod.PY_ROOT_ENV, str(tmp_path))
+    assert mod.py_mode() == 1
+
+
+def test_the_python_floor_is_60() -> None:
+    assert mod.PY_FLOOR == 60
