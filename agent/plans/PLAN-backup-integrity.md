@@ -433,17 +433,19 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
 (moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) H4
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
   - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
-- [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
+- [x] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
   - Accept: `rdc --config eu-bench backup verify <repo> --deep` rc 0, figures recorded here.
+    (ticked) 2026-11-23T03:34:06Z by ace763dd: fileline:packages/cli/src/commands/backup-storage.ts:404 commit:a12e0c9bd6 -- `backup verify mail@hostinger --deep -o json` rc=0 status verified level full checkedCells 1532 snapshot 20261122T192550Z-f102899cf28979fd; scope run-r...scope showed CPUQuotaPerSecUSec=1s (CPUQuota 100%), machine-wide busy CPU before 21%, during 18% and 33%, h6.json in /tmp/live-hostinger/run4/ (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 - [x] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
   - Accept: `rdc --config eu-bench backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
     (ticked) 2026-11-12T05:12:26Z by d778be9d: 2026-11-12 hostinger via eu-remote (hostinger-only proof, remote renet unchanged): rdc backup verify demo-heartbeat@hostinger --restore-test -o json rc 0, status proven, compare identical (sha256 2788bb37 both sides), cleanup deleted (copy restoretest-b092d2c4 deleted by the tool). repo list -m hostinger before and after identical (13 repos, GUIDs unchanged, original 1b8e6a28 present, no copy). Files /tmp/hostinger-run/r2-h7.json r2-before-repos.json r2-after-h7-repos.json
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
-- [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
+- [x] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
   (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
   (corrected 2026-11-11, R2) Local-route: hostinger -- run renet backup report --test from the branch renet build on the real hostinger machine.
+    (ticked) 2026-11-23T03:34:04Z by ace763dd: fileline:private/renet/cmd/renet/backup_report_planted.go:16 commit:3a1b56d360 -- `rdc --config eu-bench term connect hostinger -c 'sudo renet backup report --test'` EXIT=0 from the released renet printing {"kind":"alert-test","status":"alert-test","delivered":true,"spooled":false}, no repository involved, /tmp/live-hostinger/run3/h9.txt (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

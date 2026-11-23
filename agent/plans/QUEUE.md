@@ -40,25 +40,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (4 epic(s)):
-  - epic 79b7e92e, no plan, 271 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 281 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 1 live of writer_cap 25 (session ace763dd): worker:a31b1fd3856da4a7e.
-- Leased items: 3: #3b82cf28 (worker:a31b1fd3856da4a7e, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd).
+- Writers: 0 live of writer_cap 25 (session fee07197).
+- Leased items: 5: #3b82cf28 (worker:bad7z4t8h, ace763dd), #3c069662 (worker:a0ba19762cc3951c5, ace763dd), #47ce3621 (worker:a9febc8422c200389, ace763dd), #52b534a6 (worker:a8fa88c948f224b88, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 4 of 64 plans done, 1094 of 1415 boxes done (77%).
+Promoted: 6 of 64 plans done, 1105 of 1415 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-ciquick-cpu.md | 16/38 | 22 open |
-| 2 | PLAN-backup-program.md | 186/192 | 6 open |
-| 3 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
+| 2 | PLAN-backup-program.md | 189/192 | 3 open |
+| 3 | PLAN-cloudflare-proxy.md | 29/29 | done |
 | 4 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
 | 5 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
 | 6 | PLAN-proxy-cd-six-targets.md | 27/31 | 4 open |
@@ -69,12 +69,12 @@ Promoted: 4 of 64 plans done, 1094 of 1415 boxes done (77%).
 | 11 | PLAN-production-key-only.md | 14/17 | 3 open |
 | 12 | PLAN-detached-jobs.md | 33/41 | 8 open |
 | 13 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
-| 14 | PLAN-backup-local-image.md | 11/14 | 3 open |
+| 14 | PLAN-backup-local-image.md | 12/14 | 2 open |
 | 15 | PLAN-backup-plane-shared-bucket-hardening.md | 6/7 | 1 open |
 | 16 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
 | 17 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
 | 18 | PLAN-free-license.md | 11/13 | 2 open |
-| 19 | PLAN-backup-integrity.md | 49/56 | 7 open |
+| 19 | PLAN-backup-integrity.md | 51/56 | 5 open |
 | 20 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
 | 21 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
 | 22 | PLAN-worktree-lease.md | 15/16 | 1 open |
@@ -86,11 +86,11 @@ Promoted: 4 of 64 plans done, 1094 of 1415 boxes done (77%).
 | 28 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
 | 29 | PLAN-renet-executor-tiered-license-check.md | 3/4 | 1 open |
 | 30 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
-| 31 | PLAN-renet-docker-running-semantics.md | 13/15 | 2 open |
+| 31 | PLAN-renet-docker-running-semantics.md | 14/15 | 1 open |
 | 32 | PLAN-product-domain-rename.md | 24/28 | 4 open |
 | 33 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
 | 34 | PLAN-enterprise-isolation.md | 26/34 | 8 open |
-| 35 | PLAN-renet-restart-cycle-defects.md | 6/7 | 1 open |
+| 35 | PLAN-renet-restart-cycle-defects.md | 7/7 | done |
 | 36 | PLAN-ciquick-green-then-batch.md | 7/7 | done |
 | 37 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 38 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
@@ -103,8 +103,8 @@ Promoted: 4 of 64 plans done, 1094 of 1415 boxes done (77%).
 | 45 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 46 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 47 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
-| 48 | PLAN-hostinger-to-bench.md | 12/22 | 10 open |
-| 49 | PLAN-multi-region-bench.md | 13/23 | 10 open |
+| 48 | PLAN-hostinger-to-bench.md | 13/22 | 9 open |
+| 49 | PLAN-multi-region-bench.md | 14/23 | 9 open |
 | 50 | PLAN-root-api-token.md | 9/15 | 6 open |
 | 51 | PLAN-site-entry-points.md | 7/11 | 4 open |
 | 52 | PLAN-root-grants.md | 8/19 | 11 open |

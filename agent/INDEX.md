@@ -474,12 +474,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 799 | 3 | 48 | 116026 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 58 | 1 | 8 | 12672 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 507 | 7 | 49 | 80351 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 509 | 5 | 51 | 81386 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
-| `agent/plans/PLAN-backup-local-image.md` | approved | 458 | 3 | 11 | 58086 |
+| `agent/plans/PLAN-backup-local-image.md` | approved | 459 | 2 | 12 | 58536 |
 | `agent/plans/PLAN-backup-multi-target.md` | approved | 114 | 3 | 18 | 31635 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 43 | 1 | 6 | 7166 |
-| `agent/plans/PLAN-backup-program.md` | approved | 622 | 6 | 186 | 166155 |
+| `agent/plans/PLAN-backup-program.md` | approved | 625 | 3 | 189 | 167785 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 203 | 2 | 8 | 35942 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -499,7 +499,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 456 | 1 | 28 | 65583 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 457 | 0 | 29 | 66206 |
 | `agent/plans/PLAN-cluster-crosssite-transport.md` | proposed | 60 | 7 | 0 | 14595 |
 | `agent/plans/PLAN-cluster-live-proofs.md` | proposed | 72 | 16 | 0 | 20063 |
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
@@ -541,7 +541,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 711 | 17 | 64 | 132236 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 110 | 10 | 12 | 23793 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 111 | 9 | 13 | 24409 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
@@ -551,7 +551,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 336 | 10 | 13 | 56048 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 337 | 9 | 14 | 56707 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 74 | 15 | 0 | 17548 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
@@ -578,11 +578,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-release-credits-compliance.md` | proposed | 61 | 10 | 0 | 18378 |
 | `agent/plans/PLAN-release-path-protection-2027.md` | approved | 58 | 4 | 0 | 4609 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
-| `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 78 | 2 | 13 | 16442 |
+| `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 79 | 1 | 14 | 17008 |
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 155 | 2 | 13 | 32170 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 58 | 1 | 3 | 13068 |
 | `agent/plans/PLAN-renet-i18n-baseline-drain.md` | proposed | 61 | 16 | 0 | 14873 |
-| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 40 | 1 | 6 | 6087 |
+| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 41 | 0 | 7 | 6638 |
 | `agent/plans/PLAN-repo-resource-limits.md` | approved | 189 | 3 | 10 | 28058 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |

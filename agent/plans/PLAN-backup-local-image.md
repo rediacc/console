@@ -398,8 +398,9 @@ R2's changes:
   Owns: packages/www/src/content/docs/*/backup-download.md (new), packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
     (ticked) 2026-10-30T22:53:37Z by d778be9d: commit:8165aa358 packages/www/src/content/docs/en/backup-download.md:1; 13 locale pages; check:i18n rc 0
 
-- [ ] V1 [lead] The VM proof for the renet change. `npm run vm:check -- --changed` must report VERIFIED on the tree carrying R1 and R2, as the push guard requires for the renet trigger paths.
+- [x] V1 [lead] The VM proof for the renet change. `npm run vm:check -- --changed` must report VERIFIED on the tree carrying R1 and R2, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt, and `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --test 26-backup-storage-cli --fail-on-skip` rc 0 (PLAN-jobs-backup-real-machine-tests E2).
+    (ticked) 2026-11-23T03:33:58Z by ace763dd: fileline:packages/e2e-tests/tests/26-backup-storage-cli.test.ts:1 commit:354703737284c -- `npm run vm:check -- --changed` rc=0 vm:check VERIFIED (receipt runId vmc-11221812-59a485, log /tmp/vm-live3/vmcheck2.log) and suite 26 rc=0, '26 passed (17.6m)', 0 skipped (/tmp/vm-live3/e2e26b.log) (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 
 - [ ] L1 [live] An ops VM or bench machine running the branch renet, with one small repo `app` (a LUKS image of at least 2 GiB, a running container) and a local target `/tmp/bdl`. Steps:
   1. `./rdc.sh backup download app@<vm> --to /tmp/bdl`, interrupted with `timeout -s INT 20`. Expect rc 130, state `incomplete`, and no `.snapshot-*` under `repositories/` within 90 s.

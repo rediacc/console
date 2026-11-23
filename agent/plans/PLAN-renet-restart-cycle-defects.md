@@ -33,7 +33,8 @@ Worklist: #5e864374, PR-TASK 09b8bdfa
 - [x] D4 tickets gain an `expired` event; starting tickets older than 10 minutes resolve through `renet job list --request-id`; finished tickets older than 7 days expire; `job claim` on a missing job exits 16; `rdc job dismiss <id...>|--stale`; vitest and Go tests per the design
     (ticked) 2026-11-07T06:46:54Z by d778be9d: commit:e573d1e0d rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
   (corrected 2026-11-07, review 4504214e.2) D4's `job claim` exit-16 half is in the private/renet submodule: 85aa590 (job claim on a missing job exits 16) and afc70f1 (the claim error carries the spool's own message), reaching the console through the pointer bump d82ce6f6a; e573d1e0d, cited in the tick, carries the ticket expiry and `rdc job dismiss` half.
-- [ ] L1 hostinger: the remaining restart cycle runs on the landed renet and mautic's up() succeeds without a manual chown
+- [x] L1 hostinger: the remaining restart cycle runs on the landed renet and mautic's up() succeeds without a manual chown
+    (ticked) 2026-11-23T03:34:07Z by ace763dd: fileline:private/renet/cmd/renet/repository_repair.go:28 commit:033e44b796 -- fork mautic:r4 on hostinger: `repo up` 4 containers up, `repo down` rc=0, `repo up` again rc=0 4 containers up, `docker logs --tail 200 mautic-app | grep -ci 'permission denied'` = 0 with no manual chown; the fork was deleted and the real mautic untouched (4 containers Up 2 days), logs /tmp/live-hostinger/run4/ (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 
 - [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
   - Accept: `live-proof hostinger renet-live`
