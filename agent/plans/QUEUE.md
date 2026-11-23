@@ -40,19 +40,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (4 epic(s)):
-  - epic 79b7e92e, no plan, 285 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 292 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 7 live of writer_cap 25 (session ace763dd): worker:a17682ae974c23632, worker:a4064d2cd1ae8e3e1, worker:a8fa88c948f224b88, worker:a0ba19762cc3951c5, worker:a13f570112a0e1aeb, worker:ae846d6cd4ff1cd86, worker:ac75418c491c3da8b.
-- Leased items: 9: #3245577e (worker:a0ba19762cc3951c5, ace763dd), #3b82cf28 (worker:bad7z4t8h, ace763dd), #3c069662 (worker:a17682ae974c23632, ace763dd), #52b534a6 (worker:a4064d2cd1ae8e3e1, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #b1c18842 (worker:a8fa88c948f224b88, ace763dd), #ed73ad26 (worker:a13f570112a0e1aeb, ace763dd), #f37b174b (worker:ac75418c491c3da8b, ace763dd), #fbbbe4db (worker:ae846d6cd4ff1cd86, ace763dd).
+- Writers: 9 live of writer_cap 25 (session ace763dd): worker:a17682ae974c23632, worker:a8fa88c948f224b88, worker:a0ba19762cc3951c5, worker:ae846d6cd4ff1cd86, worker:a2b4563484417910b, worker:a6cfc8584913fc048, worker:a6025d5f617693d9b, worker:a4064d2cd1ae8e3e1, worker:a6c1cfe8da4a1d31a.
+- Leased items: 13: #1f2eabab (worker:a6025d5f617693d9b, ace763dd), #3245577e (worker:a0ba19762cc3951c5, ace763dd), #3b82cf28 (worker:bv2z5yuha, ace763dd), #3c069662 (worker:a17682ae974c23632, ace763dd), #52b534a6 (worker:a4064d2cd1ae8e3e1, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #8d726864 (worker:a2b4563484417910b, ace763dd), #b1c18842 (worker:a8fa88c948f224b88, ace763dd), #ed73ad26 (worker:bxv5894ql, ace763dd), #f2b0de02 (worker:a6c1cfe8da4a1d31a, ace763dd), #f37b174b (worker:bxv5894ql, ace763dd), #f7ff7ef3 (worker:a6cfc8584913fc048, ace763dd), and 1 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 65 plans done, 1105 of 1423 boxes done (77%).
+Promoted: 6 of 65 plans done, 1113 of 1423 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -119,8 +119,8 @@ Promoted: 6 of 65 plans done, 1105 of 1423 boxes done (77%).
 | 61 | PLAN-preview-signer.md | 12/37 | 25 open |
 | 62 | PLAN-weekly-lessons.md | 1/8 | 7 open |
 | 63 | PLAN-tooling-speed.md | 0/8 | 8 open |
-| 64 | PLAN-tooling-code-reduction.md | 1/11 | 10 open |
-| 65 | PLAN-stop-hook-retro-20261123.md | 0/8 | 8 open |
+| 64 | PLAN-tooling-code-reduction.md | 2/11 | 9 open |
+| 65 | PLAN-stop-hook-retro-20261123.md | 7/8 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
