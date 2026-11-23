@@ -67,6 +67,15 @@ THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they 
 next to the twin's output.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal lists. A guard that names a tool in its arrays but never reaches the branch that uses them still passes, because presence in an array is all that is checked. That is the same class of blindness `rediacc_ci.quality.toolchain_pins` has at definition time, one layer further out.
+
+---- gate ----
+lane: quality-code
+step: Host toolchain runtime coverage
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -463,4 +472,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_host_toolchain_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

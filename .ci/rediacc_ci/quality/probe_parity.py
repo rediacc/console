@@ -78,6 +78,13 @@ MEASURE grep WITH `/usr/bin/grep`, NEVER AT AN INTERACTIVE PROMPT. A Claude Code
 3.12. The two disagree on `\x27`, on binary-file reporting and on which files are searched, and a probe run at the prompt is a statement about the wrapper rather than about the gate. This cost two wrong port notes in this same wave.
 
 THE EM DASHES IN THE TWIN'S MESSAGES ARE EMITTED AS `\\u2014` ESCAPES. The house rule forbids an em dash in authored text; the twin's message bytes are not authored here, they are REPRODUCED, and the differential compares finding text. Writing the escape keeps this file free of the character while keeping the two sides byte-identical.
+
+---- gate ----
+lane: quality-static
+step: Capability-probe parity
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import pathlib
@@ -292,4 +299,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_probe_parity.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

@@ -110,6 +110,13 @@ containing a space therefore keeps it. `split(maxsplit=1)` is the same rule.
 THE DATE COMPARISON IS A STRING COMPARISON in the twin (`[[ "$TODAY" > "$exp" ]]`) and it is a string comparison here. Both are correct for ISO-8601 and both are wrong in the same way for anything else, which is the property that matters: an allowlist carrying `2026-1-5` sorts as later than `2026-12-01` on BOTH sides.
 
 EXIT CODES ARE UNCHANGED: 0 clean, 1 offender or refusal, 2 setup error.
+
+---- gate ----
+step: Plan file housekeeping
+needs: none
+selftest: true
+lane: quality-i18n
+---- end gate ----
 """
 
 import datetime as dt
@@ -1180,4 +1187,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_plan_housekeeping.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

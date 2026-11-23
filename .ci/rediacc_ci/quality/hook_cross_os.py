@@ -55,6 +55,17 @@ registry INVOKES, and the registry invokes .ci/scripts/quality/check_hook_cross_
 a header here derives this module's own path and the binding disagrees with
 package.json. Measured 2026-09-09: three gates landed with it in the module and
 `check:ci-gate-bind` named all three.
+
+---- gate ----
+step: Hook cross-OS seams
+needs: none
+lane: quality-static
+selftest: true
+why: .claude/rediacc_hooks has exactly one platform seam today and nothing was
+     keeping it that way. A `/proc` read added to a guard works for every
+     reviewer, because every reviewer is on Linux, and fails silently on macOS
+     by finding nothing rather than by erroring
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -701,4 +712,13 @@ def _refuses(root, scopes):
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_hook_cross_os.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root",),
+        equals=("--root",),
+    )
     raise SystemExit(main(sys.argv[1:]))

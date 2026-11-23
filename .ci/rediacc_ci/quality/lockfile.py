@@ -79,6 +79,13 @@ ONE LOCKFILE, ONE FIRST FAILURE. The three per-lockfile properties run in order 
 STREAMS. `common.sh`'s four loggers all write to stderr and gate colour on `[[ -t 2 ]]`, which is the one pre-existing variant that tests the stream it writes to -- so `rediacc_ci.log` matches it exactly and no stream moves in this port. The bare `echo` advice lines around a resolve failure are STDOUT in the twin and stay stdout here; they are data a reader copies, not messages.
 
 ONE KNOWN DIVERGENCE, inherited from the logger and stated so nobody "fixes" it: `common.sh` logs with `echo -e`, which interprets backslash escapes IN THE MESSAGE. A lockfile path containing `\t` would be printed differently by the two implementations. No such path exists, and `rediacc_ci.log` formats the message as data on purpose; see its docstring.
+
+---- gate ----
+lane: quality-code
+step: Lockfile
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import contextlib
@@ -1093,4 +1100,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_lockfile.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""Entry point for the container build-context gate. Logic is in the package.
+"""Run `rediacc_ci.quality.container_build_context` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.container_build_context`, which the gate's own `--selftest` exercises.
-
----- gate ----
-step: Container build context
-needs: none
-lane: quality-static
-selftest: true
-why: workers/proxy's container could never build (its Dockerfile copies packages/* from
-     the repo root while wrangler built from workers/proxy), and no CI path builds it
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/container_build_context.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys

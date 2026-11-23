@@ -68,6 +68,15 @@ THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split
 
 `sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching line and the two after it, then RESUMES looking for a new start. A port that deleted only matching lines would leave the two lines after the guard behind and the control's stripped copy would still carry them; a port that stopped after the first range would miss a second guard. Both are wrong in the same
 direction: they make the control easier to pass.
+
+---- gate ----
+step: Control-first gates prove their plant landed
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import glob
@@ -706,4 +715,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_control_vacuity.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

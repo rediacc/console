@@ -122,6 +122,16 @@ what `sort` gives.
 
 STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
 than soundness."
+
+---- gate ----
+step: Swallowed failures
+needs: none
+selftest: true
+lane: quality-code
+why: a gate that captures a probe whose failure is indistinguishable from an empty
+     result reports success it never verified. This is the scanner for that class, and
+     it ran nowhere from the day it was written until 2026-09-08.
+---- end gate ----
 """
 
 import json

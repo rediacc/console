@@ -62,6 +62,13 @@ turning a fixed string into a regex is how `$?` would quietly become an anchor p
 `grep -v '^\\s*#'` DROPS COMMENT LINES ONLY. A trailing comment on a line of code
 is not removed, so `foo || canon_rc=$?  # note` still counts. That is the twin's
 behaviour and the control's value depends on it staying that way.
+
+---- gate ----
+step: Release key canonical
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import os
@@ -658,4 +665,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_release_key_canonical.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

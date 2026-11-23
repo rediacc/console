@@ -173,6 +173,13 @@ changes which names reconcile.
 `gh` IS SHELLED OUT TO, once for the name list and once for the JSON, exactly as the twin does it, and the single-label re-read is a third call. A failed call is never folded into "fine": the name read refuses outright, and the re-read reports "could not probe" (2), which REPORTS the finding rather than dropping it.
 
 THE ALLOWLIST IS PRINTED, NOT SILENT. `log_info` names every allowlisted label that is legitimately absent on every run, so the debt stays visible. That is the house rule about quiet exemptions, and the twin already follows it.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py
+blocker: BLOCKER: test_gate_label_inventory.py:test_real_tree_reconciles_against_an_injected_live_list runs the gate seam-free over the REAL .github/labels.yml under check:ci-pytest (ci-quality.yml quality-security) with the live list injected, so the real parse, the declared floor and the create-on-demand check execute every CI run; the live GitHub read runs on npm
+needs: none
+---- end gate ----
 """
 
 import json
@@ -713,4 +720,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_label_inventory.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

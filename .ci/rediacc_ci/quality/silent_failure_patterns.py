@@ -64,6 +64,14 @@ THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that
 only says `set -e` qualifies on neither. Reproduced exactly, including the fact that `set -e` alone (with no trailing space) fails the pre-filter.
 
 STREAMS. The twin's findings go through `log_error`, so they are `✗ <text>` on stderr, and its clean verdict through `log_info`. `rediacc_ci.log` produces byte-identical lines for both. The `--json` output is a bare `printf` on stdout and stays there.
+
+---- gate ----
+lane: quality-static
+step: Silent-failure patterns
+needs: none
+id: check:ci-silent-failures
+selftest: true
+---- end gate ----
 """
 
 import json

@@ -53,6 +53,20 @@ ANTI-VACUITY, in the gate rather than in anybody's memory of having checked:
 READING ANOTHER CHECKOUT. `--root <path>` judges that tree's plans, that tree's store and that tree's submodules (the store directory is pinned through `WORKLIST_STORE_DIR`, the override `wl_store.store_dir` documents for exactly this), so a disposable clone can measure the live checkout without writing to it. The fold is `wl_store.load(..., sync=False)`, which never writes, and `wl_store` itself always comes from THIS checkout, the instrument. `--config <path>` swaps the term list, which is how the pytest module drives fixture terms against fixture trees; `--write-baseline` refuses all three flags, because a drain judged against another tree must not rewrite this one's baseline.
 
 THE STOP HOOK'S CALL, described rather than wired here: `.ci/scripts/quality/check_retired_terms.py --owner <session prefix>` from the stop checks, as a blocking check for the stopping session. It exits 1 only on that session's own open items, which is the one refusal a session can always act on (withdraw the item, or cite the retirement it belongs to).
+
+---- gate ----
+step: Retired terms
+lane: quality-security
+needs: submodules
+why: a retirement does not reach the work already queued against it, nor the shipped
+     text still naming it. Worklist item #fcd7316f stayed open to bake rclone into an
+     image after rclone was ordered removed, so an open item or a live plan naming a
+     retired term is reported unless it cites the work doing the retiring. Every
+     checked-out submodule's tracked files are read too: a hit refuses against a
+     count-keyed shrink-only file_baseline, file_exclusions drop a subtree under a
+     BLOCKER, and a line that must keep a term carries
+     `retired-term-ok(<term>): <reason>`. Absent submodules fail closed in CI.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1681,3 +1695,15 @@ __all__ = [
     "selftest",
     "unresolved_refs",
 ]
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_retired_terms.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline"),
+        valued=("--root", "--owner", "--config"),
+    )
+    raise SystemExit(main(sys.argv[1:]))

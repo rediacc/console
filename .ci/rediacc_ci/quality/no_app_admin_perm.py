@@ -42,6 +42,14 @@ THE TWIN SOURCES `.ci/scripts/lib/common.sh` AND THE PORT DOES NOT, which is the
 
 THE ONE PLACE THIS IS DELIBERATELY STRONGER, and it is the failure this whole programme is named after. `if grep -rn ... 2>/dev/null; then` cannot distinguish "no workflow requests the permission" from "there are no workflows". Rename `.github/workflows`, move the tree, run the gate from a fixture that copied the gate but not its subject, and grep exits 2 into a suppressed stderr
 while the twin prints its green line. This port counts the files it read and REFUSES when that count is zero, so its green always carries evidence that it saw the tree. The count is printed on the success line for the same reason.
+
+---- gate ----
+step: App admin permission
+needs: none
+id: check:ci-app-admin-perm
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -256,4 +264,7 @@ def _run_empty_dirs(saved_cwd: str, saved_env: dict[str, str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_no_app_admin_perm.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

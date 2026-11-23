@@ -143,6 +143,21 @@ ANTI-VACUITY, and every clause is written for the FINISH LINE as well as today
     this gate is aiming at, and it passes, printing zero.
 
 There is deliberately NO `> 0` floor on the unproven count. That is the clause that reds at the finish line, and three of them shipped in this repo in three days.
+
+---- gate ----
+step: Control plant proofs
+needs: none
+lane: quality-static
+selftest: true
+why: a control proves a gate can fail by feeding it a MUTATED fixture, and a
+     mutation whose needle has gone changes nothing -- so the control scans the
+     clean text, asserts the opposite verdict about identical input, and passes
+     for free. Python already refuses this via `rediacc_ci.controls.plant`
+     (check:ci-python-control-plants) and bash GATE SCRIPTS via
+     check:ci-control-vacuity; this closes the other two thirds, every tracked
+     .sh and every tracked .ts, and REFUSES if the Python delegate stops being
+     registered rather than leaving that third silently unscanned
+---- end gate ----
 """
 
 import hashlib
@@ -1584,3 +1599,17 @@ def selftest():
         )
 
     return not check.ok
+
+
+if __name__ == "__main__":
+    import sys
+
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_plant_proofs.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+        valued=("--allow-new",),
+    )
+    raise SystemExit(main(sys.argv[1:]))

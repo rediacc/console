@@ -64,6 +64,13 @@ variant `rediacc_ci.log`'s docstring measures. So a developer piping this gate i
 THE ANTI-VACUITY BRANCH IS THE ONE TO PROTECT. `[[ $n -gt 0 ]] || { echo "  no
 closure paths found -- this check is blind"; return 1; }` is what stops an empty
 closure set from reading as success, and it is carried with its wording intact because the wording is what stops the next reader from deleting it.
+
+---- gate ----
+lane: quality-code
+step: Greenlight closure paths
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -418,4 +425,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_greenlight_closures.py", sys.argv[1:], switches=("--selftest", "--scan"))
     raise SystemExit(main(sys.argv[1:]))

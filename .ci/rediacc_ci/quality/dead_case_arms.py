@@ -75,6 +75,13 @@ different order is the same verdict, and imposing a sort here would hide a real 
 SYMLINKS ARE NOT FOLLOWED, on both sides. `grep -r` (as opposed to `-R`) does not descend through a directory symlink, and `os.walk` agrees by default. A symlinked FILE inside a scanned tree is skipped too, which matches `-r`.
 
 EVERY LOOP VARIABLE THAT WAS AN OUT-PARAMETER IS NOW A RETURN VALUE. `scan()` returns its findings as a list of message strings rather than logging them and setting a global, so the two control scans no longer need `2>/dev/null` to stay quiet and cannot accidentally print into a caller's output.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py
+blocker: BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test_gate_dead_case_arms.py:test_real_tree_is_clean_and_the_control_fired runs it seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security)
+needs: none
+---- end gate ----
 """
 
 import os
@@ -563,4 +570,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_dead_case_arms.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

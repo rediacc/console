@@ -30,6 +30,16 @@ saying so: its VACUOUS message names both causes, "plant one" and "the finding e
 
 THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and finding none means the spellings moved -- at which point a green asserts nothing, which is the exact failure the gate is written against. The floor is carried at the same value with the same message. It is a hand-typed count and contract section 6 says a floor should be set-based or corpus-derived;
 that is a real finding about this gate, and it is NOT fixed here, because changing the floor changes the verdict and a port that changes the verdict is not a port.
+
+---- gate ----
+step: www build token
+     # The EXISTING step name, lower case and all. Renaming it is a separate
+     # change from moving which file it invokes.
+needs: none
+lane: quality-code
+why: every www build must pass github.token. Found and fixed by hand at two of
+     three call sites, twice, before the third reddened job 99839065246
+---- end gate ----
 """
 
 import pathlib
@@ -351,3 +361,10 @@ def selftest() -> int:
         ctl.check("SPELLINGS MIRROR: a sibling build is not a www build", total, 0)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_www_build_token.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

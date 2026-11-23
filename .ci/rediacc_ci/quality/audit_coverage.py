@@ -58,6 +58,13 @@ THE ABSENT-INPUT PATHS ARE ASYMMETRIC, and that asymmetry is the twin's. Phases 
 the twin, preserved because closing it would change the verdict, and reported.
 
 `grep -q 'auditService\.recordOperation'` IS A BRE WITH AN ESCAPED DOT, so it is a plain substring test and is written as one here. `'cli\.[a-z._]+[a-z_]'` is an ERE and is written as a regex. The two are not the same kind of pattern and are not treated as if they were.
+
+---- gate ----
+lane: quality-static
+step: Check audit logging coverage for CLI operations
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -543,4 +550,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_audit_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -28,6 +28,16 @@ ANTI-VACUITY. Zero windows is a failure. Fewer windows than `MIN_WINDOWS` is a f
 THE SEAM. `WORKFLOW_DIR` replaces the corpus with every `*.yml` in that directory, and `BWS_STEP_SCOPED_CONFIG` replaces the config, so a test can drive the real scan against a fixture. Neither weakens a rule: an empty directory has zero windows and reds.
 
 KNOWN LIMIT, recorded rather than hidden. A process the consumer starts and leaves running keeps the key in its own environment (`.ci/rediacc_ci/testrun/start_account.py` starts the per-run account server with `**os.environ`), and a later step running as the same user can read `/proc/<pid>/environ`. Blanking GITHUB_ENV cannot reach it; the plan's follow-up item owns it.
+
+---- gate ----
+step: Bitwarden step-scoped secrets
+needs: none
+selftest: true
+lane: quality-security
+why: a production signing key fetched at job start through bws-secrets lands in
+     GITHUB_ENV and is readable by every later step of the job. This keeps each
+     listed key to a dedicated fetch, its consumer and an always() scrub.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -847,3 +857,10 @@ __all__ = [
     "selftest",
     "verdict",
 ]
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_bws_step_scope.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

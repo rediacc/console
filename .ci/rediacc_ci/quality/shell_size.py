@@ -55,6 +55,15 @@ the result through `sort -u`. Under `LC_ALL=C` -- which the differential harness
 pins and CI sets -- that sort is byte order, which is what Python's own `sorted` on `str` gives for these ASCII paths.
 
 `gen_lines` IS NOT `seq`. The twin says why: "ubuntu-slim does not ship it, and check-ci-compat flags it. Same reason mapfile is avoided below." Neither constraint applies to a Python range, and both are recorded here because the next person to touch the bash will need them.
+
+---- gate ----
+step: Shell file size
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -408,4 +417,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_shell_size.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

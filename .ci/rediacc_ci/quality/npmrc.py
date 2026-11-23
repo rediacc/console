@@ -62,6 +62,23 @@ npm's own config keys are case sensitive, so the required half is right and the 
 `[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's `\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a `.npmrc` line indented with a non-breaking space would be seen by the port and not by grep. The character class is written out rather than abbreviated.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root `.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*` environment variable overrides these settings at install time and this gate never looks. That is a real blind spot in the twin and it is preserved rather than quietly widened, because widening it would change the verdict.
+
+---- gate ----
+step: Block legacy-peer-deps workarounds
+     # The step name is the EXISTING one, not a tidier one. gate-bind matches a
+     # header against the workflow step that already runs, and renaming the step
+     # is a separate change from moving which file it invokes.
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: `.npmrc` must keep ignore-scripts and allow-git=none and must not carry
+     minimum-release-age, whose 1440-minute window lives in
+     .ci/config/release-age.json; enforced in BOTH directions so neither a
+     missing file nor a weakened value passes. First port cut over from bash to Python under W7 P4, on the
+     ledger condition its own sibling entry points name.
+---- end gate ----
 """
 
 import json
@@ -537,4 +554,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_npmrc.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

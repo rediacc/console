@@ -75,6 +75,20 @@ WHAT THIS GATE DOES NOT SEE, stated so that its green is not read as a claim it
 cannot make. Bash `${VAR}`, as above. And a JS/TS `process.env[expr]` where
 `expr` is not a literal: 19 such sites exist today, and every one that resolves to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via `SUBSCRIPTION_TOKEN_ENV`, `REDIACC_ALLOW_CONFIG_EDIT` via `OVERRIDE_VAR_CONFIG_EDIT`, the four `AGENT_ENV_VARS`), the rest being loop variables. The count is printed every run rather than asserted, because the honest assertion
 -- "no unresolvable dynamic read" -- is false today and could only be made true with a baseline.
+
+---- gate ----
+step: Env manifest
+needs: none
+lane: quality-static
+selftest: true
+why: an environment variable is an undeclared input, and nothing in this tree could
+     answer "who supplies this value and who may read it" without a fresh grep that
+     is wrong in both directions. Five readers derive the corpus from tracked files
+     on every run -- no count is ever written down -- and four set-arithmetic clauses
+     hold it against an eight-shard classification, the eighth shard being tombstones
+     so that "a dead name came back" and "a new name is unclassified" are the same
+     assertion rather than two mechanisms to keep in sync
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1062,4 +1076,7 @@ def main(argv=None):
 if __name__ == "__main__":
     import sys
 
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_env_manifest.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

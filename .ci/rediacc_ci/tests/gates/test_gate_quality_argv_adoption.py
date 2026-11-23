@@ -131,3 +131,38 @@ def test_a_declared_flag_is_still_taken(gate):
     stray = harness.run([sys.executable, str(script), "-h", BOGUS], cwd=paths.repo_root())
     gate.assert_exit_code(2, stray.rc, "an unknown flag beside a declared one is still refused")
     gate.log_pass("a declared flag parses and an undeclared neighbour is refused")
+
+
+# THE RUN CI MAKES. A gate whose `---- gate ----` header sits in its rediacc_ci.quality module is registered as `PYTHONPATH=.ci python3 -m rediacc_ci.quality.<x>` (PLAN-tooling-code-reduction D2), so the entry point above is no longer what the lane starts. Each such module refuses an unknown argument itself, from its own `__main__`, or the move dropped the check this file exists for.
+MODULES = paths.repo_root() / ".ci" / "rediacc_ci" / "quality"
+MIN_HEADED_MODULES = 80
+
+
+def headed_modules() -> list[str]:
+    return sorted(
+        p.stem
+        for p in MODULES.glob("*.py")
+        if "\n---- gate ----\n" in p.read_text(encoding="utf-8")
+    )
+
+
+def test_the_scan_sees_the_headed_modules(gate):
+    found = headed_modules()
+    if len(found) < MIN_HEADED_MODULES:
+        gate.log_fail(
+            "%d modules under %s carry a gate header (floor %d): the scan is not seeing the tree"
+            % (len(found), MODULES, MIN_HEADED_MODULES)
+        )
+    gate.log_pass("%d header-carrying modules enumerated" % len(found))
+
+
+@pytest.mark.parametrize("mod", headed_modules())
+def test_a_headed_module_run_with_dash_m_refuses_an_unknown_flag(gate, mod):
+    result = harness.run(
+        [sys.executable, "-m", "rediacc_ci.quality." + mod, BOGUS],
+        cwd=paths.repo_root(),
+        timeout=120,
+        env={"PYTHONPATH": str(paths.repo_root() / ".ci")},
+    )
+    gate.assert_exit_code(2, result.rc, "rediacc_ci.quality.%s must refuse %s" % (mod, BOGUS))
+    gate.log_pass("rediacc_ci.quality.%s refuses %s with rc 2" % (mod, BOGUS))

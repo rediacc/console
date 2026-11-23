@@ -31,6 +31,15 @@ the pin is what makes that true rather than a coincidence of the developer's loc
 
 THE CONTROL'S `sed` IS A PLAIN GLOBAL SUBSTITUTION and is reproduced as `str.replace`, including its blunt edge: replacing `--changed` also hits `--changed-only` if such a flag existed. That over-reach makes the control STRICTER, never weaker -- more flags go missing from the fixture, and the assertion only asks whether the TARGET went missing -- so it is carried rather than
 refined.
+
+---- gate ----
+step: CLI docs stay in sync with their scripts' real flags
+     # The EXISTING step name, character for character, not a tidier one.
+     # gate-bind matches a header against the step that already runs, so
+     # renaming a step is a separate change from moving what it invokes.
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -299,3 +308,10 @@ def selftest() -> int:
         ctl.check("CONTROL VACUITY: a doc with no flag at all is a refusal", run(), 1)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_cli_doc_coverage.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

@@ -92,6 +92,15 @@ the outcome".
 STREAMS. `fail()` is `✗ <msg>` on STDERR and `pass()` is `ok <msg>` on STDOUT,
 neither through a logger. The A1/A2/A8 detail lists follow their `✗` on STDERR;
 the A10 detail list goes to STDOUT with a nine-space indent, which is an inconsistency in the twin and is preserved because moving it would change which stream a reader greps.
+
+---- gate ----
+step: Toolchain pins
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import fnmatch
@@ -903,4 +912,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_toolchain_pins.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

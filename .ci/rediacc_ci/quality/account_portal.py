@@ -60,6 +60,13 @@ run satisfies it. Carried, and reported.
 
 NEITHER SIDE PROBES FOR `npm` OR `npx`. A host without them produces a `command not found` from bash and a `FileNotFoundError` from Python. The port catches that and returns the same exit code at the same point rather than raising a traceback, which is the only place it deliberately behaves better than the twin without changing the verdict: a traceback and a `command not found` are
 both non-zero with no findings, and a traceback is the one that reads as a bug in the gate.
+
+---- gate ----
+step: Check account portal (typecheck + build)
+needs: node, submodules
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import os
@@ -395,4 +402,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_account_portal.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

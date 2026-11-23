@@ -61,6 +61,21 @@ its presence in the class otherwise looks like a bug when read next to `re.MULTI
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port and worth knowing before anyone trusts a green: the analysis is per-FILE, so a GOBIN mention anywhere in a file clears every bare invocation in it, including ones on a code path the GOBIN line never runs on. That is the twin's deliberate trade -- the install and the invocation are usually several lines apart, and a PATH fix
 anywhere above the call site is what actually makes it work -- and widening it would flag correct code, which is how a gate gets suppressed.
+
+---- gate ----
+step: Go tool PATH
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: Console's own scripts already use the right shape -- toolchain.sh installs
+     with GOBIN and invokes by absolute path, which is why check:ci-shell-format
+     passes on a host with no shfmt on PATH. This gate exists so that stays
+     true: the defect it names cost four instances in the renet submodule on
+     2026-08-27, each one a `go install` followed by a bare invocation, and CI
+     could not see any of them because actions/setup-go masks it.
+---- end gate ----
 """
 
 import os
@@ -438,4 +453,7 @@ def _run(root: pathlib.Path) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_go_tool_path.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

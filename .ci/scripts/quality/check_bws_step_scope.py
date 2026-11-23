@@ -1,17 +1,8 @@
 #!/usr/bin/env python3
-"""Entry point for the Bitwarden step-scope gate.
+"""Run `rediacc_ci.quality.bws_step_scope` by path, with the same argument check its own entry makes.
 
-The logic and the controls live in `rediacc_ci.quality.bws_step_scope`; this file exists so the registry can invoke it BY PATH. The five rules, the names they cover (`.ci/config/bws-step-scoped.json`) and the one exposure they cannot reach are argued in that module's docstring.
-
----- gate ----
-step: Bitwarden step-scoped secrets
-needs: none
-selftest: true
-lane: quality-security
-why: a production signing key fetched at job start through bws-secrets lands in
-     GITHUB_ENV and is readable by every later step of the job. This keeps each
-     listed key to a dedicated fetch, its consumer and an always() scrub.
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/bws_step_scope.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys

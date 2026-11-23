@@ -38,6 +38,13 @@ traceback TEXT differs between the two -- it names different files -- but a cras
 
 THE DIFF PRINTED ON DIVERGENCE. The twin ends with `diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | head -20`. Both operands are ONE line -- `json.dumps` with no indent -- so the output is always the four-line normal-format hunk `1c1`, `< a`, `---`, `> b`, and `head -20` never truncates anything. The port emits those four lines literally rather than reaching for difflib, which
 produces a different format for the same fact. The `head -20` is carried as a cap anyway, so a future multi-line normalization cannot turn a divergence report into a screenful.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py
+blocker: BLOCKER: test_gate_regions_sync.py drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json, and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") runs it every CI run; its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install
+needs: none
+---- end gate ----
 """
 
 import json
@@ -233,3 +240,10 @@ def selftest() -> int:
         ctl.check("FLOOR MIRROR: exactly %d region(s) is enough" % MIN_REGIONS, run(one, one), 0)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_regions_sync.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

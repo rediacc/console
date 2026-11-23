@@ -40,6 +40,13 @@ change what the gate prints.
 
 `2>&1` IS THE TWIN'S OWN MERGE AND IS NOT THIS PORT'S CHOICE. Phase 2 captures the test run with the two streams merged, then re-prints the whole thing on stderr when the run failed. `rediacc_ci.tests.differential` refuses to merge streams for exactly the reason the 2026-09-06 emit-advisory incident showed, and this is not that: the merge here is INSIDE the subject, part of what
 the gate prints, so the port merges too and the gate's own two streams stay separate.
+
+---- gate ----
+kind: local-only
+id: check:ci-renet-tiers
+blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes
+needs: go, submodules
+---- end gate ----
 """
 
 import os
@@ -355,4 +362,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_renet_tier_map.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

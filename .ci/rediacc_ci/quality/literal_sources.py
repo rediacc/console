@@ -45,6 +45,14 @@ USAGE
     check_literal_sources.py --write              render the TS and bash projections
 
 Exit 0 clean, 1 on a finding or a refusal, 2 on a failed control.
+
+---- gate ----
+step: Literal sources
+needs: none
+lane: quality-static
+selftest: true
+why: every origin, bucket, slug, image registry, owned path, address and port is written once in .ci/config/well-known.env and read everywhere else; a registered value typed out in code, or an owned literal spreading across files unregistered, is a finding.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -2584,4 +2592,12 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_literal_sources.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write", "--report"),
+        variadic=("--paths",),
+    )
     raise SystemExit(main(sys.argv[1:]))

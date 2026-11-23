@@ -19,6 +19,19 @@ THE RULES, each with a plant in the controls that must turn it red:
 A CORPUS FLOOR. Fewer than `MIN_MODULES` Python modules importing `awscli` means the scan is not looking at the tree the rules were written for (a moved package, an emptied glob), and that is a refusal (exit 2), never a pass.
 
 Exit 0 clean, 1 on any finding, 2 on a failed control or a corpus too small to judge.
+
+---- gate ----
+needs-not: node
+blocker: BLOCKER: the inference matches `awscli.require()`, a Python call in this module; the gate starts no node process.
+step: aws resolver
+lane: quality-static
+why: every R2 read and write runs the aws CLI, and until 2026-10-19 each of
+     twenty-three modules exec'd a bare "aws" after its own presence check, so
+     the version that wrote production R2 was whatever the runner carried.
+     rediacc_ci.core.awscli resolves AWS_BIN, PATH, then the pinned install;
+     this keeps a new call site, a require_cmd("aws") or a bare `aws s3` in a
+     workflow or .ci shell script from walking around it.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -328,4 +341,9 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_aws_resolver.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
+    raise SystemExit(main(sys.argv[1:]))

@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""Entry point for the dev-stack liveness probe gate. Logic is in the package.
+"""Run `rediacc_ci.quality.account_probes` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.account_probes`, which pytest and the port's own `--selftest` import directly. A path invocation puts nothing on `sys.path`, hence the `_cipath` hop below.
-
-The subject is `rustfs_alive` in `.ci/rediacc_ci/core/account.py`, the Python port of the retired `.ci/lib/account.sh`; the gate refuses (exit 1, "nothing to check") when that module is absent.
-
----- gate ----
-step: Dev-stack liveness probes
-needs: none
-selftest: true
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/account_probes.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys

@@ -76,6 +76,13 @@ THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and verifi
      naming which of the two commands failed.
 
 WHAT IT CANNOT SEE: whether the tree is CORRECT, only whether it is CURRENT. A CLI whose Commander definitions are wrong exports a tree that matches itself.
+
+---- gate ----
+lane: quality-code
+step: Command tree
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -361,4 +368,7 @@ def node_count_of(text: str) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_command_tree.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

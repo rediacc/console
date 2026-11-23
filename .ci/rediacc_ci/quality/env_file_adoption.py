@@ -36,6 +36,20 @@ TWO CHECKS, because one of them can pass while the thing is broken:
 
 ONE EXEMPTION DISAPPEARED IN THE PORT, and it is worth saying why rather than letting the list quietly shrink by one. The bash predecessor had to exempt ITSELF: it wrote `set -a` fixtures to prove its own matcher fired on all three spellings, and the sweep read those literals in its own source. This module has the same fixtures and needs no exemption, because the sweep scans `*.sh`
 and this is not one. That is a real reduction in exempted surface, not an accounting change -- the alternative the predecessor named was obfuscating the literal so the sweep could not see it, which would have disarmed the control that keeps the matcher honest.
+
+---- gate ----
+step: Env file adoption
+needs: none
+lane: quality-static
+selftest: true
+why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
+     shell, and the files it is used on hold ACCOUNT_ED25519_PRIVATE_KEY and
+     ACCOUNT_JWT_SECRET. The replacement is rediacc_ci.core.env; this sweeps for
+     the pattern coming back, proves the module's export verb lets a planted shell
+     value win, and drives a real `set -a; source` on the same fixture demanding
+     the opposite answer so that proof cannot pass against a loader that reads
+     nothing
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -361,4 +375,7 @@ def main(argv=None):
 if __name__ == "__main__":
     import sys
 
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_env_file_adoption.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

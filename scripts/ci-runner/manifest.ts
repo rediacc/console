@@ -1269,7 +1269,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-rubric-calibration',
-    run: 'npm run check:ci-rubric-calibration',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.rubric_calibration',
     gate: true,
     paths: [
       '.ci/**',
@@ -1282,7 +1282,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_rubric_calibration.py'],
+    leaves: ['.ci/rediacc_ci/quality/rubric_calibration.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1292,11 +1292,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-www-build-token',
-    run: 'npm run check:ci-www-build-token',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.www_build_token',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_www_build_token.py'],
+    leaves: ['.ci/rediacc_ci/quality/www_build_token.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2275,11 +2275,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // FIRST REGISTRATION, not a cutover. `check-ci-job-aggregation.sh` was invoked by nothing at all -- no key, no entry, no workflow line -- so CI ran its gate test and never the gate. Added 2026-09-08 with the port, through its header and one `gate:bind --write`.
     id: 'check:ci-job-aggregation',
-    run: 'npm run check:ci-job-aggregation',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_job_aggregation',
     gate: true,
     paths: ['.ci/**', '.github/workflows/ci.yml', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_ci_job_aggregation.py'],
+    leaves: ['.ci/rediacc_ci/quality/ci_job_aggregation.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2290,11 +2290,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // FIRST REGISTRATION, same story: the scanner for probes whose failure is indistinguishable from an empty result was itself unrun.
     id: 'check:ci-swallowed-failures',
-    run: 'npm run check:ci-swallowed-failures',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.swallowed_failures',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_swallowed_failures.py'],
+    leaves: ['.ci/rediacc_ci/quality/swallowed_failures.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2304,11 +2304,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-probe-parity',
-    run: 'npm run check:ci-probe-parity',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.probe_parity',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json', 'packages/cli/src/utils/secure-storage.ts'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_probe_parity.py'],
+    leaves: ['.ci/rediacc_ci/quality/probe_parity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2318,7 +2318,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-drill-verdicts',
-    run: 'npm run check:ci-drill-verdicts',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.drill_verdicts',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -2350,7 +2350,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_drill_verdicts.py'],
+    leaves: ['.ci/rediacc_ci/quality/drill_verdicts.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2360,7 +2360,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-account-probes',
-    run: 'npm run check:ci-account-probes',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_probes',
     gate: true,
     paths: [
       '.ci-trigger',
@@ -2427,7 +2427,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_account_probes.py'],
+    leaves: ['.ci/rediacc_ci/quality/account_probes.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2437,7 +2437,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-npmrc',
-    run: 'npm run check:ci-npmrc',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.npmrc',
     gate: true,
     // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python. The leaf is the Python entry point now, not check-npmrc.sh. The twin is NOT deleted (invariant 5 forbids that in the porting change; deletion is W7 P5) -- what changed is only which of the two the registry invokes. Condition for cutting over is the one the sibling entry points name in their own docstrings:
     // the differential ledger says the port kept its verdict. `shadow-gate --pair w7p2-npmrc --assert --k 5` reports equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical stdout AND stderr.
@@ -2452,7 +2452,7 @@ export const GATES: readonly GateSpec[] = [
       'private/renet',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_npmrc.py'],
+    leaves: ['.ci/rediacc_ci/quality/npmrc.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2472,10 +2472,11 @@ export const GATES: readonly GateSpec[] = [
       'run.sh',
       // setup() is ported to rediacc_ci.setup.machine.run_setup, which check G reads now that .ci/legacy/run-legacy.sh is deleted. Without this an edit to the file the gate READS does not select it.
       '.ci/rediacc_ci/setup/machine.py',
+      '.ci/rediacc_ci/quality/setup_idempotency.py',
       '.ci/scripts/quality/check_setup_idempotency.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_setup_idempotency.py'],
+    leaves: ['.ci/rediacc_ci/quality/setup_idempotency.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2617,11 +2618,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-control-vacuity',
-    run: 'npm run check:ci-control-vacuity',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.control_vacuity',
     gate: true,
-    paths: ['.ci/scripts/quality/**'],
+    paths: ['.ci/scripts/quality/**', '.ci/rediacc_ci/quality/control_vacuity.py'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_control_vacuity.py'],
+    leaves: ['.ci/rediacc_ci/quality/control_vacuity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2633,9 +2634,13 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-devcontainer-scripts',
     run: 'npm run check:ci-devcontainer-scripts',
     gate: true,
-    paths: ['.devcontainer/**', '.ci/scripts/quality/check_devcontainer_scripts.py'],
+    paths: [
+      '.devcontainer/**',
+      '.ci/scripts/quality/check_devcontainer_scripts.py',
+      '.ci/rediacc_ci/quality/devcontainer_scripts.py',
+    ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_devcontainer_scripts.py'],
+    leaves: ['.ci/rediacc_ci/quality/devcontainer_scripts.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2645,15 +2650,19 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-shell-size',
-    run: 'npm run check:ci-shell-size',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.shell_size',
     gate: true,
     // Any shell file anywhere can grow into the linter-killing range, so this one is deliberately not path-narrowed.
     //
     // THE LEAF IS LISTED EXPLICITLY, and it has to be. `**/*.sh` used to cover the gate's own file for free, because the gate WAS a `.sh`. The W7 P4 cutover made the leaf a `.py`, the glob stopped matching it, and `check:ci-gate-manifest` caught the consequence by name: "declares paths but not its own leaf -- editing the gate does not select the gate". Any cutover of a gate whose
     // `paths` glob is extension-shaped inherits this.
-    paths: ['**/*.sh', '.ci/scripts/quality/check_shell_size.py'],
+    paths: [
+      '**/*.sh',
+      '.ci/scripts/quality/check_shell_size.py',
+      '.ci/rediacc_ci/quality/shell_size.py',
+    ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_shell_size.py'],
+    leaves: ['.ci/rediacc_ci/quality/shell_size.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2663,7 +2672,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-devbox-exec',
-    run: 'npm run check:ci-devbox-exec',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.devbox_exec',
     gate: true,
     // The lane library and anything that could add a call site to it. Narrow on purpose: this gate reasons about devbox.sh's own invocations, and a wider path filter would imply a coverage it does not have.
     // The subject moved with 94934de41 (2026-10-08): `.ci/lib/devbox.sh` is deleted and the gate reads its port, core/devbox.py (DEVBOX_REL in rediacc_ci/quality/devbox_exec.py).
@@ -2673,7 +2682,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality/check_devbox_exec.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_devbox_exec.py'],
+    leaves: ['.ci/rediacc_ci/quality/devbox_exec.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2683,7 +2692,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-toolchain-pins',
-    run: 'npm run check:ci-toolchain-pins',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_pins',
     gate: true,
     // Triggers on every surface that could restate a pin or acquire a tool unpinned, so a version added back into a workflow or the Dockerfile cannot slip past on an unrelated path filter.
     paths: [
@@ -2697,7 +2706,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/quality/*.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_toolchain_pins.py'],
+    leaves: ['.ci/rediacc_ci/quality/toolchain_pins.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2710,17 +2719,18 @@ export const GATES: readonly GateSpec[] = [
     // from its single-source check (they legitimately appear elsewhere: go.mod,
     // third-party action inputs) -- which also removes any check that the TWO files meant to carry the identical value on purpose (toolchain.env and the Dockerfile's matching ARG) actually do. This is that narrower check.
     id: 'check:ci-toolchain-env-dockerfile-sync',
-    run: 'npm run check:ci-toolchain-env-dockerfile-sync',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_env_dockerfile_sync',
     gate: true,
     paths: [
       '.devcontainer/toolchain.env',
       '.devcontainer/Dockerfile',
+      '.ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py',
       '.ci/scripts/quality/check_toolchain_env_dockerfile_sync.py',
       'package.json',
       'packages/cli/package.json',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_toolchain_env_dockerfile_sync.py'],
+    leaves: ['.ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2730,16 +2740,17 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-host-toolchain-coverage',
-    run: 'npm run check:ci-host-toolchain-coverage',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.host_toolchain_coverage',
     gate: true,
     // The pinned-tools DEFINITION (check-toolchain-pins.sh's GATED_TOOLS) and the host-toolchain runtime GUARD's call sites (block-host-toolchain-run.sh's NPX_TOOLS/BARE_TOOLS) are two independently maintained lists. Either surface changing is when they can drift.
     paths: [
       '.ci/rediacc_ci/quality/toolchain_pins.py',
       '.claude/rediacc_hooks/guards/block_host_toolchain_run.py',
+      '.ci/rediacc_ci/quality/host_toolchain_coverage.py',
       '.ci/scripts/quality/check_host_toolchain_coverage.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_host_toolchain_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/host_toolchain_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2749,7 +2760,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-git-op-conditionals',
-    run: 'npm run check:ci-git-op-conditionals',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_op_conditionals',
     gate: true,
     // Scoped to .claude/hooks and .ci/scripts/quality, where the two real defects lived (a git identity capture guarded against empty but not against rev-parse --abbrev-ref HEAD's misleading literal "HEAD" on a detached checkout, in both an assignment and a bare-statement shape). BOTH suffixes plus the port module: `globToRegExp('.ci/scripts/quality/*.sh')` is
     // `^\.ci/scripts/quality/[^/]*\.sh$`, which does not match the new `.py` leaf, and gate-manifest's leaf-self-inclusion oracle reds without it. The `.sh` glob went on 2026-10-01: PLAN-retire-bash-oracles B3 retired the last shell file under .ci/scripts/quality, and a glob that matches nothing can only exclude.
@@ -2760,7 +2771,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/rediacc_hooks/**/*.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_git_op_conditionals.py'],
+    leaves: ['.ci/rediacc_ci/quality/git_op_conditionals.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2773,11 +2784,11 @@ export const GATES: readonly GateSpec[] = [
     // with GOBIN and invokes by absolute path, which is why check:ci-shell-format
     // passes on a host with no shfmt on PATH. This gate exists so that stays true: the defect it names cost four instances in the renet submodule on 2026-08-27, each one a `go install` followed by a bare invocation, and CI could not see any of them because actions/setup-go masks it.
     id: 'check:ci-go-tool-path',
-    run: 'npm run check:ci-go-tool-path',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.go_tool_path',
     gate: true,
     paths: ['.ci/**', 'scripts/**'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_go_tool_path.py'],
+    leaves: ['.ci/rediacc_ci/quality/go_tool_path.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2854,7 +2865,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-trap-registry',
     run: 'npm run check:ci-trap-registry',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_trap_registry.py'],
+    leaves: ['.ci/rediacc_ci/quality/trap_registry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2903,6 +2914,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/**',
       'scripts/data/hook-inventory-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
+      '.ci/rediacc_ci/quality/hook_integrity.py',
       '.ci/scripts/quality/check_hook_integrity.py',
       // Added 2026-09-06 with W11 P3. This gate's audited corpus AND its case corpus are now both decided by this file, and run.ts only selects a path-scoped gate when a changed file matches one of its globs. Without this entry a commit touching only the scope file runs a CI where this gate is not selected, so dropping a guard_dirs entry would be invisible: the corpus shrinks and
       // nothing reds. That is the silent-narrowing shape this program keeps finding.
@@ -2910,7 +2922,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/rediacc_hooks/**',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_hook_integrity.py'],
+    leaves: ['.ci/rediacc_ci/quality/hook_integrity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2932,9 +2944,10 @@ export const GATES: readonly GateSpec[] = [
       // `.ci/lib/**` left this list on 2026-10-08: 94934de41 and 0327ab26b deleted every file under it, and a glob matching nothing only drops out of --changed. The scan root in pipefail_grep_q.py stays, so a shell file that reappears there is scanned without a manifest edit.
       '.devcontainer/**',
       '.ci/media/**',
+      '.ci/rediacc_ci/quality/pipefail_grep_q.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_pipefail_grep_q.py'],
+    leaves: ['.ci/rediacc_ci/quality/pipefail_grep_q.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2944,7 +2957,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-watch-recipe',
-    run: 'npm run check:ci-watch-recipe',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_watch_recipe',
     gate: true,
     // The defect lives in PROSE agents copy, so the trigger set is the prose, not the code: every instruction surface that has ever carried the loop.
     paths: [
@@ -2953,13 +2966,14 @@ export const GATES: readonly GateSpec[] = [
       '.claude/agents/**',
       '.claude/hooks/**',
       'docs/agent-reference/**',
+      '.ci/rediacc_ci/quality/ci_watch_recipe.py',
       '.ci/scripts/quality/check_ci_watch_recipe.py',
       '.claude/**',
       '.ci/scripts/ci/**',
       '.ci/scripts/quality/lib/**',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_ci_watch_recipe.py'],
+    leaves: ['.ci/rediacc_ci/quality/ci_watch_recipe.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2969,7 +2983,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-cli-doc-coverage',
-    run: 'npm run check:ci-cli-doc-coverage',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_doc_coverage',
     gate: true,
     // The pairs it checks: ci-trace.py against its skill, run.ts against ci-gates.md. Trigger on either script or either doc changing.
     paths: [
@@ -2978,10 +2992,11 @@ export const GATES: readonly GateSpec[] = [
       'scripts/ci-runner/run.ts',
       'docs/agent-reference/ci-gates.md',
       // The port is both what CI RUNS (`leaves`) and what an edit SELECTS (`paths`). The bash twin that used to sit beside it here was retired in W7 P5.
+      '.ci/rediacc_ci/quality/cli_doc_coverage.py',
       '.ci/scripts/quality/check_cli_doc_coverage.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_cli_doc_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/cli_doc_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3080,10 +3095,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-script-exec-bit',
-    run: 'npm run check:ci-script-exec-bit',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.script_exec_bit',
     // Dropped 2026-09-28: CI step timing (budget_report.py's gate_step_p90_seconds) measures 2.0s, not the 22.1s a local run once read.
     gate: true,
-    leaves: ['.ci/scripts/quality/check_script_exec_bit.py'],
+    leaves: ['.ci/rediacc_ci/quality/script_exec_bit.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3102,10 +3117,11 @@ export const GATES: readonly GateSpec[] = [
       '**/package-lock.json',
       '**/package.json',
       'private/account',
+      '.ci/rediacc_ci/quality/lockfile.py',
       '.ci/scripts/quality/check_lockfile.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_lockfile.py'],
+    leaves: ['.ci/rediacc_ci/quality/lockfile.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3115,7 +3131,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-peer-deps',
-    run: 'npm run check:ci-peer-deps',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.peer_deps',
     gate: true,
     paths: [
       '.ci/**',
@@ -3130,7 +3146,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_peer_deps.py'],
+    leaves: ['.ci/rediacc_ci/quality/peer_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3186,7 +3202,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-scope-scripts-reachability',
-    run: 'npm run check:ci-scope-scripts-reachability',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_scripts_reachability',
     gate: true,
     paths: [
       '.ci/**',
@@ -3197,7 +3213,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/ci/write-shard-receipt.cjs',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_scope_scripts_reachability.py'],
+    leaves: ['.ci/rediacc_ci/quality/scope_scripts_reachability.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3207,7 +3223,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-mutate-check',
-    run: 'npm run check:ci-mutate-check',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.mutate_check',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -3224,7 +3240,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     lists: ['', '.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_mutate_check.py'],
+    leaves: ['.ci/rediacc_ci/quality/mutate_check.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3528,7 +3544,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 34.8s measured COLD, 1.8s warm. CI is always cold: `.ci/cache/mypy` is gitignored and nothing restores it, so the number that matters here is the first one.
     // NO `paths`, DELIBERATELY. mypy follows imports, so a change to any .py can move a finding in another one, and the pins file decides which mypy reaches the verdict at all. An entry without `paths` is ALWAYS selected, which is the safe half of that trade; a half-populated table here would make `--changed` drop the gate silently.
     gate: true,
-    leaves: ['.ci/scripts/quality/check_python_types.py'],
+    leaves: ['.ci/rediacc_ci/quality/python_types.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3568,11 +3584,11 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 7
   {
     id: 'check:ci-actions-vars',
-    run: 'npm run check:ci-actions-vars',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_vars',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_actions_vars.py'],
+    leaves: ['.ci/rediacc_ci/quality/actions_vars.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3600,7 +3616,7 @@ export const GATES: readonly GateSpec[] = [
     // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: true,
-    leaves: ['.ci/scripts/quality/check_literal_sources.py'],
+    leaves: ['.ci/rediacc_ci/quality/literal_sources.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3611,9 +3627,9 @@ export const GATES: readonly GateSpec[] = [
   {
     // agent/plans/PLAN-account-env-to-bws.md T19: the two account env files the Bitwarden move retired stay retired. Shrink-only baseline of the mentions that predate it, plus the dotenv-table ceiling and the token-path rule.
     id: 'check:ci-account-env-retired',
-    run: 'npm run check:ci-account-env-retired',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_env_retired',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_account_env_retired.py'],
+    leaves: ['.ci/rediacc_ci/quality/account_env_retired.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3655,7 +3671,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-bws-map-live',
     run: 'npm run check:ci-bws-map-live',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_bws_map_live.py'],
+    leaves: ['.ci/rediacc_ci/quality/bws_map_live.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -3669,7 +3685,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-retired-terms',
     run: 'npm run check:ci-retired-terms',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_retired_terms.py'],
+    leaves: ['.ci/rediacc_ci/quality/retired_terms.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3681,9 +3697,9 @@ export const GATES: readonly GateSpec[] = [
     // Every aws call goes through rediacc_ci.core.awscli (agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md): no literal "aws" argv head and no require_cmd/which of "aws" in .ci/rediacc_ci, every module naming awscli.AWS calls the resolver, and no bare `aws s3|s3api|iam` in a workflow or a .ci shell script. Refuses below 20 awscli modules.
     // NO `paths:` DELIBERATELY. Its subjects are every module under .ci/rediacc_ci, every workflow and every .ci shell script, which is most of what a CI change touches; an entry without paths is always selected.
     id: 'check:ci-aws-resolver',
-    run: 'npm run check:ci-aws-resolver',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.aws_resolver',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_aws_resolver.py'],
+    leaves: ['.ci/rediacc_ci/quality/aws_resolver.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3709,7 +3725,7 @@ export const GATES: readonly GateSpec[] = [
       'workers/account/wrangler.bench-us.toml',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_backup_credential_isolation.py'],
+    leaves: ['.ci/rediacc_ci/quality/backup_credential_isolation.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3747,10 +3763,11 @@ export const GATES: readonly GateSpec[] = [
       'agent/plans/**',
       '.ci/config/plan-lifecycle.json',
       '.ci/policy/.plan-housekeeping-allowlist',
+      '.ci/rediacc_ci/quality/plan_housekeeping.py',
       '.ci/scripts/quality/check_plan_housekeeping.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_housekeeping.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_housekeeping.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3785,7 +3802,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-env-manifest',
     gate: true,
     slow: true, // 24.8 s CI step p90 (lane-durations refresh 2026-11-01), over the 20 s pre-push ceiling
-    leaves: ['.ci/scripts/quality/check_env_manifest.py'],
+    leaves: ['.ci/rediacc_ci/quality/env_manifest.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3797,9 +3814,9 @@ export const GATES: readonly GateSpec[] = [
     // W8 P4. `set -a; source <envfile>` EXECUTES the file and lets it overwrite the shell, on files holding ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_JWT_SECRET. The replacement is rediacc_ci.core.env (the bash shim scripts/lib/env-file.sh left in W7P5-c); this sweeps for the pattern returning, proves the module's export verb lets a planted shell value win, and drives a real `set -a; source` on the same fixture demanding the OPPOSITE answer --
     // without which that proof would pass just as happily against a loader that read nothing at all.
     id: 'check:ci-env-file-adoption',
-    run: 'npm run check:ci-env-file-adoption',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_file_adoption',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_env_file_adoption.py'],
+    leaves: ['.ci/rediacc_ci/quality/env_file_adoption.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3815,7 +3832,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.claude/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_hook_exec_baseline.py'],
+    leaves: ['.ci/rediacc_ci/quality/hook_exec_baseline.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3828,11 +3845,11 @@ export const GATES: readonly GateSpec[] = [
     // for pgrep returns 15 hits and 14 are prose or a pattern matched against someone
     // else's command line.
     id: 'check:ci-hook-cross-os',
-    run: 'npm run check:ci-hook-cross-os',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_cross_os',
     gate: true,
     paths: ['.ci/**', '.claude/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_hook_cross_os.py'],
+    leaves: ['.ci/rediacc_ci/quality/hook_cross_os.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3844,11 +3861,11 @@ export const GATES: readonly GateSpec[] = [
     // W4 P3d. The vendored blocker copy under .ci/breakpoint must stay a strict subset of the canonical list, and the corpus's "exactly five divergences" was a MAGIC NUMBER: it said which count, never which five, so it could not see one row leaving as another arrived. This derives all five and attributes each, and refuses rather than judging when the digest has already drifted
     // (that is check-breakpoint-drift's job).
     id: 'check:ci-vendored-blocker-derivation',
-    run: 'npm run check:ci-vendored-blocker-derivation',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.vendored_blocker_derivation',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_vendored_blocker_derivation.py'],
+    leaves: ['.ci/rediacc_ci/quality/vendored_blocker_derivation.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3860,9 +3877,9 @@ export const GATES: readonly GateSpec[] = [
     // The control-plant class in bash and TypeScript, tree-wide. Python is delegated to check:ci-python-control-plants and the delegation is ASSERTED, not documented: if that entry point stops existing or stops being registered, this gate REFUSES rather than leaving a third of the class unscanned. A control mutant built by raw substitution passes for free when its needle has gone
     // -- it scans unmutated text and asserts the opposite verdict about it. Seeded 2026-09-09 at 25 unproven plants of 33; the baseline is shrink-only and set-equal in both directions. NO `paths:` ON PURPOSE: the corpus is every tracked .sh and .ts, so a path table would make `--changed` drop this gate exactly when a control moves.
     id: 'check:ci-plant-proofs',
-    run: 'npm run check:ci-plant-proofs',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.plant_proofs',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_plant_proofs.py'],
+    leaves: ['.ci/rediacc_ci/quality/plant_proofs.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3878,7 +3895,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 20.0s in the idle pre-push pool, 5.1s alone (AST-scans 1217 Python files); 2026-09-26
     run: 'npm run check:ci-python-env-registry',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_python_env_registry.py'],
+    leaves: ['.ci/rediacc_ci/quality/python_env_registry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3886,12 +3903,11 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python env registry',
     },
   },
-  // >>> gen-manifest: region 8
   {
     id: 'check:ci-secret-supply',
     run: 'npm run check:ci-secret-supply',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_secret_supply.py'],
+    leaves: ['.ci/rediacc_ci/quality/secret_supply.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3899,14 +3915,13 @@ export const GATES: readonly GateSpec[] = [
       step: 'Secret supply',
     },
   },
-  // <<< gen-manifest: region 8
   {
     // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set equality both ways. Derived from the AST rather than grep, which is why it is 133 and not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
     id: 'check:ci-worklist-env-registry',
     run: 'npm run check:ci-worklist-env-registry',
     slow: true, // ~21s measured in a clean clone (2026-09-26): scans every worklist env read across the tree
     gate: true,
-    leaves: ['.ci/scripts/quality/check_worklist_env_registry.py'],
+    leaves: ['.ci/rediacc_ci/quality/worklist_env_registry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4632,11 +4647,11 @@ export const GATES: readonly GateSpec[] = [
     // from one Linux box every run -- strictly more than the macOS CI job the box asked
     // for, which would have covered one arm.
     id: 'check:ci-rdc-native',
-    run: 'npm run check:ci-rdc-native',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.rdc_native',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json', 'rdc.sh'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_rdc_native.py'],
+    leaves: ['.ci/rediacc_ci/quality/rdc_native.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4665,7 +4680,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-dead-python',
     gate: true,
     slow: true, // 20.3s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
-    leaves: ['.ci/scripts/quality/check_dead_python.py'],
+    leaves: ['.ci/rediacc_ci/quality/dead_python.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4833,7 +4848,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_bws_step_scope.py'],
+    leaves: ['.ci/rediacc_ci/quality/bws_step_scope.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5308,7 +5323,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'syncpack source coverage',
     },
   },
-  // >>> gen-manifest: region 9
+  // >>> gen-manifest: region 8
   {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
@@ -5321,7 +5336,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Secret reachability',
     },
   },
-  // <<< gen-manifest: region 9
+  // <<< gen-manifest: region 8
   {
     id: 'check:ci-secret-scope',
     run: 'npm run check:ci-secret-scope',
@@ -5348,7 +5363,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-release-key-canonical',
-    run: 'npm run check:ci-release-key-canonical',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.release_key_canonical',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -5371,7 +5386,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_release_key_canonical.py'],
+    leaves: ['.ci/rediacc_ci/quality/release_key_canonical.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5379,7 +5394,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Release key canonical',
     },
   },
-  // >>> gen-manifest: region 10
+  // >>> gen-manifest: region 9
   {
     id: 'check:ci-staging-tag-guard',
     run: 'npm run check:ci-staging-tag-guard',
@@ -5392,7 +5407,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Staging tag guard',
     },
   },
-  // <<< gen-manifest: region 10
+  // <<< gen-manifest: region 9
   {
     id: 'check:ci-release-signing-coverage',
     run: 'npm run check:ci-release-signing-coverage',
@@ -5410,7 +5425,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     lists: ['.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_release_signing_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/release_signing_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5418,7 +5433,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Release signing coverage',
     },
   },
-  // >>> gen-manifest: region 11
+  // >>> gen-manifest: region 10
   {
     id: 'check:ci-tracked-credentials',
     run: 'npm run check:ci-tracked-credentials',
@@ -5431,7 +5446,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked credentials',
     },
   },
-  // <<< gen-manifest: region 11
+  // <<< gen-manifest: region 10
   {
     id: 'check:ci-scope-completeness',
     run: 'npm run check:ci-scope-completeness',
@@ -5455,7 +5470,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Scope completeness',
     },
   },
-  // >>> gen-manifest: region 12
+  // >>> gen-manifest: region 11
   {
     id: 'check:ci-hooks-resolvable',
     run: 'npm run check:ci-hooks-resolvable',
@@ -5468,7 +5483,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Hooks resolvable',
     },
   },
-  // <<< gen-manifest: region 12
+  // <<< gen-manifest: region 11
   {
     // An apt source rewritten to ONE mirror must carry a fallback to another. Born 2026-08-19, when azure.archive.ubuntu.com refused connections for ninety minutes and took down four consecutive CI attempts: every apt source had been rewritten to that single host, so the surrounding five-attempt retry loop hammered the same dead mirror five times. Existing checks counted retry
     // ATTEMPTS and never asked whether the attempts could reach a different SOURCE, which is why nothing caught it.
@@ -5525,7 +5540,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dockerfile mirror resilience',
     },
   },
-  // >>> gen-manifest: region 13
+  // >>> gen-manifest: region 12
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
@@ -5539,7 +5554,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow submodule deps',
     },
   },
-  // <<< gen-manifest: region 13
+  // <<< gen-manifest: region 12
   {
     id: 'check:ci-python-gate-deps',
     run: 'npm run check:ci-python-gate-deps',
@@ -5856,7 +5871,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Controls are not written inside string literals',
     },
   },
-  // >>> gen-manifest: region 14
+  // >>> gen-manifest: region 13
   {
     id: 'check:ci-timeout-headroom',
     run: 'npm run check:ci-timeout-headroom',
@@ -5869,7 +5884,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CI job timeout headroom',
     },
   },
-  // <<< gen-manifest: region 14
+  // <<< gen-manifest: region 13
   {
     id: 'check:ci-runner-advice',
     run: 'npm run check:ci-runner-advice',
@@ -5960,7 +5975,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'No inline Python in JS/TS',
     },
   },
-  // >>> gen-manifest: region 15
+  // >>> gen-manifest: region 14
   {
     id: 'check:ci-inline-suppressions',
     run: 'npm run check:ci-inline-suppressions',
@@ -5985,7 +6000,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Model-invocable commands',
     },
   },
-  // <<< gen-manifest: region 15
+  // <<< gen-manifest: region 14
   {
     id: 'check:ci-i18n-value-types',
     run: 'npm run check:ci-i18n-value-types',
@@ -6194,7 +6209,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Sentence wrapping',
     },
   },
-  // >>> gen-manifest: region 16
+  // >>> gen-manifest: region 15
   {
     id: 'check:ci-test-file-orphans',
     run: 'npm run check:ci-test-file-orphans',
@@ -6207,7 +6222,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test-file orphan check',
     },
   },
-  // <<< gen-manifest: region 16
+  // <<< gen-manifest: region 15
   // Hand-registered rather than folded into a gen-manifest region: agent/plans/PLAN-haiku-model-routing.md section 4. Every agent declaring a non-opus model must be named, by filename, with a reason, in docs/agent-reference/model-routing.md, in the same commit -- the same bargain check-naturalization-model-policy.ts already makes for the naturalization ledger.
   {
     id: 'check:ci-agent-model-roster',
@@ -6695,11 +6710,11 @@ export const GATES: readonly GateSpec[] = [
   // RETIRED WITH ITS SUBJECT (2026-10-08): check:ci-gate-id-convention held every manifest entry that RUNS a `.ci/scripts/test/gates/test-*.sh` to the `gate-test:<name>` id. W11-A/B/C and section 12 U1-U3 deleted the last such script and its entry, so the lock carries zero `gate-test:` ids and zero gates/ runs, and the gate refused an empty corpus. Its module, entry point and test are deleted.
   {
     id: 'check:ci-pool-writer-safety',
-    run: 'npm run check:ci-pool-writer-safety',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pool_writer_safety',
     gate: true,
     paths: ['.ci/**', '.claude/rediacc_hooks/tests/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_pool_writer_safety.py'],
+    leaves: ['.ci/rediacc_ci/quality/pool_writer_safety.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6711,7 +6726,7 @@ export const GATES: readonly GateSpec[] = [
     // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
     id: 'check:ci-gate-tree-writes',
     slow: true, // 15.7s in the idle pre-push pool, 4.4s alone; 2026-09-26
-    run: 'npm run check:ci-gate-tree-writes',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_tree_writes',
     gate: true,
     paths: [
       '.ci/rediacc_ci/**',
@@ -6729,7 +6744,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/shared/**',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_gate_tree_writes.py'],
+    leaves: ['.ci/rediacc_ci/quality/gate_tree_writes.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6835,7 +6850,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_workflows.py'],
+    leaves: ['.ci/rediacc_ci/quality/workflows.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6843,12 +6858,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
-  // >>> gen-manifest: region 17
+  // >>> gen-manifest: region 16
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_greenlight_closures.py'],
+    leaves: ['.ci/rediacc_ci/quality/greenlight_closures.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6856,7 +6871,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
-  // <<< gen-manifest: region 17
+  // <<< gen-manifest: region 16
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -6930,11 +6945,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-app-admin-perm',
-    run: 'npm run check:ci-app-admin-perm',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.no_app_admin_perm',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_no_app_admin_perm.py'],
+    leaves: ['.ci/rediacc_ci/quality/no_app_admin_perm.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6944,7 +6959,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-tracked-sidecars',
-    run: 'npm run check:ci-tracked-sidecars',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tracked_sidecars',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -6961,7 +6976,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_tracked_sidecars.py'],
+    leaves: ['.ci/rediacc_ci/quality/tracked_sidecars.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6983,10 +6998,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-agent-browser-exit',
-    run: 'npm run check:ci-agent-browser-exit',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_browser_exit',
     // 20.8s measured serially on an idle machine, so this is the gate's own cost and not the 17x parallel load the pre-push lane runs under. The oracle judges the FLOOR of recent samples for exactly that reason, and the floor is over the line too.
     gate: true,
-    leaves: ['.ci/scripts/quality/check_agent_browser_exit.py'],
+    leaves: ['.ci/rediacc_ci/quality/agent_browser_exit.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6996,11 +7011,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-silent-failures',
-    run: 'npm run check:ci-silent-failures',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.silent_failure_patterns',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json', 'scripts/dev/**', 'scripts/ops/**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_silent_failure_patterns.py'],
+    leaves: ['.ci/rediacc_ci/quality/silent_failure_patterns.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7010,11 +7025,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-compose-env',
-    run: 'npm run check:ci-compose-env',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.compose_env',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_compose_env.py'],
+    leaves: ['.ci/rediacc_ci/quality/compose_env.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7022,12 +7037,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Compose env',
     },
   },
-  // >>> gen-manifest: region 18
+  // >>> gen-manifest: region 17
   {
     id: 'check:ci-e2e-coverage',
     run: 'npm run check:ci-e2e-coverage',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_e2e_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/e2e_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7035,7 +7050,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check E2E test coverage for all renet functions',
     },
   },
-  // <<< gen-manifest: region 18
+  // <<< gen-manifest: region 17
   {
     id: 'check:ci-e2e-skip-hygiene',
     run: 'npm run check:ci-e2e-skip-hygiene',
@@ -7077,7 +7092,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     lists: ['.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_audit_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/audit_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7336,7 +7351,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/cli/src/types',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_cli_contract.py'],
+    leaves: ['.ci/rediacc_ci/quality/cli_contract.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7596,7 +7611,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/cli/src/types',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_command_tree.py'],
+    leaves: ['.ci/rediacc_ci/quality/command_tree.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -7992,7 +8007,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
-  // >>> gen-manifest: region 19
+  // >>> gen-manifest: region 18
   {
     id: 'check:ci-locale-sources',
     run: 'npm run check:ci-locale-sources',
@@ -8005,7 +8020,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale sources',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 18
   {
     id: 'check:ci-i18n-command-parity',
     run: 'npm run check:ci-i18n-command-parity',
@@ -8234,7 +8249,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-config-migrations',
-    run: 'npm run check:ci-config-migrations',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_migrations',
     gate: true,
     paths: [
       '.ci/**',
@@ -8275,7 +8290,7 @@ export const GATES: readonly GateSpec[] = [
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_config_migrations.py'],
+    leaves: ['.ci/rediacc_ci/quality/config_migrations.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -8423,7 +8438,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CI fetch integrity',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-aws-credential-bridge',
     run: 'npm run check:ci-aws-credential-bridge',
@@ -8448,7 +8463,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Worker secret names',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 19
   {
     id: 'check:ci-builder-env-contract',
     run: 'npm run check:ci-builder-env-contract',
@@ -8665,7 +8680,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-account-portal',
-    run: 'npm run check:ci-account-portal',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_portal',
     slow: true, // 53.7s measured
     gate: true,
     // Phases 2 and 3 typecheck the portal and the backend against packages/shared/dist, so a stale dist reds them for the reason check:ci-account-server needs the same edge.
@@ -8685,7 +8700,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     pathsOrigin: 'declared',
     heavy: true,
-    leaves: ['.ci/scripts/quality/check_account_portal.py'],
+    leaves: ['.ci/rediacc_ci/quality/account_portal.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -8940,7 +8955,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-go-deps',
     gate: true,
     slow: true, // 46.2s CI step measured 2026-10-22 (lane refresh after run 39742633342): go list -u -m -json all resolves every module upstream
-    leaves: ['.ci/scripts/quality/check_go_deps.py'],
+    leaves: ['.ci/rediacc_ci/quality/go_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -8970,7 +8985,7 @@ export const GATES: readonly GateSpec[] = [
     // 1.4s measured. It shells out to `go build`, so a COLD Go build cache costs more than this -- but that is a once-per-tree cost, not the steady-state one the lane is sized against.
     gate: true,
     // Builds into the gate's own scratch directory (`-tags nolicense`), so it writes nothing shared: no `renet-bin` mutex and no `writesTree`. It used to build bin/renet in place, which planted a keyless binary that the next deploy shipped.
-    leaves: ['.ci/scripts/quality/check_renet_types.py'],
+    leaves: ['.ci/rediacc_ci/quality/renet_types.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -8988,7 +9003,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json', 'private/renet'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_renet_tier_map.py'],
+    leaves: ['.ci/rediacc_ci/quality/renet_tier_map.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -9064,7 +9079,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -9092,7 +9107,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-real-provider-pins',
     env: {
@@ -9294,12 +9309,12 @@ export const GATES: readonly GateSpec[] = [
       step: 'Run account backup tests',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-subscription-schema',
-    run: 'npm run check:ci-subscription-schema',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.subscription_schema',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_subscription_schema.py'],
+    leaves: ['.ci/rediacc_ci/quality/subscription_schema.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -9307,7 +9322,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check subscription schema consistency',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 21
   {
     id: 'check:ci-pricing-consistency',
     run: 'npm run check:ci-pricing-consistency',
@@ -9795,7 +9810,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Raw translation keys',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -9811,7 +9826,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -9937,7 +9952,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     lists: ['.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_content_quality.py'],
+    leaves: ['.ci/rediacc_ci/quality/content_quality.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -10502,7 +10517,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Suppression liveness — are our allowlist entries still needed?',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-pr-condition-ledger',
     env: {
@@ -10518,7 +10533,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'PR-condition ledger is current',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
@@ -10695,11 +10710,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-dead-case-arms',
-    run: 'npm run check:ci-dead-case-arms',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.dead_case_arms',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json', 'packages/www/scripts/**', 'scripts/**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_dead_case_arms.py'],
+    leaves: ['.ci/rediacc_ci/quality/dead_case_arms.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py',
@@ -10709,11 +10724,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-label-refs',
-    run: 'npm run check:ci-label-refs',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.label_references',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_label_references.py'],
+    leaves: ['.ci/rediacc_ci/quality/label_references.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_label_references.py',
@@ -10725,7 +10740,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-label-inventory',
     run: 'npm run check:ci-label-inventory',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_label_inventory.py'],
+    leaves: ['.ci/rediacc_ci/quality/label_inventory.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_label_inventory.py',
@@ -10739,7 +10754,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_profiler_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/profiler_coverage.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py',
@@ -10747,12 +10762,12 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_go_module_sync.py'],
+    leaves: ['.ci/rediacc_ci/quality/go_module_sync.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -10760,7 +10775,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-workflow-invariants',
     run: 'npm run check:ci-workflow-invariants',
@@ -10818,7 +10833,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -10831,7 +10846,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-locale-config-divergence',
     run: 'npm run check:ci-locale-config-divergence',
@@ -11358,7 +11373,7 @@ export const GATES: readonly GateSpec[] = [
   // RETIRED WITH ITS SUBJECT (W11-A, 2026-10-08): gate-test:run-sh ran .ci/scripts/test/gates/test-run-sh.sh, which is deleted. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` is collected by check:ci-pytest, and the bare-checkout ubuntu-slim proof is ci.yml's run-sh-tests job, which runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`.
   {
     id: 'check:ci-release-bump-skip',
-    run: 'npm run check:ci-release-bump-skip',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.release_bump_skip',
     gate: true,
     paths: [
       '.ci/config/well-known.env',
@@ -11395,7 +11410,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_release_bump_skip.py'],
+    leaves: ['.ci/rediacc_ci/quality/release_bump_skip.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py',
@@ -11415,7 +11430,7 @@ export const GATES: readonly GateSpec[] = [
       'regions.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_regions_sync.py'],
+    leaves: ['.ci/rediacc_ci/quality/regions_sync.py'],
     ci: {
       kind: 'test',
       test: '.ci/rediacc_ci/tests/gates/test_gate_regions_sync.py',
@@ -11465,7 +11480,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 27
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -11478,7 +11493,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 27
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
@@ -11835,11 +11850,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-bash-lib-ported',
-    run: 'npm run check:ci-bash-lib-ported',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.bash_lib_migration_complete',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_bash_lib_ported.py'],
+    leaves: ['.ci/rediacc_ci/quality/bash_lib_migration_complete.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11849,7 +11864,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-container-build-context',
-    run: 'npm run check:ci-container-build-context',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.container_build_context',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -11881,7 +11896,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_container_build_context.py'],
+    leaves: ['.ci/rediacc_ci/quality/container_build_context.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11931,7 +11946,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-cli-proxy-safe-output',
-    run: 'npm run check:ci-cli-proxy-safe-output',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_proxy_safe_output',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -11955,7 +11970,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/quality',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_cli_proxy_safe_output.py'],
+    leaves: ['.ci/rediacc_ci/quality/cli_proxy_safe_output.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11965,7 +11980,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-portal-sitekey-guard',
-    run: 'npm run check:ci-portal-sitekey-guard',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.portal_sitekey_guard',
     gate: true,
     paths: [
       '.ci/**',
@@ -11976,7 +11991,7 @@ export const GATES: readonly GateSpec[] = [
       'workers/account/**',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_portal_sitekey_guard.py'],
+    leaves: ['.ci/rediacc_ci/quality/portal_sitekey_guard.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

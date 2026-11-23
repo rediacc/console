@@ -1,4 +1,4 @@
-"""`.ci/scripts/quality/_gate_args.py`: the shared refusal of an argument a gate does not take.
+"""`.ci/rediacc_ci/quality/gate_args.py`: the shared refusal of an argument a gate does not take.
 
 THE FAILURE THIS GUARDS. `npm run check:ci-record-paths -- --update` exited 0 having done nothing, and 138 sibling entry points read `sys.argv` the same way: they ask about the flags they know and never look at what is left. The helper is the one place the contract lives, so these controls pin it in both directions: what must be refused (an unknown argument, a valued flag with no value, a value that is itself a flag, a bare argument where none is taken) and what must NOT be (every declared switch, valued flag, `--flag=value` spelling and positional).
 
@@ -6,13 +6,14 @@ A control that only refuses would pass a helper that refuses everything, and the
 """
 
 import importlib.util
-import pathlib
 import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-HELPER = paths.repo_root() / ".ci" / "scripts" / "quality" / "_gate_args.py"
+HELPER = paths.repo_root() / ".ci" / "rediacc_ci" / "quality" / "gate_args.py"
+#: The name the entry points under .ci/scripts/quality import it by.
+ENTRY_ALIAS = paths.repo_root() / ".ci" / "scripts" / "quality" / "_gate_args.py"
 
 
 def _load():
@@ -92,9 +93,9 @@ def test_a_positional_is_refused_unless_declared_and_a_dash_is_never_one(gate):
 
 def test_parse_exits_2_on_stderr_and_returns_the_argv_otherwise(gate):
     probe = (
-        "import sys; sys.path.insert(0, %r); import _gate_args as g; "
+        "import sys; sys.path.insert(0, %r); from rediacc_ci.quality import gate_args as g; "
         "p = g.parse('check_x.py', sys.argv[1:], switches=('--selftest',)); print(p.argv)"
-        % str(HELPER.parent)
+        % str(paths.repo_root() / ".ci")
     )
     refused = harness.run([sys.executable, "-c", probe, "--definitely-not-a-flag"])
     gate.assert_exit_code(2, refused.rc, "an unknown argument exits 2")
@@ -131,11 +132,17 @@ def test_a_variadic_flag_takes_every_value_up_to_the_next_flag(gate):
     gate.log_pass("a variadic flag needs one value, and does not adopt an earlier bare word")
 
 
-def test_the_helper_file_is_where_the_entry_points_import_it_from(gate):
-    gate.assert_eq(
-        pathlib.Path(HELPER).is_file(), True, "the helper sits beside _cipath.py in the entry dir"
+def test_the_entry_alias_imports_the_package_helper(gate):
+    """An entry point that runs a module by path imports `_gate_args` beside `_cipath`; it must be the package helper, not a second copy."""
+    probe = (
+        "import sys; sys.path[:0] = [%r, %r]; import _gate_args, rediacc_ci.quality.gate_args as g; "
+        "print(_gate_args.parse is g.parse and _gate_args.problem is g.problem)"
+        % (str(ENTRY_ALIAS.parent), str(paths.repo_root() / ".ci"))
     )
+    got = harness.run([sys.executable, "-c", probe])
+    gate.assert_exit_code(0, got.rc, "the alias imports")
+    gate.assert_eq(got.out.strip(), "True", "the alias re-exports the package functions")
     gate.assert_eq(
-        (HELPER.parent / "_cipath.py").is_file(), True, "the sibling it is modelled on exists"
+        (ENTRY_ALIAS.parent / "_cipath.py").is_file(), True, "the alias sits beside _cipath.py"
     )
-    gate.log_pass("the helper lives beside _cipath.py, on every entry point's sys.path[0]")
+    gate.log_pass("the entry alias is the package helper, on every entry point's sys.path[0]")

@@ -331,7 +331,9 @@ export function derivedId(repoPath: string): string {
 /**
  * The run command a path implies.
  *
- * THE BARE PATH FOR .py AND .sh IS NOT COSMETIC: check:ci-parity compares the manifest's
+ * A module under `.ci/rediacc_ci` never reaches here: gate-bind's `directRun` gives it
+ * `PYTHONPATH=.ci python3 -m <module>`, which the parity resolver reads as the module's file.
+ * THE BARE PATH FOR .py AND .sh IS NOT COSMETIC: the parity leg of check:ci-gen-gates compares the manifest's
  * `leaves` against what the npm script resolves to, and writing `python3 <path>` makes
  * that resolve to `[python3]` and fail. Deriving it removes the whole class.
  */

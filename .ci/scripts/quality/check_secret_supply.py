@@ -1,22 +1,8 @@
 #!/usr/bin/env python3
-"""Entry point for the secret-supply gate.
+"""Run `rediacc_ci.quality.secret_supply` by path, with the same argument check its own entry makes.
 
-The logic lives in `rediacc_ci.quality.secret_supply`; this file exists so the registry can invoke it BY PATH, for the parity-tokenizer reason recorded in `gate-header.ts`'s `derivedRun` and in `_cipath`'s docstring. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
-
----- gate ----
-step: Secret supply
-needs: none
-lane: quality-static
-selftest: true
-why: a name the env manifest declares vault-supplied that no vault holds is a
-     credential whose supply is unstated, and nothing in this tree could name
-     that set. Only the FIRST line of this field survives the parser, so the
-     rest is for a human: the same file carries the truncation spec for
-     private/account/.env, one destination per assigned name, each destination
-     a claim checked against the vault map rather than a note. The dev-shared
-     and admin-bootstrap seedings are door:operator-only and every blocked name
-     is printed in full on every run
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/secret_supply.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys

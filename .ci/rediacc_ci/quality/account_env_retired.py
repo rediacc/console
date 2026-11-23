@@ -28,6 +28,16 @@ THE CLAUSES.
 ANTI-VACUITY. Zero tracked files is a REFUSAL (the instrument lost the tree). An EMPTY baseline beside an empty scan is the terminal state and passes, printing zero; no typed floor, because a floor on a number that is supposed to fall reds on success.
 
 Exit 1 on a finding or refusal, 2 on a failed control.
+
+---- gate ----
+step: Account env files retired
+lane: quality-security
+needs: submodules
+selftest: true
+why: private/account/.env is retired in favour of Bitwarden profiles, so no tracked file
+     may start reading or recommending it again, the dotenv table only shrinks, and the
+     bootstrap token path must stay outside the repository.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -411,4 +421,9 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_account_env_retired.py", sys.argv[1:], switches=("--selftest", "--write-baseline")
+    )
     raise SystemExit(main(sys.argv[1:]))

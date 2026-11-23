@@ -57,6 +57,15 @@ THE EM DASH IN THE THREE `CONTROL IS VACUOUS` LINES is named by code point rathe
 
 UGREP WAS CHECKED HERE, NOT ASSUMED. `PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a negated class (`curl [^|]*`), which is the shape `docs/agent-reference/TRAPS.md` records as returning silent false zeros from `grep -E`. Measured on this host, ugrep 7.8.4: `-E` and `-P` return the SAME five lines over a corpus containing one instance of each branch. The
 port's Python regex is compared against the real `grep -E` over every `.devcontainer/*.sh` in `tests/test_quality_devcontainer_scripts.py`, so a future ugrep that does diverge shows up as a test failure rather than as two gates quietly disagreeing.
+
+---- gate ----
+step: Devcontainer script stderr visibility
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -562,4 +571,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_devcontainer_scripts.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

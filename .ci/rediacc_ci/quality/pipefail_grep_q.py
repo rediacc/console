@@ -132,6 +132,20 @@ THE SED IS THREE SUBSTITUTIONS IN ORDER, per line: strip from the first `#` to e
 SORT ORDER IS BYTEWISE IN BOTH. The twin pipes function names through `sort -u`
 with no locale pinned, and the differential harness exports LC_ALL=C; Python's
 `sorted()` on ASCII identifiers is the same order. Named because a locale-aware sort would reorder findings, and while the comparator treats findings as an unordered multiset, a human diffing the two streams would see churn.
+
+---- gate ----
+step: No racing pipefail/grep -q detectors
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: A detector built as `producer | grep -q` under pipefail cannot reliably
+     fail: grep -q exits at its first match, SIGPIPEs the producer, and
+     pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped
+     exactly that in both detectors and certified 124 files clean over a real
+     offender for as long as it existed.
+---- end gate ----
 """
 
 import os
@@ -806,4 +820,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_pipefail_grep_q.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

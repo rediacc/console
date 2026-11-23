@@ -123,7 +123,7 @@ function serialise(leaf: string, h: GateHeader, workflow: string): string {
     }
     L.push('    },');
   }
-  L.push(`    run: ${q(`npm run ${id}`)},`);
+  L.push(`    run: ${q(entryRun(id, leaf, packageScripts()))},`);
   if (h.slow) L.push('    slow: true,');
   L.push('    gate: true,', `    leaves: [${q(leaf)}],`);
   if (h.when) L.push(`    when: ${q(h.when as string)},`);
@@ -141,6 +141,23 @@ function serialise(leaf: string, h: GateHeader, workflow: string): string {
   if (h.test !== undefined) L.push(`      test: ${q(h.test as string)},`);
   L.push('    },', '  },');
   return L.join('\n');
+}
+
+/**
+ * The `run` an entry takes: an `npm run <id>` hop while package.json still defines the key, else the module run directly (`directRun`), the D2 form of a gate whose key was retired.
+ */
+export function entryRun(id: string, leaf: string, scripts: Readonly<Record<string, string>>): string {
+  return Object.hasOwn(scripts, id) ? `npm run ${id}` : directRun(leaf);
+}
+
+let scriptsCache: Record<string, string> | undefined;
+function packageScripts(): Record<string, string> {
+  scriptsCache ??= (
+    JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf-8')) as {
+      scripts: Record<string, string>;
+    }
+  ).scripts;
+  return scriptsCache;
 }
 
 /** Entry spans in array order: `  {` .. `  },` at indent 2. */
@@ -415,6 +432,13 @@ function selftest(): number {
         'tsx scripts/gates/check-probe.ts --selftest && tsx scripts/gates/check-probe.ts' &&
       directRun('.ci/scripts/quality/check_probe.py') === '.ci/scripts/quality/check_probe.py',
     'CONTROL: a .ci/rediacc_ci module runs as `python3 -m`, a .ts through tsx, any other path as itself'
+  );
+  check(
+    entryRun('check:ci-probe', '.ci/rediacc_ci/quality/probe.py', { 'check:ci-probe': 'x' }) ===
+      'npm run check:ci-probe' &&
+      entryRun('check:ci-probe', '.ci/rediacc_ci/quality/probe.py', {}) ===
+        'PYTHONPATH=.ci python3 -m rediacc_ci.quality.probe',
+    'CONTROL: an entry with a package.json key hops through it, one without runs its module directly'
   );
   const text1 = serialiseSpec(spec);
   check(

@@ -28,6 +28,13 @@ THIS GATE MERGES STDOUT AND STDERR, AND THAT IS DELIBERATE RATHER THAN LAZY.
 THE GH SHIM IS BUILT AS A FILE, NOT AS A PYTHON MOCK. The subject is a child process that resolves `gh` through PATH; a mock inside this process would test nothing about it. The shim carries `rows` as heredoc BODY under a quoted delimiter, so a `$` in a label is never expanded.
 
 THE EMPTY-ROWS CASE IS NOT AN EMPTY SHIM. `printf '%s\\n' "$rows"` with an empty `rows` writes ONE BLANK LINE, so case 5 ("no merged PR at all") drives the decider with a single empty line of API output rather than with nothing. That is a real difference -- a decider that reads line-by-line sees one iteration -- and it is reproduced exactly rather than tidied into an empty body.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py
+blocker: BLOCKER: test_gate_dispatch_release.py runs this gate and its selftest in the quality-pytest lane; the gate drives the release decider initialize runs (python3 -m rediacc_ci.ci.dispatch_release --decide-only, the module named by initialize.DISPATCH_RELEASE_MODULE) with a shimmed gh through all five paths; it exists because a bump-none merge and a broken decision both produce "no release" and only the emitted signal distinguishes them, which no release gate could see
+needs: none
+---- end gate ----
 """
 
 import importlib.util
@@ -372,3 +379,10 @@ def selftest() -> int:
             os.environ.update(saved)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_release_bump_skip.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

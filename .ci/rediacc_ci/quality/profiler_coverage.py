@@ -75,6 +75,13 @@ inline controls cannot express.
 THE `mktemp -d` SCRATCH DIRECTORIES ARE GONE and nothing depends on them. The twin writes each job's body to `$WORK_DIR/block.txt` because its extractors take FILES; these take lists of lines. The `trap 'rm -rf ...' EXIT` that cleaned them up, and the second `trap` that had to re-list both directories after the work directory appeared, disappear with them.
 
 EXIT CODES ARE UNCHANGED: 0 and 1 only. Every refusal in the twin is `exit 1`, including the ones a reader might expect to be a setup error, and that is deliberate on the twin's part: an unscannable surface is a broken instrument, not a clean tree, and reporting it as a different class would let a runner treat it as skippable.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py
+blocker: BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction
+needs: none
+---- end gate ----
 """
 
 import os
@@ -1221,4 +1228,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_profiler_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

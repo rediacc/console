@@ -33,6 +33,13 @@ to 1 would tell a reader "the contract is stale" when the truth is "the build di
 STDOUT OF BOTH SUBPROCESSES IS DISCARDED AND STDERR IS NOT. `>/dev/null` in the twin redirects stdout only. A build's progress chatter is noise; its errors are the only thing that explains a non-zero status, and swallowing them is how a gate failure becomes unreadable.
 
 WHAT THIS GATE CANNOT SEE, unchanged: whether the generator itself is correct. It proves the committed data equals what the generator produces TODAY, so a generator that started emitting nonsense would make the tree stale, get regenerated, and go green on the nonsense. That is the twin's blind spot and the port inherits it rather than growing a second opinion.
+
+---- gate ----
+step: CLI contract
+needs: node
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import os

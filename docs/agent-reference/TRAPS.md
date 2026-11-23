@@ -341,7 +341,7 @@ The tell, for a reviewer: a report that says "restored, no-op" and cites a clean
 
 ## A green task notification can be reporting the shell, not the gate
 Trap-Id: green-notification-reports-the-shell
-Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
+Enforced-By: file:.ci/rediacc_ci/quality/swallowed_failures.py
 Residue: The gate reads scripts in the tree. A wrapper typed into a Bash call, `cmd > log 2>&1; echo exit=$?`, lives in no file, and that is exactly where this one was paid for.
 
 A backgrounded `npm run check:lint` completed with **"exit code 0"** in its task notification while the gate itself was failing with 17 errors. Nothing was broken. The command was:
@@ -621,7 +621,7 @@ Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field
 
 ## Read stdout and stderr SEPARATELY, and never `2>/dev/null`
 Trap-Id: read-stdout-and-stderr-separately
-Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
+Enforced-By: file:.ci/rediacc_ci/quality/swallowed_failures.py
 Residue: The gate covers `2>/dev/null` and discarded exit statuses in TRACKED scripts. A one-off command typed into a tool call is in no file, and that is where three rounds went.
 
 Cost: at least three rounds this program. `gh run view --log-failed` is run-scoped even with `--job` and says so on stderr; a plan writer wrapped in `2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and `grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation probe look inconclusive. <!-- raw-ci-read-ok: history -->

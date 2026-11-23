@@ -43,6 +43,14 @@ TWO CHECKS ADDED 2026-10-09, for review 18700a76.
 A RIDING RUBRIC RECORDS THE HASH OF WHAT IT RIDES (18700a76.5). REGGATE_PROMPT has no fixtures of its own: the calibrator measures it through SWEEP_CASES, every one of which is judged in a prompt carrying REGGATE_PROMPT and SWEEP_PROMPT together (`sweep_extra` in calibrate-judge-rules.py, and `run_judge` appending the sweep section). So each of the two passes is a measurement of BOTH texts, and a recorded sha for one said nothing about the other: REGGATE was recorded fully calibrated at a sha that did not move when SWEEP_PROMPT, the text its only fixtures ran under, was rewritten. RIDES names that coupling in code, where the manifest cannot drop it; the manifest entry carries `rides: {<rubric>: <sha>}` measured in the same run, and the gate refuses an entry whose ride-along hash is absent, stale, or names a rubric RIDES does not declare.
 
 A FIXTURE IS HELD OUT FROM THE RUBRIC IT CALIBRATES (18700a76.4). The rubrics teach by worked example, and the examples are the measured defects, so a fixture worded as an example scores whether the model recognises a quoted sentence, not whether it applies the rule. 18700a769 quoted a whole brave fixture, question, default and answer, into BRAVE_PROMPT. Every string a fixture SENDS to the model (not its label or expected answer) is compared with every calibrated rubric, and a shared run of FIXTURE_NGRAM words is refused. Five words is measured, not chosen: on the tree that prompted it, five caught the four brave defaults and the typo control the prompts quote, and no fixture/rubric pair shared any five-word run that was not a quotation. Read by `ast`, never by importing the calibrator, which imports the whole stop hook.
+
+---- gate ----
+step: Rubric calibration
+     # The EXISTING step name. Renaming a step is a separate change from
+     # moving which file the step invokes.
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import ast
@@ -605,3 +613,15 @@ def selftest() -> int:
         ctl.check("MIRROR: the truthful manifest still passes", main([manifest(truthful)]), 0)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_rubric_calibration.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        positional="<manifest>",
+    )
+    raise SystemExit(main(sys.argv[1:]))

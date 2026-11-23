@@ -58,6 +58,17 @@ ANTI-VACUITY. There are 11 refusals, all of them the same shape: the gate would 
 records will not parse, a shadow directory that yields zero records at all, and a declared glob root that no longer exists.
 
 THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own AST, counts the `RefusalError` raise sites and compares them against the digit in the paragraph above, because the first draft said "nine" while the code had eleven. A docstring that miscounts its own refusals is how a reader concludes a condition is covered when it is not.
+
+---- gate ----
+step: Dead Python
+needs: none
+lane: quality-static
+selftest: true
+why: a Python file no execution route reaches is dead code sitting beside live
+     gates, and the specific case this tree keeps producing is a bash-to-Python
+     port that shadowed EQUIVALENT, was never registered, and whose twin was
+     later deleted; nothing else in the estate can see that file stop running
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1109,3 +1120,12 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     return 0
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_dead_python.py", sys.argv[1:], switches=("--selftest", "--verbose", "--json")
+    )
+    raise SystemExit(main(sys.argv[1:]))

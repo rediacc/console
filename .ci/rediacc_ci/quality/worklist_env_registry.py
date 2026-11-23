@@ -66,6 +66,17 @@ registry INVOKES, and the registry invokes .ci/scripts/quality/check_worklist_en
 a header here derives this module's own path and the binding disagrees with
 package.json. Measured 2026-09-09: three gates landed with it in the module and
 `check:ci-gate-bind` named all three.
+
+---- gate ----
+step: Worklist env registry
+needs: none
+lane: quality-static
+selftest: true
+why: 133 WORKLIST_* names are read at 183 sites with no registry and no schema.
+     A typo'd name reads as unset, and for the four flags that default to `on`
+     that is fail-open: the author believes they switched something off and it
+     is still running
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1118,4 +1129,7 @@ def _refuses(root):
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_worklist_env_registry.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

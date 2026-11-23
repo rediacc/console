@@ -105,6 +105,14 @@ because the comparison is `ind <= envind`, and an off-by-one there silently
 changes which lines belong to the mapping.
 
 STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
+
+---- gate ----
+lane: quality-code
+step: Workflow banned patterns
+needs: node
+selftest: true
+slow: true
+---- end gate ----
 """
 
 import json
@@ -1331,4 +1339,9 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_workflows.py", sys.argv[1:], switches=("--selftest", "--refresh-retention")
+    )
     raise SystemExit(main(sys.argv[1:]))

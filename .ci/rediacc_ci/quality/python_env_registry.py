@@ -76,6 +76,18 @@ WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
 THE GATE HEADER LIVES IN THE ENTRY POINT, not here, for the reason `check_worklist_env_registry.py` records: `gate-bind` reads the file the registry INVOKES BY PATH, and a header on the module derives this module's own path, which the package.json binding then disagrees with.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
+
+---- gate ----
+step: Python env registry
+needs: none
+lane: quality-static
+selftest: true
+why: an environment read is an undeclared input, and until this landed nothing
+     in the tree could say which Python modules had one. Seeded 2026-09-09 at
+     445 module:NAME pairs across 164 modules; the set is shrink-only and
+     set-equal in BOTH directions, so the registry can neither be trimmed to
+     escape a finding nor pre-loaded with one
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -954,4 +966,12 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_python_env_registry.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+        valued=("--allow-new",),
+    )
     raise SystemExit(main(sys.argv[1:]))

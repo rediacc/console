@@ -48,6 +48,18 @@ registry INVOKES, and the registry invokes .ci/scripts/quality/check_hook_exec_b
 a header here derives this module's own path and the binding disagrees with
 package.json. Measured 2026-09-09: three gates landed with it in the module and
 `check:ci-gate-bind` named all three.
+
+---- gate ----
+step: Hook exec baseline
+needs: none
+lane: quality-static
+selftest: true
+why: W5's "2 processes per Bash tool call" target had no baseline in the tree at
+     all, so the cost of the hook wiring could grow without anything noticing.
+     This pins the per-tool and per-event process counts derived from
+     .claude/settings.json and refuses in both directions, so a collapse has to
+     be claimed and a regression cannot be quiet
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -589,4 +601,7 @@ def _refuses(root):
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_hook_exec_baseline.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

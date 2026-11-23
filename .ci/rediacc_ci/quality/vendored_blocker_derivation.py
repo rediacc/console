@@ -47,6 +47,20 @@ AND THE GATE'S OWN INNOCENCE, because invariant 8 is the reason this is a separa
                        under us.
 
 Nothing here mutates anything. The perturbation controls in `selftest()` build their own temporary copies and never name the real directory as a write target.
+
+---- gate ----
+step: Vendored blocker derivation
+needs: none
+lane: quality-static
+selftest: true
+why: the golden corpus pins the vendored breakpoint validator as differing from
+     canonical on "exactly five" cases, which is a magic number: it says which
+     count, never which five, and it cannot see one row leaving as another
+     arrives. This DERIVES the five from the two list facts that cause them --
+     the vendored copy drops twelve canonical phrases and has no substring list
+     at all -- so a divergence that stops being explained is a finding rather
+     than a repin, and it reads and hashes .ci/breakpoint/ without writing to it
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -690,5 +704,8 @@ def selftest() -> bool:
     return not check.ok
 
 
-if __name__ == "__main__":  # pragma: no cover - the entry point is the wrapper
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_vendored_blocker_derivation.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

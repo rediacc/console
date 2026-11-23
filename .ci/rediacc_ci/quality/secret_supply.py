@@ -107,6 +107,23 @@ WHAT THIS GATE DOES NOT CLAIM, so nobody reads more into a green than is there:
     instead of a silence.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
+
+---- gate ----
+needs-not: submodules
+blocker: BLOCKER: `private/account/` appears in a message and in the local arm, which reads a gitignored file when present; the CI arm reads the workflow, and an absent submodule is the case that message names as expected.
+step: Secret supply
+needs: none
+lane: quality-static
+selftest: true
+why: a name the env manifest declares vault-supplied that no vault holds is a
+     credential whose supply is unstated, and nothing in this tree could name
+     that set. Only the FIRST line of this field survives the parser, so the
+     rest is for a human: the same file carries the truncation spec for
+     private/account/.env, one destination per assigned name, each destination
+     a claim checked against the vault map rather than a note. The dev-shared
+     and admin-bootstrap seedings are door:operator-only and every blocked name
+     is printed in full on every run
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1258,4 +1275,7 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_secret_supply.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

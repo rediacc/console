@@ -40,6 +40,13 @@ THE ROOT IS RESOLVED THE TWIN'S WAY, AND `$REDIACC_CI_ROOT` IS NOT CONSULTED. Th
 
 THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the FIRST line in the builder that looks like `<lowercase names>) ;;` and treats it as the validation case. That is a positional assumption: a builder that grew an earlier one-line case arm would have its format list read from the wrong place. The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing
 case and not this one. Carried unchanged, because widening it would change the verdict.
+
+---- gate ----
+step: Release signing coverage
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import ast
@@ -547,4 +554,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_release_signing_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -19,6 +19,17 @@ AND THE MARKETING SITE, since every www form (contact, newsletter, lead magnet, 
 Self-hosted image builds (ci-build-docker.yml) and the CI e2e and PR-preview builds (ci.yml) are out of scope: they build keyless or with a per-run widget on purpose. The PR-preview www pages come from the keyless `build-www` artifact, so a preview's www forms carry no widget; only the preview portal gets the per-PR widget.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
+
+---- gate ----
+needs-not: node
+blocker: BLOCKER: `npx vite build` appears only inside strings this gate compares a workflow against and prints as the fix; the gate starts no node process.
+step: Portal site-key guard
+needs: none
+lane: quality-static
+selftest: true
+why: every production login failed on 2026-09-24 because the deployed portal was built
+     with an empty Turnstile site key, and no check read the deploy workflows for it
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -921,4 +932,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_portal_sitekey_guard.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

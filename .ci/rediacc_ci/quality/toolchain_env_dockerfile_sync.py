@@ -64,6 +64,20 @@ twin's text (`echo "${RED}x $fails toolchain-env/Dockerfile mismatch(es)${NC}"`)
 so `scripts/lib/shadow-gate.ts` classifies it as chatter rather than as a finding, while every `fail()` line above it IS a finding. Carried unchanged: the difference is invisible to a human and load-bearing for the comparator, and "fixing" the glyph would change which lines the ledger compares.
 
 STREAMS. `fail()` writes to stderr, `pass()` and the banners to stdout. Nothing here uses `rediacc_ci.log`, because the twin sources no logger and its lines carry no glyph but the one typed into them.
+
+---- gate ----
+lane: quality-code
+step: Toolchain env/Dockerfile sync
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: node
+selftest: true
+why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
+     from its single-source check (they legitimately appear elsewhere: go.mod,
+     third-party action inputs) -- which also removes any check that the TWO
+     files meant to carry the identical value on purpose (toolchain.env and the
+     Dockerfile's matching ARG) actually do. This is that narrower check.
+---- end gate ----
 """
 
 import io
@@ -581,4 +595,9 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_toolchain_env_dockerfile_sync.py", sys.argv[1:], switches=("--selftest",)
+    )
     raise SystemExit(main(sys.argv[1:]))

@@ -125,6 +125,13 @@ let `test-foo.sh` be satisfied by a registration of `test-foo.sh.bak`. The
 retarget kept that property: the lock parser emits basenames and membership is still an exact set lookup.
 
 THE THREE ANTI-VACUITY REFUSALS SURVIVED THE RETARGET ONE FOR ONE, because they are what make the verdict mean anything: the LOCK being absent (was: the runner), the parse returning ZERO writers (was: an empty WRITER_TESTS), and the gates directory being empty. Each one exits 1 and says which.
+
+---- gate ----
+lane: quality-static
+step: Pool-registered tests do not write the real tree
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -814,4 +821,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_pool_writer_safety.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

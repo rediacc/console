@@ -71,6 +71,13 @@ the debt is not silent, which is the only thing that makes carrying it defensibl
 `npx --no-install` IS DELIBERATE ON BOTH SIDES. It refuses to reach the network
 for a missing `tsx` and fails loudly instead, which is what turns "the toolchain
 is not installed" into a red rather than into a silent download in CI.
+
+---- gate ----
+step: Check config-migration runner + fixtures
+needs: node
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import os
@@ -434,4 +441,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_config_migrations.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

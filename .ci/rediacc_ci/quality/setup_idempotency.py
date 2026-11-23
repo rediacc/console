@@ -110,6 +110,15 @@ would change the bytes of a gate CI already reads.
 streams and the counter the same way.
 
 STREAMS. `fail()` and every CONTROL line go to stderr; `pass()` and the offender detail go to stdout. Nothing here uses `rediacc_ci.log`: the twin sources no logger and its lines carry no glyph.
+
+---- gate ----
+step: Setup path idempotency
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: submodules
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import contextlib
@@ -1220,4 +1229,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_setup_idempotency.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

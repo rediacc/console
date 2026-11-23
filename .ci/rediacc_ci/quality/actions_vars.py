@@ -49,6 +49,18 @@ WHY `.ci/config/` AND NOT `.ci/policy/`, by `secret_supply.py`'s reasoning, whic
 WHAT A GREEN DOES NOT CLAIM. It does not talk to GitHub, so it cannot see a variable that exists in the org settings with no reader; the deletion of those is an operator action recorded in the plan. It does not know whether a Bitwarden value is correct, only that the name resolves. It sees `console`'s workflows only, not a submodule's.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
+
+---- gate ----
+step: GitHub Actions variables
+needs: none
+lane: quality-security
+selftest: true
+why: every vars.NAME a workflow reads must be declared in .ci/config/actions-vars.json
+     and every declaration must still be read, so no workflow depends on a GitHub
+     variable without the file saying why. Only the FIRST line of this field
+     survives the parser. The secrets arm allows the bootstrap token named in
+     secret-supply.json and the runner-minted GITHUB_TOKEN, nothing else.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -723,4 +735,7 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_actions_vars.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

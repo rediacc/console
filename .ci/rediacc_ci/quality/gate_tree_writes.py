@@ -30,6 +30,14 @@ carries both `tree:repo` and `writesTree`.
 ANTI-VACUITY REFUSALS (exit 1, each named): the lock missing or unparseable; zero entries resolved to a scannable leaf; the lint-rule-liveness closure without its `.mjs`; the TS extractor exiting non-zero or printing non-JSON (never "no sites"); total sites under the floor; zero TEMP sites; zero TREE-or-MODE-GATED sites.
 
 `--report` prints every site and exits 0; it is the measurement mode task 2.1 of the plan ran. Without it the gate enforces.
+
+---- gate ----
+step: Gates that write the real tree declare it
+needs: node
+lane: quality-code
+selftest: true
+why: A gate that writes the shared tree without an exclusive tree: claim runs beside its readers and leaves residue on a hard kill; check:ci-pool-writer-safety only sees gate tests
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1195,3 +1203,15 @@ def main(argv: list[str] | None = None) -> int:
         % tally.ok
     )
     return 0
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_gate_tree_writes.py",
+        sys.argv[1:],
+        switches=("--selftest", "--report"),
+        valued=("--root", "--lock", "--pkg"),
+    )
+    raise SystemExit(main(sys.argv[1:]))

@@ -58,6 +58,13 @@ MESSAGES ON STDERR, DATA ON STDOUT, exactly as the twin splits them: `log_error`
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads only the two content directories, so a slop phrase in `README.md`, in a component's JSX, or in a translation JSON is invisible to it. The allowlist is also a FILE-level opt-out with no expiry and no liveness check, so an allowlisted path stays unscanned forever. Both are limits of the twin, preserved rather than
 widened, because widening either would change the verdict.
+
+---- gate ----
+step: Check content for AI slop patterns
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import os
@@ -586,4 +593,9 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_content_quality.py", sys.argv[1:], switches=("--selftest",), positional="<file>"
+    )
     raise SystemExit(main(sys.argv[1:]))

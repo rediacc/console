@@ -66,6 +66,17 @@ orphan lists come out in an order that is neither insertion nor sorted. This por
 
 `tr '[:lower:]-' '[:upper:]_'` IS A TWO-SET TRANSLATION, NOT AN UPPERCASE. The set on the left is the 26 lowercase letters PLUS the hyphen, and the right is the 26 uppercase letters PLUS the underscore. Digits, dots and any character outside those sets pass through untouched, and an already-uppercase letter is not touched either. `result_var_for` reproduces exactly that, because a
 port that called `.upper().replace("-", "_")` would agree on every job name this workflow has ever had and would diverge the first time one contains a character the translation leaves alone.
+
+---- gate ----
+step: CI job aggregation
+needs: none
+id: check:ci-job-aggregation
+selftest: true
+lane: quality-code
+why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered, or a
+     job can fail while the pipeline reports success. The gate existed and ran nowhere
+     from the day it was written until 2026-09-08.
+---- end gate ----
 """
 
 import ast
@@ -667,4 +678,7 @@ def run_missing(root: pathlib.Path) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_ci_job_aggregation.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

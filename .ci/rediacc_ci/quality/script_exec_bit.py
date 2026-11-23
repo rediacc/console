@@ -93,6 +93,15 @@ MEASURED END TO END ON THE REAL TREE, 2026-09-06: `git grep -nP` returns 830 hit
 Python's is unicode-aware and would admit an accented letter in a path, which would change which references are extracted. This is the class of difference that does not show up in any fixture and shows up once, on a real path, years later.
 
 EXIT 2 IS THE REFUSAL AND IS PRESERVED EXACTLY. It is not exit 1: the twin distinguishes "the control could not fire" from "the tree has offenders", and a port that collapsed them would make an unrunnable gate look like a failing tree.
+
+---- gate ----
+step: Block non-executable invoked scripts
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -408,4 +417,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_script_exec_bit.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

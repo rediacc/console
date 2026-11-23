@@ -74,6 +74,14 @@ SITE ORDER IS FILESYSTEM STATE, NOT REPOSITORY CONTENT, AND THE TWO SIDES NEED N
 AGREE ON IT. `grep -rl` emits in the order its directory walk produces and `os.walk` does the same, and the two orders are NOT the same walk: measured 2026-09-06 over one directory of four files, ugrep 7.8.4 returned bravo, mike, zeta, alpha and `os.walk` returned bravo, mike, alpha, zeta. So a finding naming TWO OR MORE sites can differ between the implementations in the order of
 that one bracketed list, while naming the same set. This is not fixable by sorting: sorting would guarantee a difference wherever the twin's readdir order is not sorted, which is most of the time. It is stated here because it is the one place this port is not byte-deterministic against its twin, and because the differential specimens are therefore built with exactly one site per
 finding.
+
+---- gate ----
+kind: test
+id: check:ci-label-refs
+test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py
+blocker: BLOCKER: test_gate_label_references.py:test_real_tree_is_clean_and_excludes_this_file runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security, "Python package tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+needs: none
+---- end gate ----
 """
 
 import os
@@ -463,4 +471,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_label_references.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

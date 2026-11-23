@@ -1268,7 +1268,7 @@
   },
   {
     "id": "check:ci-rubric-calibration",
-    "run": "npm run check:ci-rubric-calibration",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.rubric_calibration",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -1282,7 +1282,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_rubric_calibration.py"
+      ".ci/rediacc_ci/quality/rubric_calibration.py"
     ],
     "ci": {
       "kind": "step",
@@ -1293,7 +1293,7 @@
   },
   {
     "id": "check:ci-www-build-token",
-    "run": "npm run check:ci-www-build-token",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.www_build_token",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -1303,7 +1303,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_www_build_token.py"
+      ".ci/rediacc_ci/quality/www_build_token.py"
     ],
     "ci": {
       "kind": "step",
@@ -2354,7 +2354,7 @@
   },
   {
     "id": "check:ci-job-aggregation",
-    "run": "npm run check:ci-job-aggregation",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_job_aggregation",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -2364,7 +2364,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_ci_job_aggregation.py"
+      ".ci/rediacc_ci/quality/ci_job_aggregation.py"
     ],
     "ci": {
       "kind": "step",
@@ -2375,7 +2375,7 @@
   },
   {
     "id": "check:ci-swallowed-failures",
-    "run": "npm run check:ci-swallowed-failures",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.swallowed_failures",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -2384,7 +2384,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_swallowed_failures.py"
+      ".ci/rediacc_ci/quality/swallowed_failures.py"
     ],
     "ci": {
       "kind": "step",
@@ -2395,7 +2395,7 @@
   },
   {
     "id": "check:ci-probe-parity",
-    "run": "npm run check:ci-probe-parity",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.probe_parity",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -2405,7 +2405,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_probe_parity.py"
+      ".ci/rediacc_ci/quality/probe_parity.py"
     ],
     "ci": {
       "kind": "step",
@@ -2416,7 +2416,7 @@
   },
   {
     "id": "check:ci-drill-verdicts",
-    "run": "npm run check:ci-drill-verdicts",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.drill_verdicts",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -2449,7 +2449,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_drill_verdicts.py"
+      ".ci/rediacc_ci/quality/drill_verdicts.py"
     ],
     "ci": {
       "kind": "step",
@@ -2460,7 +2460,7 @@
   },
   {
     "id": "check:ci-account-probes",
-    "run": "npm run check:ci-account-probes",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_probes",
     "gate": true,
     "paths": [
       ".ci-trigger",
@@ -2528,7 +2528,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_account_probes.py"
+      ".ci/rediacc_ci/quality/account_probes.py"
     ],
     "ci": {
       "kind": "step",
@@ -2539,7 +2539,7 @@
   },
   {
     "id": "check:ci-npmrc",
-    "run": "npm run check:ci-npmrc",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.npmrc",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -2553,7 +2553,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_npmrc.py"
+      ".ci/rediacc_ci/quality/npmrc.py"
     ],
     "ci": {
       "kind": "step",
@@ -2572,11 +2572,12 @@
       ".ci/rediacc_ci/core/ports.py",
       "run.sh",
       ".ci/rediacc_ci/setup/machine.py",
+      ".ci/rediacc_ci/quality/setup_idempotency.py",
       ".ci/scripts/quality/check_setup_idempotency.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_setup_idempotency.py"
+      ".ci/rediacc_ci/quality/setup_idempotency.py"
     ],
     "ci": {
       "kind": "step",
@@ -2729,14 +2730,15 @@
   },
   {
     "id": "check:ci-control-vacuity",
-    "run": "npm run check:ci-control-vacuity",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.control_vacuity",
     "gate": true,
     "paths": [
-      ".ci/scripts/quality/**"
+      ".ci/scripts/quality/**",
+      ".ci/rediacc_ci/quality/control_vacuity.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_control_vacuity.py"
+      ".ci/rediacc_ci/quality/control_vacuity.py"
     ],
     "ci": {
       "kind": "step",
@@ -2751,11 +2753,12 @@
     "gate": true,
     "paths": [
       ".devcontainer/**",
-      ".ci/scripts/quality/check_devcontainer_scripts.py"
+      ".ci/scripts/quality/check_devcontainer_scripts.py",
+      ".ci/rediacc_ci/quality/devcontainer_scripts.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_devcontainer_scripts.py"
+      ".ci/rediacc_ci/quality/devcontainer_scripts.py"
     ],
     "ci": {
       "kind": "step",
@@ -2766,15 +2769,16 @@
   },
   {
     "id": "check:ci-shell-size",
-    "run": "npm run check:ci-shell-size",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.shell_size",
     "gate": true,
     "paths": [
       "**/*.sh",
-      ".ci/scripts/quality/check_shell_size.py"
+      ".ci/scripts/quality/check_shell_size.py",
+      ".ci/rediacc_ci/quality/shell_size.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_shell_size.py"
+      ".ci/rediacc_ci/quality/shell_size.py"
     ],
     "ci": {
       "kind": "step",
@@ -2785,7 +2789,7 @@
   },
   {
     "id": "check:ci-devbox-exec",
-    "run": "npm run check:ci-devbox-exec",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.devbox_exec",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/core/devbox.py",
@@ -2794,7 +2798,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_devbox_exec.py"
+      ".ci/rediacc_ci/quality/devbox_exec.py"
     ],
     "ci": {
       "kind": "step",
@@ -2805,7 +2809,7 @@
   },
   {
     "id": "check:ci-toolchain-pins",
-    "run": "npm run check:ci-toolchain-pins",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_pins",
     "gate": true,
     "paths": [
       ".devcontainer/**",
@@ -2818,7 +2822,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_toolchain_pins.py"
+      ".ci/rediacc_ci/quality/toolchain_pins.py"
     ],
     "ci": {
       "kind": "step",
@@ -2829,18 +2833,19 @@
   },
   {
     "id": "check:ci-toolchain-env-dockerfile-sync",
-    "run": "npm run check:ci-toolchain-env-dockerfile-sync",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_env_dockerfile_sync",
     "gate": true,
     "paths": [
       ".devcontainer/toolchain.env",
       ".devcontainer/Dockerfile",
+      ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py",
       ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py",
       "package.json",
       "packages/cli/package.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
+      ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py"
     ],
     "ci": {
       "kind": "step",
@@ -2851,16 +2856,17 @@
   },
   {
     "id": "check:ci-host-toolchain-coverage",
-    "run": "npm run check:ci-host-toolchain-coverage",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.host_toolchain_coverage",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/quality/toolchain_pins.py",
       ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
+      ".ci/rediacc_ci/quality/host_toolchain_coverage.py",
       ".ci/scripts/quality/check_host_toolchain_coverage.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_host_toolchain_coverage.py"
+      ".ci/rediacc_ci/quality/host_toolchain_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -2871,7 +2877,7 @@
   },
   {
     "id": "check:ci-git-op-conditionals",
-    "run": "npm run check:ci-git-op-conditionals",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_op_conditionals",
     "gate": true,
     "paths": [
       ".claude/hooks/**/*.sh",
@@ -2881,7 +2887,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_git_op_conditionals.py"
+      ".ci/rediacc_ci/quality/git_op_conditionals.py"
     ],
     "ci": {
       "kind": "step",
@@ -2892,7 +2898,7 @@
   },
   {
     "id": "check:ci-go-tool-path",
-    "run": "npm run check:ci-go-tool-path",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.go_tool_path",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -2900,7 +2906,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_go_tool_path.py"
+      ".ci/rediacc_ci/quality/go_tool_path.py"
     ],
     "ci": {
       "kind": "step",
@@ -2980,7 +2986,7 @@
     "run": "npm run check:ci-trap-registry",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_trap_registry.py"
+      ".ci/rediacc_ci/quality/trap_registry.py"
     ],
     "ci": {
       "kind": "step",
@@ -3031,13 +3037,14 @@
       ".claude/hooks/**",
       "scripts/data/hook-inventory-baseline.json",
       "scripts/data/hook-coverage-baseline.json",
+      ".ci/rediacc_ci/quality/hook_integrity.py",
       ".ci/scripts/quality/check_hook_integrity.py",
       "scripts/data/hook-audit-scope.json",
       ".claude/rediacc_hooks/**"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_hook_integrity.py"
+      ".ci/rediacc_ci/quality/hook_integrity.py"
     ],
     "ci": {
       "kind": "step",
@@ -3055,11 +3062,12 @@
       "scripts/**",
       ".claude/hooks/**",
       ".devcontainer/**",
-      ".ci/media/**"
+      ".ci/media/**",
+      ".ci/rediacc_ci/quality/pipefail_grep_q.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_pipefail_grep_q.py"
+      ".ci/rediacc_ci/quality/pipefail_grep_q.py"
     ],
     "ci": {
       "kind": "step",
@@ -3070,7 +3078,7 @@
   },
   {
     "id": "check:ci-watch-recipe",
-    "run": "npm run check:ci-watch-recipe",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_watch_recipe",
     "gate": true,
     "paths": [
       ".claude/skills/ci-watch/**",
@@ -3078,6 +3086,7 @@
       ".claude/agents/**",
       ".claude/hooks/**",
       "docs/agent-reference/**",
+      ".ci/rediacc_ci/quality/ci_watch_recipe.py",
       ".ci/scripts/quality/check_ci_watch_recipe.py",
       ".claude/**",
       ".ci/scripts/ci/**",
@@ -3085,7 +3094,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_ci_watch_recipe.py"
+      ".ci/rediacc_ci/quality/ci_watch_recipe.py"
     ],
     "ci": {
       "kind": "step",
@@ -3096,18 +3105,19 @@
   },
   {
     "id": "check:ci-cli-doc-coverage",
-    "run": "npm run check:ci-cli-doc-coverage",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_doc_coverage",
     "gate": true,
     "paths": [
       ".ci/scripts/ci/ci-trace.py",
       ".claude/skills/ci-watch/**",
       "scripts/ci-runner/run.ts",
       "docs/agent-reference/ci-gates.md",
+      ".ci/rediacc_ci/quality/cli_doc_coverage.py",
       ".ci/scripts/quality/check_cli_doc_coverage.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_cli_doc_coverage.py"
+      ".ci/rediacc_ci/quality/cli_doc_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -3213,10 +3223,10 @@
   },
   {
     "id": "check:ci-script-exec-bit",
-    "run": "npm run check:ci-script-exec-bit",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.script_exec_bit",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_script_exec_bit.py"
+      ".ci/rediacc_ci/quality/script_exec_bit.py"
     ],
     "ci": {
       "kind": "step",
@@ -3234,11 +3244,12 @@
       "**/package-lock.json",
       "**/package.json",
       "private/account",
+      ".ci/rediacc_ci/quality/lockfile.py",
       ".ci/scripts/quality/check_lockfile.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_lockfile.py"
+      ".ci/rediacc_ci/quality/lockfile.py"
     ],
     "ci": {
       "kind": "step",
@@ -3249,7 +3260,7 @@
   },
   {
     "id": "check:ci-peer-deps",
-    "run": "npm run check:ci-peer-deps",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.peer_deps",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -3265,7 +3276,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_peer_deps.py"
+      ".ci/rediacc_ci/quality/peer_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -3325,7 +3336,7 @@
   },
   {
     "id": "check:ci-scope-scripts-reachability",
-    "run": "npm run check:ci-scope-scripts-reachability",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_scripts_reachability",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -3337,7 +3348,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_scope_scripts_reachability.py"
+      ".ci/rediacc_ci/quality/scope_scripts_reachability.py"
     ],
     "ci": {
       "kind": "step",
@@ -3348,7 +3359,7 @@
   },
   {
     "id": "check:ci-mutate-check",
-    "run": "npm run check:ci-mutate-check",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.mutate_check",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -3372,7 +3383,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_mutate_check.py"
+      ".ci/rediacc_ci/quality/mutate_check.py"
     ],
     "ci": {
       "kind": "step",
@@ -3684,7 +3695,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_python_types.py"
+      ".ci/rediacc_ci/quality/python_types.py"
     ],
     "ci": {
       "kind": "step",
@@ -3728,7 +3739,7 @@
   },
   {
     "id": "check:ci-actions-vars",
-    "run": "npm run check:ci-actions-vars",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_vars",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -3738,7 +3749,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_actions_vars.py"
+      ".ci/rediacc_ci/quality/actions_vars.py"
     ],
     "ci": {
       "kind": "step",
@@ -3771,7 +3782,7 @@
     },
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_literal_sources.py"
+      ".ci/rediacc_ci/quality/literal_sources.py"
     ],
     "ci": {
       "kind": "step",
@@ -3782,10 +3793,10 @@
   },
   {
     "id": "check:ci-account-env-retired",
-    "run": "npm run check:ci-account-env-retired",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_env_retired",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_account_env_retired.py"
+      ".ci/rediacc_ci/quality/account_env_retired.py"
     ],
     "ci": {
       "kind": "step",
@@ -3827,7 +3838,7 @@
     "run": "npm run check:ci-bws-map-live",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_bws_map_live.py"
+      ".ci/rediacc_ci/quality/bws_map_live.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -3839,7 +3850,7 @@
     "run": "npm run check:ci-retired-terms",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_retired_terms.py"
+      ".ci/rediacc_ci/quality/retired_terms.py"
     ],
     "ci": {
       "kind": "step",
@@ -3850,10 +3861,10 @@
   },
   {
     "id": "check:ci-aws-resolver",
-    "run": "npm run check:ci-aws-resolver",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.aws_resolver",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_aws_resolver.py"
+      ".ci/rediacc_ci/quality/aws_resolver.py"
     ],
     "ci": {
       "kind": "step",
@@ -3879,7 +3890,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_backup_credential_isolation.py"
+      ".ci/rediacc_ci/quality/backup_credential_isolation.py"
     ],
     "ci": {
       "kind": "step",
@@ -3919,11 +3930,12 @@
       "agent/plans/**",
       ".ci/config/plan-lifecycle.json",
       ".ci/policy/.plan-housekeeping-allowlist",
+      ".ci/rediacc_ci/quality/plan_housekeeping.py",
       ".ci/scripts/quality/check_plan_housekeeping.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_housekeeping.py"
+      ".ci/rediacc_ci/quality/plan_housekeeping.py"
     ],
     "ci": {
       "kind": "step",
@@ -3956,7 +3968,7 @@
     "gate": true,
     "slow": true,
     "leaves": [
-      ".ci/scripts/quality/check_env_manifest.py"
+      ".ci/rediacc_ci/quality/env_manifest.py"
     ],
     "ci": {
       "kind": "step",
@@ -3967,10 +3979,10 @@
   },
   {
     "id": "check:ci-env-file-adoption",
-    "run": "npm run check:ci-env-file-adoption",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_file_adoption",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_env_file_adoption.py"
+      ".ci/rediacc_ci/quality/env_file_adoption.py"
     ],
     "ci": {
       "kind": "step",
@@ -3991,7 +4003,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_hook_exec_baseline.py"
+      ".ci/rediacc_ci/quality/hook_exec_baseline.py"
     ],
     "ci": {
       "kind": "step",
@@ -4002,7 +4014,7 @@
   },
   {
     "id": "check:ci-hook-cross-os",
-    "run": "npm run check:ci-hook-cross-os",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_cross_os",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -4012,7 +4024,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_hook_cross_os.py"
+      ".ci/rediacc_ci/quality/hook_cross_os.py"
     ],
     "ci": {
       "kind": "step",
@@ -4023,7 +4035,7 @@
   },
   {
     "id": "check:ci-vendored-blocker-derivation",
-    "run": "npm run check:ci-vendored-blocker-derivation",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.vendored_blocker_derivation",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -4032,7 +4044,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_vendored_blocker_derivation.py"
+      ".ci/rediacc_ci/quality/vendored_blocker_derivation.py"
     ],
     "ci": {
       "kind": "step",
@@ -4043,10 +4055,10 @@
   },
   {
     "id": "check:ci-plant-proofs",
-    "run": "npm run check:ci-plant-proofs",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.plant_proofs",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_plant_proofs.py"
+      ".ci/rediacc_ci/quality/plant_proofs.py"
     ],
     "ci": {
       "kind": "step",
@@ -4061,7 +4073,7 @@
     "run": "npm run check:ci-python-env-registry",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_python_env_registry.py"
+      ".ci/rediacc_ci/quality/python_env_registry.py"
     ],
     "ci": {
       "kind": "step",
@@ -4075,7 +4087,7 @@
     "run": "npm run check:ci-secret-supply",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_secret_supply.py"
+      ".ci/rediacc_ci/quality/secret_supply.py"
     ],
     "ci": {
       "kind": "step",
@@ -4090,7 +4102,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_worklist_env_registry.py"
+      ".ci/rediacc_ci/quality/worklist_env_registry.py"
     ],
     "ci": {
       "kind": "step",
@@ -4822,7 +4834,7 @@
   },
   {
     "id": "check:ci-rdc-native",
-    "run": "npm run check:ci-rdc-native",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.rdc_native",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -4832,7 +4844,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_rdc_native.py"
+      ".ci/rediacc_ci/quality/rdc_native.py"
     ],
     "ci": {
       "kind": "step",
@@ -4861,7 +4873,7 @@
     "gate": true,
     "slow": true,
     "leaves": [
-      ".ci/scripts/quality/check_dead_python.py"
+      ".ci/rediacc_ci/quality/dead_python.py"
     ],
     "ci": {
       "kind": "step",
@@ -5048,7 +5060,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_bws_step_scope.py"
+      ".ci/rediacc_ci/quality/bws_step_scope.py"
     ],
     "ci": {
       "kind": "step",
@@ -5582,7 +5594,7 @@
   },
   {
     "id": "check:ci-release-key-canonical",
-    "run": "npm run check:ci-release-key-canonical",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.release_key_canonical",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -5606,7 +5618,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_release_key_canonical.py"
+      ".ci/rediacc_ci/quality/release_key_canonical.py"
     ],
     "ci": {
       "kind": "step",
@@ -5652,7 +5664,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_release_signing_coverage.py"
+      ".ci/rediacc_ci/quality/release_signing_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -7034,7 +7046,7 @@
   },
   {
     "id": "check:ci-pool-writer-safety",
-    "run": "npm run check:ci-pool-writer-safety",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.pool_writer_safety",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -7044,7 +7056,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_pool_writer_safety.py"
+      ".ci/rediacc_ci/quality/pool_writer_safety.py"
     ],
     "ci": {
       "kind": "step",
@@ -7056,7 +7068,7 @@
   {
     "id": "check:ci-gate-tree-writes",
     "slow": true,
-    "run": "npm run check:ci-gate-tree-writes",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_tree_writes",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/**",
@@ -7075,7 +7087,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_gate_tree_writes.py"
+      ".ci/rediacc_ci/quality/gate_tree_writes.py"
     ],
     "ci": {
       "kind": "step",
@@ -7205,7 +7217,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_workflows.py"
+      ".ci/rediacc_ci/quality/workflows.py"
     ],
     "ci": {
       "kind": "step",
@@ -7219,7 +7231,7 @@
     "run": "npm run check:ci-greenlight-closures",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_greenlight_closures.py"
+      ".ci/rediacc_ci/quality/greenlight_closures.py"
     ],
     "ci": {
       "kind": "step",
@@ -7320,7 +7332,7 @@
   },
   {
     "id": "check:ci-app-admin-perm",
-    "run": "npm run check:ci-app-admin-perm",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.no_app_admin_perm",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -7330,7 +7342,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_no_app_admin_perm.py"
+      ".ci/rediacc_ci/quality/no_app_admin_perm.py"
     ],
     "ci": {
       "kind": "step",
@@ -7341,7 +7353,7 @@
   },
   {
     "id": "check:ci-tracked-sidecars",
-    "run": "npm run check:ci-tracked-sidecars",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.tracked_sidecars",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -7366,7 +7378,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_tracked_sidecars.py"
+      ".ci/rediacc_ci/quality/tracked_sidecars.py"
     ],
     "ci": {
       "kind": "step",
@@ -7391,10 +7403,10 @@
   },
   {
     "id": "check:ci-agent-browser-exit",
-    "run": "npm run check:ci-agent-browser-exit",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_browser_exit",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_agent_browser_exit.py"
+      ".ci/rediacc_ci/quality/agent_browser_exit.py"
     ],
     "ci": {
       "kind": "step",
@@ -7405,7 +7417,7 @@
   },
   {
     "id": "check:ci-silent-failures",
-    "run": "npm run check:ci-silent-failures",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.silent_failure_patterns",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -7416,7 +7428,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_silent_failure_patterns.py"
+      ".ci/rediacc_ci/quality/silent_failure_patterns.py"
     ],
     "ci": {
       "kind": "step",
@@ -7427,7 +7439,7 @@
   },
   {
     "id": "check:ci-compose-env",
-    "run": "npm run check:ci-compose-env",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.compose_env",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -7436,7 +7448,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_compose_env.py"
+      ".ci/rediacc_ci/quality/compose_env.py"
     ],
     "ci": {
       "kind": "step",
@@ -7450,7 +7462,7 @@
     "run": "npm run check:ci-e2e-coverage",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_e2e_coverage.py"
+      ".ci/rediacc_ci/quality/e2e_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -7508,7 +7520,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_audit_coverage.py"
+      ".ci/rediacc_ci/quality/audit_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -7773,7 +7785,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_cli_contract.py"
+      ".ci/rediacc_ci/quality/cli_contract.py"
     ],
     "ci": {
       "kind": "step",
@@ -8039,7 +8051,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_command_tree.py"
+      ".ci/rediacc_ci/quality/command_tree.py"
     ],
     "ci": {
       "kind": "step",
@@ -8695,7 +8707,7 @@
   },
   {
     "id": "check:ci-config-migrations",
-    "run": "npm run check:ci-config-migrations",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_migrations",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -8737,7 +8749,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_config_migrations.py"
+      ".ci/rediacc_ci/quality/config_migrations.py"
     ],
     "ci": {
       "kind": "step",
@@ -9166,7 +9178,7 @@
   },
   {
     "id": "check:ci-account-portal",
-    "run": "npm run check:ci-account-portal",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_portal",
     "slow": true,
     "gate": true,
     "needs": [
@@ -9186,7 +9198,7 @@
     "pathsOrigin": "declared",
     "heavy": true,
     "leaves": [
-      ".ci/scripts/quality/check_account_portal.py"
+      ".ci/rediacc_ci/quality/account_portal.py"
     ],
     "ci": {
       "kind": "step",
@@ -9481,7 +9493,7 @@
     "gate": true,
     "slow": true,
     "leaves": [
-      ".ci/scripts/quality/check_go_deps.py"
+      ".ci/rediacc_ci/quality/go_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -9512,7 +9524,7 @@
     "run": "npm run check:ci-renet-types",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_renet_types.py"
+      ".ci/rediacc_ci/quality/renet_types.py"
     ],
     "ci": {
       "kind": "step",
@@ -9533,7 +9545,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_renet_tier_map.py"
+      ".ci/rediacc_ci/quality/renet_tier_map.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -9872,10 +9884,10 @@
   },
   {
     "id": "check:ci-subscription-schema",
-    "run": "npm run check:ci-subscription-schema",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.subscription_schema",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_subscription_schema.py"
+      ".ci/rediacc_ci/quality/subscription_schema.py"
     ],
     "ci": {
       "kind": "step",
@@ -10577,7 +10589,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_content_quality.py"
+      ".ci/rediacc_ci/quality/content_quality.py"
     ],
     "ci": {
       "kind": "step",
@@ -11376,7 +11388,7 @@
   },
   {
     "id": "check:ci-dead-case-arms",
-    "run": "npm run check:ci-dead-case-arms",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.dead_case_arms",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -11387,7 +11399,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_dead_case_arms.py"
+      ".ci/rediacc_ci/quality/dead_case_arms.py"
     ],
     "ci": {
       "kind": "test",
@@ -11397,7 +11409,7 @@
   },
   {
     "id": "check:ci-label-refs",
-    "run": "npm run check:ci-label-refs",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.label_references",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -11407,7 +11419,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_label_references.py"
+      ".ci/rediacc_ci/quality/label_references.py"
     ],
     "ci": {
       "kind": "test",
@@ -11420,7 +11432,7 @@
     "run": "npm run check:ci-label-inventory",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_label_inventory.py"
+      ".ci/rediacc_ci/quality/label_inventory.py"
     ],
     "ci": {
       "kind": "test",
@@ -11440,7 +11452,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_profiler_coverage.py"
+      ".ci/rediacc_ci/quality/profiler_coverage.py"
     ],
     "ci": {
       "kind": "test",
@@ -11453,7 +11465,7 @@
     "run": "npm run check:ci-go-module-sync",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_go_module_sync.py"
+      ".ci/rediacc_ci/quality/go_module_sync.py"
     ],
     "ci": {
       "kind": "step",
@@ -12089,7 +12101,7 @@
   },
   {
     "id": "check:ci-release-bump-skip",
-    "run": "npm run check:ci-release-bump-skip",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.release_bump_skip",
     "gate": true,
     "paths": [
       ".ci/config/well-known.env",
@@ -12127,7 +12139,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_release_bump_skip.py"
+      ".ci/rediacc_ci/quality/release_bump_skip.py"
     ],
     "ci": {
       "kind": "test",
@@ -12148,7 +12160,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_regions_sync.py"
+      ".ci/rediacc_ci/quality/regions_sync.py"
     ],
     "ci": {
       "kind": "test",
@@ -12583,7 +12595,7 @@
   },
   {
     "id": "check:ci-bash-lib-ported",
-    "run": "npm run check:ci-bash-lib-ported",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.bash_lib_migration_complete",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -12592,7 +12604,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_bash_lib_ported.py"
+      ".ci/rediacc_ci/quality/bash_lib_migration_complete.py"
     ],
     "ci": {
       "kind": "step",
@@ -12603,7 +12615,7 @@
   },
   {
     "id": "check:ci-container-build-context",
-    "run": "npm run check:ci-container-build-context",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.container_build_context",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -12643,7 +12655,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_container_build_context.py"
+      ".ci/rediacc_ci/quality/container_build_context.py"
     ],
     "ci": {
       "kind": "step",
@@ -12694,7 +12706,7 @@
   },
   {
     "id": "check:ci-cli-proxy-safe-output",
-    "run": "npm run check:ci-cli-proxy-safe-output",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_proxy_safe_output",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -12719,7 +12731,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_cli_proxy_safe_output.py"
+      ".ci/rediacc_ci/quality/cli_proxy_safe_output.py"
     ],
     "ci": {
       "kind": "step",
@@ -12730,7 +12742,7 @@
   },
   {
     "id": "check:ci-portal-sitekey-guard",
-    "run": "npm run check:ci-portal-sitekey-guard",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.portal_sitekey_guard",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -12742,7 +12754,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_portal_sitekey_guard.py"
+      ".ci/rediacc_ci/quality/portal_sitekey_guard.py"
     ],
     "ci": {
       "kind": "step",

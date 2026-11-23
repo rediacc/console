@@ -130,6 +130,14 @@ THE FIVE-STAGE PIPELINE IS FIVE STAGES HERE TOO. Each `grep`/`sed` in `extract_r
 `node` IS SHELLED OUT TO, exactly as the twin does it. `classify()` lives in `.ci/scripts/ci/scope-map.cjs`, whose rule ORDER is semantics (first match wins, per driver contract section 3). Re-deriving it in Python would produce a gate that agrees with itself about a file it no longer reads.
 
 A MISSING `node` IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a stack trace: `classify_mode` returns the twin's literal `"ERROR"` string, which is not `"full"` and therefore reports every path as a violation -- the same conservative direction the twin takes.
+
+---- gate ----
+step: Scope map, reachable scripts/ paths force full CI
+needs: node
+selftest: true
+lane: quality-security
+its `slow: true
+---- end gate ----
 """
 
 import os
@@ -642,4 +650,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_scope_scripts_reachability.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

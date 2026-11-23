@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""Entry point for the CLI proxy-safe output gate. Logic is in the package.
+"""Run `rediacc_ci.quality.cli_proxy_safe_output` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.cli_proxy_safe_output`, which the gate's own `--selftest` exercises.
-
----- gate ----
-step: CLI proxy-safe output
-needs: none
-lane: quality-static
-selftest: true
-why: a CLI command that wrote to process.stdout or set process.exitCode directly returned
-     empty output and exit 0 through the executor proxy (repo cat, 2026-09-24)
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/cli_proxy_safe_output.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys

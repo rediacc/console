@@ -45,6 +45,13 @@ it carries govulncheck (Go CVE scanning), deadcode and golangci-lint -- all thre
 THE ORDER OF THE `cd`s IS BEHAVIOUR. The twin `cd`s to the repo root, then into the submodule for `go test`, then back to the root for phase 3. Nothing here changes process-global state; each subprocess is given its own `cwd`, which is the same fact expressed without the hazard of leaving the interpreter somewhere unexpected if a phase returns early.
 
 STREAMS. `log_step`, `log_info`, `log_warn` and `log_error` are all stderr in `common.sh`, and `rediacc_ci.log` matches them byte for byte. The generator's stdout is discarded (`>/dev/null`) and its stderr is INHERITED, so a real failure still explains itself; `go test -v` inherits both, because its output is the evidence a reader needs.
+
+---- gate ----
+lane: quality-go
+step: Check subscription schema consistency
+needs: go, node, submodules
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -373,4 +380,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_subscription_schema.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -43,6 +43,13 @@ the blanks are preserved exactly.
 The final success line is a bare `echo` on STDOUT in the twin, printing the derived pattern COUNT. It is data a reader is meant to see collapse, so it stays on stdout through `print()`.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it globs only under `.claude/hooks/stop`. A sidecar written anywhere else, or one whose name does not appear in wl_store.py's docstring, is invisible. Widening it would change the verdict, so it is preserved and stated instead.
+
+---- gate ----
+lane: quality-static
+step: Tracked runtime sidecars
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import fnmatch
@@ -325,4 +332,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_tracked_sidecars.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

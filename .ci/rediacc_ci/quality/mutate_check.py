@@ -57,6 +57,13 @@ THE DETAIL BLOCK IS `sed 's/^/ /' | head -12`: seven spaces, twelve lines, on ST
 
 ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is NOT EXECUTABLE, bash reports 126 with its own "Permission denied" text captured into the scenario output, while this port raises OSError and reports 126 with an empty output. The twin's own precondition loop tests `-f`, not `-x`, so both implementations reach that state the same way. No fixture in the
 ledger exercises it, and it is written down because an undocumented divergence is the kind a later reader takes for a defect in the port.
+
+---- gate ----
+lane: quality-static
+step: Mutation runner self-test
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -359,4 +366,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_mutate_check.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -32,6 +32,13 @@ A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f "$TEMP_DIR/$
 
 `go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the twin dies with bash's own `go: command not found` and exit 127, a message the gate never wrote. The port cannot produce that string without pretending to be a shell, so it prints its own line naming the same fix and returns the same 127. The exit code is what any caller reads; the text differs and is
 stated here so nobody reports it as a regression.
+
+---- gate ----
+lane: quality-go
+step: Check renet types freshness
+needs: go, submodules
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -308,4 +315,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_renet_types.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))
