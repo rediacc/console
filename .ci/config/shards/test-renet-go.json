@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-23T17:37:05.034Z",
+  "generatedAt": "2026-11-23T18:54:30.536Z",
   "legs": [
     {
       "index": 1,
@@ -53,6 +53,8 @@
     {
       "index": 2,
       "ids": [
+        "github.com/rediacc/renet/cmd/detectwasm",
+        "github.com/rediacc/renet/cmd/modelsign",
         "github.com/rediacc/renet/pkg/atomicjson",
         "github.com/rediacc/renet/pkg/backuphook",
         "github.com/rediacc/renet/pkg/bwrate",
@@ -64,6 +66,10 @@
         "github.com/rediacc/renet/pkg/convergeguard",
         "github.com/rediacc/renet/pkg/credentials",
         "github.com/rediacc/renet/pkg/datastore",
+        "github.com/rediacc/renet/pkg/detect",
+        "github.com/rediacc/renet/pkg/detect/errcode",
+        "github.com/rediacc/renet/pkg/detect/errtext",
+        "github.com/rediacc/renet/pkg/detect/kernels",
         "github.com/rediacc/renet/pkg/dns",
         "github.com/rediacc/renet/pkg/dockergrant",
         "github.com/rediacc/renet/pkg/dockerpolicy",
@@ -96,7 +102,10 @@
         "github.com/rediacc/renet/pkg/license",
         "github.com/rediacc/renet/pkg/list",
         "github.com/rediacc/renet/pkg/loop",
+        "github.com/rediacc/renet/pkg/models",
+        "github.com/rediacc/renet/pkg/models/keys",
         "github.com/rediacc/renet/pkg/netaudit",
+        "github.com/rediacc/renet/pkg/netaudit/collector",
         "github.com/rediacc/renet/pkg/netaudit/internal/atomicfile",
         "github.com/rediacc/renet/pkg/netaudit/spool",
         "github.com/rediacc/renet/pkg/netaudit/trigger",

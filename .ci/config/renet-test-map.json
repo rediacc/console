@@ -59,6 +59,20 @@
   ],
   "entries": [
     {
+      "glob": "cmd/detectwasm/**",
+      "packages": [
+        "cmd/detectwasm"
+      ],
+      "dependents": []
+    },
+    {
+      "glob": "cmd/modelsign/**",
+      "packages": [
+        "cmd/modelsign"
+      ],
+      "dependents": []
+    },
+    {
       "glob": "cmd/renet/**",
       "packages": [
         "cmd/renet"
@@ -78,6 +92,10 @@
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/restorepath"
       ]
     },
@@ -132,6 +150,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -189,6 +208,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -272,6 +292,7 @@
         "pkg/locking",
         "pkg/luks",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/nodeteardown",
@@ -356,6 +377,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -384,6 +406,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -405,6 +428,52 @@
         "pkg/functions",
         "pkg/repodiff",
         "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/detect/**",
+      "packages": [
+        "pkg/detect"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "pkg/models"
+      ]
+    },
+    {
+      "glob": "pkg/detect/errcode/**",
+      "packages": [
+        "pkg/detect/errcode"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "pkg/detect",
+        "pkg/detect/errtext",
+        "pkg/detect/kernels",
+        "pkg/models"
+      ]
+    },
+    {
+      "glob": "pkg/detect/errtext/**",
+      "packages": [
+        "pkg/detect/errtext"
+      ],
+      "dependents": [
+        "cmd/modelsign"
+      ]
+    },
+    {
+      "glob": "pkg/detect/kernels/**",
+      "packages": [
+        "pkg/detect/kernels"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "pkg/detect",
+        "pkg/models"
       ]
     },
     {
@@ -438,6 +507,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -477,6 +547,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -531,6 +602,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -563,6 +635,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -626,6 +699,7 @@
         "pkg/license",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -676,6 +750,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -708,6 +783,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -741,6 +817,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -770,6 +847,8 @@
         "pkg/i18n/locales"
       ],
       "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
         "cmd/renet",
         "pkg/atomicjson",
         "pkg/backuphook",
@@ -786,6 +865,7 @@
         "pkg/daemon",
         "pkg/datastore",
         "pkg/delta",
+        "pkg/detect/errtext",
         "pkg/dns",
         "pkg/dockergrant",
         "pkg/dockerproxy",
@@ -825,6 +905,8 @@
         "pkg/locking",
         "pkg/luks",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/internal/atomicfile",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/nodeteardown",
@@ -1011,6 +1093,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1050,6 +1133,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1097,6 +1181,7 @@
         "pkg/license",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1111,13 +1196,45 @@
       ]
     },
     {
+      "glob": "pkg/models/**",
+      "packages": [
+        "pkg/models"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign"
+      ]
+    },
+    {
+      "glob": "pkg/models/keys/**",
+      "packages": [
+        "pkg/models/keys"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "pkg/models"
+      ]
+    },
+    {
       "glob": "pkg/netaudit/**",
       "packages": [
         "pkg/netaudit"
       ],
       "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/collector/**",
+      "packages": [
+        "pkg/netaudit/collector"
+      ],
+      "dependents": [
+        "cmd/renet"
       ]
     },
     {
@@ -1126,7 +1243,9 @@
         "pkg/netaudit/internal/atomicfile"
       ],
       "dependents": [
+        "cmd/renet",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger"
       ]
@@ -1136,14 +1255,20 @@
       "packages": [
         "pkg/netaudit/spool"
       ],
-      "dependents": []
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector"
+      ]
     },
     {
       "glob": "pkg/netaudit/trigger/**",
       "packages": [
         "pkg/netaudit/trigger"
       ],
-      "dependents": []
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector"
+      ]
     },
     {
       "glob": "pkg/nodeteardown/**",
@@ -1163,6 +1288,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1240,6 +1366,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1304,6 +1431,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1333,6 +1461,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1422,6 +1551,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1510,6 +1640,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1549,6 +1680,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1639,6 +1771,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1686,6 +1819,7 @@
         "pkg/license",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1714,6 +1848,7 @@
         "pkg/license",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1746,6 +1881,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
@@ -1812,6 +1948,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/nodeteardown",
@@ -1846,6 +1983,7 @@
         "pkg/kubevolume",
         "pkg/list",
         "pkg/netaudit",
+        "pkg/netaudit/collector",
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
