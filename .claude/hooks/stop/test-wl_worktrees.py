@@ -497,7 +497,7 @@ SURVEY = """
 import json, subprocess, sys
 sys.path.insert(0, sys.argv[1])
 import wl_worktrees as W
-root, session, live, items, cache_path = sys.argv[2:7]
+root, session, live, items, cache_path, role = sys.argv[2:8]
 real = subprocess.run
 statuses = []
 def counting(argv, *a, **k):
@@ -520,7 +520,7 @@ if cache_path:
             cache = json.load(fh)
     except OSError:
         pass
-got = W.survey(root, session, json.loads(items), lambda: live, cache)
+got = W.survey(root, session, json.loads(items), lambda: live, cache, role=role)
 if cache_path:
     with open(cache_path, "w", encoding="utf-8") as fh:
         json.dump(got["cache"], fh)
@@ -532,7 +532,7 @@ print(json.dumps(got))
 NOBODY: dict[str, list[str]] = {"ids": [], "trees": []}
 
 
-def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):
+def read(tmp, main, session=SID, live=NOBODY, items=(), cache="", role=""):
     """One `survey` in a child process. `statuses` counts its `git status` calls through a stub over `subprocess.run`."""
     code, out, err = pyrun(
         tmp,
@@ -544,6 +544,7 @@ def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):
         json.dumps(live),
         json.dumps(list(items)),
         cache,
+        role,
     )
     if code != 0:
         raise SystemExit("survey: %s" % err[-600:])
@@ -1014,6 +1015,57 @@ def _cut_from(main, lease_id, branch):
     path.write_text(json.dumps({**json.loads(path.read_text()), "cut_from": branch}), "utf-8")
 
 
+def _stamp(main, lease_id, **fields):
+    """Stamp fields onto a lease record, as the `lease` verb writes `tree` and as a lander would be named."""
+    path = main / ".git/rediacc-worktrees" / ("%s.json" % lease_id)
+    path.write_text(json.dumps({**json.loads(path.read_text()), **fields}), "utf-8")
+
+
+def control_lander(tmp):
+    """B7 (agent/plans/PLAN-simple-two-tree-loop.md D5): a lease cut with `--tree landing` counts as unlanded for its lander only. The development session that owns it lists it as handed over and is not blocked; the landing tree's stop is. A named `lander` narrows that to one session."""
+    main = lease_main_repo(tmp, "lander")
+    lease = new_lease(tmp, main, "h1")
+    _stamp(main, "h1", tree="landing")
+    commit_in(tmp, lease, "h.txt", "h\n")
+    got = read(tmp, main, role="development")
+    check("the owner's development stop does not block on a landing-cut lease", got["unlanded"], [])
+    check("...and lists it as handed over", ids(got["handed"]), ["h1"])
+    check("...in its report", "handed lease h1 (the landing tree lands it)" in got["report"], True)
+    got = read(tmp, main, session=PEER, role="landing")
+    check("the landing tree's stop blocks on it", ids(got["unlanded"]), ["h1"])
+    check("...and lists nothing as handed", got["handed"], [])
+    got = read(tmp, main, session=PEER, role="")
+    check(
+        "a peer with no landing role neither blocks nor lists it as handed",
+        (got["unlanded"], got["handed"]),
+        ([], []),
+    )
+    _stamp(main, "h1", lander=PEER[:8])
+    got = read(tmp, main, session=PEER, role="")
+    check("a named lander blocks wherever its stop runs", ids(got["unlanded"]), ["h1"])
+    third = "f00d0000-0000-4000-8000-000000000000"
+    got = read(tmp, main, session=third, role="landing")
+    check(
+        "another landing-tree session does not block on a lease another lander holds",
+        got["unlanded"],
+        [],
+    )
+    got = read(tmp, main, role="development")
+    check(
+        "...and the owner still lists it as handed, naming the lander",
+        got["handed"][0]["lander"] if got["handed"] else "",
+        PEER[:8],
+    )
+    # CONTROL: a lease cut from the development tree is still its owner's to land.
+    dev = new_lease(tmp, main, "d2")
+    _stamp(main, "d2", tree="development")
+    commit_in(tmp, dev, "d.txt", "d\n")
+    got = read(tmp, main, role="development")
+    check("a development-cut lease still blocks its owner", ids(got["unlanded"]), ["d2"])
+    got = read(tmp, main, session=PEER, role="landing")
+    check("...and never the landing tree", "d2" in ids(got["unlanded"]), False)
+
+
 def control_landing_cut(tmp):
     """R20261123.6's twin, R20261123.7: lease ace763dd-1 was cut from the landing tree, its one commit was picked into landing, and the block still listed it, because the survey judged it against the development HEAD."""
     # The landing branch holds a commit the development HEAD lacks, as 1104-1 held 36 when ace763dd-1 was cut from it.
@@ -1328,6 +1380,7 @@ def section_stop():
     control_cache(tmp)
     control_submodule(tmp)
     control_landing_cut(tmp)
+    control_lander(tmp)
     control_effort_table(tmp)
     control_real_hook(tmp)
     control_probes(tmp)

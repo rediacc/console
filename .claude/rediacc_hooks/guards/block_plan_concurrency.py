@@ -17,6 +17,8 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
      parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
+  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED with a stderr note when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
+
 The writer cap still applies first: `block_agent_cap` is ORDER 3 on the same chain.
 
 SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so either hook order is safe. The cap is decided here too, because a count read at ORDER 3 and a claim appended at ORDER 5 would leave two racing spawns both under it: this session's live writers plus its claims must stay under `wl_roster.writer_cap`. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 5, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
@@ -34,6 +36,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import tempfile
 import time
 
@@ -189,6 +192,39 @@ UNEXAMINED = (
 )
 
 
+# `Handover: #<id>` on a line of its own in the brief (rule 7).
+HANDOVER_LINE = re.compile(r"(?m)^\s*Handover:\s*#([0-9a-f]{8})\b")
+
+
+def handover_lease(text, root, worklist):
+    """(lease id, "") when the brief's `Handover: #<id>` names a handover answered `lease:<lease>` whose record was cut with `--tree landing`; ("", why) for a brief that names a handover the rule does not admit; ("", "") for a brief with no Handover line. A read that fails raises, and the caller judges the spawn by the plan rules."""
+    found = HANDOVER_LINE.search(text)
+    if not found:
+        return "", ""
+    import wl_core as C
+    import wl_handover
+    import wl_worktrees
+
+    hid = found.group(1)
+    record = wl_handover.fold(worklist, root=root).get(hid)
+    if record is None:
+        return "", "handover #%s is not in the store" % hid
+    lease = wl_handover.lease_of(record)
+    if not lease:
+        return "", "handover #%s is answered %r, which names no lease" % (
+            hid,
+            record.get("answer") or "nothing yet",
+        )
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return "", "the record store of %s cannot be located" % root
+    base = pathlib.Path(os.path.realpath(pathlib.Path(root) / ".claude" / "worktrees"))
+    lease_record = wl_worktrees.read_records(dirs[1], base).get(lease)
+    if not lease_record or not wl_worktrees.landing_cut(lease_record):
+        return "", "lease %s of handover #%s was not cut with `--tree landing`" % (lease, hid)
+    return lease, ""
+
+
 def _refuse(event, verdict, kind, exits):
     head = HEAD.get(
         verdict.kind, "BLOCKED: this %r writer breaks plan concurrency (" + verdict.kind + ")."
@@ -221,6 +257,30 @@ def run(event):
         root = C.project_root(C.project_start({"cwd": cwd}))
         if kind in wl_roster.read_only_types(root):
             return hookio.ALLOW
+        # RULE 7: a handover fix in a landing-cut lease, briefed with no plan line, shares no tree with a live plan here.
+        handover_why = ""
+        if HANDOVER_LINE.search(text):
+            if X.spawn_plans(text):
+                handover_why = "the brief also names a plan, which the plan rules judge"
+            else:
+                try:
+                    worklist = C.worklist_for(C.project_start({"cwd": cwd}))
+                    lease, handover_why = handover_lease(text, root, worklist)
+                except Exception as exc:
+                    lease, handover_why = (
+                        "",
+                        "the handover could not be read (%s: %s)"
+                        % (
+                            type(exc).__name__,
+                            str(exc)[:160],
+                        ),
+                    )
+                if lease:
+                    event.warn_raw(
+                        "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so it is admitted unjudged.\n"
+                        % (kind, lease)
+                    )
+                    return hookio.ALLOW
         declared = X.declared_owns(text)
         owns_problem = X.owns_line_problem(text) if declared is None else None
         # A brief `Owns: none -- <reason>` (the grammar refuses a bare `none`, which reads as None above) is a runner: it holds no plan, as `live_plans` already treats such an agent once it is live, so it serves none here and claims nothing (#79b7e92e).
@@ -286,6 +346,10 @@ def run(event):
             verdict.kind,
             (*verdict.lines, OWNS_UNREAD % owns_problem),
             verdict.note,
+        )
+    if handover_why:
+        event.warn_raw(
+            "plan-concurrency: the `Handover:` line did not admit this spawn: %s.\n" % handover_why
         )
     if verdict.kind in ("mutex", "mutex-own"):
         return _refuse(event, verdict, kind, MUTEX_EXITS)

@@ -2867,12 +2867,14 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
     try:
         import wl_worktrees
 
+        # The stop's tree role decides who lands a lease cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the landing tree's stop blocks on it, its development owner only lists it.
         got = wl_worktrees.survey(
             root,
             session_id,
             fold.items,
             lambda: wl_worktrees.live_work(roster, cwd, session_id),
             state_doc.get("worktrees") or {},
+            role=wl_prscope.tree_role(C.landing_record(pathlib.Path(root)), own_tree(event)),
         )
         report = wl_worktrees.report_lines(got)
     except Exception as exc:

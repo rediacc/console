@@ -69,7 +69,17 @@ CAP = 25
 FILL = tuple("idle writer %d, no plan" % i for i in range(CAP))
 
 
-def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors=()):
+def world(
+    plans,
+    writers=(),
+    finished=(),
+    items=(),
+    leases=(),
+    cap=None,
+    editors=(),
+    handovers=(),
+    records=(),
+):
     """A fresh fixture. `plans` maps a name to its X lines (without Priority); `writers`/`finished`/`editors` are first prompts of this session's live/finished/live-and-editing general-purpose agents (an editor's last record is an in-flight Edit call); `items` are (id, owner, text); `leases` are (id, owner, worker, minutes ahead)."""
     if BASE.exists():
         shutil.rmtree(BASE)
@@ -140,9 +150,28 @@ def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors
         }
         for i, o, w, m in leases
     ]
+    # B7: handover events as `worklist.py --handover` and `--handover-answer` write them, and lease records as the `lease` verb writes them, `tree` included.
+    rows += list(handovers)
     (BASE / "store" / "fixture.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )
+    store = proj / ".git" / "rediacc-worktrees"
+    for lease_id, tree in records:
+        store.mkdir(exist_ok=True)
+        (store / ("%s.json" % lease_id)).write_text(
+            json.dumps(
+                {
+                    "id": lease_id,
+                    "path": str(proj / ".claude" / "worktrees" / lease_id),
+                    "owner": SID[:8],
+                    "agent": "",
+                    "base": {},
+                    "tree": tree,
+                    "created_at": at,
+                }
+            ),
+            encoding="utf-8",
+        )
     return proj
 
 
@@ -207,7 +236,90 @@ P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
 # (name, world kwargs, payload, want_rc, stderr needles)
 # (name, world kwargs, spawn payload, expected rc, stderr needles)
+HID = "abcd1234"
+
+
+def handover_rows(answer):
+    """One stuck handover, answered `answer` (None leaves it unanswered)."""
+    at = "2026-11-23T08:00:00Z"
+    rows = [
+        {
+            "ev": "handover",
+            "id": HID,
+            "at": at,
+            "by": PEER[:8],
+            "kind": "stuck",
+            "check": "Quality / lint",
+            "evidence": "red after 3 fix rounds",
+        }
+    ]
+    if answer is not None:
+        rows.append({"ev": "handover", "id": HID, "at": at, "by": SID[:8], "answer": answer})
+    return rows
+
+
+HANDOVER_BRIEF = "fix the handed-over red\nHandover: #%s\nOwns: docs/e/**" % HID
+HANDOVER_WORLD = {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]}
+
 CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
+    (
+        "h1 a Handover brief for a landing-cut lease is admitted beside a live exclusive overlap (B7)",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF),
+        0,
+        ["serves a handover in lease hx1"],
+    ),
+    (
+        "h1c CONTROL: the same overlapping spawn with no Handover line is refused",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload("fix the handed-over red\nOwns: docs/e/**"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "h2 a Handover brief whose lease was cut from the development tree is judged by the plan rules",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "development")],
+        },
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "was not cut with `--tree landing`"],
+    ),
+    (
+        "h3 a Handover brief naming an unknown handover is judged by the plan rules",
+        {**HANDOVER_WORLD, "records": [("hx1", "landing")]},
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "is not in the store"],
+    ),
+    (
+        "h4 a Handover brief whose handover names no lease is judged by the plan rules",
+        {**HANDOVER_WORLD, "handovers": handover_rows("keep"), "records": [("hx1", "landing")]},
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "names no lease"],
+    ),
+    (
+        "h5 a Handover brief that also names a plan is judged by the plan rules",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF + "\nPlan: PLAN-o.md"),
+        2,
+        ["PLAN-e.md is exclusive", "also names a plan"],
+    ),
     (
         "m1 a live exclusive writer refuses a plan whose Owns overlap its own",
         {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},

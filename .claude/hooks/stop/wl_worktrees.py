@@ -2,7 +2,9 @@
 
 `survey` joins three sources per store, the console's and each `<common>/modules/**` one: `git worktree list --porcelain`, the pins under `refs/worktrees/`, and the records in `<common>/rediacc-worktrees/<id>.json`. wl_checks turns the answer into `worktree-unlanded` (block, owner session only) and `worktree-orphan` (advisory, which also carries a peer's lease as one line).
 
-THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (the session id or its prefix), `agent` (the id inside `agent-<id>`, or ""), `base` ({"." or `private/<name>`: sha}) and `created_at`.
+THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (the session id or its prefix), `agent` (the id inside `agent-<id>`, or ""), `base` ({"." or `private/<name>`: sha}), `tree` (`development` or `landing`, the `--tree` it was cut with), `cut_from` and `created_at`, and optionally `lander`.
+
+A LANDING-CUT LEASE IS ITS LANDER'S TO LAND (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7). The development session cuts a lease with `--tree landing` to fix a failure the landing session handed over, and owns it; the landing session lands it once. So such a lease counts as unlanded for its lander only: the session the record's `lander` names, else any session whose own tree is the landing tree (`role` == `landing`). The owner's stop lists it as handed over and never blocks on it, so neither session's stop waits on the other's half.
 
 LIVENESS COMES FROM THE ROSTER. A subagent's shell does not live between tool calls, so an empty cwd list proves nothing. A lease is held by a live roster row (by `agent`, or by the meta's recorded tree), by a worklist `[>]` item naming it, or by a process inside it. A blind roster says nothing, and a lease is never accused on a blind reading.
 
@@ -28,6 +30,8 @@ import wl_roster
 import wl_scratch
 
 RECORD_DIR = "rediacc-worktrees"
+# The record `tree` of a lease cut with `--tree landing`, and the tree role (wl_prscope.LANDING) of a stop in the landing tree.
+LANDING_TREE = "landing"
 PIN_ROOT = "refs/worktrees/"
 # The console's key in `tips`, `pins`, a lease's repos and a record's `base`; a submodule's is its store path under `modules/`.
 CONSOLE = "."
@@ -485,10 +489,25 @@ def _record_orphans(world, trees):
     )
 
 
-def survey(root, session_id, items, live_fn, cache):
-    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, and `cache` is what the last stop returned.
+def landing_cut(record):
+    """True for a lease cut with `--tree landing` (its record's `tree`)."""
+    return str(record.get("tree") or "") == LANDING_TREE
 
-    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `orphans` [(id, why)], `doubts` [text] and `cache`.
+
+def lands_it(record, session_id, role):
+    """Is this stop's session the one that lands `record`? A landing-cut lease: the session its `lander` names, else any stop whose own tree is the landing tree. Any other lease: its owner."""
+    if landing_cut(record):
+        lander = str(record.get("lander") or "")[:8]
+        if lander:
+            return C.owned_by_me(lander, session_id)
+        return role == LANDING_TREE
+    return C.owned_by_me(str(record.get("owner") or "")[:8] or None, session_id)
+
+
+def survey(root, session_id, items, live_fn, cache, role=""):
+    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, `cache` is what the last stop returned, and `role` is this stop's tree role (wl_prscope.tree_role: `landing`, `development` or "").
+
+    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `orphans` [(id, why)], `doubts` [text] and `cache`.
     """
     world = read_world(root)
     out: dict[str, Any] = {
@@ -496,6 +515,7 @@ def survey(root, session_id, items, live_fn, cache):
         "held": [],
         "unknown": [],
         "peers": [],
+        "handed": [],
         "orphans": [],
         "doubts": list(world["doubts"]),
         "cache": {},
@@ -509,8 +529,16 @@ def survey(root, session_id, items, live_fn, cache):
             out["doubts"].append("%s: its record could not be read" % lease_id)
             continue
         owner = str(record.get("owner") or "")[:8] or None
-        if C.owned_by_me(owner, session_id):
+        if lands_it(record, session_id, role):
             mine.append((lease_id, record))
+        elif landing_cut(record) and C.owned_by_me(owner, session_id):
+            out["handed"].append(
+                {
+                    "id": lease_id,
+                    "lander": str(record.get("lander") or "")[:8] or "the landing tree",
+                    "path": str(record.get("path") or ""),
+                }
+            )
         else:
             out["peers"].append(
                 {"id": lease_id, "owner": owner, "path": str(record.get("path") or "")}
@@ -583,6 +611,10 @@ def report_lines(got):
     lines.extend(
         "  peer lease %s (session %s): %s" % (row["id"], row["owner"], row["path"])
         for row in got["peers"]
+    )
+    lines.extend(
+        "  handed lease %s (%s lands it): %s" % (row["id"], row["lander"], row["path"])
+        for row in got.get("handed", ())
     )
     lines.extend("  unreadable %s" % doubt for doubt in got["doubts"])
     lines.extend(
