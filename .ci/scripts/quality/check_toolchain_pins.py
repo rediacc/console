@@ -48,7 +48,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import toolchain_pins
 
 if __name__ == "__main__":
+    _gate_args.parse("check_toolchain_pins.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(toolchain_pins.main(sys.argv[1:]))

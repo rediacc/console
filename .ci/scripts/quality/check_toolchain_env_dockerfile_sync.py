@@ -52,7 +52,11 @@ why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import toolchain_env_dockerfile_sync
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_toolchain_env_dockerfile_sync.py", sys.argv[1:], switches=("--selftest",)
+    )
     raise SystemExit(toolchain_env_dockerfile_sync.main(sys.argv[1:]))

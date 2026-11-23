@@ -28,7 +28,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import subscription_schema
 
 if __name__ == "__main__":
+    _gate_args.parse("check_subscription_schema.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(subscription_schema.main(sys.argv[1:]))

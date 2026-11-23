@@ -21,7 +21,14 @@ why: a retirement does not reach the work already queued against it, nor the shi
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import retired_terms
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_retired_terms.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline"),
+        valued=("--root", "--owner", "--config"),
+    )
     raise SystemExit(retired_terms.main(sys.argv[1:]))

@@ -21,8 +21,12 @@ why: a `deferred` resolution counted as resolved in every local reader and no CI
 
 import sys
 
+import _gate_args
 from _cipath import CI_DIR
 from rediacc_ci.quality import review_resolutions
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_review_resolutions.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(review_resolutions.main(sys.argv[1:], root=CI_DIR.parent))

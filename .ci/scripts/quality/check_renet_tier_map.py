@@ -44,7 +44,9 @@ needs: go, submodules
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import renet_tier_map
 
 if __name__ == "__main__":
+    _gate_args.parse("check_renet_tier_map.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(renet_tier_map.main(sys.argv[1:]))

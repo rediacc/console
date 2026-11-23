@@ -38,6 +38,7 @@ import time
 from pathlib import Path
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, paths
 
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
@@ -417,4 +418,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_resprofile.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--seed", "--reseed-class", "--captures"),
+    )
     sys.exit(main(sys.argv[1:]))

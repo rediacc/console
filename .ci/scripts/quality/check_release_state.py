@@ -19,7 +19,9 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import release_state
 
 if __name__ == "__main__":
+    _gate_args.parse("check_release_state.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(release_state.main(sys.argv[1:]))

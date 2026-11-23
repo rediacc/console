@@ -78,7 +78,9 @@ its `slow: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import scope_scripts_reachability
 
 if __name__ == "__main__":
+    _gate_args.parse("check_scope_scripts_reachability.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(scope_scripts_reachability.main(sys.argv[1:]))

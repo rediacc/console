@@ -19,7 +19,9 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import resolved_threads
 
 if __name__ == "__main__":
+    _gate_args.parse("check_resolved_threads.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(resolved_threads.main(sys.argv[1:]))

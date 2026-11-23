@@ -22,7 +22,9 @@ why: a name the env manifest declares vault-supplied that no vault holds is a
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import secret_supply
 
 if __name__ == "__main__":
+    _gate_args.parse("check_secret_supply.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(secret_supply.main(sys.argv[1:]))

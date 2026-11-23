@@ -23,6 +23,8 @@ import os
 import sys
 from typing import NamedTuple
 
+import _gate_args
+
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
@@ -119,6 +121,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_tmpfs_health.py", sys.argv[1:], switches=("--selftest",))
     if "--selftest" in sys.argv:
         controls()
         print("%s✓%s selftest" % (GREEN, NC))

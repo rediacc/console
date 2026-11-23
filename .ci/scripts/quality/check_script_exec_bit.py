@@ -34,7 +34,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import script_exec_bit
 
 if __name__ == "__main__":
+    _gate_args.parse("check_script_exec_bit.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(script_exec_bit.main(sys.argv[1:]))

@@ -48,7 +48,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import setup_idempotency
 
 if __name__ == "__main__":
+    _gate_args.parse("check_setup_idempotency.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(setup_idempotency.main(sys.argv[1:]))
