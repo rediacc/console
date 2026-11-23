@@ -1,22 +1,18 @@
-"""The drill-leg half of `.ci/scripts/quality/check_test_file_orphans.py` (box J5 of agent/plans/PLAN-backup-program.md): a leg a drill declares must be run by a workflow or named with a `BLOCKER:` reason.
+"""The drill-leg half of `.ci/rediacc_ci/quality/test_file_orphans.py` (box J5 of agent/plans/PLAN-backup-program.md): a leg a drill declares must be run by a workflow or named with a `BLOCKER:` reason.
 
 Both directions per helper: a leg a workflow runs is reached and one it does not run is reported; an exemption for a reached leg, for an undeclared leg, or without a BLOCKER reason is a problem. The last case runs the real gate on the live tree, so the production exemption table is judged against the real workflows.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import pathlib
 import subprocess
 import sys
 
+from rediacc_ci.quality import test_file_orphans as ORPHANS
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 GATE = REPO / ".ci" / "scripts" / "quality" / "check_test_file_orphans.py"
-_SPEC = importlib.util.spec_from_file_location("orphans_gate_under_test", GATE)
-assert _SPEC is not None
-assert _SPEC.loader is not None
-ORPHANS = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(ORPHANS)
 
 REASON = "BLOCKER: this leg needs an ops VM that no CI job provides, so it runs by hand"
 DRILLS = {"backup": (["a", "b", "i"], ["a", "b"]), "license": (["a", "b"], ["a", "b"])}

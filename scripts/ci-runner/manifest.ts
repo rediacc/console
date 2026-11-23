@@ -4735,11 +4735,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // PLAN-cloudflare-proxy A5. The proxy's one real cost risk is container instances pinned awake: max_instances and sleepAfter were lowered on purpose (the plan's section 4), and a raise reads like a capacity tweak in review.
     id: 'check:ci-proxy-cost-guard',
-    run: 'npm run check:ci-proxy-cost-guard',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.proxy_cost_guard',
     gate: true,
-    paths: ['.ci/scripts/quality/**', '.npmrc', 'package.json', 'workers/proxy/**'],
+    paths: ['.ci/rediacc_ci/quality/proxy_cost_guard.py', '.ci/scripts/quality/**', '.npmrc', 'package.json', 'workers/proxy/**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_proxy_cost_guard.py'],
+    leaves: ['.ci/rediacc_ci/quality/proxy_cost_guard.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5061,9 +5061,9 @@ export const GATES: readonly GateSpec[] = [
     // FEEDBACK LINKS POINT AT REAL FINGERPRINTS (agent/plans/PLAN-rdc-feedback.md R10, D5, box T3). Every id on a live plan's `Feedback:` header line must be in agent/ledgers/feedback-snapshot.json, the public record `rediacc_ci.feedback.link` and `.ship` write from the admin export; a plan carrying the line while the snapshot is missing or empty is a failure, and zero carriers is a pass with the count printed. Lane quality-static: it reads only the working tree, and that job carries a gate-bind region, so the step is emitted from the gate header.
     // No `paths` DELIBERATELY: the verdict reads every plan, the snapshot and the grammar in rediacc_ci.feedback.link, which imports the classify, client and triage modules; a partial table would make --changed drop the gate silently, and the gate runs in under a second.
     id: 'check:ci-plan-feedback',
-    run: 'npm run check:ci-plan-feedback',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_feedback',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_plan_feedback.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_feedback.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6199,9 +6199,9 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 15
   {
     id: 'check:ci-test-file-orphans',
-    run: 'npm run check:ci-test-file-orphans',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.test_file_orphans',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_test_file_orphans.py'],
+    leaves: ['.ci/rediacc_ci/quality/test_file_orphans.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -8960,10 +8960,10 @@ export const GATES: readonly GateSpec[] = [
     env: {
       OPS_HEALTH_READ_TOKEN: '${{ env.BWS_OPS_HEALTH_READ_TOKEN }}',
     },
-    run: 'npm run check:ci-ops-health',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ops_health',
     gate: true,
     // One GET of the ops-health Worker's /v1/status (PLAN-health-checks-local D-gate). It asks a host outside the repository, so it is one of UPSTREAM_GATES and runs under the no-external-quality hold.
-    leaves: ['.ci/scripts/quality/check_ops_health.py'],
+    leaves: ['.ci/rediacc_ci/quality/ops_health.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -12000,11 +12000,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-turnstile-drift',
-    run: 'npm run check:ci-turnstile-drift',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.turnstile_drift --selftest',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_turnstile_drift.py'],
+    leaves: ['.ci/rediacc_ci/quality/turnstile_drift.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

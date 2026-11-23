@@ -109,7 +109,7 @@ def main() -> int:
     if red:
         print(
             "tmpfs inode headroom below threshold -- see "
-            ".ci/scripts/quality/check_tmpfs_health.py for the incident this guards "
+            ".ci/rediacc_ci/quality/tmpfs_health.py for the incident this guards "
             "against.",
             file=sys.stderr,
         )
