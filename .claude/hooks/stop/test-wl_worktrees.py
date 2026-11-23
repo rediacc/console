@@ -690,6 +690,49 @@ def control_live(tmp):
     check("a blind roster says so", "w1" in got["report"], True)
 
 
+def write_hold(main, lease_id, item, reason="waits on its dependencies"):
+    store = main / ".git/rediacc-worktrees"
+    store.mkdir(exist_ok=True)
+    body = {"item": item, "reason": reason, "held_at": "2026-11-23T08:00:00Z"}
+    (store / ("%s.hold" % lease_id)).write_text(json.dumps(body), encoding="utf-8")
+
+
+def control_hold(tmp):
+    main = lease_main_repo(tmp, "hold")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    open_item = {"id": "ac6a4f6b", "state": " ", "text": "preview signer"}
+    got = read(tmp, main, items=[open_item])
+    check("an unheld lease blocks", ids(got["unlanded"]), ["w1"])
+    check("an unheld lease parks nothing", got["parked"], [])
+    write_hold(main, "w1", "ac6a4f6b")
+    got = read(tmp, main, items=[open_item])
+    check("a held lease with an open item does not block", got["unlanded"], [])
+    check("the hold is one parked row", got["parked"][0]["id"], "w1")
+    check("a parked lease spends no git status", got["statuses"], 0)
+    check(
+        "the advisory names the item and the reason",
+        "parked lease w1, held for #ac6a4f6b: waits on its dependencies" in got["report"],
+        True,
+    )
+    for state in ("?", ">"):
+        got = read(tmp, main, items=[{**open_item, "state": state}])
+        check("a [%s] item still holds the lease" % state, got["unlanded"], [])
+    got = read(tmp, main, items=[{**open_item, "state": "x"}])
+    check("a ticked item blocks again", ids(got["unlanded"]), ["w1"])
+    check("a ticked item parks nothing", got["parked"], [])
+    got = read(tmp, main, items=[])
+    check("a gone item blocks again", got["unlanded"][0]["commits"], {".": [sha]})
+    got = read(tmp, main, items=[{**open_item, "id": "ac6a4f6b0001"}])
+    check("a hold names an item by its id prefix too", got["unlanded"], [])
+    got = read(tmp, main, items=[{**open_item, "id": "ffff0000"}])
+    check("another open item does not hold it", ids(got["unlanded"]), ["w1"])
+    (main / ".git/rediacc-worktrees/w1.hold").write_text("{", encoding="utf-8")
+    got = read(tmp, main, items=[open_item])
+    check("a damaged hold blocks", ids(got["unlanded"]), ["w1"])
+    check("a damaged hold is said", "w1: its hold record could not be read" in got["doubts"], True)
+
+
 def control_landed(tmp):
     main = lease_main_repo(tmp, "landed")
     lease = new_lease(tmp, main, "w1")
@@ -1375,6 +1418,7 @@ def section_stop():
     control_peer(tmp)
     control_live(tmp)
     control_landed(tmp)
+    control_hold(tmp)
     control_orphans(tmp)
     control_index(tmp)
     control_cache(tmp)

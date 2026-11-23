@@ -44,6 +44,9 @@ LANDED_AS_LINE = "Lease-Landed-As: %s "
 GITLINK_MOVED = "SC.."
 # Waivers `gc --superseded-by` records, one JSON row per lease commit, beside the lease records (the `.jsonl` name keeps the `*.json` record glob off it).
 SUPERSEDED_LEDGER = "superseded.jsonl"
+# A hold, `<id>.hold` beside the records (the suffix keeps the `*.json` record glob off it): the lead parks a finished lease on purpose until a worklist item's work exists. `{"item", "reason", "held_at"}`.
+HOLD_SUFFIX = ".hold"
+HOLD_OPEN_STATES = (" ", "?", ">")
 ORPHAN_TREE = "a tree with no record"
 ORPHAN_RECORD = "a record with no tree"
 ORPHAN_PIN = "a pin with neither a record nor a tree"
@@ -216,6 +219,33 @@ def read_records(common, base):
     return out
 
 
+def read_holds(common):
+    """{lease id: {"item", "reason"}} from `<id>.hold`. An unreadable hold stays as `{"broken": True}`, which parks nothing, so a damaged hold blocks again rather than hiding a lease."""
+    out = {}
+    for path in sorted((common / RECORD_DIR).glob("*" + HOLD_SUFFIX)):
+        lease_id = path.name[: -len(HOLD_SUFFIX)]
+        try:
+            hold = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            hold = None
+        if isinstance(hold, dict) and hold.get("item") and hold.get("reason"):
+            out[lease_id] = {"item": str(hold["item"]), "reason": str(hold["reason"])}
+        else:
+            out[lease_id] = {"broken": True}
+    return out
+
+
+def find_open_item(items, ref):
+    """The folded record of the item `ref` names (its id, or a prefix of it) while it is open (`[ ]`, `[?]`, `[>]`), else None. A ticked or deleted item is not open, so a hold cannot outlive its reason."""
+    ref = str(ref).lstrip("#")
+    if not ref:
+        return None
+    for rec in items:
+        if str(rec.get("id", "")).startswith(ref) and rec.get("state") in HOLD_OPEN_STATES:
+            return rec
+    return None
+
+
 def _stray_dirs(base):
     """Direct child directories of `base`, symlinks excluded."""
     try:
@@ -232,6 +262,7 @@ def read_world(root):
         "tips": {},
         "pins": {},
         "records": {},
+        "holds": {},
         "dirs": [],
         "doubts": [],
     }
@@ -246,6 +277,7 @@ def read_world(root):
     for repo, store in stores(common):
         _read_store(world, repo, store, base, here if repo == CONSOLE else "")
     world["records"] = read_records(common, base)
+    world["holds"] = read_holds(common)
     world["dirs"] = _stray_dirs(base)
     return world
 
@@ -507,7 +539,7 @@ def lands_it(record, session_id, role):
 def survey(root, session_id, items, live_fn, cache, role=""):
     """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, `cache` is what the last stop returned, and `role` is this stop's tree role (wl_prscope.tree_role: `landing`, `development` or "").
 
-    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `orphans` [(id, why)], `doubts` [text] and `cache`.
+    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `parked` [{"id", "item", "reason"}] (leases this session owns that a hold keeps from blocking while its item is open), `orphans` [(id, why)], `doubts` [text] and `cache`.
     """
     world = read_world(root)
     out: dict[str, Any] = {
@@ -516,6 +548,7 @@ def survey(root, session_id, items, live_fn, cache, role=""):
         "unknown": [],
         "peers": [],
         "handed": [],
+        "parked": [],
         "orphans": [],
         "doubts": list(world["doubts"]),
         "cache": {},
@@ -551,6 +584,12 @@ def survey(root, session_id, items, live_fn, cache, role=""):
     landing = C.landing_record(pathlib.Path(root))
     landing_branch = landing["branch"] if landing else ""
     for lease_id, record in mine:
+        hold = world["holds"].get(lease_id)
+        if hold and hold.get("broken"):
+            out["doubts"].append("%s: its hold record could not be read" % lease_id)
+        elif hold and find_open_item(items, hold["item"]):
+            out["parked"].append({"id": lease_id, "item": hold["item"], "reason": hold["reason"]})
+            continue
         if live is None:
             out["unknown"].append(lease_id)
             continue
@@ -615,6 +654,10 @@ def report_lines(got):
     lines.extend(
         "  handed lease %s (%s lands it): %s" % (row["id"], row["lander"], row["path"])
         for row in got.get("handed", ())
+    )
+    lines.extend(
+        "  parked lease %s, held for #%s: %s" % (row["id"], row["item"], row["reason"])
+        for row in got.get("parked", ())
     )
     lines.extend("  unreadable %s" % doubt for doubt in got["doubts"])
     lines.extend(
