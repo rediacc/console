@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T10:59:09.759Z",
+  "generatedAt": "2026-11-23T15:44:26.399Z",
   "legs": [
     {
       "index": 1,
@@ -455,6 +455,7 @@
         "pytest:.ci/rediacc_ci/tests/test_pytest_impact_tree.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_branch.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_content_quality.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_environment_names.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_gate_tree_writes.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_tool_path.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py",
@@ -821,6 +822,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_python_lint.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_review_comments.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_scope_mirrors.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_seams.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_silent_failure_patterns.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_submodule_branches.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_swallowed_failures.py",
