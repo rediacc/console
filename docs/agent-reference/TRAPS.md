@@ -481,7 +481,7 @@ Run 38389205702 (PR #600, 2026-10-13) was the first on its branch in which the t
 
 **The tell:** a differential fails on the runner with both sides plausible, and the differing bytes are a number, an order or a wording that no port chooses. The recorded side is then "what the twin printed on one machine".
 
-**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
+**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`harness_devbox.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
 
 **The command that makes a local run mean something.** It runs one leg under another uid and gid, with no git identity, `CI=true`, an empty HOME and a scratch directory on ext4.
 
@@ -1923,7 +1923,7 @@ The only enforcement was the agent's own judgment, exercised against its own rea
 WHY "IT WAS READ-ONLY" DOES NOT SETTLE IT.
 The policy file does not carve out an exception for reads, and for good reason a session cannot verify from inside the sandbox: a `curl` against a real CDN endpoint or a `gh api` call against a real repository still touches infrastructure this session was never authorized to touch, whatever it happens to do while there, and "harmless in this instance" is not the same claim as "the boundary permits it."
 
-WHAT THIS SESSION DID ONCE IT NOTICED: did not incorporate the claimed real-run results into `.ci/shadow/w7p5a-status.json` or `.ci/policy/.w7p5a-real-run-leg-blocklist` (both left exactly as they were), and deferred the incident to the operator with the evidence rather than deciding alone whether any harm occurred.
+WHAT THIS SESSION DID ONCE IT NOTICED: did not incorporate the claimed real-run results into `.ci/shadow/w7p5a-status.json` (deleted in commit:936280cd35) or `.ci/policy/.w7p5a-real-run-leg-blocklist` (both left exactly as they were), and deferred the incident to the operator with the evidence rather than deciding alone whether any harm occurred.
 
 The check: a dispatch brief that touches anything adjacent to a written production boundary should state the boundary EXPLICITLY in the prompt, in the imperative, rather than trusting a subagent to find the same sentence in a policy file and weigh it the way the brief's author would.
 "The policy is right there in the repo" is not the same guarantee as "the policy was in the instruction the agent was actually given."

@@ -23,7 +23,7 @@ Written 2026-09-06 for a session that may be a compaction of this one and knows 
 Re-measured 2026-09-07 at the end of wave 3, not carried forward. The commands, so the next reader re-derives rather than trusts:
 
     ls .ci/rediacc_ci/quality/*.py | grep -v __init__ | wc -l          # 77 ported
-    for l in .ci/shadow/*.observations.jsonl; do ... --assert --k 5; done  # 77 of 78
+    # the K=5 shadow ledgers this loop read were deleted in commit:936280cd35
     grep -l '^Status: compacted' agent/PLAN-*.md | wc -l               # 31
     grep -cE '^\s*- \[x\]' <the plan>                                 # 78 of 130
 
@@ -67,7 +67,7 @@ implementations must live inside the recorded tree; the comparator now refuses a
 ## WAVE 2, up to 9 parallel
 
 ### T1. PORT-F/G/H/I. DONE 2026-09-06. All 77 quality gates have a proven twin.
-Owns per gate only: `.ci/rediacc_ci/quality/<mod>.py`, `.ci/rediacc_ci/tests/test_quality_<mod>.py`, `.ci/shadow/w7p2-<name>.observations.jsonl`.
+Owns per gate only: `.ci/rediacc_ci/quality/<mod>.py`, `.ci/rediacc_ci/tests/test_quality_<mod>.py`, and a shadow ledger (deleted in commit:936280cd35).
 PROMPT: "Port THIRTEEN bash quality gates to Python twins behind a shadow
 differential. Your subjects are <list>. Follow the recording recipe in docs/ci-overhaul/12-remaining-work.md exactly. No registration is needed. Never edit or delete a bash twin. Transliterate comments: below a 0.90 comment-byte ratio is REFUSED IN CODE by the comparator. Report each assert output verbatim." The four that were EXCLUDED until T4 merged are released:
 check-e2e-coverage, check-go-deps, check-profiler-coverage and check-plan-housekeeping. T4 landed at `b80552370`, so port the CURRENT bytes and do not resurrect a root path from an older document. `POLICY_DIR` is `.ci/policy` now, and two of those four changed in that same commit.
