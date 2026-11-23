@@ -588,7 +588,8 @@
       "DRILL_EXPECT_NO_KEYRING"
     ],
     ".ci/rediacc_ci/drills/upgrade_converge.py": [
-      "HOME"
+      "HOME",
+      "REDIACC_CONFIG"
     ],
     ".ci/rediacc_ci/drills/vm_check.py": [
       "CI_QUICK_CLONE_DIR",
@@ -2407,6 +2408,11 @@
       "WORKLIST_SWEEP_MAX_FIRES",
       "WORKLIST_SWEEP_TTL_MIN"
     ],
+    ".claude/hooks/stop/wl_cli.py": [
+      "CLAUDE_TRANSCRIPT_PATH",
+      "WORKLIST_MIGRATE_PLANS_SHOW",
+      "WORKLIST_PUBLISH_ROOT"
+    ],
     ".claude/hooks/stop/wl_core.py": [
       "*k",
       "CLAUDE_CODE_SESSION_ID",
@@ -2565,13 +2571,10 @@
     ],
     ".claude/hooks/stop/worklist.py": [
       "CLAUDE_PROJECT_DIR",
-      "CLAUDE_TRANSCRIPT_PATH",
       "GITHUB_ACTIONS",
       "STOPHOOK_CHILD",
       "TMPDIR",
-      "WORKLIST_LKG_CHILD",
-      "WORKLIST_MIGRATE_PLANS_SHOW",
-      "WORKLIST_PUBLISH_ROOT"
+      "WORKLIST_LKG_CHILD"
     ],
     ".claude/hooks/trapguard/dispatch.py": [
       "SHAPE_ROOT",
