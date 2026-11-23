@@ -739,11 +739,10 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     resolved = None
     if transcript_path and os.path.isfile(transcript_path):
         try:
-            with open(transcript_path, "rb") as fh:
-                fh.seek(0, os.SEEK_END)
-                size = fh.tell()
-                fh.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
-                tail = fh.read().decode("utf-8", "replace")
+            got = tail_bytes(transcript_path, TRANSCRIPT_TAIL_BYTES)
+            if got is None:
+                raise OSError("transcript unreadable")
+            tail = got[2].decode("utf-8", "replace")
             # Newest creations first: the last one is the least likely to have been deleted since. Subjects are read out of JSONL, so cut each at the first escape sequence and prefix-match on what is left.
             matches = _TASK_CREATED_RE.findall(tail)[-5:][::-1]
             cands = set()
@@ -884,6 +883,98 @@ def strip_quoted_spans(text):
 TRANSCRIPT_TAIL_BYTES = int(os.environ.get("WORKLIST_TAIL_BYTES", "2000000"))
 
 
+# ---- ONE TRANSCRIPT READ PER STOP (agent/plans/PLAN-tooling-speed.md D1) ------
+#
+# The Stop run read the transcript tail about twelve times: the tasks-dir join, transcript_tail, wl_admit, wl_deflect, wl_uncommitted, each its own open, seek and parse. The memo below keeps the LAST bytes read per path, keyed on (mtime_ns, size), and serves any later request whose start lies inside them; a request reaching further back, or a file whose mtime or size moved, reads
+# again. A miss reads at least TRANSCRIPT_TAIL_BYTES, so the standard-size readers that follow are all served by the first. The parsed records of one (path, mtime, size, start) are memoized too, and every caller gets its own list.
+#
+# A memo can serve a stale read only if a write keeps both mtime_ns and size, which an append cannot. WORKLIST_READ_MEMO=off turns it off (the control in test_wl_stop_speed_reads.py proves the open counter is not blind with it off).
+READ_MEMO_STATS = {"hit": 0, "miss": 0}
+_TAIL_MEMO: dict[str, tuple] = {}
+_RECS_MEMO: dict[tuple, list] = {}
+_MEMO_PATHS_MAX = 4
+
+
+def read_memo_on():
+    """False only under WORKLIST_READ_MEMO=off."""
+    return os.environ.get("WORKLIST_READ_MEMO", "on").strip().lower() != "off"
+
+
+def clear_read_memo():
+    _TAIL_MEMO.clear()
+    _RECS_MEMO.clear()
+    READ_MEMO_STATS.update(hit=0, miss=0)
+
+
+def tail_bytes(path, max_bytes=None, start=None):
+    """(size, start, data): the bytes of `path` from `start`, or the last `max_bytes` when no start is given, to the end. None when the file cannot be read.
+
+    Served from the per-process memo when the file's mtime and size are unchanged and the memo's bytes reach back to the requested start.
+    """
+    try:
+        st = os.stat(path)
+    except (OSError, TypeError, ValueError):
+        return None
+
+    def want_of(size):
+        if start is not None:
+            return min(max(0, int(start)), size)
+        return max(0, size - int(max_bytes or 0))
+
+    key = os.path.abspath(os.fsdecode(path))
+    on = read_memo_on()
+    m = _TAIL_MEMO.get(key) if on else None
+    want = want_of(st.st_size)
+    if m is not None and m[0] == st.st_mtime_ns and m[1] == st.st_size and m[2] <= want:
+        READ_MEMO_STATS["hit"] += 1
+        return st.st_size, want, m[3][want - m[2] :]
+    try:
+        with open(path, "rb") as fh:
+            fst = os.fstat(fh.fileno())
+            size, mtime = fst.st_size, fst.st_mtime_ns
+            want = want_of(size)
+            read_from = min(want, max(0, size - TRANSCRIPT_TAIL_BYTES)) if on else want
+            fh.seek(read_from)
+            data = fh.read(size - read_from)
+    except OSError:
+        return None
+    READ_MEMO_STATS["miss"] += 1
+    if on:
+        if len(_TAIL_MEMO) >= _MEMO_PATHS_MAX:
+            _TAIL_MEMO.clear()
+            _RECS_MEMO.clear()
+        _TAIL_MEMO[key] = (mtime, size, read_from, data)
+    return size, want, data[want - read_from :]
+
+
+def tail_records(path, max_bytes):
+    """The JSON objects in the last `max_bytes` of the file at `path`, oldest first, or None when there is no such file or it cannot be read; wl_common.tail_records' contract, served from the memo. When the read starts mid-file its first line is dropped, because it is probably partial."""
+    if not path or not os.path.exists(path):
+        return None
+    got = tail_bytes(path, max_bytes)
+    if got is None:
+        return None
+    size, start, chunk = got
+    on = read_memo_on()
+    rkey = None
+    if on:
+        m = _TAIL_MEMO.get(os.path.abspath(os.fsdecode(path)))
+        rkey = (os.path.abspath(os.fsdecode(path)), m[0] if m else None, size, start)
+        if rkey in _RECS_MEMO:
+            return list(_RECS_MEMO[rkey])
+    lines = chunk.split(b"\n")
+    if start > 0:
+        lines = lines[1:]
+    recs = list(wl_common.records(lines))
+    if rkey is not None:
+        _RECS_MEMO[rkey] = recs
+    return list(recs)
+
+
+# wl_admit.turn_text and wl_deflect read the tail through wl_common.tail_records; rebinding the shared name here serves them from the same memo without a second copy of the reader. Same contract, same return value. A reader that opens the transcript itself (wl_admit.turn_tools, wl_uncommitted.scan_transcript) is served only once it calls tail_bytes, and test_wl_stop_speed_reads.py names each one that still opens it.
+wl_common.tail_records = tail_records
+
+
 def transcript_tail(path, want=None, tries=6, delay=0.25):
     """(last_assistant_text, tool_names_since_last_user, readable) from the tail.
 
@@ -895,7 +986,7 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
     Tail-read, because the transcript is tens of MB and the hook runs on every stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so this is not the expensive part of anything.
     """
     # The first (probably partial) line is dropped unless the read started at byte 0.
-    recs = wl_common.tail_records(path, TRANSCRIPT_TAIL_BYTES)
+    recs = tail_records(path, TRANSCRIPT_TAIL_BYTES)
     if recs is None:
         return "", [], False
     turn_texts, since_user = [], []

@@ -39,6 +39,7 @@ import pathlib
 import re
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any
@@ -647,25 +648,89 @@ def live_intent(worklist, session_id, now=None):
 # ---- per-session state doc --------------------------------------------------
 
 
+# ONE STATE WRITE PER STOP (agent/plans/PLAN-tooling-speed.md D1). A Stop run saved this doc up to 19 times. Inside a batch, save_state serializes the doc at once (so a later mutation the caller did not save is not written) and keeps the text in memory; load_state reads the pending text first; the batch's end writes each pending doc once. A batch is either the
+# `state_batch()` context (its exit flushes on success and on an exception alike), or the whole of a Stop process (worklist.py running with `_RUN["stop"]` set), which flushes from atexit: after the final emit's sys.exit and after an uncaught exception. A process killed by a signal loses that stop's state writes, which load_state's contract already absorbs: a missing key
+# is first sight, never an obligation passed. WORKLIST_READ_MEMO=off writes at once, as before.
+_PENDING_STATE: dict[str, str] = {}
+_STATE_BATCH = {"depth": 0, "atexit": False}
+STATE_FLUSHES = {"n": 0}
+
+
+def _stop_process():
+    """True when this process is worklist.py running a Stop (its `_RUN["stop"]` flag), the one process shape that batches without asking."""
+    run = getattr(sys.modules.get("__main__"), "_RUN", None)
+    return isinstance(run, dict) and bool(run.get("stop"))
+
+
+def _state_deferred():
+    if not C.read_memo_on():
+        return False
+    if _STATE_BATCH["depth"] > 0:
+        return True
+    if _stop_process():
+        if not _STATE_BATCH["atexit"]:
+            import atexit
+
+            atexit.register(flush_state)
+            _STATE_BATCH["atexit"] = True
+        return True
+    return False
+
+
+def _write_state_text(p, text):
+    """tempfile + os.replace: single writer (per-session), atomic on crash."""
+    try:
+        fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix=p.name)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, p)
+    except OSError:
+        pass
+
+
+def flush_state():
+    """Write every pending state doc once. A second call with nothing pending writes nothing."""
+    if not _PENDING_STATE:
+        return
+    pending = dict(_PENDING_STATE)
+    _PENDING_STATE.clear()
+    for path, text in pending.items():
+        _write_state_text(pathlib.Path(path), text)
+    STATE_FLUSHES["n"] += 1
+
+
+@contextlib.contextmanager
+def state_batch():
+    """Collect save_state writes and flush them once when the outermost batch ends, whether it ends normally or by an exception."""
+    _STATE_BATCH["depth"] += 1
+    try:
+        yield
+    finally:
+        _STATE_BATCH["depth"] -= 1
+        if _STATE_BATCH["depth"] == 0:
+            flush_state()
+
+
 def load_state(worklist, session_id):
     """The v10 per-session doc. A corrupt or missing doc is the empty default: every consumer treats absent keys as first sight, which can delay a nudge by one stop but can never fail open on an obligation check."""
+    p = state_path(worklist, session_id)
     try:
-        d = json.loads(state_path(worklist, session_id).read_text(encoding="utf-8"))
+        pending = _PENDING_STATE.get(str(p))
+        d = json.loads(pending if pending is not None else p.read_text(encoding="utf-8"))
         return d if isinstance(d, dict) else {}
     except (OSError, ValueError):
         return {}
 
 
 def save_state(worklist, session_id, doc):
-    """tempfile + os.replace: single writer (per-session), atomic on crash."""
+    """Write the doc, or hold it for the batch's one flush (see ONE STATE WRITE PER STOP)."""
     p = state_path(worklist, session_id)
-    try:
-        fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix=p.name)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(doc, f, indent=1)
-        os.replace(tmp, p)
-    except OSError:
-        pass
+    text = json.dumps(doc, indent=1)
+    if _state_deferred():
+        _PENDING_STATE[str(p)] = text
+        return
+    _PENDING_STATE.pop(str(p), None)
+    _write_state_text(p, text)
 
 
 # ---- the event log ----------------------------------------------------------
@@ -996,6 +1061,79 @@ def _read_events(worklist, root=None):
 
     THE SORT IS LOAD-BEARING. File name order is not time order, and after a merge one file can hold events older than another's first line. Sorting by the stamp (which is `%Y-%m-%dT%H:%M:%SZ`, so lexical order is chronological) is what makes a union of histories fold to the same state as one history.
     """
+    key = _events_sig(worklist, root) if C.read_memo_on() else None
+    if key is not None and key in _EVENTS_MEMO:
+        EVENTS_MEMO_STATS["hit"] += 1
+        return list(_EVENTS_MEMO[key])
+    out = _read_events_uncached(worklist, root)
+    EVENTS_MEMO_STATS["miss"] += 1
+    if key is not None:
+        if len(_EVENTS_MEMO) >= 4:
+            _EVENTS_MEMO.clear()
+        _EVENTS_MEMO[key] = out
+        return list(out)
+    return out
+
+
+# ---- ONE EVENT-LOG READ PER STOP (agent/plans/PLAN-tooling-speed.md D1) ------
+#
+# The Stop run re-read and re-folded the store about ten times (run_stop, wl_roster, wl_planqueue, wl_schedred, wl_prreview, wl_retro), 9 MB each time. The parsed events and the Fold are memoized per process, keyed on the (path, mtime_ns, size) of every file the read touches: each tracked store file, each journal file and the legacy log. Any append moves a size, so a
+# write between two loads is re-read (the control in test_wl_stop_speed_reads.py). A stat that races a write stores newer bytes under the older key, which costs one extra read on the next call and can never serve a stale world. WORKLIST_READ_MEMO=off turns both memos off.
+EVENTS_MEMO_STATS = {"hit": 0, "miss": 0}
+READ_MEMO_STATS = {"hit": 0, "miss": 0}
+_EVENTS_MEMO: dict[tuple, list] = {}
+_FOLD_MEMO: dict[tuple, Any] = {}
+
+
+def clear_read_memo():
+    _EVENTS_MEMO.clear()
+    _FOLD_MEMO.clear()
+    EVENTS_MEMO_STATS.update(hit=0, miss=0)
+    READ_MEMO_STATS.update(hit=0, miss=0)
+    STATE_FLUSHES["n"] = 0
+
+
+def _file_sig(path):
+    try:
+        st = os.stat(path)
+    except OSError:
+        return (str(path), None, None)
+    return (str(path), st.st_mtime_ns, st.st_size)
+
+
+def _events_sig(worklist, root=None):
+    """The memo key of one store read: every file _read_events would open, with its mtime and size."""
+    sigs = []
+    sd = store_dir(root)
+    with contextlib.suppress(OSError):
+        sigs.extend(_file_sig(f) for f in sorted(sd.glob("*.jsonl")))
+    jd = journal_dir(root)
+    if jd is not None:
+        with contextlib.suppress(OSError):
+            sigs.extend(_file_sig(f) for f in sorted(jd.glob("*.jsonl")))
+    sigs.append(_file_sig(events_path(worklist)))
+    return (str(sd), str(jd), tuple(sigs))
+
+
+def _copy_value(v):
+    if isinstance(v, dict):
+        return dict(v)
+    if isinstance(v, list):
+        return list(v)
+    return v
+
+
+def _copy_fold(fold):
+    """A Fold no caller shares: its item dicts, their nested dicts and lists, the lineage and the statuses are fresh containers (the strings inside are immutable)."""
+    return Fold(
+        [{k: _copy_value(v) for k, v in r.items()} for r in fold.items],
+        fold.md_hash,
+        [dict(e) for e in fold.lineage],
+        statuses={k: _copy_value(v) for k, v in fold.statuses.items()},
+    )
+
+
+def _read_events_uncached(worklist, root=None):
     out = []
     # Tracked files, then the checkout journal's lines they lack (see THE CHECKOUT JOURNAL).
     for text in _store_texts(root):
@@ -1304,6 +1442,15 @@ def load(worklist, sync=True):
             md_bytes = b""
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
+    # THE FOLD MEMO (see ONE EVENT-LOG READ PER STOP). Keyed on the markdown's hash and the store's file signatures; stored only for a world where the markdown and the log already agree, which is exactly when sync and read-only loads fold to the same items.
+    memo_on = C.read_memo_on()
+    if memo_on:
+        hit = _FOLD_MEMO.get((str(worklist), md_hash, _events_sig(worklist)))
+        if hit is not None:
+            READ_MEMO_STATS["hit"] += 1
+            return _bind_fold(_copy_fold(hit))
+    READ_MEMO_STATS["miss"] += 1
+
     statuses_box: list[dict[Any, Any]] = [{}]
 
     def build(events):
@@ -1388,6 +1535,14 @@ def load(worklist, sync=True):
         items.append(rec)
     items.sort(key=lambda r: (r.get("first", ""), r["id"]))
     fold = Fold(items, md_hash, lineage, statuses=statuses_box[0])
+    if memo_on and last_h == md_hash:
+        if len(_FOLD_MEMO) >= 4:
+            _FOLD_MEMO.clear()
+        _FOLD_MEMO[(str(worklist), md_hash, _events_sig(worklist))] = _copy_fold(fold)
+    return _bind_fold(fold)
+
+
+def _bind_fold(fold):
     # BIND ONCE, HERE, and only for the identity this process actually resolved to. Every ownership question downstream goes through wl_core.owned_by_me, so binding at the single load point is what makes the compaction fix impossible to roll out half-applied. A process with no resolvable identity binds nothing and behaves exactly as it did before lineage existed.
     me = C.resolve_session_id()
     if me:
