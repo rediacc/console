@@ -59,11 +59,9 @@
  * collation, which differs between machines), and NOTHING here embeds a timestamp, a duration,
  * a hostname or a run id.
  *
- * NO GATE HEADER, DELIBERATELY. scripts/gate-bind.ts treats a `---- gate ----` block as a
- * declaration that four registrations exist (package.json, the ci-runner manifest, the workflow
- * step, the npm key). Those four files have a single writer during this program and this phase
- * is not it, so declaring a header here would register a gate that does not exist and turn
- * check:ci-gate-bind red. Registration is reported to the root driver instead.
+ * NO GATE HEADER: its default (verify) mode is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), and `--write`
+ * is the doc-tables producer of `gen:gates -- --write`.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';

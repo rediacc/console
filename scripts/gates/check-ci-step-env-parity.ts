@@ -49,14 +49,9 @@
  *
  * Usage: npx tsx scripts/gates/check-ci-step-env-parity.ts [--selftest]
  *
- * ---- gate ----
- * id: check:ci-step-env-parity
- * step: Step env parity
- * lane: quality-code
- * needs: node
- * selftest: true
- * why: a gate-bind region rewrites steps from headers, so an env the lock does not know about is an env the next --write silently drops
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs its --selftest and then its check, so it registers no gate of its own.
  */
 
 import { readFileSync } from 'node:fs';

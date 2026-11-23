@@ -312,15 +312,15 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow |
 |---|---|---|---|
-| (all lanes) | 403 | 386 | 73 |
+| (all lanes) | 396 | 379 | 73 |
 | local-only (CI never runs it) | 23 | 11 | 3 |
 | step / build-renet | 2 | 2 | 0 |
 | step / proxy-image-smoke | 1 | 1 | 1 |
 | step / proxy-wrangler-dev | 1 | 1 | 1 |
 | step / quality-account | 6 | 6 | 2 |
 | step / quality-branch | 12 | 12 | 5 |
-| step / quality-code | 108 | 108 | 13 |
-| step / quality-content | 50 | 50 | 4 |
+| step / quality-code | 102 | 102 | 13 |
+| step / quality-content | 49 | 49 | 4 |
 | step / quality-go | 15 | 15 | 4 |
 | step / quality-i18n | 43 | 41 | 4 |
 | step / quality-packages | 13 | 13 | 5 |

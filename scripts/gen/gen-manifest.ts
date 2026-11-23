@@ -39,19 +39,21 @@
  * makes the entry hand-written until its prose is migrated into the header.
  *
  * ---- gate ----
- * step: Generated manifest regions
+ * id: check:ci-gen-gates
+ * step: Gate declarations agree
+ * run: tsx scripts/gen/gen-manifest.ts --gates --check
  * needs: node
  * lane: quality-code
- * selftest: true
- * why: The generated regions of the gate manifest must still equal what the
- *      headers say, or a hand edit inside one is silently reverted by the next
- *      `--write` -- and the entries inside them are the ones whose text is proven
- *      byte-identical to their own header, so a drift here means a header and its
- *      entry have parted company
+ * why: ONE check over every copy a gate's declaration is written into (agent/plans/
+ *      PLAN-tooling-code-reduction.md D2): the manifest regions, the lock, the
+ *      workflow regions and shards, the header bindings, the CI parity surface, the
+ *      manifest rules, the doc regions, the step env and the orphan step keys, each
+ *      leg's own selftest first. It replaced eight gates that each held one copy.
  * ---- end gate ----
  */
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -493,6 +495,39 @@ function selftest(): number {
   return bad === 0 ? 0 : 1;
 }
 
+/** The controls over the concurrent leg runner, which is async and so cannot ride `selftest()`. */
+async function asyncSelftest(): Promise<number> {
+  let bad = 0;
+  const check = (ok: boolean, name: string): void => {
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}`);
+    if (!ok) bad++;
+  };
+  check(
+    legWidth({ CI_RUNNER_CORES: '3' }, 24) === 3 &&
+      legWidth({}, 24) === 24 &&
+      legWidth({ CI_RUNNER_CORES: 'x' }, 6) === 6 &&
+      legWidth({ CI_RUNNER_CORES: '0' }, 0) === 1,
+    'CONTROL: the granted cores set the width, a missing or malformed grant falls to the machine, never below 1'
+  );
+  const fx: Leg[] = [10, 1, 5, 0, 3].map((ms, i) => ({ label: String(i), args: [String(ms)] }));
+  let live = 0;
+  let peak = 0;
+  const got = await runPool(fx, 2, async (leg) => {
+    live++;
+    peak = Math.max(peak, live);
+    await new Promise((r) => setTimeout(r, Number(leg.args[0])));
+    live--;
+    return leg.label;
+  });
+  check(
+    got.join('') === '01234' && peak === 2,
+    'CONTROL: the pool returns results in leg order whatever order they finish in, and never runs more than its width'
+  );
+  const none = await runPool([], 4, async () => 1);
+  check(none.length === 0, 'CONTROL: an empty leg list yields no results (checkVerdict reds it)');
+  return bad === 0 ? 0 : 1;
+}
+
 /** The manifest pass: the `gen-manifest` marker regions over the hand entries, then the `gen-gates` region of header-declared gates. Writes when `write`, else verifies. */
 function manifestPass(write: boolean): number {
   const text = fs.readFileSync(MANIFEST, 'utf-8');
@@ -521,7 +556,7 @@ function manifestPass(write: boolean): number {
   const { present, missing } = trackedSubjects();
   if (missing.length > 0) {
     console.error(
-      `gen-manifest: ${missing.length} tracked file(s) are absent from the worktree (${missing.slice(0, 3).join(', ')}); refusing to derive the region from a tree the index disagrees with`
+      `gen-manifest: ${missing.length} tracked file(s) are absent from the working tree (${missing.slice(0, 3).join(', ')}); refusing to derive the region from a tree the index disagrees with`
     );
     return 1;
   }
@@ -732,6 +767,55 @@ function runLeg(leg: Leg): number {
 }
 
 /**
+ * How many `--check` legs run at once: the cores the runner granted (`CI_RUNNER_CORES`, which the pool exports to every gate it admits), else the machine's parallelism, never below 1. The legs only read, so the order they finish in changes nothing but the wall clock: run one after another they cost about 43 s, which priced the check out of the fast lane the eight gates it replaced sat in.
+ */
+export function legWidth(env: NodeJS.ProcessEnv, machine: number): number {
+  const granted = Number.parseInt(env.CI_RUNNER_CORES ?? '', 10);
+  const n = Number.isInteger(granted) && granted > 0 ? granted : machine;
+  return Math.max(1, Math.floor(n));
+}
+
+/** One leg in a child process with its output captured, so concurrent legs never interleave; the caller prints it whole. A leg that cannot start is rc 1 with the reason as its output. */
+function runLegCaptured(leg: Leg): Promise<{ rc: number; out: string }> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    const child = spawn(process.execPath, [...process.execArgv, ...leg.args], {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    child.stdout.on('data', (b: Buffer) => chunks.push(b));
+    child.stderr.on('data', (b: Buffer) => chunks.push(b));
+    child.on('error', (e) =>
+      resolve({ rc: 1, out: `gen:gates: could not start ${leg.args[0]}: ${e.message}\n` })
+    );
+    child.on('close', (code, signal) =>
+      resolve({
+        rc: code ?? 1,
+        out: Buffer.concat(chunks).toString('utf-8') + (signal ? `killed by ${signal}\n` : ''),
+      })
+    );
+  });
+}
+
+/** Run `legs` at most `width` at a time, results in leg order whatever order they finish in. */
+export async function runPool<T>(
+  legs: readonly Leg[],
+  width: number,
+  run: (leg: Leg) => Promise<T>
+): Promise<T[]> {
+  const out: T[] = new Array(legs.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < legs.length) {
+      const i = next++;
+      out[i] = await run(legs[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, width), legs.length) }, worker));
+  return out;
+}
+
+/**
  * `--allow-drop <step>` reaches the binder's write leg and no other. Retiring a header-declared gate removes its step from a region, and gate-bind refuses an unnamed removal (a dropped step takes its `env:` and secrets with it, invisibly); without this the generator could add a gate and never retire one.
  */
 export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
@@ -742,7 +826,7 @@ export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
   return drops.length === 0 ? leg : { ...leg, args: [...leg.args, ...drops] };
 }
 
-function gates(argv: string[]): number {
+async function gates(argv: string[]): Promise<number> {
   const write = argv.includes('--write');
   if (write && argv.includes('--check')) {
     console.error('gen:gates: --write and --check are exclusive');
@@ -775,12 +859,17 @@ function gates(argv: string[]): number {
   }
   const verdicts: [string, number][] = [
     ['manifest regions match the headers', first],
-    ['selftest: scripts/gen/gen-manifest.ts', selftest()],
+    ['selftest: scripts/gen/gen-manifest.ts', selftest() || (await asyncSelftest())],
   ];
-  for (const leg of [...selftestLegs(CHECK_LEGS), ...CHECK_LEGS]) {
+  const legs = [...selftestLegs(CHECK_LEGS), ...CHECK_LEGS];
+  const width = legWidth(process.env, os.availableParallelism());
+  console.log(`gen:gates --check: ${legs.length} leg(s), ${width} at a time`);
+  const results = await runPool(legs, width, runLegCaptured);
+  legs.forEach((leg, i) => {
     console.log(`gen:gates --check: ${leg.label}`);
-    verdicts.push([leg.label, runLeg(leg)]);
-  }
+    process.stdout.write(results[i].out);
+    verdicts.push([leg.label, results[i].rc]);
+  });
   const red = verdicts.filter(([, rc]) => rc !== 0);
   console.log(`\ngen:gates --check: ${verdicts.length} leg(s), ${red.length} red`);
   for (const [label, rc] of verdicts)
@@ -801,10 +890,16 @@ function gates(argv: string[]): number {
   return 0;
 }
 
-function main(argv: string[]): number {
-  if (argv.includes('--selftest')) return selftest();
+async function main(argv: string[]): Promise<number> {
+  if (argv.includes('--selftest')) return (await asyncSelftest()) === 0 ? selftest() : 1;
   if (argv.includes('--gates')) return gates(argv);
   return manifestPass(argv.includes('--write'));
 }
 
-process.exit(main(process.argv.slice(2)));
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (e: unknown) => {
+    console.error(`gen-manifest: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);
+    process.exit(1);
+  }
+);

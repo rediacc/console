@@ -1,5 +1,5 @@
 /**
- * check:ci-gate-bind -- a gate's four registrations must match what its own header says.
+ * gate-bind -- a gate's four registrations must match what its own header says.
  *
  * WHY. Registering a gate means editing package.json, scripts/ci-runner/manifest.ts and
  * .github/workflows/ci-quality.yml by hand, and each has a convention that only ever
@@ -16,14 +16,9 @@
  * yet, so a mismatch is reported rather than silently rewritten -- the migration is
  * coexist-and-drain, and a gate with no header is simply not this gate's business.
  *
- * ---- gate ----
- * step: Gate binding
- * needs: node
- * selftest: true
- * why: four hand-written registrations per gate, each with a convention that only
- *      announces itself as a red gate. The binder declares itself through the same
- *      header it reads, so the first thing it verifies is that IT is registered right
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs its --selftest and then its check, so it registers no gate of its own.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -3471,7 +3466,7 @@ function main(argv: string[]): void {
       for (const c of claimed) console.error(`    ${c}`);
       console.error('');
       console.error('  Dropping them would stop those gates running in CI, and the only');
-      console.error('  symptom would be check:ci-parity one gate later. Move them BELOW');
+      console.error('  symptom would be the parity leg of gen:gates --check. Move them BELOW');
       console.error('  the `# <<< gate-bind` marker, where a hand-registered step belongs.');
       process.exit(1);
     }
@@ -3513,7 +3508,7 @@ function main(argv: string[]): void {
         `  ${[...scoped.entries()].map(([l, g]) => `${l}: ${g.length}`).join(', ')} step(s) emitted.`
       );
       console.log('  Any of those whose hand-written copy still exists becomes a DUPLICATE until');
-      console.log('  that copy is deleted. Run `check:ci-gate-bind` after writing.');
+      console.log('  that copy is deleted. Run `npm run gen:gates -- --check` after writing.');
       failOnDrift(drift);
       return;
     }
@@ -3621,7 +3616,7 @@ function main(argv: string[]): void {
   );
   console.log(
     '  Blind spot: this checks the gates that DECLARE a header. The rest are still ' +
-      'registered by hand and are check:ci-parity’s business until the drain reaches them.'
+      'registered by hand and are the parity leg’s business until the drain reaches them.'
   );
   // FRESHNESS, which the binding check above never covered: re-run this binder as `--dry-run --fail-on-drift`, the same computation `--write` performs, so a committed shard manifest or region that no longer matches the lock fails here instead of in CI's shard-receipt aggregator (2026-09-28: quality-code's manifest and six ci-quality.yml regions were stale and this check still printed ✓).
   try {

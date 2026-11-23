@@ -2976,20 +2976,6 @@
     }
   },
   {
-    "id": "check:ci-gate-manifest",
-    "run": "npm run check:ci-gate-manifest",
-    "gate": true,
-    "leaves": [
-      "scripts/gates/check-gate-manifest.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Gate manifest self-consistency"
-    }
-  },
-  {
     "id": "check:ci-trap-registry",
     "run": "npm run check:ci-trap-registry",
     "gate": true,
@@ -3962,34 +3948,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Resource profile (previous run's captures)"
-    }
-  },
-  {
-    "id": "check:ci-step-env-parity",
-    "run": "npm run check:ci-step-env-parity",
-    "gate": true,
-    "paths": [
-      ".github/workflows/ci-build-renet.yml",
-      ".github/workflows/ci-quality.yml",
-      ".npmrc",
-      "package.json",
-      "packages/shared/package.json",
-      "packages/shared/src/config/well-known.generated.ts",
-      "scripts/gates/check-ci-step-env-parity.ts",
-      "scripts/lib/console.ts",
-      "scripts/lib/controls.ts",
-      "scripts/lib/repo-root.ts",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gates/check-ci-step-env-parity.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Step env parity"
     }
   },
   {
@@ -5441,41 +5399,6 @@
     }
   },
   {
-    "id": "check:ci-gates-lock",
-    "run": "npm run check:ci-gates-lock",
-    "gate": true,
-    "paths": [
-      "scripts/ci-runner/manifest.ts",
-      "scripts/ci-runner/gates.lock.json",
-      "scripts/gen/gen-gates-lock.ts",
-      "packages/cli/scripts/command-tree.json"
-    ],
-    "pathsOrigin": "declared",
-    "leaves": [
-      "scripts/gen/gen-gates-lock.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Gates lock"
-    }
-  },
-  {
-    "id": "check:ci-doc-region-parity",
-    "run": "npm run check:ci-doc-region-parity",
-    "gate": true,
-    "leaves": [
-      "scripts/gates/check-doc-region-parity.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Doc region parity"
-    }
-  },
-  {
     "id": "gen:gates-lock",
     "run": "npm run gen:gates-lock",
     "gate": false,
@@ -5484,7 +5407,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: an emitter, not a validation. CI verifies the committed lock through check:ci-gates-lock, which runs the same file in its default checking mode; a step pointer here would claim CI regenerates the artifact it is meant to be holding still."
+      "blocker": "BLOCKER: an emitter, not a validation. CI verifies the committed lock through check:ci-gen-gates, whose lock leg runs the same file in its default checking mode; a step pointer here would claim CI regenerates the artifact it is meant to be holding still."
     }
   },
   {
@@ -5508,7 +5431,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: an emitter whose default mode only checks. Same shape as gen:gates-lock above: CI runs every leg of its --check as its own gate (check:ci-gen-manifest, check:ci-gates-lock, check:ci-gate-bind, check:ci-parity and the rest), so a step here would run them twice and claim CI regenerates what it holds still."
+      "blocker": "BLOCKER: the author-facing spelling of the generator. Its `--check` IS a gate, check:ci-gen-gates, which runs `tsx scripts/gen/gen-manifest.ts --gates --check` directly; a step here would run that check twice and claim CI regenerates what it holds still."
     }
   },
   {
@@ -11540,28 +11463,6 @@
     }
   },
   {
-    "id": "check:ci-workflow-orphan-step-keys",
-    "run": "npm run check:ci-workflow-orphan-step-keys",
-    "gate": true,
-    "paths": [
-      ".github/**",
-      ".npmrc",
-      "package.json",
-      "scripts/gates/check-workflow-orphan-step-keys.ts",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gates/check-workflow-orphan-step-keys.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Workflow orphan step keys"
-    }
-  },
-  {
     "id": "check:ci-workflow-invariants",
     "run": "npm run check:ci-workflow-invariants",
     "gate": true,
@@ -12013,138 +11914,6 @@
     }
   },
   {
-    "id": "check:ci-parity",
-    "run": "npm run check:ci-parity",
-    "gate": true,
-    "paths": [
-      ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
-      ".ci/policy/.ci-parity-exempt",
-      ".ci/rediacc_ci/__init__.py",
-      ".ci/rediacc_ci/check_pytest.py",
-      ".ci/rediacc_ci/ci/freshness.py",
-      ".ci/rediacc_ci/core/__init__.py",
-      ".ci/rediacc_ci/core/allowlist.py",
-      ".ci/rediacc_ci/core/release_state_validator.py",
-      ".ci/rediacc_ci/deploy/proxy_configs.py",
-      ".ci/rediacc_ci/deploy/write_once_guard.py",
-      ".ci/rediacc_ci/deploy/write_once_guard_check.py",
-      ".ci/rediacc_ci/drills/vm_check.py",
-      ".ci/rediacc_ci/ops/login_bench.py",
-      ".ci/rediacc_ci/paths.py",
-      ".ci/rediacc_ci/private/run_account.py",
-      ".ci/rediacc_ci/private/run_renet.py",
-      ".ci/rediacc_ci/proxies/**",
-      ".ci/rediacc_ci/quality/browser_smoke.py",
-      ".ci/rediacc_ci/quality/env_register.py",
-      ".ci/rediacc_ci/quality/page_density.py",
-      ".ci/rediacc_ci/quality/staging_tag_guard.py",
-      ".ci/rediacc_ci/quality/typecheck_workers.py",
-      ".ci/rediacc_ci/release/install_script_check.py",
-      ".ci/rediacc_ci/release/install_sh_config_check.py",
-      ".ci/rediacc_ci/release/local.py",
-      ".ci/rediacc_ci/security/**",
-      ".ci/rediacc_ci/setup/port_parity.py",
-      ".ci/rediacc_ci/setup/tools.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_form_validation.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_label_inventory.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_label_references.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_regions_sync.py",
-      ".ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py",
-      ".ci/scripts/**",
-      ".github/workflows/ci-build-renet.yml",
-      ".github/workflows/ci-quality.yml",
-      ".github/workflows/ci.yml",
-      ".npmrc",
-      "package.json",
-      "packages/cli/bundle.mjs",
-      "packages/cli/package.json",
-      "packages/cli/scripts/check-cli-i18n-help-render.ts",
-      "packages/cli/scripts/check-command-planes.ts",
-      "packages/e2e-tests/package.json",
-      "packages/json/package.json",
-      "packages/locales/package.json",
-      "packages/provisioning/package.json",
-      "packages/shared/package.json",
-      "packages/www/package.json",
-      "packages/www/scripts/check-client-i18n-freshness.ts",
-      "packages/www/scripts/check-cta-bolt-uniqueness.js",
-      "packages/www/scripts/check-locale-tutorial-assets.ts",
-      "packages/www/scripts/check-solution-video-engine.ts",
-      "packages/www/scripts/check-solution-videos.ts",
-      "packages/www/scripts/check-tutorial-caption-sync.ts",
-      "packages/www/scripts/check-tutorial-card-fonts.ts",
-      "packages/www/scripts/check-tutorial-parity.ts",
-      "packages/www/scripts/check-video-source.js",
-      "packages/www/scripts/list-tutorial-render-pairs.js",
-      "packages/www/scripts/test-tutorial-player-release-gate.js",
-      "packages/www/scripts/validate-cli-docs.js",
-      "packages/www/scripts/validate-comparison-refs.js",
-      "packages/www/scripts/validate-content-accuracy.js",
-      "packages/www/scripts/validate-content.js",
-      "packages/www/scripts/validate-docs-cli-usage.js",
-      "packages/www/scripts/validate-landing-cli-usage.js",
-      "packages/www/scripts/validate-translation-freshness.js",
-      "packages/www/scripts/validate-tutorial-audio.js",
-      "packages/www/scripts/validate-tutorial-cast-output.js",
-      "packages/www/scripts/validate-tutorial-transcripts.js",
-      "private/account",
-      "private/elite",
-      "private/homebrew-tap",
-      "private/renet",
-      "scripts/__tests__/**",
-      "scripts/gate-bind.ts",
-      "scripts/gates/**",
-      "scripts/gen/gen-docs.ts",
-      "scripts/gen/gen-gates-lock.ts",
-      "scripts/gen/gen-manifest.ts",
-      "scripts/gen/validate-cli-examples.ts",
-      "scripts/lib/blocker-validator.ts",
-      "scripts/lib/entry-point.ts",
-      "scripts/lib/policy-paths.ts",
-      "scripts/pins/pins.ts",
-      "scripts/settings/settings.ts",
-      "tsconfig.json",
-      "workers/account/package.json",
-      "workers/mta-sts/package.json",
-      "workers/ops-health/package.json",
-      "workers/proxy/package.json",
-      "workers/signer/package.json",
-      "workers/www/package.json"
-    ],
-    "lists": [
-      "",
-      ".ci",
-      ".ci/rediacc_ci",
-      ".ci/rediacc_ci/core",
-      ".github/workflows",
-      "packages",
-      "private",
-      "scripts",
-      "scripts/ci-runner",
-      "scripts/lib",
-      "workers"
-    ],
-    "names": [
-      "**"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gates/check-ci-parity.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-content",
-      "step": "Validate parity between the local gate set and the CI quality surface"
-    }
-  },
-  {
     "id": "test:write-once-guard",
     "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py",
     "gate": true,
@@ -12545,36 +12314,6 @@
     }
   },
   {
-    "id": "check:ci-gate-bind",
-    "run": "npm run check:ci-gate-bind",
-    "gate": true,
-    "paths": [
-      ".ci/config/actions-retention.json",
-      ".ci/config/lane-durations.json",
-      ".ci/config/shards/**",
-      ".ci/rediacc_ci/**",
-      ".ci/scripts/**",
-      ".github/**",
-      ".npmrc",
-      "package.json",
-      "scripts/**",
-      "tsconfig.json"
-    ],
-    "names": [
-      "**"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gate-bind.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Gate binding"
-    }
-  },
-  {
     "id": "check:ci-enumeration-vacuity",
     "run": "npm run check:ci-enumeration-vacuity",
     "gate": true,
@@ -12843,81 +12582,6 @@
     }
   },
   {
-    "id": "check:ci-gen-manifest",
-    "run": "npm run check:ci-gen-manifest",
-    "gate": true,
-    "paths": [
-      ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
-      ".ci/rediacc_ci/deploy/proxy_configs.py",
-      ".ci/rediacc_ci/drills/vm_check.py",
-      ".ci/rediacc_ci/ops/login_bench.py",
-      ".ci/rediacc_ci/proxies/cli_manifest.py",
-      ".ci/rediacc_ci/proxies/docker_prepull.py",
-      ".ci/rediacc_ci/proxies/ensure_nfpm.py",
-      ".ci/rediacc_ci/proxies/linux_packages.py",
-      ".ci/rediacc_ci/proxies/rdc_update.py",
-      ".ci/rediacc_ci/quality/browser_smoke.py",
-      ".ci/rediacc_ci/quality/env_register.py",
-      ".ci/rediacc_ci/quality/page_density.py",
-      ".ci/rediacc_ci/quality/staging_tag_guard.py",
-      ".ci/rediacc_ci/release/install_script_check.py",
-      ".ci/rediacc_ci/release/install_sh_config_check.py",
-      ".ci/rediacc_ci/release/local.py",
-      ".ci/rediacc_ci/security/actionlint.py",
-      ".ci/rediacc_ci/security/check_commands.py",
-      ".ci/rediacc_ci/security/ci_workflow_invariants.py",
-      ".ci/rediacc_ci/security/rdc_sh_env_check.py",
-      ".ci/rediacc_ci/security/shfmt.py",
-      ".ci/rediacc_ci/setup/port_parity.py",
-      ".ci/rediacc_ci/setup/tools.py",
-      ".ci/scripts/**",
-      ".github/workflows/ci-quality.yml",
-      ".npmrc",
-      "package.json",
-      "packages/cli/scripts/check-cli-i18n-help-render.ts",
-      "packages/cli/scripts/check-command-planes.ts",
-      "packages/www/scripts/check-client-i18n-freshness.ts",
-      "packages/www/scripts/check-cta-bolt-uniqueness.js",
-      "packages/www/scripts/check-locale-tutorial-assets.ts",
-      "packages/www/scripts/check-solution-video-engine.ts",
-      "packages/www/scripts/check-solution-videos.ts",
-      "packages/www/scripts/check-tutorial-caption-sync.ts",
-      "packages/www/scripts/check-tutorial-card-fonts.ts",
-      "packages/www/scripts/check-tutorial-parity.ts",
-      "packages/www/scripts/list-tutorial-render-pairs.js",
-      "packages/www/scripts/validate-cli-docs.js",
-      "packages/www/scripts/validate-comparison-refs.js",
-      "packages/www/scripts/validate-content-accuracy.js",
-      "packages/www/scripts/validate-content.js",
-      "packages/www/scripts/validate-docs-cli-usage.js",
-      "packages/www/scripts/validate-landing-cli-usage.js",
-      "packages/www/scripts/validate-translation-freshness.js",
-      "packages/www/scripts/validate-tutorial-cast-output.js",
-      "scripts/__tests__/check-docs-render-parity.control.ts",
-      "scripts/__tests__/check-page-locale-imports.control.ts",
-      "scripts/gate-bind.ts",
-      "scripts/gates/**",
-      "scripts/gen/gen-docs.ts",
-      "scripts/gen/gen-gates-lock.ts",
-      "scripts/gen/gen-manifest.ts",
-      "scripts/gen/validate-cli-examples.ts",
-      "scripts/lib/gate-header.ts",
-      "scripts/pins/pins.ts",
-      "scripts/settings/settings.ts",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gen/gen-manifest.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Generated manifest regions"
-    }
-  },
-  {
     "id": "check:ci-bash-lib-ported",
     "run": "npm run check:ci-bash-lib-ported",
     "gate": true,
@@ -13105,6 +12769,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Turnstile widget drift"
+    }
+  },
+  {
+    "id": "check:ci-gen-gates",
+    "run": "tsx scripts/gen/gen-manifest.ts --gates --check",
+    "gate": true,
+    "leaves": [
+      "scripts/gen/gen-manifest.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate declarations agree"
     }
   }
 ]

@@ -1,13 +1,10 @@
 /**
- * check:ci-workflow-orphan-step-keys -- a step-level key may not survive the
+ * check-workflow-orphan-step-keys -- a step-level key may not survive the
  * deletion of the step it belonged to.
  *
- * ---- gate ----
- * step: Workflow orphan step keys
- * needs: none
- * selftest: true
- * why: a refactor deleted a step's name/if/run and left its env block grafted onto the previous step
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs its --selftest and then its check, so it registers no gate of its own.
  *
  * WHY THIS EXISTS, found by the Claude review on PR #585 and not by any gate.
  * Commit 1e8026bd extracted the "External dependency freshness" step and removed

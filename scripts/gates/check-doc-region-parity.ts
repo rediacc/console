@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * check:ci-doc-region-parity -- the committed bytes of every `gen-docs` region must equal
+ * check-doc-region-parity -- the committed bytes of every `gen-docs` region must equal
  * what the providers would emit RIGHT NOW, and every provider must still be used by one.
  *
  * WHY THIS EXISTS AT ALL, GIVEN test_gate_docs_gen.py ALREADY RUNS THE GENERATOR.
@@ -53,23 +53,12 @@
  * path list short of "the repository" would be wrong, and a half-populated one makes
  * `--changed` drop this gate silently. An entry without `paths` is always selected.
  *
- * NO `---- gate ----` HEADER, and that is a choice rather than an omission. This gate belongs
- * in quality-code, and .github/workflows/ci-quality.yml:894 records why the sibling gate
- * check:ci-gates-lock declares none either: quality-code HAS a gate-bind region, but 73 of its
- * gates still have hand-written steps outside it, so `gate-bind --write` would emit all 73 into
- * the region and leave the hand-written copies as duplicates. Declaring here would make it the
- * 74th. It joins the region in the W2.6 lane cutover, with the rest. Until then the four
- * registrations are hand-written and check:ci-parity is what proves they agree.
- *
- * The registration this expects, so a reader can check it in one place:
- *   package.json  "check:ci-doc-region-parity":
- *       "tsx scripts/gates/check-doc-region-parity.ts --selftest && tsx scripts/gates/check-doc-region-parity.ts"
- *   manifest      id check:ci-doc-region-parity, gate: true, no paths (see above),
- *                 leaves ['scripts/gates/check-doc-region-parity.ts'],
- *                 ci: step "Doc region parity" in quality-code
- *   workflow      a step named exactly "Doc region parity" in the quality-code job
- *   and the gate test .ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py, collected
- *   by check:ci-pytest.
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which runs its
+ * --selftest and then its check, so it registers no gate of its own. That gate carries no
+ * `paths`, for the reason above. The gate test
+ * .ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py, collected by check:ci-pytest,
+ * drives this script directly.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -860,7 +849,7 @@ function main(argv: string[]): number {
   };
   const fail: string[] = [];
 
-  process.stdout.write(`check:ci-doc-region-parity  root=${root}\n`);
+  process.stdout.write(`doc region parity  root=${root}\n`);
 
   // 1. THE FLOOR, corpus-derived. Four readings of one module, no typed number.
   const corpus = providerCorpus(fs.readFileSync(PROVIDER_SOURCE, 'utf-8'));

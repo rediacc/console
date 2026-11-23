@@ -46,12 +46,10 @@
  *
  * Usage: npx tsx scripts/gates/check-ci-parity.ts
  *
- * ---- gate ----
- * step: Validate parity between the local gate set and the CI quality surface
- * needs: node
- * id: check:ci-parity
- * lane: quality-content
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs it; its controls run first on every invocation, so it has no --selftest mode and
+ * registers no gate of its own.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -179,8 +177,16 @@ export function resolveInvocations(
       break;
     }
     if (toks.length === 0) continue;
-    const prog = toks[0] ?? '';
-    const rest = toks.slice(1);
+    let prog = toks[0] ?? '';
+    let rest = toks.slice(1);
+    // `npx tsx <file>` and `npx node <file>` RUN THE FILE, the way `tsx <file>` does. gate-bind spells a local bin through npx in a workflow step (a step has no node_modules/.bin on PATH), and before this arm the resolver read `tsx` as a bare tool run through npx, so a direct-run .ts gate resolved to the leaf `tsx` and its correct `leaves:` read as a pointer to a step that runs something else.
+    if (prog === 'npx') {
+      const i = rest.findIndex((a) => !a.startsWith('-'));
+      if (i >= 0 && (rest[i] === 'tsx' || rest[i] === 'node')) {
+        prog = rest[i];
+        rest = rest.slice(i + 1);
+      }
+    }
 
     if (prog === 'npm' && (rest[0] === 'run' || rest[0] === 'test')) {
       const key = rest[0] === 'test' ? 'test' : (rest[1] ?? '');
@@ -709,6 +715,22 @@ function control(): void {
     // CONTROL: a plain script invocation is unchanged, so the arm cannot eat that form.
     if (leaves('python3 tools/solo.py')[0] !== 'tools/solo.py') {
       fail('a plain `python3 <script>` invocation stopped resolving to its script');
+    }
+  }
+
+  // --- `npx tsx <file>` resolves to the file, a bare npx tool stays the tool ----
+  {
+    const u = universeOf({ '': {} }, {}, ['scripts/gen/gen-x.ts']);
+    const leaves = (cmd: string): string[] => resolveLeaves(cmd, u);
+    if (leaves('npx tsx scripts/gen/gen-x.ts --gates --check')[0] !== 'scripts/gen/gen-x.ts') {
+      fail('`npx tsx <file>` does not resolve to the file it runs');
+    }
+    if (leaves('npx --yes node scripts/gen/gen-x.ts')[0] !== 'scripts/gen/gen-x.ts') {
+      fail('`npx --yes node <file>` does not resolve to the file it runs');
+    }
+    // CONTROL: a bare tool run through npx is still the tool, so the arm cannot widen to every npx run.
+    if (leaves('npx biome check .')[0] !== 'biome') {
+      fail('a bare tool run through npx stopped resolving to the tool');
     }
   }
 
