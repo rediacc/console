@@ -8,7 +8,9 @@
     "unjudged record change through. A flagged gate that reads nothing goes in notReaders with its reason, by name, and the gate prints it every run.",
     "Globs use only ** and *: the gate, the guard and run.ts globToRegExp read those three alike and differ on ? and braces.",
     "THE PLAN RECORDS (operator ruling 2026-11-16): a commit that only writes plans advances too. agent/plans/**/*.md (QUEUE.md included), agent/INDEX.md, .ci/config/plan-boxes.json and the three plan ledgers (plan-investigation, plan-box-progress, live-proof) are records; their 36 readers are pinned by name in .ci/rediacc_ci/tests/gates/test_gate_record_paths.py (PLAN_READERS).",
-    "The plan glob ends in *.md on purpose: a non-.md file under agent/plans/ (an inventory .tsv, a .patch attachment) is judged by check:ci-language-policy, which scans every tracked path, so it voids the receipt. agent/STATE.md is not a record.",
+    "The plan glob ends in *.md on purpose: a non-.md file under agent/plans/ (an inventory .tsv, a .patch attachment) is judged by check:ci-language-policy, which scans every tracked path, so it voids the receipt.",
+    "THE SESSION HAND-OVERS (agent/plans/PLAN-stop-hook-retro-20261123.md box R20261123.4, decision D4): agent/*/STATE.md is a record, so the STATE.md commit the Stop hook itself orders near the end of a context (wisdom-due, /wisdom step 6) advances a receipt instead of voiding a ci:quick run in flight. Its readers are the derivation's, check:ci-pr-task-trailers included on the over-count rule: it reads only agent/worklist/epics.jsonl (the joined `agent` segment matches this glob's prefix), so its commit-range verdict never depends on a STATE.md, and the re-run costs one gate.",
+    "agent/STATE.md is not a record: no session writes a hand-over at the agent/ root (each writes agent/<session>/STATE.md, and `*` does not cross a slash), so a file appearing there is unexpected and stays a voiding path, judged by the whole lane.",
     "`\"review\": \"keep\"` on a record keeps its paths in the per-commit review (.claude/hooks/stop/wl_review.py skip_globs): a plan's text is reviewed although it advances the receipt. A record without the key leaves the reviewed diff when its glob is admissible there.",
     "check:ci-pytest is no reader of any record and is not listed: its real-tree tests re-run reader gates, CI runs it on every push, and it costs about 1750 s. The derivation does not flag it, so it needs no notReaders entry; if a later leaf makes it flagged, exempt it by name with this reason instead of declaring it.",
     "A RED receipt advances when none of its failed gates reads a touched record (scripts/ci-runner/run.ts planAdvance): `failed` keeps describing the receipt's own tree, and the push guard still refuses a red no carry covers.",
@@ -2803,6 +2805,308 @@
         {
           "id": "check:ci-inner-timeout-reachable",
           "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        }
+      ],
+      "notReaders": []
+    },
+    {
+      "glob": "agent/*/STATE.md",
+      "except": [],
+      "probes": [
+        "agent/ace763dd/STATE.md"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-account-env-retired",
+          "evidence": ".ci/rediacc_ci/quality/account_env_retired.py:59 (cite) agent/"
+        },
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".ci/rediacc_ci/quality/agent_session_archival.py:43 (cite) agent"
+        },
+        {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12492 (declared) names **"
+        },
+        {
+          "id": "check:ci-bws-map",
+          "evidence": ".ci/scripts/quality/check_bws_map.py:364 (cite) agent/"
+        },
+        {
+          "id": "check:ci-command-planes",
+          "evidence": "packages/cli/src/commands/config/audit.ts:63 (cite) agent"
+        },
+        {
+          "id": "check:ci-commit-citations",
+          "evidence": ".ci/scripts/quality/check_commit_citations.py:58 (cite) agent/reviews/"
+        },
+        {
+          "id": "check:ci-config-server-key-constant",
+          "evidence": ".ci/scripts/quality/check_config_server_key_constant.py:55 (cite) agent"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12933 (declared) names **"
+        },
+        {
+          "id": "check:ci-dead-python",
+          "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (cite) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:6038 (declared) names **"
+        },
+        {
+          "id": "check:ci-dead-translation-keys",
+          "evidence": "scripts/gates/check-dead-translation-keys.ts:548 (glob) *.*"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/gates/check-doc-region-parity.ts:325 (glob) *.md"
+        },
+        {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5784 (declared) names **"
+        },
+        {
+          "id": "check:ci-durable-paths-tracked",
+          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:31 (cite) agent/programs/<slug>/state/reports/"
+        },
+        {
+          "id": "check:ci-env-manifest",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (cite) agent/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8944 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1364 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12540 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-manifest",
+          "evidence": "scripts/gates/check-gate-manifest.ts:487 (cite) agent/"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4146 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6824 (declared) names **"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (cite) agent/**"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1427 (declared) names **"
+        },
+        {
+          "id": "check:ci-guard-mention-anchoring",
+          "evidence": ".ci/scripts/quality/check_guard_mention_anchoring.py:769 (cite) agent"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-i18n-cli-help-render",
+          "evidence": "packages/cli/src/commands/config/audit.ts:63 (cite) agent"
+        },
+        {
+          "id": "check:ci-i18n-cli-key-usage",
+          "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
+        },
+        {
+          "id": "check:ci-i18n-command-parity",
+          "evidence": "packages/cli/src/commands/config/audit.ts:63 (cite) agent"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (cite) agent/**"
+        },
+        {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11347 (declared) names **"
+        },
+        {
+          "id": "check:ci-literal-sources",
+          "evidence": ".ci/rediacc_ci/quality/literal_sources.py:1974 (cite) agent/**"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2681 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6248 (declared) names **"
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "evidence": ".ci/scripts/quality/check_operator_rulings.py:59 (cite) agent"
+        },
+        {
+          "id": "check:ci-ops-health",
+          "evidence": ".ci/rediacc_ci/ops/ops_health.py:55 (cite) agent/ledgers/ops-health.jsonl"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:12005 (declared) names **"
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "evidence": "scripts/ci-runner/run.ts:3120 (cite) agent/reviews/**"
+        },
+        {
+          "id": "check:ci-plan-bindings",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-feedback",
+          "evidence": ".ci/rediacc_ci/feedback/classify.py:81 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-folders",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-housekeeping",
+          "evidence": ".ci/rediacc_ci/quality/plan_housekeeping.py:942 (cite) agent/PLAN-x.md"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".ci/rediacc_ci/proof/live_tier.py:34 (cite) agent"
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-pr-epic-block",
+          "evidence": "scripts/gates/check-pr-epic-block.ts:245 (cite) agent"
+        },
+        {
+          "id": "check:ci-pr-task-trailers",
+          "evidence": "scripts/gates/check-pr-task-trailers.ts:518 (cite) agent"
+        },
+        {
+          "id": "check:ci-prose-duplication",
+          "evidence": ".ci/rediacc_ci/quality/scope_mirrors.py:106 (cite) agent/plans/QUEUE.md"
+        },
+        {
+          "id": "check:ci-prose-style",
+          "evidence": ".ci/rediacc_ci/quality/prose_style.py:898 (cite) agent/plans/%s"
+        },
+        {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5861 (declared) lists agent"
+        },
+        {
+          "id": "check:ci-release-bump-skip",
+          "evidence": ".ci/rediacc_ci/ci/detect_pointer_bump.py:130 (cite) agent/reviews/"
+        },
+        {
+          "id": "check:ci-resprofile",
+          "evidence": ".ci/scripts/quality/check_resprofile.py:130 (cite) agent/plans/PLAN-resprofile-wave2.md"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6110 (declared) names **"
+        },
+        {
+          "id": "check:ci-retired-terms",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-review-resolutions",
+          "evidence": ".ci/rediacc_ci/quality/review_resolutions.py:528 (cite) agent/reviews/feat/x.md"
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "evidence": "scripts/ci-runner/run.ts:3120 (cite) agent/reviews/**"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12437 (declared) names **"
+        },
+        {
+          "id": "check:ci-scope-mirrors",
+          "evidence": ".ci/rediacc_ci/quality/scope_mirrors.py:106 (cite) agent/plans/QUEUE.md"
+        },
+        {
+          "id": "check:ci-script-exec-bit",
+          "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1316 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11842 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7409 (declared) names **"
+        },
+        {
+          "id": "check:ci-trap-registry",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:51 (cite) agent"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1459 (declared) names **"
+        },
+        {
+          "id": "check:ci-worklist-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (cite) agent/"
+        },
+        {
+          "id": "check:cli-docs",
+          "evidence": "packages/cli/src/commands/config/audit.ts:63 (cite) agent"
+        },
+        {
+          "id": "check:cli-examples",
+          "evidence": "scripts/gen/validate-cli-examples.ts:51 (cite) agent/**/*.{md"
         }
       ],
       "notReaders": []
