@@ -16,8 +16,17 @@ import { ValidationError } from '../../utils/errors.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { SessionPrincipal } from './sessions.js';
 
-/** How long a resolved identity is trusted before re-asking the account server. */
+/**
+ * How long a resolved identity is trusted before re-asking the account server,
+ * at most: an entry never outlives the token's own `expiresAt`.
+ */
 const CACHE_TTL_MS = 60_000;
+
+/**
+ * The most resolved identities held at once. Past it the least recently used
+ * entry goes, so a flood of distinct bearers costs a bounded amount of memory.
+ */
+export const VERIFIER_CACHE_MAX_ENTRIES = 1_024;
 
 /** The scope the executor's OWN token needs to record what it ran. */
 const AUDIT_WRITE_SCOPE = 'audit:write';
@@ -35,6 +44,8 @@ export interface IntrospectionResponse {
   orgRole?: string;
   /** The presented token's own id, which the audit event is attributed to. */
   tokenId?: string;
+  /** ISO instant the presented token expires; absent for a token with no expiry. */
+  expiresAt?: string;
 }
 
 export interface AuthVerifierOptions {
@@ -110,13 +121,20 @@ export class AuthVerifier {
    *
    * Cached briefly, because a warm container fields many commands per session
    * and re-introspecting each one would add a round trip to every command
-   * without changing the answer. The cache is short enough that a revoked token
-   * stops working within a minute.
+   * without changing the answer. An entry lives `CACHE_TTL_MS` or until the
+   * token's own expiry, whichever comes first, so a revoked token stops working
+   * within a minute and an expired one at its expiry. The cache is an LRU of at
+   * most `VERIFIER_CACHE_MAX_ENTRIES`; an expired entry is dropped when read.
    */
   async verify(bearerToken: string): Promise<SessionPrincipal> {
     const cached = this.cache.get(bearerToken);
-    if (cached && cached.expiresAt > this.now()) {
-      return cached.principal;
+    if (cached) {
+      this.cache.delete(bearerToken);
+      if (cached.expiresAt > this.now()) {
+        // Re-insert to mark it most recently used (Map keeps insertion order).
+        this.cache.set(bearerToken, cached);
+        return cached.principal;
+      }
     }
 
     const response = await this.fetchImpl(`${this.accountUrl}/account/api/v1/proxy/introspect`, {
@@ -138,8 +156,36 @@ export class AuthVerifier {
     const body = (await response.json()) as IntrospectionResponse;
     const principal = this.toPrincipal(body);
 
-    this.cache.set(bearerToken, { principal, expiresAt: this.now() + CACHE_TTL_MS });
+    const now = this.now();
+    let entryExpiresAt = now + CACHE_TTL_MS;
+    if (body.expiresAt !== undefined) {
+      const tokenExpiresAt = Date.parse(body.expiresAt);
+      if (Number.isNaN(tokenExpiresAt)) {
+        throw new AuthError(
+          'The account server returned an unreadable expiry for this token.',
+          401
+        );
+      }
+      entryExpiresAt = Math.min(entryExpiresAt, tokenExpiresAt);
+    }
+    // A token the account server calls active but whose expiry has already
+    // passed on this clock is answered once and not cached.
+    if (entryExpiresAt > now) this.remember(bearerToken, { principal, expiresAt: entryExpiresAt });
     return principal;
+  }
+
+  /** Number of resolved identities currently held; exposed for the bound's test. */
+  get cacheSize(): number {
+    return this.cache.size;
+  }
+
+  private remember(bearerToken: string, entry: CacheEntry): void {
+    this.cache.set(bearerToken, entry);
+    while (this.cache.size > VERIFIER_CACHE_MAX_ENTRIES) {
+      const oldest = this.cache.keys().next();
+      if (oldest.done) break;
+      this.cache.delete(oldest.value);
+    }
   }
 
   /**
