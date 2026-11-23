@@ -39,11 +39,9 @@ POLICY = {
         },
     ],
 }
-#: The seven gates whose only path to agent/worklist/*.jsonl was the gate table: each carried a notReader with a manifest.ts reason until F1 deleted it.
+#: The five gates whose only path to agent/worklist/*.jsonl was the gate table: each carried a notReader with a manifest.ts reason until F1 deleted it.
 TABLE_IMPORTERS = (
     "check:ci-embed-asset-versions",
-    "check:ci-gates-lock",
-    "check:ci-gen-manifest",
     "check:ci-package-key-budget",
     "check:ci-pin-registry",
     "check:ci-selftest-reachability",
@@ -150,7 +148,7 @@ def test_a_record_glob_only_in_the_gate_table_or_trace_ledger_makes_no_reader(ga
 
 
 def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
-    """The seven gates that import the gate table, against the real policy and lock: the table still holds an agent/worklist/** literal, and none of them is derived as a reader of the worklist record."""
+    """The five gates that import the gate table, against the real policy and lock: the table still holds an agent/worklist/** literal, and none of them is derived as a reader of the worklist record."""
     assert "'agent/worklist/**'" in MANIFEST.read_text(encoding="utf-8"), (
         "the control's subject moved"
     )
@@ -176,7 +174,7 @@ def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
 
 
 def test_the_seven_table_importers_listing_agent_are_flagged_through_declared(tmp_path):
-    """The real-tree control the F1 brief names, as a process: the real lock with `agent` added to those seven gates' `lists`. Each is flagged, every flag is the declared tier's, and none cites manifest.ts. MIRROR: the unplanted lock is green."""
+    """The real-tree control the F1 brief names, as a process: the real lock with `agent` added to those five gates' `lists`. Each is flagged, every flag is the declared tier's, and none cites manifest.ts. MIRROR: the unplanted lock is green."""
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     for g in lock:
         if g["id"] in TABLE_IMPORTERS:

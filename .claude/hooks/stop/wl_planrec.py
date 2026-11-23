@@ -636,7 +636,22 @@ def resolve(root, kind, token):
         scripts = _package_scripts(root)
         if not scripts:
             return False, "package.json has no scripts block to check against"
-        return (token in scripts), ("package.json scripts" if token in scripts else "no such gate")
+        if token in scripts:
+            return True, "package.json scripts"
+        # A gate the runner runs directly (no npm key, e.g. check:ci-gen-gates) is real when the lock registers it with `gate: true`.
+        lock = pathlib.Path(root) / "scripts/ci-runner/gates.lock.json"
+        try:
+            data = json.loads(lock.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return False, "no such package.json script, and %s could not be read (%s)" % (
+                lock.name,
+                exc,
+            )
+        rows = data if isinstance(data, list) else []
+        row = next((r for r in rows if isinstance(r, dict) and r.get("id") == token), None)
+        if row is not None and row.get("gate") is True:
+            return True, "gates.lock.json gate"
+        return False, "no such gate"
     if kind == "plan":
         # A BARE SLUG IS TRIED IN EVERY FOLDER, deepest first, because a closed plan lives under `agent/plans/_done/` and the slug in a citation does not say so. A full path is taken as written: the stub left at a moved plan's old path used to be a real file, so the legacy spelling resolved there and the citation kept its meaning rather than silently following the move.
         if token.startswith("agent/"):
