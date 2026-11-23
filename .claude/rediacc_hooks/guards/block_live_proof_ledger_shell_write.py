@@ -7,7 +7,7 @@ WHAT COUNTS AS A WRITE, read by the lexer (`shellscan`) and never by a regex ove
   - an output redirection (`>`, `>>`, `>|`) whose target lands on the ledger, as typed and as bash expands it;
   - `tee`, an in-place `sed`/`perl`, `truncate`, `dd of=` or `rm` naming it, and a copier (`cp`, `mv`, `install`, `rsync`, `ln`) whose destination lands on it (`shellscan.copy_landings`, so a copy into `agent/ledgers/` of a file named `live-proof.jsonl` counts);
   - any other command's output word (`shellscan.output_landings`): an output option of a listed reader (`sort -o`), or any word of a command that table does not list as a reader (`touch`, `rm`);
-  the redirect, tee, in-place, copy and output-word readings are `Event.writes()` (`shellscan.writes`, parsed once per Event and shared with every guard of the chain), each tested where it lands; truncate, `dd of=`, `rm` and interpreter code are this guard's own readings;
+  the redirect, tee, in-place, copy, truncate, `dd of=`, `rm` and output-word readings are the chain's one walk (`shellscan.event_write_records`, made once per Event and shared with every guard of the chain), each tested where it lands; interpreter code is this guard's own reading;
   - interpreter code: a Python program whose write targets, or whose appending calls (`append_lines`, `.write`, `json.dump`), name the ledger, a call of `ledger_path`, or the `LEDGER` constant; other interpreters, and Python that does not parse, by a line that names the ledger beside write code. A program that imports the recorder and passes `write=True`,
     or calls its `_judge_and_write`, is refused too: an in-process `record(..., world=World(run=<fake>))` would append a VERIFIED row for steps that never ran.
 
@@ -78,9 +78,6 @@ RECORDER_WRITE = re.compile(r"\bwrite\s*=\s*True\b|_judge_and_write|\bjsonl_appe
 MESSAGE = RULE.message[1]
 
 
-_base = shellscan.run_base
-
-
 def _is_ledger(word, base=None):
     """Does `word`, as text or resolved on disk from the absolute directory `base` (symlinks followed, a glob expanded), land on the live-proof ledger?"""
     if not word:
@@ -98,21 +95,6 @@ def _is_ledger(word, base=None):
     except (OSError, ValueError, RecursionError):
         return False
     return any(LEDGER_PATH.search(p.replace("\\", "/")) for p in landed)
-
-
-_operands = shellscan.plain_operands
-
-
-def _operand_write(run, name, argv, base):
-    """A description of the ledger write `run` makes through one of its own operands (tee, sed/perl -i, truncate, dd of=, rm), or ""."""
-    operands = shellscan.xargs_fed_operands(run, _operands(argv))
-    if name == "truncate" and any(_is_ledger(a, base) for a in operands):
-        return "truncate of the ledger"
-    if name == "dd" and any(a.startswith("of=") and _is_ledger(a[3:], base) for a in argv):
-        return "dd of= the ledger"
-    if name in ("rm", "unlink", "shred") and any(_is_ledger(a, base) for a in operands):
-        return "%s of the ledger" % name
-    return ""
 
 
 def _searched_text(node):
@@ -741,34 +723,31 @@ def _code_writes_ledger(code, program):
     return "code that writes the ledger" if verdict else ""
 
 
-# How each `shellscan.writes` reading is named in the refusal. Two readings are not taken: a pathspec of a restoring verb (this guard never judged restores of the ledger; the restore guards do), and "interpreter", whose Python targets are followed through bindings without scope, so a parameter or a match capture shadowing a module ledger name read as a ledger write (five scope controls of this suite, #b4bb4a4e and 53e8d8aa.2); `_code_writes_ledger` judges programs by scope.
+# How each `shellscan.write_records` reading is named in the refusal (`%(path)s` the landing, `%(name)s` the writing command). `dd of=` is an "option" record, and `unlink`/`shred` are "unread" ones. Two readings are not taken: a pathspec of a restoring verb (this guard never judged restores of the ledger; the restore guards do), and "interpreter", whose Python targets are followed through bindings without scope, so a parameter or a match capture shadowing a module ledger name read as a ledger write (five scope controls of this suite, #b4bb4a4e and 53e8d8aa.2); `_code_writes_ledger` judges programs by scope.
 _HOW = {
-    "redirect": "redirect into %s",
-    "append": "redirect into %s",
-    "tee": "tee into %s",
-    "in-place": "in-place edit of %s",
-    "copy": "copy onto %s",
-    "option": "a command writing %s through its own output option",
-    "unread": "a command naming %s, which this guard does not read as a reader",
+    "redirect": "redirect into %(path)s",
+    "append": "redirect into %(path)s",
+    "tee": "tee into %(path)s",
+    "in-place": "in-place edit of %(path)s",
+    "copy": "copy onto %(path)s",
+    "option": "a command writing %(path)s through its own output option",
+    "unread": "a command naming %(path)s, which this guard does not read as a reader",
+    "truncate": "truncate of the ledger",
+    "remove": "%(name)s of the ledger",
 }
 
 
-def _offending(cmd, cwd, writes=()):
-    """A short description of the first hand write to the ledger in `cmd`, or "". `writes` is `Event.writes()`, the walk's shared readings (`shellscan.writes`), each tested where it lands (`_is_ledger` from "/", so a glob in the absolute path is expanded); the run loop keeps this guard's own readings, which `writes` leaves to other guards or reads without scope: truncate, `dd of=`, rm (`_operand_write`, over the typed and the expanded words) and interpreter code."""
-    for path, how in writes:
-        if how in _HOW and _is_ledger(path, "/"):
-            return _HOW[how] % path
+def _offending(cmd, cwd, records=None):
+    """A short description of the first hand write to the ledger in `cmd`, or "". `records` is the chain's one walk (`shellscan.event_write_records`; made here without it), each record tested where it lands (`_is_ledger` from "/", so a glob in the absolute path is expanded); the run loop keeps this guard's own reading, which the walk makes without scope: interpreter code."""
+    if records is None:
+        records = shellscan.write_records(cmd, cwd)
+    for write in records:
+        if write.how in _HOW and _is_ledger(write.path, "/"):
+            name = write.run.name.rsplit("/", 1)[-1]
+            return _HOW[write.how] % {"path": write.path, "name": name}
     for run in shellscan.every_run(cmd):
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
-        base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
-        variants = [argv]
-        if run.xargv is not None and list(run.xargv) != argv:
-            variants.append(list(run.xargv))
-        for words in variants:
-            what = _operand_write(run, name, words, base)
-            if what:
-                return what
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
             name = shebang
@@ -815,7 +794,7 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    what = _offending(cmd, cwd, ev.writes())
+    what = _offending(cmd, cwd, shellscan.event_write_records(ev))
     if not what:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % what)

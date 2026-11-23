@@ -829,7 +829,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_ssh_docker.py | (none) | via .claude/rediacc_hooks/guards/block_ssh_docker.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_ssh_file_write.py | (none) | via .claude/rediacc_hooks/guards/block_ssh_file_write.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_suppressions.py | (none) | via .claude/rediacc_hooks/guards/block_suppressions.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_suppressions_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_suppressions.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_suppressions_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unasked_release.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unlinked_commit_author.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unproven_bulk_transform.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
@@ -839,7 +839,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_untagged_commit.py | (none) | via .claude/hooks/stop/wl_epic.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unverified_push.py | (none) | via .claude/hooks/stop/test-review-mark.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_user_only_command.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_review_file_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_vm_unverified_push.py | (none) | via .claude/hooks/stop/wl_boxready.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_worktree_add.py | (none) | via .claude/hooks/stop/test-landing-stack.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/warn_hook_change.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
