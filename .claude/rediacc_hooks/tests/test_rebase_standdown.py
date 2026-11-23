@@ -467,11 +467,21 @@ def halt_cherry_pick_in(w):
 BRANCH_R = "0930-1"
 
 
+def _recording_spawn(spawned: list[tuple[object, ...]]):
+    """A spawn stand-in that records each call and answers a fake pid."""
+
+    def spawn(*a: object) -> int:
+        spawned.append(a)
+        return 4242
+
+    return spawn
+
+
 def test_trigger_starts_no_reviewer_mid_operation(reviewworld):
     w = reviewworld
     halt_cherry_pick_in(w)
-    spawned = []
-    assert R.trigger(w.repo, w.repo, spawn=lambda *a: spawned.append(a) or 4242) == []
+    spawned: list[tuple[object, ...]] = []
+    assert R.trigger(w.repo, w.repo, spawn=_recording_spawn(spawned)) == []
     assert spawned == []
 
 
@@ -479,8 +489,8 @@ def test_trigger_control_the_same_commit_gets_a_reviewer_once_the_operation_ends
     w = reviewworld
     halt_cherry_pick_in(w)
     w.git("cherry-pick", "--abort")
-    spawned = []
-    started = R.trigger(w.repo, w.repo, spawn=lambda *a: spawned.append(a) or 4242)
+    spawned: list[tuple[object, ...]] = []
+    started = R.trigger(w.repo, w.repo, spawn=_recording_spawn(spawned))
     assert spawned, "nothing was uncovered, so the stand-down case proves nothing"
     assert started
 
@@ -507,7 +517,7 @@ def test_a_running_reviewer_records_nothing_once_an_operation_began(reviewworld)
     w = reviewworld
     head = halt_cherry_pick_in(w)
     before = tracked_snapshot(w.repo)
-    said = []
+    said: list[str] = []
     path = R.run_review(
         w.repo, "console", head, BRANCH_R, reviewer=_clean_reviewer, log=said.append
     )
@@ -535,6 +545,8 @@ def _tiny():
     spec = importlib.util.spec_from_file_location(
         "githook_artifacts_tests_for_standdown", HERE / "test_githook_generated_artifacts.py"
     )
+    assert spec is not None, "cannot load test_githook_generated_artifacts.py"
+    assert spec.loader is not None, "test_githook_generated_artifacts.py has no loader"
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
