@@ -11,6 +11,7 @@ import { printFeedbackHint, withFeedbackOption } from '../services/feedback/hint
 import { recordCommand } from '../services/feedback/ring.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
+import { errorOrigin } from '../types/error-origins.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { CliExitError } from './cli-exit-error.js';
 
@@ -109,6 +110,7 @@ function getGuidance(error: CliError): string | undefined {
 
 /** Output error in JSON envelope format */
 function outputJsonError(cliError: CliError): void {
+  const origin = errorOrigin(cliError.code, (cliError as NamedCliError).errorCode);
   const envelope = {
     success: false,
     command: outputService.getCommandName() ?? DEFAULTS.TELEMETRY.UNKNOWN,
@@ -116,6 +118,7 @@ function outputJsonError(cliError: CliError): void {
     errors: [
       {
         code: cliError.code,
+        ...(origin && { origin }),
         message: cliError.message,
         ...(cliError.details?.length && { details: cliError.details }),
         ...((cliError as NamedCliError).errorCode && {
