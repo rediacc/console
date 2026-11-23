@@ -1,0 +1,45 @@
+/**
+ * Forensics shipping: the signed batch format and the licence claim, shared by
+ * the account Worker, the verifier script and the Go shipper's vectors.
+ */
+export {
+  BATCH_SCHEMA,
+  BatchFormatError,
+  type BatchHeader,
+  BatchHeaderSchema,
+  type BatchSection,
+  type BatchVerdict,
+  batchHash,
+  type ChainCheck,
+  type ChainPoint,
+  checkChain,
+  decodeHeader,
+  decodeSignature,
+  encodeHeader,
+  encodeSignature,
+  GENESIS_HASH,
+  type HeaderDecode,
+  importSpoolPublicKey,
+  MAX_BATCH_BYTES,
+  MAX_SECTIONS,
+  SECTION_KINDS,
+  type SectionKind,
+  type SectionStatus,
+  type SectionVerdict,
+  sectionKey,
+  sha256Hex,
+  type VerifyBatchInput,
+  verifyBatch,
+  verifyHeaderSignature,
+} from './batch.js';
+export {
+  clampLevel,
+  effectiveLevel,
+  FORENSICS_LEVELS,
+  type ForensicsClaim,
+  ForensicsClaimSchema,
+  type ForensicsLevel,
+  ForensicsLevelSchema,
+  levelRank,
+  levelWithinClaim,
+} from './claim.js';

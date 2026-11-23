@@ -233,6 +233,14 @@
       "types": "./dist/ai/*.d.ts",
       "default": "./dist/ai/*.js"
     },
+    "./forensics": {
+      "types": "./dist/forensics/index.d.ts",
+      "default": "./dist/forensics/index.js"
+    },
+    "./forensics/*": {
+      "types": "./dist/forensics/*.d.ts",
+      "default": "./dist/forensics/*.js"
+    },
     "./command-line": {
       "types": "./dist/command-line/index.d.ts",
       "default": "./dist/command-line/index.js"
