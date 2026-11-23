@@ -67,6 +67,14 @@ export { hkdfDeriveKey, hkdfDeriveRaw } from './hkdf.js';
 export { hmacCompute, hmacVerify } from './hmac.js';
 // Triple-layer encryption
 export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
+// Policy record (its own record under the CEK, PLAN-rmcp-policy-record.md Design 1)
+export type { PolicyRecord, PolicyRecordBinding } from './policy-record.js';
+export {
+  decryptPolicyRecord,
+  encryptPolicyRecord,
+  PolicyRecordIntegrityError,
+  policyRecordAad,
+} from './policy-record.js';
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
 // Selective encryption

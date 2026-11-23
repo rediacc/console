@@ -7,7 +7,13 @@
  */
 
 import { DEFAULTS } from '../config/index.js';
-import type { MutationScope, PolicyDocument, PolicyOrgRole, PolicyRule } from './schema.js';
+import type {
+  MutationScope,
+  PolicyDocument,
+  PolicyOrgRole,
+  PolicyRule,
+  PolicyRuleKey,
+} from './schema.js';
 
 /**
  * What happens when an organization has NO policy document at all.
@@ -96,6 +102,24 @@ function applicableTiers(doc: PolicyDocument, ctx: PolicyContext): PolicyRule[] 
   return tiers;
 }
 
+/** `rule` without the keys in `ignored`. */
+function withoutKeys(rule: PolicyRule, ignored: ReadonlySet<PolicyRuleKey>): PolicyRule {
+  if (ignored.size === 0) return rule;
+  const out: PolicyRule = { ...rule };
+  for (const key of ignored) delete out[key];
+  return out;
+}
+
+/**
+ * Whether an `allowGrandRepos` value admits `repoName`: `true` admits every grand repo (it equals
+ * `['*']`), a list admits a repo one of its globs matches, anything else admits none.
+ */
+function grandRepoAllowed(value: PolicyRule['allowGrandRepos'], repoName?: string): boolean {
+  if (value === true) return true;
+  if (!Array.isArray(value)) return false;
+  return matchesAny(value, repoName ?? '');
+}
+
 /**
  * One dimension's value, taken from the most specific tier that defines it. A
  * tier that omits a field does not override a broader tier that set it, which is
@@ -130,10 +154,21 @@ function missingPolicyDecision(ctx: PolicyContext, subject: string): PolicyDecis
 }
 
 /**
+ * How an opt-in switch (`allowGrandRepos`, `allowClusterOps`) that no tier sets reads. A full
+ * policy (`ceiling`) denies: the switches are opt-in. A narrowing team policy (`narrowing`) leaves
+ * the decision to the org policy: a key the team does not set adds no restriction.
+ */
+type AbsentSwitch = 'ceiling' | 'narrowing';
+
+/**
  * Target-dimension denials: machine, repo, grand-repo. Returns the first denial,
  * or null when every target the context carries is within policy.
  */
-function denyByTarget(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyDecision | null {
+function denyByTarget(
+  tiers: readonly PolicyRule[],
+  ctx: PolicyContext,
+  absent: AbsentSwitch
+): PolicyDecision | null {
   const machines = resolve(tiers, 'machines');
   if (ctx.machineName && machines && !matchesAny(machines, ctx.machineName)) {
     return { allowed: false, reason: `Policy does not allow machine "${ctx.machineName}".` };
@@ -144,7 +179,9 @@ function denyByTarget(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyD
     return { allowed: false, reason: `Policy does not allow repo "${ctx.repoName}".` };
   }
 
-  if (ctx.isGrandRepo && resolve(tiers, 'allowGrandRepos') !== true) {
+  const grand = resolve(tiers, 'allowGrandRepos');
+  const grandUnset = grand === undefined && absent === 'narrowing';
+  if (ctx.isGrandRepo && !grandUnset && !grandRepoAllowed(grand, ctx.repoName)) {
     return {
       allowed: false,
       reason: `Policy does not allow operations on grand repos ("${ctx.repoName ?? DEFAULTS.TELEMETRY.UNKNOWN}").`,
@@ -158,9 +195,15 @@ function denyByTarget(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyD
  * Operation-dimension denials: cluster lifecycle and mutation class. Returns the
  * first denial, or null when the operation is within policy.
  */
-function denyByOperation(tiers: readonly PolicyRule[], ctx: PolicyContext): PolicyDecision | null {
+function denyByOperation(
+  tiers: readonly PolicyRule[],
+  ctx: PolicyContext,
+  absent: AbsentSwitch
+): PolicyDecision | null {
   const isClusterOp = ctx.isClusterOp ?? looksLikeClusterOp(ctx.commandPath);
-  if (isClusterOp && resolve(tiers, 'allowClusterOps') !== true) {
+  const cluster = resolve(tiers, 'allowClusterOps');
+  const clusterUnset = cluster === undefined && absent === 'narrowing';
+  if (isClusterOp && !clusterUnset && cluster !== true) {
     return { allowed: false, reason: 'Policy does not allow cluster operations.' };
   }
 
@@ -213,7 +256,39 @@ export function evaluatePolicy(
   }
 
   return (
-    denyByTarget(tiers, ctx) ??
-    denyByOperation(tiers, ctx) ?? { allowed: true, reason: `Policy allows ${subject}.` }
+    denyByTarget(tiers, ctx, 'ceiling') ??
+    denyByOperation(tiers, ctx, 'ceiling') ?? { allowed: true, reason: `Policy allows ${subject}.` }
   );
+}
+
+/**
+ * The denial a NARROWING policy (a team policy under an org ceiling, merge.ts) adds, or null when it
+ * adds none. Unlike `evaluatePolicy`, a key no tier sets restricts nothing here: the ceiling has
+ * already decided it. A key in `ignored` (locked by the org) is treated as unset at every tier.
+ * A `commands.deny` match at any tier still wins.
+ */
+export function narrowingDenial(
+  doc: PolicyDocument,
+  ctx: PolicyContext,
+  ignored: ReadonlySet<PolicyRuleKey>
+): PolicyDecision | null {
+  const subject = ctx.destructive
+    ? `destructive command "${ctx.commandPath}"`
+    : `"${ctx.commandPath}"`;
+  const tiers = applicableTiers(doc, ctx).map((tier) => withoutKeys(tier, ignored));
+
+  for (const tier of tiers) {
+    const deny = tier.commands?.deny;
+    if (deny && matchesAny(deny, ctx.commandPath)) {
+      return { allowed: false, reason: `Team policy explicitly denies ${subject}.` };
+    }
+  }
+
+  const commands = resolve(tiers, 'commands');
+  if (commands && !matchesAny(commands.allow, ctx.commandPath)) {
+    return { allowed: false, reason: `Team policy does not allow ${subject}.` };
+  }
+
+  const denial = denyByTarget(tiers, ctx, 'narrowing') ?? denyByOperation(tiers, ctx, 'narrowing');
+  return denial ? { allowed: false, reason: `Team policy: ${denial.reason}` } : null;
 }
