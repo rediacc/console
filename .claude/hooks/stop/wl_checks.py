@@ -6884,6 +6884,20 @@ def _stop_store_freshness(ns):
     # ---- THE STORE'S FRESHNESS VERDICT (agent/plans/PLAN-stop-hook-store-status.md D2): a stale or orphaned owned item that no check above names. It fires on every stop while the item stays stale, with no latch, because every exit is one the session completes alone.
     if wl_storestatus.blocking(_ss_rows):
         vadd("wl-stale", False, wl_storestatus.render_stale(_ss_rows, me8))
+    # ---- THE WEEKLY LESSONS CADENCE (agent/plans/PLAN-weekly-lessons.md D4): pending hint proposals with no weekly plan in the last 7 days, or an older weekly plan with open boxes. One session holds the claim; the landing tree (the babysit and merge phases of the PR) parks it. It owns the pending-proposal subject, so the old `hint-proposals` advisory is gone.
+    try:
+        _lw = wl_hints.weekly_block(
+            ns["root"],
+            ns["worklist"],
+            ns["session_id"],
+            C.utcnow().date(),
+            parked=getattr(ns["_loop"], "role", "") == "landing",
+        )
+    except Exception as exc:
+        note_read_failure("lessons-weekly", exc)
+        _lw = ""
+    if _lw:
+        vadd("lessons-weekly", False, _lw)
 
 
 def _stop_store_fold(ns):
@@ -8384,17 +8398,6 @@ def _stop_judge(ns):
                 "hint-corpus-err",
                 M.N_HINT_CORPUS_ERR % "\n".join("  " + e for e in hint_errs),
                 3,
-            )
-        pending = wl_hints.pending_proposals(root)
-        if pending:
-            outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "hint-proposals",
-                wl_hints.pending_note(session_id, pending),
-                3,
-                refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
             )
     # TRAPGUARD RETIREMENT CANDIDATES (PLAN-trap-enforcement.md section 5, defence 3): a rule over wl_trapfires.RETIRE_FIRES fires with no confirmed true positive. Advisory only, never a block: many fires is also what a rule that is right every time looks like.
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop

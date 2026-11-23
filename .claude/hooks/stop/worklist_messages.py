@@ -1445,6 +1445,32 @@ N_HINT_CLUSTERS_READY = (
     " %(k)d source family(ies) hold 3 or more of them, one weekly-lessons box each: %(families)s."
 )
 
+# THE WEEKLY LESSONS CHECK (PLAN-weekly-lessons.md D4): `lessons-weekly` blocks at effort smart. It owns the pending-proposal subject, so the old `hint-proposals` advisory is gone and its text rides inside this one.
+N_LESSONS_WEEKLY_DISPATCH = (
+    "LESSONS WEEKLY: %(why)s\n%(pending)s\n"
+    "Dispatch the read-only lesson-curator (.claude/agents/lesson-curator.md, prompt "
+    "`weekly %(me8)s %(epoch)s %(date)s`). It writes PLAN-lessons-%(date)s.md into its run directory; "
+    "save that file verbatim as agent/plans/PLAN-lessons-%(date)s.md, run "
+    "`worklist.py --promote %(me8)s PLAN-lessons-%(date)s.md '<who ordered it and why>'`, "
+    "and commit both together. Proposals resolve as the plan's boxes are ticked "
+    "(`worklist.py --plan-tick`), each box resolving the ids its cluster-table row lists."
+)
+
+N_LESSONS_WEEKLY_WHY_NONE = (
+    "pending hint proposals exist and no weekly lessons plan has been written."
+)
+N_LESSONS_WEEKLY_WHY_OLD = (
+    "pending hint proposals exist and the newest weekly lessons plan (%(plan)s) is %(days)d days old, "
+    "past the %(cadence)d-day cadence."
+)
+
+N_LESSONS_WEEKLY_WORK = (
+    "LESSONS WEEKLY: %(plan)s is %(days)d days old (cadence %(cadence)d) and %(open)d box(es) are "
+    "still open. Work the oldest open box, `%(box)s`: build its fix as the plan says, verify it, "
+    "commit it, then `worklist.py --plan-tick %(me8)s %(plan)s %(sig)s <evidence> --write`, "
+    "which resolves the proposals its cluster-table row lists."
+)
+
 CLI_HINT_RESOLVE_USAGE = (
     "usage: worklist.py --hint-resolve <my-prefix> <proposal-id> <kind>:<token>\n"
     "  kind is one of: trap, guard, gate, hook, test, commit.\n"

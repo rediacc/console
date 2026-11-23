@@ -66,6 +66,10 @@
       "block": "smart",
       "advise": "low"
     },
+    "lessons-weekly": {
+      "block": "smart",
+      "advise": "low"
+    },
     "plan-unimplemented": {
       "block": "low",
       "advise": "low"
@@ -488,9 +492,6 @@
       "advise": "smart"
     },
     "hint-corpus-err": {
-      "advise": "high"
-    },
-    "hint-proposals": {
       "advise": "high"
     },
     "resprofile": {

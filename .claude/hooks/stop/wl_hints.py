@@ -194,9 +194,6 @@ def propose(root, by, text, source=""):
     return row
 
 
-# Plain constant, not a WORKLIST_* env knob -- matching wl_claimcheck's own reasoning: an untunable rule costs nothing an edit does not buy, and every WORKLIST_* name in this tree must be declared in the registry check:ci-worklist-env-registry enforces.
-PROPOSAL_REFRESH_MIN = 720
-
 # A proposal can also become a gate, a test, a guard or a tool fix rather than prose (PLAN-experience-feedback.md P2). `worklist.py --hint-resolve` records that in its own ledger, so the proposals ledger keeps one row shape and the retro brief that lists a session's proposals reads only proposals.
 RESOLUTIONS_REL = ("agent", "ledgers", "hint-resolutions.jsonl")
 
@@ -331,20 +328,23 @@ def lessons_dir(me8, epoch):
     return "agent/%s/lessons/e%s/" % (me8, epoch)
 
 
-def pending_note(session_id, rows):
-    """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan). The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
-    me8 = S.agent_session_slug(session_id)
-    epoch = 0
-    epoch_problem = ""
+def context_epoch(session_id):
+    """(epoch, problem): the context epoch from the band state, or (0, a sentence saying why it could not be read)."""
     try:
         import wl_retro
 
-        epoch = int(wl_retro.ctx().load_state(session_id).get("epoch") or 0)
+        return int(wl_retro.ctx().load_state(session_id).get("epoch") or 0), ""
     except Exception as exc:
-        epoch_problem = " The context epoch could not be read (%s: %s), so epoch 0 is assumed." % (
+        return 0, " The context epoch could not be read (%s: %s), so epoch 0 is assumed." % (
             type(exc).__name__,
             exc,
         )
+
+
+def pending_note(session_id, rows):
+    """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan). The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
+    me8 = S.agent_session_slug(session_id)
+    epoch, epoch_problem = context_epoch(session_id)
     ready = clusters(rows)
     note = M.N_HINT_PROPOSALS_PENDING % {
         "n": len(rows),
@@ -358,3 +358,242 @@ def pending_note(session_id, rows):
             "families": ", ".join("%s (%d)" % (fam, len(ids)) for fam, ids in ready),
         }
     return note + epoch_problem
+
+
+# -- The weekly lessons plan (agent/plans/PLAN-weekly-lessons.md D1-D4) -----------
+#
+# One plan a week turns pending proposals into fixes. `weekly_plan_text` builds its skeleton from the ledger (one box per cluster of 3 or more proposals, a cluster table naming every pending id), and the lesson-curator completes each box. `newest_lessons_plan` and `weekly_state` are what the `lessons-weekly` Stop check reads.
+
+LESSONS_PLAN_PREFIX = "PLAN-lessons-"
+LESSONS_PLAN_RE = re.compile(r"^PLAN-lessons-(\d{8})\.md$")
+# D4: a plan older than this many days no longer covers the week.
+LESSONS_CADENCE_DAYS = 7
+CLUSTER_HEADING = "## Cluster table"
+_TABLE_ROW_RE = re.compile(r"^\|\s*(L\d+|SINGLES)\s*\|([^|]*)\|([^|]*)\|", re.IGNORECASE)
+_BOX_ID_RE = re.compile(r"^L\d+$")
+
+
+def lessons_plan_name(date):
+    """`PLAN-lessons-<YYYYMMDD>.md` for a `YYYYMMDD` or `YYYY-MM-DD` date."""
+    return "%s%s.md" % (LESSONS_PLAN_PREFIX, str(date).replace("-", ""))
+
+
+def lessons_plans(root):
+    """[(date `YYYYMMDD`, repo-relative path)] of every `agent/plans/PLAN-lessons-<date>.md`, newest first. Folders under agent/plans/ (`_done`, `_removed`) count too: a finished weekly plan still marks the week as covered."""
+    base = pathlib.Path(root) / "agent" / "plans"
+    out = []
+    try:
+        paths = [p for p in base.rglob("PLAN-lessons-*.md") if p.is_file()]
+    except OSError:
+        return []
+    for path in paths:
+        m = LESSONS_PLAN_RE.match(path.name)
+        if m:
+            out.append((m.group(1), path.relative_to(root).as_posix()))
+    return sorted(out, reverse=True)
+
+
+def newest_lessons_plan(root):
+    """(date, repo-relative path) of the newest weekly lessons plan, or None."""
+    plans = lessons_plans(root)
+    return plans[0] if plans else None
+
+
+def _days_between(date8, today):
+    """Whole days from `YYYYMMDD` `date8` to the `datetime.date` `today`."""
+    import datetime
+
+    return (today - datetime.date(int(date8[:4]), int(date8[4:6]), int(date8[6:]))).days
+
+
+def _open_box_count(root, rel):
+    """Open boxes of the plan at `rel`; raises OSError when the file cannot be read."""
+    import wl_planrec
+
+    text = (pathlib.Path(root) / rel).read_text(encoding="utf-8")
+    return len(wl_planrec.open_boxes(text))
+
+
+def weekly_state(root, today, pending=None):
+    """(kind, detail) for the `lessons-weekly` check, `today` a `datetime.date`.
+
+    kinds: `none` nothing is owed; `dispatch` pending proposals exist and no plan covers the last 7 days (the newest is older or absent), so the curator is due; `work` the newest plan is more than 7 days old and still has open boxes, so its oldest open box is due. `detail` is the newest plan's repo-relative path ("" for none). An unreadable plan file raises: a read that failed is not an empty plan.
+    """
+    pend = pending_proposals(root) if pending is None else pending
+    newest = newest_lessons_plan(root)
+    if newest is None:
+        return ("dispatch", "") if pend else ("none", "")
+    date8, rel = newest
+    if _days_between(date8, today) <= LESSONS_CADENCE_DAYS:
+        return ("none", rel)
+    if _open_box_count(root, rel) > 0:
+        return ("work", rel)
+    return ("dispatch", rel) if pend else ("none", rel)
+
+
+def weekly_plan_text(rows, date, owner):
+    """The skeleton of `PLAN-lessons-<date>.md` for the pending proposal `rows`.
+
+    One `[writer]` box per source family holding 3 or more proposals (`clusters`), the cluster table naming EVERY pending id exactly once (families under 3 sit on one `SINGLES` row, which the curator resolves or folds into a box), and a header that fits the plan parser. The curator replaces each box's placeholder owns and accept lines with the real ones; resolving the ids is the closing act of ticking a box (`resolved_ids_for_box`).
+    """
+    date8 = str(date).replace("-", "")
+    iso = "%s-%s-%s" % (date8[:4], date8[4:6], date8[6:])
+    counts = cluster_counts(rows)
+    ready = clusters(rows)
+    in_box = {f for f, _ids in ready}
+    singles = [pid for f, ids in counts.items() if f not in in_box for pid in ids]
+    by_id = {r["id"]: r for r in rows}
+    lines = [
+        "# PLAN: Weekly lessons %s -- pending hint proposals become fixes" % iso,
+        "",
+        "Status: approved",
+        "Depends-On: no-dep -- no box waits on another plan",
+        "Priority: P2 -- %d pending hint proposal(s) in %d source family(ies)"
+        % (len(rows), len(counts)),
+        "Concurrency: parallel -- one box per cluster, each on its own files",
+        "Owns: .claude/hooks/stop/**, .claude/rediacc_hooks/**, docs/agent-reference/HINTS.md, docs/agent-reference/TRAPS.md",
+        "First-Seen: %s" % iso,
+        "Owner: %s" % owner,
+        "Updated: %s" % iso,
+        "",
+        "## Ask",
+        "",
+        "PLAN-weekly-lessons.md D1: one box per cluster of 3 or more pending proposals, each a code change that makes the lesson unnecessary; a lesson something already enforces closes as resolved with that pointer instead.",
+        "",
+        CLUSTER_HEADING,
+        "",
+        "| Box | Family | Proposals |",
+        "|---|---|---|",
+    ]
+    for n, (fam, ids) in enumerate(ready, 1):
+        lines.append("| L%d | %s | %s |" % (n, fam, ", ".join(ids)))
+    if singles:
+        lines.append("| SINGLES | families under 3 | %s |" % ", ".join(singles))
+    lines += ["", "## Tasks", ""]
+    for n, (fam, ids) in enumerate(ready, 1):
+        sample = (by_id[ids[0]].get("text") or "").strip().replace("\n", " ")[:100]
+        lines += [
+            "- [ ] L%d [writer] The `%s` family (%d pending proposals, first: %s): a guard, gate, check or tool fix that makes the lesson unnecessary"
+            % (n, fam, len(ids), sample),
+            "    Owns: <the curator names the files>",
+            "    Depends on: none.",
+            "    Needs: none",
+            "    Accept: <the curator names the command, its control that fires and the one that stays silent>",
+        ]
+    lines.append("")
+    return "\n".join(lines)
+
+
+def parse_cluster_table(text):
+    """{box id (`L1`..) or `SINGLES`: [proposal id, ...]} from the cluster table of a weekly lessons plan; rows outside the table section are ignored."""
+    out: dict = {}
+    in_table = False
+    for line in str(text or "").splitlines():
+        if line.startswith("## "):
+            in_table = line.strip().lower() == CLUSTER_HEADING.lower()
+            continue
+        if not in_table:
+            continue
+        m = _TABLE_ROW_RE.match(line.strip())
+        if m:
+            ids = [p.strip() for p in m.group(3).split(",") if p.strip()]
+            out.setdefault(m.group(1).upper(), []).extend(ids)
+    return out
+
+
+def box_label(body):
+    """The box id (`L3`) a box body starts with, or ""."""
+    words = str(body or "").split(None, 1)
+    return words[0] if words and _BOX_ID_RE.match(words[0]) else ""
+
+
+def resolved_ids_for_box(plan_text, body):
+    """The proposal ids the cluster table lists for the box whose body is `body`: [] for a box with no table row (or a plan without a table)."""
+    label = box_label(body)
+    return parse_cluster_table(plan_text).get(label, []) if label else []
+
+
+CLAIM_STEM = "lessons-weekly"
+
+
+def weekly_block(root, worklist, session_id, today, parked=False):
+    """The `lessons-weekly` block text for this stop, or "" when nothing is owed to this session.
+
+    "" when: the stop is `parked` (the landing tree babysits and merges the PR, so the weekly cadence waits for the development tree), `weekly_state` says nothing is owed, or another live session holds the claim (wl_schedred.claim: O_EXCL file `<worklist>.schedred-claim-lessons-weekly`, keyed on the owed state, handed on when the holder's session brief goes stale). The text names the exact next command: dispatch the curator, or work the oldest open box.
+    """
+    if parked:
+        return ""
+    kind, rel = weekly_state(root, today)
+    if kind == "none":
+        return ""
+    import wl_schedred
+
+    me8 = S.agent_session_slug(session_id)
+    holder = wl_schedred.claim(worklist, CLAIM_STEM, "%s|%s" % (kind, rel or "none"), me8)
+    if holder != me8:
+        return ""
+    date8 = today.strftime("%Y%m%d")
+    if kind == "work":
+        import wl_planrec
+
+        text = (pathlib.Path(root) / rel).read_text(encoding="utf-8")
+        boxes = wl_planrec.open_boxes(text)
+        return M.N_LESSONS_WEEKLY_WORK % {
+            "plan": rel,
+            "days": _days_between(lessons_plans(root)[0][0], today),
+            "cadence": LESSONS_CADENCE_DAYS,
+            "open": len(boxes),
+            "box": box_label(boxes[0][2]) or boxes[0][3],
+            "sig": boxes[0][3],
+            "me8": me8,
+        }
+    pending = pending_proposals(root)
+    if rel:
+        why = M.N_LESSONS_WEEKLY_WHY_OLD % {
+            "plan": rel,
+            "days": _days_between(lessons_plans(root)[0][0], today),
+            "cadence": LESSONS_CADENCE_DAYS,
+        }
+    else:
+        why = M.N_LESSONS_WEEKLY_WHY_NONE
+    return M.N_LESSONS_WEEKLY_DISPATCH % {
+        "why": why,
+        "pending": pending_note(session_id, pending),
+        "me8": me8,
+        "epoch": context_epoch(session_id)[0],
+        "date": date8,
+    }
+
+
+_SHA_RE = re.compile(r"\b(?:commit:)?([0-9a-f]{7,40})\b")
+
+
+def tick_resolution(root, rel, plan_text, selector, evidence):
+    """(ids, pointer, problem) for ticking the box `selector` of the plan at `rel`, whose text before the tick is `plan_text`.
+
+    D3/W6: ticking a box of a `PLAN-lessons-<date>.md` resolves every proposal id its cluster-table row lists. `ids` is [] for any other plan, a box with no table row, or ids already taken. `pointer` is the first `commit:<sha>` the evidence names that resolves in this tree (wl_lessons.pointer_problem), or "" with `problem` saying why none did: the caller then resolves nothing and names the ids, never writes a dead pointer.
+    """
+    import wl_lessons
+    import wl_planrec
+
+    if not LESSONS_PLAN_RE.match(pathlib.PurePosixPath(rel).name):
+        return [], "", ""
+    box = wl_planrec.select_box(wl_planrec.open_boxes(plan_text), selector)
+    listed = resolved_ids_for_box(plan_text, box[2])
+    if not listed:
+        return [], "", ""
+    pending = {r["id"] for r in pending_proposals(root)}
+    ids = [pid for pid in listed if pid in pending]
+    if not ids:
+        return [], "", ""
+    problems = []
+    for sha in _SHA_RE.findall(str(evidence or "")):
+        why = wl_lessons.pointer_problem(root, "commit:%s" % sha)
+        if why is None:
+            return ids, "commit:%s" % sha, ""
+        problems.append(why)
+    return (
+        ids,
+        "",
+        problems[0] if problems else "the evidence names no commit sha to point the proposals at",
+    )

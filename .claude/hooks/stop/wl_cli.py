@@ -790,6 +790,14 @@ def _plantick_cli(argv):
     _plantick_dep_gate(R, root, rel, selector, evidence)
     try:
         text, doc, note = R.plan_tick(root, rel, selector, evidence, me)
+        # The tick is accepted, so the plan exists and still holds its pre-tick text on disk.
+        lessons = H.tick_resolution(
+            root,
+            rel,
+            (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace"),
+            selector,
+            evidence,
+        )
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
         return
@@ -809,6 +817,31 @@ def _plantick_cli(argv):
             "investigation": "/".join(R.INVESTIGATION_REL),
             "note": note,
         }
+    )
+    _lessons_resolve(root, me, lessons)
+
+
+def _lessons_resolve(root, me, lessons):
+    """The closing act of a weekly lessons box (agent/plans/PLAN-weekly-lessons.md D3, W6): resolve each proposal its cluster-table row lists, through the same writer as `--hint-resolve`. `lessons` is `wl_hints.tick_resolution`'s (ids, pointer, problem). A pointer that did not resolve resolves nothing and the ids are named with the exact command."""
+    ids, pointer, problem = lessons
+    if not ids:
+        return
+    if not pointer:
+        print(
+            "hint proposals NOT resolved (%s). Resolve each once a commit carries the fix:\n%s"
+            % (
+                problem,
+                "\n".join(
+                    "  worklist.py --hint-resolve %s %s commit:<sha>" % (me, pid) for pid in ids
+                ),
+            )
+        )
+        return
+    for pid in ids:
+        H.resolve_proposal(root, me, pid, pointer)
+    print(
+        "resolved %d hint proposal(s) -> %s (agent/ledgers/hint-resolutions.jsonl; commit it with the plan): %s"
+        % (len(ids), pointer, " ".join(ids))
     )
 
 
