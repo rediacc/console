@@ -279,7 +279,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-linux-packages | local-only | yes | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no |
 | check:ci-proxy-rdc-update | local-only | yes | no |
-| check:ci-proxy-wrangler-dev-e2e | quality-wrangler-dev / Proxy wrangler dev e2e | yes | yes |
+| check:ci-proxy-wrangler-dev-e2e | proxy-wrangler-dev / Proxy wrangler dev e2e | yes | yes |
 | check:ci-pytest | quality-pytest / Python package tests | yes | yes |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no |
 | check:ci-python-env-registry | quality-static / Python env registry | yes | yes |

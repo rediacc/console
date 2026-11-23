@@ -12236,7 +12236,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Proxy image smoke',
     },
   },
-  // The Worker and its container together (agent/plans/PLAN-cloudflare-proxy.md A6): `wrangler dev` builds the executor image on the local docker host, and a valid bearer must reach `rdc serve --mode container` inside it while a missing or inactive one gets 401 and starts no container. Builds the same image as the smoke above, hence slow and heavy. CI runs it in ci-quality.yml's own native-Linux lane, quality-wrangler-dev (agent/plans/PLAN-tooling-speed.md D8): Docker Desktop's host-gateway cannot reach workerd's egress listener, so a WSL2 host gets exit 77 (blocked, never green) naming that job. Hand-registered: the lane builds its own renet under an App token and secrets a generated region would not carry.
+  // The Worker and its container together (agent/plans/PLAN-cloudflare-proxy.md A6): `wrangler dev` builds the executor image on the local docker host, and a valid bearer must reach `rdc serve --mode container` inside it while a missing or inactive one gets 401 and starts no container. Builds the same image as the smoke above, hence slow and heavy. CI runs it on a native-Linux runner in ci-build-renet.yml's proxy-wrangler-dev job, beside the smoke above and on the same downloaded renet artifact (agent/plans/PLAN-tooling-speed.md D8): Docker Desktop's host-gateway cannot reach workerd's egress listener, so a WSL2 host gets exit 77 (blocked, never green) naming that job. Hand-registered, like the smoke: no quality lane can reach the renet artifact, and a lane building its own renet does not fit the 15-minute cap.
   //
   // NO `paths`: it depends on the Worker, the Dockerfile, the whole CLI workspace the image bundles and the staged renet, and a partial table would make `--changed` drop it silently.
   {
@@ -12252,8 +12252,8 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/scripts/quality/check_proxy_wrangler_dev_e2e.py'],
     ci: {
       kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-wrangler-dev',
+      workflow: '.github/workflows/ci-build-renet.yml',
+      job: 'proxy-wrangler-dev',
       step: 'Proxy wrangler dev e2e',
     },
   },

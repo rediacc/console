@@ -316,6 +316,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | local-only (CI never runs it) | 23 | 11 | 3 |
 | step / build-renet | 2 | 2 | 0 |
 | step / proxy-image-smoke | 1 | 1 | 1 |
+| step / proxy-wrangler-dev | 1 | 1 | 1 |
 | step / quality-account | 6 | 6 | 2 |
 | step / quality-branch | 12 | 12 | 5 |
 | step / quality-code | 108 | 108 | 13 |
@@ -328,7 +329,6 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / quality-security | 25 | 25 | 2 |
 | step / quality-static | 73 | 73 | 11 |
 | step / quality-wiring | 1 | 1 | 0 |
-| step / quality-wrangler-dev | 1 | 1 | 1 |
 | step / quality-www-build | 17 | 14 | 16 |
 | test (a gate test drives it) | 11 | 11 | 0 |
 

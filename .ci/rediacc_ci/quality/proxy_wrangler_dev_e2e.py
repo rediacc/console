@@ -44,7 +44,7 @@ TEARDOWN, ALWAYS. `wrangler dev` does NOT remove its containers when it exits (m
 
 THE RENET IT SHIPS. Staged exactly as check:ci-proxy-image-smoke stages it (`proxy_image_smoke._stage_local`, which runs `executor_artifacts stage-local`): an already staged `workers/proxy/stage/manifest.json` is used as is, otherwise the stage is written for the run and removed afterwards.
 
-NATIVE-LINUX AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). The daemon must be a native-Linux one: Docker Desktop's host-gateway cannot reach workerd's egress listener, so on a Docker Desktop host (the WSL2 development machines) the gate exits 77 and names the CI lane that does run it, ci-quality.yml job `quality-wrangler-dev` on ubuntu-latest (agent/plans/PLAN-tooling-speed.md D8). `CI_JOB` and `CI_STEP` below are the names that refusal prints; `ci_lane_findings` holds them to the workflow, and two live-tree controls hold them to the real ci-quality.yml and the gate's gates.lock.json pointer on every run, so the refusal cannot name a lane that is gone.
+NATIVE-LINUX AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). The daemon must be a native-Linux one: Docker Desktop's host-gateway cannot reach workerd's egress listener, so on a Docker Desktop host (the WSL2 development machines) the gate exits 77 and names the CI job that does run it, ci-build-renet.yml job `proxy-wrangler-dev` on ubuntu-latest (agent/plans/PLAN-tooling-speed.md D8). That job sits beside proxy-image-smoke and ships the renet artifact the same run built, under the 15-minute lane cap. `CI_JOB` and `CI_STEP` below are the names that refusal prints; `ci_lane_findings` holds them, the job's timeout and its artifact download to the workflow, and two live-tree controls hold them to the real ci-build-renet.yml and the gate's gates.lock.json pointer on every run, so the refusal cannot name a job that is gone.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail, 77 (the pool's CANNOT_RUN, reported `blocked`, never green) when docker or wrangler is absent or no renet can be staged.
 """
@@ -104,16 +104,25 @@ STUB_ISSUER_TTL_S = 45 * 60
 
 CANNOT_RUN = 77
 # The one CI lane that runs this gate (agent/plans/PLAN-tooling-speed.md D8). The Docker Desktop refusal names it, so a rename that leaves these behind makes the refusal point at nothing; ci_lane_findings is the check.
-CI_WORKFLOW = ".github/workflows/ci-quality.yml"
-CI_JOB = "quality-wrangler-dev"
-CI_JOB_DISPLAY = "Quality / Proxy Wrangler Dev"
+CI_WORKFLOW = ".github/workflows/ci-build-renet.yml"
+CI_JOB = "proxy-wrangler-dev"
+# ci.yml calls ci-build-renet.yml as `Build (Renet)`, so Actions shows the job under that prefix.
+CI_CALLER_DISPLAY = "Build (Renet)"
+CI_JOB_DISPLAY = CI_CALLER_DISPLAY + " / Proxy Wrangler Dev"
 CI_STEP = "Proxy wrangler dev e2e"
 GATE_ID = "check:ci-proxy-wrangler-dev-e2e"
 CI_RUN = "npm run " + GATE_ID
 CI_RUNNER = "ubuntu-latest"
+# The renet the image ships is this artifact of the same run (ci-build-renet.yml's build-renet or extract-renet), never one the lane builds.
+CI_RENET_ARTIFACT = "renet-binaries-${{ github.sha }}"
+# The lane cap check:ci-lane-budget check 7 holds every CI job to; the job's timeout-minutes must not exceed it.
+CI_TIMEOUT_MAX_MIN = 15
 DOCKER_DESKTOP_OS = "Docker Desktop"
-READY_TIMEOUT_S = 1800
+# The ready wait plus one request timeout must end inside the job's timeout-minutes with SETUP_MARGIN_S to spare, so a slow start is reported by this gate rather than by a job kill (ci_lane_findings holds the job to it). The smoke's measured image build on the same runner is 29 s (Proxy image smoke, job 137284910716), so 420 s is roomy.
+READY_TIMEOUT_S = 420
 REQUEST_TIMEOUT_S = 180
+# Checkout, setup-workspace, the CLI bundle, the artifact download and `npm ci` for wrangler before the gate starts: 58 s measured for the same steps of Proxy image smoke (job 137284910716), less wrangler's install.
+SETUP_MARGIN_S = 180
 SETTLE_S = 3
 STOP_GRACE_S = 20
 
@@ -802,19 +811,46 @@ def selftest() -> bool:
         "  %s:\n"
         "    name: %s\n"
         "    runs-on: %s\n"
+        "    needs: [build-renet, extract-renet]\n"
+        "    timeout-minutes: %d # the lane cap\n"
         "    steps:\n"
-        "      - id: setup\n"
-        "        uses: ./.github/actions/setup-workspace\n"
+        "      - uses: ./.github/actions/setup-workspace\n"
+        "      - uses: actions/download-artifact@0000000000000000000000000000000000000000\n"
+        "        with:\n"
+        "          name: %s\n"
+        "          path: private/bin/\n"
         "      - name: %s\n"
-        "        if: ${{ !cancelled() }}\n"
         "        run: %s\n"
         "  after:\n"
         "    name: After\n"
+        "    timeout-minutes: 99\n"
         "    steps:\n"
+        "      - uses: actions/download-artifact@0000000000000000000000000000000000000000\n"
+        "        with:\n"
+        "          name: %s\n"
         "      - name: %s\n"
         "        run: true\n"
-    ) % (CI_JOB, CI_JOB_DISPLAY.split(" / ", 1)[1], CI_RUNNER, CI_STEP, CI_RUN, CI_STEP)
+    ) % (
+        CI_JOB,
+        CI_JOB_DISPLAY.split(" / ", 1)[1],
+        CI_RUNNER,
+        CI_TIMEOUT_MAX_MIN,
+        CI_RENET_ARTIFACT,
+        CI_STEP,
+        CI_RUN,
+        CI_RENET_ARTIFACT,
+        CI_STEP,
+    )
     check("the lane the refusal names, as written, has no findings", ci_lane_findings(lane) == [])
+    check(
+        "the gate's ready wait, one request and setup fit inside the %dm lane cap"
+        % CI_TIMEOUT_MAX_MIN,
+        READY_TIMEOUT_S + REQUEST_TIMEOUT_S + SETUP_MARGIN_S <= CI_TIMEOUT_MAX_MIN * 60,
+    )
+    check(
+        "the job display carries the caller's prefix, as Actions shows it",
+        CI_JOB_DISPLAY.startswith(CI_CALLER_DISPLAY + " / "),
+    )
     for label, broken in (
         (
             "a workflow without the named job is a finding",
@@ -832,13 +868,37 @@ def selftest() -> bool:
             "a renamed gate step is a finding",
             plant(
                 lane,
-                "      - name: %s\n        if" % CI_STEP,
-                "      - name: Wrangler e2e\n        if",
+                "      - name: %s\n        run: %s" % (CI_STEP, CI_RUN),
+                "      - name: Wrangler e2e\n        run: %s" % CI_RUN,
             ),
         ),
         (
             "a step running something else is a finding",
             plant(lane, "run: %s" % CI_RUN, "run: npm run check:ci-proxy-image-smoke"),
+        ),
+        (
+            "a timeout over the lane cap is a finding",
+            plant(
+                lane,
+                "timeout-minutes: %d #" % CI_TIMEOUT_MAX_MIN,
+                "timeout-minutes: %d #" % (CI_TIMEOUT_MAX_MIN + 30),
+            ),
+        ),
+        (
+            "a timeout shorter than the gate's own waits is a finding",
+            plant(lane, "timeout-minutes: %d #" % CI_TIMEOUT_MAX_MIN, "timeout-minutes: 5 #"),
+        ),
+        (
+            "a job with no timeout is a finding",
+            plant(lane, "    timeout-minutes: %d # the lane cap\n" % CI_TIMEOUT_MAX_MIN, ""),
+        ),
+        (
+            "a job that does not download the renet artifact is a finding",
+            plant(
+                lane,
+                "          name: %s\n          path:" % CI_RENET_ARTIFACT,
+                "          name: renet-built-here\n          path:",
+            ),
         ),
     ):
         check(label, len(ci_lane_findings(broken)) == 1)
@@ -1057,7 +1117,7 @@ def docker_host_refusal(operating_system: str) -> str | None:
 
 
 def ci_lane_findings(workflow_text: str) -> list[str]:
-    """What is wrong with the CI lane the refusal names, read from the workflow's text: the job must exist, run on `CI_RUNNER`, be named so it displays as `CI_JOB_DISPLAY`, and hold a step `CI_STEP` whose `run:` is `CI_RUN`. A line-oriented read, as scripts/ci-runner/lanes.ts reads the same file, so no YAML dependency is needed."""
+    """What is wrong with the CI lane the refusal names, read from the workflow's text: the job must exist, run on `CI_RUNNER`, be named so it displays as `CI_JOB_DISPLAY`, declare a `timeout-minutes` no higher than `CI_TIMEOUT_MAX_MIN` that still outlasts the gate's own waits, download `CI_RENET_ARTIFACT` rather than build a renet, and hold a step `CI_STEP` whose `run:` is `CI_RUN`. A line-oriented read, as scripts/ci-runner/lanes.ts reads the same file, so no YAML dependency is needed."""
     lines = workflow_text.splitlines()
     start = None
     for i, line in enumerate(lines):
@@ -1076,10 +1136,42 @@ def ci_lane_findings(workflow_text: str) -> list[str]:
     body = lines[start + 1 : end]
     found: list[str] = []
     name = next((ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    name:")), "")
-    if "Quality / " + name != CI_JOB_DISPLAY:
+    shown = "%s / %s" % (CI_CALLER_DISPLAY, name)
+    if shown != CI_JOB_DISPLAY:
         found.append(
             "job `%s` is named %r, so it displays as %r, not %r"
-            % (CI_JOB, name, "Quality / " + name, CI_JOB_DISPLAY)
+            % (CI_JOB, name, shown, CI_JOB_DISPLAY)
+        )
+    raw_timeout = next(
+        (
+            ln.split(":", 1)[1].split("#", 1)[0].strip()
+            for ln in body
+            if ln.startswith("    timeout-minutes:")
+        ),
+        "",
+    )
+    floor_s = READY_TIMEOUT_S + REQUEST_TIMEOUT_S + SETUP_MARGIN_S
+    if not raw_timeout.isdigit():
+        found.append(
+            "job `%s` declares timeout-minutes %r, not a literal number of minutes"
+            % (CI_JOB, raw_timeout)
+        )
+    elif int(raw_timeout) > CI_TIMEOUT_MAX_MIN:
+        found.append(
+            "job `%s` has timeout-minutes %s, over the %dm lane cap check:ci-lane-budget holds it to"
+            % (CI_JOB, raw_timeout, CI_TIMEOUT_MAX_MIN)
+        )
+    elif int(raw_timeout) * 60 < floor_s:
+        found.append(
+            "job `%s` has timeout-minutes %s, which ends before the gate's ready wait (%ds), one "
+            "request (%ds) and setup (%ds) can, so a slow start would be a job kill rather than "
+            "this gate's finding; lower READY_TIMEOUT_S"
+            % (CI_JOB, raw_timeout, READY_TIMEOUT_S, REQUEST_TIMEOUT_S, SETUP_MARGIN_S)
+        )
+    if not any(ln.strip() == "name: %s" % CI_RENET_ARTIFACT for ln in body):
+        found.append(
+            "job `%s` does not download the %s artifact, so the image would not ship the renet "
+            "this run built" % (CI_JOB, CI_RENET_ARTIFACT)
         )
     runs_on = next(
         (ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    runs-on:")), ""
