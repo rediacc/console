@@ -18,6 +18,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_review_file_edit.py uses).
 _SYSPATH = importlib.util.spec_from_file_location(
@@ -170,7 +174,7 @@ CASES = [
 
 
 def via_dispatch(payload):
-    p = subprocess.run(
+    p = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=json.dumps(payload),
         capture_output=True,

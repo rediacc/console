@@ -12,6 +12,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_pr_freeze_commit"]
 
@@ -76,7 +80,7 @@ def run(repo, store, cmd, cwd=None, extra_env=None):
         PATH="%s%s%s" % (store.parent / "bin", os.pathsep, os.environ["PATH"]),
         **(extra_env or {}),
     )
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps(
             {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(cwd or repo)}

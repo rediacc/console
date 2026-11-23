@@ -24,9 +24,12 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_without_depends.py"
@@ -786,7 +789,7 @@ def materialize(payload):
 
 
 def run_case(payload):
-    proc = subprocess.run(
+    proc = _harness.run(
         ARGV, input=json.dumps(materialize(payload)), capture_output=True, text=True, check=False
     )
     return proc.returncode, proc.stderr

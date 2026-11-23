@@ -23,6 +23,10 @@ import tempfile
 import time
 import types
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 CLAUDE = HOOKS.parent
@@ -83,7 +87,7 @@ def drive(payload, root, argv=(STEM,), extra_env=None):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
     env.update(extra_env or {})
     started = time.monotonic()
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, *argv],
         input=payload if isinstance(payload, str) else json.dumps(payload),
         capture_output=True,

@@ -10,10 +10,13 @@ import importlib
 import importlib.util
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve()
 HOOKS = HERE.parents[1]
@@ -332,7 +335,7 @@ MUTANTS = [
 
 
 def via_dispatch(command, cwd):
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
         capture_output=True,

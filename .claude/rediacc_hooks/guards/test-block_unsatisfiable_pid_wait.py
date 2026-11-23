@@ -12,8 +12,11 @@ NO GIT FIXTURE NEEDED. Unlike `test-block_push_to_protected_branch.py`, none of 
 import json
 import os
 import pathlib
-import subprocess
 import sys
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unsatisfiable_pid_wait"]
@@ -147,7 +150,7 @@ def run(command, cwd):
     env = dict(os.environ)
     if cwd is not None:
         env["CLAUDE_PROJECT_DIR"] = cwd
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,

@@ -10,8 +10,11 @@ NO FIXTURE NEEDED. The guard reads the command, `run_in_background` and `timeout
 
 import json
 import pathlib
-import subprocess
 import sys
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_short_wake_timeout"]
@@ -161,7 +164,7 @@ CASES = [
 
 def run(command, extra):
     payload = {"tool_name": "Bash", "tool_input": dict({"command": command}, **extra)}
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps(payload),
         capture_output=True,

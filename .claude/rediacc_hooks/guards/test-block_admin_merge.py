@@ -20,6 +20,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_admin_merge"]
@@ -230,7 +234,7 @@ def run(command, body, root=CHECKOUT, head=BRANCH, oid="", argv=None):
         env["FX_GH"] = "nobody"
     else:
         env["FX_BODY"] = body
-    proc = subprocess.run(
+    proc = _harness.run(
         argv or GUARD_ARGV,
         input=json.dumps(
             {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}

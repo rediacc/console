@@ -7,13 +7,13 @@ Both directions, because a one-sided control is satisfiable by a broken guard: o
 import ast
 import json
 import pathlib
-import subprocess
 import sys
 import typing
 
 import _hookpath
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.guards import block_unscoped_formatter_run as guard
 
 HERE = pathlib.Path(__file__).resolve()
@@ -129,7 +129,7 @@ CASES = [
 
 
 def answer(cmd):
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}, "cwd": str(ROOT)}),
         capture_output=True,

@@ -23,6 +23,7 @@ import json
 import subprocess
 import time
 
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.tests import corpus
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
 
@@ -188,7 +189,28 @@ def run_guard(
     """`(exit code, stderr text)`. stdout is discarded, exactly as the suite did.
 
     The suite ran `... 2>&1 >/dev/null` for the message assertions, which redirects stderr to the pipe and stdout to /dev/null -- NOT the other way round. A guard's product is what it says on stderr.
+
+    IN THIS PROCESS (PLAN-ciquick-cpu W15): `guards/_harness.run` answers a `dispatch.py <stem>` argv through `dispatch.run_one` with the child's environment, zone, temp directory and cwd swapped in, and hands anything else (a bash key, a process-table reader) to a real process. `run_guard_process` below is the always-a-process form `test_hooks_boundary.py` holds every guard to.
     """
+    argv = guard_cmd(key)
+    completed = _harness.run(
+        argv,
+        input=today_filled(payload).encode(),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE if want_stderr else subprocess.DEVNULL,
+        env=env,
+        cwd=cwd,
+        timeout=GUARD_TIMEOUT_S,
+        check=False,
+    )
+    err = completed.stderr.decode("utf-8", "replace") if want_stderr else ""
+    return completed.returncode, err
+
+
+def run_guard_process(
+    key: str, payload: str, *, want_stderr: bool, env: dict | None = None, cwd: str | None = None
+) -> tuple[int, str]:
+    """`run_guard`, always as a real `python3 dispatch.py <stem>` (or bash) process: the boundary the in-process path is measured against."""
     argv = guard_cmd(key)
     completed = subprocess.run(
         argv,

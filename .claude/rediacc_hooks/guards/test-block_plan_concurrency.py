@@ -33,6 +33,10 @@ import tempfile
 import time
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_concurrency.py"
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -174,7 +178,7 @@ CHAIN_ARGV = [sys.executable, DISPATCH, "--chain", "pre-agent"]
 
 
 def run_case(proj, doc, argv=None):
-    proc = subprocess.run(
+    proc = _harness.run(
         argv or GUARD_ARGV,
         input=json.dumps(doc),
         capture_output=True,

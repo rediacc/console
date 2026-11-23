@@ -16,9 +16,12 @@ import atexit
 import json
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
@@ -190,7 +193,7 @@ CASES = [
 
 
 def run(tool_input):
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Write", "tool_input": tool_input}),
         capture_output=True,

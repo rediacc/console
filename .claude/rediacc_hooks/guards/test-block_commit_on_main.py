@@ -15,6 +15,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_commit_on_main"
@@ -256,7 +260,7 @@ def run(command, root, broken=False, mutant=False, agent=None, defect=None):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
+    proc = _harness.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
     if (broken or mutant) and proc.returncode not in (0, 2):
         raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
     return proc.returncode != 0, proc.stderr

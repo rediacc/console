@@ -19,6 +19,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 CLAUDE_DIR = HERE.parents[1]
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -125,7 +129,7 @@ def run(command, mutant=False):
         env["PYTHONPATH"] = str(CLAUDE_DIR)
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(WORK)
     )
     if mutant and proc.returncode not in (0, 2):
@@ -321,7 +325,7 @@ def run_session(command, mutant=False):
         env["PYTHONPATH"] = str(CLAUDE_DIR)
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(WORK)
     )
     if mutant and proc.returncode not in (0, 2):

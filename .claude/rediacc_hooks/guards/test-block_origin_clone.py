@@ -15,6 +15,10 @@ import pathlib
 import subprocess
 import sys
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 DISPATCH = str(HOOKS / "dispatch.py")
@@ -460,7 +464,7 @@ def run_guard(command, cwd=ROOT, defect=None):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=ENV, cwd=ROOT
     )
     if proc.returncode not in (0, 2):
@@ -470,7 +474,7 @@ def run_guard(command, cwd=ROOT, defect=None):
 
 
 def _par(fn, items):
-    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess, so the threads wait on children."""
+    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess (the planted-DEFECT runner), so the threads wait on children. The pristine rows call the guard in process through `_harness.run`, which answers only on the main thread, so they run as a plain loop instead."""
     items = list(items)
     if not items:
         return []
@@ -503,19 +507,19 @@ def check(name, want_blocked, command, cwd=ROOT, got=None):
 
 print("== refused (%d rows)" % len(REFUSED))
 for (row_name, row_command), row_got in zip(
-    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED), strict=True
+    REFUSED, [run_guard(r[1]) for r in REFUSED], strict=True
 ):
     check(row_name, True, row_command, got=row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
 for (row_name, row_command), row_got in zip(
-    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED), strict=True
+    ALLOWED, [run_guard(r[1]) for r in ALLOWED], strict=True
 ):
     check(row_name, False, row_command, got=row_got)
 
 print("== a source relative to the event's cwd (%d rows)" % len(RELATIVE))
 for (row_name, row_blocked, row_command, row_cwd), row_got in zip(
-    RELATIVE, _par(lambda r: run_guard(r[2], r[3]), RELATIVE), strict=True
+    RELATIVE, [run_guard(r[2], r[3]) for r in RELATIVE], strict=True
 ):
     check(row_name, row_blocked, row_command, cwd=row_cwd, got=row_got)
 
@@ -633,7 +637,7 @@ for _name, _want, _cmd in (
         "git -C %s fetch origin" % OLD_CLONE,
     ),
 ):
-    _proc = subprocess.run(
+    _proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=_payload(_cmd, WT_MAIN),
         capture_output=True,

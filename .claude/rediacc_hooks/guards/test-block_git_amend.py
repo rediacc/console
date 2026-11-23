@@ -6,8 +6,11 @@ Both directions, because a one-sided control is satisfiable by a broken hook: on
 
 import json
 import pathlib
-import subprocess
 import sys
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 # Derived from THIS file, never hard-coded: the hook lives beside the harness. An absolute path under one operator's checkout is the exact failure CLAUDE.md's "Worktree Warning" names -- in any other worktree, container or CI runner it would silently test a stale copy, or nothing at all, while still reporting success. THIS HARNESS SITS BESIDE ITS GUARD, which is what
 # .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
@@ -61,7 +64,7 @@ CASES = [
 
 
 def run(cmd):
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,

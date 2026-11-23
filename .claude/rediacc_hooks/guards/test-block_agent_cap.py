@@ -13,10 +13,13 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 SID = "cafe0000-1111-2222-3333-444444444444"
@@ -102,7 +105,7 @@ def spawn(proj, kind, session=SID, tool="Agent"):
         "cwd": str(proj),
         "tool_input": {"subagent_type": kind, "description": "probe", "prompt": "p"},
     }
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, "block_agent_cap"],
         input=json.dumps(payload),
         capture_output=True,

@@ -15,6 +15,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unproven_bulk_transform"]
 
@@ -26,7 +30,7 @@ def run(command, cwd):
     # runner happened to hold, which was inert only while no case named a different repo via `-C`/`cd`.
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = cwd
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
         capture_output=True,

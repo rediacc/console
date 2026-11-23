@@ -13,9 +13,12 @@ import importlib
 import importlib.util
 import json
 import pathlib
-import subprocess
 import sys
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
@@ -164,7 +167,7 @@ def _event(cmd):
 
 
 def via_dispatch(cmd):
-    p = subprocess.run(GUARD_ARGV, input=_event(cmd), capture_output=True, text=True, check=False)
+    p = _harness.run(GUARD_ARGV, input=_event(cmd), capture_output=True, text=True, check=False)
     return p.returncode, p.stdout + p.stderr
 
 

@@ -15,9 +15,12 @@ import json
 import os
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_commit"]
@@ -451,7 +454,7 @@ def run(command, mutant=False):
     if mutant:
         argv = [sys.executable, "-c", MUTANT_RUNNER % (GUARD_PATH, GUARD_PATH)]
         env = dict(os.environ, PYTHONPATH=str(pathlib.Path(DISPATCH).parents[1]))
-    proc = subprocess.run(
+    proc = _harness.run(
         argv,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,

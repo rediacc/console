@@ -14,13 +14,13 @@ import importlib.util
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import tempfile
 
 import _hookpath
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.wellknown import GH_REPO, IMAGE_REGISTRY
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -1309,7 +1309,7 @@ def run(command, transcript_path, broken=None):
         ]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv,
         input=json.dumps(doc),
         capture_output=True,

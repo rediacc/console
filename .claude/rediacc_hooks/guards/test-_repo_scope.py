@@ -22,6 +22,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 DISPATCH = str(HOOKS / "dispatch.py")
@@ -236,7 +240,7 @@ def run_guard(stem, command, cwd, guard_pairs=None, scope_pairs=None):
             list(guard_pairs or []),
         )
         argv = [sys.executable, "-c", code]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv,
         input=_payload(command, cwd),
         capture_output=True,

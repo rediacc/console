@@ -8,9 +8,12 @@ import atexit
 import json
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 # Derived from THIS file, never hard-coded: the guard lives beside the harness, and the dispatcher is what actually runs it.
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
@@ -138,7 +141,7 @@ def blocked(cmd, background):
     tool_input = {"command": cmd}
     if background:
         tool_input["run_in_background"] = True
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": tool_input}),
         capture_output=True,

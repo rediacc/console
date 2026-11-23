@@ -21,6 +21,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import _harness
 
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
@@ -69,7 +70,7 @@ def _case_env(path, extra):
 
 def run(cmd, path=None, extra=None):
     env = _case_env(path, extra)
-    return subprocess.run(
+    return _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
@@ -81,7 +82,7 @@ def run(cmd, path=None, extra=None):
 
 def run_full(cmd, path=None, extra=None):
     env = _case_env(path, extra)
-    return subprocess.run(
+    return _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
