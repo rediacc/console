@@ -220,7 +220,7 @@ def read_records(common, base):
 
 
 def read_holds(common):
-    """{lease id: {"item", "reason"}} from `<id>.hold`. An unreadable hold stays as `{"broken": True}`, which parks nothing, so a damaged hold blocks again rather than hiding a lease."""
+    """{lease id: {"item", "reason", "session"}} from `<id>.hold`. A hold that cannot be read, or has no item or no reason, stays as `{"broken": True}`, which parks nothing, so a damaged hold blocks again rather than hiding a lease. `session` is the writer's id prefix, "" when the record names none (`hold_check` then refuses it)."""
     out = {}
     for path in sorted((common / RECORD_DIR).glob("*" + HOLD_SUFFIX)):
         lease_id = path.name[: -len(HOLD_SUFFIX)]
@@ -229,21 +229,73 @@ def read_holds(common):
         except (OSError, ValueError):
             hold = None
         if isinstance(hold, dict) and hold.get("item") and hold.get("reason"):
-            out[lease_id] = {"item": str(hold["item"]), "reason": str(hold["reason"])}
+            out[lease_id] = {
+                "item": str(hold["item"]),
+                "reason": str(hold["reason"]),
+                "session": str(hold.get("session") or ""),
+            }
         else:
             out[lease_id] = {"broken": True}
     return out
 
 
-def find_open_item(items, ref):
-    """The folded record of the item `ref` names (its id, or a prefix of it) while it is open (`[ ]`, `[?]`, `[>]`), else None. A ticked or deleted item is not open, so a hold cannot outlive its reason."""
+def _tags_agree(owner, tag):
+    """Whether two session id prefixes name one session: both non-empty and one a prefix of the other."""
+    return bool(owner) and bool(tag) and (owner.startswith(tag) or tag.startswith(owner))
+
+
+def resolve_open_item(items, ref):
+    """`(record, "")` for the open item (`[ ]`, `[?]`, `[>]`) `ref` names: its full id, else the one open id it is a prefix of. `(None, why)` for none or for an ambiguous prefix. Used where a hold is WRITTEN; the stop check reads the full id only (`hold_check`)."""
     ref = str(ref).lstrip("#")
     if not ref:
-        return None
-    for rec in items:
-        if str(rec.get("id", "")).startswith(ref) and rec.get("state") in HOLD_OPEN_STATES:
-            return rec
-    return None
+        return None, "no item id given"
+    live = [rec for rec in items if rec.get("state") in HOLD_OPEN_STATES]
+    for rec in live:
+        if str(rec.get("id", "")) == ref:
+            return rec, ""
+    near = [rec for rec in live if str(rec.get("id", "")).startswith(ref)]
+    if len(near) > 1:
+        return None, "#%s is ambiguous: it starts %s" % (
+            ref,
+            ", ".join("#" + str(rec["id"]) for rec in near),
+        )
+    if near:
+        return near[0], ""
+    return None, "#%s is not an open worklist item" % ref
+
+
+def owner_problem(hold_session, item, lease_owner):
+    """Why a hold written by `hold_session` naming the folded item `item` is no hold of the lease `lease_owner` owns, or "". Both the writer and the item's `(<prefix>)` tag must be the lease's owner, so a session cannot park a peer's lease or hide behind a peer's item."""
+    if not _tags_agree(lease_owner, hold_session):
+        return "hold written by session %s, not the lease owner %s" % (
+            hold_session or "(none recorded)",
+            lease_owner or "(none recorded)",
+        )
+    tag = str(item.get("owner") or "")
+    if not _tags_agree(lease_owner, tag):
+        return "item #%s is %s, not the lease owner %s's" % (
+            item["id"],
+            "tagged %s" % tag if tag else "untagged",
+            lease_owner,
+        )
+    return ""
+
+
+def hold_check(hold, items, record):
+    """`(item record, "")` when the hold parks its lease. `(None, "")` for a hold whose item is closed or gone (a hold cannot outlive its reason). `(None, why)` for a hold not honoured: unreadable, an id that is no open item's FULL id, or one that `owner_problem` refuses."""
+    if hold.get("broken"):
+        return None, "its hold record could not be read"
+    ref = hold["item"]
+    found = next((rec for rec in items if str(rec.get("id", "")) == ref), None)
+    if found is None:
+        near = [rec for rec in items if str(rec.get("id", "")).startswith(ref)]
+        if any(rec.get("state") in HOLD_OPEN_STATES for rec in near):
+            return None, "its hold names #%s, which is not a full item id" % ref
+        return None, ""
+    if found.get("state") not in HOLD_OPEN_STATES:
+        return None, ""
+    why = owner_problem(hold["session"], found, str(record.get("owner") or "")[:8])
+    return (None, "its hold is not honoured: %s" % why) if why else (found, "")
 
 
 def _stray_dirs(base):
@@ -584,18 +636,22 @@ def survey(root, session_id, items, live_fn, cache, role=""):
     landing = C.landing_record(pathlib.Path(root))
     landing_branch = landing["branch"] if landing else ""
     for lease_id, record in mine:
-        hold = world["holds"].get(lease_id)
-        if hold and hold.get("broken"):
-            out["doubts"].append("%s: its hold record could not be read" % lease_id)
-        elif hold and find_open_item(items, hold["item"]):
-            out["parked"].append({"id": lease_id, "item": hold["item"], "reason": hold["reason"]})
-            continue
         if live is None:
             out["unknown"].append(lease_id)
             continue
         if _holder(lease_id, record, live, leases, cwds):
             out["held"].append(lease_id)
             continue
+        hold = world["holds"].get(lease_id)
+        if hold:
+            found, why = hold_check(hold, items, record)
+            if found:
+                out["parked"].append(
+                    {"id": lease_id, "item": hold["item"], "reason": hold["reason"]}
+                )
+                continue
+            if why:
+                out["doubts"].append("%s: %s" % (lease_id, why))
         repos = world["leases"].get(lease_id)
         if not repos:
             out["doubts"].append("%s: a directory git lists no tree for" % lease_id)
