@@ -10,8 +10,10 @@
  * could tell).
  *
  * The precomputed values (wrapped CEK, handoff blob, X25519 key) were
- * generated ONCE with a throwaway script; the deterministic vectors (HKDF,
- * PBKDF2) are reproducible from the fixed inputs alone. Do NOT regenerate to
+ * generated ONCE with a throwaway script; the deterministic HKDF vectors (the
+ * recovery and machine-secret ones were checked against an independent
+ * RFC 5869 implementation in Python's hmac module) are reproducible from the
+ * fixed inputs alone. Do NOT regenerate to
  * make a red test green — a red test here means a break in compatibility with
  * every existing store.
  */
@@ -21,7 +23,7 @@ import { hkdfDeriveKey } from '../hkdf.js';
 import {
   cekHandoffDecrypt,
   cekUnwrap,
-  derivePasswordSlotSecret,
+  deriveMachineSecretSlotSecret,
   deriveRecoverySlotSecret,
   deriveWrappingKey,
   exportAesKey,
@@ -48,7 +50,6 @@ const SERVER_SECRET = seq(0x20, 32);
 const CEK_RAW_HEX = bytesToHex(seq(0x40, 32));
 const SDK_MASTER = seq(0x60, 32);
 const HANDOFF_CEK_RAW_HEX = bytesToHex(seq(0x80, 32));
-const PBKDF2_SALT_B64 = 'oKGio6SlpqeoqaqrrK2urw=='; // a0a1...af
 const RECOVERY_SALT_B64 = 'sLGys7S1tre4ubq7vL2+vw=='; // b0b1...bf
 
 // ─── Pinned string constants ─────────────────────────────────────────────────
@@ -66,6 +67,7 @@ describe('golden: pinned constants', () => {
     expect(HKDF_INFO.WRAPPING_KEY).toBe('rediacc-config-wrapping-key-v1');
     expect(HKDF_INFO.FIELD_COMMITMENT).toBe('rediacc-config-fck-v1');
     expect(HKDF_INFO.RECOVERY_SLOT).toBe('rediacc-recovery-slot-v1');
+    expect(HKDF_INFO.MACHINE_SECRET).toBe('rediacc-machine-secret-v1');
   });
 });
 
@@ -105,15 +107,15 @@ describe('golden: deriveWrappingKey / cekUnwrap', () => {
 // ─── Slot secret KDFs ────────────────────────────────────────────────────────
 
 describe('golden: slot secret derivation', () => {
-  it('PBKDF2-SHA256 password slot vector (600k iterations)', async () => {
-    const secret = await derivePasswordSlotSecret('correct horse battery staple', {
-      method: 'password',
-      algorithm: 'PBKDF2-SHA256',
-      iterations: 600_000,
-      salt: PBKDF2_SALT_B64,
+  it('machine secret parses from messy input and derives the pinned secret', async () => {
+    // Same characters and salt as the recovery vector below: the prefix and the HKDF info keep the two apart.
+    const messy = 'rm1 7gv2lvcb yq8c4ctm fvIz5kst nvqvcma9';
+    const secret = await deriveMachineSecretSlotSecret(messy, {
+      algorithm: 'HKDF-SHA256',
+      salt: RECOVERY_SALT_B64,
     });
     expect(bytesToHex(secret)).toBe(
-      '5e15ba4e3e1c2558826aabea1d3fe1688b18909303a416c9578f17066a6bc2ee'
+      '031c4328ee68a5a722c2ad05b9bd7ea626b3c3162772fa20dd7f3a2b1da2a843'
     );
   });
 

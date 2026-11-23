@@ -13,6 +13,8 @@ export const HKDF_INFO = {
   /** Envelope v3: the key that blinds commitment pointers (commitments.ts `derivePointerBlindingKey`). */
   POINTER_BLIND: 'rediacc-config-ptr-v1',
   RECOVERY_SLOT: 'rediacc-recovery-slot-v1',
+  /** A machine secret's wrapping secret (slots.ts `deriveMachineSecretSlotSecret`, D46). */
+  MACHINE_SECRET: 'rediacc-machine-secret-v1',
 } as const;
 
 /**

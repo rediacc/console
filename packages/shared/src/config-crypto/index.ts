@@ -75,21 +75,36 @@ export {
   PolicyRecordIntegrityError,
   policyRecordAad,
 } from './policy-record.js';
+// Recovery kit content and save check (D43)
+export type { RecoveryKit, RecoveryKitInput } from './recovery-kit.js';
+export { buildRecoveryKit, checkRecoveryKitSaved, KIT_CHECK_LENGTH } from './recovery-kit.js';
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
 // Selective encryption
 export type { PriorEnvelope } from './selective.js';
 export { envelopeAad, selectiveDecrypt, selectiveEncrypt } from './selective.js';
-// CEK key slots (passkey / password / recovery-code)
-export type { SlotKdfParams, SlotMethod } from './slots.js';
+// CEK key slots (passkey / recovery-code) and machine secrets (D46)
+export type {
+  MachineSecretKdfParams,
+  PasskeyTransport,
+  SlotKdfParams,
+  SlotMethod,
+} from './slots.js';
 export {
-  derivePasswordSlotSecret,
+  deriveMachineSecretSlotSecret,
   deriveRecoverySlotSecret,
+  generateMachineSecret,
   generateRecoveryCode,
-  newPasswordSlotParams,
+  MachineSecretKdfParamsSchema,
+  newMachineSecretParams,
+  newPasskeySlotParams,
   newRecoverySlotParams,
-  PASSWORD_PBKDF2_ITERATIONS,
+  PASSKEY_TRANSPORTS,
+  parseMachineSecret,
   parseRecoveryCode,
+  parseSlotKdfParams,
+  SLOT_METHODS,
+  SlotKdfParamsSchema,
   unwrapCekForSlot,
   wrapCekForSlot,
 } from './slots.js';
