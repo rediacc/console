@@ -138,6 +138,7 @@
     "check:ci-security-audit": "PYTHONPATH=.ci python3 -m rediacc_ci.security.audit",
     "check:ci-shell-commands": "PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands",
     "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",
+    "check:ci-gate-argv": ".ci/scripts/quality/check_gate_argv.py",
     "check:ci-shell-format": "PYTHONPATH=.ci python3 -m rediacc_ci.security.shfmt",
     "check:ci-python-lint": ".ci/scripts/quality/check_python_lint.py",
     "check:ci-python-types": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types",

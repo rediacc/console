@@ -2303,6 +2303,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-silent-failure-sweep.md SF8: every quality entry point refuses an argument it does not take, and every registered call passes only declared flags. NO `paths:`: it reads package.json, the workflows and the .claude hooks as call sources, so any path table would drop it when a caller moves.
+    id: 'check:ci-gate-argv',
+    run: 'npm run check:ci-gate-argv',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_gate_argv.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Gate argv',
+    },
+  },
+  {
     id: 'check:ci-probe-parity',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.probe_parity',
     gate: true,
