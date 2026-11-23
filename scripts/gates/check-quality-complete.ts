@@ -472,6 +472,11 @@ export const HOST_LANE = 'quality-wiring';
  * where the next reader finds it.
  */
 export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
+  'quality-wrangler-dev':
+    'the native-Linux lane for check:ci-proxy-wrangler-dev-e2e (PLAN-tooling-speed SP7): it builds ' +
+    'its own renet from the renet submodule under an App token, with the Docker Hub login and the ' +
+    'production public key from Bitwarden, before the one hand-written `Proxy wrangler dev e2e` ' +
+    'step; the manifest binds it by step name, and a region would not carry the secrets and checkout order',
   'quality-content-receipt':
     'the receipt signer: no checkout and no repo code, only the download, attest and upload of the ' +
     'quality-content receipt, so it holds no gate and has no setup step',
