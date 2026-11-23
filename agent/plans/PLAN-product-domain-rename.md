@@ -186,9 +186,10 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 - [x] H1 [live] Read hostinger's schedule: which timers exist, their cadence and last runs, including any faster cadence on a critical repository. Read-only, and it sets L9's timing so a re-point does not land inside a run. A run caught by the re-point fails and is fixed forward. Whether this verb leaves renet alone from an unmerged branch is unverified, so the box runs from a released `rdc` if the read says otherwise.
   Accept: `./rdc.sh --config eu-bench backup status -m hostinger` rc 0, with the listing recorded here.
     (ticked) 2026-11-08T15:06:40Z by d778be9d: eu-remote backup status -m hostinger rc 0 + backup strategy list rc 0 on 2026-11-08: one timer nightly-hot (0 2 * * *, hot, store home), last run 2026-11-08T02:00:46Z success, next 2026-11-09T02:00Z, no faster cadence on any repo; L9 re-point stays outside 01:45-03:00Z; read-only verbs ran the machine's own renet
-- [ ] M1 [live] Merge the batch through `/pr-merge` with the `Operational-Reason:` line, then release edge from the merged tree, so CD runs on the new names and hostinger gets a released renet.
+- [x] M1 [live] Merge the batch through `/pr-merge` with the `Operational-Reason:` line, then release edge from the merged tree, so CD runs on the new names and hostinger gets a released renet.
   Accept: `npm run release:local -- --channel edge` rc 0.
   (corrected 2026-11-11, R2) GitHub-only: CD -- the box merges through /pr-merge so that CD itself runs on the new names; only the release pipeline shows that.
+    (ticked) 2026-11-23T11:09:30Z by ace763dd: merged through /pr-merge to main aa829a19dc; edge released by CD run 45050186727 success, edge manifest v4.0.1 commit aa829a19dc
 
 ### hostinger
 

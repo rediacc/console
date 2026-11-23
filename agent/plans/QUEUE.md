@@ -41,19 +41,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (5 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 452 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 470 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 7 live of writer_cap 25 (session ace763dd): worker:ac4c976a5e825adbc, worker:abde7539c34217c63, worker:aed705b0fc5c49616, worker:a024858535529ee5f, worker:a84684551eaa71ce0, worker:a0a43b34cf9ee8f35, worker:adfc1e02cda787ea1.
-- Leased items: 12: #086a62bd (worker:a19118161599506ae, ace763dd), #107916b3 (worker:a84684551eaa71ce0, ace763dd), #1eb0d5c2 (worker:a024858535529ee5f, ace763dd), #3b82cf28 (worker:af268160b495d8c65, ace763dd), #4d8d29c1 (worker:aed705b0fc5c49616, ace763dd), #591e9522 (worker:ac4c976a5e825adbc, ace763dd), #5fb35432 (worker:a7c1d8def712d7382, ace763dd), #70dd3771 (worker:abde7539c34217c63, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #950353f2 (worker:adfc1e02cda787ea1, ace763dd), #e1968074 (worker:ac4c976a5e825adbc, ace763dd), #f8e8edc7 (worker:a0a43b34cf9ee8f35, ace763dd).
+- Writers: 8 live of writer_cap 25 (session ace763dd): worker:ab344be350a223d8d, worker:aabf5553c862d30b0, worker:a263cb61af552d383, worker:af8a6deabee93d3e8, worker:a0977c3f08a66d9fa, worker:a41bd97970daa23e7, worker:a5aab88a778d1f59b, worker:a5996b88c3b61880a.
+- Leased items: 13: #1229f71c (worker:a0977c3f08a66d9fa, ace763dd), #14c6e1c9 (worker:aabf5553c862d30b0, ace763dd), #3b82cf28 (worker:bjm21up2m, ace763dd), #591e9522 (worker:ac4c976a5e825adbc, ace763dd), #70dd3771 (worker:abde7539c34217c63, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #776cd026 (worker:a5996b88c3b61880a, ace763dd), #aa6b18f4 (worker:ab344be350a223d8d, ace763dd), #b49288c4 (worker:a263cb61af552d383, ace763dd), #e1968074 (worker:ac4c976a5e825adbc, ace763dd), #ee003a80 (worker:af8a6deabee93d3e8, ace763dd), #f16b4889 (worker:a41bd97970daa23e7, ace763dd), and 1 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 8 of 66 plans done, 1168 of 1433 boxes done (81%).
+Promoted: 9 of 66 plans done, 1174 of 1433 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -62,12 +62,12 @@ Promoted: 8 of 66 plans done, 1168 of 1433 boxes done (81%).
 | 3 | PLAN-cloudflare-proxy.md | 29/29 | done |
 | 4 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
 | 5 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
-| 6 | PLAN-proxy-cd-six-targets.md | 27/31 | 4 open |
+| 6 | PLAN-proxy-cd-six-targets.md | 28/31 | 3 open |
 | 7 | PLAN-console-executor-multi-org.md | 18/18 | done |
 | 8 | PLAN-executor-durable-object-policy.md | 18/18 | done |
 | 9 | PLAN-tested-on-bench.md | 16/20 | 4 open |
 | 10 | PLAN-backup-restore-path.md | 8/10 | 2 open |
-| 11 | PLAN-production-key-only.md | 14/17 | 3 open |
+| 11 | PLAN-production-key-only.md | 15/17 | 2 open |
 | 12 | PLAN-detached-jobs.md | 33/41 | 8 open |
 | 13 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
 | 14 | PLAN-backup-local-image.md | 12/14 | 2 open |
@@ -85,10 +85,10 @@ Promoted: 8 of 66 plans done, 1168 of 1433 boxes done (81%).
 | 26 | PLAN-health-checks-local.md | 65/81 | 16 open |
 | 27 | PLAN-backup-multi-target.md | 18/21 | 3 open |
 | 28 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
-| 29 | PLAN-renet-executor-tiered-license-check.md | 3/4 | 1 open |
+| 29 | PLAN-renet-executor-tiered-license-check.md | 4/4 | done |
 | 30 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
 | 31 | PLAN-renet-docker-running-semantics.md | 14/15 | 1 open |
-| 32 | PLAN-product-domain-rename.md | 24/28 | 4 open |
+| 32 | PLAN-product-domain-rename.md | 25/28 | 3 open |
 | 33 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
 | 34 | PLAN-enterprise-isolation.md | 27/34 | 7 open |
 | 35 | PLAN-renet-restart-cycle-defects.md | 7/7 | done |
@@ -99,7 +99,7 @@ Promoted: 8 of 66 plans done, 1168 of 1433 boxes done (81%).
 | 40 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 41 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 42 | PLAN-account-notices.md | 16/17 | 1 open |
-| 43 | PLAN-enterprise-tenants.md | 27/47 | 20 open |
+| 43 | PLAN-enterprise-tenants.md | 28/47 | 19 open |
 | 44 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 45 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 46 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
@@ -107,7 +107,7 @@ Promoted: 8 of 66 plans done, 1168 of 1433 boxes done (81%).
 | 48 | PLAN-hostinger-to-bench.md | 14/22 | 8 open |
 | 49 | PLAN-multi-region-bench.md | 15/23 | 8 open |
 | 50 | PLAN-root-api-token.md | 13/15 | 2 open |
-| 51 | PLAN-site-entry-points.md | 7/11 | 4 open |
+| 51 | PLAN-site-entry-points.md | 8/11 | 3 open |
 | 52 | PLAN-root-grants.md | 11/19 | 8 open |
 | 53 | PLAN-push-decoupling.md | 18/23 | 5 open |
 | 54 | PLAN-stop-hook-store-status.md | 4/9 | 5 open |

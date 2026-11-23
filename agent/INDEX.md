@@ -519,7 +519,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
-| `agent/plans/PLAN-enterprise-tenants.md` | approved | 481 | 20 | 27 | 66711 |
+| `agent/plans/PLAN-enterprise-tenants.md` | approved | 482 | 19 | 28 | 66899 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | done | 487 | 0 | 18 | 66043 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
@@ -563,10 +563,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 340 | 19 | 18 | 70750 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 226 | 4 | 24 | 45792 |
-| `agent/plans/PLAN-production-key-only.md` | approved | 349 | 3 | 14 | 51686 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 227 | 3 | 25 | 45968 |
+| `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
-| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 416 | 4 | 27 | 69927 |
+| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 417 | 3 | 28 | 70182 |
 | `agent/plans/PLAN-push-decoupling.md` | approved | 256 | 5 | 18 | 36239 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
@@ -579,7 +579,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 79 | 1 | 14 | 17008 |
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 155 | 2 | 13 | 32170 |
-| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 58 | 1 | 3 | 13068 |
+| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 59 | 0 | 4 | 13301 |
 | `agent/plans/PLAN-renet-i18n-baseline-drain.md` | proposed | 61 | 16 | 0 | 14873 |
 | `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 41 | 0 | 7 | 6638 |
 | `agent/plans/PLAN-repo-resource-limits.md` | approved | 189 | 3 | 10 | 28058 |
@@ -612,7 +612,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
 | `agent/plans/PLAN-silent-failure-sweep.md` | approved | 219 | 1 | 9 | 28693 |
 | `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 186 | 4 | 8 | 39535 |
-| `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
+| `agent/plans/PLAN-site-entry-points.md` | approved | 160 | 3 | 8 | 22890 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |

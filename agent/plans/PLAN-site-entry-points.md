@@ -153,7 +153,8 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
   - Also: `curl -s https://<bench www host>/en/ | grep -c 'href="/en/downloads"'` prints at least 1.
 - [ ] BP-portal [live] On the bench portal, the Getting started page shows the install tabs, and every "Read tutorial" link points at the www origin.
   - Accept: the portal smoke against the bench passes (exact invocation recorded by the writer), with a recorded check that each docs anchor on the Getting started page has an `href` starting `https://www.rediacc.com/`, and a `curl -s -o /dev/null -w '%{http_code}' https://www.rediacc.com/en/docs/tutorial-installation` that prints 200.
-- [ ] PROD-edge [live] After the release flow's edge deploy of eu is green: repeat both bench checks against production edge eu.
+- [x] PROD-edge [live] After the release flow's edge deploy of eu is green: repeat both bench checks against production edge eu.
   - Accept: `curl -s https://www.rediacc.com/en/ | grep -c 'href="/en/downloads"'` prints at least 1, and the portal smoke against edge eu passes.
+    (ticked) 2026-11-23T11:09:31Z by ace763dd: portal_health --target stable --region eu rc 0 GREEN 7 URLs 0 red; curl -s https://www.rediacc.com/en | grep -c href="/en/downloads" prints 1, /en/downloads 200
 - [ ] PROD-stable [live] After the stable promotion per the release flow: repeat on stable eu, and confirm the originally reported link no longer 404s from the portal page.
   - Accept: the portal smoke against stable eu passes, and the Getting started "Read tutorial" anchors on https://eu.rediacc.cloud/account/ all resolve to a 200 on www.rediacc.com.

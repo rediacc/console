@@ -330,12 +330,13 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - Owns += packages/cli/src/commands/machine/register.ts, packages/cli/src/services/machine/add-existing.ts (new). Runs together with C9 and C10 (disjoint). C11 extends it afterwards.
   (corrected 2026-11-12T13:15Z) (operator rulings 2026-11-12) Single install path: C7 also carries the P2 extras (licence via /delegation/issue, optional --bws-project, owned-zone DNS write); upgrade re-applies a newer template and refuses on local edits unless --force (ASKED:2026-11-12T13:00Z).
     (ticked) 2026-11-12T14:29:26Z by d778be9d: commit:6c48953db0 rdc server install|status|upgrade|backup|licence; server vitest rc=0 (54), tsc rc=0, check:ci-cli-contract, check:ci-i18n-hashes, check:cli-examples, check:ci-command-tree rc=0; ./rdc.sh server install --help lists the steps
-- [ ] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
+- [x] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
   - Owns: private/account (gitlink bump only), private/renet (gitlink bump only).
   - Accept: `git submodule status private/account private/renet` shows the merged C3-C6 commits, and `./rdc.sh --config eu-bench machine status hostinger` reports the released renet version.
   (corrected 2026-11-12T11:58Z) Local-route: hostinger -- the C3-C6 submodule commits ride the 1104-1 branch and land as gitlink commits here (no merge needed); the renet build reaches hostinger through `npm run release:local -- --channel edge` and then `./rdc.sh --config eu-bench machine setup hostinger`, so nothing waits on GitHub.
   (corrected 2026-11-12T12:55Z) The renet bump and release also carry C10.
   (corrected 2026-11-14T17:30Z, review 0f12623a.2) The 11:58Z correction supersedes the header's 'after their submodule PRs merge': the C3-C6 commits land as gitlink commits on this branch, and nothing waits on a submodule merge.
+    (ticked) 2026-11-23T11:09:33Z by ace763dd: gitlinks hold the merged C3-C6 commits (ancestor checks rc=0); machine status hostinger no renet mismatch warning after setup with rdc 4.0.1
 - [ ] CL2 [live] On hostinger after C7 and C8: the free tier, licence upgrade and recovery bundle.
   - Run `rdc server install hostinger --config eu-bench --repo acme-free --domain acme-free.rediacc.io --licence free --yes`, then `rdc server licence acme-free.rediacc.io`.
   - The upgrade needs a bench subscription with no active cert. Each subscription allows one (packages/shared/src/subscription/constants.ts:388), and HO1 holds the operator's. Use a second bench subscription, or revoke after HO2.
