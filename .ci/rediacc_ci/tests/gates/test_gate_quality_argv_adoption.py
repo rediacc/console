@@ -35,26 +35,6 @@ PENDING = {
     "check_environment_names": "adoption batch not landed yet",
     "check_gate_reachability_coverage": "adoption batch not landed yet",
     "check_hint_corpus": "adoption batch not landed yet",
-    "check_judged_rule_wiring": "adoption batch not landed yet",
-    "check_label_inventory": "adoption batch not landed yet",
-    "check_label_references": "adoption batch not landed yet",
-    "check_language_policy": "adoption batch not landed yet",
-    "check_literal_sources": "adoption batch not landed yet",
-    "check_lockfile": "adoption batch not landed yet",
-    "check_mutate_check": "adoption batch not landed yet",
-    "check_no_app_admin_perm": "adoption batch not landed yet",
-    "check_no_otlp_creds": "adoption batch not landed yet",
-    "check_npmrc": "adoption batch not landed yet",
-    "check_ops_health": "adoption batch not landed yet",
-    "check_pathspec_scope": "adoption batch not landed yet",
-    "check_peer_deps": "adoption batch not landed yet",
-    "check_pipefail_grep_q": "adoption batch not landed yet",
-    "check_plan_boxes": "adoption batch not landed yet",
-    "check_plan_citations": "adoption batch not landed yet",
-    "check_plan_deps": "adoption batch not landed yet",
-    "check_plan_folders": "adoption batch not landed yet",
-    "check_plan_housekeeping": "adoption batch not landed yet",
-    "check_plan_implementation": "adoption batch not landed yet",
     "check_plan_record": "adoption batch not landed yet",
     "check_plant_proofs": "adoption batch not landed yet",
     "check_policy_inventory": "adoption batch not landed yet",
@@ -165,3 +145,13 @@ def test_an_unknown_flag_exits_2_naming_it(gate, stem):
         )
         gate.assert_eq(result.out, "", "%s printed nothing on stdout before refusing" % stem)
     gate.log_pass("%s refuses %s with rc 2" % (stem, BOGUS))
+
+
+def test_a_declared_flag_is_still_taken(gate):
+    """The accepting side: `check_ops_health.py` takes -h, so the refusal is not a blanket one."""
+    script = QUALITY / "check_ops_health.py"
+    helped = harness.run([sys.executable, str(script), "-h"], cwd=paths.repo_root())
+    gate.assert_exit_code(0, helped.rc, "-h is a declared switch and prints the usage")
+    stray = harness.run([sys.executable, str(script), "-h", BOGUS], cwd=paths.repo_root())
+    gate.assert_exit_code(2, stray.rc, "an unknown flag beside a declared one is still refused")
+    gate.log_pass("a declared flag parses and an undeclared neighbour is refused")

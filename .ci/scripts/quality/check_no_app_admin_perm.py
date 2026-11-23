@@ -28,7 +28,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import no_app_admin_perm
 
 if __name__ == "__main__":
+    _gate_args.parse("check_no_app_admin_perm.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(no_app_admin_perm.main(sys.argv[1:]))

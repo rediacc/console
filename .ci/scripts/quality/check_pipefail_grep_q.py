@@ -42,7 +42,9 @@ why: A detector built as `producer | grep -q` under pipefail cannot reliably
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import pipefail_grep_q
 
 if __name__ == "__main__":
+    _gate_args.parse("check_pipefail_grep_q.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(pipefail_grep_q.main(sys.argv[1:]))

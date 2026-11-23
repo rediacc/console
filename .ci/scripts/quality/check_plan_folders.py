@@ -74,6 +74,7 @@ import re
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import plan_lifecycle as PL
@@ -1406,4 +1407,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_folders.py",
+        sys.argv[1:],
+        switches=("--selftest", "--status", "--retire-promoted", "--sweep", "--update", "--write"),
+        valued=("--move", "--keep", "--archive", "--asked", "--ruling"),
+    )
     sys.exit(main(sys.argv[1:]))

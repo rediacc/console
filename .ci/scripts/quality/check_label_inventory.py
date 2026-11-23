@@ -67,7 +67,9 @@ needs: none
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import label_inventory
 
 if __name__ == "__main__":
+    _gate_args.parse("check_label_inventory.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(label_inventory.main(sys.argv[1:]))

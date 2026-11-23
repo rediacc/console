@@ -91,6 +91,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci import paths
 from rediacc_ci import shacite as SC
 from rediacc_ci.quality import plan_lifecycle as PL
@@ -1947,4 +1948,10 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_citations.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json"),
+        valued=("--plan",),
+    )
     sys.exit(main(sys.argv[1:]))

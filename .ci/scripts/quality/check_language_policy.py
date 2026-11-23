@@ -61,6 +61,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.core import allowlist, blocker_validator
 from rediacc_ci.policy_paths import policy_path
@@ -860,4 +861,9 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_language_policy.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+    )
     sys.exit(main(sys.argv[1:]))

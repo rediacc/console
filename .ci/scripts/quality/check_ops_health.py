@@ -15,9 +15,11 @@ env-OPS_HEALTH_READ_TOKEN: ${{ env.BWS_OPS_HEALTH_READ_TOKEN }}
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.ops import ops_health
 
 if __name__ == "__main__":
+    _gate_args.parse("check_ops_health.py", sys.argv[1:], switches=("-h", "--help"))
     if sys.argv[1:] in (["-h"], ["--help"]):
         print(__doc__)
         raise SystemExit(0)

@@ -34,7 +34,9 @@ INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import no_otlp_creds
 
 if __name__ == "__main__":
+    _gate_args.parse("check_no_otlp_creds.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(no_otlp_creds.main(sys.argv[1:]))

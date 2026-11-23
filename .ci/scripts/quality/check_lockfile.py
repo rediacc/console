@@ -67,7 +67,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import lockfile
 
 if __name__ == "__main__":
+    _gate_args.parse("check_lockfile.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(lockfile.main(sys.argv[1:]))

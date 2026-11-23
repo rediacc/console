@@ -57,6 +57,7 @@ from typing import Any
 from unittest import mock
 
 import _cipath
+import _gate_args
 from rediacc_ci import log, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import plan_impl_facts as PIF
@@ -2689,4 +2690,9 @@ def evidence_in_lines(planrec, lines, sig):
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_implementation.py",
+        sys.argv[1:],
+        switches=("--selftest", "--selftest-only", "--merge", "--no-fact-cache"),
+    )
     raise SystemExit(main())

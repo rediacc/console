@@ -22,6 +22,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _gate_args
+
 ROOT = Path(__file__).resolve().parents[3]
 
 # A ls-files (or ls-tree/diff) invocation and the quoted pathspecs on its line.
@@ -177,4 +179,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_pathspec_scope.py", sys.argv[1:], switches=("--selftest",))
     sys.exit(main())

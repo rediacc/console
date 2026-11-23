@@ -108,6 +108,7 @@ import sys
 import typing
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, paths
 
 paths.on_sys_path(paths.hooks_stop_dir())
@@ -1619,4 +1620,22 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_deps.py",
+        sys.argv[1:],
+        switches=(
+            "--selftest",
+            "--overlaps",
+            "--migrate-x",
+            "--table",
+            "--save",
+            "--diff",
+            "--write",
+            "--draft",
+            "--set",
+            "--set-x",
+        ),
+        valued=("--apply", "--root", "--base-tree"),
+        positional="<path> <value>...",
+    )
     sys.exit(main(sys.argv[1:]))
