@@ -153,29 +153,32 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
     (ticked) 2026-11-23T08:06:21Z by ace763dd: commit:cc68eafa0a fileline:.claude/rediacc_hooks/tests/test_wl_checks_silent_failure.py:1 -- wl_checks.py names 46 read failures via check-read-failed, cd-done latch only on a non-empty notice; test_wl_checks_silent_failure.py rc 0 (39 passed)
 
   Also: the whole `test_wl_*` family passes, and `npm run check:ci-plan-record` rc 0.
-- [ ] SF4 [writer] Class B (D5, D6) in wl_store.py (5 sites) and wl_core.py (1 site at :938). `landing_record` (`.claude/hooks/stop/wl_core.py:398-417`) reads through `commit_policy.read_landing_record`: a missing file stays `None`, and a defective record hands its problem to the caller, which names it once.
+- [x] SF4 [writer] Class B (D5, D6) in wl_store.py (5 sites) and wl_core.py (1 site at :938). `landing_record` (`.claude/hooks/stop/wl_core.py:398-417`) reads through `commit_policy.read_landing_record`: a missing file stays `None`, and a defective record hands its problem to the caller, which names it once.
   Owns: .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_core.py, .claude/rediacc_hooks/tests/test_wl_named_reads_core.py
   Depends on: PLAN-tooling-speed.md SP1.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_core.py` rc 0, with:
   - a malformed landing record named in the caller's text
   - a missing record that stays silent
   - per-site controls for wl_store
+    (ticked) 2026-11-23T10:02:14Z by ace763dd: commit:7f32cb0e0c SF4 class B in wl_store/wl_core named; twins in lockstep via 1cd8870276; test_wl_named_reads_core.py passed and test-landing-store.py rc 0 on the landed tree
 
   Also: if SF9 has landed, this commit deletes the two files' rows from `.ci/policy/swallowed-except-baseline.json`, and `npm run -s check:ci-swallowed-failures` stays rc 0.
-- [ ] SF5 [writer] Class B (D5) in wl_review.py (5), wl_schedred.py (5), wl_histfirst.py (1) and wl_resprofile.py (2).
+- [x] SF5 [writer] Class B (D5) in wl_review.py (5), wl_schedred.py (5), wl_histfirst.py (1) and wl_resprofile.py (2).
   Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/stop/wl_schedred.py, .claude/hooks/stop/wl_histfirst.py, .claude/hooks/stop/wl_resprofile.py, .claude/rediacc_hooks/tests/test_wl_named_reads_git.py
   Depends on: PLAN-tooling-speed.md SP2 and SP5.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_git.py` rc 0, with per-site controls and a silent control per file; baseline rows deleted as in SF4.
+    (ticked) 2026-11-23T10:02:17Z by ace763dd: commit:b9c7fd2d1a SF5 class B in wl_review/wl_schedred/wl_histfirst/wl_resprofile named or waived; test_wl_named_reads_git.py passed on the landed tree. DEPS-WAIVED: SP2 is in flight with writer W1 and SF5 changes no SP2 surface
 - [ ] SF6 [writer] Class B (D5) in worklist.py (7 sites). Once SP3 has moved the CLI verbs, each site is fixed in whichever of worklist.py or wl_cli.py now holds it.
   Owns: .claude/hooks/stop/worklist.py, .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py
   Depends on: PLAN-tooling-speed.md SP3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py` rc 0; baseline row deleted as in SF4.
-- [ ] SF7 [writer] Class B (D5, D6) in the two wl_stack.py handlers left after the lease fix, and in wl_bgsweep.py (2 sites, at `.claude/hooks/stop/wl_bgsweep.py:443` and `:531` at the tip).
+- [x] SF7 [writer] Class B (D5, D6) in the two wl_stack.py handlers left after the lease fix, and in wl_bgsweep.py (2 sites, at `.claude/hooks/stop/wl_bgsweep.py:443` and `:531` at the tip).
   - `main_checkout_tasks` stops returning `[]` on a raise.
   - `notify_line` returns its reason, which SF3's landing text names.
   Owns: .claude/hooks/stop/wl_stack.py, .claude/hooks/stop/wl_bgsweep.py, .claude/rediacc_hooks/tests/test_wl_named_reads_stack.py
   Depends on: 8cd21a2a34 and 83f2247313 on 1121-1; SF3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_stack.py` rc 0 and `python3 .claude/hooks/stop/test-landing-stack.py` rc 0. One test feeds an unreadable landing record and asserts the cd-done step names the record's problem. Baseline rows deleted as in SF4.
+    (ticked) 2026-11-23T10:02:16Z by ace763dd: commit:f30d6eb86e SF7 wl_stack/wl_bgsweep reads named, wl_checks naming in 1cd8870276; test_wl_named_reads_stack.py and test_sf7_cd_done.py passed, test-landing-stack.py rc 0 on the landed tree
 - [ ] SF8 [writer] The class A gate, check:ci-gate-argv (D4). The entry point `.ci/scripts/quality/check_gate_argv.py` uses `gate_args` itself and is registered through its `---- gate ----` header and `npm run gate:bind`. The module is `.ci/rediacc_ci/quality/gate_argv.py`. If SF1's commits already carry this gate, tick SF8 with SF1's sha.
   Owns: .ci/scripts/quality/check_gate_argv.py, .ci/rediacc_ci/quality/gate_argv.py, .ci/rediacc_ci/tests/test_quality_gate_argv.py, .ci/rediacc_ci/tests/gates/test_gate_gate_argv.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
   Depends on: SF1.
