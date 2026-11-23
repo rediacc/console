@@ -15,6 +15,11 @@ import {
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { getSubscriptionTokenFile } from '../services/account/subscription-auth.js';
+import {
+  CONFIG_WRITE_UNAVAILABLE,
+  ConfigWriteUnavailableError,
+  currentCommandName,
+} from '../services/core/config-write-errors.js';
 import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
 import {
   decryptConfigFields,
@@ -56,17 +61,21 @@ function refuseInRequestScope(what: string, name: string): void {
 }
 
 /**
- * Apply a write to a request-scoped config, in memory only. A spec write is
- * counted, so the executor can say it was not persisted.
+ * Apply a write to a request-scoped config. A state write applies in memory for
+ * the rest of the request. A spec (version-bumping) write is refused before the
+ * updater runs: the executor cannot persist it, and the refusal ends the command
+ * before its host job starts. The scope records the code for the served result.
  */
 function writeScoped(
   scope: RequestConfigScope,
   updater: (config: RdcConfig) => RdcConfig,
   bumpVersion: boolean
 ): RdcConfig {
-  const updated = updater(scope.config);
-  scope.config = bumpVersion ? { ...updated, version: updated.version + 1 } : updated;
-  if (bumpVersion) scope.specWrites += 1;
+  if (bumpVersion) {
+    scope.writeFailure = CONFIG_WRITE_UNAVAILABLE;
+    throw new ConfigWriteUnavailableError(currentCommandName());
+  }
+  scope.config = updater(scope.config);
   // The memoized resource view was built from the previous config.
   scope.resourceState = undefined;
   return scope.config;
@@ -361,7 +370,8 @@ export class ConfigFileStorage {
     opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return Promise.resolve(writeScoped(scoped, updater, bumpVersion));
+    // A refused write rejects the returned promise rather than throwing synchronously, as the locked path does.
+    if (scoped) return Promise.resolve().then(() => writeScoped(scoped, updater, bumpVersion));
     return this.withLock(
       name,
       async () => {

@@ -112,22 +112,33 @@ export interface CommandRequestContext {
 }
 
 /**
- * A config held for one request. Writes land here, in memory, and are never
- * persisted: the container has no config file to write, and the remote store
- * is not written back through the executor.
+ * A config held for one request.
+ *
+ * A state write (`bumpVersion: false`, runtime status) applies here, in memory,
+ * for the rest of the request. A version-bumping (spec) write is refused with
+ * ConfigWriteUnavailableError (services/core/config-write-errors.ts): the
+ * container has no config file to write and does not push the change back to
+ * config storage, and a change that lives only in this request would vanish with
+ * it while the host side effect it registered (a volume, a fork) stayed. The
+ * write precedes the command's host job, so the refusal ends the command before
+ * any machine is touched (agent/plans/PLAN-rmcp-writeback.md D6).
  */
 export interface RequestConfigScope {
   /** The current plaintext config. Replaced (not mutated) by each write. */
   config: RdcConfig;
   /** configService's memoized resource view for THIS config, per request. */
   resourceState?: unknown;
-  /** Version-bumping (spec) writes the command made; they die with the request. */
-  specWrites: number;
+  /**
+   * The error code of a config write this scope refused (CONFIG_WRITE_UNAVAILABLE).
+   * The command's own error handling flattens the thrown error into an exit, so
+   * the dispatch reads the code from here to put it on the served result.
+   */
+  writeFailure?: string;
 }
 
 /** A fresh request-scoped config holder around `config`. */
 export function createRequestConfigScope(config: RdcConfig): RequestConfigScope {
-  return { config, specWrites: 0 };
+  return { config };
 }
 
 /**

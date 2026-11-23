@@ -3537,6 +3537,7 @@
       }
     },
     "proxy": {
+      "configWriteUnavailable": "\"rdc {{command}}\" yapılandırmayı değiştirir, ancak yürütücü henüz yapılandırma değişikliklerini kaydedemiyor; bu yüzden hiçbir şey değiştirilmedi. Geri yazma desteği gelene kadar komutu yerelde çalıştırın.",
       "timeout": "{{host}} adresindeki proxy yürütücüsü {{seconds}} sn içinde yanıt vermedi. Çalıştığını kontrol edin veya REDIACC_PROXY_TIMEOUT_MS değerini artırın.",
       "unreachable": "{{host}} adresindeki proxy yürütücüsüne ulaşılamıyor: {{reason}}"
     },

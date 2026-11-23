@@ -3537,6 +3537,7 @@
       }
     },
     "proxy": {
+      "configWriteUnavailable": "「rdc {{command}}」は設定を変更しますが、エグゼキューターはまだ設定の変更を保存できないため、何も変更されていません。書き戻しが提供されるまでは、ローカルで実行してください。",
       "timeout": "{{host}} のプロキシエグゼキューターが {{seconds}} 秒以内に応答しませんでした。起動しているか確認するか、REDIACC_PROXY_TIMEOUT_MS を大きくしてください。",
       "unreachable": "{{host}} のプロキシエグゼキューターに接続できません: {{reason}}"
     },

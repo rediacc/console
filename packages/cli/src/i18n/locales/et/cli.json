@@ -3537,6 +3537,7 @@
       }
     },
     "proxy": {
+      "configWriteUnavailable": "\"rdc {{command}}\" muudab konfiguratsiooni, kuid täitja ei saa konfiguratsioonimuudatusi veel salvestada, seega ei muudetud midagi. Kuni tagasikirjutus pole saadaval, käivita käsk kohapeal.",
       "timeout": "Puhverserveri täitja ({{host}}) ei vastanud {{seconds}} s jooksul. Kontrolli, kas see töötab, või suurenda väärtust REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Puhverserveri täitjani ({{host}}) ei pääse ligi: {{reason}}"
     },

@@ -376,12 +376,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         ...(dispatched.stdoutBytes
           ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
           : {}),
-        stderr: withNotices(stderr, [
-          auditWarning,
-          dispatched.unpersistedConfigWrites > 0
-            ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
-            : undefined,
-        ]),
+        stderr: withNotices(stderr, [auditWarning]),
       });
     });
   });

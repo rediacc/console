@@ -141,11 +141,6 @@ export interface DispatchOutcome {
    * the audit would otherwise record `undefined` for it.
    */
   machineName?: string;
-  /**
-   * Config changes the command made that were NOT persisted, because it ran
-   * against a request-scoped config. Zero on a daemon, whose writes land on disk.
-   */
-  unpersistedConfigWrites: number;
 }
 
 /** The error code of a refusal that carries none of its own: another job holds the scope. */
@@ -453,14 +448,12 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
   const stderr = context.stderr.join('\n');
-  const unpersistedConfigWrites = context.config?.specWrites ?? 0;
   const common = {
     stdout,
     ...(stdoutBytes ? { stdoutBytes } : {}),
     stderr,
     functionName,
     machineName,
-    unpersistedConfigWrites,
   };
 
   if (!outcome.failed) {
@@ -468,12 +461,26 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     return { result: withRequestedExit(result, context.exitCode), ...common };
   }
 
-  const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
+  const failure = withWriteFailure(
+    toFailure(outcome.error, lastResult, Date.now() - started, stderr),
+    context.config?.writeFailure
+  );
   // A BUSY refusal is a structured result: the code, and the jobs that hold the scope with their attach commands.
   const refused = refusedOverlaps
     ? { ...failure, errorCode: failure.errorCode ?? BUSY_ERROR_CODE, overlaps: refusedOverlaps }
     : failure;
   return { result: refused, ...common };
+}
+
+/**
+ * Name a failure after the config write the request scope refused
+ * (CONFIG_WRITE_UNAVAILABLE). The command's handleError flattened the thrown
+ * refusal into an exit, so its code survives only on the scope. A failed machine
+ * call keeps its own code: it is how the command as a whole ended.
+ */
+function withWriteFailure(failure: ExecuteResult, writeFailure: string | undefined): ExecuteResult {
+  if (!writeFailure || failure.errorCode) return failure;
+  return { ...failure, errorCode: writeFailure };
 }
 
 /** The overlaps a refused start carried (JobOverlapRefusedError), or undefined for any other error. */

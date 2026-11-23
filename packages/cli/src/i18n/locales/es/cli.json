@@ -3537,6 +3537,7 @@
       }
     },
     "proxy": {
+      "configWriteUnavailable": "\"rdc {{command}}\" modifica la configuración, pero el ejecutor aún no puede guardar cambios de configuración, así que no se ha cambiado nada. Ejecútalo en local hasta que llegue la escritura de vuelta.",
       "timeout": "El ejecutor proxy en {{host}} no respondió en {{seconds}} s. Comprueba que esté en marcha o aumenta REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "No se puede conectar con el ejecutor proxy en {{host}}: {{reason}}"
     },

@@ -3537,6 +3537,7 @@
       }
     },
     "proxy": {
+      "configWriteUnavailable": "\"rdc {{command}}\" ändert die Konfiguration, doch der Executor kann Konfigurationsänderungen noch nicht speichern, daher wurde nichts geändert. Bis das Zurückschreiben verfügbar ist, führen Sie den Befehl lokal aus.",
       "timeout": "Der Proxy-Executor unter {{host}} hat nicht innerhalb von {{seconds}} s geantwortet. Prüfen Sie, ob er läuft, oder erhöhen Sie REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Der Proxy-Executor unter {{host}} ist nicht erreichbar: {{reason}}"
     },
