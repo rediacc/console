@@ -25,12 +25,10 @@ SCOPE is `block_vm_unverified_push`'s: a command-position `git push` in this che
 FAILS OPEN, LOUDLY, on a broken environment (no root, the trigger module will not import, git cannot name the pushed tree): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
 """
 
-import datetime
-import json
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 
@@ -58,10 +56,12 @@ MUTANTS = {
     ),
 }
 
-REASON_ENV = "BACKUP_CHECK_PUSH_REASON"
-KINDS = ("drill-unavailable", "not-runtime", "deadline")
-MIN_WHY = 40
-LEDGER_REL = "agent/ledgers/backup-check-push-reasons.jsonl"
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the escape, its kinds and the ledger are declared there and read back here.
+ROW = _push_receipts.row("backup")
+REASON_ENV = ROW.escape
+KINDS = ROW.kinds
+MIN_WHY = _push_receipts.MIN_WHY
+LEDGER_REL = ROW.ledger
 HITS_SHOWN = 10
 TRIGGER_MOD = "rediacc_ci.drills.backup_check_trigger"
 
@@ -249,14 +249,9 @@ def _for_these_inputs(receipt, tree, digest):
     return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)
 
 
-def _not_verified_attempt(trigger, root, tree, digest):
-    """The NOT_VERIFIED receipt taken for these inputs, or None."""
-    for receipt in (trigger.read_archive(root, tree), trigger.read_latest(root)):
-        if receipt is None or receipt.get("status") != trigger.NOT_VERIFIED:
-            continue
-        if _for_these_inputs(receipt, tree, digest):
-            return receipt
-    return None
+def _not_verified_attempt(root, tree, digest):
+    """The NOT_VERIFIED receipt taken for these inputs, or None (the table's reader, judged by `_for_these_inputs`)."""
+    return _push_receipts.not_verified_attempt(ROW.id, root, tree, digest, _for_these_inputs)
 
 
 def _operator_answered(ev, reason):
@@ -276,38 +271,11 @@ def _operator_answered(ev, reason):
     return bool(wl_checks._asked_in_transcript(reason, transcript))
 
 
-def _judge_reason(ev, reason, trigger, root, tree, digest):
-    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None)."""
-    if reason is None:
-        return None, "escape-missing: no `%s=` on it" % REASON_ENV, None
-    m = VM.REASON_RE.match(reason)
-    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
-    if kind not in KINDS:
-        return (
-            None,
-            "escape-kind: `%s=%r`: the kind must be one of %s"
-            % (REASON_ENV, reason, ", ".join(KINDS)),
-            None,
-        )
-    why = VM.ASKED_TOKEN_RE.sub("", rest).strip()
-    if len(why) < MIN_WHY:
-        return (
-            None,
-            "escape-why: `%s`: the why is %d characters; at least %d name the files or the deadline"
-            % (reason, len(why), MIN_WHY),
-            None,
-        )
-    if not VM.ASKED_STRICT_RE.search(reason):
-        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
-    if not _operator_answered(ev, reason):
-        return (
-            None,
-            (
-                "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this "
-                "session's transcript (within 300 s)"
-            ),
-            None,
-        )
+def _judge_reason(ev, reason, root, tree, digest):
+    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None). The checks every escape shares are the table's (`_push_receipts.judge_escape`); the NOT_VERIFIED attempt is this row's own."""
+    kind, why = _push_receipts.judge_escape(ev, ROW.id, reason, _operator_answered)
+    if kind is None:
+        return None, why, None
     attempt = None
     if kind == "drill-unavailable" and tree is None:
         return (
@@ -319,7 +287,7 @@ def _judge_reason(ev, reason, trigger, root, tree, digest):
             None,
         )
     if kind == "drill-unavailable":
-        attempt = _not_verified_attempt(trigger, root, tree, digest)
+        attempt = _not_verified_attempt(root, tree, digest)
         if attempt is None:
             return (
                 None,
@@ -336,7 +304,6 @@ def _judge_reason(ev, reason, trigger, root, tree, digest):
 
 
 def _row(root, commit, tree, kind, why, reason, hits, attempt):
-    asked = VM.ASKED_STRICT_RE.search(reason or "")
     receipt = None
     if attempt is not None:
         receipt = {
@@ -344,7 +311,7 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt):
             "class": (attempt.get("reason") or {}).get("class"),
         }
     return {
-        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": _push_receipts.now_stamp(),
         "branch": commit_policy.current_branch(root),
         "head": commit,
         "tree": tree,
@@ -352,23 +319,14 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt):
         "account": VM._pointer(root, tree, ACCOUNT),
         "kind": kind,
         "why": why,
-        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
+        "asked": _push_receipts.asked_minute(reason),
         "hits": hits[:HITS_SHOWN],
         "receipt": receipt,
     }
 
 
 def _record(ev, root, rows):
-    path = pathlib.Path(root) / LEDGER_REL
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
-    except OSError as exc:
-        ev.warn(
-            "block-backup-unverified-push: the admission was NOT recorded in %s (%s)."
-            % (LEDGER_REL, exc)
-        )
+    _push_receipts.record(ev, ROW.id, root, rows)
 
 
 REFUSAL = """BLOCKED: this push touches the backup paths and no VERIFIED backup receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`).
@@ -438,7 +396,7 @@ def run(ev):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, _attempt = _judge_reason(ev, reason, trigger, root_path, None, "")
+            kind, why, _attempt = _judge_reason(ev, reason, root_path, None, "")
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue
@@ -471,7 +429,7 @@ def run(ev):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, attempt = _judge_reason(ev, reason, trigger, root_path, tree, digest)
+            kind, why, attempt = _judge_reason(ev, reason, root_path, tree, digest)
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue

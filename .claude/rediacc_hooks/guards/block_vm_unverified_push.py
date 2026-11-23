@@ -33,13 +33,11 @@ THE OPERATOR. There is no override beyond the ASKED escape: the operator's own `
 FAILS OPEN, LOUDLY, on a broken environment (no root, the trigger or receipt module will not import, git cannot name the pushed tree): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
 """
 
-import datetime
 import json
 import pathlib
-import re
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts
 from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
@@ -81,15 +79,16 @@ MUTANTS = {
     ),
 }
 
-REASON_ENV = "VM_CHECK_PUSH_REASON"
-KINDS = ("vm-unavailable", "not-runtime", "deadline")
-MIN_WHY = 40
-LEDGER_REL = "agent/ledgers/vm-check-push-reasons.jsonl"
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the escape, its kinds and the ledger are declared there and read back here.
+ROW = _push_receipts.row("vm:check")
+REASON_ENV = ROW.escape
+KINDS = ROW.kinds
+MIN_WHY = _push_receipts.MIN_WHY
+LEDGER_REL = ROW.ledger
 HITS_SHOWN = 10
-REASON_RE = re.compile(r"^\s*([A-Za-z-]+)\s*:\s*(.*?)\s*$", re.DOTALL)
-ASKED_TOKEN_RE = re.compile(r"\s*\bASKED:\S*")
-# The minute the escape must spell; `wl_checks.ASKED_RE` is the same shape, and matching it here lets a malformed token be named before the transcript is read.
-ASKED_STRICT_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
+REASON_RE = _push_receipts.REASON_RE
+ASKED_TOKEN_RE = _push_receipts.ASKED_TOKEN_RE
+ASKED_STRICT_RE = _push_receipts.ASKED_STRICT_RE
 TRIGGER_MOD = "rediacc_ci.proof.surfaces"
 RECEIPT_MOD = "rediacc_ci.proof.vm_tier"
 
@@ -723,14 +722,9 @@ def _for_these_inputs(receipt, tree, digest):
     return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)
 
 
-def _not_verified_attempt(receipt_mod, root, tree, digest):
-    """The NOT_VERIFIED receipt taken for these inputs, or None."""
-    for receipt in (receipt_mod.read_archive(root, tree), receipt_mod.read_latest(root)):
-        if receipt is None or receipt.get("status") != receipt_mod.NOT_VERIFIED:
-            continue
-        if _for_these_inputs(receipt, tree, digest):
-            return receipt
-    return None
+def _not_verified_attempt(root, tree, digest):
+    """The NOT_VERIFIED receipt taken for these inputs, or None (the table's reader, judged by `_for_these_inputs`)."""
+    return _push_receipts.not_verified_attempt(ROW.id, root, tree, digest, _for_these_inputs)
 
 
 def _operator_answered(ev, reason):
@@ -750,35 +744,11 @@ def _operator_answered(ev, reason):
     return bool(wl_checks._asked_in_transcript(reason, transcript))
 
 
-def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
-    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None)."""
-    if reason is None:
-        return None, "escape-missing: no `%s=` on it" % REASON_ENV, None
-    m = REASON_RE.match(reason)
-    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
-    if kind not in KINDS:
-        return (
-            None,
-            "escape-kind: `%s=%r`: the kind must be one of %s"
-            % (REASON_ENV, reason, ", ".join(KINDS)),
-            None,
-        )
-    why = ASKED_TOKEN_RE.sub("", rest).strip()
-    if len(why) < MIN_WHY:
-        return (
-            None,
-            "escape-why: `%s`: the why is %d characters; at least %d name the files or the deadline"
-            % (reason, len(why), MIN_WHY),
-            None,
-        )
-    if not ASKED_STRICT_RE.search(reason):
-        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
-    if not _operator_answered(ev, reason):
-        unproven = (
-            "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this session's transcript "
-            "(within 300 s)"
-        )
-        return None, unproven, None
+def _judge_reason(ev, reason, root, tree, digest):
+    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None). The checks every escape shares are the table's (`_push_receipts.judge_escape`); the NOT_VERIFIED attempt is this row's own."""
+    kind, why = _push_receipts.judge_escape(ev, ROW.id, reason, _operator_answered)
+    if kind is None:
+        return None, why, None
     attempt = None
     if kind == "vm-unavailable" and tree is None:
         blind = (
@@ -787,7 +757,7 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
         )
         return None, blind, None
     if kind == "vm-unavailable":
-        attempt = _not_verified_attempt(receipt_mod, root, tree, digest)
+        attempt = _not_verified_attempt(root, tree, digest)
         if attempt is None:
             missing = (
                 "escape-no-attempt: `vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs; "
@@ -805,7 +775,6 @@ def _pointer(root, tree, sub):
 
 
 def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
-    asked = ASKED_STRICT_RE.search(reason or "")
     receipt = None
     if attempt is not None:
         receipt = {
@@ -813,7 +782,7 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
             "class": (attempt.get("reason") or {}).get("class"),
         }
     return {
-        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": _push_receipts.now_stamp(),
         "branch": commit_policy.current_branch(root),
         "head": commit,
         "tree": tree,
@@ -822,23 +791,14 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
         "sides": sorted(sides),
         "kind": kind,
         "why": why,
-        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
+        "asked": _push_receipts.asked_minute(reason),
         "hits": hits[:HITS_SHOWN],
         "receipt": receipt,
     }
 
 
 def _record(ev, root, rows):
-    path = pathlib.Path(root) / LEDGER_REL
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
-    except OSError as exc:
-        ev.warn(
-            "block-vm-unverified-push: the admission was NOT recorded in %s (%s)."
-            % (LEDGER_REL, exc)
-        )
+    _push_receipts.record(ev, ROW.id, root, rows)
 
 
 # What each phase costs, as the refusal shows it (agent/plans/PLAN-account-vm-check.md *Cost*; AV7 measures it live).
@@ -936,7 +896,7 @@ def _judge_tree(ev, root, pushes, trigger, receipt_mod, blocks):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, _attempt = _judge_reason(ev, reason, receipt_mod, root_path, None, "")
+            kind, why, _attempt = _judge_reason(ev, reason, root_path, None, "")
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue
@@ -969,7 +929,7 @@ def _judge_tree(ev, root, pushes, trigger, receipt_mod, blocks):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, attempt = _judge_reason(ev, reason, receipt_mod, root_path, tree, digest)
+            kind, why, attempt = _judge_reason(ev, reason, root_path, tree, digest)
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue

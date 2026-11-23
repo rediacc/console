@@ -27,12 +27,11 @@ SCOPE: a command-position `git push` in this checkout or in its private/renet. N
 FAILS OPEN, LOUDLY, on a broken environment (no root, the map or a helper module will not load): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
 """
 
-import datetime
 import json
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 
@@ -61,10 +60,12 @@ MUTANTS = {
     ),
 }
 
-REASON_ENV = "RENET_TEST_PUSH_REASON"
-KINDS = ("environment", "deadline")
-MIN_WHY = 40
-LEDGER_REL = "agent/ledgers/renet-test-push-reasons.jsonl"
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the escape, its kinds and the ledger are declared there and read back here.
+ROW = _push_receipts.row("renet")
+REASON_ENV = ROW.escape
+KINDS = ROW.kinds
+MIN_WHY = _push_receipts.MIN_WHY
+LEDGER_REL = ROW.ledger
 SHOWN = 10
 SURFACES_MOD = "rediacc_ci.proof.surfaces"
 RENET = "private/renet"
@@ -342,64 +343,26 @@ def _operator_answered(ev, reason):
 
 
 def _judge_reason(ev, reason):
-    """(kind, why) when the escape is admitted, else (None, the refusal line)."""
-    if reason is None:
-        return None, "escape-missing: no `%s=` on it" % REASON_ENV
-    m = VM.REASON_RE.match(reason)
-    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
-    if kind not in KINDS:
-        return None, "escape-kind: `%s=%r`: the kind must be one of %s" % (
-            REASON_ENV,
-            reason,
-            ", ".join(KINDS),
-        )
-    why = VM.ASKED_TOKEN_RE.sub("", rest).strip()
-    if len(why) < MIN_WHY:
-        return (
-            None,
-            "escape-why: `%s`: the why is %d characters; at least %d name the tests or the deadline"
-            % (
-                reason,
-                len(why),
-                MIN_WHY,
-            ),
-        )
-    if not VM.ASKED_STRICT_RE.search(reason):
-        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason
-    if not _operator_answered(ev, reason):
-        return (
-            None,
-            "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this session's transcript (within 300 s)",
-        )
-    return kind, why
+    """(kind, why) when the escape is admitted, else (None, the refusal line): the table's shared escape checks (`_push_receipts.judge_escape`)."""
+    return _push_receipts.judge_escape(ev, ROW.id, reason, _operator_answered)
 
 
 def _row(root, form, commit, tree, kind, why, reason, packages):
-    asked = VM.ASKED_STRICT_RE.search(reason or "")
     return {
-        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": _push_receipts.now_stamp(),
         "branch": commit_policy.current_branch(root),
         "form": form,
         "head": commit,
         "renetTree": tree,
         "kind": kind,
         "why": why,
-        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
+        "asked": _push_receipts.asked_minute(reason),
         "packages": packages[:SHOWN],
     }
 
 
 def _record(ev, root, rows):
-    path = pathlib.Path(root) / LEDGER_REL
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
-    except OSError as exc:
-        ev.warn(
-            "block-renet-untested-push: the admission was NOT recorded in %s (%s)."
-            % (LEDGER_REL, exc)
-        )
+    _push_receipts.record(ev, ROW.id, root, rows)
 
 
 REFUSAL = """BLOCKED: this push changes renet Go code and no passing renet test receipt covers renet tree %(tree)s (%(form)s push, commit %(commit)s, sent as `%(src)s`).
@@ -498,7 +461,7 @@ def run(ev):
             required = _required(WR, test_map, changed, console_changed, base_label)
             if not required["packages"]:
                 continue
-            receipt = WR.read_receipt(tree)
+            receipt = _push_receipts.read(ROW.id, root, tree)
             missing = WR.uncovered(receipt, required)
             if missing == []:
                 continue

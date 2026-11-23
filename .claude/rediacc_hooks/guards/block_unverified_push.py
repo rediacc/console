@@ -45,12 +45,14 @@ import tempfile
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
 ORDER = 39
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the receipt files, the admit line and the readers, `read_receipt` and ORIGIN_READERS below, are declared there.
+ROW = _push_receipts.row("ci:quick")
 
 # The confinement check is what keeps an advance from being a second way past the tree comparison: without it a step claiming "records only" over a code commit authorises that commit, which is a receipt for a tree no gate judged. The tree comparison itself is pinned by the frozen golden's push-wrong-tree rows.
 DEFECT = ("confined = not outside", "confined = True")
@@ -1634,7 +1636,7 @@ RECEIPT_SCHEMA = 2
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 CARRY_EXEMPT_REL = _policy_rel("carry-exempt.json")
 V2_VERDICTS = ("ok", "fail", "blocked")
-V2_REGEN = "npm run ci:quick"
+V2_REGEN = ROW.admit[0]
 
 
 def v2_canon(x):
@@ -1818,7 +1820,7 @@ def _exempt_ids(doc):
 
 # --- attested receipts: the verifier seam (PLAN-two-track-merge-dev D6, R4) ---------------------
 # A gate carried from a SIGNED CI RECEIPT names its origin `ci-<tree>` (scripts/ci-runner/ci-receipt.ts writes that prior as .ci/cache/receipts/ci-<tree>.json beside the local archive). The prior is a convenience for the runner and is never believed here: the origin check reads the content-addressed receipt bytes the prior points at, re-verifies their attestation, and compares the carried entry against the attested gate. So a receipt edited after the fetch, one signed by another workflow, or a prior that names a gate no receipt holds is refused at the push, field named. Verification is memoized per sha256 of the bytes, so several hundred gates carried from one receipt cost one `gh` call.
-# THE SEAM. `attested(data, source_digest, memo, spec)` answers '' or why, through ATTESTATION_VERIFIER (a module attribute, so a suite stands a stub in). ORIGIN_READERS maps an origin kind to the reader that returns the comparable origin entry; the push-guard rule table (PLAN-tooling-code-reduction CR6, "a push needs receipt X") adds a receipt kind as one more reader and one more spec, and reuses `attested` unchanged.
+# THE SEAM. `attested(data, source_digest, memo, spec)` answers '' or why, through ATTESTATION_VERIFIER (a module attribute, so a suite stands a stub in). ORIGIN_READERS maps an origin kind to the reader that returns the comparable origin entry, and it is the ci:quick row's `origins` in the push-receipt table (`_push_receipts`, PLAN-tooling-code-reduction CR6): `_push_receipts.readers("ci:quick")` returns it beside the row's tree reader under one interface, so a new receipt kind is one more entry here (and a row there when it needs its own admit line), reusing `attested` unchanged.
 
 #: Who may have signed a CI receipt. scripts/ci-runner/ci-receipt.ts `ATTESTATION_SPEC` holds the same two strings, and test-block_unverified_push.py pins them equal.
 CI_ATTESTATION_SPEC = {
