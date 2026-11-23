@@ -50,14 +50,14 @@ import {
   parseShardManifest,
   shardManifestPath,
 } from './ci-runner/shard-manifest.js';
-import type { GateKind } from './lib/gate-header.js';
+import type { GateKind } from './ci-runner/gate-spec.js';
 import {
   derivedId,
   derivedRun,
   headerError,
   inferredNeeds,
   parseGateHeader,
-} from './lib/gate-header.js';
+} from './ci-runner/gate-spec.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';

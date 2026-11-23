@@ -227,7 +227,7 @@ export function resolveInvocations(
     // Without this arm the tokenizer took the program word and stopped, so every
     // `-m` invocation resolved to the bare leaf `python3` and its `leaves:` could never
     // match a tracked path. That is why the whole W7 estate registers gates as bare FILE
-    // paths instead: `scripts/lib/gate-header.ts:derivedRun` records the trap by name.
+    // paths instead: `scripts/ci-runner/gate-spec.ts:derivedRun` records the trap by name.
     // The registration shape is not being changed here -- this only stops the resolver
     // lying about a form the repo may legitimately use.
     //
