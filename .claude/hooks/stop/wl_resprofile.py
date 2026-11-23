@@ -414,7 +414,7 @@ def prune_all(
 ) -> dict:
     """Prune every repo folder under the resprofile top directory, not only this repo's; return what went, counted.
 
-    * a temporary or pytest slug (`_TMP_SLUG`) is removed outright, whatever its age: its directory no longer exists and its records are fixtures;
+    * a temporary or pytest slug (`_TMP_SLUG`) is removed outright, whatever its age, unless it is the `keep` folder (a repo checked out under /tmp owns a tmp-named live profile): its directory no longer exists and its records are fixtures;
     * a stray day folder at the top (written while a recorder resolved its root to `/`) goes once it is past `keep_days`;
     * every other slug loses its day folders past `keep_days` (prune), and the whole slug goes when no day folder is left and its newest one is past `keep_days` too: a lease or clone nobody has run in that long. `keep` (this repo's own folder) is never removed whole, so its rollup stays.
 
@@ -437,7 +437,8 @@ def prune_all(
                     shutil.rmtree(d)
                     out["days"] += 1
                 continue
-            if _TMP_SLUG.search(d.name):
+            is_keep = keep is not None and d.resolve() == keep.resolve()
+            if _TMP_SLUG.search(d.name) and not is_keep:
                 shutil.rmtree(d)
                 out["tmp"] += 1
                 continue
@@ -445,7 +446,7 @@ def prune_all(
             stale = (
                 _newest_day(d) < cutoff and (time.time() - d.stat().st_mtime) > keep_days * 86400
             )
-            if stale and not (keep is not None and d.resolve() == keep.resolve()):
+            if stale and not is_keep:
                 shutil.rmtree(d)
                 out["stale"] += 1
                 continue

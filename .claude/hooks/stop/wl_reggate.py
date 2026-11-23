@@ -685,6 +685,7 @@ def pytest_collects(rel, root):
 
 
 VERDICT_FILE = "rediacc-reggate-verdicts.json"
+LOG_DIR = "rediacc-reggate-logs"
 
 
 def _verdict_path(root):
@@ -692,23 +693,50 @@ def _verdict_path(root):
     return None if dirs is None else dirs[0] / VERDICT_FILE
 
 
+def _log_dir(root):
+    dirs = C._repo_git_dirs(root)
+    return None if dirs is None else dirs[0] / LOG_DIR
+
+
+def _proof_trailer(rel, digest, code):
+    return "REGGATE-PROOF gate=%s hash=%s exit=%d\n" % (rel, digest, code)
+
+
 def recorded_verdict(root, rel, digest):
-    """The exit code `--prove` recorded for gate `rel` at content hash `digest`, or None when none was recorded (or the record is unreadable, which the caller reports as not recorded)."""
+    """The exit code `--prove` recorded for gate `rel` at content hash `digest`, or None when none was recorded, the record is unreadable, or the evidence behind it does not check out.
+
+    A row alone settles nothing: it must name a log file under <git-dir>/rediacc-reggate-logs/ whose sha256 equals the row's `log_sha256` and whose last line is the proof trailer for THIS gate, hash and exit. A hand-written `{"hash", "exit": 0}` therefore has no log to name. RESIDUAL RISK: a writer with access to the git directory can still forge the row, the log and the trailer together; this binds a verdict to a run's recorded output, it does not authenticate who ran it (no key outside the agent's writable paths exists to sign with).
+    """
     path = _verdict_path(root)
-    if path is None:
+    logs = _log_dir(root)
+    if path is None or logs is None:
         return None
     try:
         row = json.loads(path.read_text(encoding="utf-8")).get(rel)
     except (OSError, ValueError, AttributeError):
         return None
-    if isinstance(row, dict) and row.get("hash") == digest and isinstance(row.get("exit"), int):
-        return row["exit"]
-    return None
+    if not (isinstance(row, dict) and row.get("hash") == digest):
+        return None
+    code, name, want = row.get("exit"), row.get("log"), row.get("log_sha256")
+    if not isinstance(code, int) or isinstance(code, bool):
+        return None
+    if not isinstance(name, str) or not name or os.path.basename(name) != name:
+        return None
+    try:
+        raw = (logs / name).read_bytes()
+    except OSError:
+        return None
+    if hashlib.sha256(raw).hexdigest() != want:
+        return None
+    if not raw.decode("utf-8", "replace").endswith(_proof_trailer(rel, digest, code)):
+        return None
+    return code
 
 
-def _record_verdict(root, rel, digest, code):
+def _record_verdict(root, rel, digest, code, output=""):
     path = _verdict_path(root)
-    if path is None:
+    logs = _log_dir(root)
+    if path is None or logs is None:
         raise OSError("no git directory under %s to hold %s" % (root, VERDICT_FILE))
     try:
         rows = json.loads(path.read_text(encoding="utf-8"))
@@ -718,7 +746,21 @@ def _record_verdict(root, rel, digest, code):
         rows = {}
     except ValueError:
         rows = {}  # a corrupt record is replaced by this fresh one, which names the run that wrote it
-    rows[rel] = {"hash": digest, "exit": code, "at": C.stamp_now()}
+    logs.mkdir(parents=True, exist_ok=True)
+    name = "%s-%s.log" % (hashlib.sha256(rel.encode("utf-8")).hexdigest()[:12], digest[:16])
+    body = (
+        output
+        + ("" if output.endswith("\n") or not output else "\n")
+        + _proof_trailer(rel, digest, code)
+    )
+    (logs / name).write_text(body, encoding="utf-8")
+    rows[rel] = {
+        "hash": digest,
+        "exit": code,
+        "at": C.stamp_now(),
+        "log": name,
+        "log_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+    }
     path.write_text(json.dumps(rows, indent=1, sort_keys=True), encoding="utf-8")
 
 
@@ -742,10 +784,11 @@ def prove_cli(root):
             if not key or not gate_reachable(scripts, key, root):
                 out.append("%s: skipped (no reachable check:* key runs it)" % rel)
                 continue
-            code = wl_proc.run(
+            res = wl_proc.run(
                 ["npm", "run", "--silent", key], cwd=str(root), timeout=REGGATE_TIMEOUT_S
-            ).returncode
-            _record_verdict(root, rel, digest, code)
+            )
+            code = res.returncode
+            _record_verdict(root, rel, digest, code, (res.stdout or "") + (res.stderr or ""))
             out.append("%s via `npm run %s`: exit %d (recorded)" % (rel, key, code))
     return out or ["nothing to prove: no new or changed check script lacks a verdict"]
 

@@ -1015,6 +1015,7 @@ def _red_session_start_line(worklist):
         if not rows:
             return ""
         unread = ""
+        unread_reason = ""
         try:
             import wl_store as S
 
@@ -1022,10 +1023,8 @@ def _red_session_start_line(worklist):
         except Exception as exc:
             # "untracked" below would be a guess: the line says the worklist went unread.
             items = []
-            unread = " [the worklist could not be read (%s: %s), so tracked is unknown]" % (
-                type(exc).__name__,
-                exc,
-            )
+            unread_reason = "%s: %s" % (type(exc).__name__, exc)
+            unread = " [the worklist could not be read (%s), so tracked is unknown]" % unread_reason
         age_s = max(0.0, time.time() - float(doc.get("at") or 0))
         stale = unread + (
             " [cache %d h old, stale]" % (age_s // 3600) if age_s > SESSION_START_STALE_S else ""
@@ -1043,7 +1042,13 @@ def _red_session_start_line(worklist):
                 )
                 % dict(
                     fields(row),
-                    tracked="tracked by #%s" % tracked[0]["id"] if tracked else "untracked",
+                    tracked=(
+                        "tracking unknown (worklist unreadable: %s)" % unread_reason
+                        if unread_reason
+                        else "tracked by #%s" % tracked[0]["id"]
+                        if tracked
+                        else "untracked"
+                    ),
                     stale=stale,
                 )
             )

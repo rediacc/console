@@ -363,6 +363,17 @@ def test_prune_walks_every_repo_folder(tmp_path):
     assert got == {"tmp": 2, "stale": 1, "days": 2, "errors": 0}
 
 
+def test_a_keep_folder_with_a_tmp_slug_survives_prune_all(tmp_path):
+    top = tmp_path / "resprofile"
+    mine = top / "tmp-checkout-console"
+    live = _mk(mine / _day(0))
+    other = _mk(top / "tmp-other-checkout" / _day(0))
+    got = R.prune_all(top, keep=mine)
+    assert live.exists(), "a repo checked out under /tmp lost its live profile"
+    assert not other.parent.exists(), "control: a non-kept tmp slug still goes"
+    assert got["tmp"] == 1
+
+
 def test_this_repos_folder_keeps_its_rollup_with_no_day_left(tmp_path):
     top = tmp_path / "resprofile"
     mine = top / "home-dev-console"

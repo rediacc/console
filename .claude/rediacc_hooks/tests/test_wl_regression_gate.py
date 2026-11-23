@@ -226,6 +226,45 @@ def test_86b_control_a_gate_with_no_recorded_verdict_is_not_run_by_the_stop_and_
     assert '"exit": 0' not in marker.read_text(encoding="utf-8")
 
 
+def _forge_setup(wl):
+    wl.reg_repo()
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    gate = quality / "check-forged.sh"
+    gate.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    rel = ".ci/scripts/quality/check-forged.sh"
+    return rel, wl_reggate._hash_file(str(gate)), wl_reggate._verdict_path(wl.proj)
+
+
+def test_86c_a_forged_verdict_row_with_no_log_is_not_a_recorded_verdict(wl):
+    rel, digest, path = _forge_setup(wl)
+    path.write_text(json.dumps({rel: {"hash": digest, "exit": 0}}), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None
+    # A row naming a log that does not exist, or one outside the log dir, is refused too.
+    row = {"hash": digest, "exit": 0, "log": "../x.log", "log_sha256": "0" * 64}
+    path.write_text(json.dumps({rel: row}), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None
+
+
+def test_86d_control_a_recorded_run_reads_back_and_any_tamper_refuses_it(wl):
+    rel, digest, path = _forge_setup(wl)
+    wl_reggate._record_verdict(wl.proj, rel, digest, 0, "gate output\n")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) == 0
+    assert wl_reggate.recorded_verdict(wl.proj, rel, "f" * 64) is None, "different content hash"
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    log = wl_reggate._log_dir(wl.proj) / rows[rel]["log"]
+    good = log.read_text(encoding="utf-8")
+    log.write_text(good.replace("exit=0", "exit=1"), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "log edited after the run"
+    log.write_text(good, encoding="utf-8")
+    rows[rel]["exit"] = "0"
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "non-int exit"
+    rows[rel]["exit"] = 1
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "exit disagrees with the log"
+
+
 def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):
     """CONTROL, and the anti-substring control too: `ci` MENTIONS the key inside an echo, so a substring reachability test would wrongly pass this. Only `npm run` edges count."""
     wl.say("done for now")

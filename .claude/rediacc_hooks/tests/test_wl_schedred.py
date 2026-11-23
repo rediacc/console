@@ -725,6 +725,35 @@ def test_session_start_line_reads_the_cache_only(tmp_path, gh, monkeypatch):
     assert SR.session_start_line(wlp) == ""
 
 
+@pytest.mark.usefixtures("gh")
+def test_session_start_line_says_tracking_unknown_when_the_worklist_is_unreadable(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), jobs={}))
+
+    def boom(*_args, **_kwargs):
+        raise OSError("store locked")
+
+    monkeypatch.setattr(S, "load", boom)
+    line = SR.session_start_line(wlp)
+    assert "tracking unknown (worklist unreadable: OSError: store locked)" in line, line
+    assert "untracked" not in line, line
+
+
+@pytest.mark.usefixtures("gh")
+def test_session_start_line_control_a_readable_empty_worklist_is_untracked(tmp_path, monkeypatch):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), jobs={}))
+    line = SR.session_start_line(wlp)
+    assert "untracked" in line, line
+    assert "tracking unknown" not in line, line
+
+
 # --------------------------------------------------------------------------- the Stop hook wiring
 
 

@@ -1288,7 +1288,7 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
     return last_text, since_user, readable
 
 
-# ARM THE EXIT RECORDER, LAST, and inside a suppress that swallows everything.
+# ARM THE EXIT RECORDER, LAST, and inside a guard that turns any Exception into one stderr line.
 #
 # wl_core is imported by 16 modules and by every one of the ~880 python3 invocations the case suite makes, so this line is the single seam that turns "profile every hook process" into one edit with no settings change, no wrapper and no per-guard work. It is also, for the same reason, the single line that could break every hook at once -- which is why the import itself is guarded,
 # why wl_resprofile.install() never raises, why its exit handler writes nothing to
@@ -1298,6 +1298,9 @@ try:
     import wl_resprofile as _resprofile
 
     _resprofile.install()
-# swallowed-failure-ok: an unimportable or failing profiler must never change the exit code or output of the hook it measures, and wl_core is imported by every hook process; a dead profiler shows as hook processes missing from its rollup, never as a failed hook.
-except BaseException:
-    pass
+except Exception as _profiler_exc:
+    # Only Exception: SystemExit and KeyboardInterrupt are the hook's own to raise and must propagate. The failure is named once on stderr and never changes the exit code or stdout of the hook it measures.
+    sys.stderr.write(
+        "wl_core: resprofile profiler not armed (%s: %s)\n"
+        % (type(_profiler_exc).__name__, _profiler_exc)
+    )
