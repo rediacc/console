@@ -510,3 +510,46 @@ def test_bash_env_exports_one_call_id_to_the_whole_tree(tmp_path):
     first, second = got.stdout.split()
     assert first == second
     assert R.CALL_ID.match(first)
+
+
+@pytest.fixture(scope="module")
+def built_sup(tmp_path_factory):
+    """The supervisor built from the repo source at the flags setup uses, plus -Wextra; a warning fails the build."""
+    gcc = shutil.which("gcc")
+    if gcc is None:
+        pytest.skip("no gcc on this machine")
+    out = tmp_path_factory.mktemp("sup") / "bashcov-sup"
+    src = REPO / ".devcontainer" / "bashcov-sup.c"
+    subprocess.run(
+        [gcc, "-O2", "-Wall", "-Wextra", "-Werror", "-o", str(out), str(src)],
+        check=True,
+        capture_output=True,
+    )
+    return out
+
+
+def sup_row(sup: pathlib.Path, tmp: pathlib.Path, call: str | None) -> dict:
+    out = tmp / "rows.jsonl"
+    env = {"PATH": os.environ.get("PATH", ""), "BASHCOV_OUT": str(out)}
+    if call is not None:
+        env["BASHCOV_CALL"] = call
+    subprocess.run([str(sup), "--", "true"], env=env, check=True, timeout=30)
+    return json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_the_supervisor_row_carries_call_and_epoch_ms(built_sup, tmp_path):
+    before = int(time.time() * 1000)
+    row = sup_row(built_sup, tmp_path, "12-345")
+    assert row["call"] == "12-345"
+    assert before - 1000 <= row["t"] <= int(time.time() * 1000) + 1000
+
+
+@pytest.mark.parametrize("bad", ["junk", 'x"; rm', "1-", "-1", "1-2-3", "12", ""])
+def test_a_malformed_call_id_leaves_the_field_out(built_sup, tmp_path, bad):
+    row = sup_row(built_sup, tmp_path, bad)
+    assert "call" not in row
+    assert isinstance(row["t"], int)
+
+
+def test_an_absent_call_id_leaves_the_field_out(built_sup, tmp_path):
+    assert "call" not in sup_row(built_sup, tmp_path, None)
