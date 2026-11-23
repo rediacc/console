@@ -3706,27 +3706,29 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 10,
+      "done": 7,
       "open_sigs": [
-        "0fef13a4",
-        "264bb001",
-        "2b4e97ab",
         "43ed1e7b",
         "4eed4a7d",
         "5b1cee9c",
         "5d5d5243",
-        "673d0d14",
         "6f6ad235",
         "8af4e51e",
+        "92637737",
         "a3f2f92a",
         "a8f5898f",
+        "dce1cf95"
+      ],
+      "done_sigs": [
+        "0fef13a4",
+        "264bb001",
+        "2b4e97ab",
+        "673d0d14",
         "d4f01da9",
-        "dce1cf95",
         "e25b9816",
         "f85930c0"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-root-api-token.md": {
       "status": "approved",

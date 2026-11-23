@@ -46,16 +46,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-  - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 6 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
+  - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 7 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
 - Writers: 2 live of writer_cap 25 (session ace763dd): worker:ae0a5c89585f83955, worker:ae22165c142f59698.
-- Leased items: 5: #3b82cf28 (worker:ae22165c142f59698, ace763dd), #40138a55 (worker:ae22165c142f59698, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #9398f02e (worker:ae0a5c89585f83955, ace763dd), #dd8b07c6 (worker:a565f2007e00c07f7, 9b22c347).
+- Leased items: 4: #3b82cf28 (worker:ae22165c142f59698, ace763dd), #40138a55 (worker:ae22165c142f59698, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #9398f02e (worker:ae0a5c89585f83955, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 96 plans done, 1175 of 1861 boxes done (63%).
+Promoted: 10 of 96 plans done, 1182 of 1862 boxes done (63%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -134,7 +134,7 @@ Promoted: 10 of 96 plans done, 1175 of 1861 boxes done (63%).
 | 73 | PLAN-console-animations.md | 0/9 | 9 open |
 | 74 | PLAN-rmcp-policy-record.md | 0/26 | 26 open |
 | 75 | PLAN-rmcp-decide.md | 0/9 | 9 open |
-| 76 | PLAN-rmcp-writeback.md | 0/16 | 16 open |
+| 76 | PLAN-rmcp-writeback.md | 7/17 | 10 open |
 | 77 | PLAN-rmcp-executor-hardening.md | 0/21 | 21 open |
 | 78 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
 | 79 | PLAN-console-ai-providers.md | 0/15 | 15 open |
