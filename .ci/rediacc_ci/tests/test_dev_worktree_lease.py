@@ -3395,3 +3395,50 @@ def test_hold_refuses_unknown_lease_empty_reason_and_closed_item(
     assert done.returncode == 1, done.stdout
     assert message in done.stderr, done.stderr
     assert not hold_file(repo, lease_id).exists()
+
+
+# --------------------------------------------------------------------------- disk floor (#24f87180) ---------------------------------------------------------------------------
+
+
+def fake_free(monkeypatch, free_bytes):
+    frsize = 4096
+    monkeypatch.setattr(
+        lease.os,
+        "statvfs",
+        lambda _path: types.SimpleNamespace(f_bavail=-(-free_bytes // frsize), f_frsize=frsize),
+    )
+
+
+def test_lease_refuses_below_the_disk_floor_and_leaves_nothing(repo, monkeypatch):
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES - 1_000_000)
+    with pytest.raises(lease.LeaseRefusedError) as raised:
+        lease.make_lease(repo.root, name="low")
+    message = str(raised.value)
+    assert "GB free" in message
+    assert "a lease costs about %.1f GB" % (lease.LEASE_ESTIMATE_BYTES / lease.GIB) in message
+    assert "./run.sh worktree gc --write" in message
+    assert not (repo.root / spike.HOLDER / "low").exists()
+    assert not (repo.root / ".git" / lease.RECORD_DIR / "low.json").exists()
+
+
+def test_lease_is_made_at_the_disk_floor(repo, monkeypatch):
+    """Control: exactly the floor plus two leases is enough, so the refusal above reads the free space."""
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES)
+    path = lease.make_lease(repo.root, name="ok")
+    assert pathlib.Path(path).is_dir()
+
+
+def test_failed_seed_removes_the_partial_tree(repo, monkeypatch):
+    """The 2026-11-23 ENOSPC runs: a seed that dies after the trees exist leaves no tree, record or id directory."""
+    fake_free(monkeypatch, 10**12)
+
+    def broken(path, _root, _tip):
+        (pathlib.Path(path) / "partial.txt").write_text("half a copy\n", encoding="utf-8")
+        message = "lease-seed.ts exited 1"
+        raise lease.LeaseRefusedError(message)
+
+    monkeypatch.setattr(lease, "_run_seed", broken)
+    with pytest.raises(lease.LeaseRefusedError, match="lease bad not made"):
+        lease.make_lease(repo.root, name="bad")
+    assert not (repo.root / spike.HOLDER / "bad").exists()
+    assert not (repo.root / ".git" / lease.RECORD_DIR / "bad.json").exists()

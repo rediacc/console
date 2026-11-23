@@ -38,6 +38,11 @@ GITLINK_MODE = "160000"
 CONSOLE = "."
 DEFAULT_OWNER = "cli"
 SHOWN_ESCAPES = 5
+GIB = 1024**3
+# Measured 2026-11-23 on the live seeded trees: `du -sk` of a second lease after a first one (hard links counted once) is 4271856 KiB, the disk one more lease adds. Rounded up.
+LEASE_ESTIMATE_BYTES = 4_400_000_000
+# What stays free after the new lease, besides room for one more: the 12 spawns of 2026-11-23 filled the disk and every seed failed with ENOSPC (#24f87180).
+FREE_FLOOR_BYTES = 10 * GIB
 # The two trees a lease is cut from (PLAN-two-track-merge-dev LT16), spelled as commit_policy's ROLE_DEVELOPMENT and ROLE_LANDING: the main checkout's live branch, or the branch the landing record binds.
 TREE_DEVELOPMENT = "development"
 TREE_LANDING = "landing"
@@ -184,6 +189,28 @@ def _add_exclude_lines(git_dir):
         lead = "" if not text or text.endswith("\n") else "\n"
         with exclude.open("a", encoding="utf-8") as handle:
             handle.write("%s%s\n" % (lead, "\n".join(missing)))
+
+
+def _free_bytes(path):
+    stat = os.statvfs(path)
+    return stat.f_bavail * stat.f_frsize
+
+
+def _check_disk(root):
+    """Refuse a lease that would leave less than FREE_FLOOR_BYTES plus one more lease free on the worktree filesystem. Runs before anything is created, so a refusal leaves nothing behind."""
+    free = _free_bytes(root)
+    needed = FREE_FLOOR_BYTES + 2 * LEASE_ESTIMATE_BYTES
+    if free < needed:
+        message = (
+            "only %.1f GB free on the worktree filesystem; a lease costs about %.1f GB and %.1f GB must stay free after it (the %.1f GB floor plus room for one more lease). Free space with `./run.sh worktree gc --write`"
+            % (
+                free / GIB,
+                LEASE_ESTIMATE_BYTES / GIB,
+                (needed - LEASE_ESTIMATE_BYTES) / GIB,
+                FREE_FLOOR_BYTES / GIB,
+            )
+        )
+        raise LeaseRefusedError(message)
 
 
 def _reserve(root, name, owner):
@@ -368,6 +395,7 @@ def make_lease(root, *, name="", owner="", agent="", tree=""):
             % (", ".join(absent), " ".join(absent))
         )
         raise LeaseRefusedError(message)
+    _check_disk(root)
     repo = spike.Repo(root, [sub for sub, _ in held])
     lease_id, path = _reserve(root, name, owner)
     # The lease's own handler for the build, then each signal goes back to what the caller had (as _remove_row does): left armed, a caller's later SIGINT raised the lease's InterruptedRunError long after the lease was made.
