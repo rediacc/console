@@ -84,12 +84,31 @@ def test_one_process_still_writes_one_row(tmp_path):
     assert len(records(tmp_path)) == 1
 
 
-def test_wl_resprofile_claims_its_own_pid_only(monkeypatch):
-    monkeypatch.delenv("_WL_SITEPROFILE", raising=False)
-    monkeypatch.setenv("_WL_SITEPROFILE", "super:1")
-    monkeypatch.setattr(R.atexit, "register", lambda *_a, **_k: None)
-    R.install()
-    assert os.environ["_WL_SITEPROFILE"] == "super:%d" % os.getpid()
+def test_a_hook_process_writes_one_rich_row(tmp_path):
+    """wl_resprofile claims THIS process (`super:<pid>`), so the site recorder stands down in it and only the richer row is written; an unkeyed claim wrote both. A second install() in the same process adds no second row."""
+    hook = (
+        "import sys; sys.path.insert(0, %r); import wl_resprofile; "
+        "wl_resprofile.install(); wl_resprofile.install()"
+        % str(REPO / ".claude" / "hooks" / "stop")
+    )
+    got = run_py(tmp_path, ["-c", hook], PYTHONPATH=str(PROFILE / "py"))
+    assert got.returncode == 0, got.stderr
+    rows = records(tmp_path)
+    assert len(rows) == 1, rows
+    assert "psi_us" in rows[0]
+    assert "src" not in rows[0]
+
+
+def test_a_child_of_a_hook_process_records_its_own_row(tmp_path):
+    """The claim is the parent's: a child python3 of a hook process writes its own site row."""
+    hook = (
+        "import subprocess, sys; sys.path.insert(0, %r); import wl_resprofile; wl_resprofile.install(); "
+        "subprocess.run([sys.executable, '-c', 'pass'], check=True)"
+    ) % str(REPO / ".claude" / "hooks" / "stop")
+    got = run_py(tmp_path, ["-c", hook], PYTHONPATH=str(PROFILE / "py"))
+    assert got.returncode == 0, got.stderr
+    rows = records(tmp_path)
+    assert sorted(r.get("src", "rich") for r in rows) == ["rich", "site"]
 
 
 # ---- the .pth loader ------------------------------------------------------------

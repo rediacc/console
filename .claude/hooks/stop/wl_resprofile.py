@@ -61,6 +61,8 @@ RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
 _T0 = time.monotonic()
 _PSI0: dict[str, int] = {}
+# install() has armed this process. Module state, not the environment: a child inherits the environment, never this.
+_ARMED: list[bool] = []
 
 
 def _read(path: str) -> str:
@@ -487,10 +489,10 @@ def install() -> None:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
         # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two. It names THIS pid: a child inherits the environment, and a marker naming its parent must not stand the child down.
-        mine = "super:%d" % os.getpid()
-        if os.environ.get("_WL_SITEPROFILE") == mine:
+        if _ARMED:
             return
-        os.environ["_WL_SITEPROFILE"] = mine
+        os.environ["_WL_SITEPROFILE"] = "super:%d" % os.getpid()
+        _ARMED.append(True)
         for name in ("cpu", "io"):
             v = _psi_some_total(name)
             if v is not None:
