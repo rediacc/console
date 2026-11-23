@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "حدِّد مكان الاستعادة: --machine <m> (Docker) أو --datastore <d> (مخزن بيانات مسمى).",
   "commands.backup.restore.placeRequired": "يجب أن يذكر عنصر الاستعادة مكانه: استخدم repo@place (مثال shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "جارٍ سحب \"{{name}}\" من {{place}}...",
+  "commands.backup.restore.registrationCleanupFailed": "تعذّر حذف تسجيل {{name}} بعد الفشل ({{error}})، ولا يزال مدرجًا في الإعداد.",
   "commands.backup.restore.restored": "تمت استعادة \"{{name}}\" على {{machine}}",
   "commands.backup.restore.restoringSnapshot": "جارٍ استعادة \"{{name}}\" من اللقطة {{snapshot}}...",
   "commands.backup.restore.salvageDamaged": "وضع الإنقاذ صورة فيها {{count}} ثقب/ثقوب حيث فُقدت الأجزاء المخزّنة أو تلفت.",

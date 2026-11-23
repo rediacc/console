@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Indique onde restaurar: --machine <m> (docker) ou --datastore <d> (datastore com nome).",
   "commands.backup.restore.placeRequired": "Um artefacto a restaurar tem de indicar onde vive: use repo@local (por exemplo shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "A receber {{name}} de {{place}}...",
+  "commands.backup.restore.registrationCleanupFailed": "Não foi possível remover o registro de {{name}} após a falha ({{error}}); a configuração ainda o lista.",
   "commands.backup.restore.restored": "{{name}} restaurado em {{machine}}",
   "commands.backup.restore.restoringSnapshot": "A restaurar {{name}} a partir do snapshot {{snapshot}}...",
   "commands.backup.restore.salvageDamaged": "O salvamento colocou uma imagem com {{count}} buraco(s) onde os chunks armazenados estavam perdidos ou corrompidos.",

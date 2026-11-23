@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "请指明恢复位置：--machine <m>（Docker）或 --datastore <d>（命名数据存储）。",
   "commands.backup.restore.placeRequired": "恢复产物必须指明其所在位置：使用 repo@place 格式（例如 shop:nightly@backup-1）。",
   "commands.backup.restore.pulling": "正在从 {{place}} 拉取 {{name}}...",
+  "commands.backup.restore.registrationCleanupFailed": "失败后无法移除 {{name}} 的注册（{{error}}）；配置中仍保留该项。",
   "commands.backup.restore.restored": "已将 {{name}} 恢复到 {{machine}}",
   "commands.backup.restore.restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
   "commands.backup.restore.salvageDamaged": "抢救已放置一个镜像,其中有 {{count}} 处空洞,对应已存储数据块丢失或损坏的位置。",

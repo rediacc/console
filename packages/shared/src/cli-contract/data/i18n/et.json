@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Määra, kuhu taastada: --machine <m> (docker) või --datastore <d> (nimega andmehoidla).",
   "commands.backup.restore.placeRequired": "Taastamise artefakt peab nimetama, kus see asub: kasuta repo@place (nt shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "\"{{name}}\" tõmbamine asukohast {{place}}...",
+  "commands.backup.restore.registrationCleanupFailed": "Pärast tõrget ei õnnestunud {{name}} registreeringut eemaldada ({{error}}); konfiguratsioon loetleb seda endiselt.",
   "commands.backup.restore.restored": "\"{{name}}\" taastatud masinale {{machine}}",
   "commands.backup.restore.restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
   "commands.backup.restore.salvageDamaged": "Päästmine paigutas kujutise, kus on {{count}} auku kohtades, kus salvestatud tükid olid kadunud või rikutud.",

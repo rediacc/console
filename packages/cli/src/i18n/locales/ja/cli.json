@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage には --as <新しい名前> が必要です。破損したイメージを既存の名前で配置することはありません。",
         "salvageNeedsSnapshot": "--salvage には復元元のチャンクストアのスナップショットが必要です。",
         "salvageWholeImage": "--salvage はイメージ全体を復元します。--path や --to とは併用できません。",
-        "atIndexGap": "スナップショット {{snapshot}} には保存済みの一覧がないため、{{gap}} 前に取得した {{indexed}} を読み取ります。"
+        "atIndexGap": "スナップショット {{snapshot}} には保存済みの一覧がないため、{{gap}} 前に取得した {{indexed}} を読み取ります。",
+        "registrationCleanupFailed": "失敗後に {{name}} の登録を削除できませんでした（{{error}}）。設定にはまだ残っています。"
       },
       "retention": {
         "clear": {

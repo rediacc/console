@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage için --as <yeni ad> gerekir: hasarlı imaj hiçbir zaman var olan bir adın altına yerleştirilmez.",
         "salvageNeedsSnapshot": "--salvage için geri yüklenecek bir parça deposu anlık görüntüsü gerekir.",
         "salvageWholeImage": "--salvage imajın tamamını geri yükler; --path veya --to ile birlikte kullanılamaz.",
-        "atIndexGap": "{{snapshot}} anlık görüntüsünün saklanan bir listesi yok, bu yüzden bunun yerine {{gap}} önce alınan {{indexed}} okunuyor."
+        "atIndexGap": "{{snapshot}} anlık görüntüsünün saklanan bir listesi yok, bu yüzden bunun yerine {{gap}} önce alınan {{indexed}} okunuyor.",
+        "registrationCleanupFailed": "Hatadan sonra {{name}} kaydı kaldırılamadı ({{error}}); yapılandırma onu hâlâ listeliyor."
       },
       "retention": {
         "clear": {

@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Indica dove ripristinare: --machine <m> (docker) oppure --datastore <d> (datastore con nome).",
   "commands.backup.restore.placeRequired": "Un artefatto da ripristinare deve indicare dove si trova: usa repo@luogo (es. shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "Download di {{name}} da {{place}} in corso...",
+  "commands.backup.restore.registrationCleanupFailed": "Impossibile rimuovere la registrazione di {{name}} dopo l’errore ({{error}}); la configurazione la elenca ancora.",
   "commands.backup.restore.restored": "{{name}} ripristinato su {{machine}}",
   "commands.backup.restore.restoringSnapshot": "Ripristino di {{name}} dallo snapshot {{snapshot}} in corso...",
   "commands.backup.restore.salvageDamaged": "Il salvataggio ha posizionato un'immagine con {{count}} buco/buchi dove i chunk archiviati erano persi o corrotti.",

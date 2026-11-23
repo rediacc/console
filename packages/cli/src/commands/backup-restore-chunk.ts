@@ -28,6 +28,7 @@ import {
   parseVerifyVerdict,
   type RestoreStats,
 } from './backup-storage-parser.js';
+import { dropRegistrationAfterFailure } from './registration-cleanup.js';
 
 /**
  * A snapshot id as `MintSnapshotID` writes it: RFC3339-basic UTC, a dash, and
@@ -302,7 +303,7 @@ export async function runChunkRestore(args: {
     await deployRepoKeyIfNeeded(targetName, targetMachine);
   } catch (error) {
     // The job never started, so its rollback step never runs: drop the registration here, as the pull route does.
-    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
+    await dropRegistrationAfterFailure(targetName);
     throw error;
   }
   const outcome = await runCommandJob(

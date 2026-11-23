@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Укажите, куда восстанавливать: --machine <m> (docker) или --datastore <d> (именованное хранилище данных).",
   "commands.backup.restore.placeRequired": "Восстанавливаемый артефакт должен указывать место своего хранения: используйте формат repo@place (например, shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "Получение {{name}} из {{place}}...",
+  "commands.backup.restore.registrationCleanupFailed": "Не удалось удалить регистрацию {{name}} после сбоя ({{error}}); она по-прежнему есть в конфигурации.",
   "commands.backup.restore.restored": "{{name}} восстановлен на {{machine}}",
   "commands.backup.restore.restoringSnapshot": "Восстановление {{name}} из снимка {{snapshot}}...",
   "commands.backup.restore.salvageDamaged": "Спасение разместило образ с пустыми участками ({{count}}) там, где сохранённые чанки были потеряны или повреждены.",

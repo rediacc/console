@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3161,
+    "keyCount": 3162,
     "sourceCommit": "a5d16e9ee9cdd2159b6ed419becddc0fb716424c"
   },
   "hashes": {
@@ -211,6 +211,7 @@
     "commands.backup.restore.placementRequired": "3597319e",
     "commands.backup.restore.placeRequired": "337cee1a",
     "commands.backup.restore.pulling": "2de30120",
+    "commands.backup.restore.registrationCleanupFailed": "114aaaa1",
     "commands.backup.restore.restored": "8ed4ad00",
     "commands.backup.restore.restoringSnapshot": "510f88ee",
     "commands.backup.restore.salvageDamaged": "b26174ee",

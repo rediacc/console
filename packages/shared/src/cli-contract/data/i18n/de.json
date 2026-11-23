@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Geben Sie an, wohin wiederhergestellt werden soll: --machine <m> (Docker) oder --datastore <d> (benannter Datenspeicher).",
   "commands.backup.restore.placeRequired": "Ein Wiederherstellungs-Artefakt muss angeben, wo es liegt: verwenden Sie repo@place (z. B. shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "{{name}} wird von {{place}} abgerufen...",
+  "commands.backup.restore.registrationCleanupFailed": "Die Registrierung von {{name}} ließ sich nach dem Fehler nicht entfernen ({{error}}); die Konfiguration führt sie weiterhin.",
   "commands.backup.restore.restored": "{{name}} auf {{machine}} wiederhergestellt",
   "commands.backup.restore.restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
   "commands.backup.restore.salvageDamaged": "Salvage hat ein Image mit {{count}} Lücke(n) platziert, wo gespeicherte Chunks verloren oder beschädigt waren.",

@@ -36,6 +36,7 @@ import {
   type RestoreStats,
 } from './backup-storage-parser.js';
 import { postVerification, type VerificationAnswer } from './backup-verification.js';
+import { dropRegistrationAfterFailure } from './registration-cleanup.js';
 
 /** The copy needs the image plus headroom for the staging file's metadata and the filesystem. */
 const SPACE_FACTOR = 1.2;
@@ -118,7 +119,7 @@ async function deleteCopy(
     ok = false;
   }
   if (ok) {
-    await configService.removeRepository(compositeKey(name, 'latest')).catch(() => undefined);
+    await dropRegistrationAfterFailure(name);
     return 'deleted';
   }
   outputService.warn(

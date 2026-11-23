@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Nereye geri yükleneceğini belirtin: --machine <m> (docker) veya --datastore <d> (adlandırılmış veri deposu).",
   "commands.backup.restore.placeRequired": "Geri yüklenecek bir artefakt nerede bulunduğunu belirtmelidir: repo@yer biçimini kullanın (örn. shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "{{name}}, {{place}} konumundan çekiliyor...",
+  "commands.backup.restore.registrationCleanupFailed": "Hatadan sonra {{name}} kaydı kaldırılamadı ({{error}}); yapılandırma onu hâlâ listeliyor.",
   "commands.backup.restore.restored": "{{name}}, {{machine}} üzerine geri yüklendi",
   "commands.backup.restore.restoringSnapshot": "{{name}}, {{snapshot}} anlık görüntüsünden geri yükleniyor...",
   "commands.backup.restore.salvageDamaged": "Kurtarma, saklanan parçaların kaybolduğu veya bozulduğu yerlerde {{count}} boşluklu bir imaj yerleştirdi.",

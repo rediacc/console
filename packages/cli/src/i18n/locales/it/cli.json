@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage richiede --as <nuovo nome>: un'immagine danneggiata non viene mai posizionata sotto un nome esistente.",
         "salvageNeedsSnapshot": "--salvage richiede uno snapshot del chunk store da cui ripristinare.",
         "salvageWholeImage": "--salvage ripristina un'immagine intera; non si può combinare con --path o --to.",
-        "atIndexGap": "Lo snapshot {{snapshot}} non ha un elenco archiviato, quindi si legge {{indexed}}, acquisito {{gap}} prima."
+        "atIndexGap": "Lo snapshot {{snapshot}} non ha un elenco archiviato, quindi si legge {{indexed}}, acquisito {{gap}} prima.",
+        "registrationCleanupFailed": "Impossibile rimuovere la registrazione di {{name}} dopo l’errore ({{error}}); la configurazione la elenca ancora."
       },
       "retention": {
         "clear": {

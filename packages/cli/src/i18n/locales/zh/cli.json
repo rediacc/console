@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage 需要 --as <新名称>:损坏的镜像绝不会放在已有名称之下。",
         "salvageNeedsSnapshot": "--salvage 需要一个数据块存储快照作为恢复来源。",
         "salvageWholeImage": "--salvage 恢复整个镜像,不能与 --path 或 --to 同时使用。",
-        "atIndexGap": "快照 {{snapshot}} 没有已存储的列表,因此改为读取早 {{gap}} 的 {{indexed}}。"
+        "atIndexGap": "快照 {{snapshot}} 没有已存储的列表,因此改为读取早 {{gap}} 的 {{indexed}}。",
+        "registrationCleanupFailed": "失败后无法移除 {{name}} 的注册（{{error}}）；配置中仍保留该项。"
       },
       "retention": {
         "clear": {

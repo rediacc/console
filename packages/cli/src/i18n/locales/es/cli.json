@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage requiere --as <nuevo nombre>: una imagen dañada nunca se coloca bajo un nombre existente.",
         "salvageNeedsSnapshot": "--salvage requiere un snapshot del chunk store desde el que restaurar.",
         "salvageWholeImage": "--salvage restaura una imagen completa; no se puede combinar con --path ni --to.",
-        "atIndexGap": "La instantánea {{snapshot}} no tiene listado almacenado, así que se lee {{indexed}}, tomada {{gap}} antes."
+        "atIndexGap": "La instantánea {{snapshot}} no tiene listado almacenado, así que se lee {{indexed}}, tomada {{gap}} antes.",
+        "registrationCleanupFailed": "No se pudo quitar el registro de {{name}} tras el fallo ({{error}}); la configuración todavía lo incluye."
       },
       "retention": {
         "clear": {

@@ -37,6 +37,7 @@ import {
 } from './backup-restore-route.js';
 import { registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
+import { dropRegistrationAfterFailure } from './registration-cleanup.js';
 import { listBackups } from './repo-backup-list.js';
 
 /** `backup list [artifact-ref]`, list backup artifacts on a machine. */
@@ -448,7 +449,7 @@ async function runRestorePull(args: {
   } catch (error) {
     // Nothing ran yet, so the job's rollback step never will: drop the registration here, or a retry meets target-exists.
     // A failing cleanup must not hide the deploy or licence error the user needs to see.
-    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
+    await dropRegistrationAfterFailure(targetName);
     throw error;
   }
   // No `at` here. `backup_pull` no longer declares the parameter, and the caller routes `--at` to `backup_restore` before reaching this function. Passing one anyway would fail schema validation, which is the honest outcome: a parameter wired to a verb that refuses it is how the next session concludes the path works.

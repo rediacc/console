@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "복원 위치를 지정하세요: --machine <m> (Docker) 또는 --datastore <d> (이름 지정 데이터스토어)",
   "commands.backup.restore.placeRequired": "복원할 아티팩트는 위치를 명시해야 합니다: repo@place 형식을 사용하세요 (예: shop:nightly@backup-1)",
   "commands.backup.restore.pulling": "{{place}}에서 {{name}}을(를) 가져오는 중...",
+  "commands.backup.restore.registrationCleanupFailed": "실패 후 {{name}} 등록을 제거하지 못했습니다({{error}}). 구성에 아직 남아 있습니다.",
   "commands.backup.restore.restored": "{{machine}}에 {{name}} 복원 완료",
   "commands.backup.restore.restoringSnapshot": "스냅샷 {{snapshot}}에서 {{name}}을(를) 복원하는 중...",
   "commands.backup.restore.salvageDamaged": "구조 복원이 저장된 청크가 유실되었거나 손상된 곳에 구멍 {{count}}개가 있는 이미지를 배치했습니다.",

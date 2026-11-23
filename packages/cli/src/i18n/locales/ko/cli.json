@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage에는 --as <새 이름>이 필요합니다. 손상된 이미지는 기존 이름으로 배치되지 않습니다.",
         "salvageNeedsSnapshot": "--salvage에는 복원할 청크 저장소 스냅샷이 필요합니다.",
         "salvageWholeImage": "--salvage는 이미지 전체를 복원하며 --path 또는 --to와 함께 사용할 수 없습니다.",
-        "atIndexGap": "스냅샷 {{snapshot}} 에는 저장된 목록이 없어 {{gap}} 전에 찍은 {{indexed}} 을(를) 대신 읽습니다."
+        "atIndexGap": "스냅샷 {{snapshot}} 에는 저장된 목록이 없어 {{gap}} 전에 찍은 {{indexed}} 을(를) 대신 읽습니다.",
+        "registrationCleanupFailed": "실패 후 {{name}} 등록을 제거하지 못했습니다({{error}}). 구성에 아직 남아 있습니다."
       },
       "retention": {
         "clear": {

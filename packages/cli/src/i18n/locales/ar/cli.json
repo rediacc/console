@@ -123,7 +123,8 @@
         "salvageNeedsAs": "يتطلب --salvage الخيار --as <اسم جديد>: لا توضع صورة تالفة أبدًا تحت اسم موجود.",
         "salvageNeedsSnapshot": "يتطلب --salvage لقطة من مخزن الأجزاء للاستعادة منها.",
         "salvageWholeImage": "يستعيد --salvage صورة كاملة؛ ولا يمكن الجمع بينه وبين --path أو --to.",
-        "atIndexGap": "ليس للقطة {{snapshot}} قائمة مخزنة، لذا تُقرأ {{indexed}} بدلًا منها، وقد أُخذت قبلها بـ {{gap}}."
+        "atIndexGap": "ليس للقطة {{snapshot}} قائمة مخزنة، لذا تُقرأ {{indexed}} بدلًا منها، وقد أُخذت قبلها بـ {{gap}}.",
+        "registrationCleanupFailed": "تعذّر حذف تسجيل {{name}} بعد الفشل ({{error}})، ولا يزال مدرجًا في الإعداد."
       },
       "retention": {
         "clear": {

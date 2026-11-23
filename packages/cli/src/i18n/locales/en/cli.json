@@ -2123,7 +2123,8 @@
         "salvageNeedsAs": "--salvage needs --as <new name>: a damaged image is never placed under an existing name.",
         "salvageNeedsSnapshot": "--salvage needs a chunk-store snapshot to restore from.",
         "salvageWholeImage": "--salvage restores a whole image; it cannot be combined with --path or --to.",
-        "atIndexGap": "Snapshot {{snapshot}} has no stored listing, so {{indexed}} is read instead, taken {{gap}} earlier."
+        "atIndexGap": "Snapshot {{snapshot}} has no stored listing, so {{indexed}} is read instead, taken {{gap}} earlier.",
+        "registrationCleanupFailed": "Could not drop the {{name}} registration after the failure ({{error}}); the config still lists it."
       },
       "retention": {
         "clear": {

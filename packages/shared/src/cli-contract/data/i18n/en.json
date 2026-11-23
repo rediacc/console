@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "Say where to restore: --machine <m> (docker) or --datastore <d> (named datastore).",
   "commands.backup.restore.placeRequired": "A restore artifact must name where it lives: use repo@place (for example shop:nightly@backup-1).",
   "commands.backup.restore.pulling": "Pulling {{name}} from {{place}}...",
+  "commands.backup.restore.registrationCleanupFailed": "Could not drop the {{name}} registration after the failure ({{error}}); the config still lists it.",
   "commands.backup.restore.restored": "Restored {{name}} onto {{machine}}",
   "commands.backup.restore.restoringSnapshot": "Restoring {{name}} from snapshot {{snapshot}}...",
   "commands.backup.restore.salvageDamaged": "Salvage placed an image with {{count}} hole(s) where stored chunks were lost or corrupt.",

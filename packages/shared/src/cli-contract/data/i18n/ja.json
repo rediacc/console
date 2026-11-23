@@ -203,6 +203,7 @@
   "commands.backup.restore.placementRequired": "復元先を指定してください: --machine <m>（Docker）または --datastore <d>（名前付きデータストア）",
   "commands.backup.restore.placeRequired": "復元対象のアーティファクトは所在地を明示する必要がある: repo@place の形式を使用（例: shop:nightly@backup-1）",
   "commands.backup.restore.pulling": "{{place}} から {{name}} をプル中...",
+  "commands.backup.restore.registrationCleanupFailed": "失敗後に {{name}} の登録を削除できませんでした（{{error}}）。設定にはまだ残っています。",
   "commands.backup.restore.restored": "{{machine}} に {{name}} を復元しました",
   "commands.backup.restore.restoringSnapshot": "スナップショット {{snapshot}} から {{name}} を復元中...",
   "commands.backup.restore.salvageDamaged": "サルベージにより、保存済みチャンクが失われた、または破損していた箇所に {{count}} 個の空きがあるイメージを配置しました。",

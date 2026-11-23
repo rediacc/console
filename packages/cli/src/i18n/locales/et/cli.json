@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage vajab --as <uus nimi>: kahjustatud kujutist ei paigutata kunagi olemasoleva nime alla.",
         "salvageNeedsSnapshot": "--salvage vajab taastamiseks tükihoidla hetktõmmist.",
         "salvageWholeImage": "--salvage taastab terve kujutise; seda ei saa kombineerida valikutega --path ega --to.",
-        "atIndexGap": "Hetktõmmisel {{snapshot}} puudub salvestatud loend, seega loetakse selle asemel {{indexed}}, mis tehti {{gap}} varem."
+        "atIndexGap": "Hetktõmmisel {{snapshot}} puudub salvestatud loend, seega loetakse selle asemel {{indexed}}, mis tehti {{gap}} varem.",
+        "registrationCleanupFailed": "Pärast tõrget ei õnnestunud {{name}} registreeringut eemaldada ({{error}}); konfiguratsioon loetleb seda endiselt."
       },
       "retention": {
         "clear": {

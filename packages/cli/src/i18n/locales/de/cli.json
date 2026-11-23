@@ -123,7 +123,8 @@
         "salvageNeedsAs": "--salvage benötigt --as <neuer Name>: Ein beschädigtes Image wird nie unter einem vorhandenen Namen platziert.",
         "salvageNeedsSnapshot": "--salvage benötigt einen Chunk-Store-Snapshot als Quelle.",
         "salvageWholeImage": "--salvage stellt ein ganzes Image wieder her; es lässt sich nicht mit --path oder --to kombinieren.",
-        "atIndexGap": "Snapshot {{snapshot}} hat keine gespeicherte Auflistung, daher wird stattdessen {{indexed}} gelesen, {{gap}} früher aufgenommen."
+        "atIndexGap": "Snapshot {{snapshot}} hat keine gespeicherte Auflistung, daher wird stattdessen {{indexed}} gelesen, {{gap}} früher aufgenommen.",
+        "registrationCleanupFailed": "Die Registrierung von {{name}} ließ sich nach dem Fehler nicht entfernen ({{error}}); die Konfiguration führt sie weiterhin."
       },
       "retention": {
         "clear": {
