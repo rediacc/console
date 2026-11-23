@@ -473,6 +473,8 @@ export class ProxyClient {
     }
     // A heartbeat only keeps a quiet attach window's connection alive.
     if (line.kind === 'heartbeat') return;
+    // An AI line belongs to the console AI routes (aiChat, aiTest); it carries no renet event for a command stream.
+    if (line.kind === 'ai') return;
     // An event. Dedupe on the spool-line ordinal so a resumed boundary line renders exactly once.
     if (line.line != null && line.line <= state.highestLine) return;
     if (line.line == null) {
