@@ -1929,9 +1929,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-tutorial-healthcheck-headroom',
-    run: 'npm run check:ci-tutorial-healthcheck-headroom',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/tutorial_healthcheck_headroom.py',
       '.ci/docker/ci/docker-compose.yml',
       '.ci/scripts/quality/**',
       '.ci/tutorials/apps/**',
@@ -1939,7 +1940,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_tutorial_healthcheck_headroom.py'],
+    leaves: ['.ci/rediacc_ci/quality/tutorial_healthcheck_headroom.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2838,11 +2839,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // Found by hand three times in one session (2026-08-28: 891ff49db, 946e0e6da, 74114a26b) before this existed: a script preferring PR_HEAD_REF, invoked by a workflow step that never set it. On this repo's workflow_call chain the runner's default GITHUB_HEAD_REF does not reliably materialise, so the gap is silent -- a skipped check or a degraded one, never a crash.
     id: 'check:ci-pr-head-ref-completeness',
-    run: 'npm run check:ci-pr-head-ref-completeness',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pr_head_ref_completeness',
     gate: true,
-    paths: ['.github/workflows/**', 'package.json', '.ci/scripts/**', 'scripts/**'],
+    paths: ['.ci/rediacc_ci/quality/pr_head_ref_completeness.py', '.github/workflows/**', 'package.json', '.ci/scripts/**', 'scripts/**'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_pr_head_ref_completeness.py'],
+    leaves: ['.ci/rediacc_ci/quality/pr_head_ref_completeness.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5522,10 +5523,10 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 12
   {
     id: 'check:ci-workflow-submodule-deps',
-    run: 'npm run check:ci-workflow-submodule-deps',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_submodule_deps',
     slow: true,
     gate: true,
-    leaves: ['.ci/scripts/quality/check_workflow_submodule_deps.py'],
+    leaves: ['.ci/rediacc_ci/quality/workflow_submodule_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5594,9 +5595,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-tutorial-cli-validity',
-    run: 'npm run check:ci-tutorial-cli-validity',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_cli_validity',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/tutorial_cli_validity.py',
       '.ci/scripts/quality/**',
       '.ci/tutorials/**',
       '.npmrc',
@@ -5604,7 +5606,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/cli/scripts/command-tree.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_tutorial_cli_validity.py'],
+    leaves: ['.ci/rediacc_ci/quality/tutorial_cli_validity.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6472,11 +6474,11 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-workflow-env-provision',
     // A job may not use a shell variable nothing in that job provides. bash expands an unset name to the empty string, so the failure always surfaces downstream wearing somebody else's name.
-    run: 'npm run check:ci-workflow-env-provision',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_env_provision',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json', 'scripts/ci/write-shard-receipt.cjs'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_workflow_env_provision.py'],
+    leaves: ['.ci/rediacc_ci/quality/workflow_env_provision.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

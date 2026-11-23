@@ -496,13 +496,13 @@ jobs:
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_workflow_env_provision.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_env_provision
       - name: Workflow submodule deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_workflow_submodule_deps.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_submodule_deps
       - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
@@ -1620,7 +1620,7 @@ jobs:
         run: npm run check:ci-test-gate-wiring
       - name: Tutorial CLI validity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_tutorial_cli_validity.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_cli_validity
       - name: Tutorials cannot skip themselves
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_no_skips

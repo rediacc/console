@@ -1161,7 +1161,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 175 | .py 175 |
+| .ci/rediacc_ci/quality | 180 | .py 180 |
 | .ci/rediacc_ci/release | 41 | .py 41 |
 | .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
