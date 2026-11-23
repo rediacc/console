@@ -33,8 +33,10 @@ import sys
 from pathlib import Path
 
 from rediacc_ci import controls
+from rediacc_ci.quality import seams
 
-ROOT = Path(os.environ.get("FORMAT_SCOPE_ROOT") or Path(__file__).resolve().parents[3])
+_SEAM = seams.scratch_root("FORMAT_SCOPE_ROOT", os.environ.get("FORMAT_SCOPE_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 # A floor: biome reporting zero files means the instrument is broken, not the tree clean.
 MIN_FILES = 200
 COUNT_RE = re.compile(r"Checked (\d+) files?")

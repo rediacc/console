@@ -62,17 +62,18 @@ import tempfile
 from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.core import allowlist, blocker_validator
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import seams
 
-ROOT = pathlib.Path(
-    os.environ.get("LANGUAGE_POLICY_ROOT") or pathlib.Path(__file__).resolve().parents[3]
-)
+_SEAM = seams.scratch_root("LANGUAGE_POLICY_ROOT", os.environ.get("LANGUAGE_POLICY_ROOT"))
+ROOT = _SEAM or pathlib.Path(__file__).resolve().parents[3]
 BASELINE = pathlib.Path(
-    os.environ.get("LANGUAGE_POLICY_BASELINE")
+    seams.scratch_root("LANGUAGE_POLICY_BASELINE", os.environ.get("LANGUAGE_POLICY_BASELINE"))
     or ROOT / ".ci" / "config" / "language-policy-baseline.json"
 )
 # THROUGH THE SEAM (W4 P4a), with the environment override still in FRONT of it. The hardcoded join this replaces is the one that let `.language-policy-allowlist` land in `.ci/policy/` on 2026-09-07 while both POLICY_FILES lists stayed at fifteen names, with nothing red for a day: a reader that does not go through the seam cannot be counted by the inventory that checks the seam.
 ALLOWLIST = pathlib.Path(
-    os.environ.get("LANGUAGE_POLICY_ALLOWLIST") or policy_path(".language-policy-allowlist", ROOT)
+    seams.scratch_root("LANGUAGE_POLICY_ALLOWLIST", os.environ.get("LANGUAGE_POLICY_ALLOWLIST"))
+    or policy_path(".language-policy-allowlist", ROOT)
 )
 # The trees ruling 7 assigns to Python. Not configurable: a gate whose scope can be narrowed by an environment variable has a scope nobody can state.
 #

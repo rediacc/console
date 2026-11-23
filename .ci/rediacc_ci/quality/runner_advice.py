@@ -54,6 +54,7 @@ import sys
 
 from rediacc_ci.core import allowlist, gh_retry
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import seams
 from rediacc_ci.well_known import GH_REPO
 
 # --- The thresholds. These MIRROR .ci/scripts/ci/profiler/report.awk's advise() --- and its BEGIN block. Changing one without the other is what the gate --- test's awk/python parity case exists to catch.
@@ -767,18 +768,20 @@ def main(argv=None):
     root = pathlib.Path(__file__).resolve().parents[3]
     baseline_path = pathlib.Path(
         args.baseline
-        or os.environ.get("RUNNER_ADVICE_BASELINE")
+        or seams.scratch_root("RUNNER_ADVICE_BASELINE", os.environ.get("RUNNER_ADVICE_BASELINE"))
         or root / ".ci/scripts/quality/runner-sizing-baseline.json"
     )
     workflow_dir = pathlib.Path(
         args.workflow_dir
-        or os.environ.get("RUNNER_ADVICE_WORKFLOW_DIR")
+        or seams.scratch_root(
+            "RUNNER_ADVICE_WORKFLOW_DIR", os.environ.get("RUNNER_ADVICE_WORKFLOW_DIR")
+        )
         or root / ".github/workflows"
     )
     # THE FLAG AND THE ENVIRONMENT STAY IN FRONT OF THE SEAM (W4 P4a): both are per-run redirections a harness sets, and `policy_path` is deliberately blind to them so there is exactly one default location, not two live ones.
     allowlist_path = pathlib.Path(
         args.allowlist
-        or os.environ.get("RUNNER_ADVICE_ALLOWLIST")
+        or seams.scratch_root("RUNNER_ADVICE_ALLOWLIST", os.environ.get("RUNNER_ADVICE_ALLOWLIST"))
         or policy_path(".runner-advice-allowlist", root)
     )
 

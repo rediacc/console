@@ -32,9 +32,11 @@ from pathlib import Path
 
 from rediacc_ci import controls
 from rediacc_ci.core import gh_retry
+from rediacc_ci.quality import seams
 from rediacc_ci.well_known import GH_REPO
 
-ROOT = Path(os.environ.get("ACTIONS_ALLOWLIST_ROOT") or Path(__file__).resolve().parents[3])
+_SEAM = seams.scratch_root("ACTIONS_ALLOWLIST_ROOT", os.environ.get("ACTIONS_ALLOWLIST_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 RECORD = ROOT / ".ci" / "config" / "actions-allowlist.json"
 
 # `uses: owner/repo[/path]@ref`. A leading `./` is a local action and never checked -- it ships in this repo, so the allowlist has nothing to say about it. `docker://` is a container reference, also out of scope.
@@ -42,7 +44,9 @@ USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*['\"]?([^'\"\s#]+)", re.MULTILINE)
 # GitHub-owned owners, per the error message's "created by GitHub".
 GITHUB_OWNED = frozenset({"actions", "github"})
 # Floor: a corpus this small cannot be the whole repo. Measured 2026-09-03: 17 distinct third-party actions across 28 workflow files and the composites.
-MIN_ACTIONS = int(os.environ.get("ACTIONS_ALLOWLIST_MIN", "8"))
+MIN_ACTIONS = seams.floor(
+    "ACTIONS_ALLOWLIST_MIN", os.environ.get("ACTIONS_ALLOWLIST_MIN"), 8, honoured=bool(_SEAM)
+)
 
 
 def corpus() -> list[Path]:

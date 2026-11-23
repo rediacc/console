@@ -92,10 +92,10 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci import shacite as SC
 from rediacc_ci.quality import plan_lifecycle as PL
+from rediacc_ci.quality import seams
 
-ROOT = pathlib.Path(
-    os.environ.get("PLAN_CITATIONS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
-)
+_SEAM = seams.scratch_root("PLAN_CITATIONS_ROOT", os.environ.get("PLAN_CITATIONS_ROOT"))
+ROOT = _SEAM or pathlib.Path(__file__).resolve().parents[3]
 # The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
 # honours its own PLAN_CITATIONS_ROOT override, which the resolver's default root does not read.
 #
@@ -180,7 +180,12 @@ def in_scope(rel):
 #: now invisible to this gate. That is the trade, taken knowingly, because the
 #: alternative is a gate that reds on every session id in every STATE.md and is
 #: therefore switched off within a day.
-OBJECT_MIN = int(os.environ.get("PLAN_CITATIONS_OBJECT_MIN", "9"))
+OBJECT_MIN = seams.floor(
+    "PLAN_CITATIONS_OBJECT_MIN",
+    os.environ.get("PLAN_CITATIONS_OBJECT_MIN"),
+    9,
+    honoured=bool(_SEAM),
+)
 
 #: The trailing 12-hex group of a canonical UUID
 #: (`nnnnnnnn-nnnn-nnnn-nnnn-NNNNNNNNNNNN`) is always pure hex and always

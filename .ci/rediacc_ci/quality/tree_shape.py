@@ -32,6 +32,7 @@ import pathlib
 import re
 
 from rediacc_ci import gitx, paths, policy_paths
+from rediacc_ci.quality import seams
 
 POLICY_NAME = "tree-shape.json"
 BASELINE_REL = ".ci/config/tree-shape-baseline.json"
@@ -41,10 +42,17 @@ ROOT_ENV = "TREE_SHAPE_ROOT"
 AGENT_DIR = "agent"
 
 #: Floors under the enumeration. Both are well below the measured tree (29 root files, 16 root directories, 109 files directly under `agent/` on 2026-09-21): they guard against the enumeration losing the tree, not against ordinary housekeeping. A count of zero is the shape this gate exists to refuse, because zero strays and zero files read identically.
-MIN_ROOT_FILES = int(os.environ.get("TREE_SHAPE_MIN_ROOT", "10"))
-MIN_AGENT_ENTRIES = int(os.environ.get("TREE_SHAPE_MIN_AGENT", "10"))
+_SEAM = seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV))
+MIN_ROOT_FILES = seams.floor(
+    "TREE_SHAPE_MIN_ROOT", os.environ.get("TREE_SHAPE_MIN_ROOT"), 10, honoured=bool(_SEAM)
+)
+MIN_AGENT_ENTRIES = seams.floor(
+    "TREE_SHAPE_MIN_AGENT", os.environ.get("TREE_SHAPE_MIN_AGENT"), 10, honoured=bool(_SEAM)
+)
 #: A floor on the TOP-LEVEL DIRECTORY count as well, because that half has its own way of going vacuous: a pathspec narrow enough to admit only root files yields exactly one directory name, and T2 then cannot fire while everything else still reports.
-MIN_ROOT_DIRS = int(os.environ.get("TREE_SHAPE_MIN_ROOT_DIRS", "5"))
+MIN_ROOT_DIRS = seams.floor(
+    "TREE_SHAPE_MIN_ROOT_DIRS", os.environ.get("TREE_SHAPE_MIN_ROOT_DIRS"), 5, honoured=bool(_SEAM)
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -340,8 +348,7 @@ def finding_t6(sites: list[tuple[str, int, str]]) -> list[Finding]:
 
 
 def repo_root() -> pathlib.Path:
-    override = os.environ.get(ROOT_ENV)
-    return pathlib.Path(override) if override else paths.repo_root()
+    return seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV)) or paths.repo_root()
 
 
 def enumerate_tree(root: pathlib.Path, *pathspecs: str) -> tuple[list[str], str]:

@@ -200,6 +200,7 @@ import tempfile
 from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.quality import plan_lifecycle
+from rediacc_ci.quality import seams as scratch
 
 # The package whose guards rediacc_hooks/dispatch.py loads by glob (see Registry.dispatched_guards).
 GUARDS_PACKAGE_REL = ".claude/rediacc_hooks/guards"
@@ -1923,6 +1924,10 @@ def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
         override = environ.get(name, "")
+        # The process environment is a seam any caller can set, so a path outside the temp directory is ignored there; an `env` handed in by a test is the caller's own statement and is taken as given.
+        if env is None:
+            honoured = scratch.scratch_root(name, override)
+            override = str(honoured) if honoured else ""
         out[name] = pathlib.Path(override) if override else root.joinpath(*parts)
     return out
 
@@ -1934,8 +1939,15 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    registry = Registry(resolve_seams(root))
-    floor = int(os.environ.get("TRAP_FLOOR", "") or TRAP_FLOOR_DEFAULT)
+    resolved = resolve_seams(root)
+    registry = Registry(resolved)
+    # TRAP_FLOOR lowers the floor only together with a scratch corpus: against the real corpus the floor is always TRAP_FLOOR_DEFAULT.
+    floor = scratch.floor(
+        "TRAP_FLOOR",
+        os.environ.get("TRAP_FLOOR", ""),
+        TRAP_FLOOR_DEFAULT,
+        honoured=resolved["TRAP_CORPUS"] != root.joinpath(*SEAMS["TRAP_CORPUS"]),
+    )
 
     # `--scan-only` runs the scan WITHOUT the controls. Nothing in package.json or CI uses it, deliberately.
     if args[:1] != ["--scan-only"]:

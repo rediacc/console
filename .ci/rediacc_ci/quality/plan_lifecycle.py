@@ -44,6 +44,7 @@ import pathlib
 import re
 
 from rediacc_ci import gitx, paths, proc
+from rediacc_ci.quality import seams
 from rediacc_ci.shacite import citable_token, skip_as_number
 
 # --------------------------------------------------------------------------- The layout, in one place.
@@ -92,9 +93,11 @@ STUB_PROBE_BYTES = 1024
 #: The corpus floor, shared with `check_plan_boxes` and `check_plan_record`
 #: rather than re-typed: below this the enumeration has lost the tree and no
 #: verdict about folders would mean anything.
-MIN_PLAN_FILES = int(os.environ.get("PLAN_FOLDERS_MIN_PLANS", "20"))
-
 ROOT_ENV = "PLAN_FOLDERS_ROOT"
+_SEAM = seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV))
+MIN_PLAN_FILES = seams.floor(
+    "PLAN_FOLDERS_MIN_PLANS", os.environ.get("PLAN_FOLDERS_MIN_PLANS"), 20, honoured=bool(_SEAM)
+)
 
 # --------------------------------------------------------------------------- Line grammars. Anchored, every one of them.
 
@@ -794,8 +797,7 @@ def load_config(root: pathlib.Path) -> dict:
 
 
 def repo_root() -> pathlib.Path:
-    override = os.environ.get(ROOT_ENV)
-    return pathlib.Path(override) if override else paths.repo_root()
+    return seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV)) or paths.repo_root()
 
 
 def enumerate_plans(root: pathlib.Path) -> tuple[list[str], str]:

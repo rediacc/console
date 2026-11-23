@@ -123,9 +123,11 @@ from rediacc_ci.core.bws_env import ARCHIVE_PATTERN as BWS_ENV_ARCHIVE_PATTERN
 from rediacc_ci.core.bws_env import PARKED_PATTERN as BWS_ENV_PARKED_PATTERN
 from rediacc_ci.core.bws_env import SELLER_FIELDS as BWS_ENV_SELLER_FIELDS
 from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
+from rediacc_ci.quality import seams
 
 # Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
-ROOT = Path(os.environ.get("BWS_MAP_ROOT") or Path(__file__).resolve().parents[3])
+_SEAM = seams.scratch_root("BWS_MAP_ROOT", os.environ.get("BWS_MAP_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 MAP = ROOT / ".ci" / "config" / "bws-secret-map.json"
 ACTION_REF = "./.github/actions/bws-secrets"
 
@@ -147,14 +149,18 @@ SIBLING_REPOS = ("private/growth", "private/generative")
 MAX_MAP_AGE_DAYS = 45
 
 # The two population floors are env-overridable ONLY so the gate-test can judge a small fixture tree. Lowering them against the REAL tree would be suppressing a finding, which is why the defaults live here and the test sets them explicitly.
-MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
+MIN_MAP_ENTRIES = seams.floor(
+    "BWS_MIN_MAP_ENTRIES", os.environ.get("BWS_MIN_MAP_ENTRIES"), 30, honoured=bool(_SEAM)
+)
 # 19 since 2026-09-05, down from 20: ops-watchdog-monitor.yml's fetch was REMOVED on purpose. It existed solely to feed the shadow comparator, and that comparator is gone -- the org
 # secrets it compared against were deleted, so every comparison read "EMPTY (github=unset)
 # -- nothing was compared" and took all of CI down with it. That job's own read stays on GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing consumed the fetch any more.
 #
 # 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on purpose (it exported four credentials into a job that hands a human a shell), and the frozen template counts as a second file. A floor that is lowered to match a deliberate removal is honest; one lowered to match a finding is not, which is why the reason is written here rather than in a commit
 # nobody re-reads.
-MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "19"))  # files, not jobs; see the docstring
+MIN_CALLERS = seams.floor(
+    "BWS_MIN_CALLERS", os.environ.get("BWS_MIN_CALLERS"), 19, honoured=bool(_SEAM)
+)  # files, not jobs; see the docstring
 
 # A BARE REFERENCE, not a whole expression. This used to demand the reference BE the
 # entire `${{ ... }}`, so `env.BWS_X` inside a compound expression was INVISIBLE --

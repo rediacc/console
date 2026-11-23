@@ -590,7 +590,7 @@ def test_scope_is_gates_only(gate):
 # --------------------------------------------------------------------------- ADDED BY THE PORT. ---------------------------------------------------------------------------
 
 
-def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
+def test_this_module_plants_no_capture_the_real_sweep_can_see(gate, tmp_path):
     """ADDED BY THE PORT, and it is the control on this port's central claim.
 
     Every fire case above writes a genuine swallowed-failure shape out LITERALLY, which is only safe because the subject cannot see this file: it
@@ -610,11 +610,16 @@ def test_this_module_plants_no_capture_the_real_sweep_can_see(gate):
             "green would mean nothing." % HERE_REL
         )
     runner = require_gate(gate)
+    # The seam is honoured only inside the temp directory (seams.scratch_root), so the directory is COPIED under a scratch root rather than pointed at in place; the sweep scopes by extension and relative path, which a copy preserves.
+    scratch = tmp_path / "root"
+    (scratch / HERE_REL).mkdir(parents=True)
+    for module in here.glob("*.py"):
+        shutil.copy2(module, scratch / HERE_REL / module.name)
     result = harness.run(
         [runner, os.fspath(GATE)],
         cwd=paths.repo_root(),
         env={
-            "SWALLOWED_SCAN_ROOT": os.fspath(paths.repo_root()),
+            "SWALLOWED_SCAN_ROOT": os.fspath(scratch),
             "SWALLOWED_SCAN_DIRS": HERE_REL,
         },
     )

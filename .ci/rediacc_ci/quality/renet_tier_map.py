@@ -57,6 +57,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.quality import seams
 from rediacc_ci.well_known import RENET_REPO
 
 RENET_REL = "private/renet"
@@ -146,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    renet_dir = pathlib.Path(os.environ.get("RENET_DIR") or (root / RENET_REL))
+    renet_dir = seams.scratch_root("RENET_DIR", os.environ.get("RENET_DIR")) or (root / RENET_REL)
 
     # go.mod is the marker, NOT the directory: an uninitialised submodule leaves an EMPTY directory behind, and a gate that ran zero tests against it would report success while checking nothing.
     if not _require_submodule(renet_dir / MARKER, "Renet submodule"):

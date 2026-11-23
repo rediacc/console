@@ -42,13 +42,23 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(os.environ.get("DOCKER_NPM_PINS_ROOT") or Path(__file__).resolve().parents[3])
+from rediacc_ci.quality import seams
+
+_SEAM = seams.scratch_root("DOCKER_NPM_PINS_ROOT", os.environ.get("DOCKER_NPM_PINS_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 EXCLUSIONS = ROOT / ".ci" / "config" / "docker-npm-pin-exclusions.json"
 MIN_REASON_CHARS = 40
 # Measured 2026-09-04 with the enumeration this gate actually uses (git ls-files --recurse-submodules): 11 tracked Dockerfiles carrying 9 npm-install lines between them. A `find` over the tree says 14, which is the number a first draft of this comment carried -- it counts untracked and node_modules copies that CI never sees. The floor guards the ENUMERATION, not the population.
-MIN_DOCKERFILES = int(os.environ.get("DOCKER_NPM_PINS_MIN", "6"))
+MIN_DOCKERFILES = seams.floor(
+    "DOCKER_NPM_PINS_MIN", os.environ.get("DOCKER_NPM_PINS_MIN"), 6, honoured=bool(_SEAM)
+)
 # Workflows are the bigger half of the corpus and the half this gate originally missed, so they get their own floor rather than hiding inside a combined one.
-MIN_WORKFLOWS = int(os.environ.get("DOCKER_NPM_PINS_MIN_WORKFLOWS", "20"))
+MIN_WORKFLOWS = seams.floor(
+    "DOCKER_NPM_PINS_MIN_WORKFLOWS",
+    os.environ.get("DOCKER_NPM_PINS_MIN_WORKFLOWS"),
+    20,
+    honoured=bool(_SEAM),
+)
 
 # Long flags that are BOOLEAN, so the token after them really is a package. Listed rather than guessed: treating every long flag as value-taking would swallow the package in `npm install --ignore-scripts foo@latest`.
 _VALUELESS_LONG_FLAGS = frozenset(

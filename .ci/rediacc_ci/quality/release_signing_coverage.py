@@ -57,6 +57,7 @@ import sys
 import tempfile
 
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.quality import seams
 
 # The builder, relative to the root. `$SIGNING_COVERAGE_BUILDER` overrides it, which is how the twin's own controls point it at a scratch copy.
 BUILDER_REL = ".ci/rediacc_ci/build/build_linux_pkg.py"
@@ -267,9 +268,9 @@ def resolve_root() -> str:
 
     Three rungs, the twin's, and `$REDIACC_CI_ROOT` is not one of them. See the port notes: an environment that pointed the two implementations at two different trees would produce a differential nobody could interpret.
     """
-    override = os.environ.get("SIGNING_COVERAGE_ROOT")
+    override = seams.scratch_root("SIGNING_COVERAGE_ROOT", os.environ.get("SIGNING_COVERAGE_ROOT"))
     if override:
-        return override
+        return str(override)
     try:
         proc = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],

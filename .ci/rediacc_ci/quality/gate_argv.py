@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, controls_first, plant
-from rediacc_ci.quality import gate_args
+from rediacc_ci.quality import gate_args, seams
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -598,8 +598,7 @@ def run(root: pathlib.Path, own: dict[str, str] | None = None, floor: int = FLOO
 
 
 def scan_root() -> pathlib.Path:
-    override = os.environ.get(ROOT_ENV, "")
-    return pathlib.Path(override).resolve() if override else paths.repo_root()
+    return seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV, "")) or paths.repo_root()
 
 
 # -- selftest ------------------------------------------------------------------

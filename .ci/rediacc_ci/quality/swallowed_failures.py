@@ -145,6 +145,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
+from rediacc_ci.quality import seams
 
 # The seams the twin exposes so its own controls, and any gate test, can drive it against fixtures instead of the real tree.
 ROOT_ENV = "SWALLOWED_SCAN_ROOT"
@@ -443,6 +444,14 @@ def scan_dirs(env: dict[str, str] | None = None) -> tuple[str, ...]:
     """The scanned directories: the seam, split on whitespace, or the default."""
     environ = os.environ if env is None else env
     override = environ.get(DIRS_ENV, "")
+    # Redirecting the scanned directories is a scan-root override like the root itself, so a process environment sets it only together with a scratch root.
+    if override and env is None and not seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV)):
+        print(
+            "NOTE: %s is ignored without a scratch %s inside the temp directory."
+            % (DIRS_ENV, ROOT_ENV),
+            file=sys.stderr,
+        )
+        override = ""
     if override:
         return tuple(override.split())
     return DEFAULT_SCAN_DIRS
@@ -600,9 +609,18 @@ def read_py_baseline(path: pathlib.Path) -> dict[str, int]:
 
 def py_mode(json_rows: dict | None = None) -> int:
     """Run the Python mode over the hook modules. 0 clean, 1 finding, ratchet drift or refusal."""
-    override_root = os.environ.get(PY_ROOT_ENV, "")
-    root = pathlib.Path(override_root).resolve() if override_root else paths.repo_root()
-    rel = os.environ.get(PY_DIR_ENV, "") or DEFAULT_PY_DIR
+    scratch = seams.scratch_root(PY_ROOT_ENV, os.environ.get(PY_ROOT_ENV, ""))
+    root = scratch or paths.repo_root()
+    # The directory is relative to the root, so redirecting it is honoured only together with a scratch root.
+    rel_override = os.environ.get(PY_DIR_ENV, "")
+    if rel_override and not scratch:
+        print(
+            "NOTE: %s is ignored without a scratch %s inside the temp directory."
+            % (PY_DIR_ENV, PY_ROOT_ENV),
+            file=sys.stderr,
+        )
+        rel_override = ""
+    rel = rel_override or DEFAULT_PY_DIR
     modules = py_discover(root, rel)
     if len(modules) < PY_FLOOR:
         log.error(
@@ -746,8 +764,7 @@ def shell_main(argv: list[str] | None = None, python_json: dict | None = None) -
             log.error("unknown argument: %s" % arg)
             return 2
 
-    override_root = os.environ.get(ROOT_ENV, "")
-    root = pathlib.Path(override_root).resolve() if override_root else paths.repo_root()
+    root = seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV, "")) or paths.repo_root()
     dirs = scan_dirs()
 
     files = discover(root, dirs)

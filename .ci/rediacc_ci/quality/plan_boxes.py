@@ -89,8 +89,10 @@ from pathlib import Path
 
 from rediacc_ci import controls, paths
 from rediacc_ci.quality import plan_lifecycle as PL
+from rediacc_ci.quality import seams
 
-ROOT = Path(os.environ.get("PLAN_BOXES_ROOT") or Path(__file__).resolve().parents[3])
+_SEAM = seams.scratch_root("PLAN_BOXES_ROOT", os.environ.get("PLAN_BOXES_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 # The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
 # honours its own PLAN_BOXES_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
@@ -114,8 +116,12 @@ except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/
 LEDGER = ROOT / ".ci" / "config" / "plan-boxes.json"
 
 # Floors. Measured 2026-09-02: 10 plan files carry boxes out of 70 total, 83 open and 37 ticked. The file floor is deliberately well under the total -- it guards against the glob losing the corpus, not against ordinary housekeeping -- and the box floor guards against a parser that silently resolves nothing.
-MIN_PLAN_FILES = int(os.environ.get("PLAN_BOXES_MIN_PLANS", "20"))
-MIN_OPEN_BOXES = int(os.environ.get("PLAN_BOXES_MIN_OPEN", "1"))
+MIN_PLAN_FILES = seams.floor(
+    "PLAN_BOXES_MIN_PLANS", os.environ.get("PLAN_BOXES_MIN_PLANS"), 20, honoured=bool(_SEAM)
+)
+MIN_OPEN_BOXES = seams.floor(
+    "PLAN_BOXES_MIN_OPEN", os.environ.get("PLAN_BOXES_MIN_OPEN"), 1, honoured=bool(_SEAM)
+)
 
 LIFECYCLE = ROOT / ".ci" / "config" / "plan-lifecycle.json"
 # FINISHED comes from the Stop hook, imported rather than restated: G-A3 INVERTS it (there the status means "stop nagging"; here it means "this header switches the advisory off over live boxes"), and the two halves must never drift apart.

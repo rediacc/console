@@ -73,6 +73,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import seams
 
 
 class RefusalError(Exception):
@@ -91,7 +92,7 @@ SETTINGS_REL = (".claude", "settings.json")
 # THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many processes does a Bash call cost" is exactly the drift this gate exists to stop, and it would be a drift the gate could not see.
 _HOOK_PKG = {
     "parent": pathlib.Path(
-        os.environ.get("HOOK_EXEC_COUNTER_DIR")
+        seams.scratch_root("HOOK_EXEC_COUNTER_DIR", os.environ.get("HOOK_EXEC_COUNTER_DIR"))
         or pathlib.Path(__file__).resolve().parents[3] / ".claude"
     )
 }

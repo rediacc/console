@@ -31,12 +31,16 @@ import sys
 from pathlib import Path
 
 from rediacc_ci import controls
+from rediacc_ci.quality import seams
 
-ROOT = Path(os.environ.get("SYNCPACK_SOURCES_ROOT") or Path(__file__).resolve().parents[3])
+_SEAM = seams.scratch_root("SYNCPACK_SOURCES_ROOT", os.environ.get("SYNCPACK_SOURCES_ROOT"))
+ROOT = _SEAM or Path(__file__).resolve().parents[3]
 RC = ROOT / ".syncpackrc.json"
 EXCLUSIONS = ROOT / ".ci" / "config" / "syncpack-source-exclusions.json"
 # Measured 2026-09-03: 17 tracked manifests, 13 of them declaring dependencies. The floor guards the git enumeration, not the population.
-MIN_MANIFESTS = int(os.environ.get("SYNCPACK_SOURCES_MIN", "8"))
+MIN_MANIFESTS = seams.floor(
+    "SYNCPACK_SOURCES_MIN", os.environ.get("SYNCPACK_SOURCES_MIN"), 8, honoured=bool(_SEAM)
+)
 MIN_REASON_CHARS = 40
 
 

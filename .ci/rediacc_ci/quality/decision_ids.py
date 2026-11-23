@@ -65,10 +65,10 @@ import subprocess
 import sys
 
 from rediacc_ci import controls, paths
+from rediacc_ci.quality import seams
 
-ROOT = pathlib.Path(
-    os.environ.get("DECISION_IDS_ROOT") or pathlib.Path(__file__).resolve().parents[3]
-)
+_SEAM = seams.scratch_root("DECISION_IDS_ROOT", os.environ.get("DECISION_IDS_ROOT"))
+ROOT = _SEAM or pathlib.Path(__file__).resolve().parents[3]
 # The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
 # honours its own DECISION_IDS_ROOT override, which the resolver's default root does not read.
 paths.on_sys_path(paths.hooks_stop_dir(ROOT))
