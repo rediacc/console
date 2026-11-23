@@ -1,6 +1,0 @@
-{
-  "EDGE_CASES": [
-    ["writer-spawn-uncountable", {"tool_name": "Agent", "session_id": "zz-no-such-session", "cwd": "/nonexistent-agent-cap-fixture", "tool_input": {"subagent_type": "general-purpose", "description": "x"}}],
-    ["reader-spawn", {"tool_name": "Agent", "session_id": "zz-no-such-session", "cwd": "/nonexistent-agent-cap-fixture", "tool_input": {"subagent_type": "Explore", "description": "x"}}]
-  ]
-}

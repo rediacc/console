@@ -4353,20 +4353,16 @@
     "$gate": ".ci/rediacc_ci/quality/env_registry.py",
     "sealed_modules": {
       ".claude/hooks/stop/wl_roster.py": {
-        "why": "the parallel-writer roster's limits are the operator's (25 writers, fixed in code by agent/plans/PLAN-simple-two-tree-loop.md ruling 11 with no QUEUE.md line, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
+        "why": "the parallel-writer roster's 20-minute status ping is the operator's (2026-09-24, 'no escape hatches'; there is no writer limit since agent/plans/PLAN-unlimited-writers.md), so no variable may retune it, or hide a live writer from supervision, and a registered knob would be exactly the hatch that was ruled out",
         "literals": {
-          "WRITER_CAP": 25,
           "STATUS_PING_MIN": 20
         }
-      },
-      ".claude/rediacc_hooks/guards/block_agent_cap.py": {
-        "why": "the PreToolUse half of the same writer cap; it calls `wl_roster.writer_cap`, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
       },
       ".claude/hooks/stop/wl_standdown.py": {
         "literals": {
           "FOCUS_PR_TTL_S": 180
         },
-        "why": "the stand-down keep-lists (the cap-saturated wait, the PR loop and the landing tree) decide which checks still block while the session is told to wait; a variable that retuned a list or the PR-read cache would be exactly the escape hatch the roster rules out"
+        "why": "the stand-down keep-lists (the concurrency-saturated wait, the PR loop and the landing tree) decide which checks still block while the session is told to wait; a variable that retuned a list or the PR-read cache would be exactly the escape hatch the roster rules out"
       },
       ".claude/hooks/stop/wl_floor.py": {
         "why": "the Stop hook's FLOOR, the checks that block at every effort level (agent/plans/PLAN-stop-hook-effort.md); a variable that shrank it would be the off switch the effort dial replaced, so the set is a literal here and .claude/config/effort.json may only mark its keys `floor`"

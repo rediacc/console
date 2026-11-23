@@ -63,9 +63,9 @@ def stamp(minutes):
     return t.strftime("%Y-%m-%dT%H:%MZ")
 
 
-# wl_roster.WRITER_CAP, restated, and planless live writers that hold slots of it without claiming a file.
-CAP = 25
-FILL = tuple("idle writer %d, no plan" % i for i in range(CAP))
+# Thirty planless live writers, past the old writer cap of 25 that agent/plans/PLAN-unlimited-writers.md removed: they claim no file, so no rule here may refuse a spawn beside them.
+CROWD = 30
+FILL = tuple("idle writer %d, no plan" % i for i in range(CROWD))
 
 
 def world(
@@ -74,7 +74,6 @@ def world(
     finished=(),
     items=(),
     leases=(),
-    cap=None,
     editors=(),
     handovers=(),
     records=(),
@@ -87,13 +86,6 @@ def world(
     (proj / "agent" / "plans").mkdir(parents=True)
     (BASE / "tmp").mkdir()
     (BASE / "store").mkdir()
-    if cap is not None:
-        # A `writer_cap:` line, which moves nothing: the cap is wl_roster.WRITER_CAP (agent/plans/PLAN-simple-two-tree-loop.md ruling 11).
-        (proj / "agent" / "plans" / "QUEUE.md").write_text(
-            "# Plan queue\n\n## Settings\n\n```stop-hook\nwriter_cap: %d\n```\n\n## Promoted\n"
-            % cap,
-            encoding="utf-8",
-        )
     for name, x in plans.items():
         (proj / "agent" / "plans" / ("PLAN-%s.md" % name)).write_text(
             PLAN.format(n=name, x=x), encoding="utf-8"
@@ -827,63 +819,53 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         ],
     ),
     (
-        "c1 one slot left refuses the second same-message writer",
-        {"plans": {"p": PAR_A, "q": PAR_C}, "writers": FILL[: CAP - 1], "cap": 1},
+        "c1 thirty live writers refuse no disjoint spawn, nor its same-message siblings",
+        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "writers": FILL},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md"), 2, ["writer_cap %d" % CAP, "1 same-message"]),
+            (payload("Plan: PLAN-q.md"), 0, []),
+            (payload("Plan: PLAN-z.md"), 0, []),
         ],
     ),
     (
-        "c1h a landing-cut Handover writer is still counted and refused by the cap (review b8c57655.1)",
+        "c1c CONTROL: the same crowd still refuses a spawn whose Owns overlap a live writer's plan",
+        {"plans": {"p": PAR_A, "az": PAR_AZ}, "writers": ["Plan: PLAN-p.md", *FILL]},
+        CHAIN_ARGV,
+        [
+            (payload("Plan: PLAN-az.md"), 2, ["both claim `a/b.py`"]),
+        ],
+    ),
+    (
+        "c1h a landing-cut Handover writer beside thirty live writers is admitted twice",
         {
             **HANDOVER_WORLD,
-            "writers": ["Plan: PLAN-e.md", *FILL[: CAP - 2]],
+            "writers": ["Plan: PLAN-e.md", *FILL],
             "handovers": handover_rows("lease:hx1"),
             "records": [("hx1", "landing")],
         },
         CHAIN_ARGV,
         [
             (payload(HANDOVER_BRIEF), 0, ["serves a handover in lease hx1"]),
-            (payload(HANDOVER_BRIEF), 2, ["writer_cap %d" % CAP, "1 same-message"]),
+            (payload(HANDOVER_BRIEF), 0, ["serves a handover in lease hx1"]),
         ],
     ),
     (
-        "c1b a planless writer counts toward the cap too",
-        {"plans": {}, "writers": FILL[: CAP - 1]},
+        "c1b planless writers beside thirty live writers are admitted",
+        {"plans": {}, "writers": FILL},
         CHAIN_ARGV,
         [
             (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
-            (payload("fix a typo"), 2, ["writer_cap %d" % CAP]),
+            (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
         ],
     ),
     (
-        "c2 two slots left admit the second and refuse the third",
-        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "writers": FILL[: CAP - 2]},
-        CHAIN_ARGV,
-        [
-            (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md"), 0, []),
-            (payload("Plan: PLAN-z.md"), 2, ["writer_cap %d" % CAP, "2 same-message"]),
-        ],
-    ),
-    (
-        "c3 a reader never reaches the cap",
-        {"plans": {"p": PAR_A}, "cap": 1},
+        "c3 a reader is never refused",
+        {"plans": {"p": PAR_A}},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
             (payload("Plan: PLAN-p.md", kind="Explore"), 0, []),
-        ],
-    ),
-    (
-        "c4 the cap is per session, as the roster's count is",
-        {"plans": {"p": PAR_A, "q": PAR_C}, "cap": 1},
-        CHAIN_ARGV,
-        [
-            (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md", session=PEER_SID), 0, []),
         ],
     ),
 ]
@@ -939,8 +921,8 @@ def c_expired():
 
 
 def c_started(sibling="the sibling"):
-    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one frees the slot. A sibling spawned with no description is claimed with an empty one and stops holding the same way."""
-    proj = world(plans={"p": PAR_A, "q": PAR_AB}, cap=1)
+    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one holds nothing. A sibling spawned with no description is claimed with an empty one and stops holding the same way."""
+    proj = world(plans={"p": PAR_A, "q": PAR_AB})
     rc1, _ = run_case(proj, payload("Plan: PLAN-p.md", desc=sibling), CHAIN_ARGV)
     sub = BASE / "claude" / "projects" / munged(proj.resolve()) / SID / "subagents"
     (sub / "agent-a0000000000000099.meta.json").write_text(

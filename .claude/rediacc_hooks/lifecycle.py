@@ -121,7 +121,7 @@ PATTERNS = {
             "python3 " + _P % "rediacc_hooks/dispatch.py" + " --chain pre-ask",
         ),
     },
-    # THE PARALLEL-WRITER CAP (agent/plans/PLAN-parallel-writer-roster.md). A writer-class spawn is refused while `wl_roster.writer_cap(root)` writers (wl_roster.WRITER_CAP, 25, fixed in code) are already live; Plan and Explore spawns never are. The Stop hook's `roster-cap` recounts from the authoritative event on every stop, so this guard is the primary and that block is the backstop. A head pattern like the other guard
+    # THE SPAWN GUARDS (agent/plans/PLAN-plan-priority-concurrency.md section 5a). A writer-class spawn is refused when it would break a live plan's mutex or claim files a live plan owns (block_plan_concurrency); Plan and Explore spawns never are, and no count of writers refuses one (agent/plans/PLAN-unlimited-writers.md). The Stop hook's `roster-concurrency` recounts from the authoritative event on every stop, so the guard is the primary and that block is the backstop. A head pattern like the other guard
     # chains, because a missing python3 would otherwise disarm it silently.
     "pre-agent": {
         "event": "PreToolUse",

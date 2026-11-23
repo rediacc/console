@@ -3,7 +3,7 @@
 THE ASK (operator, 2026-09-25, section X): "The concurrency field is really about files. 'Exclusive' is only needed when two plans touch the same files, like today's A3 and scanner collision. Declaring the owned paths lets the hook decide instead of relying on a label." Plan: agent/plans/PLAN-plan-priority-concurrency.md section 5a (T5).
 
 THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdict`, shared with the roster's queue):
-  1. not a spawn, or a read-only type (`wl_roster.read_only_types`, as the cap guard) -> ALLOW;
+  1. not a spawn, or a read-only type (`wl_roster.read_only_types`) -> ALLOW;
   2. S = the plans the spawn serves (`spawn_plans`: none for a `Plan: none -- <reason>` line, else a `Plan: PLAN-x.md` line, else
      the `#<id>` items it names, else a bare `PLAN-x.md [<8hex>]`); L = the plans live writers serve (`live_plans`: this
      session's live writers through their first prompts, every session's fresh leases on plan-linked items), minus S;
@@ -17,11 +17,11 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
      parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
-  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED past every file rule (an exclusive plan's mutex is over its files), still refused by the writer cap and still recorded as a claim, with a stderr note, when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
+  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED past every file rule (an exclusive plan's mutex is over its files) and still recorded as a claim, with a stderr note, when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
 
-The writer cap still applies first: `block_agent_cap` is ORDER 3 on the same chain.
+NO WRITER LIMIT (operator ruling #3ca908ee, 2026-11-23; agent/plans/PLAN-unlimited-writers.md): any number of writers may run, so no count refuses a spawn here; only the file rules above do.
 
-SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so either hook order is safe. The cap is decided here too, because a count read at ORDER 3 and a claim appended at ORDER 5 would leave two racing spawns both under it: this session's live writers plus its claims must stay under `wl_roster.writer_cap`. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 5, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
+SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so two racing spawns cannot both miss each other's claim. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 5, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
 
 THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11): a missing Owns fails closed as `**` and a spawn for such a plan is refused.
 
@@ -74,21 +74,12 @@ Do one of these:
   - stop the holder (TaskStop <id>) and release its lease
 """
 
-CAP_EXITS = """
-Do one of these:
-  - queue the work until a slot frees, naming its brief and files in the todo list:
-      .claude/hooks/stop/worklist.py --lease <me> <id> +120 worker:queue
-  - dispatch read-only work as subagent_type Plan or Explore, which the cap does not count
-  - do the work inline in this session
-"""
-
 # Printed when a refusal's holder is a claim, which has no task id to stop.
 CLAIM_NOTE = """
 A `spawn claim` is a sibling admitted moments ago, with no agent on disk yet. It clears when that agent appears and expires by itself; a refused spawn sent again after it has started is judged on the live writer.
 """
 
 HEAD = {
-    "cap": "BLOCKED: this %r writer would pass the writer cap, counting the spawns of this message.",
     "mutex": "BLOCKED: a live plan holds the mutex, so this %r writer does not start.",
     "mutex-own": "BLOCKED: this %r writer serves an exclusive plan, and other plans are live.",
     "overlap": "BLOCKED: this %r writer would edit files a live plan already owns.",
@@ -151,7 +142,7 @@ def _refuse(event, verdict, kind, exits):
         verdict.kind, "BLOCKED: this %r writer breaks plan concurrency (" + verdict.kind + ")."
     )
     facts = "\n".join("  " + ln for ln in verdict.lines)
-    note = CLAIM_NOTE if "spawn claim" in facts or verdict.kind == "cap" else ""
+    note = CLAIM_NOTE if "spawn claim" in facts else ""
     event.warn_raw("%s\n\n%s\n%s%s" % (head % kind, facts, exits, note))
     return hookio.DENY
 
@@ -214,9 +205,7 @@ def run(event):
             by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
             serving = set() if runner else X.spawn_plans(text, by_id)
             live = X.live_plans(cwd, session_id, fold)
-        rows, metas = wl_roster.live_estimate(cwd, session_id)
-        writers = sum(1 for r in rows or () if r.get("writer"))
-        cap = wl_roster.writer_cap(root)
+        _rows, metas = wl_roster.live_estimate(cwd, session_id)
         claims_path = C.worklist_for(C.project_start({"cwd": cwd})).with_suffix(X.CLAIMS_SUFFIX)
     except Exception as exc:
         event.warn_raw(
@@ -246,11 +235,9 @@ def run(event):
                 isolated=isolated,
             )
         if not verdict.allow and admitted_lease:
-            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, and a planless spawn meets only file rules here (an exclusive plan's mutex is over its files), so none refuses it; the writer cap still does, and the claim row is still appended.
+            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, and a planless spawn meets only file rules here (an exclusive plan's mutex is over its files), so none refuses it; the claim row is still appended.
             verdict = X.Verdict(True, "handover", (), verdict.note)
-        if not verdict.allow:
-            return verdict
-        return X.cap_verdict(writers, pending, session_id, cap) or verdict
+        return verdict
 
     row = X.claim_row(
         session_id, serving, declared, tool_input.get("description"), isolated, entered
@@ -269,7 +256,7 @@ def run(event):
         )
     if admitted_lease and verdict.allow:
         event.warn_raw(
-            "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so no file rule refuses it (the writer cap still applies).\n"
+            "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so no file rule refuses it.\n"
             % (kind, admitted_lease)
         )
     if handover_why:
@@ -278,8 +265,6 @@ def run(event):
         )
     if verdict.kind in ("mutex", "mutex-own"):
         return _refuse(event, verdict, kind, MUTEX_EXITS)
-    if verdict.kind == "cap":
-        return _refuse(event, verdict, kind, CAP_EXITS)
     if not verdict.allow:
         return _refuse(event, verdict, kind, OVERLAP_EXITS)
     if cheap:

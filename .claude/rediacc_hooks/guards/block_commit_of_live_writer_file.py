@@ -19,7 +19,7 @@ FAILS OPEN ONLY WHEN THE ROSTER CANNOT BE READ, and says so on stderr. A session
 
 MEASURED COST, 2026-10-08, on a session with 1,090 subagent metas and a 597 MB lead transcript: the liveness pass reads only each transcript's bounded tail (about one second warm), and full transcripts are read only for the agents that pass it. The lead transcript itself is never read, which is why the harness's completion notifications (`wl_roster._completed_since`) are not consulted: that read covers the whole file from offset 0. On the same session every one of the 1,088 finished agents was already proven finished by its own tail, and the two left were the two writers really running.
 
-NO ENVIRONMENT READ OF ITS OWN. The payload's `cwd` and `session_id` locate the session, as in `block_agent_cap`. The stop-hook modules are loaded by `importlib` inside `run`, after the command is known to be a commit, so the other Bash calls of the chain never pay for them.
+NO ENVIRONMENT READ OF ITS OWN. The payload's `cwd` and `session_id` locate the session, as in `block_plan_concurrency`. The stop-hook modules are loaded by `importlib` inside `run`, after the command is known to be a commit, so the other Bash calls of the chain never pay for them.
 """
 
 import importlib
