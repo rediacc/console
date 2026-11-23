@@ -63,7 +63,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:deps',
-    run: 'npm run check:deps',
+    run: 'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:deps',
     slow: true, // ~33 s measured 2026-10-06 (17.8 s before 8edf49524; 86-155 s until the changelog lookups shared the packument cache)
     gate: true,
     leaves: ['scripts/gates/check-deps.ts'],
@@ -8404,7 +8404,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-account-server',
-    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-server',
+    run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-account-server',
     slow: true, // 41.5s contended (submodule vitest suite)
     gate: true,
     // The account server imports @rediacc/shared through packages/shared/dist. Without this edge ci:quick run 40 started the suite before build:packages and 172 suites failed on a dist that predated FEEDBACK_STATUSES.
@@ -10991,7 +10991,7 @@ export const GATES: readonly GateSpec[] = [
     env: {
       GITHUB_TOKEN: '${{ github.token }}',
     },
-    run: 'npm run build:www',
+    run: 'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run build:www',
     slow: true, // 131.9s measured
     gate: false,
     mutex: ['www-dist'],

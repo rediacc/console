@@ -28,6 +28,8 @@ CLI (`python3 .ci/rediacc_ci/core_lease.py <verb> ...`). `--max` takes a positiv
       Takes k tokens, M <= k <= N, as many as are free. Prints `k` and a newline on stdout, flushed, then HOLDS them until its stdin reaches EOF (or it dies), so give it a pipe; `</dev/null` releases at once. Fewer than M free: prints `0`, exit 75 (with `--wait`: polls until M are free, or exit 75 after `--timeout` seconds).
   run --min M --max N [--wait] [--timeout S] [--label L] -- CMD...
       Takes k tokens like `acquire`, then execs CMD with `CI_RUNNER_CORES=k` and `CI_CORE_LEASE_HELD=1` exported and the token descriptors inherited, so the lease lives exactly as long as CMD's process tree holds them. Exit: CMD's own, 75 when short, 127 when CMD cannot be executed.
+  heavy-lock [--timeout S] -- CMD...
+      Takes the machine-wide heavy lock (`heavy.lock` beside the tokens), waiting with a message while another heavy gate holds it, then execs CMD with the lock descriptor inherited, so the lock lives as long as CMD's process tree. Exit 75 when --timeout passes first. The manifest wraps check:deps, check:ci-account-server and build:www in it.
   pytest --real PYTEST [-- ARGS...]
       The session pytest wrapper's verb (.ci/bootstrap.sh writes the wrapper). With `CI_CORE_LEASE_HELD` set, or for --version/-V/-VV/--help/-h, execs PYTEST untouched. Otherwise reads xdist's `-n` from ARGS and `PYTEST_ADDOPTS` (`-n N` asks for up to N tokens, `-n auto` and `-n logical` for the whole pool, no `-n` or `-n 0` for one), waits for at least one token, rewrites `-n` to the grant k, and execs PYTEST like `run`.
   broker [--label L]
@@ -84,6 +86,8 @@ LOCK_FLAGS = fcntl.LOCK_EX | fcntl.LOCK_NB
 
 # The pool mutex: every scan of the tokens (an acquire, a `free` count, a `status`) holds it, so a probe that takes a token's lock for a microsecond can never be what a concurrent acquirer finds busy. Without it a runner polling `free` before each admit pass made a session's `--max 3` over 4 free tokens come back with 2 (test_core_lease.py `test_probes_never_short_a_concurrent_acquire`, and its planted `unguarded-scan`). Held only for the scan, never across a sidecar write or a wait; taken with LOCK_NB and a spin, so a process stopped mid-scan is reported after MUTEX_TIMEOUT_S rather than hanging every caller.
 MUTEX_NAME = "pool.mutex"
+# The machine-wide heavy lock (PLAN-ciquick-cpu L3): one kernel lock beside the pool, held for the life of a heavy gate's process tree, so check:deps, check:ci-account-server and build:www run one after another across trees instead of piling up on a loaded machine.
+HEAVY_LOCK_NAME = "heavy.lock"
 RUNS_DIR = "runs"
 MUTEX_TIMEOUT_S = 10.0
 MUTEX_SPIN_S = 0.001
@@ -783,6 +787,57 @@ def _cmd_run(pool: Pool, ns: argparse.Namespace) -> int:
     return _exec_holding(tokens, cmd, {}, marker)
 
 
+def acquire_heavy_lock(
+    directory: pathlib.Path,
+    *,
+    timeout: float | None = None,
+    on_wait: Callable[[], None] | None = None,
+) -> int | None:
+    """The descriptor holding the machine-wide heavy lock, or None when `timeout` seconds pass first. Polled with the same non-blocking flock as the tokens, so a timeout is honoured and a waiter never parks in the kernel; the lock lives as long as the descriptor, which an exec keeps open, and a killed holder frees it."""
+    fd = os.open(directory / HEAVY_LOCK_NAME, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
+    deadline = None if timeout is None else time.monotonic() + timeout
+    waited = False
+    while True:
+        with contextlib.suppress(BlockingIOError):
+            fcntl.flock(fd, LOCK_FLAGS)
+            return fd
+        if not waited and on_wait is not None:
+            on_wait()
+        waited = True
+        if deadline is not None and time.monotonic() >= deadline:
+            os.close(fd)
+            return None
+        time.sleep(WAIT_POLL_SECONDS)
+
+
+def _cmd_heavy_lock(pool: Pool, ns: argparse.Namespace) -> int:
+    cmd = list(ns.cmd)
+    if cmd and cmd[0] == "--":
+        cmd = cmd[1:]
+    if not cmd:
+        _err("heavy-lock needs a command after --")
+        return EXIT_USAGE
+    fd = acquire_heavy_lock(
+        pool.directory,
+        timeout=ns.timeout,
+        on_wait=lambda: _err(
+            "another heavy gate holds the machine-wide heavy lock (%s); waiting to run %s"
+            % (pool.directory / HEAVY_LOCK_NAME, cmd[0])
+        ),
+    )
+    if fd is None:
+        _err("the heavy lock stayed held for %s s" % ns.timeout)
+        return EXIT_SHORT
+    os.set_inheritable(fd, True)
+    try:
+        _exec_replace(cmd)
+    except OSError as exc:
+        _err("cannot execute %s: %s" % (cmd[0], exc))
+        os.close(fd)
+        return EXIT_NOEXEC
+    return EXIT_NOEXEC  # pragma: no cover -- execvp returns only by raising
+
+
 def _cmd_pytest(ns: argparse.Namespace) -> int:
     real = ns.real
     args = list(ns.args)
@@ -934,6 +989,9 @@ def _parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run")
     grant_args(run)
     run.add_argument("cmd", nargs=argparse.REMAINDER)
+    heavy = sub.add_parser("heavy-lock")
+    heavy.add_argument("--timeout", type=float, default=None)
+    heavy.add_argument("cmd", nargs=argparse.REMAINDER)
     pyt = sub.add_parser("pytest")
     pyt.add_argument("--real", required=True)
     pyt.add_argument("args", nargs=argparse.REMAINDER)
@@ -962,6 +1020,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         handlers: dict[str, Callable[[Pool, argparse.Namespace], int]] = {
             "acquire": _cmd_acquire,
             "run": _cmd_run,
+            "heavy-lock": _cmd_heavy_lock,
             "broker": _cmd_broker,
             "status": _cmd_status,
         }

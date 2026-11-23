@@ -16,7 +16,7 @@
   },
   {
     "id": "check:deps",
-    "run": "npm run check:deps",
+    "run": "python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:deps",
     "slow": true,
     "gate": true,
     "leaves": [
@@ -8903,7 +8903,7 @@
   },
   {
     "id": "check:ci-account-server",
-    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-server",
+    "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-account-server",
     "slow": true,
     "gate": true,
     "needs": [
@@ -11718,7 +11718,7 @@
     "env": {
       "GITHUB_TOKEN": "${{ github.token }}"
     },
-    "run": "npm run build:www",
+    "run": "python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run build:www",
     "slow": true,
     "gate": false,
     "mutex": [
