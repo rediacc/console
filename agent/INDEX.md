@@ -512,7 +512,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 118 | 13 | 0 | 20656 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 125 | 16 | 0 | 24001 |
-| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 114 | 11 | 0 | 20928 |
+| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 115 | 11 | 0 | 21225 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 122 | 15 | 0 | 24140 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68133 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
