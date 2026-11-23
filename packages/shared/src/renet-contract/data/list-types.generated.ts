@@ -230,6 +230,7 @@ export interface ContainersResult {
 /** System information (CPU, memory, disk) */
 export interface SystemInfo {
   cpu_count: number;
+  cpu_features?: string[];
   cpu_model: string;
   datastore: DiskInfo;
   disk: DiskInfo;
