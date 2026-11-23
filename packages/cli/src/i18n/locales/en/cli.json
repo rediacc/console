@@ -2725,6 +2725,56 @@
         "description": "Retry a failed task (shortcut for: queue retry)"
       }
     },
+    "preview": {
+      "descriptionShort": "Test a PR build on your own machines, and switch back",
+      "description": "Switch this config to a preview of a pull request: rdc and the renet on each server rdc touches move to the preview's builds, and `rdc preview leave` returns to the published ones. Run `rdc preview use <name>` with the name you were given.",
+      "use": {
+        "nameArgument": "The preview name, for example pv-amber-river-stone",
+        "descriptionShort": "Switch to a preview",
+        "description": "Check the preview's build of the CLI against both of its origins, keep the current CLI as rdc.pre-preview, install the preview's CLI and point this config at the preview server. A server gets the preview's renet only the first time the CLI provisions it.",
+        "acceptFormatChange": "Accept the warning that this preview changes an on-disk format, without asking"
+      },
+      "leave": {
+        "descriptionShort": "Return to the published rdc and renet",
+        "description": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+        "machine": "Switch back only this server"
+      },
+      "status": {
+        "descriptionShort": "Show the active preview",
+        "description": "Show the active preview, its licence end date, the servers on its renet and the way back."
+      },
+      "msg": {
+        "banner": "Preview {{name}} is active (its licences end {{date}}). Run `rdc preview leave` to return to the published rdc and renet.",
+        "expiryMessage": "This machine is on preview {{name}}, a test build of a fix. Its licences end on {{date}} and renew only while the preview exists. After that, running apps keep running and can be stopped and started, but new repositories, forks, resizes and backups are refused. Run `rdc preview leave` to return to {{server}} and the published rdc and renet; repositories created on the preview are then licensed from the real account, within its plan.",
+        "emergencyExit": "If the preview's CLI cannot run, leave with the kept copy: {{command}}",
+        "useDone": "Switched to preview {{name}} (rdc v{{version}}).",
+        "formatChange": "This preview changes an on-disk format ({{formats}}): {{reason}}. Switching back may not read data the preview writes.",
+        "formatChangeConfirm": "Switch to this preview anyway ({{formats}})?",
+        "notActive": "This config is not on a preview.",
+        "touchedHeader": "Servers on the renet of preview {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} now, v{{recorded}} before the preview",
+        "unreachableVersion": "unreachable",
+        "confirmSwitchBack": "Switch {{count}} server(s) back to the renet they had before the preview?",
+        "switchedBack": "{{machine}} is back on renet v{{version}}.",
+        "unreachable": "{{machine}} could not be switched back ({{detail}}); it stays listed. Finish it with: rdc preview leave --machine {{machine}}",
+        "leavePending": "Preview {{name}} stays active until every server is back: {{machines}}. Run `rdc preview leave` again once they are reachable.",
+        "leaveDone": "Left preview {{name}}. This config is back on {{server}}.",
+        "binaryRestored": "rdc v{{version}} restored.",
+        "binaryRestoredFromCopy": "rdc v{{version}} restored from the copy kept before the preview ({{reason}}).",
+        "binaryNotRestored": "rdc was not restored. The previous channel failed ({{channel}}) and so did the kept copy ({{copy}}). Reinstall rdc from the published channel; a kept copy may still exist at {{path}}.",
+        "reprovisionFailed": "the pinned renet slot is {{slot}} and re-provisioning failed: {{detail}}",
+        "licencesRelicensed": "{{machine}}: re-licensed from {{server}}: {{repos}}.",
+        "licenceRefused": "{{repo}} on {{machine}} was not licensed from {{server}}: {{reason}}. It keeps running and can be stopped and started; growth is refused until the plan admits it.",
+        "licencesFailed": "The licences on {{machine}} were not moved to the real account: {{detail}}. Run: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licenceNotIssued": "the account server issued no licence",
+        "statusName": "Preview {{name}} at {{host}}",
+        "statusSince": "Switched on {{date}}; licences end {{end}}.",
+        "statusPrevious": "Before the preview: rdc v{{version}} on {{server}}.",
+        "statusNoServers": "No server runs the preview's renet yet.",
+        "statusServers": "{{count}} server(s) run the preview's renet:",
+        "statusServer": "  {{machine}}: renet v{{version}} kept in {{slot}}"
+      }
+    },
     "update": {
       "descriptionShort": "Check for and apply CLI updates",
       "description": "Check for new CLI versions and apply updates. Supports --check-only to check without installing, and --force to update even if already on the latest version.",
@@ -3638,7 +3688,18 @@
     "preview": {
       "invalidName": "\"{{name}}\" is not a preview name. A preview name is pv- followed by three lowercase words, for example pv-amber-river-stone.",
       "alreadyActive": "This config is already on preview {{name}}. Leave that preview first.",
-      "serversPending": "Preview {{name}} still has {{count}} server(s) on its renet: {{machines}}. Switch them back before the preview is removed."
+      "serversPending": "Preview {{name}} still has {{count}} server(s) on its renet: {{machines}}. Switch them back before the preview is removed.",
+      "noBuild": "Preview {{name}} answers no build, so it cannot be switched to. Check the name, or that the preview still exists.",
+      "badBuild": "Preview {{name}} answers an unreadable build ({{detail}}).",
+      "noBinary": "Preview {{name}} has no CLI build for {{platform}}.",
+      "versionMismatch": "Preview {{name}}: the release manifest says v{{manifest}} and the preview server says v{{server}}. Nothing was installed.",
+      "hashMismatch": "Preview {{name}}: the {{platform}} checksum in the release manifest differs from the preview server's. Nothing was installed.",
+      "notSea": "A preview replaces the installed rdc binary, so it needs the packaged rdc (not an npm or source run).",
+      "unsupportedPlatform": "This platform has no preview build.",
+      "formatChangeDeclined": "Preview {{name}} was not switched to: its on-disk format change was not accepted.",
+      "leaveDeclined": "Preview {{name}} was not left: switching the servers back was not confirmed.",
+      "machineNotTouched": "{{machine}} is not on the renet of preview {{name}}.",
+      "machineUnnamed": "Preview {{name}} is active and this call names no config machine (\"{{machine}}\"), so the renet it would replace could not be recorded. Nothing was replaced."
     }
   },
   "feedback": {

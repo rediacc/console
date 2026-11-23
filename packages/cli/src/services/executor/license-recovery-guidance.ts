@@ -3,8 +3,11 @@
  * error code, guidance line and fail-fast or recovery-failed message per reason.
  */
 
+import type { PreviewOverlay } from '@rediacc/shared/config-schema';
 import { t } from '../../i18n/index.js';
 import type { RepoBatchRecoveryFailureMode } from '../account/license.js';
+import { readPreviewOverlay, readRealAccountServer } from '../preview/state.js';
+import { previewExpiryMessage } from '../preview/switch.js';
 import type { RenetLicenseFailure } from '../renet/renet-license-contract.js';
 
 function buildMissingLicenseMessage(
@@ -34,16 +37,38 @@ function buildMissingLicenseMessage(
   return base;
 }
 
+/** The D11 text for an `expired` or `cert_expired` refusal while the config is on a preview: the licence is a preview one, so the on-prem and refresh advice does not apply (PLAN-preview-signer.md D11). */
+function previewExpiryGuidance(
+  reason: 'expired' | 'cert_expired',
+  preview: PreviewOverlay,
+  realServer: string
+): {
+  errorCode: string;
+  guidance: string;
+  failFastMessage?: string;
+  recoveryFailedMessage?: string;
+} {
+  const text = previewExpiryMessage(preview, realServer);
+  // `expired` still tries a refresh first (no fail-fast), exactly as the non-preview case does; an expired cert cannot be refreshed, so it fails fast.
+  return reason === 'expired'
+    ? { errorCode: 'REPO_LICENSE_REFRESH_REQUIRED', guidance: text, recoveryFailedMessage: text }
+    : { errorCode: 'REPO_LICENSE_DELEGATION_CERT_EXPIRED', guidance: text, failFastMessage: text };
+}
+
 export function resolveLicenseRecoveryGuidance(
   failure: RenetLicenseFailure,
   machineName: string,
-  outcome?: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string }
+  outcome?: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string },
+  preview: PreviewOverlay | undefined = readPreviewOverlay()
 ): {
   errorCode?: string;
   guidance?: string;
   failFastMessage?: string;
   recoveryFailedMessage?: string;
 } {
+  if (preview && (failure.reason === 'expired' || failure.reason === 'cert_expired')) {
+    return previewExpiryGuidance(failure.reason, preview, readRealAccountServer());
+  }
   switch (failure.reason) {
     case 'missing': {
       const recoveryFailedMessage = buildMissingLicenseMessage(outcome, machineName);

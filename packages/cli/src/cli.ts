@@ -14,6 +14,7 @@ import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
+import { printPreviewBanner, registerPreviewCommand } from './commands/preview.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerServerCommands } from './commands/server.js';
@@ -266,6 +267,9 @@ export function createCli(): Command {
       // Initialize or update i18n language. Before the proxy branch: a proxied run still renders here, so it needs its strings.
       await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
 
+      // While the config is on a preview, every command names it, its licence end and the way back (PLAN-preview-signer.md D8). stderr, so a machine-readable stdout is untouched.
+      if (currentRequestContext() === undefined) printPreviewBanner();
+
       // Fire-and-forget: start the machine work as a detached job and return the instant it starts, leaving it running (finding #2 of the detach handoff). Refuse it up front for a command that cannot become a job, so the operator gets a clear message rather than a flag that silently did nothing. Set before the proxy branch, which never returns.
       if (opts.background) {
         const commandPath = commandPathOf(actionCommand);
@@ -435,6 +439,7 @@ export function createCli(): Command {
   registerVSCodeCommands(cli);
   registerToolsCommands(cli);
   registerUpdateCommand(cli);
+  registerPreviewCommand(cli);
   registerOpsCommands(cli);
   registerDatastoreCommands(cli);
   registerSubscriptionCommands(cli);

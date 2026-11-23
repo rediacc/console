@@ -6635,6 +6635,56 @@
       "subcommands": []
     },
     {
+      "name": "preview",
+      "descriptionKey": "commands.preview.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "use",
+          "descriptionKey": "commands.preview.use.description",
+          "options": [
+            {
+              "flags": "--accept-format-change",
+              "descriptionKey": "commands.preview.use.acceptFormatChange",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "leave",
+          "descriptionKey": "commands.preview.leave.description",
+          "options": [
+            {
+              "flags": "--machine <name>",
+              "descriptionKey": "commands.preview.leave.machine",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.preview.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "ops",
       "descriptionKey": "commands.ops.description",
       "options": [],

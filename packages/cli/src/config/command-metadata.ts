@@ -970,6 +970,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   ops: { mcpExcludeReason: 'Local VM provisioning: requires host KVM/QEMU, not remote-operable' },
   doctor: { mcpExcludeReason: 'Diagnoses local CLI installation, not a remote operation' },
   update: { mcpExcludeReason: 'CLI self-update, not a remote operation' },
+  preview: {
+    mcpExcludeReason:
+      "Replaces the installed CLI and the machines' renet; an operator switch, not an agent operation",
+  },
   subscription: { mcpExcludeReason: 'License management; local concern.' },
   mcp: { mcpExcludeReason: 'The MCP server itself, which cannot recurse' },
 

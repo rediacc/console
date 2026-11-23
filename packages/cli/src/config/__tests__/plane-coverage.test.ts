@@ -159,8 +159,9 @@ describe('command plane coverage', () => {
     // 223 -> 225, machine 121 -> 123: `repo admin orphan list|delete` (worklist #48d790e1) read the machine's images and delete one through renet.
     // 225 -> 226, other 44 -> 45: `feedback report` files a report with the account service and reaches no machine (PLAN-rdc-feedback C3).
     // 226 -> 228, other 45 -> 47: `feedback list|show` read the account service and reach no machine (PLAN-rdc-feedback C4).
-    expect(COMMANDS.length).toBe(228);
-    expect(counts).toEqual({ config: 58, machine: 123, other: 47 });
+    // 228 -> 231, machine 123 -> 124, other 47 -> 49: `preview use|status` read and write the config, the installed rdc and the preview's public endpoints; `preview leave` also switches each touched server's renet back over SSH (PLAN-preview-signer C2, C3).
+    expect(COMMANDS.length).toBe(231);
+    expect(counts).toEqual({ config: 58, machine: 124, other: 49 });
   });
 
   it('records the interactive commands', () => {
@@ -175,6 +176,7 @@ describe('command plane coverage', () => {
       'config field rotate',
       'config remote enable',
       'ops ssh',
+      'preview leave',
       'repo tunnel',
       'serve',
       'server install',

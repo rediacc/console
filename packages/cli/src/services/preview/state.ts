@@ -9,6 +9,10 @@
 import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_RELEASES_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
+import {
   PREVIEW_NAME_PATTERN,
   type PreviewOverlay,
   PreviewOverlaySchema,
@@ -53,6 +57,45 @@ export function readPreviewOverlay(
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The server the config names in its `account` section, which a preview overlay hides from the account
+ * pointer: the one `leave` returns to, read straight from the file. The default origin when the section names none.
+ */
+export function readRealAccountServer(
+  configName = getEffectiveConfigName(),
+  configDir = getConfigDir()
+): string {
+  try {
+    const parsed = JSON.parse(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
+      account?: { accountServer?: unknown };
+    };
+    const server = parsed.account?.accountServer;
+    return typeof server === 'string' && server !== '' ? server : WK_ACCOUNT_DEFAULT_ORIGIN;
+  } catch {
+    return WK_ACCOUNT_DEFAULT_ORIGIN;
+  }
+}
+
+/**
+ * The releases base (`.../cli`) of the config's real account section: the on-prem `releasesUrl` it names, else
+ * the public origin. A preview overlay hides the section from the account pointer, so the way back reads it here.
+ */
+export function readRealReleasesBase(
+  configName = getEffectiveConfigName(),
+  configDir = getConfigDir()
+): string {
+  try {
+    const parsed = JSON.parse(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
+      account?: { releasesUrl?: unknown };
+    };
+    const url = parsed.account?.releasesUrl;
+    if (typeof url === 'string' && url !== '') return `${url.replace(/\/+$/, '')}/cli`;
+  } catch {
+    // an unreadable config names no on-prem releases server: the public one answers
+  }
+  return `${WK_RELEASES_ORIGIN}/cli`;
 }
 
 function withPreview(config: RdcConfig, preview: PreviewOverlay | undefined): RdcConfig {

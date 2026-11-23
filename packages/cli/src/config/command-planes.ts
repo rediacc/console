@@ -63,6 +63,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   version: { plane: 'other' },
   tools: { plane: 'other' },
   update: { plane: 'other' },
+  // `use` and `status` read and write this config, the installed CLI and the preview's public endpoints. `leave` also switches each touched server's renet back over SSH, so it reaches a machine; it asks before it does and replaces the local CLI, so it is interactive and never offered to a headless executor.
+  preview: { plane: 'other' },
+  'preview leave': { plane: 'machine', interactive: true },
   mcp: { plane: 'other' },
 
   // ── machine: config-CRUD leaves only touch the config file ───────────── add/remove/list write or read the config record; provider add/remove/list register cloud-provider credentials in the config; `infra set`/`show` edit the machine's infra block in the config; `infra cert status`/`clear` read and clear the LOCAL cert cache. All would produce the CALLER's answer, so they must

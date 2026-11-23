@@ -2379,6 +2379,26 @@ Check for new CLI versions and apply updates. Supports --check-only to check wit
 
 > MCP excluded: CLI self-update, not a remote operation
 
+### rdc preview use <name>
+
+Check the preview's build of the CLI against both of its origins, keep the current CLI as rdc.pre-preview, install the preview's CLI and point this config at the preview server. A server gets the preview's renet only the first time the CLI provisions it.
+
+**Options:**
+
+- `--accept-format-change`: Accept the warning that this preview changes an on-disk format, without asking
+
+### rdc preview leave
+
+List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.
+
+**Options:**
+
+- `--machine <name>`: Switch back only this server
+
+### rdc preview status
+
+Show the active preview, its licence end date, the servers on its renet and the way back.
+
 ### rdc subscription login
 
 Authenticate via browser or API token

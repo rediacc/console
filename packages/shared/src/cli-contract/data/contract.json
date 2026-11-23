@@ -9563,6 +9563,111 @@
     },
     {
       "path": [
+        "preview",
+        "leave"
+      ],
+      "pathKey": "preview leave",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.preview.leave.description",
+      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+      "options": [
+        {
+          "flags": "--machine <name>",
+          "long": "machine",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.preview.leave.machine",
+          "label": "Switch back only this server"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": true,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "preview",
+        "status"
+      ],
+      "pathKey": "preview status",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.preview.status.description",
+      "label": "Show the active preview, its licence end date, the servers on its renet and the way back.",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "preview",
+        "use"
+      ],
+      "pathKey": "preview use",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.preview.use.description",
+      "label": "Check the preview's build of the CLI against both of its origins, keep the current CLI as rdc.pre-preview, install the preview's CLI and point this config at the preview server. A server gets the preview's renet only the first time the CLI provisions it.",
+      "options": [
+        {
+          "flags": "--accept-format-change",
+          "long": "accept-format-change",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.preview.use.acceptFormatChange",
+          "label": "Accept the warning that this preview changes an on-disk format, without asking"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.preview.use.nameArgument",
+          "label": "The preview name, for example pv-amber-river-stone"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "repo",
         "admin",
         "archive",
