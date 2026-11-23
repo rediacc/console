@@ -23,8 +23,10 @@ import {
   sealRequest,
 } from '@rediacc/shared/e2e';
 import {
+  computePublicKeyId,
+  type DelegationCert,
   importPublicKey,
-  type SignedSubscriptionBlob,
+  type SignedRepoLicense,
   verifySignature,
 } from '@rediacc/shared/subscription';
 
@@ -45,26 +47,12 @@ const TEST_MACHINE_ID = 'a'.repeat(64); // deterministic 64-char hex
 const TEST_CLIENT_MACHINE_ID = 'b'.repeat(64);
 const TEST_REPO_GUID = '00000000-0000-4000-8000-000000000001';
 
-// A preview binds no LICENSE_SIGNER, so activate-repo cannot sign there and the signature and payload checks have nothing to verify. Nothing sets PREVIEW_HAS_SIGNER until box T1 of PLAN-preview-signer.md restores the signer and sets it to true in the smoke step env, so the signer branch stays skipped until then. Any value but unset, empty, `true` or `false` is refused: a typo such as `1` or `True` must not silently turn the signature and payload checks off.
-const SIGNER_FLAG = process.env.PREVIEW_HAS_SIGNER ?? '';
-if (!['', 'true', 'false'].includes(SIGNER_FLAG)) {
-  console.error(`PREVIEW_HAS_SIGNER must be unset, "true" or "false", got "${SIGNER_FLAG}"`);
-  process.exit(1);
-}
-const PREVIEW_HAS_SIGNER = SIGNER_FLAG === 'true';
-
 let passed = 0;
 let failed = 0;
-let skipped = 0;
 
 function ok(name: string): void {
   passed++;
   console.log(`  ✓ ${name}`);
-}
-
-function skip(name: string, reason: string): void {
-  skipped++;
-  console.log(`  - SKIPPED ${name}: ${reason}`);
 }
 
 function fail(name: string, error: unknown): void {
@@ -243,7 +231,7 @@ async function stepLicenseStatus({ serverKey, keyId }: E2eContext): Promise<void
 async function stepIssueLicense({
   serverKey,
   keyId,
-}: E2eContext): Promise<SignedSubscriptionBlob | null> {
+}: E2eContext): Promise<SignedRepoLicense | null> {
   try {
     const { status, data } = await tunnelRequest(
       serverKey,
@@ -260,12 +248,12 @@ async function stepIssueLicense({
     );
     if (status >= 400) throw new Error(`Inner HTTP ${status}: ${JSON.stringify(data)}`);
     const result = data as {
-      license?: { payload: string; signature: string; publicKeyId: string };
+      license?: SignedRepoLicense;
     };
     if (!result.license?.payload) throw new Error('Missing license.payload');
     if (!result.license?.signature) throw new Error('Missing license.signature');
     if (!result.license?.publicKeyId) throw new Error('Missing license.publicKeyId');
-    const signedLicense = result.license as SignedSubscriptionBlob;
+    const signedLicense = result.license as SignedRepoLicense;
     ok(`Repo license issued (keyId: ${signedLicense.publicKeyId})`);
     return signedLicense;
   } catch (e) {
@@ -274,20 +262,46 @@ async function stepIssueLicense({
   }
 }
 
-// Step 5: Verify Ed25519 signature
-async function stepVerifySignature(signedLicense: SignedSubscriptionBlob): Promise<void> {
+// Step 5: Verify the licence the way renet does for a delegated licence. A preview signs with its own delegated key, so the licence is verified under the delegated public key its embedded certificate names, and that certificate must chain to the production public key (ED25519_PUBLIC_KEY, read from the secret store). A licence signed by the production key directly is refused: a preview holds no such key.
+async function stepVerifySignature(signedLicense: SignedRepoLicense): Promise<void> {
   try {
-    await importPublicKey(signedLicense.publicKeyId, ED25519_PUBLIC_KEY!);
-    const valid = await verifySignature(signedLicense);
-    if (!valid) throw new Error('Signature verification returned false');
-    ok('Ed25519 signature verified');
+    const masterId = await computePublicKeyId(ED25519_PUBLIC_KEY!);
+    if (signedLicense.publicKeyId === masterId) {
+      throw new Error('licence is signed by the production key, not a delegated preview key');
+    }
+    const certBlob = signedLicense.delegationCert;
+    if (!certBlob) throw new Error('licence embeds no delegation certificate');
+    if (certBlob.publicKeyId !== masterId) {
+      throw new Error(`certificate key id ${certBlob.publicKeyId} is not the production key id`);
+    }
+    await importPublicKey(masterId, ED25519_PUBLIC_KEY!);
+    if (!(await verifySignature(certBlob))) {
+      throw new Error('certificate does not verify under the production public key');
+    }
+    const cert = JSON.parse(atob(certBlob.payload)) as DelegationCert;
+    const delegatedId = await computePublicKeyId(cert.delegatedPublicKey);
+    if (delegatedId !== signedLicense.publicKeyId) {
+      throw new Error('licence key id is not the fingerprint of the certificate delegated key');
+    }
+    await importPublicKey(delegatedId, cert.delegatedPublicKey);
+    if (!(await verifySignature(signedLicense))) {
+      throw new Error('licence does not verify under the delegated key');
+    }
+    const payload = JSON.parse(atob(signedLicense.payload)) as { subscriptionId?: string };
+    if (payload.subscriptionId !== cert.subscriptionId) {
+      throw new Error('licence and certificate name different subscriptions');
+    }
+    if (!/^pv-[a-z]+-[a-z]+-[a-z]+-[0-9a-f]{8}$/.test(cert.subscriptionId)) {
+      throw new Error('certificate subscription is not a preview (pv-) subscription');
+    }
+    ok(`Delegated licence chains to the production key (keyId: ${delegatedId})`);
   } catch (e) {
     fail('Signature verification', e);
   }
 }
 
 // Step 6: Decode and validate payload fields
-function stepValidatePayload(signedLicense: SignedSubscriptionBlob): void {
+function stepValidatePayload(signedLicense: SignedRepoLicense): void {
   try {
     const payload = JSON.parse(atob(signedLicense.payload)) as Record<string, unknown>;
     const checks = [
@@ -397,27 +411,17 @@ async function main(): Promise<void> {
   stepPreviewIdentity(context.serverInfo);
   await stepLicenseStatus(context);
 
-  if (PREVIEW_HAS_SIGNER) {
-    const signedLicense = await stepIssueLicense(context);
-    if (signedLicense) {
-      await stepVerifySignature(signedLicense);
-      stepValidatePayload(signedLicense);
-    }
-  } else {
-    for (const name of [
-      'Repo license issuance',
-      'Ed25519 signature verification',
-      'License payload validation',
-    ]) {
-      skip(name, 'a preview has no license signer until PLAN-preview-signer.md box T1 lands');
-    }
+  const signedLicense = await stepIssueLicense(context);
+  if (signedLicense) {
+    await stepVerifySignature(signedLicense);
+    stepValidatePayload(signedLicense);
   }
 
   await stepChannelRewrite();
   await stepQuotaPageShipped();
 
   // Summary
-  console.log(`\n${passed} passed, ${failed} failed, ${skipped} skipped\n`);
+  console.log(`\n${passed} passed, ${failed} failed\n`);
   if (failed > 0) process.exit(1);
 }
 
