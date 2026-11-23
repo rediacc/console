@@ -27,6 +27,14 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WK_IMAGE_REGISTRY } from '../packages/shared/src/config/well-known.generated.js';
+import type { GateKind } from './ci-runner/gate-spec.js';
+import {
+  derivedId,
+  derivedRun,
+  headerError,
+  inferredNeeds,
+  parseGateHeader,
+} from './ci-runner/gate-spec.js';
 import {
   type LaneCapabilities,
   laneCapabilities,
@@ -50,14 +58,6 @@ import {
   parseShardManifest,
   shardManifestPath,
 } from './ci-runner/shard-manifest.js';
-import type { GateKind } from './ci-runner/gate-spec.js';
-import {
-  derivedId,
-  derivedRun,
-  headerError,
-  inferredNeeds,
-  parseGateHeader,
-} from './ci-runner/gate-spec.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';

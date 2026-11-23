@@ -56,7 +56,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-
+import type { GateHeader, GateSpec } from '../ci-runner/gate-spec.js';
+import { derivedId, headerSpec, inferredNeeds, parseGateHeader } from '../ci-runner/gate-spec.js';
 import { laneCapabilities, placeGate } from '../ci-runner/lanes.js';
 import { GATES } from '../ci-runner/manifest.js';
 import {
@@ -66,8 +67,6 @@ import {
   scanDeclarations,
   trackedSubjects,
 } from '../gate-bind.js';
-import type { GateHeader, GateSpec } from '../ci-runner/gate-spec.js';
-import { derivedId, headerSpec, inferredNeeds, parseGateHeader } from '../ci-runner/gate-spec.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const MANIFEST = path.join(ROOT, 'scripts/ci-runner/manifest.ts');
