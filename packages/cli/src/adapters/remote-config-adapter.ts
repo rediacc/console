@@ -25,6 +25,7 @@ import {
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import {
   buildConfigPushPayload,
+  ConfigPolicyFieldError,
   type PushPrior,
   pathsToCommit,
 } from '@rediacc/shared/config-schema';
@@ -380,6 +381,8 @@ export class RemoteConfigAdapter {
    * the stored salt for tombstones and, on a v2 store, the upgrade; see PushOptions.
    */
   push(config: RdcConfig, currentVersion: number, options: PushOptions = {}): Promise<PushResult> {
+    // Before the lease and the first request: a remote config's policy is its own record, and a push that carries one is refused without spending a token.
+    if (config.policy !== undefined) return Promise.reject(new ConfigPolicyFieldError());
     return this.tokenStorage.withLease(this.configName, async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);

@@ -29,9 +29,15 @@ import {
   generateCek,
   generateSdkMaster,
   sdkDerive,
+  selectiveEncrypt,
   toBase64,
 } from '@rediacc/shared/config-crypto';
-import { buildConfigPushPayload, type RdcConfig } from '@rediacc/shared/config-schema';
+import {
+  buildCommitEntries,
+  buildConfigPushPayload,
+  type RdcConfig,
+  toFullConfig,
+} from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
@@ -244,16 +250,23 @@ describe('container-tier config loading', () => {
     mintBodies = [];
     refuseGrants = false;
 
-    // Real ciphertext, built exactly as a CLI push builds it.
     const sdkEpoch = 12345;
     const sdkDerived = await sdkDerive(generateSdkMaster(), sdkEpoch);
-    const payload = await buildConfigPushPayload(config, {
-      storeId: 'store-1',
-      version: 4,
-      sdkEpoch,
-      sdkDerived,
-      cek,
-    });
+    // Real ciphertext, built exactly as a CLI push builds it; a forged policy field is sealed by hand, past the builder that refuses it, as a member forging one would.
+    const payload =
+      config.policy === undefined
+        ? await buildConfigPushPayload(config, {
+            storeId: 'store-1',
+            version: 4,
+            sdkEpoch,
+            sdkDerived,
+            cek,
+          })
+        : await selectiveEncrypt(toFullConfig(config, { version: 4, sdkEpoch }), sdkDerived, cek, {
+            sdkEpoch,
+            storeId: 'store-1',
+            commitEntries: buildCommitEntries(config),
+          });
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
     const policyRecord =
       policy === undefined

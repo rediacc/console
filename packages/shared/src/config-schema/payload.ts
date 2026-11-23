@@ -222,8 +222,24 @@ export interface PushPrior {
 }
 
 /**
+ * A push of a config document that carries a `policy` field. Only a remote config is ever pushed,
+ * and a remote config's policy is its own record (PUT /configs/:id/policy,
+ * PLAN-rmcp-policy-record.md Design 1): the server cannot see a policy inside the blob, so the
+ * builder every client pushes through refuses to seal one.
+ */
+export class ConfigPolicyFieldError extends Error {
+  constructor() {
+    super(
+      'A remote config carries no policy field: its policy is the separate policy record (the Permissions page, PUT /configs/:id/policy). Remove the policy field from the config and push again.'
+    );
+    this.name = 'ConfigPolicyFieldError';
+  }
+}
+
+/**
  * Compose the encrypted payload for a config push: commitments from the schema
- * walker, envelope from the document, ciphertext from the crypto layer.
+ * walker, envelope from the document, ciphertext from the crypto layer. Refuses a
+ * document carrying `policy` (ConfigPolicyFieldError).
  */
 export function buildConfigPushPayload(
   config: RdcConfig,
@@ -243,6 +259,9 @@ export function buildConfigPushPayload(
     prior?: PushPrior;
   }
 ): Promise<EncryptedConfigPayload> {
+  if ((config as { policy?: unknown }).policy !== undefined) {
+    return Promise.reject(new ConfigPolicyFieldError());
+  }
   // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
   const doc = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const fullConfig = toFullConfig(doc, {
