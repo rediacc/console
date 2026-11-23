@@ -225,6 +225,14 @@
       "types": "./dist/job-poll/*.d.ts",
       "default": "./dist/job-poll/*.js"
     },
+    "./ai": {
+      "types": "./dist/ai/index.d.ts",
+      "default": "./dist/ai/index.js"
+    },
+    "./ai/*": {
+      "types": "./dist/ai/*.d.ts",
+      "default": "./dist/ai/*.js"
+    },
     "./command-line": {
       "types": "./dist/command-line/index.d.ts",
       "default": "./dist/command-line/index.js"
