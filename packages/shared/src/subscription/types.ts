@@ -291,7 +291,7 @@ export interface OrganizationSubscription {
 }
 
 /**
- * Billing period for Stripe subscriptions.
+ * Billing period for plan pricing.
  */
 export type BillingPeriod = 'monthly' | 'annual';
 
@@ -313,7 +313,7 @@ export interface PlanMetadata {
   description: string;
   paid: boolean;
   featured: boolean;
-  /** Purchasable via self-serve checkout. False for every plan while Stripe is disabled (no checkout; paid plans are sold through partners or an account link). */
+  /** Purchasable via self-serve checkout. False for every plan (no checkout; paid plans are sold through partners or an account link). */
   selfServe: boolean;
   /**
    * The web console (browser-driven command execution through an executor) is

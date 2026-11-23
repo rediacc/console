@@ -640,14 +640,6 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
 } as const;
 
 /**
- * Get the Stripe lookup key for a plan and billing period.
- * E.g. "professional_monthly", "business_annual"
- */
-export function getStripeLookupKey(planCode: PlanCode, period: BillingPeriod): string {
-  return `${planCode.toLowerCase()}_${period}`;
-}
-
-/**
  * Get pricing for a plan code.
  * Returns COMMUNITY pricing if plan code is invalid.
  */

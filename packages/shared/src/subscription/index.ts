@@ -21,7 +21,6 @@ export {
   getPlanPricing,
   getForensicsQuotaBytesForPlan,
   getStorageQuotaBytesForPlan,
-  getStripeLookupKey,
   hasFeature,
   isValidPlanCode,
   LICENSE_RENEW_PATH,
