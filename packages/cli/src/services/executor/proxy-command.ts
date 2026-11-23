@@ -21,6 +21,7 @@ import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/tim
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
 import { backgroundEnvelope, backgroundStartedHint } from './job-client.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
+import { ProxySessionCache } from './proxy-session-cache.js';
 import type { RenetEvent } from './types.js';
 
 /**
@@ -241,6 +242,8 @@ export interface ProxyRunContext {
   getCek?: () => Promise<CryptoKey>;
   /** `-b` / `--background`: ask the executor for the job's ticket at once instead of following the job. */
   background?: boolean;
+  /** Where the granted session is kept between runs. Defaults to the file cache beside the config tokens. */
+  sessionCache?: ProxySessionCache;
 }
 
 /**
@@ -302,6 +305,8 @@ export async function runCommandThroughProxy(
     contractVersion: context.contractVersion,
     ...(context.fetchImpl ? { fetchImpl: context.fetchImpl } : {}),
     getCek: cekProviderFor(context),
+    // Consecutive runs reuse the session granted by the last one (PLAN-rmcp-executor-hardening Design 7).
+    sessionCache: context.sessionCache ?? new ProxySessionCache(),
   });
 
   const params = paramsFromCommand(entry, actionCommand);

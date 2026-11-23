@@ -69,9 +69,24 @@ import {
   type StreamState,
   terminalOutcome,
 } from './proxy-follow.js';
+import type { ProxySessionCache } from './proxy-session-cache.js';
 import { traceProxyRequest } from './proxy-trace.js';
 
 import type { RenetEvent } from './types.js';
+
+/** The header naming the executor session a command draws its config key from. */
+const CONFIG_SESSION_HEADER = 'x-config-session';
+
+/** The executor's wire code for a session it does not hold (packages/cli/src/services/serve/sessions.ts). */
+const SESSION_UNKNOWN_CODE = 'EXECUTOR_SESSION_UNKNOWN';
+
+/** A command the executor refused because it no longer holds the named session. */
+class ExecutorSessionUnknownError extends Error {
+  constructor(readonly detail: string) {
+    super(detail);
+    this.name = 'ExecutorSessionUnknownError';
+  }
+}
 
 /** The waits before start retry 1, 2 and 3: the head of the poll ladder (2 s, then 3 s, then 4.5 s). */
 const START_RETRY_DELAYS_MS = [2000, 3000, 4500] as const;
@@ -109,14 +124,21 @@ export interface ProxyClientOptions {
   /** How long consecutive failed polls are retried before the follow is given up with the ticket kept. */
   lostBudgetMs?: number;
   ticketStore?: TicketStore | null;
+  /**
+   * Where a granted session is kept for the next run. Absent keeps none beyond
+   * this process; the `rdc --proxy` entry (proxy-command.ts) passes the file
+   * cache beside the config tokens.
+   */
+  sessionCache?: ProxySessionCache;
 }
 
 /**
  * Grants already made by this process, keyed by executor and token, so a
- * process grants once however many commands it sends. Holds the promise, so
- * concurrent callers share one grant rather than racing two sessions.
+ * process grants once however many commands it sends. Holds the promise of the
+ * granted session id (undefined for a daemon), so concurrent callers share one
+ * grant rather than racing two sessions.
  */
-const grantedSessions = new Map<string, Promise<void>>();
+const grantedSessions = new Map<string, Promise<string | undefined>>();
 
 /** Forget every grant this process made. For tests. */
 export function resetProxySessions(): void {
@@ -139,6 +161,7 @@ export class ProxyClient {
   private readonly random: () => number;
   private readonly lostBudgetMs: number;
   private readonly ticketStore: TicketStore | null | undefined;
+  private readonly sessionCache: ProxySessionCache | null;
 
   constructor(options: ProxyClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
@@ -151,6 +174,7 @@ export class ProxyClient {
     this.random = options.random ?? Math.random;
     this.lostBudgetMs = options.lostBudgetMs ?? PROXY_LOST_BUDGET_MS;
     this.ticketStore = options.ticketStore;
+    this.sessionCache = options.sessionCache ?? null;
   }
 
   /**
@@ -164,14 +188,20 @@ export class ProxyClient {
    * enrollment, seal it to that public key, and post the sealed blob. The key
    * never crosses the wire in the clear, and a daemon, which derives its own
    * key, is never sent it at all.
+   *
+   * A session granted by an earlier run is reused from the session cache while
+   * the executor's idle TTL has not run out, skipping server-info, the session
+   * open and the CEK unwrap. Resolves to the session id the commands name
+   * (undefined for a daemon, or a client with no key to give).
    */
-  async ensureSession(): Promise<void> {
+  async ensureSession(): Promise<string | undefined> {
     // A client with no key to give (a test harness, a caller that manages its own sessions) leaves the grant to whoever holds one.
-    if (!this.getCek) return;
-    const key = `${this.baseUrl}\u0000${await this.getToken()}`;
+    if (!this.getCek) return undefined;
+    const token = await this.getToken();
+    const key = `${this.baseUrl}\u0000${token}`;
     let grant = grantedSessions.get(key);
     if (!grant) {
-      grant = this.grantSession();
+      grant = this.cachedOrGrantedSession(token);
       grantedSessions.set(key, grant);
       // A failed grant must not be remembered as done: the next command retries it.
       grant.catch(() => grantedSessions.delete(key));
@@ -179,12 +209,30 @@ export class ProxyClient {
     return grant;
   }
 
-  private async grantSession(): Promise<void> {
-    const info = await this.serverInfo();
-    if (info.mode !== 'container') return;
+  /**
+   * Drop the session this process and the cache hold for this caller, and grant
+   * a new one. Called once when the executor answers EXECUTOR_SESSION_UNKNOWN.
+   */
+  private async regrantSession(): Promise<string | undefined> {
+    const token = await this.getToken();
+    grantedSessions.delete(`${this.baseUrl}\u0000${token}`);
+    await this.sessionCache?.delete(this.baseUrl, token);
+    return this.ensureSession();
+  }
 
+  private async cachedOrGrantedSession(token: string): Promise<string | undefined> {
+    const cached = await this.sessionCache?.get(this.baseUrl, token);
+    if (cached?.mode === 'daemon') return undefined;
+    if (cached?.sessionId) return cached.sessionId;
+    const granted = await this.grantSession();
+    await this.sessionCache?.set(this.baseUrl, token, granted);
+    return granted.sessionId;
+  }
+
+  private async grantSession(): Promise<{ mode: 'container' | 'daemon'; sessionId?: string }> {
+    const info = await this.serverInfo();
     const getCek = this.getCek;
-    if (!getCek) return;
+    if (info.mode !== 'container' || !getCek) return { mode: 'daemon' };
 
     const opened = await this.post(PROXY_ROUTES.session, {});
     if (!opened.ok) throw new Error(await this.describeFailure(opened));
@@ -204,6 +252,7 @@ export class ProxyClient {
 
     const granted = await this.post(PROXY_ROUTES.sessionCek(sessionId), sealed);
     if (!granted.ok) throw new Error(await this.describeFailure(granted));
+    return { mode: 'container', sessionId };
   }
 
   /**
@@ -221,7 +270,7 @@ export class ProxyClient {
     reattach?: ReattachTarget,
     options: { background?: boolean } = {}
   ): Promise<ProxyCommandOutcome> {
-    await this.ensureSession();
+    let sessionId = await this.ensureSession();
 
     // One id for the invocation: a POST that dropped before the job line is retried with it, so the executor attaches to the job the first one started instead of starting a second.
     const requestId = randomUUID();
@@ -241,8 +290,25 @@ export class ProxyClient {
       unorderedSeen: 0,
       unorderedSkip: 0,
     };
-    await this.startCommand(request, onEvent, state, reattach?.machine);
+    try {
+      await this.startCommand(request, onEvent, state, reattach?.machine, sessionId);
+    } catch (error) {
+      if (!(error instanceof ExecutorSessionUnknownError)) throw error;
+      // The executor no longer holds the session (a redeploy, an idle eviction): grant a new one once and retry with the same request id, so a job the first attempt started is attached to, not started twice.
+      sessionId = await this.regrantSession();
+      await this.startCommand(request, onEvent, state, reattach?.machine, sessionId);
+    }
+    await this.touchSession(sessionId);
     return this.finishOrPoll(pathKey, requestId, onEvent, state, reattach, options.background);
+  }
+
+  /** Slide the cached session's expiry, as the executor slid the session on this command. */
+  private async touchSession(sessionId: string | undefined): Promise<void> {
+    if (!sessionId || !this.getCek) return;
+    await this.sessionCache?.set(this.baseUrl, await this.getToken(), {
+      mode: 'container',
+      sessionId,
+    });
   }
 
   /**
@@ -254,7 +320,8 @@ export class ProxyClient {
     request: CommandRequest,
     onEvent: (event: RenetEvent) => void,
     state: ClientStreamState,
-    fallbackMachine: string | undefined
+    fallbackMachine: string | undefined,
+    sessionId: string | undefined
   ): Promise<void> {
     for (let attempt = 0; ; attempt++) {
       const step = await this.tryStart(
@@ -262,7 +329,8 @@ export class ProxyClient {
         onEvent,
         state,
         fallbackMachine,
-        attempt < MAX_START_RETRIES
+        attempt < MAX_START_RETRIES,
+        sessionId
       );
       if (step === 'done') return;
       // The retry waits on the poll ladder (Design 5): 2 s, then 3 s, then 4.5 s.
@@ -277,11 +345,16 @@ export class ProxyClient {
     onEvent: (event: RenetEvent) => void,
     state: ClientStreamState,
     fallbackMachine: string | undefined,
-    retriable: boolean
+    retriable: boolean,
+    sessionId: string | undefined
   ): Promise<'done' | 'retry'> {
     let response: Response;
     try {
-      response = await this.post(PROXY_ROUTES.command, request);
+      response = await this.post(
+        PROXY_ROUTES.command,
+        request,
+        sessionId ? { [CONFIG_SESSION_HEADER]: sessionId } : {}
+      );
     } catch (error) {
       if (retriable) return 'retry';
       throw error;
@@ -303,6 +376,7 @@ export class ProxyClient {
   /** The command response's body, or the refusal it carried. */
   private async commandBody(response: Response): Promise<ReadableStream<Uint8Array>> {
     if (response.status === 409) await this.throwVersionMismatch(response);
+    if (response.status === 404) await this.throwIfSessionUnknown(response);
     if (!response.ok) throw new Error(await this.describeFailure(response));
     if (!response.body) throw new ProxyStreamTruncatedError(0);
     return response.body;
@@ -631,12 +705,33 @@ export class ProxyClient {
     }
   }
 
-  private async post(path: string, body: unknown): Promise<Response> {
+  private async post(
+    path: string,
+    body: unknown,
+    extraHeaders: Record<string, string> = {}
+  ): Promise<Response> {
     return this.request(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { ...(await this.headers()), 'content-type': 'application/json' },
+      headers: {
+        ...(await this.headers()),
+        'content-type': 'application/json',
+        ...extraHeaders,
+      },
       body: JSON.stringify(body),
     });
+  }
+
+  /** A 404 carrying EXECUTOR_SESSION_UNKNOWN becomes the error the re-grant catches; any other 404 is described as before. */
+  private async throwIfSessionUnknown(response: Response): Promise<void> {
+    const text = await response.clone().text();
+    let code: unknown;
+    try {
+      code = (JSON.parse(text) as { code?: unknown }).code;
+    } catch {
+      // Not JSON: an ordinary 404, described by the caller.
+      return;
+    }
+    if (code === SESSION_UNKNOWN_CODE) throw new ExecutorSessionUnknownError(text.slice(0, 500));
   }
 
   private async headers(): Promise<Record<string, string>> {
