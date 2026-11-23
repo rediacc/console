@@ -110,11 +110,23 @@ LOCAL_ONLY = frozenset({".claude/settings.local.json"})
 
 def _record_globs(tree):
     """The record set (.ci/policy/record-paths.json) plus the hook ledgers: files the hooks of every session rewrite after each commit, so a checkout is never clean of them at the instant promote looks. The rebase's autostash carries them across; nothing else is exempt."""
+    path = policy_path("record-paths.json", tree)
+    # A tree with no policy defines no record set. One that holds the policy and cannot read it refuses by name: read as an empty set, every record path would count as dirt and the refusal would name the wrong cause.
+    if not path.exists():
+        return [("agent/ledgers/*.jsonl", ())]
     try:
-        data = json.loads(policy_path("record-paths.json", tree).read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
         rows = [(r["glob"], tuple(r.get("except") or ())) for r in data.get("records", [])]
-    except (OSError, ValueError, KeyError, TypeError):
-        rows = []
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        message = (
+            "the record policy %s cannot be read (%s: %s), so promote cannot tell a record from a dirty path"
+            % (
+                path,
+                type(exc).__name__,
+                exc,
+            )
+        )
+        raise PromoteRefusedError(message) from exc
     return [*rows, ("agent/ledgers/*.jsonl", ())]
 
 

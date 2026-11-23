@@ -13,7 +13,7 @@ A promoted tree is quiet by construction: promotion rewrites the record to the b
 
 The landing tip is the LOCAL branch, which every tree of the repository shares. A development branch rebased onto a landing commit that is not pushed yet is no hazard for the landing push: block_landing_one_way admits a pushed commit the landing branch's reflog shows was made there.
 
-`stack_block` and `stack_report` never raise: a reader failure answers "", because a git blip must not block a stop. The merged block is the `landing-stack` key (blocks from effort low, advises at quiet); the behind report is advisory (`landing-behind`).
+`stack_block` and `stack_report` never raise, and a reader failure never blocks, because a git blip must not block a stop. It is not silent either: a failed read (a git command, gh, a defective landing record) raises StackReadError inside `stack_state`, and `stack_verdict` and `stack_report` answer it as a `landing-stack` advisory naming the failure, since an unread state is unknown, not "none". The merged block is the `landing-stack` key (blocks from effort low, advises at quiet); the behind report is advisory (`landing-behind`).
 
 THE BLOCK ASKS WHETHER PROMOTE WOULD PROCEED (agent/plans/PLAN-stop-hook-retro-20261123.md friction 1, D1 and D2). Blocking a stop on a promotion that refuses for a reason the session cannot act on cost 70 stop turns in one window. `stack_verdict` returns `(block, advisory)`, at most one non-empty, while the merged branch's release is green:
 
@@ -21,7 +21,7 @@ THE BLOCK ASKS WHETHER PROMOTE WOULD PROCEED (agent/plans/PLAN-stop-hook-retro-2
   live run       a live background task of this session runs in the main checkout (`main_checkout_tasks`), which promote rebases: an advisory naming the tasks (the loop-next rule: a background task of this session downgrades it).
   dirty tree     promote's tracked non-record dirt (landing_promote._dirty, through `_promote_dirt`, which never raises) in the main checkout, the landing tree or a landing submodule tree: when no dirty path is this session's own edit (`own_paths`, the `uc_files` union wl_uncommitted keeps), an advisory naming them; otherwise the block stands and names this session's own dirty paths, since committing them is a real action.
 
-A named plan that cannot be read keeps the block and names the reason: promote refuses on it too, and it is the session's to fix.
+A named plan that cannot be read keeps the block and names the reason: promote refuses on it too, and it is the session's to fix. So does any other failed read under the merged state (the open-box read, the development-commit listing, promote's dirty preflight): the block stands and names what could not be read.
 """
 
 from __future__ import annotations
@@ -49,6 +49,10 @@ SHOWN = 5
 
 class OpenBoxesError(RuntimeError):
     """A commit message or a plan a `Plan-Box:` trailer names cannot be read: `open_writer_boxes` cannot answer."""
+
+
+class StackReadError(RuntimeError):
+    """A git, gh or landing-record read `stack_state` rests on failed: the stack's state is unknown, which is not `none`."""
 
 
 class Verdict(tuple):
@@ -122,11 +126,11 @@ def _cherry(root, upstream: str, head: str) -> list[str] | None:
 
 
 def gh_pr_merged(root, branch: str) -> bool:
-    """Whether a MERGED PR is headed by `branch`, read through wl_gh; False when gh cannot say."""
+    """Whether a MERGED PR is headed by `branch`, read through wl_gh. Raises StackReadError when gh cannot say: an unanswered question is not "no merged PR"."""
     try:
         import wl_gh
 
-        rows, _err = wl_gh.call(
+        rows, err = wl_gh.call(
             [
                 "pr",
                 "list",
@@ -141,8 +145,16 @@ def gh_pr_merged(root, branch: str) -> bool:
             ],
             cwd=str(root),
         )
-    except Exception:
-        return False
+    except Exception as exc:
+        raise StackReadError(
+            "gh could not say whether a merged PR is headed by %s (%s: %s)"
+            % (branch, type(exc).__name__, exc)
+        ) from exc
+    if rows is None:
+        raise StackReadError(
+            "gh could not say whether a merged PR is headed by %s (%s)"
+            % (branch, err or "no answer")
+        )
     return bool(rows)
 
 
@@ -160,7 +172,12 @@ def _fetch(root, branch: str) -> None:
 def _landing_merged(root, landing: str, main_ref: str, pr_merged) -> str:
     """How the landing branch reads merged ("" when it does not): every commit absorbed on main, or none of its own and a MERGED PR."""
     marks = _cherry(root, main_ref, "refs/heads/" + landing)
-    if marks is None or "+" in marks:
+    if marks is None:
+        raise StackReadError(
+            "git could not compare the landing branch %s with %s (`git cherry` failed)"
+            % (landing, main_ref.removeprefix("refs/remotes/"))
+        )
+    if "+" in marks:
         return ""
     if marks:
         return "its %d commit(s) are absorbed on %s" % (
@@ -173,9 +190,11 @@ def _landing_merged(root, landing: str, main_ref: str, pr_merged) -> str:
 
 
 def stack_state(root, fetch: bool = True, pr_merged=gh_pr_merged) -> StackState:
-    """Where the development tree at `root` stands against the landing branch. `fetch` refreshes origin/main first (best effort); `pr_merged(root, branch)` answers the PR question for a landing branch with no commits of its own."""
+    """Where the development tree at `root` stands against the landing branch. `fetch` refreshes origin/main first (best effort); `pr_merged(root, branch)` answers the PR question for a landing branch with no commits of its own. Raises StackReadError when a read it rests on fails (a defective landing record, a failed `git cherry`, gh that cannot say)."""
     cp = _hooks_pkg()
-    record = cp.landing_record(str(root))
+    record, problem = cp.read_landing_record(str(root))
+    if problem:
+        raise StackReadError(problem)
     if record is None or cp.tree_role(str(root)) == cp.ROLE_LANDING:
         return StackState(NONE)
     landing = record["branch"]
@@ -297,13 +316,13 @@ def _dev_shas(root, main_ref: str, development: str) -> list[str] | None:
     return [line.split()[1] for line in out.splitlines() if line.startswith("+ ")]
 
 
-def _promote_dirt(root, landing_path: str) -> list[str] | None:
-    """The absolute paths promote's dirty preflight refuses on (landing_promote._dirty: tracked, non-record, not machine-local) in the main checkout, the landing tree and each landing submodule tree; None when they cannot be read. Never raises."""
+def _promote_dirt(root, landing_path: str) -> tuple[list[str], str]:
+    """`(paths, problem)`: the absolute paths promote's dirty preflight refuses on (landing_promote._dirty: tracked, non-record, not machine-local) in the main checkout, the landing tree and each landing submodule tree with "", or `([], why)` when they cannot be read. Never raises."""
     try:
         hop = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
         spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
         if spec is None or spec.loader is None:
-            return None
+            return [], "cannot load %s" % hop
         syspath = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(syspath)
         lp = syspath.import_from_ci("rediacc_ci.dev.landing_promote")
@@ -316,9 +335,9 @@ def _promote_dirt(root, landing_path: str) -> list[str] | None:
         rows: list[str] = []
         for tree in trees:
             rows.extend(str(tree / lp._porcelain_path(line)) for line in lp._dirty(tree))
-        return rows
-    except Exception:
-        return None
+        return rows, ""
+    except Exception as exc:
+        return [], "%s: %s" % (type(exc).__name__, exc)
 
 
 def _norm(path) -> str:
@@ -357,6 +376,16 @@ def main_checkout_tasks(root, live_bg, metas) -> list[str]:
         return out
     except Exception:
         return []
+
+
+def _unread_text(exc: BaseException) -> str:
+    return (
+        "LANDING STACK UNREAD: where the development branch stands against the landing branch could not be read "
+        "(%s: %s), so whether promotion is due is unknown. The stop does not block on an unread state; the next "
+        "stop reads it again.\n"
+        "(.claude/hooks/stop/wl_stack.py, PLAN-two-track-merge-dev LT19)"
+        % (type(exc).__name__, exc)
+    )
 
 
 def _code_complete_text(st: StackState, plans) -> str:
@@ -398,17 +427,22 @@ def _peer_dirt_text(st: StackState, dirt) -> str:
 
 
 def stack_verdict(root, released=True, own_paths=None, live_main_bg=None, **kw) -> Verdict:
-    """`(block, advisory)` while the landing branch is merged, its release is green (`released`, the development tree's `wl_prscope.LoopState.landing_released`) and promotion has not run; `("", "")` otherwise. `own_paths` is this session's edited-file union (repo-relative to `root`, or absolute); `live_main_bg` is this session's live background tasks in the main checkout (`main_checkout_tasks`'s list, or a bool). Never raises."""
+    """`(block, advisory)` while the landing branch is merged, its release is green (`released`, the development tree's `wl_prscope.LoopState.landing_released`) and promotion has not run; an advisory naming the failure when the stack cannot be read (StackReadError or any other raise of `stack_state`); `("", "")` otherwise. `own_paths` is this session's edited-file union (repo-relative to `root`, or absolute); `live_main_bg` is this session's live background tasks in the main checkout (`main_checkout_tasks`'s list, or a bool). Never raises."""
     if not released:
         return Verdict()
     try:
         st = stack_state(root, **kw)
-    except Exception:
-        return Verdict()
+    except Exception as exc:
+        return Verdict(advisory=_unread_text(exc))
     if st.state != MERGED:
         return Verdict()
     notes = []
     shas = _dev_shas(root, "refs/remotes/%s/main" % REMOTE, st.development)
+    if shas is None:
+        notes.append(
+            "git could not list the development commits ahead of %s/main, so whether promote refuses on an open [writer] box is unknown."
+            % REMOTE
+        )
     if shas:
         try:
             plans = open_writer_boxes(root, shas)
@@ -423,7 +457,12 @@ def stack_verdict(root, released=True, own_paths=None, live_main_bg=None, **kw) 
             )
         if plans:
             return Verdict(advisory=_code_complete_text(st, plans))
-    dirt = _promote_dirt(root, st.landing_path) or []
+    dirt, dirt_problem = _promote_dirt(root, st.landing_path)
+    if dirt_problem:
+        notes.append(
+            "Promote's dirty preflight could not be read (%s), so whether it refuses on a dirty tree is unknown."
+            % dirt_problem
+        )
     if live_main_bg:
         tasks = live_main_bg if isinstance(live_main_bg, (list, tuple)) else ["a live task"]
         return Verdict(advisory=_live_run_text(st, [str(t) for t in tasks], dirt))
@@ -450,11 +489,11 @@ def stack_block(root, released=True, own_paths=None, live_main_bg=None, **kw) ->
 
 
 def stack_report(root, released=True, **kw) -> str:
-    """The advisory text while the landing branch is ahead of the development branch, or merged while its release is not green yet (`released` False), else "". Never raises."""
+    """The advisory text while the landing branch is ahead of the development branch, or merged while its release is not green yet (`released` False), or the stack cannot be read (naming the failure), else "". Never raises."""
     try:
         st = stack_state(root, **kw)
-    except Exception:
-        return ""
+    except Exception as exc:
+        return _unread_text(exc)
     if st.state == MERGED and not released:
         return _release_pending_text(st)
     return _behind_text(st) if st.state == BEHIND else ""

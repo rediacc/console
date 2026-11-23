@@ -104,8 +104,8 @@ MUTANTS = [
     ),
     (
         "gh that cannot say read as unmerged",
-        '        raise StackReadError(\n            "gh could not say',
-        '        return False\n        raise StackReadError(\n            "gh could not say',
+        "    if rows is None:\n        raise StackReadError(",
+        "    if False:\n        raise StackReadError(",
     ),
 ]
 

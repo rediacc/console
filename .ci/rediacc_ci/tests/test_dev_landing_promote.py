@@ -315,6 +315,29 @@ def test_the_settings_file_is_ignored_when_it_is_the_first_dirty_row(two):
 
 
 @pytest.mark.parametrize(
+    "text",
+    ["{ not json\n", '{"records": [{"except": []}]}\n'],
+    ids=["unparseable", "a record with no glob"],
+)
+def test_an_unreadable_record_policy_refuses_by_name(two, text):
+    """A record policy that exists and cannot be read is not an empty record set: read as one, every record path counts as dirt and the refusal names the wrong cause (stop-gate judge 2026-11-23)."""
+    spike.write(two.main / ".ci" / "policy" / "record-paths.json", text)
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"record-paths\.json"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_control_a_readable_record_policy_exempts_its_records(two):
+    """The silent control for the refusal above: a readable policy is read, and a dirty path it lists is a record, not dirt."""
+    spike.write(
+        two.main / ".ci" / "policy" / "record-paths.json", '{"records": [{"glob": "*.txt"}]}\n'
+    )
+    tracked = next(p for p in spike.must(two.main, "ls-files").splitlines() if p.endswith(".txt"))
+    spike.write(two.main / tracked, "a record rewrite\n")
+    assert promote_mod._dirty(two.main) == []
+
+
+@pytest.mark.parametrize(
     ("gh", "why"),
     [(fake_gh(state="OPEN"), "is OPEN, not MERGED"), (fake_gh(fail=True), "gh could not say")],
 )
