@@ -135,7 +135,7 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Depends on: R2.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-release-hold.py` and `python3 .claude/hooks/stop/test-wl_worktrees.py` exit 0 with new cases: a record-only commit after a green receipt still reads as a green receipt on an unpushed head; a code commit does not; a landing order is kept while ci:quick runs and still rewritten while vm:check runs.
-    (ticked) 2026-11-22T16:53:07Z by ace763dd: commit:aff2b777c fileline:.claude/hooks/stop/wl_checks.py:2756 -- tree comparison through headTree and advances, ci:quick hold removed, vm:check hold kept; .claude/rediacc_hooks/tests/test_wl_receipt_hold.py and test_wl_judge*.py 158 passed, test-release-hold.py FAILURES 0. DEPS-WAIVED: R4 names only R2 (ticked) in its Depends on line
+    (ticked) 2026-11-22T16:53:07Z by ace763dd: commit:65f35528b fileline:.claude/hooks/stop/wl_checks.py:2756 -- tree comparison through headTree and advances, ci:quick hold removed, vm:check hold kept; .claude/rediacc_hooks/tests/test_wl_receipt_hold.py and test_wl_judge*.py 158 passed, test-release-hold.py FAILURES 0. DEPS-WAIVED: R4 names only R2 (ticked) in its Depends on line
 - [ ] R5 [writer] `vm:check --commit <sha>` runs from the kept clone with its own renet build, CLI build and gateway record, under the shared fleet lock (D1.4, D1.5)
     Owns: .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_vm_check.py, .ci/rediacc_ci/tests/test_vm_check_list_evidence.py
     Depends on: L1.

@@ -562,7 +562,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
-| `agent/plans/PLAN-preview-signer.md` | approved | 334 | 25 | 12 | 68805 |
+| `agent/plans/PLAN-preview-signer.md` | approved | 334 | 25 | 12 | 68794 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 226 | 4 | 24 | 45792 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 349 | 3 | 14 | 51686 |
@@ -632,11 +632,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48532 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
-| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 101 | 10 | 1 | 23239 |
+| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 101 | 10 | 1 | 23238 |
 | `agent/plans/PLAN-tooling-speed.md` | approved | 90 | 8 | 0 | 15654 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
-| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74640 |
+| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74638 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 24 | 1 | 2 | 3682 |
 | `agent/plans/PLAN-vscode-browser-exposure.md` | proposed | 61 | 9 | 0 | 10932 |

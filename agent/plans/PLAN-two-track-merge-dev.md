@@ -176,12 +176,12 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Owns: .ci/config/devcontainer-image.json, .ci/rediacc_ci/core/devbox.py, .devcontainer/Dockerfile, scripts/ci-runner/input-hash.ts, scripts/ci-runner/quick-clone.ts
   Depends on: R0.
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0 with a new salt control (two environments differing only in the image term yield different salts; a mutant dropping the term is red); a devbox selftest asserting the run image equals the pin, where a mutant reverting to `:latest` is red; `./run.sh devbox exec npm run ci:quick` completes and its receipt's salt differs from the host receipt's.
-    (ticked) 2026-11-22T19:02:28Z by ace763dd: commit:60fe37875 fileline:.ci/rediacc_ci/core/devbox.py:143 -- pin file read by devbox.py; pin moved to the main-published image. DEPS-WAIVED: present work
+    (ticked) 2026-11-22T19:02:28Z by ace763dd: commit:6f208262d fileline:.ci/rediacc_ci/core/devbox.py:143 -- pin file read by devbox.py; pin moved to the main-published image. DEPS-WAIVED: present work
 - [x] R2 [writer] Move one CI lane into the container, quality-content first (it hosts check:ci-prose-style): scripts/gate-bind.ts emits `container:` from the pin for lanes listed in the pin file; .github/actions/setup-workspace/action.yml takes a `node-from-image` input that skips setup-node and checks `node --version` against the image; permissions are added per job.
   Owns: scripts/gate-bind.ts, .github/workflows/ci-quality.yml, .github/workflows/ci.yml, .github/actions/setup-workspace/action.yml
   Depends on: R1.
   Accept: `npm run -s check:ci-workflows` rc 0; the binder's own check rc 0; one PR run where the lane is green in the container and its log shows the image's node and python versions equal R0's.
-    (ticked) 2026-11-22T19:02:29Z by ace763dd: commit:60fe37875 fileline:.github/workflows/ci-quality.yml:1498 -- quality-content lane in the pinned container via gate-bind. DEPS-WAIVED: present work
+    (ticked) 2026-11-22T19:02:29Z by ace763dd: commit:6f208262d fileline:.github/workflows/ci-quality.yml:1498 -- quality-content lane in the pinned container via gate-bind. DEPS-WAIVED: present work
 - [ ] R3 [writer] Add the receipt writer scripts/ci-runner/ci-receipt.ts and its workflow steps in the container lane (write, `actions/attest-build-provenance` on the file, upload as an artifact); add the local verb `ci-receipt fetch`, which downloads, verifies with `gh attestation verify` (D6 flags) and stores `.ci/cache/receipts/ci-<tree>.json` priors; the runner's prior loader accepts them under the unchanged inputHash rule; gate_ledger fold-ci reads the receipt's inputHash when present (.ci/rediacc_ci/ci/gate_ledger.py:380).
   Owns: scripts/ci-runner/ci-receipt.ts, scripts/ci-runner/input-hash.ts, .github/workflows/ci-quality.yml, .ci/rediacc_ci/ci/gate_ledger.py
   Depends on: R2.
@@ -190,7 +190,7 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Owns: .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py
   Depends on: R3.
   Accept: `python3 .claude/rediacc_hooks/guards/test-block_unverified_push.py` rc 0 with cases for a verified CI origin admitted, a byte-altered receipt refused, a receipt signed by another workflow refused (stub verifier), and a CI origin with verdict `fail` refused; `npm run -s check:ci-guard-mutations` rc 0, with the DEFECT turning the suite red.
-    (ticked) 2026-11-22T19:47:34Z by ace763dd: commit:3a4355bdc4 fileline:.claude/rediacc_hooks/guards/block_unverified_push.py:1 -- carried ci- origins re-verified through the attested() seam; guard suite 350 cases 0 failures. DEPS-WAIVED: R4 names only R3 work landed in 68d8179a08
+    (ticked) 2026-11-22T19:47:34Z by ace763dd: commit:0256f791e fileline:.claude/rediacc_hooks/guards/block_unverified_push.py:1 -- carried ci- origins re-verified through the attested() seam; guard suite 350 cases 0 failures. DEPS-WAIVED: R4 names only R3 work landed in 0ece2e48e
 
 ### Rebase consistency (operator /ask 2026-11-20: build now, first wave)
 
@@ -210,7 +210,7 @@ Inventory (sonnet Explore, 2026-11-20): review records, finding fixes, investiga
   Owns: .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py
   Depends on: RB1.
   Accept: `python3 .claude/rediacc_hooks/guards/test-block_unverified_push.py` rc 0 with a lease-branch case refused when behind and admitted at the base; a `DEFECT` tuple that drops lease branches turns the suite red under `npm run -s check:ci-guard-mutations` (rc 0).
-    (ticked) 2026-11-21T04:38:49Z by d778be9d: commit:d8c9ac142 landed on 1121-1: behind_base_refusal judges every branch a push from a lease names, base via wl_rebase.base_branch (cut_from while origin has it, else main); test-block_unverified_push.py rc 0 (334 cases, 18 new lease cases); plant on the real file rc 1 (7 LEASE cases); MUTANTS lease-branch-dropped admits both refused pushes. check:ci-guard-mutations rc 0 but never reads hook guard MUTANTS (#de875def), so the mutant is proven by the suite and the plant
+    (ticked) 2026-11-21T04:38:49Z by d778be9d: commit:9db837479 landed on 1121-1: behind_base_refusal judges every branch a push from a lease names, base via wl_rebase.base_branch (cut_from while origin has it, else main); test-block_unverified_push.py rc 0 (334 cases, 18 new lease cases); plant on the real file rc 1 (7 LEASE cases); MUTANTS lease-branch-dropped admits both refused pushes. check:ci-guard-mutations rc 0 but never reads hook guard MUTANTS (#de875def), so the mutant is proven by the suite and the plant
 - [x] RB4 [writer] Post-rebase proof: a verb that runs `--git verify-rebase` and `python3 .claude/hooks/stop/wl_review.py --check` after a rebase and names every dev commit with no review record (which the successor map cannot carry) and every commit whose patch-id changed (conflict-resolved), before the push.
   Owns: .claude/hooks/stop/wl_rebase.py, .claude/hooks/stop/test-rebase-consistency.py
   Depends on: RB1.
