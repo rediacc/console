@@ -25,7 +25,7 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
 5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench-eu.rediacc.cloud`.
-6. Runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench-eu.rediacc.cloud`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it.
+6. Runs `./rdc.sh --config eu-bench config remote enable --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench-eu.rediacc.cloud`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it. The tool still passes the password-slot flag that the removal of password key slots deleted, so this step waits on the operator-created recovery code and a machine secret (`--machine-secret <id>`, PLAN-rmcp-policy-record.md).
 7. Prints `./rdc.sh --config eu-bench config remote status`.
 
 ## The secrets
@@ -74,7 +74,7 @@ The X25519 pair stays DEV. It is the E2E envelope key, not the licence signer, a
 
 The `deploy-proxy-bench-eu` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
 
-A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". Nothing waits automatically: a caller that runs a second TOTP-using command right after `npm run login:bench` (for example `rdc config remote master-password change`) must itself wait for the next 30 s step before computing the codes, or it is refused before anything is written.
+A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". Nothing waits automatically: a caller that runs a second TOTP-using command right after `npm run login:bench` (for example `rdc config remote refresh`) must itself wait for the next 30 s step before computing the codes, or it is refused before anything is written.
 
 ## Stable and edge root
 

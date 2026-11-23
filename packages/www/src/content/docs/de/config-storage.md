@@ -1,6 +1,6 @@
 ---
 title: Konfigurationsspeicher
-description: Clientseitig verschlüsselte Konfigurationssynchronisierung mit Passkey-, Master-Passwort- und Wiederherstellungscode-Entsperrung
+description: Clientseitig verschlüsselte Konfigurationssynchronisierung mit Passkey- und Wiederherstellungscode-Entsperrung
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "221b5fec50ec0ce2"
+sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
 ---
 
 # Konfigurationsspeicher
@@ -23,14 +23,13 @@ Es gibt eine CEK pro Speicher, die für jede Entsperrmethode unabhängig verpack
 | Methode | Was es ist | Hinweise |
 |--------|-----------|-------|
 | **Passkey** | WebAuthn-Passkey mit PRF-Erweiterung | Die stärkste Option; hardwaregestützt |
-| **Master-Passwort** | Ein selbst gewähltes Passwort, gestreckt mit PBKDF2-SHA256 (600.000 Iterationen) | Funktioniert ohne PRF-fähige Hardware; ermöglicht außerdem die headless CLI-Einbindung |
 | **Wiederherstellungscode** | Ein generierter Code der Form `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Wird bei der Erstellung nur einmal angezeigt; sicher aufbewahren |
 
-Jede Methode speist dieselbe Verarbeitungskette: Der Slot liefert ein Geheimnis, das sich mit einem serverseitigen Geheimnis kombiniert, um die CEK zu entschlüsseln. Keine der beiden Hälften reicht allein aus, und das Slot-Geheimnis erreicht den Server nie. Ein Master-Passwort-Slot ist der schwächste der drei: Der Server verfügt über alles, was nötig ist, um Passwortversuche offline zu testen, weshalb das Passwort stark sein muss. Passkey- und Wiederherstellungscode-Slots haben diese Schwäche nicht.
+Jede Methode speist dieselbe Verarbeitungskette: Der Slot liefert ein Geheimnis, das sich mit einem serverseitigen Geheimnis kombiniert, um die CEK zu entschlüsseln. Keine der beiden Hälften reicht allein aus, und das Slot-Geheimnis erreicht den Server nie. Beide Geheimnisse haben genug Entropie, sodass der Server, der den verpackten Schlüssel und seine Hälfte des Verpackungsschlüssels kennt, offline nichts zu erraten hat.
 
 Slots werden im Portal auf der Seite Konfigurationsspeicher verwaltet. Organisationen, die eine reine Hardware-Entsperrung wünschen, können die Richtlinie **Passkey erforderlich** aktivieren, die Nicht-Passkey-Slots für den gesamten Speicher ablehnt und widerruft.
 
-Die Entsperrung erfolgt pro Gerät: Sie entsperren einmal auf einem neuen Gerät, und danach funktionieren tägliche CLI-Operationen (Push/Pull), ohne dass ein Passkey oder ein Passwort nötig ist.
+Die Entsperrung erfolgt pro Gerät: Sie entsperren einmal auf einem neuen Gerät, und danach funktionieren tägliche CLI-Operationen (Push/Pull), ohne dass ein Passkey oder ein Wiederherstellungscode nötig ist.
 
 ## Voraussetzungen
 
@@ -38,16 +37,14 @@ Die Entsperrung erfolgt pro Gerät: Sie entsperren einmal auf einem neuen Gerät
 - Für die **Passkey**-Methode: ein Passkey-Anbieter mit PRF-Unterstützung, etwa ein FIDO2-Sicherheitsschlüssel (z. B. YubiKey), iCloud Keychain, Google Password Manager, 1Password oder Dashlane
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+ oder Safari 17+
 
-Die PRF-Anforderung gilt nur für den Passkey-Slot. Die Methoden Master-Passwort und Wiederherstellungscode funktionieren mit jedem unterstützten Browser.
+Die PRF-Anforderung gilt nur für den Passkey-Slot. Der Wiederherstellungscode funktioniert mit jedem unterstützten Browser.
 
 ## Einrichtung
 
 1. Navigieren Sie zu **Konfigurationsspeicher** in der Seitenleiste und klicken Sie auf **Konfigurationsspeicher einrichten**
 2. Die Anforderungscheckliste überprüft Ihren Browser, 2FA und den Sitzungsstatus
-3. Wählen Sie die erste Entsperrmethode und klicken Sie auf **Konfigurationsspeicher erstellen**:
-   - **Passkey**, wenn Ihr Anbieter PRF unterstützt: Sie berühren Ihren Sicherheitsschlüssel zweimal, einmal zur Registrierung und einmal zum Ableiten der Schlüssel.
-   - **Master-Passwort**, das mit jedem Browser funktioniert, auch mit Passkey-Anbietern ohne PRF wie Bitwarden.
-   - Optional ein **Wiederherstellungscode**, der einmal angezeigt wird und vor dem Anlegen des Speichers gesichert werden muss.
+3. Registrieren Sie einen Passkey und klicken Sie auf **Konfigurationsspeicher erstellen**. Der Anbieter muss PRF unterstützen: Sie berühren Ihren Sicherheitsschlüssel zweimal, einmal zur Registrierung und einmal zum Ableiten der Schlüssel.
+   - Ein **Wiederherstellungscode** wird mit dem Speicher erzeugt und einmal in einem Wiederherstellungs-Kit angezeigt. Sichern Sie das Kit, bevor der Speicher angelegt wird; ohne diesen Schritt wird die Einrichtung nicht abgeschlossen.
 4. Die Einrichtung ist abgeschlossen. Die CLI bewahrt das Entsperrgeheimnis im Schlüsselbund Ihres Betriebssystems auf.
 
 Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. Behalten Sie mindestens zwei Entsperrmethoden, damit ein verlorener oder nicht unterstützter Authenticator Sie nicht aussperrt.
@@ -61,23 +58,24 @@ Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. 
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Plattformübergreifend |
-| Bitwarden-Erweiterung | ❌ | Stattdessen ein Master-Passwort verwenden |
+| Bitwarden-Erweiterung | ❌ | Einen Hardware-Schlüssel oder einen anderen Passkey-Anbieter verwenden |
 | Windows Hello | ❌ | Nicht unterstützt |
 
 ## Headless CLI-Einbindung
 
-Eine Maschine ohne Browser (ein Server, ein CI-Runner, ein Executor-Daemon) kann sich mit der Master-Passwort-Methode in einen bestehenden Speicher einbinden:
+Eine Maschine ohne Browser (ein Server, ein CI-Runner, ein Executor-Daemon) kann sich mit einem Maschinengeheimnis in einen bestehenden Speicher einbinden:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Voraussetzungen:
 
-- Ein bereits über das Portal eingerichteter **Master-Passwort-Slot** (der Browser hält den Schlüssel während der Einrichtung, dieser Schritt kann also selbst nicht headless erfolgen)
+- Ein über das Portal erzeugtes **Maschinengeheimnis** (der Browser hält den Schlüssel, während er ihn unter dem Geheimnis verpackt, dieser Schritt kann also selbst nicht headless erfolgen). Das Portal zeigt das `RM1-`-Geheimnis einmalig zusammen mit seiner ID an; das Geheimnis gilt für die Organisation, ein Team oder eine einzelne Konfiguration
 - Ein **API-Token mit dem Scope `config:enroll`**, um den Aufruf zu authentifizieren
 
-Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter des Slots und den verpackten Schlüssel ab, leitet das Passwort-Geheimnis lokal ab und entschlüsselt die CEK auf dem Gerät. Sie gewährt dem Gerät die Fähigkeit, die Konfiguration zu entschlüsseln und zu synchronisieren; der Speicher selbst wird dabei nicht verändert.
+Das Geheimnis stammt aus `REDIACC_MACHINE_SECRET`, sonst aus der Standardeingabe, wenn diese per Pipe befüllt wird, sonst aus einer verdeckten Eingabeaufforderung; es ist nie ein Kommandozeilenargument. Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter des Geheimnisses und den verpackten Schlüssel ab, leitet das Verpackungsgeheimnis lokal ab und entschlüsselt die CEK auf dem Gerät. Sie gewährt dem Gerät die Fähigkeit, die Konfiguration zu entschlüsseln und zu synchronisieren; der Speicher selbst wird dabei nicht verändert. Wird das Geheimnis im Portal widerrufen, sind damit keine neuen Einbindungen mehr möglich.
 
 ## Wie die Schlüssel zu Ihrer CLI gelangen
 
@@ -87,7 +85,7 @@ Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter
 2. Die CLI erstellt eine kurzlebige Anfrage und gibt einen Link sowie einen **Kopplungscode** wie `7KQ2-M9XD-P4RT` aus. Alles, was der Link trägt, steht hinter dem `#`, und Browser senden diesen Teil nie an einen Server.
 3. Öffnen Sie den Link in einem beliebigen Browser, der mit demselben Konto angemeldet ist. Eine Anfrage von einem anderen Konto wird abgelehnt.
 4. Geben Sie den Kopplungscode aus Ihrem Terminal ein, sobald die Seite danach fragt. Die Schaltfläche zum Entsperren bleibt deaktiviert, bis er übereinstimmt.
-5. Entsperren Sie mit Ihrem Passkey oder Master-Passwort. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
+5. Entsperren Sie mit Ihrem Passkey oder Wiederherstellungscode. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
 6. Die CLI entschlüsselt den Datenblock, legt das Geheimnis im Schlüsselbund des Betriebssystems ab und meldet den Erfolg.
 
 Die Anfrage läuft nach 10 Minuten ab. Mit **Ctrl+C** in der CLI brechen Sie sie ab: Die CLI fordert den Server auf, den Link zu verwerfen, der dann sofort nicht mehr funktioniert, und die Seite weist darauf hin, den Befehl erneut auszuführen. Kommt diese Anfrage nicht an, bleibt der Link bis zum Ablauf der Anfrage nutzbar. Wird der Link nach Ablauf geöffnet oder hat eine Weiterleitung nach der Anmeldung den Teil nach dem `#` verloren, führen Sie den Befehl einfach noch einmal aus.
@@ -127,7 +125,6 @@ Eine Wiederherstellung veröffentlicht den alten Inhalt als neue Version auf der
 Beim Rotieren der CEK des Speichers wird diese unter einer neuen Generation neu verpackt:
 
 - **Wiederherstellungscodes werden bei jeder Rotation ungültig** - erzeugen und sichern Sie danach einen neuen
-- Ein **Master-Passwort-Slot** übersteht die Rotation nur, wenn das Passwort im Rotationsassistenten erneut eingegeben wird
 - Ein Slot, der bei einer älteren Generation zurückbleibt, wird als veraltet gemeldet, statt mit einem kryptischen Entschlüsselungsfehler zu scheitern
 - Die Konfigurations-Token der anderen Mitglieder werden widerrufen, und ein Gerät, das noch den alten Schlüssel besitzt, wird aufgefordert, sich mit `rdc config remote enable` erneut zu aktivieren
 
@@ -154,7 +151,6 @@ Konfigurationen im Speicher sind zusätzlich pro Team begrenzt, aber diese Begre
 | Konfigurations-IDs, Teams, Versionsnummern, Zeitstempel, Blob-Größen, die Anzahl der in einer Konfiguration festgeschriebenen Felder samt deren Typ sowie Client-IP-Adressen sehen | Maschinen-, Repository- oder Speichernamen (sie sind geblindet) oder irgendeinen Konfigurationswert sehen |
 | Konfigurationen und ihren Verlauf ablehnen, verzögern oder löschen | Den Inhalt einer Konfiguration als den einer anderen ausgeben oder ihn verändern, ohne dass das Gerät es bemerkt |
 | Einem Gerät, das eine neuere Version nie gesehen hat, eine alte Version ausliefern | Der CLI eine Version ausliefern, die älter ist als eine bereits gesehene: Die CLI lehnt sie ab |
-| Master-Passwort-Vermutungen offline testen | Einen Passkey- oder Wiederherstellungscode-Slot öffnen |
 
 Weitere Schutzmaßnahmen:
 
@@ -167,7 +163,7 @@ Weitere Schutzmaßnahmen:
 
 | Fehler | Ursache | Lösung |
 |-------|-------|-----|
-| PRF not supported | Authentifikator unterstützt keine PRF-Erweiterung | Verwenden Sie YubiKey, iCloud Keychain, 1Password oder Dashlane, oder fügen Sie einen Master-Passwort-Slot hinzu |
+| PRF not supported | Authentifikator unterstützt keine PRF-Erweiterung | Verwenden Sie YubiKey, iCloud Keychain, 1Password oder Dashlane |
 | X25519 not supported | Browser-Version zu alt | Aktualisieren Sie auf Chrome 133+, Edge 133+, Firefox 130+ oder Safari 17+ |
 | Already configured | Speicher existiert bereits für Ihre Organisation | Besuchen Sie /account/config-storage zur Verwaltung |
 | Config storage not configured | Server fehlt Blob-Speicher | Kontaktieren Sie Ihren Administrator zur Konfiguration von R2/RustFS |

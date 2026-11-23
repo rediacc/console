@@ -1,6 +1,6 @@
 ---
 title: Config Storage
-description: Client-side encrypted config sync with passkey, master password, and recovery code unlock
+description: Client-side encrypted config sync with passkey and recovery code unlock
 category: Guides
 tags:
   - account
@@ -21,14 +21,13 @@ There is one CEK per store, wrapped independently for each unlock method, simila
 | Method | What it is | Notes |
 |--------|-----------|-------|
 | **Passkey** | WebAuthn passkey with the PRF extension | The strongest option; hardware-backed |
-| **Master password** | A password you choose, stretched with PBKDF2-SHA256 (600,000 iterations) | Works without PRF-capable hardware; also enables headless CLI enrollment |
 | **Recovery code** | A generated `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` code | Shown exactly once at creation; store it somewhere safe |
 
-Every method feeds the same pipeline: the slot yields a secret that combines with a server-held secret to unwrap the CEK. Neither half alone is enough, and the slot secret never reaches the server. A master password slot is the weakest of the three: the server holds everything needed to test password guesses offline, so the password has to be strong. Passkey and recovery code slots have no such weakness.
+Every method feeds the same pipeline: the slot yields a secret that combines with a server-held secret to unwrap the CEK. Neither half alone is enough, and the slot secret never reaches the server. Both secrets carry enough entropy that the server, which holds the wrapped key and its half of the wrapping key, has nothing to guess offline.
 
 Slots are managed in the portal on the Config Storage page. Organizations that want hardware-only unlock can enable the **require passkey** policy, which refuses and revokes non-passkey slots for the whole store.
 
-Unlocking is per-device: you unlock once on a new device, and after that daily CLI operations (push/pull) work without touching a passkey or typing a password.
+Unlocking is per-device: you unlock once on a new device, and after that daily CLI operations (push/pull) work without touching a passkey or typing a recovery code.
 
 ## Prerequisites
 
@@ -36,16 +35,14 @@ Unlocking is per-device: you unlock once on a new device, and after that daily C
 - For the **passkey** method: a passkey provider with PRF support, such as a FIDO2 security key (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, or Dashlane
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+, or Safari 17+
 
-The PRF requirement applies only to the passkey slot. The master password and recovery code methods work with any supported browser.
+The PRF requirement applies only to the passkey slot. The recovery code works with any supported browser.
 
 ## Setup
 
 1. Navigate to **Config Storage** in the sidebar, then click **Set Up Config Storage**
 2. The requirements checklist verifies your browser, 2FA, and session status
-3. Choose the first unlock method, then click **Create config store**:
-   - **Passkey**, when the provider supports PRF: the security key is touched twice, once to register it and once to derive the encryption keys.
-   - **Master password**, which works with any browser, including passkey providers without PRF such as Bitwarden.
-   - Optionally a **recovery code**, shown once, to save before the store is created.
+3. Register a passkey, then click **Create config store**. The provider must support PRF: the security key is touched twice, once to register it and once to derive the encryption keys.
+   - A **recovery code** is generated with the store and shown once, in a recovery kit. Save the kit before the store is created; setup does not complete without it.
 4. Setup complete. The CLI keeps the unlock secret in the OS keyring.
 
 A passkey can be added later from the Config Storage page. Keep at least two unlock methods, so a lost or unsupported authenticator cannot lock the store.
@@ -59,23 +56,24 @@ A passkey can be added later from the Config Storage page. Keep at least two unl
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Cross-platform |
-| Bitwarden extension | ❌ | Use a master password instead |
+| Bitwarden extension | ❌ | Use a hardware key or another passkey provider |
 | Windows Hello | ❌ | Not supported |
 
 ## Headless CLI enrollment
 
-A machine with no browser (a server, a CI runner, an executor daemon) can enroll into an existing store with the master password method:
+A machine with no browser (a server, a CI runner, an executor daemon) can enroll into an existing store with a machine secret:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Requirements:
 
-- A **master password slot** already provisioned through the portal (the browser holds the key during provisioning, so this step cannot itself be headless)
+- A **machine secret** minted through the portal (the browser holds the key while it wraps it under the secret, so this step cannot itself be headless). The portal shows the `RM1-` secret once, together with its id; the secret is scoped to the organization, a team or one config
 - An **API token with the `config:enroll` scope** to authenticate the call
 
-Enrollment is a read: the CLI fetches the slot's public KDF parameters and the wrapped key, derives the password secret locally, and unwraps the CEK on the device. It grants the device the ability to decrypt and sync the config; it does not modify the store.
+The secret comes from `REDIACC_MACHINE_SECRET`, else from standard input when it is piped, else from a hidden prompt; it is never a command-line argument. Enrollment is a read: the CLI fetches the secret's public KDF parameters and the wrapped key, derives the wrapping secret locally, and unwraps the CEK on the device. It grants the device the ability to decrypt and sync the config; it does not modify the store. Revoking the secret in the portal stops new enrollments with it.
 
 ## How the keys reach your CLI
 
@@ -85,7 +83,7 @@ Enrollment is a read: the CLI fetches the slot's public KDF parameters and the w
 2. The CLI creates a short-lived request and prints a link and a **pairing code** such as `7KQ2-M9XD-P4RT`. The link keeps everything it carries after the `#`, which browsers never send to a server.
 3. Open the link in any browser signed in as the same account. A request from another account is refused.
 4. Type the pairing code from the terminal when the page asks. The unlock button stays disabled until it matches.
-5. Unlock with a passkey or the master password. The browser seals the key to the CLI, and the server relays a blob it cannot read.
+5. Unlock with a passkey or the recovery code. The browser seals the key to the CLI, and the server relays a blob it cannot read.
 6. The CLI decrypts the blob, stores the secret in the OS keyring and reports success.
 
 The request expires after 10 minutes. Press **Ctrl+C** in the CLI to cancel it: the CLI asks the server to drop the link, which then stops working at once, and the page says to run the command again. If that request does not get through, the link stays usable until the request expires. If the link is opened after it expired, or after a login redirect dropped the part after `#`, run the command again.
@@ -125,7 +123,6 @@ A restore publishes the old content as a new version on top of the current one; 
 Rotating the store's CEK re-wraps it under a new generation:
 
 - **Recovery codes are always invalidated** by rotation, generate and save a new one afterwards
-- A **master password slot** survives only if the password is re-entered during the rotation wizard
 - A slot left behind at an older generation is reported as stale rather than failing with a cryptic decryption error
 - The other members' config tokens are revoked, and a device still holding the old key is told to re-enable with `rdc config remote enable`
 
@@ -152,7 +149,6 @@ Configs in the store are further scoped per team, but that scoping is **server-s
 | See config ids, teams, version numbers, timestamps, blob sizes, how many fields a config commits and each field's type, and client IP addresses | See machine, repository or storage names (they are blinded) or any config value |
 | Refuse, delay or delete configs and their history | Serve one config's content as another's, or edit it, without the device detecting it |
 | Serve an old version to a device that never saw a newer one | Serve the CLI a version older than one it already saw: the CLI refuses it |
-| Test master password guesses offline | Open a passkey or recovery code slot |
 
 Other safeguards:
 
@@ -165,7 +161,7 @@ Other safeguards:
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| PRF not supported | Authenticator lacks PRF extension | Use YubiKey, iCloud Keychain, 1Password, or Dashlane, or add a master password slot |
+| PRF not supported | Authenticator lacks PRF extension | Use YubiKey, iCloud Keychain, 1Password, or Dashlane |
 | X25519 not supported | Browser version too old | Update to Chrome 133+, Edge 133+, Firefox 130+, or Safari 17+ |
 | Already configured | Store exists for your organization | Visit /account/config-storage to manage |
 | Config storage not configured | Server missing blob storage | Contact your admin to configure R2/RustFS |

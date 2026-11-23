@@ -2374,6 +2374,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_LOGIN_EMAIL` | secret | - |
 | `REDIACC_LOGIN_PASSWORD` | secret | - |
 | `REDIACC_LOGIN_TOTP` | secret | - |
+| `REDIACC_MACHINE_SECRET` | secret | - |
 | `REDIACC_MASTER_PASSWORD` | secret | - |
 | `REDIACC_NETWORK_ID` | machine-local | - |
 | `REDIACC_NEW_CONFIG_PASSWORD` | tombstone | - |
@@ -2402,7 +2403,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_SMOKE_RESOLVE_WINDOW_S` | gate-seam | - |
 | `REDIACC_SSH_LINGER_MS` | product-runtime | - |
 | `REDIACC_STARTUP_TIMEOUT` | harness | - |
-| `REDIACC_STORE_MASTER_PASSWORD` | secret | - |
 | `REDIACC_SUBSCRIPTION_TOKEN` | tombstone | - |
 | `REDIACC_SUBSCRIPTION_TOKEN_FILE` | tombstone | - |
 | `REDIACC_TEAM` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |

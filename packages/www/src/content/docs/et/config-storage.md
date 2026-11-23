@@ -1,6 +1,6 @@
 ---
 title: Konfiguratsioonisalv
-description: Kliendipoolselt krüpteeritud konfiguratsioonisünkroonimine passkey, peaparooli ja taastekoodiga avamisega
+description: Kliendipoolselt krüpteeritud konfiguratsioonisünkroonimine passkey ja taastekoodiga avamisega
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "221b5fec50ec0ce2"
+sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
 ---
 
 # Konfiguratsioonisalv
@@ -23,14 +23,13 @@ Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud (sarnase
 | Meetod | Mis see on | Märkused |
 |--------|-----------|-------|
 | **Passkey** | WebAuthn passkey PRF-laiendusega | Kõige tugevam valik; riistvarapõhine |
-| **Peaparool** | Sinu valitud parool, venitatud PBKDF2-SHA256-ga (600 000 iteratsiooni) | Toimib ka ilma PRF-toega riistvarata; võimaldab ka pealdiseta CLI registreerimist |
 | **Taastekood** | Genereeritud `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kood | Näidatakse täpselt üks kord loomisel; hoia see turvalises kohas |
 
-Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa ja pesa saladus ei jõua kunagi serverisse. Peaparooli pesa on kolmest kõige nõrgem: serveril on olemas kõik, mida on vaja parooli oletuste offline-testimiseks, seega peab parool olema tugev. Passkey ja taastekoodi pesadel sellist nõrkust ei ole.
+Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa ja pesa saladus ei jõua kunagi serverisse. Mõlemal saladusel on piisavalt entroopiat, nii et serveril, mis hoiab mähitud võtit ja oma poolt mähkimisvõtmest, pole offline midagi arvata.
 
 Pesasid hallatakse portaalis Konfiguratsioonisalve lehel. Organisatsioonid, kes soovivad ainult riistvarapõhist avamist, saavad lubada **nõua passkey** poliitika, mis keeldub mitte-passkey pesadest ja tühistab need kogu salve jaoks.
 
-Avamine on seadmepõhine: sa avad salve uuel seadmel üks kord ja pärast seda toimivad igapäevased CLI toimingud (push/pull) ilma passkey'i puudutamata või parooli sisestamata.
+Avamine on seadmepõhine: sa avad salve uuel seadmel üks kord ja pärast seda toimivad igapäevased CLI toimingud (push/pull) ilma passkey'i puudutamata või taastekoodi sisestamata.
 
 ## Eeltingimused
 
@@ -38,16 +37,14 @@ Avamine on seadmepõhine: sa avad salve uuel seadmel üks kord ja pärast seda t
 - **Passkey** meetodi jaoks: PRF-toega passkey-pakkuja, näiteks FIDO2 turvavõti (nt YubiKey), iCloud Keychain, Google Password Manager, 1Password või Dashlane
 - **Brauser**: Chrome 133+, Edge 133+, Firefox 130+ või Safari 17+
 
-PRF-nõue kehtib ainult passkey-pesa kohta. Peaparooli ja taastekoodi meetodid toimivad igas toetatud brauseris.
+PRF-nõue kehtib ainult passkey-pesa kohta. Taastekood toimib igas toetatud brauseris.
 
 ## Seadistamine
 
 1. Naviseeri külgribal **Konfiguratsioonisalv** ja klõpsa **Seadista konfiguratsioonisalv**
 2. Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut
-3. Vali esimene lukust avamise viis ja klõpsa **Loo konfiguratsioonihoidla**:
-   - **Pääsuvõti**, kui su teenusepakkuja toetab PRF-i: puudutad turvavõtit kaks korda, üks kord registreerimiseks ja teist korda krüpteerimisvõtmete tuletamiseks.
-   - **Ülemparool**, mis töötab igas brauseris, ka PRF-i toeta pääsuvõtme pakkujatega nagu Bitwarden.
-   - Soovi korral **taastekood**, mida näidatakse ainult üks kord ja mis tuleb enne hoidla loomist salvestada.
+3. Registreeri pääsuvõti ja klõpsa **Loo konfiguratsioonihoidla**. Pakkuja peab toetama PRF-i: puudutad turvavõtit kaks korda, üks kord registreerimiseks ja teist korda krüpteerimisvõtmete tuletamiseks.
+   - **Taastekood** luuakse koos hoidlaga ja näidatakse ainult üks kord taastekomplektis. Salvesta komplekt enne hoidla loomist; ilma selleta seadistus ei lõpe.
 4. Seadistus on valmis. CLI hoiab lukust avamise saladust sinu operatsioonisüsteemi võtmehoidlas.
 
 Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kaks lukust avamise viisi, et kaotatud või toeta autentija sind välja ei lukustaks.
@@ -61,23 +58,24 @@ Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kak
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Platvormideülene |
-| Bitwarden laiendus | ❌ | Kasuta selle asemel peaparooli |
+| Bitwarden laiendus | ❌ | Kasuta riistvaravõtit või mõnda muud passkey-pakkujat |
 | Windows Hello | ❌ | Pole toetatud |
 
 ## Pealdiseta CLI registreerimine
 
-Brauserita masin (server, CI-käitaja, käitaja teenus) saab liituda olemasoleva salvega peaparooli meetodi abil:
+Brauserita masin (server, CI-käitaja, käitaja teenus) saab liituda olemasoleva salvega masinasaladuse abil:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Nõuded:
 
-- **Peaparooli pesa** on portaali kaudu juba loodud (brauser hoiab võtit loomise ajal, seega see samm ise ei saa olla pealdiseta)
+- Portaali kaudu loodud **masinasaladus** (brauser hoiab võtit, kuni mähib selle saladuse alla, seega see samm ise ei saa olla pealdiseta). Portaal näitab `RM1-` saladust ainult üks kord koos selle id-ga; saladus kehtib organisatsiooni, ühe meeskonna või ühe konfiguratsiooni kohta
 - **API-token `config:enroll` õigusega** kutse autentimiseks
 
-Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mähitud võtme, tuletab parooli saladuse lokaalselt ning mähib CEK-i seadmes lahti. See annab seadmele õiguse konfiguratsiooni dekrüpteerida ja sünkroonida; see ei muuda salve.
+Saladus võetakse muutujast `REDIACC_MACHINE_SECRET`, vastasel juhul standardsisendist, kui see tuleb torust, vastasel juhul peidetud küsimusest; see ei ole kunagi käsurea argument. Registreerimine on lugemistoiming: CLI toob saladuse avalikud KDF-parameetrid ja mähitud võtme, tuletab mähkimissaladuse lokaalselt ning mähib CEK-i seadmes lahti. See annab seadmele õiguse konfiguratsiooni dekrüpteerida ja sünkroonida; see ei muuda salve. Saladuse tühistamine portaalis peatab uued registreerimised sellega.
 
 ## Kuidas võtmed sinu CLI-ni jõuavad
 
@@ -87,7 +85,7 @@ Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mä
 2. CLI loob lühiealise päringu ning kuvab lingi ja **sidumiskoodi**, näiteks `7KQ2-M9XD-P4RT`. Link hoiab kõike, mida see kannab, märgi `#` taga, mida brauserid serverile kunagi ei saada.
 3. Ava link mis tahes brauseris, kus oled sisse logitud samal kontol. Teise konto päring lükatakse tagasi.
 4. Sisesta sidumiskood oma terminalist, kui leht seda küsib. Avamisnupp jääb keelatuks, kuni kood klapib.
-5. Ava pääsuvõtme või ülemparooliga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
+5. Ava pääsuvõtme või taastekoodiga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
 6. CLI dekrüpteerib andmeploki, salvestab saladuse operatsioonisüsteemi võtmehoidlasse (keyring) ja teatab õnnestumisest.
 
 Päring aegub 10 minuti pärast. Selle tühistamiseks vajuta CLI-s **Ctrl+C**: CLI palub serveril lingi tühistada, mispeale see lakkab kohe töötamast, ja leht palub käsu uuesti käivitada. Kui see päring kohale ei jõua, jääb link kasutatavaks päringu aegumiseni. Kui link avatakse pärast aegumist või kui sisselogimise ümbersuunamine kaotas `#` järgse osa, käivita käsk uuesti.
@@ -127,7 +125,6 @@ Taastamine avaldab vana sisu uue versioonina praeguse peal; versiooninumber ei l
 Salve CEK-i pööramine mähib selle uude põlvkonda:
 
 - **Taastekoodid muutuvad pööramisel alati kehtetuks**, genereeri ja salvesta pärast seda uus
-- **Peaparooli pesa** säilib ainult siis, kui parool sisestatakse pööramisviisardis uuesti
 - Vana põlvkonda jäänud pesa märgitakse aegunuks, mitte ei ebaõnnestu arusaamatu dekrüpteerimisveaga
 - Teiste liikmete konfiguratsioonitokenid tühistatakse ning seadmele, mis hoiab veel vana võtit, kuvatakse juhis uuesti aktiveerida käsuga `rdc config remote enable`
 
@@ -154,7 +151,6 @@ Salves olevad konfiguratsioonid on lisaks piiritletud meeskonna kaupa, kuid see 
 | Näha konfiguratsioonide ID-sid, meeskondi, versiooninumbreid, ajatempleid, blobi suurusi, mitut välja konfiguratsioon kommiteerib ja iga välja tüüpi, ning kliendi IP-aadresse | Näha masina, repositooriumi ega salve nimesid (need on varjatud) ega ühtegi konfiguratsiooni väärtust |
 | Keelduda, viivitada või kustutada konfiguratsioone ja nende ajalugu | Serveerida ühe konfiguratsiooni sisu teise omana või seda muuta ilma, et seade seda tuvastaks |
 | Serveerida vana versiooni seadmele, mis pole kunagi uuemat näinud | Serveerida CLI-le versiooni, mis on vanem kui see, mida ta juba nägi: CLI keeldub sellest |
-| Testida peaparooli oletusi offline | Avada passkey või taastekoodi pesa |
 
 Muud kaitsemeetmed:
 
@@ -167,7 +163,7 @@ Muud kaitsemeetmed:
 
 | Viga | Põhjus | Lahendus |
 |-------|-------|-----|
-| PRF pole toetatud | Autentikaatoril puudub PRF-laiendus | Kasuta YubiKey, iCloud Keychain, 1Password või Dashlane, või lisa peaparooli pesa |
+| PRF pole toetatud | Autentikaatoril puudub PRF-laiendus | Kasuta YubiKey, iCloud Keychain, 1Password või Dashlane |
 | X25519 pole toetatud | Brauseri versioon on liiga vana | Uuenda Chrome 133+, Edge 133+, Firefox 130+ või Safari 17+ |
 | Juba konfigureeritud | Salv on sinu organisatsiooni jaoks olemas | Külasta /account/config-storage haldamiseks |
 | Konfiguratsioonisalv pole seadistatud | Serveril puudub blob-salvestus | Võta ühendust administraatoriga R2/RustFS seadistamiseks |

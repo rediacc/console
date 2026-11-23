@@ -2,7 +2,7 @@
 title: Almacenamiento de configuración
 description: >-
   Sincronización cifrada del lado del cliente de la configuración, con
-  desbloqueo mediante passkey, contraseña maestra o código de recuperación
+  desbloqueo mediante passkey o código de recuperación
 category: Guides
 tags:
   - account
@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "221b5fec50ec0ce2"
+sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
 ---
 
 # Almacenamiento de configuración
@@ -25,14 +25,13 @@ Hay una única CEK por almacén, envuelta de forma independiente para cada méto
 | Método | Qué es | Notas |
 |--------|-----------|-------|
 | **Passkey** | Passkey WebAuthn con la extensión PRF | La opción más robusta; respaldada por hardware |
-| **Contraseña maestra** | Una contraseña que usted elige, reforzada con PBKDF2-SHA256 (600.000 iteraciones) | Funciona sin hardware compatible con PRF; también habilita la inscripción headless del CLI |
 | **Código de recuperación** | Un código generado `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Se muestra una única vez al crearse; guárdelo en un lugar seguro |
 
-Todos los métodos alimentan el mismo proceso: la ranura produce un secreto que se combina con un secreto guardado en el servidor para desenvolver la CEK. Ninguna de las dos mitades basta por sí sola, y el secreto de la ranura nunca llega al servidor. Una ranura de contraseña maestra es la más débil de las tres: el servidor tiene todo lo necesario para probar contraseñas sin conexión, así que la contraseña debe ser robusta. Las ranuras de passkey y de código de recuperación no tienen esa debilidad.
+Todos los métodos alimentan el mismo proceso: la ranura produce un secreto que se combina con un secreto guardado en el servidor para desenvolver la CEK. Ninguna de las dos mitades basta por sí sola, y el secreto de la ranura nunca llega al servidor. Ambos secretos tienen entropía suficiente, así que el servidor, que guarda la clave envuelta y su mitad de la clave de envoltura, no tiene nada que adivinar sin conexión.
 
 Las ranuras se gestionan en el portal, en la página de Almacenamiento de configuración. Las organizaciones que quieran un desbloqueo exclusivo por hardware pueden activar la política **requerir passkey**, que rechaza y revoca las ranuras que no sean passkey en todo el almacén.
 
-El desbloqueo es por dispositivo: se desbloquea una vez en un dispositivo nuevo y, a partir de ahí, las operaciones diarias del CLI (push/pull) funcionan sin tocar un passkey ni escribir una contraseña.
+El desbloqueo es por dispositivo: se desbloquea una vez en un dispositivo nuevo y, a partir de ahí, las operaciones diarias del CLI (push/pull) funcionan sin tocar un passkey ni escribir un código de recuperación.
 
 ## Requisitos previos
 
@@ -40,16 +39,14 @@ El desbloqueo es por dispositivo: se desbloquea una vez en un dispositivo nuevo 
 - Para el método de **passkey**: un proveedor de passkey con soporte PRF, como una clave de seguridad FIDO2 (p. ej. YubiKey), iCloud Keychain, Google Password Manager, 1Password o Dashlane
 - **Navegador**: Chrome 133+, Edge 133+, Firefox 130+ o Safari 17+
 
-El requisito de PRF se aplica solo a la ranura de passkey. Los métodos de contraseña maestra y código de recuperación funcionan con cualquier navegador compatible.
+El requisito de PRF se aplica solo a la ranura de passkey. El código de recuperación funciona con cualquier navegador compatible.
 
 ## Configuración
 
 1. Navegue a **Almacenamiento de configuración** en la barra lateral, luego haga clic en **Configurar almacenamiento de configuración**
 2. La lista de verificación de requisitos verifica su navegador, 2FA y el estado de la sesión
-3. Elige el primer método de desbloqueo y haz clic en **Crear almacén de configuración**:
-   - **Passkey**, si tu proveedor admite PRF: tocas tu llave de seguridad dos veces, una para registrarla y otra para derivar las claves de cifrado.
-   - **Contraseña maestra**, que funciona en cualquier navegador, también con proveedores de passkeys sin PRF como Bitwarden.
-   - Opcionalmente, un **código de recuperación**, que se muestra una sola vez y debes guardar antes de crear el almacén.
+3. Registra una passkey y haz clic en **Crear almacén de configuración**. El proveedor debe admitir PRF: tocas tu llave de seguridad dos veces, una para registrarla y otra para derivar las claves de cifrado.
+   - Un **código de recuperación** se genera junto con el almacén y se muestra una sola vez, en un kit de recuperación. Guarda el kit antes de crear el almacén; sin él la configuración no se completa.
 4. Configuración completada. La CLI guarda el secreto de desbloqueo en el llavero de tu sistema operativo.
 
 Puedes añadir una passkey más adelante desde la página de Config Storage. Mantén al menos dos métodos de desbloqueo para que un autenticador perdido o no compatible no te deje fuera.
@@ -63,23 +60,24 @@ Puedes añadir una passkey más adelante desde la página de Config Storage. Man
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplataforma |
-| Extensión Bitwarden | ❌ | Utilice una contraseña maestra en su lugar |
+| Extensión Bitwarden | ❌ | Utilice una llave de hardware u otro proveedor de passkeys |
 | Windows Hello | ❌ | No soportado |
 
 ## Inscripción headless del CLI
 
-Una máquina sin navegador (un servidor, un runner de CI, un daemon ejecutor) puede inscribirse en un almacén existente con el método de contraseña maestra:
+Una máquina sin navegador (un servidor, un runner de CI, un daemon ejecutor) puede inscribirse en un almacén existente con un secreto de máquina:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Requisitos:
 
-- Una **ranura de contraseña maestra** ya aprovisionada a través del portal (el navegador retiene la clave durante el aprovisionamiento, así que este paso en sí no puede ser headless)
+- Un **secreto de máquina** generado a través del portal (el navegador retiene la clave mientras la envuelve bajo el secreto, así que este paso en sí no puede ser headless). El portal muestra el secreto `RM1-` una sola vez, junto con su id; el secreto se limita a la organización, a un equipo o a una configuración
 - Un **token de API con el alcance `config:enroll`** para autenticar la llamada
 
-La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF de la ranura y la clave envuelta, deriva el secreto de la contraseña localmente y desenvuelve la CEK en el dispositivo. Otorga al dispositivo la capacidad de descifrar y sincronizar la configuración; no modifica el almacén.
+El secreto se toma de `REDIACC_MACHINE_SECRET`, o bien de la entrada estándar si llega por una tubería, o bien de un aviso oculto; nunca es un argumento de la línea de comandos. La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF del secreto y la clave envuelta, deriva el secreto de envoltura localmente y desenvuelve la CEK en el dispositivo. Otorga al dispositivo la capacidad de descifrar y sincronizar la configuración; no modifica el almacén. Revocar el secreto en el portal impide nuevas inscripciones con él.
 
 ## Cómo llegan las claves a tu CLI
 
@@ -89,7 +87,7 @@ La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF 
 2. El CLI crea una solicitud de corta duración e imprime un enlace y un **código de emparejamiento** como `7KQ2-M9XD-P4RT`. El enlace guarda todo lo que lleva después del `#`, una parte que los navegadores nunca envían a un servidor.
 3. Abre el enlace en cualquier navegador con la sesión iniciada en la misma cuenta. Una solicitud de otra cuenta se rechaza.
 4. Escribe el código de emparejamiento desde tu terminal cuando la página lo pida. El botón de desbloqueo permanece desactivado hasta que coincida.
-5. Desbloquea con tu passkey o tu contraseña maestra. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
+5. Desbloquea con tu passkey o tu código de recuperación. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
 6. El CLI descifra el bloque, guarda el secreto en el llavero del sistema operativo e informa del éxito.
 
 La solicitud caduca a los 10 minutos. Pulsa **Ctrl+C** en el CLI para cancelarla: el CLI pide al servidor que descarte el enlace, que deja de funcionar al instante, y la página indica que hay que volver a ejecutar el comando. Si esa petición no llega, el enlace sigue siendo válido hasta que caduque la solicitud. Si el enlace se abre después de que caduque, o después de que una redirección de inicio de sesión haya perdido la parte posterior al `#`, vuelve a ejecutar el comando.
@@ -129,7 +127,6 @@ Una restauración publica el contenido antiguo como una nueva versión sobre la 
 Rotar la CEK del almacén la vuelve a envolver bajo una nueva generación:
 
 - **Los códigos de recuperación siempre se invalidan** con la rotación, genere y guarde uno nuevo después
-- Una **ranura de contraseña maestra** solo sobrevive si la contraseña se vuelve a introducir durante el asistente de rotación
 - Una ranura que queda rezagada en una generación anterior se reporta como obsoleta en lugar de fallar con un error de descifrado críptico
 - Los tokens de configuración de los demás miembros se revocan, y a un dispositivo que aún conserve la clave antigua se le indica que vuelva a activarse con `rdc config remote enable`
 
@@ -156,7 +153,6 @@ Las configuraciones del almacén también están delimitadas por equipo, pero es
 | Ver los ids de configuración, los equipos, los números de versión, las marcas de tiempo, el tamaño de los blobs, cuántos campos confirma una configuración y el tipo de cada campo, y las direcciones IP de los clientes | Ver los nombres de máquinas, repositorios o almacenes (están cegados) ni ningún valor de configuración |
 | Rechazar, retrasar o eliminar configuraciones y su historial | Servir el contenido de una configuración como si fuera el de otra, o editarlo, sin que el dispositivo lo detecte |
 | Servir una versión antigua a un dispositivo que nunca vio una más reciente | Servir al CLI una versión más antigua que otra que ya vio: el CLI la rechaza |
-| Probar contraseñas maestras sin conexión | Abrir una ranura de passkey o de código de recuperación |
 
 Otras salvaguardas:
 
@@ -169,7 +165,7 @@ Otras salvaguardas:
 
 | Error | Causa | Solución |
 |-------|-------|-----|
-| PRF not supported | El autenticador carece de extensión PRF | Use YubiKey, iCloud Keychain, 1Password o Dashlane, o añada una ranura de contraseña maestra |
+| PRF not supported | El autenticador carece de extensión PRF | Use YubiKey, iCloud Keychain, 1Password o Dashlane |
 | X25519 not supported | Versión del navegador demasiado antigua | Actualice a Chrome 133+, Edge 133+, Firefox 130+ o Safari 17+ |
 | Already configured | Ya existe un almacén para su organización | Visite /account/config-storage para gestionar |
 | Config storage not configured | El servidor carece de almacenamiento blob | Contacte a su administrador para configurar R2/RustFS |

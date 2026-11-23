@@ -38,7 +38,7 @@ function getOutputPath(lang) {
 const COMMAND_ORDER = [...LOCAL_GROUPS];
 
 // i18n-only groups: keys that exist in cli.json commands but are NOT standalone top-level commands. They provide translations used by subcommands of other groups (e.g. "sync" translations are used by "repo sync", "backup" by "repo push/pull").
-const I18N_ONLY_GROUPS = new Set(['sync', 'backup', 'snapshot']);
+const I18N_ONLY_GROUPS = new Set(['sync', 'backup', 'snapshot', 'proxyBlocked']);
 
 // Validate COMMAND_ORDER against actual command groups in cli.json
 function validateCommandOrder(commands) {

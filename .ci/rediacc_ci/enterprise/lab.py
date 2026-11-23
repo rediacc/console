@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-import hashlib
-import hmac
 import importlib
 import itertools
 import json
@@ -1140,11 +1138,11 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`).
 #
-# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` sets the store up the first time the way the portal does. Setup sits behind `requireTwoFactor` and `requireElevated` (`POST /configs/setup`), so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`). A second factor is enrolled for the length of the setup only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`), the store is created with one master-password slot, and the second factor is disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. A store already there is opened through `POST /configs/bootstrap-session` with method `password`, which `requireTwoFactor` gates as well, so the bootstrap runs under the same elevated, short-lived second factor. Either answer carries a fresh config token, and that token is the artifact. The slot password is never stored: it is an HMAC of the company's `ACCOUNT_SERVER_API_KEY` under a fixed label (`store_password`), so a later run derives it again and a removed company leaves nothing behind for it.
+# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` opens the store the portal set up. The lab cannot set one up: `POST /configs/setup` demands a passkey slot with a verified WebAuthn registration (a recovery code alone is refused, private/account/src/routes/configs.ts), and password slots no longer exist, so a company without a store is a `LabError` that names the portal step. The store is opened through `POST /configs/bootstrap-session` with method `recovery`, which sits behind `requireTwoFactor`, so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`) and a second factor is enrolled for the length of the bootstrap only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`) and disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. The answer carries a fresh config token, and that token is the artifact. The recovery code is the operator's: the kit the portal showed at the store's setup, supplied in `ENTERPRISE_PROOF_RECOVERY_CODE` (`store_recovery_code`), never stored by the lab.
 #
 # An `e2e-envelope` is a request sealed to the company's X25519 key, as the CLI's tunnel seals every request (packages/cli/src/services/account/account-client.ts). The key is the one `GET /account/api/v1/.well-known/server-info` publishes, and the sealed request is `GET /account/api/v1/licenses/status` under a fresh `license:read` token of the same company.
 #
-# THE CRYPTOGRAPHY IS THE PRODUCT'S OWN. The slot wrap, the CEK unwrap, the config push payload, the CEK handoff to an executor and the request seal are the TypeScript functions of `@rediacc/shared` (`config-crypto`, `config-schema`, `e2e`, `cli-contract`), imported from packages/shared/src by `ts_crypto` and run through the repository's `tsx`, one JSON request on stdin and one JSON answer on stdout. Nothing is ported to Python, a password or a CEK never reaches argv, and the helper's stderr is never put into an error.
+# THE CRYPTOGRAPHY IS THE PRODUCT'S OWN. The slot wrap, the CEK unwrap, the config push payload, the CEK handoff to an executor and the request seal are the TypeScript functions of `@rediacc/shared` (`config-crypto`, `config-schema`, `e2e`, `cli-contract`), imported from packages/shared/src by `ts_crypto` and run through the repository's `tsx`, one JSON request on stdin and one JSON answer on stdout. Nothing is ported to Python, a recovery code or a CEK never reaches argv, and the helper's stderr is never put into an error.
 #
 # `present(company, kind, artifact)` sends one artifact to the company's own account host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one probe: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts); an `api-token` is the bearer of `GET /account/api/v1/licenses/status` (scope `license:read`, private/account/src/routes/license.ts); a `proxy-token` is the bearer of `POST /account/api/v1/proxy/introspect` with `{"token": "self", "self": true}` (scope `proxy:exec`, private/account/src/routes/proxy.ts), the lookup the company's proxy makes through its own account Worker's `ExecutorIssuer`, over the same D1. The api-token middleware binds a first-use token to the presenting address, which is this machine for both companies, so a refusal by the other company is never an address mismatch. A `config-token` is the `X-Config-Token` of `POST /configs/session`; the token rotates on use but stays good for three, so the other company refuses a live token. An `e2e-envelope` is posted to `POST /account/api/v1/tunnel`: the company that holds the key opens it and answers 200 with the inner status in the clear (`E2eResponseEnvelope.status`), which is then the verdict, and a company that does not answers 400 `Decryption failed`, the refusal.
 
@@ -1205,7 +1203,7 @@ REAUTH_SQL = (
     "ORDER BY created_at DESC LIMIT 50"
 )
 REAUTH_TOKEN = login_bench.REAUTH_TOKEN
-STORE_PASSWORD_LABEL = b"rediacc-enterprise-proof-config-store-v1"
+RECOVERY_CODE_ENV = "ENTERPRISE_PROOF_RECOVERY_CODE"
 CRYPTO_TIMEOUT_S = 120
 # The crypto helper `ts_crypto` runs: `@rediacc/shared` imported from packages/shared/src (argv[2], a file URL), one
 # JSON request on stdin, one JSON answer on stdout. Every operation is a call into the shared package.
@@ -1224,14 +1222,23 @@ const x25519 = (spki) =>
   crypto.subtle.importKey('spki', cc.fromBase64(spki), { name: 'X25519' }, false, []);
 let out;
 if (req.op === 'setup') {
+  // The key material of a new store: the CEK wrapped under a fresh recovery slot and under a fresh machine secret.
   const cek = await cc.generateCek();
   const serverSecret = cc.generateServerSecret();
-  const params = cc.newPasswordSlotParams();
-  const secret = await cc.derivePasswordSlotSecret(req.password, params);
+  const recoveryCode = cc.generateRecoveryCode();
+  const recoveryParams = cc.newRecoverySlotParams();
+  const recoverySecret = await cc.deriveRecoverySlotSecret(recoveryCode, recoveryParams);
+  const machineSecret = cc.generateMachineSecret();
+  const machineParams = cc.newMachineSecretParams();
+  const machineSlotSecret = await cc.deriveMachineSecretSlotSecret(machineSecret, machineParams);
   const pair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
   const spki = new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey));
   out = {
     cek: await rawCek(cek),
+    recoveryCode,
+    machineSecret,
+    machineSecretKdfParams: machineParams,
+    machineSecretWrappedCek: await cc.wrapCekForSlot(cek, machineSlotSecret, serverSecret),
     body: {
       orgId: '',
       sdkMaster: b64(cc.generateSdkMaster()),
@@ -1239,9 +1246,9 @@ if (req.op === 'setup') {
       orgPassphrase: b64(cc.randomBytes(32)),
       slots: [
         {
-          method: 'password',
-          kdfParams: params,
-          wrappedCek: await cc.wrapCekForSlot(cek, secret, serverSecret),
+          method: 'recovery',
+          kdfParams: recoveryParams,
+          wrappedCek: await cc.wrapCekForSlot(cek, recoverySecret, serverSecret),
         },
       ],
       requirePasskey: false,
@@ -1249,7 +1256,14 @@ if (req.op === 'setup') {
     },
   };
 } else if (req.op === 'unwrap') {
-  const secret = await cc.derivePasswordSlotSecret(req.password, req.kdfParams);
+  // A recovery code opens a recovery slot, a machine secret a machine-secret wrap; exactly one is given.
+  if ((req.recoveryCode === undefined) === (req.machineSecret === undefined)) {
+    throw new Error('unwrap takes a recoveryCode or a machineSecret');
+  }
+  const secret =
+    req.recoveryCode === undefined
+      ? await cc.deriveMachineSecretSlotSecret(req.machineSecret, req.kdfParams)
+      : await cc.deriveRecoverySlotSecret(req.recoveryCode, req.kdfParams);
   const cek = await cc.unwrapCekForSlot(req.wrappedCek, secret, cc.fromBase64(req.serverSecret));
   out = { cek: await rawCek(cek) };
 } else if (req.op === 'push') {
@@ -1780,10 +1794,15 @@ class StoreKeys:
     configs: int
 
 
-def store_password(company: str, *, api_key: ApiKey = store_api_key) -> str:
-    """The master password of the store's proof slot: an HMAC of the company's server key, derived again on every run and stored nowhere."""
-    key = api_key(company).encode()
-    return hmac.new(key, STORE_PASSWORD_LABEL, hashlib.sha256).hexdigest()
+def store_recovery_code(*, env: Mapping[str, str] | None = None) -> str:
+    """The recovery code that opens the store's recovery slot: the operator's kit from the portal, read from `ENTERPRISE_PROOF_RECOVERY_CODE` and never stored by the lab."""
+    value = (os.environ if env is None else env).get(RECOVERY_CODE_ENV, "").strip()
+    if not value:
+        raise proof.LabError(
+            "%s is not set (the recovery code the portal showed when the store was set up)"
+            % RECOVERY_CODE_ENV
+        )
+    return value
 
 
 # The account's coded 503 for a console leg no executor can serve (private/account/src/routes/console.ts `consoleUnavailable`).
@@ -1900,35 +1919,12 @@ def _under_second_factor[T](world: Owner, action: Callable[[], T]) -> T:
     return result
 
 
-def _setup_store(world: Owner, password: str) -> StoreKeys:
-    """Create the store with one master-password slot, under a second factor that lives only as long as the setup."""
-
-    def setup() -> StoreKeys:
-        material = world.crypto({"op": "setup", "password": password})
-        made = _expect(
-            world.send("POST", SETUP_PATH, material.get("body")),
-            (201,),
-            world.company,
-            "the config store setup",
-        )
-        store = made.get("store")
-        store_id = str(store.get("id") or "") if isinstance(store, dict) else ""
-        token = made.get("initialToken")
-        if not store_id or not isinstance(token, str) or not token:
-            raise proof.LabError(
-                "company %s: the store setup answered no store or token" % world.company
-            )
-        return StoreKeys(store_id, str(material.get("cek") or ""), token, 0)
-
-    return _under_second_factor(world, setup)
-
-
-def _open_store(world: Owner, store_id: str, configs: int, password: str) -> StoreKeys:
-    """Open an existing store through its password slot: a fresh config token and the CEK. The bootstrap runs under the same short-lived second factor as the setup, since `POST /configs/bootstrap-session` is `requireTwoFactor` gated too."""
+def _open_store(world: Owner, store_id: str, configs: int, recovery_code: str) -> StoreKeys:
+    """Open an existing store through its recovery slot: a fresh config token and the CEK. The bootstrap runs under the same short-lived second factor as the setup, since `POST /configs/bootstrap-session` is `requireTwoFactor` gated too."""
     slot = _under_second_factor(
         world,
         lambda: _expect(
-            world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "password"}),
+            world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "recovery"}),
             (200,),
             world.company,
             "the store bootstrap",
@@ -1940,7 +1936,7 @@ def _open_store(world: Owner, store_id: str, configs: int, password: str) -> Sto
     opened = world.crypto(
         {
             "op": "unwrap",
-            "password": password,
+            "recoveryCode": recovery_code,
             "kdfParams": slot.get("kdfParams"),
             "wrappedCek": slot.get("wrappedCek"),
             "serverSecret": slot.get("serverSecret"),
@@ -1950,15 +1946,18 @@ def _open_store(world: Owner, store_id: str, configs: int, password: str) -> Sto
 
 
 def ensure_store(world: Owner) -> StoreKeys:
-    """The company's config store, set up on first use and opened after that."""
+    """The company's config store, opened through its recovery slot. A company without a store is refused: setup needs a passkey registration the lab cannot make."""
     info = _expect(world.send("GET", STORE_INFO_PATH), (200,), world.company, "the store info")
-    password = store_password(world.company, api_key=world.api_key)
-    if info.get("configured") is True:
-        store_id = str(info.get("storeId") or "")
-        if not store_id:
-            raise proof.LabError("company %s: a configured store names no id" % world.company)
-        return _open_store(world, store_id, int(info.get("configCount") or 0), password)
-    return _setup_store(world, password)
+    if info.get("configured") is not True:
+        raise proof.LabError(
+            "company %s has no config store: setup needs a passkey slot with a verified WebAuthn "
+            "registration, so the owner sets it up in the portal first and saves the recovery kit"
+            % world.company
+        )
+    store_id = str(info.get("storeId") or "")
+    if not store_id:
+        raise proof.LabError("company %s: a configured store names no id" % world.company)
+    return _open_store(world, store_id, int(info.get("configCount") or 0), store_recovery_code())
 
 
 def e2e_envelope(

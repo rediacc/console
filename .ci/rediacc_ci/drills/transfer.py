@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.drills.transfer [--selftest] [--no-restart] [--keep-work]
 
-WHAT IT PROVES. Config storage holds the only copy of an operator's universe, so the interesting cases are the ones where the server is NOT there: (1) SEED ON ENABLE, enrolling against an empty store pushes the local config as version 1 and says so; (2) OFFLINE READ, with the server unreachable reads still succeed from the encrypted local cache, the staleness warning goes to STDERR and stdout stays clean; (3) FAIL-CLOSED WRITE, an offline write refuses with the exact message and exit code and the cache is byte-identical afterwards; (4) SECOND DEVICE, a second box enrolls headlessly through the password slot, does not re-seed, and pulls what the first pushed, its account login going through the real two-factor challenge.
+WHAT IT PROVES. Config storage holds the only copy of an operator's universe, so the interesting cases are the ones where the server is NOT there: (1) SEED ON ENABLE, enrolling against an empty store pushes the local config as version 1 and says so; (2) OFFLINE READ, with the server unreachable reads still succeed from the encrypted local cache, the staleness warning goes to STDERR and stdout stays clean; (3) FAIL-CLOSED WRITE, an offline write refuses with the exact message and exit code and the cache is byte-identical afterwards; (4) SECOND DEVICE, a second box enrolls headlessly with the same machine secret, does not re-seed, and pulls what the first pushed, its account login going through the real two-factor challenge.
 
 COST. Headless: no VMs. It needs `./run.sh account dev` including its Docker side (the store is backed by RustFS); without it the store cannot be seeded and the drill fails fast saying so. Offline is simulated with the in-process shim in `rediacc_ci.drills.lib` rather than by stopping the gateway, because a restart may move the gateway to another port and strand the configs.
 
@@ -25,7 +25,6 @@ from rediacc_ci import log
 from rediacc_ci.drills import lib
 
 DRILL_PASSWORD = "DrillTransfer123!"
-STORE_PASSWORD = "DrillStore123!"
 CONFIG_NAME = "drill-transfer"
 USAGE = "Usage: ./run.sh drill transfer [--selftest] [--no-restart] [--keep-work]"
 # `RemoteUnreachableError` maps to NETWORK_ERROR, which `packages/cli/src/types/index.ts` defines as exit 6 (`EXIT_CODES.NETWORK_ERROR`). The bash asserted exit 1 and failed on every live run (2026-10-01: "expected exit 1, got 6", assertion 19); a test pins this constant to the CLI's own table.
@@ -38,12 +37,14 @@ class Transfer:
         self.d = drill
         self.restart = restart_gateway
         self.rdc = str(drill.root / "rdc.sh")
-        # A fresh dev user, and so a fresh store, on every run: a second run's `config remote enable --master-password` against the store the first left behind dies with a raw WebCrypto OperationError.
+        # A fresh dev user, and so a fresh store, on every run: a second run's `config remote enable --machine-secret` against the store the first left behind dies with a raw WebCrypto OperationError.
         self.email = lib.run_email("transfer")
         self.device1 = ""
         self.device2 = ""
         self.server_url = ""
         self.minted_token = ""
+        self.machine_secret_id = ""
+        self.machine_secret = ""
 
     def cli(self, home: str, *args: str, **env: str) -> None:
         self.d.run_with([self.rdc, *args], XDG_CONFIG_HOME=home, **env)
@@ -150,14 +151,14 @@ class Transfer:
 
     def setup_store(self) -> None:
         d = self.d
-        d.step("Setup: dev user, subscription and a password-unlockable config store")
+        d.step("Setup: dev user, subscription and a machine-secret-enrollable config store")
         d.account_ensure_login(self.email, DRILL_PASSWORD)
         d.account_ensure_subscription(self.email, "PROFESSIONAL")
         seed = d.api_post(
             "/test/seed-config-store",
             # emptyStore: no dev-fixture entry, so Phase 1 enrolls against a store that is really empty.
             # An enable that sees one listed config attaches to it instead of seeding.
-            {"email": self.email, "password": STORE_PASSWORD, "emptyStore": True},
+            {"email": self.email, "emptyStore": True},
         )
         store_id = lib.json_get(seed, "storeId")
         if not store_id:
@@ -166,7 +167,12 @@ class Transfer:
                 "Config storage needs the RustFS container from ./run.sh account dev (Docker)."
             )
             raise SystemExit(1)
-        d.note("store %s seeded, password slot provisioned" % store_id)
+        self.machine_secret_id = lib.json_get(seed, "machineSecretId")
+        self.machine_secret = lib.json_get(seed, "machineSecret")
+        if not self.machine_secret_id or not self.machine_secret:
+            log.error("The seed minted no machine secret: %s" % seed)
+            raise SystemExit(1)
+        d.note("store %s seeded, machine secret %s minted" % (store_id, self.machine_secret_id))
 
     def mint_token(self, name: str) -> None:
         """A fresh account token minted over the SESSION api only; nothing else may use it before the CLI does (workaround b)."""
@@ -208,15 +214,16 @@ class Transfer:
             "config",
             "remote",
             "enable",
-            "--master-password",
+            "--machine-secret",
+            self.machine_secret_id,
             "--api-url",
             self.server_url,
             REDIACC_CONFIG=CONFIG_NAME,
             REDIACC_TOKEN=self.minted_token,
-            REDIACC_STORE_MASTER_PASSWORD=STORE_PASSWORD,
+            REDIACC_MACHINE_SECRET=self.machine_secret,
             REDIACC_DEFAULT_OUTPUT="table",
         )
-        d.assert_exit(0, "headless password enrollment succeeds with no browser")
+        d.assert_exit(0, "headless machine-secret enrollment succeeds with no browser")
         d.assert_stderr_contains(
             "Store was empty; pushed the local config as version 1.",
             "the empty store was seeded, and the CLI said so",
@@ -354,15 +361,16 @@ class Transfer:
             "config",
             "remote",
             "enable",
-            "--master-password",
+            "--machine-secret",
+            self.machine_secret_id,
             "--api-url",
             self.server_url,
             REDIACC_CONFIG=CONFIG_NAME,
             REDIACC_TOKEN=self.minted_token,
-            REDIACC_STORE_MASTER_PASSWORD=STORE_PASSWORD,
+            REDIACC_MACHINE_SECRET=self.machine_secret,
             REDIACC_DEFAULT_OUTPUT="table",
         )
-        d.assert_exit(0, "the second device enrolls with the same password slot")
+        d.assert_exit(0, "the second device enrolls with the same machine secret")
         d.assert_stderr_not_contains(
             "Store was empty", "and does NOT re-seed: the store already holds this config"
         )

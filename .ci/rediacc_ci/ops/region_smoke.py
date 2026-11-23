@@ -6,10 +6,10 @@ WHY (agent/plans/PLAN-d1-eu-jurisdiction.md, Design 7). A relocated D1 is only p
 
 THE STEPS, in order:
 
-  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MASTER_PASSWORD and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench-eu` is declared (.ci/config/secret-supply.json; it aliases the bench-login-eu entries, the bench probe being the bench account); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
+  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MACHINE_SECRET_ID, REDIACC_SMOKE_MACHINE_SECRET and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench-eu` is declared (.ci/config/secret-supply.json; it aliases the bench-login-eu entries, the bench probe being the bench account); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
   2. Refuse a missing value or the placeholder `PLACEHOLDER-operator-fills`, naming the store entry, before anything runs.
   3. Create the probe config `region-smoke-<region>` (`config init`; "already exists" is fine), then `subscription login --server <origin>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and, with a seed, REDIACC_LOGIN_TOTP in the child environment.
-  4. `config remote enable --master-password --api-url <origin>` with REDIACC_STORE_MASTER_PASSWORD (the first enable seeds the store from the local config; a later one is "already linked and this device can open it"), then `config remote refresh`: the read of the store through the region's Worker and D1.
+  4. `config remote enable --machine-secret <id> --api-url <origin>` with REDIACC_MACHINE_SECRET (the id rides argv, the secret only the child environment; the first enable seeds the store from the local config; a later one is "already linked and this device can open it"), then `config remote refresh`: the read of the store through the region's Worker and D1.
   5. `config show` as JSON, canonicalised (sorted keys, no whitespace) and hashed with sha256.
   6. `--record-baseline` writes the digest to `.ci/state/region-smoke/<region>.json`; otherwise the digest must equal the stored one.
 
@@ -45,24 +45,26 @@ MIN_WINDOW_LEFT = 5
 
 EMAIL_ENV = "REDIACC_SMOKE_EMAIL"
 PW_ENV = "REDIACC_SMOKE_PASSWORD"
-MASTER_PW_ENV = "REDIACC_SMOKE_MASTER_PASSWORD"
+MS_ID_ENV = "REDIACC_SMOKE_MACHINE_SECRET_ID"
+MS_ENV = "REDIACC_SMOKE_MACHINE_SECRET"
 TOTP_SEED_ENV = "REDIACC_SMOKE_TOTP_SEED"
-REQUIRED_NAMES = (EMAIL_ENV, PW_ENV, MASTER_PW_ENV)
+REQUIRED_NAMES = (EMAIL_ENV, PW_ENV, MS_ID_ENV, MS_ENV)
 
-# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/commands/config-remote-master-password.ts).
+# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/commands/config-remote-machine-secret.ts).
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
-CLI_STORE_MASTER_PW_ENV = "REDIACC_STORE_MASTER_PASSWORD"
+CLI_MS_ENV = "REDIACC_MACHINE_SECRET"
 CHILD_SECRET_NAMES = (
     EMAIL_ENV,
     PW_ENV,
-    MASTER_PW_ENV,
+    MS_ID_ENV,
+    MS_ENV,
     TOTP_SEED_ENV,
     LOGIN_EMAIL_ENV,
     LOGIN_PW_ENV,
     LOGIN_TOTP_ENV,
-    CLI_STORE_MASTER_PW_ENV,
+    CLI_MS_ENV,
 )
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
 ALREADY_EXISTS = "already exists"
@@ -301,7 +303,7 @@ def smoke(
         raise SmokeError("subscription login to %s failed (exit %d)" % (server, rc))
 
     enable_env = dict(clean)
-    enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
+    enable_env[CLI_MS_ENV] = values[MS_ENV]
     log.step("Linking the remote config store (config remote enable)")
     rc, out = capture(
         _rdc(
@@ -311,7 +313,8 @@ def smoke(
             "config",
             "remote",
             "enable",
-            "--master-password",
+            "--machine-secret",
+            values[MS_ID_ENV],
             "--api-url",
             server,
         ),

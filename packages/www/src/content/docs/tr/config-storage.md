@@ -1,6 +1,6 @@
 ---
 title: Yapılandırma Depolama
-description: Cihaz tarafında şifrelenen, passkey, ana parola veya kurtarma koduyla açılabilen yapılandırma senkronizasyonu
+description: Cihaz tarafında şifrelenen, passkey veya kurtarma koduyla açılabilen yapılandırma senkronizasyonu
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "221b5fec50ec0ce2"
+sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
 ---
 
 # Yapılandırma Depolama
@@ -23,14 +23,13 @@ Her depo için tek bir CEK vardır ve bu anahtar, LUKS'un anahtar yuvalarına be
 | Yöntem | Nedir | Notlar |
 |--------|-----------|-------|
 | **Passkey** | PRF uzantılı WebAuthn passkey | En güçlü seçenek; donanım destekli |
-| **Ana parola** | Seçtiğiniz, PBKDF2-SHA256 ile (600.000 yineleme) güçlendirilmiş bir parola | PRF destekli donanım gerektirmez; CLI'ı başsız (headless) olarak kaydetmeyi de mümkün kılar |
 | **Kurtarma kodu** | Oluşturulan bir `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kodu | Oluşturulduğunda yalnızca bir kez gösterilir; güvenli bir yerde saklayın |
 
-Her yöntem aynı süreçten geçer: yuva, CEK'in kilidini açmak için sunucudaki bir sırla birleşen bir sır üretir. Bu yarımlardan hiçbiri tek başına yeterli değildir, ve yuva sırrı sunucuya asla ulaşmaz. Ana parola yuvası üçü arasında en zayıf olanıdır: sunucu, parola tahminlerini çevrimdışı denemek için gereken her şeye sahiptir, bu yüzden parolanın güçlü olması gerekir. Passkey ve kurtarma kodu yuvalarında böyle bir zayıflık yoktur.
+Her yöntem aynı süreçten geçer: yuva, CEK'in kilidini açmak için sunucudaki bir sırla birleşen bir sır üretir. Bu yarımlardan hiçbiri tek başına yeterli değildir, ve yuva sırrı sunucuya asla ulaşmaz. Her iki sır da yeterli entropiye sahiptir; sarmalanmış anahtarı ve sarmalama anahtarının kendi yarısını tutan sunucunun çevrimdışı tahmin edebileceği bir şey yoktur.
 
 Yuvalar, portaldaki Yapılandırma Depolama sayfasından yönetilir. Yalnızca donanımla kilit açılmasını isteyen organizasyonlar, tüm depo için passkey dışındaki yuvaları reddeden ve iptal eden **passkey zorunlu kıl** politikasını etkinleştirebilir.
 
-Kilit açma cihaz bazlıdır: yeni bir cihazda bir kez kilidi açarsınız, sonrasında günlük CLI işlemleri (push/pull) passkey'e dokunmadan veya parola girmeden çalışır.
+Kilit açma cihaz bazlıdır: yeni bir cihazda bir kez kilidi açarsınız, sonrasında günlük CLI işlemleri (push/pull) passkey'e dokunmadan veya kurtarma kodu girmeden çalışır.
 
 ## Ön Koşullar
 
@@ -38,16 +37,14 @@ Kilit açma cihaz bazlıdır: yeni bir cihazda bir kez kilidi açarsınız, sonr
 - **Passkey** yöntemi için: FIDO2 güvenlik anahtarı (örn. YubiKey), iCloud Keychain, Google Password Manager, 1Password veya Dashlane gibi PRF destekli bir passkey sağlayıcısı
 - **Tarayıcı**: Chrome 133+, Edge 133+, Firefox 130+ veya Safari 17+
 
-PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Ana parola ve kurtarma kodu yöntemleri desteklenen her tarayıcıda çalışır.
+PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Kurtarma kodu desteklenen her tarayıcıda çalışır.
 
 ## Kurulum
 
 1. Kenar çubuğunda **Yapılandırma Depolama**'ya gidin, ardından **Yapılandırma Depolamayı Kur**'a tıklayın
 2. Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular
-3. İlk kilit açma yöntemini seçin ve **Yapılandırma deposu oluştur**'a tıklayın:
-   - **Passkey**, sağlayıcınız PRF destekliyorsa: güvenlik anahtarınıza iki kez dokunursunuz; biri kaydetmek, diğeri şifreleme anahtarlarını türetmek için.
-   - **Ana parola**, her tarayıcıyla çalışır; Bitwarden gibi PRF desteklemeyen passkey sağlayıcılarıyla da.
-   - İsteğe bağlı olarak bir **kurtarma kodu**: yalnızca bir kez gösterilir ve depo oluşturulmadan önce saklanmalıdır.
+3. Bir passkey kaydedin, ardından **Yapılandırma deposu oluştur**'a tıklayın. Sağlayıcının PRF desteklemesi gerekir: güvenlik anahtarınıza iki kez dokunursunuz; biri kaydetmek, diğeri şifreleme anahtarlarını türetmek için.
+   - Depoyla birlikte bir **kurtarma kodu** üretilir ve bir kurtarma kitinde yalnızca bir kez gösterilir. Kiti depo oluşturulmadan önce saklayın; onsuz kurulum tamamlanmaz.
 4. Kurulum tamamlandı. CLI kilit açma sırrını işletim sisteminizin anahtar zincirinde tutar.
 
 Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da desteklenmeyen bir doğrulayıcı sizi dışarıda bırakmasın diye en az iki kilit açma yöntemi tutun.
@@ -61,23 +58,24 @@ Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da deste
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Çapraz platform |
-| Bitwarden eklentisi | ❌ | Bunun yerine ana parola kullanın |
+| Bitwarden eklentisi | ❌ | Bunun yerine bir donanım anahtarı veya başka bir passkey sağlayıcısı kullanın |
 | Windows Hello | ❌ | Desteklenmiyor |
 
 ## Başsız (Headless) CLI Kaydı
 
-Tarayıcısı olmayan bir makine (bir sunucu, bir CI çalıştırıcısı, bir executor daemon'u) ana parola yöntemiyle mevcut bir depoya kaydolabilir:
+Tarayıcısı olmayan bir makine (bir sunucu, bir CI çalıştırıcısı, bir executor daemon'u) bir makine sırrıyla mevcut bir depoya kaydolabilir:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Gereksinimler:
 
-- Portal üzerinden önceden sağlanmış bir **ana parola yuvası** (sağlama sırasında anahtarı tarayıcı tuttuğu için bu adımın kendisi başsız olamaz)
+- Portal üzerinden oluşturulmuş bir **makine sırrı** (sırrla sarmalanırken anahtarı tarayıcı tuttuğu için bu adımın kendisi başsız olamaz). Portal `RM1-` sırrını kimliğiyle birlikte yalnızca bir kez gösterir; sır kuruluş, bir ekip veya tek bir yapılandırma kapsamındadır
 - Çağrıyı doğrulamak için `config:enroll` kapsamına sahip bir **API token'ı**
 
-Kayıt işlemi bir okumadır: CLI, yuvanın herkese açık KDF parametrelerini ve sarmalanmış anahtarı getirir, parola sırrını yerel olarak türetir ve CEK'in kilidini cihazda açar. Bu işlem cihaza yapılandırmayı çözme ve senkronize etme yetkisi verir; depoda herhangi bir değişiklik yapmaz.
+Sır `REDIACC_MACHINE_SECRET` değişkeninden alınır; yoksa, veri pipe ile gelmişse standart girdiden, o da yoksa gizli bir istemden okunur; asla komut satırı argümanı olmaz. Kayıt işlemi bir okumadır: CLI, sırrın herkese açık KDF parametrelerini ve sarmalanmış anahtarı getirir, sarmalama sırrını yerel olarak türetir ve CEK'in kilidini cihazda açar. Bu işlem cihaza yapılandırmayı çözme ve senkronize etme yetkisi verir; depoda herhangi bir değişiklik yapmaz. Sırrı portaldan iptal etmek, onunla yeni kayıtları durdurur.
 
 ## Anahtarlar CLI'a nasıl ulaşır
 
@@ -87,7 +85,7 @@ Kayıt işlemi bir okumadır: CLI, yuvanın herkese açık KDF parametrelerini v
 2. CLI kısa ömürlü bir istek oluşturur ve bir bağlantı ile `7KQ2-M9XD-P4RT` gibi bir **eşleştirme kodu** yazdırır. Bağlantı taşıdığı her şeyi `#` işaretinden sonra tutar; tarayıcılar bu kısmı sunucuya hiç göndermez.
 3. Bağlantıyı aynı hesapla oturum açmış herhangi bir tarayıcıda açın. Başka bir hesaptan gelen istek reddedilir.
 4. Sayfa istediğinde eşleştirme kodunu terminalinizden yazın. Kod eşleşene kadar kilit açma düğmesi devre dışı kalır.
-5. Passkey'iniz veya ana parolanızla kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
+5. Passkey'iniz veya kurtarma kodunuzla kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
 6. CLI bloğun şifresini çözer, sırrı işletim sisteminin anahtar zincirinde saklar ve başarıyı bildirir.
 
 İstek 10 dakika sonra sona erer. İptal etmek için CLI'da **Ctrl+C** tuşlarına basın: CLI sunucudan bağlantıyı düşürmesini ister, bağlantı hemen çalışmaz hale gelir ve sayfa komutu yeniden çalıştırmanızı söyler. Bu istek ulaşmazsa bağlantı, istek sona erene kadar kullanılabilir kalır. Bağlantı süresi dolduktan sonra ya da bir oturum açma yönlendirmesi `#` sonrasındaki kısmı düşürdükten sonra açılırsa komutu yeniden çalıştırın.
@@ -127,7 +125,6 @@ Bir geri yükleme, eski içeriği mevcut sürümün üzerine yeni bir sürüm ol
 Deponun CEK'ini rotasyona sokmak, anahtarı yeni bir nesil altında yeniden sarmalar:
 
 - **Kurtarma kodları rotasyonla her zaman geçersiz kılınır**, ardından yeni bir kod oluşturup saklayın
-- Bir **ana parola yuvası** yalnızca rotasyon sihirbazı sırasında parola yeniden girilirse hayatta kalır
 - Eski bir nesilde kalan bir yuva, anlaşılmaz bir şifre çözme hatası vermek yerine bayat (stale) olarak raporlanır
 - Diğer üyelerin yapılandırma token'ları iptal edilir ve eski anahtarı hâlâ tutan bir cihaza `rdc config remote enable` ile yeniden etkinleştirmesi söylenir
 
@@ -154,7 +151,6 @@ Depodaki yapılandırmalar ayrıca ekip bazında da kapsamlıdır, ancak bu kaps
 | Yapılandırma kimliklerini, ekipleri, sürüm numaralarını, zaman damgalarını, blob boyutlarını, bir yapılandırmanın kaç alan içerdiğini ve her alanın türünü, ve istemci IP adreslerini görmek | Makine, depo veya depolama adlarını (körleştirilmiştir) ya da herhangi bir yapılandırma değerini görmek |
 | Yapılandırmaları ve geçmişlerini reddetmek, geciktirmek veya silmek | Bir yapılandırmanın içeriğini başka birininki gibi sunmak veya cihaz fark etmeden düzenlemek |
 | Daha yeni bir sürüm hiç görmemiş bir cihaza eski bir sürüm sunmak | CLI'a zaten gördüğü bir sürümden daha eskisini sunmak: CLI bunu reddeder |
-| Ana parolayı çevrimdışı tahmin etmeye çalışmak | Bir passkey ya da kurtarma kodu yuvasını açmak |
 
 Diğer korumalar:
 
@@ -167,7 +163,7 @@ Diğer korumalar:
 
 | Hata | Neden | Çözüm |
 |-------|-------|-----|
-| PRF not supported | Kimlik doğrulayıcı PRF uzantısından yoksun | YubiKey, iCloud Keychain, 1Password veya Dashlane kullanın, ya da bir ana parola yuvası ekleyin |
+| PRF not supported | Kimlik doğrulayıcı PRF uzantısından yoksun | YubiKey, iCloud Keychain, 1Password veya Dashlane kullanın |
 | X25519 not supported | Tarayıcı sürümü çok eski | Chrome 133+, Edge 133+, Firefox 130+ veya Safari 17+'ye güncelleyin |
 | Already configured | Organizasyonunuz için depo zaten mevcut | Yönetmek için /account/config-storage adresini ziyaret edin |
 | Config storage not configured | Sunucuda blob depolama eksik | R2/RustFS yapılandırması için yöneticinize başvurun |

@@ -1,6 +1,6 @@
 ---
 title: Armazenamento de Configuração
-description: Sincronização de configuração encriptada no dispositivo, com desbloqueio por passkey, palavra-passe mestra ou código de recuperação
+description: Sincronização de configuração encriptada no dispositivo, com desbloqueio por passkey ou código de recuperação
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "221b5fec50ec0ce2"
+sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
 ---
 
 # Armazenamento de Configuração
@@ -23,14 +23,13 @@ Existe uma CEK por armazenamento, protegida de forma independente para cada mét
 | Método | O que é | Notas |
 |--------|-----------|-------|
 | **Passkey** | Passkey WebAuthn com a extensão PRF | A opção mais forte; protegida por hardware |
-| **Palavra-passe mestra** | Uma palavra-passe à sua escolha, reforçada com PBKDF2-SHA256 (600.000 iterações) | Funciona sem hardware compatível com PRF; também permite a inscrição headless do CLI |
 | **Código de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Mostrado apenas uma vez na criação; guarde-o num local seguro |
 
-Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, e o segredo do slot nunca chega ao servidor. Um slot de palavra-passe mestra é o mais fraco dos três: o servidor tem tudo o que é necessário para testar tentativas de palavra-passe offline, por isso a palavra-passe tem de ser forte. Os slots de passkey e de código de recuperação não têm esta fraqueza.
+Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, e o segredo do slot nunca chega ao servidor. Ambos os segredos têm entropia suficiente para que o servidor, que guarda a chave protegida e a sua metade da chave de proteção, não tenha nada para adivinhar offline.
 
 Os slots são geridos no portal, na página Armazenamento de Configuração. As organizações que queiram exigir desbloqueio apenas por hardware podem ativar a política **exigir passkey**, que recusa e revoga slots não-passkey em todo o armazenamento.
 
-O desbloqueio é feito por dispositivo: desbloqueia uma vez num dispositivo novo e, a partir daí, as operações diárias do CLI (push/pull) funcionam sem tocar numa passkey ou introduzir uma palavra-passe.
+O desbloqueio é feito por dispositivo: desbloqueia uma vez num dispositivo novo e, a partir daí, as operações diárias do CLI (push/pull) funcionam sem tocar numa passkey ou introduzir um código de recuperação.
 
 ## Pré-requisitos
 
@@ -38,16 +37,14 @@ O desbloqueio é feito por dispositivo: desbloqueia uma vez num dispositivo novo
 - Para o método de **passkey**: um fornecedor de passkey com suporte PRF, como uma chave de segurança FIDO2 (por exemplo, YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+
 
-O requisito de PRF aplica-se apenas ao slot de passkey. Os métodos de palavra-passe mestra e código de recuperação funcionam em qualquer browser suportado.
+O requisito de PRF aplica-se apenas ao slot de passkey. O código de recuperação funciona em qualquer browser suportado.
 
 ## Configuração
 
 1. Navegue até **Armazenamento de Configuração** na barra lateral e clique em **Configurar Armazenamento de Configuração**
 2. A lista de verificação de requisitos valida o seu browser, 2FA e estado da sessão
-3. Escolha o primeiro método de desbloqueio e clique em **Criar armazenamento de configuração**:
-   - **Passkey**, se o seu provedor suportar PRF: você toca a chave de segurança duas vezes, uma para registrá-la e outra para derivar as chaves de criptografia.
-   - **Senha mestra**, que funciona em qualquer navegador, inclusive com provedores de passkey sem PRF, como o Bitwarden.
-   - Opcionalmente, um **código de recuperação**, exibido uma única vez, para guardar antes de o armazenamento ser criado.
+3. Registe uma passkey e clique em **Criar armazenamento de configuração**. O provedor tem de suportar PRF: a chave de segurança é tocada duas vezes, uma para a registar e outra para derivar as chaves de encriptação.
+   - Um **código de recuperação** é gerado com o armazenamento e mostrado uma única vez, num kit de recuperação. Guarde o kit antes de o armazenamento ser criado; a configuração não termina sem ele.
 4. Configuração concluída. A CLI guarda o segredo de desbloqueio no chaveiro do seu sistema operacional.
 
 Uma passkey pode ser adicionada depois na página Config Storage. Mantenha pelo menos dois métodos de desbloqueio, para que um autenticador perdido ou incompatível não bloqueie seu acesso.
@@ -61,23 +58,24 @@ Uma passkey pode ser adicionada depois na página Config Storage. Mantenha pelo 
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplataforma |
-| Extensão Bitwarden | ❌ | Use antes uma palavra-passe mestra |
+| Extensão Bitwarden | ❌ | Use uma chave de hardware ou outro provedor de passkey |
 | Windows Hello | ❌ | Não suportado |
 
 ## Inscrição headless do CLI
 
-Uma máquina sem browser (um servidor, um executor de CI, um daemon executor) pode inscrever-se num armazenamento existente através do método de palavra-passe mestra:
+Uma máquina sem browser (um servidor, um executor de CI, um daemon executor) pode inscrever-se num armazenamento existente com um segredo de máquina:
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Requisitos:
 
-- Um **slot de palavra-passe mestra** já provisionado através do portal (é o browser que detém a chave durante o provisionamento, pelo que este passo em si não pode ser headless)
+- Um **segredo de máquina** criado através do portal (o browser detém a chave enquanto a protege com o segredo, pelo que este passo em si não pode ser headless). O portal mostra o segredo `RM1-` uma única vez, juntamente com o seu id; o segredo tem como âmbito a organização, uma equipa ou uma configuração
 - Um **token de API com o âmbito `config:enroll`** para autenticar o pedido
 
-A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot e a chave protegida, deriva o segredo da palavra-passe localmente e desbloqueia a CEK no próprio dispositivo. Isto concede ao dispositivo a capacidade de desencriptar e sincronizar a configuração; não altera o armazenamento.
+O segredo vem de `REDIACC_MACHINE_SECRET`; se esta não existir, da entrada padrão, quando recebido por pipe; caso contrário, de um pedido oculto. Nunca é um argumento da linha de comandos. A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do segredo e a chave protegida, deriva localmente o segredo de proteção e desbloqueia a CEK no próprio dispositivo. Isto concede ao dispositivo a capacidade de desencriptar e sincronizar a configuração; não altera o armazenamento. Revogar o segredo no portal impede novas inscrições com ele.
 
 ## Como as chaves chegam ao seu CLI
 
@@ -87,7 +85,7 @@ A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot 
 2. O CLI cria um pedido de curta duração e apresenta uma ligação e um **código de emparelhamento** como `7KQ2-M9XD-P4RT`. A ligação guarda tudo o que transporta depois do `#`, parte que os browsers nunca enviam a um servidor.
 3. Abra a ligação em qualquer browser com sessão iniciada na mesma conta. Um pedido de outra conta é recusado.
 4. Quando a página pedir, introduza o código de emparelhamento que aparece no seu terminal. O botão de desbloqueio fica desativado até o código coincidir.
-5. Desbloqueie com a sua passkey ou palavra-passe mestra. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
+5. Desbloqueie com a sua passkey ou o código de recuperação. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
 6. O CLI desencripta o blob, guarda o segredo no chaveiro do sistema operativo e indica que a operação foi concluída.
 
 O pedido expira ao fim de 10 minutos. Prima **Ctrl+C** no CLI para o cancelar: o CLI pede ao servidor que descarte a ligação, que deixa de funcionar de imediato, e a página indica que deve executar o comando outra vez. Se esse pedido não chegar, a ligação continua utilizável até o pedido expirar. Se a ligação for aberta depois de expirar, ou depois de um redirecionamento de início de sessão ter perdido a parte a seguir ao `#`, execute o comando novamente.
@@ -127,7 +125,6 @@ Um restauro publica o conteúdo antigo como uma nova versão sobre a atual; nunc
 Rodar a CEK do armazenamento volta a protegê-la sob uma nova geração:
 
 - Os **códigos de recuperação são sempre invalidados** pela rotação; gere e guarde um novo depois
-- Um **slot de palavra-passe mestra** só sobrevive se a palavra-passe for reintroduzida durante o assistente de rotação
 - Um slot deixado numa geração mais antiga é reportado como obsoleto em vez de falhar com um erro de desencriptação críptico
 - Os tokens de configuração dos outros membros são revogados, e um dispositivo que ainda tenha a chave antiga é instruído a reativar com `rdc config remote enable`
 
@@ -154,7 +151,6 @@ As configurações no armazenamento têm ainda âmbito por equipa, mas esse âmb
 | Ver os IDs de configuração, equipas, números de versão, carimbos de data/hora, tamanhos dos blobs, quantos campos uma configuração contém e o tipo de cada campo, e os endereços IP dos clientes | Ver nomes de máquinas, repositórios ou armazenamentos (são ofuscados) ou qualquer valor de configuração |
 | Recusar, atrasar ou eliminar configurações e o seu histórico | Servir o conteúdo de uma configuração como se fosse outra, ou editá-lo, sem que o dispositivo detete isso |
 | Servir uma versão antiga a um dispositivo que nunca viu uma mais recente | Servir ao CLI uma versão mais antiga do que outra que já viu: o CLI recusa-a |
-| Testar tentativas de palavra-passe mestra offline | Abrir um slot de passkey ou de código de recuperação |
 
 Outras proteções:
 
@@ -167,7 +163,7 @@ Outras proteções:
 
 | Erro | Causa | Solução |
 |-------|-------|-----|
-| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password ou Dashlane, ou adicione um slot de palavra-passe mestra |
+| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password ou Dashlane |
 | X25519 não suportado | Versão do browser demasiado antiga | Atualize para Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Já configurado | Existe um armazenamento para a sua organização | Visite /account/config-storage para gerir |
 | Armazenamento de configuração não configurado | Servidor sem armazenamento de blobs | Contacte o seu administrador para configurar R2/RustFS |

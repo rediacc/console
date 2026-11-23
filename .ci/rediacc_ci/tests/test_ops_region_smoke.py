@@ -17,7 +17,8 @@ SEED = "JBSWY3DPEHPK3PXP"
 VALUES = {
     rs.EMAIL_ENV: "probe@example.invalid",
     rs.PW_ENV: "pw-secret",
-    rs.MASTER_PW_ENV: "master-secret",
+    rs.MS_ID_ENV: "ms-id-1",
+    rs.MS_ENV: "RM1-secret",
 }
 SHOWN = json.dumps({"machines": {"a": 1}, "repos": []})
 
@@ -67,7 +68,7 @@ def test_the_smoke_runs_init_login_enable_refresh_and_show_in_order() -> None:
     assert fake.verbs() == [
         "config init region-smoke-eu",
         f"subscription login --server {ACCOUNT_DEFAULT_ORIGIN}",
-        f"-o json config remote enable --master-password --api-url {ACCOUNT_DEFAULT_ORIGIN}",
+        f"-o json config remote enable --machine-secret ms-id-1 --api-url {ACCOUNT_DEFAULT_ORIGIN}",
         "config remote refresh",
         "-o json config show",
     ]
@@ -78,12 +79,13 @@ def test_secrets_reach_only_the_children_that_need_them_and_never_argv() -> None
     fake = FakeRdc()
     _smoke(fake)
     for argv, _env in fake.calls:
-        assert not any(v in " ".join(argv) for v in VALUES.values())
+        # The secret's id is a public handle and rides argv; the secret itself never does.
+        assert not any(v in " ".join(argv) for k, v in VALUES.items() if k != rs.MS_ID_ENV)
     login = next(e for a, e in fake.calls if a[3] == "subscription")
     enable = next(e for a, e in fake.calls if "enable" in a)
     assert login[rs.LOGIN_PW_ENV] == "pw-secret"
-    assert rs.CLI_STORE_MASTER_PW_ENV not in login
-    assert enable[rs.CLI_STORE_MASTER_PW_ENV] == "master-secret"
+    assert rs.CLI_MS_ENV not in login
+    assert enable[rs.CLI_MS_ENV] == "RM1-secret"
     assert rs.LOGIN_PW_ENV not in enable
     assert all("RDC_DEV" not in e for _a, e in fake.calls)
     assert all(rs.EMAIL_ENV not in e and rs.PW_ENV not in e for _a, e in fake.calls)
@@ -136,7 +138,7 @@ def test_the_digest_is_independent_of_key_order_and_changes_with_content() -> No
 
 def test_values_refuse_a_missing_entry_and_the_placeholder() -> None:
     with pytest.raises(rs.SmokeError, match=rs.PW_ENV) as err:
-        rs.read_values({rs.EMAIL_ENV: "e", rs.MASTER_PW_ENV: "m"})
+        rs.read_values({rs.EMAIL_ENV: "e", rs.MS_ID_ENV: "i", rs.MS_ENV: "m"})
     assert err.value.rc == 2
     with pytest.raises(rs.SmokeError, match="placeholder"):
         rs.read_values({**VALUES, rs.EMAIL_ENV: rs.PLACEHOLDER})

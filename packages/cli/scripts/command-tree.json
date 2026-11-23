@@ -5433,14 +5433,8 @@
               "descriptionKey": "commands.config.remote.enable.descriptionShort",
               "options": [
                 {
-                  "flags": "--master-password",
-                  "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
-                  "flags": "--master-password-stdin",
-                  "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
+                  "flags": "--machine-secret <id>",
+                  "descriptionKey": "commands.config.remote.enable.optionMachineSecret",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -5527,28 +5521,6 @@
                 }
               ],
               "subcommands": []
-            },
-            {
-              "name": "master-password",
-              "descriptionKey": "commands.config.remote.masterPassword.description",
-              "options": [],
-              "arguments": [],
-              "subcommands": [
-                {
-                  "name": "change",
-                  "descriptionKey": "commands.config.remote.masterPassword.change.description",
-                  "options": [
-                    {
-                      "flags": "--new-master-password-stdin",
-                      "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
-                      "mandatory": false,
-                      "defaultValue": null
-                    }
-                  ],
-                  "arguments": [],
-                  "subcommands": []
-                }
-              ]
             },
             {
               "name": "refresh",

@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "6fc96f16de125a6b"
+sourceHash: "c5e022bd5edfdcfa"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -218,8 +218,7 @@ rdc config remote enable [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--master-password` | {{t:cli.commands.config.remote.enable.optionMasterPassword}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--master-password-stdin` | {{t:cli.commands.config.remote.enable.optionMasterPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--machine-secret <id>` | {{t:cli.commands.config.remote.enable.optionMachineSecret}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.config.remote.enable.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--config-id <id>` | {{t:cli.commands.config.remote.enable.optionConfigId}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -248,24 +247,6 @@ rdc config remote disable [options]
 ```bash
 rdc config remote status
 ```
-
-#### master-password
-
-{{t:cli.commands.config.remote.masterPassword.description}}
-
-<a id="cli-local-config-remote-master-password-change"></a>
-**change:**
-
-{{t:cli.commands.config.remote.masterPassword.change.description}}
-
-```bash
-rdc config remote master-password change [options]
-```
-
-| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
-|------|-------------|----------|---------|
-| `--new-master-password-stdin` | {{t:cli.commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin}} | {{t:cli.docs.optionLabels.no}} | - |
-
 
 <a id="cli-local-config-remote-refresh"></a>
 #### refresh
