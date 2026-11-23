@@ -1,4 +1,4 @@
-r"""check:ci-worklist-env-registry -- every WORKLIST_* name is registered, and every registered name is read.
+r"""The `worklist` section of the one environment registry, held by check:ci-env-registry -- every WORKLIST_* name is registered, and every registered name is read.
 
 THE DEFECT, IN ONE SENTENCE. A typo'd environment name reads as UNSET, and for a feature flag that defaults to `on` that is the FAIL-OPEN direction: the author believes they switched something off, the default applies, and the check keeps firing with nothing anywhere saying why. `WORKLIST_FOCUS` is exactly that shape (so were `WORKLIST_AGENT_HINT`, `WORKLIST_AGENT_PUSHBACK` and
 `WORKLIST_CADENCE` until they moved into agent/plans/QUEUE.md), and until 2026-09-09 there was no registry, no schema and nothing that could tell a live name from a dead one.
@@ -41,7 +41,7 @@ WHAT IS DERIVED AND WHAT IS AUTHORED, because a registry whose every field is de
 
 `foreign_reads` IS THE SECOND EXCLUSION, for names read only where this scan cannot look. The scan reads Python and bash; `WORKLIST_EPICS_LEDGER` is read by a TypeScript gate alone, so under `names` it would report DEAD. Each entry carries its class, its reader and a reason, and the exclusion contract applies: the reader must still name it, word-bounded, and a name the scan CAN see may not hide there.
 
-REGISTERING A NAME is one command, `npm run env:register -- <module> <NAME> --class <c> --kind <k> --default <spelling>... [--why <w>]` (`env_register.py`). It applies this gate's schema before writing, writes this file, re-renders the manifest and runs the three registry gates.
+REGISTERING A NAME is one command, `npm run env:register -- <module> <NAME> --class <c> --kind <k> --default <spelling>... [--why <w>]` (`env_register.py`). It applies this section's schema before writing, writes this section, re-renders the shards and runs check:ci-env-registry.
 
 `corpus` IS THE RESIDUAL, AND THAT IS WHY IT REQUIRES A REASON. Any name whose default fits no other shape lands there. Making the residual the most expensive kind to declare is what stops it becoming the drawer everything is swept into.
 
@@ -61,22 +61,7 @@ visible.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 
-THE GATE HEADER LIVES IN THE ENTRY POINT, not here. `gate-bind` reads the file the
-registry INVOKES, and the registry invokes .ci/scripts/quality/check_worklist_env_registry.py by path;
-a header here derives this module's own path and the binding disagrees with
-package.json. Measured 2026-09-09: three gates landed with it in the module and
-`check:ci-gate-bind` named all three.
-
----- gate ----
-step: Worklist env registry
-needs: none
-lane: quality-static
-selftest: true
-why: 133 WORKLIST_* names are read at 183 sites with no registry and no schema.
-     A typo'd name reads as unset, and for the four flags that default to `on`
-     that is fail-open: the author believes they switched something off and it
-     is still running
----- end gate ----
+THE SECTION LIVES IN `.ci/config/env-manifest.json` under `worklist` (`env_doc.py`), beside the shard classification and the Python read set, and this module is no gate of its own: check:ci-env-registry (`env_registry.py`) runs `check()` and these controls.
 """
 
 from __future__ import annotations
@@ -87,14 +72,15 @@ import os
 import pathlib
 import re
 import subprocess
-import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
-from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.controls import Checker, git_isolated, plant
+from rediacc_ci.quality import env_doc
 
-REGISTRY_NAME = "worklist-env-registry.json"
+# The registry is the `worklist` section of the one environment registry document.
+REGISTRY_REL = env_doc.DOC_REL
+SECTION = env_doc.WORKLIST
 NAME_RE = re.compile(r"WORKLIST_[A-Z0-9_]+")
 
 KINDS = ("flag", "tuning", "path", "handle", "corpus")
@@ -394,16 +380,19 @@ def scan_corpus(root, exclusions, files=None):
 def load_registry(path):
     p = pathlib.Path(path)
     try:
-        raw = p.read_text(encoding="utf-8")
-    except OSError as exc:
+        doc = env_doc.read(p)
+    except env_doc.DocError as exc:
         raise RefusalError(
-            "cannot read the registry at %s (%s). Every name in the tree would read "
-            "as unregistered and the report would be noise, so this is a refusal." % (p, exc)
+            "cannot read the registry (%s). Every name in the tree would read "
+            "as unregistered and the report would be noise, so this is a refusal." % exc
         ) from exc
-    try:
-        obj = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RefusalError("%s is not valid JSON: %s" % (p, exc)) from exc
+    obj = doc.get(SECTION)
+    if not isinstance(obj, dict):
+        raise RefusalError(
+            "%s has no `%s` section, so every WORKLIST_* name in the tree would read as "
+            "unregistered." % (env_doc.shown(p), SECTION)
+        )
+    p = "%s `%s`" % (env_doc.shown(p), SECTION)
     names = obj.get("names")
     if not isinstance(names, dict) or not names:
         raise RefusalError(
@@ -601,30 +590,10 @@ def evaluate(registry, reads):
     return findings, stats
 
 
-#: Test-only override for WHICH FILE `load_registry` reads, matching the
-#: `LABEL_INVENTORY_LIVE_FILE` seam already in this estate
-#: (`label_inventory.py`). The real corpus scan (`scan_corpus`, above)
-#: is untouched by this seam -- only the registry file swaps -- so a plant
-#: that mutates the REGISTRY no longer has to write the tracked
-#: `.ci/policy/worklist-env-registry.json` to exercise the comparison. Two
-#: cases (`test_dropping_a_registered_name_reds`,
-#: `test_a_registered_name_nobody_reads_reds`) used to write-mutate-restore
-#: that tracked file directly; a hard kill in the write window left it
-#: genuinely corrupted twice in one session (`WORKLIST_FOCUS` deleted, then
-#: `WORKLIST_ZZZ_PHANTOM` added), each time from an unrelated process
-#: (a suite timeout, then a concurrent pytest run) landing in the exact
-#: millisecond window between the write and the `finally`.
-REGISTRY_OVERRIDE = os.environ.get("WORKLIST_REGISTRY_OVERRIDE_FILE", "")
-
-
 def run(root=None):
-    # The override applies ONLY to the real invocation (no explicit root, i.e. `run()` from main()). selftest()'s own controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp registry that happens to be sitting in the same process's environment -- that would make every OTHER control's fixture registry silently wrong.
-    use_override = root is None and REGISTRY_OVERRIDE
+    # `env_doc.doc_path` reads ENV_REGISTRY_OVERRIDE_FILE for the real invocation ONLY (no explicit root). selftest()'s own controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp document sitting in the same process's environment. Only the registry swaps; `scan_corpus` still reads the real tree, so a plant mutating the registry never writes the tracked file.
+    registry = load_registry(env_doc.doc_path(root))
     root = pathlib.Path(root or paths.repo_root())
-    registry_path = (
-        pathlib.Path(REGISTRY_OVERRIDE) if use_override else policy_path(REGISTRY_NAME, root)
-    )
-    registry = load_registry(registry_path)
     exclusions = sorted(registry["exclusions"])
     files = tracked_files(root)
     reads, scanned, excluded = scan_corpus(root, exclusions, files)
@@ -658,22 +627,17 @@ def run(root=None):
     return findings, stats
 
 
-def main(argv=None):
-    argv = list(argv or [])
-    if "--selftest" in argv:
-        return 1 if selftest() else 0
-    rc = controls_first("worklist env registry", selftest)
-    if rc:
-        return rc
+def check():
+    """The verdict on the real tree, printed. 0 green, 1 on a finding or refusal. Controls are the caller's (`env_registry.py`)."""
     try:
         findings, stats = run()
     except RefusalError as exc:
-        log.error("worklist env registry: %s" % exc)
+        log.error("worklist: %s" % exc)
         return 1
     if findings:
         for finding in findings:
             log.error("  %s" % finding)
-        log.error("%d finding(s) against .ci/policy/%s." % (len(findings), REGISTRY_NAME))
+        log.error("%d finding(s) against %s `%s`." % (len(findings), REGISTRY_REL, SECTION))
         return 1
     for prefix in stats["exclusions"]:
         log.info("  excluded by declaration: %s" % prefix)
@@ -681,7 +645,7 @@ def main(argv=None):
     for name in stats["foreign"]:
         log.info("  read outside this scan, by declaration: %s" % name)
     log.success(
-        "worklist env registry: %d name(s) across %d file(s) at %d read site(s), "
+        "worklist: %d name(s) across %d file(s) at %d read site(s), "
         "all registered and all read; %d tracked file(s) scanned, %d excluded by "
         "declaration; %d sealed module(s) read no environment; kinds %s; classes %s; "
         "%d foreign read(s)"
@@ -768,7 +732,7 @@ def _registry_obj():
 def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE_SEALED, ts=None):
     """A real git repository, because the scanner reads `git ls-files`."""
     root = pathlib.Path(tmp)
-    (root / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     (root / "agent").mkdir(parents=True, exist_ok=True)
     (root / "src.py").write_text(py, encoding="utf-8")
     if sealed is not None:
@@ -776,8 +740,8 @@ def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE
     (root / "run.sh").write_text(sh, encoding="utf-8")
     (root / "gate.ts").write_text(_FIXTURE_TS if ts is None else ts, encoding="utf-8")
     (root / "agent" / "PLAN.md").write_text(_FIXTURE_PROSE, encoding="utf-8")
-    (root / ".ci" / "policy" / REGISTRY_NAME).write_text(
-        json.dumps(registry if registry is not None else _registry_obj(), indent=2),
+    (root / REGISTRY_REL).write_text(
+        json.dumps({SECTION: registry if registry is not None else _registry_obj()}, indent=2),
         encoding="utf-8",
     )
     for args in (["init", "-q"], ["add", "-A", "-f"]):
@@ -1020,8 +984,13 @@ def selftest():
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
-        (root / ".ci" / "policy").mkdir(parents=True)
+        (root / ".ci" / "config").mkdir(parents=True)
         check("VACUITY: a missing registry file is a REFUSAL", _refuses(root))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp)
+        (root / REGISTRY_REL).write_text('{"shards": {}}', encoding="utf-8")
+        check("VACUITY: a document with no `worklist` section is a REFUSAL", _refuses(root))
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp, py="def broken(:\n")
@@ -1126,10 +1095,3 @@ def _refuses(root):
     except RefusalError:
         return True
     return False
-
-
-if __name__ == "__main__":
-    from rediacc_ci.quality import gate_args
-
-    gate_args.parse("check_worklist_env_registry.py", sys.argv[1:], switches=("--selftest",))
-    raise SystemExit(main(sys.argv[1:]))

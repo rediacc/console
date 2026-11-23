@@ -1,10 +1,14 @@
-r"""`rediacc_ci.quality.env_manifest`: the entry point, the real tree, and the plants.
+r"""check:ci-env-registry (`rediacc_ci.quality.env_registry`) and its `shards` section (`env_manifest`): the entry point, the real tree, and the plants.
 
-WHAT IS WORTH TESTING HERE, given the gate already runs 26 controls on every invocation. Three things a control inside the gate cannot do:
+WHAT IS WORTH TESTING HERE, given the gate already runs every section's controls on every invocation. Four things a control inside the gate cannot do:
 
+  0. Prove the ONE GATE reds for each section on the real tree: a read nobody
+     registered, and a registry row nothing reads, each planted into a tmp copy
+     of the whole document and driven through the real gate, beside a control
+     where an unmutated copy stays green.
   1. Drive the ENTRY POINT as a subprocess, the way CI runs it. The controls
      exercise the pure helpers in-process, which proves the arithmetic and proves
-     nothing about the shim, the `_cipath` hop or the exit code.
+     nothing about the module entry or the exit code.
   2. PLANT A DEFECT IN THE REAL MANIFEST AND WATCH THE REAL INVOCATION GO RED.
      A control that calls `clause_findings` with a hand-built dict passes while
      the gate reads no file at all. Each plant below copies the real manifest,
@@ -16,8 +20,8 @@ WHAT IS WORTH TESTING HERE, given the gate already runs 26 controls on every inv
      happen unless all five readers really parsed real tracked files.
 
 NO PLANT BELOW EVER WRITES THE REAL MANIFEST, and that is the correction this file exists in its current form for. `planted()` used to copy `.ci/config/env-manifest.json`, write a mutated version OVER the tracked file, run the gate, and restore in a `finally`; `test_a_deleted_manifest_...` went further and `unlink`ed it. A hard kill anywhere in those windows leaves the tracked
-manifest corrupted or gone, with the only backup in a temp directory the same kill orphans. That is not a hypothesis -- the identical shape destroyed `.ci/policy/worklist-env-registry.json` twice in one session, once from a `check:ci-pytest` timeout and once from a concurrent pytest run in a second worktree. Every mutation now happens to a TMP COPY, and `ENV_MANIFEST_OVERRIDE_FILE`
-points the real entry point at it. The corpus side is untouched: the five readers still derive names from the real tracked tree, so a plant still proves the live gate reads the live repository.
+manifest corrupted or gone, with the only backup in a temp directory the same kill orphans. That is not a hypothesis -- the identical shape destroyed `.ci/policy/worklist-env-registry.json` twice in one session, once from a `check:ci-pytest` timeout and once from a concurrent pytest run in a second worktree. Every mutation now happens to a TMP COPY, and `ENV_REGISTRY_OVERRIDE_FILE`
+points the real invocation at it. A `shards` plant drives that section's own `check()` in a child process, so it costs one section's scan rather than all three; the cross-section plants drive the whole gate. The corpus side is untouched: the five readers still derive names from the real tracked tree, so a plant still proves the live gate reads the live repository.
 
 `xdist_group` IS DECLARED, and its justification changed with the seam. It used to be required, because every plant mutated one shared file in the real tree and two of them on different workers would interleave: worker A plants a STALE entry, worker B runs the gate expecting green, and the failure lands on B with no explanation in it. Nothing is shared any more, so the group is no
 longer load bearing for correctness; it is kept because each case forks the whole gate across the whole tracked tree, and one worker running them back to back is cheaper than several doing it at once.
@@ -37,38 +41,39 @@ from rediacc_ci import paths
 from rediacc_ci.quality import env_manifest as em
 from rediacc_ci.tests.gates import harness
 
-ENTRY = ".ci/scripts/quality/check_env_manifest.py"
+GATE = [sys.executable, "-m", "rediacc_ci.quality.env_registry"]
+SHARDS_CHECK = [
+    sys.executable,
+    "-c",
+    "from rediacc_ci.quality import env_manifest as m; raise SystemExit(m.check())",
+]
 
 pytestmark = pytest.mark.xdist_group("env-manifest")
 
 
-# PLAN-ciquick-cpu.md W17. The clean real-tree run (no override) is a read two cases share, so it runs ONCE per session, controls first, as check:ci-env-manifest runs it; this module is one xdist group, so the once is real. A plant run sets an override and skips the gate's `controls_first` (`harness.without_controls`): the clean run and the gate's own CI step still run them, and each plant used to repeat them.
+# PLAN-ciquick-cpu.md W17. The clean real-tree run (no override) is a read several cases share, so it runs ONCE per session, controls first, as check:ci-env-registry runs it; this module is one xdist group, so the once is real. A plant run sets an override and skips the controls: a `shards` plant runs only that section's `check()`, a whole-gate plant goes through `harness.without_controls`. The clean run and the gate's own CI step still run them.
 _CLEAN: dict[str, subprocess.CompletedProcess] = {}
 
 
-def _run(root, override=None, python_env=None):
-    if override is None and python_env is None:
+def _env(root, override=None):
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(root / ".ci")
+    if override is not None:
+        env["ENV_REGISTRY_OVERRIDE_FILE"] = str(override)
+    return env
+
+
+def _run(root, override=None, whole_gate=False):
+    """The clean whole-gate run (cached) with no override; else one plant run against `override`."""
+    if override is None:
         if str(root) not in _CLEAN:
             _CLEAN[str(root)] = subprocess.run(
-                [sys.executable, str(root / ENTRY)],
-                cwd=root,
-                capture_output=True,
-                text=True,
-                check=False,
+                GATE, cwd=root, capture_output=True, text=True, check=False, env=_env(root)
             )
         return _CLEAN[str(root)]
-    env = dict(os.environ)
-    if override is not None:
-        env["ENV_MANIFEST_OVERRIDE_FILE"] = str(override)
-    if python_env is not None:
-        env["ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE"] = str(python_env)
+    argv = harness.without_controls(GATE) if whole_gate else SHARDS_CHECK
     return subprocess.run(
-        harness.without_controls([sys.executable, str(root / ENTRY)]),
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
+        argv, cwd=root, capture_output=True, text=True, check=False, env=_env(root, override)
     )
 
 
@@ -85,10 +90,10 @@ def _derived(root):
 
 
 @contextlib.contextmanager
-def planted(mutate):
-    """Mutate a TMP COPY of the manifest, run the gate against it, yield the run.
+def planted(mutate, whole_gate=False):
+    """Mutate a TMP COPY of the whole registry document, run the check against it, yield the run.
 
-    The real file is read and never written, so there is no restore to race and no window a kill can land in. The caller gets the same thing it always got: a real subprocess run of the real entry point over the real tracked tree, disagreeing with a manifest that says something wrong.
+    The real file is read and never written, so there is no restore to race and no window a kill can land in. The caller gets a real subprocess run over the real tracked tree, disagreeing with a document that says something wrong: the `shards` section's check, or with `whole_gate` the whole gate.
     """
     root = paths.repo_root()
     live = root / em.MANIFEST_REL
@@ -98,8 +103,99 @@ def planted(mutate):
         data = json.loads(before.decode("utf-8"))
         mutate(data)
         mutated.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-        yield _run(root, override=mutated)
+        yield _run(root, override=mutated, whole_gate=whole_gate)
     assert live.read_bytes() == before, "the real manifest must never be written at all"
+
+
+# ---- T0: the one gate, both directions, every section ----
+
+
+def test_the_one_gate_is_green_on_the_real_tree_and_prints_each_section():
+    proc = _run(paths.repo_root())
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    text = proc.stdout + proc.stderr
+    for section in ("shards", "python_reads", "worklist"):
+        assert "section `%s`" % section in text, text
+        assert "%s rc 0" % section in text, text
+
+
+def test_control_an_unmutated_copy_through_the_override_stays_green():
+    """CONTROL for the plants below: the override seam itself must not turn the gate red."""
+    with planted(lambda _data: None, whole_gate=True) as proc:
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "3 section(s)" in proc.stderr, proc.stderr
+
+
+def _a_python_read(data):
+    """A (module, NAME) the real tree reads, in no other module and in a live shard: the victim for an unregistered read."""
+    modules = data["python_reads"]["modules"]
+    readers: dict[str, list[str]] = {}
+    for module, names in modules.items():
+        for name in names:
+            readers.setdefault(name, []).append(module)
+    for module in sorted(modules):
+        for name in modules[module]:
+            if name.startswith(("*", "WORKLIST_")) or len(readers[name]) != 1:
+                continue
+            if any(name in entries for entries in data["shards"].values()):
+                return module, name
+    raise AssertionError("no singly-read Python name found; the victim picker has lost the tree")
+
+
+def test_an_unregistered_read_reds_the_one_gate():
+    """A read the document does not know, in BOTH sections that pin it: unclassified in `shards`, NEW in `python_reads`.
+
+    Taking a real read's rows out of the document is the same input to the gate as a new read the rows were never written for, and it plants nothing into the tracked tree.
+    """
+    victim = {}
+
+    def mutate(data):
+        module, name = _a_python_read(data)
+        victim.update(module=module, name=name)
+        data["python_reads"]["modules"][module].remove(name)
+        for entries in data["shards"].values():
+            if name in entries:
+                entries.remove(name)
+
+    with planted(mutate, whole_gate=True) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "UNCLASSIFIED %s " % victim["name"] in proc.stderr, proc.stderr
+        assert "NEW %s:%s" % (victim["module"], victim["name"]) in proc.stderr, proc.stderr
+        assert "shards rc 1, python_reads rc 1, worklist rc 0" in proc.stderr, proc.stderr
+
+
+def test_an_unregistered_worklist_read_reds_the_one_gate():
+    def mutate(data):
+        data["worklist"]["names"].pop("WORKLIST_JUDGE")
+
+    with planted(mutate, whole_gate=True) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "UNREGISTERED WORKLIST_JUDGE" in proc.stderr, proc.stderr
+        assert "worklist rc 1" in proc.stderr, proc.stderr
+
+
+def test_an_orphan_row_reds_the_one_gate_in_every_section():
+    """A row nothing reads, one per section: a shard entry, a `python_reads` pair, a `worklist` name."""
+
+    def mutate(data):
+        data["shards"]["harness"] = sorted(data["shards"]["harness"] + ["ZZ_ORPHAN_SHARD_ROW"])
+        data["python_reads"]["modules"].setdefault(".ci/rediacc_ci/quality/env_doc.py", []).append(
+            "ZZ_ORPHAN_PY_ROW"
+        )
+        data["worklist"]["names"]["WORKLIST_ZZ_ORPHAN_ROW"] = {
+            "kind": "tuning",
+            "class": "harness",
+            "defaults": ["'1'"],
+        }
+
+    with planted(mutate, whole_gate=True) as proc:
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+        assert "STALE ZZ_ORPHAN_SHARD_ROW" in proc.stderr, proc.stderr
+        assert "STALE .ci/rediacc_ci/quality/env_doc.py:ZZ_ORPHAN_PY_ROW" in proc.stderr, (
+            proc.stderr
+        )
+        assert "DEAD WORKLIST_ZZ_ORPHAN_ROW" in proc.stderr, proc.stderr
+        assert "shards rc 1, python_reads rc 1, worklist rc 1" in proc.stderr, proc.stderr
 
 
 def test_entry_point_is_green_on_the_real_tree():
@@ -252,6 +348,13 @@ def test_a_deleted_manifest_is_a_refusal_not_a_pass():
     assert _run(root).returncode == 0, "the real tree is still green with no override set"
 
 
+def test_a_deleted_document_refuses_through_the_whole_gate():
+    """rc 2 from the whole gate too: every section refuses, and the worst code wins."""
+    with tempfile.TemporaryDirectory() as td:
+        proc = _run(paths.repo_root(), override=pathlib.Path(td) / "absent.json", whole_gate=True)
+    assert proc.returncode == 2, proc.stdout + proc.stderr
+
+
 def test_the_python_reader_resolves_constant_indirection():
     """The 55-name hole a regex leaves, in one line, both directions."""
     assert em.names_from_py('S = "SEAM"\nimport os\nos.environ.get(S)\n') == {"SEAM"}
@@ -269,7 +372,7 @@ def test_the_python_reader_ignores_a_literal_inside_another_gates_fixture():
 
 def _registry_classes():
     root = paths.repo_root()
-    reg = json.loads((root / ".ci/policy/worklist-env-registry.json").read_text(encoding="utf-8"))
+    reg = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))["worklist"]
     out = {name: entry.get("class") for name, entry in reg["names"].items()}
     out.update({name: entry.get("class") for name, entry in reg.get("foreign_reads", {}).items()})
     return out
@@ -326,22 +429,18 @@ def test_render_moves_misplaced_members_and_leaves_the_rest_alone():
     assert lists["harness"] == ["OTHER", "WORKLIST_A", "WORKLIST_B"], "the input is not mutated"
 
 
-# ---- T3: every literal name python-env-registry.json records is classified ----
+# ---- T3: every literal name the `python_reads` section records is classified ----
 
 
 @contextlib.contextmanager
 def planted_python_env(mutate):
-    """Mutate a TMP COPY of python-env-registry.json and run the real gate against it."""
-    root = paths.repo_root()
-    live = root / em.PYTHON_ENV_REL
-    before = live.read_bytes()
-    with tempfile.TemporaryDirectory() as td:
-        mutated = pathlib.Path(td) / "python-env-registry-mutated.json"
-        data = json.loads(before.decode("utf-8"))
-        mutate(data)
-        mutated.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-        yield _run(root, python_env=mutated)
-    assert live.read_bytes() == before, "the real registry must never be written at all"
+    """Mutate the `python_reads` section of a TMP COPY of the document and run the `shards` check against it."""
+
+    def whole(data):
+        mutate(data["python_reads"])
+
+    with planted(whole) as proc:
+        yield proc
 
 
 def test_gate_harness_ledger_is_classified_as_a_gate_seam():
@@ -352,27 +451,26 @@ def test_gate_harness_ledger_is_classified_as_a_gate_seam():
 
 def test_a_literal_name_in_the_python_env_registry_must_be_classified():
     def mutate(data):
-        data["modules"][".ci/rediacc_ci/quality/env_manifest.py"].append("ZZ_PLANTED_PY_ENV")
+        data["modules"][".ci/rediacc_ci/quality/env_doc.py"].append("ZZ_PLANTED_PY_ENV")
 
     with planted_python_env(mutate) as proc:
         assert proc.returncode == 1, proc.stdout + proc.stderr
         assert "UNCLASSIFIED ZZ_PLANTED_PY_ENV" in proc.stderr, proc.stderr
-        assert "python-env-registry.json" in proc.stderr, proc.stderr
+        assert "`python_reads`" in proc.stderr, proc.stderr
 
 
 def test_an_opaque_star_name_in_the_python_env_registry_is_not_a_finding():
     """CONTROL: `*expr` is an expression, not a name; the clause must not demand it be classified."""
 
     def mutate(data):
-        data["modules"][".ci/rediacc_ci/quality/env_manifest.py"].append("*zz_planted_key")
+        data["modules"][".ci/rediacc_ci/quality/env_doc.py"].append("*zz_planted_key")
 
     with planted_python_env(mutate) as proc:
         assert proc.returncode == 0, proc.stdout + proc.stderr
         assert "zz_planted_key" not in proc.stdout + proc.stderr
 
 
-def test_a_missing_python_env_registry_is_a_refusal():
-    with tempfile.TemporaryDirectory() as td:
-        proc = _run(paths.repo_root(), python_env=pathlib.Path(td) / "absent.json")
-    assert proc.returncode == 2, proc.stdout + proc.stderr
-    assert "is missing" in proc.stderr, proc.stderr
+def test_a_missing_python_reads_section_is_a_refusal():
+    with planted(lambda data: data.pop("python_reads")) as proc:
+        assert proc.returncode == 2, proc.stdout + proc.stderr
+        assert "is missing" in proc.stderr, proc.stderr

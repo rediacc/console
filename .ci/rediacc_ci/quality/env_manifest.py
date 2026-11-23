@@ -1,4 +1,4 @@
-r"""check:ci-env-manifest -- every environment variable this repo reads or supplies, classified by WHO SUPPLIES THE VALUE and WHO MAY READ IT.
+r"""The `shards` section of the one environment registry, held by check:ci-env-registry -- every environment variable this repo reads or supplies, classified by WHO SUPPLIES THE VALUE and WHO MAY READ IT.
 
 THE NUMBER IS NOT THE ACCEPTANCE, AND THAT IS THE WHOLE DESIGN. The plan box that asked for this file carried a union of 1,014 names; its own design annotation re-measured 745, then 721 over tracked files and 777 over everything on disk, and not one of the five component counts reproduced. The 56-name swing was entirely gitignored `.env` files, one of them a single developer's
 `.env.pre-rename.bak`. A manifest whose size depends on whether a stray backup is present is not a manifest, so no count is written down anywhere in this module or in `.ci/config/env-manifest.json`. Every number in the output below is derived on the run that prints it.
@@ -42,20 +42,20 @@ variable that goes away RED-LIGHTS its stale manifest line instead of sitting th
 
 TWO MORE INPUTS, AND WHAT EACH ONE ADDS (agent/plans/PLAN-ci-consolidation.md, Part A).
 
-  python-env   `.ci/config/python-env-registry.json`, the AST-measured
+  python-env   the `python_reads` section of the same file, the AST-measured
                `module -> [NAME]` read set. It resolves a read through a
                constant in ANOTHER module (`os.environ.get(harness.LEDGER_ENV)`),
                which the os-environ reader above cannot. Its literal names join
                `sources`, so the four clauses hold them too; a `*expr` entry is an
                expression, not a name, and is not asked to be classified.
-  worklist     `.ci/policy/worklist-env-registry.json`. Every WORKLIST_* member of
+  worklist     the `worklist` section of the same file. Every WORKLIST_* member of
                a live shard is GENERATED from that registry's `class`
                (`render_worklist`), and a member placed anywhere else is a finding
                naming `npm run env:register`. The four clauses cannot see a hand
                MOVE between shards: the name is still in exactly one shard and
                still read. Only the registry knows where it belongs.
 
-HOW A NAME IS ADDED: `npm run env:register -- <module> <NAME> --class <shard>` (`env_register.py`). It writes the one authored home, re-renders the WORKLIST_* members, records a Python read with a typed `--allow-new`, regenerates the docs and runs this gate with its two siblings. An UNCLASSIFIED finding names it.
+HOW A NAME IS ADDED: `npm run env:register -- <module> <NAME> --class <shard>` (`env_register.py`). It writes the one authored home, re-renders the WORKLIST_* members, records a Python read with a typed `--allow-new`, regenerates the docs and runs check:ci-env-registry. An UNCLASSIFIED finding names it.
 
 ANTI-VACUITY, AND WHY IT IS NOT `n > 0`. A per-source count floor is the obvious guard against a reader that silently stops matching, and it is the wrong shape: a clause like `env_file_names > 0` becomes a false red the day the last `.env` example is deleted, which is a legitimate terminal state. Two clauses that are true in EVERY state replace it:
 
@@ -76,26 +76,13 @@ cannot make. Bash `${VAR}`, as above. And a JS/TS `process.env[expr]` where
 `expr` is not a literal: 19 such sites exist today, and every one that resolves to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via `SUBSCRIPTION_TOKEN_ENV`, `REDIACC_ALLOW_CONFIG_EDIT` via `OVERRIDE_VAR_CONFIG_EDIT`, the four `AGENT_ENV_VARS`), the rest being loop variables. The count is printed every run rather than asserted, because the honest assertion
 -- "no unresolvable dynamic read" -- is false today and could only be made true with a baseline.
 
----- gate ----
-step: Env manifest
-needs: none
-lane: quality-static
-selftest: true
-why: an environment variable is an undeclared input, and nothing in this tree could
-     answer "who supplies this value and who may read it" without a fresh grep that
-     is wrong in both directions. Five readers derive the corpus from tracked files
-     on every run -- no count is ever written down -- and four set-arithmetic clauses
-     hold it against an eight-shard classification, the eighth shard being tombstones
-     so that "a dead name came back" and "a new name is unclassified" are the same
-     assertion rather than two mechanisms to keep in sync
----- end gate ----
+ONE FILE, ONE GATE. The shard classification, the `python_reads` read set and the `worklist` registry are sections of `.ci/config/env-manifest.json` (`env_doc.py`), and check:ci-env-registry (`env_registry.py`) runs this module's `check()` and controls with the other two. This module is no gate of its own.
 """
 
 from __future__ import annotations
 
 import ast
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -103,37 +90,17 @@ import subprocess
 import tempfile
 
 from rediacc_ci import log, paths, runtmp
-from rediacc_ci.controls import Controls, controls_first
-from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.controls import Controls
+from rediacc_ci.quality import env_doc
 from rediacc_ci.quality import worklist_env_registry as wer
 
-MANIFEST_REL = ".ci/config/env-manifest.json"
+MANIFEST_REL = env_doc.DOC_REL
 VAULT_REL = ".ci/config/bws-secret-map.json"
-PYTHON_ENV_REL = ".ci/config/python-env-registry.json"
+PYTHON_ENV_REL = "%s `%s`" % (env_doc.DOC_REL, env_doc.PYTHON_READS)
 WORKLIST_PREFIX = "WORKLIST_"
 REGISTER_VERB = "npm run env:register -- <module> <NAME> --class <shard> [...]"
 
-#: Test-only. One file path that REPLACES `.ci/config/env-manifest.json` as the
-#: thing every clause is compared against. The corpus side is untouched -- the
-#: five readers still derive names from the real `git ls-files` tree, which is
-#: the whole point of a plant test driving the live gate -- so only the
-#: MANIFEST side becomes a tmp copy the caller mutated.
-#:
-#: This exists because `test_quality_env_manifest.py`'s `planted()` used to
-#: copy the real manifest, write a mutated version OVER the tracked file, run
-#: the gate, and restore in a `finally`. A hard kill inside that window leaves
-#: `.ci/config/env-manifest.json` genuinely corrupted with no backup. That is
-#: not hypothetical: the same shape destroyed
-#: `.ci/policy/worklist-env-registry.json` twice in one session, once from a
-#: suite timeout and once from a concurrent pytest run in a second worktree,
-#: which is why `WORKLIST_REGISTRY_OVERRIDE_FILE` was added one file over. This
-#: is that seam, for this gate.
-MANIFEST_OVERRIDE = os.environ.get("ENV_MANIFEST_OVERRIDE_FILE", "")
-
-#: Test-only, the same seam for the OTHER input: a tmp copy that replaces
-#: `.ci/config/python-env-registry.json`, so a plant can add a name to the
-#: measured read set without writing the tracked baseline.
-PYTHON_ENV_OVERRIDE = os.environ.get("ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE", "")
+# THE TEST SEAM is `env_doc.OVERRIDE` (ENV_REGISTRY_OVERRIDE_FILE): one tmp copy of the whole document replaces it for the real invocation. The corpus side is untouched -- the five readers still derive names from the real `git ls-files` tree, which is the whole point of a plant test driving the live gate -- so only the document becomes a tmp copy the caller mutated, and a hard kill inside a test cannot corrupt the tracked file. That corruption is not hypothetical: write-mutate-restore plants destroyed the WORKLIST_* registry twice in one session.
 
 LIVE_SHARDS = (
     "secret",
@@ -453,23 +420,21 @@ def derive_sources(root, files=None, suppress=None):
 # -------------------------------------------------------------------------- The manifest --------------------------------------------------------------------------
 
 
-def load_manifest(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
-    """The manifest to compare against: the tracked one, or a test-only override.
+def load_manifest(path: pathlib.Path) -> dict:
+    """The document to compare against: the tracked one, or a test-only override.
 
-    The refusal names the path it actually looked at rather than `MANIFEST_REL`, so an override pointed at the wrong file says so instead of accusing the tracked manifest of being missing.
+    The refusal names the path it actually looked at, so an override pointed at the wrong file says so instead of accusing the tracked manifest of being missing.
     """
-    path = override or root / MANIFEST_REL
-    shown = str(override) if override else MANIFEST_REL
     if not path.is_file():
         raise RefusalError(
             "%s is missing. Every verdict this gate gives is a comparison against "
             "that file; without it there is nothing to compare and a green would "
-            "mean nothing." % shown
+            "mean nothing." % env_doc.shown(path)
         )
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise RefusalError("%s is not valid JSON: %s" % (shown, exc)) from exc
+        return env_doc.read(path)
+    except env_doc.DocError as exc:
+        raise RefusalError(str(exc)) from exc
 
 
 def shard_lists(manifest: dict) -> dict[str, list[str]]:
@@ -523,7 +488,7 @@ def clause_findings(
 ) -> list[str]:
     """The four clauses, each returning its own findings. Order is the box's.
 
-    `origins` names, for a name only python-env-registry.json supplies, the module that reads it, so an UNCLASSIFIED finding the five readers cannot reproduce still says where to look.
+    `origins` names, for a name only the `python_reads` section supplies, the module that reads it, so an UNCLASSIFIED finding the five readers cannot reproduce still says where to look.
     """
     origins = origins or {}
     findings = []
@@ -655,22 +620,20 @@ def suppress_map(manifest: dict) -> dict[str, set[str]]:
     return {rel: set(names) for rel, names in raw.items()}
 
 
-def load_python_env(root: pathlib.Path, override: pathlib.Path | None = None) -> dict:
-    """`modules` of python-env-registry.json: the AST-measured `module -> [NAME]` read set."""
-    path = override or root / PYTHON_ENV_REL
-    shown = str(override) if override else PYTHON_ENV_REL
-    if not path.is_file():
+def load_python_env(manifest: dict) -> dict:
+    """`modules` of the `python_reads` section: the AST-measured `module -> [NAME]` read set."""
+    section = manifest.get(env_doc.PYTHON_READS)
+    if not isinstance(section, dict):
         raise RefusalError(
             "%s is missing. It is the measured Python read set this gate holds the manifest "
             "against; without it the cross-module reads the os-environ reader cannot resolve "
-            "go unchecked, and a green would claim them." % shown
+            "go unchecked, and a green would claim them." % PYTHON_ENV_REL
         )
-    try:
-        modules = json.loads(path.read_text(encoding="utf-8")).get("modules")
-    except json.JSONDecodeError as exc:
-        raise RefusalError("%s is not valid JSON: %s" % (shown, exc)) from exc
+    modules = section.get("modules")
     if not isinstance(modules, dict) or not modules:
-        raise RefusalError("%s records no modules, so the clause would check nothing" % shown)
+        raise RefusalError(
+            "%s records no modules, so the clause would check nothing" % PYTHON_ENV_REL
+        )
     return modules
 
 
@@ -687,10 +650,10 @@ def python_env_names(modules: dict) -> dict[str, str]:
     return out
 
 
-def load_worklist_classes(root: pathlib.Path) -> dict[str, str]:
-    """{WORKLIST_NAME: class} from the authored home, `.ci/policy/worklist-env-registry.json`."""
+def load_worklist_classes(path: pathlib.Path) -> dict[str, str]:
+    """{WORKLIST_NAME: class} from the authored home, the document's `worklist` section."""
     try:
-        registry = wer.load_registry(policy_path(wer.REGISTRY_NAME, root))
+        registry = wer.load_registry(path)
     except wer.RefusalError as exc:
         raise RefusalError(
             "the WORKLIST_* shard membership is rendered from the worklist env registry, "
@@ -729,9 +692,9 @@ def worklist_findings(lists: dict[str, list[str]], classes: dict[str, str]) -> l
             if name.startswith(WORKLIST_PREFIX):
                 placed.setdefault(name, []).append(shard)
     hint = (
-        "WORKLIST_* membership is generated from the `class` in .ci/policy/%s; do not "
+        "WORKLIST_* membership is generated from the `class` in %s `%s`; do not "
         "hand-place it. Set the class with `%s`, which re-renders this list."
-        % (wer.REGISTRY_NAME, REGISTER_VERB)
+        % (MANIFEST_REL, wer.SECTION, REGISTER_VERB)
     )
     findings = []
     for name in sorted(set(placed) | set(classes)):
@@ -917,7 +880,7 @@ def selftest() -> bool:
     )
     c.truthy(
         "VACUITY: a missing python-env registry is a REFUSAL",
-        _refuses(lambda: load_python_env(pathlib.Path("/nonexistent-env-manifest-root"))),
+        _refuses(lambda: load_python_env({"shards": {}})),
     )
     return not c.report()
 
@@ -942,10 +905,10 @@ def _raises_syntax(text: str) -> bool:
 
 
 def run(root=None):
-    # The override applies ONLY to the real invocation (no explicit root, i.e. `run()` from main()). `selftest()`'s controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp manifest that happens to be sitting in the same process's environment -- that would make every other control's fixture manifest silently wrong.
-    use_override = root is None and MANIFEST_OVERRIDE
+    # `env_doc.doc_path` applies ENV_REGISTRY_OVERRIDE_FILE to the real invocation ONLY (no explicit root). `selftest()`'s controls always pass an explicit fixture root, and must never be redirected onto a plant test's tmp document sitting in the same process's environment -- that would make every other control's fixture manifest silently wrong.
+    doc_path = env_doc.doc_path(root)
     base = root or paths.repo_root()
-    manifest = load_manifest(base, pathlib.Path(MANIFEST_OVERRIDE) if use_override else None)
+    manifest = load_manifest(doc_path)
     lists = shard_lists(manifest)
     suppress = suppress_map(manifest)
     files = tracked_files(base)
@@ -958,13 +921,11 @@ def run(root=None):
         base, files, suppress
     )
     # The measured Python read set resolves reads through a constant in ANOTHER module (`os.environ.get(harness.LEDGER_ENV)`), which the os-environ reader above cannot. Its literal names join the sources, so they must be classified and so their manifest entries do not read as STALE.
-    py_env = python_env_names(
-        load_python_env(base, pathlib.Path(PYTHON_ENV_OVERRIDE) if use_override_py(root) else None)
-    )
+    py_env = python_env_names(load_python_env(manifest))
     origins = {n: m for n, m in py_env.items() if n not in sources}
     sources = sources | set(py_env)
     per_names["python-env"] = set(py_env)
-    classes = load_worklist_classes(base)
+    classes = load_worklist_classes(doc_path)
     blind = [r.id for r in SOURCES if per_files[r.id] == 0]
     if blind:
         raise RefusalError(
@@ -986,22 +947,12 @@ def run(root=None):
     return findings, sources, per_names, per_files, dynamic_js, lists, manifest, len(files)
 
 
-def use_override_py(root) -> bool:
-    """The python-env seam, under the same rule as the manifest seam: the real invocation only."""
-    return root is None and bool(PYTHON_ENV_OVERRIDE)
-
-
-def main(argv=None):
-    argv = list(argv or [])
-    if "--selftest" in argv:
-        return 1 if selftest() else 0
-    rc = controls_first("env manifest", selftest)
-    if rc:
-        return rc
+def check():
+    """The verdict on the real tree, printed. 0 green, 1 on a finding, 2 on a refusal. Controls are the caller's (`env_registry.py`)."""
     try:
         findings, sources, per_names, per_files, dynamic_js, lists, manifest, n_files = run()
     except RefusalError as exc:
-        log.error("env manifest: %s" % exc)
+        log.error("shards: %s" % exc)
         return 2
 
     log.info("sources, derived on this run over tracked files:")
@@ -1020,7 +971,7 @@ def main(argv=None):
     for line in clause_report(sources, lists):
         print("  %s" % line)
 
-    log.info("shards, as %s classifies them:" % MANIFEST_REL)
+    log.info("shards, as %s `shards` classifies them:" % MANIFEST_REL)
     for shard in ALL_SHARDS:
         print("  %-16s %4d" % (shard, len(lists[shard])))
 
@@ -1071,12 +1022,3 @@ def main(argv=None):
         )
     )
     return 0
-
-
-if __name__ == "__main__":
-    import sys
-
-    from rediacc_ci.quality import gate_args
-
-    gate_args.parse("check_env_manifest.py", sys.argv[1:], switches=("--selftest",))
-    raise SystemExit(main(sys.argv[1:]))

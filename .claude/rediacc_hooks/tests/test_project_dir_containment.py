@@ -172,7 +172,7 @@ def _root_conftest_harness_env() -> tuple[str, ...]:
 
 
 def test_the_conftest_pop_reaches_no_reader_outside_the_hook_tree():
-    """Review finding 6351de94.4: the root conftest pops `HARNESS_ROOT_ENV` for EVERY test in the repository, `.ci` gate tests included, so no module outside `.claude/` may read it from the session environment. The python env registry (`.ci/config/python-env-registry.json`, kept complete by `check:ci-python-env-registry`) is the census of every read. Control first: a planted `.ci` reader is named."""
+    """Review finding 6351de94.4: the root conftest pops `HARNESS_ROOT_ENV` for EVERY test in the repository, `.ci` gate tests included, so no module outside `.claude/` may read it from the session environment. The `python_reads` section of `.ci/config/env-manifest.json`, kept complete by `check:ci-env-registry`, is the census of every read. Control first: a planted `.ci` reader is named."""
     planted = {
         "modules": {
             ".ci/rediacc_ci/x.py": ["CLAUDE_PROJECT_DIR"],
@@ -181,8 +181,8 @@ def test_the_conftest_pop_reaches_no_reader_outside_the_hook_tree():
     }
     assert harness_root_readers(planted) == [".ci/rediacc_ci/x.py", ".claude/hooks/y.py"]
     registry = json.loads(
-        (REAL_ROOT / ".ci" / "config" / "python-env-registry.json").read_text(encoding="utf-8")
-    )
+        (REAL_ROOT / ".ci" / "config" / "env-manifest.json").read_text(encoding="utf-8")
+    )["python_reads"]
     readers = harness_root_readers(registry)
     assert readers, (
         "CONTROL: the registry records no reader at all, so it is not the census this test reads"

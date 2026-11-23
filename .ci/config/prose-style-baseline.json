@@ -76,11 +76,6 @@
     "e5038611286af891"
    ]
   },
-  ".ci/config/python-env-registry.json": {
-   "R18": [
-    "7970e93bb65005b6"
-   ]
-  },
   ".ci/config/secret-supply.json": {
    "R7": [
     "b65f611b0a5546a9"
@@ -90,11 +85,6 @@
    "R1": [
     "089b9f3aafd43d39",
     "313197e1fae3ad5a"
-   ]
-  },
-  ".ci/policy/worklist-env-registry.json": {
-   "R7": [
-    "33006525c9e20d0e"
    ]
   },
   ".ci/prompts/ci-failure-classifier.md": {

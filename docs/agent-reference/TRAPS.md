@@ -2000,11 +2000,11 @@ CI collects pytest units by shard manifest, not by directory. A new test module 
 
 ## An environment read registered in one registry and not the other
 Trap-Id: env-read-needs-both-registries
-Enforced-By: gate:check:ci-python-env-registry, gate:check:ci-worklist-env-registry
+Enforced-By: gate:check:ci-env-registry
 Residue:
 Documented-In: text:docs/agent-reference/ci-gates.md A new environment variable is registered with one command
 
-An environment read is registered twice: the Python env registry for `.ci`, and the worklist env registry for the hook side. A read added to only one passes its own gate and fails the other's on the next run, often in a different session that never touched it.
+An environment read is registered in more than one place: the `python_reads` section of `.ci/config/env-manifest.json` for a Python module, the `worklist` section for a WORKLIST_* name, and a shard for every name. A read added to only one section reds check:ci-env-registry on the next run, often in a different session that never touched it, which is why `npm run env:register` writes every section in one call.
 
 ## Manifest paths without pathsOrigin
 Trap-Id: manifest-paths-needs-paths-origin

@@ -1125,7 +1125,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 76 | .json 65, .txt 5, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
+| .ci/config | 75 | .json 64, .txt 5, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
 | .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
@@ -1137,7 +1137,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/media | 10 | .sh 10 |
 | .ci/media/tools | 2 | .sh 2 |
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
-| .ci/policy | 28 | (none) 18, .json 9, .md 1 |
+| .ci/policy | 27 | (none) 18, .json 8, .md 1 |
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 18 | .py 18 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
@@ -1163,7 +1163,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 168 | .py 168 |
+| .ci/rediacc_ci/quality | 170 | .py 170 |
 | .ci/rediacc_ci/release | 41 | .py 41 |
 | .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
@@ -1265,7 +1265,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/infra | 3 | .sh 3 |
 | .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 180 | .py 178, .json 1, .mjs 1 |
+| .ci/scripts/quality | 177 | .py 175, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
@@ -1434,7 +1434,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/devcontainer-image.json` | .ci/config | code: `.ci/rediacc_ci/core/devbox.py` | no -- hardcoded in `.ci/rediacc_ci/core/devbox.py` |
 | `.ci/config/dmarc-known-sources.json` | .ci/config | code: `.ci/rediacc_ci/ops/dmarc_reports.py` | no -- hardcoded in `.ci/rediacc_ci/ops/dmarc_reports.py` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/rediacc_ci/quality/allowlist_key_matching.py` | no -- hardcoded in `.ci/rediacc_ci/quality/allowlist_key_matching.py` |
-| `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
+| `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_doc.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_doc.py` |
 | `.ci/config/free-mail-domains.json` | .ci/config | code: `.ci/rediacc_ci/ops/enterprise_lookup.py` | no -- hardcoded in `.ci/rediacc_ci/ops/enterprise_lookup.py` |
 | `.ci/config/freshness.json` | .ci/config | wiring: `.github/workflows/ops-housekeeping.yml` | yes -- repoint in `.github/workflows/ops-housekeeping.yml` |
 | `.ci/config/gate-costs.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
@@ -1456,7 +1456,6 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/proof-tiers.json` | .ci/config | code: `.ci/rediacc_ci/proof/surfaces.py` | no -- hardcoded in `.ci/rediacc_ci/proof/surfaces.py` |
 | `.ci/config/prose-style-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/prose-style-rules.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
-| `.ci/config/python-env-registry.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/python-types-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_types.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_types.py` |
 | `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/quality/go_deps.py` | no -- hardcoded in `.ci/rediacc_ci/quality/go_deps.py` |
 | `.ci/config/release-requires.json` | .ci/config | code: `.ci/rediacc_ci/release/order.py` | no -- hardcoded in `.ci/rediacc_ci/release/order.py` |
@@ -1508,9 +1507,8 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/policy/pytest-slow-allow.json` | .ci/policy | code: `.ci/rediacc_ci/quality/pytest_slow_ratchet.py` | no -- hardcoded in `.ci/rediacc_ci/quality/pytest_slow_ratchet.py` |
 | `.ci/policy/record-paths.json` | .ci/policy | code: `.ci/rediacc_ci/dev/landing_promote.py` | no -- hardcoded in `.ci/rediacc_ci/dev/landing_promote.py` |
 | `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/quality/tree_shape.py` | no -- hardcoded in `.ci/rediacc_ci/quality/tree_shape.py` |
-| `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/quality/worklist_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/worklist_env_registry.py` |
 
-109 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+107 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -1956,10 +1954,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ENTERPRISE_PROOF_CONFIG` | harness | - |
 | `ENTERPRISE_PROOF_REF` | harness | - |
 | `ENUM_VACUITY_MIN` | gate-seam | - |
-| `ENV_MANIFEST_OVERRIDE_FILE` | gate-seam | - |
-| `ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE` | gate-seam | - |
 | `ENV_NAMES_MIN` | gate-seam | - |
 | `ENV_NAMES_ROOT` | gate-seam | - |
+| `ENV_REGISTRY_OVERRIDE_FILE` | gate-seam | - |
 | `EVENT_NAME` | ci-runner | - |
 | `EXECUTION_FILE` | ci-runner | - |
 | `EXPORT_ENV` | ci-runner | - |
@@ -2892,7 +2889,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_REGGATE_DEBT_GRACE_MIN` | harness | - |
 | `WORKLIST_REGGATE_TICK_FLOOD` | harness | - |
 | `WORKLIST_REGGATE_TIMEOUT_S` | harness | - |
-| `WORKLIST_REGISTRY_OVERRIDE_FILE` | gate-seam | - |
 | `WORKLIST_REPORTS_DIR` | harness | - |
 | `WORKLIST_REPORT_INDEX_READ_MAX_BYTES` | harness | - |
 | `WORKLIST_REPORT_REFRESH_MIN` | harness | - |
@@ -2947,7 +2943,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `_DEVBOX_DOCKER` | harness | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-1412 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+1410 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

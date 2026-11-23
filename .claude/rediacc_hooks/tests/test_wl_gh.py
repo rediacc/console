@@ -22,7 +22,7 @@ G = wlfix.import_wl("wl_gh")
 STOP_DIR = pathlib.Path(G.__file__).resolve().parent
 WL_GH = STOP_DIR / "wl_gh.py"
 REPO = STOP_DIR.parents[2]
-REGISTRY = REPO / ".ci" / "policy" / "worklist-env-registry.json"
+REGISTRY = REPO / ".ci" / "config" / "env-manifest.json"
 
 
 @pytest.fixture(autouse=True)
@@ -429,7 +429,7 @@ def test_t13b_no_hook_module_spawns_gh_outside_wl_gh():
 
 
 def test_t13c_wl_gh_is_sealed_and_its_bounds_are_literals():
-    reg = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    reg = json.loads(REGISTRY.read_text(encoding="utf-8"))["worklist"]
     entry = reg["sealed_modules"].get(".claude/hooks/stop/wl_gh.py")
     assert entry, "wl_gh.py is not in %s sealed_modules" % REGISTRY
     pins = entry.get("literals") or {}
