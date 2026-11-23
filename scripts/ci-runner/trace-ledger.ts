@@ -869,17 +869,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 100,
     seconds: 0.9,
   },
-  'check:ci-env-manifest': {
-    tracedAt: '2026-11-18T03:12Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'whole-tree',
-    reason:
-      'enumerates the tracked file list through the git index (<gitdir>/index), so a new file anywhere can change its verdict',
-    reads: 4264,
-    listed: 5,
-    coveragePct: 100,
-    seconds: 7,
-  },
   'check:ci-environment-names': {
     tracedAt: '2026-11-17T15:35Z',
     tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
@@ -1133,15 +1122,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 34.8,
     seconds: 2.6,
   },
-  'check:ci-i18n-command-parity': {
-    tracedAt: '2026-11-17T15:09Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 661,
-    listed: 1,
-    coveragePct: 7.3,
-    seconds: 5.7,
-  },
   'check:ci-i18n-completeness': {
     tracedAt: '2026-11-17T14:57Z',
     tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
@@ -1168,15 +1148,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 14,
     coveragePct: 15.5,
     seconds: 2.5,
-  },
-  'check:ci-i18n-docs-render-parity': {
-    tracedAt: '2026-11-17T14:57Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 8,
-    listed: 0,
-    coveragePct: 0.1,
-    seconds: 18.8,
   },
   'check:ci-i18n-docs-untranslated': {
     tracedAt: '2026-11-17T14:58Z',
@@ -1244,15 +1215,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 1,
     coveragePct: 0.2,
     seconds: 2.1,
-  },
-  'check:ci-i18n-page-locale-imports': {
-    tracedAt: '2026-11-17T14:57Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 6,
-    listed: 0,
-    coveragePct: 0,
-    seconds: 20.9,
   },
   'check:ci-i18n-placeholders': {
     tracedAt: '2026-11-17T15:09Z',
@@ -2024,17 +1986,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 800,
     coveragePct: 100,
     seconds: 2040,
-  },
-  'check:ci-python-env-registry': {
-    tracedAt: '2026-11-18T03:12Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'whole-tree',
-    reason:
-      'enumerates the tracked file list through the git index (<gitdir>/index), so a new file anywhere can change its verdict',
-    reads: 2003,
-    listed: 5,
-    coveragePct: 100,
-    seconds: 18.9,
   },
   'check:ci-python-gate-deps': {
     tracedAt: '2026-11-18T05:29Z',
@@ -2918,17 +2869,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 37,
     coveragePct: 26,
     seconds: 1.1,
-  },
-  'check:ci-worklist-env-registry': {
-    tracedAt: '2026-11-18T03:12Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'whole-tree',
-    reason:
-      'enumerates the tracked file list through the git index (<gitdir>/index), so a new file anywhere can change its verdict',
-    reads: 2095,
-    listed: 5,
-    coveragePct: 100,
-    seconds: 10.9,
   },
   'check:ci-worklist-event-builders': {
     tracedAt: '2026-11-17T15:08Z',

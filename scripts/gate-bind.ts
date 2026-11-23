@@ -2956,14 +2956,14 @@ function selftestContainer(ck: Check): void {
 /**
  * `needs-not` against the REAL gate file it was written for, plus a control each way.
  *
- * check_plan_deps.py lists submodule files only in its hand-run `--overlaps` and `--migrate-x` verbs, so the `submodules` its `git ls-files --recurse-submodules` literal infers is false for the CI path, and its lane (quality-branch) checks none out. The header's `needs-not: submodules` is what keeps the binder from refusing that placement.
+ * plan_deps.py lists submodule files only in its hand-run `--overlaps` and `--migrate-x` verbs, so the `submodules` its `git ls-files --recurse-submodules` literal infers is false for the CI path, and its lane (quality-branch) checks none out. The header's `needs-not: submodules` is what keeps the binder from refusing that placement.
  */
 function selftestNeedsNot(ck: Check): void {
-  const planDeps = '.ci/scripts/quality/check_plan_deps.py';
+  const planDeps = '.ci/rediacc_ci/quality/plan_deps.py';
   const src = read(planDeps);
   const real = bind(planDeps, src);
   ck(
-    'check_plan_deps.py binds WITHOUT submodules: its needs-not scopes the hand-run listing away',
+    'plan_deps.py binds WITHOUT submodules: its needs-not scopes the hand-run listing away',
     real !== null && !real.needs.includes('submodules'),
     real?.needs
   );
@@ -2973,12 +2973,12 @@ function selftestNeedsNot(ck: Check): void {
     'CONTROL: the same file with its needs-not line removed infers submodules',
     stripped !== src && bind(planDeps, stripped)?.needs.includes('submodules') === true
   );
-  // CONTROL: a gate whose CI path really enumerates submodule files keeps the need, so needs-not is scoped to the file that declares it rather than disabling the inference. check_syncpack_sources.py lists every submodule package.json on its check path; its declared `needs: submodules` is blanked first, so only the inference can supply the need.
-  const syncpack = '.ci/scripts/quality/check_syncpack_sources.py';
+  // CONTROL: a gate whose CI path really enumerates submodule files keeps the need, so needs-not is scoped to the file that declares it rather than disabling the inference. syncpack_sources.py lists every submodule package.json on its check path; its declared `needs: submodules` is blanked first, so only the inference can supply the need.
+  const syncpack = '.ci/rediacc_ci/quality/syncpack_sources.py';
   const syncpackSrc = read(syncpack);
   const undeclared = syncpackSrc.replace(/^needs: submodules$/m, 'needs: none');
   ck(
-    'CONTROL: check_syncpack_sources.py, which lists submodule files in CI, still infers submodules',
+    'CONTROL: syncpack_sources.py, which lists submodule files in CI, still infers submodules',
     undeclared !== syncpackSrc && bind(syncpack, undeclared)?.needs.includes('submodules') === true,
     bind(syncpack, undeclared)?.needs
   );

@@ -586,14 +586,6 @@
       "peak_rss_mb": 54,
       "rank": 223
     },
-    "check:ci-env-manifest": {
-      "cpu_s": 7.34,
-      "wall_s": 7.323,
-      "eff_cores": 1.0,
-      "capped": false,
-      "peak_rss_mb": 117,
-      "rank": 28
-    },
     "check:ci-environment-names": {
       "cpu_s": 0.169,
       "wall_s": 0.158,
@@ -826,14 +818,6 @@
       "peak_rss_mb": 259,
       "rank": 95
     },
-    "check:ci-i18n-command-parity": {
-      "cpu_s": 2.571,
-      "wall_s": 1.906,
-      "eff_cores": 1.35,
-      "capped": false,
-      "peak_rss_mb": 401,
-      "rank": 58
-    },
     "check:ci-i18n-cross-locale-core": {
       "cpu_s": 1.713,
       "wall_s": 1.582,
@@ -849,14 +833,6 @@
       "capped": false,
       "peak_rss_mb": 276,
       "rank": 82
-    },
-    "check:ci-i18n-docs-render-parity": {
-      "cpu_s": 4.019,
-      "wall_s": 3.314,
-      "eff_cores": 1.21,
-      "capped": false,
-      "peak_rss_mb": 436,
-      "rank": 43
     },
     "check:ci-i18n-docs-untranslated": {
       "cpu_s": 1.994,
@@ -905,14 +881,6 @@
       "capped": false,
       "peak_rss_mb": 55,
       "rank": 177
-    },
-    "check:ci-i18n-page-locale-imports": {
-      "cpu_s": 3.465,
-      "wall_s": 2.823,
-      "eff_cores": 1.23,
-      "capped": false,
-      "peak_rss_mb": 295,
-      "rank": 52
     },
     "check:ci-i18n-untranslated": {
       "cpu_s": 0.473,
@@ -1473,14 +1441,6 @@
       "capped": false,
       "peak_rss_mb": 175,
       "rank": 44
-    },
-    "check:ci-python-env-registry": {
-      "cpu_s": 16.099,
-      "wall_s": 16.115,
-      "eff_cores": 1.0,
-      "capped": false,
-      "peak_rss_mb": 1209,
-      "rank": 8
     },
     "check:ci-python-gate-deps": {
       "cpu_s": 1.708,
@@ -2113,14 +2073,6 @@
       "capped": false,
       "peak_rss_mb": 53,
       "rank": 190
-    },
-    "check:ci-worklist-env-registry": {
-      "cpu_s": 9.377,
-      "wall_s": 9.368,
-      "eff_cores": 1.0,
-      "capped": false,
-      "peak_rss_mb": 120,
-      "rank": 18
     },
     "check:ci-worklist-event-builders": {
       "cpu_s": 0.551,

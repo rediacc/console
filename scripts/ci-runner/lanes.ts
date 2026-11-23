@@ -541,10 +541,10 @@ export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = { 'quality
  *   5. More `heavy` gates in the lane than shards asked for. Same rule, the
  *      aggregate half; the message names the minimum that would work.
  *
- * THE LANE'S SET IS EVERY REGISTERED STEP, not every `gate: true` entry. Seven
- * lock entries are steps with `gate: false` (check:lint, check:i18n,
- * check:ci-i18n-cross-locale, check:ci-seo, check:ci-redirects, build:www and
- * the bash battery aggregate retired 2026-10-09, measured 2026-09-09). Each one still occupies a step in
+ * THE LANE'S SET IS EVERY REGISTERED STEP, not every `gate: true` entry. Lock
+ * entries such as check:i18n, check:ci-seo, check:ci-redirects and build:www
+ * are steps with `gate: false` (the lint, cross-locale and bash battery aggregates
+ * that once joined them are retired). Each one still occupies a step in
  * its job, so a plan that dropped them would emit a lane missing work CI runs
  * today, and `build:www` in particular is what twelve other entries `needs`.
  *

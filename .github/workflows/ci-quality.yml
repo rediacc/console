@@ -655,7 +655,7 @@ jobs:
       # from the working tree, so a push and a PR get the same verdict.
       - name: Plan dependencies
         if: ${{ !cancelled() }}
-        run: npm run check:ci-plan-deps
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_deps
 
       # Hand-written for the same reason as its neighbours: quality-branch has no
       # `- id: setup`. It needs GITHUB_BASE_REF and this job's fetch-depth 0: LP4 to LP6
@@ -905,7 +905,7 @@ jobs:
       # A step invoking a PR_HEAD_REF-preferring script must set it. Found by
       # hand three times in one session before this gate existed.
       - name: PR_HEAD_REF completeness
-        run: npm run check:ci-pr-head-ref-completeness
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.pr_head_ref_completeness
 
       # A guard must refuse a COMMAND, never a SENTENCE about one. Probes each
       # pre-bash guard with prose built from its own pattern; anchoring is the
@@ -1254,7 +1254,7 @@ jobs:
       - name: syncpack source coverage
         id: gate_check_ci_syncpack_sources
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: .ci/scripts/quality/check_syncpack_sources.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.syncpack_sources
       - name: Test suites are CI-reachable
         id: gate_check_ci_test_scripts_reachable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
@@ -1998,7 +1998,7 @@ jobs:
       # toolchain-pin load, which belongs with the W2.6 lane work, not to a one-line edit.
       - name: Tutorial healthcheck headroom
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tutorial-healthcheck-headroom
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom
 
       # The generated CLI contract drives the web console, `rdc --proxy` and
       # the executor. It was RED at HEAD when first run here: a stale value
@@ -2633,9 +2633,9 @@ jobs:
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The suite's own dependency-inventory and twin-parity differentials
-          # read commit topology (test_twin_parity.py, rediacc_ci.core.age), the
-          # same reason quality-security takes a deep checkout.
+          # The suite's own dependency-inventory differentials read commit
+          # topology (rediacc_ci.core.age), the same reason quality-security
+          # takes a deep checkout.
           fetch-depth: 0
           filter: blob:none
           submodules: true

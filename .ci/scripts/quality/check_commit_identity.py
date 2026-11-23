@@ -11,10 +11,7 @@ different change from moving which file the step runs.
 INVARIANT 5 IS DISCHARGED, W7 P5. `.ci/scripts/quality/check-commit-identity.sh` and its gate test `.ci/scripts/test/gates/test-commit-identity.sh` are both deleted: the fixture behaviour the test proved is now carried by `.ci/rediacc_ci/tests/gates/test_gate_commit_identity.py`, retargeted at this entry point and checked to reach the same 10 verdicts on the same 10
 fixtures before the twin left.
 
-THE LEDGER CONDITION WAS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-commit-identity --assert --k 5
-    -> equivalence holds over 5 distinct trees
+THE LEDGER CONDITION WAS MET on 2026-09-08 (equivalence over 5 distinct trees); the shadow ledger and its gate were deleted in commit:936280cd35, so that record is in history only.
 """
 
 import sys

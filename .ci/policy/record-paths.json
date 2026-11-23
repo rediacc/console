@@ -45,7 +45,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -65,7 +65,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:40 (cite) agent/reviews/<branch>/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:37 (cite) agent/reviews/<branch>/"
         },
         {
           "id": "check:ci-env-registry",
@@ -149,7 +149,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -274,7 +274,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -294,7 +294,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (cite) agent/worklist/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:41 (cite) agent/worklist/"
         },
         {
           "id": "check:ci-env-registry",
@@ -362,7 +362,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:729 (cite) agent/worklist"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:726 (cite) agent/worklist"
         },
         {
           "id": "check:ci-plan-citations",
@@ -374,7 +374,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -422,7 +422,7 @@
         },
         {
           "id": "check:ci-tree-shape",
-          "evidence": ".ci/scripts/quality/check_tree_shape.py:71 (cite) agent/worklist/abcd1234.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/tree_shape_gate.py:69 (cite) agent/worklist/abcd1234.jsonl"
         },
         {
           "id": "check:ci-typecheck-scope-coverage",
@@ -478,7 +478,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -558,7 +558,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
@@ -570,7 +570,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -614,7 +614,7 @@
         },
         {
           "id": "check:ci-tree-shape",
-          "evidence": ".ci/scripts/quality/check_tree_shape.py:72 (cite) agent/reggate/main.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/tree_shape_gate.py:70 (cite) agent/reggate/main.jsonl"
         },
         {
           "id": "check:ci-typecheck-scope-coverage",
@@ -662,7 +662,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -682,7 +682,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (cite) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (cite) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -746,11 +746,11 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-plan-deps",
@@ -758,11 +758,11 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-plan-live-proof",
@@ -770,7 +770,7 @@
         },
         {
           "id": "check:ci-plan-record",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-python-gate-deps",
@@ -802,7 +802,7 @@
         },
         {
           "id": "check:ci-tree-shape",
-          "evidence": ".ci/scripts/quality/check_tree_shape.py:73 (cite) agent/ledgers/census-plan-record.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/tree_shape_gate.py:71 (cite) agent/ledgers/census-plan-record.jsonl"
         },
         {
           "id": "check:ci-typecheck-scope-coverage",
@@ -865,7 +865,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-service-methods",
@@ -917,11 +917,11 @@
         },
         {
           "id": "check:ci-i18n-value-types",
-          "evidence": ".ci/scripts/quality/check_i18n_value_types.py:73 (glob) *.json"
+          "evidence": ".ci/rediacc_ci/quality/i18n_value_types.py:72 (glob) *.json"
         },
         {
           "id": "check:ci-inner-timeout-reachable",
-          "evidence": ".ci/scripts/quality/check_inner_timeout_reachable.py:359 (root) .ci/"
+          "evidence": ".ci/rediacc_ci/quality/inner_timeout_reachable.py:356 (root) .ci/"
         },
         {
           "id": "check:ci-jq-boolean-default",
@@ -1075,7 +1075,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -1095,7 +1095,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:45 (cite) agent/plans/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:42 (cite) agent/plans/"
         },
         {
           "id": "check:ci-env-registry",
@@ -1307,7 +1307,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -1518,7 +1518,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-service-methods",
@@ -1570,11 +1570,11 @@
         },
         {
           "id": "check:ci-i18n-value-types",
-          "evidence": ".ci/scripts/quality/check_i18n_value_types.py:73 (glob) *.json"
+          "evidence": ".ci/rediacc_ci/quality/i18n_value_types.py:72 (glob) *.json"
         },
         {
           "id": "check:ci-inner-timeout-reachable",
-          "evidence": ".ci/scripts/quality/check_inner_timeout_reachable.py:359 (root) .ci/"
+          "evidence": ".ci/rediacc_ci/quality/inner_timeout_reachable.py:356 (root) .ci/"
         },
         {
           "id": "check:ci-jq-boolean-default",
@@ -1725,7 +1725,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -1745,7 +1745,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (root) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -1813,7 +1813,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
@@ -1825,7 +1825,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -1912,7 +1912,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -1932,7 +1932,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (root) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -2000,7 +2000,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
@@ -2012,7 +2012,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -2099,7 +2099,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -2119,7 +2119,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (root) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -2187,11 +2187,11 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-plan-deps",
@@ -2199,11 +2199,11 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-plan-live-proof",
@@ -2211,7 +2211,7 @@
         },
         {
           "id": "check:ci-plan-record",
-          "evidence": ".ci/scripts/quality/check_plan_citations.py:459 (cite) agent/ledgers/live-proof.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_citations.py:456 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
           "id": "check:ci-retired-commands",
@@ -2290,7 +2290,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -2314,7 +2314,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (root) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -2386,7 +2386,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
@@ -2398,7 +2398,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -2476,7 +2476,7 @@
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -2500,7 +2500,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:46 (root) agent/ledgers/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:43 (root) agent/ledgers/"
         },
         {
           "id": "check:ci-env-registry",
@@ -2572,7 +2572,7 @@
         },
         {
           "id": "check:ci-plan-boxes",
-          "evidence": ".ci/scripts/quality/check_plan_boxes.py:401 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_boxes.py:398 (root) agent/"
         },
         {
           "id": "check:ci-plan-citations",
@@ -2584,7 +2584,7 @@
         },
         {
           "id": "check:ci-plan-folders",
-          "evidence": ".ci/scripts/quality/check_plan_folders.py:158 (root) agent/"
+          "evidence": ".ci/rediacc_ci/quality/plan_folders.py:155 (root) agent/"
         },
         {
           "id": "check:ci-plan-implementation",
@@ -2658,7 +2658,7 @@
         },
         {
           "id": "check:ci-bws-map",
-          "evidence": ".ci/scripts/quality/check_bws_map.py:365 (cite) agent/"
+          "evidence": ".ci/rediacc_ci/quality/bws_map.py:362 (cite) agent/"
         },
         {
           "id": "check:ci-command-planes",
@@ -2670,11 +2670,11 @@
         },
         {
           "id": "check:ci-config-server-key-constant",
-          "evidence": ".ci/scripts/quality/check_config_server_key_constant.py:55 (cite) agent"
+          "evidence": ".ci/rediacc_ci/quality/config_server_key_constant.py:53 (cite) agent"
         },
         {
           "id": "check:ci-container-build-context",
-          "evidence": "scripts/ci-runner/gates.lock.json:12605 (declared) names **"
+          "evidence": "scripts/ci-runner/gates.lock.json:12316 (declared) names **"
         },
         {
           "id": "check:ci-dead-python",
@@ -2698,7 +2698,7 @@
         },
         {
           "id": "check:ci-durable-paths-tracked",
-          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:33 (cite) agent/programs/<slug>/state/reports/"
+          "evidence": ".ci/rediacc_ci/quality/durable_paths_tracked.py:30 (cite) agent/programs/<slug>/state/reports/"
         },
         {
           "id": "check:ci-env-registry",
@@ -2738,7 +2738,7 @@
         },
         {
           "id": "check:ci-guard-mention-anchoring",
-          "evidence": ".ci/scripts/quality/check_guard_mention_anchoring.py:770 (cite) agent"
+          "evidence": ".ci/rediacc_ci/quality/guard_mention_anchoring.py:767 (cite) agent"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -2751,10 +2751,6 @@
         {
           "id": "check:ci-i18n-cli-key-usage",
           "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
-        },
-        {
-          "id": "check:ci-i18n-command-parity",
-          "evidence": "packages/cli/src/commands/config/audit.ts:63 (cite) agent"
         },
         {
           "id": "check:ci-inner-timeout-reachable",

@@ -5186,18 +5186,18 @@
   },
   {
     "id": "check:ci-plan-deps",
-    "run": "npm run check:ci-plan-deps",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_deps",
     "gate": true,
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",
-      ".ci/scripts/quality/check_plan_deps.py",
+      ".ci/rediacc_ci/quality/plan_deps.py",
       ".claude/hooks/stop/wl_plandeps.py",
       ".claude/hooks/stop/wl_planfile.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_plan_deps.py"
+      ".ci/rediacc_ci/quality/plan_deps.py"
     ],
     "ci": {
       "kind": "step",
@@ -5463,18 +5463,18 @@
   },
   {
     "id": "check:ci-syncpack-sources",
-    "run": "npm run check:ci-syncpack-sources",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.syncpack_sources",
     "gate": true,
     "paths": [
       ".syncpackrc.json",
       ".ci/config/syncpack-source-exclusions.json",
-      ".ci/scripts/quality/check_syncpack_sources.py",
+      ".ci/rediacc_ci/quality/syncpack_sources.py",
       "**/package.json",
       "private/account"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_syncpack_sources.py"
+      ".ci/rediacc_ci/quality/syncpack_sources.py"
     ],
     "ci": {
       "kind": "step",

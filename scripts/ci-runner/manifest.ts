@@ -4959,17 +4959,17 @@ export const GATES: readonly GateSpec[] = [
   {
     // WHAT A PLAN NEEDS before it may start (agent/plans/PLAN-plan-dependencies.md T2). Every live plan carries `Depends-On:` (plans, or `no-dep -- <reason>`); the grammar lives in .claude/hooks/stop/wl_plandeps.py, shared with the pre-edit guard block_plan_without_depends and the worklist verbs, which is why that file is in `paths`. Lane quality-branch beside the rest of the plan family, hand-written for the same reason (no `- id: setup` in that job).
     id: 'check:ci-plan-deps',
-    run: 'npm run check:ci-plan-deps',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_deps',
     gate: true,
     paths: [
       'agent/plans/**',
       'agent/INDEX.md',
-      '.ci/scripts/quality/check_plan_deps.py',
+      '.ci/rediacc_ci/quality/plan_deps.py',
       '.claude/hooks/stop/wl_plandeps.py',
       '.claude/hooks/stop/wl_planfile.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_plan_deps.py'],
+    leaves: ['.ci/rediacc_ci/quality/plan_deps.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5233,17 +5233,17 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-syncpack-sources',
-    run: 'npm run check:ci-syncpack-sources',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.syncpack_sources',
     gate: true,
     paths: [
       '.syncpackrc.json',
       '.ci/config/syncpack-source-exclusions.json',
-      '.ci/scripts/quality/check_syncpack_sources.py',
+      '.ci/rediacc_ci/quality/syncpack_sources.py',
       '**/package.json',
       'private/account',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_syncpack_sources.py'],
+    leaves: ['.ci/rediacc_ci/quality/syncpack_sources.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -10892,7 +10892,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // E1. The shadow ledger proves the bash and Python `setup` agreed over five frozen trees and says nothing about tomorrow's, so the phase ORDER is re-derived from both implementations on every run. Order and not just the set: swapping two phases leaves the finding count and the name set identical, so an unordered comparison passes it.
+    // E1. The shadow ledger (deleted in commit:936280cd35) proved the bash and Python `setup` agreed over five frozen trees and says nothing about tomorrow's, so the phase ORDER is re-derived from both implementations on every run. Order and not just the set: swapping two phases leaves the finding count and the name set identical, so an unordered comparison passes it.
     id: 'check:ci-setup-port-parity',
     run: 'npm run check:ci-setup-port-parity',
     gate: true,
