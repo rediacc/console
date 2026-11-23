@@ -13,6 +13,21 @@
     "processes": 2,
     "why": "W5's stated target, recorded so the gap is a number. Today's value is in measured.tools.Bash; the gate enforces that it cannot drift without an edit here, not the target. D4 moved it from 12 to 3 on 2026-09-21: one harness command per (event, matcher) pattern, members listed in .claude/rediacc_hooks/lifecycle.py."
   },
+  "perCall": {
+    "$why": [
+      "The TRUE per-call Python process count for one Bash tool call, lifecycle fan-out included, which `measured` (harness commands only) cannot see: the harness starts 3 commands for a Bash call, and before agent/plans/PLAN-tooling-speed.md SP4 the post-bash and post-tool runners started one more Python process per member, 16 in all.",
+      "Since SP4 the advisory members of post-bash and post-tool run inside their runner (lifecycle.run_inprocess); pre-bash keeps the dispatcher, a blocking guard chain, as its one member process.",
+      "Measured by .claude/rediacc_hooks/tests/test_lifecycle_inprocess.py with a sitecustomize that logs every Python interpreter the three harness commands start; that test fails in BOTH directions when the live count leaves these numbers. REDIACC_HOOK_INPROCESS=off measures the old fan-out (16) as its control."
+    ],
+    "tool": "Bash",
+    "pythonProcesses": {
+      "pre-bash": 2,
+      "post-bash": 1,
+      "post-tool": 1,
+      "total": 4
+    },
+    "beforeSP4": 16
+  },
   "probeTools": {
     "AskUserQuestion": "the third PreToolUse matcher. Its chain is the shortest, which makes it the row that notices a guard being added to every chain by habit.",
     "Bash": "the tool W5's '2 processes per Bash tool call' target is stated about. This row IS the target, and it is 3 today, down from 12 at the D4 collapse.",

@@ -16,12 +16,17 @@ loudly and the rest still run, which is the argument `dispatch.run_chain` makes 
 STDOUT IS MERGED, NOT CONCATENATED. Several lifecycle hooks answer with a JSON document carrying `hookSpecificOutput.additionalContext`, and two such documents written back to back parse as neither. `merge_stdout` folds them into one document and joins the contexts; plain text passes through verbatim when no member spoke JSON, which is every guard pattern.
 """
 
+import io
 import json
 import os
 import pathlib
+import runpy
 import shlex
+import signal
 import subprocess
 import sys
+import traceback
+import warnings
 
 # The harness's own per-command default, in seconds. A collapsed entry's timeout in settings.json is the SUM of its members' budgets, so no member is cut shorter than it was when it had an entry of its own.
 DEFAULT_TIMEOUT = 60
@@ -131,6 +136,8 @@ PATTERNS = {
         "matcher": "Bash",
         "head": True,
         "collapsed": True,
+        # IN-PROCESS (agent/plans/PLAN-tooling-speed.md D5): every member below only advises (none exits 2), and the three that start work (arm_ci_watch, review_commit, github_status_note) hand it to a detached child holding its own stdin, log file and session, so nothing the runner holds is shared. A member that must stay a process carries `"process": "<reason>"`.
+        "inprocess": True,
         # PYTHON SINCE W7 P6, same order, same budgets, same stop-at-refusal semantics. Both were bash until the port; their originals were kept as `.claude/oracles/post-bash/*.sh` until PLAN-retire-bash-oracles A3 deleted them, and `tests/test_post_bash_differential.py` now runs each port against a golden frozen from that same shared set of `git` and `gh` stubs. Neither ever exits 2, so nothing behind them was ever stopped and nothing is now.
         "members": _members(
             "python3 " + _P % "hooks/post-bash/cancel_old_ci.py",
@@ -153,6 +160,8 @@ PATTERNS = {
         "matcher": None,
         "head": False,
         "collapsed": True,
+        # IN-PROCESS, same reasons as post-bash: four advisors. stop-hook-edit-check's import smoke of an edited module already runs in its own subprocess, so no half-written module is imported into this runner.
+        "inprocess": True,
         "members": _members(
             {"command": "python3 " + _P % "hooks/context/band-notice.py", "timeout": 15},
             "python3 " + _P % "hooks/context/onboard.py",
@@ -248,11 +257,125 @@ PATTERNS = {
 }
 
 
+# The member keys that ARE wiring (what a settings entry carries). Anything else on a member (`process`) is this runner's own note and never reaches a reader of the flattened view.
+WIRING_KEYS = ("command", "timeout")
+
+
 def flat_commands(key):
     """The command sequence this pattern ran before the collapse, head included."""
     pattern = PATTERNS[key]
     head = [dict(h) for h in HEAD] if pattern["head"] else []
-    return head + [dict(m) for m in pattern["members"]]
+    return head + [{k: v for k, v in m.items() if k in WIRING_KEYS} for m in pattern["members"]]
+
+
+def inprocess_script(key, member, env):
+    """The script path of a member this runner may call in its own interpreter, or None when the member runs as a process.
+
+    In-process only where the pattern says so (`inprocess`), the member carries no `process` reason, REDIACC_HOOK_INPROCESS is not `off`, and its command is exactly `python3 <script>.py [args]`: anything a shell or another interpreter would run keeps its process.
+    """
+    if not PATTERNS.get(key, {}).get("inprocess") or member.get("process"):
+        return None
+    if env.get(INPROCESS_ENV, os.environ.get(INPROCESS_ENV, "")) == "off":
+        return None
+    argv = argv_of(member["command"], env)
+    if not argv or len(argv) < 2 or os.path.basename(argv[0]) not in ("python3", "python"):
+        return None
+    if not argv[1].endswith(".py") or not os.path.isfile(argv[1]):
+        return None
+    return argv
+
+
+# REDIACC_HOOK_INPROCESS=off runs every member as its own process again: the control test_lifecycle_inprocess.py measures the old fan-out with, and the way back if an in-process member ever misbehaves.
+INPROCESS_ENV = "REDIACC_HOOK_INPROCESS"
+
+
+class _MemberTimeout(BaseException):
+    """Raised by the alarm when an in-process member overruns its budget. A BaseException, so a member's own `except Exception` cannot swallow its deadline."""
+
+
+def run_inprocess(argv, payload, env, cwd, budget):
+    """(rc, stdout, stderr, raised) of one member called in this interpreter, as its own process would have given them.
+
+    The member gets the payload on stdin, its own argv, the pattern's environment and working directory, and its script's directory at the front of sys.path; its stdout and stderr are captured (text and `.buffer` alike); SystemExit becomes the exit code. Everything it changed in this interpreter is put back afterwards: sys.argv, sys.path, the three streams, os.environ, the working directory, and every module it imported from its own directory, so a sibling named like another member's sibling cannot cross. An exception is named on stderr with its traceback and costs exit 1; an overrun past `budget` seconds raises _MemberTimeout to the caller.
+    """
+    script = argv[1]
+    here = os.path.dirname(os.path.abspath(script))
+    saved = (
+        sys.argv,
+        list(sys.path),
+        sys.stdin,
+        sys.stdout,
+        sys.stderr,
+        dict(os.environ),
+        os.getcwd(),
+    )
+    before = set(sys.modules)
+    out = io.TextIOWrapper(io.BytesIO(), encoding="utf-8", errors="replace")
+    err = io.TextIOWrapper(io.BytesIO(), encoding="utf-8", errors="replace")
+    rc, raised = 0, False
+
+    def on_alarm(_signum, _frame):
+        raise _MemberTimeout
+
+    previous = signal.signal(signal.SIGALRM, on_alarm)
+    try:
+        sys.argv = argv[1:]
+        sys.path.insert(0, here)
+        sys.stdin = io.TextIOWrapper(io.BytesIO((payload or "").encode("utf-8")), encoding="utf-8")
+        sys.stdout, sys.stderr = out, err
+        os.environ.clear()
+        os.environ.update(env)
+        if cwd:
+            os.chdir(cwd)
+        signal.setitimer(signal.ITIMER_REAL, float(budget))
+        try:
+            # A DETACHED CHILD OUTLIVES ITS SPAWNER BY DESIGN (arm_ci_watch, review_commit): in its own process the member exits and the child runs on; here the member's Popen object is collected while the child still runs, and that one ResourceWarning is the in-process shape of the same, intended event.
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", message=r"subprocess \d+ is still running", category=ResourceWarning
+                )
+                runpy.run_path(script, run_name="__main__")
+        except SystemExit as exc:
+            code = exc.code
+            if code is None:
+                rc = 0
+            elif isinstance(code, int):
+                rc = code
+            else:
+                err.write("%s\n" % code)
+                rc = 1
+        except BaseException as exc:
+            # The member's deadline and the operator's interrupt end the member AND reach the caller; anything else the member raised is its own failure, named here, and the members behind it still run.
+            if isinstance(exc, (_MemberTimeout, KeyboardInterrupt)):
+                raise
+            err.write(traceback.format_exc())
+            rc, raised = 1, True
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+        sys.argv, sys.path[:], sys.stdin, sys.stdout, sys.stderr = (
+            saved[0],
+            saved[1],
+            saved[2],
+            saved[3],
+            saved[4],
+        )
+        os.environ.clear()
+        os.environ.update(saved[5])
+        os.chdir(saved[6])
+        for name in set(sys.modules) - before:
+            path = getattr(sys.modules.get(name), "__file__", None) or ""
+            if path and os.path.dirname(os.path.abspath(path)) == here:
+                del sys.modules[name]
+    out.flush()
+    err.flush()
+    return rc, _captured(out), _captured(err), raised
+
+
+def _captured(stream):
+    """The text a member wrote to one captured stream, newlines universal as `text=True` reads a child's."""
+    raw = stream.buffer.getvalue().decode("utf-8", "replace")
+    return raw.replace("\r\n", "\n").replace("\r", "\n")
 
 
 def entry_command(key):
@@ -405,6 +528,29 @@ def run_pattern(key, payload, env=None, cwd=None, members=None):
     for member in members:
         command = member["command"]
         budget = member.get("timeout", DEFAULT_TIMEOUT)
+        inproc = inprocess_script(key, member, environ)
+        if inproc is not None:
+            try:
+                rc, stdout, stderr, raised = run_inprocess(inproc, payload, environ, cwd, budget)
+            except _MemberTimeout:
+                failed = True
+                err.append(
+                    "HOOK MEMBER TIMED OUT after %ss, so it decided nothing: %s\n"
+                    "The rest of the %s pattern still ran.\n" % (budget, command, key)
+                )
+                continue
+            out.append(stdout)
+            err.append(stderr)
+            if raised:
+                err.append(
+                    "HOOK MEMBER RAISED, so it decided nothing: %s\n"
+                    "The rest of the %s pattern still ran.\n" % (command, key)
+                )
+            if rc == 2:
+                return 2, merge_stdout(out), "".join(err)
+            if rc != 0:
+                failed = True
+            continue
         argv = argv_of(command, environ)
         try:
             proc = subprocess.run(
