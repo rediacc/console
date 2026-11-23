@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 290 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 297 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -542,6 +542,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
+| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 125 | 15 | 0 | 27548 |
+| `agent/plans/PLAN-forensics-capture.md` | approved | 120 | 13 | 0 | 19272 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 125 | 15 | 0 | 23016 |
+| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19237 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 131 | 17 | 0 | 30060 |
+| `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
+| `agent/plans/PLAN-forensics-shipping.md` | approved | 127 | 16 | 0 | 32543 |
 | `agent/plans/PLAN-free-license.md` | approved | 126 | 2 | 11 | 31547 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-ghcr-registry-cleanup.md` | proposed | 54 | 7 | 0 | 13059 |
@@ -755,7 +762,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-290 plan(s), 228 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+297 plan(s), 235 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
