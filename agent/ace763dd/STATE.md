@@ -1,21 +1,28 @@
-## SESSION ace763dd 2026-11-23T18:06:03Z
+## SESSION ace763dd 2026-11-23T20:29:37Z
 
-# STATE ace763dd (2026-11-23 ~18:15Z)
+# STATE ace763dd (2026-11-23 ~20:30Z, operator away)
 
 ## Big pieces
-- 1121-1 NOT pushed (655 ahead); effort high. CLI, account, web, e2e typecheck green. Push needs: running writers green, tick batch, one vm:check, one ci:quick, then the operator's `! COMMIT_POLICY_OK=1` push (SES key ID commits kept by operator ruling).
-- Operator rulings today: writer limits removed (#3ca908ee, PLAN-unlimited-writers.md QUEUE 97, writer running); D43 amended and LANDED (68b0974552: requirePasskey keeps the recovery slot, two-slot accept; recovery code still unlocks under requirePasskey, a writer choice the operator may revisit); bench recovery code captured, mapped, bound (57d0d5a764, bench-login-eu BENCH_STORE_RECOVERY_CODE). Bench deploys carrying migration 0095 stay HELD (#f78a0020) until login_bench.py step 5 uses the recovery unwrap + machine-secret mint and one recovery unlock is proven.
-- Landed this window: K2-K4+K3, CS1-CS8/CS11 + CS6/CS7 locales, CL-S1..S4, CR1/CR5 part, SD1/SD4, ciquick L1/L3, signer S2/T1 part, DO10/DO11, on-prem harness + OR1/OR2, forensics capture FC1-FC6/FC8 + detection FD1-FD4/FD7 (renet 10da1002a4), master-password sweep + follow-ups, e2e passkey/recovery rewrite (4a2a5e91a3), writeback WB6/WB9/WB11 (caa9297b88), hostinger H1-H4 live.
-- KNOWN RED owned by writers: check:ci-renet (deadcode + i18n) -> af5b5acf4d30f2435; 38 account tests (config-sync policy-in-remote, terms-stripe selfServe) -> aae92e57c66fc97e9.
+- 1121-1: operator pushed console at e40c6991a2 (COMMIT_POLICY_OK) and the backup ref; lead pushed account d141b7b and renet 99152549. Local commits since (cadence, renet FC7/FC9, disk floor, ticks) are unpushed; the next push again needs the operator's COMMIT_POLICY_OK because the SES key-ID commits are in the range.
+- Effort high. Writer limits removed (PLAN-unlimited-writers U1-U4 landed d1b39b5a07). Cadence plan landed WN1-WN4 (bd9a688eec, 490fbdbf06): hourly /writers-now enforced at high, self-review seeds, stuck shell-waiters caught. Lease tool now refuses below a disk floor (13bfe1f8a5) after 12 spawns hit ENOSPC.
+- vm:check VERIFIED on the current tree (271 assertions, 0 failed); hostinger still runs older renet (10a05862c52e vs 31f049b3a8bd), so LP-hostinger receipts wait on the runner provisioning the branch renet.
+- Disk: ~28 GB free; each lease ~4.4 GB; /tmp/tsx-1000 15 GB cache can be cleared when nothing runs tsx.
 
 ## Delegated
-- a3edb3067830dd551 PLAN-unlimited-writers U1-U4 (#55511864).
-- af5b5acf4d30f2435 renet FC7 + FC9 + typed detect error codes + license-mint tidy (#882e8fdc; closes review 9415db0d.1).
-- aae92e57c66fc97e9 account test reds (#523d7473).
-- ac53fee36e80cda86 stripe-disable SD2 + SD3 (#d24ae8a2).
+- afb93bcd5c198652d rmcp-policy-record C1 C2 G1 SK2 SK3 K5 + W1 (#6ac78a2f, also #bdd23e50).
+- ac9bac7c8e2dcb29d rmcp-decide (#824356b7).
+- a5c9739899b8ccae2 rmcp-executor-hardening + on-prem test seams (#921c7c4e).
+- a928acfb15eb67972 console-confirm-stepup (#5a31206f).
+- a009fd200f7f1a872 forensics-shipping (#3172f6b3).
+- ae1f51c5c5b30755f hostinger runner: branch renet provision + LP-hostinger receipts (#da3e7457); production P1 (#7000becb) after it.
+
+## Overnight
+- Landed today (selection): K1-K4/K3 password removal, D43 requirePasskey keeps recovery (68b0974552), CS1-CS8/CS11, CL-S1..S4, stripe SD1-SD4 (b41f60733b), forensics FC1-FC7/FC9 + FD1-FD4/FD7 (07c84b60eb), writeback WB6/WB9/WB11, e2e passkey rewrite, unlimited writers, cadence, disk floor. Tick batches d2dbec4542 (43 boxes), e40c6991a2, 35cdd8074f.
+- Decided under rule 2: renet trees landed instead of held (gates fixed after); disk wave throttled to 6 leases; U5 (>25-writer wave) left open since the harness ceiling is 20.
+- Parked [?]: Stripe dormant code (DEFAULT keep inert behind the flag, no removal plan).
+- Queued on disk (#61fcbedd): console audit-r2, run-index, command-line, ia, forensics detection rest, alerts-notices FN1-FN7, CL-X6.
 
 ## Next action
-1. Land each report (account/renet first, gitlink, console), run its accept on the landed tree, gc the tree.
-2. Tick batch from the writers' TICK lines (contract-semantics CS6 f337529b CS7 aa551beb CS8 32e5ed31; policy-record S1 af7eb301 K2 2d18b009 K2b 1405c796 K4 fee5a0be K3 0ee93342; writeback WB9 a3f2f92a; stripe SD1 2624faf1 SD4 5fced6ed; ciquick L1 b32de811 L3 d4495ac9; signer S2 b83673bc; orphan OR1 32971876 OR2 cdaa1932; CL-S1..S4 sigs; DO10 96bc8be0; forensics FC1-FC6/FC8, FD1-FD4/FD7; email-sender H1-H4 from the hostinger evidence file), one commit.
-3. Open items: #7f131fd4 (27-9x live console specs), #5f6075f7 (DO11 i18n stamps), #69179185 (writeback design gaps), login_bench switch (#f78a0020).
-4. Then vm:check, ci:quick, and hand the operator the push command.
+1. Land each report (submodules first, gitlink, console), verify on the landed tree, gc the tree, then start the next queued cluster from #61fcbedd as disk allows.
+2. Tick each landed box in one batch commit; record hostinger receipts from the runner's evidence file.
+3. After a round of landings: vm:check again if VM trigger paths changed, then leave the push command for the operator.
