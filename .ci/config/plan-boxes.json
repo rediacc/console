@@ -4190,6 +4190,20 @@
         "f2db8fd0"
       ]
     },
+    "agent/plans/PLAN-stripe-removal.md": {
+      "status": "active",
+      "owner": "ace763dd",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 0,
+      "open_sigs": [
+        "2ecdf89d",
+        "3081ee13",
+        "9e71c81c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-subagent-idle-detection.md": {
       "status": "compacted",
       "owner": "0ad063bf",

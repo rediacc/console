@@ -294,7 +294,8 @@ Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 31. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 32. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
 33. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
-34. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
-35. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
-36. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
+34. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+35. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+36. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
+37. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
