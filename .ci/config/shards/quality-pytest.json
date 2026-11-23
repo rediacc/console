@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T06:24:29.778Z",
+  "generatedAt": "2026-11-23T06:37:31.315Z",
   "legs": [
     {
       "index": 1,
@@ -473,6 +473,7 @@
         "pytest:.ci/rediacc_ci/tests/test_version_inject_env.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_local_release_assist_admit.py",
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
+        "pytest:.claude/rediacc_hooks/tests/test_dispatch_ledger.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_release_run.py",
         "pytest:.claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py",
@@ -533,7 +534,6 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_resprofile.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_settings_registry.py",
-        "pytest:.ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_vendored_blocker_derivation.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_binary_exec_guard.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_schedule_exemption.py",
@@ -881,7 +881,6 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_plan_citations_reachable.py",
-        "pytest:.ci/rediacc_ci/tests/gates/test_twin_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_blocker_implementations.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_agg.py",
         "pytest:.ci/rediacc_ci/tests/test_build_linux_packages.py",

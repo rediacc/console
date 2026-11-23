@@ -15,15 +15,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2658,
- "files": 665,
+ "count": 2653,
+ "files": 663,
  "by_rule": {
-  "R1": 1423,
+  "R1": 1419,
   "R11": 136,
   "R14": 1,
   "R18": 12,
   "R19": 55,
-  "R2": 598,
+  "R2": 597,
   "R7": 433
  },
  "findings": {
@@ -635,11 +635,6 @@
   ".ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py": {
    "R7": [
     "25191c99a86eef7b"
-   ]
-  },
-  ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
-   "R2": [
-    "df24ea89a2acc1c1"
    ]
   },
   ".ci/rediacc_ci/tests/test_build_build_pages.py": {
@@ -5852,14 +5847,6 @@
   "scripts/lib/positional-cli-detector.ts": {
    "R7": [
     "d385e43d4f2b73d0"
-   ]
-  },
-  "scripts/lib/shadow-gate.ts": {
-   "R1": [
-    "100441ebf3211d95",
-    "62715206f3a26549",
-    "da19a89eb23e4033",
-    "e6dbf50539ebb3ff"
    ]
   },
   "scripts/ops/secret-rename.py": {

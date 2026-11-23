@@ -510,29 +510,3 @@ def test_a_transcript_difference_is_a_divergence() -> None:
     observed = svc_driver.observe("new", pathlib.Path(diff.repo()), case)
     tampered = [line for line in observed if "call#3|" not in line]
     assert tampered != observed
-
-
-def test_the_lifecycle_ledger_holds() -> None:
-    """The K=5 licence on disk, re-derived rather than trusted."""
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-service",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=diff.repo(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    ledger = (pathlib.Path(diff.repo()) / ".ci/shadow/w7p5b-service.observations.jsonl").read_text(
-        encoding="utf-8"
-    )
-    assert "rediacc_ci.core.service_shadow_driver" in ledger

@@ -157,8 +157,6 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["REDIACC_CI_REGOLDEN_ONLY"] = ",".join(
         sorted(diff.golden_stem(t) for t in args.twins)
     )
-    # The parity driver may reuse a recorded agreement without driving the twin at all; a recording run must drive it.
-    os.environ["TWIN_PARITY_ALWAYS_DRIVE"] = "1"
     select = ["-k", args.select] if args.select else []
     rc = pytest.main(["-q", "-n", "0", "-p", "no:randomly", *select, *files])
     if rc != 0:

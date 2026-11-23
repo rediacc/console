@@ -763,27 +763,6 @@ def test_bash_q_matches_printf_q(word, locale, monkeypatch) -> None:
     assert local_common.bash_q(word) == proc.stdout.decode("utf-8", "surrogateescape")
 
 
-def test_the_actions_ledger_holds() -> None:
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-local-common-actions",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=paths.repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-
-
 # -- Rule T: the twin's defects, fixed in the port as INTENTIONAL DELTAS ---------
 #
 # PLAN-retire-bash-oracles section 1 and task B4. Each case pins the port's FIXED behaviour and shows the twin's defect beside it, measured live. The live differential above excludes exactly the cases named in `DELTA_CASES`, and `test_every_delta_case_still_diverges` proves each exclusion is still a real divergence.

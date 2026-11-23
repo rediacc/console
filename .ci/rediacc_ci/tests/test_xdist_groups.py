@@ -4,14 +4,12 @@ WHAT IS ACTUALLY AT RISK HERE, because the obvious assertion is the wrong one. T
 
 What CAN go silently wrong, and is therefore what these tests hold:
 
-  * the DERIVATION going empty, which would make `test_twin_parity`'s real-tree
-    refusal admit every twin. A lock that has gone quiet, or has stopped being
+  * the DERIVATION going empty, which would leave the scheduler unable to
+    serialise anything. A lock that has gone quiet, or has stopped being
     readable, is the state that must not read as "nothing needs isolating".
     That risk GREW when the shell runner's `*_FALLBACK` arrays were retired as a
     second source: the lock is now the only source, so nothing else is left to
     keep the answer non-empty when it fails;
-  * the two readers DRIFTING, now that `test_twin_parity.real_tree_tests` and the
-    scheduler ask the same question. They are asserted to give the same answer;
   * the marker never actually reaching an item. Every unit assertion below can
     pass while the repo-root conftest is not loaded at all, so the last two tests
     drive a REAL pytest and ask it, in both directions, whether the items came
@@ -34,7 +32,6 @@ from _pytest.nodeid import NodeId
 from rediacc_ci import paths, xdist_groups
 from rediacc_ci.quality import pool_writer_safety
 from rediacc_ci.tests import test_core_ports
-from rediacc_ci.tests.gates import test_twin_parity
 
 REAL_LOCK = xdist_groups.lock_path()
 
@@ -109,36 +106,9 @@ def test_an_unreadable_lock_empties_the_set_cleanly_rather_than_raising(tmp_path
 def test_the_real_derivation_is_not_empty() -> None:
     """ANTI-VACUITY, and it is the one floor that is honest today.
 
-    An empty set makes `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files, and makes the group derivation unable to serialise anything. Zero GROUPS is the correct answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
+    An empty set makes the group derivation unable to serialise anything. Zero GROUPS is the correct answer on this tree; zero KNOWN REAL-TREE TESTS is a broken reader.
     """
     assert xdist_groups.real_tree_twins(REAL_LOCK) != set()
-
-
-def test_the_parity_test_and_the_scheduler_read_the_same_set() -> None:
-    """THE NO-DRIFT CLAIM, asserted rather than assumed.
-
-    `test_twin_parity.real_tree_tests` is now a call into this module. If someone reinstates a local copy there, the two will agree on the day it is written and diverge later, which is the failure mode that made moving it worth doing.
-    """
-    assert test_twin_parity.real_tree_tests() == xdist_groups.real_tree_twins(REAL_LOCK)
-
-
-def test_the_ported_corpus_agrees_with_the_parity_test_about_who_is_unsafe() -> None:
-    """SET-BASED, and green whether the answer is empty or not.
-
-    `test_twin_parity` fails the port when a ported module's twin is in the set; the scheduler sends exactly those modules to one worker. The two sets are computed here from opposite ends and must be equal -- so this stays true the day the first real-tree twin is ported, instead of being a hardcoded 0 that would have to be edited then.
-    """
-    unsafe = xdist_groups.real_tree_twins(REAL_LOCK)
-    from_parity = {
-        name
-        for name, _path, twin, _timeout in test_twin_parity.MODULES
-        if twin.rsplit("/", 1)[-1] in unsafe
-    }
-    from_scheduler = set()
-    for name, _path, twin, _timeout in test_twin_parity.MODULES:
-        module = _Module(BASH_TWIN=twin)
-        if xdist_groups.group_for(module, unsafe) == xdist_groups.REAL_TREE_GROUP:
-            from_scheduler.add(name)
-    assert from_scheduler == from_parity
 
 
 def test_the_port_scan_module_declares_no_group_any_more() -> None:

@@ -1694,9 +1694,6 @@
     ".ci/rediacc_ci/tests/gates/test_harness.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/gates/test_twin_parity.py": [
-      "TWIN_PARITY_ALWAYS_DRIVE"
-    ],
     ".ci/rediacc_ci/tests/ops_cf_harness.py": [
       "XDG_RUNTIME_DIR"
     ],

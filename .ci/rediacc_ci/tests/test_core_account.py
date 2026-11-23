@@ -502,24 +502,6 @@ def test_db_path_prefers_the_environment(tmp_path) -> None:
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
-def test_the_shadow_ledger_holds_five_equivalent_rows_over_five_trees() -> None:
-    """The K=5 licence, read off disk rather than remembered from a session.
-
-    Two of the first five rows (`env`, `fresh-env`) are HISTORY about writers deleted from both sides. Four more (`db`, `keys`, `probe`, `totp`) were appended on 2026-09-24 after `check_node_version`, `grep_cut` and the strict keygen changed this port, so the licence describes the bytes that ship. The live differential above is what compares today's code.
-    """
-    path = paths.repo_root() / LEDGER
-    assert path.is_file(), "%s is missing; the port has no recorded licence" % LEDGER
-    rows = [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-    assert len(rows) >= 5, "%d row(s) recorded, five are required" % len(rows)
-    assert all(row["verdict"] == "EQUIVALENT" for row in rows)
-    assert len({row["tree"]["id"] for row in rows}) >= 5
-    assert all(row["tree"]["clean"] for row in rows)
-    assert all(TWIN in row["old"]["cmd"] for row in rows)
-    assert all(PORT in row["new"]["cmd"] for row in rows)
-
-
 def test_the_tools_the_scenarios_use_are_installed() -> None:
     """ANTI-VACUITY. Without these the scenarios compare two identical failures."""
     for tool in ("node", "openssl", "curl", "bash"):
@@ -1444,31 +1426,6 @@ def test_a_stub_passthrough_keeps_the_callers_stdin(tmp_path) -> None:
         ["tool"], input="from-the-caller\n", env=env, capture_output=True, text=True, check=True
     )
     assert proc.stdout == "from-the-caller\n", proc.stdout
-
-
-def test_the_lifecycle_ledger_holds() -> None:
-    """The K=5 licence on disk, re-derived rather than trusted."""
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-account-lifecycle",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=str(paths.repo_root()),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    ledger = (paths.repo_root() / LIFECYCLE_LEDGER).read_text(encoding="utf-8")
-    assert LIFECYCLE_MODULE in ledger
-    assert LIFECYCLE_PORT in ledger
 
 
 def test_the_lifecycle_argv_surface_dispatches_like_run_legacy() -> None:

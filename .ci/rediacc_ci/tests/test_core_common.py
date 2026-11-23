@@ -16,7 +16,6 @@ FOUR CLASSES OF TEST, and the second and third are the ones that matter:
 """
 
 import pathlib
-import subprocess
 
 import pytest
 
@@ -541,27 +540,6 @@ def test_r2_stub_is_what_both_sides_reach(tmp_path) -> None:
     farm = stubfarm.Farm(tmp_path)
     farm.stub("aws")
     assert stubfarm.shadows(farm, "aws", farm.env({"PATH": "/usr/bin:/bin"}))
-
-
-def test_the_common_stub_ledger_holds() -> None:
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-common-stub",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=paths.repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_launchable_resolves_the_program_through_pathext_on_windows(monkeypatch):
