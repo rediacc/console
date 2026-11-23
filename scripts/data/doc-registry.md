@@ -1040,9 +1040,9 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 46 | .py 46 |
 | .ci/rediacc_ci/deploy | 42 | .py 42 |
-| .ci/rediacc_ci/dev | 12 | .py 12 |
+| .ci/rediacc_ci/dev | 11 | .py 11 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
-| .ci/rediacc_ci/docker | 6 | .py 6 |
+| .ci/rediacc_ci/docker | 5 | .py 5 |
 | .ci/rediacc_ci/drills | 25 | .py 25 |
 | .ci/rediacc_ci/drills/privdrop-probe | 1 | (none) 1 |
 | .ci/rediacc_ci/enterprise | 13 | .py 13 |

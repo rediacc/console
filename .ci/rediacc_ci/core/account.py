@@ -274,7 +274,7 @@ def curl_body(argv: list[str]) -> str:
 
     MEASURED 2026-09-23 WITH CURL OFF PATH, because the port raised where the twin degraded. The twin's `|| true` swallows bash's own `curl: command not found`, leaves the capture EMPTY, and `account_rustfs_alive` returns 1; the port called `subprocess.run` and died with `FileNotFoundError`, which is a traceback in place of a verdict.
 
-    THE VERDICT IS EQUIVALENT AND THE TEXT IS NOT, which is the same trade `rediacc_ci/dev/shadow_driver.py` records for its `no-npm` scenario. Bash reports a missing command as `<file>: line <n>: curl: command not found`, and a line number inside `account.sh` is neither reproducible by a port nor worth reproducing, so this is silent and only the empty body is preserved.
+    THE VERDICT IS EQUIVALENT AND THE TEXT IS NOT, which is the same trade the dev verb's recording makes for its `no-npm` scenario (`.ci/rediacc_ci/tests/test_dev_www.py`). Bash reports a missing command as `<file>: line <n>: curl: command not found`, and a line number inside `account.sh` is neither reproducible by a port nor worth reproducing, so this is silent and only the empty body is preserved.
 
     STDOUT IS THE WHOLE ANSWER, and the exit status is deliberately discarded. That is what `$(curl ... || true)` does at both call sites: `-s` with `-w '%{http_code}'` prints `000` on a refused connection, and `-sf` prints NOTHING on any failure, so an empty capture already means failure in both shapes and a second test on the return code would be a rule the twin does not have.
     """

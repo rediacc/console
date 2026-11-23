@@ -145,8 +145,6 @@ EXEMPT: dict[str, str] = {
 #: the (path, fingerprint) pair.
 BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/check_pytest.py": ("068d93dec96d",),
-    ".ci/rediacc_ci/dev/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
-    ".ci/rediacc_ci/docker/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/setup/port_parity.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
     # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control was allowed to make: all three were UNCOMMITTED work belonging to a writer running concurrently with it, and editing another writer's live files is how a tree with no safety net loses work. Sorted in place rather than grouped, so the table stays regenerable and a reader diffing it sees a stable
@@ -188,8 +186,6 @@ BASELINE: dict[str, tuple[str, ...]] = {
 #: `paths`. DRAIN THESE FIRST.
 FRESH: frozenset[str] = frozenset(
     {
-        ".ci/rediacc_ci/dev/shadow_driver.py",
-        ".ci/rediacc_ci/docker/shadow_driver.py",
         ".ci/rediacc_ci/tests/test_wl_proc.py",
         ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
         ".claude/hooks/post-bash/cancel_old_ci.py",

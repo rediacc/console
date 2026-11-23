@@ -1,6 +1,6 @@
 """`rediacc_ci.dev.www` against the recorded bytes of the bash `dev()` it replaced.
 
-WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both existed while the port was being made: `.ci/rediacc_ci/dev/shadow_driver.py` drives either side, and `.ci/shadow/e2-dev.observations.jsonl` carries five EQUIVALENT rows over five distinct trees. That instrument stops being available the moment the twin is deleted, and deleting the twin is the whole point of the port, so on its last
+WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both existed while the port was being made: `.ci/rediacc_ci/dev/shadow_driver.py` drove either side, and `.ci/shadow/e2-dev.observations.jsonl` carried five EQUIVALENT rows over five distinct trees (both deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc; the half that runs the port lives on below as the harness). That instrument stops being available the moment the twin is deleted, and deleting the twin is the whole point of the port, so on its last
 day in the tree the twin was run over every scenario the differential drove it with and its exit code, stdout, stderr and external-call trace were written to `goldens/dev-www/`. Nothing here is a hand-written expectation.
 
 THE TWIN IS RETRIEVABLE. Every golden opens with `# twin .ci/legacy/run-legacy.sh blob <sha>`, the blob the file carried at recording time, so `git cat-file -p <sha>` prints the program that produced the recorded bytes.
@@ -30,8 +30,8 @@ quietly here.
 
 from __future__ import annotations
 
-import json
 import re
+import shutil
 import subprocess
 import sys
 from typing import TYPE_CHECKING
@@ -41,7 +41,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.__main__ import VERBS
 from rediacc_ci.core import run_verbs
-from rediacc_ci.dev import shadow_driver, www
+from rediacc_ci.dev import www
 from rediacc_ci.tests import frozen
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
@@ -49,12 +49,202 @@ if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation her
 
 ROOT = paths.repo_root()
 SLUG = "dev-www"
-LEDGER = ROOT / ".ci" / "shadow" / "e2-dev.observations.jsonl"
+# --------------------------------------------------------------------------- The harness ---------------------------------------------------------------------------
+# Moved here from `.ci/rediacc_ci/dev/py` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side, the observation printer or the CLI.
 
-# The K the recipe requires of a port's ledger, and the same number `rediacc_ci/setup/port_parity.py` asserts for `e1-setup`.
-LEDGER_K = 5
+# What the sandbox is built from. `.devcontainer` carries the toolchain pins the port reads, and `.ci/config` the files beside them. Nothing under `.ci/lib` or `.ci/scripts/lib` is copied: the bash library the old side sourced is deleted, and the port runs from the tree under test.
+SANDBOX_DIRS = (
+    (".devcontainer",),
+    (".ci", "config"),
+)
 
-CASES = tuple(scenario.name for scenario in shadow_driver.SCENARIOS)
+# A node that reports one fixed version, so `check_node_version` compares a constant against the constant floor in constants.sh instead of whatever this machine has installed.
+FAKE_NODE = """#!/usr/bin/env python3
+import sys
+
+sys.stdout.write("v22.0.0\\n")
+"""
+
+# A recording npm. Its working directory is part of the record: the twin never cd's, so npm must inherit whatever directory the verb was invoked from.
+FAKE_NPM = """#!/usr/bin/env python3
+import os
+import sys
+
+with open(os.environ["DEV_TRACE"], "a", encoding="utf-8") as fh:
+    fh.write("npm cwd=%s argv=%s\\n" % (os.getcwd(), " ".join(sys.argv[1:])))
+sys.stdout.write("[fake npm] %s\\n" % " ".join(sys.argv[1:]))
+sys.stderr.write("[fake npm] starting\\n")
+sys.exit(int(os.environ.get("DEV_NPM_RC", "0")))
+"""
+
+# The port, as one expression, with the two preconditions replaced when `DEV_STUB=1`. `main` either returns an exit code or is replaced by npm, so this has to be a process of its own rather than an import into the test. A stub appends its name to `DEV_TRACE` (how the ORDER reaches the test, the way the bash stubs did) and, for a non-zero `DEV_CNV_RC` / `DEV_ED_RC`, raises with that code, which `bridge.call` returns verbatim. `DEV_STUB=0` leaves the real functions in place, which is how the two `real-*` scenarios reach `check_node_version` and `ensure_deps` as `core.local_common` defines them.
+NEW_PROGRAM = """import os
+import sys
+
+from rediacc_ci.core import local_common
+from rediacc_ci.dev import www
+
+
+def stub(name, rc_var):
+    def run(*_args, **_kwargs):
+        with open(os.environ["DEV_TRACE"], "a", encoding="utf-8") as fh:
+            fh.write(name + "\\n")
+        code = int(os.environ.get(rc_var, "0"))
+        if code:
+            raise local_common.LocalCommonError(name, code=code)
+        return True
+
+    return run
+
+
+if os.environ.get("DEV_STUB", "1") == "1":
+    local_common.check_node_version = stub("check_node_version", "DEV_CNV_RC")
+    local_common.ensure_deps = stub("ensure_deps", "DEV_ED_RC")
+sys.exit(www.main(sys.argv[1:]))
+"""
+
+
+class Scenario:
+    """One comparable run: what the preconditions answer, and how it is invoked."""
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        cnv_rc: int = 0,
+        ed_rc: int = 0,
+        npm_rc: int = 0,
+        args: tuple[str, ...] = (),
+        with_npm: bool = True,
+        subdir: str = "",
+        stub: bool = True,
+    ) -> None:
+        self.name = name
+        self.cnv_rc = cnv_rc
+        self.ed_rc = ed_rc
+        self.npm_rc = npm_rc
+        self.args = args
+        self.with_npm = with_npm
+        self.subdir = subdir
+        self.stub = stub
+
+
+# NINE SCENARIOS, one per claim in the group table above. `deps-fail` and `node-fails` are the two that prove `npm` is NOT reached, which is the half of the contract a healthy machine never exercises.
+#
+# THE TWO `real-*` ONES RUN THE PRECONDITIONS UNSTUBBED, in this order and only in this order: `real-install` meets a sandbox with no stamp and drives the whole install path, and `real-cached` then meets the stamp the FIRST one wrote and must take the early return. Ordering them the other way would test the fast path against a tree that was never installed. They are what makes the
+# ledger's finding set TREE-DERIVED: the stamp is a hash of the tree's own package.json, package-lock.json and .npmrc, so five specimens produce five fingerprints rather than one observation re-shaded five times.
+SCENARIOS = (
+    Scenario("happy"),
+    Scenario("npm-fails", npm_rc=7),
+    Scenario("node-fails", cnv_rc=1),
+    Scenario("deps-fail", ed_rc=4),
+    Scenario("extra-args", args=("anything", "--flag")),
+    Scenario("from-subdir", subdir="packages"),
+    Scenario("no-npm", with_npm=False),
+    Scenario("real-install", stub=False),
+    Scenario("real-cached", stub=False),
+)
+
+# Where `ensure_deps` keeps its hash stamp, relative to the root it is given (`core.local_common.ensure_deps`). Read as an observation because it is the side effect the install path leaves behind, and the only tree-derived value either implementation produces.
+STAMP_PATH = (".ci", "cache", "npm-install.stamp")
+
+# The root files `ensure_deps` hashes, copied into the sandbox so the real function has something to hash. Absent from a specimen the scenario still runs and both sides still agree, but the stamp then hashes a shorter input, which is a weaker observation rather than a wrong one.
+ROOT_FIXTURES = ("package.json", "package-lock.json", ".npmrc")
+
+
+def build_sandbox(root: pathlib.Path, base: pathlib.Path) -> pathlib.Path:
+    """Copy what the twin sources, plant the stub, and lay out a fresh-clone tree.
+
+    `node_modules/.bin/tsx` and the `@rediacc/cli` link are two of the four conditions `ensure_deps` tests for, and they are the two a fixture cannot get from a stamp. Creating them here leaves the STAMP as the only condition the `real-*` pair moves, which is what makes that pair a test of the stamp round trip rather than of four things at once.
+    """
+    sandbox = base / "sandbox"
+    for parts in SANDBOX_DIRS:
+        shutil.copytree(root.joinpath(*parts), sandbox.joinpath(*parts), symlinks=False)
+    (sandbox / "packages").mkdir(parents=True, exist_ok=True)
+    for name in ROOT_FIXTURES:
+        source = root / name
+        if source.is_file():
+            shutil.copyfile(source, sandbox / name)
+    binary = sandbox / "node_modules" / ".bin" / "tsx"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    binary.chmod(0o755)
+    linked = sandbox / "node_modules" / "@rediacc" / "cli"
+    linked.parent.mkdir(parents=True, exist_ok=True)
+    linked.symlink_to(sandbox / "packages")
+    return sandbox
+
+
+def build_stubs(base: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    """Two PATH directories: one carrying the fakes, one deliberately bare."""
+    withnpm = base / "bin-npm"
+    without = base / "bin-bare"
+    withnpm.mkdir(parents=True, exist_ok=True)
+    without.mkdir(parents=True, exist_ok=True)
+    for name, body in (("npm", FAKE_NPM), ("node", FAKE_NODE)):
+        target = withnpm / name
+        target.write_text(body, encoding="utf-8")
+        target.chmod(0o755)
+    return withnpm, without
+
+
+def scenario_env(
+    scenario: Scenario, sandbox: pathlib.Path, trace: pathlib.Path, bins: tuple
+) -> dict[str, str]:
+    """The environment BOTH sides get. Replaced, never extended.
+
+    A differential that inherits the caller's environment passes or fails depending on whether whoever ran it happens to export CI or NO_COLOR, which is how a test becomes green on one machine and red on another for reasons nobody can see.
+    """
+    withnpm, without = bins
+    stub = withnpm if scenario.with_npm else without
+    return {
+        "PATH": "%s:/usr/bin:/bin" % stub,
+        "HOME": str(sandbox),
+        "LC_ALL": "C",
+        "LANG": "C",
+        "DEV_TRACE": str(trace),
+        "DEV_CNV_RC": str(scenario.cnv_rc),
+        "DEV_ED_RC": str(scenario.ed_rc),
+        "DEV_NPM_RC": str(scenario.npm_rc),
+        "DEV_STUB": "1" if scenario.stub else "0",
+        "REDIACC_CI_ROOT": str(sandbox),
+        "PYTHONPATH": str(paths.repo_root() / ".ci"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+
+
+def run_side(
+    scenario: Scenario, sandbox: pathlib.Path, trace: pathlib.Path, bins: tuple
+) -> tuple[int, str, str, list[str]]:
+    """Run one scenario against the port. Returns rc, stdout, stderr and the trace."""
+    trace.write_text("", encoding="utf-8")
+    env = scenario_env(scenario, sandbox, trace, bins)
+    cwd = sandbox / scenario.subdir if scenario.subdir else sandbox
+    argv = [sys.executable, "-c", NEW_PROGRAM, *scenario.args]
+    proc = subprocess.run(
+        argv,
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    lines = [line for line in trace.read_text(encoding="utf-8").split("\n") if line]
+    return proc.returncode, proc.stdout, proc.stderr, lines
+
+
+def mask(text: str, sandbox: pathlib.Path) -> str:
+    """Replace the throwaway sandbox path with a stable token.
+
+    THE ONE NORMALIZATION THAT APPLIES TO EVERY GROUP. A tempdir name differs between the two sides' runs and between one recording and the next, so it is the single token that cannot be compared. Everything else is verbatim.
+    """
+    for spelling in (str(sandbox), str(sandbox.resolve())):
+        text = text.replace(spelling, "<sandbox>")
+    return text
+
+
+CASES = tuple(scenario.name for scenario in SCENARIOS)
 
 # Where the trace joins the recorded shape. `frozen.render` owns the exit line and the two streams; the externals are this subject's fourth stream and need a marker of their own so an empty trace is distinguishable from a missing one.
 TRACE_MARKER = "--- trace ---\n"
@@ -98,24 +288,22 @@ def recorded(name: str) -> tuple[int, str, str, list[str]]:
     )
 
 
-def drive(side: str, base: pathlib.Path):
+def drive(base: pathlib.Path):
     """Run every scenario on one side, IN ORDER, against one sandbox.
 
-    The order is load-bearing and is the driver's, not this file's: `real-cached` meets the stamp `real-install` wrote, so a parametrized test that built a fresh sandbox per case would test the fast path against a tree nothing had installed. Hence one module-scoped run and a lookup, rather than a fixture per case.
+    The order is load-bearing and is the order of `SCENARIOS`: `real-cached` meets the stamp `real-install` wrote, so a parametrized test that built a fresh sandbox per case would test the fast path against a tree nothing had installed. Hence one module-scoped run and a lookup, rather than a fixture per case.
     """
-    sandbox = shadow_driver.build_sandbox(ROOT, base)
-    bins = shadow_driver.build_stubs(base)
+    sandbox = build_sandbox(ROOT, base)
+    bins = build_stubs(base)
     trace_file = base / "trace.txt"
     out: dict[str, tuple[int, str, str, list[str]]] = {}
-    for scenario in shadow_driver.SCENARIOS:
-        code, stdout, stderr, lines = shadow_driver.run_side(
-            side, scenario, sandbox, trace_file, bins
-        )
+    for scenario in SCENARIOS:
+        code, stdout, stderr, lines = run_side(scenario, sandbox, trace_file, bins)
         out[scenario.name] = (
             code,
-            normalise(shadow_driver.mask(stdout, sandbox)),
-            reduce_stderr(scenario.name, normalise(shadow_driver.mask(stderr, sandbox))),
-            [normalise(shadow_driver.mask(line, sandbox)) for line in lines],
+            normalise(mask(stdout, sandbox)),
+            reduce_stderr(scenario.name, normalise(mask(stderr, sandbox))),
+            [normalise(mask(line, sandbox)) for line in lines],
         )
     return sandbox, out
 
@@ -123,7 +311,7 @@ def drive(side: str, base: pathlib.Path):
 @pytest.fixture(scope="module")
 def run_new(tmp_path_factory):
     """One ordered run of every scenario against the port, and the sandbox it left behind."""
-    return drive("new", tmp_path_factory.mktemp("dev-port"))
+    return drive(tmp_path_factory.mktemp("dev-port"))
 
 
 @pytest.fixture(scope="module")
@@ -229,7 +417,7 @@ def test_the_stamp_round_trip_is_real(run_new) -> None:
     Without this the mask would hide the entire side effect of the install path, which is the thing the `real-*` scenarios exist to observe.
     """
     sandbox, results = run_new
-    stamp = sandbox.joinpath(*shadow_driver.STAMP_PATH)
+    stamp = sandbox.joinpath(*STAMP_PATH)
     assert stamp.is_file(), "the install path wrote no stamp"
     assert STAMP_RE.fullmatch(stamp.read_text(encoding="utf-8").strip()), (
         "the stamp is not a sha256"
@@ -270,11 +458,11 @@ def test_a_hoisted_step_line_is_caught(tmp_path: pathlib.Path) -> None:
 
     base = tmp_path / "run"
     base.mkdir()
-    sandbox = shadow_driver.build_sandbox(ROOT, base)
-    bins = shadow_driver.build_stubs(base)
+    sandbox = build_sandbox(ROOT, base)
+    bins = build_stubs(base)
     trace_file = base / "trace.txt"
-    scenario = next(s for s in shadow_driver.SCENARIOS if s.name == "node-fails")
-    env = shadow_driver.scenario_env(scenario, sandbox, trace_file, bins)
+    scenario = next(s for s in SCENARIOS if s.name == "node-fails")
+    env = scenario_env(scenario, sandbox, trace_file, bins)
     env["PYTHONPATH"] = "%s:%s" % (tmp_path / "plant", env["PYTHONPATH"])
     trace_file.write_text("", encoding="utf-8")
     proc = subprocess.run(
@@ -294,27 +482,6 @@ def test_a_hoisted_step_line_is_caught(tmp_path: pathlib.Path) -> None:
     want = recorded("node-fails")
     assert www.STEP_MESSAGE not in want[2], "the recording no longer proves anything about order"
     assert www.STEP_MESSAGE in proc.stderr, "the plant did not take effect"
-
-
-# --------------------------------------------------------------------------- The ledger ---------------------------------------------------------------------------
-
-
-def test_the_ledger_carries_five_equivalent_distinct_trees() -> None:
-    """THE EVIDENCE THE GOLDENS CANNOT REPLACE, and the reason it is asserted rather than cited.
-
-    A recording proves the port still says what the twin said on the day the twin was read. The ledger proves the two ran side by side over five distinct clean trees and agreed every time. A ledger that is emptied, truncated or hand-edited is exactly as bad as one that was never recorded, so the file is read here rather than pointed at.
-    """
-    assert LEDGER.is_file(), "no ledger at %s" % LEDGER
-    rows = [json.loads(line) for line in LEDGER.read_text(encoding="utf-8").splitlines() if line]
-    equivalent = [row for row in rows if row.get("verdict") == "EQUIVALENT"]
-    trees = {row["tree"]["id"] for row in equivalent if row["tree"].get("clean")}
-    assert len(trees) >= LEDGER_K, "%d distinct clean tree(s), %d required" % (
-        len(trees),
-        LEDGER_K,
-    )
-    assert len(equivalent) == len(rows), "a non-EQUIVALENT row is in the ledger"
-    fingerprints = {row["old"]["fingerprint"] for row in equivalent}
-    assert len(fingerprints) > 1, "one observation re-shaded, not %d of them" % len(trees)
 
 
 # --------------------------------------------------------------------------- The flip ---------------------------------------------------------------------------
@@ -342,12 +509,3 @@ def test_the_verb_table_names_this_module() -> None:
     row = next((verb for verb in VERBS if verb.name == "dev"), None)
     assert row is not None, "run.sh forwards `dev` here and the table does not serve it"
     assert row.module == "rediacc_ci.dev.www"
-
-
-def test_the_old_side_refuses_now_that_the_body_is_gone() -> None:
-    """The refusal is REACHABLE, which is what makes it a guard rather than a comment.
-
-    After the flip there is no bash to drive, and a driver that answered anyway would let a new row be recorded against a twin that no longer exists.
-    """
-    assert shadow_driver.twin_body(ROOT) == ""
-    assert shadow_driver.main(["--side", "old"]) == shadow_driver.EXIT_CANNOT_RUN
