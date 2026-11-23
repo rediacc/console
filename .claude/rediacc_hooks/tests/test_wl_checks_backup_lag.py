@@ -123,3 +123,71 @@ def test_the_advisory_rides_the_allow_queue_at_advise_level():
 def test_a_record_naming_another_branch_is_silent(tmp_path):
     """CONTROL: a cached live oid recorded for another branch says nothing about this one."""
     assert wl_checks.backup_lag(make_repo(tmp_path, 51, record_branch="0101-1")) is None
+
+
+# ---- the verdict is cached by repository state (PLAN-tooling-speed.md SP2, D3) ----
+
+
+def _count_children(monkeypatch):
+    calls = []
+    real = wl_checks._backup_lag_ask
+
+    def counting(root):
+        calls.append(str(root))
+        return real(root)
+
+    monkeypatch.setattr(wl_checks, "_backup_lag_ask", counting)
+    return calls
+
+
+def test_backup_lag_second_call_on_unchanged_state_starts_no_child(tmp_path, monkeypatch):
+    root = make_repo(tmp_path, 51)
+    calls = _count_children(monkeypatch)
+    first = wl_checks.backup_lag(root)
+    assert first is not None
+    assert wl_checks.backup_lag(root) == first
+    assert len(calls) == 1
+
+
+def test_backup_lag_new_commit_asks_again(tmp_path, monkeypatch):
+    """Control: a commit moves the key, so the cache cannot serve a stale verdict."""
+    root = make_repo(tmp_path, 51)
+    calls = _count_children(monkeypatch)
+    first = wl_checks.backup_lag(root)
+    git(root, "commit", "-q", "--allow-empty", "-m", "one more")
+    second = wl_checks.backup_lag(root)
+    assert len(calls) == 2
+    assert second is not None
+    assert second != first
+
+
+def test_backup_lag_new_sync_record_asks_again(tmp_path, monkeypatch):
+    """Control: a sync rewrites last-live without moving a ref, and the verdict clears."""
+    root = make_repo(tmp_path, 51)
+    calls = _count_children(monkeypatch)
+    assert wl_checks.backup_lag(root) is not None
+    state = pathlib.Path(git(root, "rev-parse", "--absolute-git-dir")) / "rediacc-backup"
+    (state / "last-live").write_text(
+        "1104-1 %s\n" % git(root, "rev-parse", "HEAD"), encoding="utf-8"
+    )
+    assert wl_checks.backup_lag(root) is None
+    assert len(calls) == 2
+
+
+def test_backup_lag_expires_by_age(tmp_path, monkeypatch):
+    root = make_repo(tmp_path, 51)
+    calls = _count_children(monkeypatch)
+    wl_checks.backup_lag(root)
+    later = time.time() + wl_checks.BACKUP_LAG_CACHE_TTL_S + 1
+    monkeypatch.setattr(wl_checks.time, "time", lambda: later)
+    wl_checks.backup_lag(root)
+    assert len(calls) == 2
+
+
+def test_backup_lag_failed_child_is_not_cached(tmp_path, monkeypatch):
+    """Control: a timeout or crash is asked again, never remembered as 'no lag'."""
+    root = make_repo(tmp_path, 51)
+    outcomes = iter([(None, False), ("BACKUP LAG: x", True)])
+    monkeypatch.setattr(wl_checks, "_backup_lag_ask", lambda _root: next(outcomes))
+    assert wl_checks.backup_lag(root) is None
+    assert wl_checks.backup_lag(root) == "BACKUP LAG: x"

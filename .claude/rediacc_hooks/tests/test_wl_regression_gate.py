@@ -11,6 +11,8 @@ import json
 import pathlib
 import re
 
+import wl_reggate
+
 from rediacc_hooks.tests import wlfix
 
 # A package.json whose `ci` key really runs `check:ci-real`, which is what makes a citation of that name resolvable rather than hallucinated.
@@ -182,12 +184,46 @@ def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):
             instruction="gate written",
         )
     )
+    # The stop only reads the verdict `--prove` recorded; the gate's own run happens here, off the stop path.
+    assert "exit 0 (recorded)" in "\n".join(wl_reggate.prove_cli(wl.proj))
     wl.checkj(
         "allow", "settled as proven", "a wired (ci -> batch -> gate), green gate is the proof"
     )
     text = marker.read_text(encoding="utf-8")
     assert '"exit": 0' in text, "no cached gate run in the marker: %s" % text[:300]
     assert "check-newgate.sh" in text, "no cached gate run in the marker: %s" % text[:300]
+
+
+def test_86b_control_a_gate_with_no_recorded_verdict_is_not_run_by_the_stop_and_does_not_prove(wl):
+    """CONTROL for test_86: the same wired, green gate with no `--prove` run leaves the finding open and starts no npm."""
+    wl.say("done for now")
+    wl.brief_now()
+    marker = wl.reg_repo()
+    (wl.proj / "package.json").write_text(
+        '{"name":"p","version":"0.0.0","scripts":{"ci":"npm run check:ci-batch",'
+        '"check:ci-batch":"npm run check:ci-newgate",'
+        '"check:ci-newgate":"bash .ci/scripts/quality/check-newgate.sh"}}\n',
+        encoding="utf-8",
+    )
+    wl.run()
+    wl.fixcommit("src.ts", "fix: the recurring defect")
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    (quality / "check-newgate.sh").write_text(
+        "#!/bin/bash\ntouch ran-by-the-stop\nexit 0\n", encoding="utf-8"
+    )
+    wl.shim_judge(
+        judge_verdict(
+            blind_spot="nothing asserted the invariant",
+            recurring=True,
+            gate_needed=True,
+            gate_proven=True,
+            instruction="gate written",
+        )
+    )
+    wl.checkj("block", "no recorded verdict", "the stop names `--prove` instead of running npm")
+    assert not (wl.proj / "ran-by-the-stop").exists()
+    assert '"exit": 0' not in marker.read_text(encoding="utf-8")
 
 
 def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):

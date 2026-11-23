@@ -74,10 +74,8 @@ UNOWNED_GIT_SITES = {
     "wl_outcomes.py": "BLOCKER: wl_outcomes.py is outside PLAN-tooling-speed.md's Owns; commits_since runs its own git log",
 }
 
-# NON-GIT CHILDREN of run_stop that this box cannot remove, by the module that starts them.
-UNOWNED_PROCESS_SITES = {
-    "wl_checks.py:backup_lag": "BLOCKER: backup_lag lives in wl_checks.py, which this plan's SP3 and other live plans edit; its `python3 -m rediacc_ci.dev.backup_ref` child leaves the stop path only by an edit there",
-}
+# NON-GIT CHILDREN of run_stop that this box cannot remove, by the module that starts them. backup_lag left the list when its verdict was cached by repository state.
+UNOWNED_PROCESS_SITES: dict[str, str] = {}
 
 # Owned git starts allowed on a warm stop: wl_uncommitted's `git status --porcelain` reads the working tree, which no HEAD key can answer, and the rest come from the cache.
 WARM_OWNED_GIT_BUDGET = 3

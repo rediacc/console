@@ -129,8 +129,52 @@ DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
 PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claude").split()
 
 
+BACKUP_LAG_CACHE_NAME = "rediacc-backuplag.json"
+# The 6 h age limb moves with the clock while HEAD does not, so a cached verdict also expires after this many seconds.
+BACKUP_LAG_CACHE_TTL_S = 900
+
+
+def _backup_lag_cache_key(root):
+    """(cache file, key hash) for `backup_lag`, or None when the repository state cannot be read. The key is wl_core's repository state (HEAD, branch tip, refs, packed-refs, config) plus the stat of the sync's last-live record and log, which a sync rewrites without moving any ref."""
+    state = C.git_state_key(root)
+    dirs = C._repo_git_dirs(root)
+    if state is None or dirs is None:
+        return None
+    gd = dirs[0]
+    sync_dir = gd / "rediacc-backup"
+    sig = [C._stat_sig(sync_dir / "last-live"), C._stat_sig(sync_dir / "log")]
+    return gd / BACKUP_LAG_CACHE_NAME, C._key_hash([state, sig])
+
+
 def backup_lag(root):
-    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup, or its oldest unbacked commit is more than 6 h old (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence."""
+    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup, or its oldest unbacked commit is more than 6 h old (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence.
+
+    The verdict is cached by the repository state and the sync's records (`_backup_lag_cache_key`) for BACKUP_LAG_CACHE_TTL_S, so a stop on an unchanged HEAD starts no `python3 -m` child (agent/plans/PLAN-tooling-speed.md D3). Only a verdict the child really gave (exit 0, or exit 1 with its verdict line) is cached; a timeout or any other exit is asked again at the next stop."""
+    cache = _backup_lag_cache_key(root)
+    if cache is not None:
+        try:
+            row = json.loads(cache[0].read_text(encoding="utf-8"))
+            if (
+                row.get("key") == cache[1]
+                and 0 <= time.time() - float(row.get("at", 0)) < BACKUP_LAG_CACHE_TTL_S
+            ):
+                return row.get("text")
+        # swallowed-failure-ok: no cache file yet, or an unreadable one, is a miss and the child below answers
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
+    text, cacheable = _backup_lag_ask(root)
+    if cache is not None and cacheable:
+        try:
+            cache[0].write_text(
+                json.dumps({"key": cache[1], "at": time.time(), "text": text}), encoding="utf-8"
+            )
+        except OSError as exc:
+            _sys.stderr.write("backup-lag: could not write its cache (%s)\n" % exc)
+    return text
+
+
+def _backup_lag_ask(root):
+    """(text or None, cacheable): one `backup_ref status --cached` child."""
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.join(str(root), ".ci") + os.pathsep + env.get("PYTHONPATH", "")
     try:
@@ -144,11 +188,11 @@ def backup_lag(root):
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
-        return None
+        return None, False
     # Exit 1 is also what python gives for a module it cannot find, so the verdict line on stdout is required too.
-    if proc.returncode != 1 or not proc.stdout.startswith("backup-ref: "):
-        return None
-    return "BACKUP LAG: %s" % proc.stdout.strip().removeprefix("backup-ref: ")
+    if proc.returncode == 1 and proc.stdout.startswith("backup-ref: "):
+        return "BACKUP LAG: %s" % proc.stdout.strip().removeprefix("backup-ref: "), True
+    return None, proc.returncode == 0
 
 
 def broken_schedules(event, now=None):

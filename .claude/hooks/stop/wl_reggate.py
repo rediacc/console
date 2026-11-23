@@ -684,6 +684,72 @@ def pytest_collects(rel, root):
     return any(fnmatch.fnmatch(os.path.basename(rel), pat) for pat in patterns)
 
 
+VERDICT_FILE = "rediacc-reggate-verdicts.json"
+
+
+def _verdict_path(root):
+    dirs = C._repo_git_dirs(root)
+    return None if dirs is None else dirs[0] / VERDICT_FILE
+
+
+def recorded_verdict(root, rel, digest):
+    """The exit code `--prove` recorded for gate `rel` at content hash `digest`, or None when none was recorded (or the record is unreadable, which the caller reports as not recorded)."""
+    path = _verdict_path(root)
+    if path is None:
+        return None
+    try:
+        row = json.loads(path.read_text(encoding="utf-8")).get(rel)
+    except (OSError, ValueError, AttributeError):
+        return None
+    if isinstance(row, dict) and row.get("hash") == digest and isinstance(row.get("exit"), int):
+        return row["exit"]
+    return None
+
+
+def _record_verdict(root, rel, digest, code):
+    path = _verdict_path(root)
+    if path is None:
+        raise OSError("no git directory under %s to hold %s" % (root, VERDICT_FILE))
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(rows, dict):
+            rows = {}
+    except FileNotFoundError:
+        rows = {}
+    except ValueError:
+        rows = {}  # a corrupt record is replaced by this fresh one, which names the run that wrote it
+    rows[rel] = {"hash": digest, "exit": code, "at": C.stamp_now()}
+    path.write_text(json.dumps(rows, indent=1, sort_keys=True), encoding="utf-8")
+
+
+def _gate_key(scripts, rel):
+    return next((k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]), "")
+
+
+def prove_cli(root):
+    """`wl_reggate.py --prove`: run `npm run <key>` for every new or changed check script that has no recorded verdict at its content hash, and record each exit. The Stop hook only READS these verdicts (prove_new_gate), so a gate's minutes-long run never sits on the stop path (agent/plans/PLAN-tooling-speed.md D3). Returns the printed lines."""
+    scripts = package_scripts(root)
+    out = []
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in sorted(glob.glob(os.path.join(str(root), pat))):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if not digest or recorded_verdict(root, rel, digest) is not None:
+                continue
+            if not (_is_dirty(rel, root) or _new_since_head(rel, root, "HEAD")):
+                continue
+            key = _gate_key(scripts, rel)
+            if not key or not gate_reachable(scripts, key, root):
+                out.append("%s: skipped (no reachable check:* key runs it)" % rel)
+                continue
+            code = wl_proc.run(
+                ["npm", "run", "--silent", key], cwd=str(root), timeout=REGGATE_TIMEOUT_S
+            ).returncode
+            _record_verdict(root, rel, digest, code)
+            out.append("%s via `npm run %s`: exit %d (recorded)" % (rel, key, code))
+    return out or ["nothing to prove: no new or changed check script lacks a verdict"]
+
+
 def prove_new_gate(root, scripts, state):
     """(proven, notes). A claimed gate must leave ARTIFACTS, each verified: a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of
     a control-first gate IS the planted-defect proof, because such a gate self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists because a gate can be defined yet never run."""
@@ -721,10 +787,7 @@ def prove_new_gate(root, scripts, state):
                 )
                 proven = True
                 continue
-            key = next(
-                (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
-                "",
-            )
+            key = _gate_key(scripts, rel)
             if not key and PYTEST_GATE_KEY in scripts and pytest_collects(rel, root):
                 # Collected through pyproject.toml testpaths. The whole suite exceeds REGGATE_TIMEOUT_S, so like the other suites it is accepted on change once the key is shown reachable from `npm run ci`.
                 if not gate_reachable(scripts, PYTEST_GATE_KEY, root):
@@ -752,14 +815,16 @@ def prove_new_gate(root, scripts, state):
                     "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
-            # NO try/except: `wl_proc.run` never raises for a timeout or a failed spawn, and the codes it returns are the two this site was already synthesising by hand -- TIMEOUT_RC is 124 and SPAWN_FAILED_RC is 127.
-            code = wl_proc.run(
-                ["npm", "run", "--silent", key],
-                cwd=str(root),
-                timeout=REGGATE_TIMEOUT_S,
-            ).returncode
+            # The Stop hook never starts npm: it reads the verdict `wl_reggate.py --prove` recorded for this content hash. A gate with no recorded verdict is left unsettled (not written to gate_runs, so the next stop looks again) and the note names the command.
+            code = recorded_verdict(root, rel, digest)
+            if code is None:
+                notes.append(
+                    "%s: no recorded verdict for `npm run %s`; run `python3 .claude/hooks/stop/wl_reggate.py --prove`"
+                    % (rel, key)
+                )
+                continue
             state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
-            notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
+            notes.append("%s via `npm run %s`: exit %d (recorded verdict)" % (rel, key, code))
             if code == 0:
                 proven = True
     if not notes:
@@ -888,3 +953,13 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
         token,
     )
     return "block", reason, ""
+
+
+if __name__ == "__main__":
+    import sys
+
+    if sys.argv[1:2] == ["--prove"]:
+        print("\n".join(prove_cli(sys.argv[2] if len(sys.argv) > 2 else os.getcwd())))
+    else:
+        sys.stderr.write("usage: wl_reggate.py --prove [<repo root>]\n")
+        sys.exit(2)
