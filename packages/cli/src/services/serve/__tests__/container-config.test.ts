@@ -576,7 +576,8 @@ describe('container-tier config loading', () => {
     expect(grantBodies).toEqual([{ sessionId, token: OWNER_TOKEN }]);
 
     await (await runCommand()).text();
-    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId }]);
+    // Minted writable: the session's config changes are pushed back through this chain (PLAN-rmcp-writeback.md WB1).
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId, write: true }]);
     expect(executed).toHaveLength(1);
   });
 
@@ -585,7 +586,7 @@ describe('container-tier config loading', () => {
     await grantKey();
 
     await (await runCommand(OWNER_TOKEN, { 'X-Config-Session': first })).text();
-    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId: first }]);
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId: first, write: true }]);
   });
 
   it('drops the session when the account server refuses to record the grant', async () => {

@@ -3537,6 +3537,8 @@
       }
     },
     "proxy": {
+      "configConflict": "« rdc {{command}} » n'a pas pu enregistrer sa modification de configuration : la configuration stockée a changé entre-temps lors des {{attempts}} tentatives. Relancez la commande.",
+      "configWriteFailed": "« rdc {{command}} » n'a pas pu enregistrer sa modification dans le stockage de configuration : {{reason}}.",
       "configWriteUnavailable": "« rdc {{command}} » modifie la configuration, mais l'exécuteur ne peut pas encore enregistrer de modifications de configuration : rien n'a donc été changé. Lancez la commande en local jusqu'à l'arrivée de la réécriture.",
       "timeout": "L'exécuteur proxy sur {{host}} n'a pas répondu en {{seconds}} s. Vérifiez qu'il est démarré ou augmentez REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Impossible de joindre l'exécuteur proxy sur {{host}} : {{reason}}"

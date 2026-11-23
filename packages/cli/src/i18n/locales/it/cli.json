@@ -3537,6 +3537,8 @@
       }
     },
     "proxy": {
+      "configConflict": "\"rdc {{command}}\" non è riuscito a salvare la modifica alla configurazione: la configurazione memorizzata è cambiata nel frattempo in tutti i {{attempts}} tentativi. Esegui di nuovo il comando.",
+      "configWriteFailed": "\"rdc {{command}}\" non è riuscito a salvare la modifica nell'archivio delle configurazioni: {{reason}}.",
       "configWriteUnavailable": "\"rdc {{command}}\" modifica la configurazione, ma l'executor non può ancora salvare le modifiche alla configurazione, quindi non è stato cambiato nulla. Eseguilo in locale finché la riscrittura non sarà disponibile.",
       "timeout": "L'executor proxy su {{host}} non ha risposto entro {{seconds}} s. Verifica che sia in esecuzione o aumenta REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Impossibile raggiungere l'executor proxy su {{host}}: {{reason}}"

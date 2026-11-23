@@ -3537,6 +3537,8 @@
       }
     },
     "proxy": {
+      "configConflict": "「rdc {{command}}」は設定の変更を保存できませんでした。{{attempts}} 回の試行すべてで、保存済みの設定がその間に変更されました。コマンドをもう一度実行してください。",
+      "configWriteFailed": "「rdc {{command}}」は設定の変更を設定ストレージに保存できませんでした: {{reason}}。",
       "configWriteUnavailable": "「rdc {{command}}」は設定を変更しますが、エグゼキューターはまだ設定の変更を保存できないため、何も変更されていません。書き戻しが提供されるまでは、ローカルで実行してください。",
       "timeout": "{{host}} のプロキシエグゼキューターが {{seconds}} 秒以内に応答しませんでした。起動しているか確認するか、REDIACC_PROXY_TIMEOUT_MS を大きくしてください。",
       "unreachable": "{{host}} のプロキシエグゼキューターに接続できません: {{reason}}"

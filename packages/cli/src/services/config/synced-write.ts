@@ -29,8 +29,9 @@ interface SyncedWriteService {
 
 /** True when `configName` exists on disk and carries a `remote` pointer. */
 export async function isRemoteConfigFile(configName: string): Promise<boolean> {
-  // A request-scoped dispatch edits the session's config in memory, never a remote store.
-  if (currentRequestConfig()) return false;
+  // A request-scoped dispatch's config is remote exactly when its scope saves writes to the config store it came from (a container session's writeback); the write then reaches configFileStorage, which pushes it through that writeback.
+  const scoped = currentRequestConfig();
+  if (scoped) return scoped.writeback !== undefined;
   if (!(await configFileStorage.exists(configName))) return false;
   return hasRemoteConfig(await configFileStorage.load(configName));
 }
@@ -52,6 +53,11 @@ export async function updateSyncedConfig(
   edit: ConfigEdit,
   service?: SyncedWriteService
 ): Promise<void> {
+  // A request-scoped config has exactly one store, whatever its name: configFileStorage pushes the edit through the scope's writeback, or refuses it when the scope has none.
+  if (currentRequestConfig()) {
+    await configFileStorage.update(configName, edit);
+    return;
+  }
   if (await isRemoteConfigFile(configName)) {
     await pushEdit(configName, edit, service);
     return;

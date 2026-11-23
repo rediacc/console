@@ -112,33 +112,72 @@ export interface CommandRequestContext {
 }
 
 /**
+ * Where a request-scoped config's writes are saved: the config store the
+ * executor pulled the config from (services/serve/config-writeback.ts).
+ *
+ * `write` applies `edit` to the newest copy of the stored config, pushes the
+ * result with compare-and-swap, replays `edit` on a fresh pull after a version
+ * conflict, and resolves to the document the store now holds (its `version` the
+ * store's). It throws when the change could not be saved, so a command fails
+ * before the host job its write precedes.
+ */
+export interface ConfigWriteback {
+  write(edit: (config: RdcConfig) => RdcConfig): Promise<RdcConfig>;
+}
+
+/**
  * A config held for one request.
  *
- * A state write (`bumpVersion: false`, runtime status) applies here, in memory,
- * for the rest of the request. A version-bumping (spec) write is refused with
- * ConfigWriteUnavailableError (services/core/config-write-errors.ts): the
- * container has no config file to write and does not push the change back to
- * config storage, and a change that lives only in this request would vanish with
- * it while the host side effect it registered (a volume, a fork) stayed. The
- * write precedes the command's host job, so the refusal ends the command before
- * any machine is touched (agent/plans/PLAN-rmcp-writeback.md D6).
+ * With a writeback (the container tier's session config), every write that
+ * changes the stored document is pushed through it: a spec write and a state
+ * write alike, since `state` syncs too and a network ID recorded only in memory
+ * would be lost with the request. A cache write (`updateCache`) stays here.
+ *
+ * Without one, a state write applies here, in memory, for the rest of the
+ * request, and a version-bumping (spec) write is refused with
+ * ConfigWriteUnavailableError (services/core/config-write-errors.ts): a change
+ * that lives only in this request would vanish with it while the host side
+ * effect it registered (a volume, a fork) stayed. The write precedes the
+ * command's host job, so the refusal ends the command before any machine is
+ * touched (agent/plans/PLAN-rmcp-writeback.md D6).
  */
 export interface RequestConfigScope {
   /** The current plaintext config. Replaced (not mutated) by each write. */
   config: RdcConfig;
   /** configService's memoized resource view for THIS config, per request. */
   resourceState?: unknown;
+  /** Where this config's writes are saved; absent when the config has no store to push to. */
+  writeback?: ConfigWriteback;
   /**
-   * The error code of a config write this scope refused (CONFIG_WRITE_UNAVAILABLE).
-   * The command's own error handling flattens the thrown error into an exit, so
-   * the dispatch reads the code from here to put it on the served result.
+   * The error code of a config write this scope refused or failed to save
+   * (CONFIG_WRITE_UNAVAILABLE, CONFIG_CONFLICT, CONFIG_WRITE_FAILED). The command's
+   * own error handling flattens the thrown error into an exit, so the dispatch
+   * reads the code from here to put it on the served result.
    */
   writeFailure?: string;
 }
 
-/** A fresh request-scoped config holder around `config`. */
+/**
+ * The writeback of each config a loader handed out, keyed by the very object.
+ *
+ * The container tier's loader binds the config it returns for a session to that
+ * session's writeback (bindConfigWriteback), and every request scope built
+ * around that object picks it up here: the command dispatch, the job routes and
+ * the policy check all build their scope from the loader's config, so none of
+ * them can run a write-capable command against a scope that silently drops it.
+ * A WeakMap, so a config nobody references any more releases its writeback.
+ */
+const writebacks = new WeakMap<RdcConfig, ConfigWriteback>();
+
+/** Make every request scope built around `config` save its writes through `writeback`. */
+export function bindConfigWriteback(config: RdcConfig, writeback: ConfigWriteback): void {
+  writebacks.set(config, writeback);
+}
+
+/** A fresh request-scoped config holder around `config`, with the writeback bound to it, if any. */
 export function createRequestConfigScope(config: RdcConfig): RequestConfigScope {
-  return { config };
+  const writeback = writebacks.get(config);
+  return writeback ? { config, writeback } : { config };
 }
 
 /**

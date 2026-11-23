@@ -3680,6 +3680,8 @@
       "orStopIt": "  Or stop it: rdc job cancel {{id}} -m {{machine}}"
     },
     "proxy": {
+      "configConflict": "\"rdc {{command}}\" could not save its config change: the stored config changed under it on all {{attempts}} attempts. Run the command again.",
+      "configWriteFailed": "\"rdc {{command}}\" could not save its config change to config storage: {{reason}}.",
       "configWriteUnavailable": "\"rdc {{command}}\" changes the config, and the executor cannot save config changes yet, so nothing was changed. Run it locally until write-back ships.",
       "timeout": "The proxy executor at {{host}} did not answer within {{seconds}}s. Check that it is running, or raise REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Cannot reach the proxy executor at {{host}}: {{reason}}"

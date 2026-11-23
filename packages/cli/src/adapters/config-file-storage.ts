@@ -18,6 +18,7 @@ import { getSubscriptionTokenFile } from '../services/account/subscription-auth.
 import {
   CONFIG_WRITE_UNAVAILABLE,
   ConfigWriteUnavailableError,
+  configWriteFailureCode,
   currentCommandName,
 } from '../services/core/config-write-errors.js';
 import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
@@ -61,21 +62,40 @@ function refuseInRequestScope(what: string, name: string): void {
 }
 
 /**
- * Apply a write to a request-scoped config. A state write applies in memory for
- * the rest of the request. A spec (version-bumping) write is refused before the
- * updater runs: the executor cannot persist it, and the refusal ends the command
- * before its host job starts. The scope records the code for the served result.
+ * How a request-scoped write lands: `stored` changes the stored document (a spec
+ * or state write), `cache` only this request's copy (updateCache).
  */
-function writeScoped(
+type ScopedWriteKind = 'spec' | 'state' | 'cache';
+
+/**
+ * Apply a write to a request-scoped config (request-context.ts RequestConfigScope).
+ *
+ * With a writeback, a spec or state write is pushed to the config store, the
+ * updater applied to the store's newest copy (and again after a version
+ * conflict), and the scope re-seated on what the store now holds. Without one,
+ * a spec write is refused before the updater runs, ending the command before
+ * its host job starts, and a state write applies in memory for the request. A
+ * cache write always stays in memory. A failed or refused write records its code
+ * on the scope for the served result.
+ */
+async function writeScoped(
   scope: RequestConfigScope,
   updater: (config: RdcConfig) => RdcConfig,
-  bumpVersion: boolean
-): RdcConfig {
-  if (bumpVersion) {
+  kind: ScopedWriteKind
+): Promise<RdcConfig> {
+  if (kind !== 'cache' && scope.writeback) {
+    try {
+      scope.config = await scope.writeback.write(updater);
+    } catch (error) {
+      scope.writeFailure = configWriteFailureCode(error);
+      throw error;
+    }
+  } else if (kind === 'spec') {
     scope.writeFailure = CONFIG_WRITE_UNAVAILABLE;
     throw new ConfigWriteUnavailableError(currentCommandName());
+  } else {
+    scope.config = updater(scope.config);
   }
-  scope.config = updater(scope.config);
   // The memoized resource view was built from the previous config.
   scope.resourceState = undefined;
   return scope.config;
@@ -355,7 +375,7 @@ export class ConfigFileStorage {
   async save(config: RdcConfig, name: string = DEFAULT_CONFIG_NAME): Promise<void> {
     const scoped = currentRequestConfig();
     if (scoped) {
-      writeScoped(scoped, () => config, true);
+      await writeScoped(scoped, () => config, 'spec');
       return;
     }
     await this.withLock(name, async () => {
@@ -370,8 +390,7 @@ export class ConfigFileStorage {
     opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    // A refused write rejects the returned promise rather than throwing synchronously, as the locked path does.
-    if (scoped) return Promise.resolve().then(() => writeScoped(scoped, updater, bumpVersion));
+    if (scoped) return writeScoped(scoped, updater, bumpVersion ? 'spec' : 'state');
     return this.withLock(
       name,
       async () => {
@@ -403,7 +422,7 @@ export class ConfigFileStorage {
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return writeScoped(scoped, updater, false);
+    if (scoped) return writeScoped(scoped, updater, 'state');
     // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles `rm` it between runs; `config prune` removes it), a background writer , the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a rejected promise they already tolerate.
     try {
       await fs.access(this.getPath(name));
@@ -442,7 +461,7 @@ export class ConfigFileStorage {
    */
   async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return writeScoped(scoped, updater, false);
+    if (scoped) return writeScoped(scoped, updater, 'cache');
     try {
       await fs.access(this.getPath(name));
     } catch {

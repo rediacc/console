@@ -28,30 +28,11 @@
  * independently-rotating tokens keep the two apart.
  */
 
-import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
-import { ENVELOPE_VERSION, fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
-import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
-import { decryptConfigPullPayload } from '@rediacc/shared/config-schema';
 import { deadlineFetch } from './account-fetch.js';
 import { AuthError } from './auth.js';
+import { ConfigChain, type ExecutorGrant, SessionConfigStore } from './config-writeback.js';
 import { SessionError, type SessionPrincipal, SessionStore } from './sessions.js';
-
-/** What the account server hands an executor so it can fetch a member's config. */
-interface ExecutorGrant {
-  token: string;
-  storeId: string;
-  serverSecret: string;
-  configs: { configId: string; teamId: string | null; version: number }[];
-}
-
-interface PullResponse {
-  newServerToken: string;
-  sdk_derived: string;
-  configData: string;
-  envelope: EncryptedConfigPayload['envelope'];
-  hmac: string | null;
-}
 
 export interface ContainerConfigLoaderOptions {
   /** Account server base URL, e.g. https://eu.rediacc.cloud */
@@ -70,26 +51,69 @@ export interface ContainerConfigLoaderOptions {
  * argument for a warm container: the second command in a session pays no pull,
  * no decrypt, and no round trip. It is dropped when the session is, so a config
  * never outlives the key that opened it.
+ *
+ * The config it returns is bound to the session's writeback
+ * (config-writeback.ts): a command dispatched against it pushes its config
+ * changes back to config storage through a writable chain, and the next command
+ * of the session reads the pushed version (agent/plans/PLAN-rmcp-writeback.md).
  */
 export function createContainerConfigLoader(
   options: ContainerConfigLoaderOptions
-): (principal: SessionPrincipal) => Promise<RdcConfig> {
-  const accountUrl = options.accountUrl.replace(/\/+$/, '');
-  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
+): (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig> {
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const { sessions, executorToken } = options;
 
-  /** sessionId -> decrypted config. RAM only; never serialized, never written. */
-  const cache = new Map<string, RdcConfig>();
+  /**
+   * sessionId -> the session's config store (the decrypted config and its
+   * writeback, config-writeback.ts). RAM only; never serialized, never written.
+   * The promise is cached, so concurrent first requests of a session share one
+   * pull and one store, and with it one write serialization.
+   */
+  const stores = new Map<string, Promise<SessionConfigStore>>();
+  /** `${userId}\0${teamId}` -> the one config-token chain this container holds for that user and team. */
+  const chains = new Map<string, ConfigChain>();
 
   /** Drop cached configs whose session has gone. Nothing decrypted outlives its key. */
   const pruneDeadSessions = (): void => {
-    for (const sessionId of cache.keys()) {
+    for (const sessionId of stores.keys()) {
       try {
         sessions.principal(sessionId);
       } catch {
-        cache.delete(sessionId);
+        stores.delete(sessionId);
       }
     }
+  };
+
+  const chainFor = (principal: SessionPrincipal): ConfigChain => {
+    const key = `${principal.userId}\u0000${principal.teamId ?? ''}`;
+    let chain = chains.get(key);
+    if (!chain) {
+      chain = new ConfigChain({
+        accountUrl: options.accountUrl,
+        executorToken,
+        userId: principal.userId,
+        fetchImpl,
+      });
+      chains.set(key, chain);
+    }
+    return chain;
+  };
+
+  const openStore = async (
+    principal: SessionPrincipal,
+    sessionId: string,
+    cek: CryptoKey
+  ): Promise<SessionConfigStore> => {
+    const chain = chainFor(principal);
+    // Minted for THIS principal under THIS session. The account server checks they are in the executor's org, an active config-store member, and the recorded grantor of the session (recordGrant below) before answering.
+    const grant = await chain.mint(sessionId);
+    const target = pickConfig(grant.configs, principal.teamId);
+    return SessionConfigStore.open({
+      chain,
+      sessionId,
+      cek,
+      target: { storeId: grant.storeId, ...target },
+    });
   };
 
   return async function loadConfig(
@@ -110,65 +134,18 @@ export function createContainerConfigLoader(
     // Touches the session (keeping it alive) and fails loudly if the key is gone.
     const cek = sessions.requireCek(sessionId);
 
-    const cached = cache.get(sessionId);
-    if (cached) return cached;
-
-    // Minted for THIS principal under THIS session. The account server checks they are in the executor's org, an active config-store member, and the recorded grantor of the session (recordGrant below) before answering.
-    const grant = await mintExecutorGrant(principal.userId, sessionId);
-    const target = pickConfig(grant.configs, principal.teamId);
-
-    const pull = await pullConfig(grant.token, target.configId, target.teamId);
-
-    const payload: EncryptedConfigPayload = {
-      envelope: pull.envelope,
-      encryptedBlob: pull.configData,
-      hmac: pull.hmac,
-    };
-
-    // The key is the SESSION's, never the executor's, it has none of its own. The binding is the config the executor asked for: a blob the server serves for another store, config or team does not open (envelope v3 AAD).
-    const decrypted = await decryptConfigPullPayload(payload, {
-      cek,
-      sdkDerived: await importAesKey(fromBase64(pull.sdk_derived)),
-      binding: { storeId: grant.storeId, configId: target.configId, teamId: target.teamId },
-    });
-
-    const config = fullConfigToRdcConfig(decrypted);
-    cache.set(sessionId, config);
-    return config;
+    let store = stores.get(sessionId);
+    if (!store) {
+      store = openStore(principal, sessionId, cek);
+      stores.set(sessionId, store);
+      // A failed open is not cached: the next request tries again.
+      store.catch(() => {
+        if (stores.get(sessionId) === store) stores.delete(sessionId);
+      });
+    }
+    // The store's current document, bound to its writeback: a request scope built around it pushes its writes back to config storage.
+    return (await store).config;
   };
-
-  async function mintExecutorGrant(userId: string, sessionId: string): Promise<ExecutorGrant> {
-    const response = await doFetch(`${accountUrl}/account/api/v1/configs/executor-token`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${executorToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ userId, sessionId }),
-    });
-    if (!response.ok) {
-      throw new SessionError(await describe(response, 'could not obtain a config token'));
-    }
-    return (await response.json()) as ExecutorGrant;
-  }
-
-  async function pullConfig(
-    configToken: string,
-    configId: string,
-    teamId: string | null
-  ): Promise<PullResponse> {
-    const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
-    const response = await doFetch(
-      `${accountUrl}/account/api/v1/configs/${encodeURIComponent(configId)}${query}`,
-      {
-        headers: { 'X-Config-Token': configToken, 'x-config-envelope': String(ENVELOPE_VERSION) },
-      }
-    );
-    if (!response.ok) {
-      throw new SessionError(await describe(response, 'could not fetch the config'));
-    }
-    return (await response.json()) as PullResponse;
-  }
 }
 
 export interface ExecutorGrantRecorderOptions {

@@ -3537,6 +3537,8 @@
       }
     },
     "proxy": {
+      "configConflict": "“rdc {{command}}” 无法保存其配置更改：在全部 {{attempts}} 次尝试中，已存储的配置都在此期间被修改。请重新运行该命令。",
+      "configWriteFailed": "“rdc {{command}}” 无法将配置更改保存到配置存储：{{reason}}。",
       "configWriteUnavailable": "“rdc {{command}}” 会修改配置，但执行器暂时无法保存配置更改，因此未做任何更改。在回写功能上线之前，请在本地运行该命令。",
       "timeout": "{{host}} 上的代理执行器在 {{seconds}} 秒内没有响应。请确认它正在运行，或调大 REDIACC_PROXY_TIMEOUT_MS。",
       "unreachable": "无法连接到 {{host}} 上的代理执行器：{{reason}}"

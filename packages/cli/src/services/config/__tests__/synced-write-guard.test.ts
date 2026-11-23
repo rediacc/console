@@ -24,8 +24,9 @@ const WRITE_CALL = /configFileStorage\s*\.\s*(update|save|updateCache)\s*\(/g;
 /** Files allowed to write the config file directly: path (relative to src) -> call count and why. */
 const ALLOWED: Record<string, { count: number; reason: string }> = {
   'services/config/synced-write.ts': {
-    count: 3,
-    reason: 'the synced write path itself: local configs, device-local pointers, request scope',
+    count: 4,
+    reason:
+      'the synced write path itself: request scope (pushed through its writeback), local configs, device-local pointers, a remote config without a remote view',
   },
   'services/config/resource-state.ts': {
     count: 2,
@@ -138,7 +139,7 @@ describe('synced-write guard', () => {
     );
     expect(violations(countWrites(files)).sort((a, b) => Number(a > b) - Number(a < b))).toEqual([
       `${planted}: 1 direct config write(s); use updateSyncedConfig (synced-write.ts)`,
-      'services/config/synced-write.ts: 4 direct config writes, 3 allowed',
+      'services/config/synced-write.ts: 5 direct config writes, 4 allowed',
     ]);
   });
 

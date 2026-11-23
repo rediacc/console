@@ -473,14 +473,12 @@ class ConfigService extends ConfigAccessService {
 
     const deletedRepos = state.getDeletedRepositories();
     deletedRepos.push(buildArchivedRecord(repoName, repos[repoName]));
-    await state.setDeletedRepositories(boundArchive(deletedRepos));
-
     delete repos[repoName];
-    await state.setRepositories(repos);
+    await state.setRepositoriesAndArchive(repos, boundArchive(deletedRepos));
   }
 
   /**
-   * Archive several repository entries in one write per bucket (a deprovisioned machine's repos):
+   * Archive several repository entries in one write (a deprovisioned machine's repos):
    * each keeps its GUID and credential in the archive, restorable with `config repository restore`.
    * Keys not in the config are skipped; the archived keys are returned.
    */
@@ -493,10 +491,8 @@ class ConfigService extends ConfigAccessService {
 
     const deletedRepos = state.getDeletedRepositories();
     for (const key of archived) deletedRepos.push(buildArchivedRecord(key, repos[key]));
-    await state.setDeletedRepositories(boundArchive(deletedRepos));
-
     for (const key of archived) delete repos[key];
-    await state.setRepositories(repos);
+    await state.setRepositoriesAndArchive(repos, boundArchive(deletedRepos));
     return archived;
   }
 
@@ -506,8 +502,7 @@ class ConfigService extends ConfigAccessService {
     const deletedRepos = state.getDeletedRepositories();
     const repos = state.getRepositories();
     const restoredName = takeArchivedRepository(repos, deletedRepos, guid, name);
-    await state.setRepositories(repos);
-    await state.setDeletedRepositories(deletedRepos);
+    await state.setRepositoriesAndArchive(repos, deletedRepos);
     return restoredName;
   }
 
