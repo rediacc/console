@@ -1167,7 +1167,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 25 | .json 16, .log 9 |
 | .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
-| .ci/rediacc_ci/tests/gates | 204 | .py 203, .fixture 1 |
+| .ci/rediacc_ci/tests/gates | 205 | .py 204, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -1255,7 +1255,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/infra | 3 | .sh 3 |
 | .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 178 | .py 176, .json 1, .mjs 1 |
+| .ci/scripts/quality | 179 | .py 177, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
