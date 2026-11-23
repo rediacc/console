@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "已取消 {{name}}",
+        "descriptionShort": "取消远程机器上正在运行的备份",
         "description": "取消远程机器上正在运行的备份",
         "notRunning": "策略 \"{{name}}\" 没有正在运行的备份"
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "管理备份",
       "drNudge": "配置存储未启用：您的仓库凭据（LUKS 密码短语）仅存在于此主机上，因此裸机恢复无法找回它们。请使用 \"rdc config remote enable\" 启用，将它们同步到加密的配置数据块中。",
       "list": {
+        "descriptionShort": "列出机器上的备份产物",
         "description": "列出机器上的备份产物。",
         "examples": {
           "basic": "列出某台机器已保存的备份。",
@@ -42,6 +44,7 @@
         "placementRequired": "使用 -m <machine> 指定要列出其备份的机器。"
       },
       "manifests": {
+        "descriptionShort": "列出服务器上记录的备份快照清单",
         "description": "列出服务器上记录的备份快照清单",
         "empty": "未找到备份清单。",
         "fetching": "正在获取备份清单...",
@@ -59,6 +62,7 @@
         "deployed": "已在 {{machine}} 上部署 {{name}}",
         "deployFailed": "已恢复的 {{name}} 部署失败",
         "deploying": "正在 {{machine}} 上部署 {{name}}...",
+        "descriptionShort": "将备份产物还原为可运行的仓库",
         "description": "将备份产物转换为可运行的仓库。放置位置在此指定。",
         "examples": {
           "asNewRepo": "将备份恢复为新仓库并启动它。",
@@ -123,9 +127,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "移除已声明的策略，使套餐或服务器默认值重新生效",
           "description": "移除已声明的策略，改回套餐或服务器的默认设置。"
         },
         "cleared": "已移除 {{name}} 的保留策略。此后将采用套餐或服务器的默认设置。",
+        "descriptionShort": "显示服务器当前执行的快照保留策略",
         "description": "显示服务器正在执行的快照保留策略。",
         "empty": "未声明保留策略，因此采用套餐或服务器的默认设置。",
         "knobNotAnInteger": "{{flag}} 需要一个表示保留快照数量的整数，而不是 \"{{value}}\"。",
@@ -137,6 +143,7 @@
         "optionKeepWeekly": "为这么多周中的每一周保留最新的快照",
         "optionKeepYearly": "为这么多年中的每一年保留最新的快照",
         "set": {
+          "descriptionShort": "声明要保留的快照数量",
           "description": "指定要保留的快照数量。每个选项都会被整体替换，而不是合并。",
           "success": "已为 {{name}} 设置保留策略（{{count}} 条规则）。范围之外的快照将在下一次清理时被删除。",
           "pending": "此更改保留得更少,因此会等待延迟删除窗口,并于 {{when}}(UTC)对 \"{{name}}\" 生效。所示策略在此之前保持有效。"
@@ -144,6 +151,7 @@
         "effective": "{{name}} 当前生效的保留策略:{{source}}",
         "optionStream": "仅应用于此备份流(流 ID);省略时使用整个仓库的默认值",
         "preview": {
+          "descriptionShort": "显示下次清理将删除的快照以及可释放的空间",
           "description": "显示下一次清理将删除哪些快照,以及可释放的空间。",
           "nothing": "下一次清理不会删除 {{name}} 的任何内容。",
           "summary": "下一次清理将删除 {{name}} 的 {{count}} 个快照,保留 {{kept}} 个,并释放 {{bytes}}。",
@@ -163,12 +171,14 @@
         "pendingClear": "移除 \"{{name}}\" 的策略会等待延迟删除窗口,并于 {{when}}(UTC)生效。在此之前,当前生效的策略继续适用。"
       },
       "run": {
+        "descriptionShort": "立即运行备份",
         "description": "在远程机器上立即触发备份",
         "examples": {
           "basic": "立即执行备份策略。"
         }
       },
       "schedule": {
+        "descriptionShort": "将备份计划 (systemd 定时器) 部署到远程机器",
         "description": "将备份计划部署到远程机器（systemd 定时器）",
         "optionDryRun": "预览生成的单元而不部署",
         "optionForce": "即使当前有备份正在运行也继续执行（新单元在下次定时器触发时生效；正在运行的调用保留其旧单元）",
@@ -176,6 +186,7 @@
         "success": "已将备份计划部署到 {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "上传块存储快照: 先上传完整清单，之后只上传有变化的单元",
         "bwlimitInvalid": "--bwlimit 必须是 100Mbps 或 12.5M 这样的速率，当前为 \"{{value}}\"。",
         "completed": "已保存 {{name}} 的快照",
         "description": "上传分块存储快照：首次为完整清单，之后仅为变更单元",
@@ -206,11 +217,13 @@
         "optionAcceptIdentityChange": "当镜像的 LUKS 标识变化或镜像缩小时,将其作为新基线;上传完整快照"
       },
       "status": {
+        "descriptionShort": "显示远程机器上的备份状态和定时器状态",
         "description": "显示远程机器上的备份状态和定时器状态"
       },
       "strategy": {
         "bandwidthUnconvertible": "无法转换带宽限制 \"{{value}}\"（{{reason}}）。请使用字节/秒（12500000）、十进制字节（12.5M）、二进制字节（12Mi）或比特（100Mbps）。",
         "bind": {
+          "descriptionShort": "将备份策略绑定到机器，使其计划部署到该机器上",
           "alreadyBound": "备份策略 \"{{strategy}}\" 已经绑定到机器 \"{{machine}}\"",
           "bound": "备份策略 \"{{strategy}}\" 已绑定到机器 \"{{machine}}\"",
           "description": "将备份策略绑定到机器，以便其调度部署到该机器",
@@ -218,10 +231,12 @@
         },
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
         "list": {
+          "descriptionShort": "列出所有备份策略",
           "description": "列出所有备份策略"
         },
         "readBandwidthUnconvertible": "无法转换读取带宽限制 \"{{value}}\"（{{reason}}）。请使用字节/秒（50000000）、十进制字节（50M）、二进制字节（48Mi）、比特（400Mbps），或用 0 表示不限速。",
         "remove": {
+          "descriptionShort": "移除备份策略或目标",
           "bound": "无法删除备份策略 \"{{strategy}}\"：仍有 {{count}} 台机器绑定了它：{{machines}}。",
           "boundNext": "请先从这些机器上解除绑定，或连同绑定一起删除。",
           "description": "删除备份策略或目标",
@@ -241,6 +256,7 @@
           "syncFailed": "无法同步复制规则：{{reason}}"
         },
         "set": {
+          "descriptionShort": "创建或更新备份策略",
           "description": "创建或更新备份策略",
           "examples": {
             "configure": "配置备份策略的计划与模式。",
@@ -291,11 +307,13 @@
           "dryRun": "试运行:策略 \"{{strategy}}\" 将发生更改({{changes}})。未写入任何内容。"
         },
         "show": {
+          "descriptionShort": "显示备份策略详情",
           "description": "显示备份策略详情",
           "notConfigured": "未配置备份策略",
           "notFound": "备份策略 \"{{name}}\" 未找到"
         },
         "unbind": {
+          "descriptionShort": "解除备份策略与机器的绑定",
           "description": "将备份策略从机器解绑",
           "notBound": "备份策略 \"{{strategy}}\" 未绑定到机器 \"{{machine}}\"",
           "unbound": "备份策略 \"{{strategy}}\" 已从机器 \"{{machine}}\" 解绑"
@@ -303,6 +321,7 @@
       },
       "reconcile": {
         "checkSkipped": "已跳过的谱系未检查：{{lineages}}",
+        "descriptionShort": "将仓库的已存字节账本重置为存储实际持有的量 (绝不删除任何块)",
         "description": "将仓库的已存储字节台账重置为存储中的实际内容(绝不删除任何数据块)",
         "argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
         "optionDryRun": "只显示数据,不修改台账",
@@ -332,6 +351,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "显示备份存储配额、已存字节数以及各仓库的用量",
         "description": "显示备份存储配额、已存储字节数和各仓库的使用情况",
         "empty": "尚未记录任何按仓库统计的备份存储使用情况。",
         "fetching": "正在获取备份存储使用情况...",
@@ -341,6 +361,7 @@
         "throttled": "等待中的存储超过 {{cap}} 的变化上限:快于每小时一次的备份流会被拒绝,直到存储腾空。"
       },
       "verify": {
+        "descriptionShort": "对照块存储验证仓库的备份锚点",
         "completed": "已验证 {{name}} 的备份",
         "description": "对照分块存储验证仓库的备份锚点",
         "failed": "{{name}} 的备份验证失败",
@@ -367,6 +388,7 @@
         "description": "管理已存储的快照",
         "snapshotIdArgument": "快照 ID(参见 rdc backup manifests)",
         "delete": {
+          "descriptionShort": "删除一个已存储的快照，其独占的数据会在下次垃圾回收时释放",
           "description": "删除一个已存储的快照。其独占的数据会在下一次垃圾回收时释放。",
           "notInRepo": "快照 {{snapshot}} 不在 {{name}} 的已存储历史中。可用以下命令列出其 ID:rdc backup manifests {{name}}",
           "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。",
@@ -440,6 +462,7 @@
         "confirmLineage": "此操作将删除谱系 {{name}} 的全部 {{count}} 个已存储快照({{bytes}}),且无法撤销。输入谱系 ID 以确认:"
       },
       "check": {
+        "descriptionShort": "通过还原一个文件，证明已存储的快照可以用口令打开",
         "description": "通过恢复一个文件,证明已存储的快照可以用口令打开",
         "needsCredential": "此配置中没有 {{name}} 的凭据,因此无法打开其列表。",
         "noIndex": "{{name}} 的快照 {{snapshot}} 没有已存储的列表,无法用这种方式检查。它未获证明。",
@@ -449,6 +472,7 @@
       },
       "repair": {
         "affected": "引用这些数据块的快照:{{snapshots}}",
+        "descriptionShort": "从本机的锚点重新上传存储丢失或持有有误的块",
         "description": "从本机的锚点重新上传存储丢失或有误的数据块",
         "dryRunDamage": "发现 {{count}} 个损坏的数据块;试运行未更改任何内容。",
         "optionDryRun": "报告将被删除并重新上传的内容;不做任何更改"
@@ -456,6 +480,7 @@
       "tocKey": {
         "description": "管理仓库的浏览列表密钥",
         "sync": {
+          "descriptionShort": "在仓库所在机器上安装其列表密钥，或替换为不同的密钥",
           "description": "在仓库所在机器上安装其列表密钥,或替换不同的密钥",
           "optionDryRun": "报告将要执行的操作;不触碰任何内容",
           "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)"
@@ -492,11 +517,13 @@
       "immutability": {
         "description": "显示或设置已存储备份的延迟删除窗口",
         "show": {
+          "descriptionShort": "显示当前生效的延迟删除窗口",
           "description": "显示当前生效的延迟删除窗口",
           "window": "延迟删除:删除、整体清除或缩减保留都会等待 {{days}} 天,在此之前可以撤销。",
           "off": "延迟删除已关闭:删除立即生效。"
         },
         "set": {
+          "descriptionShort": "以天为单位设置延迟删除窗口 (0 到 30)",
           "description": "以天为单位设置延迟删除窗口(0 到 30)",
           "daysArgument": "删除生效前等待的天数(0 到 30)",
           "applied": "延迟删除窗口现在是 {{days}} 天。",
@@ -506,6 +533,7 @@
         "pending": "窗口将于 {{when}}(UTC)缩短为 {{days}} 天。在此之前 {{current}} 天仍然有效。"
       },
       "undelete": {
+        "descriptionShort": "在延迟的快照删除生效之前将其取消",
         "description": "在生效前取消快照的延迟删除",
         "success": "快照 {{snapshot}} 已保留:它的删除已取消。",
         "notWaiting": "快照 {{snapshot}} 并未等待删除。"
@@ -629,6 +657,7 @@
         "emptyRangeFlag": "{{flag}} 至少需要一个 CIDR，但收到的是空值",
         "keyNotFound": "未找到访问密钥 \"{{key}}\"",
         "list": {
+          "descriptionShort": "列出配置中的访问密钥",
           "description": "列出配置的访问密钥",
           "noKeys": "此配置中没有访问密钥。请用 'config access add' 添加"
         },
@@ -646,6 +675,7 @@
           "success": "已设置整个配置的来源范围：{{ranges}}"
         },
         "remove": {
+          "descriptionShort": "从配置中移除访问密钥",
           "description": "从配置中移除访问密钥",
           "pushHint": "它的行会保留在 {{machines}} 上，直到在那里运行 'machine access push'",
           "success": "已移除访问密钥 \"{{key}}\""
@@ -654,15 +684,18 @@
       "audit": {
         "description": "查看配置审计日志(~/.config/rediacc/audit.log.jsonl 中的哈希链 JSONL)",
         "log": {
+          "descriptionShort": "以 JSON 格式输出最近的审计条目",
           "description": "以 JSON 格式打印最近的审计条目",
           "optionActor": "按操作者类型过滤(human|agent)",
           "optionPath": "按 JSON 指针通配符过滤(例如 /credentials/*)",
           "optionSince": "仅显示指定时间之后的条目(例如 '24h'、'7d'、ISO 时间戳)"
         },
         "tail": {
+          "descriptionShort": "实时输出新写入的审计条目 (按 Ctrl+C 停止)",
           "description": "实时输出新写入的审计条目(Ctrl+C 停止)"
         },
         "verify": {
+          "descriptionShort": "校验所有审计条目的 SHA-256 哈希链是否完整",
           "chainBroken": "第 {{line}} 行的链断裂：文件已被篡改或损坏。",
           "chainOk": "已对 {{count}} 条目验证链完整性。",
           "description": "验证所有审计条目上 SHA-256 哈希链的完整性"
@@ -688,20 +721,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "清除默认值 (全部或指定的键)",
         "allCleared": "已清除所有默认值",
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
       "current": {
+        "descriptionShort": "显示当前生效的配置: 名称、文件、解析出的服务器和渠道、令牌状态",
         "description": "显示当前配置：名称、文件、解析出的服务器和渠道、令牌状态"
       },
       "delete": {
+        "descriptionShort": "删除配置文件",
         "description": "删除配置文件",
         "success": "配置 \"{{name}}\" 已删除"
       },
       "description": "管理配置文件：创建、切换、编辑、协调状态，以及各类横切功能（字段、审计、SSH 密钥、远程同步）。",
       "descriptionShort": "管理配置文件",
       "edit": {
+        "descriptionShort": "在 $EDITOR 中以脱敏的 JSONC 形式打开当前配置",
         "abortAfterRetries": "在 {{count}} 次失败尝试后中止。草稿已保留于:{{path}}",
         "applied": "已应用 {{path}}",
         "bannerRedacted": "敏感字段以 <redacted:KIND>:DIGEST 占位符显示,可安全往返转换。",
@@ -727,23 +764,27 @@
         "description": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。",
         "descriptionShort": "基于指针的配置字段操作",
         "get": {
+          "descriptionShort": "按 JSON Pointer 读取单个配置值",
           "description": "按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。",
           "optionDigest": "输出 SHA-256 摘要而非数值(可安全地分享给代理)",
           "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)"
         },
         "list": {
+          "descriptionShort": "列出所有已注册的敏感指针模板及其类型和提交/加密策略",
           "description": "列出每个已注册的敏感字段指针模板及其类别和提交/加密策略。",
           "optionOutput": "输出格式(json|table)",
           "optionSensitive": "仅显示敏感(非公开)模板"
         },
         "rotate": {
+          "descriptionShort": "无需 --current 即可轮换敏感值",
           "description": "在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。",
           "optionNew": "新值",
           "optionPointer": "指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "success": "已轮换 {{pointer}}"
         },
         "set": {
+          "descriptionShort": "在指定的 JSON Pointer 处写入配置值",
           "description": "在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。",
           "optionCurrent": "当前明文值，修改敏感路径时必填(知识门控证明)",
           "optionNew": "新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析)",
@@ -751,6 +792,7 @@
           "success": "已设置 {{pointer}}"
         },
         "unset": {
+          "descriptionShort": "删除指定 JSON Pointer 处的配置值",
           "description": "删除 JSON 指针位置的配置值。敏感路径需提供 --current。",
           "optionCurrent": "当前明文值，删除敏感路径时必填",
           "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
@@ -770,6 +812,7 @@
         }
       },
       "init": {
+        "descriptionShort": "创建新的命名配置文件",
         "alreadyExists": "配置 \"{{name}}\" 已存在",
         "bareForm": "默认配置会自动创建；如需命名配置，请使用 'config init <name>'，或传入标志（--ssh-key、--server 等）为默认配置设置选项。",
         "description": "创建新的命名配置文件",
@@ -783,6 +826,7 @@
         "success": "配置 \"{{name}}\" 已初始化"
       },
       "list": {
+        "descriptionShort": "列出所有配置文件",
         "description": "列出所有配置文件",
         "noConfigs": "未找到配置文件。请使用以下命令创建：rdc config init"
       },
@@ -825,6 +869,7 @@
         "droppedGoneMachineState": "{{count}} 条指向已不在配置中的机器的运行时记录 {{verb}} 删除："
       },
       "reconcile": {
+        "descriptionShort": "根据机器的实际状态重建运行时状态",
         "acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。",
         "description": "根据机器上的真实状态重建运行时状态。修复过时的挂接和路由数据。",
         "optionAcceptObserved": "将声明的放置位置重写为镜像的实际所在位置，但仅当结果是无歧义时才这样做（恰好在一台机器上观察到）。重复项仍视为冲突。",
@@ -833,6 +878,7 @@
         "listFailed": "renet list all 执行失败(退出码 {{exitCode}})。"
       },
       "recover": {
+        "descriptionShort": "从备份 (.bak) 文件恢复配置",
         "confirm": "从备份恢复配置 \"{{name}}\"？",
         "description": "从备份文件 (.bak) 恢复配置",
         "failed": "从备份恢复配置 \"{{name}}\" 失败",
@@ -844,6 +890,7 @@
         "preconditionFailed": "配置“{{config}}”：服务器拒绝了删除 {{paths}} 的更改，因为此设备无法证明它见过已存储的值。请用“rdc config remote refresh”刷新后重新运行该命令。",
         "description": "管理远程配置存储连接",
         "disable": {
+          "descriptionShort": "断开与远程存储的连接，并将配置保存到本地",
           "description": "断开远程存储连接并将配置保存到本地",
           "optionLocal": "仅在此设备上解除链接：使用缓存副本，不联系服务器",
           "notEnabled": "远程配置未启用。",
@@ -867,6 +914,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file：此设备的配置存储密钥保存在 {{path}}（权限 0600）中，仅受文件权限保护。"
         },
         "enable": {
+          "descriptionShort": "将此配置关联到远程加密存储",
           "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储，且此设备可以打开它，因此无需启用。如需取消链接，请运行：rdc config remote disable",
           "description": "将此配置链接到远程加密存储",
           "expired": "设备代码已过期。请重试。",
@@ -927,6 +975,7 @@
         "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"rdc config remote refresh\" 以生成缓存。",
         "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：rdc config remote enable",
         "refresh": {
+          "descriptionShort": "强制从远程存储重新获取配置",
           "description": "强制从远程存储重新获取配置",
           "notEnabled": "远程配置未启用。",
           "pulled": "配置已拉取",
@@ -936,6 +985,7 @@
         },
         "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
         "status": {
+          "descriptionShort": "显示远程连接状态",
           "description": "显示远程连接状态",
           "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（重启可能会清空密钥存储）。请用以下命令重新注册此设备：rdc config remote enable",
           "deviceCannotOpen": "此设备无法打开该配置的远程存储：它的注册已被拒绝，例如在密钥轮换之后。请用以下命令重新注册此设备：rdc config remote enable"
@@ -971,6 +1021,7 @@
         },
         "pushVisibility": "配置 {{config}}：v{{from}} → v{{to}}，由 \"{{command}}\" 推送：{{changes}}",
         "versions": {
+          "descriptionShort": "列出服务器上保留的此配置的历史版本",
           "description": "列出服务器保存的此配置的早期版本",
           "optionExplain": "根据服务器保存的版本，显示每个版本更改的 JSON 指针",
           "explainUnreadable": "(无法读取: {{reason}})",
@@ -978,6 +1029,7 @@
           "empty": "服务器未保存配置 \"{{config}}\" 的任何早期版本。"
         },
         "restore": {
+          "descriptionShort": "将此配置的某个历史版本发布为最新版本",
           "description": "将此配置的某个早期版本发布为最新版本",
           "argVersion": "要恢复的版本（参见 rdc config remote versions）",
           "confirm": "要将配置 \"{{config}}\" 版本 {{version}} 的内容作为新版本发布在版本 {{current}} 之上吗？每台设备都会在下次拉取时获得它。",
@@ -990,6 +1042,7 @@
         "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
       },
       "rotateCek": {
+        "descriptionShort": "轮换组织的配置加密密钥",
         "cancelled": "轮换已取消。未做任何更改。",
         "confirm": "现在轮换配置加密密钥吗？",
         "waiting": "正在等待浏览器中的轮换完成（按 Ctrl+C 停止）...",
@@ -1006,10 +1059,12 @@
         "warning": "此操作会轮换整个组织配置所使用的加密密钥。之后所有其他设备都必须重新关联。"
       },
       "set": {
+        "descriptionShort": "设置默认值 (团队、区域、网桥)",
         "description": "设置默认值（team、region、bridge）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "show": {
+        "descriptionShort": "显示当前配置的详细信息",
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
         "optionReveal": "以明文显示敏感值（仅限交互模式）"
@@ -1017,11 +1072,13 @@
       "ssh": {
         "description": "管理 SSH 密钥配置",
         "remove": {
+          "descriptionShort": "从当前配置中移除 SSH 密钥",
           "description": "从当前配置中移除 SSH 密钥",
           "noKey": "未配置 SSH 密钥",
           "success": "SSH 密钥已移除"
         },
         "set": {
+          "descriptionShort": "为当前配置设置 SSH 密钥",
           "description": "为当前配置设置 SSH 密钥",
           "invalidKey": "文件不包含有效的 SSH 私钥",
           "keyNotFound": "未找到 SSH 密钥文件：{{path}}",
@@ -1030,6 +1087,7 @@
           "success": "SSH 密钥已配置"
         },
         "show": {
+          "descriptionShort": "显示当前的 SSH 密钥配置",
           "description": "显示当前 SSH 密钥配置",
           "noKey": "未配置 SSH 密钥"
         }
@@ -1225,6 +1283,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "取消正在运行的分离作业",
         "alreadyFinished": "任务 {{jobId}} 已经{{state}},无需取消。",
         "confirm": "确定要取消 {{machine}} 上的任务 {{jobId}}({{function}})吗?该操作将被停止。",
         "description": "取消正在运行的分离任务",
@@ -1239,6 +1298,7 @@
         "succeeded": "任务 {{jobId}} 已成功完成。"
       },
       "gc": {
+        "descriptionShort": "清理已完成的作业及其日志",
         "confirm": "确定要删除 {{machine}} 上完成时间超过 {{hours}} 小时的任务吗?其日志也将被删除。",
         "description": "删除已完成的任务及其日志",
         "invalidOlderThan": "--older-than 必须是小时数,例如 168 或 168h(得到的是 \"{{value}}\")",
@@ -1247,6 +1307,7 @@
       },
       "idOption": "任务 ID",
       "list": {
+        "descriptionShort": "按时间从新到旧列出机器上的分离作业",
         "description": "列出机器上的分离任务,按最新排列在前",
         "empty": "{{machine}} 上没有任务。",
         "examples": {
@@ -1257,6 +1318,7 @@
         "allOption": "同时显示已过期和已忽略的票据"
       },
       "logs": {
+        "descriptionShort": "回放或持续跟踪分离作业的事件日志",
         "description": "回放或跟踪分离任务的事件日志",
         "detached": "已从任务 {{jobId}} 断开连接。该任务仍在 {{machine}} 上运行,并未被取消。重新连接: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1269,6 +1331,7 @@
       },
       "machineOption": "目标机器名称",
       "status": {
+        "descriptionShort": "显示分离作业的状态",
         "description": "显示分离任务的状态",
         "examples": {
           "basic": "显示单个任务的状态。"
@@ -1279,6 +1342,7 @@
       "machineRequired": "此配置中没有任务 {{jobId}} 的凭据。请用 -m <machine> 指明它运行在哪台机器上。",
       "ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
       "wait": {
+        "descriptionShort": "凭票据继续跟踪作业，随后确认并以作业的退出码退出",
         "description": "根据凭据继续跟踪任务,随后确认并以该任务的退出码退出",
         "timeoutOption": "超过此时长后不再等待(30s、5m、2h;纯数字表示秒)。任务会继续运行。",
         "invalidTimeout": "--timeout 必须是 30s、5m 或 2h 这样的时长(收到 \"{{value}}\")",
@@ -1332,6 +1396,7 @@
         "success": "已添加机器 \"{{name}}\" ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "销毁云上预配的机器，并从配置中移除",
         "completed": "机器 {{name}} 已销毁并从配置中移除",
         "confirm": "这将永久销毁机器 \"{{name}}\" 及其所有数据。是否继续？",
         "deactivateFailed": "无法释放 {{name}} 在账户中的激活名额：{{reason}}。名额会在最后一次活动 5 小时后自动释放。",
@@ -1350,6 +1415,7 @@
       "description": "检查远程机器状态：系统资源、运行中的容器、systemd 服务、已部署的仓库以及健康诊断。只读查询；如需修改仓库请使用 `repo`。关键子命令：status（完整状态，可用 --system、--containers、--repositories、--services 缩小范围）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "管理远程机器（status、health、list、add、remove、setup、prune）",
       "health": {
+        "descriptionShort": "为 CI/CD 流水线检查机器健康状况",
         "containersSection": "\n容器：",
         "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
         "description": "检查 CI/CD 流水线的机器健康状况",
@@ -1416,19 +1482,23 @@
         "cert": {
           "clear": {
             "cleared": "证书缓存已清除",
+            "descriptionShort": "清除证书缓存",
             "description": "移除证书缓存",
             "noCache": "没有可清除的证书缓存"
           },
           "description": "管理缓存的 TLS 证书",
           "pull": {
+            "descriptionShort": "从机器下载 TLS 证书并缓存",
             "description": "从机器下载并缓存 TLS 证书",
             "optionNoPrune": "跳过清理过期的网络 ID 证书"
           },
           "push": {
+            "descriptionShort": "将缓存的 TLS 证书上传到机器",
             "description": "将缓存的 TLS 证书上传到机器"
           },
           "status": {
             "certCount": "{{count}} 个证书，{{size}} 压缩",
+            "descriptionShort": "显示已缓存证书的清单",
             "description": "显示缓存的证书清单",
             "header": "{{baseDomain}} 的证书缓存",
             "noCache": "没有已存储的证书缓存",
@@ -1455,11 +1525,13 @@
           "success": "已更新 \"{{name}}\" 的基础设施配置"
         },
         "show": {
+          "descriptionShort": "显示机器的基础设施配置",
           "description": "显示机器的基础设施配置",
           "noInfra": "\"{{name}}\" 未设置基础设施配置"
         }
       },
       "list": {
+        "descriptionShort": "列出机器",
         "description": "列出机器",
         "examples": {
           "basic": "列出所有已注册的机器。",
@@ -1469,6 +1541,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "添加云服务商",
           "description": "添加云服务提供商",
           "optionImage": "默认操作系统镜像",
           "optionImageAttr": "自定义：操作系统镜像的属性名",
@@ -1492,15 +1565,18 @@
         },
         "description": "管理用于自动配置机器的云服务提供商",
         "list": {
+          "descriptionShort": "列出已配置的云服务商",
           "description": "列出已配置的云服务提供商",
           "noProviders": "未配置云提供商。使用以下命令添加：rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "移除云服务商配置",
           "description": "移除云服务提供商配置",
           "success": "已移除云提供商 \"{{name}}\""
         }
       },
       "provision": {
+        "descriptionShort": "使用 OpenTofu 在云服务商上预配新机器",
         "completed": "机器 {{name}} 已配置完成并就绪 ({{ip}})",
         "configuringInfra": "正在为 {{name}} 配置基础设施（代理 + DNS）...",
         "description": "使用OpenTofu在云提供商上配置新机器",
@@ -1578,6 +1654,7 @@
         "clusterMember": "无法移除机器 \"{{name}}\"：它是集群 \"{{cluster}}\" 的成员。",
         "clusterMemberNext": "请先将该节点从其集群中逐出。",
         "confirm": "从配置中移除机器 \"{{name}}\"？",
+        "descriptionShort": "从配置中移除机器",
         "description": "从当前配置中移除机器",
         "forceDangling": "已移除机器 \"{{name}}\"，但其上仍有 {{count}} 个仓库放置：{{repos}}。这些放置现已悬空。请使用 \"rdc repo migrate\" 重新指向它们，或使用 \"rdc repo delete\" 删除它们。",
         "forceOption": "即使仓库仍放置在该机器上，或备份策略仍绑定到该机器，也移除该机器，使这些引用处于悬空状态。",
@@ -1609,6 +1686,7 @@
       },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
+        "descriptionShort": "扫描当前配置中各机器的 SSH 主机密钥",
         "description": "扫描当前配置中机器的 SSH 主机密钥",
         "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
         "noKeys": "无法扫描 \"{{name}}\" 的主机密钥",
@@ -1693,6 +1771,7 @@
           "unchanged": "\"{{name}}\" 上的访问密钥已是最新（{{path}}）"
         },
         "remove": {
+          "descriptionShort": "解除访问密钥与机器的绑定",
           "description": "解除访问密钥与机器的绑定。下一次 'machine access push' 会删除它的行",
           "success": "访问密钥 \"{{key}}\" 已与 \"{{name}}\" 解除绑定。请用 'machine access push {{name}}' 删除它的行"
         },
@@ -1704,6 +1783,7 @@
           "success": "访问密钥 \"{{key}}\" 已绑定到 \"{{name}}\"。请用 'machine access push {{name}}' 应用"
         },
         "show": {
+          "descriptionShort": "显示绑定到机器的访问密钥，以及每个密钥在该机器上对应的范围",
           "description": "显示绑定到机器的访问密钥，以及每个密钥在该机器上生效的范围",
           "noKeys": "\"{{name}}\" 没有绑定任何访问密钥",
           "path": "\"{{name}}\" 上用户 {{user}} 的 authorized_keys (~/.ssh/authorized_keys)"
@@ -1714,6 +1794,7 @@
       "description": "用于 AI 代理的 Model Context Protocol 服务器",
       "descriptionShort": "用于 AI 代理的 Model Context Protocol 服务器",
       "serve": {
+        "descriptionShort": "启动 MCP 服务器 (stdio 传输)",
         "configOption": "用于所有命令的配置名称",
         "description": "启动 MCP 服务器（stdio 传输）",
         "timeoutOption": "默认命令超时时间（毫秒）"
@@ -1721,6 +1802,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "检查虚拟化所需的前置组件",
         "allPassed": "所有前置条件均已满足",
         "description": "验证虚拟化前置条件",
         "hasMissing": "缺少 {{count}} 个前置条件",
@@ -1730,12 +1812,14 @@
       "description": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器。远程机器请使用 `machine`。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪状态）。",
       "descriptionShort": "本地 VM 操作（创建、管理、销毁）",
       "down": {
+        "descriptionShort": "销毁虚拟机集群",
         "completed": "VM 集群已成功销毁",
         "description": "销毁 VM 集群",
         "failed": "VM 集群销毁失败",
         "starting": "正在销毁 VM 集群..."
       },
       "setup": {
+        "descriptionShort": "安装虚拟化所需的前置组件",
         "brewFailed": "Homebrew 安装失败",
         "completed": "前置条件安装成功",
         "description": "安装虚拟化前置条件",
@@ -1746,15 +1830,18 @@
         "windows": "正在设置 Hyper-V 前置条件..."
       },
       "ssh": {
+        "descriptionShort": "通过 SSH 登录虚拟机",
         "connecting": "正在连接到 VM {{id}}...",
         "description": "通过 SSH 连接到 VM",
         "vmNotFound": "未找到 ID 为 {{id}} 的 VM 或该 VM 未运行"
       },
       "status": {
+        "descriptionShort": "显示虚拟机集群状态",
         "description": "显示 VM 集群状态",
         "noVMs": "未找到任何 VM"
       },
       "up": {
+        "descriptionShort": "在本地预配虚拟机集群",
         "completed": "VM 集群创建成功",
         "description": "在本地创建 VM 集群",
         "failed": "VM 集群创建失败",
@@ -1816,16 +1903,19 @@
         "archive": {
           "description": "已归档仓库记录的簿记管理。",
           "list": {
+            "descriptionShort": "列出已归档的仓库记录",
             "description": "列出已归档的仓库凭据",
             "noArchived": "没有已归档的仓库"
           },
           "purge": {
             "confirm": "清除所有已过期的归档记录？",
+            "descriptionShort": "永久删除已归档的记录",
             "description": "永久删除所有已归档的凭据",
             "noArchived": "没有需要清除的已归档仓库",
             "success": "已清除 {{count}} 个已归档的凭证"
           },
           "restore": {
+            "descriptionShort": "将已归档的记录恢复到配置中",
             "description": "恢复已归档的仓库凭据",
             "success": "已恢复 \"{{name}}\"（{{guid}}）"
           }
@@ -1833,6 +1923,7 @@
         "orphan": {
           "description": "机器上没有任何配置引用的仓库镜像。",
           "list": {
+            "descriptionShort": "列出机器上的仓库镜像，并标明每个镜像是否为没有任何配置引用的孤立镜像",
             "description": "列出机器上的仓库镜像，并标明每个镜像是否为孤立镜像，即没有任何配置引用它。",
             "none": "{{machine}} 上没有仓库镜像"
           },
@@ -1854,6 +1945,7 @@
         "autostart": {
           "description": "管理开机时仓库的自动启动",
           "disable": {
+            "descriptionShort": "为仓库禁用自动启动 (省略名称则全部禁用)",
             "completed": "自动启动已禁用",
             "completedAll": "已禁用所有仓库的自动启动",
             "description": "为仓库禁用自动启动",
@@ -1863,6 +1955,7 @@
             "startingAll": "正在为 \"{{machine}}\" 上的所有仓库禁用自动启动..."
           },
           "enable": {
+            "descriptionShort": "为仓库启用自动启动 (省略名称则全部启用)",
             "completed": "自动启动已启用",
             "completedAll": "已启用所有仓库的自动启动",
             "description": "为仓库启用自动启动",
@@ -1872,6 +1965,7 @@
             "startingAll": "正在为 \"{{machine}}\" 上的所有仓库启用自动启动..."
           },
           "list": {
+            "descriptionShort": "列出已启用自动启动的仓库",
             "description": "列出已启用自动启动的仓库",
             "empty": "\"{{machine}}\" 上没有已启用自动启动的仓库",
             "failed": "获取自动启动仓库列表失败",
@@ -1968,6 +2062,7 @@
         "weightOption": "路由到 canary 的流量百分比（整数 0-100；0 表示暗启动，100 表示完全切换）"
       },
       "cat": {
+        "descriptionShort": "将仓库中某个文件的一段内容读取到标准输出 (诊断信息输出到标准错误)",
         "description": "读取仓库内文件的有界窗口并写入 stdout（服务端限制；诊断信息输出到 stderr）",
         "examples": {
           "basic": "打印仓库内的一个文件。"
@@ -2000,6 +2095,7 @@
         "messageOption": "Commit 信息"
       },
       "create": {
+        "descriptionShort": "创建新仓库",
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "completed": "仓库已创建",
         "datastoreNotAttached": "数据存储 \"{{datastore}}\" 未挂接到任何机器。请挂接它：rdc datastore attach {{datastore}} --to <machine>。如果已挂接但配置未识别，请运行 rdc config reconcile。",
@@ -2148,6 +2244,7 @@
         "datastorePathUnsupported": "数据存储路径 {{path}} 含有“,”或“@”，任务的列表参数无法承载。请重命名该路径。"
       },
       "list": {
+        "descriptionShort": "列出机器上的仓库",
         "completed": "列表获取完成",
         "datastoreOption": "列出此数据存储中的仓库（解析为当前持有该数据存储的机器）",
         "description": "列出机器上的仓库",
@@ -2428,12 +2525,14 @@
         "valueOption": "密钥值。传递 `-` 以从 stdin 读取（避免在 shell 历史记录中暴露）。"
       },
       "status": {
+        "descriptionShort": "获取仓库状态 (挂载状态、Docker 守护进程是否运行、容器数量、磁盘用量)",
         "completed": "状态已获取",
         "description": "获取仓库状态",
         "failed": "状态检查失败",
         "starting": "正在获取 \"{{machine}}\" 上 \"{{repository}}\" 的状态..."
       },
       "health": {
+        "descriptionShort": "运行仓库 Rediaccfile 的 health() 检查，并以 0 (正常)、1 (警告) 或 2 (错误) 退出",
         "description": "运行仓库 Rediaccfile 中的 health() 检查，并以 0（正常）、1（警告）或 2（错误）退出",
         "header": "\n{{repository}} 的健康状况：",
         "levelOk": "✓ 健康",
@@ -2660,6 +2759,7 @@
         "helpOffline": "离线（气隙）环境：先在联网环境用 rdc server bundle --out <dir> 生成离线包。rdc server install --offline --bundle <dir> 会校验离线包、加载代理镜像、以离线方式配置机器，并且不访问任何外部服务。安装会在许可证步骤停下并写出一个请求文件：请在联网环境用 rdc server licence mint 签发证书，然后加上 --cert 重新运行。"
       },
       "status": {
+        "descriptionShort": "显示已安装服务器的健康状况、层级、证书和镜像",
         "description": "显示已安装服务器的健康状况、版本等级、证书和镜像",
         "certRefused": "已拒绝 ({{reason}})，时间 {{at}}",
         "certRefusedRun": "请运行：rdc server licence {{domain}}",
@@ -2667,6 +2767,7 @@
         "certExpiring": "许可证书将在 {{days}} 天后到期；请续期（rdc server licence）"
       },
       "backup": {
+        "descriptionShort": "输出已安装服务器的恢复包 (密钥)，或将其写入文件",
         "description": "打印已安装服务器的恢复包（密钥），或将其写入文件",
         "optionOut": "将恢复包写入此文件（权限 0600），而不是 stdout",
         "written": "恢复包已写入 {{file}}（权限 0600）",
@@ -2690,6 +2791,7 @@
         "templateNoBaseline": "该机器未记录模板校验和，因此无法检测本地修改；正在应用较新的模板"
       },
       "licence": {
+        "descriptionShort": "将免费层服务器切换为使用已登录账户或 --cert 提供的委派证书",
         "description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
         "done": "{{domain}} 已通过订阅 {{subscription}} 获得授权",
         "certUnreadable": "无法读取证书文件 {{file}}",
@@ -2711,6 +2813,7 @@
         "noUpstreamKey": "服务器没有 UPSTREAM_PUBLIC_KEY，无法校验任何证书，新证书也无济于事。请在 {{domain}} 的密钥中设置 UPSTREAM_PUBLIC_KEY，然后运行 `rdc server upgrade {{domain}}`。",
         "bootRefusalStays": "证书已应用，但服务器仍报告启动时被拒绝 ({{reason}})；请检查服务器日志",
         "mint": {
+          "descriptionShort": "为离线机器的请求签发许可证书 (需联网并已登录)",
           "description": "为离线机器的请求签发许可证书（需联网并已登录后运行）",
           "done": "证书已写入 {{file}}（有效期至 {{until}}）；请将其带到该机器，并使用 --cert 安装",
           "optionOut": "证书的写入文件",
@@ -2889,6 +2992,7 @@
       "description": "管理许可证和订阅令牌。使用 login 登录，使用 status 查看，使用 refresh 重新签发许可证。",
       "descriptionShort": "管理机器许可证和订阅",
       "login": {
+        "descriptionShort": "通过浏览器或 API 令牌进行身份验证",
         "backupNeedsTwoFactor": "已登录，但没有备份存储管理权限。请在 {{url}} 的设置中开启双重身份验证，然后重新登录。",
         "channelSynced": "更新频道已设置为{{channel}}。",
         "description": "使用Web门户的API令牌进行认证",
@@ -2923,20 +3027,24 @@
         "waitingApproval": "等待浏览器授权..."
       },
       "register": {
+        "descriptionShort": "在浏览器中创建账户 (邮箱已预填) 并登录",
         "description": "在浏览器中创建账户（邮箱已预填）并登录",
         "optionEmail": "在注册页面预填的电子邮件地址",
         "invalidEmail": "请输入有效的电子邮件地址。"
       },
       "logout": {
+        "descriptionShort": "清除已保存的订阅令牌",
         "description": "清除已存储的订阅令牌",
         "success": "订阅令牌已删除"
       },
       "proxyToken": {
+        "descriptionShort": "使用此设备的登录状态签发短期 proxy:exec 令牌，供 --proxy 使用",
         "description": "基于本设备的登录签发一个短期有效的 proxy:exec 令牌，供 --proxy 使用",
         "jsonOption": "以 JSON 输出令牌及其 expiresAt",
         "noToken": "账户服务器未返回代理令牌。"
       },
       "refresh": {
+        "descriptionShort": "从账户服务器刷新许可证",
         "account": {
           "failed": "无法从账户服务器读取账户状态。",
           "refreshed": "账户状态已刷新",
@@ -2984,6 +3092,7 @@
         }
       },
       "status": {
+        "descriptionShort": "显示订阅信息以及机器的许可证状态",
         "description": "显示订阅状态以及某台机器的许可证状态。",
         "issuanceLimitReached": "当前 UTC 自然月的仓库许可证签发额度已用尽。",
         "issuanceUsageHigh80": "每月仓库许可证签发量已超过当前 UTC 限额的 80%。",
@@ -3034,6 +3143,7 @@
         "needsYes": "退还许可证需要确认,但 stdin 不是终端。请加上 --yes 来确认。",
         "confirm": "要退还 {{name}}({{guid}},{{state}})的许可证吗?续期不会让它恢复。",
         "success": "许可证已退还: {{name}}",
+        "descriptionShort": "注销已不存在的仓库的许可证，使其不再计入许可证数量和通知",
         "description": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。",
         "argGuid": "仓库 GUID,或账户报告中某个许可证的至少前 8 个字符",
         "optionForce": "退还其仓库仍在此配置中且尚未彻底过期的许可证",
@@ -3051,6 +3161,7 @@
         "optionExpired": "退还已删除或不在此配置中的仓库的所有已彻底过期许可证"
       },
       "notices": {
+        "descriptionShort": "列出账户的通知: 许可证到期、备份健康、续订、证书和条款",
         "description": "列出账户通知:许可证到期、备份状况、续期、证书和条款。",
         "optionAll": "包含已关闭的通知和所有分页,而不只是最近 30 天",
         "optionUnread": "仅显示未读通知",
@@ -3103,6 +3214,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "在机器上打开 shell，或在已配置好 Docker 的仓库内打开",
         "description": "在机器上打开 shell，或在已配置好 Docker 的仓库内部打开 shell。",
         "examples": {
           "machine": "打开到某台机器的 SSH 终端。",
@@ -3158,6 +3270,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "检查 VS Code 的安装和配置",
         "activeConnections": "活跃连接：{{count}}",
         "configuration": "\n配置：",
         "configured": "  已配置：{{status}}",
@@ -3178,12 +3291,14 @@
         "yes": "是"
       },
       "cleanup": {
+        "descriptionShort": "移除 VS Code SSH 配置",
         "cleaned": "已清除：{{connection}}",
         "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
         "description": "移除 VS Code SSH 配置",
         "removedKeys": "已移除所有保存的 SSH 密钥。"
       },
       "connect": {
+        "descriptionShort": "在机器或仓库内打开 VS Code",
         "browserUrl": "在浏览器中打开 VS Code：{{url}}",
         "configuringSSH": "正在配置 SSH...",
         "configuringVSCode": "正在配置 VS Code 设置...",
@@ -3212,6 +3327,7 @@
       "description": "打开 VS Code Remote SSH 连接到机器或仓库",
       "descriptionShort": "打开 VS Code Remote SSH 连接到机器或仓库",
       "list": {
+        "descriptionShort": "列出已配置的 VS Code SSH 连接",
         "configFile": "\n配置文件：{{path}}",
         "description": "列出已配置的 VS Code SSH 连接",
         "header": "已配置的 VS Code SSH 连接：\n",
@@ -3222,11 +3338,13 @@
       "serve": {
         "description": "管理沙盒内的浏览器 VS Code 服务器",
         "status": {
+          "descriptionShort": "显示浏览器版 VS Code 服务器是否正在运行",
           "description": "显示浏览器 VS Code 服务器是否正在运行",
           "running": "{{provider}} 正在运行（pid {{pid}}，端口 {{port}}）",
           "stopped": "{{provider}} 未在运行"
         },
         "stop": {
+          "descriptionShort": "停止浏览器版 VS Code 服务器",
           "description": "停止浏览器 VS Code 服务器",
           "notRunning": "{{provider}} 本来就未在运行",
           "stopped": "{{provider}} 已停止"
@@ -3287,6 +3405,35 @@
       "notAccepted": "已接受：尚未接受",
       "terms": "服务条款：版本 {{version}}，自 {{effective}} 起生效",
       "upcoming": "下一版本 {{version}} 将于 {{effective}} 生效"
+    },
+    "proxyBlocked": {
+      "backupCheck": "使用仓库凭据读取列表并还原文件，该凭据只保留在配置所在的位置",
+      "backupChurn": "这是客户端侧的一轮探测，可能持续数小时，结束时还必须丢弃其基准",
+      "backupDownload": "通过客户端侧的 rsync 将仓库镜像复制到本地目录；远程执行端会把镜像写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "localTooling": "这是从不连接机器的本地工具，因此没有可代理的对象。请不要加 --proxy 运行。",
+      "backupRepair": "使用调用方的 backup:manage 令牌删除账户上的坏块，再从机器重新上传；远程执行端既没有该令牌，也没有调用方的配置。请不要加 --proxy 运行。",
+      "localConfig": "完全针对本地配置运行，不会连接机器，因此没有可代理的对象。请不要加 --proxy 运行。",
+      "backupTocKeySync": "从仓库凭据派生公钥，该凭据只保留在配置所在的位置",
+      "backupUpload": "通过客户端侧的 rsync 发送本地镜像文件，并在本地配置中登记仓库；远程执行端看不到该文件。请不要加 --proxy 运行。",
+      "clusterKubeconfig": "将 kubeconfig 缓存到本地权限为 0600 的文件并输出其路径；远程执行端会把文件写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "interactive": "需要终端，或自身不会结束 (交互式 shell、编辑器、隧道、流或守护进程)，因此无头执行端无法运行。请不要加 --proxy 运行。",
+      "configReconcile": "它会查询每台机器，但把结果写入调用方本地的状态存储；远程执行端只会重建它自己的状态，调用方却毫不知情。请不要加 --proxy 运行。",
+      "machineAccessPush": "根据调用方的访问密钥重写谁可以登录该机器；执行端从不改写自己用来连接的访问权限，而且会推送它自己配置中的密钥。请不要加 --proxy 运行。",
+      "machineConverge": "使用调用方配置中的环境密钥重启每个仓库守护进程；远程执行端会用它自己的副本重启，或者什么都没有。请不要加 --proxy 运行。",
+      "machineInfraCertPull": "它的作用是把机器的 acme.json 写入调用方的本地配置；远程执行端会把它写入自己的配置。请不要加 --proxy 运行。",
+      "machinePrune": "使用 --orphaned-repos 或 --prune-unknown 时，会对照调用方能读取的所有配置来判断每个镜像；远程执行端只会对照它自己的配置判断，从而删除调用方的仓库。请不要加 --proxy 运行。",
+      "machineScanKeys": "从调用方的网络位置运行 ssh-keyscan，并把 knownHosts 存入调用方的本地配置；远程执行端会从它自己的位置扫描，并把结果留在那里。请不要加 --proxy 运行。",
+      "repoAdminOrphanDelete": "拒绝调用方能读取的任一配置仍然引用的 GUID；远程执行端只检查它自己的配置，可能删除调用方配置所引用的镜像。请不要加 --proxy 运行。",
+      "repoAdminOrphanList": "对照调用方能读取的所有配置来判断每个镜像；远程执行端只会对照它自己的配置判断，并把调用方的仓库报告为孤立镜像。请不要加 --proxy 运行。",
+      "repoSyncDownload": "通过 rsync/SFTP 下载到本地文件系统；远程执行端会把文件写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "repoSyncStatus": "通过客户端侧的 rsync 对比机器与本地文件系统的差异；远程执行端没有本地目录树的副本。请不要加 --proxy 运行。",
+      "repoSyncUpload": "通过 rsync/SFTP 从本地文件系统上传；远程执行端看不到源路径。请不要加 --proxy 运行。",
+      "serverBackup": "把恢复包 (服务器的密钥) 写到调用方的终端或文件；经过执行端的话，密钥会经过另一台机器。请不要加 --proxy 运行。",
+      "serverBundle": "运行调用方本地的 docker (pull 和 save)，并把包写到调用方的磁盘；远程执行端会写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "serverLicence": "使用调用方的登录状态签发证书，并记录到调用方本地的安装记录中；远程执行端两者都没有。请不要加 --proxy 运行。",
+      "serverLicenceMint": "使用调用方的登录状态签发证书，并写入调用方的文件；远程执行端两者都没有。请不要加 --proxy 运行。",
+      "serverStatus": "通过调用方本地的安装记录查找服务器；远程执行端没有这份记录。请不要加 --proxy 运行。",
+      "serverUpgrade": "驱动子命令和调用方本地的安装记录 (使用 --local-image 时还有调用方的 Docker)；远程执行端会从它自己的环境执行。请不要加 --proxy 运行。"
     }
   },
   "docs": {

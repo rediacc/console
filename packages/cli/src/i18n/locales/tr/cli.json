@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "{{name}} iptal edildi",
+        "descriptionShort": "Uzak bir makinede çalışan yedeklemeyi iptal eder",
         "description": "Uzak makinede çalışan bir yedeklemeyi iptal et",
         "notRunning": "\"{{name}}\" stratejisi için çalışan yedekleme yok"
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "Yedeklemeleri yönet",
       "drNudge": "Config deposu kayıtlı değil: depo kimlik bilgileriniz (LUKS parola ifadeleri) yalnızca bu makinede bulunur, bu yüzden bare-metal geri yükleme onları kurtaramaz. Şifreli config blob içinde senkronlamak için \"rdc config remote enable\" ile kaydedin.",
       "list": {
+        "descriptionShort": "Bir makinedeki yedek çıktılarını listeler",
         "description": "Bir makine üzerindeki yedek artefaktlarını listele.",
         "examples": {
           "basic": "Bir makine için saklanan yedekleri listele.",
@@ -42,6 +44,7 @@
         "placementRequired": "Yedekleri listelenecek makineyi belirtmek için -m <machine> kullanın."
       },
       "manifests": {
+        "descriptionShort": "Sunucuda kayıtlı yedek anlık görüntü bildirimlerini listeler",
         "description": "Sunucuya kaydedilen yedek anlık görüntü manifestlerini listele",
         "empty": "Yedek manifesti bulunamadı.",
         "fetching": "Yedek manifestleri alınıyor...",
@@ -59,6 +62,7 @@
         "deployed": "{{name}}, {{machine}} üzerinde dağıtıldı",
         "deployFailed": "Geri yüklenen {{name}} dağıtımı başarısız oldu",
         "deploying": "{{name}}, {{machine}} üzerinde dağıtılıyor...",
+        "descriptionShort": "Bir yedek çıktısını çalışan bir depoya dönüştürür",
         "description": "Bir yedek artefaktını canlı bir depoya dönüştürün. Yerleşim burada belirtilir.",
         "examples": {
           "asNewRepo": "Bir yedeği yeni bir depo olarak geri yükle ve başlat.",
@@ -123,9 +127,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "Bildirilen politikayı kaldırır, böylece plan veya sunucu varsayılanı yeniden geçerli olur",
           "description": "Tanımlı politikayı kaldırır, böylece planın ya da sunucunun varsayılanı yeniden geçerli olur."
         },
         "cleared": "{{name}} için saklama politikası kaldırıldı. Artık planın ya da sunucunun varsayılanı geçerli.",
+        "descriptionShort": "Sunucunun uyguladığı anlık görüntü saklama politikasını gösterir",
         "description": "Sunucunun uyguladığı anlık görüntü saklama politikasını gösterir.",
         "empty": "Bildirilmiş bir saklama politikası yok, bu yüzden planın ya da sunucunun varsayılanı geçerli.",
         "knobNotAnInteger": "{{flag}} saklanacak anlık görüntü sayısı için tam sayı bekliyor, \"{{value}}\" değil.",
@@ -137,6 +143,7 @@
         "optionKeepWeekly": "Bu kadar haftanın her birinden en yeni anlık görüntüyü sakla",
         "optionKeepYearly": "Bu kadar yılın her birinden en yeni anlık görüntüyü sakla",
         "set": {
+          "descriptionShort": "Kaç anlık görüntü saklanacağını bildirir",
           "description": "Kaç anlık görüntü saklanacağını belirtin. Her ayar birleştirilmez, tamamen değiştirilir.",
           "success": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir.",
           "pending": "Değişiklik daha azını saklıyor, bu yüzden ertelenmiş silme penceresini bekler ve \"{{name}}\" için {{when}} (UTC) tarihinde yürürlüğe girer. Gösterilen ilke o zamana kadar geçerli kalır."
@@ -144,6 +151,7 @@
         "effective": "{{name}} için geçerli saklama: {{source}}",
         "optionStream": "Yalnızca bu yedek akışına uygula (bir akış kimliği); verilmezse tüm depo için varsayılan geçerli olur",
         "preview": {
+          "descriptionShort": "Bir sonraki taramada hangi anlık görüntülerin silineceğini ve ne kadar alan açılacağını gösterir",
           "description": "Bir sonraki temizliğin hangi anlık görüntüleri sileceğini ve ne kadar yer açacağını gösterir.",
           "nothing": "Bir sonraki temizlik {{name}} için hiçbir şey silmez.",
           "summary": "Bir sonraki temizlik {{name}} deposunun {{count}} anlık görüntüsünü siler, {{kept}} tanesini tutar ve {{bytes}} yer açar.",
@@ -163,12 +171,14 @@
         "pendingClear": "\"{{name}}\" ilkesinin kaldırılması ertelenmiş silme penceresini bekler ve {{when}} (UTC) tarihinde yürürlüğe girer. Geçerli ilke o zamana kadar uygulanmaya devam eder."
       },
       "run": {
+        "descriptionShort": "Yedeklemeyi hemen çalıştırır",
         "description": "Uzak makinede hemen bir yedekleme başlat",
         "examples": {
           "basic": "Bir yedekleme stratejisini şimdi çalıştır."
         }
       },
       "schedule": {
+        "descriptionShort": "Yedekleme zamanlamasını uzak bir makineye dağıtır (systemd zamanlayıcıları)",
         "description": "Uzak makineye yedekleme zamanlaması dağıt (systemd zamanlayıcıları)",
         "optionDryRun": "Dağıtmadan oluşturulan birimleri önizle",
         "optionForce": "Şu anda bir yedekleme çalışıyor olsa bile devam et (yeni birim sonraki tetiklemede uygulanır; çalışan işlem eski birimini korur)",
@@ -176,6 +186,7 @@
         "success": "Yedekleme zamanlaması {{machine}} makinesine dağıtıldı"
       },
       "snapshot": {
+        "descriptionShort": "Parça deposu anlık görüntüsünü yükler: önce tam envanter, sonra yalnızca değişen hücreler",
         "bwlimitInvalid": "--bwlimit 100Mbps veya 12.5M gibi bir hız olmalıdır, \"{{value}}\" verildi.",
         "completed": "{{name}} için anlık görüntü kaydedildi",
         "description": "Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra değişen hücreler",
@@ -206,11 +217,13 @@
         "optionAcceptIdentityChange": "LUKS kimliği değiştiğinde veya imaj küçüldüğünde bu imajı yeni temel kabul et; tam bir anlık görüntü yükler"
       },
       "status": {
+        "descriptionShort": "Uzak bir makinedeki yedekleme durumunu ve zamanlayıcı durumunu gösterir",
         "description": "Uzak makinede yedekleme durumunu ve zamanlayıcı durumunu göster"
       },
       "strategy": {
         "bandwidthUnconvertible": "\"{{value}}\" bant genişliği sınırı dönüştürülemiyor ({{reason}}). Saniyede bayt (12500000), ondalık bayt (12.5M), ikili bayt (12Mi) veya bit (100Mbps) kullanın.",
         "bind": {
+          "descriptionShort": "Bir yedekleme stratejisini makineye bağlar, böylece zamanlaması orada dağıtılır",
           "alreadyBound": "\"{{strategy}}\" yedekleme stratejisi zaten \"{{machine}}\" makinesine bağlı",
           "bound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlandı",
           "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır",
@@ -218,10 +231,12 @@
         },
         "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
         "list": {
+          "descriptionShort": "Tüm yedekleme stratejilerini listeler",
           "description": "Tüm yedekleme stratejilerini listele"
         },
         "readBandwidthUnconvertible": "\"{{value}}\" okuma bant genişliği sınırı dönüştürülemiyor ({{reason}}). Saniyede bayt (50000000), ondalık bayt (50M), ikili bayt (48Mi), bit (400Mbps) veya sınırsız için 0 kullanın.",
         "remove": {
+          "descriptionShort": "Bir yedekleme stratejisini veya hedefini kaldırır",
           "bound": "\"{{strategy}}\" yedekleme stratejisi kaldırılamıyor: {{count}} makine hâlâ onu bağlıyor: {{machines}}.",
           "boundNext": "Önce bu makinelerden bağlantısını kaldırın veya bağlantılarıyla birlikte kaldırın.",
           "description": "Yedekleme stratejisini veya hedefi kaldır",
@@ -241,6 +256,7 @@
           "syncFailed": "Çoğaltma kuralları senkronize edilemedi: {{reason}}"
         },
         "set": {
+          "descriptionShort": "Bir yedekleme stratejisi oluşturur veya günceller",
           "description": "Yedekleme stratejisi oluştur veya güncelle",
           "examples": {
             "configure": "Bir yedekleme stratejisinin zamanlamasını ve modunu yapılandır.",
@@ -291,11 +307,13 @@
           "dryRun": "Deneme: \"{{strategy}}\" stratejisi değişirdi ({{changes}}). Hiçbir şey yazılmadı."
         },
         "show": {
+          "descriptionShort": "Yedekleme stratejisi ayrıntılarını gösterir",
           "description": "Yedekleme stratejisi ayrıntılarını göster",
           "notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
           "notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı"
         },
         "unbind": {
+          "descriptionShort": "Bir yedekleme stratejisinin makineyle bağını kaldırır",
           "description": "Bir yedekleme stratejisinin bir makineyle bağlantısını kes",
           "notBound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlı değil",
           "unbound": "\"{{strategy}}\" yedekleme stratejisinin \"{{machine}}\" makinesiyle bağlantısı kesildi"
@@ -303,6 +321,7 @@
       },
       "reconcile": {
         "checkSkipped": "Atlanan soy hatları denetlenmedi: {{lineages}}",
+        "descriptionShort": "Bir deponun saklanan bayt defterini deponun gerçekte tuttuğu miktara sıfırlar (hiçbir parçayı silmez)",
         "description": "Bir deponun depolanan bayt kaydını mağazadaki gerçek duruma getirir (hiçbir parçayı silmez)",
         "argRepoRef": "Uzlaştırılacak depo (varsayılan: belirtecin kapsamındaki tüm depolar)",
         "optionDryRun": "Kaydı değiştirmeden rakamları göster",
@@ -332,6 +351,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "Yedekleme depolama kotasını, saklanan baytları ve depo başına kullanımı gösterir",
         "description": "Yedek depolama kotasını, saklanan bayt sayısını ve depo başına kullanımı göster",
         "empty": "Depo başına yedek depolama kullanımı henüz kaydedilmedi.",
         "fetching": "Yedek depolama kullanımı alınıyor...",
@@ -341,6 +361,7 @@
         "throttled": "Bekleyen depolama {{cap}} değişim sınırının üzerinde: saatlikten hızlı bir yedek akışı boşalana kadar reddedilir."
       },
       "verify": {
+        "descriptionShort": "Bir deponun yedek çıpasını parça deposuna karşı doğrular",
         "completed": "{{name}} için yedek doğrulandı",
         "description": "Bir deponun yedek çıpasını parça depolamaya karşı doğrula",
         "failed": "{{name}} için yedek doğrulaması başarısız oldu",
@@ -367,6 +388,7 @@
         "description": "Saklanan anlık görüntüleri yönet",
         "snapshotIdArgument": "Anlık görüntü kimliği (bkz. rdc backup manifests)",
         "delete": {
+          "descriptionShort": "Saklanan bir anlık görüntüyü siler; yalnızca ona ait veriler bir sonraki çöp toplamada boşaltılır",
           "description": "Saklanan tek bir anlık görüntüyü siler. Yalnızca ona ait veriler bir sonraki çöp toplamada boşaltılır.",
           "notInRepo": "{{snapshot}} anlık görüntüsü {{name}} deposunun saklanan geçmişinde yok. Kimlikleri listelemek için: rdc backup manifests {{name}}",
           "success": "{{name}} deposunun {{snapshot}} dahil {{count}} anlık görüntüsü silindi.",
@@ -440,6 +462,7 @@
         "confirmLineage": "Bu işlem {{name}} soyunun depolanan {{count}} anlık görüntüsünün tamamını ({{bytes}}) siler ve geri alınamaz. Onaylamak için soy kimliğini yazın:"
       },
       "check": {
+        "descriptionShort": "Bir dosyayı geri yükleyerek saklanan bir anlık görüntünün parolayla açıldığını kanıtlar",
         "description": "Bir dosyayı geri yükleyerek anlık görüntünün parola ile açıldığını kanıtlar",
         "needsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden listesi açılamaz.",
         "noIndex": "{{name}} deposunun {{snapshot}} anlık görüntüsünün saklanmış listesi yok, bu yolla denetlenemez. Kanıtlanmış değil.",
@@ -449,6 +472,7 @@
       },
       "repair": {
         "affected": "Bu parçaları içeren anlık görüntüler: {{snapshots}}",
+        "descriptionShort": "Deponun kaybettiği veya yanlış tuttuğu parçaları bu makinenin çıpasından yeniden yükler",
         "description": "Depoda kaybolan veya yanlış olan parçaları bu makinenin çapasından yeniden yükler",
         "dryRunDamage": "{{count}} hasarlı parça bulundu; deneme çalıştırması hiçbir şeyi değiştirmedi.",
         "optionDryRun": "Nelerin silinip yeniden yükleneceğini bildirir; hiçbir şeyi değiştirmez"
@@ -456,6 +480,7 @@
       "tocKey": {
         "description": "Bir deponun gözatma listesi anahtarını yönetir",
         "sync": {
+          "descriptionShort": "Deponun listeleme anahtarını makinesine kurar veya farklı bir anahtarla değiştirir",
           "description": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir",
           "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
           "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)"
@@ -492,11 +517,13 @@
       "immutability": {
         "description": "Saklanan yedeklerin ertelenmiş silme penceresini göster veya ayarla",
         "show": {
+          "descriptionShort": "Yürürlükteki gecikmeli silme penceresini gösterir",
           "description": "Geçerli ertelenmiş silme penceresini göster",
           "window": "Ertelenmiş silme: bir silme, tam temizleme veya daha az saklama {{days}} gün bekler ve o zamana kadar geri alınabilir.",
           "off": "Ertelenmiş silme kapalı: silmeler hemen yürürlüğe girer."
         },
         "set": {
+          "descriptionShort": "Gecikmeli silme penceresini gün olarak ayarlar (0 ile 30)",
           "description": "Ertelenmiş silme penceresini gün olarak ayarla (0 ile 30)",
           "daysArgument": "Bir silmenin yürürlüğe girmeden önce bekleyeceği gün sayısı (0 ile 30)",
           "applied": "Ertelenmiş silme penceresi artık {{days}} gün.",
@@ -506,6 +533,7 @@
         "pending": "Pencere {{when}} (UTC) tarihinde {{days}} güne iner. O zamana kadar {{current}} gün geçerli kalır."
       },
       "undelete": {
+        "descriptionShort": "Gecikmeli bir anlık görüntü silmeyi yürürlüğe girmeden önce iptal eder",
         "description": "Bir anlık görüntünün ertelenmiş silmesini yürürlüğe girmeden iptal et",
         "success": "{{snapshot}} anlık görüntüsü korunuyor: silmesi iptal edildi.",
         "notWaiting": "{{snapshot}} anlık görüntüsü silinmeyi beklemiyordu."
@@ -629,6 +657,7 @@
         "emptyRangeFlag": "{{flag}} için en az bir CIDR gerekir, boş değer verildi",
         "keyNotFound": "\"{{key}}\" erişim anahtarı bulunamadı",
         "list": {
+          "descriptionShort": "Yapılandırmanın erişim anahtarlarını listeler",
           "description": "Yapılandırmanın erişim anahtarlarını listele",
           "noKeys": "Bu yapılandırmada erişim anahtarı yok. 'config access add' ile ekle"
         },
@@ -646,6 +675,7 @@
           "success": "Yapılandırma genelindeki kaynak aralıkları belirlendi: {{ranges}}"
         },
         "remove": {
+          "descriptionShort": "Yapılandırmadan bir erişim anahtarını kaldırır",
           "description": "Bir erişim anahtarını yapılandırmadan kaldır",
           "pushHint": "Satırları, orada 'machine access push' çalıştırılana kadar {{machines}} üzerinde kalır",
           "success": "\"{{key}}\" erişim anahtarı kaldırıldı"
@@ -654,15 +684,18 @@
       "audit": {
         "description": "Yapılandırma denetim günlüğünü incele (~/.config/rediacc/audit.log.jsonl konumunda hash zincirli JSONL)",
         "log": {
+          "descriptionShort": "Son denetim kayıtlarını JSON olarak yazdırır",
           "description": "Son denetim girdilerini JSON olarak yaz",
           "optionActor": "Aktör türüne göre filtrele (human|agent)",
           "optionPath": "JSON Pointer glob'una göre filtrele (örn.: /credentials/*)",
           "optionSince": "Yalnızca belirtilen zamandan sonraki girdileri göster (örn.: '24h', '7d', ISO zaman damgası)"
         },
         "tail": {
+          "descriptionShort": "Yeni denetim kayıtlarını yazıldıkça akıtır (durdurmak için Ctrl+C)",
           "description": "Yazıldıkça yeni denetim girdilerini akıt (durdurmak için Ctrl+C)"
         },
         "verify": {
+          "descriptionShort": "Tüm denetim kayıtlarındaki SHA-256 karma zincirinin bütünlüğünü doğrular",
           "chainBroken": "Zincir {{line}} satırında kırık: dosya kurcalanmış veya bozulmuş.",
           "chainOk": "{{count}} girdi boyunca zincir bütünlüğü doğrulandı.",
           "description": "Tüm denetim girdilerinde SHA-256 hash zincirinin bütünlüğünü doğrula"
@@ -688,20 +721,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "Varsayılanları temizler (tümü veya belirli bir anahtar)",
         "allCleared": "Tüm varsayılanlar temizlendi",
         "description": "Varsayılanları temizleyin (tümü veya belirli bir anahtar)",
         "keyCleared": "\"{{key}}\" temizlendi"
       },
       "current": {
+        "descriptionShort": "Etkin yapılandırmayı gösterir: ad, dosya, çözümlenen sunucu ve kanal, token durumu",
         "description": "Etkin yapılandırmayı göster: ad, dosya, çözümlenmiş sunucu ve kanal, jeton durumu"
       },
       "delete": {
+        "descriptionShort": "Bir yapılandırma dosyasını siler",
         "description": "Bir yapılandırma dosyasını silin",
         "success": "\"{{name}}\" yapılandırması silindi"
       },
       "description": "Yapılandırma dosyalarını yönetin: oluşturun, geçiş yapın, düzenleyin, durumu uzlaştırın ve çapraz kesen özellikleri kullanın (alanlar, denetim, SSH anahtarları, uzak senkronizasyon).",
       "descriptionShort": "Yapılandırma dosyalarını yönet",
       "edit": {
+        "descriptionShort": "Etkin yapılandırmayı $EDITOR içinde gizlenmiş bir JSONC görünümü olarak açar",
         "abortAfterRetries": "{{count}} başarısız denemeden sonra iptal ediliyor. Taslak şurada korundu: {{path}}",
         "applied": "{{path}} uygulandı",
         "bannerRedacted": "Hassas alanlar <redacted:KIND>:DIGEST formunda stub olarak gösterilir ve güvenle gidip gelir.",
@@ -727,23 +764,27 @@
         "description": "İşaretçi adresli yapılandırma alan işlemleri (get/set/unset/rotate/list). /credentials/cfDnsApiToken gibi JSON Pointer (RFC 6901).",
         "descriptionShort": "İşaretçi adresli yapılandırma alanı işlemleri",
         "get": {
+          "descriptionShort": "Tek bir yapılandırma değerini JSON Pointer ile okur",
           "description": "JSON Pointer ile tek bir yapılandırma değerini oku. --reveal olmadıkça hassas alanlar maskelenir (yalnızca insan).",
           "optionDigest": "Değer yerine SHA-256 özetini yaz (ajanlarla paylaşmak için güvenli)",
           "optionPointer": "Alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)"
         },
         "list": {
+          "descriptionShort": "Kayıtlı her hassas işaretçi şablonunu türü ve commit/şifreleme politikasıyla listeler",
           "description": "Kaydedilmiş tüm duyarlılık pointer şablonlarını türü ve commit/şifreleme politikasıyla listele.",
           "optionOutput": "Çıktı biçimi (json|table)",
           "optionSensitive": "Yalnızca hassas (genel olmayan) şablonları göster"
         },
         "rotate": {
+          "descriptionShort": "Hassas bir değeri --current olmadan döndürür",
           "description": "Hassas bir değeri --current olmadan döndür. Yalnızca etkileşimli TTY; belirgin şekilde denetlenir.",
           "optionNew": "Yeni değer",
           "optionPointer": "Hassas alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
           "success": "{{pointer}} döndürüldü"
         },
         "set": {
+          "descriptionShort": "Bir JSON Pointer konumuna yapılandırma değeri yazar",
           "description": "JSON Pointer konumuna yapılandırma değeri yaz. Hassas yollar --current gerektirir (bilgi kapısı).",
           "optionCurrent": "Mevcut açık metin değer, hassas yol değişikliklerinde gerekli (bilgi kapısı kanıtı)",
           "optionNew": "Yeni değer ({, [, \", true/false/null veya sayı ile başlıyorsa JSON olarak ayrıştırılır)",
@@ -751,6 +792,7 @@
           "success": "{{pointer}} ayarlandı"
         },
         "unset": {
+          "descriptionShort": "Bir JSON Pointer konumundaki yapılandırma değerini siler",
           "description": "JSON Pointer konumundaki yapılandırma değerini sil. Hassas yollar --current gerektirir.",
           "optionCurrent": "Mevcut açık metin değer, hassas yol silmelerinde gerekli",
           "optionPointer": "Alana işaret eden JSON Pointer (örn. /credentials/cfDnsApiToken)",
@@ -770,6 +812,7 @@
         }
       },
       "init": {
+        "descriptionShort": "Adlandırılmış yeni bir yapılandırma dosyası oluşturur",
         "alreadyExists": "\"{{name}}\" yapılandırması zaten mevcut",
         "bareForm": "Varsayılan yapılandırma otomatik olarak oluşturulur; adlandırılmış bir yapılandırma için 'config init <ad>' kullanın veya varsayılan üzerinde bir seçenek ayarlamak için bir bayrak geçirin (--ssh-key, --server, ...).",
         "description": "Yeni bir adlandırılmış yapılandırma dosyası oluşturun",
@@ -783,6 +826,7 @@
         "success": "\"{{name}}\" yapılandırması başlatıldı"
       },
       "list": {
+        "descriptionShort": "Tüm yapılandırma dosyalarını listeler",
         "description": "Tüm yapılandırma dosyalarını listeleyin",
         "noConfigs": "Yapılandırma dosyası bulunamadı. Oluşturun: rdc config init"
       },
@@ -825,6 +869,7 @@
         "droppedGoneMachineState": "Artık yapılandırmada olmayan bir makineyi gösteren {{count}} çalışma kaydı {{verb}} kaldırıldı:"
       },
       "reconcile": {
+        "descriptionShort": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden oluşturur",
         "acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın.",
         "description": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden kurar. Eski bağlama ve yönlendirme verilerini düzeltir.",
         "optionAcceptObserved": "Bildirilen bir yerleşimi, imajın gerçekte bulunduğu yere uyacak şekilde yeniden yazar, ancak yalnızca bu belirsizlik içermediğinde (tam olarak bir makinede gözlemlendiğinde) yapar. Kopyalar çakışma olarak kalır.",
@@ -833,6 +878,7 @@
         "listFailed": "renet list all başarısız oldu (çıkış kodu {{exitCode}})."
       },
       "recover": {
+        "descriptionShort": "Yapılandırmayı yedek (.bak) dosyasından geri yükler",
         "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
         "description": "Yapılandırmayı yedek dosyasından (.bak) geri yükle",
         "failed": "\"{{name}}\" yapılandırması yedekten geri yüklenemedi",
@@ -844,6 +890,7 @@
         "preconditionFailed": "\"{{config}}\" yapılandırması: sunucu {{paths}} öğesini kaldıran bir değişikliği reddetti, çünkü bu cihaz kayıtlı değerleri gördüğünü kanıtlayamadı. \"rdc config remote refresh\" ile yenileyip komutu tekrar çalıştırın.",
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
         "disable": {
+          "descriptionShort": "Uzak depolamayla bağlantıyı keser ve yapılandırmayı yerel olarak kaydeder",
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
           "optionLocal": "Sunucuya bağlanmadan, önbellekteki kopyadan, yalnızca bu cihazda bağlantıyı kaldır",
           "notEnabled": "Uzak yapılandırma etkin değil.",
@@ -867,6 +914,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: bu cihazın yapılandırma depolaması anahtarı {{path}} dosyasında (0600 kipi) tutuluyor ve yalnızca dosya izinleriyle korunuyor."
         },
         "enable": {
+          "descriptionShort": "Bu yapılandırmayı uzak şifreli depolamaya bağlar",
           "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı ve bu cihaz onu açabiliyor; etkinleştirilecek bir şey yok. Bağlantıyı kesmek için şunu çalıştırın: rdc config remote disable",
           "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
           "expired": "Cihaz kodu süresi doldu. Tekrar deneyin.",
@@ -927,6 +975,7 @@
         "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"rdc config remote refresh\" komutunu çalıştırın.",
         "passkeySecretMissing": "Bu cihaz, yapılandırma depolaması için anahtarını artık tutmuyor (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşalır). Bu cihazı şununla yeniden kaydedin: rdc config remote enable",
         "refresh": {
+          "descriptionShort": "Yapılandırmayı uzak depolamadan zorla yeniden getirir",
           "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "pulled": "Yapılandırma alındı",
@@ -936,6 +985,7 @@
         },
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
         "status": {
+          "descriptionShort": "Uzak bağlantı durumunu gösterir",
           "description": "Uzak bağlantı durumunu göster",
           "deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (yeniden başlatma anahtar deposunu boşaltabilir). Cihazı şu komutla yeniden kaydedin: rdc config remote enable",
           "deviceCannotOpen": "Bu cihaz bu yapılandırmanın uzak depolamasını açamıyor: kaydı reddedildi, örneğin anahtar döndürüldükten sonra. Cihazı şu komutla yeniden kaydedin: rdc config remote enable"
@@ -971,6 +1021,7 @@
         },
         "pushVisibility": "{{config}} yapılandırması: v{{from}} → v{{to}} sürümü \"{{command}}\" tarafından gönderildi: {{changes}}",
         "versions": {
+          "descriptionShort": "Bu yapılandırmanın sunucuda tutulan önceki sürümlerini listeler",
           "description": "Sunucuda saklanan bu yapılandırmanın önceki sürümlerini listeler",
           "optionExplain": "Sunucunun sakladığı sürümlerden, her sürümün değiştirdiği JSON işaretçilerini gösterir",
           "explainUnreadable": "(okunamadı: {{reason}})",
@@ -978,6 +1029,7 @@
           "empty": "Sunucu \"{{config}}\" yapılandırmasının önceki sürümlerinden hiçbirini saklamıyor."
         },
         "restore": {
+          "descriptionShort": "Bu yapılandırmanın önceki bir sürümünü en yeni sürüm olarak yayımlar",
           "description": "Bu yapılandırmanın önceki bir sürümünü en yeni sürümü olarak yayımlar",
           "argVersion": "Geri yüklenecek sürüm (bkz. rdc config remote versions)",
           "confirm": "\"{{config}}\" yapılandırmasının {{version}} sürümünün içeriği, {{current}} sürümünün üzerine yeni bir sürüm olarak yayımlansın mı? Her cihaz bunu bir sonraki çekişinde alır.",
@@ -990,6 +1042,7 @@
         "localEditsUnverifiable": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{server}} ile farklı ({{changes}}) ve önbelleğin alındığı {{cached}} sürümü okunamadı ({{reason}}); bu yüzden yerel bir düzenleme sunucu değişikliğinden ayırt edilemiyor. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından yeniden uygulayın."
       },
       "rotateCek": {
+        "descriptionShort": "Kuruluşun yapılandırma şifreleme anahtarını döndürür",
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",
         "confirm": "Yapılandırma şifreleme anahtarı şimdi döndürülsün mü?",
         "waiting": "Döndürmenin tarayıcıda tamamlanması bekleniyor (durdurmak için Ctrl+C)...",
@@ -1006,10 +1059,12 @@
         "warning": "Bu işlem, kuruluşun tüm yapılandırmasının şifrelendiği anahtarı döndürür. Diğer tüm cihazların ardından yeniden bağlanması gerekir."
       },
       "set": {
+        "descriptionShort": "Varsayılan bir değer ayarlar (takım, bölge, köprü)",
         "description": "Varsayılan bir değer belirleyin (takım, bölge, köprü)",
         "success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı"
       },
       "show": {
+        "descriptionShort": "Geçerli yapılandırmanın ayrıntılarını gösterir",
         "description": "Geçerli yapılandırma ayrıntılarını gösterin",
         "noConfig": "Etkin yapılandırma yok. Oluşturun: rdc config init",
         "optionReveal": "Hassas değerler için düz metni göster (yalnızca etkileşimli modda)"
@@ -1017,11 +1072,13 @@
       "ssh": {
         "description": "SSH anahtar yapılandırmasını yönet",
         "remove": {
+          "descriptionShort": "Geçerli yapılandırmadan SSH anahtarını kaldırır",
           "description": "Geçerli yapılandırmadan SSH anahtarını kaldır",
           "noKey": "SSH anahtarı yapılandırılmamış",
           "success": "SSH anahtarı kaldırıldı"
         },
         "set": {
+          "descriptionShort": "Geçerli yapılandırma için SSH anahtarı ayarlar",
           "description": "Geçerli yapılandırma için SSH anahtarını ayarla",
           "invalidKey": "Dosya geçerli bir SSH özel anahtarı içermiyor",
           "keyNotFound": "SSH anahtar dosyası bulunamadı: {{path}}",
@@ -1030,6 +1087,7 @@
           "success": "SSH anahtarı yapılandırıldı"
         },
         "show": {
+          "descriptionShort": "Geçerli SSH anahtarı ayarını gösterir",
           "description": "Geçerli SSH anahtar yapılandırmasını göster",
           "noKey": "SSH anahtarı yapılandırılmamış"
         }
@@ -1225,6 +1283,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "Çalışan bir ayrık işi iptal eder",
         "alreadyFinished": "{{jobId}} görevi zaten {{state}}; iptal edilecek bir şey yok.",
         "confirm": "{{machine}} üzerindeki {{jobId}} ({{function}}) görevi iptal edilsin mi? İşlem durdurulacak.",
         "description": "Çalışan bağımsız bir görevi iptal eder",
@@ -1239,6 +1298,7 @@
         "succeeded": "{{jobId}} görevi başarıyla tamamlandı."
       },
       "gc": {
+        "descriptionShort": "Biten işleri ve günlüklerini kaldırır",
         "confirm": "{{machine}} üzerinde {{hours}} saatten daha önce tamamlanmış görevler kaldırılsın mı? Günlükleri de silinecek.",
         "description": "Tamamlanmış görevleri ve günlüklerini kaldırır",
         "invalidOlderThan": "--older-than bir saat sayısı olmalıdır, örn. 168 veya 168h (alınan: \"{{value}}\")",
@@ -1247,6 +1307,7 @@
       },
       "idOption": "Görev kimliği",
       "list": {
+        "descriptionShort": "Bir makinedeki ayrık işleri en yeniden eskiye listeler",
         "description": "Bir makinedeki bağımsız görevleri en yeniden en eskiye listeler",
         "empty": "{{machine}} üzerinde görev yok.",
         "examples": {
@@ -1257,6 +1318,7 @@
         "allOption": "Süresi dolmuş ve reddedilmiş biletleri de göster"
       },
       "logs": {
+        "descriptionShort": "Ayrık bir işin olay günlüğünü yeniden oynatır veya izler",
         "description": "Bağımsız bir görevin olay günlüğünü yeniden oynatır veya canlı izler",
         "detached": "{{jobId}} görevinden ayrıldınız. Görev {{machine}} üzerinde hâlâ çalışıyor ve İPTAL EDİLMEDİ. Yeniden bağlanmak için: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1269,6 +1331,7 @@
       },
       "machineOption": "Hedef makine adı",
       "status": {
+        "descriptionShort": "Ayrık bir işin durumunu gösterir",
         "description": "Bağımsız bir görevin durumunu gösterir",
         "examples": {
           "basic": "Tek bir görevin durumunu göster."
@@ -1279,6 +1342,7 @@
       "machineRequired": "Bu yapılandırmada {{jobId}} görevi için bilet yok. Nerede çalıştığını -m <machine> ile belirtin.",
       "ticketMachineOption": "Hedef makine adı (bu yapılandırmada görevin bileti varsa isteğe bağlı)",
       "wait": {
+        "descriptionShort": "Bir işi biletinden izlemeye devam eder, ardından onaylar ve işin çıkış koduyla çıkar",
         "description": "Bir görevi biletinden devam ederek izlemeye al, ardından onayla ve görevin çıkış koduyla çık",
         "timeoutOption": "Bu süre sonunda beklemeyi bırak (30s, 5m, 2h; yalnız sayı saniye demektir). Görev çalışmaya devam eder.",
         "invalidTimeout": "--timeout 30s, 5m veya 2h gibi bir süre olmalıdır (alınan: \"{{value}}\")",
@@ -1332,6 +1396,7 @@
         "success": "Makine \"{{name}}\" eklendi ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "Bulutta hazırlanan bir makineyi yok eder ve yapılandırmadan kaldırır",
         "completed": "Makine {{name}} yok edildi ve yapılandırmadan kaldırıldı",
         "confirm": "Bu, \"{{name}}\" makinesini ve tüm verilerini kalıcı olarak yok edecek. Devam edilsin mi?",
         "deactivateFailed": "{{name}} için hesaptaki etkinleştirme yuvası serbest bırakılamadı: {{reason}}. Yuva, son etkinlikten 5 saat sonra kendiliğinden boşalır.",
@@ -1350,6 +1415,7 @@
       "description": "Uzak makine durumunu incele: sistem kaynakları, çalışan konteynerler, systemd servisleri, dağıtılmış depolar ve sağlık tanılaması. Salt okunur sorgulardır; depoları değiştirmek için `repo` kullanın. Temel alt komutlar: status (--system, --containers, --repositories, --services ile daraltılan tam durum), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Uzak makineleri yönetin (status, health, list, add, remove, setup, prune)",
       "health": {
+        "descriptionShort": "CI/CD işlem hatları için makine sağlığını denetler",
         "containersSection": "\nKonteynerler:",
         "containersSummary": "  {{running}}/{{total}} çalışıyor ({{healthy}} sağlıklı, {{unhealthy}} sağlıksız)",
         "description": "CI/CD pipeline'ları için makine sağlığını kontrol edin",
@@ -1416,19 +1482,23 @@
         "cert": {
           "clear": {
             "cleared": "Sertifika önbelleği temizlendi",
+            "descriptionShort": "Sertifika önbelleğini siler",
             "description": "Sertifika önbelleğini kaldır",
             "noCache": "Temizlenecek sertifika önbelleği yok"
           },
           "description": "Önbelleğe alınmış TLS sertifikalarını yönet",
           "pull": {
+            "descriptionShort": "Bir makineden TLS sertifikalarını indirir ve önbelleğe alır",
             "description": "Bir makineden TLS sertifikalarını indir ve önbelleğe al",
             "optionNoPrune": "Eski ağ kimliği sertifikalarının temizliğini atla"
           },
           "push": {
+            "descriptionShort": "Önbellekteki TLS sertifikalarını bir makineye yükler",
             "description": "Önbelleğe alınmış TLS sertifikalarını bir makineye yükle"
           },
           "status": {
             "certCount": "{{count}} sertifika, {{size}} sıkıştırılmış",
+            "descriptionShort": "Önbellekteki sertifika envanterini gösterir",
             "description": "Önbelleğe alınmış sertifika envanterini göster",
             "header": "{{baseDomain}} için sertifika önbelleği",
             "noCache": "Kayıtlı sertifika önbelleği yok",
@@ -1455,11 +1525,13 @@
           "success": "\"{{name}}\" için altyapı yapılandırması güncellendi"
         },
         "show": {
+          "descriptionShort": "Bir makinenin altyapı yapılandırmasını gösterir",
           "description": "Bir makine için altyapı yapılandırmasını göster",
           "noInfra": "\"{{name}}\" için altyapı yapılandırması ayarlanmamış"
         }
       },
       "list": {
+        "descriptionShort": "Makineleri listeler",
         "description": "Makineleri listeleyin",
         "examples": {
           "basic": "Kayıtlı tüm makineleri listele.",
@@ -1469,6 +1541,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "Bir bulut sağlayıcısı ekler",
           "description": "Bulut sağlayıcı ekle",
           "optionImage": "Varsayılan işletim sistemi imajı",
           "optionImageAttr": "Özel: işletim sistemi imajı için öznitelik adı",
@@ -1492,15 +1565,18 @@
         },
         "description": "Otomatik makine oluşturma için bulut sağlayıcıları yönet",
         "list": {
+          "descriptionShort": "Yapılandırılmış bulut sağlayıcılarını listeler",
           "description": "Yapılandırılmış bulut sağlayıcıları listele",
           "noProviders": "Yapılandırılmış bulut sağlayıcısı yok. Şu komutla ekleyin: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "Bir bulut sağlayıcısının yapılandırmasını kaldırır",
           "description": "Bulut sağlayıcı yapılandırmasını kaldır",
           "success": "\"{{name}}\" bulut sağlayıcısı kaldırıldı"
         }
       },
       "provision": {
+        "descriptionShort": "OpenTofu ile bir bulut sağlayıcısında yeni makine hazırlar",
         "completed": "Makine {{name}} oluşturuldu ve hazır ({{ip}})",
         "configuringInfra": "{{name}} için altyapı (proxy + DNS) yapılandırılıyor...",
         "description": "OpenTofu kullanarak bir bulut sağlayıcıda yeni makine oluştur",
@@ -1578,6 +1654,7 @@
         "clusterMember": "\"{{name}}\" makinesi kaldırılamıyor: \"{{cluster}}\" kümesinin üyesi.",
         "clusterMemberNext": "Önce düğümü kümesinden çıkarın.",
         "confirm": "\"{{name}}\" makinesi yapılandırmadan kaldırılsın mı?",
+        "descriptionShort": "Bir makineyi yapılandırmadan kaldırır",
         "description": "Mevcut yapılandırmadan makine kaldır",
         "forceDangling": "\"{{name}}\" makinesi, üzerinde hâlâ {{count}} depo yerleşimi varken kaldırıldı: {{repos}}. Bu yerleşimler artık askıda. \"rdc repo migrate\" ile yeniden yönlendirin veya \"rdc repo delete\" ile silin.",
         "forceOption": "Depolar üzerinde yerleşikken veya yedekleme stratejileri makineye bağlıyken bile makineyi kaldır, bu referansları askıda bırak.",
@@ -1609,6 +1686,7 @@
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} makine tarandı",
+        "descriptionShort": "Geçerli yapılandırmadaki makinelerin SSH ana bilgisayar anahtarlarını tarar",
         "description": "Mevcut yapılandırmadaki makineler için SSH ana bilgisayar anahtarlarını tara",
         "keysScanned": "\"{{name}}\" için host anahtarları tarandı",
         "noKeys": "\"{{name}}\" için host anahtarları taranamadı",
@@ -1693,6 +1771,7 @@
           "unchanged": "\"{{name}}\" üzerindeki erişim anahtarları zaten güncel ({{path}})"
         },
         "remove": {
+          "descriptionShort": "Bir erişim anahtarının makineyle bağını kaldırır",
           "description": "Bir erişim anahtarının makineyle bağını kaldır. Sonraki 'machine access push' satırını siler",
           "success": "\"{{key}}\" erişim anahtarının \"{{name}}\" makinesiyle bağı kaldırıldı. Satırını 'machine access push {{name}}' ile sil"
         },
@@ -1704,6 +1783,7 @@
           "success": "\"{{key}}\" erişim anahtarı \"{{name}}\" makinesine bağlandı. 'machine access push {{name}}' ile uygula"
         },
         "show": {
+          "descriptionShort": "Bir makineye bağlı erişim anahtarlarını ve her birinin orada çözümlendiği aralıkları gösterir",
           "description": "Bir makineye bağlı erişim anahtarlarını ve her birinin orada geçerli aralıklarını göster",
           "noKeys": "\"{{name}}\" makinesine bağlı erişim anahtarı yok",
           "path": "\"{{name}}\" üzerinde {{user}} kullanıcısının authorized_keys dosyası (~/.ssh/authorized_keys)"
@@ -1714,6 +1794,7 @@
       "description": "Yapay zeka agentları için Model Context Protocol sunucusu",
       "descriptionShort": "Yapay zeka agentları için Model Context Protocol sunucusu",
       "serve": {
+        "descriptionShort": "MCP sunucusunu başlatır (stdio aktarımı)",
         "configOption": "Tüm komutlar için kullanılacak yapılandırma adı",
         "description": "MCP sunucusunu başlat (stdio aktarımı)",
         "timeoutOption": "Milisaniye cinsinden varsayılan komut zaman aşımı"
@@ -1721,6 +1802,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "Sanallaştırma ön koşullarını doğrular",
         "allPassed": "Tüm ön koşullar karşılandı",
         "description": "Sanallaştırma ön koşullarını doğrula",
         "hasMissing": "{{count}} ön koşul eksik",
@@ -1730,12 +1812,14 @@
       "description": "KVM/QEMU/Hyper-V kullanarak yerel VM sağlama ve yönetimi (platform otomatik algılanır). Uzak makineler için değildir. Onlar için `machine` kullanın. Temel alt komutlar: up (VM'leri başlat), down (durdur), status (çalışan VM'leri listele), ssh (VM'ye bağlan), setup (önkoşulları kur), check (ana bilgisayar hazırlığını doğrula).",
       "descriptionShort": "Yerel VM işlemleri (sağlama, yönetme, yok etme)",
       "down": {
+        "descriptionShort": "VM kümesini yok eder",
         "completed": "VM kümesi başarıyla yok edildi",
         "description": "VM kümesini yok et",
         "failed": "VM kümesi yok etme işlemi başarısız oldu",
         "starting": "VM kümesi yok ediliyor..."
       },
       "setup": {
+        "descriptionShort": "Sanallaştırma ön koşullarını kurar",
         "brewFailed": "Homebrew kurulumu başarısız oldu",
         "completed": "Ön koşullar başarıyla kuruldu",
         "description": "Sanallaştırma ön koşullarını kur",
@@ -1746,15 +1830,18 @@
         "windows": "Hyper-V ön koşulları ayarlanıyor..."
       },
       "ssh": {
+        "descriptionShort": "Bir VM'ye SSH ile bağlanır",
         "connecting": "VM {{id}} bağlantısı kuruluyor...",
         "description": "Bir VM'ye SSH ile bağlan",
         "vmNotFound": "{{id}} ID'li VM bulunamadı veya çalışmıyor"
       },
       "status": {
+        "descriptionShort": "VM kümesinin durumunu gösterir",
         "description": "VM kümesi durumunu göster",
         "noVMs": "Hiçbir VM bulunamadı"
       },
       "up": {
+        "descriptionShort": "VM kümesini yerel olarak hazırlar",
         "completed": "VM kümesi başarıyla oluşturuldu",
         "description": "VM kümesini yerel olarak oluştur",
         "failed": "VM kümesi oluşturma başarısız oldu",
@@ -1816,16 +1903,19 @@
         "archive": {
           "description": "Arşivlenmiş depo kayıtlarının yönetimi.",
           "list": {
+            "descriptionShort": "Arşivlenmiş depo kayıtlarını listeler",
             "description": "Arşivlenmiş depo kimlik bilgilerini listele",
             "noArchived": "Arşivlenmiş depo yok"
           },
           "purge": {
             "confirm": "Süresi dolmuş tüm arşivlenmiş kayıtlar kalıcı olarak silinsin mi?",
+            "descriptionShort": "Arşivlenmiş kayıtları kalıcı olarak siler",
             "description": "Tüm arşivlenmiş kimlik bilgilerini kalıcı olarak sil",
             "noArchived": "Temizlenecek arşivlenmiş depo yok",
             "success": "{{count}} arşivlenmiş kimlik bilgisi temizlendi"
           },
           "restore": {
+            "descriptionShort": "Arşivlenmiş bir kaydı yapılandırmaya geri yükler",
             "description": "Arşivlenmiş depo kimlik bilgisini geri yükle",
             "success": "\"{{name}}\" ({{guid}}) geri yüklendi"
           }
@@ -1833,6 +1923,7 @@
         "orphan": {
           "description": "Bir makinede hiçbir yapılandırmanın anmadığı depo imajları.",
           "list": {
+            "descriptionShort": "Bir makinedeki depo imajlarını ve her birinin hiçbir yapılandırmanın anmadığı yetim bir imaj olup olmadığını listeler",
             "description": "Bir makinedeki depo imajlarını listeler ve her birinin sahipsiz olup olmadığını, yani hiçbir yapılandırmada geçip geçmediğini gösterir.",
             "none": "{{machine}} üzerinde depo imajı yok"
           },
@@ -1854,6 +1945,7 @@
         "autostart": {
           "description": "Önyüklemede otomatik depo başlatmayı yönet",
           "disable": {
+            "descriptionShort": "Bir depo için otomatik başlatmayı kapatır (ad verilmezse hepsi için kapatır)",
             "completed": "Otomatik başlatma devre dışı bırakıldı",
             "completedAll": "Tüm depolar için otomatik başlatma devre dışı bırakıldı",
             "description": "Bir depo için otomatik başlatmayı devre dışı bırak",
@@ -1863,6 +1955,7 @@
             "startingAll": "\"{{machine}}\" üzerindeki tüm depolar için otomatik başlatma devre dışı bırakılıyor..."
           },
           "enable": {
+            "descriptionShort": "Bir depo için otomatik başlatmayı açar (ad verilmezse hepsi için açar)",
             "completed": "Otomatik başlatma etkinleştirildi",
             "completedAll": "Tüm depolar için otomatik başlatma etkinleştirildi",
             "description": "Bir depo için otomatik başlatmayı etkinleştir",
@@ -1872,6 +1965,7 @@
             "startingAll": "\"{{machine}}\" üzerindeki tüm depolar için otomatik başlatma etkinleştiriliyor..."
           },
           "list": {
+            "descriptionShort": "Otomatik başlatması açık depoları listeler",
             "description": "Otomatik başlatma etkin olan depoları listele",
             "empty": "\"{{machine}}\" üzerinde otomatik başlatma etkin depo yok",
             "failed": "Otomatik başlatma depolarını listeleme başarısız",
@@ -1968,6 +2062,7 @@
         "weightOption": "Canary'ye yönlendirilen trafik yüzdesi (0-100 arası tam sayı; 0 = devre dışı, 100 = tam geçiş)"
       },
       "cat": {
+        "descriptionShort": "Bir depodaki dosyanın sınırlı bir bölümünü standart çıktıya okur (tanılar stderr'e gider)",
         "description": "Depo içindeki bir dosyanın sınırlı bir penceresini oku ve stdout'a yaz (sunucu tarafında sınırlı; tanılama bilgileri stderr'e gider)",
         "examples": {
           "basic": "Bir depo içinden bir dosyayı yazdır."
@@ -2000,6 +2095,7 @@
         "messageOption": "Commit mesajı"
       },
       "create": {
+        "descriptionShort": "Yeni bir depo oluşturur",
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "completed": "Depo oluşturuldu",
         "datastoreNotAttached": "\"{{datastore}}\" veri deposu hiçbir makineye bağlı değil. Bağlayın: rdc datastore attach {{datastore}} --to <machine>. Zaten bağlıysa ama yapılandırma bunu bilmiyorsa rdc config reconcile çalıştırın.",
@@ -2148,6 +2244,7 @@
         "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir"
       },
       "list": {
+        "descriptionShort": "Bir makinedeki depoları listeler",
         "completed": "Listeleme tamamlandı",
         "datastoreOption": "Bu veri deposundaki depoları listele (şu anda onu tutan makineye göre çözümlenir)",
         "description": "Bir makinedeki depoları listele",
@@ -2428,12 +2525,14 @@
         "valueOption": "Gizli değer. stdin'den okumak için `-` geçin (kabuk geçmişine maruz kalmayı önler)."
       },
       "status": {
+        "descriptionShort": "Depo durumunu getirir (bağlama durumu, Docker daemon'ının çalışıp çalışmadığı, kapsayıcı sayısı, disk kullanımı)",
         "completed": "Durum alındı",
         "description": "Depo durumunu al",
         "failed": "Durum kontrolü başarısız",
         "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
       },
       "health": {
+        "descriptionShort": "Deponun Rediaccfile health() denetimlerini çalıştırır ve 0 (tamam), 1 (uyarı) veya 2 (hata) koduyla çıkar",
         "description": "Deponun Rediaccfile health() denetimlerini çalıştırır ve 0 (sağlıklı), 1 (uyarı) ya da 2 (hata) koduyla çıkar",
         "header": "\n{{repository}} sağlık durumu:",
         "levelOk": "✓ Sağlıklı",
@@ -2660,6 +2759,7 @@
         "helpOffline": "İzole ağ: paketi internet erişimi olan bir makinede rdc server bundle --out <dir> ile oluşturun. rdc server install --offline --bundle <dir> paketi doğrular, proxy imajını yükler, makineyi çevrimdışı kurar ve dışarıya hiçbir çağrı yapmaz. Kurulum lisans adımında durup bir istek dosyası yazar: çevrimiçi bir sertifika üretin (rdc server licence mint), ardından --cert ile yeniden çalıştırın."
       },
       "status": {
+        "descriptionShort": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını gösterir",
         "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster",
         "certRefused": "REDDEDİLDİ ({{reason}}) {{at}}",
         "certRefusedRun": "çalıştırın: rdc server licence {{domain}}",
@@ -2667,6 +2767,7 @@
         "certExpiring": "Lisans sertifikasının süresi {{days}} gün içinde doluyor; yenileyin (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdırır veya bir dosyaya yazar",
         "description": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdır veya bir dosyaya yaz",
         "optionOut": "Paketi stdout yerine bu dosyaya yaz (kip 0600)",
         "written": "Kurtarma paketi {{file}} dosyasına yazıldı (kip 0600)",
@@ -2690,6 +2791,7 @@
         "templateNoBaseline": "Bu makine şablon sağlama toplamlarını kaydetmemiş, bu yüzden yerel düzenlemeler algılanamıyor; daha yeni şablon uygulanıyor"
       },
       "licence": {
+        "descriptionShort": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile verilen bir yetki devri sertifikasına geçirir",
         "description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
         "done": "{{domain}}, {{subscription}} aboneliği altında lisanslandı",
         "certUnreadable": "{{file}} sertifika dosyası okunamıyor",
@@ -2711,6 +2813,7 @@
         "noUpstreamKey": "Sunucuda UPSTREAM_PUBLIC_KEY yok; bu yüzden hiçbir sertifikayı doğrulayamaz ve yeni bir sertifika işe yaramaz. {{domain}} sırlarında UPSTREAM_PUBLIC_KEY değerini ayarlayın, ardından `rdc server upgrade {{domain}}` çalıştırın.",
         "bootRefusalStays": "Sertifika uygulandı, ancak sunucu hâlâ açılışta bir ret bildiriyor ({{reason}}); sunucu günlüklerine bakın",
         "mint": {
+          "descriptionShort": "Çevrimdışı bir kutunun isteği için lisans sertifikası üretir (çevrimiçi, oturum açıkken çalıştırın)",
           "description": "Çevrimdışı bir makinenin isteği için lisans sertifikası üret (çevrimiçi ve oturum açık olarak çalıştırın)",
           "done": "Sertifika {{file}} dosyasına yazıldı ({{until}} tarihine kadar geçerli); makineye taşıyın ve --cert ile kurun",
           "optionOut": "Sertifikanın yazılacağı dosya",
@@ -2889,6 +2992,7 @@
       "description": "Lisanslama ve abonelik jetonlarını yönet. login ile giriş yapın, status ile inceleyin, refresh ile lisansları yeniden verin.",
       "descriptionShort": "Makine lisanslama ve abonelik yönetimi",
       "login": {
+        "descriptionShort": "Tarayıcı veya API token'ı ile kimlik doğrular",
         "backupNeedsTwoFactor": "Yedekleme depolama yönetimi olmadan oturum açıldı. {{url}} adresindeki Ayarlar'dan iki adımlı doğrulamayı açın, ardından yeniden oturum açın.",
         "channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
@@ -2923,20 +3027,24 @@
         "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
       },
       "register": {
+        "descriptionShort": "Tarayıcıda hesap oluşturur (e-posta önceden doldurulur) ve oturum açar",
         "description": "Tarayıcıda hesap oluştur (e-posta önceden doldurulur) ve oturum aç",
         "optionEmail": "Kayıt sayfasında önceden doldurulacak e-posta adresi",
         "invalidEmail": "Geçerli bir e-posta adresi girin."
       },
       "logout": {
+        "descriptionShort": "Saklanan abonelik token'ını temizler",
         "description": "Kayıtlı abonelik jetonunu temizle",
         "success": "Abonelik jetonu kaldırıldı"
       },
       "proxyToken": {
+        "descriptionShort": "Bu cihazın oturumundan --proxy için kısa ömürlü bir proxy:exec token'ı üretir",
         "description": "--proxy için bu cihazdaki oturumdan kısa ömürlü bir proxy:exec belirteci üret",
         "jsonOption": "Belirteci ve expiresAt değerini JSON olarak yazdır",
         "noToken": "Hesap sunucusu bir vekil belirteci döndürmedi."
       },
       "refresh": {
+        "descriptionShort": "Lisansları hesap sunucusundan yeniler",
         "account": {
           "failed": "Hesap durumu hesap sunucusundan okunamadı.",
           "refreshed": "Hesap durumu yenilendi",
@@ -2984,6 +3092,7 @@
         }
       },
       "status": {
+        "descriptionShort": "Aboneliği ve bir makinenin lisans durumunu gösterir",
         "description": "Bir makine için aboneliği ve lisans durumunu göster.",
         "issuanceLimitReached": "Geçerli UTC takvim ayı için aylık depo lisansı verme sınırına ulaşıldı.",
         "issuanceUsageHigh80": "Aylık depo lisansı verimleri mevcut UTC sınırının %80'inin üzerinde.",
@@ -3034,6 +3143,7 @@
         "needsYes": "Lisansı iade etmek onay gerektirir ve stdin bir terminal değil. Onaylamak için --yes verin.",
         "confirm": "{{name}} lisansı iade edilsin mi ({{guid}}, {{state}})? Yenileme onu geri getirmez.",
         "success": "Lisans iade edildi: {{name}}",
+        "descriptionShort": "Artık var olmayan bir deponun lisansını emekliye ayırır, böylece lisans sayımlarından ve bildirimlerden çıkar",
         "description": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar.",
         "argGuid": "Deponun GUID değeri ya da hesap raporundaki bir lisansın en az 8 karakteri",
         "optionForce": "Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder",
@@ -3051,6 +3161,7 @@
         "optionExpired": "Silinmiş veya bu yapılandırmada olmayan depolara ait, kesin olarak süresi dolmuş tüm lisansları iade eder"
       },
       "notices": {
+        "descriptionShort": "Hesabın bildirimlerini listeler: lisans süresi, yedek sağlığı, yenilemeler, sertifikalar ve Şartlar",
         "description": "Hesabın bildirimlerini listeler: lisans süreleri, yedekleme durumu, yenilemeler, sertifikalar ve koşullar.",
         "optionAll": "Kapatılan bildirimleri ve tüm sayfaları dahil eder, yalnızca son 30 günü değil",
         "optionUnread": "Yalnızca henüz okunmamış bildirimler",
@@ -3103,6 +3214,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "Bir makinede veya Docker'ı kurulu bir depo içinde kabuk açar",
         "description": "Bir makinede veya Docker'ı kurulmuş bir depo içinde bir kabuk açın.",
         "examples": {
           "machine": "Bir makineye SSH terminali aç.",
@@ -3158,6 +3270,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "VS Code kurulumunu ve yapılandırmasını denetler",
         "activeConnections": "Etkin Bağlantılar: {{count}}",
         "configuration": "\nYapılandırma:",
         "configured": "  Yapılandırılmış: {{status}}",
@@ -3178,12 +3291,14 @@
         "yes": "Evet"
       },
       "cleanup": {
+        "descriptionShort": "VS Code SSH yapılandırmalarını kaldırır",
         "cleaned": "Temizlendi: {{connection}}",
         "cleanedAll": "{{count}} VS Code SSH bağlantısı temizlendi.",
         "description": "VS Code SSH yapılandırmalarını kaldırın",
         "removedKeys": "Tüm kalıcı SSH anahtarları kaldırıldı."
       },
       "connect": {
+        "descriptionShort": "VS Code'u bir makinede veya bir depo içinde açar",
         "browserUrl": "VS Code'u tarayıcınızda açın: {{url}}",
         "configuringSSH": "SSH yapılandırılıyor...",
         "configuringVSCode": "VS Code ayarları yapılandırılıyor...",
@@ -3212,6 +3327,7 @@
       "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "descriptionShort": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "list": {
+        "descriptionShort": "Yapılandırılmış VS Code SSH bağlantılarını listeler",
         "configFile": "\nYapılandırma dosyası: {{path}}",
         "description": "Yapılandırılmış VS Code SSH bağlantılarını listeleyin",
         "header": "Yapılandırılmış VS Code SSH bağlantıları:\n",
@@ -3222,11 +3338,13 @@
       "serve": {
         "description": "Sandbox içindeki tarayıcı VS Code sunucusunu yönet",
         "status": {
+          "descriptionShort": "Tarayıcıdaki VS Code sunucusunun çalışıp çalışmadığını gösterir",
           "description": "Tarayıcı VS Code sunucusunun çalışıp çalışmadığını göster",
           "running": "{{provider}} çalışıyor (pid {{pid}}, port {{port}})",
           "stopped": "{{provider}} çalışmıyor"
         },
         "stop": {
+          "descriptionShort": "Tarayıcıdaki VS Code sunucusunu durdurur",
           "description": "Tarayıcı VS Code sunucusunu durdur",
           "notRunning": "{{provider}} zaten çalışmıyordu",
           "stopped": "{{provider}} durduruldu"
@@ -3287,6 +3405,35 @@
       "notAccepted": "Kabul edildi: kabul edilmedi",
       "terms": "Hizmet Şartları: sürüm {{version}}, {{effective}} tarihinden beri yürürlükte",
       "upcoming": "Gelecek sürüm {{version}}, {{effective}} tarihinde yürürlüğe girer"
+    },
+    "proxyBlocked": {
+      "backupCheck": "bir listeyi okur ve bir dosyayı deponun kimlik bilgisiyle geri yükler; bu kimlik bilgisi yapılandırmanın bulunduğu yerde kalır",
+      "backupChurn": "saatler sürebilen istemci tarafı bir yoklama döngüsüdür ve bittiğinde tabanını unutması gerekir",
+      "backupDownload": "Depo imajını istemci tarafı bir rsync ile yerel bir dizine kopyalar; uzak bir yürütücü imajı kendi diskine yazardı. --proxy olmadan çalıştırın.",
+      "localTooling": "Hiçbir makineye ulaşmayan yerel bir araçtır, bu yüzden vekilden geçirilecek bir şey yoktur. --proxy olmadan çalıştırın.",
+      "backupRepair": "Hesaptaki bozuk parçaları çağıranın backup:manage token'ıyla siler, sonra makineden yeniden yükler; uzak bir yürütücüde ne bu token ne de çağıranın yapılandırması bulunur. --proxy olmadan çalıştırın.",
+      "localConfig": "Tamamen yerel yapılandırma üzerinde çalışır ve hiçbir makineye ulaşmaz, bu yüzden vekilden geçirilecek bir şey yoktur. --proxy olmadan çalıştırın.",
+      "backupTocKeySync": "açık anahtarı deponun kimlik bilgisinden türetir; bu kimlik bilgisi yapılandırmanın bulunduğu yerde kalır",
+      "backupUpload": "Yerel bir imaj dosyasını istemci tarafı bir rsync ile gönderir ve depoyu yerel yapılandırmaya kaydeder; uzak bir yürütücü bu dosyayı göremez. --proxy olmadan çalıştırın.",
+      "clusterKubeconfig": "kubeconfig'i yerel bir 0600 dosyasına önbelleğe alır ve bu yolu yazdırır; uzak bir yürütücü dosyayı kendi diskine yazardı. --proxy olmadan çalıştırın.",
+      "interactive": "Bir terminal gerektirir veya kendiliğinden hiç bitmez (etkileşimli kabuk, düzenleyici, tünel, akış veya daemon), bu yüzden arayüzsüz bir yürütücü çalıştıramaz. --proxy olmadan çalıştırın.",
+      "configReconcile": "Her makineyi sorgular ama sonucu ÇAĞIRANIN yerel durum kovasına yazar; uzak bir yürütücü kendi durumunu yeniden oluştururdu ve çağıranın haberi bile olmazdı. --proxy olmadan çalıştırın.",
+      "machineAccessPush": "Makineye kimlerin giriş yapabileceğini ÇAĞIRANIN erişim anahtarlarından yeniden yazar; bir yürütücü bağlandığı erişimi asla yeniden yazmaz ve kendi yapılandırmasının anahtarlarını iterdi. --proxy olmadan çalıştırın.",
+      "machineConverge": "Her depo daemon'ını ÇAĞIRANIN yapılandırmasındaki ortam gizlileriyle yeniden başlatır; uzak bir yürütücü bunları kendi kopyasıyla ya da hiçbiri olmadan yeniden başlatırdı. --proxy olmadan çalıştırın.",
+      "machineInfraCertPull": "Etkisi, makinenin acme.json dosyasını çağıranın yerel yapılandırmasına yazmaktır; uzak bir yürütücü bunu kendi yapılandırmasına yazardı. --proxy olmadan çalıştırın.",
+      "machinePrune": "--orphaned-repos veya --prune-unknown ile her imajı ÇAĞIRANIN okuyabildiği tüm yapılandırmalara göre değerlendirir; uzak bir yürütücü kendi yapılandırmalarına göre değerlendirir ve çağıranın depolarını silerdi. --proxy olmadan çalıştırın.",
+      "machineScanKeys": "ssh-keyscan'i çağıranın ağ konumundan çalıştırır ve knownHosts'u çağıranın yerel yapılandırmasında saklar; uzak bir yürütücü kendi konumundan tarar ve sonucu kendinde tutardı. --proxy olmadan çalıştırın.",
+      "repoAdminOrphanDelete": "ÇAĞIRANIN okuyabildiği herhangi bir yapılandırmanın hâlâ andığı bir GUID'i reddeder; uzak bir yürütücü kendi yapılandırmalarına bakar ve çağıranın yapılandırmasının andığı bir imajı silebilirdi. --proxy olmadan çalıştırın.",
+      "repoAdminOrphanList": "Her imajı ÇAĞIRANIN okuyabildiği tüm yapılandırmalara göre değerlendirir; uzak bir yürütücü kendi yapılandırmalarına göre değerlendirir ve çağıranın depolarını yetim olarak bildirirdi. --proxy olmadan çalıştırın.",
+      "repoSyncDownload": "rsync/SFTP ile yerel dosya sistemine indirir; uzak bir yürütücü dosyaları kendi diskine yazardı. --proxy olmadan çalıştırın.",
+      "repoSyncStatus": "Makineyi yerel dosya sistemiyle istemci tarafı bir rsync ile karşılaştırır; uzak bir yürütücüde yerel ağacın kopyası yoktur. --proxy olmadan çalıştırın.",
+      "repoSyncUpload": "rsync/SFTP ile yerel dosya sisteminden yükler; uzak bir yürütücü kaynak yolları göremez. --proxy olmadan çalıştırın.",
+      "serverBackup": "Kurtarma paketini (sunucunun anahtarlarını) çağıranın terminaline veya dosyasına yazar; bir yürütücü üzerinden anahtarlar başka bir makineden geçerdi. --proxy olmadan çalıştırın.",
+      "serverBundle": "Çağıranın yerel docker'ını (pull ve save) çalıştırır ve paketi çağıranın diskine yazar; uzak bir yürütücü bunu kendi diskine yazardı. --proxy olmadan çalıştırın.",
+      "serverLicence": "Sertifikayı çağıranın oturumuyla üretir ve çağıranın yerel kurulum kaydına işler; uzak bir yürütücüde ikisi de yoktur. --proxy olmadan çalıştırın.",
+      "serverLicenceMint": "Sertifikayı çağıranın oturumuyla üretir ve çağıranın dosyasına yazar; uzak bir yürütücüde ikisi de yoktur. --proxy olmadan çalıştırın.",
+      "serverStatus": "Sunucuyu çağıranın yerel kurulum kaydı üzerinden bulur; uzak bir yürütücüde böyle bir kayıt yoktur. --proxy olmadan çalıştırın.",
+      "serverUpgrade": "Alt komutları ve çağıranın yerel kurulum kaydını (ve --local-image ile çağıranın Docker'ını) yönetir; uzak bir yürütücü kendi ortamından hareket ederdi. --proxy olmadan çalıştırın."
     }
   },
   "docs": {

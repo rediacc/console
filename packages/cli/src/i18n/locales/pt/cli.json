@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "{{name}} cancelado",
+        "descriptionShort": "Cancela um backup em andamento em uma máquina remota",
         "description": "Cancelar uma cópia de segurança em curso numa máquina remota",
         "notRunning": "Nenhuma cópia de segurança em curso para a estratégia \"{{name}}\""
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "Gerir cópias de segurança",
       "drNudge": "O armazenamento de configuração não está registado: as suas credenciais de repositório (frases-passe LUKS) só existem neste anfitrião, pelo que uma restauração bare-metal não as consegue recuperar. Registe-o com \"rdc config remote enable\" para as sincronizar dentro do blob de configuração encriptado.",
       "list": {
+        "descriptionShort": "Lista os artefatos de backup de uma máquina",
         "description": "Listar artefactos de cópia de segurança numa máquina.",
         "examples": {
           "basic": "Lista as cópias de segurança guardadas de uma máquina.",
@@ -42,6 +44,7 @@
         "placementRequired": "Especifique -m <machine> para indicar a máquina cujas cópias de segurança pretende listar."
       },
       "manifests": {
+        "descriptionShort": "Lista os manifestos de snapshots de backup registrados no servidor",
         "description": "Listar os manifestos de snapshots de cópia de segurança registados no servidor",
         "empty": "Não foram encontrados manifestos de cópia de segurança.",
         "fetching": "A obter manifestos de cópia de segurança...",
@@ -59,6 +62,7 @@
         "deployed": "{{name}} implementado em {{machine}}",
         "deployFailed": "Falha na implementação de {{name}} restaurado",
         "deploying": "A implementar {{name}} em {{machine}}...",
+        "descriptionShort": "Transforma um artefato de backup em um repositório ativo",
         "description": "Transforma um artefacto de cópia de segurança num repositório ativo. A localização é indicada aqui.",
         "examples": {
           "asNewRepo": "Restaura uma cópia de segurança como novo repositório e arranca-o.",
@@ -123,9 +127,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "Remove a política declarada, para que o padrão do plano ou do servidor volte a valer",
           "description": "Remove a política declarada, para que volte a aplicar-se o valor predefinido do plano ou do servidor."
         },
         "cleared": "Política de retenção removida para {{name}}. A partir de agora, aplica-se o valor predefinido do plano ou do servidor.",
+        "descriptionShort": "Mostra a política de retenção de snapshots que o servidor está aplicando",
         "description": "Mostra a política de retenção de snapshots aplicada pelo servidor.",
         "empty": "Não há política de retenção declarada, pelo que se aplica o valor predefinido do plano ou do servidor.",
         "knobNotAnInteger": "{{flag}} requer um número inteiro de snapshots a manter, não \"{{value}}\".",
@@ -137,6 +143,7 @@
         "optionKeepWeekly": "Manter o snapshot mais recente de cada uma destas semanas",
         "optionKeepYearly": "Manter o snapshot mais recente de cada um destes anos",
         "set": {
+          "descriptionShort": "Declara quantos snapshots manter",
           "description": "Indique quantos snapshots manter. Cada campo é substituído por completo, nunca combinado.",
           "success": "Política de retenção definida para {{name}} ({{count}} regra(s)). Os snapshots fora dela são eliminados na próxima limpeza.",
           "pending": "A mudança mantém menos, então espera a janela de exclusão adiada e tem efeito em {{when}} (UTC) para \"{{name}}\". A política exibida continua em vigor até lá."
@@ -144,6 +151,7 @@
         "effective": "Retenção em vigor para {{name}}: {{source}}",
         "optionStream": "Aplicar apenas a este fluxo de backup (um id de fluxo); sem ele, vale o padrão do repositório inteiro",
         "preview": {
+          "descriptionShort": "Mostra quais snapshots a próxima varredura excluiria e o espaço que liberaria",
           "description": "Mostra quais snapshots a próxima limpeza apagaria e quanto espaço liberaria.",
           "nothing": "A próxima limpeza não apaga nada de {{name}}.",
           "summary": "A próxima limpeza apaga {{count}} snapshot(s) de {{name}}, mantém {{kept}} e libera {{bytes}}.",
@@ -163,12 +171,14 @@
         "pendingClear": "Remover a política de \"{{name}}\" espera a janela de exclusão adiada e tem efeito em {{when}} (UTC). A política em vigor continua valendo até lá."
       },
       "run": {
+        "descriptionShort": "Executa um backup agora",
         "description": "Acionar uma cópia de segurança imediatamente numa máquina remota",
         "examples": {
           "basic": "Executa uma estratégia de cópia de segurança agora."
         }
       },
       "schedule": {
+        "descriptionShort": "Implanta o agendamento de backup em uma máquina remota (timers do systemd)",
         "description": "Implementar o agendamento de cópias de segurança numa máquina remota (temporizadores systemd)",
         "optionDryRun": "Pré-visualizar as unidades geradas sem implementar",
         "optionForce": "Prosseguir mesmo que uma cópia de segurança esteja em curso (a nova unidade aplica-se no próximo ciclo; a invocação em curso mantém a unidade antiga)",
@@ -176,6 +186,7 @@
         "success": "Agendamento de cópia de segurança implementado em {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "Envia um snapshot do chunk store: primeiro o inventário completo, depois só as células alteradas",
         "bwlimitInvalid": "--bwlimit deve ser uma taxa como 100Mbps ou 12.5M, mas foi recebido \"{{value}}\".",
         "completed": "Snapshot guardado para {{name}}",
         "description": "Enviar um snapshot para o armazenamento fragmentado: primeiro o inventário completo, depois as células alteradas",
@@ -206,11 +217,13 @@
         "optionAcceptIdentityChange": "Aceitar esta imagem como nova referência quando a sua identidade LUKS mudou ou ela encolheu; envia um snapshot completo"
       },
       "status": {
+        "descriptionShort": "Mostra o estado do backup e dos timers em uma máquina remota",
         "description": "Mostrar estado da cópia de segurança e estado do temporizador numa máquina remota"
       },
       "strategy": {
         "bandwidthUnconvertible": "Não foi possível converter o limite de largura de banda \"{{value}}\" ({{reason}}). Use bytes por segundo (12500000), bytes decimais (12.5M), bytes binários (12Mi) ou bits (100Mbps).",
         "bind": {
+          "descriptionShort": "Vincula uma estratégia de backup a uma máquina para que seu agendamento seja implantado nela",
           "alreadyBound": "Estratégia de cópia de segurança \"{{strategy}}\" já está vinculada à máquina \"{{machine}}\"",
           "bound": "Estratégia de cópia de segurança \"{{strategy}}\" vinculada à máquina \"{{machine}}\"",
           "description": "Vincular uma estratégia de cópia de segurança a uma máquina para que o seu agendamento seja implementado nela",
@@ -218,10 +231,12 @@
         },
         "description": "Gerir estratégias de cópia de segurança com nome (modos hot/cold, destinos, agendamento)",
         "list": {
+          "descriptionShort": "Lista todas as estratégias de backup",
           "description": "Listar todas as estratégias de cópia de segurança"
         },
         "readBandwidthUnconvertible": "Não foi possível converter o limite de leitura \"{{value}}\" ({{reason}}). Use bytes por segundo (50000000), bytes decimais (50M), bytes binários (48Mi), bits (400Mbps) ou 0 para sem limite.",
         "remove": {
+          "descriptionShort": "Remove uma estratégia ou um destino de backup",
           "bound": "Não é possível remover a estratégia de cópia de segurança \"{{strategy}}\": {{count}} máquina(s) ainda a associam: {{machines}}.",
           "boundNext": "Desassocie-a primeiro dessas máquinas ou remova-a juntamente com as suas associações.",
           "description": "Remover uma estratégia ou destino de cópia de segurança",
@@ -241,6 +256,7 @@
           "syncFailed": "Não foi possível sincronizar as regras de replicação: {{reason}}"
         },
         "set": {
+          "descriptionShort": "Cria ou atualiza uma estratégia de backup",
           "description": "Criar ou actualizar uma estratégia de cópia de segurança",
           "examples": {
             "configure": "Configura o agendamento e o modo de uma estratégia de cópia de segurança.",
@@ -291,11 +307,13 @@
           "dryRun": "Simulação: a estratégia \"{{strategy}}\" mudaria ({{changes}}). Nada foi gravado."
         },
         "show": {
+          "descriptionShort": "Mostra os detalhes de uma estratégia de backup",
           "description": "Mostrar os detalhes de uma estratégia de cópia de segurança",
           "notConfigured": "Nenhuma estratégia de cópia de segurança configurada",
           "notFound": "Estratégia de cópia de segurança \"{{name}}\" não encontrada"
         },
         "unbind": {
+          "descriptionShort": "Desvincula uma estratégia de backup de uma máquina",
           "description": "Desvincular uma estratégia de cópia de segurança de uma máquina",
           "notBound": "Estratégia de cópia de segurança \"{{strategy}}\" não está vinculada à máquina \"{{machine}}\"",
           "unbound": "Estratégia de cópia de segurança \"{{strategy}}\" desvinculada da máquina \"{{machine}}\""
@@ -303,6 +321,7 @@
       },
       "reconcile": {
         "checkSkipped": "As linhagens ignoradas não foram verificadas: {{lineages}}",
+        "descriptionShort": "Redefine o livro-razão de bytes armazenados de um repositório para o que o armazenamento realmente guarda (nunca exclui um chunk)",
         "description": "Redefine o registro de bytes armazenados de um repositório para o que o armazenamento realmente contém (nunca apaga um fragmento)",
         "argRepoRef": "Repositório a reconciliar (padrão: todos no escopo do token)",
         "optionDryRun": "Mostrar os números sem alterar o registro",
@@ -332,6 +351,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "Mostra a cota de armazenamento de backup, os bytes armazenados e o uso por repositório",
         "description": "Mostrar a quota de armazenamento de cópias de segurança, os bytes armazenados e o uso por repositório",
         "empty": "Ainda não foi registado uso de armazenamento de cópias de segurança por repositório.",
         "fetching": "A obter o uso do armazenamento de cópias de segurança...",
@@ -341,6 +361,7 @@
         "throttled": "O armazenamento em espera passa do limite de variação de {{cap}}: um fluxo de backup mais rápido que a cada hora é recusado até esvaziar."
       },
       "verify": {
+        "descriptionShort": "Verifica a âncora de backup de um repositório contra o chunk store",
         "completed": "Cópia de segurança verificada para {{name}}",
         "description": "Verificar a âncora de cópia de segurança de um repositório face ao armazenamento fragmentado",
         "failed": "Falha na verificação da cópia de segurança de {{name}}",
@@ -367,6 +388,7 @@
         "description": "Gerenciar os snapshots armazenados",
         "snapshotIdArgument": "Id do snapshot (veja rdc backup manifests)",
         "delete": {
+          "descriptionShort": "Exclui um snapshot armazenado; os dados exclusivos dele são liberados na próxima coleta de lixo",
           "description": "Apaga um snapshot armazenado. Os dados exclusivos dele são liberados na próxima coleta de lixo.",
           "notInRepo": "O snapshot {{snapshot}} não está no histórico armazenado de {{name}}. Para listar os ids: rdc backup manifests {{name}}",
           "success": "{{count}} snapshot(s) de {{name}} apagado(s), incluindo {{snapshot}}.",
@@ -440,6 +462,7 @@
         "confirmLineage": "Isto apaga todos os {{count}} snapshot(s) armazenados da linhagem {{name}} ({{bytes}}) e não pode ser desfeito. Digite o id da linhagem para confirmar:"
       },
       "check": {
+        "descriptionShort": "Prova que um snapshot armazenado abre com a senha, restaurando um arquivo",
         "description": "Comprova que um snapshot abre com a frase secreta restaurando um ficheiro",
         "needsCredential": "{{name}} não tem credencial nesta configuração, por isso a sua listagem não pode ser aberta.",
         "noIndex": "O snapshot {{snapshot}} de {{name}} não tem listagem armazenada e não pode ser verificado assim. Não está comprovado.",
@@ -449,6 +472,7 @@
       },
       "repair": {
         "affected": "Snapshots que contêm estes chunks: {{snapshots}}",
+        "descriptionShort": "Reenvia os chunks que o armazenamento perdeu ou guarda incorretos, a partir da âncora desta máquina",
         "description": "Reenviar a partir da âncora desta máquina os chunks perdidos ou errados",
         "dryRunDamage": "{{count}} chunk(s) danificado(s) encontrado(s); uma simulação não alterou nada.",
         "optionDryRun": "Indica o que seria apagado e reenviado; não altera nada"
@@ -456,6 +480,7 @@
       "tocKey": {
         "description": "Gerir a chave da listagem de navegação de um repositório",
         "sync": {
+          "descriptionShort": "Instala a chave de listagem do repositório na máquina dele, ou substitui uma diferente",
           "description": "Instalar a chave de listagem do repositório na sua máquina, ou substituir uma diferente",
           "optionDryRun": "Indica o que seria feito; não toca em nada",
           "optionReplace": "Substituir uma chave diferente já presente na máquina (envia a frase secreta como prova)"
@@ -492,11 +517,13 @@
       "immutability": {
         "description": "Mostrar ou definir a janela de exclusão adiada dos backups armazenados",
         "show": {
+          "descriptionShort": "Mostra a janela de exclusão adiada em vigor",
           "description": "Mostrar a janela de exclusão adiada em vigor",
           "window": "Exclusão adiada: uma exclusão, remoção total ou retenção menor espera {{days}} dia(s) e pode ser desfeita até lá.",
           "off": "A exclusão adiada está desativada: as exclusões têm efeito de imediato."
         },
         "set": {
+          "descriptionShort": "Define a janela de exclusão adiada em dias (0 a 30)",
           "description": "Definir a janela de exclusão adiada em dias (0 a 30)",
           "daysArgument": "Dias que uma exclusão espera antes de ter efeito (0 a 30)",
           "applied": "A janela de exclusão adiada agora é de {{days}} dia(s).",
@@ -506,6 +533,7 @@
         "pending": "A janela diminui para {{days}} dia(s) em {{when}} (UTC). Até lá continuam em vigor {{current}} dia(s)."
       },
       "undelete": {
+        "descriptionShort": "Cancela uma exclusão adiada de snapshot antes de ela entrar em vigor",
         "description": "Cancelar a exclusão adiada de um snapshot antes de ter efeito",
         "success": "O snapshot {{snapshot}} foi mantido: sua exclusão foi cancelada.",
         "notWaiting": "O snapshot {{snapshot}} não estava aguardando exclusão."
@@ -629,6 +657,7 @@
         "emptyRangeFlag": "{{flag}} requer pelo menos um CIDR, mas o valor está vazio",
         "keyNotFound": "Chave de acesso \"{{key}}\" não encontrada",
         "list": {
+          "descriptionShort": "Lista as chaves de acesso da configuração",
           "description": "Listar as chaves de acesso da configuração",
           "noKeys": "Nenhuma chave de acesso nesta configuração. Adicione uma com 'config access add'"
         },
@@ -646,6 +675,7 @@
           "success": "Intervalos de origem da configuração definidos: {{ranges}}"
         },
         "remove": {
+          "descriptionShort": "Remove uma chave de acesso da configuração",
           "description": "Remover uma chave de acesso da configuração",
           "pushHint": "As suas linhas permanecem em {{machines}} até 'machine access push' ser executado aí",
           "success": "Chave de acesso \"{{key}}\" removida"
@@ -654,15 +684,18 @@
       "audit": {
         "description": "Inspeccionar o registo de auditoria da configuração (JSONL com cadeia de hashes em ~/.config/rediacc/audit.log.jsonl)",
         "log": {
+          "descriptionShort": "Imprime as entradas de auditoria recentes em JSON",
           "description": "Imprimir entradas de auditoria recentes como JSON",
           "optionActor": "Filtrar por tipo de actor (human|agent)",
           "optionPath": "Filtrar por glob de Ponteiro JSON (por ex., /credentials/*)",
           "optionSince": "Mostrar apenas entradas mais recentes do que (por ex., '24h', '7d', carimbo de data/hora ISO)"
         },
         "tail": {
+          "descriptionShort": "Acompanha as novas entradas de auditoria conforme são gravadas (Ctrl+C para parar)",
           "description": "Transmitir novas entradas de auditoria à medida que são escritas (Ctrl+C para parar)"
         },
         "verify": {
+          "descriptionShort": "Verifica a integridade da cadeia de hashes SHA-256 em todas as entradas de auditoria",
           "chainBroken": "Cadeia interrompida na linha {{line}}: o ficheiro foi adulterado ou corrompido.",
           "chainOk": "Integridade da cadeia verificada em {{count}} entradas.",
           "description": "Verificar a integridade da cadeia de hashes SHA-256 em todas as entradas de auditoria"
@@ -688,20 +721,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "Limpa os padrões (todos ou uma chave específica)",
         "allCleared": "Todos os valores por omissão limpos",
         "description": "Limpar os valores por omissão (todos ou uma chave específica)",
         "keyCleared": "\"{{key}}\" limpo"
       },
       "current": {
+        "descriptionShort": "Mostra a configuração ativa: nome, arquivo, servidor e canal resolvidos, estado do token",
         "description": "Mostra a configuração ativa: nome, ficheiro, servidor e canal resolvidos, estado do token"
       },
       "delete": {
+        "descriptionShort": "Exclui um arquivo de configuração",
         "description": "Eliminar um ficheiro de configuração",
         "success": "Configuração \"{{name}}\" eliminada"
       },
       "description": "Gerir ficheiros de configuração: criar, mudar, editar, reconciliar o estado e funcionalidades transversais (campos, auditoria, chaves SSH, sincronização remota).",
       "descriptionShort": "Gerir ficheiros de configuração",
       "edit": {
+        "descriptionShort": "Abre a configuração ativa no $EDITOR como uma projeção JSONC com os segredos ocultos",
         "abortAfterRetries": "A abandonar após {{count}} tentativas falhadas. Rascunho preservado em: {{path}}",
         "applied": "{{path}} aplicado",
         "bannerRedacted": "Os campos sensíveis são apresentados como marcadores <redacted:TIPO>:RESUMO que são reproduzidos correctamente.",
@@ -727,23 +764,27 @@
         "description": "Operações em campos de configuração por ponteiro (get/set/unset/rotate/list). Ponteiros JSON (RFC 6901) como /credentials/cfDnsApiToken.",
         "descriptionShort": "Operações em campos de configuração por ponteiro",
         "get": {
+          "descriptionShort": "Lê um único valor da configuração por JSON Pointer",
           "description": "Ler um valor de configuração pelo Ponteiro JSON. Os campos sensíveis são ocultados salvo com --reveal (apenas para humanos).",
           "optionDigest": "Imprimir o resumo SHA-256 em vez do valor (seguro para partilhar com agentes)",
           "optionPointer": "Ponteiro JSON para o campo (por ex., /credentials/cfDnsApiToken)",
           "optionReveal": "Mostrar texto simples para valores sensíveis (apenas TTY interactivo; auditado)"
         },
         "list": {
+          "descriptionShort": "Lista cada modelo de ponteiro sensível registrado, com seu tipo e a política de commit/criptografia",
           "description": "Listar todos os modelos de ponteiro de sensibilidade registados com o seu tipo e política de confirmação/encriptação.",
           "optionOutput": "Formato de saída (json|table)",
           "optionSensitive": "Mostrar apenas modelos sensíveis (não públicos)"
         },
         "rotate": {
+          "descriptionShort": "Rotaciona um valor sensível sem --current",
           "description": "Rodar um valor sensível sem --current. Apenas TTY interactivo; auditado explicitamente.",
           "optionNew": "Novo valor",
           "optionPointer": "Ponteiro JSON para o campo sensível (por ex., /credentials/cfDnsApiToken)",
           "success": "{{pointer}} rodado"
         },
         "set": {
+          "descriptionShort": "Grava um valor da configuração em um JSON Pointer",
           "description": "Escrever um valor de configuração num Ponteiro JSON. Os caminhos sensíveis requerem --current (barreira de conhecimento).",
           "optionCurrent": "Valor actual em texto simples, obrigatório para mutações em caminhos sensíveis (prova de barreira de conhecimento)",
           "optionNew": "Novo valor (interpretado como JSON se parecer JSON: {, [, \", true/false/null/número)",
@@ -751,6 +792,7 @@
           "success": "{{pointer}} definido"
         },
         "unset": {
+          "descriptionShort": "Remove um valor da configuração em um JSON Pointer",
           "description": "Eliminar um valor de configuração num Ponteiro JSON. Os caminhos sensíveis requerem --current.",
           "optionCurrent": "Valor actual em texto simples, obrigatório para eliminações em caminhos sensíveis",
           "optionPointer": "Ponteiro JSON para o campo (por ex., /credentials/cfDnsApiToken)",
@@ -770,6 +812,7 @@
         }
       },
       "init": {
+        "descriptionShort": "Cria um novo arquivo de configuração nomeado",
         "alreadyExists": "A configuração \"{{name}}\" já existe",
         "bareForm": "A configuração predefinida é criada automaticamente; use 'config init <name>' para uma configuração com nome, ou passe uma flag (--ssh-key, --server, ...) para definir uma opção na predefinida.",
         "description": "Criar um novo ficheiro de configuração com nome",
@@ -783,6 +826,7 @@
         "success": "Configuração \"{{name}}\" inicializada"
       },
       "list": {
+        "descriptionShort": "Lista todos os arquivos de configuração",
         "description": "Listar todos os ficheiros de configuração",
         "noConfigs": "Nenhum ficheiro de configuração encontrado. Crie um com: rdc config init"
       },
@@ -825,6 +869,7 @@
         "droppedGoneMachineState": "{{count}} registro(s) de execução que apontam para uma máquina que não está mais na configuração {{verb}} removido(s):"
       },
       "reconcile": {
+        "descriptionShort": "Reconstrói o estado de execução a partir do estado real das máquinas",
         "acceptObservedUnfiltered": "--accept-observed não pode ser combinado com --machine: uma verificação parcial não consegue provar que uma colocação é inequívoca, pelo que a reescrita seria um palpite. Execute 'rdc config reconcile --accept-observed' sem filtro.",
         "description": "Reconstrói o estado em tempo de execução a partir do estado real das máquinas. Corrige dados de anexação e encaminhamento desatualizados.",
         "optionAcceptObserved": "Reescreve uma colocação declarada para corresponder ao local real da imagem, mas apenas quando isso é inequívoco (observada em exatamente uma máquina). As duplicações mantêm-se como conflitos.",
@@ -833,6 +878,7 @@
         "listFailed": "renet list all falhou (código de saída {{exitCode}})."
       },
       "recover": {
+        "descriptionShort": "Restaura a configuração a partir de um arquivo de backup (.bak)",
         "confirm": "Restaurar a configuração \"{{name}}\" a partir da cópia de segurança?",
         "description": "Restaurar a configuração a partir de um ficheiro de cópia de segurança (.bak)",
         "failed": "Falha ao restaurar a configuração \"{{name}}\" a partir da cópia de segurança",
@@ -844,6 +890,7 @@
         "preconditionFailed": "Configuração \"{{config}}\": o servidor recusou uma alteração que remove {{paths}}, porque este dispositivo não conseguiu provar que viu os valores guardados. Atualize com \"rdc config remote refresh\" e execute o comando de novo.",
         "description": "Gerir a ligação ao armazenamento de configuração remoto",
         "disable": {
+          "descriptionShort": "Desconecta do armazenamento remoto e salva a configuração localmente",
           "description": "Desligar do armazenamento remoto e guardar a configuração localmente",
           "optionLocal": "Desligar apenas neste dispositivo, a partir da cópia em cache, sem contactar o servidor",
           "notEnabled": "A configuração remota não está activada.",
@@ -867,6 +914,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: a chave do armazenamento de configuração deste dispositivo fica em {{path}} (modo 0600), protegida apenas pelas permissões do ficheiro."
         },
         "enable": {
+          "descriptionShort": "Vincula esta configuração ao armazenamento remoto criptografado",
           "alreadyEnabled": "A configuração \"{{name}}\" já está ligada ao armazenamento remoto e este dispositivo consegue abri-la, por isso não há nada a activar. Para a desligar, execute: rdc config remote disable",
           "description": "Ligar esta configuração ao armazenamento encriptado remoto",
           "expired": "O código de dispositivo expirou. Tente novamente.",
@@ -927,6 +975,7 @@
         "offlineNoCache": "O servidor de configuração {{server}} está inacessível e a configuração \"{{config}}\" ainda não tem cache offline. Execute \"rdc config remote refresh\" assim que o servidor estiver acessível para preencher a cache.",
         "passkeySecretMissing": "Este dispositivo já não tem a sua chave do armazenamento de configuração (em Linux, o porta-chaves do kernel é esvaziado a cada reinício). Volte a inscrever este dispositivo com: rdc config remote enable",
         "refresh": {
+          "descriptionShort": "Força uma nova busca da configuração no armazenamento remoto",
           "description": "Forçar a re-obtenção da configuração a partir do armazenamento remoto",
           "notEnabled": "A configuração remota não está activada.",
           "pulled": "Configuração obtida",
@@ -936,6 +985,7 @@
         },
         "staleSlot": "O seu key slot está desatualizado (a chave de encriptação da config foi rodada). Volte a inscrever-se com: rdc config remote enable",
         "status": {
+          "descriptionShort": "Mostra o estado da conexão remota",
           "description": "Mostrar o estado da ligação remota",
           "deviceKeyMissing": "Este dispositivo já não consegue abrir o armazenamento remoto desta configuração: a sua chave desapareceu (um reinício pode esvaziar o armazém de chaves). Volte a registar este dispositivo com: rdc config remote enable",
           "deviceCannotOpen": "Este dispositivo não consegue abrir o armazenamento remoto desta configuração: o seu registo foi rejeitado, por exemplo depois de a chave ser rodada. Volte a registar este dispositivo com: rdc config remote enable"
@@ -971,6 +1021,7 @@
         },
         "pushVisibility": "configuração {{config}}: v{{from}} → v{{to}} enviada por \"{{command}}\": {{changes}}",
         "versions": {
+          "descriptionShort": "Lista as versões anteriores desta configuração guardadas no servidor",
           "description": "Listar as versões anteriores desta configuração guardadas no servidor",
           "optionExplain": "Mostrar os ponteiros JSON que cada versão alterou, a partir das versões guardadas no servidor",
           "explainUnreadable": "(ilegível: {{reason}})",
@@ -978,6 +1029,7 @@
           "empty": "O servidor não guarda versões anteriores da configuração \"{{config}}\"."
         },
         "restore": {
+          "descriptionShort": "Publica uma versão anterior desta configuração como a mais recente",
           "description": "Publicar uma versão anterior desta configuração como a sua versão mais recente",
           "argVersion": "Versão a restaurar (ver rdc config remote versions)",
           "confirm": "Publicar o conteúdo da versão {{version}} da configuração \"{{config}}\" como nova versão sobre a versão {{current}}? Cada dispositivo recebe-o na próxima transferência.",
@@ -990,6 +1042,7 @@
         "localEditsUnverifiable": "Configuração \"{{config}}\": o arquivo local difere da versão {{server}} do servidor ({{changes}}) e não foi possível ler a versão {{cached}} de onde veio ({{reason}}), então uma alteração local não pode ser distinguida de uma do servidor. Nada foi sobrescrito. Guarde as alterações à parte, execute \"rdc config remote refresh\" para obter a versão {{server}} (substitui o arquivo local) e aplique-as de novo."
       },
       "rotateCek": {
+        "descriptionShort": "Rotaciona a chave de criptografia de configuração da organização",
         "cancelled": "Rotação cancelada. Nada foi alterado.",
         "confirm": "Rodar agora a chave de encriptação da configuração?",
         "waiting": "A aguardar que a rotação termine no browser (prima Ctrl+C para parar)...",
@@ -1006,10 +1059,12 @@
         "warning": "Isto roda a chave com que está encriptada toda a configuração da organização. Todos os outros dispositivos terão de voltar a ligar-se depois."
       },
       "set": {
+        "descriptionShort": "Define um valor padrão (equipe, região, bridge)",
         "description": "Definir um valor por omissão (equipa, região, bridge)",
         "success": "\"{{key}}\" definido para \"{{value}}\""
       },
       "show": {
+        "descriptionShort": "Mostra os detalhes da configuração atual",
         "description": "Mostrar os detalhes da configuração actual",
         "noConfig": "Nenhuma configuração activa. Crie uma com: rdc config init",
         "optionReveal": "Mostrar texto simples para valores sensíveis (apenas em modo interactivo)"
@@ -1017,11 +1072,13 @@
       "ssh": {
         "description": "Gerir a configuração de chaves SSH",
         "remove": {
+          "descriptionShort": "Remove a chave SSH da configuração atual",
           "description": "Remover a chave SSH da configuração actual",
           "noKey": "Nenhuma chave SSH configurada",
           "success": "Chave SSH removida"
         },
         "set": {
+          "descriptionShort": "Define a chave SSH da configuração atual",
           "description": "Definir a chave SSH para a configuração actual",
           "invalidKey": "O ficheiro não contém uma chave privada SSH válida",
           "keyNotFound": "Ficheiro de chave SSH não encontrado: {{path}}",
@@ -1030,6 +1087,7 @@
           "success": "Chave SSH configurada"
         },
         "show": {
+          "descriptionShort": "Mostra a configuração atual da chave SSH",
           "description": "Mostrar a configuração actual de chave SSH",
           "noKey": "Nenhuma chave SSH configurada"
         }
@@ -1225,6 +1283,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "Cancela um job desacoplado em execução",
         "alreadyFinished": "O job {{jobId}} já está {{state}}; nada a cancelar.",
         "confirm": "Cancelar o job {{jobId}} ({{function}}) em {{machine}}? A operação será interrompida.",
         "description": "Cancela um job desanexado em execução",
@@ -1239,6 +1298,7 @@
         "succeeded": "O job {{jobId}} foi concluído com sucesso."
       },
       "gc": {
+        "descriptionShort": "Remove os jobs concluídos e seus logs",
         "confirm": "Remover jobs em {{machine}} finalizados há mais de {{hours}}h? Os logs deles serão excluídos.",
         "description": "Remove jobs finalizados e seus logs",
         "invalidOlderThan": "--older-than deve ser um número de horas, por exemplo 168 ou 168h (recebido \"{{value}}\")",
@@ -1247,6 +1307,7 @@
       },
       "idOption": "ID do job",
       "list": {
+        "descriptionShort": "Lista os jobs desacoplados de uma máquina, do mais recente ao mais antigo",
         "description": "Lista os jobs desanexados em uma máquina, do mais recente ao mais antigo",
         "empty": "Nenhum job em {{machine}}.",
         "examples": {
@@ -1257,6 +1318,7 @@
         "allOption": "Incluir os tickets expirados e descartados"
       },
       "logs": {
+        "descriptionShort": "Reproduz ou acompanha o log de eventos de um job desacoplado",
         "description": "Reproduz ou acompanha o log de eventos de um job desanexado",
         "detached": "Desconectado do job {{jobId}}. Ele ainda está em execução em {{machine}} e NÃO foi cancelado. Reconecte-se com: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1269,6 +1331,7 @@
       },
       "machineOption": "Nome da máquina de destino",
       "status": {
+        "descriptionShort": "Mostra o estado de um job desacoplado",
         "description": "Mostra o status de um job desanexado",
         "examples": {
           "basic": "Mostra o estado de um job."
@@ -1279,6 +1342,7 @@
       "machineRequired": "Não há ticket do job {{jobId}} nesta configuração. Indique com -m <machine> onde ele é executado.",
       "ticketMachineOption": "Nome da máquina de destino (opcional quando esta configuração guarda um ticket do job)",
       "wait": {
+        "descriptionShort": "Retoma o acompanhamento de um job a partir do ticket, depois o confirma e sai com o código de saída do job",
         "description": "Retomar o acompanhamento de um job a partir do seu ticket, confirmá-lo e sair com o código de saída do job",
         "timeoutOption": "Parar de esperar após esse tempo (30s, 5m, 2h; um número sozinho são segundos). O job continua em execução.",
         "invalidTimeout": "--timeout deve ser uma duração como 30s, 5m ou 2h (recebido \"{{value}}\")",
@@ -1332,6 +1396,7 @@
         "success": "Máquina \"{{name}}\" adicionada ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "Destrói uma máquina provisionada na nuvem e a remove da configuração",
         "completed": "Máquina {{name}} destruída e removida da configuração",
         "confirm": "Isto vai destruir permanentemente a máquina \"{{name}}\" e todos os seus dados. Continuar?",
         "deactivateFailed": "Não foi possível liberar a vaga de ativação da conta para {{name}}: {{reason}}. A vaga é liberada sozinha 5 horas após a última atividade.",
@@ -1350,6 +1415,7 @@
       "description": "Inspecionar o estado de máquinas remotas: recursos do sistema, contentores em execução, serviços systemd, repositórios implementados e diagnósticos de saúde. Consultas de leitura apenas; para modificar repositórios use `repo`. Subcomandos principais: status (estado completo, restringido com --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Gerir máquinas remotas (estado, saúde, listar, adicionar, remover, configurar, limpar)",
       "health": {
+        "descriptionShort": "Verifica a saúde da máquina para pipelines de CI/CD",
         "containersSection": "\nContentores:",
         "containersSummary": "  {{running}}/{{total}} em execução ({{healthy}} saudáveis, {{unhealthy}} não saudáveis)",
         "description": "Verificar saúde da máquina para pipelines de CI/CD",
@@ -1416,19 +1482,23 @@
         "cert": {
           "clear": {
             "cleared": "Cache de certificados limpa",
+            "descriptionShort": "Remove o cache de certificados",
             "description": "Remover a cache de certificados",
             "noCache": "Nenhuma cache de certificados para limpar"
           },
           "description": "Gerir certificados TLS em cache",
           "pull": {
+            "descriptionShort": "Baixa e armazena em cache os certificados TLS de uma máquina",
             "description": "Descarregar e colocar em cache os certificados TLS de uma máquina",
             "optionNoPrune": "Não remover certificados de ID de rede obsoletos"
           },
           "push": {
+            "descriptionShort": "Envia os certificados TLS em cache para uma máquina",
             "description": "Carregar certificados TLS em cache para uma máquina"
           },
           "status": {
             "certCount": "{{count}} certificado(s), {{size}} comprimido(s)",
+            "descriptionShort": "Mostra o inventário de certificados em cache",
             "description": "Mostrar o inventário de certificados em cache",
             "header": "Cache de certificados para {{baseDomain}}",
             "noCache": "Nenhuma cache de certificados armazenada",
@@ -1455,11 +1525,13 @@
           "success": "Configuração de infraestrutura actualizada para \"{{name}}\""
         },
         "show": {
+          "descriptionShort": "Mostra a configuração de infraestrutura de uma máquina",
           "description": "Mostrar a configuração de infraestrutura de uma máquina",
           "noInfra": "Nenhuma configuração de infraestrutura definida para \"{{name}}\""
         }
       },
       "list": {
+        "descriptionShort": "Lista as máquinas",
         "description": "Listar máquinas",
         "examples": {
           "basic": "Lista todas as máquinas registadas.",
@@ -1469,6 +1541,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "Adiciona um provedor de nuvem",
           "description": "Adicionar um fornecedor de cloud",
           "optionImage": "Imagem do sistema operativo por omissão",
           "optionImageAttr": "Personalizado: nome do atributo para a imagem do sistema operativo",
@@ -1492,15 +1565,18 @@
         },
         "description": "Gerir fornecedores de cloud para aprovisionamento automático de máquinas",
         "list": {
+          "descriptionShort": "Lista os provedores de nuvem configurados",
           "description": "Listar os fornecedores de cloud configurados",
           "noProviders": "Nenhum fornecedor de cloud configurado. Adicione com: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "Remove a configuração de um provedor de nuvem",
           "description": "Remover uma configuração de fornecedor de cloud",
           "success": "Fornecedor de cloud \"{{name}}\" removido"
         }
       },
       "provision": {
+        "descriptionShort": "Provisiona uma nova máquina em um provedor de nuvem usando OpenTofu",
         "completed": "Máquina {{name}} provisionada e pronta ({{ip}})",
         "configuringInfra": "A configurar infraestrutura (proxy + DNS) para {{name}}...",
         "description": "Provisionar uma nova máquina num fornecedor de cloud com OpenTofu",
@@ -1578,6 +1654,7 @@
         "clusterMember": "Não é possível remover a máquina \"{{name}}\": ela é membro do cluster \"{{cluster}}\".",
         "clusterMemberNext": "Retire primeiro o nó do seu cluster.",
         "confirm": "Remover a máquina \"{{name}}\" da configuração?",
+        "descriptionShort": "Remove uma máquina da configuração",
         "description": "Remover uma máquina da configuração actual",
         "forceDangling": "Máquina \"{{name}}\" removida com {{count}} localização(ões) de repositório ainda nela: {{repos}}. Essas localizações estão agora pendentes. Redirecione-as com \"rdc repo migrate\" ou elimine-as com \"rdc repo delete\".",
         "forceOption": "Remover a máquina mesmo que existam repositórios colocados nela ou estratégias de cópia de segurança associadas a ela, deixando essas referências pendentes.",
@@ -1609,6 +1686,7 @@
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} máquinas analisadas",
+        "descriptionShort": "Verifica as chaves de host SSH das máquinas da configuração atual",
         "description": "Analisar as chaves de anfitrião SSH das máquinas na configuração actual",
         "keysScanned": "Chaves de anfitrião analisadas para \"{{name}}\"",
         "noKeys": "Não foi possível analisar as chaves de anfitrião para \"{{name}}\"",
@@ -1693,6 +1771,7 @@
           "unchanged": "As chaves de acesso em \"{{name}}\" já estão atualizadas ({{path}})"
         },
         "remove": {
+          "descriptionShort": "Desvincula uma chave de acesso de uma máquina",
           "description": "Desassociar uma chave de acesso de uma máquina. O próximo 'machine access push' remove a sua linha",
           "success": "Chave de acesso \"{{key}}\" desassociada de \"{{name}}\". Remova a sua linha com 'machine access push {{name}}'"
         },
@@ -1704,6 +1783,7 @@
           "success": "Chave de acesso \"{{key}}\" associada a \"{{name}}\". Aplique-a com 'machine access push {{name}}'"
         },
         "show": {
+          "descriptionShort": "Mostra as chaves de acesso vinculadas a uma máquina e os intervalos que cada uma resolve nela",
           "description": "Mostrar as chaves de acesso associadas a uma máquina e os intervalos que cada uma tem aí",
           "noKeys": "Nenhuma chave de acesso associada a \"{{name}}\"",
           "path": "authorized_keys do utilizador {{user}} em \"{{name}}\" (~/.ssh/authorized_keys)"
@@ -1714,6 +1794,7 @@
       "description": "Expõe o CLI como servidor Model Context Protocol (MCP) para integração com agentes de IA. O servidor envolve comandos do CLI como ferramentas MCP com entrada/saída JSON estruturada. Subcomando principal: serve (inicia o servidor MCP baseado em stdio).",
       "descriptionShort": "Servidor Model Context Protocol para agentes de IA",
       "serve": {
+        "descriptionShort": "Inicia o servidor MCP (transporte stdio)",
         "configOption": "Nome da configuração a usar em todos os comandos",
         "description": "Iniciar o servidor MCP (transporte stdio)",
         "timeoutOption": "Tempo limite predefinido dos comandos em milissegundos"
@@ -1721,6 +1802,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "Verifica os pré-requisitos de virtualização",
         "allPassed": "Todos os pré-requisitos satisfeitos",
         "description": "Verificar pré-requisitos de virtualização",
         "hasMissing": "{{count}} pré-requisito(s) em falta",
@@ -1730,12 +1812,14 @@
       "description": "Provisionamento e gestão de VMs locais com KVM/QEMU/Hyper-V (plataforma detetada automaticamente). Não se destina a máquinas remotas. Use `machine` para esse efeito. Subcomandos principais: up (iniciar VMs), down (parar), status (listar VMs em execução), ssh (ligar a VM), setup (instalar pré-requisitos), check (verificar disponibilidade do anfitrião).",
       "descriptionShort": "Operações locais de VM (provisionar, gerir, destruir)",
       "down": {
+        "descriptionShort": "Destrói o cluster de VMs",
         "completed": "Cluster de VMs destruído com sucesso",
         "description": "Destruir cluster de VMs",
         "failed": "Falha na destruição do cluster de VMs",
         "starting": "A destruir cluster de VMs..."
       },
       "setup": {
+        "descriptionShort": "Instala os pré-requisitos de virtualização",
         "brewFailed": "Falha na instalação do Homebrew",
         "completed": "Pré-requisitos instalados com sucesso",
         "description": "Instalar pré-requisitos de virtualização",
@@ -1746,15 +1830,18 @@
         "windows": "A configurar pré-requisitos Hyper-V..."
       },
       "ssh": {
+        "descriptionShort": "Conecta a uma VM por SSH",
         "connecting": "A ligar à VM {{id}}...",
         "description": "Acesso SSH a uma VM",
         "vmNotFound": "VM com ID {{id}} não encontrada ou não está em execução"
       },
       "status": {
+        "descriptionShort": "Mostra o estado do cluster de VMs",
         "description": "Mostrar estado do cluster de VMs",
         "noVMs": "Nenhuma VM encontrada"
       },
       "up": {
+        "descriptionShort": "Provisiona o cluster de VMs localmente",
         "completed": "Cluster de VMs provisionado com sucesso",
         "description": "Provisionar cluster de VMs localmente",
         "failed": "Falha no provisionamento do cluster de VMs",
@@ -1816,16 +1903,19 @@
         "archive": {
           "description": "Gestão de registos de repositórios arquivados.",
           "list": {
+            "descriptionShort": "Lista os registros de repositórios arquivados",
             "description": "Listar as credenciais de repositórios arquivados",
             "noArchived": "Nenhum repositório arquivado"
           },
           "purge": {
             "confirm": "Purgar todos os registos arquivados expirados?",
+            "descriptionShort": "Exclui permanentemente os registros arquivados",
             "description": "Eliminar permanentemente todas as credenciais arquivadas",
             "noArchived": "Nenhum repositório arquivado para eliminar",
             "success": "{{count}} credencial(ais) arquivada(s) eliminada(s)"
           },
           "restore": {
+            "descriptionShort": "Restaura um registro arquivado na configuração",
             "description": "Restaurar uma credencial de repositório arquivado",
             "success": "\"{{name}}\" restaurado ({{guid}})"
           }
@@ -1833,6 +1923,7 @@
         "orphan": {
           "description": "Imagens de repositório em uma máquina que nenhuma configuração menciona.",
           "list": {
+            "descriptionShort": "Lista as imagens de repositório de uma máquina e indica se cada uma é órfã, sem nenhuma configuração que a cite",
             "description": "Mostra as imagens de repositório de uma máquina e indica se cada uma está órfã, ou seja, se nenhuma configuração a menciona.",
             "none": "Nenhuma imagem de repositório em {{machine}}"
           },
@@ -1854,6 +1945,7 @@
         "autostart": {
           "description": "Gerir o arranque automático do repositório no arranque do sistema",
           "disable": {
+            "descriptionShort": "Desativa a inicialização automática de um repositório (sem nome, desativa todos)",
             "completed": "Arranque automático desactivado",
             "completedAll": "Arranque automático desactivado para todos os repositórios",
             "description": "Desactivar o arranque automático de um repositório (omita o nome para desactivar todos)",
@@ -1863,6 +1955,7 @@
             "startingAll": "A desactivar o arranque automático de todos os repositórios em \"{{machine}}\"..."
           },
           "enable": {
+            "descriptionShort": "Ativa a inicialização automática de um repositório (sem nome, ativa todos)",
             "completed": "Arranque automático activado",
             "completedAll": "Arranque automático activado para todos os repositórios",
             "description": "Activar o arranque automático de um repositório (omita o nome para activar todos)",
@@ -1872,6 +1965,7 @@
             "startingAll": "A activar o arranque automático de todos os repositórios em \"{{machine}}\"..."
           },
           "list": {
+            "descriptionShort": "Lista os repositórios com inicialização automática ativada",
             "description": "Listar os repositórios com arranque automático activado",
             "empty": "Nenhum repositório com arranque automático ativado em \"{{machine}}\"",
             "failed": "Falha ao listar os repositórios com arranque automático",
@@ -1968,6 +2062,7 @@
         "weightOption": "Percentagem de tráfego encaminhado para o canary (inteiro 0-100; 0 = oculto, 100 = troca total)"
       },
       "cat": {
+        "descriptionShort": "Lê uma janela limitada de um arquivo de um repositório para a saída padrão (diagnósticos vão para o stderr)",
         "description": "Ler uma janela delimitada de um ficheiro dentro de um repositório e escrevê-la para stdout (delimitado no servidor; os diagnósticos vão para stderr)",
         "examples": {
           "basic": "Imprime um ficheiro de dentro de um repositório."
@@ -2000,6 +2095,7 @@
         "messageOption": "Mensagem do commit"
       },
       "create": {
+        "descriptionShort": "Cria um novo repositório",
         "alreadyExists": "O repositório \"{{name}}\" já existe na configuração",
         "completed": "Repositório criado",
         "datastoreNotAttached": "o datastore \"{{datastore}}\" não está anexado a nenhuma máquina. Anexe-o: rdc datastore attach {{datastore}} --to <machine>. Se já estiver anexado mas a configuração não o souber, execute rdc config reconcile.",
@@ -2148,6 +2244,7 @@
         "nothing": "Nada a coletar em {{machine}}: todos os commits são alcançáveis"
       },
       "list": {
+        "descriptionShort": "Lista os repositórios de uma máquina",
         "completed": "Listagem concluída",
         "datastoreOption": "Listar os repositórios deste datastore (resolvido para a máquina que atualmente o possui)",
         "description": "Listar os repositórios numa máquina",
@@ -2428,12 +2525,14 @@
         "valueOption": "Valor do segredo. Passe `-` para ler a partir de stdin (evita exposição no histórico da shell)."
       },
       "status": {
+        "descriptionShort": "Obtém o estado do repositório (montagem, daemon do Docker em execução, número de contêineres, uso de disco)",
         "completed": "Estado obtido",
         "description": "Obter o estado do repositório (estado de montagem, daemon Docker em execução, número de contentores, utilização do disco)",
         "failed": "Falha na verificação do estado",
         "starting": "A obter o estado de \"{{repository}}\" em \"{{machine}}\"..."
       },
       "health": {
+        "descriptionShort": "Executa as verificações health() do Rediaccfile do repositório e termina com 0 (ok), 1 (aviso) ou 2 (erro)",
         "description": "Executa as verificações health() dos Rediaccfile do repositório e sai com 0 (ok), 1 (aviso) ou 2 (erro)",
         "header": "\nSaúde de {{repository}}:",
         "levelOk": "✓ Saudável",
@@ -2660,6 +2759,7 @@
         "helpOffline": "Ambiente isolado: crie o bundle com internet usando rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifica o bundle, carrega a imagem do proxy, configura a máquina offline e não chama nada externo. A instalação para na etapa da licença e grava uma solicitação: emita um certificado online (rdc server licence mint) e execute de novo com --cert."
       },
       "status": {
+        "descriptionShort": "Mostra a saúde, o nível, o certificado e a imagem de um servidor instalado",
         "description": "Mostrar a saúde, o plano, o certificado e a imagem de um servidor instalado",
         "certRefused": "RECUSADO ({{reason}}) em {{at}}",
         "certRefusedRun": "execute: rdc server licence {{domain}}",
@@ -2667,6 +2767,7 @@
         "certExpiring": "O certificado de licença expira em {{days}} dias; renove-o (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "Imprime o pacote de recuperação (as chaves) de um servidor instalado, ou grava em um arquivo",
         "description": "Exibir o pacote de recuperação (as chaves) de um servidor instalado, ou gravá-lo em um arquivo",
         "optionOut": "Gravar o pacote neste arquivo (modo 0600) em vez de stdout",
         "written": "Pacote de recuperação gravado em {{file}} (modo 0600)",
@@ -2690,6 +2791,7 @@
         "templateNoBaseline": "Esta máquina não registrou checksums do template, então edições locais não podem ser detectadas; aplicando o template mais novo"
       },
       "licence": {
+        "descriptionShort": "Muda um servidor do nível gratuito para um certificado de delegação da conta conectada, ou de --cert",
         "description": "Migrar um servidor do plano gratuito para um certificado de delegação da conta conectada, ou de --cert",
         "done": "{{domain}} está licenciado na assinatura {{subscription}}",
         "certUnreadable": "Não foi possível ler o arquivo de certificado {{file}}",
@@ -2711,6 +2813,7 @@
         "noUpstreamKey": "O servidor não tem UPSTREAM_PUBLIC_KEY, por isso não consegue verificar nenhum certificado e um novo não ajuda. Defina UPSTREAM_PUBLIC_KEY nos segredos de {{domain}} e execute `rdc server upgrade {{domain}}`.",
         "bootRefusalStays": "O certificado foi aplicado, mas o servidor ainda relata uma recusa na inicialização ({{reason}}); verifique os logs do servidor",
         "mint": {
+          "descriptionShort": "Emite um certificado de licença para o pedido de uma máquina offline (executar online, com login)",
           "description": "Emitir um certificado de licença para a solicitação de uma máquina offline (execute online, com login feito)",
           "done": "Certificado gravado em {{file}} (válido até {{until}}); leve-o à máquina e instale com --cert",
           "optionOut": "Arquivo onde gravar o certificado",
@@ -2889,6 +2992,7 @@
       "description": "Gerir licenciamento e tokens de subscrição. Inicie sessão com login, inspecione com status, reemita licenças com refresh.",
       "descriptionShort": "Gerir licenciamento e subscrição de máquinas",
       "login": {
+        "descriptionShort": "Autentica pelo navegador ou com um token de API",
         "backupNeedsTwoFactor": "Sessão iniciada sem a gestão do armazenamento de backups. Ative a autenticação de dois fatores nas Configurações, em {{url}}, e entre novamente.",
         "channelSynced": "Canal de atualização definido para {{channel}}.",
         "description": "Autenticar via browser ou token de API",
@@ -2923,20 +3027,24 @@
         "waitingApproval": "À espera de autorização pelo browser..."
       },
       "register": {
+        "descriptionShort": "Cria uma conta no navegador (e-mail já preenchido) e faz login",
         "description": "Criar uma conta no navegador (e-mail preenchido) e entrar",
         "optionEmail": "Endereço de e-mail a preencher na página de cadastro",
         "invalidEmail": "Informe um endereço de e-mail válido."
       },
       "logout": {
+        "descriptionShort": "Apaga o token de assinatura armazenado",
         "description": "Apagar token de subscrição armazenado",
         "success": "Token de subscrição removido"
       },
       "proxyToken": {
+        "descriptionShort": "Emite um token proxy:exec de curta duração a partir do login deste dispositivo, para usar com --proxy",
         "description": "Emitir um token proxy:exec de curta duração a partir do login deste dispositivo, para usar com --proxy",
         "jsonOption": "Imprimir JSON com o token e o respectivo expiresAt",
         "noToken": "O servidor de contas não retornou nenhum token de proxy."
       },
       "refresh": {
+        "descriptionShort": "Atualiza as licenças a partir do servidor de contas",
         "account": {
           "failed": "Não foi possível ler o estado da conta a partir do servidor de conta.",
           "refreshed": "Estado da conta atualizado",
@@ -2984,6 +3092,7 @@
         }
       },
       "status": {
+        "descriptionShort": "Mostra a assinatura e o estado da licença de uma máquina",
         "description": "Mostrar a subscrição e o estado de licença de uma máquina.",
         "issuanceLimitReached": "Limite mensal de emissões de licenças de repositório atingido para o mês civil UTC atual.",
         "issuanceUsageHigh80": "As emissões mensais de licenças de repositório estão acima de 80% do limite UTC atual.",
@@ -3034,6 +3143,7 @@
         "needsYes": "Retirar uma licença exige confirmação, e o stdin não é um terminal. Passe --yes para confirmar.",
         "confirm": "Retirar a licença de {{name}} ({{guid}}, {{state}})? Renovar não a traz de volta.",
         "success": "Licença retirada: {{name}}",
+        "descriptionShort": "Aposenta a licença de um repositório que não existe mais, para que saia das contagens de licenças e dos avisos",
         "description": "Retira a licença de um repositório que já não existe, para que saia das contagens de licenças e dos avisos.",
         "argGuid": "GUID do repositório, ou pelo menos 8 caracteres de uma licença do relatório da conta",
         "optionForce": "Retira uma licença cujo repositório ainda está nesta configuração e não expirou de vez",
@@ -3051,6 +3161,7 @@
         "optionExpired": "Retira todas as licenças expiradas de vez de repositórios excluídos ou que não estão nesta configuração"
       },
       "notices": {
+        "descriptionShort": "Lista os avisos da conta: vencimento de licença, saúde dos backups, renovações, certificados e Termos",
         "description": "Lista os avisos da conta: validade das licenças, estado dos backups, renovações, certificados e termos.",
         "optionAll": "Inclui avisos dispensados e todas as páginas, não só os últimos 30 dias",
         "optionUnread": "Só os avisos ainda não lidos",
@@ -3103,6 +3214,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "Abre um shell em uma máquina, ou dentro de um repositório com o Docker dele configurado",
         "description": "Abrir uma shell numa máquina, ou dentro de um repositório com o seu Docker configurado.",
         "examples": {
           "machine": "Abre um terminal SSH para uma máquina.",
@@ -3158,6 +3270,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "Verifica a instalação e a configuração do VS Code",
         "activeConnections": "Ligações ativas: {{count}}",
         "configuration": "\nConfiguração:",
         "configured": "  Configurado: {{status}}",
@@ -3178,12 +3291,14 @@
         "yes": "Sim"
       },
       "cleanup": {
+        "descriptionShort": "Remove as configurações SSH do VS Code",
         "cleaned": "Removido: {{connection}}",
         "cleanedAll": "{{count}} ligação(ões) SSH do VS Code removida(s).",
         "description": "Remover configurações SSH do VS Code",
         "removedKeys": "Todas as chaves SSH persistidas removidas."
       },
       "connect": {
+        "descriptionShort": "Abre o VS Code em uma máquina ou dentro de um repositório",
         "browserUrl": "Abra o VS Code no seu browser: {{url}}",
         "configuringSSH": "A configurar SSH...",
         "configuringVSCode": "A configurar definições do VS Code...",
@@ -3212,6 +3327,7 @@
       "description": "Abrir o VS Code com Remote SSH para uma máquina ou repositório com ambiente isolado por repositório. Mesma ligação SSH que `term` mas inicia o VS Code em vez do terminal. Subcomandos principais: connect (ou atalho posicional), list (mostrar ligações configuradas), cleanup (remover entradas de configuração SSH), check (verificar instalação do VS Code).",
       "descriptionShort": "Abrir VS Code Remote SSH para uma máquina ou repositório",
       "list": {
+        "descriptionShort": "Lista as conexões SSH do VS Code configuradas",
         "configFile": "\nFicheiro de configuração: {{path}}",
         "description": "Listar ligações SSH do VS Code configuradas",
         "header": "Ligações SSH do VS Code configuradas:\n",
@@ -3222,11 +3338,13 @@
       "serve": {
         "description": "Gerir o servidor VS Code para browser dentro da sandbox",
         "status": {
+          "descriptionShort": "Mostra se o servidor do VS Code no navegador está em execução",
           "description": "Mostrar se o servidor VS Code para browser está em execução",
           "running": "{{provider}} em execução (pid {{pid}}, porta {{port}})",
           "stopped": "{{provider}} não está em execução"
         },
         "stop": {
+          "descriptionShort": "Para o servidor do VS Code no navegador",
           "description": "Parar o servidor VS Code para browser",
           "notRunning": "{{provider}} não estava em execução",
           "stopped": "{{provider}} parado"
@@ -3287,6 +3405,35 @@
       "notAccepted": "Aceito: não aceito",
       "terms": "Termos de Serviço: versão {{version}}, em vigor desde {{effective}}",
       "upcoming": "A próxima versão {{version}} entra em vigor em {{effective}}"
+    },
+    "proxyBlocked": {
+      "backupCheck": "lê uma listagem e restaura um arquivo com a credencial do repositório, que fica onde a configuração está",
+      "backupChurn": "é um laço de sondagens no lado do cliente que pode durar horas e precisa esquecer sua base ao terminar",
+      "backupDownload": "Copia a imagem do repositório para um diretório local com um rsync no lado do cliente; um executor remoto gravaria a imagem no próprio disco. Execute sem --proxy.",
+      "localTooling": "Ferramenta local que nunca alcança uma máquina, então não há nada para encaminhar pelo proxy. Execute sem --proxy.",
+      "backupRepair": "Exclui chunks ruins na conta com o token backup:manage de quem chama e depois reenvia a partir da máquina; um executor remoto não tem nem o token nem a configuração de quem chama. Execute sem --proxy.",
+      "localConfig": "Roda inteiramente sobre a configuração local e nunca alcança uma máquina, então não há nada para encaminhar pelo proxy. Execute sem --proxy.",
+      "backupTocKeySync": "deriva a chave pública da credencial do repositório, que fica onde a configuração está",
+      "backupUpload": "Envia um arquivo de imagem local com um rsync no lado do cliente e registra o repositório na configuração local; um executor remoto não enxerga o arquivo. Execute sem --proxy.",
+      "clusterKubeconfig": "Guarda o kubeconfig em cache em um arquivo local 0600 e imprime esse caminho; um executor remoto gravaria o arquivo no próprio disco. Execute sem --proxy.",
+      "interactive": "Precisa de um terminal ou nunca termina sozinho (shell interativo, editor, túnel, stream ou daemon), então um executor sem interface não consegue executá-lo. Execute sem --proxy.",
+      "configReconcile": "Consulta todas as máquinas, mas grava o resultado no bucket de estado local de QUEM CHAMA; um executor remoto reconstruiria o próprio estado e quem chama não saberia de nada. Execute sem --proxy.",
+      "machineAccessPush": "Reescreve quem pode entrar na máquina a partir das chaves de acesso de QUEM CHAMA; um executor nunca reescreve o acesso com que se conecta e enviaria as chaves da própria configuração. Execute sem --proxy.",
+      "machineConverge": "Reinicia o daemon de cada repositório com os segredos de ambiente da configuração de QUEM CHAMA; um executor remoto os reiniciaria com a própria cópia, ou com nenhuma. Execute sem --proxy.",
+      "machineInfraCertPull": "Seu efeito é gravar o acme.json da máquina na configuração local de quem chama; um executor remoto o gravaria na própria. Execute sem --proxy.",
+      "machinePrune": "Com --orphaned-repos ou --prune-unknown, avalia cada imagem contra todas as configurações que QUEM CHAMA consegue ler; um executor remoto avaliaria contra as próprias e excluiria os repositórios de quem chama. Execute sem --proxy.",
+      "machineScanKeys": "Executa o ssh-keyscan a partir da posição de rede de quem chama e grava o knownHosts na configuração local de quem chama; um executor remoto faria a varredura da própria posição e ficaria com o resultado. Execute sem --proxy.",
+      "repoAdminOrphanDelete": "Recusa um GUID que ainda conste em qualquer configuração que QUEM CHAMA consiga ler; um executor remoto verificaria as próprias configurações e poderia excluir uma imagem que a configuração de quem chama cita. Execute sem --proxy.",
+      "repoAdminOrphanList": "Avalia cada imagem contra todas as configurações que QUEM CHAMA consegue ler; um executor remoto avaliaria contra as próprias e relataria os repositórios de quem chama como órfãos. Execute sem --proxy.",
+      "repoSyncDownload": "Baixa para o sistema de arquivos local com rsync/SFTP; um executor remoto gravaria os arquivos no próprio disco. Execute sem --proxy.",
+      "repoSyncStatus": "Compara a máquina com o sistema de arquivos local usando um rsync no lado do cliente; um executor remoto não tem cópia da árvore local. Execute sem --proxy.",
+      "repoSyncUpload": "Envia a partir do sistema de arquivos local com rsync/SFTP; um executor remoto não enxerga os caminhos de origem. Execute sem --proxy.",
+      "serverBackup": "Grava o pacote de recuperação (as chaves do servidor) no terminal ou no arquivo de quem chama; por um executor, as chaves passariam por outra máquina. Execute sem --proxy.",
+      "serverBundle": "Executa o docker local de quem chama (pull e save) e grava o pacote no disco de quem chama; um executor remoto o gravaria no próprio. Execute sem --proxy.",
+      "serverLicence": "Emite o certificado com o login de quem chama e o registra no registro de instalação local de quem chama; um executor remoto não tem nenhum dos dois. Execute sem --proxy.",
+      "serverLicenceMint": "Emite o certificado com o login de quem chama e o grava no arquivo de quem chama; um executor remoto não tem nenhum dos dois. Execute sem --proxy.",
+      "serverStatus": "Localiza o servidor pelo registro de instalação local de quem chama; um executor remoto não tem nenhum. Execute sem --proxy.",
+      "serverUpgrade": "Aciona comandos filhos e o registro de instalação local de quem chama (e, com --local-image, o Docker de quem chama); um executor remoto agiria a partir do próprio ambiente. Execute sem --proxy."
     }
   },
   "docs": {

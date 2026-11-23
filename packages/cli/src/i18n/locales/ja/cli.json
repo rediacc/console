@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "{{name}} をキャンセルしました",
+        "descriptionShort": "リモートマシンで実行中のバックアップをキャンセルする",
         "description": "リモートマシン上の実行中バックアップをキャンセル",
         "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません"
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "バックアップを管理する",
       "drNudge": "Config-Storageが未設定です: リポジトリの認証情報（LUKSパスフレーズ）はこのホストにのみ存在するため、ベアメタル復元では復元できません。\"rdc config remote enable\" で設定し、暗号化されたconfig blob内に同期してください。",
       "list": {
+        "descriptionShort": "マシン上のバックアップ成果物を一覧表示する",
         "description": "マシン上のバックアップアーティファクトを一覧表示する",
         "examples": {
           "basic": "マシンに保存されたバックアップを一覧表示する",
@@ -42,6 +44,7 @@
         "placementRequired": "バックアップを一覧表示したいマシンを指定するには -m <machine> を指定してください"
       },
       "manifests": {
+        "descriptionShort": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",
         "description": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",
         "empty": "バックアップマニフェストが見つかりません。",
         "fetching": "バックアップマニフェストを取得中...",
@@ -59,6 +62,7 @@
         "deployed": "{{machine}} に {{name}} をデプロイしました",
         "deployFailed": "復元した {{name}} のデプロイに失敗しました",
         "deploying": "{{machine}} に {{name}} をデプロイ中...",
+        "descriptionShort": "バックアップ成果物を稼働中のリポジトリに変換する",
         "description": "バックアップアーティファクトを稼働中のリポジトリに変換する。配置先はここで指定する",
         "examples": {
           "asNewRepo": "バックアップを新しいリポジトリとして復元して起動する",
@@ -123,9 +127,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "宣言済みのポリシーを削除し、プランまたはサーバーの既定値を再び適用する",
           "description": "宣言したポリシーを削除し、プランまたはサーバーのデフォルトが再び適用される"
         },
         "cleared": "{{name}} の保持ポリシーを削除しました。以降は、プランまたはサーバーのデフォルトが適用されます",
+        "descriptionShort": "サーバーが適用しているスナップショット保持ポリシーを表示する",
         "description": "サーバーが適用しているスナップショット保持ポリシーを表示する",
         "empty": "保持ポリシーが設定されていないため、プランまたはサーバーのデフォルトが適用されます",
         "knobNotAnInteger": "{{flag}} には保持するスナップショット数を整数で指定してください（\"{{value}}\" は不可）",
@@ -137,6 +143,7 @@
         "optionKeepWeekly": "指定した週数分、それぞれ最新のスナップショットを保持する",
         "optionKeepYearly": "指定した年数分、それぞれ最新のスナップショットを保持する",
         "set": {
+          "descriptionShort": "保持するスナップショットの数を宣言する",
           "description": "保持するスナップショット数を指定する。各項目は常に上書きされ、マージはされない",
           "success": "{{name}} の保持ポリシーを設定しました（{{count}} 件のルール）。対象外のスナップショットは次回のクリーンアップで削除されます",
           "pending": "この変更は保持量を減らすため、遅延削除ウィンドウを待ち、\"{{name}}\" に対して {{when}} (UTC) に有効になります。表示中のポリシーはそれまで有効です。"
@@ -144,6 +151,7 @@
         "effective": "{{name}} に適用される保持設定: {{source}}",
         "optionStream": "このバックアップストリームだけに適用します(ストリーム ID)。省略するとリポジトリ全体の既定値になります",
         "preview": {
+          "descriptionShort": "次回のスイープで削除されるスナップショットと、解放される容量を表示する",
           "description": "次回のクリーンアップで削除されるスナップショットと、解放される容量を表示します。",
           "nothing": "次回のクリーンアップでは {{name}} のスナップショットは削除されません。",
           "summary": "次回のクリーンアップで {{name}} のスナップショットを {{count}} 件削除し、{{kept}} 件を残して {{bytes}} を解放します。",
@@ -163,12 +171,14 @@
         "pendingClear": "\"{{name}}\" のポリシーの削除は遅延削除ウィンドウを待ち、{{when}} (UTC) に有効になります。現在のポリシーはそれまで適用され続けます。"
       },
       "run": {
+        "descriptionShort": "今すぐバックアップを実行する",
         "description": "リモートマシンで今すぐバックアップを実行",
         "examples": {
           "basic": "バックアップ戦略を今すぐ実行する"
         }
       },
       "schedule": {
+        "descriptionShort": "リモートマシンにバックアップスケジュール (systemd タイマー) をデプロイする",
         "description": "リモートマシンにバックアップスケジュールをデプロイする（systemd タイマー）",
         "optionDryRun": "デプロイせずに生成されるユニットをプレビュー",
         "optionForce": "現在バックアップが実行中でも続行する（新しいユニットは次のタイマーティックで適用され、実行中の呼び出しは古いユニットを保持）",
@@ -176,6 +186,7 @@
         "success": "バックアップスケジュールを {{machine}} にデプロイしました"
       },
       "snapshot": {
+        "descriptionShort": "チャンクストアのスナップショットをアップロードする (最初は全体のインベントリ、その後は変更されたセルのみ)",
         "bwlimitInvalid": "--bwlimit には 100Mbps や 12.5M のような速度を指定してください。指定された値: \"{{value}}\"",
         "completed": "{{name}} のスナップショットを保存しました",
         "description": "チャンクストアへスナップショットをアップロードする: 初回は全インベントリ、以降は変更セルのみ",
@@ -206,11 +217,13 @@
         "optionAcceptIdentityChange": "LUKS の識別情報が変わった、または縮小した場合に、このイメージを新しい基準として採用します。完全なスナップショットをアップロードします"
       },
       "status": {
+        "descriptionShort": "リモートマシンのバックアップ状態とタイマーの状態を表示する",
         "description": "リモートマシンのバックアップ状態とタイマー状態を表示"
       },
       "strategy": {
         "bandwidthUnconvertible": "帯域幅の上限 \"{{value}}\" を変換できません ({{reason}})。バイト毎秒 (12500000)、10進バイト (12.5M)、2進バイト (12Mi)、ビット (100Mbps) のいずれかで指定してください。",
         "bind": {
+          "descriptionShort": "バックアップ戦略をマシンにバインドし、そのスケジュールをそこにデプロイする",
           "alreadyBound": "バックアップ戦略 \"{{strategy}}\" は既にマシン \"{{machine}}\" に紐付けられています",
           "bound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" に紐付けました",
           "description": "バックアップ戦略をマシンに紐付け、そのスケジュールをそこにデプロイする",
@@ -218,10 +231,12 @@
         },
         "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
         "list": {
+          "descriptionShort": "すべてのバックアップ戦略を一覧表示する",
           "description": "すべてのバックアップ戦略を一覧表示"
         },
         "readBandwidthUnconvertible": "読み取り帯域幅の上限 \"{{value}}\" を変換できません ({{reason}})。バイト毎秒 (50000000)、10進バイト (50M)、2進バイト (48Mi)、ビット (400Mbps) のいずれかで指定するか、無制限なら 0 を指定してください。",
         "remove": {
+          "descriptionShort": "バックアップ戦略または保存先を削除する",
           "bound": "バックアップ戦略 \"{{strategy}}\" は削除できません。{{count}} 台のマシンがまだバインドしています: {{machines}}。",
           "boundNext": "先にそれらのマシンからバインドを解除するか、バインドごと削除してください。",
           "description": "バックアップ戦略または宛先を削除",
@@ -241,6 +256,7 @@
           "syncFailed": "レプリケーションルールを同期できませんでした: {{reason}}"
         },
         "set": {
+          "descriptionShort": "バックアップ戦略を作成または更新する",
           "description": "バックアップ戦略を作成または更新",
           "examples": {
             "configure": "バックアップ戦略のスケジュールとモードを設定する",
@@ -291,11 +307,13 @@
           "dryRun": "ドライラン: ストラテジー \"{{strategy}}\" は変更されます ({{changes}})。何も書き込まれていません。"
         },
         "show": {
+          "descriptionShort": "バックアップ戦略の詳細を表示する",
           "description": "バックアップ戦略の詳細を表示",
           "notConfigured": "バックアップ戦略が設定されていません",
           "notFound": "バックアップ戦略 \"{{name}}\" が見つかりません"
         },
         "unbind": {
+          "descriptionShort": "マシンからバックアップ戦略のバインドを解除する",
           "description": "バックアップ戦略をマシンから切り離す",
           "notBound": "バックアップ戦略 \"{{strategy}}\" はマシン \"{{machine}}\" に紐付けられていません",
           "unbound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" から切り離しました"
@@ -303,6 +321,7 @@
       },
       "reconcile": {
         "checkSkipped": "スキップされた系統はチェックされていません: {{lineages}}",
+        "descriptionShort": "リポジトリの保存バイト数の台帳を、ストアが実際に保持している量に合わせてリセットする (チャンクは削除しない)",
         "description": "リポジトリの保存バイト台帳を、ストアが実際に保持している内容に合わせ直します(チャンクは削除しません)",
         "argRepoRef": "照合するリポジトリ(省略時はトークンの範囲内のすべて)",
         "optionDryRun": "台帳を変更せずに数値だけを表示する",
@@ -332,6 +351,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "バックアップのストレージクォータ、保存バイト数、リポジトリ別の使用量を表示する",
         "description": "バックアップストレージのクォータ、保存済みバイト数、リポジトリごとの使用量を表示する",
         "empty": "リポジトリごとのバックアップストレージ使用量はまだ記録されていません。",
         "fetching": "バックアップストレージの使用量を取得中...",
@@ -341,6 +361,7 @@
         "throttled": "待機中のストレージが変化量の上限 {{cap}} を超えています: 1 時間より速いバックアップストリームは、空きができるまで拒否されます。"
       },
       "verify": {
+        "descriptionShort": "リポジトリのバックアップアンカーをチャンクストアと照合して検証する",
         "completed": "{{name}} のバックアップを検証しました",
         "description": "リポジトリのバックアップアンカーをチャンクストアと照合して検証する",
         "failed": "{{name}} のバックアップ検証に失敗しました",
@@ -367,6 +388,7 @@
         "description": "保存済みスナップショットを管理します",
         "snapshotIdArgument": "スナップショット ID(rdc backup manifests を参照)",
         "delete": {
+          "descriptionShort": "保存済みのスナップショットを 1 つ削除する (固有のデータは次回のガベージコレクションで解放される)",
           "description": "保存済みスナップショットを 1 つ削除します。そのスナップショット固有のデータは、次回のガベージコレクションで解放されます。",
           "notInRepo": "スナップショット {{snapshot}} は {{name}} の保存済み履歴にありません。ID は rdc backup manifests {{name}} で確認できます。",
           "success": "{{name}} のスナップショットを {{snapshot}} を含め {{count}} 件削除しました。",
@@ -440,6 +462,7 @@
         "confirmLineage": "系列 {{name}} の保存済みスナップショット {{count}} 件 ({{bytes}}) をすべて削除します。この操作は元に戻せません。確認のため系列 ID を入力してください:"
       },
       "check": {
+        "descriptionShort": "ファイルを 1 つ復元して、保存済みスナップショットがパスフレーズで開けることを確認する",
         "description": "1つのファイルを復元して、スナップショットがパスフレーズで開くことを証明します",
         "needsCredential": "この設定に {{name}} の認証情報がないため、一覧を開けません。",
         "noIndex": "{{name}} のスナップショット {{snapshot}} には保存済みの一覧がなく、この方法では確認できません。証明されていません。",
@@ -449,6 +472,7 @@
       },
       "repair": {
         "affected": "これらのチャンクを参照するスナップショット: {{snapshots}}",
+        "descriptionShort": "ストアが失った、または誤って保持しているチャンクを、このマシンのアンカーから再アップロードする",
         "description": "ストアで失われた、または誤っているチャンクを、このマシンのアンカーから再アップロードします",
         "dryRunDamage": "破損したチャンクが {{count}} 個見つかりました。ドライランでは何も変更していません。",
         "optionDryRun": "削除・再アップロードされる内容を表示し、何も変更しません"
@@ -456,6 +480,7 @@
       "tocKey": {
         "description": "リポジトリの参照一覧キーを管理します",
         "sync": {
+          "descriptionShort": "リポジトリの一覧表示用キーをマシンにインストールする (別のキーがある場合は置き換える)",
           "description": "リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます",
           "optionDryRun": "実行される内容を表示し、何にも触れません",
           "optionReplace": "マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します)"
@@ -492,11 +517,13 @@
       "immutability": {
         "description": "保存済みバックアップの遅延削除ウィンドウを表示または設定する",
         "show": {
+          "descriptionShort": "適用中の遅延削除ウィンドウを表示する",
           "description": "有効な遅延削除ウィンドウを表示する",
           "window": "遅延削除: 削除、全消去、保持の縮小は {{days}} 日待機し、それまで取り消せます。",
           "off": "遅延削除はオフです: 削除は即座に有効になります。"
         },
         "set": {
+          "descriptionShort": "遅延削除ウィンドウを日数で設定する (0 から 30)",
           "description": "遅延削除ウィンドウを日数で設定する (0 から 30)",
           "daysArgument": "削除が有効になるまで待つ日数 (0 から 30)",
           "applied": "遅延削除ウィンドウは {{days}} 日になりました。",
@@ -506,6 +533,7 @@
         "pending": "ウィンドウは {{when}} (UTC) に {{days}} 日へ短縮されます。それまでは {{current}} 日が有効です。"
       },
       "undelete": {
+        "descriptionShort": "遅延されたスナップショットの削除を、実行される前に取り消す",
         "description": "スナップショットの遅延削除を有効になる前に取り消す",
         "success": "スナップショット {{snapshot}} は保持されます: 削除を取り消しました。",
         "notWaiting": "スナップショット {{snapshot}} は削除待ちではありませんでした。"
@@ -629,6 +657,7 @@
         "emptyRangeFlag": "{{flag}} には CIDR を 1 つ以上指定してください（空の値が渡されました）",
         "keyNotFound": "アクセスキー \"{{key}}\" が見つかりません",
         "list": {
+          "descriptionShort": "設定のアクセスキーを一覧表示する",
           "description": "設定のアクセスキーを一覧表示する",
           "noKeys": "この設定にアクセスキーはありません。 'config access add' で追加してください"
         },
@@ -646,6 +675,7 @@
           "success": "設定全体の送信元範囲を設定しました: {{ranges}}"
         },
         "remove": {
+          "descriptionShort": "設定からアクセスキーを削除する",
           "description": "設定からアクセスキーを削除する",
           "pushHint": "{{machines}} 上の該当行は、そこで 'machine access push' を実行するまで残ります",
           "success": "アクセスキー \"{{key}}\" を削除しました"
@@ -654,15 +684,18 @@
       "audit": {
         "description": "設定監査ログを確認(~/.config/rediacc/audit.log.jsonl のハッシュチェーン JSONL)",
         "log": {
+          "descriptionShort": "最近の監査エントリを JSON で出力する",
           "description": "最近の監査エントリを JSON として出力",
           "optionActor": "アクターの種類でフィルタ(human|agent)",
           "optionPath": "JSON Pointer グロブでフィルタ(例: /credentials/*)",
           "optionSince": "指定より新しいエントリのみ表示(例: '24h', '7d', ISO タイムスタンプ)"
         },
         "tail": {
+          "descriptionShort": "書き込まれた新しい監査エントリをストリーム表示する (Ctrl+C で停止)",
           "description": "新しいエントリを書き込まれた順にストリーム(Ctrl+C で停止)"
         },
         "verify": {
+          "descriptionShort": "すべての監査エントリにわたる SHA-256 ハッシュチェーンの整合性を検証する",
           "chainBroken": "{{line}} 行目でチェーンが破損しました。ファイルが改ざんまたは破損しています。",
           "chainOk": "{{count}} エントリにわたりチェーン整合性を確認しました。",
           "description": "すべての監査エントリにおける SHA-256 ハッシュチェーンの整合性を検証"
@@ -688,20 +721,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "既定値を消去する (すべて、または指定したキー)",
         "allCleared": "すべてのデフォルトをクリアしました",
         "description": "デフォルト値をクリアする（すべてまたは特定のキー）",
         "keyCleared": "\"{{key}}\" をクリアしました"
       },
       "current": {
+        "descriptionShort": "有効な設定を表示する (名前、ファイル、解決済みのサーバーとチャンネル、トークンの状態)",
         "description": "アクティブな設定を表示します: 名前、ファイル、解決されたサーバーとチャンネル、トークンの状態"
       },
       "delete": {
+        "descriptionShort": "設定ファイルを削除する",
         "description": "設定ファイルを削除する",
         "success": "設定 \"{{name}}\" が削除されました"
       },
       "description": "設定ファイルを管理する: 作成、切り替え、編集、状態の reconcile、横断的機能（フィールド、監査、SSH キー、リモート同期）",
       "descriptionShort": "設定ファイルを管理する",
       "edit": {
+        "descriptionShort": "有効な設定を、秘匿化した JSONC として $EDITOR で開く",
         "abortAfterRetries": "{{count}} 回の失敗後に中止します。下書きを保存: {{path}}",
         "applied": "{{path}} を適用しました",
         "bannerRedacted": "機密フィールドは <redacted:KIND>:DIGEST 形式のスタブとして表示され、安全に往復変換されます。",
@@ -727,23 +764,27 @@
         "description": "ポインタ指定による設定フィールド操作(get/set/unset/rotate/list)。/credentials/cfDnsApiToken のような JSON Pointer(RFC 6901)を使用します。",
         "descriptionShort": "ポインタ指定によるコンフィグフィールド操作",
         "get": {
+          "descriptionShort": "JSON Pointer を指定して設定値を 1 つ読み取る",
           "description": "JSON ポインタで単一の設定値を読み取ります。機密フィールドは --reveal を指定しない限り秘匿されます(人間のみ)。",
           "optionDigest": "値の代わりに SHA-256 ダイジェストを出力(エージェントに共有しても安全)",
           "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "optionReveal": "機密値を平文で表示する(対話型 TTY のみ、監査ログに記録)"
         },
         "list": {
+          "descriptionShort": "登録済みの機密ポインターテンプレートを、種別とコミット/暗号化ポリシーとともに一覧表示する",
           "description": "登録済みのすべてのセンシティビティ・ポインタ・テンプレートと種類、commit/encrypt ポリシーを一覧表示。",
           "optionOutput": "出力形式(json|table)",
           "optionSensitive": "機密(非パブリック)テンプレートのみ表示"
         },
         "rotate": {
+          "descriptionShort": "--current なしで機密値をローテーションする",
           "description": "--current なしで機密値をローテーションします。対話型 TTY のみ、詳細に監査されます。",
           "optionNew": "新しい値",
           "optionPointer": "機密フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
           "success": "{{pointer}} をローテーションしました"
         },
         "set": {
+          "descriptionShort": "JSON Pointer の位置に設定値を書き込む",
           "description": "JSON ポインタ位置に設定値を書き込みます。機密パスには --current(知識ゲート)が必要です。",
           "optionCurrent": "現在の平文値、機密パスの変更に必須(知識ゲート証明)",
           "optionNew": "新しい値({, [, \", true/false/null, 数値で始まる場合は JSON として解釈)",
@@ -751,6 +792,7 @@
           "success": "{{pointer}} を設定しました"
         },
         "unset": {
+          "descriptionShort": "JSON Pointer の位置にある設定値を削除する",
           "description": "JSON ポインタ位置の設定値を削除。機密パスには --current が必要です。",
           "optionCurrent": "現在の平文値、機密パスの削除に必須",
           "optionPointer": "フィールドへのJSONポインタ（例: /credentials/cfDnsApiToken）",
@@ -770,6 +812,7 @@
         }
       },
       "init": {
+        "descriptionShort": "名前付きの設定ファイルを新規作成する",
         "alreadyExists": "設定 \"{{name}}\" は既に存在します",
         "bareForm": "デフォルト設定は自動的に作成される。名前付き設定を作るには 'config init <name>' を使用するか、デフォルト設定にオプションを設定するにはフラグ（--ssh-key、--server など）を渡す",
         "description": "新しい名前付き設定ファイルを作成する",
@@ -783,6 +826,7 @@
         "success": "設定 \"{{name}}\" が初期化されました"
       },
       "list": {
+        "descriptionShort": "設定ファイルを一覧表示する",
         "description": "すべての設定ファイルをリスト表示する",
         "noConfigs": "設定ファイルが見つかりません。次のコマンドで作成してください: rdc config init"
       },
@@ -825,6 +869,7 @@
         "droppedGoneMachineState": "構成にもう存在しないマシンを指すランタイムレコード {{count}} 件 {{verb}} 削除:"
       },
       "reconcile": {
+        "descriptionShort": "マシンの実状態からランタイム状態を再構築する",
         "acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。",
         "description": "マシン側の実態からランタイム状態を再構築する。古くなったアタッチ情報やルーティング情報を修正する",
         "optionAcceptObserved": "宣言された配置を、イメージが実際にある場所に一致するよう書き換える。ただしそれが一意である場合のみ（正確に 1 台のマシンで観測された場合）。重複は競合のままとなる。",
@@ -833,6 +878,7 @@
         "listFailed": "renet list all が失敗しました(終了コード {{exitCode}})。"
       },
       "recover": {
+        "descriptionShort": "バックアップ (.bak) ファイルから設定を復元する",
         "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
         "description": "バックアップファイル (.bak) から設定を復元する",
         "failed": "設定 \"{{name}}\" のバックアップからの復元に失敗しました",
@@ -844,6 +890,7 @@
         "preconditionFailed": "構成「{{config}}」: {{paths}} を削除する変更をサーバーが拒否しました。保存済みの値を確認したことを、このデバイスが証明できなかったためです。「rdc config remote refresh」で更新してから、コマンドを再実行してください。",
         "description": "リモート設定ストレージ接続を管理",
         "disable": {
+          "descriptionShort": "リモートストレージとの接続を解除し、設定をローカルに保存する",
           "description": "リモートストレージから切断し、設定をローカルに保存",
           "optionLocal": "サーバーに接続せず、キャッシュ済みのコピーから、このデバイスでのみリンクを解除",
           "notEnabled": "リモート設定は有効になっていません。",
@@ -867,6 +914,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: このデバイスの設定ストレージ用キーは {{path}} (モード 0600) に保管され、ファイルのアクセス権だけで保護されます。"
         },
         "enable": {
+          "descriptionShort": "この設定をリモートの暗号化ストレージにリンクする",
           "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされており、このデバイスで開けるため、有効化するものはありません。リンクを解除するには次を実行してください: rdc config remote disable",
           "description": "この設定をリモート暗号化ストレージにリンク",
           "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
@@ -927,6 +975,7 @@
         "offlineNoCache": "設定サーバー {{server}} に到達できず、設定 \"{{config}}\" にはまだオフラインキャッシュがありません。サーバーに到達できるようになったら \"rdc config remote refresh\" を実行してキャッシュを作成してください。",
         "passkeySecretMissing": "このデバイスは設定ストレージ用のキーをもう保持していません（Linux ではカーネルキーリングが再起動のたびに空になります）。次のコマンドでこのデバイスを再登録してください: rdc config remote enable",
         "refresh": {
+          "descriptionShort": "リモートストレージから設定を強制的に再取得する",
           "description": "リモートストレージから設定を強制再取得",
           "notEnabled": "リモート設定は有効になっていません。",
           "pulled": "設定を取得済み",
@@ -936,6 +985,7 @@
         },
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
         "status": {
+          "descriptionShort": "リモート接続の状態を表示する",
           "description": "リモート接続状態を表示",
           "deviceKeyMissing": "このデバイスは、この設定のリモートストレージを開けなくなりました。鍵が失われています（再起動するとキーストアが空になることがあります）。次のコマンドでデバイスを登録し直してください: rdc config remote enable",
           "deviceCannotOpen": "このデバイスは、この設定のリモートストレージを開けません。デバイスの登録が拒否されました（たとえば鍵のローテーション後）。次のコマンドでデバイスを登録し直してください: rdc config remote enable"
@@ -971,6 +1021,7 @@
         },
         "pushVisibility": "設定 {{config}}: v{{from}} → v{{to}} を \"{{command}}\" がプッシュしました: {{changes}}",
         "versions": {
+          "descriptionShort": "サーバーに保持されているこの設定の過去のバージョンを一覧表示する",
           "description": "サーバーに保存されているこの設定の過去のバージョンを一覧表示",
           "optionExplain": "サーバーに保存されているバージョンから、各バージョンで変更された JSON ポインターを表示",
           "explainUnreadable": "(読み取れません: {{reason}})",
@@ -978,6 +1029,7 @@
           "empty": "サーバーには設定 \"{{config}}\" の過去のバージョンが保存されていません。"
         },
         "restore": {
+          "descriptionShort": "この設定の過去のバージョンを最新バージョンとして公開する",
           "description": "この設定の過去のバージョンを最新バージョンとして公開",
           "argVersion": "復元するバージョン (rdc config remote versions を参照)",
           "confirm": "設定 \"{{config}}\" のバージョン {{version}} の内容を、バージョン {{current}} の上に新しいバージョンとして公開しますか? すべてのデバイスが次回の取得時にこれを受け取ります。",
@@ -990,6 +1042,7 @@
         "localEditsUnverifiable": "構成「{{config}}」: ローカルファイルがサーバーバージョン {{server}} と異なり ({{changes}})、キャッシュ元のバージョン {{cached}} を読み戻せませんでした ({{reason}})。そのため、ローカル編集とサーバー側の変更を区別できません。何も上書きしていません。編集内容を退避し、「rdc config remote refresh」でバージョン {{server}} を取得してから (ローカルファイルは置き換わります)、編集を再適用してください。"
       },
       "rotateCek": {
+        "descriptionShort": "組織の設定暗号化キーをローテーションする",
         "cancelled": "ローテーションをキャンセルしました。何も変更されていません",
         "confirm": "設定暗号化キーを今すぐローテーションしますか？",
         "waiting": "ブラウザでのローテーション完了を待っています (Ctrl+C で中止)...",
@@ -1006,10 +1059,12 @@
         "warning": "これは組織全体の設定を暗号化しているキーをローテーションする。他のすべてのデバイスは、その後再リンクが必要になる"
       },
       "set": {
+        "descriptionShort": "既定値 (チーム、リージョン、ブリッジ) を設定する",
         "description": "デフォルト値を設定する (team、region、bridge)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
       "show": {
+        "descriptionShort": "現在の設定の詳細を表示する",
         "description": "現在の設定の詳細を表示する",
         "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init",
         "optionReveal": "機密値を平文で表示（対話モードのみ）"
@@ -1017,11 +1072,13 @@
       "ssh": {
         "description": "SSH キーの設定を管理する",
         "remove": {
+          "descriptionShort": "現在の設定から SSH キーを削除する",
           "description": "現在の設定から SSH キーを削除する",
           "noKey": "SSH キーが設定されていません",
           "success": "SSH キーを削除しました"
         },
         "set": {
+          "descriptionShort": "現在の設定に SSH キーを設定する",
           "description": "現在の設定に SSH キーを設定する",
           "invalidKey": "ファイルに有効な SSH 秘密キーが含まれていません",
           "keyNotFound": "SSH キーファイルが見つかりません: {{path}}",
@@ -1030,6 +1087,7 @@
           "success": "SSH キーを設定しました"
         },
         "show": {
+          "descriptionShort": "現在の SSH キーの設定を表示する",
           "description": "現在の SSH キー設定を表示する",
           "noKey": "SSH キーが設定されていません"
         }
@@ -1225,6 +1283,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "実行中のデタッチされたジョブをキャンセルする",
         "alreadyFinished": "ジョブ {{jobId}} はすでに {{state}} のため、キャンセルする対象がありません。",
         "confirm": "{{machine}} 上のジョブ {{jobId}}({{function}})をキャンセルしますか? 処理は停止されます。",
         "description": "実行中のデタッチジョブをキャンセル",
@@ -1239,6 +1298,7 @@
         "succeeded": "ジョブ {{jobId}} は成功しました。"
       },
       "gc": {
+        "descriptionShort": "完了したジョブとそのログを削除する",
         "confirm": "{{machine}} 上で {{hours}} 時間以上前に完了したジョブを削除しますか? ログも削除されます。",
         "description": "完了済みジョブとそのログを削除",
         "invalidOlderThan": "--older-than には時間数を指定してください。例: 168 または 168h(指定値: \"{{value}}\")",
@@ -1247,6 +1307,7 @@
       },
       "idOption": "ジョブID",
       "list": {
+        "descriptionShort": "マシン上のデタッチされたジョブを新しい順に一覧表示する",
         "description": "マシン上のデタッチジョブを新しい順に一覧表示",
         "empty": "{{machine}} にジョブはありません。",
         "examples": {
@@ -1257,6 +1318,7 @@
         "allOption": "期限切れおよび却下済みのチケットも表示"
       },
       "logs": {
+        "descriptionShort": "デタッチされたジョブのイベントログを再生または追跡する",
         "description": "デタッチジョブのイベントログを再生またはフォロー",
         "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再アタッチするには次を実行してください: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1269,6 +1331,7 @@
       },
       "machineOption": "対象マシン名",
       "status": {
+        "descriptionShort": "デタッチされたジョブの状態を表示する",
         "description": "デタッチジョブのステータスを表示",
         "examples": {
           "basic": "1つのジョブのステータスを表示する"
@@ -1279,6 +1342,7 @@
       "machineRequired": "この設定にはジョブ {{jobId}} のチケットがありません。実行場所を -m <machine> で指定してください。",
       "ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
       "wait": {
+        "descriptionShort": "チケットからジョブの追跡を再開し、確認応答したうえでジョブの終了コードで終了する",
         "description": "チケットをもとにジョブの追跡を再開し、確認済みにしてジョブの終了コードで終了する",
         "timeoutOption": "この時間が経過したら待機をやめる(30s、5m、2h。数字のみは秒)。ジョブは実行され続けます。",
         "invalidTimeout": "--timeout には 30s、5m、2h のような時間を指定してください(受け取った値: \"{{value}}\")",
@@ -1332,6 +1396,7 @@
         "success": "マシン \"{{name}}\" を追加しました ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "クラウドでプロビジョニングしたマシンを破棄し、設定から削除する",
         "completed": "マシン {{name}} が破棄され、設定から削除されました",
         "confirm": "マシン \"{{name}}\" とそのすべてのデータが完全に破棄されます。続行しますか？",
         "deactivateFailed": "{{name}} のアカウント上のアクティベーション枠を解放できませんでした: {{reason}}。枠は最後のアクティビティから 5 時間後に自動で空きます。",
@@ -1350,6 +1415,7 @@
       "description": "リモートマシンの状態を調べる: システムリソース、実行中のコンテナ、systemd サービス、デプロイ済みリポジトリ、ヘルス診断。読み取り専用のクエリであり、リポジトリを変更するには `repo` を使用する。主なサブコマンド: status（--system、--containers、--repositories、--services で絞り込める完全な状態）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "リモートマシンの管理（status、health、list、add、remove、setup、prune）",
       "health": {
+        "descriptionShort": "CI/CD パイプライン向けにマシンのヘルスをチェックする",
         "containersSection": "\nコンテナ:",
         "containersSummary": "  {{running}}/{{total}} 実行中 ({{healthy}} 健全, {{unhealthy}} 不健全)",
         "description": "CI/CDパイプライン用のマシン健全性を確認する",
@@ -1416,19 +1482,23 @@
         "cert": {
           "clear": {
             "cleared": "証明書キャッシュを削除しました",
+            "descriptionShort": "証明書キャッシュを削除する",
             "description": "証明書キャッシュを削除",
             "noCache": "削除する証明書キャッシュがありません"
           },
           "description": "キャッシュされたTLS証明書を管理",
           "pull": {
+            "descriptionShort": "マシンから TLS 証明書をダウンロードしてキャッシュする",
             "description": "マシンからTLS証明書をダウンロードしてキャッシュ",
             "optionNoPrune": "古いネットワークID証明書の整理をスキップ"
           },
           "push": {
+            "descriptionShort": "キャッシュした TLS 証明書をマシンにアップロードする",
             "description": "キャッシュされたTLS証明書をマシンにアップロード"
           },
           "status": {
             "certCount": "{{count}} 件の証明書、{{size}} 圧縮",
+            "descriptionShort": "キャッシュ済みの証明書の一覧を表示する",
             "description": "キャッシュされた証明書のインベントリを表示",
             "header": "{{baseDomain}} の証明書キャッシュ",
             "noCache": "保存された証明書キャッシュはありません",
@@ -1455,11 +1525,13 @@
           "success": "\"{{name}}\" のインフラ設定を更新しました"
         },
         "show": {
+          "descriptionShort": "マシンのインフラ構成を表示する",
           "description": "マシンのインフラ設定を表示する",
           "noInfra": "\"{{name}}\" のインフラ設定がありません"
         }
       },
       "list": {
+        "descriptionShort": "マシンを一覧表示する",
         "description": "マシンをリスト表示する",
         "examples": {
           "basic": "登録済みのすべてのマシンを一覧表示する",
@@ -1469,6 +1541,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "クラウドプロバイダーを追加する",
           "description": "クラウドプロバイダーを追加する",
           "optionImage": "デフォルトの OS イメージ",
           "optionImageAttr": "カスタム: OS イメージの属性名",
@@ -1492,15 +1565,18 @@
         },
         "description": "自動マシンプロビジョニング用クラウドプロバイダーを管理する",
         "list": {
+          "descriptionShort": "設定済みのクラウドプロバイダーを一覧表示する",
           "description": "設定済みクラウドプロバイダーをリスト表示する",
           "noProviders": "クラウドプロバイダーが設定されていません。次のコマンドで追加してください: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "クラウドプロバイダーの設定を削除する",
           "description": "クラウドプロバイダー設定を削除する",
           "success": "クラウドプロバイダー \"{{name}}\" を削除しました"
         }
       },
       "provision": {
+        "descriptionShort": "OpenTofu を使ってクラウドプロバイダー上に新しいマシンをプロビジョニングする",
         "completed": "マシン {{name}} がプロビジョニングされ準備完了 ({{ip}})",
         "configuringInfra": "{{name}} のインフラストラクチャ（プロキシ + DNS）を設定中...",
         "description": "OpenTofuを使用してクラウドプロバイダーに新しいマシンをプロビジョニングする",
@@ -1578,6 +1654,7 @@
         "clusterMember": "マシン \"{{name}}\" は削除できません。クラスタ \"{{cluster}}\" のメンバーです。",
         "clusterMemberNext": "先にノードをクラスタから退去させてください。",
         "confirm": "マシン \"{{name}}\" を設定から削除しますか？",
+        "descriptionShort": "設定からマシンを削除する",
         "description": "現在の設定からマシンを削除する",
         "forceDangling": "マシン \"{{name}}\" を削除しましたが、{{count}} 件のリポジトリ配置がまだ残っていました: {{repos}}。これらの配置は現在ダングリング状態です。\"rdc repo migrate\" で再配置するか、\"rdc repo delete\" で削除してください。",
         "forceOption": "リポジトリが配置されていたり、バックアップ戦略がバインドされていてもマシンを削除し、それらの参照をダングリング状態のまま残す。",
@@ -1609,6 +1686,7 @@
       },
       "scanKeys": {
         "completed": "{{count}}/{{total}} 台のマシンをスキャン済み",
+        "descriptionShort": "現在の設定にあるマシンの SSH ホストキーをスキャンする",
         "description": "現在の設定のマシンの SSH ホストキーをスキャンする",
         "keysScanned": "\"{{name}}\" のホストキーをスキャンしました",
         "noKeys": "\"{{name}}\" のホストキーをスキャンできませんでした",
@@ -1693,6 +1771,7 @@
           "unchanged": "\"{{name}}\" 上のアクセスキーはすでに最新です（{{path}}）"
         },
         "remove": {
+          "descriptionShort": "マシンからアクセスキーのバインドを解除する",
           "description": "アクセスキーとマシンの紐付けを解除する。次回の 'machine access push' でその行が削除される",
           "success": "アクセスキー \"{{key}}\" と \"{{name}}\" の紐付けを解除しました。 'machine access push {{name}}' でその行を削除してください"
         },
@@ -1704,6 +1783,7 @@
           "success": "アクセスキー \"{{key}}\" を \"{{name}}\" に紐付けました。 'machine access push {{name}}' で反映してください"
         },
         "show": {
+          "descriptionShort": "マシンにバインドされたアクセスキーと、それぞれがそこで解決される範囲を表示する",
           "description": "マシンに紐付けられたアクセスキーと、そこで各キーに適用される範囲を表示する",
           "noKeys": "\"{{name}}\" に紐付けられたアクセスキーはありません",
           "path": "\"{{name}}\" 上のユーザー {{user}} の authorized_keys (~/.ssh/authorized_keys)"
@@ -1714,6 +1794,7 @@
       "description": "AIエージェント向けの Model Context Protocol サーバー",
       "descriptionShort": "AIエージェント向けの Model Context Protocol サーバー",
       "serve": {
+        "descriptionShort": "MCP サーバーを起動する (stdio トランスポート)",
         "configOption": "すべてのコマンドに使用する設定名",
         "description": "MCP サーバーを起動する (stdio トランスポート)",
         "timeoutOption": "デフォルトのコマンドタイムアウト (ミリ秒単位)"
@@ -1721,6 +1802,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "仮想化の前提条件を検証する",
         "allPassed": "すべての前提条件を満たしています",
         "description": "仮想化の前提条件を確認",
         "hasMissing": "{{count}} 件の前提条件が不足しています",
@@ -1730,12 +1812,14 @@
       "description": "KVM/QEMU/Hyper-V を使ったローカル VM のプロビジョニングと管理（プラットフォームは自動検出）。リモートマシン向けではない。そちらには `machine` を使用する。主なサブコマンド: up（VM 起動）、down（停止）、status（実行中 VM の一覧）、ssh（VM へ接続）、setup（前提条件のインストール）、check（ホストの準備状況を確認）。",
       "descriptionShort": "ローカル VM 操作（プロビジョニング、管理、破棄）",
       "down": {
+        "descriptionShort": "VM クラスターを破棄する",
         "completed": "VM クラスターの破棄が完了しました",
         "description": "VM クラスターを破棄",
         "failed": "VM クラスターの破棄に失敗しました",
         "starting": "VM クラスターを破棄しています..."
       },
       "setup": {
+        "descriptionShort": "仮想化の前提条件をインストールする",
         "brewFailed": "Homebrew のインストールに失敗しました",
         "completed": "前提条件のインストールが完了しました",
         "description": "仮想化の前提条件をインストール",
@@ -1746,15 +1830,18 @@
         "windows": "Hyper-V の前提条件をセットアップしています..."
       },
       "ssh": {
+        "descriptionShort": "VM に SSH 接続する",
         "connecting": "VM {{id}} に接続しています...",
         "description": "VM に SSH 接続",
         "vmNotFound": "ID {{id}} の VM が見つからないか、実行されていません"
       },
       "status": {
+        "descriptionShort": "VM クラスターの状態を表示する",
         "description": "VM クラスターの状態を表示",
         "noVMs": "VM が見つかりません"
       },
       "up": {
+        "descriptionShort": "VM クラスターをローカルでプロビジョニングする",
         "completed": "VM クラスターのプロビジョニングが完了しました",
         "description": "VM クラスターをローカルにプロビジョニング",
         "failed": "VM クラスターのプロビジョニングに失敗しました",
@@ -1816,16 +1903,19 @@
         "archive": {
           "description": "アーカイブ済みリポジトリレコードの管理",
           "list": {
+            "descriptionShort": "アーカイブ済みのリポジトリレコードを一覧表示する",
             "description": "アーカイブ済みリポジトリ資格情報をリスト表示する",
             "noArchived": "アーカイブ済みリポジトリはありません"
           },
           "purge": {
             "confirm": "期限切れのアーカイブ済みレコードをすべてパージしますか？",
+            "descriptionShort": "アーカイブ済みのレコードを完全に削除する",
             "description": "アーカイブ済み資格情報をすべて完全に削除する",
             "noArchived": "パージするアーカイブ済みリポジトリはありません",
             "success": "アーカイブ済みの認証情報を {{count}} 件削除しました"
           },
           "restore": {
+            "descriptionShort": "アーカイブ済みのレコードを設定に復元する",
             "description": "アーカイブ済みリポジトリ資格情報を復元する",
             "success": "\"{{name}}\"（{{guid}}）を復元しました"
           }
@@ -1833,6 +1923,7 @@
         "orphan": {
           "description": "どの設定にも登録されていない、マシン上のリポジトリイメージ。",
           "list": {
+            "descriptionShort": "マシン上のリポジトリイメージを一覧表示し、どの設定からも参照されていない孤立イメージかどうかを示す",
             "description": "マシン上のリポジトリイメージを一覧表示し、それぞれがどの設定にも登録されていない孤立イメージかどうかを示します。",
             "none": "{{machine}} にリポジトリイメージはありません"
           },
@@ -1854,6 +1945,7 @@
         "autostart": {
           "description": "起動時の自動リポジトリ開始を管理する",
           "disable": {
+            "descriptionShort": "リポジトリの自動起動を無効にする (名前を省略するとすべてを無効化)",
             "completed": "自動開始が無効になりました",
             "completedAll": "すべてのリポジトリの自動起動を無効にしました",
             "description": "リポジトリの自動開始を無効にする",
@@ -1863,6 +1955,7 @@
             "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を無効化中..."
           },
           "enable": {
+            "descriptionShort": "リポジトリの自動起動を有効にする (名前を省略するとすべてを有効化)",
             "completed": "自動開始が有効になりました",
             "completedAll": "すべてのリポジトリの自動起動を有効にしました",
             "description": "リポジトリの自動開始を有効にする",
@@ -1872,6 +1965,7 @@
             "startingAll": "\"{{machine}}\" の全リポジトリの自動起動を有効化中..."
           },
           "list": {
+            "descriptionShort": "自動起動が有効なリポジトリを一覧表示する",
             "description": "自動開始が有効なリポジトリを一覧表示する",
             "empty": "\"{{machine}}\" に自動起動が有効なリポジトリはありません",
             "failed": "自動開始リポジトリの一覧取得に失敗しました",
@@ -1968,6 +2062,7 @@
         "weightOption": "カナリアへ振り分けるトラフィックの割合（0-100 の整数。0 = ダーク、100 = 完全切り替え）"
       },
       "cat": {
+        "descriptionShort": "リポジトリ内のファイルの一部を範囲を限って標準出力に読み出す (診断メッセージは標準エラー出力へ)",
         "description": "リポジトリ内のファイルを範囲指定で読み取り、stdout に書き出します（サーバー側で範囲制限あり。診断情報は stderr に出力）",
         "examples": {
           "basic": "リポジトリ内のファイルを出力する"
@@ -2000,6 +2095,7 @@
         "messageOption": "commit メッセージ"
       },
       "create": {
+        "descriptionShort": "新しいリポジトリを作成する",
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "completed": "リポジトリを作成しました",
         "datastoreNotAttached": "データストア \"{{datastore}}\" はどのマシンにもアタッチされていません。アタッチしてください: rdc datastore attach {{datastore}} --to <machine>。既にアタッチ済みなのに設定がそれを認識していない場合は、rdc config reconcile を実行してください。",
@@ -2148,6 +2244,7 @@
         "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です"
       },
       "list": {
+        "descriptionShort": "マシン上のリポジトリを一覧表示する",
         "completed": "リスト表示が完了しました",
         "datastoreOption": "このデータストア内のリポジトリを一覧表示する（現在保持しているマシンへ自動的に解決される）",
         "description": "マシン上のリポジトリをリスト表示する",
@@ -2428,12 +2525,14 @@
         "valueOption": "シークレット値。`-` を渡して stdin から読み取ります（シェル履歴への露出を回避）。"
       },
       "status": {
+        "descriptionShort": "リポジトリの状態を取得する (マウント状態、Docker デーモンの稼働、コンテナ数、ディスク使用量)",
         "completed": "ステータスを取得しました",
         "description": "リポジトリのステータスを取得する",
         "failed": "ステータスの確認に失敗しました",
         "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
       },
       "health": {
+        "descriptionShort": "リポジトリの Rediaccfile の health() チェックを実行し、終了コード 0 (正常)、1 (警告)、2 (エラー) で終了する",
         "description": "リポジトリの Rediaccfile の health() チェックを実行し、0 (正常)、1 (警告)、2 (エラー) で終了します",
         "header": "\n{{repository}} の健全性:",
         "levelOk": "✓ 正常",
@@ -2660,6 +2759,7 @@
         "helpOffline": "エアギャップ環境: オンラインの環境で rdc server bundle --out <dir> を実行してバンドルを作成します。rdc server install --offline --bundle <dir> はバンドルを検証し、プロキシイメージを読み込み、オフラインでセットアップして、外部には一切接続しません。インストールはライセンスの手順で止まり、リクエストを書き出します。オンラインの環境で rdc server licence mint により証明書を発行し、--cert を付けて再実行してください。"
       },
       "status": {
+        "descriptionShort": "インストール済みサーバーのヘルス、ティア、証明書、イメージを表示する",
         "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する",
         "certRefused": "拒否 ({{reason}}) {{at}}",
         "certRefusedRun": "実行: rdc server licence {{domain}}",
@@ -2667,6 +2767,7 @@
         "certExpiring": "ライセンス証明書は {{days}} 日後に期限切れになります。更新してください (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "インストール済みサーバーのリカバリーバンドル (キー) を出力する。ファイルへの書き出しも可能",
         "description": "インストール済みサーバーのリカバリーバンドル (キー) を表示、またはファイルに書き出す",
         "optionOut": "stdout ではなく、このファイルにバンドルを書き出す (モード 0600)",
         "written": "リカバリーバンドルを {{file}} に書き出しました (モード 0600)",
@@ -2690,6 +2791,7 @@
         "templateNoBaseline": "このボックスにはテンプレートのチェックサムが記録されていないため、ローカルの変更を検出できません。新しいテンプレートを適用します"
       },
       "licence": {
+        "descriptionShort": "無料ティアのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
         "description": "無料プランのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
         "done": "{{domain}} はサブスクリプション {{subscription}} でライセンス付与されました",
         "certUnreadable": "証明書ファイル {{file}} を読み取れません",
@@ -2711,6 +2813,7 @@
         "noUpstreamKey": "サーバーに UPSTREAM_PUBLIC_KEY がないため、証明書を検証できず、新しい証明書でも解決しません。{{domain}} のシークレットに UPSTREAM_PUBLIC_KEY を設定し、`rdc server upgrade {{domain}}` を実行してください。",
         "bootRefusalStays": "証明書は適用されましたが、サーバーはまだ起動時の拒否 ({{reason}}) を報告しています。サーバーのログを確認してください",
         "mint": {
+          "descriptionShort": "オフラインのボックスからのリクエストに対してライセンス証明書を発行する (オンラインでログインして実行)",
           "description": "オフラインのボックスからのリクエストに対してライセンス証明書を発行する (オンラインでログインした状態で実行)",
           "done": "証明書を {{file}} に書き出しました ({{until}} まで有効)。ボックスに持ち込み、--cert を指定してインストールしてください",
           "optionOut": "証明書の書き出し先ファイル",
@@ -2889,6 +2992,7 @@
       "description": "ライセンスとサブスクリプショントークンを管理する。login でサインインし、status で確認し、refresh でライセンスを再発行する",
       "descriptionShort": "マシンライセンスとサブスクリプションの管理",
       "login": {
+        "descriptionShort": "ブラウザーまたは API トークンで認証する",
         "backupNeedsTwoFactor": "バックアップストレージの管理権限なしでサインインしました。{{url}} の設定で二要素認証を有効にしてから、もう一度サインインしてください。",
         "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
         "description": "WebポータルのAPIトークンで認証",
@@ -2923,20 +3027,24 @@
         "waitingApproval": "ブラウザでの認証を待っています..."
       },
       "register": {
+        "descriptionShort": "ブラウザーでアカウントを作成 (メールアドレスは入力済み) してログインする",
         "description": "ブラウザでアカウントを作成（メール入力済み）してログイン",
         "optionEmail": "登録ページに事前入力するメールアドレス",
         "invalidEmail": "有効なメールアドレスを入力してください。"
       },
       "logout": {
+        "descriptionShort": "保存されているサブスクリプショントークンを消去する",
         "description": "保存されたサブスクリプショントークンを削除する",
         "success": "サブスクリプショントークンを削除しました"
       },
       "proxyToken": {
+        "descriptionShort": "このデバイスのログインから、--proxy 用の短命な proxy:exec トークンを発行する",
         "description": "このデバイスのログインから、--proxy 用の短期間有効な proxy:exec トークンを発行する",
         "jsonOption": "トークンとその expiresAt を JSON で出力する",
         "noToken": "アカウントサーバーからプロキシトークンが返されませんでした。"
       },
       "refresh": {
+        "descriptionShort": "アカウントサーバーからライセンスを更新する",
         "account": {
           "failed": "アカウントサーバーからアカウント状態を読み取れませんでした",
           "refreshed": "アカウント状態を更新しました",
@@ -2984,6 +3092,7 @@
         }
       },
       "status": {
+        "descriptionShort": "サブスクリプションと、マシンのライセンス状態を表示する",
         "description": "サブスクリプションと、マシンのライセンス状態を表示する",
         "issuanceLimitReached": "現在の UTC 暦月のリポジトリライセンス発行上限に達しました。",
         "issuanceUsageHigh80": "月間リポジトリライセンス発行数が現在の UTC 上限の 80% を超えています。",
@@ -3034,6 +3143,7 @@
         "needsYes": "ライセンスの返却には確認が必要ですが、標準入力が端末ではありません。確認するには --yes を付けてください。",
         "confirm": "{{name}}({{guid}}、{{state}})のライセンスを返却しますか?更新しても元には戻りません。",
         "success": "ライセンスを返却しました: {{name}}",
+        "descriptionShort": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数と通知から外す",
         "description": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。",
         "argGuid": "リポジトリの GUID、またはアカウントレポートにあるライセンスの先頭 8 文字以上",
         "optionForce": "リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します",
@@ -3051,6 +3161,7 @@
         "optionExpired": "削除済み、またはこの構成にないリポジトリで完全に失効したライセンスをすべて返却します"
       },
       "notices": {
+        "descriptionShort": "アカウントの通知を一覧表示する (ライセンスの有効期限、バックアップの状態、更新、証明書、利用規約)",
         "description": "アカウントのお知らせを一覧表示します。ライセンスの期限、バックアップの状態、更新、証明書、利用規約が対象です。",
         "optionAll": "非表示にしたお知らせと全ページを含めます(既定は直近 30 日分のみ)",
         "optionUnread": "未読のお知らせのみ",
@@ -3103,6 +3214,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "マシンでシェルを開く。リポジトリを指定すると Docker を設定した状態でその中で開く",
         "description": "マシン上、またはリポジトリ内（Docker 設定済み）でシェルを開く",
         "examples": {
           "machine": "マシンへの SSH ターミナルを開く",
@@ -3158,6 +3270,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "VS Code のインストールと設定を確認する",
         "activeConnections": "アクティブな接続: {{count}}",
         "configuration": "\n設定:",
         "configured": "  設定済み: {{status}}",
@@ -3178,12 +3291,14 @@
         "yes": "はい"
       },
       "cleanup": {
+        "descriptionShort": "VS Code の SSH 設定を削除する",
         "cleaned": "クリーンアップ: {{connection}}",
         "cleanedAll": "{{count}} 個の VS Code SSH 接続をクリーンアップしました。",
         "description": "VS Code SSH 設定を削除する",
         "removedKeys": "すべての永続化された SSH キーを削除しました。"
       },
       "connect": {
+        "descriptionShort": "マシンまたはリポジトリ内で VS Code を開く",
         "browserUrl": "ブラウザで VS Code を開く: {{url}}",
         "configuringSSH": "SSH を設定中です...",
         "configuringVSCode": "VS Code 設定を設定中です...",
@@ -3212,6 +3327,7 @@
       "description": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
       "descriptionShort": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
       "list": {
+        "descriptionShort": "設定済みの VS Code SSH 接続を一覧表示する",
         "configFile": "\n設定ファイル: {{path}}",
         "description": "設定済みの VS Code SSH 接続をリスト表示する",
         "header": "設定済みの VS Code SSH 接続:\n",
@@ -3222,11 +3338,13 @@
       "serve": {
         "description": "サンドボックス内のブラウザ VS Code サーバーを管理する",
         "status": {
+          "descriptionShort": "ブラウザー版 VS Code サーバーが実行中かどうかを表示する",
           "description": "ブラウザ VS Code サーバーが起動しているか確認する",
           "running": "{{provider}} 起動中 (pid {{pid}}、ポート {{port}})",
           "stopped": "{{provider}} は起動していません"
         },
         "stop": {
+          "descriptionShort": "ブラウザー版 VS Code サーバーを停止する",
           "description": "ブラウザ VS Code サーバーを停止する",
           "notRunning": "{{provider}} は起動していませんでした",
           "stopped": "{{provider}} を停止しました"
@@ -3287,6 +3405,35 @@
       "notAccepted": "承諾済み: 未承諾",
       "terms": "利用規約: バージョン {{version}}、{{effective}} から有効",
       "upcoming": "次のバージョン {{version}} は {{effective}} に発効します"
+    },
+    "proxyBlocked": {
+      "backupCheck": "リポジトリの認証情報で一覧を読み取りファイルを復元します。この認証情報は設定の場所から出ません",
+      "backupChurn": "数時間かかることもあるクライアント側のプローブのループで、終了時にベースを破棄する必要があります",
+      "backupDownload": "クライアント側の rsync でリポジトリイメージをローカルディレクトリにコピーします。リモート実行側ではイメージがその実行側のディスクに書き込まれます。--proxy なしで実行してください。",
+      "localTooling": "マシンに一切接続しないローカルのツールなので、プロキシする対象がありません。--proxy なしで実行してください。",
+      "backupRepair": "呼び出し元の backup:manage トークンでアカウント上の不良チャンクを削除し、マシンから再アップロードします。リモート実行側はそのトークンも呼び出し元の設定も持ちません。--proxy なしで実行してください。",
+      "localConfig": "ローカルの設定だけを対象に実行し、マシンには接続しないので、プロキシする対象がありません。--proxy なしで実行してください。",
+      "backupTocKeySync": "リポジトリの認証情報から公開鍵を導出します。この認証情報は設定の場所から出ません",
+      "backupUpload": "ローカルのイメージファイルをクライアント側の rsync で送信し、ローカルの設定にリポジトリを登録します。リモート実行側はそのファイルを参照できません。--proxy なしで実行してください。",
+      "clusterKubeconfig": "kubeconfig をローカルの 0600 ファイルにキャッシュし、そのパスを出力します。リモート実行側ではファイルがその実行側のディスクに書き込まれます。--proxy なしで実行してください。",
+      "interactive": "端末が必要、または自力では終了しません (対話シェル、エディター、トンネル、ストリーム、デーモン)。そのためヘッドレスの実行側では実行できません。--proxy なしで実行してください。",
+      "configReconcile": "すべてのマシンに問い合わせますが、結果は呼び出し元のローカル状態バケットに書き込まれます。リモート実行側は自分の状態を再構築するだけで、呼び出し元には何も反映されません。--proxy なしで実行してください。",
+      "machineAccessPush": "呼び出し元のアクセスキーに基づいて、マシンにログインできる対象を書き換えます。実行側は自分が接続に使っているアクセスを書き換えることはなく、自分の設定のキーをプッシュしてしまいます。--proxy なしで実行してください。",
+      "machineConverge": "呼び出し元の設定にある環境シークレットで各リポジトリのデーモンを再起動します。リモート実行側は自分のコピー (または何も無い状態) で再起動してしまいます。--proxy なしで実行してください。",
+      "machineInfraCertPull": "実際の動作はマシンの acme.json を呼び出し元のローカル設定に書き込むことです。リモート実行側では自分の設定に書き込まれます。--proxy なしで実行してください。",
+      "machinePrune": "--orphaned-repos または --prune-unknown を指定すると、呼び出し元が読み取れるすべての設定と照らして各イメージを判定します。リモート実行側は自分の設定で判定し、呼び出し元のリポジトリを削除してしまいます。--proxy なしで実行してください。",
+      "machineScanKeys": "呼び出し元のネットワーク上の位置から ssh-keyscan を実行し、knownHosts を呼び出し元のローカル設定に保存します。リモート実行側は自分の位置からスキャンし、結果をそちらに保持してしまいます。--proxy なしで実行してください。",
+      "repoAdminOrphanDelete": "呼び出し元が読み取れるいずれかの設定がまだ参照している GUID は拒否します。リモート実行側は自分の設定だけを確認し、呼び出し元の設定が参照しているイメージを削除しかねません。--proxy なしで実行してください。",
+      "repoAdminOrphanList": "呼び出し元が読み取れるすべての設定と照らして各イメージを判定します。リモート実行側は自分の設定で判定し、呼び出し元のリポジトリを孤立として報告してしまいます。--proxy なしで実行してください。",
+      "repoSyncDownload": "rsync/SFTP でローカルファイルシステムにダウンロードします。リモート実行側ではファイルがその実行側のディスクに書き込まれます。--proxy なしで実行してください。",
+      "repoSyncStatus": "クライアント側の rsync で、マシンとローカルファイルシステムの差分を取ります。リモート実行側にはローカルのツリーのコピーがありません。--proxy なしで実行してください。",
+      "repoSyncUpload": "rsync/SFTP でローカルファイルシステムからアップロードします。リモート実行側は元のパスを参照できません。--proxy なしで実行してください。",
+      "serverBackup": "リカバリーバンドル (サーバーのキー) を呼び出し元の端末またはファイルに書き出します。実行側を経由すると、キーが別のマシンを通過してしまいます。--proxy なしで実行してください。",
+      "serverBundle": "呼び出し元のローカルの docker (pull と save) を実行し、バンドルを呼び出し元のディスクに書き込みます。リモート実行側ではその実行側のディスクに書き込まれます。--proxy なしで実行してください。",
+      "serverLicence": "呼び出し元のログインで証明書を発行し、呼び出し元のローカルのインストール記録に保存します。リモート実行側はどちらも持っていません。--proxy なしで実行してください。",
+      "serverLicenceMint": "呼び出し元のログインで証明書を発行し、呼び出し元のファイルに書き込みます。リモート実行側はどちらも持っていません。--proxy なしで実行してください。",
+      "serverStatus": "呼び出し元のローカルのインストール記録を通じてサーバーを探します。リモート実行側にはそれがありません。--proxy なしで実行してください。",
+      "serverUpgrade": "子コマンドと呼び出し元のローカルのインストール記録 (および --local-image では呼び出し元の Docker) を操作します。リモート実行側は自分の環境で動作してしまいます。--proxy なしで実行してください。"
     }
   },
   "docs": {
