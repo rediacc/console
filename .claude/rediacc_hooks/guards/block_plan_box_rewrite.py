@@ -27,9 +27,9 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_plan_box_rewrite",
     "EDGE_CASES",
     "ENVS",

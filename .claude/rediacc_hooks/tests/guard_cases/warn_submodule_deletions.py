@@ -1,4 +1,4 @@
-"""The test tables of `warn_submodule_deletions`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `warn_submodule_deletions`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 from rediacc_hooks.tests.guard_cases import _common
 

@@ -28,10 +28,10 @@ import re
 import shlex
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.guards.block_host_toolchain_run import _python_target
 
-__getattr__ = _cases.lazy("block_unasked_release", "EDGE_CASES", "_ASK", "_PY")
+__getattr__ = tables("block_unasked_release", "EDGE_CASES", "_ASK", "_PY")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

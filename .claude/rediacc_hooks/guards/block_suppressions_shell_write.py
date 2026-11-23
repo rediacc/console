@@ -30,9 +30,9 @@ import sys
 import tokenize
 
 from rediacc_hooks import hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases, _writes
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_suppressions_shell_write", "EDGE_CASES", "_NQ", "_SC", "_TSI")
+__getattr__ = tables("block_suppressions_shell_write", "EDGE_CASES", "_NQ", "_SC", "_TSI")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -48,8 +48,11 @@ _PREFILTER = re.compile(
     re.IGNORECASE,
 )
 INTERPRETERS = shellscan.INTERPRETER_NAMES
-WRITERS = _writes.WRITERS
-WRITE_CODE = _writes.WRITE_CODE
+WRITERS = ("echo", "printf", "cat")
+WRITE_CODE = re.compile(
+    r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
+    r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
+)
 # A program that RUNS text it was handed (review 13505e0b.2): for one of these the stdin is program text as well as data.
 # THE RULE (648366c8.1): stdin is program text unless the source can be classified as not evaluating it. In Python, Perl and Ruby an evaluator is ordinarily reached by a NAME, so a source naming none of `_RUNS_TEXT` is classified. That is a reading of the plain spelling, not a proof: a name assembled at run time (`getattr(__builtins__, 'ex' + 'ec')`) is not seen, and such a program's stdin is read as data. JavaScript has plain spellings that name nothing a list can hold (a bare `Function(...)` call, `import('data:...')`, `x.constructor.constructor(...)`), beside the ones the list does hold (`new Function`), so no JavaScript program is classified and every one of `_UNCLASSIFIED` that is fed anything is read as running it.
 _UNCLASSIFIED = ("node", "deno", "bun", "tsx")
@@ -57,8 +60,10 @@ _RUNS_TEXT = re.compile(
     r"\b(?:exec|eval|execfile|compile|instance_eval|class_eval|module_eval)\b|new\s+Function\b"
     r"|\brunIn(?:This|New)?Context\b|\brunpy\b|\bcode\.interact|\bInteractiveConsole\b"
 )
-_SED_SUB = _writes.SED_SUB
-_SED_TEXT = _writes.SED_TEXT
+_SED_SUB = re.compile(
+    r"(?:^|[;\s{])s(?P<d>[^\w\s\\])(?P<pat>(?:\\.|(?!(?P=d)).)*)(?P=d)(?P<rep>(?:\\.|(?!(?P=d)).)*)(?P=d)"
+)
+_SED_TEXT = re.compile(r"(?:^|[;\s])(?:\d+|\$|/[^/]*/)?\s*[aic]\\?\s*(?P<text>[^;\n]*)")
 
 UNEXAMINED = (
     "block-suppressions-shell-write: the inline-suppression scanner could not be loaded (%s); "
@@ -118,7 +123,7 @@ def _disk_counts(engine, path, language):
         return engine.count_markers("", language)
 
 
-_operands = _writes.operands
+_operands = shellscan.plain_operands
 
 
 def _run_operands(run, argv):

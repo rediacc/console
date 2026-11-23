@@ -24,9 +24,9 @@ PORT NOTE ON `grep -c .`. That is a count of records matching the regex `.`, i.e
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "warn_stale_index",
     "EDGE_CASES",
     "ENVS",

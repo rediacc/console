@@ -24,9 +24,9 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_commit_meta", "EDGE_CASES", "ENVS", "FIXTURES", "HOME_BODIES", "_home_fixture"
 )
 

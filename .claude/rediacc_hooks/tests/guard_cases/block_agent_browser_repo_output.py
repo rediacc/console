@@ -1,4 +1,4 @@
-"""The test tables of `block_agent_browser_repo_output`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_agent_browser_repo_output`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 EDGE_CASES = [
     # Case 1, reproduced 2026-08-27.

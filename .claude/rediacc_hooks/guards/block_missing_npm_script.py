@@ -21,9 +21,9 @@ import os
 import pathlib
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_missing_npm_script", "EDGE_CASES")
+__getattr__ = tables("block_missing_npm_script", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

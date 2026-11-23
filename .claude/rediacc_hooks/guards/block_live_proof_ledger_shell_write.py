@@ -27,10 +27,10 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases, _writes
 from rediacc_hooks.guards import block_live_proof_ledger_write as EDIT
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_live_proof_ledger_shell_write", "EDGE_CASES", "LEDGER_REL")
+__getattr__ = tables("block_live_proof_ledger_shell_write", "EDGE_CASES", "LEDGER_REL")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -42,7 +42,7 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 LEDGER_PATH = EDIT.LEDGER_PATH
 LEDGER_NAME = "live-proof.jsonl"
 INTERPRETERS = shellscan.INTERPRETER_NAMES
-_PATH_MAX = _writes.PATH_MAX
+_PATH_MAX = shellscan.PATH_MAX
 _GLOB = frozenset("*?[")
 
 # Code that opens a file for writing, appends to one, replaces or removes one (the review-file guard's reading plus the append verbs this ledger is written with).
@@ -85,7 +85,7 @@ MESSAGE = (
 )
 
 
-_base = _writes.run_dir
+_base = shellscan.run_base
 
 
 def _is_ledger(word, base=None):
@@ -107,7 +107,7 @@ def _is_ledger(word, base=None):
     return any(LEDGER_PATH.search(p.replace("\\", "/")) for p in landed)
 
 
-_operands = _writes.operands
+_operands = shellscan.plain_operands
 
 
 def _operand_write(run, name, argv, base):

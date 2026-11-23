@@ -28,10 +28,10 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_second_open_pr", "EDGE_CASES", "ENVS", "_GH_DOWN", "_GH_EMPTY", "_GH_LIST"
 )
 

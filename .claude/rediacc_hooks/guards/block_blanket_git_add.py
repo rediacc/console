@@ -28,9 +28,9 @@ NO CROSS-TALK with block-worktree-add.sh: `git worktree add x` has `worktree` be
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases, _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 
-__getattr__ = _cases.lazy("block_blanket_git_add", "EDGE_CASES")
+__getattr__ = tables("block_blanket_git_add", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 29

@@ -1,4 +1,4 @@
-"""The test tables of `block_unverified_push`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_unverified_push`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import json
 import os
@@ -185,6 +185,8 @@ def _repo_with_forged_advance(path):
     git("add", "-A")
     git("commit", "-q", "-m", "code")
     head = git("rev-parse", "HEAD^{tree}")
+    if not head:
+        raise RuntimeError("the forged-advance fixture could not read its head tree")
     cache = path / ".ci" / "cache"
     cache.mkdir(parents=True)
     (cache / "prepush-receipt.json").write_text(

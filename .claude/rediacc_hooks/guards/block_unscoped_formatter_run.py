@@ -32,9 +32,9 @@ import pathlib
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_unscoped_formatter_run", "EDGE_CASES", "INCIDENT")
+__getattr__ = tables("block_unscoped_formatter_run", "EDGE_CASES", "INCIDENT")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

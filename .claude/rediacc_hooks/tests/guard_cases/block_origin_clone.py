@@ -1,4 +1,4 @@
-"""The test tables of `block_origin_clone`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_origin_clone`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 from rediacc_hooks import wellknown
 from rediacc_hooks.guards.block_origin_clone import githooks

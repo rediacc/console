@@ -8,9 +8,9 @@ CHECKED TWICE: here, at commit time, against the pathspec (or the index when the
 """
 
 from rediacc_hooks import commit_policy, hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_no_review_ineligible", "EDGE_CASES")
+__getattr__ = tables("block_no_review_ineligible", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

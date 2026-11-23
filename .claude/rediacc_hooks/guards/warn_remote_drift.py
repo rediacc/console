@@ -22,9 +22,9 @@ PORT NOTE ON THE HEREDOC. `cat >&2 <<EOF ... EOF` emits its body with the final 
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "warn_remote_drift",
     "EDGE_CASES",
     "ENVS",

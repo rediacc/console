@@ -9,9 +9,9 @@ trailing newline `scan_target` writes is removed before grep ever sees it; and t
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_ssh_docker", "EDGE_CASES")
+__getattr__ = tables("block_ssh_docker", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 9

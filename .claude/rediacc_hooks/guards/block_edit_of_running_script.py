@@ -25,9 +25,9 @@ when the interpreter that built them exits. Both sides then read the same two pr
 """
 
 from rediacc_hooks import hookio, runningscript
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_edit_of_running_script",
     "EDGE_CASES",
     "ENVS",

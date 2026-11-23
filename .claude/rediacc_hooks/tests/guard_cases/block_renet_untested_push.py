@@ -1,4 +1,4 @@
-"""The test tables of `block_renet_untested_push`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_renet_untested_push`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import json
 import pathlib
@@ -59,6 +59,8 @@ def plant_receipt(root, packages, every=False, commit="HEAD"):
     """A passing receipt for the renet tree of `commit` (in private/renet) under `<root>/RECEIPTS_REL`, the shape the gate writes."""
     renet = pathlib.Path(root) / RENET
     tree = VM._git(renet, "rev-parse", "%s^{tree}" % commit)
+    if not tree:
+        raise RuntimeError("plant_receipt: rev-parse %s^{tree} printed nothing" % commit)
     receipts = pathlib.Path(root) / RECEIPTS_REL
     receipts.mkdir(parents=True, exist_ok=True)
     doc = {

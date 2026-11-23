@@ -27,11 +27,11 @@ import shlex
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases, _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 from rediacc_hooks.guards import block_prose_style_commit as PSC
 from rediacc_hooks.guards import block_unverified_push as PUSH
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_unproven_bulk_transform", "EDGE_CASES", "ENVS", "FIXTURES", "_bulk_staged_world"
 )
 

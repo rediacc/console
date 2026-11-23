@@ -26,9 +26,9 @@ import re
 import sys
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_plan_without_depends", "EDGE_CASES", "_ABS")
+__getattr__ = tables("block_plan_without_depends", "EDGE_CASES", "_ABS")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True

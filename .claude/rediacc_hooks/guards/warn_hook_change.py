@@ -16,9 +16,9 @@ inherited the shell's. That is also why this module's ENVS point `GIT_DIR` at it
 """
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "warn_hook_change", "EDGE_CASES", "ENVS", "FIXTURES", "_fixture_git", "_repo_with_staged"
 )
 

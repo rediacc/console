@@ -40,10 +40,10 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import GH_REPO
 
-__getattr__ = _cases.lazy("block_admin_merge", "EDGE_CASES")
+__getattr__ = tables("block_admin_merge", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 26

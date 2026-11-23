@@ -9,9 +9,9 @@ one empty record and matches nothing. That is why `hook_init` is NOT used here a
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_ssh_file_write", "EDGE_CASES")
+__getattr__ = tables("block_ssh_file_write", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 10

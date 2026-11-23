@@ -1,6 +1,6 @@
 """The guard test tables live in `tests/guard_cases/`, and every reader still finds them on the guard module (PLAN-tooling-code-reduction CR5).
 
-Both directions: a forwarded name must resolve to the table's own object (without `guards._cases.lazy` that read is an AttributeError, and the differential would quietly see no EDGE_CASES at all), and a hook call must import NO table (the point of the move is that the hot path stops loading test data).
+Both directions: a forwarded name must resolve to the table's own object (without `guards.tables` that read is an AttributeError, and the differential would quietly see no EDGE_CASES at all), and a hook call must import NO table (the point of the move is that the hot path stops loading test data).
 """
 
 import ast
@@ -12,7 +12,6 @@ import sys
 import pytest
 
 from rediacc_hooks import guards
-from rediacc_hooks.guards import _cases
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 TABLES = HOOKS / "tests" / "guard_cases"
@@ -20,7 +19,7 @@ TABLE_STEMS = sorted(p.stem for p in TABLES.glob("*.py") if not p.name.startswit
 
 
 def _forwarded(stem):
-    """The names a guard's `lazy(...)` line forwards, read from its source."""
+    """The names a guard's `tables(...)` line forwards, read from its source."""
     tree = ast.parse((guards.HERE / ("%s.py" % stem)).read_text(encoding="utf-8"))
     for node in tree.body:
         if (
@@ -46,12 +45,10 @@ def test_the_table_set_is_not_empty():
 def test_every_forwarded_name_resolves_to_the_tables_object(stem):
     assert stem in guards.stems(), "tests/guard_cases/%s.py names no guard" % stem
     names = _forwarded(stem)
-    assert names, (
-        '%s has a table file but no `__getattr__ = _cases.lazy("<stem>", ...)` line' % stem
-    )
+    assert names, '%s has a table file but no `__getattr__ = tables("<stem>", ...)` line' % stem
     assert "EDGE_CASES" in names or "FIXTURES" in names or "ENVS" in names
     module = guards.load(stem)
-    table = __import__("%s.%s" % (_cases.TABLES, stem), fromlist=["_"])
+    table = __import__("%s.%s" % (guards.TABLES, stem), fromlist=["_"])
     for name in names:
         assert name not in vars(module), "%s still defines %s inline" % (stem, name)
         assert getattr(module, name) is getattr(table, name), "%s.%s" % (stem, name)
@@ -114,7 +111,7 @@ def test_a_forwarded_read_does_import_the_table():
     ).stdout
     assert json.loads(out) == [
         "rediacc_hooks.tests.guard_cases",
-        _cases.TABLES + ".block_git_amend",
+        guards.TABLES + ".block_git_amend",
     ]
 
 
@@ -138,5 +135,5 @@ def test_no_guard_regrows_an_inline_table_except_the_clock_readers():
             inline.append(stem)
     assert inline == [], (
         "these guards define a test table inline; put it in tests/guard_cases/<stem>.py "
-        'and forward it with `__getattr__ = _cases.lazy("<stem>", ...)`: %s' % inline
+        'and forward it with `__getattr__ = tables("<stem>", ...)`: %s' % inline
     )

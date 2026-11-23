@@ -1,4 +1,4 @@
-"""The test tables of `block_raw_ci_read`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_raw_ci_read`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 EDGE_CASES = [
     # --- refused: every CI_READ_VERBS row, plus the shapes the walk must see through ---

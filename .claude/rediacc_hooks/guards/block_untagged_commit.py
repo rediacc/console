@@ -39,9 +39,9 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_untagged_commit", "EDGE_CASES", "ENVS", "FIXTURES", "_fixture")
+__getattr__ = tables("block_untagged_commit", "EDGE_CASES", "ENVS", "FIXTURES", "_fixture")
 
 CHAIN = "pre-bash"
 ORDER = 37

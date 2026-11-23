@@ -1,4 +1,4 @@
-"""The test tables of `block_ci_polling`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_ci_polling`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 EDGE_CASES = [
     # The 2026-08-25 ruling, pinned here as well as in the suite: prose fires.

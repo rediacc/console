@@ -24,9 +24,9 @@ different set of tokens than the twin whenever a selector carries a glob charact
 import glob
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_agent_browser_repo_output", "EDGE_CASES")
+__getattr__ = tables("block_agent_browser_repo_output", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 33

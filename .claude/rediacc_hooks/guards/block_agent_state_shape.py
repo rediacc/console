@@ -33,9 +33,9 @@ Python's `^` would too under `re.MULTILINE`. A path is not supposed to carry a n
 import re
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_agent_state_shape", "EDGE_CASES")
+__getattr__ = tables("block_agent_state_shape", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 ORDER = 6

@@ -8,9 +8,9 @@ FAILS OPEN. No flag, an unreadable flag, or a stop directory that cannot be impo
 """
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_away_questions", "EDGE_CASES", "ENVS", "FIXTURES", "_empty_world", "_flag_world"
 )
 

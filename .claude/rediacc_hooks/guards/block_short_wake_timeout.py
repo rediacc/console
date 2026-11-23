@@ -18,9 +18,9 @@ import math
 import re
 
 from rediacc_hooks import hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_short_wake_timeout", "EDGE_CASES")
+__getattr__ = tables("block_short_wake_timeout", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

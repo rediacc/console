@@ -23,10 +23,10 @@ PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, s
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases, _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 from rediacc_hooks.wellknown import GH_REPO
 
-__getattr__ = _cases.lazy("block_git_empty_commit", "EDGE_CASES", "ENVS", "_GIT_STUB")
+__getattr__ = tables("block_git_empty_commit", "EDGE_CASES", "ENVS", "_GIT_STUB")
 
 CHAIN = "pre-bash"
 ORDER = 20

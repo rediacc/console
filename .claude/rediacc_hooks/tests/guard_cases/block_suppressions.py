@@ -1,4 +1,4 @@
-"""The test tables of `block_suppressions`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_suppressions`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 # Fixture tokens, assembled from halves so this file never holds a literal marker.
 _TS_IGNORE = "@ts-ignor" + "e"

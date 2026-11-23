@@ -1,4 +1,4 @@
-"""The test tables of `block_unscoped_formatter_run`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_unscoped_formatter_run`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 INCIDENT = (
     "R=ruff; $R format $( $R format --check a.py b.py 2>&1 | grep 'Would reformat'"

@@ -39,10 +39,10 @@ import re
 import sys
 
 from rediacc_hooks import hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import IMAGE_REGISTRY
 
-__getattr__ = _cases.lazy("block_host_toolchain_run", "EDGE_CASES", "ENVS")
+__getattr__ = tables("block_host_toolchain_run", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 34

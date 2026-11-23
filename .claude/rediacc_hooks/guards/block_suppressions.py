@@ -26,9 +26,9 @@ import pathlib
 import sys
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_suppressions",
     "EDGE_CASES",
     "_ESLINT_DISABLE",

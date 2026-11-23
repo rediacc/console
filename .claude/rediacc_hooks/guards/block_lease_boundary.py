@@ -23,9 +23,9 @@ import os
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_lease_boundary", "EDGE_CASES", "ENVS", "FIXTURES", "_lease_world")
+__getattr__ = tables("block_lease_boundary", "EDGE_CASES", "ENVS", "FIXTURES", "_lease_world")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

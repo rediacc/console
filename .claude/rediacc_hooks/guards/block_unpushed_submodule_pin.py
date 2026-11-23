@@ -16,9 +16,9 @@ FAILS OPEN on every environmental error: git missing or failing, a detached HEAD
 import os
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_unpushed_submodule_pin",
     "EDGE_CASES",
     "ENVS",

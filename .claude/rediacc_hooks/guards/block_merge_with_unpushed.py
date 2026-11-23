@@ -18,9 +18,9 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_merge_with_unpushed", "EDGE_CASES", "ENVS")
+__getattr__ = tables("block_merge_with_unpushed", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 27

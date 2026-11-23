@@ -1,4 +1,4 @@
-"""The test tables of `block_agent_state_shape`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_agent_state_shape`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 EDGE_CASES = [
     # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the control was refused.

@@ -37,9 +37,9 @@ import re
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases, _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 
-__getattr__ = _cases.lazy("block_unlinked_commit_author", "EDGE_CASES")
+__getattr__ = tables("block_unlinked_commit_author", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 5

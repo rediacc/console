@@ -1,4 +1,4 @@
-"""The test tables of `block_worktree_add`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
+"""The test tables of `block_worktree_add`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 EDGE_CASES = [
     ("the plain shape", "git worktree add /tmp/wt main"),

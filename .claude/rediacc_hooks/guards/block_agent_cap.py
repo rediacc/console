@@ -18,9 +18,9 @@ NO ENVIRONMENT READ. This file is a sealed module in `.ci/policy/worklist-env-re
 import pathlib
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_agent_cap", "EDGE_CASES")
+__getattr__ = tables("block_agent_cap", "EDGE_CASES")
 
 CHAIN = "pre-agent"
 OWN_SUITE = True

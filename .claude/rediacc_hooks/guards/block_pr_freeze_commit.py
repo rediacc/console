@@ -10,9 +10,9 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, pr_freeze, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_pr_freeze_commit",
     "EDGE_CASES",
     "ENVS",

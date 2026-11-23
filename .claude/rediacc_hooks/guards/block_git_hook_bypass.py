@@ -23,9 +23,9 @@ WHICH LAYER RULES. This pre-bash layer stays authoritative for agents, because o
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_git_hook_bypass", "EDGE_CASES")
+__getattr__ = tables("block_git_hook_bypass", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

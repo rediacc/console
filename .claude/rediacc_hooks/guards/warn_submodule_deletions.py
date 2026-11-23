@@ -23,9 +23,9 @@ header. The cost here is one spurious advisory rather than a refused command, wh
 import os
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "warn_submodule_deletions",
     "EDGE_CASES",
     "ENVS",

@@ -16,10 +16,10 @@ import pathlib
 import subprocess
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_protected_files as PF
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_protected_files_edit", "EDGE_CASES")
+__getattr__ = tables("block_protected_files_edit", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True

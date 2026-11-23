@@ -31,9 +31,9 @@ import subprocess
 import tempfile
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_inline_python", "EDGE_CASES", "ENVS", "_PROGRAM")
+__getattr__ = tables("block_inline_python", "EDGE_CASES", "ENVS", "_PROGRAM")
 
 CHAIN = "pre-edit"
 ORDER = 8

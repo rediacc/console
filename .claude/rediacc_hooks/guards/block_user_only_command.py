@@ -20,9 +20,9 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import pathlib
 
 from rediacc_hooks import hookio, model_invocation
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_user_only_command", "EDGE_CASES", "_C", "_FM")
+__getattr__ = tables("block_user_only_command", "EDGE_CASES", "_C", "_FM")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True

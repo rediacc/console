@@ -25,9 +25,9 @@ is stated rather than asserted: the differential is what pins it, and it compare
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_self_matching_pgrep", "EDGE_CASES")
+__getattr__ = tables("block_self_matching_pgrep", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 14

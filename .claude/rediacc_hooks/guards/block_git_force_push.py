@@ -35,9 +35,9 @@ import os
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_git_force_push", "EDGE_CASES", "ENVS", "FIXTURES", "_two_trees")
+__getattr__ = tables("block_git_force_push", "EDGE_CASES", "ENVS", "FIXTURES", "_two_trees")
 
 CHAIN = "pre-bash"
 ORDER = 18

@@ -24,9 +24,9 @@ import importlib
 import os
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_rebase_over_foreign_dirt",
     "EDGE_CASES",
     "ENVS",

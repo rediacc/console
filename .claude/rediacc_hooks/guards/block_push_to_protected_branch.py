@@ -75,10 +75,10 @@ import sys
 import time
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _backup_push, _cases
+from rediacc_hooks.guards import _backup_push, tables
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
-__getattr__ = _cases.lazy("block_push_to_protected_branch", "EDGE_CASES", "ENVS")
+__getattr__ = tables("block_push_to_protected_branch", "EDGE_CASES", "ENVS")
 
 # The hook's own gh read budget (`_gh_json`), the same two attempts and 2 s pause every guard's retried read uses.
 GH_READ_ATTEMPTS = 2

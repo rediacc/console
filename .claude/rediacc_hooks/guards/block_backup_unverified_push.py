@@ -28,11 +28,11 @@ FAILS OPEN, LOUDLY, on a broken environment (no root, the trigger module will no
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
-from rediacc_hooks.guards import _backup_push, _cases, _push_receipts
+from rediacc_hooks.guards import _backup_push, _push_receipts, tables
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_backup_unverified_push",
     "EDGE_CASES",
     "ENVS",

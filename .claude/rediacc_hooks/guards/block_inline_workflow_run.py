@@ -26,9 +26,9 @@ PORT NOTE ON THE SUBJECT'S NEWLINE. `printf '%s\\n' "$CONTENT"` appends exactly 
 import re
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_inline_workflow_run", "EDGE_CASES", "_ANNOTATED", "_FAT")
+__getattr__ = tables("block_inline_workflow_run", "EDGE_CASES", "_ANNOTATED", "_FAT")
 
 CHAIN = "pre-edit"
 ORDER = 5

@@ -53,9 +53,9 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_destructive_git_restore", "EDGE_CASES", "ENVS")
+__getattr__ = tables("block_destructive_git_restore", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 30

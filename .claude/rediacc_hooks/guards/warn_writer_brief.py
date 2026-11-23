@@ -36,9 +36,9 @@ import subprocess
 import time
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "warn_writer_brief", "EDGE_CASES", "ENVS", "FIXTURES", "WORLD", "_SID", "_brief_world", "_spawn"
 )
 

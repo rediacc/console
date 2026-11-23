@@ -12,9 +12,9 @@ here, so the awk is ported rather than replaced, and the two live side by side e
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases, _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 
-__getattr__ = _cases.lazy("block_git_amend", "EDGE_CASES")
+__getattr__ = tables("block_git_amend", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 17

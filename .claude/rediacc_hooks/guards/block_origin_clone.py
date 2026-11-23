@@ -27,12 +27,10 @@ import shlex
 import urllib.parse
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_worktree_add as programs
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
-    "block_origin_clone", "EDGE_CASES", "_CONSOLE", "_GHO", "_MIRROR", "_RENET"
-)
+__getattr__ = tables("block_origin_clone", "EDGE_CASES", "_CONSOLE", "_GHO", "_MIRROR", "_RENET")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

@@ -11,9 +11,9 @@ import importlib.util
 import sys
 
 from rediacc_hooks import hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_shape_lessons", "EDGE_CASES")
+__getattr__ = tables("block_shape_lessons", "EDGE_CASES")
 
 _MODULE = "trapguard_shapes"
 

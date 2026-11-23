@@ -27,9 +27,9 @@ import os
 import time
 
 from rediacc_hooks import commit_policy, hookio, syspath
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_commit_of_live_writer_file",
     "EDGE_CASES",
     "ENVS",

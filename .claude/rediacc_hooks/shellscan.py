@@ -9033,6 +9033,66 @@ def in_place_edit(run):
     return scripts, files
 
 
+# --------------------------------------------------------------------------- the shell-write guards' shared readings (PLAN-tooling-code-reduction CR5, D5) ---------------------------------------------------------------------------
+#
+# block_review_file_shell_write, block_user_only_command_shell_write, block_live_proof_ledger_shell_write and block_suppressions_shell_write were written one from another, and each carried its own copy of the operand filter, the run-directory join, the find-start expansion and the "a write through a link the text never spells" reading; a fix to one copy reached none of the others. Each guard now binds
+# these (`_operands = shellscan.plain_operands`), so its call sites and its DEFECT read as before. NO MATCHER LIVES HERE: the regexes the readings apply (each guard's `_LITERAL` and `WRITE_CODE`) stay in the guard modules and are passed in, because check:ci-guard-mention-anchoring judges the matcher-shaped constants of guard modules only.
+
+# The longest path the kernel resolves; a word longer than this names no file a write can open.
+PATH_MAX = 4096
+
+
+def plain_operands(argv):
+    """`run.argv` is the ARGUMENTS, without the command name; every word that is not an option, a lone `-` kept."""
+    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+
+
+def run_base(where, cwd):
+    """The absolute directory a run in `where` (`write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
+    if not cwd or not os.path.isabs(str(cwd)):
+        return None
+    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+
+
+def find_starts(run, ops):
+    """`ops` with a `{}` read as the starting points of the `find` that launched this run (`Launch.starts`): `find .claude -exec sed -i ... {} +` edits files under `.claude`."""
+    if run.launch is None or run.launch.launcher != "find":
+        return ops
+    out: list[str] = []
+    for a in ops:
+        out.extend(run.launch.starts if "{}" in a else [a])
+    return out
+
+
+def code_writes_through_disk(code, through_link, write_code, literal, program=None):
+    """Whether interpreter `code` writes to a place `through_link` accepts (a literal that reaches the guarded tree only on disk, through a link the text never spells).
+
+    A Python `program` that parses is judged by its write TARGETS through `python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.1, .2, .3). Other code is read line by line: a line `write_code` matches writes through a link when one of its quoted literals (`literal`, the guard's own pattern, whose first matching group is the body) is accepted, or when it names a variable assigned from such a literal.
+    """
+    if program is not None:
+        verdict = python_writes_to(program, through_link)
+        if verdict is not None:
+            return verdict
+
+    def bodies(text):
+        for m in literal.finditer(text):
+            yield next(g for g in m.groups() if g is not None)
+
+    names = {
+        m.group(1)
+        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
+        if any(through_link(lit) for lit in bodies(m.group(2)))
+    }
+    for line in code.splitlines():
+        if not write_code.search(line):
+            continue
+        if any(through_link(lit) for lit in bodies(line)):
+            return True
+        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
+            return True
+    return False
+
+
 # --------------------------------------------------------------------------- every file a command writes (PLAN-tooling-code-reduction CR5, D5) ---------------------------------------------------------------------------
 #
 # ONE ANSWER TO "DOES THIS COMMAND WRITE P?". Each write guard grew its own reading of the same walk: the redirects, `tee`, `sed -i`/`perl -i`, a copier's landing, a listed command's output option, a destructive git verb's pathspecs and an interpreter program's write calls. Every reading below already lives in this module; `writes` only puts them behind one call, so a guard asks its own path question

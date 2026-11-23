@@ -47,10 +47,10 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_prose_style_commit as PSC
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("warn_staged_shape_duplication", "EDGE_CASES")
+__getattr__ = tables("warn_staged_shape_duplication", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True

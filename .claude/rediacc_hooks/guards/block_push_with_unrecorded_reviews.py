@@ -25,10 +25,10 @@ import os
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _cases
 from rediacc_hooks.guards import block_unverified_push as PUSH
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_push_with_unrecorded_reviews",
     "EDGE_CASES",
     "ENVS",

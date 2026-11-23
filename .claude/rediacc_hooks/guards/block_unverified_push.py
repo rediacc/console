@@ -45,10 +45,10 @@ import tempfile
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _backup_push, _cases, _push_receipts
+from rediacc_hooks.guards import _backup_push, _push_receipts, tables
 from rediacc_hooks.wellknown import GH_REPO
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_unverified_push",
     "EDGE_CASES",
     "ENVS",

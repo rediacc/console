@@ -25,9 +25,9 @@ import shlex
 import types
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases, _writes
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_review_file_shell_write", "EDGE_CASES", "R")
+__getattr__ = tables("block_review_file_shell_write", "EDGE_CASES", "R")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -51,7 +51,7 @@ WRITE_CODE = re.compile(
 SHELL_CALL = re.compile(
     r"\b(system|popen|exec(Sync|File|FileSync)?|spawn(Sync)?|subprocess|check_output|check_call|getoutput|getstatusoutput|qx|Popen3?|Open3)\b|`"
 )
-_LITERAL = _writes.LITERAL
+_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
 # How deep a command handed to a shell from inside a program is followed; a program that runs a program that runs a shell is two.
 MAX_DEPTH = 4
 
@@ -83,10 +83,10 @@ def _is_review(word, cwd=None, base=None):
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93). With `lnk` a link to `agent/reviews/sub`, `cd lnk && tee x.md`, `echo x > lnk/x.md` and `cp /tmp/a lnk/` write review files while no word, and no directory text the walk keeps, spells the review directory: the lexical reading allowed all three (rc 0), logical `cd` or physical. `base` is the absolute directory the run executes in, and the word is resolved against it on disk.
 # Read only for a word short enough to be a path: a heredoc body or a commit message is not one, and resolving it would only spend system calls.
-_PATH_MAX = _writes.PATH_MAX
+_PATH_MAX = shellscan.PATH_MAX
 
 
-_base = _writes.run_dir
+_base = shellscan.run_base
 
 
 def _lands_in_reviews(word, base):
@@ -468,12 +468,15 @@ def _globs_reviews(cmd, cwd):
     return False
 
 
-_literals = _writes.literals
+def _literals(text):
+    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
+    for m in _LITERAL.finditer(text):
+        yield next(g for g in m.groups() if g is not None)
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). A literal that spells the directory is the precise readings' to judge; `_writes.code_writes_through_disk` reads the rest."""
-    return _writes.code_writes_through_disk(
+    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). A literal that spells the directory is the precise readings' to judge; `shellscan.code_writes_through_disk` reads the rest."""
+    return shellscan.code_writes_through_disk(
         code,
         lambda value: (
             isinstance(value, str)
@@ -481,6 +484,7 @@ def _code_writes_through_disk(code, base, program=None):
             and _lands_in_reviews(value, base)
         ),
         WRITE_CODE,
+        _LITERAL,
         program,
     )
 
@@ -600,7 +604,7 @@ def _without_ref_operands(run, argv):
     return out
 
 
-_operands = _writes.operands
+_operands = shellscan.plain_operands
 
 
 def _run_operands(run, argv):

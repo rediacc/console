@@ -12,9 +12,9 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import re
 
 from rediacc_hooks import hookio
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_live_proof_ledger_write", "EDGE_CASES")
+__getattr__ = tables("block_live_proof_ledger_write", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True

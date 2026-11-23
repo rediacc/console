@@ -12,10 +12,10 @@ differ by one iteration, which is the whole loop.
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, HOMEBREW_TAP_REPO, RENET_REPO
 
-__getattr__ = _cases.lazy("block_nondraft_pr_create", "EDGE_CASES")
+__getattr__ = tables("block_nondraft_pr_create", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 22

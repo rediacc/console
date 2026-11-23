@@ -20,9 +20,9 @@ Here the registry is imported into this interpreter instead, so there is no argu
 import importlib.util
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy("block_adhoc_sanctioned", "EDGE_CASES")
+__getattr__ = tables("block_adhoc_sanctioned", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 32

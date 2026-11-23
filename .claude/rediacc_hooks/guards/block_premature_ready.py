@@ -7,10 +7,10 @@ as well as an unset one, and empty is precisely what the network path yields whe
 """
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import GH_REPO
 
-__getattr__ = _cases.lazy("block_premature_ready", "EDGE_CASES", "ENVS")
+__getattr__ = tables("block_premature_ready", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 25

@@ -16,9 +16,9 @@ import os
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import tables
 
-__getattr__ = _cases.lazy(
+__getattr__ = tables(
     "block_landing_one_way", "EDGE_CASES", "ENVS", "FIXTURES", "_FIXED_ENV", "_landing_world"
 )
 
