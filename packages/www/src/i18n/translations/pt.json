@@ -775,7 +775,8 @@
           ],
           "content2": [
             "A Rediacc avisa com, pelo menos, trinta (30) dias de antecedência antes de acrescentar ou substituir um Subcontratante Ulterior, atualizando esta página e notificando o correio eletrónico da Conta. O Cliente pode opor-se, por motivos razoáveis de proteção de dados, dentro desse prazo. Se as partes não conseguirem resolver a oposição, o Cliente pode pôr termo aos Serviços afetados e receber o reembolso dos preços pré-pagos relativos ao período posterior à cessação.",
-            "A análise de tráfego do sítio web (Plausible) não trata Dados Pessoais do Cliente e é abrangida pela Política de Privacidade."
+            "A análise de tráfego do sítio web (Plausible) não trata Dados Pessoais do Cliente e é abrangida pela Política de Privacidade.",
+            "Um provedor de modelos que o Cliente conecta a um agente de IA não é um subprocessador, pois a Rediacc nem o escolhe nem lhe dá instruções. A saída das ferramentas enviada a esse provedor é regida pelo acordo próprio do Cliente com ele."
           ],
           "id": "subprocessors",
           "items": [
@@ -2517,7 +2518,8 @@
             "<strong>Prestadores de serviços (subcontratantes)</strong> que alojam e operam a nossa plataforma, enviam correio eletrónico e processam pagamentos, vinculados por obrigações contratuais de proteção dos seus dados. A lista atual, com a função e a localização de cada prestador, consta do nosso <a href=\"data-processing-agreement\">Acordo de Tratamento de Dados</a>",
             "<strong>Plausible Analytics</strong> para análise do sítio web sem cookies e anonimizada (não são partilhados dados pessoais)",
             "<strong>Processamento de telemetria</strong>: os dados de utilização do produto anonimizados são transmitidos para o nosso próprio endpoint de telemetria dentro da UE para agregação e análise. Nenhum dado de telemetria é partilhado com terceiros (consulte a nossa <a href=\"telemetry-policy\">Política de Telemetria</a>)",
-            "<strong>Autoridades policiais</strong> quando exigido por lei, regulamento ou processo legal válido"
+            "<strong>Autoridades policiais</strong> quando exigido por lei, regulamento ou processo legal válido",
+            "<strong>O provedor de modelos que o usuário conecta</strong> quando um agente de IA é usado por meio de MCP remoto: a saída das ferramentas devolvida ao agente é processada por esse provedor segundo os termos dele. A Rediacc não escolhe esse provedor, e alguns conectores, como o conector MCP da API do Claude, não são elegíveis para retenção zero de dados"
           ],
           "title": "4. Partilha de Dados e Terceiros"
         },

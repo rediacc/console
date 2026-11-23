@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6013,
-    "sourceCommit": "6a049fc810d7851a621d0735df35f8add6cb2369"
+    "keyCount": 6015,
+    "sourceCommit": "f9c980842b182e644eb84eb1d37e394baf60f7a5"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -465,6 +465,7 @@
     "pages.dataProcessingAgreement.sections.subprocessors.content.0": "f127c778",
     "pages.dataProcessingAgreement.sections.subprocessors.content2.0": "e52c1a2d",
     "pages.dataProcessingAgreement.sections.subprocessors.content2.1": "84251270",
+    "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1",
     "pages.dataProcessingAgreement.sections.subprocessors.id": "2fddb91a",
     "pages.dataProcessingAgreement.sections.subprocessors.items.0": "e1dc7cb5",
     "pages.dataProcessingAgreement.sections.subprocessors.items.1": "e289445c",
@@ -1394,6 +1395,7 @@
     "pages.privacyPolicy.sections.dataSharing.items.1": "e3f509dc",
     "pages.privacyPolicy.sections.dataSharing.items.2": "d33ba21d",
     "pages.privacyPolicy.sections.dataSharing.items.3": "2a822600",
+    "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
     "pages.privacyPolicy.sections.dataSharing.title": "3de6c90d",
     "pages.privacyPolicy.sections.howWeUseInformation.content.0": "a5b297fc",
     "pages.privacyPolicy.sections.howWeUseInformation.id": "86bf2e64",

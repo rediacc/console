@@ -771,7 +771,8 @@
           ],
           "content2": [
             "Rediacc, bir Alt İşleyen eklemeden veya değiştirmeden en az otuz (30) gün önce bu sayfayı güncelleyerek ve Hesap e-postasını bilgilendirerek bildirimde bulunur. Müşteri bu süre içinde makul veri koruma gerekçeleriyle itiraz edebilir. Taraflar itirazı çözemezse Müşteri etkilenen Hizmetleri sonlandırabilir ve fesihten sonraki döneme ait ödenmiş ücretlerin iadesini alabilir.",
-            "Web sitesi analitiği (Plausible) Müşteri Kişisel Verilerini işlemez ve Gizlilik Politikası kapsamındadır."
+            "Web sitesi analitiği (Plausible) Müşteri Kişisel Verilerini işlemez ve Gizlilik Politikası kapsamındadır.",
+            "Müşterinin bir yapay zekâ ajanına bağladığı model sağlayıcı, Rediacc onu seçmediği ve ona talimat vermediği için alt işleyici sayılmaz. Bu sağlayıcıya gönderilen araç çıktısı, Müşterinin onunla yaptığı kendi sözleşmesine tabidir."
           ],
           "id": "subprocessors",
           "items": [
@@ -2502,7 +2503,8 @@
             "Platformumuzu barındıran ve işleten, e-posta gönderen ve ödemeleri işleyen, verilerinizi korumaya yönelik sözleşmesel yükümlülüklerle bağlı <strong>hizmet sağlayıcılar (alt işleyiciler)</strong>. Her sağlayıcının rolünü ve konumunu içeren güncel liste <a href=\"data-processing-agreement\">Veri İşleme Sözleşmemizde</a> yer alır",
             "Çerezsiz anonim web analitiği için <strong>Plausible Analytics</strong>",
             "<strong>Telemetri işleme</strong> — anonimleştirilmiş ürün kullanım verileri, toplama ve analiz için AB içindeki kendi telemetri uç noktamıza iletilir. Telemetri verileri üçüncü taraflarla paylaşılmaz (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
-            "Kanun gerektirdiğinde <strong>kolluk kuvvetleri</strong>"
+            "Kanun gerektirdiğinde <strong>kolluk kuvvetleri</strong>",
+            "<strong>Kullanıcının bağladığı model sağlayıcı</strong>, bir yapay zekâ ajanı uzak MCP üzerinden kullanıldığında: ajana dönen araç çıktısı bu sağlayıcı tarafından kendi koşullarına göre işlenir. Rediacc bu sağlayıcıyı seçmez; Claude API MCP bağlayıcısı gibi bazı bağlayıcılar sıfır veri saklama için uygun değildir"
           ],
           "title": "4. Veri Paylaşımı ve Üçüncü Taraflar"
         },

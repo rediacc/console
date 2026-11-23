@@ -745,7 +745,8 @@
           ],
           "content2": [
             "Rediacc prévient au moins trente (30) jours à l'avance avant d'ajouter ou de remplacer un Sous-traitant ultérieur, en mettant à jour cette page et en notifiant l'adresse e-mail du Compte. Le Client peut s'y opposer dans ce délai pour des motifs raisonnables de protection des données. Si les parties ne parviennent pas à résoudre l'objection, le Client peut résilier les Services concernés et obtenir le remboursement des frais prépayés pour la période postérieure à la résiliation.",
-            "L'analyse d'audience du site web (Plausible) ne traite pas de Données personnelles du Client et relève de la Politique de confidentialité."
+            "L'analyse d'audience du site web (Plausible) ne traite pas de Données personnelles du Client et relève de la Politique de confidentialité.",
+            "Un fournisseur de modèle que le Client connecte à un agent IA n'est pas un sous-traitant ultérieur, car Rediacc ne le choisit ni ne lui donne d'instructions. La sortie des outils envoyée à ce fournisseur relève de l'accord propre du Client avec lui."
           ]
         },
         "transfers": {
@@ -2517,7 +2518,8 @@
             "<strong>Prestataires de services (sous-traitants ultérieurs)</strong> qui hébergent et exploitent notre plateforme, envoient les e-mails et traitent les paiements, et qui sont tenus par contrat de protéger vos données. La liste actuelle, avec le rôle et la localisation de chaque prestataire, figure dans notre <a href=\"data-processing-agreement\">Accord de traitement des données</a>",
             "<strong>Plausible Analytics</strong> pour des analyses web anonymes",
             "<strong>Traitement de la télémétrie</strong> — les données d'utilisation anonymisées des produits sont transmises à notre propre point de terminaison de télémétrie au sein de l'UE pour agrégation et analyse. Aucune donnée de télémétrie n'est partagée avec des tiers (voir notre <a href=\"telemetry-policy\">Politique de télémétrie</a>)",
-            "<strong>Autorités légales</strong> lorsque la loi l'exige"
+            "<strong>Autorités légales</strong> lorsque la loi l'exige",
+            "<strong>Le fournisseur de modèle que l'utilisateur connecte</strong> lorsqu'un agent IA passe par MCP distant : la sortie des outils renvoyée à l'agent est traitée par ce fournisseur selon ses propres conditions. Rediacc ne choisit pas ce fournisseur, et certains connecteurs, comme le connecteur MCP de l'API Claude, ne sont pas éligibles à la rétention zéro des données"
           ],
           "title": "4. Partage de données et tiers"
         },

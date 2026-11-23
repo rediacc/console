@@ -747,7 +747,8 @@
           ],
           "content2": [
             "Rediacc dà un preavviso di almeno trenta (30) giorni prima di aggiungere o sostituire un Sub-responsabile, aggiornando questa pagina e avvisando l'email dell'Account. Il Cliente può opporsi entro tale termine per ragionevoli motivi di protezione dei dati. Se le parti non riescono a risolvere l'opposizione, il Cliente può risolvere i Servizi interessati e ottenere il rimborso dei corrispettivi prepagati per il periodo successivo alla risoluzione.",
-            "L'analisi statistica del sito web (Plausible) non tratta Dati Personali del Cliente ed è disciplinata dall'Informativa sulla privacy."
+            "L'analisi statistica del sito web (Plausible) non tratta Dati Personali del Cliente ed è disciplinata dall'Informativa sulla privacy.",
+            "Un fornitore di modelli che il Cliente collega a un agente IA non è un sub-responsabile, perché Rediacc non lo sceglie né gli impartisce istruzioni. L'output degli strumenti inviato a tale fornitore è regolato dall'accordo proprio del Cliente con esso."
           ]
         },
         "transfers": {
@@ -2521,7 +2522,8 @@
             "<strong>Fornitori di servizi (sub-responsabili del trattamento)</strong> che ospitano e gestiscono la nostra piattaforma, recapitano le email ed elaborano i pagamenti, vincolati da obblighi contrattuali di tutela dei vostri dati. L'elenco aggiornato, con il ruolo e la sede di ciascun fornitore, è nel nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>",
             "<strong>Plausible Analytics</strong> per analisi del sito web senza cookie e anonimizzate (nessun dato personale viene condiviso)",
             "<strong>Elaborazione della telemetria</strong>: i dati anonimi di utilizzo del prodotto vengono trasmessi al nostro endpoint di telemetria all'interno dell'UE per l'aggregazione e l'analisi. Nessun dato di telemetria viene condiviso con terzi (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
-            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
+            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale",
+            "<strong>Il fornitore di modelli collegato dall'utente</strong> quando un agente IA viene usato tramite MCP remoto: l'output degli strumenti restituito all'agente è trattato da quel fornitore secondo i propri termini. Rediacc non sceglie tale fornitore, e alcuni connettori, come il connettore MCP dell'API Claude, non sono idonei alla conservazione zero dei dati"
           ],
           "title": "4. Condivisione dei Dati e Terze Parti"
         },

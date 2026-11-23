@@ -1153,7 +1153,8 @@
             "<strong>Service providers (subprocessors)</strong> who host and operate our platform, deliver email and process payments, bound by contractual obligations to protect your data. The current list, with each provider's role and location, is in our <a href=\"data-processing-agreement\">Data Processing Agreement</a>",
             "<strong>Plausible Analytics</strong> for cookieless, anonymized website analytics (no personal data is shared)",
             "<strong>Telemetry processing</strong> for anonymized product usage data, which is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
-            "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process"
+            "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process",
+            "<strong>The model provider the user connects</strong> when an AI agent is used through remote MCP: tool output returned to the agent is processed by that provider under its own terms. Rediacc does not choose that provider, and some connectors, such as the Claude API MCP connector, are not eligible for zero data retention"
           ]
         },
         "dataRetention": {
@@ -2417,7 +2418,8 @@
           ],
           "content2": [
             "Rediacc gives at least thirty (30) days' notice before adding or replacing a Subprocessor, by updating this page and notifying the Account email. The Customer may object on reasonable data protection grounds within that period. If the parties cannot resolve the objection, the Customer may terminate the affected Services and receive a refund of prepaid fees for the period after termination.",
-            "Website analytics (Plausible) do not process Customer Personal Data and are covered by the Privacy Policy."
+            "Website analytics (Plausible) do not process Customer Personal Data and are covered by the Privacy Policy.",
+            "A model provider that the Customer connects to an AI agent is not a Subprocessor, because Rediacc neither selects it nor instructs it. Tool output sent to that provider is governed by the Customer's own agreement with it."
           ]
         },
         "transfers": {

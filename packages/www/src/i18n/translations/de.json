@@ -743,7 +743,8 @@
           ],
           "content2": [
             "Rediacc kündigt das Hinzufügen oder Ersetzen eines Unterauftragsverarbeiters mindestens dreißig (30) Tage vorher an, indem es diese Seite aktualisiert und die E-Mail-Adresse des Kontos benachrichtigt. Der Kunde kann innerhalb dieser Frist aus berechtigten datenschutzrechtlichen Gründen widersprechen. Können die Parteien den Widerspruch nicht beilegen, kann der Kunde die betroffenen Dienste kündigen und erhält im Voraus bezahlte Entgelte für den Zeitraum nach der Kündigung erstattet.",
-            "Website-Analysen (Plausible) verarbeiten keine Personenbezogenen Kundendaten und unterliegen der Datenschutzerklärung."
+            "Website-Analysen (Plausible) verarbeiten keine Personenbezogenen Kundendaten und unterliegen der Datenschutzerklärung.",
+            "Ein Modellanbieter, den der Kunde mit einem KI-Agenten verbindet, ist kein Unterauftragsverarbeiter, weil Rediacc ihn weder auswählt noch anweist. Für die an diesen Anbieter gesendete Tool-Ausgabe gilt die eigene Vereinbarung des Kunden mit ihm."
           ]
         },
         "transfers": {
@@ -2517,7 +2518,8 @@
             "<strong>Dienstleister (Unterauftragsverarbeiter)</strong>, die unsere Plattform hosten und betreiben, E-Mails zustellen und Zahlungen abwickeln und vertraglich zum Schutz Ihrer Daten verpflichtet sind. Die aktuelle Liste mit Rolle und Standort der einzelnen Anbieter finden Sie in unserem <a href=\"data-processing-agreement\">Auftragsverarbeitungsvertrag</a>",
             "<strong>Plausible Analytics</strong> für cookielose, anonymisierte Webanalytik",
             "<strong>Telemetrieverarbeitung</strong> — anonymisierte Produktnutzungsdaten werden an unseren eigenen Telemetrie-Endpunkt innerhalb der EU zur Aggregation und Analyse übermittelt. Keine Telemetriedaten werden an Dritte weitergegeben (siehe unsere <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>)",
-            "<strong>Strafverfolgungsbehörden</strong>, wenn gesetzlich vorgeschrieben"
+            "<strong>Strafverfolgungsbehörden</strong>, wenn gesetzlich vorgeschrieben",
+            "<strong>Der vom Nutzer verbundene Modellanbieter</strong>, wenn ein KI-Agent über Remote-MCP arbeitet: Die an den Agenten zurückgegebene Tool-Ausgabe wird von diesem Anbieter nach dessen eigenen Bedingungen verarbeitet. Rediacc wählt diesen Anbieter nicht aus, und manche Konnektoren, etwa der MCP-Konnektor der Claude API, kommen für Zero Data Retention nicht in Frage"
           ],
           "title": "4. Datenweitergabe und Dritte"
         },

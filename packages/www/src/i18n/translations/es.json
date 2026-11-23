@@ -743,7 +743,8 @@
           ],
           "content2": [
             "Rediacc avisa con al menos treinta (30) días de antelación antes de añadir o sustituir un Subencargado, actualizando esta página y notificándolo al correo electrónico de la Cuenta. El Cliente puede oponerse dentro de ese plazo por motivos razonables de protección de datos. Si las partes no pueden resolver la oposición, el Cliente puede resolver los Servicios afectados y recibir el reembolso de las tarifas prepagadas correspondientes al período posterior a la resolución.",
-            "Las analíticas del sitio web (Plausible) no tratan Datos Personales del Cliente y se rigen por la Política de privacidad."
+            "Las analíticas del sitio web (Plausible) no tratan Datos Personales del Cliente y se rigen por la Política de privacidad.",
+            "Un proveedor de modelos que el Cliente conecta a un agente de IA no es un subencargado, porque Rediacc ni lo elige ni le da instrucciones. La salida de las herramientas enviada a ese proveedor se rige por el acuerdo propio del Cliente con él."
           ]
         },
         "transfers": {
@@ -2515,7 +2516,8 @@
             "<strong>Proveedores de servicios (subencargados del tratamiento)</strong> que alojan y operan nuestra plataforma, envían correo electrónico y procesan pagos, y que están obligados contractualmente a proteger sus datos. La lista actual, con la función y la ubicación de cada proveedor, figura en nuestro <a href=\"data-processing-agreement\">Acuerdo de encargo de tratamiento de datos</a>",
             "<strong>Plausible Analytics</strong> para análisis web anónimos",
             "<strong>Procesamiento de telemetría</strong> — los datos anonimizados de uso del producto se transmiten a nuestro propio punto de telemetría dentro de la UE para su agregación y análisis. Ningún dato de telemetría se comparte con terceros (consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>)",
-            "<strong>Autoridades legales</strong> cuando lo exija la ley"
+            "<strong>Autoridades legales</strong> cuando lo exija la ley",
+            "<strong>El proveedor de modelos que el usuario conecta</strong> cuando un agente de IA se usa a través de MCP remoto: la salida de las herramientas que vuelve al agente la procesa ese proveedor según sus propias condiciones. Rediacc no elige a ese proveedor, y algunos conectores, como el conector MCP de la API de Claude, no son aptos para la retención cero de datos"
           ],
           "title": "4. Intercambio de datos y terceros"
         },
