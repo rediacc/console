@@ -491,7 +491,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4913 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
-| `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 79 | 2 | 3 | 10894 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
 | `agent/plans/PLAN-ciquick-cpu.md` | approved | 198 | 22 | 16 | 35476 |
@@ -620,7 +619,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-state-md-session-isolation.md` | compacted | 40 | 0 | 0 | 2556 |
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
-| `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
 | `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13916 |
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 206 | 8 | 0 | 26494 |
@@ -661,6 +659,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-cd-errors-in-ci.md` | done | 86 | 0 | 6 | 8862 |
 | `agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md` | done | 172 | 0 | 11 | 35651 |
 | `agent/plans/_done/PLAN-ci-consolidation.md` | done | 187 | 0 | 22 | 24553 |
+| `agent/plans/_done/PLAN-ci-quick-cpu-scheduling.md` | superseded | 82 | 2 | 3 | 11050 |
 | `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 232 | 6 | 0 | 21797 |
 | `agent/plans/_done/PLAN-cli-tofu-toolchain.md` | done | 55 | 0 | 10 | 11429 |
 | `agent/plans/_done/PLAN-cloudflare-spend-guard.md` | done | 116 | 0 | 10 | 41296 |
@@ -723,6 +722,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-stop-hook-effort.md` | done | 45 | 0 | 7 | 7833 |
 | `agent/plans/_done/PLAN-stop-hook-focus-mode.md` | done | 354 | 0 | 8 | 36786 |
 | `agent/plans/_done/PLAN-stop-hook-one-plan-scope.md` | done | 180 | 0 | 14 | 42603 |
+| `agent/plans/_done/PLAN-stop-hook-refactor-enforcement.md` | superseded | 373 | 1 | 16 | 49489 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260924.md` | done | 619 | 0 | 23 | 67980 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260925.md` | done | 259 | 0 | 10 | 25162 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20261101.md` | done | 182 | 0 | 4 | 18323 |
