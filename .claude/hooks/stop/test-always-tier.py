@@ -61,6 +61,8 @@ ALWAYS_KEYS = frozenset(
         "queue-slot",
         # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.
         "roster-concurrency",
+        # I3 -- a shell waiter the roster no longer counts live (wl_stuckshell, agent/plans/PLAN-writers-now-cadence.md WN4): its final report is captured or its shell outlived the bound. On 2026-11-23 such a writer showed "waiting on 1 shell" for hours while every check read it as live; a rotating key would let the same silence read as a pass.
+        "stuck-shell",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",
         # I2 -- a scheduled workflow red on main (wl_schedred): the release pipeline is the party blocked (promote-stable counts only green scheduled runs) and it cannot see this session stop, so a rotating key would let the red sit another night behind unrelated checks.

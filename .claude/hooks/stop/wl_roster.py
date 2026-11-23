@@ -469,10 +469,25 @@ def _running(event):
     ]
 
 
-def shell_waiters(running, metas, now=None):
+def shell_waiters(running, metas, now=None, start=None):
+    """{agent id: shell id} for every LIVE shell waiter: the `armed_waiters` minus each agent `wl_stuckshell` calls stuck.
+
+    A waiter whose final report is already captured, or whose shell has run past `wl_stuckshell.STUCK_SHELL_MIN`, is stuck and not live (agent/plans/PLAN-writers-now-cadence.md WN4): on 2026-11-23 writer a7f511c739e4aa739 reported a final TICK block and still counted live for hours behind its own narrow-CI shell. `start` is the project start the report store is found from; with None only the runtime bound applies.
+    """
+    import wl_stuckshell as S
+
+    out = armed_waiters(running, metas, now)
+    if out:
+        entries = S.report_entries(start)
+        for aid in S.classify(out, metas, entries, now):
+            out.pop(aid)
+    return out
+
+
+def armed_waiters(running, metas, now=None):
     """{agent id: shell id} for every agent the event does NOT list as running whose own transcript launched a shell that still runs.
 
-    An agent that armed a background command and ended its turn is WAITING, not finished: the harness resumes it when that shell exits, yet the event reports the agent itself as completed. Its launch leaves `"backgroundTaskId":"<id>"` in the agent's transcript, and that is the only link between the two, since the event's shell rows carry no owner.
+    An agent that armed a background command and ended its turn is WAITING, not finished: the harness resumes it when that shell exits, yet the event reports the agent itself as completed. Its launch leaves `"backgroundTaskId":"<id>"` in the agent's transcript, and that is the only link between the two, since the event's shell rows carry no owner. Stuck waiters are included; `shell_waiters` is the live subset.
     """
     listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"}
     shell_ids = [
@@ -585,7 +600,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     running = _running(event)
     shells = {str(b.get("id") or ""): b for b in running if b.get("type") == "shell"}
     workflows = {str(b.get("id") or ""): b for b in running if b.get("type") == "workflow"}
-    waiters = shell_waiters(running, metas)
+    waiters = shell_waiters(running, metas, now, start)
     running = running + [{"id": aid, "type": "subagent", "status": "running"} for aid in waiters]
 
     # LIVE: the harness lists it AND its transcript is not proven finished. The `--reap` list is not consulted: a reaped id whose transcript is not proven finished is still a live writer, and one that is proven finished is excluded here anyway.
@@ -1628,11 +1643,11 @@ def live_writer_paths(cwd, session_id, event, now=None, fold=None):
             return WriterPaths()
         kids = children_map(metas)
         running = _running(event or {})
-        waiters = shell_waiters(running, metas)
+        start = C.project_start({"cwd": cwd})
+        waiters = shell_waiters(running, metas, now, start)
         listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"} | set(
             waiters
         )
-        start = C.project_start({"cwd": cwd})
         root = C.project_root(start)
         cache: dict[str, set] = {}
 
@@ -1715,8 +1730,22 @@ def live_estimate(cwd, session_id, now=None):
     if sub_dir is None:
         return None, {}
     metas = load_metas(sub_dir)
-    ro_types = read_only_types(C.project_root(C.project_start({"cwd": cwd})))
+    start = C.project_start({"cwd": cwd})
+    ro_types = read_only_types(C.project_root(start))
     types, since, waiters = {}, None, {}
+    stuck_memo: dict[Any, Any] = {}
+
+    def live_wait(aid, m):
+        """The shell `aid` waits on per its transcript alone, or "" when none is armed or `wl_stuckshell` calls the wait stuck (WN4)."""
+        wshell = transcript_waiting(m["jsonl"], now)
+        if not wshell:
+            return ""
+        import wl_stuckshell as S
+
+        if "entries" not in stuck_memo:
+            stuck_memo["entries"] = S.report_entries(start)
+        return "" if S.classify({aid: wshell}, metas, stuck_memo["entries"], now) else wshell
+
     try:
         p = lastevent_path(cwd, session_id)
         doc = json.loads(p.read_text(encoding="utf-8"))
@@ -1724,7 +1753,7 @@ def live_estimate(cwd, session_id, now=None):
         for b in _running(doc):
             if b.get("type") == "subagent" and b.get("id"):
                 types[str(b["id"])] = str(b.get("agent_type") or "")
-        waiters = shell_waiters(_running(doc), metas)
+        waiters = shell_waiters(_running(doc), metas, now, start)
         for aid in waiters:
             types.setdefault(aid, metas[aid]["type"])
     except (OSError, ValueError, AttributeError, TypeError):
@@ -1739,7 +1768,7 @@ def live_estimate(cwd, session_id, now=None):
             types[aid] = m["type"]
         elif aid not in types and aid not in waiters:
             # WAITING SINCE THE EVENT: the last Stop event may already call it completed while the shell it armed after that event still runs. Its own transcript says so.
-            wshell = transcript_waiting(m["jsonl"], now)
+            wshell = live_wait(aid, m)
             # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, counting a writer the Stop hook already saw finished (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
             mt_agent = _mtime(m["jsonl"])
             if wshell and since is not None and (mt_agent is None or mt_agent <= since):
@@ -1761,7 +1790,7 @@ def live_estimate(cwd, session_id, now=None):
             )
         ):
             # ONE NUMBER FOR BOTH CALLERS: an agent listed as running by the last event that has since ended its turn to wait on a shell is a live writer, not a finished one. The spawn guard and `--lease worker:queue` both read this function, so they now agree.
-            wshell = transcript_waiting(m["jsonl"], now)
+            wshell = live_wait(aid, m)
             if not wshell:
                 continue
             waiters[aid] = wshell

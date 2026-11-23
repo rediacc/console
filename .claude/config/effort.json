@@ -241,6 +241,10 @@
       "block": "smart",
       "advise": "low"
     },
+    "stuck-shell": {
+      "block": "low",
+      "advise": "quiet"
+    },
     "plan-adopted": {
       "block": "smart",
       "advise": "low"

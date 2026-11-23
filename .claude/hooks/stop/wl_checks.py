@@ -2618,6 +2618,8 @@ PRIORITY_LADDER = (
                 "queue-slot",
                 # The Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers already serving plans that break a mutex or share files, which the pre-agent guard missed or was bypassed for. Same roster family as roster-unleased/roster-dead above.
                 "roster-concurrency",
+                # A shell waiter whose final report is captured or whose shell outlived wl_stuckshell.STUCK_SHELL_MIN (agent/plans/PLAN-writers-now-cadence.md WN4): the roster no longer counts it live, and the item it holds waits on a landing only the lead can do. Same roster family.
+                "stuck-shell",
                 # A trapguard rule raised and was skipped (wl_trapfires, PLAN-trap-enforcement.md section 4.3.4): the dispatcher fails open per rule, and this is what keeps that from being silent.
                 "trapguard-errors",
             }
@@ -4737,6 +4739,21 @@ def _stop_roster(ns):
                     me8,
                 ),
             )
+
+    # STUCK SHELL-WAITERS (agent/plans/PLAN-writers-now-cadence.md WN4, wl_stuckshell): an agent waiting on a shell whose final report is captured, or whose shell outlived STUCK_SHELL_MIN, is not live; name it with its shell and both moves. Computed in every roster state, a roster that could not be built included.
+    import wl_stuckshell
+
+    _stuck_problems: list[str] = []
+    _stuck = wl_stuckshell.stop_rows(event, session_id, problems=_stuck_problems)
+    if _stuck_problems:
+        note_read_failure("stuck-shell", RuntimeError("; ".join(_stuck_problems)))
+    if _stuck:
+        vadd(
+            "stuck-shell",
+            True,
+            M.V_STUCK_SHELL
+            % (len(_stuck), wl_stuckshell.STUCK_SHELL_MIN, wl_stuckshell.render(_stuck), me8),
+        )
 
     worktree_check(
         worklist,

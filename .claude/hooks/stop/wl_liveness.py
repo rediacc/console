@@ -299,7 +299,7 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
 
 
 def live_worker_ids(event, live_bg, cwd, session_id, problems=None):
-    """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`).
+    """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`), minus a waiter `wl_stuckshell` calls stuck (its final report captured, or its shell past STUCK_SHELL_MIN; agent/plans/PLAN-writers-now-cadence.md WN4).
 
     A waiter ended its turn, so the event lists only its shell and calls the agent completed; the harness resumes it when that shell exits. Before 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.8) an expired lease on a waiter therefore failed closed into an open item, and the stuck detector did not count the lease as supervision, while the roster called the same agent live."""
     import wl_roster as R
@@ -311,7 +311,8 @@ def live_worker_ids(event, live_bg, cwd, session_id, problems=None):
             for b in (event.get("background_tasks") or [])
             if isinstance(b, dict) and b.get("status") == "running"
         ]
-        ids |= set(R.shell_waiters(running, R.load_metas(R.session_subagents_dir(cwd, session_id))))
+        metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
+        ids |= set(R.shell_waiters(running, metas, None, C.project_start({"cwd": cwd})))
     except Exception as exc:
         # The shell waiters are missing from `ids`; a caller that passes `problems` can say so.
         if problems is not None:

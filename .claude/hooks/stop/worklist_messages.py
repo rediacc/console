@@ -3100,6 +3100,15 @@ V_ROSTER_CONCURRENCY = (
     "    .claude/hooks/stop/worklist.py --lease %s <id> +120 worker:queue"
 )
 
+# A STUCK SHELL-WAITER (agent/plans/PLAN-writers-now-cadence.md WN4, `stuck-shell`, wl_stuckshell): an agent shown waiting on a shell whose final report is already captured, or whose shell outlived the bound, so the roster no longer counts it live. Substitutions: the count, the bound in minutes, the rendered rows (each naming the agent, the shell and both moves), the session prefix.
+V_STUCK_SHELL = (
+    "STUCK SHELL-WAITER: %d agent(s) of this session wait on a shell yet are finished or past "
+    "the %d-minute bound, so the roster no longer counts them live:\n"
+    "%s\n"
+    "  After landing, close each item the agent held:\n"
+    "    .claude/hooks/stop/worklist.py --tick %s <id> <evidence>"
+)
+
 # An expired or malformed lease fails closed into an open item (wl_store.classify_items). The last clause is the remedy for an item that is really waiting on another (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5): a BLOCKED_BY token makes it `waiting` instead of open. Substitutions: the item's display line, the lease state, the session prefix, the item id.
 N_LEASE_FAILED_CLOSED = (
     "%s   <- [>] lease %s; finish it, renew the lease, or tick it; waiting on another item? "
