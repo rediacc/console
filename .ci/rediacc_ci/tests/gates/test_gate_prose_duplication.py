@@ -23,7 +23,7 @@ REPO = paths.repo_root()
 
 LAUNCHER = ".claude/commands/pr-babysit.md"
 AGENT = ".claude/agents/pr-babysitter.md"
-PR_MERGE = ".claude/commands/pr-merge.md"
+PR_MERGE = ".claude/commands/landing.md"
 REGISTRY_REL = ".ci/config/scope-mirrors.json"
 
 # What the gate reads, copied into every temp root.

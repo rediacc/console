@@ -216,6 +216,6 @@ def test_the_family_is_the_four_loop_files() -> None:
         "CLAUDE.md",
         ".claude/commands/pr-babysit.md",
         ".claude/agents/pr-babysitter.md",
-        ".claude/commands/pr-merge.md",
+        ".claude/commands/landing.md",
     )
     assert pd.THRESHOLD == 25
