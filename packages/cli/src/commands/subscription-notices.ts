@@ -129,10 +129,11 @@ function licenceSummary(notice: NoticeWire, names: Map<string, RepoNameEntry>): 
   });
 }
 
+/** One literal key per server state, so the CLI key-usage gate sees each one referenced. */
 const FORENSICS_STATE_KEYS = {
-  warning: 'warning',
-  level_capped: 'levelCapped',
-  refused: 'refused',
+  warning: 'commands.subscription.notices.summary.forensicsQuota.warning',
+  level_capped: 'commands.subscription.notices.summary.forensicsQuota.levelCapped',
+  refused: 'commands.subscription.notices.summary.forensicsQuota.refused',
 } as const;
 
 /** Bytes as decimal gigabytes with one fractional digit, the unit the quota is sold in. */
@@ -146,7 +147,7 @@ function forensicsQuotaSummary(p: Record<string, unknown>): string {
   if (state !== 'warning' && state !== 'level_capped' && state !== 'refused') {
     return 'forensics_quota';
   }
-  return t(`commands.subscription.notices.summary.forensicsQuota.${FORENSICS_STATE_KEYS[state]}`, {
+  return t(FORENSICS_STATE_KEYS[state], {
     used: gb(p.usedBytes),
     quota: gb(p.quotaBytes),
     locked: gb(p.lockedBytes),
