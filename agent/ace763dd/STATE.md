@@ -1,18 +1,18 @@
-## SESSION ace763dd 2026-11-23T02:00:52Z
+## SESSION ace763dd 2026-11-23T08:07:44Z
 
-# STATE ace763dd (2026-11-23 ~02:05Z, operator AWAY since 19:45Z)
+# STATE ace763dd (2026-11-23 ~08:25Z)
 
 ## Big pieces
-- 1121-1 is REBASED onto origin/main (done in the landing tree because the hooks read the main checkout; rebase-proof 266 carried, 14 absorbed, 5 changed, 8 flagged missing each verified present). Landing tree back on local main. Submodule core.worktree for account/elite/renet repaired after a landing `submodule update --init` broke it (hint recorded).
-- Post-rebase reds fixed: f05a6c1b61 458d35c366 3ca6914bde b473d05491 (pytest, types, shard, lane, pin), citations ffbed1f5c2, deps account 0747abe + gitlink 9ac1d1a82a, A0 row 739fd13a11. carried-reds now: check:ci-ops-health, check:ci-plan-bindings (open live box 0e4aa275 of PLAN-multi-region-bench).
-- ci:quick re-run on the tip: background bq45yug0r (#3b82cf28).
+- 1121-1 NOT pushed yet. Everything finished is landed (tip dfc082a5f3+). ci:quick 10 ran green-ish fast at load 2; its ~22 reds were fixed by writers and landed (02e6e36779 b6b785dc79 4bc79712cb a745aa7769..e13c638f58, 5a0ffe4f35). Gate fix: check_plan_citations._bare kept dot paths (5a0ffe4f35).
+- Rulings today: on-prem needs a registered account (#27f914c6, landed 6d09c1f3ca); SP7 job must fit 15 min (#1f7bbb86, landed 4bc79712cb, cost unmeasured until first CI run); lab ToS for onprem-lab only (#97dfbca4); keep local-run live ticks (#f411e441); branch-rebase permission restored (ee55dfaec6).
+- /writers-now round started 07:56Z: survey /tmp/writers-now/1121-1-20261123T0756Z.md (307 open: CODE 90, PRESENT 9, LIVE 160, GITHUB 29, TIME 14, OPERATOR 5). 6 PRESENT ticked (dfc082a5f3). Promoted 1132/1433.
 
-## Delegated
-- none live; bq45yug0r is the ci:quick run.
-
-## Overnight
-- Hook stand-down during a rebase landed (rebased sha d9c3ad783c). R3/R4 landed; R3 needs its live CI receipt run. Flaky: packages/www/scripts/lib/__tests__/ffmpeg-video.test.ts 5 s limit hit at 6.97 s under load (needs a longer per-case timeout).
+## Delegated (writers-now wave, each leased on the worklist)
+- CL-A a3fc1039ee1e08f05 (R7 R1 SP3 B7 B4 W4 W6 W3 W5 W7), CL-B a06841e9ff2c7fb69 (SF4 SF7 SP5 SF5), CL-C/G ab59cc2d48cfd64ae (CR9 CR8), CL-D a1fa378c0a61b48ae (D1 X1 L2 L3 B9), CL-E af268160b495d8c65 (CR2 rest, W2.2 W2.6 W3.2 W3.3 L3, CR3 CR4), CL-F1 a8d935b9332ecc51f, CL-F2 acec86b6e7282ddc4, CL-F3 a408b9ba30b15a551, CL-H/J a938b62533f8905c0.
+- Runners: bench ae287ab31c62de73f, hostinger a3b1347ef0c66c2e6, production a4a2e0ad0296b23b6 (destructive+stable listed only), VM a7d5b5387bc707bcb (lab first; also D1 fe5245eb, P1 8d218ccc). Evidence files /tmp/writers-now/1121-1-20261123T0756Z-evidence-<target>.md.
+- Queued: CL-O bench rename (multi-region-bench exclusive). Done no-commit: P3 partial (drop migration waits LB1), N5 present (CI owed), drills P1/D1 code present.
 
 ## Next action
-1. When bq45yug0r passes (only the two carried reds): push submodule first `git -C private/account push origin 1121-1` (needs its own guard receipt if asked), then `TURBO_PUSH_REASON=backup git push -u origin 1121-1`; if the guard says the receipt judged another tree, run `npm run ci:quick` again (advance) and push.
-2. Watch that push's CI: `npx tsx scripts/ci-runner/ci-receipt.ts fetch`, verify, ci:quick carrying a ci- origin; tick R3 a2ae6f1c with the rebased shas; `./run.sh worktree landing --promote`; tell console-1a "promotion done"; effort=smart; writers for ciquick-cpu W11/W12/W15-W19, tooling-speed SP1/SP2/SP4/SP6, code-reduction CR2/CR1/CR7; mark #73b32419 (1104-1 review findings) with rebased sha; runner tick batch from /tmp/writers-now evidence files.
+1. Each writer report: spot-check, land with /home/developer/.claude/jobs/ace763dd/tmp/landall.sh <lease-id> (resolves generated-file conflicts), gc --write --id, tick via `worktree land <id> --ticks` lines or investigate+plan-tick pairs.
+2. Runner reports: read evidence file, run close: lines in one tick batch commit.
+3. When writers drain: ONE ci:quick, fix reds, push (TURBO_PUSH_REASON=backup git push -u origin 1121-1, renet/account branches first if new submodule commits), verify R3 receipt (ci-receipt.ts fetch/verify), tick R3 a2ae6f1c, ./run.sh worktree landing --promote.
