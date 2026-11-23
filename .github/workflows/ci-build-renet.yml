@@ -453,12 +453,15 @@ jobs:
           if-no-files-found: error
 
   # Native macOS/Windows tests for pkg/procwalk (the process-ancestry walker
-  # behind the agent-override legitimacy checks). renet's lint.sh analyzes the
-  # darwin/windows build tags statically (golangci-lint per GOOS), but the real
-  # kern.procargs2 / PEB ReadProcessMemory code paths only execute on their
-  # native OS, so this is their sole RUNTIME coverage. Scope is strictly
-  # ./pkg/procwalk/...: cmd/renet and pkg/ebpf need the BPF go:generate step
-  # (clang/libbpf), which exists only on the Linux runners.
+  # behind the agent-override legitimacy checks) and for pkg/chunkstore's hole
+  # punch twins. renet's lint.sh analyzes the darwin/windows build tags
+  # statically (golangci-lint per GOOS), but the real kern.procargs2 / PEB
+  # ReadProcessMemory and F_PUNCHHOLE / FSCTL_SET_ZERO_DATA code paths only
+  # execute on their native OS, so this is their sole RUNTIME coverage. Scope is
+  # strictly those two packages: cmd/renet and pkg/ebpf need the BPF go:generate
+  # step (clang/libbpf), which exists only on the Linux runners. The job keeps
+  # its Procwalk name because gate tests and the recorded lane durations key
+  # on it.
   platform-tests:
     name: Procwalk (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
