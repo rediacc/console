@@ -60,6 +60,8 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'repo sync status': LOCAL_SYNC,
   'repo sync upload': LOCAL_SYNC,
   'repo tunnel': INTERACTIVE,
+  'preview leave':
+    "interactive and local: asks before it switches each touched server's renet over SSH, then replaces the local CLI (section 24)",
   'term connect': INTERACTIVE,
   'vscode connect': INTERACTIVE,
   serve: 'the executor daemon itself (section 24)',
