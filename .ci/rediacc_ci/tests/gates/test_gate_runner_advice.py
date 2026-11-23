@@ -38,6 +38,8 @@ BASH_TWIN = ".ci/scripts/test/gates/test-runner-advice.sh"
 
 GATE_REL = ".ci/scripts/quality/check_runner_advice.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
+# The gate's logic lives in the package module; the by-path entry above only runs it. The inline probes load the module, so they need `.ci` on the path.
+MODULE = paths.from_root(".ci", "rediacc_ci", "quality", "runner_advice.py")
 REPORT_AWK_REL = ".ci/scripts/ci/profiler/report.awk"
 REPORT_AWK = paths.from_root(*REPORT_AWK_REL.split("/"))
 # The shared BLOCKER validator. The twin sourced `.ci/scripts/lib/blocker-validator.sh`; that library was deleted in PLAN-retire-bash-oracles section 12 U1 and this drives its port's `verify` verb, which is the twin's `parse_blockered_list` + `verify_all_blockers` pair (byte agreement frozen in `goldens/twins/lib.blocker-validator.jsonl`).
@@ -142,10 +144,14 @@ def run_gate(gate, baseline_path, workflow_dir, allowlist) -> harness.RunResult:
 def run_inline(gate, script: str, *args: str) -> harness.RunResult:
     """`python3 - "$GATE" <args> <<'PY'`, one throwaway interpreter per call.
 
-    `sys.argv[1]` is the gate path on the far side, exactly as in the twin, so a snippet carried across needs no index rewriting.
+    `sys.argv[1]` is the gate module path on the far side, so a snippet carried across needs no index rewriting.
     """
     python3 = require_python(gate)
-    return harness.run([python3, "-", os.fspath(GATE), *args], stdin=script)
+    return harness.run(
+        [python3, "-", os.fspath(MODULE), *args],
+        stdin=script,
+        env={"PYTHONPATH": os.fspath(paths.from_root(".ci"))},
+    )
 
 
 def workflow(directory, runner: str) -> None:

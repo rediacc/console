@@ -1809,7 +1809,7 @@
         },
         {
           "id": "check:ci-plan-bindings",
-          "evidence": ".ci/scripts/quality/check_plan_bindings.py:336 (glob) *.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_bindings.py:334 (glob) *.jsonl"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -1996,7 +1996,7 @@
         },
         {
           "id": "check:ci-plan-bindings",
-          "evidence": ".ci/scripts/quality/check_plan_bindings.py:336 (glob) *.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_bindings.py:334 (glob) *.jsonl"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -2183,7 +2183,7 @@
         },
         {
           "id": "check:ci-plan-bindings",
-          "evidence": ".ci/scripts/quality/check_plan_bindings.py:336 (glob) *.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_bindings.py:334 (glob) *.jsonl"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -2382,7 +2382,7 @@
         },
         {
           "id": "check:ci-plan-bindings",
-          "evidence": ".ci/scripts/quality/check_plan_bindings.py:336 (glob) *.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_bindings.py:334 (glob) *.jsonl"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -2568,7 +2568,7 @@
         },
         {
           "id": "check:ci-plan-bindings",
-          "evidence": ".ci/scripts/quality/check_plan_bindings.py:336 (glob) *.jsonl"
+          "evidence": ".ci/rediacc_ci/quality/plan_bindings.py:334 (glob) *.jsonl"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -2778,7 +2778,7 @@
         },
         {
           "id": "check:ci-operator-rulings",
-          "evidence": ".ci/scripts/quality/check_operator_rulings.py:59 (cite) agent"
+          "evidence": ".ci/rediacc_ci/quality/operator_rulings.py:57 (cite) agent"
         },
         {
           "id": "check:ci-ops-health",

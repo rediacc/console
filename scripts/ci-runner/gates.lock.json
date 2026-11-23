@@ -3724,7 +3724,7 @@
   },
   {
     "id": "check:ci-python-control-plants",
-    "run": "npm run check:ci-python-control-plants",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_control_plants",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/**",
@@ -3732,7 +3732,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_python_control_plants.py"
+      ".ci/rediacc_ci/quality/python_control_plants.py"
     ],
     "ci": {
       "kind": "step",
@@ -3778,11 +3778,11 @@
   },
   {
     "id": "check:ci-record-paths",
-    "run": "npm run check:ci-record-paths",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.record_paths",
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_record_paths.py"
+      ".ci/rediacc_ci/quality/record_paths.py"
     ],
     "ci": {
       "kind": "step",
@@ -4976,7 +4976,7 @@
   },
   {
     "id": "check:ci-settings-registry",
-    "run": "npm run check:ci-settings-registry",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.settings_registry",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -4985,7 +4985,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_settings_registry.py"
+      ".ci/rediacc_ci/quality/settings_registry.py"
     ],
     "ci": {
       "kind": "step",
@@ -5535,10 +5535,10 @@
   },
   {
     "id": "check:ci-secret-reachability",
-    "run": "npm run check:ci-secret-reachability",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_secret_reachability.py"
+      ".ci/rediacc_ci/quality/secret_reachability.py"
     ],
     "ci": {
       "kind": "step",
@@ -6157,7 +6157,7 @@
   },
   {
     "id": "check:ci-runner-advice",
-    "run": "npm run check:ci-runner-advice",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -6167,7 +6167,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_runner_advice.py"
+      ".ci/rediacc_ci/quality/runner_advice.py"
     ],
     "ci": {
       "kind": "step",

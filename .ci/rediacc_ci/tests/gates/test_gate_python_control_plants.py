@@ -84,28 +84,12 @@ _CACHE: dict[str, Any] = {}
 
 
 def _gate_module() -> Any:
-    """The gate, imported BY PATH, purely to borrow its own `SCOPE` globs.
+    """The gate, imported from the package that holds its logic, purely to borrow its own `SCOPE` globs.
 
     The mirror has to copy exactly what the gate scans. Re-typing the two globs here would let the two drift apart in silence, and a mirror that had quietly stopped copying half the estate would still pass every case that expects a green, which is the vacuity this whole file is about. Importing under a name other than `__main__` runs no `SystemExit`.
     """
     if "subject" not in _CACHE:
-        if not GATE.is_file():
-            raise harness.GateAssertionError("subject under test is missing: %s" % GATE)
-        added = str(GATE.parent) not in sys.path
-        entry = paths.on_sys_path(GATE.parent)
-        try:
-            spec = importlib.util.spec_from_file_location("py_control_plants_subject", GATE)
-            if spec is None or spec.loader is None:
-                raise harness.GateAssertionError(
-                    "python built no import spec for %s, so this file cannot read the gate's "
-                    "own SCOPE and every mirror below would be copied from a guess" % GATE
-                )
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-        finally:
-            if added and entry in sys.path:
-                sys.path.remove(entry)
-        _CACHE["subject"] = module
+        _CACHE["subject"] = importlib.import_module("rediacc_ci.quality.python_control_plants")
     return _CACHE["subject"]
 
 

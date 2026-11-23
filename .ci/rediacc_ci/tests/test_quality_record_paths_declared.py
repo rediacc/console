@@ -50,15 +50,9 @@ TABLE_IMPORTERS = (
 
 
 @pytest.fixture
-def gate(monkeypatch):
-    """The gate module, loaded by file (its `import _cipath` only puts `.ci` on sys.path, which pytest already has)."""
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def gate():
+    """The gate module, imported from the package that holds its logic."""
+    return importlib.import_module("rediacc_ci.quality.record_paths")
 
 
 def _findings(gate, root, entry, policy=POLICY):

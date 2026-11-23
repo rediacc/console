@@ -3570,13 +3570,13 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-python-control-plants',
-    run: 'npm run check:ci-python-control-plants',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_control_plants',
     gate: true,
     // The verdict depends only on the Python gate sources under these two trees. TWO GLOBS AND NOT A FILE LIST, deliberately: a W7 P4 cutover landing a port under the first one is in scope the moment it exists, with no registration and no baseline row to hand-edit. That is the property a shrink-only baseline would have cost, and it is argued in
     // agent/plans/PLAN-ci-vacuity-baseline-registry.md section 5.
     paths: ['.ci/rediacc_ci/**', '.ci/scripts/quality/**'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_python_control_plants.py'],
+    leaves: ['.ci/rediacc_ci/quality/python_control_plants.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3615,10 +3615,10 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-record-paths',
     // A receipt advances across a record-only commit only when every reader of those records is declared; a fixed parallel width must be a listed I/O fan-out (PLAN-prepush-full-cpu PF23, PF9).
-    run: 'npm run check:ci-record-paths',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.record_paths',
     slow: true, // its CI step measured 40.5 s (lane-durations, 2026-10-05); memoised import closures cut it from 27 s to 13 s locally, still over the 10 s pre-push budget
     gate: true,
-    leaves: ['.ci/scripts/quality/check_record_paths.py'],
+    leaves: ['.ci/rediacc_ci/quality/record_paths.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4772,11 +4772,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // PLAN-settings-set-verb S4. Every copy of a tunable registered in .ci/config/settings.json resolves, holds the same number and sits in range; a hand edit to one copy fails here, and `npm run settings -- set` writes them all. NO `paths:`: always selected.
     id: 'check:ci-settings-registry',
-    run: 'npm run check:ci-settings-registry',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.settings_registry',
     gate: true,
     paths: ['.ci/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_settings_registry.py'],
+    leaves: ['.ci/rediacc_ci/quality/settings_registry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5307,9 +5307,9 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 8
   {
     id: 'check:ci-secret-reachability',
-    run: 'npm run check:ci-secret-reachability',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_secret_reachability.py'],
+    leaves: ['.ci/rediacc_ci/quality/secret_reachability.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5872,11 +5872,11 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 13
   {
     id: 'check:ci-runner-advice',
-    run: 'npm run check:ci-runner-advice',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_runner_advice.py'],
+    leaves: ['.ci/rediacc_ci/quality/runner_advice.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

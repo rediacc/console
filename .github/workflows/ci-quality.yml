@@ -425,7 +425,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.proxy_cost_guard
       - name: Python control plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_python_control_plants.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_control_plants
       - name: Python gate deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
@@ -445,13 +445,13 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.rdc_native
       - name: Record paths and fixed widths
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_record_paths.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.record_paths
       - name: Region consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency
       - name: Runner sizing advice
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_runner_advice.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice
       - name: Schema call sites
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.schema_call_sites
@@ -460,7 +460,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_supply
       - name: Settings registry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_settings_registry.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.settings_registry
       - name: Setup port parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.port_parity
@@ -2491,7 +2491,7 @@ jobs:
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_secret_reachability.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability
       - name: Secret scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-secret-scope

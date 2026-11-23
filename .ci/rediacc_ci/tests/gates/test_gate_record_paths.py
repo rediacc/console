@@ -121,7 +121,7 @@ print(json.dumps({
 """
 
 
-def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does(monkeypatch):
+def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does():
     """block_unverified_push cannot import rediacc_ci and this gate should not import a hook, so the two matchers are copies; this pins them equal, and pins the guard's reading of the REAL policy to this gate's."""
     proc = subprocess.run(
         [sys.executable, "-c", PARITY_CHILD, json.dumps(GLOB_CORPUS), str(POLICY)],
@@ -132,13 +132,7 @@ def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does(monkeypa
     )
     assert proc.returncode == 0, proc.stderr
     guard = json.loads(proc.stdout)
-    # Loaded BY FILE, not through a sys.path hop (test_canonical_sys_path_hop.py freezes those). Its `import _cipath` only puts `.ci` on sys.path, which pytest already has, so a stub scoped to this test stands in for it.
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    gate = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gate)
+    gate = importlib.import_module("rediacc_ci.quality.record_paths")
     mine = [bool(gate.glob_re(g).match(p)) for g, p in GLOB_CORPUS]
     assert guard["matches"] == mine, list(zip(GLOB_CORPUS, guard["matches"], mine, strict=True))
     assert any(mine), "the corpus matched nothing, so agreement proves nothing"
@@ -255,15 +249,9 @@ PLAN_FAMILY = frozenset(
 )
 
 
-def _load_gate(monkeypatch):
-    """The gate module, loaded by file as the parity test above loads it."""
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    gate = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gate)
-    return gate
+def _load_gate():
+    """The gate module, imported from the package that holds its logic."""
+    return importlib.import_module("rediacc_ci.quality.record_paths")
 
 
 def _reads_plans(gate, root, leaf_name, source):
@@ -286,17 +274,17 @@ def _reads_plans(gate, root, leaf_name, source):
     return "check:probe" in gate.derive_readers(gates, records, root)[0][PLAN_RECORD]
 
 
-def test_a_path_in_code_is_a_citation(monkeypatch, tmp_path):
+def test_a_path_in_code_is_a_citation(tmp_path):
     """The firing halves: a whole-literal path, a path joined from literal segments, and a template literal."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     assert _reads_plans(gate, tmp_path, "opens.py", 'F = open("agent/plans/x.md")\n')
     assert _reads_plans(gate, tmp_path, "joins.py", 'D = ROOT / "agent" / "plans"\n')
     assert _reads_plans(gate, tmp_path, "tpl.ts", "const p = `${root}/agent/plans/${n}.md`;\n")
 
 
-def test_a_path_in_prose_is_not_a_citation(monkeypatch, tmp_path):
+def test_a_path_in_prose_is_not_a_citation(tmp_path):
     """The silent halves, each a firing source with the path moved into prose. Before the fix every one of these made its gate a reader, which is how 168 gates came to read the plan set."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     # CONTROL FIRST: the instrument fires in this very tree, so a silence below is the rule's.
     assert _reads_plans(gate, tmp_path, "control.py", 'F = open("agent/plans/x.md")\n')
     docstring = '"""WHY (agent/plans/PLAN-x.md): like open("agent/plans/x.md")."""\nX = 1\n'
@@ -309,9 +297,9 @@ def test_a_path_in_prose_is_not_a_citation(monkeypatch, tmp_path):
     assert not _reads_plans(gate, tmp_path, "jsdoc.ts", jsdoc)
 
 
-def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
+def test_an_exclusion_key_in_a_config_is_not_a_scope(tmp_path):
     """.ci/config/pins.json lists `agent/**` under `literalExclude`; read as a scope it made eleven pin gates readers. The same glob under an inclusion key still counts."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     cfg = tmp_path / ".cfg"
     cfg.mkdir()
     (cfg / "out.json").write_text('{"literalExclude": [{"glob": "agent/**"}]}', encoding="utf-8")
@@ -328,9 +316,7 @@ def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
 @pytest.fixture(scope="module")
 def real_derivation():
     """The real-tree derivation, run once for the module: a full scan of the tracked tree is the test's whole cost, and fixture setup is shared time the slow-test ratchet does not charge to a test."""
-    # The patch is import-time only: the gate imports `_cipath` once at module top, so undoing the stub when the context exits does not touch `derive_readers`.
-    with pytest.MonkeyPatch.context() as mp:
-        gate = _load_gate(mp)
+    gate = _load_gate()
     records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     derived, scanned, _read = gate.derive_readers(lock, records, ROOT)
@@ -518,19 +504,14 @@ print(json.dumps({
 """
 
 
-def test_a_session_hand_over_commit_advances_the_receipt(monkeypatch, tmp_path):
+def test_a_session_hand_over_commit_advances_the_receipt(tmp_path):
     """The wisdom commit of 2026-11-23 (ea95248e0f, 72 s into a ci:quick run) voided the receipt because agent/<session>/STATE.md was no record, and the push was refused "judged a different tree" after 54 minutes. With the REAL policy:
 
     * the runner's side: the hand-over lies inside exactly one record and every reader of it is a `gate: true` gate of the real lock, the two policy facts scripts/ci-runner/run.ts planAdvance needs to plan an advance rather than the whole lane (the three matchers agree, pinned above);
     * the guard's side: block_unverified_push admits the pushed tree over the step runAdvance appends (receipt at T0, a commit touching only the hand-over, its readers re-run green at T1);
     * the inverse: the same world under the policy WITHOUT the record is refused as outside the record set, which is the pre-fix behaviour, and agent/STATE.md at the agent/ root is refused under the real policy.
     """
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    gate = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gate)
+    gate = importlib.import_module("rediacc_ci.quality.record_paths")
     records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
     owners = [r["glob"] for r in records if gate.covers(r, STATE_PATH)]
     assert owners == [STATE_RECORD], owners

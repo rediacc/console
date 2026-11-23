@@ -288,7 +288,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
     """
     for rel in (
         ".ci/rediacc_ci/quality/swallowed_failures.py",
-        ".ci/scripts/quality/check_runner_advice.py",
+        ".ci/rediacc_ci/quality/runner_advice.py",
         ".ci/rediacc_ci/quality/language_policy.py",
     ):
         text = _text(rel)
