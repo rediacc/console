@@ -2,7 +2,7 @@
 
 WHY A SEPARATE MODULE. worklist.py was the Stop hook and every verb in one 4,000-line file, so reading the hook meant reading the CLI. worklist.py now holds the Stop path, the self-contained twins of the wl_core path helpers and the fail-closed wrapper; this module holds the verbs, and `worklist.py`'s main() delegates to `main()` here.
 
-BOUND, NOT IMPORTED. The siblings are probed by worklist.py (a broken one becomes a shim whose every attribute access raises, so the first USE fails into worklist.py's crash handler), and `--brief`, `--loop` and `--reap` stay self-contained: they answer with every sibling broken. So this module imports only the standard library, and worklist.py calls `bind(<worklist module>)` at import, which hands over the same probed modules, the `_BROKEN` map and the stdlib-only twins (BOUND below). Importing `worklist` first is therefore how a direct caller (a test) reaches these functions.
+BOUND, NOT IMPORTED. The siblings are probed by worklist.py (a broken one becomes a shim whose every attribute access raises, so the first USE fails into worklist.py's crash handler), and `--brief`, `--loop` and `--reap` stay self-contained: they answer with every sibling broken. So this module imports only the standard library, and worklist.py calls `bind(globals())` at import, which hands over the same probed modules, the `_BROKEN` map and the stdlib-only twins (BOUND below). Importing `worklist` first is therefore how a direct caller (a test) reaches these functions.
 """
 
 import contextlib
@@ -62,9 +62,9 @@ _read_event: Any = None
 
 
 def bind(host):
-    """Take every BOUND name from `host` (the worklist module). A name the host lacks raises AttributeError at import of worklist, which its crash handler turns into a block."""
+    """Take every BOUND name from `host`, the worklist module's globals. A name the host lacks raises KeyError; worklist.py catches it at import and turns wl_cli into a broken-sibling shim, so the first verb blocks loudly."""
     for name in BOUND:
-        globals()[name] = getattr(host, name)
+        globals()[name] = host[name]
 
 
 def _plan_rel(root, given):

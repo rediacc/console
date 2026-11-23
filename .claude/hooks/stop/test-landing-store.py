@@ -181,7 +181,7 @@ print(json.dumps({
     "dir": C.projects_dir(root),
     "fresh": L.live_teammate_transcripts(str(root), session_id=sys.argv[2]),
     "meta_id": meta[1],
-    "lead": W._lead_transcript(sys.argv[2][:8]),
+    "lead": W.CLI._lead_transcript(sys.argv[2][:8]),
 }))
 """
 

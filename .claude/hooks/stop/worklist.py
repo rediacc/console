@@ -418,9 +418,13 @@ def _read_event():
 
 USAGE_FALLBACK = "worklist.py: see --help (message catalogue unavailable: %s)"
 
-# THE VERBS' HOST (wl_cli.bind): handed the probed siblings, `_BROKEN` and the twins above, here at import, after every name it takes is defined. A broken wl_cli is a shim like any sibling, so its first use in main() fails into the crash handler.
+# THE VERBS' HOST (wl_cli.bind): handed this module's globals (the probed siblings, `_BROKEN` and the twins above), here at import, after every name it takes is defined. Globals rather than `sys.modules[__name__]`, because a test loads this file under another name with no sys.modules entry. A bind that fails turns wl_cli into a shim like any broken sibling: this line runs at import, OUTSIDE the crash handler below, so raising here would print to stderr and nothing to stdout, which the harness reads as ALLOW.
 if "wl_cli" not in _BROKEN:
-    CLI.bind(sys.modules[__name__])
+    try:
+        CLI.bind(globals())
+    except Exception as _exc:
+        _BROKEN["wl_cli"] = "bind: %s: %s" % (type(_exc).__name__, _exc)
+        CLI = _MODS["wl_cli"] = _BrokenModule("wl_cli")
 
 
 def main():
