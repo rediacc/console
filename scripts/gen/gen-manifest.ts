@@ -146,7 +146,11 @@ function serialise(leaf: string, h: GateHeader, workflow: string): string {
 /**
  * The `run` an entry takes: an `npm run <id>` hop while package.json still defines the key, else the module run directly (`directRun`), the D2 form of a gate whose key was retired.
  */
-export function entryRun(id: string, leaf: string, scripts: Readonly<Record<string, string>>): string {
+export function entryRun(
+  id: string,
+  leaf: string,
+  scripts: Readonly<Record<string, string>>
+): string {
   return Object.hasOwn(scripts, id) ? `npm run ${id}` : directRun(leaf);
 }
 

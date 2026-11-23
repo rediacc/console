@@ -253,19 +253,19 @@ def main() -> int:
     ok = True
     ok &= ctl(
         "jobs:\n  a:\n    steps:\n      - uses: actions/checkout@v4\n"
-        "      - name: Gate\n        run: npm run check:ci-gate-manifest\n",
+        "      - name: Gate\n        run: npm run gen:gates\n",
         True,
         "a tsx gate with NO node setup is detected (the real 33125687081 defect)",
     )
     ok &= ctl(
         "jobs:\n  a:\n    steps:\n      - uses: actions/checkout@v4\n"
         "      - uses: ./.github/actions/setup-workspace\n"
-        "      - name: Gate\n        run: npm run check:ci-gate-manifest\n",
+        "      - name: Gate\n        run: npm run gen:gates\n",
         False,
         "setup-workspace BEFORE the gate is not flagged",
     )
     ok &= ctl(
-        "jobs:\n  a:\n    steps:\n      - name: Gate\n        run: npm run check:ci-gate-manifest\n"
+        "jobs:\n  a:\n    steps:\n      - name: Gate\n        run: npm run gen:gates\n"
         "      - uses: ./.github/actions/setup-workspace\n",
         True,
         "setup AFTER the gate still fires -- order is the point, not presence",
@@ -322,7 +322,7 @@ def main() -> int:
     )
     ok &= ctl(
         "jobs:\n  a:\n    steps:\n      - uses: actions/checkout@v4\n"
-        "      - name: Gate\n        run: npm run check:ci-gate-manifest\n"
+        "      - name: Gate\n        run: npm run gen:gates\n"
         "      - name: Unrelated\n        run: echo agent-browser mentioned only in prose\n",
         True,
         "CONTROL: a prose mention of agent-browser in an unrelated echo does not "
