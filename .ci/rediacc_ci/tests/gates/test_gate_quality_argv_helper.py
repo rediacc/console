@@ -16,9 +16,13 @@ HELPER = paths.repo_root() / ".ci" / "scripts" / "quality" / "_gate_args.py"
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("gate_args_under_test", HELPER)
+    name = "gate_args_under_test"
+    spec = importlib.util.spec_from_file_location(name, HELPER)
+    if spec is None or spec.loader is None:
+        refusal = "cannot load %s: the helper under test is missing or unreadable" % HELPER
+        raise ImportError(refusal)
     module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
