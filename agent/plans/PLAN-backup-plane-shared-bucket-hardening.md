@@ -31,8 +31,9 @@ Three residual risks:
     (ticked) 2026-10-29T22:24:06Z by d778be9d: commit:e19760c96 probe rc=0 per region: stable eu/us/asia and edge eu/us/asia every leg PASS (own PUT/GET/DELETE 2xx, foreign LIST 403) at 2026-10-29T22:23Z, bench rc=0; pytest 17 passed; tokens minted earlier by credential-isolation B5
 - [x] L1. Bench: deploy A1 and R1, run a snapshot and a restore on a bench machine, and show a size-less grant refused. Accept: the bench snapshot and restore exit 0 and the refusal answers 400.
     (ticked) 2026-10-29T22:24:21Z by d778be9d: bench worker version 3906a08b (account 318b696, branch renet with R1): backup snapshot hb1023-src rc=0 (19 chunks stored), backup restore --as hb1023-rst rc=0, three POST /backups/grants without chunkBytes or manifestBytes answered 400; repos deleted and the lineage purged after
-- [ ] L2. Hostinger: after the stable deploy, the next scheduled snapshot of one hostinger repo uploads and commits. Accept: `backup usage` shows the new snapshot.
+- [x] L2. Hostinger: after the stable deploy, the next scheduled snapshot of one hostinger repo uploads and commits. Accept: `backup usage` shows the new snapshot.
   (corrected ASKED:2026-11-05T07:06Z) Bench form: a manual `backup snapshot` on a bench repo, and the Accept reads as bench: `rdc --config eu-bench backup usage` shows the new snapshot. The hostinger scheduled-timer clause, after the stable deploy, moved to agent/plans/PLAN-first-release-checks.md (Hostinger scheduled timer).
+    (ticked) 2026-11-23T13:21:02Z by ace763dd: commit:f104e24c6d hostinger, branch renet: manual backup snapshot of mail rc=0 2026-11-23, then backup usage shows the manifest count 142 -> 144; evidence /tmp/writers-now/1121-1-20261123T1154Z-evidence-hostinger.md
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

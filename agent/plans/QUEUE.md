@@ -39,21 +39,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (5 epic(s)):
+- Work outside the PR's plans (6 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 515 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 516 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 1 live of writer_cap 25 (session 9b22c347): worker:a17de29aa2c82c9e3.
-- Leased items: 5: #0b525a64 (worker:a3af7e757775bad20, ace763dd), #3b82cf28 (worker:bm4cib5pd, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #da3e7457 (worker:a0825792c3982bf4f, ace763dd), #da9a5acc (worker:aa2edc7f54a0c4798, ace763dd).
+  - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 3 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
+- Writers: 0 live of writer_cap 25 (session 9b22c347).
+- Leased items: 5: #3b82cf28 (worker:bm4cib5pd, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #a8746fe0 (worker:ad3d6280aa8f4fc1b, ace763dd), #da3e7457 (worker:a0825792c3982bf4f, ace763dd), #da9a5acc (worker:aa2edc7f54a0c4798, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 9 of 83 plans done, 1174 of 1672 boxes done (70%).
+Promoted: 10 of 83 plans done, 1175 of 1672 boxes done (70%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -71,7 +72,7 @@ Promoted: 9 of 83 plans done, 1174 of 1672 boxes done (70%).
 | 12 | PLAN-detached-jobs.md | 33/41 | 8 open |
 | 13 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
 | 14 | PLAN-backup-local-image.md | 12/14 | 2 open |
-| 15 | PLAN-backup-plane-shared-bucket-hardening.md | 6/7 | 1 open |
+| 15 | PLAN-backup-plane-shared-bucket-hardening.md | 7/7 | done |
 | 16 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
 | 17 | PLAN-backup-download-from-store.md | 9/9 | done |
 | 18 | PLAN-free-license.md | 11/13 | 2 open |
