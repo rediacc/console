@@ -17,7 +17,7 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
      parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
-  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED with a stderr note when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
+  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED past every file rule (an exclusive plan's mutex is over its files), still refused by the writer cap and still recorded as a claim, with a stderr note, when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
 
 The writer cap still applies first: `block_agent_cap` is ORDER 3 on the same chain.
 
@@ -259,6 +259,7 @@ def run(event):
             return hookio.ALLOW
         # RULE 7: a handover fix in a landing-cut lease, briefed with no plan line, shares no tree with a live plan here.
         handover_why = ""
+        handover_lease = ""
         if HANDOVER_LINE.search(text):
             if X.spawn_plans(text):
                 handover_why = "the brief also names a plan, which the plan rules judge"
@@ -275,12 +276,7 @@ def run(event):
                             str(exc)[:160],
                         ),
                     )
-                if lease:
-                    event.warn_raw(
-                        "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so it is admitted unjudged.\n"
-                        % (kind, lease)
-                    )
-                    return hookio.ALLOW
+                handover_lease = lease
         declared = X.declared_owns(text)
         owns_problem = X.owns_line_problem(text) if declared is None else None
         # A brief `Owns: none -- <reason>` (the grammar refuses a bare `none`, which reads as None above) is a runner: it holds no plan, as `live_plans` already treats such an agent once it is live, so it serves none here and claims nothing (#79b7e92e).
@@ -328,6 +324,9 @@ def run(event):
                 root=root,
                 isolated=isolated,
             )
+        if not verdict.allow and handover_lease:
+            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, and a planless spawn meets only file rules here (an exclusive plan's mutex is over its files), so none refuses it; the writer cap still does, and the claim row is still appended.
+            verdict = X.Verdict(True, "handover", (), verdict.note)
         if not verdict.allow:
             return verdict
         return X.cap_verdict(writers, pending, session_id, cap) or verdict
@@ -346,6 +345,11 @@ def run(event):
             verdict.kind,
             (*verdict.lines, OWNS_UNREAD % owns_problem),
             verdict.note,
+        )
+    if handover_lease and verdict.allow:
+        event.warn_raw(
+            "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so no file rule refuses it (the writer cap still applies).\n"
+            % (kind, handover_lease)
         )
     if handover_why:
         event.warn_raw(

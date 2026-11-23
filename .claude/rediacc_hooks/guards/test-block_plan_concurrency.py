@@ -837,6 +837,20 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         ],
     ),
     (
+        "c1h a landing-cut Handover writer is still counted and refused by the cap (review b8c57655.1)",
+        {
+            **HANDOVER_WORLD,
+            "writers": ["Plan: PLAN-e.md", *FILL[: CAP - 2]],
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        CHAIN_ARGV,
+        [
+            (payload(HANDOVER_BRIEF), 0, ["serves a handover in lease hx1"]),
+            (payload(HANDOVER_BRIEF), 2, ["writer_cap %d" % CAP, "1 same-message"]),
+        ],
+    ),
+    (
         "c1b a planless writer counts toward the cap too",
         {"plans": {}, "writers": FILL[: CAP - 1]},
         CHAIN_ARGV,
