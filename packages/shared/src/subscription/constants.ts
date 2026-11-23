@@ -30,32 +30,44 @@ export const PLAN_LIMITS: Record<
      * marketing knob. On-prem transport rides the signed delegation cert.
      */
     storageQuotaBytes: number;
+    /**
+     * Forensic-capture quota in bytes (raw batches and day files together).
+     * A quarter of `storageQuotaBytes` for the plans that ship forensics; FREE
+     * and COMMUNITY ship none. A per-subscription override applies to
+     * ENTERPRISE only.
+     */
+    forensicsQuotaBytes: number;
   }
 > = {
   FREE: {
     maxRepositorySizeGb: 3,
     maxRepoLicenseIssuancesPerMonth: 0,
     storageQuotaBytes: 0,
+    forensicsQuotaBytes: 0,
   },
   COMMUNITY: {
     maxRepositorySizeGb: 10,
     maxRepoLicenseIssuancesPerMonth: 100,
     storageQuotaBytes: 10 * 1024 ** 3,
+    forensicsQuotaBytes: 0,
   },
   PROFESSIONAL: {
     maxRepositorySizeGb: 100,
     maxRepoLicenseIssuancesPerMonth: 2000,
     storageQuotaBytes: 100 * 1024 ** 3,
+    forensicsQuotaBytes: 25 * 1024 ** 3,
   },
   BUSINESS: {
     maxRepositorySizeGb: 500,
     maxRepoLicenseIssuancesPerMonth: 5000,
     storageQuotaBytes: 500 * 1024 ** 3,
+    forensicsQuotaBytes: 125 * 1024 ** 3,
   },
   ENTERPRISE: {
     maxRepositorySizeGb: 1024,
     maxRepoLicenseIssuancesPerMonth: 15000,
     storageQuotaBytes: 2048 * 1024 ** 3,
+    forensicsQuotaBytes: 512 * 1024 ** 3,
   },
 } as const;
 
@@ -65,6 +77,14 @@ export function getStorageQuotaBytesForPlan(planCode: string): number {
     return PLAN_LIMITS[planCode as PlanCode].storageQuotaBytes;
   }
   return PLAN_LIMITS.COMMUNITY.storageQuotaBytes;
+}
+
+/** Plan-default forensic-capture quota in bytes (COMMUNITY fallback, which is 0). */
+export function getForensicsQuotaBytesForPlan(planCode: string): number {
+  if (planCode in PLAN_LIMITS) {
+    return PLAN_LIMITS[planCode as PlanCode].forensicsQuotaBytes;
+  }
+  return PLAN_LIMITS.COMMUNITY.forensicsQuotaBytes;
 }
 
 /** The six GFS retention knobs, as a plan states them. */
@@ -458,6 +478,7 @@ export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof (typeof PLAN_LIMITS)[PlanCo
   'maxRepositorySizeGb',
   'maxRepoLicenseIssuancesPerMonth',
   'storageQuotaBytes',
+  'forensicsQuotaBytes',
 ] as const;
 
 /**
@@ -578,6 +599,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     featured: false,
     selfServe: false,
     webConsole: false,
+    rediaccAiCredits: false,
   },
   COMMUNITY: {
     displayName: 'Community',
@@ -586,22 +608,25 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     featured: false,
     selfServe: false,
     webConsole: false,
+    rediaccAiCredits: false,
   },
   PROFESSIONAL: {
     displayName: 'Professional',
     description: 'For individuals and small projects that need one production machine',
     paid: true,
     featured: true,
-    selfServe: true,
+    selfServe: false,
     webConsole: true,
+    rediaccAiCredits: false,
   },
   BUSINESS: {
     displayName: 'Business',
     description: 'For teams that need larger repositories and advanced management',
     paid: true,
     featured: false,
-    selfServe: true,
+    selfServe: false,
     webConsole: true,
+    rediaccAiCredits: false,
   },
   ENTERPRISE: {
     displayName: 'Enterprise',
@@ -610,6 +635,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
     featured: false,
     selfServe: false,
     webConsole: true,
+    rediaccAiCredits: true,
   },
 } as const;
 

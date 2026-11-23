@@ -19,6 +19,7 @@ export {
   getPlanLimits,
   getPlanMetadata,
   getPlanPricing,
+  getForensicsQuotaBytesForPlan,
   getStorageQuotaBytesForPlan,
   getStripeLookupKey,
   hasFeature,

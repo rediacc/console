@@ -197,6 +197,12 @@ export interface DelegationCert {
    * backups default to the plan value when read.
    */
   storageQuotaBytes?: number;
+  /**
+   * Forensic-capture quota in bytes. Optional for the same reason as
+   * `storageQuotaBytes`: certs issued before forensics shipping carry none and
+   * read the plan value.
+   */
+  forensicsQuotaBytes?: number;
   /** Upper bound on the chain sequence number */
   maxTotalIssuances: number;
   /** Base64 SPKI Ed25519 public key of the on-premise server */
@@ -299,7 +305,7 @@ export interface PlanMetadata {
   description: string;
   paid: boolean;
   featured: boolean;
-  /** Purchasable via self-serve checkout. False = fallback-only (COMMUNITY) or partner-only (ENTERPRISE). */
+  /** Purchasable via self-serve checkout. False for every plan while Stripe is disabled (no checkout; paid plans are sold through partners or an account link). */
   selfServe: boolean;
   /**
    * The web console (browser-driven command execution through an executor) is
@@ -307,6 +313,12 @@ export interface PlanMetadata {
    * against real machines on the operator's behalf, which is a paid capability.
    */
   webConsole: boolean;
+  /**
+   * The Rediacc-hosted AI tier (prepaid credits) is available on this plan.
+   * Grants and reservations both check it; the provider choice shows the
+   * Rediacc tier only for an entitled org.
+   */
+  rediaccAiCredits: boolean;
 }
 
 /**
