@@ -76,7 +76,11 @@ lane: quality-content
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import content_quality
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_content_quality.py", sys.argv[1:], switches=("--selftest",), positional="<file>"
+    )
     raise SystemExit(content_quality.main(sys.argv[1:]))

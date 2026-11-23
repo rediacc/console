@@ -44,7 +44,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import devcontainer_scripts
 
 if __name__ == "__main__":
+    _gate_args.parse("check_devcontainer_scripts.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(devcontainer_scripts.main(sys.argv[1:]))

@@ -40,7 +40,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import command_tree
 
 if __name__ == "__main__":
+    _gate_args.parse("check_command_tree.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(command_tree.main(sys.argv[1:]))

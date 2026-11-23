@@ -53,7 +53,9 @@ lane: quality-content
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import e2e_coverage
 
 if __name__ == "__main__":
+    _gate_args.parse("check_e2e_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(e2e_coverage.main(sys.argv[1:]))

@@ -38,7 +38,11 @@ why: a Python file no execution route reaches is dead code sitting beside live
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import dead_python
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_dead_python.py", sys.argv[1:], switches=("--selftest", "--verbose", "--json")
+    )
     raise SystemExit(dead_python.main(sys.argv[1:]))

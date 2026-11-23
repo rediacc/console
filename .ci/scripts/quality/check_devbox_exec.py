@@ -18,7 +18,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import devbox_exec
 
 if __name__ == "__main__":
+    _gate_args.parse("check_devbox_exec.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(devbox_exec.main(sys.argv[1:]))

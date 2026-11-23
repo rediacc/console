@@ -36,7 +36,9 @@ lane: quality-code
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import cli_doc_coverage
 
 if __name__ == "__main__":
+    _gate_args.parse("check_cli_doc_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(cli_doc_coverage.main(sys.argv[1:]))

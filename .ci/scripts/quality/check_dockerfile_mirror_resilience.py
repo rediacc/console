@@ -36,6 +36,7 @@ import subprocess
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.controls import plant
 from rediacc_ci.well_known import UBUNTU_ARCHIVE, UBUNTU_AZURE_MIRROR
 
@@ -504,4 +505,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_dockerfile_mirror_resilience.py", sys.argv[1:], switches=("--selftest",)
+    )
     sys.exit(main(sys.argv[1:]))

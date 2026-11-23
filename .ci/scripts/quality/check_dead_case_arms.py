@@ -72,7 +72,9 @@ needs: none
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import dead_case_arms
 
 if __name__ == "__main__":
+    _gate_args.parse("check_dead_case_arms.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(dead_case_arms.main(sys.argv[1:]))

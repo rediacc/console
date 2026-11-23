@@ -66,6 +66,7 @@ import subprocess
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, paths
 
 ROOT = pathlib.Path(
@@ -533,4 +534,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_decision_ids.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

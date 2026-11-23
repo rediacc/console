@@ -20,7 +20,9 @@ THE LEDGER CONDITION WAS MET. Driven 2026-09-08:
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import commit_identity
 
 if __name__ == "__main__":
+    _gate_args.parse("check_commit_identity.py", sys.argv[1:], switches=("--selftest", "--refresh"))
     raise SystemExit(commit_identity.main(sys.argv[1:]))

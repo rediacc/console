@@ -16,7 +16,9 @@ why: workers/proxy's container could never build (its Dockerfile copies packages
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import container_build_context
 
 if __name__ == "__main__":
+    _gate_args.parse("check_container_build_context.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(container_build_context.main(sys.argv[1:]))

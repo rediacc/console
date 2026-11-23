@@ -30,7 +30,9 @@ lane: quality-packages
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import config_migrations
 
 if __name__ == "__main__":
+    _gate_args.parse("check_config_migrations.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(config_migrations.main(sys.argv[1:]))

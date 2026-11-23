@@ -20,7 +20,9 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import claude_attribution
 
 if __name__ == "__main__":
+    _gate_args.parse("check_claude_attribution.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(claude_attribution.main(sys.argv[1:]))
