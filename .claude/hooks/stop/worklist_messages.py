@@ -1132,12 +1132,6 @@ V_MISLABELLED = (
     "Either fix the wording or move the task with TaskUpdate, so the two match."
 )
 
-V_OUT_OF_SYNC = (
-    "your Remaining section is OUT OF SYNC with the task list the operator sees. "
-    "%d open task(s) are not mentioned by id: %s. List every open task, or close "
-    "the ones that are done."
-)
-
 V_HOOK_BLIND = (
     "THIS IS A HOOK BUG, not something you did wrong: no assistant text could be "
     "read from the transcript (path=%r), so the '## Remaining' check is BLIND. "
@@ -1145,11 +1139,14 @@ V_HOOK_BLIND = (
     "captured event at %s and fix transcript_tail in %s."
 )
 
+# agent/plans/PLAN-stop-hook-store-status.md D6: the opening clause, up to and including "The ", stays byte-identical (five test files match on it); the rest states the message contract and lists no item, because the hook renders the item table from the store.
 V_NO_REMAINING = (
     "work remains and your last message has no '## Remaining' section. The "
-    "operator reads YOUR message, not this hook's output, so a report that "
-    "lives only here does not exist. Re-state the answer and end it with a "
-    "'## Remaining' section listing what is left and who it is blocked on:\n%s"
+    "final message is the operator's report: what changed this turn, the decisions "
+    "taken, the operator questions and the blockers, ending in a '## Remaining' "
+    "section that holds the questions and blockers. A turn that only waited says so "
+    "in one line and cites CHANGES SINCE LAST STOP. The hook renders the item table "
+    "from the store, so the message lists, restates or tables no item."
 )
 
 # ---- v11: the store-derived stop guide -------------------------------------- WHY (operator, 2026-07-30): "--list should be used always on stop hook to output enforced guided instructions." The v10 store stamped every item and the hand-authored Remaining prose ignored all of it, so the report is now derived from the store on EVERY stop, allow and block alike. The per-line bodies

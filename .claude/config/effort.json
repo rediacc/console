@@ -270,10 +270,6 @@
       "block": "smart",
       "advise": "smart"
     },
-    "out-of-sync": {
-      "block": "smart",
-      "advise": "smart"
-    },
     "agent-state": {
       "block": "high",
       "advise": "smart"
@@ -589,16 +585,6 @@
       "tuned_at": "2026-11-06T14:23:19Z",
       "review_after": "2026-11-20T14:23:19Z",
       "evidence": "eo-6064c474, eo-63c5b57a, eo-905d7062, eo-3402a702, eo-76ecab46, eo-71073147, eo-46ff6676, eo-49b083b7, eo-d570962c, eo-bc24ae51, eo-030c1558, eo-c15194bf"
-    },
-    "out-of-sync": {
-      "direction": "promote",
-      "from": {
-        "block": "high",
-        "advise": "smart"
-      },
-      "tuned_at": "2026-11-06T14:23:19Z",
-      "review_after": "2026-11-20T14:23:19Z",
-      "evidence": "eo-7af458c7, eo-7c629d3e, eo-1279e2e7, eo-4910ad27, eo-6954f7ef, eo-9ef59881, eo-5eddde17, eo-d5189bfa, eo-e63ed506, eo-51f0eaa8, eo-9bfe5c49, eo-cee58da0"
     },
     "reg-capped": {
       "direction": "promote",

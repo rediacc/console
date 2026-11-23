@@ -2488,7 +2488,6 @@ PRIORITY_LADDER = (
                 "phantom-gate",
                 "unstated",
                 "mislabelled",
-                "out-of-sync",
                 "loop-died",
                 "broken-schedule",
                 "many-work-crons",
@@ -5887,8 +5886,6 @@ def run_stop(event, event_ok, worklist, hook_file):
     ]
     if unconfirmed:
         vadd("unconfirmed", False, M.V_UNCONFIRMED % ", ".join("#" + i for i in unconfirmed))
-    # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)" in the app, so a Remaining section that omits one of those six is out of sync with what they are looking at. Every open task id must appear.
-    missing_ids = [i for i, _, _ in tasks if not re.search(r"#%s\b" % re.escape(i), last_msg or "")]
     # EVERY REMAINING ITEM MUST DECLARE ITS STATE. "who it is blocked on" is not the same question as "is anyone working it": a list where six items all look alike cannot tell the operator what is moving and what is parked. The word must also AGREE with the harness, which is the list they see in their app.
     state_re = re.compile(
         r"\b(ongoing|in progress|in-progress|in_progress|pending|blocked|parked)\b",
@@ -6118,12 +6115,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything is honestly parked is a legitimate state, and blocking on it would nag a session that is correctly waiting. The case that actually matters -- driving something while the operator's list still shows it pending -- is caught by the agreement check above, which fires when the message says "ongoing" and
     # the harness disagrees.
-    if tasks and REMAINING_HEADING.search(last_msg or "") and missing_ids:
-        vadd(
-            "out-of-sync",
-            False,
-            M.V_OUT_OF_SYNC % (len(missing_ids), ", ".join("#" + i for i in missing_ids)),
-        )
+    # NOT CHECKED EITHER: an open task id the Remaining section omits. The `out-of-sync` check that demanded every id was retired (agent/plans/PLAN-stop-hook-store-status.md D6, box R1): the hook renders the item table from the store (wl_storestatus), so a copy in the message proves nothing the store does not.
     # ---- TRAPGUARD RULE ERRORS (PLAN-trap-enforcement.md section 4.3.4), in the ALWAYS tier: the PostToolUse dispatcher skips a rule that raised, so the rule went silent on that call, and a guard failing silently is the exact trap that surface exists for. Not gated on remaining work -- the log is machine-wide and the failure is real whatever this session is doing.
     with contextlib.suppress(Exception):  # reading a ledger must never wedge a stop
         _tg_errors = wl_trapfires.errors_violation()
@@ -6149,7 +6141,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd(
             "no-remaining",
             False,
-            M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]),
+            M.V_NO_REMAINING,
         )
 
     # ---- ADMISSION PREFILTER, ABOVE THE BLOCK EXIT (agent/plans/PLAN-stop-hook-continuity.md P0.4). wl_admit's docstring promises Tier R is appended "always, BEFORE any model call", and until 2026-09-24 that was false on every blocked stop: the prefilter sat after the block exit, so a busy session that admitted a mistake left no record at all. The regex pass is under 0.4 ms
