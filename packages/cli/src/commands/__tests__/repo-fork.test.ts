@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -105,6 +106,8 @@ vi.mock('../../services/config/network-id-discovery.js', async (orig) => {
 });
 
 const { handleForkAction } = await import('../repo-fork.js');
+const { JobDispatchedError, setCommandJobDeps } = await import('../../services/jobs/command-job.js');
+const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 
 const PARENT = {
   repositoryGuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -362,6 +365,52 @@ describe('repo fork — orchestration', () => {
   it('a successful fork leaves the key alone', async () => {
     await handleForkAction('app', 'staging', { machine: 'hostinger' });
     expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+  });
+});
+
+// WB6 (PLAN-rmcp-writeback Design 6): the catch rolls the registration back only for a fork whose job never started.
+describe('repo fork: a started job keeps its registration', () => {
+  let ticketDir: string;
+  /** A ticket store whose record of the finished job cannot be written, so recording the dispatched job fails. */
+  class FinishFailsStore extends TicketStore {
+    override append(...args: Parameters<TicketStore['append']>) {
+      if (args[0] === 'finished') throw new Error('disk full');
+      return super.append(...args);
+    }
+  }
+
+  beforeEach(() => {
+    ticketDir = mkdtempSync(join(tmpdir(), 'repo-fork-wb6-'));
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
+  });
+  afterEach(() => {
+    setCommandJobDeps();
+    rmSync(ticketDir, { recursive: true, force: true });
+  });
+
+  it('keeps the registration and the deployed key when the job was dispatched and recording it failed', async () => {
+    setCommandJobDeps({ store: () => new FinishFailsStore('test', ticketDir) });
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      JobDispatchedError
+    );
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+    expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it('still rolls back when the job never started', async () => {
+    setCommandJobDeps({ store: () => new TicketStore('test', ticketDir) });
+    mockExecute.mockRejectedValue(new Error('refused before any job'));
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'refused before any job'
+    );
+
+    expect(mockRemoveRepository).toHaveBeenCalledWith('app:staging');
+    expect(mockRemoveRepoKey).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -39,6 +39,7 @@ import type { ExecuteOptions } from '../services/executor/types.js';
 import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
+  JobDispatchedError,
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
@@ -104,6 +105,8 @@ export interface ForkActionOptions {
 interface ForkKeyState {
   machine?: string;
   guid?: string;
+  /** The fork job exists on the machine (it answered, or recording its dispatch failed): the registration and key stay. */
+  jobStarted?: boolean;
 }
 
 /** Remove the fork's authorized_keys line when this invocation attempted to deploy it; best-effort. */
@@ -269,11 +272,29 @@ function executeForkLeg(
   renetSteps: TimelineStep[],
   steps: PlannedStep[]
 ): Promise<CommandJobOutcome> {
-  return runCommandJob(
-    plan.options.verb ?? DEFAULT_VERB,
-    forkLegOptions(plan, params, renetSteps),
-    steps
-  );
+  return startForkJob(plan, params, renetSteps, steps);
+}
+
+/** `runCommandJob`, noting on the plan once the job exists so a later throw never undoes the registration the job owns. */
+async function startForkJob(
+  plan: ForkPlan,
+  params: Record<string, unknown>,
+  renetSteps: TimelineStep[],
+  steps: PlannedStep[]
+): Promise<CommandJobOutcome> {
+  try {
+    const outcome = await runCommandJob(
+      plan.options.verb ?? DEFAULT_VERB,
+      forkLegOptions(plan, params, renetSteps),
+      steps
+    );
+    // From here the job's own failure step (rollbackFork) owns the registration, not the caller's catch.
+    plan.keyState.jobStarted = true;
+    return outcome;
+  } catch (error) {
+    if (error instanceof JobDispatchedError) plan.keyState.jobStarted = true;
+    throw error;
+  }
 }
 
 function forkLegOptions(
@@ -579,7 +600,8 @@ export async function handleForkAction(
       lease.release();
     }
   } catch (error) {
-    if (forkGuid !== undefined) {
+    // Once the job exists on the machine the registration and the deployed key stay: the job's own rollbackFork step settles them when it ends.
+    if (keyState.jobStarted !== true && forkGuid !== undefined) {
       await rollbackFork(forkKey, keyState, forkGuid);
     }
     handleError(error);

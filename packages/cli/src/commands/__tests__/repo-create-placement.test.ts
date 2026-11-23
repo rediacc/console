@@ -558,3 +558,46 @@ describe('repo create network ID: renet allocates inside the job', () => {
     });
   });
 });
+
+// WB6 (PLAN-rmcp-writeback Design 6): the catch rolls the registration back only for a create whose job never started.
+describe('repo create rollback follows the job, not the error', () => {
+  /** The registration the create made, as the config holds it once the birth record is saved. */
+  async function holdRegistration(): Promise<void> {
+    const { configService } = await import('../../services/config/config-resources.js');
+    vi.mocked(configService.getRepository).mockImplementation(() =>
+      Promise.resolve(addRepository.mock.calls.at(-1)?.[1] as never)
+    );
+  }
+  async function removed(): Promise<ReturnType<typeof vi.fn>> {
+    const { configService } = await import('../../services/config/config-resources.js');
+    return vi.mocked(configService.removeRepository);
+  }
+  /** A ticket store whose record of the finished job cannot be written. */
+  class FinishFailsStore extends TicketStore {
+    override append(...args: Parameters<TicketStore['append']>) {
+      if (args[0] === 'finished') throw new Error('disk full');
+      return super.append(...args);
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getCurrent.mockResolvedValue(config());
+  });
+
+  it('removes the registration when the start is refused before any job exists', async () => {
+    await holdRegistration();
+    execute.mockRejectedValueOnce(new Error('refused before any job'));
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(handleError).toHaveBeenCalledOnce();
+    expect(await removed()).toHaveBeenCalledWith('shop');
+  });
+
+  it('keeps the registration when the job was dispatched and recording it failed', async () => {
+    await holdRegistration();
+    setCommandJobDeps({ store: () => new FinishFailsStore('test', ticketDir) });
+    await handleRepoCreate('shop', { machine: 'm1', size: '5G' });
+    expect(handleError).not.toHaveBeenCalled();
+    expect(await removed()).not.toHaveBeenCalled();
+  });
+});

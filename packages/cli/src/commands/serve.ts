@@ -96,10 +96,10 @@ export function registerServeCommand(program: Command): void {
           audit: createExecutorAudit({
             accountUrl,
             executorToken,
-            // A command that ran but could not be recorded is exactly the case an audit trail exists to catch, so it is never swallowed.
+            // A record the audit route refused or could not take is never swallowed: a refused `started` record means the command did not run, a refused `finished` one means it ran unrecorded.
             onFailure: (error, event) => {
               outputService.warn(
-                `Ran "${event.commandPath}" for ${event.principal.userEmail} but could not record it: ` +
+                `Could not record "${event.commandPath}" for ${event.principal.userEmail}: ` +
                   `${error instanceof Error ? error.message : String(error)}`
               );
             },
