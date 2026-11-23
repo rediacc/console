@@ -113,14 +113,25 @@ const stepUp = z.strictObject({
   }),
 });
 
+// Two reveals: a command reveal names the command (`pathKey`), a config-editor
+// reveal names the config and how many leaves it unmasked. Neither carries a value.
+const commandReveal = z.strictObject({
+  requestId: requestId.optional(),
+  pathKey: z.string().min(1).max(200),
+  method: stepUpMethod.nullable(),
+});
+
+const editorReveal = z.strictObject({
+  configId: z.string().min(1),
+  leafCount: z.number().int().min(0),
+  revealUntil: z.iso.datetime(),
+  method: stepUpMethod.nullable(),
+});
+
 const reveal = z.strictObject({
   ...envelope,
   type: z.literal('console.reveal'),
-  data: z.strictObject({
-    requestId: requestId.optional(),
-    pathKey: z.string().min(1).max(200),
-    method: stepUpMethod.nullable(),
-  }),
+  data: z.union([commandReveal, editorReveal]),
 });
 
 const aiApproval = z.strictObject({

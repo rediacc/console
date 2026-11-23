@@ -51,6 +51,22 @@ describe('ConsoleAuditEventSchema', () => {
     expect(ConsoleAuditEventSchema.safeParse(event(type, DATA[type])).success).toBe(true);
   });
 
+  it('admits both reveal shapes and refuses a value or neither shape', () => {
+    const editor = {
+      configId: 'c-1',
+      leafCount: 2,
+      revealUntil: '2026-11-22T10:02:00.000Z',
+      method: null,
+    };
+    const parse = (data: Record<string, unknown>) =>
+      ConsoleAuditEventSchema.safeParse(event('console.reveal', data)).success;
+    expect(parse(editor)).toBe(true);
+    expect(parse({ ...editor, value: 's3cret' })).toBe(false);
+    expect(parse({ ...DATA['console.reveal'], value: 's3cret' })).toBe(false);
+    expect(parse({ ...editor, pathKey: 'repo up' })).toBe(false);
+    expect(parse({ method: 'totp' })).toBe(false);
+  });
+
   it('refuses an unknown type', () => {
     expect(ConsoleAuditEventSchema.safeParse(event('console.unknown', {})).success).toBe(false);
   });
