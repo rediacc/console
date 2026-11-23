@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T09:57:44.674Z",
+  "generatedAt": "2026-11-23T10:10:58.611Z",
   "legs": [
     {
       "index": 1,
@@ -520,6 +520,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_silent_a.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_silent_b.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_snapshot.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stop_speed_git.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
