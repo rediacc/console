@@ -243,27 +243,34 @@ def _listed(target_abs):
 _redirects = shellscan.analysis_redirects
 
 
-def _list_write(runs, analysis, cmd, cwd):
-    """A short description of the first write to the exception list itself, or ""."""
+# The `shellscan.write_records` readings that write the exception list through a word of the run: a redirect, a `tee`, a `truncate`, an in-place `sed -i`/`perl -i` (their own option parse, review 3f53e99e.2) and `dd of=` (the output key of `dd`, the one "option" record this guard takes).
+_LIST_WRITES = {
+    "redirect": "a redirect into %(word)s",
+    "append": "a redirect into %(word)s",
+    "tee": "%(name)s on %(word)s",
+    "truncate": "%(name)s on %(word)s",
+    "in-place": "%(name)s on %(word)s",
+}
+
+
+def _list_write(runs, analysis, cmd, cwd, records):
+    """A short description of the first write to the exception list itself, or "". `records` is the chain's one walk (`shellscan.write_records`); the copy and interpreter shapes keep their own readings."""
     for _op, target in _redirects(analysis):
         if _is_list(target, base=_base(None, cwd)):
             return "a redirect into %s" % target
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
-        argv = list(run.argv)
         # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
         here = shellscan.write_directory(run.cwd, cwd)
         base = _base(here, cwd)
-        operands = _run_operands(run, argv)
         prefix = str(here).rstrip("/") + "/" if here else ""
-        on_list = [a for a in operands if _is_list(a, prefix, base)]
-        for target in shellscan.redirect_targets(run):
-            if _is_list(target, prefix, base):
-                return "a redirect into %s" % target
-        # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
-        in_place = shellscan.in_place_edit(run) is not None
-        if on_list and (name in ("tee", "truncate") or in_place):
-            return "%s on %s" % (name, on_list[0])
+        for write in records:
+            if write.run is not run or not _is_list(write.word, prefix, base):
+                continue
+            if write.how in _LIST_WRITES:
+                return _LIST_WRITES[write.how] % {"name": name, "word": write.word}
+            if write.how == "option" and name == "dd":
+                return "dd of= the exception list"
         copies = shellscan.run_copies(run, None, cwd)
         if copies is not None:
             sources, dests, into = copies
@@ -271,10 +278,6 @@ def _list_write(runs, analysis, cmd, cwd):
                 for landed in [dest] + [_lands(src, dest, into) for src in sources]:
                     if _is_list(landed, prefix, base):
                         return "%s onto %s" % (name, landed)
-        if name == "dd" and any(
-            a.startswith("of=") and _is_list(a[3:], prefix, base) for a in argv
-        ):
-            return "dd of= the exception list"
         # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
@@ -309,20 +312,21 @@ def _program(run, cmd, cwd, holds):
     return code, shellscan.python_writes_to(text, holds), kind
 
 
-def _offending(cmd, cwd):
-    """(kind, description) of the first refused write, kind "list" or "flag", or None."""
+def _offending(cmd, cwd, records=None):
+    """(kind, description) of the first refused write, kind "list" or "flag", or None. `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
+    if records is None:
+        records = shellscan.write_records(cmd, cwd)
     analysis = shellscan._analyse(cmd)
     # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
     bodies = shellscan.heredoc_bodies(cmd)
     runs = shellscan.every_run(cmd)
-    listed_write = _list_write(runs, analysis, cmd, cwd)
+    listed_write = _list_write(runs, analysis, cmd, cwd, records)
     if listed_write:
         return "list", listed_write
     written = "\n".join(
         bodies + [a for r in runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
     )
     flagged = model_invocation.flag_in_text(written)
-    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
 
     def redirect_refusal(target, run_cwd, appending, base=None):
         """A refusal for a write of `written` into `target`, or "". A LISTED file overwritten whole is judged by `verdict` on the text written; any other write carrying the key is refused."""
@@ -341,14 +345,10 @@ def _offending(cmd, cwd):
         here = shellscan.write_directory(run.cwd, cwd)
         base = _base(here, cwd)
         operands = _run_operands(run, argv)
-        for target in shellscan.redirect_targets(run):
-            why = redirect_refusal(target, here, target in appends, base)
-            if why:
-                return "flag", why
-        if name == "tee":
-            appending = "-a" in argv or "--append" in argv
-            for target in operands:
-                why = redirect_refusal(target, here, appending, base)
+        # A redirect or a `tee` writes the command's text (`written`), each target as typed and as bash expands it, with its own append flag (`shellscan.write_records`, #7b3f34ae).
+        for write in records:
+            if write.run is run and write.how in ("redirect", "append", "tee"):
+                why = redirect_refusal(write.word, here, write.append, base)
                 if why:
                     return "flag", why
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the key into a command file unrefused. Its scripts join the non-option words, so the scripts read can only grow.
@@ -444,7 +444,7 @@ def run(ev):
         and not _reaches_scope(cmd, cwd)
     ):
         return hookio.ALLOW
-    found = _offending(cmd, cwd)
+    found = _offending(cmd, cwd, shellscan.event_write_records(ev))
     if found is None:
         return hookio.ALLOW
     kind, what = found
