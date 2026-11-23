@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""The port side of the MACHINE-MUTATING half of the `core.local_common` differential. The bash side (`.ci/lib/local-common.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.local-common.jsonl`, keyed by `actions/<scenario>/<case>`, and `test_core_local_common.py` compares this driver's output against them.
+"""The port harness for `rediacc_ci.core.local_common (the machine-mutating half)`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_local_common.py` compares them with the goldens.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_actions_shadow_driver --side new --port .ci/rediacc_ci/core/local_common.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_local_common_actions --side new --port <port> <scenario>
 
-While the bash existed, `--side old --twin .ci/lib/local-common.sh` ran each case through a `bash -c` that sourced the library; a Rule-T change to the port is recorded with `regolden --source port`.
-
-A SECOND DRIVER FOR THE SAME TWIN, and a second ledger pair (`w7p5b-local-common-actions`), because the technique differs: `core/local_common_shadow_driver.py` compares pure answers inside one bash process per side, and this one runs every case as ITS OWN PROCESS per side with the external programs stubbed (`core/stubfarm.py`) and compares rc, both streams, the ordered transcript of every stubbed call and every file the case left behind. RUN AS A MODULE, never by path, for the reason that driver records.
+Moved from `.ci/rediacc_ci/tests/harness_local_common_actions.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
 
 -----------------------------------------------------------------------------
 THE SANDBOX LIVES AT THE SAME PATH ON BOTH SIDES, UNDER A LOCK
@@ -997,7 +995,7 @@ def main(argv: list[str]) -> int:
     repo = pathlib.Path.cwd().resolve()
     if not (repo / args.port).is_file():
         sys.stderr.write(
-            "local_common_actions_shadow_driver: the port %s does not exist under %s\n"
+            "harness_local_common_actions: the port %s does not exist under %s\n"
             % (args.port, repo)
         )
         return EXIT_CANNOT_RUN

@@ -3,7 +3,7 @@
 WHAT THIS IS. `.ci/lib/setup.sh` is 845 lines answering one question: what does a bare machine need before this repository can build? Nine functions are defined there and this module carries all nine, keeping the split the bash drew (`node_pick_lts` and `go_pick_sha` are separate because they are the parts that can be unit-tested without a machine, and that reason survives the
 port).
 
-THE CONTRACT THE BASH STATES AND THIS KEEPS, verbatim from `.ci/lib/setup.sh:17`: "EVERY FUNCTION HERE IS IDEMPOTENT and returns 0 early when its condition is already met. That is the contract: `./run.sh setup` is expected to be run repeatedly, and a second run must do no work." Each function below therefore has an early-return guard as its FIRST branch, and `shadow_driver.py`
+THE CONTRACT THE BASH STATES AND THIS KEEPS, verbatim from `.ci/lib/setup.sh:17`: "EVERY FUNCTION HERE IS IDEMPOTENT and returns 0 early when its condition is already met. That is the contract: `./run.sh setup` is expected to be run repeatedly, and a second run must do no work." Each function below therefore has an early-return guard as its FIRST branch, and `setup/shadow_driver.py` (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc)
 drives every one of them twice against a fixture where the tool is present and requires the second run to be byte-identical to the first.
 
 AND THE SECOND CONTRACT, `.ci/lib/setup.sh:21-23`: each "refuses rather than hanging on a non-TTY, printing the command it would have run as PLAIN stdout so it can be pasted (log_* prefixes every line with a coloured marker, which breaks

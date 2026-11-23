@@ -8,7 +8,6 @@
     ".ci/config/secret-supply.json": 3,
     ".ci/rediacc_ci/core/account.py": 2,
     ".ci/rediacc_ci/core/env.py": 3,
-    ".ci/rediacc_ci/core/shadow_driver.py": 1,
     ".ci/rediacc_ci/ops/build_server.py": 1,
     ".ci/rediacc_ci/quality/secret_supply.py": 7,
     ".ci/rediacc_ci/security/rdc_sh_env_check.py": 3,

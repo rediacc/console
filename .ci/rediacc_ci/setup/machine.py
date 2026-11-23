@@ -10,7 +10,7 @@ THE TWO CONTRACTS THIS FILE IS JUDGED ON.
   IDEMPOTENCE. `.ci/lib/setup.sh:17`: "EVERY FUNCTION HERE IS IDEMPOTENT and
   returns 0 early when its condition is already met ... a second run must do no
   work." Enforced per phase in `host.py` and driven twice per phase by
-  `shadow_driver.py`.
+  `setup/shadow_driver.py` (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc).
 
   `--check` MUTATES NOTHING. `check()` below runs no installer, writes no file
   and starts no container. `.ci/rediacc_ci/quality/setup_idempotency.py` check B

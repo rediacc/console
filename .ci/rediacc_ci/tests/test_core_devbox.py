@@ -1,6 +1,6 @@
 """`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-four functions (`devbox_build_image` is retired).
 
-THE TWIN IS DELETED. The bash side of every scenario was driven by `rediacc_ci.core.devbox_shadow_driver` while `devbox.sh` existed and its full transcripts are the golden; this file compares the port's live transcript against them. A Rule-T change to the port is recorded with `regolden --source port`.
+THE TWIN IS DELETED. The bash side of every scenario was driven by `rediacc_ci.tests.harness_devbox` while `devbox.sh` existed and its full transcripts are the golden; this file compares the port's live transcript against them. A Rule-T change to the port is recorded with `regolden --source port`.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
@@ -32,17 +32,16 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import devbox
-from rediacc_ci.core import devbox_shadow_driver as driver
 from rediacc_ci.setup import bridge
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import harness_devbox as driver
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/devbox.py"
-DRIVER = ".ci/rediacc_ci/core/devbox_shadow_driver.py"
+DRIVER = ".ci/rediacc_ci/tests/harness_devbox.py"
 # Invoked as a MODULE, never by path: see the driver's header for why the by-path form would need a hand-written sys.path hop that `test_canonical_sys_path_hop.py` refuses.
-DRIVER_MODULE = "rediacc_ci.core.devbox_shadow_driver"
-LEDGER = ".ci/shadow/w7p5b-devbox.observations.jsonl"
+DRIVER_MODULE = "rediacc_ci.tests.harness_devbox"
 CONSTANTS = ".ci/config/constants.sh"
 
 SCENARIOS = driver.SCENARIOS
@@ -1110,55 +1109,9 @@ def test_up_drops_what_the_host_does_not_have(monkeypatch) -> None:
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
-def ledger_rows() -> list[dict]:
-    path = paths.repo_root() / LEDGER
-    assert path.is_file(), "%s is missing; the port has no recorded licence" % LEDGER
-    return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-
-
-def test_the_shadow_ledger_holds_equivalent_rows_over_five_trees() -> None:
-    """The K=5 licence, read off disk rather than remembered from a session, covering EVERY scenario."""
-    rows = ledger_rows()
-    assert len(rows) >= 5
-    assert all(row["verdict"] == "EQUIVALENT" for row in rows)
-    assert len({row["tree"]["id"] for row in rows}) >= 5
-    assert all(row["tree"]["clean"] for row in rows)
-    assert all(TWIN in row["old"]["cmd"] for row in rows)
-    assert all(PORT in row["new"]["cmd"] for row in rows)
-    assert len({row["old"]["fingerprint"] for row in rows}) >= 2
-    recorded = {row["new"]["cmd"].rsplit(" ", 1)[1] for row in rows}
-    assert recorded == set(SCENARIOS), "the ledger covers %s" % sorted(recorded)
-
-
-def test_every_row_carries_the_whole_file_comment_audit() -> None:
-    """A WHOLE-FILE port is audited against the WHOLE twin, so every row carries the comment ratio and every ratio clears the floor.
-
-    The first slice recorded without the two file arguments because three functions out of forty-two were measured against a whole file; that exemption ends with the port, and this case is what holds it ended.
-    """
-    for row in ledger_rows():
-        comments = row.get("comments")
-        assert comments is not None, "a row was recorded without --old-file/--new-file"
-        assert comments["ratio"] >= 0.9, comments
-
-
 def test_the_tools_the_scenarios_use_are_installed() -> None:
     for tool in ("bash", "sed", "tr", "od", "git"):
         assert shutil.which(tool) is not None, tool
-
-
-def test_the_driver_refuses_the_retired_bash_side() -> None:
-    proc = subprocess.run(
-        [sys.executable, "-m", DRIVER_MODULE, "--side", "old", "--port", PORT, "arity"],
-        cwd=str(paths.repo_root()),
-        env={**os.environ, "PYTHONPATH": ".ci"},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == 2, "argparse refuses a side the driver no longer has"
-    assert "invalid choice" in proc.stderr
 
 
 def test_the_driver_refuses_when_the_port_is_not_there() -> None:
@@ -1298,7 +1251,7 @@ def test_the_no_argument_call_is_a_death_and_not_a_default() -> None:
 
 def test_the_repo_root_is_a_checkout_with_the_port_in_it() -> None:
     assert (paths.repo_root() / PORT).is_file()
-    assert pathlib.Path(DRIVER).name == "devbox_shadow_driver.py"
+    assert pathlib.Path(DRIVER).name == "harness_devbox.py"
 
 
 # -- Rule T: the twin's defects, fixed in the port as INTENTIONAL DELTAS ---------

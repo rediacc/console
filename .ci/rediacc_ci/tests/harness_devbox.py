@@ -1,21 +1,11 @@
 #!/usr/bin/env python3
-"""The port side of the `core.devbox` differential. The bash side (`.ci/lib/devbox.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.devbox.jsonl`.
+"""The port harness for `rediacc_ci.core.devbox`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_devbox.py` compares them with the goldens.
 
-WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a return value. This module is the printer, and it can print either side:
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_devbox --side new --port <port> <scenario>
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.devbox_shadow_driver --side new --port .ci/rediacc_ci/core/devbox.py <scenario>
-        drives the PYTHON: `rediacc_ci.core.devbox`. While the bash existed, `--side old --twin .ci/lib/devbox.sh` drove it through the prelude `.ci/rediacc_ci/setup/bridge.py` used, and the ledger rows under `.ci/shadow/` record both commands.
+Moved from `.ci/rediacc_ci/tests/harness_devbox.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert`. `test_canonical_sys_path_hop.py` refuses exactly that, and `PYTHONPATH=.ci` plus `-m` removes the need rather than baselining it.
-
-WHY THIS IS A THIRD DRIVER AND NOT A SCENARIO INSIDE `core/local_common_shadow_driver.py`. That file is the `core.local_common` differential and its ledger rows name it; a pair is one twin against one port, and folding a second twin into it would make `dead_python.py`'s shadow route admit both ports off either ledger.
-ONE FILE AND NOT TWO: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named in a `.ci/shadow/*.jsonl` record, so a separate old-side module would be reported dead the day it landed. `--twin` and `--port` carry the two paths for the same reason, and BOTH are checked to exist before anything runs.
-The STUBS are this module too (`StubServer`): a stub is a short bash script in a temporary directory that hands its argv to a server thread of this driver, so there is no tracked stub file for `dead_python.py` or `check:ci-no-inline-python` to judge, and the answer table is data the scenario builds.
-
------------------------------------------------------------------------------
-THE STUB-FARM TRANSCRIPT DIFFERENTIAL, which is the technique this ledger licenses
------------------------------------------------------------------------------
-The pure three need no sandbox and get none. Every other function reaches docker, the network, the filesystem, git or the port allocator, and the earlier slice refused them for want of a way to compare a side effect. The way is this:
 
   ONE STUB FARM, BUILT IN PYTHON, USED BY BOTH SIDES. `build_stub_farm()` writes one executable per name in `STUBBED` into `<work>/stub/bin`, and `StubServer` answers them one call at a time from a thread of this driver. Each call appends its argv to `<work>/stub/transcript.jsonl` as ONE JSON array per call, BEFORE it answers, and then answers from `<work>/stub/table.json`: an ordered list of rules, the first match wins, each rule an argv pattern (a positional `fnmatch` prefix) and an answer (stdout, stderr, status).
   A rule may also require an ordinal (`nth`: this is the Nth call matching the rule's pattern) or a history (`after` / `before`: some earlier call did or did not match another pattern). An unmatched call answers status 0 with no output. The same table file drives both sides because the SAME stub executable answers both sides.
@@ -84,7 +74,7 @@ from typing import Any, Self, cast
 from rediacc_ci.core import devbox
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
-# The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
+# Every observation line starts with this prefix; the goldens and the tests key on it.
 OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
@@ -2218,14 +2208,14 @@ def main(argv: list[str]) -> int:
     repo = pathlib.Path.cwd().resolve()
     if not (repo / args.port).is_file():
         sys.stderr.write(
-            "devbox_shadow_driver: the port %s does not exist under %s. A ledger row "
+            "harness_devbox: the port %s does not exist under %s. A ledger row "
             "naming a file that is not there attests to nothing.\n" % (args.port, repo)
         )
         return EXIT_CANNOT_RUN
 
     if shutil.which("git") is None:
         sys.stderr.write(
-            "devbox_shadow_driver: git is not installed, so the fixture repositories "
+            "harness_devbox: git is not installed, so the fixture repositories "
             "cannot be built and the comparison would prove nothing.\n"
         )
         return EXIT_CANNOT_RUN
@@ -2235,7 +2225,7 @@ def main(argv: list[str]) -> int:
     try:
         return run_side(args.side, args.scenario, repo)
     except RefusalError as exc:
-        sys.stderr.write("devbox_shadow_driver: %s\n" % exc)
+        sys.stderr.write("harness_devbox: %s\n" % exc)
         return EXIT_CANNOT_RUN
 
 

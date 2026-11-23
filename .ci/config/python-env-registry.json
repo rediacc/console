@@ -242,16 +242,6 @@
       "STRIPE_E2E_WEBHOOK_SECRET",
       "STRIPE_SANDBOX_SECRET_KEY"
     ],
-    ".ci/rediacc_ci/core/account_lifecycle_shadow_driver.py": [
-      "*name",
-      "CONSOLE_ROOT_DIR",
-      "SHADOW_FOREIGN_PID",
-      "SHADOW_PIDS",
-      "SHADOW_PRE",
-      "SHADOW_REAL_SLEEP",
-      "SHADOW_SHOW",
-      "STUB_ROOT"
-    ],
     ".ci/rediacc_ci/core/advisory.py": [
       "CI"
     ],
@@ -276,10 +266,6 @@
       "AWS_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT"
     ],
-    ".ci/rediacc_ci/core/devbox_shadow_driver.py": [
-      "HOME",
-      "PATH"
-    ],
     ".ci/rediacc_ci/core/env.py": [
       "*key"
     ],
@@ -301,10 +287,6 @@
       "SCRIPT_ENTRYPOINT",
       "USER",
       "_DEVBOX_DOCKER"
-    ],
-    ".ci/rediacc_ci/core/local_common_shadow_driver.py": [
-      "HOME",
-      "PATH"
     ],
     ".ci/rediacc_ci/core/platform.py": [
       "*name",
@@ -341,10 +323,6 @@
       "SERVICE_RUSTFS_CONSOLE_PORT",
       "SERVICE_STATUS_NOW",
       "SERVICE_TAG"
-    ],
-    ".ci/rediacc_ci/core/shadow_driver.py": [
-      "HOME",
-      "PATH"
     ],
     ".ci/rediacc_ci/core/tmp_capacity.py": [
       "TMP_CAPACITY_MIN_FREE_INODES"
@@ -1692,6 +1670,28 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_harness.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/harness_account.py": [
+      "HOME",
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/harness_account_lifecycle.py": [
+      "*name",
+      "CONSOLE_ROOT_DIR",
+      "SHADOW_FOREIGN_PID",
+      "SHADOW_PIDS",
+      "SHADOW_PRE",
+      "SHADOW_REAL_SLEEP",
+      "SHADOW_SHOW",
+      "STUB_ROOT"
+    ],
+    ".ci/rediacc_ci/tests/harness_devbox.py": [
+      "HOME",
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/harness_local_common.py": [
+      "HOME",
       "PATH"
     ],
     ".ci/rediacc_ci/tests/ops_cf_harness.py": [

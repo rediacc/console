@@ -1,8 +1,8 @@
 """`rediacc_ci.core.account` against the transcripts frozen from the retired `.ci/lib/account.sh` (`goldens/twins/lib.account.jsonl`).
 
 ALL TWENTY-TWO OF THE TWIN'S FUNCTIONS HAVE A PYTHON PORT, split across two modules, and the twin is deleted. While `account.sh` existed this file drove it for real through THREE techniques, and the bash side of the first two is now the golden:
-  * `rediacc_ci.core.shadow_driver` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer.
-  * `rediacc_ci.core.account_lifecycle_shadow_driver` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the resulting tree.
+  * `rediacc_ci.tests.harness_account` (pair `w7p5b-account`): the deterministic half of `rediacc_ci.core.account`, compared answer for answer.
+  * `rediacc_ci.tests.harness_account_lifecycle` (pair `w7p5b-account-lifecycle`): the twelve side-effecting functions in `rediacc_ci.core.account_lifecycle`, each case its own process with the external programs stubbed, compared on rc, both streams, the ordered call transcript and the resulting tree.
   * REAL RUNS for `account_stop`, `account_rotation` and `account_bws_exec`, against a real tracked process, a real Docker daemon and the real credential-free `rotation` subcommands (the "stop and rotation" section). Only the port side of those still runs.
 The twin's four `.env` writers are deleted from BOTH sides (`agent/plans/PLAN-account-env-to-bws.md`), so they appear in neither tuple below; the CI-only `mint-dev-keys` verb that replaced one of their uses has no twin and is tested directly at the end of this file.
 
@@ -30,16 +30,17 @@ import time
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
-from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
+from rediacc_ci.core import account, account_lifecycle, stubfarm
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import harness_account
+from rediacc_ci.tests import harness_account_lifecycle as lifecycle_driver
 from rediacc_ci.tests.wkloader import path_farm_without
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
 #
-# * `shadow_driver` pins CONSTANT ports (31210-31340, below the kernel's ephemeral range, `rediacc_ci/core/shadow_driver.py` "Every port below is therefore a CONSTANT") because an ephemeral port would differ between the two sides and land in a message text. Every item that runs it (`drive()`) shares SHADOW_PORTS_GROUP. These ports are above the 20000-30000 the per-worker slices are cut from, so the group serialises these items only against each other.
-# * `account_lifecycle_shadow_driver` builds its sandbox at a FIXED tmp path and takes a machine-wide `flock` around every run (`locked()`), so its items serialise however they are scheduled. LIFECYCLE_GROUP keeps them on one worker instead of leaving several workers blocked on the lock.
+# * `harness_account` pins CONSTANT ports (31210-31340, below the kernel's ephemeral range, `rediacc_ci/tests/harness_account.py` "Every port below is therefore a CONSTANT") because an ephemeral port would differ between the two sides and land in a message text. Every item that runs it (`drive()`) shares SHADOW_PORTS_GROUP. These ports are above the 20000-30000 the per-worker slices are cut from, so the group serialises these items only against each other.
+# * `harness_account_lifecycle` builds its sandbox at a FIXED tmp path and takes a machine-wide `flock` around every run (`locked()`), so its items serialise however they are scheduled. LIFECYCLE_GROUP keeps them on one worker instead of leaving several workers blocked on the lock.
 #
 # Everything else in the file distributes per item.
 SHADOW_PORTS_GROUP = "account-shadow-fixed-ports"
@@ -48,12 +49,10 @@ LIFECYCLE_GROUP = "account-lifecycle-fixed-tmp"
 TWIN = ".ci/lib/account.sh"
 DEVBOX_TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/account.py"
-DRIVER = ".ci/rediacc_ci/core/shadow_driver.py"
+DRIVER = ".ci/rediacc_ci/tests/harness_account.py"
 # Invoked as a MODULE, never by path: see the driver's header for why the by-path form would need a hand-written sys.path hop that `test_canonical_sys_path_hop.py` refuses.
-DRIVER_MODULE = "rediacc_ci.core.shadow_driver"
-LEDGER = ".ci/shadow/w7p5b-account.observations.jsonl"
-
-SCENARIOS = sorted(shadow_driver.SCENARIOS)
+DRIVER_MODULE = "rediacc_ci.tests.harness_account"
+SCENARIOS = sorted(harness_account.SCENARIOS)
 
 # The floor each scenario must clear. Measured against the recorded ledger rows, then rounded DOWN so a real change to a message does not turn into a test edit; the point is to catch a transcript collapsing to nothing, not to pin a count.
 OBSERVATION_FLOOR = {
@@ -407,7 +406,7 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
         "curl is absent anyway, so the control is not a control"
     )
 
-    root = shadow_driver.build_sandbox(paths.repo_root())
+    root = harness_account.build_sandbox(paths.repo_root())
     try:
         env = {
             "PATH": str(farm),
@@ -425,7 +424,7 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
                 sys.executable,
                 "-c",
                 "from rediacc_ci.core import account\nraise SystemExit(0 if account.rustfs_alive(%d) else 1)"
-                % shadow_driver.DEAD_PORT,
+                % harness_account.DEAD_PORT,
             ],
             cwd=str(paths.repo_root()),
             env={**env, "PYTHONPATH": ".ci"},
@@ -530,21 +529,8 @@ def test_the_driver_refuses_when_the_port_is_not_there() -> None:
         text=True,
         check=False,
     )
-    assert proc.returncode == shadow_driver.EXIT_CANNOT_RUN
+    assert proc.returncode == harness_account.EXIT_CANNOT_RUN
     assert "attests to nothing" in proc.stderr
-
-
-def test_the_driver_has_no_bash_side() -> None:
-    proc = subprocess.run(
-        [sys.executable, "-m", DRIVER_MODULE, "--side", "old", "--port", PORT, "probe"],
-        cwd=str(paths.repo_root()),
-        env={**os.environ, "PYTHONPATH": ".ci"},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == 2
-    assert "invalid choice" in proc.stderr
 
 
 def test_the_paths_derive_from_console_root_and_nothing_else() -> None:
@@ -571,19 +557,19 @@ def test_the_ported_module_has_no_launch_on_its_argv_surface() -> None:
 
 
 def test_the_driver_offers_exactly_the_scenarios_with_a_floor() -> None:
-    assert isinstance(shadow_driver.SCENARIOS, tuple)
-    assert set(shadow_driver.SCENARIOS) == set(OBSERVATION_FLOOR)
+    assert isinstance(harness_account.SCENARIOS, tuple)
+    assert set(harness_account.SCENARIOS) == set(OBSERVATION_FLOOR)
 
 
 def test_the_repo_root_is_a_checkout_with_the_port_in_it() -> None:
     """A last refusal: everything above is relative to this."""
     assert (paths.repo_root() / PORT).is_file()
-    assert pathlib.Path(DRIVER).name == "shadow_driver.py"
+    assert pathlib.Path(DRIVER).name == "harness_account.py"
 
 
 # -- stop and rotation: REAL-RUN verification, not shadow-differential -------
 #
-# `account_stop` and `account_rotation` genuinely start and stop real infrastructure (Docker containers, tracked dev pids, and, through `account_rotation`, a real TypeScript CLI that mints and deletes credentials at AWS IAM, Cloudflare and GitHub), so `shadow_driver.py` does not drive them -- see its own module docstring, "WHAT IS NEVER DRIVEN HERE", which still lists both by name.
+# `account_stop` and `account_rotation` genuinely start and stop real infrastructure (Docker containers, tracked dev pids, and, through `account_rotation`, a real TypeScript CLI that mints and deletes credentials at AWS IAM, Cloudflare and GitHub), so `harness_account.py` does not drive them -- see its own module docstring, "WHAT IS NEVER DRIVEN HERE", which still lists both by name.
 # These tests instead run the twin and the port against something real and check the OBSERVABLE SIDE EFFECT -- a process is actually dead, a port is actually free, real stdout from the real rotation CLI matches -- rather than trusting a return code alone.
 #
 # `rotation()`'s mutating subcommands (`rotate`, `check`, `deactivate`, `delete`, `sweep`, `init`) need live production credentials at AWS IAM / Cloudflare / GitHub and are NEVER invoked by anything below, or by anything else in this repository's test suite: only `list`, `status` and `history`, which read the committed, non-secret manifest and touch no platform.
@@ -633,15 +619,15 @@ def test_stop_real_run_kills_a_real_tracked_pid_and_a_real_port_occupant(
 ) -> None:
     """REAL RUN. A real `sleep` process and a real port listener are spawned -- not mocked -- `stop()` is pointed at them through a real state file, and the kill is confirmed with `kill -0` and the real socket bind, not by trusting the return code.
 
-    Runs inside `shadow_driver.build_sandbox()`, the same isolated `CONSOLE_ROOT_DIR` the differential uses: `stop()` also runs `docker compose down --remove-orphans` in `$ACCOUNT_DIR`, and the sandbox's `private/account` is a real, empty, un-symlinked directory (`shadow_driver.build_sandbox`'s own docstring), so that call finds no compose file and cannot reach whatever the real `private/account` submodule has running.
+    Runs inside `harness_account.build_sandbox()`, the same isolated `CONSOLE_ROOT_DIR` the differential uses: `stop()` also runs `docker compose down --remove-orphans` in `$ACCOUNT_DIR`, and the sandbox's `private/account` is a real, empty, un-symlinked directory (`harness_account.build_sandbox`'s own docstring), so that call finds no compose file and cannot reach whatever the real `private/account` submodule has running.
 
     A failing `docker` is put first on `PATH` (the real `lsof` stays reachable), so `stop()`'s unscoped container teardown never touches the host's daemon and the case runs on every host, whether or not a real `./run.sh account dev` stack is up. It used to skip on such a host, which turned `check:ci-pytest` red wherever that stack ran.
     """
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     tracked = listener = None
     try:
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         state = pathlib.Path(account.state_file(env))
 
         tracked = _spawn_reaped(["sleep", "20"])
@@ -723,7 +709,7 @@ class _SecondStartError(AssertionError):
 
 
 def _arm_dev(monkeypatch, work, calls: list[str]) -> pathlib.Path:
-    env = shadow_driver.sandbox_env(work)
+    env = harness_account.sandbox_env(work)
     monkeypatch.setenv("CONSOLE_ROOT_DIR", env["CONSOLE_ROOT_DIR"])
     monkeypatch.setattr(account, "bws_exec", lambda *_a, **_k: calls.append("bws_exec"))
     monkeypatch.setattr(account_lifecycle, "_check_node", lambda: None)
@@ -741,7 +727,7 @@ def _arm_dev(monkeypatch, work, calls: list[str]) -> pathlib.Path:
 
 def test_dev_reuses_a_live_stack_and_starts_no_second(monkeypatch, capsys) -> None:
     """A state file naming a live pid and a gateway answering server-info is reused: URL printed, rc 0, nothing stopped, nothing spawned, state untouched."""
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     tracked = None
     gateway = _ServerInfo()
     try:
@@ -771,7 +757,7 @@ def test_dev_reuses_a_live_stack_and_starts_no_second(monkeypatch, capsys) -> No
 @pytest.mark.parametrize("shape", ["dead-pid", "dead-port", "foreign-writer", "no-pids"])
 def test_dev_replaces_a_stale_state_file(monkeypatch, shape) -> None:
     """Dead pids, a dead gateway port, another writer's stamp or no pids at all: the state is stale, the previous instance is cleaned and a fresh start begins."""
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     tracked = None
     gateway = _ServerInfo()
     try:
@@ -807,10 +793,10 @@ def test_dev_replaces_a_stale_state_file(monkeypatch, shape) -> None:
 def test_stop_kills_the_whole_tree_not_only_the_recorded_pid(monkeypatch, tmp_path) -> None:
     """The recorded pid is a job leader (npm exec -> sh -> server). Its child and grandchild must die with it."""
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     leader = None
     try:
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         state = pathlib.Path(account.state_file(env))
         childfile = tmp_path / "child.pid"
         leader = _spawn_reaped(
@@ -856,10 +842,10 @@ def test_stop_real_run_leaves_pids_from_another_writer_alone(
 
     Red without `account.state_owned`: the tracked pid is killed. `PATH` holds only a failing `docker`, so the teardown touches no real container and `lsof` is absent (the port is closed anyway).
     """
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     tracked = None
     try:
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         state = pathlib.Path(account.state_file(env))
         tracked = _spawn_reaped(["sleep", "20"])
         assert _alive(tracked.pid), "control: the bystander must be alive before stop() runs"
@@ -1060,11 +1046,10 @@ def test_mint_dev_keys_covers_exactly_the_account_dev_required_names() -> None:
 
 # -- the lifecycle half: a stub-farm transcript differential --------------------
 #
-# `rediacc_ci.core.account_lifecycle` ports the eleven functions that start, stop or talk to real infrastructure. `account_lifecycle_shadow_driver` runs each case as its own process per side with the external programs stubbed, and every case below is the LIVE twin against the live port, not a replay.
+# `rediacc_ci.core.account_lifecycle` ports the eleven functions that start, stop or talk to real infrastructure. `harness_account_lifecycle` runs each case as its own process per side with the external programs stubbed, and every case below is the LIVE twin against the live port, not a replay.
 
 LIFECYCLE_PORT = ".ci/rediacc_ci/core/account_lifecycle.py"
-LIFECYCLE_MODULE = "rediacc_ci.core.account_lifecycle_shadow_driver"
-LIFECYCLE_LEDGER = ".ci/shadow/w7p5b-account-lifecycle.observations.jsonl"
+LIFECYCLE_MODULE = "rediacc_ci.tests.harness_account_lifecycle"
 LIFECYCLE_SCENARIOS = sorted(lifecycle_driver.SCENARIOS)
 
 # The floor each scenario must clear, rounded well down from the measured transcripts: the claim is that the scenario reached its subject, not a count.
@@ -1345,6 +1330,13 @@ def _planted_repo(
         fake / ".ci" / "rediacc_ci",
         ignore=shutil.ignore_patterns("__pycache__", "tests"),
     )
+    # The harness re-runs itself as `python3 -m rediacc_ci.tests.harness_account_lifecycle --inner`, so the view needs that one module of `tests/` (and the package marker), not the goldens beside it.
+    (fake / ".ci" / "rediacc_ci" / "tests").mkdir()
+    for name in ("__init__.py", "harness_account_lifecycle.py"):
+        shutil.copy2(
+            repo / ".ci" / "rediacc_ci" / "tests" / name,
+            fake / ".ci" / "rediacc_ci" / "tests" / name,
+        )
     target = fake / target_rel
     text = target.read_text(encoding="utf-8")
     assert text.count(old) == 1, "the plant %r no longer matches the port exactly once" % old
@@ -1831,7 +1823,7 @@ def test_the_pids_normaliser_is_still_needed() -> None:
 
 def test_the_pinned_ports_sit_below_the_default_ephemeral_range():
     """A pinned port inside 32768-60999 can be held by any outbound connection's source port (45331, 2026-10-05)."""
-    low, high = shadow_driver.PINNED_SPAN
+    low, high = harness_account.PINNED_SPAN
     assert high < 32768, "the pinned ports %d..%d reach into Linux's default ephemeral range" % (
         low,
         high,
@@ -1845,13 +1837,13 @@ def test_an_overlapping_ephemeral_range_is_a_refusal(tmp_path):
     overlapping = tmp_path / "range"
     overlapping.write_text("31000\t60999\n", encoding="utf-8")
     with pytest.raises(
-        shadow_driver.RefusalError, match=r"overlap this kernel's ephemeral range 31000\.\.60999"
+        harness_account.RefusalError, match=r"overlap this kernel's ephemeral range 31000\.\.60999"
     ):
-        shadow_driver.ports_outside_ephemeral(overlapping)
+        harness_account.ports_outside_ephemeral(overlapping)
     clear = tmp_path / "clear"
     clear.write_text("32768\t60999\n", encoding="utf-8")
-    shadow_driver.ports_outside_ephemeral(clear)
-    shadow_driver.ports_outside_ephemeral(tmp_path / "absent")
+    harness_account.ports_outside_ephemeral(clear)
+    harness_account.ports_outside_ephemeral(tmp_path / "absent")
 
 
 class _LaunchedError(Exception):
@@ -1994,10 +1986,10 @@ def test_tree_refuses_pid_zero_and_one():
 def test_stop_kills_a_sigterm_ignoring_child_whose_leader_exited(monkeypatch, tmp_path) -> None:
     """Reviews 4fb75de4.1 and a6ac20cd.3, end to end through stop(): the leader dies on SIGTERM, its child ignores SIGTERM and is reparented, and the SIGKILL pass must still reach it. Red if stop() re-collects the tree after the TERM pass, because by then the dead leader has no children."""
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     leader = None
     try:
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         state = pathlib.Path(account.state_file(env))
         childfile = tmp_path / "child.pid"
         ignorer = (
@@ -2032,9 +2024,9 @@ def test_stop_with_a_foreign_state_kills_only_the_gateway_occupant(monkeypatch, 
     """Review a6ac20cd.2: a state file another writer stamped gets the gateway occupant alone, never the trees on
     gateway+1 and gateway+2."""
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     try:
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         pathlib.Path(account.state_file(env)).write_text(
             "gateway_port=4900\npids=\nwriter=%s\n" % FOREIGN_WRITER, encoding="utf-8"
         )
@@ -2124,7 +2116,7 @@ def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_pa
     """Review 4cb0f2b2.2, end to end through stop(): a recorded process that survives SIGTERM but whose start time
     changes before the SIGKILL pass (its pid was reused) is not killed. Red if stop() passes the unfiltered tree."""
     monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin") + os.pathsep + os.environ["PATH"])
-    work = shadow_driver.build_sandbox(paths.repo_root())
+    work = harness_account.build_sandbox(paths.repo_root())
     proc = subprocess.Popen(
         [
             sys.executable,
@@ -2147,7 +2139,7 @@ def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_pa
 
         monkeypatch.setattr(account, "_start_time", changing_start_time)
         monkeypatch.setattr(account, "_tree", lambda pid: [int(pid)])
-        env = shadow_driver.sandbox_env(work)
+        env = harness_account.sandbox_env(work)
         pathlib.Path(account.state_file(env)).write_text(
             "gateway_port=1\npids=%d\nwriter=%s\n" % (proc.pid, account.writer_stamp()),
             encoding="utf-8",

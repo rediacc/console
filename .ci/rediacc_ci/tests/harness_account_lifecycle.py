@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""The port side of the `core.account_lifecycle` differential. The bash side (`.ci/lib/account.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.account.jsonl`.
+"""The port harness for `rediacc_ci.core.account_lifecycle`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_account.py` compares them with the goldens.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.account_lifecycle_shadow_driver --side new --port .ci/rediacc_ci/core/account_lifecycle.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_account_lifecycle --side new --port <port> <scenario>
 
-While the bash existed, `--side old --twin .ci/lib/account.sh` drove it and the ledger rows under `.ci/shadow/` record both commands.
-
-A SECOND DRIVER AND A SECOND PAIR (`w7p5b-account-lifecycle`) FOR THE SAME TWIN, on the `local_common_actions_shadow_driver.py` precedent: `core/shadow_driver.py` compares the deterministic half's answers inside one bash process per side, and this one runs every case as its OWN PROCESS per side with the external programs stubbed (`core/stubfarm.py`). RUN AS A MODULE, never by path, for the reason
-`core/shadow_driver.py` records.
+Moved from `.ci/rediacc_ci/tests/harness_account_lifecycle.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
 
 -----------------------------------------------------------------------------
 WHAT A CASE PRINTS
@@ -24,13 +21,6 @@ WHAT A CASE PRINTS
 THE BACKGROUND CALLS ARE SORTED, AND THAT IS THE ONE PLACE ORDER IS GIVEN UP. `account_dev` starts Astro and Vite with `&` and `account_stripe_auto` starts `stripe listen` the same way, and each of those races the foreground's own probes into one transcript. A background program (`stripe` always, `npx` in the `dev` cases) is therefore stubbed UNLOGGED and records its argv into a separate file, printed sorted, so the comparison
 still sees every argument of every call and does not see which process the scheduler ran first.
 TWO HANDSHAKES REMOVE THE OTHER RACES rather than sorting them away. The `stripe listen` stub waits for the foreground's first `sleep 1` before it prints its `whsec_` line, so exactly one sleep is ever logged on the happy path; and the dev gateway stub waits until the forked `account_dev_credentials` job has made its LAST logged call (`hostname -I`), so the credentials banner lands before the gateway returns.
-
------------------------------------------------------------------------------
-THE SANDBOX LIVES AT ONE FIXED PATH ON BOTH SIDES, UNDER A LOCK
------------------------------------------------------------------------------
-`ensure_deps` hashes absolute paths into its stamp, so each case builds `<tmp>/rediacc-account-lifecycle/{root,farm}` from nothing, and the run holds an `flock` on `<tmp>/rediacc-account-lifecycle.lock`, exactly as `local_common_actions_shadow_driver.py` does and for the same reason. The directory is removed after every case.
-`.ci/lib`, `.ci/config`, `.ci/rediacc_ci`, `.ci/scripts/lib`, `.devcontainer` and `scripts` are SYMLINKS back to this checkout, so the code under comparison is the tracked code. `private/account` is a real per-case fixture with its own `dev.defaults.env`, never the real submodule. Both sides run with `CONSOLE_ROOT_DIR`, `REDIACC_CI_ROOT` and `PYTHONPATH` pointing into it, so the
-`PYTHONPATH` the twin hands `bws_env` is the same string on both sides.
 
 STUBBED AND LOGGED: `docker`, `curl`, `npm`, `npx` (outside `dev`), `lsof`, `pgrep`, `kill` (the PROGRAM, which the twin reaches through `xargs`), `sleep`, `ss` (how `rediacc_ci.core.ports` probes, on both sides), `openssl`, `hostname`, and the `build-packages.sh` path stub. STUBBED, NOT LOGGED: `node` (`-v` and the cpu-features buildcheck answered, everything else passed to the real node), `date` (`+%s` frozen), and in the `reset` cases `python3`, a tripwire whose two
 `bws_env` rows (`store-from-env`, `cache-to`) would record themselves on the side channel with the LENGTH of each key they were handed, never a value; reset() calls neither since agent/plans/PLAN-production-key-only.md K3. Everything else is the real program.
@@ -820,7 +810,7 @@ def _real(name: str) -> str:
     """The host program a passthrough stub hands off to, resolved on the caller's PATH before any farm exists."""
     found = shutil.which(name)
     if found is None:
-        raise SystemExit("account_lifecycle_shadow_driver: %s is not installed" % name)
+        raise SystemExit("harness_account_lifecycle: %s is not installed" % name)
     return found
 
 
@@ -1027,7 +1017,7 @@ def tree_listing(root: pathlib.Path) -> list[str]:
 
 
 LINE_STAMP = re.compile(r"^.*?: line \d+: ")
-# `scripts/lib/shadow-gate.ts`'s REFUSAL vocabulary matches `CANNOT READ` case-insensitively anywhere in a finding, so the twin's own `env: cannot read env file ...` diagnostic, quoted in an observation, made the gate record the whole row as ERROR_REFUSAL. The phrase is rewritten the same way on BOTH sides, so the message is still compared; this is the same class of accommodation `core/shadow_driver.py` makes for banner whitespace.
+# The shadow comparator (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc) read `CANNOT READ` anywhere in a finding as a refusal, so the twin's own `env: cannot read env file ...` diagnostic was rewritten in every observation. The goldens were recorded through this rewrite, so it stays: dropping it would change every line they hold that carries the phrase.
 GATE_VOCABULARY = (("cannot read", "cannot-read"),)
 PID = re.compile(r"\bpid \d+")
 
@@ -1169,7 +1159,7 @@ def main(argv: list[str]) -> int:
     repo = pathlib.Path.cwd().resolve()
     if not (repo / args.port).is_file():
         sys.stderr.write(
-            "account_lifecycle_shadow_driver: the port %s does not exist under %s, so a row would attest to nothing\n"
+            "harness_account_lifecycle: the port %s does not exist under %s, so a row would attest to nothing\n"
             % (args.port, repo)
         )
         return EXIT_CANNOT_RUN

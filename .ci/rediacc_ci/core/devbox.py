@@ -20,7 +20,7 @@ A port that returned values instead would have to restate, at every call site, w
 --------------------------------------------------------------------------
 THE TECHNIQUE THAT MAKES A SIDE-EFFECTING PORT COMPARABLE
 --------------------------------------------------------------------------
-The first slice refused the thirty-nine for want of a comparison technique, and the technique this port is licensed by is the STUB-FARM TRANSCRIPT DIFFERENTIAL `rediacc_ci.core.devbox_shadow_driver` runs.
+The first slice refused the thirty-nine for want of a comparison technique, and the technique this port is licensed by is the STUB-FARM TRANSCRIPT DIFFERENTIAL `rediacc_ci.tests.harness_devbox` runs.
 Both sides run with a PATH whose first entry is a directory of stubs for every external that is not safe or not deterministic to run for real (`docker`, `sudo`, `curl`, `sleep`, `getent`, `stat`, `ss`). Each stub appends its argv to a transcript and answers from a scripted table.
 `git` runs for real against a fixture repository, and `python3 -m rediacc_ci.core.ports` runs for real (its own `ss` probe lands in the stub farm too).
 THE PORT THEREFORE ISSUES THE SAME EXTERNAL CALLS, IN THE SAME ORDER, WITH THE SAME ARGV, AS THE TWIN. That is a stronger constraint than "the same answer", and it is why several methods below look redundant: `devbox_up` asks `docker version` a dozen times because every helper it calls runs `d="$(devbox_docker)"` again, and a port that cached the answer would issue fewer calls and diverge on the transcript.

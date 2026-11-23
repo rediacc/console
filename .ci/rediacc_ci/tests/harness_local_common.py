@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
-"""The port side of the `core.local_common` differential (the pure half). The bash side (`.ci/lib/local-common.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.local-common.jsonl`, keyed by scenario, and `test_core_local_common.py` compares this driver's output against them.
+"""The port harness for `rediacc_ci.core.local_common (the pure half)`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_local_common.py` compares them with the goldens.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_shadow_driver --side new --port .ci/rediacc_ci/core/local_common.py <scenario>
-        drives the PYTHON: `rediacc_ci.core.local_common`.
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_local_common --side new --port <port> <scenario>
 
-While the bash existed, `--side old --twin .ci/lib/local-common.sh` sourced the library through the prelude `.ci/legacy/run-legacy.sh` used and called the twin's own functions; the ledger rows under `.ci/shadow/` record both commands. A Rule-T change to the port is recorded with `regolden --source port`.
+Moved from `.ci/rediacc_ci/tests/harness_local_common.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert`. `test_canonical_sys_path_hop.py` refuses exactly that, and `PYTHONPATH=.ci` plus `-m` removes the need rather than baselining it.
-
-WHY THIS IS A SECOND DRIVER AND NOT A SCENARIO INSIDE `core/shadow_driver.py`. That file is the `core.account` differential and its ledger rows name it; a pair is one twin against one port, and folding a second twin into it would make `dead_python.py`'s shadow route admit both ports off either ledger.
-One file per pair, on the `rediacc_ci/dev`, `rediacc_ci/setup` and `rediacc_ci/docker` precedent.
-
-ONE FILE AND NOT TWO, for the reason those files record: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named in a `.ci/shadow/*.jsonl` record, so a separate old-side module would be reported dead the day it landed. `--twin` and `--port` carry the two paths for the same reason, and BOTH are checked to exist before anything runs.
 
 -----------------------------------------------------------------------------
 THE SANDBOX, AND WHY PYTHON BUILDS THE FIXTURES FOR BOTH SIDES
@@ -21,9 +15,6 @@ Every function in this slice reads or writes a real path, and two of the scenari
 So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the fixtures, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
 Symlinks rather than copies because `constants.sh` derived `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` when these transcripts were frozen, and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
 `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd` is LOGICAL in bash, so the twin's own `LOCAL_ROOT_DIR` resolves to the sandbox rather than to the real checkout behind the symlink. That is load-bearing for the `npm-script` scenario, and the derivation is emitted as an observation rather than assumed.
-
-THE FIXTURES ARE BUILT IN PYTHON FOR BOTH SIDES, which is the one place this driver departs from `core/shadow_driver.py`'s shape. That driver writes its fixtures inside the bash scenario body and again in Python, which works when a fixture is three `printf`s.
-Here the `git-fp` fixture is a real git repository with a committed history, a modified file, a deleted file, a staged file and an untracked file; two hand-written builders would be two things that can drift, and a fingerprint differing because the two repositories differ is a mismatch that says nothing about the port. `build_fixtures()` runs before either side is dispatched.
 
 The temporary directory differs between the two sides, so every observation is normalised: the sandbox root becomes `<work>` and `$HOME` becomes `<home>` before anything is printed.
 
@@ -39,8 +30,6 @@ THE SIX SCENARIOS, AND WHAT EACH ONE WOULD CATCH
   npm-script  `has_npm_script` on a fixture `package.json`: a plain script, one whose name carries a colon, an absent one, a PREFIX of a real one, and the two false positives the twin really has (a dependency name, and `name` itself).
               Then the missing-file case, which exits 2 rather than 1. `LOCAL_ROOT_DIR`, `LOCAL_CI_DIR` and `LOCAL_LIB_DIR` are emitted on both sides, so the two independent derivations are compared rather than one being fed the other's.
   sed         `_sed_i` on one file, on two files at once, with a pattern that matches nothing, on a file with no trailing newline, and on a file that does not exist. Every touched file is dumped afterwards, so a port that wrote the right exit code over the wrong bytes is caught.
-
-WHAT IS NEVER DRIVEN HERE: the other twenty-one functions. They ARE ported (2026-09-24) and are driven by `core/local_common_actions_shadow_driver.py` under their own pair, `w7p5b-local-common-actions`, because they need a stub farm and a process per case rather than one bash process per side.
 """
 
 from __future__ import annotations
@@ -59,7 +48,7 @@ import tempfile
 from rediacc_ci import log, runtmp
 from rediacc_ci.core import local_common
 
-# The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
+# Every observation line starts with this prefix; the goldens and the tests key on it.
 OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
@@ -198,7 +187,7 @@ def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
                 "the sandbox cannot be built: %s is missing from %s, so neither side would "
                 "have the code under comparison" % ("/".join(parts), repo)
             )
-    work = pathlib.Path(tempfile.mkdtemp(prefix="lc-shadow-", dir=runtmp.shared("shadow-driver-")))
+    work = pathlib.Path(tempfile.mkdtemp(prefix="lc-shadow-", dir=runtmp.shared("harness-")))
     for parts in SANDBOX_LINKS:
         target = work.joinpath(*parts)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -697,14 +686,14 @@ def main(argv: list[str]) -> int:
     repo = pathlib.Path.cwd().resolve()
     if not (repo / args.port).is_file():
         sys.stderr.write(
-            "local_common_shadow_driver: the port %s does not exist under %s. A transcript "
+            "harness_local_common: the port %s does not exist under %s. A transcript "
             "of a file that is not there attests to nothing.\n" % (args.port, repo)
         )
         return EXIT_CANNOT_RUN
 
     if shutil.which("git") is None:
         sys.stderr.write(
-            "local_common_shadow_driver: git is not installed, so both sides would take the "
+            "harness_local_common: git is not installed, so both sides would take the "
             "same refusal branch and the comparison would prove nothing.\n"
         )
         return EXIT_CANNOT_RUN
@@ -717,7 +706,7 @@ def main(argv: list[str]) -> int:
         printer = Printer(work)
         return run_new(args.scenario, printer, work, env)
     except RefusalError as exc:
-        sys.stderr.write("local_common_shadow_driver: %s\n" % exc)
+        sys.stderr.write("harness_local_common: %s\n" % exc)
         return EXIT_CANNOT_RUN
     finally:
         if work is not None:

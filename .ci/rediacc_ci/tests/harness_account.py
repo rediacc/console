@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
-"""The port side of the `core.account` differential. The bash side (`.ci/lib/account.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.account.jsonl`.
+"""The port harness for `rediacc_ci.core.account`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_account.py` compares them with the goldens.
 
-WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a return value. This module is the printer, and it can print either side:
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_account --side new --port <port> <scenario>
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.shadow_driver --side new --port .ci/rediacc_ci/core/account.py <scenario>
-        drives the PYTHON: `rediacc_ci.core.account`. While the bash existed, `--side old --twin .ci/lib/account.sh` sourced it through the prelude `.ci/legacy/run-legacy.sh` used, and the ledger rows under `.ci/shadow/` record both commands.
+Moved from `.ci/rediacc_ci/tests/harness_account.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert` hop. `test_canonical_sys_path_hop.py` refuses exactly that, it refused this file on its first run, and `PYTHONPATH=.ci` plus `-m` removes
 the need rather than baselining it.
-
-ONE FILE AND NOT TWO, on the `rediacc_ci/dev/shadow_driver.py` and `rediacc_ci/setup/shadow_driver.py` precedent, and for the reason those files record: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named in a `.ci/shadow/*.jsonl` record, so a separate old-side module would be reported dead the day it landed.
-`--twin` and `--port` carry the two paths for the same reason, and BOTH are checked to exist before anything runs: a row whose `old.cmd` names a twin that is gone reads as expired, and a row naming a port that is gone is a row about nothing.
 
 -----------------------------------------------------------------------------
 THE SANDBOX, AND WHY EACH SIDE BUILDS ITS OWN
 -----------------------------------------------------------------------------
 `account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/account.db`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
-
-So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the writable state, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts`, `.ci/lib` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
-Symlinks rather than copies because `constants.sh` derived `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reached back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
-Every path either command names is relative, so `shadow-gate`'s `reachesOutside` check passes honestly rather than by accident.
 
 The temporary directory differs between the two sides, so every observation is normalised: the sandbox root becomes `<work>` and `$HOME` becomes `<home>` before anything is printed.
 
@@ -28,12 +20,6 @@ EVERY PORT NUMBER IS FIXED, AND A BUSY ONE IS A REFUSAL
 -----------------------------------------------------------------------------
 The two sides run as two processes, minutes apart, so an ephemeral port chosen at runtime would differ between them and land in a message text as a mismatch that says nothing about the port.
 Every port below is therefore a CONSTANT, and the driver refuses to run when the machine is not in the state the scenario needs: a port that must be free and is not, or a window that must be fully occupied and cannot be, exits 77 with the reason. Drifting to the next free port instead would silently measure a different branch on one side than on the other.
-
------------------------------------------------------------------------------
-WHY THE BANNER ROWS ARE PRINTED WITH DOTS INSTEAD OF SPACES
------------------------------------------------------------------------------
-`shadow-gate`'s own normaliser collapses internal whitespace runs, on the reasonable ground that a port which re-indents a continuation line has not changed which thing it objects to. `account_banner_row` is a padding function: its entire output is a whitespace run, and under that collapse a port padding to 40 columns instead of 63 would compare EQUAL.
-So banner observations replace every space with a dot, on both sides, by the same substitution. Nothing else is rewritten.
 
 -----------------------------------------------------------------------------
 THE FOUR SCENARIOS, AND WHAT EACH ONE WOULD CATCH
@@ -59,10 +45,6 @@ THE FOUR SCENARIOS, AND WHAT EACH ONE WOULD CATCH
               devbox-derived preferred port without launching a server: the
               driver holds every port in the scanned window open, and the twin
               names the port it wanted in its refusal.
-
-THE `env` AND `fresh-env` SCENARIOS ARE GONE, with the four `.env` writers they drove (`account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`), which were deleted from BOTH sides when `private/account/.env` was retired. Their rows in `.ci/shadow/w7p5b-account.observations.jsonl` are history, not a claim about any code that still exists.
-
-WHAT IS NEVER DRIVEN HERE: `account_dev`, `account_stop`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_cleanup`, `account_docker_ghost_clean`, `account_stripe_auto`, `account_dev_credentials`, `account_rotation`, `account_bws_exec`, `account_load_defaults`, `account_state_gateway_port`, and `account_db`'s launch. `account_stop`, `account_rotation` and `account_bws_exec` are ported but real-run verified (see `rediacc_ci.core.account`); the rest are not ported. A ledger row is a claim of equivalence, and none of these has one.
 """
 
 from __future__ import annotations
@@ -83,7 +65,7 @@ import threading
 from rediacc_ci import log, runtmp
 from rediacc_ci.core import account, ports
 
-# The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
+# Every observation line starts with this prefix; the goldens and the tests key on it.
 OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
@@ -128,9 +110,7 @@ def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
                 "the sandbox cannot be built: %s is missing from %s, so neither side would "
                 "have the code under comparison" % ("/".join(parts), repo)
             )
-    work = pathlib.Path(
-        tempfile.mkdtemp(prefix="acct-shadow-", dir=runtmp.shared("shadow-driver-"))
-    )
+    work = pathlib.Path(tempfile.mkdtemp(prefix="acct-shadow-", dir=runtmp.shared("harness-")))
     for parts in SANDBOX_LINKS:
         target = work.joinpath(*parts)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -172,7 +152,7 @@ class LiveServer:
 
     def __init__(self, port: int) -> None:
         handler = functools.partial(
-            LiveServer.Quiet, directory=tempfile.mkdtemp(dir=runtmp.shared("shadow-driver-"))
+            LiveServer.Quiet, directory=tempfile.mkdtemp(dir=runtmp.shared("harness-"))
         )
         try:
             self.server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
@@ -395,7 +375,7 @@ def main(argv: list[str]) -> int:
     repo = pathlib.Path.cwd().resolve()
     if not (repo / args.port).is_file():
         sys.stderr.write(
-            "shadow_driver: the port %s does not exist under %s. A ledger row naming a "
+            "harness_account: the port %s does not exist under %s. A ledger row naming a "
             "file that is not there attests to nothing.\n" % (args.port, repo)
         )
         return EXIT_CANNOT_RUN
@@ -428,7 +408,7 @@ def main(argv: list[str]) -> int:
         )
         return run_new(args.scenario, printer, env)
     except RefusalError as exc:
-        sys.stderr.write("shadow_driver: %s\n" % exc)
+        sys.stderr.write("harness_account: %s\n" % exc)
         return EXIT_CANNOT_RUN
     finally:
         if server is not None:
