@@ -294,7 +294,7 @@ def _green_repo(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str]:
 
 
 def _record(repo: pathlib.Path, head: str, python: str) -> None:
-    target = repo / str(check_pytest.SCOPE_RELPATH)
+    target = repo / str(check_pytest.LAST_GREEN_RELPATH)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
         json.dumps({"pytestScope": "full", "head": head, "python": python}), encoding="utf-8"
