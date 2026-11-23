@@ -171,8 +171,11 @@ export class AuthVerifier {
       entryExpiresAt = Math.min(entryExpiresAt, tokenExpiresAt);
     }
     // A token the account server calls active but whose expiry has already
-    // passed on this clock is answered once and not cached.
-    if (entryExpiresAt > now) this.remember(bearerToken, { principal, expiresAt: entryExpiresAt });
+    // passed on this clock is refused like an inactive one, never answered.
+    if (entryExpiresAt <= now) {
+      throw new AuthError('This token is not valid for the executor.', 401);
+    }
+    this.remember(bearerToken, { principal, expiresAt: entryExpiresAt });
     return principal;
   }
 

@@ -42,7 +42,8 @@ describe('verifier cache expiry cap', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
 
     clock += 1_001;
-    await v.verify('t');
+    // The token is now past its expiry: re-introspected, and refused even though the server still says active.
+    await expect(v.verify('t')).rejects.toThrow(/not valid for the executor/);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
@@ -58,6 +59,30 @@ describe('verifier cache expiry cap', () => {
     clock += 1_001;
     await v.verify('t');
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('refuses an active token whose expiresAt is at or before now, and does not cache it', async () => {
+    const clock = 1_000_000;
+    for (const offset of [-1_000, 0]) {
+      const expiresAt = new Date(clock + offset).toISOString();
+      const fetchImpl = vi.fn(() => Promise.resolve(Response.json(identity(expiresAt))));
+      const v = verifier(fetchImpl as unknown as typeof fetch, () => clock);
+      await expect(v.verify('t')).rejects.toThrow(/not valid for the executor/);
+      await expect(v.verify('t')).rejects.toThrow(/not valid for the executor/);
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      expect(v.cacheSize).toBe(0);
+    }
+  });
+
+  it('accepts and caches an active token expiring in the future (control)', async () => {
+    const clock = 1_000_000;
+    const expiresAt = new Date(clock + 30_000).toISOString();
+    const fetchImpl = vi.fn(() => Promise.resolve(Response.json(identity(expiresAt))));
+    const v = verifier(fetchImpl as unknown as typeof fetch, () => clock);
+    await expect(v.verify('t')).resolves.toMatchObject({ userId: 'user-1' });
+    await v.verify('t');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(v.cacheSize).toBe(1);
   });
 
   it('refuses an unreadable expiry instead of caching it', async () => {
