@@ -8,7 +8,14 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/g
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import gh_retry_gate
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_gh_retry_reads.py",
+        sys.argv[1:],
+        switches=("--selftest", "--quiet-writes", "--init-baseline"),
+        valued=("--root", "--shell-root", "--write-baseline"),
+    )
     raise SystemExit(gh_retry_gate.main(sys.argv[1:]))
