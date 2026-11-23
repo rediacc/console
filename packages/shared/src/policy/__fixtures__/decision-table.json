@@ -1,0 +1,3590 @@
+{
+  "$comment": "Decision table for decide() (agent/plans/PLAN-rmcp-decide.md Design 4). Every surface runs `rows` and must reproduce each expect; `controls` carry a deliberately wrong expect, and every surface must report each one as a mismatch. Expectations are written by hand, never generated from decide().",
+  "version": 1,
+  "rows": [
+    {
+      "id": "null-human-owner-grand",
+      "note": "owner may change a grand with no policy",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-admin-grand",
+      "note": "admin may change a grand with no policy",
+      "principal": {
+        "kind": "human",
+        "userEmail": "admin@example.com",
+        "orgRole": "admin"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-member-grand",
+      "note": "member may not run anything with no policy",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "null-human-member-read",
+      "note": "the default refuses members reads too",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo status"
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "null-human-owner-destructive-grand",
+      "note": "humans get no confirmation step from decide",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-owner-run",
+      "note": "agentBlocked never binds a human",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "run",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-owner-cluster",
+      "note": "owner may run a cluster op with no policy",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-owner-unresolved",
+      "note": "unresolved counts as grand, and the owner default admits it",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "ghost",
+          "state": "unresolved"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-human-owner-forkblocked",
+      "note": "forkBlocked binds agents only",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo resize",
+        "grandGuard": true,
+        "forkBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-grand-no-optin",
+      "note": "an agent needs a grand opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-grand-env-list",
+      "note": "an env opt-in naming the repo admits it",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-grand-env-other",
+      "note": "an env opt-in naming another repo does not",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["web"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-grand-env-star",
+      "note": "a * opt-in admits every grand",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-fork",
+      "note": "a fork needs no opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-unresolved-no-optin",
+      "note": "unresolved fails closed for an agent",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "ghost",
+          "state": "unresolved"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-unresolved-star",
+      "note": "a * opt-in covers an unresolved repo",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "ghost",
+          "state": "unresolved"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-absent-list",
+      "note": "an absent repo counts as grand and no list names it",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-absent-star",
+      "note": "an absent repo is covered by * only",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-opsvm",
+      "note": "the ops VM fleet skips the grand rule",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": true
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-destructive-unconfirmed",
+      "note": "a destructive grand change asks for confirmation",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "needs_confirmation",
+        "code": "CONFIRMATION_REQUIRED"
+      }
+    },
+    {
+      "id": "null-agent-destructive-confirmed",
+      "note": "the confirmed retry is allowed",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": true
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-destructive-fork",
+      "note": "a destructive fork change needs no confirmation",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-destructive-opsvm",
+      "note": "the ops VM fleet skips the confirmation too",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": true
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-confirm-without-optin",
+      "note": "a confirmation never stands in for the opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": true
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-run",
+      "note": "run is never available to an agent",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "run",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_BLOCKED"
+      }
+    },
+    {
+      "id": "null-agent-run-all-optins",
+      "note": "no opt-in unlocks run",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "run",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": "*",
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_BLOCKED"
+      }
+    },
+    {
+      "id": "null-agent-cluster-no-optin",
+      "note": "a cluster op needs a cluster opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-cluster-env-list",
+      "note": "a cluster opt-in naming the cluster admits it",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": ["c1"],
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-cluster-env-other",
+      "note": "a cluster opt-in naming another cluster does not",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": ["c2"],
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-cluster-create-list",
+      "note": "a create with no subject is covered by * only",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster create",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": ["c1"],
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-cluster-create-star",
+      "note": "a * cluster opt-in covers a create",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster create",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": "*",
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-datastore-list",
+      "note": "a datastore verb is unlocked by naming the datastore",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "datastore delete",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "ds1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": ["ds1"],
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-cluster-grand-optin",
+      "note": "a grand opt-in does not unlock cluster ops",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-cluster-read",
+      "note": "a cluster read is not a lifecycle op",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "cluster status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-forkblocked-fork",
+      "note": "a forkBlocked command refuses an agent on a fork",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo resize",
+        "grandGuard": true,
+        "forkBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "FORK_BLOCKED"
+      }
+    },
+    {
+      "id": "null-agent-forkblocked-grand",
+      "note": "a forkBlocked destructive grand change asks for confirmation",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo resize",
+        "grandGuard": true,
+        "forkBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "needs_confirmation",
+        "code": "CONFIRMATION_REQUIRED"
+      }
+    },
+    {
+      "id": "null-agent-promote-no-optin",
+      "note": "repo promote always lands on the grand",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo promote",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-promote-optin",
+      "note": "repo promote with an opt-in for the grand it replaces",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo promote",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-member-star",
+      "note": "an opt-in never exceeds the missing-policy default",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "null-agent-read",
+      "note": "a read needs no opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "machine status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-fork-command",
+      "note": "repo fork is the safe way off a grand",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo fork"
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-grant-list",
+      "note": "a grant opt-in naming the repo admits it",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "grant"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "null-agent-grant-other",
+      "note": "a grant opt-in naming another repo does not",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["web"],
+        "clusterOps": null,
+        "source": "grant"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "null-agent-optin-case",
+      "note": "opt-in names match case-sensitively",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["Mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "perm-human-member-grand",
+      "note": "a permissive policy admits a member on a grand",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "perm-agent-grand-no-optin",
+      "note": "the ceiling alone does not admit an agent",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "perm-agent-grand-optin",
+      "note": "ceiling AND opt-in admit an agent",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "perm-agent-cluster-optin",
+      "note": "ceiling AND cluster opt-in admit a cluster op",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": ["c1"],
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "perm-human-cluster",
+      "note": "allowClusterOps admits a member",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "perm-agent-run",
+      "note": "no policy unlocks run for an agent",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "run",
+        "agentBlocked": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_BLOCKED"
+      }
+    },
+    {
+      "id": "restr-human-read",
+      "note": "an allowed read on an allowed repo",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo status"
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "restr-human-grand",
+      "note": "no allowGrandRepos refuses a grand change",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-owner-grand",
+      "note": "a document binds owners too",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-fork-out-of-scope",
+      "note": "the repos scope matches the ref as given",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-fork-in-scope",
+      "note": "a fork inside the repos scope",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "restr-human-explicit-deny",
+      "note": "commands.deny wins",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web:t1",
+          "state": "fork"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "restr-agent-optin-exceeds",
+      "note": "an opt-in never exceeds the policy",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-cluster-not-allowed",
+      "note": "a command outside the allow list",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-unresolved-out-of-scope",
+      "note": "an unresolved repo outside the repos scope",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "ghost",
+          "state": "unresolved"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "restr-human-machine",
+      "note": "machine * admits machine status",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "machine status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "restr-agent-cluster-read",
+      "note": "the allow list refuses an agent cluster read",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *", "machine *"],
+              "deny": ["repo delete"]
+            },
+            "repos": ["mail", "web*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "glist-human-listed",
+      "note": "a listed grand",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "glist-human-glob",
+      "note": "a grand matched by a glob",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "prod-db",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "glist-human-unlisted",
+      "note": "an unlisted grand",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "glist-agent-unlisted-star",
+      "note": "a * opt-in cannot widen the grand list",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": "*",
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "glist-agent-listed-optin",
+      "note": "listed grand plus matching opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "prod-db",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": ["prod-db"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "glist-agent-optin-no-globs",
+      "note": "opt-in lists name repos exactly, never as globs",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "prod-db",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": ["prod-*"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "glist-human-cluster",
+      "note": "no allowClusterOps refuses a cluster op",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "CLUSTER_OPS_DENIED"
+      }
+    },
+    {
+      "id": "glist-agent-cluster-star",
+      "note": "a cluster opt-in cannot exceed the ceiling",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": "*",
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "CLUSTER_OPS_DENIED"
+      }
+    },
+    {
+      "id": "glist-human-absent",
+      "note": "an absent repo is no listed grand",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "glist-human-opsvm",
+      "note": "the ops VM fleet skips the grand list",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": true
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail", "prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "team-human-narrowed-grand",
+      "note": "the team narrows grands to web",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *"]
+            },
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "team-human-narrowed-out",
+      "note": "a grand the team policy leaves out",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *"]
+            },
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "team-human-narrowed-command",
+      "note": "a command the team policy leaves out",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "machine status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *"]
+            },
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "team-agent-optin",
+      "note": "team ceiling AND opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *"]
+            },
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": ["web"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "team-human-cluster",
+      "note": "the team allow list refuses a cluster op",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "cluster destroy",
+        "agentBlocked": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false,
+        "subject": "c1"
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": true,
+            "allowClusterOps": true
+          }
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo *"]
+            },
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "teamtier-in-team",
+      "note": "the team tier grants its members",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "ops"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "teams": {
+            "ops": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "teamtier-no-team",
+      "note": "no team falls back to the defaults",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "teams": {
+            "ops": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "teamtier-other-team",
+      "note": "another team falls back to the defaults",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member",
+        "teamSlug": "other"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "teams": {
+            "ops": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "locked-org-grand",
+      "note": "a locked org key holds",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail"]
+          },
+          "locked": ["allowGrandRepos"]
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "locked-team-ignored",
+      "note": "a team cannot set a locked key",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "web",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "allowGrandRepos": ["mail"]
+          },
+          "locked": ["allowGrandRepos"]
+        },
+        "team": {
+          "version": 1,
+          "defaults": {
+            "allowGrandRepos": ["web"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "user-tier-grant",
+      "note": "the user tier grants that user",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "users": {
+            "dev@example.com": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "user-tier-other",
+      "note": "another user gets the defaults",
+      "principal": {
+        "kind": "human",
+        "userEmail": "other@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "users": {
+            "dev@example.com": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "user-tier-agent",
+      "note": "an agent still needs the opt-in",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["repo status"]
+            }
+          },
+          "users": {
+            "dev@example.com": {
+              "commands": {
+                "allow": ["*"]
+              },
+              "allowGrandRepos": true
+            }
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "AGENT_OPT_IN_MISSING"
+      }
+    },
+    {
+      "id": "scope-out",
+      "note": "a mutation class the policy leaves out",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo fork",
+        "mutationScope": "infra"
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "mutationScopes": ["config"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "scope-in",
+      "note": "a permitted mutation class",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "repo fork",
+        "mutationScope": "config"
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "mutationScopes": ["config"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "machine-out",
+      "note": "a machine outside the scope",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "machine status"
+      },
+      "target": {
+        "machine": "m1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "machines": ["prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "POLICY_DENIED"
+      }
+    },
+    {
+      "id": "machine-in",
+      "note": "a machine inside the scope",
+      "principal": {
+        "kind": "human",
+        "userEmail": "dev@example.com",
+        "orgRole": "member"
+      },
+      "command": {
+        "pathKey": "machine status"
+      },
+      "target": {
+        "machine": "prod-1",
+        "isOpsVm": false
+      },
+      "policy": {
+        "org": {
+          "version": 1,
+          "defaults": {
+            "commands": {
+              "allow": ["*"]
+            },
+            "machines": ["prod-*"]
+          }
+        }
+      },
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    }
+  ],
+  "controls": [
+    {
+      "id": "control-null-human-owner-grand",
+      "note": "control: expectation flipped from allow/ALLOWED; a harness that compares must report this row",
+      "principal": {
+        "kind": "human",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED"
+      }
+    },
+    {
+      "id": "control-null-agent-grand-no-optin",
+      "note": "control: expectation flipped from deny/AGENT_OPT_IN_MISSING; a harness that compares must report this row",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo up",
+        "grandGuard": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": null,
+        "clusterOps": null,
+        "source": "none"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    },
+    {
+      "id": "control-null-agent-destructive-unconfirmed",
+      "note": "control: expectation flipped from needs_confirmation/CONFIRMATION_REQUIRED; a harness that compares must report this row",
+      "principal": {
+        "kind": "agent",
+        "userEmail": "owner@example.com",
+        "orgRole": "owner"
+      },
+      "command": {
+        "pathKey": "repo delete",
+        "grandGuard": true,
+        "destructive": true
+      },
+      "target": {
+        "machine": "m1",
+        "repo": {
+          "name": "mail",
+          "state": "grand"
+        },
+        "isOpsVm": false
+      },
+      "policy": null,
+      "overrides": {
+        "grandRepos": ["mail"],
+        "clusterOps": null,
+        "source": "env"
+      },
+      "confirmation": {
+        "granted": false
+      },
+      "expect": {
+        "verdict": "allow",
+        "code": "ALLOWED"
+      }
+    }
+  ]
+}
