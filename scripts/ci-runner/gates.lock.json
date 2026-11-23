@@ -2002,7 +2002,6 @@
     "needs": [
       "build:packages"
     ],
-    "heavy": true,
     "mutex": [
       "tree:repo"
     ],
@@ -2134,7 +2133,6 @@
       "min": 1,
       "max": "all"
     },
-    "heavy": true,
     "paths": [
       ".npmrc",
       "package.json",
@@ -3025,7 +3023,8 @@
     "run": "npm run check:ci-runner-selftest",
     "gate": true,
     "paths": [
-      "scripts/ci-runner/**"
+      "scripts/ci-runner/**",
+      ".ci/config/gate-costs.json"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -12209,7 +12208,6 @@
     "mutex": [
       "build-artifacts"
     ],
-    "heavy": true,
     "leaves": [
       "tsc"
     ],
@@ -12228,7 +12226,6 @@
     "mutex": [
       "build-artifacts"
     ],
-    "heavy": true,
     "leaves": [
       "packages/cli/bundle.mjs",
       "tsc"
@@ -12249,7 +12246,6 @@
     "mutex": [
       "www-dist"
     ],
-    "heavy": true,
     "leaves": [
       "astro"
     ],

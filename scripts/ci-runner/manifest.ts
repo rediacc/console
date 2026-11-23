@@ -1952,7 +1952,6 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     needs: ['build:packages'],
     // NO WIDTH DECLARED (PF5, 2026-10-05): `weight: 2` retired for the measured cpu/wall. Each mutant runs `vitest run` on ONE test file, so a worker knob would buy nothing.
-    heavy: true,
     // check:ci-gate-tree-writes V11. The sandbox sits INSIDE packages/cli so its copies resolve the workspace's node_modules; a temp mirror with a node_modules link is the real fix.
     mutex: ['tree:repo'],
     writesTree:
@@ -2069,7 +2068,6 @@ export const GATES: readonly GateSpec[] = [
     needs: ['build:packages'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
-    heavy: true,
     paths: [
       '.npmrc',
       'package.json',
@@ -2900,8 +2898,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-runner-selftest',
     run: 'npm run check:ci-runner-selftest',
     gate: true,
-    // The leaf must be inside the paths, or editing the runner does not select the gate that checks the runner (check:ci-gate-manifest asserts this).
-    paths: ['scripts/ci-runner/**'],
+    // The leaf must be inside the paths, or editing the runner does not select the gate that checks the runner (check:ci-gate-manifest asserts this). gate-costs.json: the selftest holds every declared `heavy` to the measured peak RSS there (lanes.ts measuredHeavyFindings, PLAN-ciquick-cpu W14).
+    paths: ['scripts/ci-runner/**', '.ci/config/gate-costs.json'],
     pathsOrigin: 'declared',
     leaves: ['scripts/ci-runner/run.ts'],
     ci: {
@@ -11485,7 +11483,6 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run build:packages',
     gate: false,
     mutex: ['build-artifacts'],
-    heavy: true,
     leaves: ['tsc'],
     ci: {
       kind: 'local-only',
@@ -11500,7 +11497,6 @@ export const GATES: readonly GateSpec[] = [
     gate: false,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
-    heavy: true,
     leaves: ['packages/cli/bundle.mjs', 'tsc'],
     ci: {
       kind: 'local-only',
@@ -11517,7 +11513,6 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 131.9s measured
     gate: false,
     mutex: ['www-dist'],
-    heavy: true,
     leaves: ['astro'],
     ci: {
       kind: 'step',
