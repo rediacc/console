@@ -173,6 +173,11 @@ export default {
       return;
     }
     const fenced = fencedEnv(env);
+    // The forensics compaction queue (forensics-compact-<region>, PLAN-forensics-shipping D5) shares this handler; its messages run in the account app.
+    if (batch.queue.startsWith('forensics-compact-')) {
+      await accountApp.consumeForensicsBatch(batch, fenced);
+      return;
+    }
     await accountApp.consumeReplicationBatch(batch, fenced, (key) =>
       replicatorStub(fenced, key).kick(key)
     );
