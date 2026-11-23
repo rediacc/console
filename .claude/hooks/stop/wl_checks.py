@@ -77,12 +77,22 @@ try:
 except ImportError:  # absent here just means the notice line stays silent
     onboard = None
 
+# READ FAILURES, NAMED (agent/plans/PLAN-silent-failure-sweep.md SF3). A check that cannot read its input keeps its empty default so the stop is never taken down, but the default used to be the whole story: a read, git or parse failure was indistinguishable from "no data". `note_read_failure(site, exc)` records which reader failed and why; run_stop turns the record into ONE `check-read-failed` advisory (never a block), so a check gone blind is said out loud instead of reading as quiet.
+READ_FAILURES: dict[str, str] = {}
+
+
+def note_read_failure(site: str, exc: BaseException) -> None:
+    """Record that `site` fell back to its empty default because of `exc`. Keyed by site, so a loop that fails the same way a hundred times is one row; the newest reason wins."""
+    READ_FAILURES[site] = ("%s: %s" % (type(exc).__name__, exc))[:160]
+
+
 # GUARDED for the same reason: an unimportable ruling module must restore the behaviour checks had before rulings existed (every subject fires), never take the hook down (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2).
 wl_ruling: _types.ModuleType | None
 try:
     import wl_ruling
-except Exception:
+except Exception as _ruling_exc:
     wl_ruling = None
+    note_read_failure("ruling-import", _ruling_exc)
 
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
@@ -687,7 +697,8 @@ def closed_sig(fold, session_id):
             for r in fold.items
             if r["state"] != " " and C.owned_by_me(r.get("owner"), session_id)
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("stuck-signature", exc)
         return ""
     return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
 
@@ -1212,6 +1223,7 @@ def triage_context(root, worklist, session_id=""):
         )
         opens = "%d" % open_n
     except Exception:
+        # Kept silent on purpose: the fallback value itself says "unknown (the store could not be read)" in the rendered line.
         opens = "unknown (the store could not be read)"
     return (
         "  branch: %s\n"
@@ -1883,6 +1895,7 @@ def mark_context_fresh(event, why):
         doc["ctx_fresh"] = {"why": why, "at": C.stamp_now()}
         S.save_state(wl, sid, doc)
     except Exception:
+        # Kept silent on purpose: SessionStart is a short-lived process that never reaches run_stop's advisory, and losing the marker only means the next judged stop prints the bare stamp instead of the full reason.
         pass
 
 
@@ -1978,7 +1991,8 @@ def _compaction_owner(event, sid):
         import wl_retro as _RT
 
         return _RT.ctx().compaction_owner(event.get("transcript_path"), sid)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("compaction-owner", exc)
         return "unknown"
 
 
@@ -2898,7 +2912,8 @@ def _lease_rebase_text(root, session_id, merged):
 
         verdicts = wl_rebase.lease_verdicts(wl_worktrees.read_world(root), session_id[:8], "main")
         return wl_rebase.behind_block(verdicts, True)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("landing-behind", exc)
         return ""
 
 
@@ -2974,7 +2989,8 @@ def _ctx_late_band(session_id):
         band = int(cb.load_state(session_id).get("band", -1))
         names = [b[0] for b in cb.BANDS]
         return band >= names.index("late")
-    except Exception:
+    except Exception as exc:
+        note_read_failure("retro-late-band", exc)
         return False
 
 
@@ -3040,7 +3056,8 @@ def wisdom_due(root, session_id, state_doc, now=None):
             "me8": cb.session_slug(session_id),
             "late": cb.fmt(threshold * (1 - cb.BANDS[-1][1])),
         }
-    except Exception:
+    except Exception as exc:
+        note_read_failure("wisdom-due", exc)
         return ""
 
 
@@ -3116,8 +3133,8 @@ def _judge_receipt_run():
     try:
         if vm_check_running():
             return "vm:check"
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("judge-receipt-run", exc)
     return None
 
 
@@ -3174,7 +3191,8 @@ def _judge_facts(
     if reports is None:
         try:
             reports = wl_report.read_index(wl_report.store_root(root))
-        except Exception:
+        except Exception as exc:
+            note_read_failure("report-index", exc)
             reports = []
     by_short: dict[str, dict] = {}
     for row in reports or ():
@@ -3392,14 +3410,20 @@ def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cide
     latch = state_doc.get("landing") if isinstance(state_doc.get("landing"), dict) else {}
     if step.release and step.sha and latch.get("cd_done") != step.sha:
         notice = wl_stack.notify_line(own, "cd-done", pr=step.pr, sha=step.sha)
-        state_doc["landing"] = {"cd_done": step.sha}
-        if notice:
-            return (
-                step.text
-                + "\nSend the development session this message (SendMessage to its session):\n"
-                + notice,
-                True,
+        # The latch below is reached only once the message exists: notify_line returns "" on a failed record read, and latching then dropped the cd-done message for good (SF3).
+        if not notice:
+            note_read_failure(
+                "cd-done-message",
+                RuntimeError("the cd-done message came back empty, so it is retried next stop"),
             )
+            return step.text, step.blocks
+        state_doc["landing"] = {"cd_done": step.sha}
+        return (
+            step.text
+            + "\nSend the development session this message (SendMessage to its session):\n"
+            + notice,
+            True,
+        )
     return step.text, step.blocks
 
 
@@ -3458,6 +3482,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
     session_id = event.get("session_id", "")
     me8 = (session_id or "unknown")[:8]
+    # One stop's read failures at a time. The import-time row (wl_ruling) is a property of the process, so it survives the reset.
+    for _site in [k for k in READ_FAILURES if k != "ruling-import"]:
+        del READ_FAILURES[_site]
     # SESSION-SCOPED, like `.stuck-<sid8>` and `.state-<sid8>` beside it. It was a single shared `.blocks` for the whole worktree, so one peer's clean allow deleted MY judge streak and one peer's block inflated it. With ~48 addressable sessions here that is not a rare race, it is the normal case, and every decision keyed off the streak was reading someone else's work. Fixed before
     # the cadence lands because the cadence's cap is the next thing to key off block streaks, and a shared counter would make the cap fire on a stranger's behaviour.
     counter = worklist.with_suffix(".blocks-%s" % me8)
@@ -3496,7 +3523,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         if cleaned:
             fold = S.load(worklist, sync=True)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("dead-session-cleanup", exc)
         archived, orphaned = [], []
     if archived:
         # STICKY, and queued HERE rather than in the allow tail: the store is already flipped to [~], so an archived item never reports twice.
@@ -3712,7 +3740,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         """
         try:
             cands = S.migrate_candidates(worklist, fold, session_id, projects_dir)
-        except Exception:
+        except Exception as exc:
+            note_read_failure("migrate-candidates", exc)
             return ""
         cands = [c for c in cands if not c.get("handed_off")][:6]
         if not cands:
@@ -3854,7 +3883,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # BANKED, NOT ASKED, HEAD UNCHANGED. A stop with only docs-only ticks and no new commit fell through both branches above and saved nothing, so the same ticks were rediscovered and re-filtered on every later stop forever -- caught in review, not by a control. This is the missing third case: nothing to ask, nothing to advance the head for, but real ids to mark seen.
                 reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
                 wl_reggate.save_reggate(reg_marker, reg_state)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("reggate-signals", exc)
         reg_signals, reg_ids, reg_sig, reg_done_tasks, reg_banked = [], [], "", [], []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
@@ -3943,16 +3973,19 @@ def run_stop(event, event_ok, worklist, hook_file):
             # v19: the wait is only PURE if the harness queue is also empty of work this session could do right now. A pending task with no unresolved blocker makes the check-in fire (even for an all-live roster) and name it, instead of certifying the wait.
             try:
                 _bg_actionable = C.actionable_tasks(session_id, event.get("transcript_path"))
-            except Exception:
+            except Exception as exc:
+                note_read_failure("bg-actionable-tasks", exc)
                 _bg_actionable = []
             try:
                 bg_facts = wl_liveness.bg_output_facts(event.get("cwd"), session_id, live_bg)
-            except Exception:
+            except Exception as exc:
+                note_read_failure("bg-output-facts", exc)
                 bg_facts = []
             try:
                 # Read on EVERY pure-wait stop since v17, not only when the check-in is due: a worker dying is the one change a byte-level view cannot see.
                 bg_verdicts = wl_liveness.verify_background(live_bg)
-            except Exception:
+            except Exception as exc:
+                note_read_failure("bg-verify-background", exc)
                 bg_verdicts = {}
             _bgw = state_doc.get("bgwait") or {}
             _last = _bgw.get("at", "")
@@ -4021,7 +4054,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             if _correlated:
                 _freshest = min(wl_liveness._age_min(r.get("upd", "")) for r in _correlated)
                 _supervised = _freshest is not None and _freshest <= STUCK_SUPERVISED_MAX_MIN
-        except Exception:
+        except Exception as exc:
+            note_read_failure("stuck-supervised", exc)
             _supervised = False
 
     # Newest own stamp PLUS the own item set (id+state): stamps are second-resolution, so two moves inside one second would otherwise read as none, and an added-then-ticked item is movement even when the clock cannot show it.
@@ -4049,7 +4083,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = (
             wl_liveness.ladder(fold, session_id, event, state_doc)
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("liveness-ladder", exc)
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     # ONE ENTRY, REBUILT EVERY STOP (agent/plans/PLAN-stop-hook-retro-20260924.md R.9). The pings are recomputed on every stop from the items' own ages (wl_liveness.ladder does not fire-once the 45-minute rung), so the entry is regenerable and needs no sticky key. As a sticky `ladder:<sig>` per ping set it was never retracted when its item moved, and on 2026-09-24 twenty of them held the
     # digest's head for every blocked stop: 0 of 52 one-line advisories delivered. Class 0 still: the wording is a direct instruction that becomes a block at the 90-minute rung. The first line drops the legacy sticky entries, a migration that is a no-op once they are gone.
@@ -4212,7 +4247,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 key, {"sig": sig, "at": C.stamp_now()}
             )
             return False
-        except Exception:
+        except Exception as exc:
+            note_read_failure("verdict-suppress", exc)
             return False
 
     def vsig_clear(key):
@@ -4446,7 +4482,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc, fold, session_id, open_items, live_bg, in_flight
         )
         _stall_claims = unblocked_claims(last_msg) if open_items else []
-    except Exception:
+    except Exception as exc:
+        note_read_failure("idle-stall", exc)
         _stall_fired, _stall_why, _stall_claims = False, "check raised", []
     if _stall_fired:
         _rows = "\n".join("    " + i for i in open_items[:8])
@@ -4472,7 +4509,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _pa_tools, _ = wl_admit.turn_tools(event.get("transcript_path", ""))
         _pa_deferred = wl_admit.defer_created(state_doc, fold, session_id)
         _pa_fired, _pa_line = wl_admit.pending_ask(last_msg, _pa_tools, _pa_deferred)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("pending-ask", exc)
         _pa_fired, _pa_line = False, ""
     if _pa_fired:
         vadd("pending-ask", True, M.V_PENDING_ASK % (_pa_line, me8))
@@ -4489,7 +4527,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _sweep_moment = (
             not open_items and not in_flight and not live_bg and bool(fold) and _just_closed
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("sweep-moment", exc)
         _sweep_moment = False
     if _sweep_moment:
         vadd("sweep-moment", False, M.V_SWEEP_MOMENT % "an item this turn")
@@ -4620,8 +4659,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             if new_ts != prev_ts:
                 reg_state["task_status"] = new_ts
                 wl_reggate.save_reggate(reg_marker, reg_state)
-        except Exception:
-            pass
+        except Exception as exc:
+            note_read_failure("reggate-task-status", exc)
     # ---- THE WORK GATE. A brief goes stale when the WORLD moves, not when the clock does: a sentence that still describes what this session is doing is still true at 91 minutes, and demanding a rewrite of an accurate sentence is noise that
     # trains the reader to dismiss the check. Same contract the STATE.md check already runs on, and the same signature, so the two cannot disagree about whether anything happened.
     #
@@ -4662,7 +4701,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # The exit is satisfiable either way (edit the plan, or set its Status), so this cannot become a nag with no way out.
     try:
         _pdrift = plan_drift_rows(root, fold, session_id)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("plan-drift", exc)
         _pdrift = []
     if _pdrift:
         # CAPPED, with the remainder COUNTED rather than dropped: twelve rows in one block is a context bomb, and the no-silent-caps doctrine says a gate that truncates must say what it truncated or it reads as "that is all of them". Newest-first, so the plans nearest the work lead.
@@ -4742,8 +4782,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             elif not _pf_text:
                 # The state it described has moved on. Without this a queued "29 open box(es), 0 ticked" kept being delivered stops after every box of that plan was ticked (2026-10-05), the way plan-pr-open and loop-next already drop theirs.
                 outq_drop(state_doc, "plan-tasks")
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("plan-tasks", exc)
 
     # ---- THE NEXT PLAN (wl_backlog), read off agent/plans/QUEUE.md: Promoted first, then Generated (operator ruling 3, 2026-10-03). The loop state already computed it with the reader the merge gate and P-A1 share; off the loop it is computed here. ADVISORY, never a vadd: the loop's own post-merge push is `loop-next`.
     # ONE NEXT PLAN AT A TIME: a queued nomination of any other plan (an older stop's, or the retired per-session ranking's) is dropped before this stop's is added, so the queue never enumerates plans the loop is not starting next.
@@ -4758,8 +4798,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _bl_text:
             _bl_key = "plan-backlog:%s" % (_bl_candidate or _bl_stats).get("rel")
             outq_add(worklist, session_id, state_doc, _bl_key, _bl_text, 2)
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("plan-backlog", exc)
     _blq = _outq(state_doc)
     _blq["items"] = [
         e
@@ -4799,8 +4839,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _pe_state != wl_planenforce.ADVISORY:
             # The advisory copy describes a stop that had live work; once the verdict is a block or silence it is stale.
             outq_drop(state_doc, "plan-pr-open")
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("plan-enforce", exc)
 
     # ---- LANDED WORK ON AN OPEN BOX WITH NO INVESTIGATION ROW (agent/plans/PLAN-tick-tracking.md Design 6, box T10). A commit landed on the live branch names a still-open box, by trailer or by report TICK, and the box has no investigation row; held for wl_boxaudit.OWED_STOPS stops in a row it blocks with the audit line and the --plan-investigate command. Writing the row drops the key. The audit is cached per HEAD and ledger size.
     try:
@@ -4868,7 +4908,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before the freshness check because a saturated queue changes what that check should say. A slack-granter must fail toward pressure: any error here reads as "unknown", which is exactly today's behavior.
     try:
         qstate, qdetail = wl_ci.ci_queue_state(root, worklist, session_id)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("ci-queue-state", exc)
         qstate, qdetail = "unknown", None
     queue_note = ""
     # THE LIVE PR ARMS THEM TOO (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): on a `live` loop state the PR's branch is the ref when the explicit WORKLIST_PUBLISH_REF override names none. `owned` lifts ci_trouble's multi-session skip only when the PR's own plan names this session as Owner, so a peer's PR keeps the skip.
@@ -4925,8 +4966,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_add(worklist, session_id, state_doc, "github-status", _gh_line, 1, on_change=False)
         else:
             outq_drop(state_doc, "github-status")
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("github-status", exc)
 
     # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`). A file that fails to parse or whose Body-Sig no longer matches blocks too (`commit-review-malformed`). Everything else is one advisory, and so is an open finding a leased `[>]` item names, while its writer works (wl_review.push_refusals still refuses it). The push guard enforces the same
     # state when this hook is disabled, so nothing here is the only line of defence.
@@ -5063,8 +5104,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=15,
                 on_change=False,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("commit-remind", exc)
     #   backup-lag      the branch is more than 50 commits or 6 h ahead of its live backup ref (`backup_ref status --cached`, advise level only).
     try:
         _bl = backup_lag(root)
@@ -5079,8 +5120,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=60,
                 on_change=False,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("backup-lag", exc)
     #   feedback-triage-due  the newest ci:quick receipt is red with no triage run since, or the last triage run is over 24 h old (agent/plans/PLAN-rdc-feedback.md T4, advise level only).
     try:
         _ft = wl_feedback_triage.due(root)
@@ -5095,8 +5136,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=360,
                 on_change=False,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("feedback-triage", exc)
     #   ciquick-on-red  a full ci:quick is running while the newest receipt is red and no --narrow run has passed since (agent/plans/PLAN-ciquick-green-then-batch.md G5).
     try:
         _cr = wl_ci.ciquick_on_red(root, live_bg)
@@ -5111,8 +5152,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=30,
                 on_change=False,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("ciquick-on-red", exc)
     try:
         _rb = wl_loopspeed.receipt_behind(root)
         if _rb:
@@ -5139,8 +5180,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=15,
                 on_change=False,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("ci-hold", exc)
     # ---- SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, A2). A nightly red reached only a human for five nights while it held the stable promotion, because every CI read here is scoped to the PR head and a scheduled run is on no PR. So this check is NOT gated on the publish ref and NOT on being the sole live session: ownership is settled by wl_schedred
     # instead (an item that tracks the red is its owner's, an O_EXCL claim picks one session when none exists), which is what lets every session look without two of them being blocked on one red. One shared cache under a TTL keeps the read cheap; no origin means zero calls, which keeps the fixtures offline.
     #   block  the untracked red this session claimed, or a tick of this session that closed a still-red run without evidence. `scheduled-red` sits in T_OWED (the party owed is the release pipeline, which cannot see this session stop) and in the always tier under I2.
@@ -5453,18 +5494,29 @@ def run_stop(event, event_ok, worklist, hook_file):
     else:
         outq_drop(state_doc, "landing-release-unreadable")
     # PROMOTE WOULD REFUSE, SO THE STOP DOES NOT BLOCK (agent/plans/PLAN-stop-hook-retro-20261123.md D1, D2): an open [writer] box of a plan the development commits name, a live background task of this session in the main checkout, or promote's dirt none of which is this session's edit (`uc_files`, wl_uncommitted) turns the block into a `landing-stack` advisory naming why; dirt this session made keeps the block and is named in it.
+    _ls_tasks_note = ""
     try:
         _ls_tasks = wl_stack.main_checkout_tasks(
             own,
             live_bg,
             wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id)),
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("landing-stack-tasks", exc)
         _ls_tasks = []
+        _ls_tasks_note = (
+            "The live background-task read failed (%s: %s), so a task that would hold promote may be missing from this verdict."
+            % (type(exc).__name__, exc)
+        )
     _ls_own = [os.path.join(str(root), p) for p in (state_doc.get("uc_files") or {})]
     _ls_block, _ls_held = wl_stack.stack_verdict(
         own, released=_ls_released, own_paths=_ls_own, live_main_bg=_ls_tasks
     )
+    # A failed task read is named inside whichever landing-stack text speaks; with neither speaking, the check-read-failed advisory carries it.
+    if _ls_block and _ls_tasks_note:
+        _ls_block = _ls_block + "\n" + _ls_tasks_note
+    if _ls_held and _ls_tasks_note:
+        _ls_held = _ls_held + "\n" + _ls_tasks_note
     if _ls_block:
         vadd("landing-stack", False, _ls_block)
     if _ls_held:
@@ -5605,7 +5657,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # it is a prompt to think, not a fact that must be answered this turn.
     try:
         _n_mates = wl_liveness.live_teammate_transcripts(event.get("cwd"), session_id=session_id)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("live-teammates", exc)
         _n_mates = 0
     if solo_grind_due(len(open_items), _n_mates, state_doc):
         vadd("solo-grind", False, M.V_SOLO_GRIND % (len(open_items), SOLO_GRIND_MIN_ITEMS))
@@ -5729,8 +5782,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 vadd("unread-reports", False, _ur_text)
             else:
                 outq_add(worklist, session_id, state_doc, "unread-reports", _ur_text, 2)
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("unread-reports", exc)
     # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh` refuses permission-shaped git questions and, until now, left no trace anywhere the operator looks -- which .claude/hooks/test-hooks.sh names as the flaw in its own design: "a false positive is invisible by construction: the operator never learns what was not asked". The hook now appends one row per
     # refusal; this is the read side.
     #
@@ -5747,8 +5800,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_ASK_REFUSALS % (_ar_n, _ar_path),
                 2,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("ask-refusals", exc)
     # v19 L2: identities that write to this store but have never stopped. The CLI check refuses them at the door from now on; this is the backstop for what it cannot reach -- history already written, and the deliberate hole where the environment cannot name the caller.
     #
     # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP is 3 and outq_drain is highest-priority-first, so a priority-2 note can still queue behind others for many stops on a busy branch. An identity split is not something to ration. REPORT-ONLY: this runs on every session's Stop path and the repair is not always this session's to make.
@@ -5772,8 +5825,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_PHANTOM_IDENTITY % (len(_phantoms), _rows, _wp, me8),
                 1,
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        note_read_failure("phantom-identity", exc)
     # NO STOP-TIME DOCS-DRIFT CHECK since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.3). It counted any commit under `.claude`, so hook work -- which the CI-overhaul design docs do not describe -- ordered edits to unrelated documents. The SessionStart block still reports DRIFTED or pending, which is where a fresh session reads the docs.
     # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
     # handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping, the file is the truth) and waves are store-linked through the `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather than promised. See wl_checklist for the adjudication.
@@ -5802,7 +5855,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # v18: the surviving half of the deleted NEXT WAKEUPS section. A schedule this hook cannot parse is invisible to every check above -- it is not a countable work cron -- so it must be said out loud rather than left implicit in a list nobody prints any more.
     try:
         _broken_scheds = broken_schedules(event)
-    except Exception:
+    except Exception as exc:
+        note_read_failure("broken-schedules", exc)
         _broken_scheds = []
     if _broken_scheds:
         vadd(
@@ -5969,7 +6023,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if r.get("state") in (" ", ">", "?") and C.owned_by_me(r.get("owner"), session_id)
             ],
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("deferred-findings", exc)
         _deferred = []
     if _deferred:
         vadd(
@@ -5981,7 +6036,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = wl_deflect.check(
             worklist, session_id, event.get("transcript_path")
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("deflected-finding", exc)
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
@@ -5991,7 +6047,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             live_ids={str(b.get("id")) for b in live_bg},
             owners=lambda ages: wl_bgsweep.owner_context(event, event.get("cwd"), session_id, ages),
         )
-    except Exception:
+    except Exception as exc:
+        note_read_failure("bg-sweep", exc)
         _bg_find = []
     if _bg_find:
         _bg_rows = [
@@ -6010,6 +6067,24 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_BG_ORPHAN % (len(_bg_find), wl_bgsweep.BGSWEEP_AGE_MIN, "".join(_bg_rows)),
         )
+    # Every reader above that fell back to its empty default is named here, once: an advisory, never a block, so naming a failure cannot widen what any check blocks on.
+    if READ_FAILURES:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "check-read-failed",
+            M.N_CHECK_READ_FAILED
+            % (
+                len(READ_FAILURES),
+                "\n".join("  %s: %s" % kv for kv in sorted(READ_FAILURES.items())),
+            ),
+            1,
+            refresh_min=30,
+            on_change=False,
+        )
+    else:
+        outq_drop(state_doc, "check-read-failed")
     if unstated:
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:

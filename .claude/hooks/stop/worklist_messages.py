@@ -1568,6 +1568,13 @@ N_CIQUICK_ON_RED = (
     "the ones the fix touched in minutes, and the whole lane is built once, green, per batch."
 )
 
+# A reader inside the Stop battery failed and its check ran on an empty default (wl_checks.note_read_failure, SF3). Two substitutions: how many readers, and one `site: ExcType: message` row each. ADVISORY: naming the blindness never blocks.
+N_CHECK_READ_FAILED = (
+    "%d Stop-hook reader(s) failed and fell back to an empty default, so the check behind each ran blind this stop "
+    "(quiet from it means unread, not clean):\n%s\n"
+    "Fix the reader named, or report it; the same failure repeats until then."
+)
+
 N_CI_HOLD = (
     "Console CI is running on %s; hold these %d local commit(s) until it settles. "
     "A red with a fix in hand pushes at once."
