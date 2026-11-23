@@ -1,0 +1,134 @@
+# PLAN: Console AI assistant -- an action timeline with risk-grouped approvals, a simple view, three autonomy modes enforced in the executor, and an encrypted conversation store
+Status: approved -- operator /ask 2026-11-23 in session 9b22c347, worklist #b785e9ff (agent/programs/console-rework/02-decisions.md)
+Owner: 9b22c347
+First-Seen: 2026-11-23
+Depends-On: PLAN-console-run-index.md, PLAN-console-command-line.md, PLAN-console-ai-providers.md, PLAN-rmcp-decide.md, PLAN-rmcp-agent-grants.md -- the timeline extends plan 4's block stream, the composer reuses plan 5's core, the loop host and provider profiles come from plan 8, and every AI command goes through decide() with an agent principal (C40)
+Priority: P2 -- no LLM product code exists in the tree (agent/programs/console-rework/01-verified-context.md section 5); the assistant waits on five plans and nothing shipped today regresses without it
+Concurrency: parallel -- Wave 1: AI1 (dependencies and headers), AI2 (policy field), AI5 and AI6 (the store's executor and account halves), each once its plan-8 or policy-record prerequisite has landed. Wave 2: AI3 after AI2, AI4 after AI3; AI7, AI8, AI9 and AI10 are file-disjoint (one locale namespace each) except that AI10 edits ai-routes.ts after AI5. Wave 3: AI11, AI12, AI13, AI14. AI2 edits packages/shared/src/policy/schema.ts and merge.ts only after PLAN-rmcp-policy-record.md#S1 lands
+Owns: agent/plans/PLAN-console-ai-assistant.md, private/account/web/package.json, private/account/web/package-lock.json, private/account/web/index.html, private/account/web/src/components/ai/**, private/account/web/src/lib/ai/**, private/account/web/src/hooks/useAi*.ts, private/account/web/src/components/console/runs/** (the AI block-kind registration only), private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/*/aiTimeline.json, private/account/web/src/i18n/locales/*/aiChat.json, private/account/web/src/i18n/locales/*/aiSimple.json, private/account/web/src/i18n/locales/*/aiSpeech.json, private/account/src/routes/console-ai.ts (the conversation, mode, approval and transcription routes added after plan 8's AP9), private/account/src/db/schema.ts (the ai_conversations, ai_messages and user_ai_preferences tables only), private/account/src/db/scope-registry.ts (the AI tables only), private/account/drizzle/*_ai_console.sql, private/account/src/services/ai-conversation.service.ts, packages/shared/src/config-crypto/ai-conversation.ts, packages/shared/src/config-crypto/__tests__/ai-conversation.test.ts, private/account/tests/integration/console-ai-conversations.test.ts, packages/cli/src/services/ai/autonomy.ts, packages/cli/src/services/ai/judge.ts, packages/cli/src/services/ai/approvals.ts, packages/cli/src/services/ai/approval-audit.ts, packages/cli/src/services/ai/conversation-store.ts, packages/cli/src/services/ai/transcribe.ts, packages/cli/src/services/ai/ui-tools.ts, packages/cli/src/services/ai/loop.ts (the gate and UI-tool registration only), packages/cli/src/services/ai/__tests__/{autonomy,judge,approvals,approval-audit,conversation-store,transcribe,ui-tools}.test.ts, packages/shared/src/cli-contract/wire.ts (new AiEventSchema members only), packages/shared/src/policy/schema.ts (aiModesDisabled only), packages/shared/src/policy/merge.ts (aiModesDisabled only), packages/shared/src/policy/__tests__/ai-modes.test.ts, packages/shared/src/audit/console-events.ts (the console.ai.mode type only), packages/shared/src/ai/profile.ts (the judgeModel field only), packages/cli/src/services/serve/ai-routes.ts (the mode, approval and transcription routes only), workers/account/src/index.ts, private/account/e2e/tests/27-console/27-1*-ai-*.test.ts
+Live-Proof: bench -- the account web timeline, the account worker AI and conversation routes, the executor autonomy gate and the sealed conversation store on the eu bench
+
+## Ask
+
+The operator ruled that the AI experience is an action timeline extending the block stream (C34), with a per-user simple view (C35), three autonomy modes per chat enforced in code (C33), always-on chat fixes (C36), the assistant-ui, use-stick-to-bottom and Streamdown stack (C37) and a user-selectable microphone engine (C38). Production means a grand repo and always asks in a popup (C13); confirmation follows severity (C11). The loop runs in the org container on the customer's key (C30, C31), and live tests may use the Anthropic key held in BWS (C41).
+
+## Context
+
+1. The executor forces `--output json --yes` on every argv (packages/cli/src/services/serve/command-dispatch.ts:284-305), so a dialog in front of the executor is the only confirmation a command gets.
+2. The executor principal has no kind field (packages/cli/src/services/serve/sessions.ts:35-43); CLI agent detection is process-based only (packages/cli/src/utils/agent-guard.ts:34-46). PLAN-rmcp-decide.md Design 3 marks console callers `kind: 'human'`; this plan marks the commands the AI loop issues `kind: 'agent'`.
+3. A granted CEK lives in executor memory for 30 idle minutes (packages/cli/src/services/serve/sessions.ts:32).
+4. `OrgExecutor` is a Durable Object per org and placement that retires on relocation (workers/proxy/src/org-executor.ts:90, :249-250), so plan 4 keeps its run index in a D1 table and seals each run's output tail under an HKDF subkey of the session CEK, opened only in an unlocked browser (agent/plans/PLAN-console-run-index.md D1, D3).
+5. `PolicyRuleSchema` has no AI field (packages/shared/src/policy/schema.ts:50-72); PLAN-rmcp-policy-record.md moves the policy into its own record and adds `merge.ts`.
+6. The account web app is React 19 on shadcn components (private/account/web/components.json, private/account/web/src/components/ui/card.tsx) with none of assistant-ui, use-stick-to-bottom or Streamdown among its dependencies (private/account/web/package.json:14-38), and it has its own lockfile (private/account/web/package-lock.json).
+7. Dependency policy: `ignore-scripts=true` (.npmrc:12) and a 1440-minute freshness window (.ci/config/release-age.json:10) read by `check:deps`; `check:ci-lockfile` refuses a lockfile the pinned npm would rewrite.
+8. The account worker sends `microphone=()` (workers/account/src/index.ts:34-35) and a CSP whose `script-src` lacks `'wasm-unsafe-eval'` and whose `connect-src` is `'self'` plus Turnstile (workers/account/src/index.ts:36-42). As shipped, the browser blocks every microphone engine of C38 and any WebAssembly speech model.
+9. The viewport meta has no `interactive-widget` (private/account/web/index.html:5).
+10. Locale namespaces are listed once (private/account/web/src/i18n/config.ts:31), with 13 locale directories under private/account/web/src/i18n/locales/.
+11. The console exec route is `POST /console/exec` under session auth (private/account/src/routes/console.ts:444).
+12. The executor's NDJSON channel is `StreamLineSchema`, a union discriminated on `kind` (packages/shared/src/cli-contract/wire.ts:240), to which plan 8 adds a `kind: 'ai'` line with an `approval_required` event.
+
+## Design
+
+D1. **The timeline is a block kind of plan 4's stream.** One AI request is one run card: the prompt, the mode chip, the plan as a checklist (the model reports its plan through a typed `plan` tool, each step ticked as its command ends), then one row per rdc command with the exact command line, the target, status, duration and collapsible output. Each command is a plan-4 run carrying `aiRequestId`, so it also shows on the Jobs page and in the pills.
+
+D2. **Results are structured cards, not prose.** The model answers through a typed `present` tool whose zod schemas cover a table (columns from the contract's output hints), a status card and choice chips; a chip sends its value as the next user turn. Prose renders through Streamdown and the system prompt keeps it short.
+
+D3. **Approvals group by risk.** Each proposed command gets decide()'s verdict and plan 1's severity. `none` (read-only) runs in every mode. `caution` commands proposed together fold into one approve card with a checkbox per command. `destructive` commands and any grand-repo target never batch: each opens plan 2's red dialog with the typed name and step-up (C11), and a grand repo pops up in every mode (C13).
+
+D4. **Autonomy is enforced in the executor (C33).** The mode is stored per conversation. Ask: read-only runs, an approval card otherwise. Auto: read-only runs; the rest goes to the judge (D5); 3 consecutive or 20 total blocks in a chat switch it to Ask and the timeline says so. Skip: whatever decide() and the policy allow. In every mode decide() runs with `principal.kind = 'agent'`; `REDIACC_ALLOW_*` is read only through decide()'s env adapter and the loop never sets it; an approval is a server-issued single-use token bound to (conversation, argv hash), so the UI holds no bypass, and the account route that submits the approval of a destructive or grand command runs plan 2's server step-up check first (C12), exactly as `/console/exec` does.
+A popup approval of a grand repo becomes a one-command `grant`-shaped override for that repo with `confirmation.granted`, so the policy ceiling still applies (remote-mcp D20, D22). "Always allow in this chat" rules are exact (one pathKey, one target); entering Auto drops any broader rule and lists what was dropped.
+
+D5. **The judge never sees output.** Input: the user and assistant messages of the conversation and the proposed command (argv, target, severity, decide() verdict); the input type has no output field. Output: strict JSON `{verdict: allow|block, reason}`; a parse failure is a block. The model is the provider profile's optional `judgeModel`, else its main model (plan 8's profile).
+
+D6. **Org admins disable Auto or Skip** through `aiModesDisabled: ('auto'|'skip')[]` on `PolicyRuleSchema`, merged as a union so a team only narrows (remote-mcp D29); the executor refuses a disabled mode and the UI greys it with the reason.
+
+D7. **Conversation store: sealed in the executor, kept in D1 beside plan 4's run index.** Conversations hold command output, so plaintext rows (readable by Rediacc) are rejected; browser-only storage is rejected because branching across devices and plan 12's background tasks need a server home; the org Durable Object is rejected for the reason plan 4 gives (it retires on relocation, and on-premise has none). The executor seals each message with AES-GCM under an HKDF subkey of the session's config key (info `rediacc/ai-conversation/v1`, AAD `org|user|conversation|message|cekGeneration`; the org CEK today, the per-config subkey once remote-mcp D56 lands) and posts it with its executor token, as plan 4's recorder does.
+Tables `ai_conversations` (id, org, team, user, sealed title, mode, timestamps) and `ai_messages` (id, conversation, parent id, seq, sealed body of at most 64 KiB) are org-scoped on the tenant shard. A command's output is not copied into a message: the message names the plan-4 run id and the browser opens that run's sealed tail. The unlocked browser opens messages; a CEK rotation retires older conversations, listed as sealed under a retired key with a delete action.
+
+D8. **Branching is a message tree.** Each message has a parent id; editing or regenerating an earlier message makes a sibling, and assistant-ui's branch picker switches between siblings; nothing is overwritten.
+
+D9. **Chat fixes (C36).** use-stick-to-bottom pins only until the first line of the newest reply is visible, never re-pins after a user scrolls up, and shows jump-to-latest. Chips show org, team, config, the page's resources and usage (tokens on a customer key; credits from PLAN-console-ai-credits.md on enterprise).
+
+D10. **Simple view (C35)** is a per-user preference in a `user_ai_preferences` D1 row (no secret content). It renders the same timeline as a chat: the input docked at the bottom, an empty state with a centred input and suggestion chips, plain-language action cards built from plan 1's summaries, plan 7's animation while a card runs, a short result summary, and "Show details" for the command and logs.
+
+D11. **Stack (C37).** assistant-ui (MIT) through its external-store runtime fed by the executor's NDJSON stream, use-stick-to-bottom (MIT) and Streamdown (Apache-2.0), each at a version past the freshness window and none needing an install script; Streamdown's highlighter loads lazily.
+
+D12. **Microphone (C38).** Engines in fallback order: the browser's Web Speech recognition (labelled as sending audio to the browser vendor); a local Whisper-base build through transformers.js on WebAssembly, downloaded only after the user picks it and sees its size, hash-checked, cached, and served from media.rediacc.com because the files exceed the Workers static-asset limit; then provider transcription through the executor for OpenAI-compatible profiles (hidden for Anthropic Messages profiles, which have no transcription endpoint). The transcript lands in the composer, editable. The headers change to `microphone=(self)`, `'wasm-unsafe-eval'` and `connect-src https://media.rediacc.com`.
+
+D13. **Accessibility.** `aria-live="polite"` announces each finished message once, never streaming tokens; Enter sends, Shift+Enter adds a line, Esc stops; nothing sends while `isComposing` is true or keyCode is 229; `interactive-widget=resizes-content` keeps the composer above the mobile keyboard. UI tests are keyboard and IME contract tests only (C28).
+
+## Ordering against other live plans
+
+- Plan 4 (PLAN-console-run-index.md) builds the block-stream panel under `components/console/runs/` (its RI8); the AI7 writer registers the AI block kind there in one line after RI8 lands, and AI5 and AI6 reuse plan 4's sealing helpers (RI4) and store (RI1). Plan 4 and this plan both edit private/account/src/db/schema.ts and scope-registry.ts; a migration number clash is renumbered at landing.
+- Plan 8 creates `packages/cli/src/services/ai/loop.ts`, `private/account/src/routes/console-ai.ts`, `packages/shared/src/ai/profile.ts` and the `kind: 'ai'` wire line (agent/plans/PLAN-console-ai-providers.md D8, D9, AP3, AP7, AP9); this plan edits each only after the plan-8 box that creates it lands, per the program README's later-plan rule. Plan 8's D9 refuses an agent's grand-repo mutation without a grant; D4 here adds the popup-approved one-command override that C13 requires.
+- PLAN-rmcp-policy-record.md#S1 lands before AI2, PLAN-rmcp-decide.md#D3 before AI3.
+- AI12 waits for PLAN-console-audit-r2.md (AU1, AU5), AI6 for PLAN-console-confirm-stepup.md#CF3 and AI14 for PLAN-console-ai-credits.md#AC10 as box dependencies, so none of those plans joins this PR's plan set.
+- PLAN-console-ai-feedback.md and PLAN-console-ai-in-pages.md build on this plan's timeline, store and routes.
+
+## Tasks
+
+- [ ] AI1 [writer] Add assistant-ui, use-stick-to-bottom, Streamdown and transformers.js to the account web app at versions older than the freshness window with the lockfile written by the pinned npm, set `microphone=(self)`, `'wasm-unsafe-eval'` and `https://media.rediacc.com` in the account worker headers, add `interactive-widget=resizes-content` to the viewport, and register the four AI locale namespaces.
+  Owns: private/account/web/package.json, private/account/web/package-lock.json, private/account/web/index.html, private/account/web/src/i18n/config.ts, workers/account/src/index.ts
+  Depends on: none.
+  Accept: `npm run check:deps`, `npm run check:ci-lockfile`, `npm run check:ci-security-audit` and `npm run check:ci-runtime-imports-are-deps` rc 0; `(cd private/account/web && npm run typecheck && npm run build)` rc 0, with the main chunk size before and after quoted in the tick.
+- [ ] AI2 [writer] Add `aiModesDisabled: ('auto'|'skip')[]` to `PolicyRuleSchema` and merge it as a union in `mergePolicies`, with tests that a team cannot re-enable a mode the org disabled.
+  Owns: packages/shared/src/policy/schema.ts, packages/shared/src/policy/merge.ts, packages/shared/src/policy/__tests__/ai-modes.test.ts
+  Depends on: PLAN-rmcp-policy-record.md#S1.
+  Accept: `(cd packages/shared && npx vitest run src/policy/__tests__/ai-modes.test.ts)` rc 0.
+- [ ] AI3 [writer] The executor autonomy gate, approvals and UI tools: the typed `plan` and `present` tools with their `AiEventSchema` members, per-conversation mode, decide() with an agent principal for every loop-issued command, risk grouping into batch cards and single popups, single-use approval tokens bound to the argv hash, grand repos popped up in every mode, disabled modes refused, and exact-only chat allow rules.
+  Owns: packages/cli/src/services/ai/autonomy.ts, packages/cli/src/services/ai/approvals.ts, packages/cli/src/services/ai/ui-tools.ts, packages/cli/src/services/ai/loop.ts (the gate and UI-tool registration only), packages/shared/src/cli-contract/wire.ts (new AiEventSchema members only), packages/cli/src/services/ai/__tests__/autonomy.test.ts, packages/cli/src/services/ai/__tests__/approvals.test.ts, packages/cli/src/services/ai/__tests__/ui-tools.test.ts
+  Depends on: AI2, PLAN-rmcp-decide.md#D3, PLAN-console-ai-providers.md#AP7.
+  Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/autonomy.test.ts src/services/ai/__tests__/approvals.test.ts src/services/ai/__tests__/ui-tools.test.ts)` rc 0, covering a destructive command in Skip mode still popping up, a grand target in every mode, a replayed approval token refused, and a control where accepting a reused token turns the suite red.
+- [ ] AI4 [writer] The Auto-mode judge: an input builder with no output field, strict JSON verdicts with a parse failure as a block, `judgeModel` read from the provider profile, and the 3-consecutive and 20-total fallback to Ask.
+  Owns: packages/cli/src/services/ai/judge.ts, packages/cli/src/services/ai/__tests__/judge.test.ts, packages/shared/src/ai/profile.ts (the judgeModel field only)
+  Depends on: AI3.
+  Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/judge.test.ts)` rc 0, including a type-level test that the judge input cannot carry tool output and a fixture where the third consecutive block flips the mode.
+- [ ] AI5 [writer] The sealed conversation store, executor half: `sealAiMessage` and `openAiMessage` over the HKDF and AES helpers, usable in Node and the browser; the executor recorder posting each sealed message with parent id and seq; and the executor routes for mode changes and approval submits.
+  Owns: packages/shared/src/config-crypto/ai-conversation.ts, packages/shared/src/config-crypto/__tests__/ai-conversation.test.ts, packages/cli/src/services/ai/conversation-store.ts, packages/cli/src/services/ai/__tests__/conversation-store.test.ts, packages/cli/src/services/serve/ai-routes.ts (the mode and approval routes only)
+  Depends on: PLAN-console-ai-providers.md#AP7, PLAN-console-run-index.md#RI4.
+  Accept: `(cd packages/shared && npx vitest run src/config-crypto/__tests__/ai-conversation.test.ts)` rc 0 with an AAD-swap control that fails to open; `(cd packages/cli && npx vitest run src/services/ai/__tests__/conversation-store.test.ts)` rc 0, including an unreachable account route that never fails the turn.
+- [ ] AI6 [writer] The sealed conversation store, account half, and the AI routes: the `ai_conversations`, `ai_messages` and `user_ai_preferences` tables on the tenant shard, the executor-token message write, session reads of conversations and branches, mode change, approval submit with plan 2's server step-up for destructive and grand commands, transcription relay and preferences.
+  Owns: private/account/src/routes/console-ai.ts, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_ai_console.sql, private/account/src/services/ai-conversation.service.ts, private/account/tests/integration/console-ai-conversations.test.ts
+  Depends on: PLAN-console-ai-providers.md#AP9, PLAN-console-run-index.md#RI1, PLAN-console-confirm-stepup.md#CF3.
+  Accept: `(cd private/account && npx vitest run tests/integration/console-ai-conversations.test.ts)` rc 0, with a cross-org read refused, a body with a plaintext field refused, and a destructive approval without step-up refused; `npm run check:ci-account-scope-audit` rc 0.
+- [ ] AI7 [writer] The timeline components: run card, plan checklist, command rows with collapsible output, table, status and choice-chip result cards, the batch approve card and the hand-off to plan 2's dialogs, registered as a block kind in plan 4's stream, with English strings in `aiTimeline.json`.
+  Owns: private/account/web/src/components/ai/timeline/**, private/account/web/src/components/runs/** (the AI block-kind registration only), private/account/web/src/i18n/locales/en/aiTimeline.json
+  Depends on: AI6, PLAN-console-run-index.md#RI8, PLAN-console-confirm-stepup.md#CF4.
+  Accept: `(cd private/account/web && npx vitest run src/components/ai/timeline)` rc 0, including a test that a destructive command never renders inside a batch card.
+- [ ] AI8 [writer] The chat shell: the assistant-ui external-store runtime over the NDJSON stream, the composer with Enter, Shift+Enter, Esc and IME guards, scroll pinning that stops at the first visible reply line with jump-to-latest, context and token-usage chips, the branch picker, and per-finished-message `aria-live`, with English strings in `aiChat.json`.
+  Owns: private/account/web/src/components/ai/chat/**, private/account/web/src/lib/ai/runtime*.ts, private/account/web/src/hooks/useAiConversation.ts, private/account/web/src/i18n/locales/en/aiChat.json
+  Depends on: AI6.
+  Accept: `(cd private/account/web && npx vitest run src/components/ai/chat)` rc 0, including a scroll test where a user scroll-up during streaming is never overridden.
+- [ ] AI9 [writer] Simple view: the per-user switch read from preferences, the docked chat layout with its empty state and suggestion chips, plain-language action cards from contract summaries with plan 7's animation while running, short summaries and "Show details", with English strings in `aiSimple.json`.
+  Owns: private/account/web/src/components/ai/simple/**, private/account/web/src/hooks/useAiPreferences.ts, private/account/web/src/i18n/locales/en/aiSimple.json
+  Depends on: AI6, PLAN-console-animations.md#AN3.
+  Accept: `(cd private/account/web && npx vitest run src/components/ai/simple)` rc 0, including a test that "Show details" reveals the exact command line of the underlying run.
+- [ ] AI10 [writer] Microphone engines: the selectable engine list in the C38 fallback order, Web Speech, the lazy hash-checked Whisper-base worker shown with its size before download, and executor transcription for OpenAI-compatible profiles; the transcript lands editable in the composer, with English strings in `aiSpeech.json`.
+  Owns: private/account/web/src/lib/ai/speech/**, private/account/web/src/components/ai/speech/**, packages/cli/src/services/ai/transcribe.ts, packages/cli/src/services/ai/__tests__/transcribe.test.ts, packages/cli/src/services/serve/ai-routes.ts (the transcription route only), private/account/web/src/i18n/locales/en/aiSpeech.json
+  Depends on: AI1, AI5, AI6.
+  Accept: `(cd private/account/web && npx vitest run src/lib/ai/speech)` and `(cd packages/cli && npx vitest run src/services/ai/__tests__/transcribe.test.ts)` rc 0; a test proves the model is not fetched before the user confirms, and a hash mismatch refuses the model.
+- [ ] AI11 [writer] Translate `aiTimeline`, `aiChat`, `aiSimple` and `aiSpeech` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
+  Owns: private/account/web/src/i18n/locales/*/aiTimeline.json, private/account/web/src/i18n/locales/*/aiChat.json, private/account/web/src/i18n/locales/*/aiSimple.json, private/account/web/src/i18n/locales/*/aiSpeech.json
+  Depends on: AI7, AI8, AI9, AI10.
+  Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
+- [ ] AI12 [writer] Audit every AI approval, rejection, judge verdict and refusal as plan 3's `console.ai.approval` with `actor.kind: 'agent'` and the approving human, and each mode change as a new `console.ai.mode` type (who, command, target, verification method), never recording a secret parameter.
+  Owns: packages/cli/src/services/ai/approval-audit.ts, packages/cli/src/services/ai/__tests__/approval-audit.test.ts, packages/shared/src/audit/console-events.ts (the console.ai.mode type only)
+  Depends on: AI3, AI4, PLAN-console-audit-r2.md#AU1, PLAN-console-audit-r2.md#AU5.
+  Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/approval-audit.test.ts)` rc 0, with a sensitive option value absent from every emitted event; `npm run check:ci-audit-coverage` rc 0.
+- [ ] AI13 [writer] Playwright keyboard and IME contract specs: Enter, Shift+Enter, Esc stop, a CDP composition that does not send, the approval card keyboard flow, jump-to-latest focus, and the simple-view switch.
+  Owns: private/account/e2e/tests/27-console/27-1*-ai-*.test.ts
+  Depends on: AI7, AI8, AI9.
+  Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-10-ai-keyboard.test.ts --project=chromium)` rc 0.
+- [ ] AI14 [writer] The credits chip for enterprise orgs on Rediacc-provided AI, reading plan 10's ledger balance beside the token chip.
+  Owns: private/account/web/src/components/ai/chat/CreditsChip.tsx, private/account/web/src/components/ai/chat/__tests__/credits-chip.test.tsx
+  Depends on: AI8, PLAN-console-ai-credits.md#AC10.
+  Accept: `(cd private/account/web && npx vitest run src/components/ai/chat/__tests__/credits-chip.test.tsx)` rc 0.
+- [ ] LP-bench [live] Deploy the branch's account and proxy Workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), then, with the BWS Anthropic key copied through `bws_env exec` (C41), run one Ask-mode chat that lists machines, proposes a `caution` batch and a destructive popup, and read the conversation back after a reload on a second browser profile; proxy-ready and cli-bench run as additional verification.
+  Accept: live-proof bench account-smoke
+
+## Risks
+
+- **Prompt injection through command output.** The judge never sees output (D5), and every mode still passes decide() and server-issued approval tokens (D4).
+- **Conversation loss with a lost or rotated key.** Conversations are only as recoverable as the config key (D7); this matches the zero-knowledge posture of config storage and the UI states it.
+- **Bundle growth.** Streamdown's highlighter and the Whisper worker load lazily; AI1 quotes the main chunk before and after.
+- **Assumed directories of plans 4 and 8.** The correction rule under Ordering re-points globs in the commit that edits them.
