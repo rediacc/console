@@ -592,41 +592,31 @@ def _without_ref_operands(run, argv):
 _operands = shellscan.plain_operands
 
 
-def _run_operands(run, argv):
-    """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews`, so the find's starting points (`shellscan.Launch.starts`) stand in for `{}`, in place. A `{}` that is a copy's SOURCE is still not its last operand, so `-exec cp {} /tmp/ ';'` stays a copy out."""
-    ops = _operands(argv)
-    # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads the operands and never under-reads them; a file named only inside an option's value (`sort --output=X/kept.md`) is not an operand, fed or typed, and is read by the `shellscan.output_landings` arm of `_offending` instead (worklist item ff3ab826): `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
-    ops = shellscan.xargs_fed_operands(run, ops)
-    # What a listing over the review directory or an ancestor feeds is review paths (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` feeds the words `grep -rl x agent/`, none of them a review file.
-    if _fed_a_listing(run):
-        ops.append(_WORST)
-    if run.launch is None or run.launch.launcher != "find":
-        return ops
-    out: list[str] = []
-    for a in ops:
-        out.extend(run.launch.starts if "{}" in a else [a])
-    return out
+# How each `shellscan.run_word_writes` reading is named in the refusal, `%(name)s` the writing command and `%(word)s` the word. "remove" is not taken: `rm` keeps the verdict the reader table gives it (`shellscan._KEPT_VERDICT`), and refusing it is a separate policy decision. `dd of=` is the "option" record of a `dd` run, named as the operand arms name theirs.
+_WORD_WRITES = {
+    "tee": "tee into the review directory",
+    "in-place": "%(name)s -i on a review file",
+    "copy": "%(name)s onto the review directory",
+    "truncate": "truncate of a review file",
+}
+_OUTPUT_WRITES = ("option", "unread")
 
 
-def _operand_write(run, name, argv, where, base, cwd):
-    """A description of the review file `run` writes through one of its operands read from `argv` (tee, an in-place sed or perl, a copy's destination, truncate, `dd of=`), or ""."""
-    operands = _run_operands(run, argv)
-    if name == "tee" and any(_is_review(a, where, base) for a in operands):
-        return "tee into the review directory"
-    # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
-    in_place = shellscan.in_place_edit(run) is not None
-    if in_place and any(_is_review(a, where, base) for a in operands):
-        return "%s -i on a review file" % name
-    # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
-    # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion in `_offending` passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
-    copies = shellscan.run_copies(run, argv, cwd)
-    if copies is not None and any(_is_review(d, where, base) for d in copies[1]):
-        return "%s onto the review directory" % name
-    if name == "truncate" and any(_is_review(a, where, base) for a in operands):
-        return "truncate of a review file"
-    if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], where, base) for a in argv):
+def _word_write(run, name, word, how, where, base):
+    """A description of the review file `run` writes through `word`, one `shellscan.run_word_writes` reading, or "". A `{}` a `find -exec` run holds is read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews` (`shellscan.find_starts`)."""
+    if not any(_is_review(form, where, base) for form in shellscan.find_starts(run, [word])):
+        return ""
+    if how == "option" and name == "dd":
         return "dd of= a review file"
-    return ""
+    if how == "option":
+        return "%s writing %s through its own output option" % (name, word)
+    if how == "unread":
+        return (
+            "%s naming %s, and %s is not a command this guard reads as a reader; "
+            "read a review file with cat, grep, head, sed -n, jq or git show, and call "
+            "a command itself rather than through a shell function"
+        ) % (name, word, name)
+    return _WORD_WRITES[how] % {"name": name, "word": word}
 
 
 def _offending(cmd, depth=0, cwd=None):
@@ -678,23 +668,29 @@ def _offending(cmd, depth=0, cwd=None):
             (words, "" if definite else _UNKNOWN_NOTE % shlex.join(words))
             for words, definite in _argv_readings(run, argv, cmd)
         ]
-        for words, note in variants:
-            what = _operand_write(run, name, list(words), where, base, cwd)
-            if what:
-                return what + note
+        # Each reading is `shellscan.run_word_writes`' (tee; an in-place sed or perl by its own option parse, review 3f53e99e.2, whose script is its program and not a file it writes; a copy's destination by `run_copies`' getopt reading, review cac47d16.1, placed the way the tool places it; truncate; `dd of=`; and `shellscan.output_landings` for every other command), over the words with a git ref verb's refs, refspecs and names dropped (`_without_ref_operands`). What a listing over the review directory or an ancestor feeds is review paths (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` feeds the words `grep -rl x agent/`, none of them a review file, so the fed operands carry `_WORST`. A command a PROGRAM hands down is read with `cwd` None, since it runs wherever that program does: a copy's destination by its shape, and one a launcher starts (`find -exec`, `npx`) the same way (`shellscan._feed_directories`, review 9ed30a8a.1).
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
-        # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
-        for words, note in variants:
-            for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
-                if not _is_review(word, where, base):
-                    continue
-                if how == "option":
-                    return "%s writing %s through its own output option%s" % (name, word, note)
-                return (
-                    "%s naming %s, and %s is not a command this guard reads as a reader; "
-                    "read a review file with cat, grep, head, sed -n, jq or git show, and call "
-                    "a command itself rather than through a shell function%s"
-                ) % (name, word, name, note)
+        # the write their own way. Each was allowed before (rc 0). The operand arms are asked of every reading before the output words are, so a command that writes through both is named by its operand.
+        listing = (_WORST,) if _fed_a_listing(run) else ()
+        readings = [
+            (
+                shellscan.run_word_writes(
+                    run, _without_ref_operands(run, list(words)), cwd, listing
+                ),
+                note,
+            )
+            for words, note in variants
+        ]
+        for output in (False, True):
+            for writes, note in readings:
+                for word, how, _append in writes:
+                    if how == "remove" or output != (
+                        how in _OUTPUT_WRITES and not (how == "option" and name == "dd")
+                    ):
+                        continue
+                    what = _word_write(run, name, word, how, where, base)
+                    if what:
+                        return what + note
         # A script run DIRECTLY by its shebang is the interpreter it names (review 05c4df4d.2): no interpreter word stands in the command.
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):

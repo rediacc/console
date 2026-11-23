@@ -9005,17 +9005,23 @@ def _perl_in_place(argv):
     return in_place, programs, operands
 
 
+def _in_place_parser(run):
+    """The option parse of the in-place editor `run` is (sed, gsed, perl), or None for any other run."""
+    base = run.name.rsplit("/", 1)[-1]
+    if base in ("sed", "gsed"):
+        return _sed_in_place
+    if base.startswith("perl"):
+        return _perl_in_place
+    return None
+
+
 def in_place_edit(run):
     """`(scripts, files)` for a sed or perl run that edits files IN PLACE, or None for any other run. `scripts` are the sed scripts or perl `-e` programs written on the command line; `files` the operands it rewrites.
 
     THE WORDS ARE READ AS TYPED AND AS BASH EXPANDS THEM (#4deea064): `F=-i; sed $F s/a/b/ x` edits `x` in place while the typed `$F` is a script, so the run is in place when either reading says so, and its scripts and files are those of each reading that is in place (an expanded word the walk cannot know is left out, its typed text being in the typed reading). A run with no `xargv` (one a caller builds) is read as typed.
     """
-    base = run.name.rsplit("/", 1)[-1]
-    if base in ("sed", "gsed"):
-        parse = _sed_in_place
-    elif base.startswith("perl"):
-        parse = _perl_in_place
-    else:
+    parse = _in_place_parser(run)
+    if parse is None:
         return None
     argv = list(run.argv)
     readings = [parse(argv)]
@@ -9205,10 +9211,44 @@ def _word_index(run, word):
     return None
 
 
+def run_word_writes(run, words, cwd, fed=()):
+    """`(word, how, append)` for every file `run` writes through one reading of its own words, `words` (its `argv`, its `xargv`, or a caller's reading of a word the walk could not expand), in this order: "tee", "in-place", "copy", "truncate", "remove", then "option" and "unread" (`output_landings`). `write_records` asks it of the typed and of the expanded words; a guard asks it of each reading it makes itself.
+
+    A word is handed back as `words` hold it, unplaced, with a `{}` that stands for find's starting points kept (the caller places it, and expands the `{}` by `find_starts`), except a copy's landing: with `cwd` known a copy is placed the way the tool places it (`copy_landings`, into a destination that is a directory), and with `cwd` None (a command a program hands to a shell, which runs wherever that program does) it is the destination word `run_copies` reads. What an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`); `fed` adds words the caller knows arrive the same way (a listing it read on the feed). It decides nothing: a word is not filtered here, so `/dev/null`, a URL and a word the walk could not expand come back as they are, for the caller to judge.
+    """
+    base = _base(run.name)
+    words = list(words)
+    ops = plain_operands(words)
+    out: list[tuple[str, str, bool]] = []
+    if base == "tee":
+        appending = _tee_appends(words)
+        out.extend((w, "tee", appending) for w in [*xargs_fed_operands(run, ops), *fed])
+    parse = _in_place_parser(run)
+    if parse is not None:
+        in_place, _scripts, files = parse(words)
+        if in_place:
+            out.extend((w, "in-place", False) for w in [*xargs_fed_operands(run, files), *fed])
+    if cwd is None:
+        copies = run_copies(run, words)
+        out.extend((d, "copy", False) for d in (copies[1] if copies is not None else ()))
+    else:
+        out.extend((path, "copy", False) for path, _into in copy_landings(run, cwd, argv=words))
+    # `truncate` and `rm` are left out of the output table on purpose (`_LANDS_ELSEWHERE`, `_NON_WRITERS`), so their operands are read here.
+    if base == "truncate":
+        out.extend(
+            (w, "truncate", False)
+            for w in [*xargs_fed_operands(run, _truncate_operands(words)), *fed]
+        )
+    if base == "rm":
+        out.extend((w, "remove", False) for w in [*xargs_fed_operands(run, ops), *fed])
+    out.extend((w, how, False) for w, how in output_landings(run, words, cwd=cwd))
+    return out
+
+
 def write_records(cmd, cwd):
     """Every file `cmd` may write, as `Write` records in walk order; `writes` is the `(path, how)` view of the same list.
 
-    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, `dd of=` among them, or any word of a command the tables do not list), "truncate" (an operand of `truncate`, its `-s`/`-r` values left out), "remove" (an operand of `rm`), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (path "": a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points, and what an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`, which over-reads the feed and never under-reads it). A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target and an output word are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`), each its own record with its own `word`.
+    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, `dd of=` among them, or any word of a command the tables do not list), "truncate" (an operand of `truncate`, its `-s`/`-r` values left out), "remove" (an operand of `rm`), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (path "": a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points, and what an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`, which over-reads the feed and never under-reads it). A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target and every reading of the run's words (`run_word_writes`) are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`), each its own record with its own `word`.
     """
     analysis = _analyse(cmd)
     appends = {target for op, target in analysis_redirects(analysis) if op in (">>", "&>>")}
@@ -9241,7 +9281,6 @@ def write_records(cmd, cwd):
 
     for run in _every_run(analysis):
         base = _base(run.name)
-        typed = run.xargv if run.xargv is not None else run.argv
         variants = (
             (run.argv, run.xargv)
             if run.xargv is not None and list(run.xargv) != list(run.argv)
@@ -9251,27 +9290,10 @@ def write_records(cmd, cwd):
             if not re.match(r"^(\d+|-)$", target):
                 appending = target in appends
                 put(target, run, "append" if appending else "redirect", appending)
-        # What an xargs feeds a tee or an in-place edit is a file it writes (`xargs_fed_operands`: each fed word alone and in each marker's place), so `echo F | xargs sed -i ...` lists F. It over-reads the feed's own words (the producer's argv), never under-reads.
-        if base == "tee":
-            appending = _tee_appends(typed)
-            for word in xargs_fed_operands(run, plain_operands(typed)):
-                put(word, run, "tee", appending)
-        edit = in_place_edit(run)
-        if edit is not None:
-            for word in xargs_fed_operands(run, edit[1]):
-                put(word, run, "in-place")
-        for path, _into in copy_landings(run, cwd):
-            put(path, run, "copy")
-        # The typed words and, where bash expands them differently, the expanded ones (`_Run.xargv`): `F=<path>; touch $F` and `sort -o $F` write `<path>`, which the typed `$F` never names (`copy_landings` reads the expanded words by default).
+        # The typed words and, where bash expands them differently, the expanded ones (`_Run.xargv`): `F=<path>; touch $F`, `sort -o $F` and `cp x $F` write `<path>`, which the typed `$F` never names. Each reading is `run_word_writes`', the one a guard with readings of its own (block_review_file_shell_write's words it cannot expand) asks of each of them.
         for words in variants:
-            for word, how in output_landings(run, words, cwd=cwd):
-                put(word, run, how)
-        # `truncate` and `rm` are left out of the output table on purpose (`_LANDS_ELSEWHERE`, `_NON_WRITERS`), so their operands are read here, over the typed and the expanded words.
-        if base in ("truncate", "rm"):
-            for words in variants:
-                ops = _truncate_operands(words) if base == "truncate" else plain_operands(words)
-                for word in xargs_fed_operands(run, ops):
-                    put(word, run, "truncate" if base == "truncate" else "remove")
+            for word, how, appending in run_word_writes(run, words, cwd):
+                put(word, run, how, appending)
         if base == "git":
             for word in _git_pathspecs(run):
                 put(word, run, "git")

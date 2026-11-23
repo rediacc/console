@@ -246,3 +246,51 @@ def test_event_write_records_walks_once_per_event(tmp_path, monkeypatch):
     assert len(calls) == 1
     shellscan.event_write_records(_event("rm -f a.txt", tmp_path))
     assert len(calls) == 2
+
+
+def _run_of(cmd, name):
+    return next(r for r in shellscan.every_run(cmd) if r.name == name)
+
+
+def _word_writes(run, words, cwd, fed=()):
+    return shellscan.run_word_writes(run, words, cwd, fed)
+
+
+def test_run_word_writes_reads_the_reading_it_is_handed(tmp_path):
+    """`run_word_writes` reads the words it is handed, not the run's own: a guard's reading of a word the walk could not expand (`$D` read as `sub`) is asked of it the way the typed and the expanded words are."""
+    run = _run_of("tee $D/y.md", "tee")
+    assert _word_writes(run, ["sub/y.md"], str(tmp_path)) == [("sub/y.md", "tee", False)]
+    assert _word_writes(run, list(run.argv), str(tmp_path)) == [("$D/y.md", "tee", False)]
+
+
+def test_run_word_writes_without_a_directory_reads_a_copy_by_its_destination(tmp_path):
+    """`cwd` None (a command a program hands to a shell, which runs wherever that program does) reads a copy's destination word as typed; with `cwd` known it is placed the way the tool places it, inside a destination that is a directory."""
+    (tmp_path / "d").mkdir()
+    run = _run_of("cp /etc/hostname d", "cp")
+    assert _word_writes(run, list(run.argv), None) == [("d", "copy", False)]
+    assert _word_writes(run, list(run.argv), str(tmp_path)) == [
+        (str(tmp_path / "d" / "hostname"), "copy", False)
+    ]
+
+
+def test_run_word_writes_adds_fed_words_to_operands_only(tmp_path):
+    """`fed` words arrive as operands: a tee writes them, while a copy's destination is its own parse and does not take them (the SILENT half)."""
+    tee = _run_of("tee a.txt", "tee")
+    assert ("fed.md", "tee", False) in _word_writes(tee, list(tee.argv), str(tmp_path), ("fed.md",))
+    cp = _run_of("cp /etc/hostname c.txt", "cp")
+    got = _word_writes(cp, list(cp.argv), str(tmp_path), ("fed.md",))
+    assert got, "the copy itself is read"
+    assert all(w != "fed.md" for w, _how, _a in got), got
+
+
+def test_an_in_place_script_is_not_a_file_it_writes(tmp_path):
+    """SILENT CONTROL for the in-place reading: the sed script is the program, never an operand, so a script whose text reads like a path (`docs/*/*/f.md`) lands nowhere. The edited file still does."""
+    got = _hows("sed -i 's#docs/*/*/f.md#x#' notes.md", tmp_path)
+    assert got == [("<CWD>/notes.md", "in-place")], got
+
+
+def test_a_copy_is_listed_as_typed_and_as_expanded(tmp_path):
+    """A copy's destination is read over the typed and the expanded words, as every other word reading is: `F=c.txt; cp x $F` lands on `c.txt`, and the typed `$F` is a record of its own."""
+    got = _hows("F=c.txt; cp /etc/hostname $F", tmp_path)
+    assert ("<CWD>/c.txt", "copy") in got, got
+    assert ("<CWD>/$F", "copy") in got, got

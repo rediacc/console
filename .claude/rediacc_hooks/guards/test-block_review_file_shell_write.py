@@ -68,6 +68,12 @@ OWN_CASES = [
     ),
     ("cp onto a glob that reads as the directory", "cp x agent/revi*s/", True),
     ("sed -i with .* on a globbed review file", "sed -i 's/a.*b/c/' agent/revi*s/x/y.md", True),
+    # CR5: the script of an in-place edit is its program, not a file it writes (`shellscan.run_word_writes`). Refused (rc 2) at f1c4747e0f, where every operand of an in-place run was read as a target and `docs/*/*` reads as `agent/reviews`; measured on a sed that rewrote a test file.
+    (
+        "sed -i whose script globs read as the directory",
+        "sed -i 's#docs/*/*/f.md#x#' notes.md",
+        False,
+    ),
     ("tee onto a glob under cd agent", "cd agent && tee revi*s/y.md", True),
     ("xargs cp fed a glob under cd agent", "cd agent && echo revi*s/x | xargs cp a", True),
     # A glob in the directory the run executes in is read as one in its word is: this was allowed (rc 0) at 5e00d0768.
@@ -1133,8 +1139,8 @@ MUTANTS = [
     (
         "operands read as typed only (#f6334e52)",
         (
-            "what = _operand_write(run, name, list(words), where, base, cwd)",
-            "what = _operand_write(run, name, argv, where, base, cwd)",
+            "_without_ref_operands(run, list(words))",
+            "_without_ref_operands(run, argv)",
         ),
     ),
     (
