@@ -6,21 +6,18 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
     test-block_review_file_edit.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
-import ast
 import atexit
 import importlib
 import importlib.util
-import json
 import pathlib
 import shutil
 import subprocess
 import sys
 import tempfile
-import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
@@ -31,7 +28,6 @@ if _SYSPATH is None or _SYSPATH.loader is None:
     raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
 _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
-DISPATCH = str(HERE.parents[1] / "dispatch.py")
 R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
 L = "agent/reviews/1231-9/clean.jsonl"
@@ -550,96 +546,20 @@ SHELL_CASES = [
 ]
 
 
-def via_dispatch(stem, payload):
-    p = _harness.run(
-        [sys.executable, DISPATCH, stem],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return p.returncode, p.stdout + p.stderr
-
-
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
-
-
-def defect_runner(stem):
-    """The guard with its declared DEFECT planted, run in-process."""
-    _syspath.on_sys_path(str(HERE.parents[2]))
-    hookio = importlib.import_module("rediacc_hooks.hookio")
-    good = importlib.import_module("rediacc_hooks.guards.%s" % stem)
-    old, new = good.DEFECT
-    src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in _outside_defect(src):
-        raise SystemExit("the DEFECT no longer applies to %s outside its own declaration" % stem)
-    ns: dict[str, typing.Any] = {"__name__": "broken_" + stem, "__file__": good.__file__}
-    exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)
-
-    def run(_stem, payload):
-        event = hookio.Event(json.dumps(payload))
-        rc = ns["run"](event)
-        _rc, out, err = event.result(rc)
-        return rc, out + err
-
-    return run
+# The runner is `_edit_suite`'s, shared by the four edit/shell twin suites (CR5); a refusal must name the verb that closes a finding.
+STYLE = _edit_suite.Style(says="--review-mark", width=46)
+via_dispatch = _edit_suite.via_dispatch
+_outside_defect = _edit_suite.outside_defect
 
 
 def run_cases(stem, cases, runner, quiet=False):
-    fails = 0
-    for name, payload, refused in cases:
-        rc, text = runner(stem, payload)
-        blocked = rc != 0
-        ok = blocked == refused and (not refused or "--review-mark" in text)
-        fails += not ok
-        if not quiet:
-            print(
-                "%-46s want=%-8s %s"
-                % (
-                    name,
-                    "BLOCKED" if refused else "allowed",
-                    "ok" if ok else "*** FAIL *** " + text[:160],
-                )
-            )
-    return fails
+    return _edit_suite.run_cases(stem, cases, runner, STYLE, quiet)
 
 
 def main(stems=("block_review_file_edit",)):
     shell = [(n, {"tool_name": "Bash", "tool_input": {"command": c}}, r) for n, c, r in SHELL_CASES]
     suites = {"block_review_file_edit": EDIT_CASES, "block_review_file_shell_write": shell}
-    total = 0
-    for stem in stems:
-        cases = suites[stem]
-        print("== %s" % stem)
-        total += run_cases(stem, cases, via_dispatch)
-        refusals = sum(1 for c in cases if c[2])
-        if refusals < 4 or len(cases) - refusals < 4:
-            print("FLOOR: at least 4 cases of each direction")
-            total += 1
-        planted = run_cases(stem, cases, defect_runner(stem), quiet=True)
-        print(
-            "DEFECT planted in %s: %d case(s) fail%s"
-            % (stem, planted, "" if planted else "  *** the suite cannot fail ***")
-        )
-        total += planted == 0
-    print("FAILURES: %d" % total)
-    return 1 if total else 0
+    return _edit_suite.finish(sum(_edit_suite.judge(stem, suites[stem], STYLE) for stem in stems))
 
 
 if __name__ == "__main__":

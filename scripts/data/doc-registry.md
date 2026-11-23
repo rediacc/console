@@ -593,7 +593,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/git/release_run.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/_backup_push.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
-| .claude/rediacc_hooks/guards/_harness.py | (none) | via .claude/rediacc_hooks/guards/test-_repo_scope.py | py |
+| .claude/rediacc_hooks/guards/_edit_suite.py | (none) | via .claude/rediacc_hooks/guards/test-block_live_proof_ledger_write.py | py |
+| .claude/rediacc_hooks/guards/_harness.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/guards/_hookpath.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
 | .claude/rediacc_hooks/guards/_push_receipts.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
 | .claude/rediacc_hooks/guards/_repo_scope.py | (none) | via .claude/rediacc_hooks/guards/block_blanket_git_add.py | py |
@@ -794,7 +795,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_landing_one_way.py | (none) | via .claude/hooks/stop/wl_stack.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_lease_boundary.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_write.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_long_sleep.py | (none) | via .claude/hooks/lib/sanctioned.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_merge_with_unpushed.py | (none) | via .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_missing_npm_script.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
@@ -811,14 +812,14 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_prose_style_commit.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_prose_style_edit.py | (none) | via .claude/rediacc_hooks/guards/__init__.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_protected_files.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_protected_files_edit.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_protected_files_edit.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_push_to_protected_branch.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_push_with_unrecorded_reviews.py | (none) | via .claude/hooks/stop/wl_review.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_raw_ci_read.py | (none) | via .claude/hooks/lib/sanctioned.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_raw_pr_body_edit.py | (none) | via .claude/rediacc_hooks/guards/block_admin_merge.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_rebase_over_foreign_dirt.py | (none) | via .claude/hooks/stop/wl_git.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_renet_untested_push.py | (none) | via .claude/hooks/stop/wl_renettests.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_review_file_edit.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_review_file_edit.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_review_file_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_roundlog_truncate.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_truncate.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_roundlog_write.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_truncate.py | py |
@@ -838,7 +839,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_unscoped_formatter_run.py | (none) | via .claude/rediacc_hooks/guards/block_unscoped_formatter_run.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_untagged_commit.py | (none) | via .claude/hooks/stop/wl_epic.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unverified_push.py | (none) | via .claude/hooks/stop/test-review-mark.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command.py | (none) | via .claude/rediacc_hooks/guards/block_protected_files_edit.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_user_only_command.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_user_only_command_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_vm_unverified_push.py | (none) | via .claude/hooks/stop/wl_boxready.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_worktree_add.py | (none) | via .claude/hooks/stop/test-landing-stack.py | py |
@@ -1043,7 +1044,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | run.sh | WorktreeCreate, WorktreeRemove | settings.json | sh |
 
-609 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+610 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

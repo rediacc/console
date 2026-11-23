@@ -6,21 +6,18 @@ Both directions, because a one-sided control is satisfiable by a broken hook: on
     test-block_protected_files_edit.py
 """
 
-import ast
 import atexit
 import importlib
 import importlib.util
-import json
 import pathlib
 import shutil
 import subprocess
 import sys
 import tempfile
-import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_review_file_edit.py uses).
@@ -31,7 +28,6 @@ if _SYSPATH is None or _SYSPATH.loader is None:
     raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
 _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
-DISPATCH = str(HERE.parents[1] / "dispatch.py")
 STEM = "block_protected_files_edit"
 NEEDLE = "protected hook file"
 
@@ -173,86 +169,12 @@ CASES = [
 ]
 
 
-def via_dispatch(payload):
-    p = _harness.run(
-        [sys.executable, DISPATCH, STEM],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return p.returncode, p.stdout + p.stderr
-
-
-def _outside_defect(src: str) -> str:
-    """`src` with the top-level `DEFECT` assignment removed, so a needle search cannot be satisfied by the declaration that names it."""
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "DEFECT" for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
-
-
-def defect_runner():
-    """The guard with its declared DEFECT planted, run in-process."""
-    _syspath.on_sys_path(str(HERE.parents[2]))
-    hookio = importlib.import_module("rediacc_hooks.hookio")
-    good = importlib.import_module("rediacc_hooks.guards.%s" % STEM)
-    old, new = good.DEFECT
-    src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in _outside_defect(src):
-        raise SystemExit("the DEFECT no longer applies to %s outside its own declaration" % STEM)
-    ns: dict[str, typing.Any] = {"__name__": "broken_" + STEM, "__file__": good.__file__}
-    exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)
-
-    def run(payload):
-        event = hookio.Event(json.dumps(payload))
-        rc = ns["run"](event)
-        _rc, out, err = event.result(rc)
-        return rc, out + err
-
-    return run
-
-
-def run_cases(runner, quiet=False):
-    fails = 0
-    for name, payload, refused in CASES:
-        rc, text = runner(payload)
-        blocked = rc != 0
-        ok = blocked == refused and (not refused or NEEDLE in text)
-        fails += not ok
-        if not quiet:
-            print(
-                "%-52s want=%-8s %s"
-                % (
-                    name,
-                    "BLOCKED" if refused else "allowed",
-                    "ok" if ok else "*** FAIL *** " + text[:160],
-                )
-            )
-    return fails
+# The runner is `_edit_suite`'s, shared by the four edit/shell twin suites (CR5); this suite judges one guard and prints no header.
+STYLE = _edit_suite.Style(says=NEEDLE, width=52)
 
 
 def main():
-    total = run_cases(via_dispatch)
-    refusals = sum(1 for c in CASES if c[2])
-    if refusals < 4 or len(CASES) - refusals < 4:
-        print("FLOOR: at least 4 cases of each direction")
-        total += 1
-    planted = run_cases(defect_runner(), quiet=True)
-    print(
-        "DEFECT planted in %s: %d case(s) fail%s"
-        % (STEM, planted, "" if planted else "  *** the suite cannot fail ***")
-    )
-    total += planted == 0
-    print("FAILURES: %d" % total)
-    return 1 if total else 0
+    return _edit_suite.finish(_edit_suite.judge(STEM, CASES, STYLE, header=False))
 
 
 if __name__ == "__main__":

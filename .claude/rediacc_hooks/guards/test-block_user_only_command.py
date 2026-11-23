@@ -8,7 +8,6 @@ The Edit, MultiEdit and copy cases need a file on disk, so every case runs again
     test-block_user_only_command.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
-import ast
 import importlib
 import importlib.util
 import json
@@ -16,11 +15,10 @@ import pathlib
 import subprocess
 import sys
 import tempfile
-import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite
 
 HERE = pathlib.Path(__file__).resolve()
 _SYSPATH = importlib.util.spec_from_file_location(
@@ -30,7 +28,6 @@ if _SYSPATH is None or _SYSPATH.loader is None:
     raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
 _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
-DISPATCH = str(HERE.parents[1] / "dispatch.py")
 NEEDLE = "a user-only command is an operator decision: the operator edits it with !"
 
 K = "disable-model-invocation"
@@ -428,103 +425,30 @@ SHELL_CASES = [
 ]
 
 
-def via_dispatch(stem, payload):
-    p = _harness.run(
-        [sys.executable, DISPATCH, stem],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return p.returncode, p.stdout + p.stderr
+# The runner is `_edit_suite`'s, shared by the four edit/shell twin suites (CR5). Every case runs in a fresh `world(root)`, with the payload's cwd there.
+via_dispatch = _edit_suite.via_dispatch
+_outside_defect = _edit_suite.outside_defect
 
 
-def _outside_defect(src: str) -> str:
-    """`src` with the top-level `DEFECT` assignment removed, so a needle search cannot be satisfied by the declaration that names it."""
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "DEFECT" for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+def _style(root):
+    def prepare(raw):
+        world(root)
+        return dict(raw, cwd=str(root))
 
-
-def defect_runner(stem, scratch):
-    """The guard with its declared DEFECT planted, imported in-process from a copy under `scratch` (an import, so no `exec` call is needed)."""
-    _syspath.on_sys_path(str(HERE.parents[2]))
-    hookio = importlib.import_module("rediacc_hooks.hookio")
-    good = importlib.import_module("rediacc_hooks.guards.%s" % stem)
-    old, new = good.DEFECT
-    src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in _outside_defect(src):
-        raise SystemExit("the DEFECT no longer applies to %s outside its own declaration" % stem)
-    planted = scratch / ("broken_%s.py" % stem)
-    planted.write_text(src.replace(old, new), encoding="utf-8")
-    spec = importlib.util.spec_from_file_location("broken_" + stem, planted)
-    if spec is None or spec.loader is None:
-        raise SystemExit("cannot load the planted copy of %s" % stem)
-    broken: typing.Any = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(broken)
-
-    def run(_stem, payload):
-        event = hookio.Event(json.dumps(payload))
-        rc = broken.run(event)
-        _rc, out, err = event.result(rc)
-        return rc, out + err
-
-    return run
+    return _edit_suite.Style(says=NEEDLE, width=50, shown=200, prepare=prepare)
 
 
 def run_cases(stem, cases, runner, root, quiet=False):
-    fails = 0
-    for name, raw, refused in cases:
-        world(root)
-        payload = dict(raw, cwd=str(root))
-        rc, text = runner(stem, payload)
-        blocked = rc != 0
-        ok = blocked == refused and (not refused or NEEDLE in text)
-        fails += not ok
-        if not quiet:
-            print(
-                "%-50s want=%-8s %s"
-                % (
-                    name,
-                    "BLOCKED" if refused else "allowed",
-                    "ok" if ok else "*** FAIL *** " + text[:200],
-                )
-            )
-    return fails
+    return _edit_suite.run_cases(stem, cases, runner, _style(root), quiet)
 
 
 def main(stems=("block_user_only_command",)):
     shell = [(n, {"tool_name": "Bash", "tool_input": {"command": c}}, r) for n, c, r in SHELL_CASES]
     suites = {"block_user_only_command": EDIT_CASES, "block_user_only_command_shell_write": shell}
-    total = 0
     with tempfile.TemporaryDirectory(prefix="uo-guard-") as tmp:
-        root = pathlib.Path(tmp) / "world"
-        scratch = pathlib.Path(tmp) / "planted"
-        scratch.mkdir()
-        for stem in stems:
-            cases = suites[stem]
-            print("== %s" % stem)
-            total += run_cases(stem, cases, via_dispatch, root)
-            refusals = sum(1 for c in cases if c[2])
-            if refusals < 4 or len(cases) - refusals < 4:
-                print("FLOOR: at least 4 cases of each direction")
-                total += 1
-            planted = run_cases(stem, cases, defect_runner(stem, scratch), root, quiet=True)
-            print(
-                "DEFECT planted in %s: %d case(s) fail%s"
-                % (stem, planted, "" if planted else "  *** the suite cannot fail ***")
-            )
-            total += planted == 0
-    print("FAILURES: %d" % total)
-    return 1 if total else 0
+        style = _style(pathlib.Path(tmp) / "world")
+        total = sum(_edit_suite.judge(stem, suites[stem], style) for stem in stems)
+    return _edit_suite.finish(total)
 
 
 if __name__ == "__main__":

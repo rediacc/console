@@ -9,7 +9,6 @@ THE WORLD is a scratch checkout under the system temp directory holding a real `
     test-block_live_proof_ledger_write.py        every Edit case through dispatch.py, then the DEFECT run
 """
 
-import ast
 import atexit
 import importlib
 import importlib.util
@@ -18,11 +17,10 @@ import pathlib
 import shutil
 import sys
 import tempfile
-import typing
 
 import _hookpath
 
-from rediacc_hooks.guards import _harness
+from rediacc_hooks.guards import _edit_suite
 
 HERE = pathlib.Path(__file__).resolve()
 _SYSPATH = importlib.util.spec_from_file_location(
@@ -32,7 +30,6 @@ if _SYSPATH is None or _SYSPATH.loader is None:
     raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
 _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
-DISPATCH = str(HERE.parents[1] / "dispatch.py")
 
 # The ledger path is the guard's own constant, read rather than retyped. That is also why this script can build its scratch world while untracked: the shell half reads an untracked script by path, and a string constant naming the ledger at a write target would be refused, which is the guard working; a value read from a module is not a constant it can see (a residue the guard's docstring names).
 _syspath.on_sys_path(str(HERE.parents[2]))
@@ -204,71 +201,14 @@ SHELL_CASES = [
 ]
 
 
-def via_dispatch(stem, payload):
-    p = _harness.run(
-        [sys.executable, DISPATCH, stem],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return p.returncode, p.stdout + p.stderr
-
-
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` assignment removed, so a needle search cannot be satisfied by the declaration that names it."""
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
-
-
-def defect_runner(stem):
-    """The guard with its declared DEFECT planted, run in-process."""
-    _syspath.on_sys_path(str(HERE.parents[2]))
-    hookio = importlib.import_module("rediacc_hooks.hookio")
-    good = importlib.import_module("rediacc_hooks.guards.%s" % stem)
-    old, new = good.DEFECT
-    src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in _outside_defect(src):
-        raise SystemExit("the DEFECT no longer applies to %s outside its own declaration" % stem)
-    ns: dict[str, typing.Any] = {"__name__": "broken_" + stem, "__file__": good.__file__}
-    exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)
-
-    def run(_stem, payload):
-        event = hookio.Event(json.dumps(payload))
-        rc = ns["run"](event)
-        _rc, out, err = event.result(rc)
-        return rc, out + err
-
-    return run
+# The runner is `_edit_suite`'s, shared by the four edit/shell twin suites (CR5); a refusal must name the recorder.
+STYLE = _edit_suite.Style(says=NEEDLE, width=52, rc=True)
+via_dispatch = _edit_suite.via_dispatch
+_outside_defect = _edit_suite.outside_defect
 
 
 def run_cases(stem, cases, runner, quiet=False):
-    fails = 0
-    for name, payload, refused in cases:
-        rc, text = runner(stem, payload)
-        blocked = rc != 0
-        ok = blocked == refused and (not refused or NEEDLE in text)
-        fails += not ok
-        if not quiet:
-            print(
-                "%-52s want=%-8s %s"
-                % (
-                    name,
-                    "BLOCKED" if refused else "allowed",
-                    "ok" if ok else "*** FAIL *** rc=%d %s" % (rc, text[:160]),
-                )
-            )
-    return fails
+    return _edit_suite.run_cases(stem, cases, runner, STYLE, quiet)
 
 
 def suites():
@@ -283,23 +223,7 @@ def suites():
 
 
 def main(stems=("block_live_proof_ledger_write",)):
-    total = 0
-    for stem in stems:
-        cases = suites()[stem]
-        print("== %s" % stem)
-        total += run_cases(stem, cases, via_dispatch)
-        refusals = sum(1 for c in cases if c[2])
-        if refusals < 4 or len(cases) - refusals < 4:
-            print("FLOOR: at least 4 cases of each direction")
-            total += 1
-        planted = run_cases(stem, cases, defect_runner(stem), quiet=True)
-        print(
-            "DEFECT planted in %s: %d case(s) fail%s"
-            % (stem, planted, "" if planted else "  *** the suite cannot fail ***")
-        )
-        total += planted == 0
-    print("FAILURES: %d" % total)
-    return 1 if total else 0
+    return _edit_suite.finish(sum(_edit_suite.judge(stem, suites()[stem], STYLE) for stem in stems))
 
 
 if __name__ == "__main__":
