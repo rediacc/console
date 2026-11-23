@@ -109,6 +109,7 @@ import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
   type CoreBudget,
+  DEFAULT_SCHED,
   type GateCost,
   type GateResult,
   type PoolLease,
@@ -208,7 +209,7 @@ const EWMA_ALPHA = 0.3;
 interface Options {
   jobs?: number;
   heavyLimit?: number;
-  /** `--sched` / CI_SCHED; undefined means the default, `cores`. */
+  /** `--sched` / CI_SCHED; undefined means the default, `cores` (pool.ts DEFAULT_SCHED, shared with the pool's own fallback). */
   sched?: Sched;
   failFast: boolean;
   json: boolean;
@@ -2098,6 +2099,99 @@ async function busySamplerSelftest(): Promise<string[]> {
   return failures;
 }
 
+/** One `--list` row: every selected gate and every prerequisite, in manifest order, with the scheduling facts a reader checks (`slow`, `needs`, `heavy`, `cores`). The text table prints three of these columns; `--json` prints them all. */
+interface ListRow {
+  id: string;
+  gate: boolean;
+  run: string;
+  slow: boolean;
+  needs: string[];
+  heavy?: true;
+  cores?: GateSpec['cores'];
+}
+
+function listRows(specs: readonly GateSpec[], selected: ReadonlySet<string>): ListRow[] {
+  return specs
+    .filter((spec) => !spec.gate || selected.has(spec.id))
+    .map((spec) => ({
+      id: spec.id,
+      gate: spec.gate,
+      run: spec.run,
+      slow: spec.slow === true,
+      needs: [...(spec.needs ?? [])],
+      ...(spec.heavy === true ? { heavy: true as const } : {}),
+      ...(spec.cores !== undefined ? { cores: spec.cores } : {}),
+    }));
+}
+
+/**
+ * W13: a runPool or planAdmission call that names no rule runs `cores`. Three gates each measured at half a core (1 cpu-s over 2 s wall) on `jobs` 2: the core budget fits all three at once (1.5 <= 2), the slots rule only two. Returns the failures.
+ */
+async function defaultSchedSelftest(): Promise<string[]> {
+  const failures: string[] = [];
+  const ids = ['selftest:half-1', 'selftest:half-2', 'selftest:half-3'];
+  const specs = ids.map((id) => syntheticSpec(id, 'true'));
+  const costs = new Map<string, GateCost>(ids.map((id) => [id, { cpuMs: 1_000, wallMs: 2_000 }]));
+  const peakOf = async (sched: Sched | undefined): Promise<number> => {
+    let live = 0;
+    let peak = 0;
+    await runPool(specs, {
+      jobs: 2,
+      heavyLimit: 1,
+      failFast: false,
+      durations: new Map(),
+      costs,
+      ...(sched === undefined ? {} : { sched }),
+      exec: async () => {
+        live += 1;
+        peak = Math.max(peak, live);
+        await new Promise((r) => setTimeout(r, 40));
+        live -= 1;
+        return { code: 0, stdout: '', stderr: '', ms: 1 };
+      },
+    });
+    return peak;
+  };
+  const unnamed = await peakOf(undefined);
+  if (unnamed !== 3)
+    failures.push(
+      `runPool with no sched must pack by the core budget (three half-core gates at once on jobs 2), ran ${unnamed} at once`
+    );
+  const slots = await peakOf('slots');
+  if (slots !== 2)
+    failures.push(
+      `CONTROL: an explicit sched 'slots' must keep one slot per gate (2 at once), ran ${slots}`
+    );
+  if (DEFAULT_SCHED !== 'cores')
+    failures.push(
+      `the default rule the pool and the runner share must be 'cores', is '${DEFAULT_SCHED}'`
+    );
+  // `--list --json` carries the facts W13's Accept reads: an unselected gate is left out, a prerequisite is kept, and `slow` and `needs` ride each row.
+  const rows = listRows(
+    [
+      { ...syntheticSpec('selftest:list-slow', 'true', ['selftest:list-pre']), slow: true },
+      { ...syntheticSpec('selftest:list-pre', 'true'), gate: false },
+      syntheticSpec('selftest:list-off', 'true'),
+    ],
+    new Set(['selftest:list-slow'])
+  );
+  if (
+    rows.map((r) => r.id).join() !== 'selftest:list-slow,selftest:list-pre' ||
+    rows[0]?.slow !== true ||
+    rows[0].needs.join() !== 'selftest:list-pre' ||
+    rows[1]?.slow !== false
+  )
+    failures.push(
+      `listRows: selected gate plus prerequisite with slow and needs, got ${JSON.stringify(rows)}`
+    );
+  const planned = planAdmission(specs, { jobs: 2, durations: new Map(), costs }).byId.get(ids[0]);
+  if (planned?.cores !== 0.5)
+    failures.push(
+      `planAdmission with no sched must budget a measured gate at its width (0.5 cores), got ${planned?.cores}`
+    );
+  return failures;
+}
+
 async function selftest(): Promise<number> {
   // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
   const processCheck = runnerProcessSelftest();
@@ -2877,6 +2971,9 @@ async function selftest(): Promise<number> {
     badSched = true;
   }
   require_(badSched, "CONTROL: --sched core (a typo) must be refused, not read as 'slots'");
+  // W13 (PLAN-ciquick-cpu, carrying PLAN-ci-quick-cpu-scheduling P2): `cores` is the pool's OWN default, not only the runner's, so a caller that names no rule packs by measured width.
+  const schedDefault = await defaultSchedSelftest();
+  require_(schedDefault.length === 0, schedDefault.join('\n'));
 
   // THE INCREMENTAL RECEIPT (input-hash.ts and the carry in this file): INCREMENTAL-PROOF-1..3 and their controls.
   const inc = incrementalSelftest(os.tmpdir());
@@ -4998,7 +5095,7 @@ async function runGraph(
       return [spec.id, gateTimeoutMs(spec, measured, opts.gateTimeoutMs)] as const;
     })
   );
-  const sched: Sched = opts.sched ?? 'cores';
+  const sched: Sched = opts.sched ?? DEFAULT_SCHED;
   // Under `cores`, --jobs names C, the core budget, rather than a slot count.
   const lease: RunnerLease | undefined =
     sched === 'cores' ? await openLease({ root: REPO_ROOT, warn: humanOut }) : undefined;
@@ -6085,10 +6182,14 @@ async function main(): Promise<number> {
     throw err;
   }
   if (opts.list) {
-    for (const spec of specs) {
-      if (spec.gate && !selection.ids.has(spec.id)) continue;
-      process.stdout.write(`${spec.gate ? 'gate ' : 'prereq'} ${spec.id.padEnd(48)} ${spec.run}\n`);
+    const rows = listRows(specs, selection.ids);
+    // `--json` was ignored here until 2026-11-23, so `--list --json` printed the text table and a reader asking whether a gate is slow or what it needs got neither (PLAN-ciquick-cpu W13's Accept reads exactly that).
+    if (opts.json) {
+      process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
+      return 0;
     }
+    for (const row of rows)
+      process.stdout.write(`${row.gate ? 'gate ' : 'prereq'} ${row.id.padEnd(48)} ${row.run}\n`);
     return 0;
   }
 

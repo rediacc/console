@@ -134,9 +134,20 @@ export interface GateResult {
 }
 
 /**
- * Which admission rule the pool runs (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2). `slots` is the rule the pool has always had: `jobs` slots, one per gate (an elastic gate takes its grant's worth), longest wall first. `cores` packs against a core budget from each gate's measured CPU, and is kept beside `slots` for A/B and rollback.
+ * Which admission rule the pool runs (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2). `cores`, the default (DEFAULT_SCHED), packs against a core budget from each gate's measured CPU. `slots` is the rule the pool had first: `jobs` slots, one per gate (an elastic gate takes its grant's worth), longest wall first, kept beside `cores` for A/B and rollback.
  */
 export type Sched = 'slots' | 'cores';
+
+/**
+ * The rule a caller gets when it names none, in the pool and in the runner alike (run.ts reads this constant rather than repeating it). `cores` since 2026-09-30 in the runner; the pool's own fallback said `slots` until W13 of agent/plans/PLAN-ciquick-cpu.md (2026-11-23), so a direct runPool or planAdmission call without `sched` ran a different rule from every real run.
+ */
+export const DEFAULT_SCHED: Sched = 'cores';
+
+/** The budget a `cores` pool gets when the caller passes none: `jobs` cores with no over-admission, 2 x jobs processes, and no memory bound, since nothing measured the machine. run.ts always passes its own (`coreBudget`). */
+function jobsBudget(jobs: number): CoreBudget {
+  const c = Math.max(1, jobs);
+  return { cores: c, epsilon: 0, maxProcs: 2 * c, memMb: Number.POSITIVE_INFINITY };
+}
 
 /**
  * Why a ready gate was held back. `slot` and `heavy` are the slots rule's; `cpu`, `mem` and `count` are the core budget's three dimensions; `reservation` is a gate that would fit now but would delay the reserved start of a wider gate ahead of it (EASY backfill); `claim` is the isolation contract, the same in both; `lease` is the machine-wide core lease (lease-client.ts) holding fewer free cores than the gate needs, so another run on this machine has them.
@@ -189,7 +200,7 @@ export interface PoolOptions {
   exec: (spec: GateSpec, grant: Grant) => Promise<ExecOutcome>;
   onStart?: (spec: GateSpec) => void;
   onFinish?: (result: GateResult) => void;
-  /** Default `slots`. `cores` needs `budget`; `costs` feeds it, and a gate missing from it is budgeted at one core. */
+  /** Default `cores` (DEFAULT_SCHED). `cores` reads `budget`, or `jobsBudget(jobs)` when it is absent; `costs` feeds it, and a gate missing from it is budgeted at one core. */
   sched?: Sched;
   budget?: CoreBudget;
   costs?: Map<string, GateCost>;
@@ -1001,7 +1012,7 @@ export function planAdmission(
     (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
   const byId = new Map<string, Candidate>();
 
-  if ((opts.sched ?? 'slots') === 'slots') {
+  if ((opts.sched ?? DEFAULT_SCHED) === 'slots') {
     for (const spec of specs) {
       const estMs = expected(spec);
       const elastic = elasticOf(spec, estMs, opts.costs?.get(spec.id));
@@ -1278,7 +1289,7 @@ export async function runPool(
   const blockedBy = new Map<string, HoldReason>();
   let stopped = false;
 
-  const sched = opts.sched ?? 'slots';
+  const sched = opts.sched ?? DEFAULT_SCHED;
   const { byId: candidates, rank } = planAdmission(specs, opts);
   const candidate = (id: string): Candidate => {
     const c = candidates.get(id);
@@ -1289,7 +1300,7 @@ export async function runPool(
     sched,
     jobs: opts.jobs,
     heavyLimit: opts.heavyLimit,
-    budget: opts.budget,
+    budget: opts.budget ?? (sched === 'cores' ? jobsBudget(opts.jobs) : undefined),
   };
 
   const record = (result: GateResult): void => {
