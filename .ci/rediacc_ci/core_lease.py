@@ -29,7 +29,7 @@ CLI (`python3 .ci/rediacc_ci/core_lease.py <verb> ...`). `--max` takes a positiv
   run --min M --max N [--wait] [--timeout S] [--label L] -- CMD...
       Takes k tokens like `acquire`, then execs CMD with `CI_RUNNER_CORES=k` and `CI_CORE_LEASE_HELD=1` exported and the token descriptors inherited, so the lease lives exactly as long as CMD's process tree holds them. Exit: CMD's own, 75 when short, 127 when CMD cannot be executed.
   heavy-lock [--timeout S] -- CMD...
-      Takes the machine-wide heavy lock (`heavy.lock` beside the tokens), waiting with a message while another heavy gate holds it, then execs CMD with the lock descriptor inherited, so the lock lives as long as CMD's process tree. Exit 75 when --timeout passes first. The manifest wraps check:deps, check:ci-account-server and build:www in it.
+      Takes the machine-wide heavy lock (`heavy.lock` beside the tokens), waiting with a message while a heavy gate of ANOTHER checkout holds it (a holder from the same checkout, by working directory, is not waited on), then execs CMD with the lock descriptor inherited, so the lock lives as long as CMD's process tree. Exit 75 when --timeout passes first. The manifest wraps check:deps, check:ci-account-server and build:www in it.
   pytest --real PYTEST [-- ARGS...]
       The session pytest wrapper's verb (.ci/bootstrap.sh writes the wrapper). With `CI_CORE_LEASE_HELD` set, or for --version/-V/-VV/--help/-h, execs PYTEST untouched. Otherwise reads xdist's `-n` from ARGS and `PYTEST_ADDOPTS` (`-n N` asks for up to N tokens, `-n auto` and `-n logical` for the whole pool, no `-n` or `-n 0` for one), waits for at least one token, rewrites `-n` to the grant k, and execs PYTEST like `run`.
   broker [--label L]
@@ -88,6 +88,9 @@ LOCK_FLAGS = fcntl.LOCK_EX | fcntl.LOCK_NB
 MUTEX_NAME = "pool.mutex"
 # The machine-wide heavy lock (PLAN-ciquick-cpu L3): one kernel lock beside the pool, held for the life of a heavy gate's process tree, so check:deps, check:ci-account-server and build:www run one after another across trees instead of piling up on a loaded machine.
 HEAVY_LOCK_NAME = "heavy.lock"
+# Who holds it: {"root": <checkout>, "pid": <holder>}, written once the lock is taken. A waiter from the SAME checkout does not wait on it (HEAVY_BYPASS): its own runner already schedules its heavy gates, and waiting on a sibling gate of the same run (build:www behind a 467 s account-server suite) timed the waiter out on 2026-11-23.
+HEAVY_OWNER_NAME = "heavy.owner"
+HEAVY_BYPASS = -1
 RUNS_DIR = "runs"
 MUTEX_TIMEOUT_S = 10.0
 MUTEX_SPIN_S = 0.001
@@ -787,20 +790,36 @@ def _cmd_run(pool: Pool, ns: argparse.Namespace) -> int:
     return _exec_holding(tokens, cmd, {}, marker)
 
 
+def _heavy_owner(directory: pathlib.Path) -> tuple[str, int] | None:
+    """(checkout root, pid) of the live holder the owner file names, or None when it is missing, unreadable or names a dead process."""
+    try:
+        data = json.loads((directory / HEAVY_OWNER_NAME).read_text(encoding="utf-8"))
+        root, pid = str(data["root"]), int(data["pid"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return (root, pid) if _alive(pid) else None
+
+
 def acquire_heavy_lock(
     directory: pathlib.Path,
     *,
+    root: str,
     timeout: float | None = None,
     on_wait: Callable[[], None] | None = None,
 ) -> int | None:
-    """The descriptor holding the machine-wide heavy lock, or None when `timeout` seconds pass first. Polled with the same non-blocking flock as the tokens, so a timeout is honoured and a waiter never parks in the kernel; the lock lives as long as the descriptor, which an exec keeps open, and a killed holder frees it."""
+    """The descriptor holding the machine-wide heavy lock; HEAVY_BYPASS when the live holder is from the same checkout `root`; None when `timeout` seconds pass first. Polled with the same non-blocking flock as the tokens, so a timeout is honoured and a waiter never parks in the kernel; the lock lives as long as the descriptor, which an exec keeps open, and a killed holder frees it."""
     fd = os.open(directory / HEAVY_LOCK_NAME, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
     deadline = None if timeout is None else time.monotonic() + timeout
     waited = False
     while True:
         with contextlib.suppress(BlockingIOError):
             fcntl.flock(fd, LOCK_FLAGS)
+            _write_json_atomic(directory / HEAVY_OWNER_NAME, {"root": root, "pid": os.getpid()})
             return fd
+        owner = _heavy_owner(directory)
+        if owner is not None and owner[0] == root:
+            os.close(fd)
+            return HEAVY_BYPASS
         if not waited and on_wait is not None:
             on_wait()
         waited = True
@@ -819,6 +838,7 @@ def _cmd_heavy_lock(pool: Pool, ns: argparse.Namespace) -> int:
         return EXIT_USAGE
     fd = acquire_heavy_lock(
         pool.directory,
+        root=os.path.realpath(os.getcwd()),
         timeout=ns.timeout,
         on_wait=lambda: _err(
             "another heavy gate holds the machine-wide heavy lock (%s); waiting to run %s"
@@ -828,12 +848,14 @@ def _cmd_heavy_lock(pool: Pool, ns: argparse.Namespace) -> int:
     if fd is None:
         _err("the heavy lock stayed held for %s s" % ns.timeout)
         return EXIT_SHORT
-    os.set_inheritable(fd, True)
+    if fd != HEAVY_BYPASS:
+        os.set_inheritable(fd, True)
     try:
         _exec_replace(cmd)
     except OSError as exc:
         _err("cannot execute %s: %s" % (cmd[0], exc))
-        os.close(fd)
+        if fd != HEAVY_BYPASS:
+            os.close(fd)
         return EXIT_NOEXEC
     return EXIT_NOEXEC  # pragma: no cover -- execvp returns only by raising
 
