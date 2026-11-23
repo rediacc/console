@@ -2,6 +2,10 @@ Status: ready
 First-Seen: 2026-11-23
 Owner: ace763dd
 Updated: 2026-11-23
+Owns: .claude/hooks/stop/wl_stack.py, .ci/rediacc_ci/dev/landing_promote.py, .ci/rediacc_ci/tests/test_dev_landing_promote.py, .claude/hooks/stop/test-landing-stack.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_checks.py, .claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py, .claude/rediacc_hooks/guards/test-block_rebase_over_foreign_dirt.py, .claude/rediacc_hooks/tests/test_rebase_standdown.py, .ci/policy/record-paths.json, .ci/rediacc_ci/tests/gates/test_gate_record_paths.py, .claude/commands/wisdom.md, .claude/commands/branch-rebase.md, .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py, .claude/hooks/stop/worklist.py, .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py, .claude/hooks/stop/wl_worktrees.py, .claude/hooks/stop/test-wl_worktrees.py, agent/plans/PLAN-stop-hook-retro-20261123.md
+Concurrency: parallel -- R1/R2, R3/R4, R5 and R6/R7 touch disjoint files
+Priority: P1 -- operator 2026-11-23: full speed, ci:quick is slow
+Depends-On: no-dep -- no box waits on another plan
 
 # PLAN: Stop-hook retro, 2026-11-23 (band late, lead session ace763dd, tracking #3b9c59de)
 
