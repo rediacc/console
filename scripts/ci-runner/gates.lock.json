@@ -1362,7 +1362,7 @@
   },
   {
     "id": "check:ci-fetch-retry",
-    "run": "npm run check:ci-fetch-retry",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.fetch_retry",
     "gate": true,
     "paths": [
       ".ci/config/well-known.env",
@@ -1374,6 +1374,7 @@
       ".ci/rediacc_ci/well_known.py",
       ".ci/scripts/quality/_cipath.py",
       ".ci/scripts/quality/check_dockerfile_mirror_resilience.py",
+      ".ci/rediacc_ci/quality/fetch_retry.py",
       ".ci/scripts/quality/check_fetch_retry.py",
       ".devcontainer/**",
       ".npmrc",
@@ -1393,7 +1394,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_fetch_retry.py"
+      ".ci/rediacc_ci/quality/fetch_retry.py"
     ],
     "ci": {
       "kind": "step",
@@ -1404,7 +1405,7 @@
   },
   {
     "id": "check:ci-judged-rule-wiring",
-    "run": "npm run check:ci-judged-rule-wiring",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.judged_rule_wiring",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -1414,7 +1415,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_judged_rule_wiring.py"
+      ".ci/rediacc_ci/quality/judged_rule_wiring.py"
     ],
     "ci": {
       "kind": "step",
@@ -1425,12 +1426,13 @@
   },
   {
     "id": "check:ci-git-history-depth",
-    "run": "npm run check:ci-git-history-depth",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_history_depth",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
       ".ci/rediacc_ci/controls.py",
       ".ci/scripts/quality/_cipath.py",
+      ".ci/rediacc_ci/quality/git_history_depth.py",
       ".ci/scripts/quality/check_git_history_depth.py",
       ".github/**",
       ".npmrc",
@@ -1446,7 +1448,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_git_history_depth.py"
+      ".ci/rediacc_ci/quality/git_history_depth.py"
     ],
     "ci": {
       "kind": "step",
@@ -2944,7 +2946,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_ci_gate_prerequisites.py"
+      ".ci/rediacc_ci/quality/ci_gate_prerequisites.py"
     ],
     "ci": {
       "kind": "step",
@@ -2982,11 +2984,12 @@
     "paths": [
       ".claude/rediacc_hooks/guards/**",
       ".claude/rediacc_hooks/dispatch.py",
+      ".ci/rediacc_ci/quality/guard_mention_anchoring.py",
       ".ci/scripts/quality/check_guard_mention_anchoring.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_guard_mention_anchoring.py"
+      ".ci/rediacc_ci/quality/guard_mention_anchoring.py"
     ],
     "ci": {
       "kind": "step",
@@ -3741,7 +3744,7 @@
     "run": "npm run check:ci-bws-map",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_bws_map.py"
+      ".ci/rediacc_ci/quality/bws_map.py"
     ],
     "ci": {
       "kind": "step",
@@ -3820,10 +3823,10 @@
   },
   {
     "id": "check:ci-config-server-key-constant",
-    "run": "npm run check:ci-config-server-key-constant",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_server_key_constant",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_config_server_key_constant.py"
+      ".ci/rediacc_ci/quality/config_server_key_constant.py"
     ],
     "ci": {
       "kind": "step",
@@ -3834,10 +3837,10 @@
   },
   {
     "id": "check:ci-bws-rotation-notice",
-    "run": "npm run check:ci-bws-rotation-notice",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_rotation_notice",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_bws_rotation_notice.py"
+      ".ci/rediacc_ci/quality/bws_rotation_notice.py"
     ],
     "ci": {
       "kind": "step",
@@ -3921,11 +3924,12 @@
       ".github/actions/**/action.yml",
       ".ci/breakpoint/workflow/*.yml",
       ".ci/config/actions-allowlist.json",
+      ".ci/rediacc_ci/quality/actions_allowlist.py",
       ".ci/scripts/quality/check_actions_allowlist.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_actions_allowlist.py"
+      ".ci/rediacc_ci/quality/actions_allowlist.py"
     ],
     "ci": {
       "kind": "step",
@@ -4126,7 +4130,7 @@
   },
   {
     "id": "check:ci-gate-test-real-file-plants",
-    "run": "npm run check:ci-gate-test-real-file-plants",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_test_real_file_plants",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/tests/__init__.py",
@@ -4717,6 +4721,7 @@
       ".ci/rediacc_ci/tests/testrun_support.py",
       ".ci/rediacc_ci/tests/twin_names.py",
       ".ci/rediacc_ci/tests/wkloader.py",
+      ".ci/rediacc_ci/quality/gate_test_real_file_plants.py",
       ".ci/scripts/quality/check_gate_test_real_file_plants.py",
       ".claude/rediacc_hooks/tests/**",
       ".npmrc",
@@ -4814,7 +4819,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_gate_test_real_file_plants.py"
+      ".ci/rediacc_ci/quality/gate_test_real_file_plants.py"
     ],
     "ci": {
       "kind": "step",
@@ -4957,7 +4962,7 @@
     "run": "npm run check:ci-decision-ids",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_decision_ids.py"
+      ".ci/rediacc_ci/quality/decision_ids.py"
     ],
     "ci": {
       "kind": "step",
@@ -5731,7 +5736,7 @@
     "run": "npm run check:ci-hooks-resolvable",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_hooks_resolvable.py"
+      ".ci/rediacc_ci/quality/hooks_resolvable.py"
     ],
     "ci": {
       "kind": "step",
@@ -5742,7 +5747,7 @@
   },
   {
     "id": "check:ci-dockerfile-mirror-resilience",
-    "run": "npm run check:ci-dockerfile-mirror-resilience",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.dockerfile_mirror_resilience",
     "gate": true,
     "paths": [
       ".ci/bootstrap.sh",
@@ -5761,6 +5766,7 @@
       ".ci/scripts/infra/ci-stop-elite.sh",
       ".ci/scripts/lib/toolchain.sh",
       ".ci/scripts/quality/_cipath.py",
+      ".ci/rediacc_ci/quality/dockerfile_mirror_resilience.py",
       ".ci/scripts/quality/check_dockerfile_mirror_resilience.py",
       ".ci/scripts/test/**",
       ".ci/tutorials/**",
@@ -5793,7 +5799,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_dockerfile_mirror_resilience.py"
+      ".ci/rediacc_ci/quality/dockerfile_mirror_resilience.py"
     ],
     "ci": {
       "kind": "step",
@@ -5952,9 +5958,10 @@
   },
   {
     "id": "check:ci-e2e-case-blind",
-    "run": "npm run check:ci-e2e-case-blind",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_case_blind_assertions",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/e2e_case_blind_assertions.py",
       ".ci/scripts/quality/**",
       ".npmrc",
       "package.json",
@@ -5963,7 +5970,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_e2e_case_blind_assertions.py"
+      ".ci/rediacc_ci/quality/e2e_case_blind_assertions.py"
     ],
     "ci": {
       "kind": "step",
@@ -6100,7 +6107,7 @@
   },
   {
     "id": "check:ci-inner-timeout-reachable",
-    "run": "npm run check:ci-inner-timeout-reachable",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.inner_timeout_reachable",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -6138,7 +6145,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_inner_timeout_reachable.py"
+      ".ci/rediacc_ci/quality/inner_timeout_reachable.py"
     ],
     "ci": {
       "kind": "step",
@@ -6173,7 +6180,7 @@
     "run": "npm run check:ci-timeout-headroom",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_job_timeout_headroom.py"
+      ".ci/rediacc_ci/quality/job_timeout_headroom.py"
     ],
     "ci": {
       "kind": "step",
@@ -6205,13 +6212,14 @@
   },
   {
     "id": "check:ci-no-inline-python",
-    "run": "npm run check:ci-no-inline-python",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_python",
     "gate": true,
     "paths": [
       ".ci/scripts/build/**",
       ".ci/scripts/ci/**",
       ".ci/scripts/docs/compress-cast-idle.mjs",
       ".ci/scripts/docs/process-cast-markers.mjs",
+      ".ci/rediacc_ci/quality/inline_python.py",
       ".ci/scripts/quality/check_inline_python.py",
       ".ci/scripts/quality/lint-rule-liveness.mjs",
       ".ci/scripts/test/smoke-test-preview.ts",
@@ -6276,7 +6284,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_inline_python.py"
+      ".ci/rediacc_ci/quality/inline_python.py"
     ],
     "ci": {
       "kind": "step",
@@ -6318,6 +6326,7 @@
     "run": "npm run check:ci-i18n-value-types",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/i18n_value_types.py",
       ".ci/scripts/quality/**",
       ".npmrc",
       "package.json",
@@ -6326,7 +6335,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_i18n_value_types.py"
+      ".ci/rediacc_ci/quality/i18n_value_types.py"
     ],
     "ci": {
       "kind": "step",
@@ -6340,7 +6349,7 @@
     "run": "npm run check:ci-lint-rule-liveness",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_lint_rule_liveness.py"
+      ".ci/rediacc_ci/quality/lint_rule_liveness.py"
     ],
     "ci": {
       "kind": "step",
@@ -6351,7 +6360,7 @@
   },
   {
     "id": "check:ci-agent-hint-liveness",
-    "run": "npm run check:ci-agent-hint-liveness",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_hint_liveness",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -6362,7 +6371,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_agent_hint_liveness.py"
+      ".ci/rediacc_ci/quality/agent_hint_liveness.py"
     ],
     "ci": {
       "kind": "step",
@@ -6555,10 +6564,11 @@
   },
   {
     "id": "check:ci-agent-model-roster",
-    "run": "npm run check:ci-agent-model-roster",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_model_roster",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/quality/agent_model_roster.py",
       ".ci/scripts/quality/**",
       ".claude/agents/**",
       ".npmrc",
@@ -6567,7 +6577,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_agent_model_roster.py"
+      ".ci/rediacc_ci/quality/agent_model_roster.py"
     ],
     "ci": {
       "kind": "step",
@@ -6632,11 +6642,11 @@
   },
   {
     "id": "check:ci-format-scope",
-    "run": "npm run check:ci-format-scope",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.format_scope",
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_format_scope.py"
+      ".ci/rediacc_ci/quality/format_scope.py"
     ],
     "ci": {
       "kind": "step",
@@ -6751,7 +6761,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_checkout_cone.py"
+      ".ci/rediacc_ci/quality/checkout_cone.py"
     ],
     "ci": {
       "kind": "step",
@@ -6762,13 +6772,14 @@
   },
   {
     "id": "check:ci-durable-paths-tracked",
-    "run": "npm run check:ci-durable-paths-tracked",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.durable_paths_tracked",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_durable_paths_tracked.py"
+      ".ci/rediacc_ci/quality/durable_paths_tracked.py"
     ],
     "paths": [
       ".gitignore",
+      ".ci/rediacc_ci/quality/durable_paths_tracked.py",
       ".ci/scripts/quality/check_durable_paths_tracked.py"
     ],
     "pathsOrigin": "declared",
@@ -6785,6 +6796,7 @@
     "gate": true,
     "paths": [
       ".ci/config/generated-artifacts.json",
+      ".ci/rediacc_ci/quality/generated_artifacts.py",
       ".ci/scripts/quality/check_generated_artifacts.py",
       ".claude/rediacc_hooks/git/artifacts.py",
       ".claude/rediacc_hooks/tests/test_githook_generated_artifacts.py",
@@ -6814,7 +6826,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_generated_artifacts.py"
+      ".ci/rediacc_ci/quality/generated_artifacts.py"
     ],
     "ci": {
       "kind": "step",
@@ -7120,7 +7132,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_gate_reachability_coverage.py"
+      ".ci/rediacc_ci/quality/gate_reachability_coverage.py"
     ],
     "ci": {
       "kind": "step",
@@ -11684,7 +11696,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_language_policy.py"
+      ".ci/rediacc_ci/quality/language_policy.py"
     ],
     "ci": {
       "kind": "step",
@@ -12290,9 +12302,10 @@
   },
   {
     "id": "check:ci-allowlist-key-matching",
-    "run": "npm run check:ci-allowlist-key-matching",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.allowlist_key_matching",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/quality/allowlist_key_matching.py",
       ".ci/scripts/**",
       ".npmrc",
       "package.json",
@@ -12306,7 +12319,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_allowlist_key_matching.py"
+      ".ci/rediacc_ci/quality/allowlist_key_matching.py"
     ],
     "ci": {
       "kind": "step",
@@ -12317,7 +12330,7 @@
   },
   {
     "id": "check:ci-environment-names",
-    "run": "npm run check:ci-environment-names",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.environment_names",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -12327,7 +12340,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_environment_names.py"
+      ".ci/rediacc_ci/quality/environment_names.py"
     ],
     "ci": {
       "kind": "step",
@@ -12352,10 +12365,10 @@
   },
   {
     "id": "check:ci-docker-npm-pins",
-    "run": "npm run check:ci-docker-npm-pins",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.docker_npm_pins",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_docker_npm_pins.py"
+      ".ci/rediacc_ci/quality/docker_npm_pins.py"
     ],
     "ci": {
       "kind": "step",

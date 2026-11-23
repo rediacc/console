@@ -287,13 +287,13 @@ jobs:
       # for the same reason.
       - name: Actions allowlist
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_actions_allowlist.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_allowlist
       - name: agent-browser exit status
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_browser_exit
       - name: Allowlist key matching
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_allowlist_key_matching.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.allowlist_key_matching
       - name: aws resolver
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.aws_resolver
@@ -311,10 +311,10 @@ jobs:
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_checkout_cone.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.checkout_cone
       - name: CI job timeout headroom
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_job_timeout_headroom.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.job_timeout_headroom
       - name: CLI proxy-safe output
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_proxy_safe_output
@@ -335,13 +335,13 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_probes
       - name: Dockerfile mirror resilience
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_dockerfile_mirror_resilience.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.dockerfile_mirror_resilience
       - name: Drill verdict logic
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.drill_verdicts
       - name: Durable paths are not gitignored
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_durable_paths_tracked.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.durable_paths_tracked
       - name: Env file adoption
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_file_adoption
@@ -350,19 +350,19 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_manifest
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_environment_names.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.environment_names
       - name: Gate argv
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_gate_argv.py
       - name: Gate-reachability probe agrees with registrations
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_gate_reachability_coverage.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_reachability_coverage
       - name: Git history depth
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          .ci/scripts/quality/check_git_history_depth.py
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_history_depth
       - name: GitHub reads retry transient faults
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.gh_retry_gate
@@ -374,7 +374,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_exec_baseline
       - name: Hooks resolvable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_hooks_resolvable.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.hooks_resolvable
       - name: Install table
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.tools
@@ -386,7 +386,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check
       - name: Language policy
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_language_policy.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.language_policy
       - name: Literal sources
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.literal_sources
@@ -395,7 +395,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.mutate_check
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_inline_python.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_python
       - name: Operator rulings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_operator_rulings.py
@@ -1090,7 +1090,7 @@ jobs:
       - name: Dockerfile npm pins
         id: gate_check_ci_docker_npm_pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: .ci/scripts/quality/check_docker_npm_pins.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.docker_npm_pins
       - name: Enumeration vacuity
         id: gate_check_ci_enumeration_vacuity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1102,7 +1102,7 @@ jobs:
       - name: Fetch retry
         id: gate_check_ci_fetch_retry
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: .ci/scripts/quality/check_fetch_retry.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.fetch_retry
       - name: Fixture event timestamps
         id: gate_check_ci_fixture_event_timestamps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
@@ -1110,7 +1110,7 @@ jobs:
       - name: Format command covers its config's scope
         id: gate_check_ci_format_scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: .ci/scripts/quality/check_format_scope.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.format_scope
       - name: Gate cwd independence
         id: gate_check_ci_gate_cwd_independence
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1126,7 +1126,7 @@ jobs:
       - name: Gate-test real-file plants
         id: gate_check_ci_gate_test_real_file_plants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: .ci/scripts/quality/check_gate_test_real_file_plants.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_test_real_file_plants
       - name: Gates that write the real tree declare it
         id: gate_check_ci_gate_tree_writes
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
@@ -1134,7 +1134,7 @@ jobs:
       - name: Generated artifacts registry
         id: gate_check_ci_generated_artifacts
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: .ci/scripts/quality/check_generated_artifacts.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.generated_artifacts
       - name: Greenlight closure paths
         id: gate_check_ci_greenlight_closures
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
@@ -1146,7 +1146,7 @@ jobs:
       - name: Inner kill timers are reachable
         id: gate_check_ci_inner_timeout_reachable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: .ci/scripts/quality/check_inner_timeout_reachable.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.inner_timeout_reachable
       - name: Instruction files do not prescribe a rejected merge method
         id: gate_check_ci_merge_method_prose
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
@@ -1158,7 +1158,7 @@ jobs:
       - name: Judged rule wiring
         id: gate_check_ci_judged_rule_wiring
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: .ci/scripts/quality/check_judged_rule_wiring.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.judged_rule_wiring
       - name: knip BLOCKER reasons
         id: gate_check_ci_knip_blockers
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1529,10 +1529,10 @@ jobs:
       # SKIPS while the job stays green.
       - name: Agent hints can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_agent_hint_liveness.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_hint_liveness
       - name: Agent model roster matches its documented reasons
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_agent_model_roster.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_model_roster
       - name: Baseline key semantics
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-baseline-key-semantics
@@ -1576,10 +1576,10 @@ jobs:
         run: npm run check:ci-docs-thumb-coverage
       - name: E2E case-blind assertions
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_e2e_case_blind_assertions.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_case_blind_assertions
       - name: Enabled lint rules can actually fire
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_lint_rule_liveness.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_rule_liveness
       - name: External dependency freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.external_quality != 'skip') }}
         run: npm run check:deps
@@ -1593,7 +1593,7 @@ jobs:
         run: npm run check:ci-de-orthography
       - name: i18n value types match English
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_i18n_value_types.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.i18n_value_types
       - name: Lint rule unit specs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-lint-rule-units
@@ -2447,7 +2447,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.backup_credential_isolation
       - name: Bitwarden secret map
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_bws_map.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_map
       - name: Bitwarden step-scoped secrets
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_step_scope
@@ -2459,13 +2459,13 @@ jobs:
         run: npm run check:ci-syncpack-reasons
       - name: BWS rotation notice
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_bws_rotation_notice.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_rotation_notice
       - name: Check every Dockerfile download is cryptographically verified
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-unverified-downloads
       - name: Config server key constant confined
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_config_server_key_constant.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_server_key_constant
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_vars

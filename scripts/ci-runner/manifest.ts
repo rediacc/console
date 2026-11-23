@@ -1351,7 +1351,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-fetch-retry',
-    run: 'npm run check:ci-fetch-retry',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.fetch_retry',
     gate: true,
     paths: [
       '.ci/config/well-known.env',
@@ -1363,6 +1363,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/well_known.py',
       '.ci/scripts/quality/_cipath.py',
       '.ci/scripts/quality/check_dockerfile_mirror_resilience.py',
+      '.ci/rediacc_ci/quality/fetch_retry.py',
       '.ci/scripts/quality/check_fetch_retry.py',
       '.devcontainer/**',
       '.npmrc',
@@ -1375,7 +1376,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci', '.ci/rediacc_ci', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_fetch_retry.py'],
+    leaves: ['.ci/rediacc_ci/quality/fetch_retry.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1385,11 +1386,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-judged-rule-wiring',
-    run: 'npm run check:ci-judged-rule-wiring',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.judged_rule_wiring',
     gate: true,
     paths: ['.ci/**', '.claude/hooks/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_judged_rule_wiring.py'],
+    leaves: ['.ci/rediacc_ci/quality/judged_rule_wiring.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1399,12 +1400,13 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-git-history-depth',
-    run: 'npm run check:ci-git-history-depth',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_history_depth',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
       '.ci/rediacc_ci/controls.py',
       '.ci/scripts/quality/_cipath.py',
+      '.ci/rediacc_ci/quality/git_history_depth.py',
       '.ci/scripts/quality/check_git_history_depth.py',
       '.github/**',
       '.npmrc',
@@ -1413,7 +1415,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci', '.ci/rediacc_ci', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_git_history_depth.py'],
+    leaves: ['.ci/rediacc_ci/quality/git_history_depth.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2825,7 +2827,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/**',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_ci_gate_prerequisites.py'],
+    leaves: ['.ci/rediacc_ci/quality/ci_gate_prerequisites.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2861,10 +2863,11 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       '.claude/rediacc_hooks/guards/**',
       '.claude/rediacc_hooks/dispatch.py',
+      '.ci/rediacc_ci/quality/guard_mention_anchoring.py',
       '.ci/scripts/quality/check_guard_mention_anchoring.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_guard_mention_anchoring.py'],
+    leaves: ['.ci/rediacc_ci/quality/guard_mention_anchoring.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3585,7 +3588,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-bws-map',
     run: 'npm run check:ci-bws-map',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_bws_map.py'],
+    leaves: ['.ci/rediacc_ci/quality/bws_map.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3652,9 +3655,9 @@ export const GATES: readonly GateSpec[] = [
   {
     // agent/plans/PLAN-config-server-key.md K6: the legacy config-key constant stays deleted and its name stays confined to the one file that may mention it.
     id: 'check:ci-config-server-key-constant',
-    run: 'npm run check:ci-config-server-key-constant',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_server_key_constant',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_config_server_key_constant.py'],
+    leaves: ['.ci/rediacc_ci/quality/config_server_key_constant.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3667,9 +3670,9 @@ export const GATES: readonly GateSpec[] = [
     // notice file, one classifier (the trapguard ring keeps a copy it cannot import, and the copy is compared here), and five emitters that still reach it.
     // NO `paths:` DELIBERATELY. The claim spans five files in five different trees plus the absence of a sixth, so a path table would have to list them all and would silently drop the gate on the one PR that reintroduced the deleted file from somewhere unlisted. An entry without paths is always selected, which is the correct cost for a five-way agreement.
     id: 'check:ci-bws-rotation-notice',
-    run: 'npm run check:ci-bws-rotation-notice',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_rotation_notice',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_bws_rotation_notice.py'],
+    leaves: ['.ci/rediacc_ci/quality/bws_rotation_notice.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3754,10 +3757,11 @@ export const GATES: readonly GateSpec[] = [
       '.github/actions/**/action.yml',
       '.ci/breakpoint/workflow/*.yml',
       '.ci/config/actions-allowlist.json',
+      '.ci/rediacc_ci/quality/actions_allowlist.py',
       '.ci/scripts/quality/check_actions_allowlist.py',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_actions_allowlist.py'],
+    leaves: ['.ci/rediacc_ci/quality/actions_allowlist.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3944,7 +3948,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // A gate-test that writes a REAL tracked file and restores it in a `finally` corrupts that file for real if a kill lands in the write-to-restore window -- it happened twice in one session to worklist-env-registry.json, from two unrelated causes. AST-scans every gate-test file for a module-level real-path constant that is also the target of a .write_text/.write_bytes call.
     id: 'check:ci-gate-test-real-file-plants',
-    run: 'npm run check:ci-gate-test-real-file-plants',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_test_real_file_plants',
     gate: true,
     paths: [
       '.ci/rediacc_ci/tests/__init__.py',
@@ -4535,6 +4539,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/tests/testrun_support.py',
       '.ci/rediacc_ci/tests/twin_names.py',
       '.ci/rediacc_ci/tests/wkloader.py',
+      '.ci/rediacc_ci/quality/gate_test_real_file_plants.py',
       '.ci/scripts/quality/check_gate_test_real_file_plants.py',
       '.claude/rediacc_hooks/tests/**',
       '.npmrc',
@@ -4629,7 +4634,7 @@ export const GATES: readonly GateSpec[] = [
     ],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_gate_test_real_file_plants.py'],
+    leaves: ['.ci/rediacc_ci/quality/gate_test_real_file_plants.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4763,7 +4768,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-decision-ids',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_decision_ids.py'],
+    leaves: ['.ci/rediacc_ci/quality/decision_ids.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5492,7 +5497,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-hooks-resolvable',
     run: 'npm run check:ci-hooks-resolvable',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_hooks_resolvable.py'],
+    leaves: ['.ci/rediacc_ci/quality/hooks_resolvable.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5505,7 +5510,7 @@ export const GATES: readonly GateSpec[] = [
     // An apt source rewritten to ONE mirror must carry a fallback to another. Born 2026-08-19, when azure.archive.ubuntu.com refused connections for ninety minutes and took down four consecutive CI attempts: every apt source had been rewritten to that single host, so the surrounding five-attempt retry loop hammered the same dead mirror five times. Existing checks counted retry
     // ATTEMPTS and never asked whether the attempts could reach a different SOURCE, which is why nothing caught it.
     id: 'check:ci-dockerfile-mirror-resilience',
-    run: 'npm run check:ci-dockerfile-mirror-resilience',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.dockerfile_mirror_resilience',
     gate: true,
     paths: [
       '.ci/bootstrap.sh',
@@ -5524,6 +5529,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/infra/ci-stop-elite.sh',
       '.ci/scripts/lib/toolchain.sh',
       '.ci/scripts/quality/_cipath.py',
+      '.ci/rediacc_ci/quality/dockerfile_mirror_resilience.py',
       '.ci/scripts/quality/check_dockerfile_mirror_resilience.py',
       '.ci/scripts/test/**',
       '.ci/tutorials/**',
@@ -5549,7 +5555,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci', '.ci/rediacc_ci', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_dockerfile_mirror_resilience.py'],
+    leaves: ['.ci/rediacc_ci/quality/dockerfile_mirror_resilience.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5701,9 +5707,10 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-e2e-case-blind',
-    run: 'npm run check:ci-e2e-case-blind',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_case_blind_assertions',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/e2e_case_blind_assertions.py',
       '.ci/scripts/quality/**',
       '.npmrc',
       'package.json',
@@ -5711,7 +5718,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/e2e-tests/tests/**',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_e2e_case_blind_assertions.py'],
+    leaves: ['.ci/rediacc_ci/quality/e2e_case_blind_assertions.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5828,7 +5835,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-inner-timeout-reachable',
-    run: 'npm run check:ci-inner-timeout-reachable',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.inner_timeout_reachable',
     gate: true,
     paths: [
       '.ci/**',
@@ -5865,7 +5872,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/gen/validate-cli-examples.ts',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_inner_timeout_reachable.py'],
+    leaves: ['.ci/rediacc_ci/quality/inner_timeout_reachable.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5892,7 +5899,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-timeout-headroom',
     run: 'npm run check:ci-timeout-headroom',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_job_timeout_headroom.py'],
+    leaves: ['.ci/rediacc_ci/quality/job_timeout_headroom.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5917,13 +5924,14 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-no-inline-python',
-    run: 'npm run check:ci-no-inline-python',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_python',
     gate: true,
     paths: [
       '.ci/scripts/build/**',
       '.ci/scripts/ci/**',
       '.ci/scripts/docs/compress-cast-idle.mjs',
       '.ci/scripts/docs/process-cast-markers.mjs',
+      '.ci/rediacc_ci/quality/inline_python.py',
       '.ci/scripts/quality/check_inline_python.py',
       '.ci/scripts/quality/lint-rule-liveness.mjs',
       '.ci/scripts/test/smoke-test-preview.ts',
@@ -5983,7 +5991,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_inline_python.py'],
+    leaves: ['.ci/rediacc_ci/quality/inline_python.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6022,6 +6030,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-i18n-value-types',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/i18n_value_types.py',
       '.ci/scripts/quality/**',
       '.npmrc',
       'package.json',
@@ -6029,7 +6038,7 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/src/i18n/translations/**',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_i18n_value_types.py'],
+    leaves: ['.ci/rediacc_ci/quality/i18n_value_types.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6041,7 +6050,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_lint_rule_liveness.py'],
+    leaves: ['.ci/rediacc_ci/quality/lint_rule_liveness.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6051,11 +6060,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-agent-hint-liveness',
-    run: 'npm run check:ci-agent-hint-liveness',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_hint_liveness',
     gate: true,
     paths: ['.ci/**', '.claude/agents/**', '.claude/hooks/stop/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_agent_hint_liveness.py'],
+    leaves: ['.ci/rediacc_ci/quality/agent_hint_liveness.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6242,10 +6251,11 @@ export const GATES: readonly GateSpec[] = [
   // Hand-registered rather than folded into a gen-manifest region: agent/plans/PLAN-haiku-model-routing.md section 4. Every agent declaring a non-opus model must be named, by filename, with a reason, in docs/agent-reference/model-routing.md, in the same commit -- the same bargain check-naturalization-model-policy.ts already makes for the naturalization ledger.
   {
     id: 'check:ci-agent-model-roster',
-    run: 'npm run check:ci-agent-model-roster',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_model_roster',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
+      '.ci/rediacc_ci/quality/agent_model_roster.py',
       '.ci/scripts/quality/**',
       '.claude/agents/**',
       '.npmrc',
@@ -6253,7 +6263,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_agent_model_roster.py'],
+    leaves: ['.ci/rediacc_ci/quality/agent_model_roster.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6319,10 +6329,10 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-format-scope',
     // A formatter command may not narrow its own config's scope. Sibling of lint-scope-coverage: that one proves FILES reach a linter, this proves the COMMAND does not shrink what biome.json declares.
-    run: 'npm run check:ci-format-scope',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.format_scope',
     slow: true, // 21.6s contended: three full biome passes over 2426 files (11.2s idle)
     gate: true,
-    leaves: ['.ci/scripts/quality/check_format_scope.py'],
+    leaves: ['.ci/rediacc_ci/quality/format_scope.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6436,7 +6446,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/gates/check-ceph-image-pin.ts',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_checkout_cone.py'],
+    leaves: ['.ci/rediacc_ci/quality/checkout_cone.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6447,10 +6457,14 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-durable-paths-tracked',
     // No .gitignore rule may swallow a durable record directory: a bare `reports/` silently dropped program state reports on 2026-10-03.
-    run: 'npm run check:ci-durable-paths-tracked',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.durable_paths_tracked',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_durable_paths_tracked.py'],
-    paths: ['.gitignore', '.ci/scripts/quality/check_durable_paths_tracked.py'],
+    leaves: ['.ci/rediacc_ci/quality/durable_paths_tracked.py'],
+    paths: [
+      '.gitignore',
+      '.ci/rediacc_ci/quality/durable_paths_tracked.py',
+      '.ci/scripts/quality/check_durable_paths_tracked.py',
+    ],
     pathsOrigin: 'declared',
     ci: {
       kind: 'step',
@@ -6466,6 +6480,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: [
       '.ci/config/generated-artifacts.json',
+      '.ci/rediacc_ci/quality/generated_artifacts.py',
       '.ci/scripts/quality/check_generated_artifacts.py',
       '.claude/rediacc_hooks/git/artifacts.py',
       '.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py',
@@ -6490,7 +6505,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_generated_artifacts.py'],
+    leaves: ['.ci/rediacc_ci/quality/generated_artifacts.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6773,7 +6788,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     paths: ['.ci/**', '.claude/hooks/stop/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_gate_reachability_coverage.py'],
+    leaves: ['.ci/rediacc_ci/quality/gate_reachability_coverage.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -10979,7 +10994,7 @@ export const GATES: readonly GateSpec[] = [
     // without them a new bash file under scripts/ops/ would land in a run that never scheduled the gate that refuses it.
     paths: ['.ci/**', '.claude/**', 'scripts/ops/**', 'scripts/dev/**'],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_language_policy.py'],
+    leaves: ['.ci/rediacc_ci/quality/language_policy.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11587,13 +11602,19 @@ export const GATES: readonly GateSpec[] = [
     // `npm install` key claimed the `npm install --omit=dev` line and the correct entry
     // was reported as dead scaffolding. The invariant is the MATCHER, not the key shape: a first draft gated key prefixes and flagged two live, correct, harmless keys.
     id: 'check:ci-allowlist-key-matching',
-    run: 'npm run check:ci-allowlist-key-matching',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.allowlist_key_matching',
     gate: true,
-    paths: ['.ci/scripts/**', '.npmrc', 'package.json', 'scripts/**'],
+    paths: [
+      '.ci/rediacc_ci/quality/allowlist_key_matching.py',
+      '.ci/scripts/**',
+      '.npmrc',
+      'package.json',
+      'scripts/**',
+    ],
     lists: [''],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_allowlist_key_matching.py'],
+    leaves: ['.ci/rediacc_ci/quality/allowlist_key_matching.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11604,11 +11625,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // 25 orphaned `pr-*` environments accumulated because a job-level `environment:` creates an object CI has no permission to delete. The block was removed by hand and only a comment stood in its place.
     id: 'check:ci-environment-names',
-    run: 'npm run check:ci-environment-names',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.environment_names',
     gate: true,
     paths: ['.ci/**', '.github/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_environment_names.py'],
+    leaves: ['.ci/rediacc_ci/quality/environment_names.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11632,11 +11653,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // A build that broke with no commit behind it: private/account's image resolved its whole dep tree live, and a package published that morning crashed npm's arborist. This is the regression test for the CLASS, not for that package.
     id: 'check:ci-docker-npm-pins',
-    run: 'npm run check:ci-docker-npm-pins',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.docker_npm_pins',
     gate: true,
     // Just the script, matching every other Python gate here: check:ci-parity requires the manifest's leaves to be what `npm run <id>` actually resolves to, and a leaf list wider than the command is a claim the runner cannot honour. The gate still scans every tracked Dockerfile -- it enumerates from git, not
     // from this list -- so a new one is covered the moment it is committed.
-    leaves: ['.ci/scripts/quality/check_docker_npm_pins.py'],
+    leaves: ['.ci/rediacc_ci/quality/docker_npm_pins.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
