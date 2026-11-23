@@ -42,12 +42,7 @@ def run_gate(gate, env: dict[str, str] | None = None) -> harness.RunResult:
     return harness.run([npx, "tsx", str(VALIDATOR)], cwd=paths.repo_root(), env=env)
 
 
-def test_accepts_real_inventories(gate):
-    require_submodule(gate)
-    result = run_gate(gate)
-    if result.rc != 0:
-        gate.log_fail("real in-tree inventories should pass the embed-credits gate", result)
-    gate.log_pass("real inventories pass validation")
+# THE REAL-TREE GREEN CASE `test_accepts_real_inventories` LEFT THIS FILE (PLAN-ciquick-cpu.md W16): `check:ci-embed-credits` (ci-quality.yml quality-go, step `Check embed credits consistency`) runs this same validator over the real in-tree inventories on every run, and exit 0 was this case's only assertion.
 
 
 def test_rejects_dockerfile_pin_drift(gate, tmp_path):

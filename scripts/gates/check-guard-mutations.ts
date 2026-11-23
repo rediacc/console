@@ -36,8 +36,12 @@
  *      the real file is never written, is in
  *      `.ci/rediacc_ci/quality/guard_mutant_site.py` (the redirect); the
  *      declarations are read by `.ci/rediacc_ci/quality/guard_mutants.py`.
- *      Per guard: the UNPLANTED copy must pass and must be
- *      LOADED (a non-empty load log), or no verdict below it means anything.
+ *      Per guard: the UNPLANTED copy must pass, must be LOADED (a non-empty
+ *      load log), must print something and must leave its private TMPDIR
+ *      empty, or no verdict below it means anything. This pristine run is the
+ *      ONLY run of these suites: `test_hooks_delegates.py` skips every suite
+ *      this arm runs, so the empty-output and TMPDIR-leak refusals it used to
+ *      apply live here (SILENT, LEAKED).
  *      Findings: a plant that leaves the suite green (UNDETECTED), a plant whose
  *      `old` no longer occurs outside its declaration (STALE), a MUTANTS entry
  *      naming more than one site (AMBIGUOUS; the suites' MUTANT_RUNNER refuses
@@ -58,11 +62,13 @@
  *
  * CONTROL-FIRST. The gate self-fails when its own instrument cannot fire:
  *   - the pristine CLI sandbox must PASS (else the harness, not the guard, is broken)
- *   - every hook suite must pass, LOADING the copy, with nothing planted
+ *   - every hook suite must pass, LOADING the copy, with nothing planted,
+ *     printing something and leaving its private TMPDIR empty
  *   - `--selftest` plants a mutation that changes NOTHING into each arm and
  *     requires it reported as unprotected; plants a total break into a hook guard
  *     and requires a red; points the redirect at a module the suite never loads
- *     and requires UNREACHED; runs the declaration reader over a planted guards
+ *     and requires UNREACHED; loads a copy that leaves a directory in TMPDIR
+ *     and requires LEAKED; runs the declaration reader over a planted guards
  *     directory (stale, ambiguous, unreadable, valid); and runs a mutant of THIS
  *     FILE that skips the hook arm, which must exit non-zero.
  *
@@ -88,6 +94,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -415,6 +422,22 @@ export interface SuiteRun {
   timedOut: boolean;
   seconds: number;
   tail: string;
+  /** Entries the run left in its private TMPDIR, minus the shared tool caches `SHARED_TOOL_CACHE` names. */
+  leftovers: string[];
+  /** Bytes the suite wrote to stdout and stderr together. */
+  outBytes: number;
+}
+
+/**
+ * Fixed-name caches node and tsx keep under TMPDIR (`node-compile-cache`, `tsx-<uid>`), made by a suite that shells out to a tsx gate. One per user and reused rather than added to, so they are exempt by exact shape, never by prefix; anything else a suite leaves behind is a leak. The same pattern `test_hooks_delegates.py` applies to the suites it still runs.
+ */
+export const SHARED_TOOL_CACHE = /^(node-compile-cache|tsx-[0-9]+)$/;
+
+/** The entries of a TMPDIR listing that count as a leak. Pure. */
+export function tmpLeftovers(names: string[]): string[] {
+  return names
+    .filter((n) => !SHARED_TOOL_CACHE.test(n))
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 export type RunVerdict =
@@ -424,12 +447,16 @@ export type RunVerdict =
   | 'unreached'
   | 'broken'
   | 'pristine-red'
+  | 'silent'
+  | 'leaked'
   | 'timeout';
 
 /**
  * The verdict for one suite run. Pure.
  *
  * `loads === 0` is checked BEFORE the exit code in both directions: a green run that never loaded the copy is not evidence the suite is blind, and a red one is not evidence it caught anything.
+ *
+ * A PRISTINE run is green only when it also printed something and left its private TMPDIR empty. Those two refusals used to live in `test_hooks_delegates.py`, which ran every one of these suites a second time under check:ci-pytest for exactly them; this run is now the only one, so it carries them. Empty output is what a stub returns (`silent`); a leftover directory is the leak that filled the /tmp inode cap on 2026-09-24 (`leaked`).
  */
 export function runVerdict(
   kind: 'pristine' | 'plant',
@@ -438,7 +465,12 @@ export function runVerdict(
 ): RunVerdict {
   if (run.timedOut) return 'timeout';
   if (run.loads === 0) return 'unreached';
-  if (kind === 'pristine') return run.rc === 0 ? 'green' : 'pristine-red';
+  if (kind === 'pristine') {
+    if (run.rc !== 0) return 'pristine-red';
+    if (run.outBytes === 0) return 'silent';
+    if (run.leftovers.length > 0) return 'leaked';
+    return 'green';
+  }
   if (run.rc === 0) return 'undetected';
   return plantNeverRan(run.tail, guardBase) ? 'broken' : 'caught';
 }
@@ -492,7 +524,9 @@ function runSuite(job: Job, id: number): Promise<SuiteRun> {
     });
     if (child.pid !== undefined) liveChildren.add(child.pid);
     let tail = '';
+    let outBytes = 0;
     const keep = (chunk: Buffer): void => {
+      outBytes += chunk.length;
       tail = (tail + chunk.toString('utf8')).slice(-6000);
     };
     child.stdout.on('data', keep);
@@ -508,8 +542,18 @@ function runSuite(job: Job, id: number): Promise<SuiteRun> {
       const loads = existsSync(log)
         ? readFileSync(log, 'utf8').split('\n').filter(Boolean).length
         : 0;
+      const tmp = join(dir, 'tmp');
+      const leftovers = existsSync(tmp) ? tmpLeftovers(readdirSync(tmp)) : [];
       rmSync(dir, { recursive: true, force: true });
-      resolveRun({ rc, loads, timedOut, seconds: (Date.now() - started) / 1000, tail });
+      resolveRun({
+        rc,
+        loads,
+        timedOut,
+        seconds: (Date.now() - started) / 1000,
+        tail,
+        leftovers,
+        outBytes,
+      });
     };
     child.on('error', (err) => {
       tail += `\nspawn failed: ${err.message}`;
@@ -694,7 +738,11 @@ async function runHookArm(opts: { planOnly: boolean }): Promise<HookReport> {
         fix:
           pv === 'unreached'
             ? `the suite never compiled ${g.file} through the import system, so the redirect cannot reach it; drive the guard by import or dispatch.py`
-            : `run python3 .claude/rediacc_hooks/guards/${g.suite} and fix what it prints. Last output:\n${indentTail(p.tail)}`,
+            : pv === 'silent'
+              ? `${g.suite} exited 0 and printed NOTHING, which is what a stub returns; make it print one line per case or a count`
+              : pv === 'leaked'
+                ? `${g.suite} left ${p.leftovers.length} entr(y/ies) in its private TMPDIR: ${p.leftovers.slice(0, 20).join(', ')}. Delete every temp directory the suite creates (try/finally or atexit plus rmtree); leaked fixture repos are what filled the /tmp inode cap on 2026-09-24`
+                : `run python3 .claude/rediacc_hooks/guards/${g.suite} and fix what it prints. Last output:\n${indentTail(p.tail)}`,
       });
     }
     for (const i of plantJobs.get(g.stem) ?? []) {
@@ -926,6 +974,8 @@ async function hookSelftest(): Promise<Control[]> {
     timedOut,
     seconds: 0,
     tail: '',
+    leftovers: [],
+    outBytes: 1,
   });
   const redTail = (tail: string): SuiteRun => ({ ...r(1, 3), tail });
   controls.push({
@@ -955,6 +1005,16 @@ async function hookSelftest(): Promise<Control[]> {
       runVerdict('pristine', r(0, 3)) === 'green' &&
       runVerdict('pristine', r(1, 3)) === 'pristine-red' &&
       runVerdict('plant', r(null, 3, true)) === 'timeout',
+  });
+  controls.push({
+    name: 'verdict: a green pristine run that printed nothing is SILENT and one that left a TMPDIR entry is LEAKED; the shared tool caches are not a leak, and a plant run is judged on neither',
+    ok:
+      runVerdict('pristine', { ...r(0, 3), outBytes: 0 }) === 'silent' &&
+      runVerdict('pristine', { ...r(0, 3), leftovers: ['tmpabc'] }) === 'leaked' &&
+      runVerdict('pristine', { ...r(1, 3), leftovers: ['tmpabc'] }) === 'pristine-red' &&
+      runVerdict('plant', { ...r(1, 3), leftovers: ['tmpabc'], outBytes: 0 }) === 'caught' &&
+      tmpLeftovers(['node-compile-cache', 'tsx-1000', 'tmpabc', 'tsx-x']).join(',') ===
+        'tmpabc,tsx-x',
   });
 
   // 3. Live runs of a real suite, through the same runner the arm uses.
@@ -988,8 +1048,19 @@ async function hookSelftest(): Promise<Control[]> {
       source: real,
       target: join(GUARDS_DIR, `${HOOK_UNLOADED_STEM}.py`),
     },
+    {
+      ...base,
+      label: 'LEAK',
+      kind: 'pristine',
+      source: Buffer.concat([
+        real,
+        Buffer.from(
+          '\nimport tempfile as _gm_tempfile\n_gm_tempfile.mkdtemp(prefix="guard-mutations-selftest-leak-")\n'
+        ),
+      ]),
+    },
   ];
-  const [pristineRun, noop, total, unreached] = await runPool(live, live.length);
+  const [pristineRun, noop, total, unreached, leak] = await runPool(live, live.length);
   controls.push({
     name: `live: ${suite} passes with the unplanted copy loaded through the redirect`,
     ok: runVerdict('pristine', pristineRun) === 'green',
@@ -1009,6 +1080,19 @@ async function hookSelftest(): Promise<Control[]> {
     name: 'live: a redirect aimed at a module the suite never loads is UNREACHED, never UNDETECTED or caught',
     ok: runVerdict('plant', unreached) === 'unreached',
     detail: `rc ${unreached.rc}, ${unreached.loads} loads`,
+  });
+  controls.push({
+    name: 'live: the unplanted run printed output and left its TMPDIR empty (the control for the LEAK run below)',
+    ok: pristineRun.outBytes > 0 && pristineRun.leftovers.length === 0,
+    detail: `${pristineRun.outBytes} bytes, leftovers ${pristineRun.leftovers.join(', ')}`,
+  });
+  controls.push({
+    name: 'live: a copy that leaves a directory in TMPDIR makes a passing pristine run LEAKED, naming the entry',
+    ok:
+      leak.rc === 0 &&
+      runVerdict('pristine', leak) === 'leaked' &&
+      leak.leftovers.some((n) => n.startsWith('guard-mutations-selftest-leak-')),
+    detail: `rc ${leak.rc}, ${leak.loads} loads, leftovers ${leak.leftovers.join(', ')}`,
   });
 
   // 4. A mutant of this gate that skips the hook arm must go red; its unmutated copy must not.

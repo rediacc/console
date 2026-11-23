@@ -162,10 +162,20 @@ def summary(gate, output: str) -> tuple[int, int, int]:
 # ---------------------------------------------------------------------------
 
 
+# ONE REAL-TREE RUN FOR THE TWO CASES BELOW (PLAN-ciquick-cpu.md W16). Both ran the same seam-free `check-suppression-liveness.ts` over the same tree and read different things out of it; the run is a pure read, so the second spawn re-did the first's work.
+_REAL_RUN: list[harness.RunResult] = []
+
+
+def _real_run(npx: str) -> harness.RunResult:
+    if not _REAL_RUN:
+        _REAL_RUN.append(harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root()))
+    return _REAL_RUN[0]
+
+
 def test_passes_on_real_repo(gate):
     """THE REAL-TREE CASE. Real policy files, real manifests, real `git ls-files`, no seams. A FAIL-tier stale entry anywhere in the tree reds here."""
     npx = require_subject(gate)
-    result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
+    result = _real_run(npx)
     gate.assert_exit(0, result, "live tree should have no FAIL-tier stale entries")
     gate.assert_contains(result.combined, "probes:", "prints a probe summary")
     gate.log_pass("passes clean on the real repository")
@@ -174,7 +184,7 @@ def test_passes_on_real_repo(gate):
 def test_the_real_run_reports_a_non_trivial_corpus(gate):
     """ADDED BY THE PORT. The twin's real-repo case is satisfied by a run that checked ZERO entries, because `probes:` is printed either way. This reads the counts out of the summary and refuses a collapse, and PRINTS the shape so a reader can see the green was non-trivial."""
     npx = require_subject(gate)
-    result = harness.run([npx, "tsx", SUBJECT_REL], cwd=paths.repo_root())
+    result = _real_run(npx)
     gate.assert_exit(0, result, "the real tree must be clean")
     run, skipped, entries = summary(gate, result.combined)
     if run < REAL_PROBE_FLOOR:

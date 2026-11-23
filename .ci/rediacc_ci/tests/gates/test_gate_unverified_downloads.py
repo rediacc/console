@@ -25,10 +25,7 @@ def run(gate, env: dict[str, str] | None = None) -> harness.RunResult:
     return harness.run([npx, "tsx", str(GATE)], cwd=paths.repo_root(), env=env)
 
 
-def test_real_tree_passes(gate):
-    result = run(gate)
-    gate.assert_exit(0, result, "the real tree must pass; every fetch is verified or allowlisted")
-    gate.log_pass("real tree passes")
+# THE REAL-TREE GREEN CASE `test_real_tree_passes` LEFT THIS FILE (PLAN-ciquick-cpu.md W16): `check:ci-unverified-downloads` (ci-quality.yml quality-security) runs this same `check-unverified-downloads.ts` over the real tree on every run, and exit 0 was this case's only assertion.
 
 
 def test_controls_run_every_invocation(gate):

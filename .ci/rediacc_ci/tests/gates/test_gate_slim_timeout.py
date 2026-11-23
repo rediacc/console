@@ -107,14 +107,4 @@ def test_no_slim_jobs_is_blind(gate, tmp_path):
     gate.log_pass("a tree with zero slim jobs fails as blind, not green")
 
 
-def test_real_workflows_pass(gate):
-    """The seam-free case: no WORKFLOWS_DIR, so the real census is what is judged.
-
-    A READ of `.github/workflows` and nothing else. It writes nowhere, which is what keeps this module admissible to the parity driver.
-    """
-    result = harness.run(
-        [harness.require_tool("python3", "install python3 with PyYAML"), str(CHECK)],
-        env={"CI": "true"},
-    )
-    gate.assert_exit(0, result, "every real ubuntu-slim job declares a compliant timeout")
-    gate.log_pass("the repo's own .github/workflows satisfies the rule")
+# THE REAL-TREE GREEN CASE `test_real_workflows_pass` LEFT THIS FILE (PLAN-ciquick-cpu.md W16): `check:ci-workflow-gates` (ci-quality.yml quality-code, step `Workflow structural gates`) runs this same `check_workflow_gates.py` over the real `.github/workflows` with CI=true on every run, and exit 0 was this case's only assertion.
