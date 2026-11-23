@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 276 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 277 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -610,6 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
+| `agent/plans/PLAN-silent-failure-sweep.md` | approved | 211 | 10 | 0 | 25834 |
 | `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 185 | 5 | 7 | 39052 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
@@ -741,7 +742,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-276 plan(s), 214 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+277 plan(s), 215 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

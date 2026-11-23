@@ -52,7 +52,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 65 plans done, 1113 of 1423 boxes done (78%).
+Promoted: 6 of 66 plans done, 1113 of 1433 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -121,6 +121,7 @@ Promoted: 6 of 65 plans done, 1113 of 1423 boxes done (78%).
 | 63 | PLAN-tooling-speed.md | 0/8 | 8 open |
 | 64 | PLAN-tooling-code-reduction.md | 2/11 | 9 open |
 | 65 | PLAN-stop-hook-retro-20261123.md | 7/8 | 1 open |
+| 66 | PLAN-silent-failure-sweep.md | 0/10 | 10 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -188,6 +189,7 @@ Promoted: 6 of 65 plans done, 1113 of 1423 boxes done (78%).
 63. agent/plans/PLAN-tooling-speed.md -- operator /ask 2026-11-22 (#bc8eb843): two tooling plans, speed first; Stop hook reads once, run_stop registry, profiler fixes, in-process lifecycle members, watchdog repeat-failure rule, wrangler-dev-e2e CI lane
 64. agent/plans/PLAN-tooling-code-reduction.md -- operator /ask 2026-11-22 (#bc8eb843): migration scaffolding removal, one declaration per gate (first), one env registry, gate tables, hook write analyser and rule tables, guard fire ledger and retirement report; replaces PLAN-deletion-budget.md
 65. agent/plans/PLAN-stop-hook-retro-20261123.md -- standing procedure PLAN-stop-hook-continuity.md P3.1 (band late, session ace763dd): landing-stack blocks while promote refuses, hooks of the onto base during a rebase, STATE.md voiding push receipts, commit-ref reachability, landing-cut leases
+66. agent/plans/PLAN-silent-failure-sweep.md -- operator /ask 2026-11-23 ("One plan this branch but start in parallel immediately"): quality scripts refuse unknown flags through one parser, and Stop hook reads name their failure; SF1-SF3 writers started at once
 
 ## Generated
 
