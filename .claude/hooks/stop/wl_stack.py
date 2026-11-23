@@ -415,8 +415,12 @@ def stack_verdict(root, released=True, own_paths=None, live_main_bg=None, **kw) 
         except OpenBoxesError as exc:
             plans = []
             notes.append("Promote also refuses here: %s." % exc)
-        except Exception:
+        except Exception as exc:
             plans = []
+            notes.append(
+                "The open [writer] box read failed (%s: %s), so whether promote would proceed is unknown."
+                % (type(exc).__name__, exc)
+            )
         if plans:
             return Verdict(advisory=_code_complete_text(st, plans))
     dirt = _promote_dirt(root, st.landing_path) or []
