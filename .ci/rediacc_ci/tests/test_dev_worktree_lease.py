@@ -3175,10 +3175,10 @@ def test_seed_public_keys_controls(tmp_path):
 # A lease the lead parks on purpose (`hold`): gc keeps it, `leases` shows it, and the Stop hook's side lives in test-wl_worktrees.py. A hold is only as long as its worklist item is open.
 
 
-def worklist_verb(root, *args):
+def worklist_verb(root, *args, session=GC_SESSION):
     done = subprocess.run(
         [sys.executable, str(WORKLIST), *args],
-        env={**gc_env(root), "WORKLIST_SESSION_ID": GC_SESSION},
+        env={**gc_env(root), "WORKLIST_SESSION_ID": session},
         cwd=str(root),
         capture_output=True,
         text=True,
@@ -3281,7 +3281,13 @@ def test_hold_refuses_a_session_that_does_not_own_the_lease(unlanded_tree):
 
 def test_hold_refuses_an_item_of_another_session(unlanded_tree):
     repo = unlanded_tree
-    done = worklist_verb(repo.root, "--add", "babe0000", "peer work waits on its dependencies")
+    done = worklist_verb(
+        repo.root,
+        "--add",
+        "babe0000",
+        "peer work waits on its dependencies",
+        session="babe0000cafe",
+    )
     peer_item = done.split("#", 1)[1].split()[0].strip(":,.)")
     refused = hold_as(repo, peer_item)
     assert refused.returncode == 1, refused.stdout

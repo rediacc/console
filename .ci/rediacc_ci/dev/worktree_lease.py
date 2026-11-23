@@ -1127,7 +1127,7 @@ def _read_items(root):
 
 
 def _hold_problem(world, lease_id):
-    """The phrase a hold keeps its tree by, or "" for no hold or a hold whose item is closed (a hold cannot outlive its reason)."""
+    """The phrase a hold keeps its tree by, or "" for no hold, a hold whose item is closed (a hold cannot outlive its reason) and a hold the Stop hook does not honour either (`hold_check`: not the full item id, not the owner's)."""
     hold = world.holds.get(lease_id)
     if hold is None:
         return ""
@@ -1135,7 +1135,10 @@ def _hold_problem(world, lease_id):
         return "its hold record could not be read"
     if world.items is None:
         return "held for #%s: %s (the worklist could not be read)" % (hold["item"], hold["reason"])
-    if _hook_module("wl_worktrees").find_open_item(world.items, hold["item"]):
+    found, _why = _hook_module("wl_worktrees").hold_check(
+        hold, world.items, world.records.get(lease_id) or {}
+    )
+    if found:
         return "held for #%s: %s" % (hold["item"], hold["reason"])
     return ""
 
@@ -2137,16 +2140,24 @@ def lease_rows(root):
 
 
 def _hold_row(world, lease_id):
-    """{"item", "reason", "open"} for a lease with a hold, else None. A hold that could not be read has an empty item."""
+    """{"item", "reason", "open", "note"} for a lease with a hold, else None. `open` is whether the hold still parks the lease, and `note` says why not ("" when it does). An unreadable hold has an empty item and stays open, since `gc` keeps the tree it names; a worklist that cannot be read leaves a readable hold open for the same reason."""
     hold = world.holds.get(lease_id)
     if hold is None:
         return None
     if hold.get("broken"):
-        return {"item": "", "reason": "unreadable", "open": False}
-    still = world.items is None or bool(
-        _hook_module("wl_worktrees").find_open_item(world.items, hold["item"])
+        return {
+            "item": "",
+            "reason": "hold record unreadable",
+            "open": True,
+            "note": "gc keeps the tree",
+        }
+    if world.items is None:
+        return {"item": hold["item"], "reason": hold["reason"], "open": True, "note": ""}
+    found, why = _hook_module("wl_worktrees").hold_check(
+        hold, world.items, world.records.get(lease_id) or {}
     )
-    return {"item": hold["item"], "reason": hold["reason"], "open": still}
+    note = "" if found else (why or "item closed, no longer held")
+    return {"item": hold["item"], "reason": hold["reason"], "open": bool(found), "note": note}
 
 
 def _lease_line(row):
@@ -2158,8 +2169,11 @@ def _lease_line(row):
     tree = "" if row["exists"] else "  (no tree on disk)"
     hold = row.get("hold")
     if hold:
-        state = "" if hold["open"] else " (item closed, no longer held)"
-        tree += "  held for #%s: %s%s" % (hold["item"], hold["reason"], state)
+        note = " (%s)" % hold["note"] if hold["note"] else ""
+        if hold["item"]:
+            tree += "  held for #%s: %s%s" % (hold["item"], hold["reason"], note)
+        else:
+            tree += "  %s%s" % (hold["reason"], note)
     return "  %-24s owner %-10s base %-12s dirty %d  unlanded: %s%s" % (
         row["id"],
         row["owner"] or "unknown",
@@ -2194,8 +2208,12 @@ Park a finished lease on purpose: its commits must not land until the open
 worklist item's work exists. The Stop hook then reports the lease as one
 advisory line (held for #<item>: <reason>) instead of blocking, and `gc` keeps
 the tree. The hold ends the moment the item is ticked or gone, and the lease
-blocks again. Refused for an unknown lease, an item that is not open and an
-empty reason. `./run.sh worktree unhold <id>` removes it.
+blocks again. The item is named by its full id (a unique prefix is resolved to
+it here and recorded in full), it must carry the session's own tag, and the
+session must own the lease: the Stop hook honours no other hold. Refused for
+an unknown lease, an item that is not open or whose prefix is ambiguous, a
+session that does not own the lease and an empty reason.
+`./run.sh worktree unhold <id>` removes it.
 """
 UNHOLD_HELP = """\
 Usage: ./run.sh worktree unhold <id>
@@ -2230,12 +2248,21 @@ def run_hold(root, lease_id, item, reason):
     if items is None:
         message = "the worklist could not be read, so the item cannot be checked"
         raise LeaseRefusedError(message)
-    found = _hook_module("wl_worktrees").find_open_item(items, item)
+    watch = _hook_module("wl_worktrees")
+    found, why = watch.resolve_open_item(items, item)
     if not found:
-        message = "#%s is not an open worklist item" % item.lstrip("#")
+        raise LeaseRefusedError(why)
+    session = _hook_module("wl_core").resolve_session_id()[:8]
+    if not session:
+        message = "no session id in the environment, so the hold cannot name its writer"
         raise LeaseRefusedError(message)
+    owner = str((world.records.get(lease_id) or {}).get("owner") or "")[:8]
+    problem = watch.owner_problem(session, found, owner)
+    if problem:
+        raise LeaseRefusedError(problem)
     record = {
         "item": str(found["id"]),
+        "session": session,
         "reason": reason,
         "held_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
