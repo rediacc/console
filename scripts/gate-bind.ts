@@ -1433,6 +1433,15 @@ export function insertHeader(
  * collected nothing would produce.
  */
 /**
+ * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then `npm run <script>` and plain arguments, with no shell operator anywhere. An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
+ */
+export function isNpmHop(run: string): boolean {
+  return /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s;&|()<>`'"]*)\s+)*npm run\s+[^\s;&|()<>`]+(?:\s+[^\s;&|()<>`]+)*\s*$/.test(
+    run
+  );
+}
+
+/**
  * How one declared gate's REGISTRATION disagrees with its header: the lock's direct `run`, or the package.json key it hops through. Exported so the selftest drives both shapes; `main` calls it once per declared gate.
  */
 export function registrationProblems(
@@ -1445,8 +1454,7 @@ export function registrationProblems(
   const runsScriptDirectly =
     lockEntry !== undefined &&
     // ANY RUN THAT IS NOT AN npm HOP, not only one ending `.sh` or `.py`. That suffix test was the W7 P4 widening of a `.sh`-only one; a header-declared gate (`gen:gates`, PLAN-tooling-code-reduction.md D2) runs `PYTHONPATH=.ci python3 -m <module>` or `tsx <file> --selftest && tsx <file>`, ends in neither, and under the suffix test fell to the package.json branch below and was refused for lacking the very key D2 retires.
-    // An env-prefixed hop (`VITEST_MAX_WORKERS=... npm run <id>`) is still a hop, so the test is for `npm run` in command position anywhere, not for the run's first word.
-    !/(^|[\s;&|(])npm run\s/.test(lockEntry.run);
+    !isNpmHop(lockEntry.run);
   if (runsScriptDirectly) {
     if (lockEntry.run !== b.run) {
       problems.push(
@@ -1557,6 +1565,22 @@ function selftest(endToEnd = false): number {
     'CONTROL: an env-prefixed npm hop is a hop, judged against package.json and not as a direct run',
     registrationProblems(modB, { run: `X=1 npm run ${modB.id}` }, { [modB.id]: modB.run })
       .length === 0
+  );
+  ck(
+    'CONTROL: a plain hop, an env-prefixed hop and a quoted-env hop are hops; a compound run is not',
+    isNpmHop('npm run check:ci-a') &&
+      isNpmHop('X=1 npm run check:ci-a') &&
+      isNpmHop('VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-a -- --flag') &&
+      !isNpmHop('tsx scripts/gates/x.ts && npm run check:ci-a') &&
+      !isNpmHop('npm run check:ci-a; rm -rf x') &&
+      !isNpmHop('(cd y && npm run check:ci-a)') &&
+      !isNpmHop('npm run check:ci-a | tee log')
+  );
+  ck(
+    'CONTROL: a drifted compound lock run is a direct run and is refused against the header',
+    registrationProblems(modB, { run: `${modB.run} && npm run check:ci-other` }, {}).some((p) =>
+      p.includes('gates.lock.json runs')
+    )
   );
   ck(
     'CONTROL: an npm-hop gate with no package.json key is a named problem',
