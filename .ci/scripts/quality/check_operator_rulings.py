@@ -5,14 +5,14 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/o
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
 import sys
 
 import _cipath
 import _gate_args
+from rediacc_ci.quality import operator_rulings
 
 if __name__ == "__main__":
     _gate_args.parse(
         "check_operator_rulings.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
     )
-    runpy.run_module("rediacc_ci.quality.operator_rulings", run_name="__main__", alter_sys=True)
+    raise SystemExit(operator_rulings.main(sys.argv[1:]))

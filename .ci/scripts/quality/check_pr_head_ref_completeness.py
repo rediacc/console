@@ -5,14 +5,12 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/p
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
 import sys
 
 import _cipath
 import _gate_args
+from rediacc_ci.quality import pr_head_ref_completeness
 
 if __name__ == "__main__":
     _gate_args.parse("check_pr_head_ref_completeness.py", sys.argv[1:], switches=())
-    runpy.run_module(
-        "rediacc_ci.quality.pr_head_ref_completeness", run_name="__main__", alter_sys=True
-    )
+    sys.exit(pr_head_ref_completeness.main())

@@ -5,9 +5,10 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/l
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
+import sys
 
 import _cipath
+from rediacc_ci.quality import lint_scope_coverage
 
 if __name__ == "__main__":
-    runpy.run_module("rediacc_ci.quality.lint_scope_coverage", run_name="__main__", alter_sys=True)
+    sys.exit(lint_scope_coverage.main())

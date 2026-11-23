@@ -5,12 +5,12 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/p
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
 import sys
 
 import _cipath
 import _gate_args
+from rediacc_ci.quality import pathspec_scope
 
 if __name__ == "__main__":
     _gate_args.parse("check_pathspec_scope.py", sys.argv[1:], switches=("--selftest",))
-    runpy.run_module("rediacc_ci.quality.pathspec_scope", run_name="__main__", alter_sys=True)
+    sys.exit(pathspec_scope.main())

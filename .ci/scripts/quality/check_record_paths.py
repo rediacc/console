@@ -5,11 +5,11 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/r
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
 import sys
 
 import _cipath
 import _gate_args
+from rediacc_ci.quality import record_paths
 
 if __name__ == "__main__":
     _gate_args.parse(
@@ -18,4 +18,4 @@ if __name__ == "__main__":
         switches=("--selftest", "--records-only", "--widths-only"),
         valued=("--policy", "--lock", "--widths"),
     )
-    runpy.run_module("rediacc_ci.quality.record_paths", run_name="__main__", alter_sys=True)
+    sys.exit(record_paths.main(sys.argv[1:]))
