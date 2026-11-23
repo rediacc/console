@@ -64,9 +64,11 @@ export interface SessionStoreOptions {
 /**
  * In-memory session store. One per executor process.
  *
- * Keyed by session id, but a session is always scoped to one (org, team), which
- * is what lets the container tier key its Durable Object by org:team and keep a
- * warm SSH pool and decrypted-config cache per tenant.
+ * Keyed by session id, and a session is always scoped to one (org, team). The
+ * container tier keys its Durable Object by org and placement
+ * (workers/proxy/src/placement.ts `executorName`), so one executor process
+ * serves every team of its org and keeps a warm SSH pool and decrypted-config
+ * cache per session.
  */
 export class SessionStore {
   private readonly sessions = new Map<string, SessionEntry>();
