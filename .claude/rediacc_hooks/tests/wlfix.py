@@ -1,7 +1,7 @@
 """The fixture layer for the worklist Stop-hook control suite, ported from bash.
 
 REPLACES `.claude/hooks/stop/worklist-cases/_harness.sh`, which was the ONE copy of every fixture helper for a 16,000-line bash suite whose whole subject is Python: `worklist.py` and the `wl_*` modules beside it. The suite drove that Python through `python3 "$HOOK"` and asserted on its stdout with `grep -qF`, so every helper below is the same subprocess call with the same
-environment; what moves is the language the assertions are written in, not what is executed.
+environment; what moves is the language the assertions are written in, not what is executed. Since PLAN-ciquick-cpu.md W18 that call is a fork of a parent that has the standard library imported already, rather than a fresh interpreter; the hook, its argv, stdin, environment, cwd and `sys.path` are the call's own (`_ForkParent` below says what is and is not shared).
 
 WHY THE SANDBOX IS REBUILT PER TEST RATHER THAN SHARED. The bash suite carried one `$BASE` for all 802 cases and `setup()` began with `rm -rf "$BASE"`, so a case that forgot the call inherited its predecessor's world. pytest gives each test its own `tmp_path`, which makes that inheritance unrepresentable instead of merely discouraged, and the cases that DELIBERATELY chain (a second
 stop on an unmoved world, a third that trips the stuck detector) chain inside one test function, where the sequence is visible in one place.
@@ -13,6 +13,7 @@ THE AMBIENT SCRUB IS STILL LOAD-BEARING and is done here rather than once at imp
 
 from __future__ import annotations
 
+import atexit
 import importlib
 import json
 import os
@@ -138,6 +139,163 @@ def import_wl(name: str):
     """Import a `wl_*` module from the hook directory, as the bash `python3 -c` did."""
     paths.on_sys_path(STOP_DIR)
     return __import__(name)
+
+
+# ONE PRE-IMPORTED PARENT PER PYTEST PROCESS, AND A FORK PER CASE (PLAN-ciquick-cpu.md W18). Every hook call used to be a fresh `python3 worklist.py`: an interpreter start plus about 800 ms of imports under load, of which about 310 ms is the standard library (measured 2026-11-23 with `-X importtime`), paid again by each of the suite's thousands of calls. The parent
+# below imports that standard-library set ONCE and forks a child per call; the child applies the call's environment, cwd, argv, stdin and `sys.path` exactly as a fresh interpreter would, then runs the hook as `__main__`.
+#
+# THE HOOK'S OWN MODULES ARE NEVER PRE-IMPORTED, and that is the line that keeps this honest. 31 `wl_*` modules read a WORKLIST_* knob into a module constant at import (`BGSWEEP_AGE_MIN = int(os.environ.get(...))` and the like), and several register atexit or signal work at import. Imported in the parent, they would freeze the parent's environment into every child. So the
+# child imports `worklist.py` and everything under `.claude` and `.ci` fresh, with the case's environment already in place; only modules from the interpreter's own library, which read no WORKLIST_* knob, come from the parent.
+#
+# EXIT IS A NORMAL EXIT. The child joins non-daemon threads and runs its atexit handlers (the resource recorder runs at the exit of every hook process) before `os._exit`, and an uncaught exception prints the traceback from the hook's own frame down, as a fresh interpreter would, with exit code 1.
+_PRELOAD = (
+    "ast base64 bisect bz2 calendar collections contextlib copy dataclasses datetime difflib dis "
+    "enum fcntl fnmatch functools glob grp hashlib heapq hmac importlib inspect io ipaddress "
+    "itertools json keyword locale lzma math operator pathlib pwd random re reprlib secrets select "
+    "selectors shlex shutil signal socket struct subprocess tarfile tempfile threading tokenize "
+    "tomllib traceback typing urllib.parse warnings weakref zlib"
+)
+
+_FORK_SERVER = r"""
+import importlib, json, os, sys
+for _name in %(preload)r.split():
+    try:
+        importlib.import_module(_name)
+    except ImportError:
+        pass
+import atexit, io, runpy, tempfile, threading, time, traceback
+
+_pp = set(p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p)
+BASE_PATH = [p for p in sys.path if p and p not in _pp]
+SCRATCH = tempfile.mkdtemp(prefix="wlfix-fork-")
+reply = os.fdopen(os.dup(1), "w", encoding="utf-8")
+devnull = os.open(os.devnull, os.O_RDWR)
+os.dup2(devnull, 1)
+
+
+def child(req, out_path, err_path, in_path):
+    os.chdir(req["cwd"])
+    os.environ.clear()
+    os.environ.update(req["env"])
+    time.tzset()
+    tempfile.tempdir = None
+    hook = req["argv"][0]
+    extra = [os.path.abspath(p) for p in req["env"].get("PYTHONPATH", "").split(os.pathsep) if p]
+    seen, path = set(), []
+    for entry in [os.path.dirname(os.path.abspath(hook)), *extra, *BASE_PATH]:
+        if entry not in seen:
+            seen.add(entry)
+            path.append(entry)
+    sys.path[:] = path
+    sys.dont_write_bytecode = bool(req["env"].get("PYTHONDONTWRITEBYTECODE"))
+    sys.argv = list(req["argv"])
+    for fd, name, flags in ((0, in_path, os.O_RDONLY), (1, out_path, os.O_WRONLY), (2, err_path, os.O_WRONLY)):
+        handle = os.open(name, flags)
+        os.dup2(handle, fd)
+        os.close(handle)
+    sys.stdin = open(0, "r", encoding="utf-8", closefd=False)
+    sys.stdout = open(1, "w", encoding="utf-8", closefd=False)
+    sys.stderr = open(2, "w", encoding="utf-8", errors="backslashreplace", closefd=False)
+    sys.__stdin__, sys.__stdout__, sys.__stderr__ = sys.stdin, sys.stdout, sys.stderr
+    code = 0
+    try:
+        runpy.run_path(hook, run_name="__main__")
+    except SystemExit as exc:
+        if exc.code is None:
+            code = 0
+        elif isinstance(exc.code, int):
+            code = exc.code
+        else:
+            print(exc.code, file=sys.stderr)
+            code = 1
+    except BaseException as exc:
+        tb = exc.__traceback__
+        while tb is not None and os.path.abspath(tb.tb_frame.f_code.co_filename) != os.path.abspath(hook):
+            tb = tb.tb_next
+        traceback.print_exception(type(exc), exc, tb or exc.__traceback__)
+        code = 1
+    try:
+        threading._shutdown()
+        atexit._run_exitfuncs()
+    finally:
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except Exception:
+                pass
+        os._exit(code & 0xFF)
+
+
+for line in sys.stdin:
+    req = json.loads(line)
+    out_path = os.path.join(SCRATCH, "out")
+    err_path = os.path.join(SCRATCH, "err")
+    in_path = os.path.join(SCRATCH, "in")
+    with open(in_path, "w", encoding="utf-8") as handle:
+        handle.write(req["stdin"])
+    for name in (out_path, err_path):
+        open(name, "w").close()
+    pid = os.fork()
+    if pid == 0:
+        try:
+            child(req, out_path, err_path, in_path)
+        finally:
+            os._exit(70)
+    _, status = os.waitpid(pid, 0)
+    rc = os.waitstatus_to_exitcode(status)
+    with open(out_path, encoding="utf-8", errors="surrogateescape") as handle:
+        out = handle.read()
+    with open(err_path, encoding="utf-8", errors="surrogateescape") as handle:
+        err = handle.read()
+    reply.write(json.dumps({"rc": rc, "out": out, "err": err}) + "\n")
+    reply.flush()
+import shutil
+shutil.rmtree(SCRATCH, ignore_errors=True)
+""" % {"preload": _PRELOAD}
+
+
+class _ForkParent:
+    """The pre-imported parent of this pytest process, started on first use and stopped at exit."""
+
+    proc: subprocess.Popen | None = None
+    served = 0
+
+    @classmethod
+    def run(cls, argv: list[str], stdin: str, env: dict[str, str]) -> tuple[int, str, str]:
+        if cls.proc is None or cls.proc.poll() is not None:
+            cls.proc = subprocess.Popen(
+                [sys.executable, "-c", _FORK_SERVER],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+            )
+            atexit.register(cls.stop)
+        to_parent, from_parent = cls.proc.stdin, cls.proc.stdout
+        if to_parent is None or from_parent is None:
+            raise RuntimeError("the wlfix fork parent was started without its pipes")
+        request = {"argv": argv, "stdin": stdin, "env": env, "cwd": os.getcwd()}
+        to_parent.write(json.dumps(request) + "\n")
+        to_parent.flush()
+        line = from_parent.readline()
+        if not line:
+            raise RuntimeError(
+                "the wlfix fork parent died (rc %r) while running %r; rerun the case to see "
+                "whether the hook or the parent is at fault" % (cls.proc.poll(), argv)
+            )
+        reply = json.loads(line)
+        cls.served += 1
+        return reply["rc"], reply["out"], reply["err"]
+
+    @classmethod
+    def stop(cls) -> None:
+        if cls.proc is not None and cls.proc.poll() is None:
+            if cls.proc.stdin is not None:
+                cls.proc.stdin.close()
+            try:
+                cls.proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                cls.proc.kill()
 
 
 class Result:
@@ -509,17 +667,10 @@ class Fixture:
         base.setdefault("WORKLIST_TASKS_DIR", str(self.base / "tasks"))
         # A Stop event (no argv): snapshot the `.lastevent-` files so check_quiet can tell a battery that ran and had nothing to say from a hook that died before deciding.
         before = self._lastevents() if not argv else None
-        proc = subprocess.run(
-            [sys.executable, str(self.hook), *argv],
-            input=stdin,
-            capture_output=True,
-            text=True,
-            env=base,
-            check=False,
-        )
-        got = Result(proc.stdout, proc.stderr, proc.returncode)
+        rc, out, err = _ForkParent.run([str(self.hook), *argv], stdin, base)
+        got = Result(out, err, rc)
         if before is not None:
-            got.battery_ran = proc.returncode == 0 and self._lastevents() != before
+            got.battery_ran = rc == 0 and self._lastevents() != before
         return got
 
     def _lastevents(self) -> dict:

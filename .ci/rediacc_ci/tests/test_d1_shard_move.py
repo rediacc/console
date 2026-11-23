@@ -38,7 +38,12 @@ def clock() -> str:
     return NOW
 
 
-@pytest.fixture(scope="module")
+# ONE TEMPLATE PER SESSION, ON ONE WORKER (PLAN-ciquick-cpu.md W18). Applying every migration in journal order is the expensive part of this file, and under xdist each worker that drew one of its tests built its own copy: measured 2026-11-20 at 23-25 s on each of eight workers, against 1.5 s for a test that copies the template. The group sends every test here to one
+# worker and the session scope builds the template there once; each test still copies it into its own `tmp_path`, so no test sees another's writes.
+XDIST_GROUP = "d1-shard-move"
+
+
+@pytest.fixture(scope="session")
 def template(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
     path = tmp_path_factory.mktemp("d1") / "template.db"
     conn = sqlite3.connect(path)

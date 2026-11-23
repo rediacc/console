@@ -216,15 +216,43 @@ class World:
         )
 
 
+# ONE WORLD PER SESSION FOR BOTH GIT-HOOK MODULES (PLAN-ciquick-cpu.md W18). This file and `test_githook_generated_artifacts.py` each built a World of their own, and under xdist every worker that drew one of their tests built it again: a checkout of the whole tree at HEAD plus a `gen-docs --write`, measured 2026-11-20 at 20-60 s per build. Both modules now declare
+# the same xdist group, so loadgroup sends all of their tests to one worker, and `shared_world` builds ONE World there. The other module adds what it needs before the build through `WORLD_EXTRAS` (its overlay of registry and checker files, the plan blob prefetch, the linked build products); pytest imports every module before the first test runs, so the extras are always in
+# place before the first build. The cases already reset the World to its starting commit after each run, which is what made sharing it within one module safe; the same reset is what makes sharing it across the two safe.
+XDIST_GROUP = "githook-world"
+
+#: Hooks another module registers at import: `before()` runs ahead of the build, `overlay()` returns working-tree files to lay over HEAD, `after(world)` runs once the World is committed.
+WORLD_EXTRAS: dict[str, list] = {"before": [], "overlay": [], "after": []}
+_SHARED: dict[str, World] = {}
+
+
+def shared_world(request, tmp_path_factory) -> World:
+    """The one World of this pytest process, built on first use with every registered extra and removed at session end."""
+    if "world" not in _SHARED:
+        for before in WORLD_EXTRAS["before"]:
+            before()
+        extra: list[str] = []
+        for overlay in WORLD_EXTRAS["overlay"]:
+            extra += [rel for rel in overlay() if rel not in extra]
+        w = World(tmp_path_factory.mktemp("githook-world"), extra_overlay=tuple(extra))
+        w.build()
+        for after in WORLD_EXTRAS["after"]:
+            after(w)
+        hooks = _load("githooks_under_test", w.real_hooks / "githooks.py")
+        scratch = hooks.scratch_for(_git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
+
+        def _teardown() -> None:
+            shutil.rmtree(scratch, ignore_errors=True)
+            print("\ntimings (s): " + ", ".join("%s %.2f" % (k, v) for k, v in TIMINGS.items()))
+
+        request.session.addfinalizer(_teardown)
+        _SHARED["world"] = w
+    return _SHARED["world"]
+
+
 @pytest.fixture(scope="module")
-def world(tmp_path_factory):
-    w = World(tmp_path_factory.mktemp("githook-gen-docs"))
-    w.build()
-    hooks = _load("githooks_under_test", w.real_hooks / "githooks.py")
-    scratch = hooks.scratch_for(_git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
-    yield w
-    shutil.rmtree(scratch, ignore_errors=True)
-    print("\ntimings (s): " + ", ".join("%s %.2f" % (k, v) for k, v in TIMINGS.items()))
+def world(request, tmp_path_factory):
+    return shared_world(request, tmp_path_factory)
 
 
 # --------------------------------------------------------------------------- the cases ---------------------------------------------------------------------------

@@ -120,6 +120,16 @@ def build_fixture(
     return fixture
 
 
+# ONE BUILD CACHE PER SESSION (PLAN-ciquick-cpu.md W18). Each fixture used to carry its own `.gocache`, so every `go test` over a synthetic module rebuilt the standard library packages `testing` pulls in, once per side per case. The build cache is safe to share between concurrent `go` processes and holds compiled packages only: both sides run `go test -count=1`, so no
+# TEST RESULT is ever served from it, and the byte-for-byte comparison of the two sides cannot see the difference.
+_GOCACHE: dict[str, str] = {}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _shared_gocache(tmp_path_factory: pytest.TempPathFactory) -> None:
+    _GOCACHE["dir"] = str(tmp_path_factory.mktemp("gocache"))
+
+
 def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
     home = fixture / ".home"
     home.mkdir(parents=True, exist_ok=True)
@@ -128,7 +138,7 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
         "HOME": str(home),
         "LC_ALL": "C",
         "LANG": "C",
-        "GOCACHE": str(fixture / ".gocache"),
+        "GOCACHE": _GOCACHE["dir"],
         "GOFLAGS": "-mod=mod",
         "PYTHONPATH": str(fixture / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",

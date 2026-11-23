@@ -48,7 +48,10 @@ def _load(name: str, path: pathlib.Path):
     return module
 
 
-GD = _load("githook_gen_docs_fixture", pathlib.Path(__file__).with_name("test_githook_gen_docs.py"))
+# The canonical module, not a private copy: the shared World lives in its module state, so a second copy would build a second World (PLAN-ciquick-cpu.md W18).
+GD = importlib.import_module("rediacc_hooks.tests.test_githook_gen_docs")
+
+XDIST_GROUP = GD.XDIST_GROUP
 GA = _load("githook_artifacts_under_test", HOOKS / "artifacts.py")
 
 
@@ -556,16 +559,15 @@ def _prefetch_main_plans() -> int:
         return 0
 
 
+# What this module needs from the one shared World, registered before any World is built (see `test_githook_gen_docs.shared_world`).
+GD.WORLD_EXTRAS["before"].append(_prefetch_main_plans)
+GD.WORLD_EXTRAS["overlay"].append(_overlay)
+GD.WORLD_EXTRAS["after"].append(lambda w: _link_build_products(w.repo))
+
+
 @pytest.fixture(scope="module")
-def world(tmp_path_factory):
-    _prefetch_main_plans()
-    w = GD.World(tmp_path_factory.mktemp("githook-artifacts"), extra_overlay=_overlay())
-    w.build()
-    _link_build_products(w.repo)
-    hooks = _load("githooks_for_world", w.real_hooks / "githooks.py")
-    scratch = hooks.scratch_for(GD._git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
-    yield w
-    shutil.rmtree(scratch, ignore_errors=True)
+def world(request, tmp_path_factory):
+    return GD.shared_world(request, tmp_path_factory)
 
 
 def _plant(w, entry: dict) -> str:

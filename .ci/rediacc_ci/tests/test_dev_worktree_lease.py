@@ -170,9 +170,8 @@ class Done(NamedTuple):
     stdout: str
 
 
-@pytest.fixture(scope="module", autouse=True)
-def hermetic_git(tmp_path_factory):
-    patch = pytest.MonkeyPatch()
+def _hermetic(patch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """The identity and config every git call here runs under; `hermetic_git` and the session-scoped `kept` both apply it."""
     identity = {
         "GIT_AUTHOR_NAME": "t",
         "GIT_AUTHOR_EMAIL": "t@example.test",
@@ -186,13 +185,22 @@ def hermetic_git(tmp_path_factory):
     for key, value in identity.items():
         patch.setenv(key, value)
     patch.delenv("COMMIT_POLICY_OK", raising=False)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def hermetic_git(tmp_path_factory):
+    patch = pytest.MonkeyPatch()
+    _hermetic(patch, tmp_path_factory)
     yield
     patch.undo()
 
 
 @pytest.fixture(scope="module")
 def done(tmp_path_factory):
-    """One lease from a dirty live tree, read by every test that only looks at it."""
+    """One lease from a dirty live tree, read by every test that only looks at it.
+
+    Module scope, built once per worker that draws a reader; the readers are many and cheap, so they stay spread rather than grouped (PLAN-ciquick-cpu.md W18 groups only `kept`, whose build is the expensive one).
+    """
     repo = make_repo(tmp_path_factory.mktemp("done").resolve())
     spike.write(repo.root / "code.txt", "UNCOMMITTED\n")
     before = shared_state(repo)
@@ -1523,8 +1531,20 @@ KEPT_RULES = [
 ]
 
 
-@pytest.fixture(scope="module")
+# ONE GC WORLD PER SESSION, ON ONE WORKER (PLAN-ciquick-cpu.md W18). `kept` builds eleven trees, holds a live process in one of them and runs gc twice; its fourteen readers only look. Under xdist every worker that drew one of them built the whole world again (measured 2026-11-20: 16-17 s on each worker for the parametrized case). The readers share one group so
+# loadgroup sends them to one worker, and the session scope builds the world there once.
+KEPT_GROUP = pytest.mark.xdist_group("dev-worktree-lease-kept")
+
+
+@pytest.fixture(scope="session")
 def kept(tmp_path_factory):
+    # A session fixture is set up BEFORE this module's autouse `hermetic_git`, so it applies the same environment itself for the build; without it the world was built under the ambient identity and HOME, and gc kept the clean tree (measured on the first run of this change).
+    with pytest.MonkeyPatch.context() as patch:
+        _hermetic(patch, tmp_path_factory)
+        return _build_kept(tmp_path_factory)
+
+
+def _build_kept(tmp_path_factory):
     repo = make_repo(tmp_path_factory.mktemp("kept").resolve())
     root = repo.root
     plant_session(root)
@@ -1564,6 +1584,7 @@ def kept(tmp_path_factory):
     return Kept(repo, trees, before, listing, written)
 
 
+@KEPT_GROUP
 @pytest.mark.parametrize(("name", "rule"), KEPT_RULES)
 def test_gc_keeps_the_tree_by_its_rule_and_leaves_it_byte_identical(kept, name, rule):
     assert kept.listing.returncode == 0, kept.listing.stderr
@@ -1573,6 +1594,7 @@ def test_gc_keeps_the_tree_by_its_rule_and_leaves_it_byte_identical(kept, name, 
     assert snapshot(kept.trees[name]) == kept.before[name]
 
 
+@KEPT_GROUP
 def test_gc_control_the_clean_tree_of_the_same_run_is_listed_and_then_deleted(kept):
     assert row_of(kept.listing.stdout, "clean").split()[0] == "DELETE"
     assert row_of(kept.written.stdout, "clean").split()[0] == "DELETE"
@@ -1580,12 +1602,14 @@ def test_gc_control_the_clean_tree_of_the_same_run_is_listed_and_then_deleted(ke
     assert "deleted 1" in kept.written.stdout.splitlines()[-1]
 
 
+@KEPT_GROUP
 def test_gc_symlink_target_outlives_the_run(kept):
     target = kept.repo.root.parent / "link-target"
     assert snapshot(target) == kept.before["link-target"]
     assert kept.trees["link"].is_symlink()
 
 
+@KEPT_GROUP
 def test_gc_kept_trees_keep_lock_pin_and_record(kept):
     root = kept.repo.root
     tree = kept.trees["unlanded"]
