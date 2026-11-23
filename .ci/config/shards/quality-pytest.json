@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T17:02:49.152Z",
+  "generatedAt": "2026-11-23T17:19:06.167Z",
   "legs": [
     {
       "index": 1,
@@ -328,6 +328,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_facts.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_lessons_weekly.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_cli.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_stack.py",
