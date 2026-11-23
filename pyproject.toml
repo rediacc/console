@@ -413,11 +413,11 @@ ignore = [
     # BLOCKER: pytest is an optional dependency of the interpreter this script starts under (main() catches ModuleNotFoundError and re-executes under the bootstrap pytest), and `differential` builds its BASE_ENV at import after REDIACC_CI_REGOLDEN is set, so both imports follow statements in main()
     "PLC0415",
 ]
-".ci/scripts/quality/check_tree_shape.py" = [
+".ci/rediacc_ci/quality/tree_shape_gate.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_store'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
-".ci/scripts/quality/check_hint_corpus.py" = [
+".ci/rediacc_ci/quality/hint_corpus.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_hints'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
@@ -429,11 +429,11 @@ ignore = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_agents'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
-".ci/scripts/quality/check_agent_session_archival.py" = [
+".ci/rediacc_ci/quality/agent_session_archival_gate.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_store'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
-".ci/scripts/quality/check_plan_implementation.py" = [
+".ci/rediacc_ci/quality/plan_implementation.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_planrec'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
     # BLOCKER: queue_head() and pr_plan_set() are calls into Stop-hook code whose failure modes are not enumerable from here (file reads, plan parsing, git), and the gate must FAIL CLOSED with a named problem rather than crash or pass, so those two handlers catch any Exception and report it; the two import handlers beside them are narrowed

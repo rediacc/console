@@ -1163,7 +1163,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 131 | .py 131 |
+| .ci/rediacc_ci/quality | 138 | .py 138 |
 | .ci/rediacc_ci/release | 41 | .py 41 |
 | .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
@@ -1449,7 +1449,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/pin-major-grace.json` | .ci/config | code: `scripts/lib/pins/status.ts` | no -- hardcoded in `scripts/lib/pins/status.ts` |
 | `.ci/config/pins.json` | .ci/config | wiring: `knip.jsonc` | yes -- repoint in `knip.jsonc` |
 | `.ci/config/plan-boxes.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |
+| `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_implementation.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_implementation.py` |
 | `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plan-priority-seed-baseline.json` | .ci/config | code: `.ci/scripts/quality/check_plan_record.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_record.py` |
 | `.ci/config/plant-proof-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/plant_proofs.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plant_proofs.py` |
@@ -1498,7 +1498,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `scripts/data/package-key-budget-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/sentence-wrapping-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/wl_shapedup.py` | no -- hardcoded in `.claude/hooks/stop/wl_shapedup.py` |
-| `scripts/data/shape-duplication-seed.json` | scripts/data | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
+| `scripts/data/shape-duplication-seed.json` | scripts/data | code: `.ci/rediacc_ci/quality/plan_citations.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_citations.py` |
 | `scripts/data/static-nowrap-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/policy/carry-exempt.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/deps-major-exceptions.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
