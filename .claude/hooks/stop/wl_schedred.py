@@ -373,8 +373,12 @@ def _diagnosis(root, owner, name, run_id):
             "%s/%s" % (owner, name), cwd=str(root), timeout=20, attempts=2, pause=2
         )
         d = diag.diagnose(fetch, run_id)
-    except Exception:
-        return {}, False
+    except Exception as exc:
+        # Not cached (ok False), so the next read tries again; the red's line says why its cause is missing meanwhile.
+        return {
+            "cause": "the diagnosis could not be read (%s: %s); --why reads it"
+            % (type(exc).__name__, str(exc)[:120])
+        }, False
     if d.get("verdict") in (None, "unknown"):
         return {}, False
     ff = d.get("first_failure") or {}
@@ -653,6 +657,7 @@ def _claim_stale(worklist, doc, run_id, now):
 
         limit = S.SESSION_BRIEF_STALE_MIN * 60.0
         when, _t = S.read_briefs(worklist).get(str(doc["sid8"]), (None, ""))
+    # swallowed-failure-ok: False keeps the claim with the session that holds it, the conservative answer when its brief cannot be read; taking a live peer's claim on a guess would race two sessions onto one red.
     except Exception:
         return False
     if when is not None:
@@ -993,8 +998,8 @@ def session_start_line(worklist):
             if text and age_s > SESSION_START_STALE_S:
                 text += "\n  [freshness cache %d h old, stale]" % (age_s // 3600)
             parts.append(text)
-    except Exception:
-        pass
+    except Exception as exc:
+        parts.append("[the freshness cache could not be read (%s: %s)]" % (type(exc).__name__, exc))
     return "\n".join(p for p in parts if p)
 
 
@@ -1009,14 +1014,20 @@ def _red_session_start_line(worklist):
             rows.append(push)
         if not rows:
             return ""
+        unread = ""
         try:
             import wl_store as S
 
             items = S.load(pathlib.Path(worklist), sync=False).items
-        except Exception:
+        except Exception as exc:
+            # "untracked" below would be a guess: the line says the worklist went unread.
             items = []
+            unread = " [the worklist could not be read (%s: %s), so tracked is unknown]" % (
+                type(exc).__name__,
+                exc,
+            )
         age_s = max(0.0, time.time() - float(doc.get("at") or 0))
-        stale = (
+        stale = unread + (
             " [cache %d h old, stale]" % (age_s // 3600) if age_s > SESSION_START_STALE_S else ""
         )
         import worklist_messages as M
@@ -1037,8 +1048,14 @@ def _red_session_start_line(worklist):
                 )
             )
         return "\n".join(lines)
-    except Exception:
-        return ""
+    except Exception as exc:
+        return (
+            "[the scheduled-red cache could not be read (%s: %s), so a red run may be missing here]"
+            % (
+                type(exc).__name__,
+                exc,
+            )
+        )
 
 
 # --------------------------------------------------------------------------- by hand

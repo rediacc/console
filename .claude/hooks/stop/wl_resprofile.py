@@ -476,8 +476,8 @@ def _on_exit() -> None:
         rec = record()
         if rec is not None:
             append(rec)
+    # swallowed-failure-ok: this runs at interpreter exit of every hook process, so a failure here must never change that process's exit status or output; a dropped record shows as a missing row in the rollup, never as a failed hook.
     except BaseException:
-        # An instrument must never change the thing it measures: a failure here is dropped, whatever it is.
         pass
 
 
@@ -496,6 +496,7 @@ def install() -> None:
             if v is not None:
                 _PSI0[name] = v
         atexit.register(_on_exit)
+    # swallowed-failure-ok: install() runs at import of wl_core in every hook process, so a failure to arm must never take the hook down; an unarmed process shows as a missing row in the rollup.
     except BaseException:
         pass
 

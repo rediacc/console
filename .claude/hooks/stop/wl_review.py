@@ -1084,7 +1084,12 @@ def landing_base(repo, branch, tip="HEAD"):
         return ""
     try:
         record, _role = policy.tree_binding(str(repo))
-    except Exception:
+    except Exception as exc:
+        # Loud, like `_policy`: without the record the range walks the PR-branch commits again, which is the defect this function exists to prevent.
+        sys.stderr.write(
+            "wl_review: the landing record could not be read (%s: %s); the review base falls back to origin/main\n"
+            % (type(exc).__name__, exc)
+        )
         return ""
     if record is None or record["branch"] == branch:
         return ""
@@ -2157,6 +2162,7 @@ def _stdlib_has(dotted, attrs):
         return False
     try:
         obj = importlib.import_module(dotted)
+    # swallowed-failure-ok: False only withholds a refutation, so the finding the existence oracle was checking stays open for a human, which is the conservative answer to a module that will not import.
     except Exception:
         return False
     for a in attrs:
@@ -2342,6 +2348,7 @@ def refute_existence(tree_obj, finding):
     for ident in idents:
         try:
             proof = lookup(ident)
+        # swallowed-failure-ok: "" refutes nothing, so the finding stays open for a human; a lookup that fails on one identifier must not close a finding the oracle could not prove wrong.
         except Exception:
             return ""
         if not proof:
@@ -2516,6 +2523,7 @@ def _writing_test(root):
     try:
         policy = _load_commit_policy(root)
         cfg = policy.load_config(str(root)) if policy is not None else None
+    # swallowed-failure-ok: None caps no finding, so every finding keeps its full severity, the conservative answer when commit_policy itself cannot be loaded (its load_config falls back to defaults and never raises).
     except Exception:
         return None
     if policy is None:
@@ -2534,10 +2542,8 @@ def _no_review_skip(root, message, paths):
     tags = policy.tags(message or "")
     if "no-review" not in tags or "hotfix" in tags:
         return False
-    try:
-        cfg = policy.load_config(str(root))
-    except Exception:
-        return False
+    # load_config falls back to the defaults on an unreadable config and never raises, so nothing is caught here.
+    cfg = policy.load_config(str(root))
     eligible, _offenders = policy.no_review_eligible(paths, cfg)
     return bool(eligible)
 
