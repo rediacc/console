@@ -2429,7 +2429,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "de": {
       "announcement.text": "6a7bf2ae",
@@ -4835,7 +4837,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "es": {
       "announcement.text": "6a7bf2ae",
@@ -7239,7 +7243,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "fr": {
       "announcement.text": "6a7bf2ae",
@@ -9645,7 +9651,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "it": {
       "announcement.text": "6a7bf2ae",
@@ -12050,7 +12058,9 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "pt": {
       "announcement.text": "6a7bf2ae",
@@ -14455,7 +14465,9 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "ar": {
       "announcement.text": "6a7bf2ae",
@@ -16861,7 +16873,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "ru": {
       "announcement.text": "6a7bf2ae",
@@ -19266,7 +19280,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "zh": {
       "announcement.text": "6a7bf2ae",
@@ -21671,7 +21687,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "ja": {
       "announcement.text": "6a7bf2ae",
@@ -24077,7 +24095,9 @@
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
       "legal.consent.stripeCheckout": "1aafb30c",
-      "pages.termsOfService.sections.definitions.title": "c8bedb41"
+      "pages.termsOfService.sections.definitions.title": "c8bedb41",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "ko": {
       "announcement.text": "6a7bf2ae",
@@ -26483,7 +26503,9 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     },
     "et": {
       "announcement.text": "6a7bf2ae",
@@ -28888,7 +28910,9 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.privacyPolicy.sections.dataSharing.items.4": "d8f268d5",
+      "pages.dataProcessingAgreement.sections.subprocessors.content2.2": "59c980e1"
     }
   }
 }
