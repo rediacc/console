@@ -2007,6 +2007,9 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     keep, clear = [], []
     for f in files:
         writer = f.stem
+        # epics.jsonl is a sidecar in this directory, not a writer's event log: the fold never carries it, so clearing it would destroy every epic.
+        if writer == "epics":
+            continue
         if writer == me8 or writer.startswith("_"):
             clear.append(f)
             continue
