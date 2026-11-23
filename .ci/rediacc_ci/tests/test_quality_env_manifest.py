@@ -35,28 +35,53 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.quality import env_manifest as em
+from rediacc_ci.tests.gates import harness
 
 ENTRY = ".ci/scripts/quality/check_env_manifest.py"
 
 pytestmark = pytest.mark.xdist_group("env-manifest")
 
 
+# PLAN-ciquick-cpu.md W17. The clean real-tree run (no override) is a read two cases share, so it runs ONCE per session, controls first, as check:ci-env-manifest runs it; this module is one xdist group, so the once is real. A plant run sets an override and skips the gate's `controls_first` (`harness.without_controls`): the clean run and the gate's own CI step still run them, and each plant used to repeat them.
+_CLEAN: dict[str, subprocess.CompletedProcess] = {}
+
+
 def _run(root, override=None, python_env=None):
-    env = None
-    if override is not None or python_env is not None:
-        env = dict(os.environ)
-        if override is not None:
-            env["ENV_MANIFEST_OVERRIDE_FILE"] = str(override)
-        if python_env is not None:
-            env["ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE"] = str(python_env)
+    if override is None and python_env is None:
+        if str(root) not in _CLEAN:
+            _CLEAN[str(root)] = subprocess.run(
+                [sys.executable, str(root / ENTRY)],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        return _CLEAN[str(root)]
+    env = dict(os.environ)
+    if override is not None:
+        env["ENV_MANIFEST_OVERRIDE_FILE"] = str(override)
+    if python_env is not None:
+        env["ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE"] = str(python_env)
     return subprocess.run(
-        [sys.executable, str(root / ENTRY)],
+        harness.without_controls([sys.executable, str(root / ENTRY)]),
         cwd=root,
         capture_output=True,
         text=True,
         check=False,
         env=env,
     )
+
+
+# The in-process derivation over the real tree, shared the same way: two cases read it with the same manifest's suppressions, and neither mutates what it returns.
+_DERIVED: dict[str, tuple] = {}
+
+
+def _derived(root):
+    if str(root) not in _DERIVED:
+        manifest = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))
+        suppress = {k: set(v) for k, v in manifest["tombstone_proof_sites"].items()}
+        _DERIVED[str(root)] = em.derive_sources(root, None, suppress)
+    return _DERIVED[str(root)]
 
 
 @contextlib.contextmanager
@@ -94,8 +119,7 @@ def test_no_current_count_is_written_into_either_authored_file():
     """
     root = paths.repo_root()
     manifest = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))
-    suppress = {k: set(v) for k, v in manifest["tombstone_proof_sites"].items()}
-    sources, _per, _pf, _dyn, _seen, _bad = em.derive_sources(root, None, suppress)
+    sources, _per, _pf, _dyn, _seen, _bad = _derived(root)
     shards = set()
     for entries in manifest["shards"].values():
         shards |= set(entries)
@@ -113,9 +137,7 @@ def test_no_current_count_is_written_into_either_authored_file():
 def test_every_reader_is_live_on_the_real_tree():
     """Remove one name UNIQUE to each reader; all five must come back unclassified."""
     root = paths.repo_root()
-    manifest = json.loads((root / em.MANIFEST_REL).read_text(encoding="utf-8"))
-    suppress = {k: set(v) for k, v in manifest["tombstone_proof_sites"].items()}
-    _names, per, _pf, _dyn, _seen, _bad = em.derive_sources(root, None, suppress)
+    _names, per, _pf, _dyn, _seen, _bad = _derived(root)
     victims = {}
     for reader in em.SOURCES:
         others = set()

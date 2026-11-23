@@ -166,6 +166,73 @@ def run(
     return RunResult(proc.returncode, proc.stdout, proc.stderr)
 
 
+# ONE REAL-TREE RUN PER SESSION (PLAN-ciquick-cpu.md W17). A gate test module drives its subject over the real tree from several cases, each reading something different out of the same output: the verdict, the shape line, a name that must be absent. The run is a pure read of a tree that does not change during the session, and for the registry and plan gates it costs a full scan
+# of every tracked file (measured 2026-11-23: 170-200 s under load for the worklist and python env registries and the plan folders gate). `run_once` runs each distinct argv, cwd and environment ONCE per pytest process and hands every later caller the same result. A case that PLANTS something passes a different environment or root, so it is a different key and runs for itself.
+#
+# PER PROCESS, AND UNDER xdist THAT IS PER WORKER. The cases sharing a run carry one `xdist_group` marker so loadgroup sends them to one worker and the run really happens once; without it each worker that drew one of them would scan the tree for itself and the memo would save nothing.
+_ONCE: dict[tuple, RunResult] = {}
+
+
+def run_once(
+    argv: list[str],
+    *,
+    cwd: os.PathLike[str] | str | None = None,
+    env: dict[str, str] | None = None,
+    timeout: int = 300,
+) -> RunResult:
+    """`run`, memoised per process on (argv, cwd, env). For a READ of the real tree only: a command that writes, or whose answer depends on anything but its inputs and the tree, must not share a result."""
+    key = (tuple(argv), None if cwd is None else str(cwd), tuple(sorted((env or {}).items())))
+    if key not in _ONCE:
+        _ONCE[key] = run(argv, cwd=cwd, env=env, timeout=timeout)
+    return _ONCE[key]
+
+
+# THE TEST-ONLY PATH THAT SKIPS A GATE'S CONTROLS (PLAN-ciquick-cpu.md W17). These gates run their whole selftest before every verdict (`controls.controls_first`, or a `selftest()` call at the top of `main`), so a module that drives the entry point thirty times over thirty fixture trees ran the same controls thirty times: 1.7-3.5 s each, measured 2026-11-23 for the plan folders
+# and plan live proof gates. The controls are proved where they belong, by the module's own `--selftest` case and by the gate's own CI step, which still runs them first. `without_controls` re-spells `[python, script, *args]` so the script runs in a child that first replaces those two entry points with one that prints a line and returns success; the gate's real `main`, real
+# argument parsing and real verdict are untouched. The printed line is what a reader of a failing case sees, so a skipped control is never silent.
+_SKIP_LINE = "controls skipped by the gate test harness: the module's --selftest case runs them"
+_WITHOUT_CONTROLS = """\
+import os, runpy, sys
+sys.path.insert(0, {ci!r})
+from rediacc_ci import controls
+def _skipped(name, selftest):
+    print("%s: {line}" % name)
+    return 0
+controls.controls_first = _skipped
+if sys.argv[1] == "-m":
+    sys.argv = sys.argv[2:]
+    runpy.run_module(sys.argv[0], run_name="__main__", alter_sys=True)
+    raise SystemExit(0)
+script = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path.insert(0, os.path.dirname(os.path.abspath(script)))
+ns = runpy.run_path(script, run_name="__gate_test__")
+main = ns.get("main")
+if main is not None and "selftest" in main.__globals__:
+    def _selftest_skipped(*_args, **_kwargs):
+        print("{line}")
+        return 0
+    main.__globals__["selftest"] = _selftest_skipped
+    raise SystemExit(main(sys.argv[1:]))
+ns = runpy.run_path(script, run_name="__main__")
+"""
+
+
+def without_controls(argv: list[str]) -> list[str]:
+    """`[python, script.py, *args]` or `[python, -m, module, *args]` re-spelt to run with the pre-verdict controls skipped (a `-m` module through `controls_first` only). Refuses a `--selftest` argv: skipping the controls of a selftest run would make it assert nothing."""
+    module = len(argv) > 2 and argv[1] == "-m"
+    if len(argv) < 2 or not (argv[1].endswith(".py") or module):
+        raise ValueError(
+            "without_controls takes [python, script.py, *args] or [python, -m, module, *args], "
+            "got %r" % (argv,)
+        )
+    if "--selftest" in argv[2:]:
+        raise ValueError("without_controls on a --selftest run would skip the only thing it runs")
+    ci_dir = str(pathlib.Path(__file__).resolve().parents[3])
+    code = _WITHOUT_CONTROLS.format(ci=ci_dir, line=_SKIP_LINE)
+    return [argv[0], "-c", code, *argv[1:]]
+
+
 def require_tool(name: str, fix: str) -> str:
     """The absolute path of `name`, or a LOUD refusal carrying the fix line.
 

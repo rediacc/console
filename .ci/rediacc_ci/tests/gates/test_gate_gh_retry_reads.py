@@ -40,9 +40,10 @@ def _planted_one_shot_read(tag):
 
 
 def _run(*args: str, root: pathlib.Path | None = None) -> harness.RunResult:
+    """PLAN-ciquick-cpu.md W17: a run over a copied tree skips the gate's `controls_first` (`harness.without_controls`); the `--selftest` case and the one real-tree run keep them, as check:ci-gh-retry-reads does."""
     argv = [sys.executable, SCRIPT, "--quiet-writes", *args]
     if root is not None:
-        argv += ["--root", str(root)]
+        argv = harness.without_controls([*argv, "--root", str(root)])
     return harness.run(argv, timeout=180)
 
 

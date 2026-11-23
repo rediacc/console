@@ -15,6 +15,8 @@ import pathlib
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
@@ -37,9 +39,18 @@ os.environ["GATETEST_WRITE"] = "x"
 CLEAN = {"src.py": ["GATETEST_A", "GATETEST_TOKEN"]}
 
 
+# PLAN-ciquick-cpu.md W17. The bare real-tree run (no root, no flag) is a read of an unchanging tree that two cases share, so it runs once per session through `harness.run_once`, controls first, exactly as check:ci-python-env-registry runs it; those two cases share an xdist group so the once is real. Every fixture-root run skips the controls (`harness.without_controls`), which the `--selftest` case below proves on their own.
+REAL_TREE = pytest.mark.xdist_group("python-env-registry-real-tree")
+
+
 def _run(root=None, *args) -> harness.RunResult:
+    argv = [sys.executable, str(GATE), *args]
+    if root is None and not args:
+        return harness.run_once(argv, cwd=paths.repo_root())
     env = {"REDIACC_CI_ROOT": str(root)} if root else {}
-    return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root(), env=env)
+    if "--selftest" not in args:
+        argv = harness.without_controls(argv)
+    return harness.run(argv, cwd=paths.repo_root(), env=env)
 
 
 def _fixture(tmp: pathlib.Path, *, src: str = SRC, modules=CLEAN) -> pathlib.Path:
@@ -61,6 +72,7 @@ def _write_modules(root: pathlib.Path, modules) -> None:
     (root / BASELINE_REL).write_text(json.dumps({"modules": modules}, indent=2), encoding="utf-8")
 
 
+@REAL_TREE
 def test_the_real_tree_is_green_through_the_real_entry_point(gate):
     gate.log_test("the real tree, the real registry, the real process")
     if not GATE.is_file():
@@ -73,6 +85,7 @@ def test_the_real_tree_is_green_through_the_real_entry_point(gate):
     gate.log_pass("the registered gate exits 0 on the tree it was seeded from")
 
 
+@REAL_TREE
 def test_the_success_line_prints_the_shape_not_just_a_verdict(gate):
     """`OK` cannot show a reader that a number collapsed. The counts can."""
     gate.log_test("the success line carries pairs, modules, names and the scan size")

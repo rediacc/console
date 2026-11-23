@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.quality import plan_lifecycle as PL
 from rediacc_ci.shacite import citable_token
@@ -36,9 +38,22 @@ def _git(repo: pathlib.Path, *args: str, when: str | None = None) -> str:
     return result.out
 
 
+# PLAN-ciquick-cpu.md W17. Every fixture-tree run skips the gate's pre-verdict `selftest()` (`harness.without_controls`): this file drives the entry point about fifty times, and each run used to repeat the same controls. `test_selftest_alone_is_green` and `test_the_controls_run_before_the_verdict` still run them, and check:ci-plan-folders runs them first on every CI run.
+def _fixture_argv(*argv: str) -> list[str]:
+    return harness.without_controls([sys.executable, str(GATE), *argv])
+
+
 def _gate(root: pathlib.Path, *argv: str) -> harness.RunResult:
     env = {"PLAN_FOLDERS_ROOT": str(root)}
-    return harness.run([sys.executable, str(GATE), *argv], cwd=paths.repo_root(), env=env)
+    return harness.run(_fixture_argv(*argv), cwd=paths.repo_root(), env=env)
+
+
+# The bare real-tree run is a read two cases share, so it runs once per session (`harness.run_once`) with its controls, as CI runs it; the two cases share an xdist group so the once is real.
+REAL_TREE = pytest.mark.xdist_group("plan-folders-real-tree")
+
+
+def _real_tree() -> harness.RunResult:
+    return harness.run_once([sys.executable, str(GATE)], cwd=paths.repo_root())
 
 
 def _write(root: pathlib.Path, rel: str, text: str) -> None:
@@ -90,16 +105,18 @@ def test_the_subject_exists_and_is_executable(gate):
 # --------------------------------------------------------------------------- The real tree.
 
 
+@REAL_TREE
 def test_the_real_tree_passes_and_says_what_it_counted(gate):
-    result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
+    result = _real_tree()
     gate.assert_exit(0, result, "the real tree must be green with F1 fatal")
     gate.assert_contains(result.out, "✓ plan folders:", "the success line names the corpus")
     gate.assert_contains(result.out, "Blind spot:", "a green says what it did not check")
     gate.log_pass("the real tree passes and reports its corpus")
 
 
+@REAL_TREE
 def test_the_controls_run_before_the_verdict(gate):
-    result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
+    result = _real_tree()
     gate.assert_contains(
         result.out, "controls first, then the verdict", "controls are not optional"
     )
@@ -553,9 +570,7 @@ def test_sweep_aborts_and_keeps_the_plan_when_git_grep_fails(gate, tmp_path):
     root, rel = _citer_fixture(tmp_path)
     env = _grep_stub(tmp_path, 2)
     env["PLAN_FOLDERS_ROOT"] = str(root)
-    result = harness.run(
-        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
-    )
+    result = harness.run(_fixture_argv("--sweep", "--write"), cwd=paths.repo_root(), env=env)
     gate.assert_exit(1, result, "a failing git grep is the handled exit 1, not an uncaught crash")
     gate.assert_not_contains(result.err, "Traceback", "the abort is handled, not an uncaught crash")
     gate.assert_contains(result.err, "nothing was deleted", "the abort says nothing was deleted")
@@ -568,9 +583,7 @@ def test_sweep_treats_git_grep_rc1_as_no_citer(gate, tmp_path):
     root, rel = _citer_fixture(tmp_path)
     env = _grep_stub(tmp_path, 1)
     env["PLAN_FOLDERS_ROOT"] = str(root)
-    result = harness.run(
-        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
-    )
+    result = harness.run(_fixture_argv("--sweep", "--write"), cwd=paths.repo_root(), env=env)
     gate.assert_exit(0, result, "control: rc 1 is a clean no-match")
     gate.assert_eq((root / rel).exists(), False, "control: the uncited plan is swept")
     gate.log_pass("git grep rc 1 still sweeps an uncited plan")

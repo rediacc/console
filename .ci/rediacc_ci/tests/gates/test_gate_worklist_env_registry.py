@@ -15,6 +15,8 @@ import subprocess
 import sys
 import tempfile
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
@@ -26,6 +28,21 @@ SOURCE_PLANT_REL = str(SOURCE_PLANT.relative_to(paths.repo_root()))
 
 def _run(*args, env=None) -> harness.RunResult:
     return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root(), env=env)
+
+
+# THE CLEAN REAL-TREE RUN HAPPENS ONCE PER SESSION (PLAN-ciquick-cpu.md W17). Five cases read it: the verdict and shape, the count, the absent prose-only name, the class breakdown, and the green after the typo plant. Each used to scan all tracked files for itself. The run goes through the real entry point, controls first, exactly as check:ci-worklist-env-registry runs it.
+REAL_TREE = pytest.mark.xdist_group("worklist-env-registry-real-tree")
+
+
+def _clean() -> harness.RunResult:
+    return harness.run_once([sys.executable, str(GATE)], cwd=paths.repo_root())
+
+
+def _planted(env) -> harness.RunResult:
+    """A plant run: the real entry point with one override set, its controls skipped (the selftest case runs them; `harness.without_controls` says why)."""
+    return harness.run(
+        harness.without_controls([sys.executable, str(GATE)]), cwd=paths.repo_root(), env=env
+    )
 
 
 def _rel(path) -> str:
@@ -42,12 +59,13 @@ def _unmodified(gate, path) -> None:
     gate.assert_exit(0, proc, "%s is unmodified against the index" % _rel(path))
 
 
+@REAL_TREE
 def test_the_real_tree_is_fully_registered(gate):
     gate.log_test("133 names, the real corpus, through the real entry point")
     for subject in (GATE, REGISTRY, SOURCE_PLANT):
         if not subject.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean tree")
     gate.assert_contains(result.combined, "all registered and all read", "set equality both ways")
     gate.assert_contains(result.combined, "read site(s)", "prints the site count")
@@ -58,11 +76,12 @@ def test_the_real_tree_is_fully_registered(gate):
     gate.log_pass("the registry and the tree are one set, and the shape is printed")
 
 
+@REAL_TREE
 def test_the_registry_size_matches_the_shape_line(gate):
     gate.log_test("the number the gate prints is the number in the file")
     registered = len(json.loads(REGISTRY.read_text(encoding="utf-8"))["names"])
     gate.assert_eq(registered >= 100, True, "%d names registered" % registered)
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_contains(
         result.combined, "%d name(s)" % registered, "and the gate reports the same count"
@@ -81,7 +100,7 @@ def test_dropping_a_registered_name_reds(gate):
         obj = json.loads(original.decode("utf-8"))
         del obj["names"]["WORKLIST_JUDGE"]
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+        result = _planted({"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
     gate.assert_exit(1, result, "an unregistered read must red")
     gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_JUDGE", "names it")
     gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
@@ -97,13 +116,14 @@ def test_a_registered_name_nobody_reads_reds(gate):
         obj = json.loads(original.decode("utf-8"))
         obj["names"]["WORKLIST_ZZZ_PHANTOM"] = {"kind": "tuning", "defaults": ["'1'"]}
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+        result = _planted({"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
     gate.assert_exit(1, result, "a dead entry must red")
     gate.assert_contains(result.combined, "DEAD WORKLIST_ZZZ_PHANTOM", "names it")
     gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
     gate.log_pass("the direction that rots is the one this case covers, with no real file at risk")
 
 
+@REAL_TREE
 def test_a_typo_in_a_real_source_file_reds(gate):
     gate.log_test("PLANT: a misspelled expansion, scanned in place of a real tracked file")
     # WORKLIST_SOURCE_OVERRIDE_FILE (registered, kind=path) substitutes CONTENT
@@ -120,7 +140,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
             original
             + b'\n# gate probe\nimport os\n_probe = os.environ.get("WORKLIST_CADENEC", "on")\n'
         )
-        result = _run(env={"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
+        result = _planted({"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
     gate.assert_exit(1, result, "a typo'd name must red")
     gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
     gate.assert_contains(result.combined, "test-reggate-ledger.py", "and the file it is in")
@@ -128,15 +148,17 @@ def test_a_typo_in_a_real_source_file_reds(gate):
         SOURCE_PLANT.read_bytes(), original, "never touched on disk, not merely restored"
     )
     _unmodified(gate, SOURCE_PLANT)
-    after = _run()
+    # The session's one clean run: the two checks above prove the plant left the tracked bytes and the index exactly as they were, so the verdict on the tree after the plant IS the clean verdict, whichever case ran it first.
+    after = _clean()
     gate.assert_exit(0, after, "green with no override set, since nothing was ever mutated")
     gate.log_pass("the scanner sees a real typo without a real file ever being at risk")
 
 
+@REAL_TREE
 def test_prose_under_agent_is_not_a_read(gate):
     gate.log_test("ANTI-SILENCER: a name that exists only in agent/ prose must stay invisible")
     # WORKLIST_EMAIL is the real case: one mention, in a comment, describing a name that no longer exists. If the exclusion or the scanner ever admitted prose, it would appear as an unregistered read.
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_not_contains(result.combined, "WORKLIST_EMAIL", "the prose-only name is absent")
     registered = json.loads(REGISTRY.read_text(encoding="utf-8"))["names"]
@@ -171,11 +193,12 @@ def _planted_registry(mutate) -> harness.RunResult:
         obj = json.loads(original.decode("utf-8"))
         mutate(obj)
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+        result = _planted({"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
     assert REGISTRY.read_bytes() == original, "the tracked registry must never be written"
     return result
 
 
+@REAL_TREE
 def test_every_registered_name_carries_a_class(gate):
     gate.log_test("the class each name renders into env-manifest under, on every entry")
     obj = json.loads(REGISTRY.read_text(encoding="utf-8"))
@@ -183,7 +206,7 @@ def test_every_registered_name_carries_a_class(gate):
     gate.assert_eq(len(entries) >= 100, True, "%d entries" % len(entries))
     missing = [e for e in entries if e.get("class") not in ("harness", "gate-seam")]
     gate.assert_eq(missing, [], "every entry has a class")
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_contains(result.combined, "classes gate-seam ", "the class breakdown is printed")
     gate.assert_contains(
