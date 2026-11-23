@@ -3644,8 +3644,8 @@ function main(argv: string[]): void {
  * that imported `bind` -- the probe's own output was 40 lines of someone else's selftest,
  * and a probe that had asserted anything would have died on the exit before reporting.
  *
- * W2.1's `gates.lock.json` generator and W2.2's shadow-gate core both import from here,
- * and neither can be written while importing the module means running the CLI.
+ * W2.1's `gates.lock.json` generator imports from here (the shadow-gate core that also did was deleted in commit:bf054adcd4),
+ * and it could not be written while importing the module meant running the CLI.
  *
  * `process.argv[1]` is the entry script; comparing its resolved path to this module's own
  * answers "was I run, or was I loaded" without depending on a bundler or a Node version
