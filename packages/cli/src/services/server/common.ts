@@ -12,6 +12,7 @@ import type { MachineConfig } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { type RepoOnBox, rdcMust, ServerError } from './box.js';
 import { PULL_IMAGE, shCommand } from './box-scripts.js';
+import { IMAGE_LIST_FILE, imageListText } from './bundle/manifest.js';
 import { loadRecord, type ServerRecord } from './state.js';
 import type { BoxTarget, ServerDeps } from './types.js';
 
@@ -125,6 +126,23 @@ export async function placeImage(
       imageFile,
       '--remote-file',
       'images/server.tar',
+      '--verify',
+    ]);
+    // The Rediaccfile reads the ref to load the tar as from this file; a bundle ships the same text.
+    const manifest = join(await deps.tempDir(), 'manifest.txt');
+    await deps.writePrivate(
+      manifest,
+      imageListText([{ file: 'images/server.tar', ref, digest: '', sha256: '' }])
+    );
+    await rdcMust(deps, [
+      'repo',
+      'sync',
+      'upload',
+      repoRef,
+      '--local',
+      manifest,
+      '--remote-file',
+      IMAGE_LIST_FILE,
       '--verify',
     ]);
     return;

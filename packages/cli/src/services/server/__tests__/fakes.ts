@@ -62,6 +62,8 @@ export interface FakeOptions {
   zoneToken?: string;
   files?: Record<string, string>;
   rdcFail?: string;
+  /** The stderr a failing `rdcFail` call carries. */
+  rdcStderr?: string;
   /** Per-path-suffix answers that win over the defaults (a refused login, a 404 route). */
   boxReplies?: Record<string, Partial<BoxReply>>;
   /** The box's live `data/web/delegation-cert.json`, as `certFor` gives it (base64 of the JSON). */
@@ -283,7 +285,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     rdc(argv) {
       calls.push(`rdc ${argv.join(' ')}`);
       if (opts.rdcFail && argv.join(' ').startsWith(opts.rdcFail)) {
-        return Promise.resolve({ code: 1, stdout: '', stderr: '' });
+        return Promise.resolve({ code: 1, stdout: '', stderr: opts.rdcStderr ?? '' });
       }
       return Promise.resolve(ok());
     },

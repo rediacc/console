@@ -33,17 +33,25 @@ function rdcBinary(): { command: string; prefix: string[] } {
 }
 
 /** A child `rdc` under this run's config: stdout captured, stderr (its progress) passed through. */
+const STDERR_KEEP = 8192;
+
 function runRdc(argv: string[]): Promise<ProcResult> {
   const bin = rdcBinary();
   const args = [...bin.prefix, '--config', getEffectiveConfigName(), ...argv];
   return new Promise((resolve) => {
-    const child = spawn(bin.command, args, { stdio: ['ignore', 'pipe', 'inherit'] });
+    const child = spawn(bin.command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
+    let stderr = '';
+    // Shown as it arrives and kept (bounded) so a failure can name its cause.
+    child.stderr.on('data', (chunk: Buffer) => {
+      process.stderr.write(chunk);
+      stderr = `${stderr}${chunk.toString('utf-8')}`.slice(-STDERR_KEEP);
+    });
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString('utf-8');
     });
     child.on('error', (error) => resolve({ code: 1, stdout, stderr: error.message }));
-    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr: '' }));
+    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
   });
 }
 

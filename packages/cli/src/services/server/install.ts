@@ -434,15 +434,23 @@ export class ServerInstall {
       }
       this.record.repoCreated = true;
       await this.save();
-      await rdcMust(this.deps, [
-        'repo',
-        'create',
-        this.plan.repo,
-        '-m',
-        this.plan.machine,
-        '--size',
-        this.plan.size,
-      ]);
+      try {
+        await rdcMust(this.deps, [
+          'repo',
+          'create',
+          this.plan.repo,
+          '-m',
+          this.plan.machine,
+          '--size',
+          this.plan.size,
+        ]);
+      } catch (error) {
+        // The create asks for the Terms of Service; a rerun with the root flag answers it.
+        if (error instanceof ServerError) {
+          throw new ServerError(`${error.message}. ${t('commands.server.install.termsHint')}`);
+        }
+        throw error;
+      }
     },
     template: async () => {
       await rdcMust(this.deps, [

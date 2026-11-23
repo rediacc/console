@@ -2901,12 +2901,13 @@
         "optionCert": "Delegation certificate file for an offline install; it must name the key generated on the machine",
         "optionImage": "Server image to run (default: ghcr.io/rediacc/server:latest)",
         "optionImageFile": "Saved image archive (docker save) to ship instead of pulling",
+        "termsHint": "If the Terms of Service were not accepted, rerun with --accept-terms (or set RDC_ACCEPT_TERMS=1)",
         "optionLocalImage": "Save the --image from the local Docker and ship it instead of pulling",
         "optionNoDnsWait": "Print the DNS records without waiting for them to resolve",
         "optionBwsProject": "Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine",
         "optionRotate": "With --bws-project, replace a stored value that differs instead of refusing",
         "optionYes": "Ask nothing: take the defaults and refuse a missing value",
-        "help": "Steps, in order (each one is recorded, so a rerun skips what is done):\n  preflight  sudo -n, architecture, ports 80 and 443, disk space and clock skew\n  setup      rdc machine setup, when renet is missing\n  dns        print the A and AAAA records, then wait until both domains resolve to the machine\n  tls        Let's Encrypt, Cloudflare DNS-01, or an existing certificate\n  repo       create the repository and apply the elite template\n  keys       generate every key on the machine, into the repository's secrets.env\n  licence    --cert, else a certificate from the logged-in account, else the free tier\n  image      pull the image on the machine, or ship --image-file\n  up         start the server and wait for https://<domain>/health\n  owner      create the owner account\n\nA machine that is not registered yet is added with --ip and --user. A cloud VM is created first with rdc machine provision.\nThe DNS records are printed and never written to a customer zone.\nOn a terminal the install ends with a one-time recovery bundle. Store it somewhere safe: it is never logged and never part of --output json, and rdc server backup prints it again later.",
+        "help": "Steps, in order (each one is recorded, so a rerun skips what is done):\n  preflight  sudo -n, architecture, ports 80 and 443, disk space and clock skew\n  setup      rdc machine setup, when renet is missing\n  dns        print the A and AAAA records, then wait until both domains resolve to the machine\n  tls        Let's Encrypt, Cloudflare DNS-01, or an existing certificate\n  repo       create the repository and apply the elite template\n  keys       generate every key on the machine, into the repository's secrets.env\n  licence    --cert, else a certificate from the logged-in account, else the free tier\n  image      pull the image on the machine, or ship --image-file\n  up         start the server and wait for https://<domain>/health\n  owner      create the owner account\n\nCreating the repository needs the Terms of Service accepted: pass the root option --accept-terms (or set RDC_ACCEPT_TERMS=1) on an unattended run.\nA machine that is not registered yet is added with --ip and --user. A cloud VM is created first with rdc machine provision.\nThe DNS records are printed and never written to a customer zone.\nOn a terminal the install ends with a one-time recovery bundle. Store it somewhere safe: it is never logged and never part of --output json, and rdc server backup prints it again later.",
         "step": "Step: {{step}}",
         "skipped": "Step {{step}}: done earlier, skipped",
         "done": "The account server is running at https://{{domain}}",
@@ -3101,6 +3102,7 @@
         "bundleIncomplete": "secrets.env on the machine lacks {{keys}}",
         "boxScriptFailed": "The command on {{machine}} exited {{code}}: {{detail}}",
         "rdcFailed": "{{command}} failed (exit {{code}})",
+        "rdcFailedDetail": "{{command}} failed (exit {{code}}): {{detail}}",
         "certAndFree": "--cert and --licence free cannot be combined"
       },
       "offline": {
