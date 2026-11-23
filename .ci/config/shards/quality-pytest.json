@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T10:10:58.611Z",
+  "generatedAt": "2026-11-23T10:59:09.759Z",
   "legs": [
     {
       "index": 1,
@@ -107,6 +107,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_control_vacuity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_dead_case_arms.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_editorconfig.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_gate_argv.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_git_op_conditionals.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_go_deps.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_literal_sources_word.py",
@@ -327,6 +328,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_facts.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_cli.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_stack.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_preflight.py",
@@ -710,6 +712,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_client_bundle_budget.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_findings_report.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_gate_argv.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_gh_retry_shell.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_installmethods_args.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_installmethods_linuxpkg_idiom.py",

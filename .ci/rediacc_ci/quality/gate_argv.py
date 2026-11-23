@@ -11,9 +11,9 @@ WHAT AN ENTRY POINT MUST BE, read statically from its AST, one of:
 
 Anything else is a BYPASS, named with what it does instead: a hand scan (`"--x" in sys.argv`), a `main()` that never receives argv, or no recognisable parse at all.
 
-TWO MORE CHECKS ON EVERY ENTRY POINT:
+TWO MORE CHECKS:
 
-  * `sys.argv` is read only as `sys.argv[1:]` passed straight into a call. Any other read (`sys.argv[1]`, `len(sys.argv)`, `"--x" in sys.argv`) is a parse the gate cannot see.
+  * where no shared parse is the first statement of the `__main__` block, `sys.argv` is read only as `sys.argv[1:]` passed straight into a call. Any other read (`sys.argv[1]`, `len(sys.argv)`, `"--x" in sys.argv`) is a parse the gate cannot see. After a first-statement parse a later read sees an argv the parser already vetted, so it is not flagged there.
   * a PARSE entry point's declared flag must appear as a string somewhere else in the entry point or the module it hands argv to. A declared flag nobody reads is accepted and IGNORED, which is the original failure with a declaration on top. Deliberately loose (any string literal containing the flag counts), because a false positive here would push an author to delete a live flag.
 
 REGISTERED CALLS. Every call that passes arguments to an entry point, in `package.json`, `scripts/ci-runner/manifest.ts`, the workflows and the non-test `.claude` hook sources, is checked against the entry point's declared set, including the `npm run <script> -- <args>` spelling, which appends to the last command of the script. A caller passing an undeclared flag is red here before it is red at run time.
@@ -39,7 +39,7 @@ import tempfile
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls, controls_first
+from rediacc_ci.controls import Controls, controls_first, plant
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -679,18 +679,18 @@ def selftest(verbose: bool = True) -> int:
         (("--x",), True),
     )
     late = _entry_of(
-        SHIM.replace("    _gate_args.parse", "    print(1)\n    _gate_args.parse") % "check_x"
+        plant(SHIM, "    _gate_args.parse", "    print(1)\n    _gate_args.parse") % "check_x"
     )
     ctl.truthy(
         "PLANT: a parse after other work is named",
         any("not the first statement" in p for p in late.problems),
     )
-    unread = _entry_of(SHIM.replace('("--selftest",)', '("--selftest", "--update")') % "check_x")
+    unread = _entry_of(plant(SHIM, '("--selftest",)', '("--selftest", "--update")') % "check_x")
     ctl.truthy(
         "PLANT: a declared flag nothing reads is named",
         any("declares --update" in p for p in unread.problems),
     )
-    dyn = _entry_of(SHIM.replace('("--selftest",)', 'tuple(x for x in ["--selftest"])') % "check_x")
+    dyn = _entry_of(plant(SHIM, '("--selftest",)', 'tuple(x for x in ["--selftest"])') % "check_x")
     ctl.truthy(
         "PLANT: a non-literal accepted set is named",
         any("not a literal" in p for p in dyn.problems),

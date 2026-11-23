@@ -1041,6 +1041,9 @@
       "ENV_MANIFEST_OVERRIDE_FILE",
       "ENV_MANIFEST_PYTHON_ENV_OVERRIDE_FILE"
     ],
+    ".ci/rediacc_ci/quality/gate_argv.py": [
+      "GATE_ARGV_SCAN_ROOT"
+    ],
     ".ci/rediacc_ci/quality/git_op_conditionals.py": [
       "REDIACC_CI_ROOT"
     ],
@@ -1226,6 +1229,8 @@
     ],
     ".ci/rediacc_ci/quality/swallowed_failures.py": [
       "CI",
+      "SWALLOWED_PY_SCAN_DIR",
+      "SWALLOWED_PY_SCAN_ROOT",
       "SWALLOWED_SCAN_DIRS",
       "SWALLOWED_SCAN_ROOT"
     ],
