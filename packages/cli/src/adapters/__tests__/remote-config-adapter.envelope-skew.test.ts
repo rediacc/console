@@ -25,11 +25,12 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 }));
 
 import {
-  derivePasswordSlotSecret,
+  deriveRecoverySlotSecret,
   generateCek,
+  generateRecoveryCode,
   generateServerSecret,
   importAesKey,
-  newPasswordSlotParams,
+  newRecoverySlotParams,
   randomBytes,
   toBase64,
   wrapCekForSlot,
@@ -54,7 +55,10 @@ const REMOTE: RemoteConfig = {
 
 /** A v3-envelope config of eu-remote's shape (schemaVersion 3, resources), sealed by the current code. */
 async function enrolled() {
-  const slotSecret = await derivePasswordSlotSecret('fixture password', newPasswordSlotParams());
+  const slotSecret = await deriveRecoverySlotSecret(
+    generateRecoveryCode(),
+    newRecoverySlotParams()
+  );
   const serverSecret = generateServerSecret();
   const cek = await generateCek();
   const wrappedCek = await wrapCekForSlot(cek, slotSecret, serverSecret);
@@ -166,7 +170,8 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
 
   it('an envelope newer than this reader names the version gap, not the slot key', async () => {
     const f = await enrolled();
-    wire(f.session, f.pull(4));
+    // v5: the shared reader already knows envelope v4 (per-config content keys, SK1), so only a version past it is "newer".
+    wire(f.session, f.pull(5));
     const err = await f
       .adapter()
       .pull()
@@ -178,7 +183,7 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
     const message = (err as Error).message;
     expect(message).toContain(CONFIG_ID);
     expect(message).toMatch(/newer version of the CLI/);
-    expect(message).toContain('envelope v4');
+    expect(message).toContain('envelope v5');
     expect(message).toMatch(/Upgrade rdc/);
     expect(message).not.toMatch(/key slot|enrolled|different key/i);
   });

@@ -2074,8 +2074,7 @@ Link this config to remote encrypted storage
 
 **Options:**
 
-- `--master-password`: Enroll headlessly with a pre-provisioned password slot (no browser)
-- `--master-password-stdin`: Like --master-password, reading the master password from stdin
+- `--machine-secret <id>`: Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
 - `--config-id <id>`: Attach to this existing config of the store instead of creating a new entry
@@ -2108,14 +2107,6 @@ Publish an earlier version of this config as its newest version
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
-
-### rdc config remote master-password change
-
-Change the master password: re-wrap the config key from this device's enrollment under a new password slot
-
-**Options:**
-
-- `--new-master-password-stdin`: Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)
 
 ### rdc config remote refresh
 

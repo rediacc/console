@@ -438,22 +438,11 @@ export class RemoteConfigAdapter {
    * the executor can open the config for that session (ProxyClient.ensureSession).
    * Rotates the config token like any other request.
    */
-  async unwrapCek(): Promise<CryptoKey> {
-    return (await this.unlockKeyMaterial()).cek;
-  }
-
-  /**
-   * The CEK together with the store's serverSecret it was unwrapped under: the two halves a NEW
-   * key slot is wrapped from (`rdc config remote master-password change`). Both stay in this process.
-   */
-  unlockKeyMaterial(): Promise<{ cek: CryptoKey; serverSecret: Uint8Array }> {
+  unwrapCek(): Promise<CryptoKey> {
     return this.tokenStorage.withLease(this.configName, async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
-      return {
-        cek: await this.deriveCek(session.serverSecret, lease),
-        serverSecret: session.serverSecret,
-      };
+      return this.deriveCek(session.serverSecret, lease);
     });
   }
 

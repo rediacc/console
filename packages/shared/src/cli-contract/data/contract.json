@@ -1,5 +1,5 @@
 {
-  "version": "db03df0b02b4d218",
+  "version": "ca260f75ebcb1302",
   "languages": [
     "ar",
     "de",
@@ -5190,27 +5190,15 @@
       "severity": "caution",
       "options": [
         {
-          "flags": "--master-password",
-          "long": "master-password",
-          "valueTaking": false,
+          "flags": "--machine-secret <id>",
+          "long": "machine-secret",
+          "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "sensitive": true,
-          "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
-          "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
-        },
-        {
-          "flags": "--master-password-stdin",
-          "long": "master-password-stdin",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
-          "label": "Like --master-password, reading the master password from stdin"
+          "descriptionKey": "commands.config.remote.enable.optionMachineSecret",
+          "label": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line"
         },
         {
           "flags": "--api-url <url>",
@@ -5253,47 +5241,6 @@
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
       "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "config",
-        "remote",
-        "master-password",
-        "change"
-      ],
-      "pathKey": "config remote master-password change",
-      "domain": "config",
-      "group": "TOOLS",
-      "plane": "other",
-      "descriptionKey": "commands.config.remote.masterPassword.change.description",
-      "label": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
-      "summaryKey": "commands.config.remote.masterPassword.change.descriptionShort",
-      "summary": "Change the master password",
-      "severity": "caution",
-      "options": [
-        {
-          "flags": "--new-master-password-stdin",
-          "long": "new-master-password-stdin",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
-          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)"
-        }
-      ],
-      "positionals": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,

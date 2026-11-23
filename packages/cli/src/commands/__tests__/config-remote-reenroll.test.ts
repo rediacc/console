@@ -129,9 +129,9 @@ vi.mock('../../services/account/account-client.js', () => ({
         configServiceAvailable: true,
       });
     }
-    if (path.endsWith('/configs/password-enroll')) {
+    if (path.endsWith('/configs/machine-enroll')) {
       account.enrollCalls += 1;
-      if (!account.enroll) return Promise.reject(new Error('the test armed no password slot'));
+      if (!account.enroll) return Promise.reject(new Error('the test armed no machine secret'));
       return Promise.resolve(account.enroll);
     }
     return Promise.reject(new Error(`unexpected account request: ${path}`));
@@ -186,8 +186,9 @@ vi.mock('../../utils/errors.js', async (importOriginal) => {
 });
 
 import {
-  derivePasswordSlotSecret,
-  newPasswordSlotParams,
+  deriveMachineSecretSlotSecret,
+  generateMachineSecret,
+  newMachineSecretParams,
   toBase64,
 } from '@rediacc/shared/config-crypto';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
@@ -326,7 +327,7 @@ beforeEach(async () => {
   relay.runs = 0;
   account.enroll = null;
   account.enrollCalls = 0;
-  delete process.env.REDIACC_STORE_MASTER_PASSWORD;
+  delete process.env.REDIACC_MACHINE_SECRET;
   Object.assign(server, {
     storeId: STORE_ID,
     configId: CONFIG_ID,
@@ -501,17 +502,19 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
   });
 });
 
-describe('config remote enable --master-password on a linked config whose slot secret is gone', () => {
-  const PASSWORD = 'correct horse battery staple';
+describe('config remote enable --machine-secret on a linked config whose slot secret is gone', () => {
+  const SECRET = generateMachineSecret();
+  const SECRET_ID = '55555555-5555-4555-8555-555555555555';
 
-  async function passwordSlot(): Promise<void> {
-    const kdfParams = newPasswordSlotParams();
-    server.slotSecrets.add(toBase64(await derivePasswordSlotSecret(PASSWORD, kdfParams)));
+  async function machineSecret(): Promise<void> {
+    const kdfParams = newMachineSecretParams();
+    server.slotSecrets.add(toBase64(await deriveMachineSecretSlotSecret(SECRET, kdfParams)));
     account.enroll = {
-      method: 'password',
+      machineSecretId: SECRET_ID,
       kdfParams,
       wrappedCek: WRAPPED_CEK,
-      token: 'rct_password',
+      cekGeneration: 1,
+      token: 'rct_machine',
       storeId: STORE_ID,
       configId: CONFIG_ID,
       teamId: null,
@@ -521,58 +524,43 @@ describe('config remote enable --master-password on a linked config whose slot s
   it('enrolls again under a new key id, same store and config, and drops the old key id', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = SECRET;
 
-    await rdc('enable', '--master-password');
+    await rdc('enable', '--machine-secret', SECRET_ID);
 
     const pointer = (await readConfigFile()).remote;
     expect(pointer).toMatchObject({ storeId: STORE_ID, configId: CONFIG_ID, cachedVersion: 7 });
-    expect(pointer?.storageKeyId).toMatch(/^rdc:pw:/);
+    expect(pointer?.storageKeyId).toMatch(/^rdc:ms:/);
     expect([...secureMem.keys()]).toEqual([pointer?.storageKeyId]);
+    expect(account.enrollCalls).toBe(1);
     await rdc('refresh');
   });
 
-  it('refuses --config-id naming another config than the linked one, before any enrollment', async () => {
+  it('refuses --config-id beside --machine-secret, before any enrollment', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = SECRET;
     const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
 
-    const error = await refusal(
-      'enable',
-      '--master-password',
-      '--config-id',
-      'someone-elses-config'
-    );
+    const error = await refusal('enable', '--machine-secret', SECRET_ID, '--config-id', CONFIG_ID);
 
-    expect(error.message).toContain('someone-elses-config');
-    expect(error.message).toContain(CONFIG_ID);
+    expect(error.message).toMatch(/--config-id cannot be combined with --machine-secret/);
     expect(account.enrollCalls).toBe(0);
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
   });
 
-  it('accepts --config-id naming the linked config and re-enrolls', async () => {
+  it('reports a wrong machine secret and leaves the device as it was', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
-
-    await rdc('enable', '--master-password', '--config-id', CONFIG_ID);
-
-    expect(account.enrollCalls).toBe(1);
-    expect((await readConfigFile()).remote?.storageKeyId).toMatch(/^rdc:pw:/);
-  });
-
-  it('reports a wrong password and leaves the device as it was', async () => {
-    await enrolledDevice();
-    reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = 'not the password';
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = generateMachineSecret();
     const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
 
-    expect((await refusal('enable', '--master-password')).message).toMatch(/password/i);
+    expect((await refusal('enable', '--machine-secret', SECRET_ID)).message).toMatch(
+      /machine secret/i
+    );
 
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
     expect(secureMem.size).toBe(0);

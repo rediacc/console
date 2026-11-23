@@ -359,7 +359,7 @@ async function chooseAttachTarget(
 
 /**
  * The 404 of a pointer nobody chose: the list decides. Empty → seed (null). One visible config and
- * a handoff that named none → attach to it (the server's own password-enroll rule: exactly one
+ * a handoff that named none → attach to it (the server's own machine-enroll rule: exactly one
  * candidate is the target). Anything else is refused naming what is visible, never seeded beside.
  */
 async function resolveUnaddressed(
@@ -525,7 +525,7 @@ export async function finalizeEnable(
 }
 
 /**
- * Store-and-finalize for a first enrollment, relay handoff or password slot alike. On any
+ * Store-and-finalize for a first enrollment, relay handoff or machine secret alike. On any
  * finalize failure the stored credentials are removed so a retry starts clean. Exported for the
  * seed tests.
  */

@@ -18,7 +18,7 @@ import { ValidationError } from '../utils/errors.js';
 
 /**
  * What one enrollment hands this device, whichever way it was obtained: the portal handoff carries
- * it sealed, and the password path derives the slot secret locally and builds the same shape.
+ * it sealed, and the machine-secret path derives the wrapping secret locally and builds the same shape.
  * `configId` is absent for a fresh (zero-config) store, the CLI then mints one from the local
  * config's id and seeds the store on enable.
  */
