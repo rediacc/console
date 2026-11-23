@@ -128,6 +128,7 @@ class Event:
         self._env = os.environ if env is None else env
         self._cwd = cwd
         self._doc = _UNPARSED
+        self._writes = None
 
     # -- the payload ------------------------------------------------------
 
@@ -191,6 +192,23 @@ class Event:
         for path in paths:
             out.extend(_jq_collect(self.doc, path))
         return "\n".join(out)
+
+    def writes(self):
+        """`shellscan.writes` over this event's command, as `[(path, how)]`, computed once per Event (PLAN-tooling-code-reduction CR5, D5); [] for an event with no command.
+
+        PER EVENT, NOT PER COMMAND TEXT, on purpose. The walk itself is already shared across a chain: `shellscan._analyse` memoizes the parse by the command string, and every guard of a chain asks about the same string. What `writes` adds reads the disk (whether a copy's destination is a directory, a script passed by path), so a memo keyed on the text would answer a long-lived process (a test run driving many cases in-process) from a world that has since changed. A guard that asks twice pays once; a new Event reads the disk again.
+
+        The paths are placed from the payload's `cwd` when it carries one, else from the event's own directory.
+        """
+        if self._writes is None:
+            cmd = self.field("tool_input", "command")
+            if not cmd:
+                self._writes = []
+            else:
+                from rediacc_hooks import shellscan
+
+                self._writes = shellscan.writes(cmd, self.field("cwd") or self.cwd)
+        return self._writes
 
     # -- the environment --------------------------------------------------
 

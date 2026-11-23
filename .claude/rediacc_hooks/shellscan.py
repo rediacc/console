@@ -9031,3 +9031,113 @@ def in_place_edit(run):
         scripts.extend(x for x in found_scripts if _UNRESOLVED not in x and x not in scripts)
         files.extend(x for x in found_files if _UNRESOLVED not in x and x not in files)
     return scripts, files
+
+
+# --------------------------------------------------------------------------- every file a command writes (PLAN-tooling-code-reduction CR5, D5) ---------------------------------------------------------------------------
+#
+# ONE ANSWER TO "DOES THIS COMMAND WRITE P?". Each write guard grew its own reading of the same walk: the redirects, `tee`, `sed -i`/`perl -i`, a copier's landing, a listed command's output option, a destructive git verb's pathspecs and an interpreter program's write calls. Every reading below already lives in this module; `writes` only puts them behind one call, so a guard asks its own path question
+# of one list instead of re-deriving the list. It decides nothing: a caller keeps its own policy for an "unread" landing (a command the tables do not list, whose every word may be a file) and for an "unknown" write (a program the walk cannot read).
+_GIT_PATH_WRITERS = frozenset(("checkout", "restore", "rm", "mv", "reset", "clean"))
+
+
+def _git_pathspecs(run):
+    """The words after a destructive git verb that may name a file it writes, options left out and every word after `--` kept; joined onto the run's `-C` directory."""
+    words = list(run.xargv if run.xargv is not None else run.argv)
+    at, directory = _git_verb_at(words)
+    if at is None or words[at] not in _GIT_PATH_WRITERS:
+        return []
+    out, after = [], False
+    for word in words[at + 1 :]:
+        if after or word == "-" or not word.startswith("-"):
+            out.append(
+                os.path.join(directory, word) if directory and not word.startswith("/") else word
+            )
+        elif word == "--":
+            after = True
+    return out
+
+
+def _program_writes(run, cmd, cwd):
+    """`(strings, unknown)` for an interpreter run: every string constant that reaches a Python write call's target, directly or through a name bound to it (each constant on its own, never joined into a path), and whether the program could not be read at all."""
+    text, kind = interpreter_program(run, cmd, cwd)
+    if kind == "unjudgeable":
+        return [], True
+    if not text or not run.name.rsplit("/", 1)[-1].startswith("python"):
+        return [], False
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return [], False
+    bound = python_bindings(tree)
+    found: list[str] = []
+
+    def strings(expr, seen):
+        for node in ast.walk(expr):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                found.append(node.value)
+            elif isinstance(node, ast.Name) and node.id not in seen:
+                seen.add(node.id)
+                for value in bound.get(node.id, ()):
+                    strings(value, seen)
+
+    for target in python_write_targets(tree):
+        strings(target, set())
+    return list(dict.fromkeys(found)), False
+
+
+def writes(cmd, cwd):
+    """Every file `cmd` may write, as `(path, how)` in walk order, each pair once; `path` is absolute (relative words placed under `cwd` and the run's own `cd`).
+
+    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, or any word of a command the tables do not list), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (`("", "unknown")`: a program this walk cannot read). A `{}` in a word of a command `find -exec` launched stands for find's starting points. A descriptor duplication, `/dev/null` and its kin, a URL and a word the walk cannot expand are left out; a redirect target is listed as typed and, where bash expands it differently, as expanded (`redirect_targets`).
+    """
+    analysis = _analyse(cmd)
+    appends = {target for op, target in analysis_redirects(analysis) if op in (">>", "&>>")}
+    out: list[tuple[str, str]] = []
+
+    def put(word, run, how):
+        if (
+            not word
+            or _UNRESOLVED in word
+            or word in _NOT_A_FILE
+            or word.startswith("/dev/fd/")
+            or _LANDING_URL.match(word)
+        ):
+            return
+        starts = (
+            run.launch.starts if run.launch is not None and run.launch.launcher == "find" else ()
+        )
+        for named in starts if starts and "{}" in word else (word,):
+            placed = named
+            if not os.path.isabs(named):
+                directory = write_directory(run.cwd, cwd) if run.cwd is not None else ""
+                placed = os.path.join(cwd, directory, named)
+            pair = (os.path.normpath(placed), how)
+            if pair not in out:
+                out.append(pair)
+
+    for run in _every_run(analysis):
+        base = _base(run.name)
+        for target in redirect_targets(run):
+            if not re.match(r"^(\d+|-)$", target):
+                put(target, run, "append" if target in appends else "redirect")
+        if base == "tee":
+            for word in run.xargv if run.xargv is not None else run.argv:
+                if not (word.startswith("-") and len(word) > 1):
+                    put(word, run, "tee")
+        edit = in_place_edit(run)
+        if edit is not None:
+            for word in edit[1]:
+                put(word, run, "in-place")
+        for path, _into in copy_landings(run, cwd):
+            put(path, run, "copy")
+        for word, how in output_landings(run, cwd=cwd):
+            put(word, run, how)
+        if base == "git":
+            for word in _git_pathspecs(run):
+                put(word, run, "git")
+        literals, unknown = _program_writes(run, cmd, cwd)
+        if unknown and ("", "unknown") not in out:
+            out.append(("", "unknown"))
+        for word in literals:
+            put(word, run, "interpreter")
+    return out
