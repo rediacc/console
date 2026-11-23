@@ -5,17 +5,18 @@
  * the plan entitlement and the repo's forensics settings. `enabled` is false on
  * an unpaid plan (the signer refuses an enabled claim there), `level` is what the
  * repo records now, and `maxLevel` is the most the customer may raise it to
- * (`full` on every paid plan). A level is an ordered pair, so comparing needs the
- * rank helpers here rather than string order.
+ * (`full` on every paid plan). Levels are ordered, so comparing needs the rank
+ * helpers here rather than string order.
  */
 import { z } from 'zod';
 
-export const FORENSICS_LEVELS = ['basic', 'full'] as const;
+/** The selectable capture levels of breach-forensics F2, lowest first; renet's netaudit.Level uses the same names. */
+export const FORENSICS_LEVELS = ['basic', 'standard', 'full'] as const;
 export type ForensicsLevel = (typeof FORENSICS_LEVELS)[number];
 
 export const ForensicsLevelSchema = z.enum(FORENSICS_LEVELS);
 
-/** Position of a level in the order basic < full. */
+/** Position of a level in the order basic < standard < full. */
 export function levelRank(level: ForensicsLevel): number {
   return FORENSICS_LEVELS.indexOf(level);
 }

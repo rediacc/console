@@ -13,16 +13,22 @@
  * the signed header, so the verifier reports `redacted` instead of a broken chain.
  * A `records` section that is gone is `missing`, never `redacted`.
  *
- * Header bytes are canonical: compact JSON, keys in the order of `HEADER_KEYS`,
- * strings restricted to characters that need no escaping, integers without
- * fraction or exponent. A decoder re-encodes and refuses bytes that differ, so one
- * header has exactly one byte form and Go and TypeScript agree on what was signed.
+ * Header bytes are canonical, and canonical means what renet's `spool.Encode`
+ * writes through `encoding/json` (private/renet/pkg/netaudit/spool/batch.go):
+ * compact JSON, keys in the order `encodeHeader` writes them, strings restricted
+ * to characters that need no escaping, integers without fraction or exponent, and
+ * `cut_at` in Go's RFC 3339 nanosecond form (UTC, fraction only when non-zero,
+ * trailing zeros trimmed). A decoder re-encodes and refuses bytes that differ, so
+ * one header has exactly one byte form and Go and TypeScript agree on what was
+ * signed. A section with an empty `repo_guid` holds machine-level records (the
+ * spool's gap records), and the header `level` is `off` when no repo records.
  */
 import { z } from 'zod';
 import { fromBase64, toBase64 } from '../config-crypto/aes.js';
-import { ForensicsLevelSchema } from './claim.js';
+import { FORENSICS_LEVELS } from './claim.js';
 
-export const BATCH_SCHEMA = 'rediacc.forensics.batch/1';
+/** The header schema version, `spool.SchemaVersion` in Go. */
+export const BATCH_SCHEMA = 1;
 export const GENESIS_HASH = 'genesis';
 /** Most bytes a batch may hold across all sections (D3). */
 export const MAX_BATCH_BYTES = 4 * 1024 * 1024;
@@ -32,12 +38,25 @@ export const MAX_SECTIONS = 512;
 export const SECTION_KINDS = ['records', 'pii'] as const;
 export type SectionKind = (typeof SECTION_KINDS)[number];
 
+/** A header's level: the highest effective level of any repo in the batch, `off` when none records. */
+export const BATCH_LEVELS = ['off', ...FORENSICS_LEVELS] as const;
+export type BatchLevel = (typeof BATCH_LEVELS)[number];
+
+/** The `repo_guid` of a machine-level section. */
+export const MACHINE_SECTION = '';
+
 const HEX64 = /^[0-9a-f]{64}$/;
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const CUT_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+/** Go's time.RFC3339Nano for a UTC instant: a fraction only when non-zero, without trailing zeros. */
+const CUT_AT = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{0,8}[1-9])?Z$/;
 
 const SectionSchema = z.strictObject({
-  repo_guid: z.string().regex(GUID, 'repo_guid must be a lowercase UUID'),
+  repo_guid: z
+    .string()
+    .refine(
+      (s) => s === MACHINE_SECTION || GUID.test(s),
+      'repo_guid must be a lowercase UUID, or empty for machine-level records'
+    ),
   kind: z.enum(SECTION_KINDS),
   sha256: z.string().regex(HEX64, 'sha256 must be 64 lowercase hex characters'),
   bytes: z.number().int().min(0).max(MAX_BATCH_BYTES),
@@ -56,12 +75,14 @@ export const BatchHeaderSchema = z
     prev_hash: z.union([z.literal(GENESIS_HASH), z.string().regex(HEX64)]),
     cut_at: z
       .string()
-      .regex(CUT_AT, 'cut_at must be UTC to the second, as 2026-01-02T03:04:05Z')
+      .regex(CUT_AT, 'cut_at must be UTC in Go RFC 3339 nanosecond form, as 2026-01-02T03:04:05.5Z')
       .refine((s) => {
-        const t = Date.parse(s);
-        return !Number.isNaN(t) && `${new Date(t).toISOString().slice(0, 19)}Z` === s;
+        const seconds = CUT_AT.exec(s)?.[1];
+        if (seconds === undefined) return false;
+        const t = Date.parse(`${seconds}Z`);
+        return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 19) === seconds;
       }, 'cut_at is not a real date'),
-    level: ForensicsLevelSchema,
+    level: z.enum(BATCH_LEVELS),
     sections: z.array(SectionSchema).max(MAX_SECTIONS),
   })
   .superRefine((header, ctx) => {
@@ -119,12 +140,13 @@ export function encodeHeader(header: BatchHeader): Uint8Array {
     );
   }
   const h = checked.data;
+  // `schema` is a number, written as Go's encoding/json writes an int.
   const sections = h.sections.map(
     (s) =>
       `{"repo_guid":${str(s.repo_guid)},"kind":${str(s.kind)},"sha256":${str(s.sha256)},"bytes":${s.bytes}}`
   );
   return text.encode(
-    `{"schema":${str(h.schema)},"machine_id":${str(h.machine_id)},"seq":${h.seq},` +
+    `{"schema":${h.schema},"machine_id":${str(h.machine_id)},"seq":${h.seq},` +
       `"prev_hash":${str(h.prev_hash)},"cut_at":${str(h.cut_at)},"level":${str(h.level)},` +
       `"sections":[${sections.join(',')}]}`
   );

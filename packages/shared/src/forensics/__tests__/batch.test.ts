@@ -64,7 +64,7 @@ function sectionMap(c: VectorCase): Map<string, Uint8Array> {
 }
 
 const publicKey = await importSpoolPublicKey(fromHex(vectors.publicKeyHex));
-const [genesis, heartbeat, chained] = vectors.cases;
+const [genesis, heartbeat, chained, machineGap] = vectors.cases;
 
 describe('Ed25519 control (RFC 8032 section 7.1, test 1)', () => {
   const pub = fromHex('d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a');
@@ -99,14 +99,18 @@ describe('known-answer vectors', () => {
     type: 'pkcs8',
   });
 
-  it('the file holds a genesis batch, an empty heartbeat and a later batch', () => {
+  it('the file holds a genesis batch, an empty heartbeat, a later batch and a machine-level gap batch', () => {
     expect(vectors.cases.map((c) => c.name)).toEqual([
       'genesis-records-and-pii',
       'chained-heartbeat-no-sections',
       'chained-two-repos-full',
+      'chained-machine-gap-standard',
     ]);
     expect(genesis.header.sections.map((s) => s.kind)).toEqual(['records', 'pii']);
     expect(heartbeat.header.sections).toEqual([]);
+    expect(heartbeat.header.level).toBe('off');
+    expect(machineGap.header.level).toBe('standard');
+    expect(machineGap.header.sections[0].repo_guid).toBe('');
   });
 
   it('the public key is the one the seed derives', () => {
@@ -158,7 +162,8 @@ describe('known-answer vectors', () => {
     expect(genesis.header.prev_hash).toBe(GENESIS_HASH);
     expect(heartbeat.header.prev_hash).toBe(genesis.batchHashHex);
     expect(chained.header.prev_hash).toBe(heartbeat.batchHashHex);
-    expect(vectors.cases.map((c) => c.header.seq)).toEqual([0, 1, 2]);
+    expect(machineGap.header.prev_hash).toBe(chained.batchHashHex);
+    expect(vectors.cases.map((c) => c.header.seq)).toEqual([0, 1, 2, 3]);
   });
 
   it('every vector verifies through verifyBatch with its chain link', async () => {
@@ -180,15 +185,22 @@ describe('known-answer vectors', () => {
     }
   });
 
-  it('encodes the genesis header as the exact bytes Go must produce', () => {
+  it('encodes the genesis header as the exact bytes Go spool.Encode produces', () => {
     const text = Buffer.from(genesis.headerBytesHex, 'hex').toString('utf-8');
-    expect(
-      text.startsWith('{"schema":"rediacc.forensics.batch/1","machine_id":"machine-7","seq":0,')
-    ).toBe(true);
+    expect(text.startsWith('{"schema":1,"machine_id":"machine-7","seq":0,')).toBe(true);
     expect(text).toContain(
       '"prev_hash":"genesis","cut_at":"2026-11-23T10:00:00Z","level":"basic","sections":[{"repo_guid":'
     );
     expect(text).not.toMatch(/\s(?=[{"[])|: /);
+  });
+
+  it('keeps cut_at in Go RFC 3339 nanosecond form', () => {
+    expect(vectors.cases.map((c) => c.header.cut_at)).toEqual([
+      '2026-11-23T10:00:00Z',
+      '2026-11-23T10:00:30.000123Z',
+      '2026-11-23T10:01:00.5Z',
+      '2026-11-23T10:01:30.123456789Z',
+    ]);
   });
 });
 
@@ -386,6 +398,16 @@ describe('header encoding', () => {
     expect(decodeHeader(encodeHeader(header))).toEqual({ ok: true, header });
   });
 
+  it.each([
+    ['a fraction of seconds', { cut_at: '2026-11-23T10:00:00.5Z' }],
+    ['nanoseconds', { cut_at: '2026-11-23T10:00:00.123456789Z' }],
+    ['the standard level', { level: 'standard' as const }],
+    ['the off level of a batch no repo records into', { level: 'off' as const }],
+  ])('control: accepts %s', (_name, patch) => {
+    const h = { ...header, ...patch };
+    expect(decodeHeader(encodeHeader(h))).toEqual({ ok: true, header: h });
+  });
+
   it('refuses a non-canonical byte form of a valid header', () => {
     const spaced = new TextEncoder().encode(JSON.stringify(header, null, 1));
     expect(decodeHeader(spaced)).toEqual({ ok: false, error: 'header is not in canonical form' });
@@ -405,7 +427,9 @@ describe('header encoding', () => {
 
   const bad: [string, Partial<BatchHeader>][] = [
     ['a real date is required', { cut_at: '2026-02-30T00:00:00Z' }],
-    ['fractional seconds are refused', { cut_at: '2026-11-23T10:00:00.5Z' }],
+    ['a fraction with a trailing zero is refused', { cut_at: '2026-11-23T10:00:00.50Z' }],
+    ['an all-zero fraction is refused', { cut_at: '2026-11-23T10:00:00.0Z' }],
+    ['a fraction past nanoseconds is refused', { cut_at: '2026-11-23T10:00:00.1234567891Z' }],
     ['a zone offset is refused', { cut_at: '2026-11-23T10:00:00+01:00' }],
     ['a negative seq is refused', { seq: -1 }],
     ['a fractional seq is refused', { seq: 1.5 }],
@@ -414,7 +438,8 @@ describe('header encoding', () => {
     ['an unknown level is refused', { level: 'verbose' as never }],
     ['a machine id with a quote is refused', { machine_id: 'a"b' }],
     ['an empty machine id is refused', { machine_id: '' }],
-    ['another schema is refused', { schema: 'rediacc.forensics.batch/2' as never }],
+    ['another schema is refused', { schema: 2 as never }],
+    ['a string schema is refused', { schema: '1' as never }],
   ];
   it.each(bad)('%s', (_name, patch) => {
     expect(() => encodeHeader({ ...header, ...patch })).toThrow();
@@ -444,6 +469,15 @@ describe('header encoding', () => {
         ],
       })
     ).toThrow(/limit/);
+  });
+
+  it('accepts an empty repo_guid for machine-level records and still refuses a malformed one', () => {
+    const machine = { ...section, repo_guid: '' };
+    expect(decodeHeader(encodeHeader({ ...header, sections: [machine, section] })).ok).toBe(true);
+    expect(() => encodeHeader({ ...header, sections: [{ ...section, repo_guid: 'x' }] })).toThrow(
+      /UUID/
+    );
+    expect(() => encodeHeader({ ...header, sections: [machine, machine] })).toThrow(/duplicate/);
   });
 
   it('control: a total exactly at the limit is accepted', () => {
@@ -490,7 +524,15 @@ describe('forensics claim', () => {
   });
 
   it('orders and clamps levels', () => {
-    expect(levelRank('basic')).toBeLessThan(levelRank('full'));
+    expect(levelRank('basic')).toBeLessThan(levelRank('standard'));
+    expect(levelRank('standard')).toBeLessThan(levelRank('full'));
+    expect(clampLevel('full', 'standard')).toBe('standard');
+    expect(levelWithinClaim('standard', { enabled: true, level: 'full', maxLevel: 'full' })).toBe(
+      true
+    );
+    expect(levelWithinClaim('full', { enabled: true, level: 'standard', maxLevel: 'full' })).toBe(
+      false
+    );
     expect(clampLevel('full', 'basic')).toBe('basic');
     expect(clampLevel('basic', 'full')).toBe('basic');
     expect(clampLevel('full', 'full')).toBe('full');
