@@ -468,7 +468,6 @@ def prune_all_daily(top: Path | None = None) -> dict | None:
             return None
     got = prune_all(top)
     with contextlib.suppress(OSError):
-        # tree-write: safe the stamp sits in ~/.claude/resprofile or $RESPROFILE_ROOT's parent, outside every checkout
         stamp.write_text(today + "\n", encoding="utf-8")
     return got
 

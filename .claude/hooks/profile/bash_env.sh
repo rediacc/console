@@ -51,7 +51,7 @@ if [[ ${WORKLIST_PROFILE:-} != off && $- != *i* && ${__BASHCOV_SUP:-} != "$PPID"
                 }
             done 2>/dev/null <"$__rp_dir/pth-roots"
         fi
-        if ((!__rp_have)); then
+        if ((! __rp_have)); then
             mkdir -p "$__rp_dir" 2>/dev/null && printf '%s\n' "$__rp_repo" 2>/dev/null >>"$__rp_dir/pth-roots"
         fi
         __rp_site=''
