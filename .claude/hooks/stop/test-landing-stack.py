@@ -39,8 +39,8 @@ MUTANTS = [
     ("merged never read", "        if how:\n", "        if False:\n"),
     (
         "an unabsorbed landing commit read as absorbed",
-        '    if marks is None or "+" in marks:',
-        "    if marks is None:",
+        '    if "+" in marks:\n        return ""',
+        '    if False:\n        return ""',
     ),
     (
         "the behind report blocks",
@@ -60,8 +60,8 @@ MUTANTS = [
     ),
     (
         "promote's dirt never read",
-        "    dirt = _promote_dirt(root, st.landing_path) or []",
-        "    dirt = []",
+        "    dirt, dirt_problem = _promote_dirt(root, st.landing_path)",
+        '    dirt, dirt_problem = [], ""',
     ),
     (
         "this session's own dirt read as a peer's",
@@ -83,6 +83,29 @@ MUTANTS = [
         "the PR answer ignored for an empty landing branch",
         "    if pr_merged(root, landing):",
         "    if False:",
+    ),
+    # The class sweep of review e943d92e.1 (stop-gate judge 2026-11-23): each named read failure, silenced alone.
+    (
+        "a failed stack read answered silently",
+        "        return Verdict(advisory=_unread_text(exc))",
+        "        return Verdict()",
+    ),
+    ("a failed development-commit listing unnamed", "    if shas is None:\n", "    if False:\n"),
+    ("an unreadable dirty preflight unnamed", "    if dirt_problem:\n", "    if False:\n"),
+    (
+        "a failed landing cherry read as unmerged",
+        '        raise StackReadError(\n            "git could not compare',
+        '        return ""\n        raise StackReadError(\n            "git could not compare',
+    ),
+    (
+        "a defective landing record read as none",
+        "    if problem:\n        raise StackReadError(problem)",
+        "    if False:\n        raise StackReadError(problem)",
+    ),
+    (
+        "gh that cannot say read as unmerged",
+        '        raise StackReadError(\n            "gh could not say',
+        '        return False\n        raise StackReadError(\n            "gh could not say',
     ),
 ]
 
@@ -424,6 +447,117 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             "CODE-COMPLETE: an unexpected open-box read failure keeps the block and names it",
             "fixture: open-box read failed" in block and advisory == "",
             (block, advisory),
+        )
+
+        # THE CLASS SWEEP of that fix (stop-gate judge 2026-11-23): every other read the verdict rests on names its failure rather than reading as "no data".
+        # A failed listing of the development commits is not "no commits": whether promote refuses on an open [writer] box is unknown, so the block stands and says why.
+        real_shas = ws._dev_shas
+        ws._dev_shas = lambda *_a, **_k: None
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            ws._dev_shas = real_shas
+        control(
+            "UNREAD: a failed development-commit listing keeps the block and names it",
+            "could not list the development commits" in block and advisory == "",
+            (block, advisory),
+        )
+        # An unparseable record policy is not "no dirt": promote refuses on it by name, and the block says the preflight could not be read.
+        planted_policy = main / ".ci" / "policy" / "record-paths.json"
+        planted_policy.parent.mkdir(parents=True, exist_ok=True)
+        planted_policy.write_text("{ not json\n", encoding="utf-8")
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            planted_policy.unlink()
+        control(
+            "UNREAD: an unreadable dirty preflight keeps the block and names it",
+            "dirty preflight could not be read" in block
+            and "record-paths.json" in block
+            and advisory == "",
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[])
+        control(
+            "UNREAD INVERSE: with the plant gone, no read failure is named",
+            "could not" not in block and "  %s\n" % ws.PROMOTE_COMMAND in block,
+            (block, advisory),
+        )
+        # A stack read that raises is not "nothing merged": it never blocks (a git blip must not), and the advisory names it.
+        real_state = ws.stack_state
+
+        def broken_state(*_a, **_k):
+            raise OSError("fixture: stack read failed")
+
+        ws.stack_state = broken_state
+        try:
+            block, advisory = verdict(own_paths=[])
+            report = ws.stack_report(main, released=False, pr_merged=no_pr)
+        finally:
+            ws.stack_state = real_state
+        control(
+            "UNREAD: a failed stack read blocks nothing and the advisory names it",
+            block == "" and "fixture: stack read failed" in advisory,
+            (block, advisory),
+        )
+        control(
+            "UNREAD: a failed stack read is named in the report too",
+            "fixture: stack read failed" in report,
+            report,
+        )
+        # A failed `git cherry` of the landing branch is not "not merged".
+        real_cherry = ws._cherry
+        ws._cherry = lambda *_a, **_k: None
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            ws._cherry = real_cherry
+        control(
+            "UNREAD: a failed landing cherry read is named, not read as unmerged",
+            block == "" and "could not compare the landing branch" in advisory,
+            (block, advisory),
+        )
+        # A defective landing record is not "no record".
+        record_file = pathlib.Path(cp.landing_record_path(str(main)))
+        record_text = record_file.read_text(encoding="utf-8")
+        record_file.write_text("{ not json\n", encoding="utf-8")
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            record_file.write_text(record_text, encoding="utf-8")
+        control(
+            "UNREAD: a defective landing record is named, not read as none",
+            block == "" and "is unreadable" in advisory,
+            (block, advisory),
+        )
+        # gh that cannot answer is not "no merged PR".
+        saved_gh = sys.modules.get("wl_gh")
+        gh_answer: list = [(None, "")]
+        fake_gh = type(sys)("wl_gh")
+        fake_gh.call = lambda *_a, **_k: gh_answer[0]
+        sys.modules["wl_gh"] = fake_gh
+        try:
+            outcomes: list = []
+            for answer in ((None, "fixture: HTTP 502"), ([], ""), ([{"number": 7}], "")):
+                gh_answer[0] = answer
+                try:
+                    outcomes.append(ws.gh_pr_merged(main, LANDING))
+                except Exception as exc:
+                    outcomes.append("raised: %s" % exc)
+        finally:
+            if saved_gh is None:
+                sys.modules.pop("wl_gh", None)
+            else:
+                sys.modules["wl_gh"] = saved_gh
+        control(
+            "UNREAD: gh that cannot say is named, not read as unmerged",
+            isinstance(outcomes[0], str) and "fixture: HTTP 502" in outcomes[0],
+            outcomes,
+        )
+        control(
+            "UNREAD INVERSE: gh's empty and one-row answers read unmerged and merged",
+            outcomes[1:] == [False, True],
+            outcomes,
         )
 
         # Promotion: the development branch moves into the landing tree, the record names it, and the next development branch is cut stacked on it.
