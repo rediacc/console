@@ -459,6 +459,37 @@ function selftest(): number {
     'CONTROL: --allow-drop reaches the binder leg only, and nothing is added without it'
   );
 
+  const sLegs = selftestLegs([
+    { label: 'a', args: ['scripts/gate-bind.ts', '--dry-run'] },
+    { label: 'b', args: ['scripts/gate-bind.ts'] },
+    { label: 'c', args: ['scripts/gates/check-ci-parity.ts'] },
+    { label: 'd', args: ['scripts/gen/gen-docs.ts'] },
+  ]);
+  check(
+    sLegs.map((l) => l.args.join(' ')).join('|') ===
+      'scripts/gate-bind.ts --selftest|scripts/gen/gen-docs.ts --selftest',
+    'CONTROL: one selftest leg per distinct leg script, none for a NO_SELFTEST script'
+  );
+  check(
+    CHECK_LEGS.every(
+      (l) =>
+        NO_SELFTEST.has(l.args[0]) || selftestLegs(CHECK_LEGS).some((s) => s.args[0] === l.args[0])
+    ) && [...NO_SELFTEST].every((f) => CHECK_LEGS.some((l) => l.args[0] === f)),
+    'CONTROL: every check-leg script has its selftest leg, and NO_SELFTEST names only leg scripts'
+  );
+  check(
+    checkVerdict([
+      ['x', 0],
+      ['y', 0],
+    ]) === 0 &&
+      checkVerdict([
+        ['x', 0],
+        ['y', 3],
+      ]) === 1 &&
+      checkVerdict([]) === 1,
+    'CONTROL: one red leg reds --check, and a run with no legs is red, never a pass'
+  );
+
   return bad === 0 ? 0 : 1;
 }
 
@@ -664,6 +695,30 @@ const CHECK_LEGS: readonly Leg[] = [
   { label: 'no orphan step keys', args: ['scripts/gates/check-workflow-orphan-step-keys.ts'] },
 ];
 
+/**
+ * Leg scripts with no `--selftest` mode, by name. Every other script a check leg runs has its selftest run as its own leg: the gates `--check` replaces each ran `<script> --selftest && <script>`, so a check without the selftests would drop the proof that each leg can fail.
+ */
+export const NO_SELFTEST: ReadonlySet<string> = new Set(['scripts/gates/check-ci-parity.ts']);
+
+/** One `--selftest` leg per distinct check-leg script, in first-seen order, minus NO_SELFTEST. */
+export function selftestLegs(legs: readonly Leg[]): Leg[] {
+  const seen = new Set<string>();
+  const out: Leg[] = [];
+  for (const leg of legs) {
+    const script = leg.args[0];
+    if (seen.has(script) || NO_SELFTEST.has(script)) continue;
+    seen.add(script);
+    out.push({ label: `selftest: ${script}`, args: [script, '--selftest'] });
+  }
+  return out;
+}
+
+/** The `--check` verdict: red when any leg is red, and a zero-leg run is red too (nothing was checked). */
+export function checkVerdict(verdicts: readonly (readonly [string, number])[]): number {
+  if (verdicts.length === 0) return 1;
+  return verdicts.some(([, rc]) => rc !== 0) ? 1 : 0;
+}
+
 function runLeg(leg: Leg): number {
   const r = spawnSync(process.execPath, [...process.execArgv, ...leg.args], {
     cwd: ROOT,
@@ -718,8 +773,11 @@ function gates(argv: string[]): number {
     );
     return 0;
   }
-  const verdicts: [string, number][] = [['manifest regions match the headers', first]];
-  for (const leg of CHECK_LEGS) {
+  const verdicts: [string, number][] = [
+    ['manifest regions match the headers', first],
+    ['selftest: scripts/gen/gen-manifest.ts', selftest()],
+  ];
+  for (const leg of [...selftestLegs(CHECK_LEGS), ...CHECK_LEGS]) {
     console.log(`gen:gates --check: ${leg.label}`);
     verdicts.push([leg.label, runLeg(leg)]);
   }
@@ -727,7 +785,7 @@ function gates(argv: string[]): number {
   console.log(`\ngen:gates --check: ${verdicts.length} leg(s), ${red.length} red`);
   for (const [label, rc] of verdicts)
     console.log(`  ${rc === 0 ? 'PASS' : 'FAIL'}  ${label}${rc === 0 ? '' : ` (rc=${rc})`}`);
-  if (red.length > 0) {
+  if (checkVerdict(verdicts) !== 0) {
     console.error(
       'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
     );
