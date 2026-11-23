@@ -343,7 +343,7 @@
     "check:ci-source-rules": "tsx scripts/gates/check-source-rules.ts --selftest && tsx scripts/gates/check-source-rules.ts",
     "check:ci-changed-selection": "tsx scripts/gates/check-changed-selection.ts --selftest && tsx scripts/gates/check-changed-selection.ts",
     "check:ci-paths-origin": "tsx scripts/gates/check-paths-origin.ts --selftest && tsx scripts/gates/check-paths-origin.ts",
-    "check:ci-setup-port-parity": ".ci/rediacc_ci/setup/port_parity.py",
+    "check:ci-setup-port-parity": "PYTHONPATH=.ci python3 -m rediacc_ci.setup.port_parity",
     "check:ci-parity": "tsx scripts/gates/check-ci-parity.ts",
     "check:ci-jq-boolean-default": "tsx scripts/gates/check-jq-boolean-default.ts",
     "check:ci-label-refs": ".ci/scripts/quality/check_label_references.py",
@@ -459,7 +459,7 @@
     "check:ci-proxy-ensure-nfpm": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.ensure_nfpm --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.ensure_nfpm",
     "check:test-provisioning": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.unit_tests --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.unit_tests @rediacc/provisioning test",
     "check:test-e2e-unit": "PYTHONPATH=.ci python3 -m rediacc_ci.proxies.unit_tests --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.proxies.unit_tests @rediacc/e2e-tests test:unit",
-    "check:ci-install-table": ".ci/rediacc_ci/setup/tools.py"
+    "check:ci-install-table": "PYTHONPATH=.ci python3 -m rediacc_ci.setup.tools"
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2"

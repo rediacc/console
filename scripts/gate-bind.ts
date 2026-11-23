@@ -1432,7 +1432,8 @@ export function registrationProblems(
   const runsScriptDirectly =
     lockEntry !== undefined &&
     // ANY RUN THAT IS NOT AN npm HOP, not only one ending `.sh` or `.py`. That suffix test was the W7 P4 widening of a `.sh`-only one; a header-declared gate (`gen:gates`, PLAN-tooling-code-reduction.md D2) runs `PYTHONPATH=.ci python3 -m <module>` or `tsx <file> --selftest && tsx <file>`, ends in neither, and under the suffix test fell to the package.json branch below and was refused for lacking the very key D2 retires.
-    !lockEntry.run.startsWith('npm run ');
+    // An env-prefixed hop (`VITEST_MAX_WORKERS=... npm run <id>`) is still a hop, so the test is for `npm run` in command position anywhere, not for the run's first word.
+    !/(^|[\s;&|(])npm run\s/.test(lockEntry.run);
   if (runsScriptDirectly) {
     if (lockEntry.run !== b.run) {
       problems.push(
@@ -1538,6 +1539,11 @@ function selftest(endToEnd = false): number {
     registrationProblems(modB, { run: modB.run }, { [modB.id]: modB.run }).some((p) =>
       p.includes('NO package.json script')
     )
+  );
+  ck(
+    'CONTROL: an env-prefixed npm hop is a hop, judged against package.json and not as a direct run',
+    registrationProblems(modB, { run: `X=1 npm run ${modB.id}` }, { [modB.id]: modB.run })
+      .length === 0
   );
   ck(
     'CONTROL: an npm-hop gate with no package.json key is a named problem',
