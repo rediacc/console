@@ -1,6 +1,6 @@
 # PLAN: Agent grants: a per-URL CEK grant with a split secret lets a hosted executor open a user's config without a browser, and dies on expiry, revocation or any membership change
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Owner: 6c87d631
 Depends-On: PLAN-rmcp-writeback.md, PLAN-rmcp-executor-hardening.md, PLAN-rmcp-decide.md, PLAN-rmcp-policy-record.md#SK1 -- the writable executor chain and the egress write routes come from writeback, grant-keyed sessions build on the session rework in hardening, and the override shape the grant row stores is the one decide() reads The on-premise boxes (AG-OP1, AG-OP-L1) run on the harness of PLAN-rmcp-executor-hardening.md (EHOP1, EHOP2) and the per-org executor resolver (EHOP5), which that dependency already covers. The per-config subkey the grant wraps comes from PLAN-rmcp-policy-record.md#SK1 (D56).
 Priority: P1 -- the remote MCP endpoint (PLAN-rmcp-remote-worker.md) cannot open a config without it

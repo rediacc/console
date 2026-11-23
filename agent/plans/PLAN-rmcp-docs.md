@@ -1,6 +1,6 @@
 # PLAN: remote-mcp docs: www pages in 13 languages, skills, design docs, drift gates, threat model and privacy wording
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Owner: 6c87d631
 Depends-On: PLAN-rmcp-writeback.md, PLAN-rmcp-policy-record.md, PLAN-rmcp-decide.md, PLAN-rmcp-config-edit-removal.md, PLAN-rmcp-executor-hardening.md, PLAN-rmcp-agent-grants.md, PLAN-rmcp-local-mcp.md, PLAN-rmcp-remote-worker.md, PLAN-rmcp-orphan-recovery.md -- each DO page box waits only for the plan whose behaviour it describes; the gate boxes DO1-DO3 and the threat model DO10 start at once
 Priority: P1 -- the public ai-agents-mcp page is already wrong today (it lists tools that no longer exist), and the program's breaking changes need a user-facing record before the PR merges

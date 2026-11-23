@@ -1,6 +1,6 @@
 # PLAN: Executor and auth hardening: identity, team scope, session lifetime and token hygiene on the hosted path
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: PLAN-rmcp-writeback.md -- this plan edits server.ts, container-config.ts and config.service.ts after the write-back plan lands its changes there
 Owner: 6c87d631
 Priority: P1 -- a team-B request of one user can be served team A's config, and a revoked token keeps working for up to 60 s past expiry

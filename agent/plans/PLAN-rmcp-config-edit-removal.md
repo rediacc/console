@@ -1,6 +1,6 @@
 # PLAN: Remove REDIACC_ALLOW_CONFIG_EDIT: agents lose every path to a whole-document config edit and to skipping the knowledge gate
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: PLAN-rmcp-decide.md, PLAN-rmcp-executor-hardening.md#EHOP2 -- the removal builds on the guard code decide() reshapes; R-OP-L1 runs on the on-premise harness and scenario runner EHOP2 ships
 Owner: 6c87d631
 Priority: P1 -- the override lets an agent rewrite the whole config, including the policy that limits it, delete repo entries whose LUKS credential then exists nowhere, and skip the --current proof on secrets (findings 1-4)

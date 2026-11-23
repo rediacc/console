@@ -1,6 +1,6 @@
 # PLAN: Local MCP on SDK v2 and one tool registry shared with the remote server
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Owner: 6c87d631
 Depends-On: PLAN-rmcp-decide.md, PLAN-rmcp-executor-hardening.md#EHOP2, PLAN-rmcp-writeback.md#WB1, PLAN-rmcp-writeback.md#WB4 -- LM4 removes the guards in tools.ts and calls decide(), which that plan creates; every other box starts at once LM-OP-L1 runs on the on-premise harness and scenario runner EHOP2 ships. LM10 moves config-plane writes onto the executor, which needs the request-scoped remote state (WB1) and the writable chain (WB4).
 Priority: P1 -- PLAN-rmcp-remote-worker.md builds its tools/list from the registry this plan creates, so the remote Worker cannot start until LM1 lands

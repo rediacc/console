@@ -1,6 +1,6 @@
 # PLAN: Remote MCP Worker: a stateless MCP endpoint per region, with its own OAuth authorization server, serves agents with no local install and never lets the bearer secret reach the account Worker
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Owner: 6c87d631
 Depends-On: PLAN-rmcp-agent-grants.md, PLAN-rmcp-local-mcp.md -- grants, agent-session and pushed revocation come from agent-grants; the shared tool registry, SDK v2 and the `surface` marker come from local-mcp
 Priority: P1 -- the user-facing goal of the program (D1)

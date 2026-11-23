@@ -1,6 +1,6 @@
 # PLAN: Orphan recovery: find every volume and fork the hosted executor created without a saved config record, and settle each one
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: PLAN-rmcp-writeback.md#WB0, PLAN-rmcp-executor-hardening.md#EHOP2 -- the sweep is final only once WB0 stops new orphans from appearing; OR-OP-L1 runs on the on-premise harness and scenario runner EHOP2 ships
 Owner: 6c87d631
 Priority: P1 -- every proxied `repo create` or `repo fork` before WB0 may have left an image on a host with no config entry and no key

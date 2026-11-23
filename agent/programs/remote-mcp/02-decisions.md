@@ -82,6 +82,7 @@ Every ruling below was given by the operator in session `6c87d631` on 2026-11-20
 ## Approval
 
 - **D51 The ten plans are approved and not promoted** (answer "approved but do not promote"): each carries `Status: approved`; none joins `agent/plans/QUEUE.md` `## Promoted` until the operator promotes it. The commit of the plan files was handed to another agent session, because it must carry regenerated `agent/plans/QUEUE.md` and `agent/INDEX.md`, which held session d778be9d's uncommitted queue edit.
+  - (superseded 2026-11-23, operator /ask) The operator promoted the whole rmcp program: all ten plans join `agent/plans/QUEUE.md` `## Promoted` (74-78 as prerequisites of the console-rework plans, 84-88 in Depends-On order), and each Status line now reads "promoted by the operator 2026-11-23".
 
 ## Working rules for this program
 

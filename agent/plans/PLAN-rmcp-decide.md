@@ -1,6 +1,6 @@
 # PLAN: One decide(): a single shared decision function at one enforcement point, so the CLI, local MCP, remote MCP, --proxy and the web console refuse and allow the same things
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: PLAN-rmcp-policy-record.md
 Owner: 6c87d631
 Priority: P1 -- today a local agent ignores the org policy entirely and the local and executor grand-repo guards disagree on five inputs (findings 1-6); the remote MCP must not ship a third variant

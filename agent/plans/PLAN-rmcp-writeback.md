@@ -1,6 +1,6 @@
 # PLAN: Executor config write-back: a hosted command saves its config change or fails before touching a host
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: no-dep -- the first plan of the remote-mcp program; it needs nothing, and later program plans wait on it
 Owner: 6c87d631
 Priority: P0 -- a proxied `repo create` today creates an encrypted volume on the host and drops its only key when the container sleeps

@@ -1,6 +1,6 @@
 # PLAN: Policy record: the authorization policy leaves the config blob for its own encrypted record that only owners, admins and team admins can write
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: no-dep -- the first plan of the policy chain; PLAN-rmcp-decide.md builds on it
 Owner: 6c87d631
 Priority: P1 -- today any member with config write access rewrites /policy by pushing a config (finding 1 below); the remote MCP grants and the shared decide() both read the policy this plan makes trustworthy
