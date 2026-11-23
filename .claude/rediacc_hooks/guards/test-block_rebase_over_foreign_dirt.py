@@ -11,6 +11,7 @@ WHAT EACH PLANT TURNS GREEN INTO RED. The guard's DEFECT (every dirty path exemp
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -105,7 +106,15 @@ def guard(cmd, project):
 
 
 def main():
+    # Under the TMPDIR the suite is given, and removed whatever the rows answer: check:ci-guard-mutations refuses a pristine run that leaves an entry there.
     base = pathlib.Path(tempfile.mkdtemp(prefix="guard-rebase-dirt-"))
+    try:
+        return rows_hold(base)
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
+def rows_hold(base):
     repo, linked = build(base)
     # (label, command, tree, dirty, want rc, mark the refusal must carry)
     rows = [
