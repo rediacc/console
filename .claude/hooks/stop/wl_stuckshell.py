@@ -61,12 +61,15 @@ def is_final(entry):
 
 
 def final_report(entries, aid, since):
-    """The newest final report row captured for `aid` at or after epoch `since`, or None."""
+    """The newest report row captured for `aid` at or after epoch `since` when that row is final, else None.
+
+    Only the NEWEST row decides: an older closing-looking row is superseded by a newer interim one (2026-11-23: the hostinger runner's report -2 predated the `armed` field and read as final while its newer report -4 said it was still waiting on its restart)."""
     import wl_report as RPT
     import wl_roster as R
 
     rid = RPT.short_id(aid)
-    found = None
+    newest = None
+    newest_at = None
     for e in entries or []:
         ident = str(e.get("id") or "")
         if ident != rid and not ident.startswith(rid + "-"):
@@ -74,9 +77,9 @@ def final_report(entries, aid, since):
         at = R._epoch(e.get("at"))
         if at is None or at < since:
             continue
-        if is_final(e):
-            found = e
-    return found
+        if newest_at is None or at >= newest_at:
+            newest, newest_at = e, at
+    return newest if newest is not None and is_final(newest) else None
 
 
 def classify(waiters, metas, entries, now=None):

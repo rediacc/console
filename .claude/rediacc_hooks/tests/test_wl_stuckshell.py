@@ -266,3 +266,33 @@ def test_a_long_report_with_an_armed_shell_is_not_final() -> None:
         check=True,
     )
     assert json.loads(proc.stdout) == [False, True, True]
+
+
+NEWEST_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_report as RPT
+import wl_stuckshell as S
+n = RPT.RELAY_FLOOR + 400
+aid = "ae1f51c5c5b30755f"
+rid = RPT.short_id(aid)
+old_final = {"id": rid + "-2", "at": "2026-11-23T20:20:00Z", "bytes": n}
+new_interim = {"id": rid + "-4", "at": "2026-11-23T20:40:00Z", "bytes": n, "armed": "bdy2q4ke7"}
+since = 0
+print(json.dumps([
+    S.final_report([old_final, new_interim], aid, since) is None,
+    S.final_report([old_final], aid, since) is not None,
+    S.final_report([new_interim, dict(old_final, at="2026-11-23T20:50:00Z")], aid, since) is not None,
+]))
+"""
+
+
+def test_the_newest_report_decides_not_an_older_final_looking_one() -> None:
+    """An older closing-looking row is superseded by a newer interim one; controls: alone it is final, and a newer final row wins."""
+    proc = subprocess.run(
+        [sys.executable, "-c", NEWEST_SNIPPET, str(wlfix.STOP_DIR)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(proc.stdout) == [True, True, True]
