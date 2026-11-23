@@ -1,0 +1,9 @@
+{
+  "EDGE_CASES": [
+    ["a bulk commit with no proof quoted", "git commit -m \"reflow the tree\""],
+    ["a small commit, well under threshold", "git commit -m \"fix: a small thing\""],
+    ["a plain command is not a target", "ls -la"],
+    ["gh pr view is not a write", "gh pr view 1"],
+    ["git log is not git commit", "git log --grep \"shape_cluster_diff.py\""]
+  ]
+}

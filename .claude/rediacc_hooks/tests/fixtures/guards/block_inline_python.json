@@ -1,0 +1,15 @@
+{
+  "EDGE_CASES": [
+    ["a program in a template literal", {"tool_input": {"file_path": "packages/cli/src/a.ts", "new_string": "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"}}],
+    ["the same program in a .mjs file", {"tool_input": {"file_path": "packages/cli/bundle.mjs", "content": "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"}}],
+    {"//": "\"Mentions Python\" is far too wide, and the detector says so at length. Naming the interpreter is not a finding; shipping a program is."},
+    ["naming the interpreter is not shipping a program", {"tool_input": {"file_path": "packages/cli/src/a.ts", "new_string": "const bin = \"python3\";"}}],
+    ["ordinary TypeScript", {"tool_input": {"file_path": "packages/cli/src/a.ts", "new_string": "const x = 1;"}}],
+    {"//": "A .py file is where the program is SUPPOSED to live, so this guard has nothing to say about it."},
+    ["the program in a real .py file", {"tool_input": {"file_path": "a.py", "content": "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"}}],
+    {"//": "No `\"\"` arm in the `case`, so a payload naming no file leaves early."},
+    ["no file_path at all", {"tool_input": {"new_string": "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"}}],
+    ["an empty fragment in a code file", {"tool_input": {"file_path": "packages/cli/src/a.ts", "new_string": ""}}],
+    ["a MultiEdit edits array is collected too", {"tool_input": {"file_path": "packages/cli/src/a.ts", "edits": [{"new_string": "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n"}]}}]
+  ]
+}

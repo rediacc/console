@@ -7,6 +7,7 @@ import tempfile
 
 from rediacc_hooks import hookio, syspath
 from rediacc_hooks.guards.warn_writer_brief import STOP_DIR
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # ---- the differential's world: a tree whose review store holds three fixed doc findings on a/x.py ------
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-writerbrief-world")
@@ -66,14 +67,4 @@ def _spawn(kind, text):
     }
 
 
-EDGE_CASES = [
-    ("writer-on-files-with-three-fixed-findings", _spawn("general-purpose", "work\nOwns: a/**")),
-    ("writer-on-an-untouched-file", _spawn("general-purpose", "work\nOwns: b/untouched/**")),
-    ("reader-on-the-same-files", _spawn("Explore", "read\nOwns: a/**")),
-    (
-        "writer-that-edits-nothing",
-        _spawn("general-purpose", "work\nOwns: none -- this writer only reports what it reads"),
-    ),
-    ("writer-with-no-owns-line", _spawn("general-purpose", "fix the docstring in a/x.py")),
-    ("not-a-spawn", {"tool_name": "Bash", "tool_input": {"command": "true"}}),
-]
+EDGE_CASES = load_table("warn_writer_brief", "EDGE_CASES")

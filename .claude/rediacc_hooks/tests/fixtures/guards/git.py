@@ -1,10 +1,10 @@
-"""Fixture helpers more than one guard table uses."""
+"""The one `git` helper for the guard fixture builders."""
 
 import subprocess
 
 
 def fixture_git(cwd, *args, date=None):
-    """`git` for the fixture builders, with the ambient config shut out.
+    """`git` for the fixture builders, with the ambient config shut out; returns stdout, stripped.
 
     GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM point at /dev/null so a host `commit.gpgsign` or `core.hooksPath` cannot reach a tree that is meant to be a controlled world. `date` pins both commit dates, which makes every fixture commit id the same on every run, for a table whose refusal names one.
     """
@@ -20,4 +20,7 @@ def fixture_git(cwd, *args, date=None):
     }
     if date is not None:
         env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = date
-    subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True, env=env)
+    done = subprocess.run(
+        ["git", *args], cwd=str(cwd), check=True, capture_output=True, text=True, env=env
+    )
+    return done.stdout.strip()

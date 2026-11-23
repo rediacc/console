@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from rediacc_hooks import commit_policy
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # ---- the differential's world: a main checkout on the development branch 1121-1 (one development-only commit) and a linked landing tree on 1120-1, bound by the landing record ----
 _FIXED_ENV = {
@@ -44,19 +45,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    ("rebase onto development", "git rebase 1121-1"),
-    ("merge development", "git merge --ff-only 1121-1"),
-    ("cherry-pick development", "git cherry-pick 1121-1"),
-    ("reset to development", "git reset --hard 1121-1"),
-    ("pull development", "git pull origin 1121-1"),
-    ("a range ending at development", "git cherry-pick 1120-1..1121-1"),
-    ("control: -C into the main checkout", "git -C ../main rebase 1121-1"),
-    ("control: rebase continue", "git rebase --continue"),
-    ("control: reset to HEAD", "git reset --hard HEAD"),
-    ("control: merge main", "git merge main"),
-    ("control: push the landing branch", "git push origin 1120-1"),
-    ("control: push the development branch", "git push origin 1121-1"),
-    ("control: prose", "echo git merge 1121-1"),
-    ("control: status", "git status"),
-]
+EDGE_CASES = load_table("block_landing_one_way", "EDGE_CASES")

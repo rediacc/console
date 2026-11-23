@@ -1,0 +1,29 @@
+{
+  "EDGE_CASES": [
+    {"//": "The two shapes this guard exists for, on a file it is in scope for."},
+    ["a write whose prose addresses the reader", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "Did you run the tests?\n"}}],
+    ["an edit whose new_string says I", {"tool_name": "Edit", "tool_input": {"file_path": "docs/new.md", "new_string": "I think this is wrong.\n"}}],
+    {"//": "CONTROLS: the same bytes, rewritten, must pass untouched."},
+    ["the rewritten sentence passes", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "Have the tests been run?\n"}}],
+    ["the ownership exception is allowed", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "My mistake; a fix is on the way.\n"}}],
+    {"//": "SCOPE: a shell script is not scanned at all."},
+    ["a .sh file is out of scope entirely", {"tool_name": "Write", "tool_input": {"file_path": "scripts/x.sh", "content": "# Did you run the tests?\n"}}],
+    ["packages/www is linted like every other tree", {"tool_name": "Write", "tool_input": {"file_path": "packages/www/src/a.md", "content": "Did you run it?\n"}}],
+    ["a submodule path is excluded", {"tool_name": "Write", "tool_input": {"file_path": "private/renet/README.md", "content": "Did you run it?\n"}}],
+    {"//": "EXTRACTION: the violation is inside a fence, an inline code span, a blockquote and a `bad:` exemplar. None of those is prose."},
+    ["a fenced block is not prose", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "```\nDid you run it?\n```\n"}}],
+    ["an inline code span is not prose", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "The flag is `you` here.\n"}}],
+    ["a quotation is somebody else's words", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "> Did you run it?\n"}}],
+    ["a bad: exemplar carries its violation on purpose", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "bad: Did you run it?\n"}}],
+    ["the explicit marker exempts the line", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "Did you run it? <!-- style-ok -->\n"}}],
+    {"//": "SEVERITY: a warning-only rule prints and allows."},
+    ["an absolute is a warning, not a block", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md", "content": "That will never work.\n"}}],
+    {"//": "A code file contributes only its COMMENTS."},
+    ["a python comment is prose", {"tool_name": "Write", "tool_input": {"file_path": "scripts/x.py", "content": "x = 1  # Did you run it?\n"}}],
+    ["a python STRING is not", {"tool_name": "Write", "tool_input": {"file_path": "scripts/x.py", "content": "x = 'did you run it'\n"}}],
+    {"//": "A MultiEdit-shaped payload, and the degenerate ones."},
+    ["the edits[] collector is read", {"tool_name": "MultiEdit", "tool_input": {"file_path": "docs/new.md", "edits": [{"new_string": "Did you run it?"}]}}],
+    ["no file path at all", {"tool_name": "Write", "tool_input": {"content": "Did you run it?"}}],
+    ["no content at all", {"tool_name": "Write", "tool_input": {"file_path": "docs/new.md"}}]
+  ]
+}

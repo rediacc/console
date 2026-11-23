@@ -1,6 +1,6 @@
 """The test tables of `block_second_open_pr`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.wellknown import RENET_REPO
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # `gh` answering is what makes the block direction reachable at all: under the harness default it exits 1 with nothing, which is only the fail-closed arm.
 _GH_LIST = (
@@ -23,14 +23,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("the create this guard exists for", "gh pr create --draft -t x -b y"),
-    ("sh -c wrapping does not bypass it", "sh -c 'gh pr create --draft -t x -b y'"),
-    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it would block the FIRST PR too and simply stop all work.
-    ("a non-create gh command is ignored", "gh pr view 567"),
-    (
-        "a submodule create is judged against ITS repo",
-        ("gh pr create --repo " + RENET_REPO + " -t x"),
-    ),
-    ("prose naming the command", "echo 'gh pr create --draft'"),
-]
+EDGE_CASES = load_table("block_second_open_pr", "EDGE_CASES")

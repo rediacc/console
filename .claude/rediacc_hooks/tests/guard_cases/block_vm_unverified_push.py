@@ -9,7 +9,6 @@ from rediacc_hooks.guards.block_vm_unverified_push import (
     ACCOUNT_SRC,
     ACCOUNT_TEST,
     CLI_FILE,
-    REASON_ENV,
     RECEIPT_MOD,
     RENET,
     TRIGGER_MOD,
@@ -18,6 +17,7 @@ from rediacc_hooks.guards.block_vm_unverified_push import (
     _put,
     world,
 )
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 
 def plant_receipt(
@@ -288,34 +288,4 @@ _UNAVAIL = "the ops fleet is down, ops up --basic exits 1 on vm11 and vm12"
 _PUSH = "git push origin 1008-1"
 
 
-EDGE_CASES = [
-    ("a bare push", "git push -u origin 1008-1"),
-    ("an implicit push", "git push"),
-    ("a -C push", "git -C . push origin 1008-1"),
-    ("vm-unavailable", "%s='vm-unavailable: %s%s' %s" % (REASON_ENV, _UNAVAIL, _ASK, _PUSH)),
-    ("not-runtime", "%s='not-runtime: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("deadline", "%s='deadline: %s%s' %s" % (REASON_ENV, _DEADLINE, _ASK, _PUSH)),
-    (
-        "an exported reason",
-        "export %s='not-runtime: %s%s'; %s" % (REASON_ENV, _FILES, _ASK, _PUSH),
-    ),
-    ("an unknown kind", "%s='because: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("a short why", "%s='deadline: soon%s' %s" % (REASON_ENV, _ASK, _PUSH)),
-    ("no ASKED", "%s='not-runtime: %s' %s" % (REASON_ENV, _FILES, _PUSH)),
-    ("a malformed ASKED", "%s='not-runtime: %s ASKED:today' %s" % (REASON_ENV, _FILES, _PUSH)),
-    ("a dry run", "git push --dry-run origin 1008-1"),
-    ("a delete push", "git push origin --delete 1007-1"),
-    ("the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"),
-    ("a submodule push", "git -C private/renet push origin 1008-1"),
-    ("prose naming a push", "echo 'git push origin 1008-1'"),
-    ("a scratch repo", "git -C /tmp push origin x"),
-    ("two pushes of two commits", "git push origin %s:refs/heads/x && %s" % (TIP_BRANCH, _PUSH)),
-    ("two refspecs in one push", "git push origin 1008-1:1008-1 %s:refs/heads/x" % TIP_BRANCH),
-    ("every branch", "git push --all origin"),
-    ("a glob refspec", "git push origin 'refs/heads/*:refs/heads/*'"),
-    ("a mirror push", "git push --mirror origin"),
-    (
-        "a mirror push, escaped",
-        "%s='deadline: %s%s' git push --mirror origin" % (REASON_ENV, _DEADLINE, _ASK),
-    ),
-]
+EDGE_CASES = load_table("block_vm_unverified_push", "EDGE_CASES")

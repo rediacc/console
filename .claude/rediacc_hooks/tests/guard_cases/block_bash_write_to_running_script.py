@@ -9,6 +9,7 @@ import tempfile
 import time
 
 from rediacc_hooks import proc
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
@@ -153,96 +154,4 @@ ENVS: list = [("running", {"REDIACC_BASHWRITE_WORLD": "{FIXTURE:bashwrite-script
 _PY = "python3 - <<'PY'\n%s\nPY"
 
 
-EDGE_CASES = [
-    ("a redirect onto a running script", "echo x > %s" % LIVE_SCRIPT),
-    ("an append onto a running script", "echo x >> %s" % LIVE_SCRIPT),
-    ("a copy onto a running script", "cp /tmp/new.sh %s" % LIVE_SCRIPT),
-    # WRITE INTENT IS REQUIRED, not merely the filename.
-    ("reading it is not writing it", "cat %s" % LIVE_SCRIPT),
-    ("grepping it is not writing it", "grep -n foo %s" % LIVE_SCRIPT),
-    ("running it is not writing it", "bash %s --help" % LIVE_SCRIPT),
-    # ... and the live process is required too.
-    ("a write to a script nobody runs", "echo x > %s" % IDLE_SCRIPT),
-    ("a chain evaluator is not a running job", "echo x > %s" % SIBLING_SCRIPT),
-    # The 2026-09-01 arrow, in the exact prose that produced it.
-    (
-        "an ASCII arrow is not a redirect",
-        "echo 'check:ci-hook-worklist-suite -> %s'" % LIVE_SCRIPT,
-    ),
-    # The python-heredoc door this guard exists for, both ways round.
-    (
-        "a python heredoc naming its target",
-        _PY % ('p = \'%s\'\nopen(p, "w").write("x")' % LIVE_SCRIPT),
-    ),
-    (
-        "a python heredoc that merely MENTIONS a running script",
-        _PY % ('p = "notes.py"\np.write_text("see %s")' % LIVE_SCRIPT),
-    ),
-    # A variable expansion is recognised and then skipped.
-    ("a variable in the target", "echo x > $SP/mp-$ver.sh"),
-    # Rule T, A0 L14: an UNQUOTED arrow is a real redirect, and `>|` truncates even under noclobber. The quoted arrow above stays prose.
-    ("an unquoted arrow is a redirect onto a running script", "echo x->%s" % LIVE_SCRIPT),
-    ("a noclobber-proof redirect onto a running script", "echo x >| %s" % LIVE_SCRIPT),
-    ("a double-quoted arrow is still prose", 'echo "x->%s"' % LIVE_SCRIPT),
-    # 2026-09-24, #a655c5f5: a closing quote after `PATS=` read as an opening one ran across `; ls` to a running script.
-    (
-        "a closing quote does not open a target that spans a listing",
-        _PY % "p = 'other.sh'\nopen(p, 'w').write('x')"
-        + '\ngrep -n "source\\|PATS=" other.sh; ls %s' % LIVE_SCRIPT,
-    ),
-    # #0c331972: a quoted write is a sentence, and every write that runs is still one.
-    ("an echo quoting a redirect onto a running script", "echo 'echo x > %s'" % LIVE_SCRIPT),
-    ("a commit message quoting a copy onto it", "git commit -m 'cp a.sh %s' -- a.md" % LIVE_SCRIPT),
-    (
-        "a python program printing an arrow names no target",
-        "python3 -c \"print('see -> %s')\"" % LIVE_SCRIPT,
-    ),
-    ("tee onto a running script", "echo x | tee -a %s" % LIVE_SCRIPT),
-    ("sudo tee onto a running script", "echo x | sudo tee %s" % LIVE_SCRIPT),
-    ("sed -i on a running script", "sed -i 's/a/b/' %s" % LIVE_SCRIPT),
-    ("a copy into the running script's directory", "cp /tmp/x/bash-side-suite.sh %s/" % WORLD),
-    ("copying the running script AWAY is a read", "cp %s /tmp/backup.sh" % LIVE_SCRIPT),
-    # Review 0bbd6471.5: a destination without `.sh` is a FILE unless `-t`, a trailing slash or the filesystem makes it a directory.
-    (
-        "copying it to a file with no suffix is a read",
-        "cp %s /tmp/rediacc-bashwrite-backup" % LIVE_SCRIPT,
-    ),
-    ("copying a script into its directory by -t", "cp -t %s /tmp/x/bash-side-suite.sh" % WORLD),
-    ("copying a script into its existing directory", "cp /tmp/x/bash-side-suite.sh %s" % WORLD),
-    # Review 88362611.1: the destination as bash expands it.
-    ("a copy onto a variable set to the running script", "F=%s; cp /tmp/x.sh $F" % LIVE_SCRIPT),
-    # Review 126f2a9f.1: bash expands `~` and braces in an echo word before xargs reads it.
-    (
-        "a fed tilde word is read as unknown, not as a literal path",
-        "echo ~/x.sh | xargs cp /tmp/y.sh",
-    ),
-    ("a fed brace word is read as unknown", "echo {/tmp/z,%s} | xargs cp /tmp/y.sh" % LIVE_SCRIPT),
-    # Review 0bbd6471.4: xargs appends its feed, so a fed running script is the operand or the destination.
-    ("xargs feeds the running script to cp", "echo %s | xargs cp /tmp/x.sh" % LIVE_SCRIPT),
-    ("xargs feeds the running script to sed -i", "echo %s | xargs sed -i s/a/b/" % LIVE_SCRIPT),
-    # #6378e10e: perl edits in place too.
-    ("perl -pi on a running script", "perl -pi -e 's/a/b/' %s" % LIVE_SCRIPT),
-    ("perl -i -pe on a running script", "perl -i -pe 's/a/b/' %s" % LIVE_SCRIPT),
-    ("perl -i.bak on a running script", "perl -i.bak -pe 's/a/b/' %s" % LIVE_SCRIPT),
-    ("perl -pe without -i only prints", "perl -pe 's/a/b/' %s" % LIVE_SCRIPT),
-    ("gsed -i on a running script", "gsed -i 's/a/b/' %s" % LIVE_SCRIPT),
-    ("xargs feeds the running script to tee", "echo %s | xargs tee" % LIVE_SCRIPT),
-    ("xargs feeds the running script to truncate", "echo %s | xargs truncate -s 0" % LIVE_SCRIPT),
-    (
-        "xargs feeds a script to cp -t its directory",
-        "echo /tmp/x/bash-side-suite.sh | xargs cp -t %s" % WORLD,
-    ),
-    ("a redirect inside sh -c", "sh -c 'echo x > %s'" % LIVE_SCRIPT),
-    ("a python -c write", "python3 -c \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
-    ("a python here-string write", "python3 <<< \"open('%s', 'w').write('x')\"" % LIVE_SCRIPT),
-    (
-        "a heredoc piped to python",
-        "cat <<'PY' | python3 -\nopen('%s', 'w').write('x')\nPY" % LIVE_SCRIPT,
-    ),
-    (
-        "a data heredoc naming a write is data",
-        "cat > /tmp/notes.md <<'EOF'\nopen('%s', 'w')\nEOF" % LIVE_SCRIPT,
-    ),
-    ("truncate a running script", "truncate -s 0 %s" % LIVE_SCRIPT),
-    ("dd onto a running script", "dd if=/dev/null of=%s" % LIVE_SCRIPT),
-]
+EDGE_CASES = load_table("block_bash_write_to_running_script", "EDGE_CASES")

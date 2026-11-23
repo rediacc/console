@@ -1,0 +1,15 @@
+{
+  "EDGE_CASES": [
+    ["a Write adding the key", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/commands/x.md", "content": "---\ndescription: x\ndisable-model-invocation: true\n---\n\nBody.\n"}}],
+    ["a Write with an explicit false", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/skills/s/SKILL.md", "content": "---\ndescription: x\ndisable-model-invocation: false\n---\n\nBody.\n"}}],
+    ["a Write with another spelling", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/commands/x.md", "content": "---\ndescription: x\nDisable_Model_Invocation : 'Yes'\n---\n\nBody.\n"}}],
+    ["a nested command tree", {"tool_name": "Write", "tool_input": {"file_path": "/r/private/account/.claude/commands/t.md", "content": "---\ndescription: x\ndisableModelInvocation: on\n---\n\nBody.\n"}}],
+    ["a NotebookEdit naming a command path", {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": "/r/.claude/commands/x.md", "new_source": "---\ndescription: x\ndisable-model-invocation: 1\n---\n\nBody.\n"}}],
+    ["a Write whose body only mentions the key", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/commands/x.md", "content": "---\ndescription: x\n---\n\nBody.\nNever set `disable-model-invocation: true`.\n"}}],
+    ["a Write outside the command directories", {"tool_name": "Write", "tool_input": {"file_path": "/r/docs/x.md", "content": "---\ndescription: x\ndisable-model-invocation: true\n---\n\nBody.\n"}}],
+    ["a Write to a sub-agent definition", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/agents/x.md", "content": "---\ndescription: x\ndisable-model-invocation: true\n---\n\nBody.\n"}}],
+    ["a commented-out key", {"tool_name": "Write", "tool_input": {"file_path": "/r/.claude/commands/x.md", "content": "---\ndescription: x\n# disable-model-invocation: true\n---\n\nBody.\n"}}],
+    ["an Edit of the exception list", {"tool_name": "Edit", "tool_input": {"file_path": "/r/.ci/config/model-invocation-exceptions.json", "old_string": "[", "new_string": "[{}"}}],
+    ["no path", {"tool_name": "Write", "tool_input": {"content": "x"}}]
+  ]
+}

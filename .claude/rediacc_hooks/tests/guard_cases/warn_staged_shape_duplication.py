@@ -1,12 +1,5 @@
 """The test tables of `warn_staged_shape_duplication`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-EDGE_CASES = [
-    ("the plain commit", "git commit -m x"),
-    ("the sanctioned pathspec form", "git commit -F /tmp/msg.txt -- scripts/gates/check-x.ts"),
-    ("-a takes the working tree", "git commit -a -m x"),
-    ("--all takes the working tree", "git commit --all -m x"),
-    ("a commit after &&", "git add -A && git commit -m x"),
-    ("quoted prose is not a command", "echo 'do not run git commit here'"),
-    ("a different git verb", "git status"),
-    ("a plain command is not a target", "ls -la"),
-]
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
+EDGE_CASES = load_table("warn_staged_shape_duplication", "EDGE_CASES")

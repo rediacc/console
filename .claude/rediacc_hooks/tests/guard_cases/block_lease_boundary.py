@@ -3,6 +3,8 @@
 import os
 import subprocess
 
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 
 def _lease_world(path):
     """A checkout with one linked tree below its holder; the path returned is the tree, so an event with no `cwd` starts inside it."""
@@ -38,17 +40,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    ("a push", "git push origin HEAD:0923-1"),
-    ("a pin push", "git push origin HEAD:refs/worktrees/x"),
-    ("a switch", "git switch main"),
-    ("a new branch", "git switch -c x"),
-    ("a checkout of a branch", "git checkout 0923-1"),
-    ("a cherry-pick", "git cherry-pick HEAD"),
-    ("gh pr", "gh pr create --title x --body y"),
-    ("a wrapper", "sh -c 'git push origin HEAD:0923-1'"),
-    ("control: status", "git status"),
-    ("control: log", "git log -1"),
-    ("control: prose", "echo git push origin HEAD:0923-1"),
-    ("control: a checkout of paths", "git checkout -- x"),
-]
+EDGE_CASES = load_table("block_lease_boundary", "EDGE_CASES")

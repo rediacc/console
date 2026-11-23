@@ -4,6 +4,7 @@ import os
 import tempfile
 
 from rediacc_hooks import hookio
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
 #
@@ -70,101 +71,4 @@ FIXTURES = {"record-world": _record_world}
 ENVS: list = [("records", {"REDIACC_RECORD_WORLD": "{FIXTURE:record-world}"}, {})]
 
 
-EDGE_CASES = [
-    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the message names both paths.
-    (
-        "a Write through a .. detour onto the record",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "%s/agent/x/../PLAN-a-compacted-record.md" % WORLD,
-                "content": "# rewritten\n",
-            },
-        },
-    ),
-    (
-        "a Write through a symlink onto the record",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "%s/linked/PLAN-a-compacted-record.md" % WORLD,
-                "content": "# rewritten\n",
-            },
-        },
-    ),
-    (
-        "a Write replaces the spine outright",
-        {"tool_name": "Write", "tool_input": {"file_path": RECORD, "content": "# rewritten\n"}},
-    ),
-    (
-        "an edit quoting a whole header line",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": RECORD,
-                "old_string": "Status: compacted",
-                "new_string": "Status: active",
-            },
-        },
-    ),
-    # The 2026-09-06 reproduction: a MINIMAL unique old_string with no line prefix at all, which every line-anchored pattern above misses.
-    (
-        "the bare 40-hex blob as old_string",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": BLOB}},
-    ),
-    (
-        "the bare 8-hex signature as old_string",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": SIG}},
-    ),
-    (
-        "a done= attestation",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "new_string": "done=abandoned"}},
-    ),
-    (
-        "a checkbox line",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "new_string": "- [ ] a new box"}},
-    ),
-    (
-        "a (record) attestation line",
-        {
-            "tool_name": "Edit",
-            "tool_input": {"file_path": RECORD, "new_string": "    (record) done=open"},
-        },
-    ),
-    # BOTH DIRECTIONS of the box-body containment test.
-    (
-        "a box body quoted whole",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": BOX_BODY}},
-    ),
-    (
-        "the shortest distinguishing part of a box body",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": BOX_BODY[:20]}},
-    ),
-    # ... and its floor: a needle under 12 characters is ordinary prose.
-    (
-        "a needle under the twelve-character floor",
-        {"tool_name": "Edit", "tool_input": {"file_path": RECORD, "old_string": "Rotate the"}},
-    ),
-    # The common case, which must stay frictionless.
-    (
-        "sharpening the prose is allowed",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": RECORD,
-                "old_string": "Prose that Record-Sig deliberately does not cover",
-                "new_string": "Prose the signature deliberately leaves alone",
-            },
-        },
-    ),
-    # Both halves of the record test are required.
-    (
-        "a plan that is not a record",
-        {"tool_name": "Write", "tool_input": {"file_path": PLAIN, "content": "# rewritten\n"}},
-    ),
-    (
-        "a record path that does not exist",
-        {"tool_name": "Write", "tool_input": {"file_path": "agent/PLAN-absent.md", "content": "x"}},
-    ),
-    ("a document that is not a plan", {"tool_name": "Write", "tool_input": {"file_path": "a.md"}}),
-]
+EDGE_CASES = load_table("block_compacted_plan_edit", "EDGE_CASES")

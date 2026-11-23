@@ -1,0 +1,27 @@
+{
+  "EDGE_CASES": [
+    ["a bare push", "git push -u origin 1008-1"],
+    ["an implicit push", "git push"],
+    ["a -C push", "git -C . push origin 1008-1"],
+    ["vm-unavailable", "VM_CHECK_PUSH_REASON='vm-unavailable: the ops fleet is down, ops up --basic exits 1 on vm11 and vm12 ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["not-runtime", "VM_CHECK_PUSH_REASON='not-runtime: only packages/cli/src/remote/sftp.ts comments changed, no runtime code ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["deadline", "VM_CHECK_PUSH_REASON='deadline: the 03:00Z CD promote carries the broken stable SFTP path otherwise ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["an exported reason", "export VM_CHECK_PUSH_REASON='not-runtime: only packages/cli/src/remote/sftp.ts comments changed, no runtime code ASKED:2026-01-01T00:00Z'; git push origin 1008-1"],
+    ["an unknown kind", "VM_CHECK_PUSH_REASON='because: only packages/cli/src/remote/sftp.ts comments changed, no runtime code ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["a short why", "VM_CHECK_PUSH_REASON='deadline: soon ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["no ASKED", "VM_CHECK_PUSH_REASON='not-runtime: only packages/cli/src/remote/sftp.ts comments changed, no runtime code' git push origin 1008-1"],
+    ["a malformed ASKED", "VM_CHECK_PUSH_REASON='not-runtime: only packages/cli/src/remote/sftp.ts comments changed, no runtime code ASKED:today' git push origin 1008-1"],
+    ["a dry run", "git push --dry-run origin 1008-1"],
+    ["a delete push", "git push origin --delete 1007-1"],
+    ["the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"],
+    ["a submodule push", "git -C private/renet push origin 1008-1"],
+    ["prose naming a push", "echo 'git push origin 1008-1'"],
+    ["a scratch repo", "git -C /tmp push origin x"],
+    ["two pushes of two commits", "git push origin vm-tip:refs/heads/x && git push origin 1008-1"],
+    ["two refspecs in one push", "git push origin 1008-1:1008-1 vm-tip:refs/heads/x"],
+    ["every branch", "git push --all origin"],
+    ["a glob refspec", "git push origin 'refs/heads/*:refs/heads/*'"],
+    ["a mirror push", "git push --mirror origin"],
+    ["a mirror push, escaped", "VM_CHECK_PUSH_REASON='deadline: the 03:00Z CD promote carries the broken stable SFTP path otherwise ASKED:2026-01-01T00:00Z' git push --mirror origin"]
+  ]
+}

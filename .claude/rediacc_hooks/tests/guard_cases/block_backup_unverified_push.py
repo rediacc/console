@@ -6,10 +6,10 @@ from rediacc_hooks import syspath
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 from rediacc_hooks.guards.block_backup_unverified_push import (
     ACCOUNT,
-    REASON_ENV,
     RENET,
     TRIGGER_MOD,
 )
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 CONSOLE_FILE = "packages/cli/src/services/backup/backup-schedule.ts"
 
@@ -138,23 +138,4 @@ _UNAVAIL = "RustFS on :9100 refuses connections and run.sh account dev cannot st
 _PUSH = "git push origin 1008-1"
 
 
-EDGE_CASES = [
-    ("a bare push", "git push -u origin 1008-1"),
-    ("an implicit push", "git push"),
-    ("a -C push", "git -C . push origin 1008-1"),
-    (
-        "drill-unavailable",
-        "%s='drill-unavailable: %s%s' %s" % (REASON_ENV, _UNAVAIL, _ASK, _PUSH),
-    ),
-    ("not-runtime", "%s='not-runtime: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("deadline", "%s='deadline: %s%s' %s" % (REASON_ENV, _DEADLINE, _ASK, _PUSH)),
-    ("an unknown kind", "%s='because: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("a short why", "%s='deadline: soon%s' %s" % (REASON_ENV, _ASK, _PUSH)),
-    ("no ASKED", "%s='not-runtime: %s' %s" % (REASON_ENV, _FILES, _PUSH)),
-    ("a dry run", "git push --dry-run origin 1008-1"),
-    ("a delete push", "git push origin --delete 1007-1"),
-    ("the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"),
-    ("a submodule push", "git -C private/renet push origin 1008-1"),
-    ("prose naming a push", "echo 'git push origin 1008-1'"),
-    ("a mirror push", "git push --mirror origin"),
-]
+EDGE_CASES = load_table("block_backup_unverified_push", "EDGE_CASES")

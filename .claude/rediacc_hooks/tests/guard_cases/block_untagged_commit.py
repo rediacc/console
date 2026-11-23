@@ -3,6 +3,8 @@
 import os
 import subprocess
 
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 
 def _fixture(path):
     """A checkout on a branch that HAS an epic snapshot.
@@ -56,30 +58,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("no trailer at all", 'git commit -m "feat(x): a change"'),
-    ("a real trailer", 'git commit -m "feat(x): a change\n\nPR-TASK: a1b2c3d4"'),
-    ("an escaped-newline trailer", 'git commit -m "feat(x): a change\\n\\nPR-TASK: a1b2c3d4"'),
-    # The 2026-08-27 typo finding: one character off, and the commit LOOKS tagged.
-    ("an id naming no epic", 'git commit -m "feat(x): a\n\nPR-TASK: f2757831"'),
-    # The `-F` shapes the same finding widened.
-    (
-        "-F - with a heredoc is readable",
-        "git commit -F - <<'EOF'\nfeat(x): a\n\nPR-TASK: a1b2c3d4\nEOF",
-    ),
-    ("-F - on a pipe is not readable, so allowed", "cat msg.txt | git commit -F -"),
-    ("-F on a file that does not exist", "git commit -F /nonexistent-msg.txt"),
-    # Prose about committing is not a commit.
-    ("prose naming the trailer", "echo 'add a PR-TASK: a1b2c3d4 trailer'"),
-    ("git log is not git commit", "git log --grep='^PR-TASK: a1b2c3d4'"),
-    # A foreign checkout's commits are not this repo's epics' business.
-    ("a commit in another tree", 'cd /tmp && git commit -m "x"'),
-    ("git -C into another tree", 'git -C /tmp commit -m "x"'),
-    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so this and the space form above both judge this tree.
-    ("git -C with a TAB is still a -C", 'git -C\t/tmp commit -m "x"'),
-    # F5: a hotfix on `main` has no epic to name. Off `main` the tag buys nothing here.
-    (
-        "a hotfix names no epic",
-        'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts',
-    ),
-]
+EDGE_CASES = load_table("block_untagged_commit", "EDGE_CASES")

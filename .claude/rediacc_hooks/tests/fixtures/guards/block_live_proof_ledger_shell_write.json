@@ -1,0 +1,11 @@
+{
+  "EDGE_CASES": [
+    ["append a row", "echo '{}' >> agent/ledgers/live-proof.jsonl"],
+    {"//": "#4e20f8c5: the refused PLAN edit. The ledger's path is text being replaced inside the PLAN, and the PLAN is the file written."},
+    ["python edits a PLAN line naming the ledger", "python3 - <<'PY'\nimport pathlib\np = pathlib.Path('agent/plans/PLAN-backup-program.md')\ns = p.read_text()\ns = s.replace('Owns: x, agent/ledgers/live-proof.jsonl', 'Owns: x')\np.write_text(s)\nPY"],
+    ["the recorder", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --write"],
+    ["read the ledger", "jq . agent/ledgers/live-proof.jsonl"],
+    ["tee the ledger", "printf x | tee -a agent/ledgers/live-proof.jsonl"],
+    ["stage the ledger", "git add -- agent/ledgers/live-proof.jsonl"]
+  ]
+}

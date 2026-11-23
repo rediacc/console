@@ -1,25 +1,5 @@
 """The test tables of `block_blanket_git_add`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-EDGE_CASES = [
-    ("the bare all form", "git add -A"),
-    ("the long spelling", "git add --all"),
-    ("a lone dot", "git add ."),
-    ("the repo-root pathspec", "git add :/"),
-    # The PR #566 finding: a redirection is not a pathspec.
-    ("a redirection does not restrict anything", "git add -A > /dev/null"),
-    ("a stderr redirection is the same", "git add -A 2>&1"),
-    # ...and the escape, which must keep working with a redirection on it.
-    ("a real pathspec with a redirection", "git add -A -- . > /dev/null"),
-    ("a trailing -- with no pathspec is still blanket", "git add -A --"),
-    ("the advertised escape", "git add -A -- packages/cli/src"),
-    ("a named file", "git add packages/cli/src/foo.ts"),
-    # The cross-talk control.
-    ("worktree add is another guard's business", "git worktree add /tmp/wt main"),
-    # SCOPE, added 2026-09-09. A scratch repo under a session's own scratchpad is not this shared checkout and firing there only teaches sessions to route around the guard. A SUBMODULE is not that case: different toplevel, same shared tree.
-    ("a foreign scratch repo is not this checkout", "git -C /tmp/scratch/plantree add -A"),
-    ("a submodule IS this checkout and stays guarded", "git -C private/account add -A"),
-    # RULE T (PLAN-retire-bash-oracles A4, A0 L9): the copied anchor missed a reserved word or a leading redirect.
-    ("L9 then runs the next word", "if true; then git add -A; fi"),
-    ("L9 a leading redirect", ">/dev/null git add -A"),
-    ("control: command -v only prints", "command -v git add -A"),
-]
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
+EDGE_CASES = load_table("block_blanket_git_add", "EDGE_CASES")

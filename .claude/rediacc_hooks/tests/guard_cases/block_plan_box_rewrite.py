@@ -4,27 +4,9 @@ import os
 import subprocess
 
 from rediacc_hooks.guards.block_plan_box_rewrite import QUEUE_REL
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-EDGE_CASES = [
-    # The incident's first shape: the evidence appended to the box text.
-    ("a tick that rewrites the box text", "git commit -F m -- agent/plans/PLAN-rewrite.md"),
-    ("the correct tick, evidence indented below", "git commit -F m -- agent/plans/PLAN-ticked.md"),
-    (
-        "a move into _done with bracket flips only",
-        "git commit -F m -- agent/plans/PLAN-moved.md agent/plans/_done/PLAN-moved.md",
-    ),
-    (
-        "a move into _done whose copy rewrites a box",
-        "git commit -F m -- agent/plans/PLAN-movedbad.md agent/plans/_done/PLAN-movedbad.md",
-    ),
-    ("a plan deleted with an open box", "git commit -F m -- agent/plans/PLAN-deleted.md"),
-    # The incident's second shape: the sliced QUEUE.md.
-    ("a QUEUE.md with its sections duplicated", "git commit -F m -- agent/plans/QUEUE.md"),
-    ("a commit touching no plan", "git commit -F m -- docs/x.md"),
-    ("a directory pathspec reaches the rewritten plan", "git commit -F m -- agent/plans/"),
-    ("prose naming a plan commit", "echo 'git commit -- agent/plans/PLAN-rewrite.md'"),
-    ("git log is not a commit", "git log -- agent/plans/PLAN-rewrite.md"),
-]
+EDGE_CASES = load_table("block_plan_box_rewrite", "EDGE_CASES")
 
 
 def _fixture(path):

@@ -1,0 +1,31 @@
+{
+  "EDGE_CASES": [
+    ["a heredoc writing the key", "cat > .claude/commands/x.md <<'EOF'\n---\ndisable-model-invocation: true\n---\nEOF"],
+    ["an append of another spelling", "echo 'Disable_Model_Invocation: yes' >> .claude/commands/x.md"],
+    ["tee into a skill", "printf -- '---\\ndisable-model-invocation: false\\n---\\n' | tee .claude/skills/s/SKILL.md"],
+    ["sed -i adding the key", "sed -i 's/^description:/disable-model-invocation: true\\ndescription:/' .claude/commands/x.md"],
+    ["sed -i appending the key", "sed -i '1a disable-model-invocation: true' .claude/commands/x.md"],
+    {"//": "#5077391c: xargs appends its feed, so under `-t` a fed word is a SOURCE (the commands directory once read as the source here, and a flagged command copied into a skill passed)."},
+    ["xargs feeds a flagged command to cp -t a skill", "echo .claude/commands/handoff.md | xargs cp -t .claude/skills/demo"],
+    ["xargs feeds a flagged command to cp -t elsewhere", "echo .claude/commands/handoff.md | xargs cp -t /tmp"],
+    ["xargs feeds the exception list to cp -t elsewhere", "echo .ci/config/model-invocation-exceptions.json | xargs cp -t /tmp"],
+    ["xargs feeds cp the exception list as its destination", "echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp"],
+    ["python writing the key", "python3 - <<'EOF'\nimport pathlib\npathlib.Path('.claude/commands/x.md').write_text('---\\ndisable-model-invocation: true\\n---\\n')\nEOF"],
+    ["after cd", "cd .claude/commands && echo 'disable-model-invocation: on' >> x.md"],
+    ["inside sh -c", "sh -c \"echo 'disable-model-invocation: 1' >> .claude/commands/x.md\""],
+    ["cp -t names where the copy lands", "cp -t .claude/skills .claude/commands/handoff.md"],
+    {"//": "CONTROLS."},
+    ["sed -i deleting the key line", "sed -i '/^disable-model-invocation:/d' .claude/commands/x.md"],
+    ["sed -i substituting the key away", "sed -i 's/^disable-model-invocation: true$//' .claude/commands/x.md"],
+    ["echo to the terminal", "echo 'disable-model-invocation: true is banned'"],
+    ["grep for the key", "grep -rn 'disable-model-invocation' .claude/commands"],
+    ["a heredoc into a doc", "cat > docs/x.md <<'EOF'\ndisable-model-invocation: true\nEOF"],
+    ["a commit message heredoc naming the key", "git commit -F - <<'EOF'\nfix: drop disable-model-invocation: true\nEOF"],
+    ["a command file without the key", "printf -- '---\\ndescription: x\\n---\\n' > .claude/commands/x.md"],
+    ["an unrelated redirect", "echo hello > /tmp/out.txt"],
+    ["cp -t copies a command out", "cp -t /tmp .claude/commands/handoff.md"],
+    {"//": "The exception list itself."},
+    ["a redirect into the exception list", "echo '{}' > .ci/config/model-invocation-exceptions.json"],
+    ["reading the exception list", "cat .ci/config/model-invocation-exceptions.json"]
+  ]
+}

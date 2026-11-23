@@ -1,8 +1,9 @@
 """The test tables of `warn_submodule_deletions`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.tests.guard_cases import _common
+from rediacc_hooks.tests.fixtures.guards.git import fixture_git
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-_fixture_git = _common.fixture_git
+_fixture_git = fixture_git
 
 
 # The four states one .gitmodules entry can be in, in one tree: sub every tracked file staged for deletion -- the loudest arm partial one of three, so the loud arm must NOT fire clean a real submodule with nothing staged, skipped by the `-n` test gone a path with no checkout at all, skipped by the `-e` test
@@ -54,13 +55,4 @@ FIXTURES = {"submodule-deletions": _submodule_tree}
 ENVS: list = [("submodules", {"GIT_WORK_TREE": "{FIXTURE:submodule-deletions}"}, {})]
 
 
-EDGE_CASES = [
-    ("the plain commit", "git commit -m x"),
-    ("a submodule commit typed from the parent", "git -C private/renet commit -m x"),
-    ("a commit in a later clause", "git add -A && git commit -m x"),
-    # The finding in the module docstring, pinned. Unlike warn-stale-index.sh this guard does not route through lib/command-scan.sh, so prose reaches the scan.
-    ("quoted prose reaches the scan", "echo 'git commit -m x'"),
-    ("commit is a whole word", "git commitment"),
-    ("a different git verb", "git status"),
-    ("no git at all", "ls -la"),
-]
+EDGE_CASES = load_table("warn_submodule_deletions", "EDGE_CASES")

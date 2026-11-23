@@ -3,6 +3,8 @@
 import json
 import pathlib
 
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 
 def _flag_world(path):
     """A flag set long before any record, so every payload meets an away operator."""
@@ -28,7 +30,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    ("a design question", "Which bucket should the restore test use?"),
-    ("a permission question", "Should the edge deploy take the live key?"),
-]
+EDGE_CASES = load_table("block_away_questions", "EDGE_CASES")

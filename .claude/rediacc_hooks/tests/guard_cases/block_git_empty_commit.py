@@ -1,5 +1,7 @@
 """The test tables of `block_git_empty_commit`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 # A FIXED sha, from a `git` stub, and that is not cosmetic. The verified arm prints HEAD into its message, so a real HEAD would put this differential at the mercy of any other session committing between the bash pass and the Python pass -- two runs of the same case disagreeing for a reason that is not a port defect. The stub makes the world the same for both sides.
 _GIT_STUB = "#!/bin/sh\necho 1111111111111111111111111111111111111111\n"
 
@@ -26,16 +28,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("the plain shape", "git commit --allow-empty -m x"),
-    ("after a separator", "true; git commit --allow-empty -m x"),
-    ("after a logical and", "git fetch && git commit --allow-empty -m retrigger"),
-    # The two mention-versus-target classes, quoted and unquoted.
-    ("quoted prose is not a command", "echo 'git commit --allow-empty -m x'"),
-    (
-        "an unquoted sentence advising against it",
-        "echo do not git commit --allow-empty to retrigger",
-    ),
-    ("a wrapper payload is still scanned", "sh -c 'git commit --allow-empty -m x'"),
-    ("an ordinary commit", "git commit -m 'fix(cli): x'"),
-]
+EDGE_CASES = load_table("block_git_empty_commit", "EDGE_CASES")

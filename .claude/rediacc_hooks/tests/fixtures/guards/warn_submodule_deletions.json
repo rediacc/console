@@ -1,0 +1,12 @@
+{
+  "EDGE_CASES": [
+    ["the plain commit", "git commit -m x"],
+    ["a submodule commit typed from the parent", "git -C private/renet commit -m x"],
+    ["a commit in a later clause", "git add -A && git commit -m x"],
+    {"//": "The finding in the module docstring, pinned. Unlike warn-stale-index.sh this guard does not route through lib/command-scan.sh, so prose reaches the scan."},
+    ["quoted prose reaches the scan", "echo 'git commit -m x'"],
+    ["commit is a whole word", "git commitment"],
+    ["a different git verb", "git status"],
+    ["no git at all", "ls -la"]
+  ]
+}

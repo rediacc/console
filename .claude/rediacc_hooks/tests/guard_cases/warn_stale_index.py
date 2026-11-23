@@ -1,8 +1,9 @@
 """The test tables of `warn_stale_index`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.tests.guard_cases import _common
+from rediacc_hooks.tests.fixtures.guards.git import fixture_git
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-_fixture_git = _common.fixture_git
+_fixture_git = fixture_git
 
 
 def _seeded(path, names):
@@ -66,16 +67,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("the plain commit", "git commit -m x"),
-    # Defect 1 above, in the form it took.
-    ("the -F form the first defect took", "git commit -F /tmp/msg.txt"),
-    ("a commit after &&", "git add -A && git commit -m x"),
-    # `-a` and `--all` commit the WORKING TREE for those paths.
-    ("-a takes the working tree", "git commit -a -m x"),
-    ("--all takes the working tree", "git commit --all -m x"),
-    # The mention-vs-target anchor, in both directions.
-    ("quoted prose is not a command", "echo 'do not run git commit here'"),
-    ("a wrapper payload is still a command", "sh -c 'git commit -m x'"),
-    ("a different git verb", "git status"),
-]
+EDGE_CASES = load_table("warn_stale_index", "EDGE_CASES")

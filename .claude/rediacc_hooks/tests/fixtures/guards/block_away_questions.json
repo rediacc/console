@@ -1,0 +1,6 @@
+{
+  "EDGE_CASES": [
+    ["a design question", "Which bucket should the restore test use?"],
+    ["a permission question", "Should the edge deploy take the live key?"]
+  ]
+}

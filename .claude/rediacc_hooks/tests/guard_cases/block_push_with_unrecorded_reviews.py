@@ -5,6 +5,7 @@ import pathlib
 import subprocess
 
 from rediacc_hooks.guards.block_push_with_unrecorded_reviews import _load_reviewer
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 
 def _fixture_env():
@@ -81,15 +82,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    ("a plain push", "git push"),
-    ("a push with a refspec", "git push origin 0930-1"),
-    ("a push in a submodule", "git -C private/account push origin 0930-1"),
-    ("a dry run publishes nothing", "git push --dry-run"),
-    ("a delete-only push", "git push origin --delete old-branch"),
-    ("prose naming a push", "echo 'git push later'"),
-    ("not a push", "git status"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    ("a push launched by npx -c", "npx -c 'git push origin 0930-1'"),
-    ("prose naming a launched push", "echo npx -c git push origin 0930-1"),
-]
+EDGE_CASES = load_table("block_push_with_unrecorded_reviews", "EDGE_CASES")

@@ -1,0 +1,11 @@
+{
+  "EDGE_CASES": [
+    ["a Write over the ledger", {"tool_name": "Write", "tool_input": {"file_path": "agent/ledgers/live-proof.jsonl", "content": "{}\n"}}],
+    ["an Edit of a row", {"tool_name": "Edit", "tool_input": {"file_path": "/r/agent/ledgers/live-proof.jsonl", "old_string": "\"status\":\"FAILED\"", "new_string": "\"status\":\"VERIFIED\""}}],
+    ["a MultiEdit of the ledger", {"tool_name": "MultiEdit", "tool_input": {"file_path": "agent/ledgers/live-proof.jsonl", "edits": []}}],
+    ["another ledger", {"tool_name": "Write", "tool_input": {"file_path": "agent/ledgers/effort-outcomes.jsonl", "content": "x"}}],
+    ["a plan that names the ledger", {"tool_name": "Write", "tool_input": {"file_path": "agent/plans/PLAN-x.md", "content": "agent/ledgers/live-proof.jsonl"}}],
+    ["a sibling with a similar name", {"tool_name": "Write", "tool_input": {"file_path": "agent/ledgers/live-proof.jsonl.bak", "content": "x"}}],
+    ["no path", {"tool_name": "Write", "tool_input": {"content": "x"}}]
+  ]
+}

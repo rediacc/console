@@ -6,6 +6,7 @@ import pathlib
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, syspath
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # ---- the differential's world: a main checkout on 1120-2 and a linked landing tree on 1120-1, bound by a landing record, with a `gh` stub answering PR 605 open ----
 # The guard reads the tree role of CLAUDE_PROJECT_DIR (commit_policy.tree_binding, through pr_freeze.check) and the landing branch's open PR (`gh pr list`), so under the harness's default CLAUDE_PROJECT_DIR (the live checkout) and the real gh its answer was whatever the live trees and GitHub said. CLAUDE_PROJECT_DIR is the one variable this guard reads itself (the repository it judges); PATH reaches the gh stub, and WORKLIST_STORE_DIR and TMPDIR are read by pr_freeze or wl_store / wl_core, never by this guard; the token builds the world.
@@ -67,17 +68,4 @@ def _bash(cmd):
     return {"tool_name": "Bash", "tool_input": {"command": cmd}}
 
 
-EDGE_CASES = [
-    ("feat-commit-is-frozen", _bash("git commit -m 'feat(x): a feature' -- a.py")),
-    ("fix-commit-is-admitted", _bash("git commit -m 'fix(x): a repair' -- a.py")),
-    ("chore-reviews-is-admitted", _bash("git commit -m 'chore(reviews): records' -- a.py")),
-    (
-        "record-paths-only-is-admitted",
-        _bash("git commit -m 'docs: notes' -- agent/reviews/1120-1/r.md"),
-    ),
-    (
-        "focus-fix-on-no-item-is-frozen",
-        _bash("git commit -m 'feat: x focus-fix:#abcdef12' -- a.py"),
-    ),
-    ("not-a-commit", _bash("git status")),
-]
+EDGE_CASES = load_table("block_pr_freeze_commit", "EDGE_CASES")

@@ -1,0 +1,10 @@
+{
+  "EDGE_CASES": [
+    ["feat-commit-is-frozen", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'feat(x): a feature' -- a.py"}}],
+    ["fix-commit-is-admitted", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'fix(x): a repair' -- a.py"}}],
+    ["chore-reviews-is-admitted", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'chore(reviews): records' -- a.py"}}],
+    ["record-paths-only-is-admitted", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'docs: notes' -- agent/reviews/1120-1/r.md"}}],
+    ["focus-fix-on-no-item-is-frozen", {"tool_name": "Bash", "tool_input": {"command": "git commit -m 'feat: x focus-fix:#abcdef12' -- a.py"}}],
+    ["not-a-commit", {"tool_name": "Bash", "tool_input": {"command": "git status"}}]
+  ]
+}

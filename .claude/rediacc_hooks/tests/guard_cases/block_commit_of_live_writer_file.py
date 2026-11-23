@@ -6,6 +6,8 @@ import pathlib
 import subprocess
 import time
 
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 # THE DIFFERENTIAL'S WORLD. A repository of its own holding a config directory with one session that has a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
 #
 # ITS OWN REPOSITORY, NOT THE ONE RUNNING PYTEST, found 2026-11-06 (#d7056e06). The world used to be planted under the munged path of the running checkout, and the cases ran there. From a lease tree that can never refuse: `wl_core.project_root` answers a lease with the main checkout (6fd1f6511), so the session was looked up under a directory nothing planted, and every case took the fail-open branch, where the DEFECT cannot bite. A lease writer's own edits are also dropped by `wl_roster.in_lease_tree`, so no planting from inside a lease could have made a lease commit refusable. So the root is named twice: `CLAUDE_PROJECT_DIR` in the `writers` variant, which is where `wl_core.project_start` starts (above the hook file's own repository and the cwd), and the harness's `CWD_WORLDS` for the cwd the commit's repository is resolved from; the payloads carry no `cwd`, so the guard reads `ev.cwd`.
@@ -113,10 +115,4 @@ def _payload(command):
     }
 
 
-EDGE_CASES = [
-    ("a live writer's file", _payload("git commit -F m -- %s/live.txt" % FIXTURE_DIR)),
-    ("a directory covering a live writer's file", _payload("git commit -F m -- %s/" % FIXTURE_DIR)),
-    ("a finished writer's file", _payload("git commit -F m -- %s/done.txt" % FIXTURE_DIR)),
-    ("a file no writer touched", _payload("git commit -F m -- %s/other.txt" % FIXTURE_DIR)),
-    ("not a commit", _payload("git status --short")),
-]
+EDGE_CASES = load_table("block_commit_of_live_writer_file", "EDGE_CASES")

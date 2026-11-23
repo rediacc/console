@@ -1,0 +1,19 @@
+{
+  "EDGE_CASES": [
+    ["a bare push", "git push -u origin 1008-1"],
+    ["an implicit push", "git push"],
+    ["a -C push", "git -C . push origin 1008-1"],
+    ["drill-unavailable", "BACKUP_CHECK_PUSH_REASON='drill-unavailable: RustFS on :9100 refuses connections and run.sh account dev cannot start it ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["not-runtime", "BACKUP_CHECK_PUSH_REASON='not-runtime: only comments in packages/cli/src/services/backup changed, no runtime code ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["deadline", "BACKUP_CHECK_PUSH_REASON='deadline: the 03:00Z CD promote carries the broken stable backup restore otherwise ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["an unknown kind", "BACKUP_CHECK_PUSH_REASON='because: only comments in packages/cli/src/services/backup changed, no runtime code ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["a short why", "BACKUP_CHECK_PUSH_REASON='deadline: soon ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["no ASKED", "BACKUP_CHECK_PUSH_REASON='not-runtime: only comments in packages/cli/src/services/backup changed, no runtime code' git push origin 1008-1"],
+    ["a dry run", "git push --dry-run origin 1008-1"],
+    ["a delete push", "git push origin --delete 1007-1"],
+    ["the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"],
+    ["a submodule push", "git -C private/renet push origin 1008-1"],
+    ["prose naming a push", "echo 'git push origin 1008-1'"],
+    ["a mirror push", "git push --mirror origin"]
+  ]
+}

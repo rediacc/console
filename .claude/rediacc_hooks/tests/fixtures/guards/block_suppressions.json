@@ -1,0 +1,32 @@
+{
+  "EDGE_CASES": [
+    ["a directive at a comment opener in a code file", {"tool_input": {"file_path": "src/a.ts", "new_string": "// @ts-ignore\nconst x = 1;"}}],
+    ["a block comment opener", {"tool_input": {"file_path": "src/a.tsx", "new_string": "/* eslint-disable */"}}],
+    ["a JSX comment opener", {"tool_input": {"file_path": "src/a.tsx", "new_string": "{/* eslint-disable */}"}}],
+    {"//": "The operator's own example, 2026-10-08."},
+    ["a python marker with a code", {"tool_input": {"file_path": "src/a.py", "old_string": "setattr(m, 'x', 1)", "new_string": "setattr(m, 'x', 1)  # noqa: B010"}}],
+    ["a python type ignore", {"tool_input": {"file_path": "src/a.py", "content": "x = f()  # type: ignore[attr-defined]\n"}}],
+    ["a go nolint", {"tool_input": {"file_path": "x/a.go", "new_string": "f() //nolint:errcheck"}}],
+    ["a shellcheck directive", {"tool_input": {"file_path": "x/a.sh", "new_string": "# shellcheck disable=SC2086\necho $x"}}],
+    {"//": "A SECOND code on an existing marker is growth: the count of (noqa, E501) rises from 0 to 1."},
+    ["a second code added to an existing marker", {"tool_input": {"file_path": "src/a.py", "old_string": "import x  # noqa: F401", "new_string": "import x  # noqa: F401, E501"}}],
+    {"//": "CONTROLS. Keeping, removing and rewording around an existing marker are all allowed."},
+    ["keeping an existing marker through an unrelated edit", {"tool_input": {"file_path": "src/a.py", "old_string": "import x  # noqa: F401\ny = 1", "new_string": "import x  # noqa: F401\ny = 2"}}],
+    ["keeping an existing TS directive through an unrelated edit", {"tool_input": {"file_path": "src/a.ts", "old_string": "// @ts-ignore\nconst x = 1;", "new_string": "// @ts-ignore\nconst x = 2;"}}],
+    ["removing a marker", {"tool_input": {"file_path": "src/a.py", "old_string": "setattr(m, 'x', 1)  # noqa: B010", "new_string": "m.x = 1"}}],
+    {"//": "Narrowing 1: Markdown is not code."},
+    ["the rule written down in a doc", {"tool_input": {"file_path": "docs/style.md", "new_string": "Never write @ts-ignore; fix the type instead."}}],
+    {"//": "Narrowing 2: prose inside a code comment, and a Python docstring naming the marker."},
+    ["prose in a code file is still prose", {"tool_input": {"file_path": "src/a.ts", "new_string": "// Never write @ts-ignore; fix the type instead."}}],
+    ["a python docstring that names the marker", {"tool_input": {"file_path": "src/a.py", "content": "\"\"\"Never write `# noqa: B010`.\"\"\"\nx = 1\n"}}],
+    ["the token with no opener at all", {"tool_input": {"file_path": "src/a.ts", "new_string": "const s = '@ts-ignore';"}}],
+    {"//": "No file_path at all: a payload naming no file could be anything, so every language is read and defaulting to \"not code\" would be a hole."},
+    ["no file_path at all still gets checked", {"tool_input": {"new_string": "// @ts-ignore"}}],
+    ["a MultiEdit edits array is collected too", {"tool_input": {"file_path": "src/a.ts", "edits": [{"old_string": "a", "new_string": "ok"}, {"old_string": "b", "new_string": "// @ts-ignore"}]}}],
+    ["Write uses content rather than new_string", {"tool_input": {"file_path": "src/a.js", "content": "// eslint-disable\n"}}],
+    ["a NotebookEdit new_source is collected too", {"tool_input": {"notebook_path": "nb/a.ipynb", "new_source": "x = 1  # noqa: F401"}}],
+    ["an ordinary code edit", {"tool_input": {"file_path": "src/a.ts", "new_string": "const x = 1;"}}],
+    ["a non-code file with no directive", {"tool_input": {"file_path": "README.md", "new_string": "hello"}}],
+    ["a coverage pragma is not a lint suppression", {"tool_input": {"file_path": "src/a.py", "new_string": "x = 1  # pragma: no cover"}}]
+  ]
+}

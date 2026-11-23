@@ -1,8 +1,9 @@
 """The test tables of `warn_hook_change`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.tests.guard_cases import _common
+from rediacc_hooks.tests.fixtures.guards.git import fixture_git
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-_fixture_git = _common.fixture_git
+_fixture_git = fixture_git
 
 
 def _repo_with_staged(path, hook_files):
@@ -53,12 +54,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("the plain commit", "git commit -m 'fix a guard'"),
-    # `case "$CMD" in *"git commit"*)` is an UNANCHORED glob, so a commit in a later clause, in a wrapper, or inside quoted prose all reach the check. That is the original's behaviour and the port must keep it, warts and all.
-    ("a commit in a later clause", "git add -A && git commit -m x"),
-    ("quoted prose still counts as a commit", "echo 'then git commit -m x'"),
-    ("git commit-tree is a substring match too", "git commit-tree HEAD^{tree}"),
-    ("a non-commit git verb", "git status"),
-    ("no git at all", "ls -la"),
-]
+EDGE_CASES = load_table("warn_hook_change", "EDGE_CASES")

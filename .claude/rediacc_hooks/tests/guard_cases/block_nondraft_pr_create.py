@@ -1,53 +1,5 @@
 """The test tables of `block_nondraft_pr_create`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-EDGE_CASES = [
-    ("a console create without --draft", "gh pr create --title x --body y"),
-    ("a console create with --draft", "gh pr create --draft --title x --body y"),
-    ("the short flag counts", "gh pr create -d --title x"),
-    # Private repos cannot have drafts at all.
-    ("a private submodule create", ("gh pr create --repo " + RENET_REPO + " --title x")),
-    (
-        "a private submodule create WITH --draft",
-        ("gh pr create --repo " + RENET_REPO + " --draft -t x"),
-    ),
-    ("a cd into a submodule resolves the repo", "cd private/account && gh pr create -t x"),
-    ("a foreign repo is not policed", "gh pr create --repo someone/other -t x"),
-    # The segment scoping: a sibling create must not donate its --draft.
-    (
-        "two creates, only the first of which is a draft",
-        "gh pr create --draft -t x; gh pr create -t y",
-    ),
-    ("a wrapper payload is still scanned", "sh -c 'gh pr create -t x'"),
-    ("a different pr subcommand", "gh pr view 42"),
-    # REST parity: the same mutation reached through `gh api` instead of `gh pr create`.
-    ("the REST create bypass", "gh api repos/o/r/pulls -X POST -f title=x -f head=b -f base=main"),
-    (
-        "the REST create bypass with flags reordered",
-        "gh api repos/o/r/pulls -f title=x -f head=b -f base=main -X POST",
-    ),
-    ("a GET on the pulls endpoint is not a create", "gh api repos/o/r/pulls"),
-    (
-        "prose naming the REST bypass",
-        "git commit -m '...gh api repos/o/r/pulls -X POST...'",
-    ),
-    # The two nearest misses to a bare `pulls` POST, both legitimate and both untouched by this arm.
-    (
-        "a POST to the comments sub-endpoint is not a create",
-        "gh api repos/o/r/pulls/42/comments -X POST -f body=hi",
-    ),
-    (
-        "the sanctioned PATCH body edit is not a create",
-        "gh api repos/o/r/pulls/42 -X PATCH -f body=x",
-    ),
-    # 2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it. The flag-file-free halves of tests/test_gh_flag_spellings.py.
-    ("-R=<private repo> names that repo", "gh pr create -R=" + RENET_REPO + " -t x"),
-    ("a bundled -dt is a draft", "gh pr create -dt x"),
-    ("a title spelled --draft is not a draft", "gh pr create -t --draft"),
-    ("--draft=false is not a draft", "gh pr create --draft=false -t x"),
-    ("a pr-level -R before the verb is still a create", "gh pr -R " + GH_REPO + " create -t x"),
-    ("--help creates nothing", "gh pr create --help"),
-    ("the REST create spelled -XPOST", "gh api repos/o/r/pulls -XPOST -f title=x"),
-    ("a REST create implied by a field, as gh implies it", "gh api repos/o/r/pulls -f title=x"),
-]
+EDGE_CASES = load_table("block_nondraft_pr_create", "EDGE_CASES")

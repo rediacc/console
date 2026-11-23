@@ -9,6 +9,7 @@ import tempfile
 import time
 
 from rediacc_hooks import proc
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-running")
 
@@ -157,15 +158,4 @@ FIXTURES = {"running-scripts": _running_world}
 ENVS: list = [("running", {"REDIACC_RUNNING_WORLD": "{FIXTURE:running-scripts}"}, {})]
 
 
-EDGE_CASES = [
-    ("a script an interpreter is executing", {"tool_input": {"file_path": LIVE_SCRIPT}}),
-    # HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB.
-    ("a chain evaluator is not a running job", {"tool_input": {"file_path": SIBLING_SCRIPT}}),
-    ("a script nobody is running", {"tool_input": {"file_path": IDLE_SCRIPT}}),
-    # SCOPE: shell scripts only.
-    ("a TypeScript file is read into memory", {"tool_input": {"file_path": "packages/cli/a.ts"}}),
-    ("a Python file is read into memory", {"tool_input": {"file_path": "a.py"}}),
-    # ESCAPE THE DOTS: `[b].sh` unescaped matches **/bin/bash**, i.e. every bash process on the machine. Measured on the twin 2026-09-01.
-    ("a one-letter script name", {"tool_input": {"file_path": "b.sh"}}),
-    ("no file_path at all", {"tool_input": {"new_string": "x"}}),
-]
+EDGE_CASES = load_table("block_edit_of_running_script", "EDGE_CASES")

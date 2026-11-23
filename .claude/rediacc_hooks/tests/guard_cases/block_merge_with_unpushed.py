@@ -1,6 +1,6 @@
 """The test tables of `block_merge_with_unpushed`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of them inside a feature worktree. Run against this checkout it fails open on every input, because no `origin/<branch>` ref exists here -- so the whole corpus would have compared two constants. `test_every_guard_discriminates` said so on the first run, which is what these are an answer to.
 ENVS: list = [
@@ -12,12 +12,4 @@ ENVS: list = [
 ]
 
 
-EDGE_CASES = [
-    ("the verb at a command position", "gh pr merge 42"),
-    # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that documents this hook are all none of its business.
-    ("a different pr subcommand", "gh pr view 42"),
-    ("a merge for another repository", ("gh pr merge 42 --repo " + RENET_REPO)),
-    ("a merge for this repository, named", ("gh pr merge 42 --repo " + GH_REPO)),
-    ("--repo with an equals sign", ("gh pr merge 42 --repo=" + RENET_REPO)),
-    ("the verb inside quoted prose", "echo 'run gh pr merge when green'"),
-]
+EDGE_CASES = load_table("block_merge_with_unpushed", "EDGE_CASES")

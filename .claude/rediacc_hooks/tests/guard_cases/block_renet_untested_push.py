@@ -4,7 +4,8 @@ import json
 import pathlib
 
 from rediacc_hooks.guards import block_vm_unverified_push as VM
-from rediacc_hooks.guards.block_renet_untested_push import REASON_ENV, RENET
+from rediacc_hooks.guards.block_renet_untested_push import RENET
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 CONSOLE_READ = "packages/shared/src/subscription/schema.generated.json"
 
@@ -147,24 +148,4 @@ _ENVIRONMENT = "pkg/daemon netns tests need root here; CI test-renet-go runs the
 _DEADLINE = "the 03:00Z CD promote carries the broken stable licence check otherwise"
 
 
-EDGE_CASES = [
-    ("a console push", "git push origin 1008-1"),
-    ("an implicit console push", "git push"),
-    ("a renet push by -C", "git -C private/renet push origin main"),
-    ("a renet push after cd", "cd private/renet && git push origin main"),
-    (
-        "environment",
-        "%s='environment: %s%s' git push origin 1008-1" % (REASON_ENV, _ENVIRONMENT, _ASK),
-    ),
-    ("deadline", "%s='deadline: %s%s' git push origin 1008-1" % (REASON_ENV, _DEADLINE, _ASK)),
-    (
-        "an unknown kind",
-        "%s='because: %s%s' git push origin 1008-1" % (REASON_ENV, _DEADLINE, _ASK),
-    ),
-    ("no ASKED", "%s='deadline: %s' git push origin 1008-1" % (REASON_ENV, _DEADLINE)),
-    ("a dry run", "git push --dry-run origin 1008-1"),
-    ("a renet dry run", "git -C private/renet push --dry-run origin main"),
-    ("a delete push", "git push origin --delete 1007-1"),
-    ("prose naming a push", "echo 'git -C private/renet push origin main'"),
-    ("a mirror push", "git push --mirror origin"),
-]
+EDGE_CASES = load_table("block_renet_untested_push", "EDGE_CASES")

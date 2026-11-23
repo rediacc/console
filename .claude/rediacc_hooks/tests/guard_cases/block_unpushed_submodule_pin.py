@@ -1,30 +1,14 @@
 """The test tables of `block_unpushed_submodule_pin`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-import os
-import subprocess
-
 from rediacc_hooks.guards.block_unpushed_submodule_pin import GITLINK_MODE
+from rediacc_hooks.tests.fixtures.guards.git import fixture_git
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 _FIXTURE_DATE = "2026-01-01T00:00:00+00:00"
 
 
 def _fixture_git(cwd, *args):
-
-    env = dict(
-        os.environ,
-        GIT_AUTHOR_NAME="Fixture",
-        GIT_AUTHOR_EMAIL="fixture@example.invalid",
-        GIT_COMMITTER_NAME="Fixture",
-        GIT_COMMITTER_EMAIL="fixture@example.invalid",
-        GIT_AUTHOR_DATE=_FIXTURE_DATE,
-        GIT_COMMITTER_DATE=_FIXTURE_DATE,
-        GIT_CONFIG_GLOBAL="/dev/null",
-        GIT_CONFIG_SYSTEM="/dev/null",
-    )
-    done = subprocess.run(
-        ["git", *args], cwd=str(cwd), check=True, capture_output=True, text=True, env=env
-    )
-    return done.stdout.strip()
+    return fixture_git(cwd, *args, date=_FIXTURE_DATE)
 
 
 def _pinned_world(path, published):
@@ -75,19 +59,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    ("a plain push of the branch", "git push origin 0923-1"),
-    ("a bare push", "git push"),
-    ("an explicit refspec", "git push origin HEAD:0923-1"),
-    ("a forced push is still a push", "git push --force-with-lease origin 0923-1"),
-    ("a wrapper payload is still scanned", "sh -c 'git push origin 0923-1'"),
-    # Controls: none of these publish a console tip.
-    ("a dry run", "git push --dry-run origin 0923-1"),
-    ("a delete", "git push origin --delete 0923-1"),
-    ("tags only", "git push --tags origin"),
-    ("prose about pushing", "echo 'git push origin 0923-1 once renet is up'"),
-    ("git pull is not git push", "git pull --rebase"),
-    ("a push inside the submodule, by -C", "git -C private/renet push origin 0923-1"),
-    ("a push inside the submodule, by cd", "cd private/renet && git push origin 0923-1"),
-    ("a push in another tree", "cd /tmp && git push"),
-]
+EDGE_CASES = load_table("block_unpushed_submodule_pin", "EDGE_CASES")

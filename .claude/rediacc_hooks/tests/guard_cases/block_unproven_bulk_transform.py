@@ -4,14 +4,9 @@ import subprocess
 from typing import Any
 
 from rediacc_hooks.guards.block_unproven_bulk_transform import BULK_FILE_THRESHOLD
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-EDGE_CASES = [
-    ("a bulk commit with no proof quoted", 'git commit -m "reflow the tree"'),
-    ("a small commit, well under threshold", 'git commit -m "fix: a small thing"'),
-    ("a plain command is not a target", "ls -la"),
-    ("gh pr view is not a write", "gh pr view 1"),
-    ("git log is not git commit", 'git log --grep "shape_cluster_diff.py"'),
-]
+EDGE_CASES = load_table("block_unproven_bulk_transform", "EDGE_CASES")
 
 
 def _bulk_staged_world(target):

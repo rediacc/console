@@ -1,0 +1,17 @@
+{
+  "EDGE_CASES": [
+    ["a console push", "git push origin 1008-1"],
+    ["an implicit console push", "git push"],
+    ["a renet push by -C", "git -C private/renet push origin main"],
+    ["a renet push after cd", "cd private/renet && git push origin main"],
+    ["environment", "RENET_TEST_PUSH_REASON='environment: pkg/daemon netns tests need root here; CI test-renet-go runs them under sudo ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["deadline", "RENET_TEST_PUSH_REASON='deadline: the 03:00Z CD promote carries the broken stable licence check otherwise ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["an unknown kind", "RENET_TEST_PUSH_REASON='because: the 03:00Z CD promote carries the broken stable licence check otherwise ASKED:2026-01-01T00:00Z' git push origin 1008-1"],
+    ["no ASKED", "RENET_TEST_PUSH_REASON='deadline: the 03:00Z CD promote carries the broken stable licence check otherwise' git push origin 1008-1"],
+    ["a dry run", "git push --dry-run origin 1008-1"],
+    ["a renet dry run", "git -C private/renet push --dry-run origin main"],
+    ["a delete push", "git push origin --delete 1007-1"],
+    ["prose naming a push", "echo 'git -C private/renet push origin main'"],
+    ["a mirror push", "git push --mirror origin"]
+  ]
+}

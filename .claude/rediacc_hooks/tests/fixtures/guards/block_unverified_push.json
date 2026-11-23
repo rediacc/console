@@ -1,0 +1,18 @@
+{
+  "EDGE_CASES": [
+    ["a plain push", "git push origin 0831-1"],
+    {"//": "A dry run publishes nothing and buys no CI round."},
+    ["a dry run", "git push --dry-run origin 0831-1"],
+    {"//": "#641e2fce: one dry run does not exempt a real push beside it."},
+    ["a dry run beside a real push", "git push --dry-run origin x; git push origin 0831-1"],
+    ["a dry run behind a global option", "git -C . push --dry-run origin 0831-1"],
+    ["prose about pushing", "echo 'remember to git push once green'"],
+    ["git pull is not git push", "git pull --rebase"],
+    {"//": "SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately."},
+    ["cd into a submodule", "cd private/account && git push origin 0831-1"],
+    ["git -C into a submodule", "git -C private/renet push"],
+    {"//": "A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is no repository but a real directory outside this checkout, so the push is another repository's and allowed either way (finding #5810a9f3)."},
+    ["git -C with a TAB is still a -C", "git -C\t/tmp push"],
+    ["a push in another tree", "cd /tmp && git push"]
+  ]
+}

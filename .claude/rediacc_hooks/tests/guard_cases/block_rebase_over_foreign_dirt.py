@@ -1,10 +1,11 @@
 """The test tables of `block_rebase_over_foreign_dirt`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
-from rediacc_hooks.tests.guard_cases import _common
+from rediacc_hooks.tests.fixtures.guards.git import fixture_git
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 
 def _fixture_git(cwd, *args):
-    _common.fixture_git(cwd, *args, date="2026-01-01T00:00:00+00:00")
+    return fixture_git(cwd, *args, date="2026-01-01T00:00:00+00:00")
 
 
 # Every path the worlds below commit, so each world differs from the others only in what it then modifies.
@@ -87,39 +88,4 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 ]
 
 
-EDGE_CASES = [
-    # Refused in `rebase-dirty`, `rebase-staged` and `rebase-gitlink`, allowed in `rebase-clean` and `rebase-volatile`: the worlds are the two directions.
-    ("a rebase onto origin/main", "git rebase origin/main"),
-    ("an interactive rebase", "git rebase -i origin/main"),
-    ("a rebase with --onto", "git rebase --onto origin/main HEAD~3"),
-    ("a rebase with no upstream named", "git rebase"),
-    ("a pull --rebase", "git pull --rebase"),
-    ("a pull -r", "git pull -r origin main"),
-    ("a plain pull merges", "git pull"),
-    ("a merge of a ref", "git merge origin/main"),
-    ("a fetch then a rebase", "git fetch origin && git rebase origin/main"),
-    ("a rebase behind a cd into the tree", "cd . && git rebase origin/main"),
-    ("a rebase under -C .", "git -C . rebase origin/main"),
-    ("a rebase in a wrapper payload", "sh -c 'git rebase origin/main'"),
-    # Never refused: continuing or undoing, a fast-forward, prose, and other commands.
-    ("control: --continue", "git rebase --continue"),
-    ("control: --abort", "git rebase --abort"),
-    # Refused in every world, clean included: `--skip` drops the commit being replayed (worklist #dbbed0b6).
-    ("refused: --skip drops the replayed commit", "git rebase --skip"),
-    ("refused: --skip by unique prefix", "git rebase --sk"),
-    ("refused: --skip behind a wrapper", "sh -c 'git rebase --skip'"),
-    ("control: --skip outside this checkout", "git -C /tmp rebase --skip"),
-    ("control: --quit", "git rebase --quit"),
-    ("control: merge --abort", "git merge --abort"),
-    ("control: merge --continue", "git merge --continue"),
-    ("control: merge --ff-only", "git merge --ff-only origin/main"),
-    ("control: pull --ff-only", "git pull --ff-only"),
-    ("control: prose about a rebase", "echo 'git rebase origin/main later'"),
-    ("control: a quoted commit message", 'git commit -m "rebase onto main" -- x'),
-    ("control: a fetch", "git fetch origin --prune"),
-    ("control: a rebase outside this checkout", "git -C /tmp rebase origin/main"),
-    # Fail closed in every world: a tree the guard cannot read.
-    ("blind: --work-tree moves the tree", "git --work-tree=. rebase origin/main"),
-    ("blind: GIT_DIR on the command line", "GIT_DIR=.git git rebase origin/main"),
-    ("blind: --git-dir", "git --git-dir=.git merge origin/main"),
-]
+EDGE_CASES = load_table("block_rebase_over_foreign_dirt", "EDGE_CASES")
