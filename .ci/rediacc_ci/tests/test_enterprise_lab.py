@@ -1563,7 +1563,12 @@ class AccountV6:
         early_rival=False,
         terms_accepted=False,
         accept_status=201,
+        step_up="confirm",
+        step_up_status=200,
     ):
+        # A server-minted owner link has no browser binding, so the verify answers a step-up (`None` is a trusted click, the control).
+        self.step_up = step_up
+        self.step_up_status = step_up_status
         # A fresh owner has never accepted the Terms, and every gated route answers 403 until it does (private/account/src/middleware/terms.ts).
         self.terms_accepted = terms_accepted
         self.accept_status = accept_status
@@ -1613,6 +1618,12 @@ class AccountV6:
         self.mailed = self.mail_status == 200
         return self.mail_status, {}
 
+    def session_answer(self):
+        cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
+        if self.cookie:
+            cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
+        return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+
     def call(self, method, url, headers, body):
         doc = json.loads(body or b"{}")
         self.calls.append((method, url, headers, doc))
@@ -1623,10 +1634,16 @@ class AccountV6:
             self.mailed = False  # the link is spent: a later company's baseline sees no mail
             if self.two_factor:
                 return lab.HttpAnswer(200, (), b'{"requiresTwoFactor": true}')
-            cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
-            if self.cookie:
-                cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
-            return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+            if self.step_up:
+                challenge = {"requiresStepUp": True, "method": self.step_up, "stepUpToken": "su-1"}
+                return lab.HttpAnswer(200, (), json.dumps(challenge).encode())
+            return self.session_answer()
+        if path == lab.STEP_UP_PATH:
+            if doc != {"stepUpToken": "su-1", "confirm": True}:
+                return lab.HttpAnswer(400)
+            if self.step_up_status != 200:
+                return lab.HttpAnswer(self.step_up_status)
+            return self.session_answer()
         if path == lab.TERMS_PATH:
             if headers.get("Cookie") != "access_token=sess-a":
                 return lab.HttpAnswer(401)
@@ -1719,7 +1736,13 @@ def test_the_owner_sign_in_accepts_the_terms_so_a_token_can_be_minted():
     )
     assert token == "rdt_proxy:exec"
     paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
-    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH, lab.TERMS_ACCEPT_PATH, lab.TOKENS_PATH]
+    assert paths == [
+        lab.VERIFY_PATH,
+        lab.STEP_UP_PATH,
+        lab.TERMS_PATH,
+        lab.TERMS_ACCEPT_PATH,
+        lab.TOKENS_PATH,
+    ]
 
 
 def test_an_owner_who_accepted_the_terms_is_not_asked_again():
@@ -1727,7 +1750,7 @@ def test_an_owner_who_accepted_the_terms_is_not_asked_again():
     acct = AccountV6(terms_accepted=True)
     assert session_v6(acct) == "sess-a"
     paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
-    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH]
+    assert paths == [lab.VERIFY_PATH, lab.STEP_UP_PATH, lab.TERMS_PATH]
 
 
 def test_a_refused_terms_acceptance_is_a_lab_error_naming_the_code():
@@ -1825,6 +1848,40 @@ def test_a_refused_owner_mail_signs_in_nothing():
 def test_a_verify_without_a_session_cookie_is_a_lab_error(kw, match):
     with pytest.raises(proof.LabError, match=match):
         session_v6(AccountV6(**kw))
+
+
+def test_the_owner_confirms_the_step_up_from_the_same_address():
+    acct = AccountV6()
+    assert session_v6(acct) == "sess-a"
+    method, url, _headers, doc = acct.calls[1]
+    assert (method, url, doc) == (
+        "POST",
+        "https://%s%s" % (HOST_A, lab.STEP_UP_PATH),
+        {"stepUpToken": "su-1", "confirm": True},
+    )
+
+
+def test_a_trusted_verify_needs_no_step_up():
+    """Control: a verify that answers the session directly posts no step-up."""
+    acct = AccountV6(step_up=None)
+    assert session_v6(acct) == "sess-a"
+    assert [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls][:2] == [
+        lab.VERIFY_PATH,
+        lab.TERMS_PATH,
+    ]
+
+
+@pytest.mark.parametrize("method", ["password", "totp", "passkey"])
+def test_a_step_up_the_lab_cannot_answer_is_refused_without_a_second_call(method):
+    acct = AccountV6(step_up=method)
+    with pytest.raises(proof.LabError, match="cannot answer"):
+        session_v6(acct)
+    assert [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls] == [lab.VERIFY_PATH]
+
+
+def test_a_refused_step_up_signs_in_nothing():
+    with pytest.raises(proof.LabError, match="step-up answered HTTP 400"):
+        session_v6(AccountV6(step_up_status=400))
 
 
 def minter_v6(acct: AccountV6):

@@ -1136,7 +1136,7 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # The `enterprise proof replay` and `proof proxy` token readers (agent/plans/PLAN-enterprise-isolation.md, box V6's group, which V7's proxy token rides). SEAMS binds them by name.
 #
-# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
+# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers a step-up (a server-minted link has no browser binding), which the confirmation `POST /account/api/v1/auth/magic-link/step-up` completes from the same address and answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`).
 #
@@ -1153,6 +1153,7 @@ ME_PATH = "/account/api/v1/portal/me"
 STATUS_PATH = "/account/api/v1/licenses/status"
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 VERIFY_PATH = "/account/api/v1/auth/magic-link/verify"
+STEP_UP_PATH = "/account/api/v1/auth/magic-link/step-up"
 TOKENS_PATH = "/account/api/v1/api-tokens"
 TERMS_PATH = "/account/api/v1/portal/terms"
 TERMS_ACCEPT_PATH = TERMS_PATH + "/accept"
@@ -1505,12 +1506,40 @@ def owner_session(
         )
     if answer.json().get("requiresTwoFactor"):
         raise proof.LabError("company %s: the owner sign-in asks for a second factor" % company)
+    if answer.json().get("requiresStepUp"):
+        # A server-minted link carries no browser binding, so the verify always steps up
+        # (private/account/src/services/auth.service.ts). The owner is passwordless without a
+        # factor, so the one answerable step is the confirmation; any other method is refused
+        # rather than answered, since the lab holds no password, code or passkey for the owner.
+        answer = _confirm_step_up(company, host, answer.json(), call)
     for cookie in answer.header_values("Set-Cookie"):
         got = ACCESS_COOKIE.search(cookie)
         if got:
             accept_terms(company, host, got.group(1), call=call)
             return got.group(1)
     raise proof.LabError("company %s: the magic-link verify set no access_token" % company)
+
+
+def _confirm_step_up(company: str, host: str, challenge: dict, call: Call) -> HttpAnswer:
+    """Answer the `confirm` step-up of the owner's magic-link verify from the same address, as the portal's confirm button does; any other method, or a missing token, is a `LabError`. The token is never put into an error."""
+    method = challenge.get("method")
+    token = challenge.get("stepUpToken")
+    if method != "confirm" or not isinstance(token, str) or not token:
+        raise proof.LabError(
+            "company %s: the owner sign-in asks for a step-up the lab cannot answer (method %s)"
+            % (company, method)
+        )
+    answer = call(
+        "POST",
+        "https://%s%s" % (host, STEP_UP_PATH),
+        {"Content-Type": "application/json"},
+        json.dumps({"stepUpToken": token, "confirm": True}).encode(),
+    )
+    if answer.status != 200:
+        raise proof.LabError(
+            "company %s: the magic-link step-up answered HTTP %d" % (company, answer.status)
+        )
+    return answer
 
 
 def accept_terms(company: str, host: str, cookie: str, *, call: Call = http_call) -> bool:
