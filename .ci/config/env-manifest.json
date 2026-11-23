@@ -2476,9 +2476,20 @@
       ".ci/rediacc_ci/quality/account_probes.py": [
         "REDIACC_CI_ROOT"
       ],
+      ".ci/rediacc_ci/quality/actions_allowlist.py": [
+        "ACTIONS_ALLOWLIST_MIN",
+        "ACTIONS_ALLOWLIST_ROOT"
+      ],
       ".ci/rediacc_ci/quality/agent_session_archival.py": [
         "AGENT_SESSION_ARCHIVAL_ROOT",
         "WORKLIST_DEAD_HOURS"
+      ],
+      ".ci/rediacc_ci/quality/agent_session_archival_gate.py": [
+        "GH_TOKEN",
+        "GITHUB_ACTIONS",
+        "GITHUB_HEAD_REF",
+        "GITHUB_REPOSITORY",
+        "GITHUB_TOKEN"
       ],
       ".ci/rediacc_ci/quality/announce_gate_skips.py": [
         "GATE_SKIP_MODE",
@@ -2495,6 +2506,11 @@
       ],
       ".ci/rediacc_ci/quality/browser_smoke.py": [
         "REDIACC_SMOKE_NO_DOCKER"
+      ],
+      ".ci/rediacc_ci/quality/bws_map.py": [
+        "BWS_MAP_ROOT",
+        "BWS_MIN_CALLERS",
+        "BWS_MIN_MAP_ENTRIES"
       ],
       ".ci/rediacc_ci/quality/bws_step_scope.py": [
         "BWS_STEP_SCOPED_CONFIG",
@@ -2547,8 +2563,19 @@
       ".ci/rediacc_ci/quality/dead_python.py": [
         "CI"
       ],
+      ".ci/rediacc_ci/quality/decision_ids.py": [
+        "DECISION_IDS_BASE",
+        "DECISION_IDS_REGISTER",
+        "DECISION_IDS_ROOT",
+        "GITHUB_BASE_REF"
+      ],
       ".ci/rediacc_ci/quality/devbox_exec.py": [
         "REDIACC_CI_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/docker_npm_pins.py": [
+        "DOCKER_NPM_PINS_MIN",
+        "DOCKER_NPM_PINS_MIN_WORKFLOWS",
+        "DOCKER_NPM_PINS_ROOT"
       ],
       ".ci/rediacc_ci/quality/drill_verdicts.py": [
         "REDIACC_CI_ROOT"
@@ -2562,6 +2589,16 @@
       ],
       ".ci/rediacc_ci/quality/env_doc.py": [
         "ENV_REGISTRY_OVERRIDE_FILE"
+      ],
+      ".ci/rediacc_ci/quality/environment_names.py": [
+        "ENV_NAMES_MIN",
+        "ENV_NAMES_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/format_scope.py": [
+        "FORMAT_SCOPE_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/gate_argv.py": [
+        "GATE_ARGV_SCAN_ROOT"
       ],
       ".ci/rediacc_ci/quality/git_op_conditionals.py": [
         "REDIACC_CI_ROOT"
@@ -2611,6 +2648,11 @@
         "LABEL_REFS_MIN_DISTINCT",
         "LABEL_REFS_SCAN_DIRS"
       ],
+      ".ci/rediacc_ci/quality/language_policy.py": [
+        "LANGUAGE_POLICY_ALLOWLIST",
+        "LANGUAGE_POLICY_BASELINE",
+        "LANGUAGE_POLICY_ROOT"
+      ],
       ".ci/rediacc_ci/quality/lockfile.py": [
         "PATH",
         "REDIACC_CI_ROOT"
@@ -2624,6 +2666,21 @@
       ".ci/rediacc_ci/quality/pipefail_grep_q.py": [
         "NO_COLOR"
       ],
+      ".ci/rediacc_ci/quality/plan_boxes.py": [
+        "GITHUB_BASE_REF",
+        "PLAN_BOXES_BASE",
+        "PLAN_BOXES_MIN_OPEN",
+        "PLAN_BOXES_MIN_PLANS",
+        "PLAN_BOXES_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/plan_citations.py": [
+        "GITHUB_BASE_REF",
+        "GITHUB_JOB",
+        "PLAN_CITATIONS_BASE",
+        "PLAN_CITATIONS_MAX_SHOWN",
+        "PLAN_CITATIONS_OBJECT_MIN",
+        "PLAN_CITATIONS_ROOT"
+      ],
       ".ci/rediacc_ci/quality/plan_housekeeping.py": [
         "*k",
         "CI",
@@ -2631,6 +2688,9 @@
         "PLAN_HK_CONFIG",
         "PLAN_HK_MIN_FILES",
         "PLAN_HK_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/plan_implementation.py": [
+        "GITHUB_EVENT_PATH"
       ],
       ".ci/rediacc_ci/quality/plan_lifecycle.py": [
         "PLAN_FOLDERS_MAIN",
@@ -2748,6 +2808,8 @@
       ],
       ".ci/rediacc_ci/quality/swallowed_failures.py": [
         "CI",
+        "SWALLOWED_PY_SCAN_DIR",
+        "SWALLOWED_PY_SCAN_ROOT",
         "SWALLOWED_SCAN_DIRS",
         "SWALLOWED_SCAN_ROOT"
       ],
@@ -3701,68 +3763,11 @@
         "RETIRE_MIN_WORKFLOWS",
         "RETIRE_ROOT"
       ],
-      ".ci/scripts/quality/check_actions_allowlist.py": [
-        "ACTIONS_ALLOWLIST_MIN",
-        "ACTIONS_ALLOWLIST_ROOT"
-      ],
-      ".ci/scripts/quality/check_agent_session_archival.py": [
-        "GH_TOKEN",
-        "GITHUB_ACTIONS",
-        "GITHUB_HEAD_REF",
-        "GITHUB_REPOSITORY",
-        "GITHUB_TOKEN"
-      ],
-      ".ci/scripts/quality/check_bws_map.py": [
-        "BWS_MAP_ROOT",
-        "BWS_MIN_CALLERS",
-        "BWS_MIN_MAP_ENTRIES"
-      ],
       ".ci/scripts/quality/check_commit_citations.py": [
         "GITHUB_BASE_REF"
       ],
-      ".ci/scripts/quality/check_decision_ids.py": [
-        "DECISION_IDS_BASE",
-        "DECISION_IDS_REGISTER",
-        "DECISION_IDS_ROOT",
-        "GITHUB_BASE_REF"
-      ],
-      ".ci/scripts/quality/check_docker_npm_pins.py": [
-        "DOCKER_NPM_PINS_MIN",
-        "DOCKER_NPM_PINS_MIN_WORKFLOWS",
-        "DOCKER_NPM_PINS_ROOT"
-      ],
-      ".ci/scripts/quality/check_environment_names.py": [
-        "ENV_NAMES_MIN",
-        "ENV_NAMES_ROOT"
-      ],
-      ".ci/scripts/quality/check_format_scope.py": [
-        "FORMAT_SCOPE_ROOT"
-      ],
-      ".ci/scripts/quality/check_language_policy.py": [
-        "LANGUAGE_POLICY_ALLOWLIST",
-        "LANGUAGE_POLICY_BASELINE",
-        "LANGUAGE_POLICY_ROOT"
-      ],
-      ".ci/scripts/quality/check_plan_boxes.py": [
-        "GITHUB_BASE_REF",
-        "PLAN_BOXES_BASE",
-        "PLAN_BOXES_MIN_OPEN",
-        "PLAN_BOXES_MIN_PLANS",
-        "PLAN_BOXES_ROOT"
-      ],
-      ".ci/scripts/quality/check_plan_citations.py": [
-        "GITHUB_BASE_REF",
-        "GITHUB_JOB",
-        "PLAN_CITATIONS_BASE",
-        "PLAN_CITATIONS_MAX_SHOWN",
-        "PLAN_CITATIONS_OBJECT_MIN",
-        "PLAN_CITATIONS_ROOT"
-      ],
       ".ci/scripts/quality/check_plan_deps.py": [
         "GITHUB_BASE_REF"
-      ],
-      ".ci/scripts/quality/check_plan_implementation.py": [
-        "GITHUB_EVENT_PATH"
       ],
       ".ci/scripts/quality/check_plan_record.py": [
         "PLAN_RECORD_CENSUS_DAYS",
