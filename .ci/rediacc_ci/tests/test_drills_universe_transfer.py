@@ -438,3 +438,15 @@ def test_delta_a_reused_gateway_survives_the_drill(world: World) -> None:
     p = _port("universe", ["--no-restart"], env, world)
     assert p[0] == 0
     assert world.gateway_alive()
+
+
+def test_seed_log_line_never_carries_the_machine_secret() -> None:
+    """Review 09a75564.1: the seed body carries the machine secret, so a failure log line must blank it."""
+    secret = "RM1-do-not-print-me"
+    line = transfer._without_secret(
+        '{"storeId": "", "machineSecret": "%s", "machineSecretId": "ms1"}' % secret
+    )
+    assert secret not in line
+    assert "ms1" in line
+    assert transfer._without_secret('{"error": "no store"}') == '{"error": "no store"}'
+    assert "unparseable" in transfer._without_secret("not json")

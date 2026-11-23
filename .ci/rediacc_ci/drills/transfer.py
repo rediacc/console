@@ -16,6 +16,7 @@ The Rule T differences from the bash twin are in `rediacc_ci.drills.lib` (the ga
 from __future__ import annotations
 
 import http.cookiejar
+import json
 import os
 import shutil
 import subprocess
@@ -30,6 +31,17 @@ USAGE = "Usage: ./run.sh drill transfer [--selftest] [--no-restart] [--keep-work
 # `RemoteUnreachableError` maps to NETWORK_ERROR, which `packages/cli/src/types/index.ts` defines as exit 6 (`EXIT_CODES.NETWORK_ERROR`). The bash asserted exit 1 and failed on every live run (2026-10-01: "expected exit 1, got 6", assertion 19); a test pins this constant to the CLI's own table.
 OFFLINE_WRITE_EXIT = 6
 KEYRING_PROBE_KEY = "rediacc-drill-keyring-probe"
+
+
+def _without_secret(raw: str) -> str:
+    """The seed response for a log line, with the machine secret blanked: the body carries it on success and may on a partial failure."""
+    try:
+        body = json.loads(raw or "{}")
+    except ValueError:
+        return "<unparseable seed response, %d bytes>" % len(raw or "")
+    if isinstance(body, dict) and "machineSecret" in body:
+        body["machineSecret"] = "<redacted>"
+    return json.dumps(body)
 
 
 class Transfer:
@@ -162,7 +174,7 @@ class Transfer:
         )
         store_id = lib.json_get(seed, "storeId")
         if not store_id:
-            log.error("Could not seed a config store: %s" % seed)
+            log.error("Could not seed a config store: %s" % _without_secret(seed))
             log.error(
                 "Config storage needs the RustFS container from ./run.sh account dev (Docker)."
             )
@@ -170,7 +182,16 @@ class Transfer:
         self.machine_secret_id = lib.json_get(seed, "machineSecretId")
         self.machine_secret = lib.json_get(seed, "machineSecret")
         if not self.machine_secret_id or not self.machine_secret:
-            log.error("The seed minted no machine secret: %s" % seed)
+            # Name the missing key only: the seed body carries the machine secret itself.
+            missing = [
+                k
+                for k, v in (
+                    ("machineSecretId", self.machine_secret_id),
+                    ("machineSecret", self.machine_secret),
+                )
+                if not v
+            ]
+            log.error("The seed answered without %s" % " and ".join(missing))
             raise SystemExit(1)
         d.note("store %s seeded, machine secret %s minted" % (store_id, self.machine_secret_id))
 
