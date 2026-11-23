@@ -193,6 +193,11 @@ const baseData = z.object({
   // Set by the executor for a command that ran as a job: the job and how its record ended (`started` when the request handed the ticket back before the job finished, else its terminal state). A job's start and its terminal state are two events of one job id.
   jobId: z.string().min(1).max(100).optional(),
   outcome: z.enum(['started', 'succeeded', 'failed', 'cancelled']).optional(),
+  // Set by the executor from the command request: the key the account Worker joins this event to the console run that caused it (`console.command.run`).
+  requestId: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/)
+    .optional(),
 });
 
 /**
