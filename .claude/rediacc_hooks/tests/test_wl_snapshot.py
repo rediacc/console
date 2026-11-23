@@ -1,0 +1,141 @@
+"""wl_snapshot (agent/plans/PLAN-tooling-code-reduction.md CR9): finished sessions' logs folded into one snapshot.
+
+Each test builds a disposable store (WORKLIST_STORE_DIR) with a finished writer, a recent writer and the epics sidecar, then compares the fold before and after. EVERY POSITIVE HAS ITS CONTROL: a recent writer's log and the epics sidecar survive, and a store with nothing finished is left byte for byte.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import types
+
+import pytest
+import wl_core as C
+import wl_snapshot as W
+import wl_store as S
+
+OLD = "2026-10-01T00:00:00Z"
+
+
+def ev(kind, by, at, **kw):
+    return json.dumps({"ev": kind, "by": by, "at": at, **kw}, separators=(",", ":")) + "\n"
+
+
+@pytest.fixture
+def store(tmp_path, monkeypatch):
+    d = tmp_path / "store"
+    d.mkdir()
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(d))
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    monkeypatch.setenv("WORKLIST_READ_MEMO", "off")
+    recent = C.stamp_now()
+    # dead0001 finished long ago: it added two items, ticked one, and ticked an item the recent writer added.
+    (d / "dead0001.jsonl").write_text(
+        ev("add", "dead0001", OLD, id="a1", s=" ", o="dead0001", t="open item of the dead session")
+        + ev(
+            "add", "dead0001", OLD, id="a2", s=" ", o="dead0001", t="done item of the dead session"
+        )
+        + ev("state", "dead0001", "2026-10-01T00:05:00Z", id="a2", s="x", note="done")
+        + ev(
+            "state", "dead0001", "2026-10-01T00:06:00Z", id="b1", s="x", note="ticked a peer's item"
+        ),
+        encoding="utf-8",
+    )
+    (d / "beef0002.jsonl").write_text(
+        ev(
+            "add",
+            "beef0002",
+            "2026-09-30T00:00:00Z",
+            id="b1",
+            s=" ",
+            o="beef0002",
+            t="item of the recent writer",
+        )
+        + ev("add", "beef0002", recent, id="b2", s=" ", o="beef0002", t="a later open item"),
+        encoding="utf-8",
+    )
+    (d / "epics.jsonl").write_text(
+        json.dumps({"at": OLD, "by": "dead0001", "id": "e1", "title": "an epic"}) + "\n",
+        encoding="utf-8",
+    )
+    return types.SimpleNamespace(d=d, root=proj, wl=tmp_path / "WORKLIST.md", tmp=tmp_path)
+
+
+def states(s):
+    fold = S.load(s.wl, sync=False)
+    return {r["id"]: r["state"] for r in fold.items}
+
+
+def run(s, flag):
+    return W.main(
+        [flag], worklist=s.wl, root=s.root, me="cafe0003", projects_dir=s.tmp / "no-transcripts"
+    )
+
+
+def test_plan_names_the_finished_log_and_not_the_recent_or_the_sidecar(store, capsys):
+    assert run(store, "--plan") == 0
+    out = capsys.readouterr().out
+    assert "dead0001.jsonl" in out
+    assert "beef0002.jsonl" not in out
+    assert "epics.jsonl" not in out
+    assert "1 file(s)" in out
+    assert (store.d / "dead0001.jsonl").exists(), "--plan wrote"
+
+
+def test_write_folds_to_the_same_state_and_the_finished_log_is_gone(store):
+    before = states(store)
+    assert before == {"a1": " ", "a2": "x", "b1": "x", "b2": " "}
+    assert run(store, "--write") == 0
+    assert not (store.d / "dead0001.jsonl").exists()
+    assert (store.d / "cafe0003.jsonl").exists(), "the snapshot is not written"
+    assert states(store) == before, "folding finished logs changed the world"
+
+
+def test_no_per_stop_read_opens_a_finished_log_after_the_fold(store, monkeypatch):
+    run(store, "--write")
+    opened = []
+    real = pathlib.Path.read_text
+
+    def spy(self, *a, **kw):
+        opened.append(self.name)
+        return real(self, *a, **kw)
+
+    monkeypatch.setattr(pathlib.Path, "read_text", spy)
+    S._read_events(store.wl, store.root)
+    assert opened, "the spy saw no read, so it measures nothing"
+    assert "dead0001.jsonl" not in opened
+
+
+def test_the_epics_sidecar_survives_a_fold(store):
+    run(store, "--write")
+    assert (store.d / "epics.jsonl").exists(), "compact_store unlinked the epics sidecar"
+
+
+def test_a_recent_writers_log_is_kept(store):
+    run(store, "--write")
+    assert (store.d / "beef0002.jsonl").exists()
+
+
+def test_the_plan_and_the_write_agree_on_which_files_go(store):
+    found = W.finished_logs(store.wl, store.root, "cafe0003", store.tmp / "x")
+    planned = {p.name for p, _n, _v in found}
+    before = {p.name for p in store.d.glob("*.jsonl")}
+    run(store, "--write")
+    gone = before - {p.name for p in store.d.glob("*.jsonl")}
+    assert planned == {"dead0001.jsonl"}
+    assert gone == planned
+
+
+def test_nothing_finished_changes_nothing(store, capsys):
+    (store.d / "dead0001.jsonl").unlink()
+    snap = {p.name: p.read_bytes() for p in store.d.glob("*.jsonl")}
+    assert run(store, "--write") == 0
+    assert "nothing to fold" in capsys.readouterr().out
+    assert {p.name: p.read_bytes() for p in store.d.glob("*.jsonl")} == snap
+
+
+def test_an_unknown_flag_is_usage(store, capsys):
+    assert W.main(["--bogus"], worklist=store.wl, root=store.root) == 2
+    assert "wl_snapshot" in capsys.readouterr().err
