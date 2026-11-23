@@ -38,6 +38,8 @@ import re
 import sys
 import tomllib
 
+import _gate_args
+
 # THE BUDGET (PLAN-cloudflare-proxy.md section 4, recommendations 1 and 2). Raise either only together with the pricing that justifies it.
 # MAX_INSTANCES_BUDGET is 25 by operator ruling ASKED:2026-10-26T15:26Z ("Per-org, raise the cap"): one executor container per org (PLAN-console-executor-multi-org), so the cap is sized by demand, up to 25 per config, at most MAX_DEPLOYABLE_CONFIGS deployable configs, at most MAX_TOTAL_INSTANCES (7 x 25) across them. It supersedes the earlier ruling ASKED:2026-10-25T19:08Z ("1 per target, 7 total but 21 max") for max_instances only; sleepAfter stays 2m, so an idle org sleeps. The cost alarm that replaces the low cap is the container spend threshold of `cf_usage_report` (.ci/config/cf-spend-guard.json, `report.containers_*`).
 MAX_INSTANCES_BUDGET = 25
@@ -753,4 +755,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_proxy_cost_guard.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(main(sys.argv[1:]))

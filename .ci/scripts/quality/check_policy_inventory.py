@@ -81,6 +81,7 @@ import tempfile
 import tokenize
 
 import _cipath
+import _gate_args
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.policy_paths import policy_path
@@ -1541,4 +1542,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_policy_inventory.py", sys.argv[1:], switches=("--selftest", "--verbose")
+    )
     raise SystemExit(main(sys.argv[1:]))

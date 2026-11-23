@@ -16,7 +16,9 @@ why: every production login failed on 2026-09-24 because the deployed portal was
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import portal_sitekey_guard
 
 if __name__ == "__main__":
+    _gate_args.parse("check_portal_sitekey_guard.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(portal_sitekey_guard.main(sys.argv[1:]))

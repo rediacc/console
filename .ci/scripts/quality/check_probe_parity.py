@@ -34,7 +34,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import probe_parity
 
 if __name__ == "__main__":
+    _gate_args.parse("check_probe_parity.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(probe_parity.main(sys.argv[1:]))

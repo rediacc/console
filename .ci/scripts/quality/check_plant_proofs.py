@@ -22,7 +22,14 @@ why: a control proves a gate can fail by feeding it a MUTATED fixture, and a
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import plant_proofs
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plant_proofs.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+        valued=("--allow-new",),
+    )
     raise SystemExit(plant_proofs.main(sys.argv[1:]))

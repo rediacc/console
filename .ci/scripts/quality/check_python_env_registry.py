@@ -19,7 +19,14 @@ why: an environment read is an undeclared input, and until this landed nothing
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import python_env_registry
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_python_env_registry.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+        valued=("--allow-new",),
+    )
     raise SystemExit(python_env_registry.main(sys.argv[1:]))

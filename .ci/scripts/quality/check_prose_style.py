@@ -46,7 +46,25 @@ lane: quality-content
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import prose_style
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_prose_style.py",
+        sys.argv[1:],
+        switches=(
+            "--selftest",
+            "-h",
+            "--help",
+            "--write",
+            "--diff",
+            "--write-baseline",
+            "--accept-new",
+            "--json",
+            "--drain",
+        ),
+        valued=("--scope",),
+        positional="<subcommand|path>",
+    )
     raise SystemExit(prose_style.main(sys.argv[1:]))

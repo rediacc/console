@@ -72,7 +72,9 @@ needs: none
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import profiler_coverage
 
 if __name__ == "__main__":
+    _gate_args.parse("check_profiler_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(profiler_coverage.main(sys.argv[1:]))

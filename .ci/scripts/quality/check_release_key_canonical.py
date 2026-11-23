@@ -51,7 +51,9 @@ lane: quality-security
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import release_key_canonical
 
 if __name__ == "__main__":
+    _gate_args.parse("check_release_key_canonical.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(release_key_canonical.main(sys.argv[1:]))

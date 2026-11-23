@@ -51,6 +51,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci.controls import Controls
 
 SELF = os.path.basename(__file__)
@@ -440,4 +441,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_python_control_plants.py", sys.argv[1:], switches=("--selftest", "--verbose")
+    )
     raise SystemExit(main(sys.argv[1:]))

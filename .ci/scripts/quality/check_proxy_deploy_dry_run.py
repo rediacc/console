@@ -22,6 +22,8 @@ import pathlib
 import subprocess
 import sys
 
+import _gate_args
+
 REGIONS_REL = "regions.json"
 WRANGLER_REL = ("workers", "proxy", "node_modules", ".bin", "wrangler")
 MODULE = "rediacc_ci.deploy.deploy_proxy"
@@ -255,4 +257,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_proxy_deploy_dry_run.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root", "--entry"),
+    )
     raise SystemExit(main(sys.argv[1:]))

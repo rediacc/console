@@ -178,6 +178,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci import paths
 from rediacc_ci.controls import git_isolated, plant
 from rediacc_ci.quality import plan_lifecycle as PL
@@ -3490,4 +3491,18 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_record.py",
+        sys.argv[1:],
+        switches=(
+            "--selftest",
+            "--update",
+            "--census-report",
+            "--rendered-only",
+            "--write-baseline",
+            "--census",
+            "--effort-table",
+        ),
+        positional="<path>",
+    )
     sys.exit(main(sys.argv[1:]))

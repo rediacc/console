@@ -21,7 +21,9 @@ why: the `--native` SEA build left rdc.sh for rediacc_ci.native, and two things
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import rdc_native
 
 if __name__ == "__main__":
+    _gate_args.parse("check_rdc_native.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(rdc_native.main(sys.argv[1:]))

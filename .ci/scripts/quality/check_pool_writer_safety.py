@@ -41,7 +41,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import pool_writer_safety
 
 if __name__ == "__main__":
+    _gate_args.parse("check_pool_writer_safety.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(pool_writer_safety.main(sys.argv[1:]))
