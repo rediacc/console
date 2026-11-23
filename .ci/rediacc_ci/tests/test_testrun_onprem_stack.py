@@ -58,7 +58,7 @@ class FakeRuntime(mod.Runtime):
             return subprocess.CompletedProcess(argv, 1, "", "boom")
         return subprocess.CompletedProcess(argv, 0, "", "")
 
-    def http_get(self, url: str) -> tuple[int, str]:
+    def http_get(self, url: str, *_unused) -> tuple[int, str]:
         if self.fail == "health" and url.endswith("/health"):
             return 0, ""
         if url.endswith("/v1/server-info"):

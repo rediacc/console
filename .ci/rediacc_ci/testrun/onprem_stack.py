@@ -30,6 +30,7 @@ import secrets
 import shutil
 import signal
 import socket
+import ssl
 import subprocess
 import sys
 import time
@@ -185,21 +186,36 @@ class Runtime:
             timeout=timeout,
         )
 
-    def http_get(self, url: str) -> tuple[int, str]:
-        """(status, body) of a GET to a loopback http URL; a refused connection is (0, "")."""
+    def http_get(
+        self, url: str, headers: dict[str, str] | None = None, insecure_tls: bool = False
+    ) -> tuple[int, str]:
+        """(status, body) of a GET to a loopback URL; a refused connection is (0, ""). `insecure_tls` skips certificate checks for the throwaway pair of a TLS probe."""
         parts = urllib.parse.urlsplit(url)
+        host = parts.hostname or "127.0.0.1"
         try:
-            connection = http.client.HTTPConnection(
-                parts.hostname or "127.0.0.1", parts.port or 80, timeout=5
-            )
+            if parts.scheme == "https":
+                context = ssl.create_default_context()
+                if insecure_tls:
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                connection: http.client.HTTPConnection = http.client.HTTPSConnection(
+                    host, parts.port or 443, timeout=5, context=context
+                )
+            else:
+                connection = http.client.HTTPConnection(host, parts.port or 80, timeout=5)
             try:
-                connection.request("GET", parts.path or "/")
+                connection.request("GET", parts.path or "/", headers=headers or {})
                 response = connection.getresponse()
                 return response.status, response.read().decode("utf-8", errors="replace")
             finally:
                 connection.close()
         except (OSError, http.client.HTTPException):
             return 0, ""
+
+    def exited(self, pgid: int) -> int | None:
+        """The exit status of a group leader this process started, or None while it still runs (or is not this process's child)."""
+        child = self._children.get(pgid)
+        return None if child is None else child.poll()
 
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
