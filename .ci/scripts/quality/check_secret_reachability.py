@@ -5,9 +5,10 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/s
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
+import sys
 
 import _cipath
+from rediacc_ci.quality import secret_reachability
 
 if __name__ == "__main__":
-    runpy.run_module("rediacc_ci.quality.secret_reachability", run_name="__main__", alter_sys=True)
+    sys.exit(secret_reachability.main())

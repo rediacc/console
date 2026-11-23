@@ -17,8 +17,14 @@ import sys
 
 from rediacc_ci.deploy import turnstile_drift as impl
 
+
+def main(argv: list[str]) -> int:
+    """The drift check's own `main`, handed the arguments."""
+    return impl.main(argv)
+
+
 if __name__ == "__main__":
     from rediacc_ci.quality import gate_args
 
     gate_args.parse("check_turnstile_drift.py", sys.argv[1:], switches=("--selftest",))
-    raise SystemExit(impl.main(sys.argv[1:]))
+    raise SystemExit(main(sys.argv[1:]))

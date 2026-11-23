@@ -5,16 +5,14 @@ The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/t
 (`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
-import runpy
 import sys
 
 import _cipath
 import _gate_args
+from rediacc_ci.quality import tutorial_healthcheck_headroom
 
 if __name__ == "__main__":
     _gate_args.parse(
         "check_tutorial_healthcheck_headroom.py", sys.argv[1:], switches=("--selftest",)
     )
-    runpy.run_module(
-        "rediacc_ci.quality.tutorial_healthcheck_headroom", run_name="__main__", alter_sys=True
-    )
+    sys.exit(tutorial_healthcheck_headroom.main())

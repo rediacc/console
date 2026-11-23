@@ -117,12 +117,17 @@ def main() -> int:
     return 0
 
 
+def cli(argv: list[str]) -> int:
+    """`--selftest` runs the controls; no argument runs the gate."""
+    if "--selftest" in argv:
+        controls()
+        print("%s✓%s selftest" % (GREEN, NC))
+        return 0
+    return main()
+
+
 if __name__ == "__main__":
     from rediacc_ci.quality import gate_args
 
     gate_args.parse("check_tmpfs_health.py", sys.argv[1:], switches=("--selftest",))
-    if "--selftest" in sys.argv:
-        controls()
-        print("%s✓%s selftest" % (GREEN, NC))
-        sys.exit(0)
-    sys.exit(main())
+    sys.exit(cli(sys.argv[1:]))

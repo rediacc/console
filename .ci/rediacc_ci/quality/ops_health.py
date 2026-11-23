@@ -15,11 +15,17 @@ import sys
 
 from rediacc_ci.ops import ops_health as impl
 
+
+def main(argv: list[str]) -> int:
+    """`-h` or `--help` prints this module's docstring; no argument runs the gate."""
+    if argv in (["-h"], ["--help"]):
+        print(__doc__)
+        return 0
+    return impl.gate_main()
+
+
 if __name__ == "__main__":
     from rediacc_ci.quality import gate_args
 
     gate_args.parse("check_ops_health.py", sys.argv[1:], switches=("-h", "--help"))
-    if sys.argv[1:] in (["-h"], ["--help"]):
-        print(__doc__)
-        raise SystemExit(0)
-    raise SystemExit(impl.gate_main())
+    raise SystemExit(main(sys.argv[1:]))
