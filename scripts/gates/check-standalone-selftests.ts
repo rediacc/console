@@ -117,7 +117,10 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   // the settings verb (scripts/settings/settings.ts): its controls for range, peer-dirty files, restore-on-failure and unit parsing.
   'scripts/settings/settings.ts': { args: ['--selftest'] },
   // the guard refusal census (scripts/census/guard-fires.py): its fingerprint, dedup and chain-filter controls, both directions.
-  'scripts/census/guard-fires.py': { args: ['--selftest'], controls: /selftest: (\d+) checks passed/ },
+  'scripts/census/guard-fires.py': {
+    args: ['--selftest'],
+    controls: /selftest: (\d+) checks passed/,
+  },
 };
 
 /** Where the table and the tree disagree over the pins selftests. */

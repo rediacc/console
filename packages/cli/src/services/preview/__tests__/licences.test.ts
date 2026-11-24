@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_PREVIEW_SAMPLE_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 
 vi.mock('../../backup/backup-store-universe.js', () => ({
   expectedAccountServerOrigin: () => WK_PREVIEW_SAMPLE_ORIGIN,

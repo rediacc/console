@@ -27,12 +27,13 @@ describe('validateBaseUrl', () => {
     expect(r.ok && r.url.hostname).toBe('api.openai.com');
   });
 
-  it.each([WK_OPENAI_API_BASE.replace('https://', 'http://'), 'ftp://example.com', 'wss://example.com/x'])(
-    'refuses a scheme other than https: %s',
-    (url) => {
-      expect(refused(url)).toBe('not-https');
-    }
-  );
+  it.each([
+    WK_OPENAI_API_BASE.replace('https://', 'http://'),
+    'ftp://example.com',
+    'wss://example.com/x',
+  ])('refuses a scheme other than https: %s', (url) => {
+    expect(refused(url)).toBe('not-https');
+  });
 
   it.each(['', 'not a url', 'https://', '//example.com'])(
     'refuses an unparseable value %j',

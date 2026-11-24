@@ -399,9 +399,14 @@ describe('CLI contract', () => {
       fileURLToPath(new URL('../../../../cli/scripts/generate-cli-contract.ts', import.meta.url)),
       'utf-8'
     );
+    // The two tables live in the curation module the generator imports, so their keys are read from that file's text.
+    const curation = readFileSync(
+      fileURLToPath(new URL('../../../../cli/scripts/lib/contract-curation.ts', import.meta.url)),
+      'utf-8'
+    );
     const tableKeys = (name: string): Record<string, string> => {
       const block =
-        new RegExp(`const ${name}[^=]*=\\s*\\{([\\s\\S]*?)\\n\\};`).exec(source)?.[1] ?? '';
+        new RegExp(`const ${name}[^=]*=\\s*\\{([\\s\\S]*?)\\n\\};`).exec(curation)?.[1] ?? '';
       return Object.fromEntries(
         [...block.matchAll(/^ {2}'([^']+)':/gm)].map((m) => [m[1] as string, ''])
       );

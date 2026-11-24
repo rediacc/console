@@ -24,7 +24,10 @@
 
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
-import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_PREVIEW_SAMPLE_ORIGIN } from '../../config/well-known.generated.js';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_PREVIEW_SAMPLE_ORIGIN,
+} from '../../config/well-known.generated.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
 import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import {
