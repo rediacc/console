@@ -42,6 +42,10 @@ export type MutationScope = (typeof MUTATION_SCOPES)[number];
 export const ORG_ROLES = ['owner', 'admin', 'member'] as const;
 export type PolicyOrgRole = (typeof ORG_ROLES)[number];
 
+/** AI assistant autonomy modes an org or team policy can disable. `ask` is always available. */
+export const AI_DISABLEABLE_MODES = ['auto', 'skip'] as const;
+export type AiDisableableMode = (typeof AI_DISABLEABLE_MODES)[number];
+
 /**
  * One tier of permissions. Every field is optional: an omitted field means
  * "this tier says nothing about that dimension", which lets a user rule refine
@@ -73,6 +77,11 @@ export const PolicyRuleSchema = z.object({
   allowClusterOps: z.boolean().optional(),
   /** Mutation classes permitted. Omitted means mutations are unrestricted. */
   mutationScopes: z.array(z.enum(MUTATION_SCOPES)).optional(),
+  /**
+   * AI assistant autonomy modes this tier disables. Omitted means none. Across the org ceiling and a
+   * team policy the lists union (`disabledAiModes` in merge.ts), so a team only disables more.
+   */
+  aiModesDisabled: z.array(z.enum(AI_DISABLEABLE_MODES)).optional(),
 });
 type PolicyRule = z.infer<typeof PolicyRuleSchema>;
 
@@ -86,6 +95,7 @@ export const POLICY_RULE_KEYS = [
   'allowGrandRepos',
   'allowClusterOps',
   'mutationScopes',
+  'aiModesDisabled',
 ] as const satisfies readonly (keyof PolicyRule)[];
 export type PolicyRuleKey = (typeof POLICY_RULE_KEYS)[number];
 

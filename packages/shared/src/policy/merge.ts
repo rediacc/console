@@ -12,6 +12,9 @@
  * A key the org policy locks (`locked`) is ignored wherever the team policy sets it, at every tier,
  * and reported in `ignoredLocked` so the editor can flag the row. A `locked` list inside the team
  * policy is ignored and reported as well: only the org policy locks.
+ *
+ * `aiModesDisabled` is the one key that unions rather than intersects: a mode either document
+ * disables stays disabled, so a team can disable more and never re-enable (`disabledAiModes`).
  */
 
 import {
@@ -20,7 +23,13 @@ import {
   type PolicyContext,
   type PolicyDecision,
 } from './evaluate.js';
-import type { PolicyDocument, PolicyRule, PolicyRuleKey } from './schema.js';
+import {
+  AI_DISABLEABLE_MODES,
+  type AiDisableableMode,
+  type PolicyDocument,
+  type PolicyRule,
+  type PolicyRuleKey,
+} from './schema.js';
 
 /** The org ceiling and the team narrowing of one config, as `mergePolicies` returns them. */
 export interface EffectivePolicy {
@@ -82,4 +91,35 @@ export function evaluateEffectivePolicy(
   const ceiling = evaluatePolicy(effective.org, ctx);
   if (!ceiling.allowed || !effective.team) return ceiling;
   return narrowingDenial(effective.team, ctx, new Set(effective.locked)) ?? ceiling;
+}
+
+/** The `aiModesDisabled` list of the most specific tier of `doc` that sets one for this caller. */
+function tierAiModesDisabled(
+  doc: PolicyDocument,
+  ctx: Pick<PolicyContext, 'userEmail' | 'teamSlug'>
+): readonly AiDisableableMode[] {
+  const user = doc.users?.[ctx.userEmail]?.aiModesDisabled;
+  if (user !== undefined) return user;
+  const team = ctx.teamSlug ? doc.teams?.[ctx.teamSlug]?.aiModesDisabled : undefined;
+  if (team !== undefined) return team;
+  return doc.defaults.aiModesDisabled ?? [];
+}
+
+/**
+ * The AI autonomy modes disabled for this caller: the union of the org policy's list and the team
+ * policy's list, each taken from its most specific tier (user > team > defaults). A team policy only
+ * adds modes; a team list the org locks (`locked` names `aiModesDisabled`) is ignored. The result is
+ * in `AI_DISABLEABLE_MODES` order.
+ */
+export function disabledAiModes(
+  effective: EffectivePolicy,
+  ctx: Pick<PolicyContext, 'userEmail' | 'teamSlug'>
+): AiDisableableMode[] {
+  const disabled = new Set<AiDisableableMode>(
+    effective.org ? tierAiModesDisabled(effective.org, ctx) : []
+  );
+  if (effective.team && !effective.locked.includes('aiModesDisabled')) {
+    for (const mode of tierAiModesDisabled(effective.team, ctx)) disabled.add(mode);
+  }
+  return AI_DISABLEABLE_MODES.filter((mode) => disabled.has(mode));
 }
