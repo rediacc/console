@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import base64
 import re
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci.deploy import preview_name as pn
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 KEY_A = base64.b64encode(bytes(range(32))).decode()
 KEY_B = base64.b64encode(bytes(range(1, 33))).decode()
@@ -77,3 +81,32 @@ def test_cli_pr_and_match(
     assert capsys.readouterr().out.strip() == "9"
     assert pn.main(["--match", name + "-signer", "--open-prs", "10"]) == 1
     assert pn.main(["--match", "signer-eu", "--open-prs", "9"]) == 2
+
+
+def test_match_key_error_exits_three_but_a_non_preview_name_exits_two(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(pn.KEY_ENV, raising=False)
+    assert pn.main(["--match", "pv-a-b-c", "--open-prs", "9"]) == 3
+    assert pn.main(["--match", "signer-eu", "--open-prs", "9"]) == 2
+    monkeypatch.setenv(pn.KEY_ENV, "not-base64-32-bytes")
+    assert pn.main(["--match", "pv-a-b-c", "--open-prs", "9"]) == 3
+
+
+def test_a_trailing_newline_is_not_a_preview_worker() -> None:
+    assert pn.is_preview_worker("pv-a-b-c")
+    assert not pn.is_preview_worker("pv-a-b-c\n")
+
+
+def test_an_unreadable_word_list_is_a_preview_name_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pn.load_words.cache_clear()
+    monkeypatch.setattr(pn, "WORDS_FILE", tmp_path / "missing.txt")
+    try:
+        with pytest.raises(pn.PreviewNameError):
+            pn.load_words()
+        monkeypatch.setenv(pn.KEY_ENV, KEY_A)
+        assert pn.main(["--match", "pv-a-b-c", "--open-prs", "9"]) == 3
+    finally:
+        pn.load_words.cache_clear()

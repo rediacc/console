@@ -5,7 +5,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr 123
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --match pv-a-b-c-signer --open-prs 12 15 20
 
-`--match` exit codes: 0 the worker belongs to one of the open PRs (the PR number is printed), 1 it has the preview shape but no open PR derives it (the sweep deletes it), 2 it does not have the preview shape (the sweep never touches it).
+`--match` exit codes: 0 the worker belongs to one of the open PRs (the PR number is printed), 1 it has the preview shape but no open PR derives it (the sweep deletes it), 2 it does not have the preview shape (the sweep never touches it, checked before the key is read), 3 the key or the word list is unusable (the sweep keeps the worker).
 
 `PREVIEW_NAME_KEY` is the base64 of 32 random bytes. A missing, empty or malformed key is refused, never defaulted.
 """
@@ -28,7 +28,7 @@ WORDS_PER_NAME = 3
 PREFIX = "pv-"
 KEY_ENV = "PREVIEW_NAME_KEY"
 WORDS_FILE = Path(__file__).resolve().parents[2] / "config" / "preview-words.txt"
-NAME_RE = re.compile(r"^pv-[a-z]+-[a-z]+-[a-z]+(-signer)?$")
+NAME_RE = re.compile(r"pv-[a-z]+-[a-z]+-[a-z]+(-signer)?")
 
 
 class PreviewNameError(Exception):
@@ -37,7 +37,10 @@ class PreviewNameError(Exception):
 
 @lru_cache(maxsize=1)
 def load_words() -> tuple[str, ...]:
-    words = tuple(WORDS_FILE.read_text(encoding="utf-8").split())
+    try:
+        words = tuple(WORDS_FILE.read_text(encoding="utf-8").split())
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PreviewNameError(f"{WORDS_FILE} is unreadable: {exc}") from exc
     if len(words) != WORD_COUNT:
         raise PreviewNameError(f"{WORDS_FILE} holds {len(words)} words, expected {WORD_COUNT}")
     return words
@@ -67,7 +70,7 @@ def preview_name(pr: int, key: bytes) -> str:
 
 
 def is_preview_worker(worker: str) -> bool:
-    return NAME_RE.match(worker) is not None
+    return NAME_RE.fullmatch(worker) is not None
 
 
 def match_worker(worker: str, open_prs: list[int], key: bytes) -> int | None:
@@ -90,13 +93,13 @@ def main(argv: list[str] | None = None) -> int:
         "--open-prs", type=int, nargs="*", default=[], help="numbers of the open PRs"
     )
     args = parser.parse_args(argv)
+    if args.match is not None and not is_preview_worker(args.match):
+        return 2
     try:
         key = load_key()
         if args.pr is not None:
             print(preview_name(args.pr, key))
             return 0
-        if not is_preview_worker(args.match):
-            return 2
         pr = match_worker(args.match, args.open_prs, key)
         if pr is None:
             return 1
