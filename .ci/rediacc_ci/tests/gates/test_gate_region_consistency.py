@@ -13,8 +13,6 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import proxy_configs
-from rediacc_ci.quality import region_consistency_controls as ctl
-from rediacc_ci.quality import region_consistency_live as live
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BENCH_RETIRING_HOST
@@ -156,7 +154,7 @@ PLANTS = [
     (
         "bench-payload",
         ".ci/rediacc_ci/ops/deploy_bench.py",
-        '        "STRIPE_WEBHOOK_SECRET": "",\n',
+        '        "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],\n',
         "",
         "bench-eu    profile",
     ),
@@ -190,11 +188,9 @@ def test_live_without_a_credential_is_unchecked_not_green(tmp_path, monkeypatch)
     assert "consistent" not in result.out
 
 
-def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
-    """594bf5b2.1: the sandbox pair is the bench-only exemption; any other payload key no regional Worker gets is a finding."""
-    pushed = sorted({k for k, _var, _src in rco.pusher.KEYS})
-    base = [*pushed, *rco.BENCH_ONLY_PAYLOAD]
-    assert rco.BENCH_ONLY_PAYLOAD
+def test_an_unknown_payload_key_is_a_finding():
+    """594bf5b2.1: any payload key no regional Worker gets is a finding, since bench has no bench-only secret."""
+    base = sorted({k for k, _var, _src in rco.pusher.KEYS})
     assert not [f for f in rco.check_profiles([], {}, base) if "pushes" in f.message]
     extra = rco.check_profiles([], {}, [*base, "ZZZ_UNKNOWN_KEY"])
     assert [f.message for f in extra if "ZZZ_UNKNOWN_KEY" in f.message]
@@ -479,28 +475,3 @@ def test_a_regional_bench_routing_the_retiring_host_fires(proxy: bool) -> None:
         return f
 
     assert ("bench-us", "proxy" if proxy else "account") in _new(inputs, targets, found, mutate)
-
-
-# The live check shares the offline gate's bench-only set: bench pushes the Stripe sandbox pair, the production Workers never do.
-def _live_findings(worker: str, extra: list[str]):
-    inputs, targets, _found = _loaded()
-    target = next(t for t in targets if t.account_worker == worker)
-    names = sorted(live.pushed_names(target) - rco.BENCH_ONLY_PAYLOAD.keys()) + extra
-    secrets = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
-    secrets.update({t.proxy_worker: [] for t in targets})
-    secrets[worker] = names
-    get = ctl.fake_get(inputs, targets, secrets=secrets)
-    return [f.message for f in live.judge(targets, inputs, get, "acct")[0] if f.cls == "secrets"]
-
-
-def test_live_bench_worker_holding_the_sandbox_pair_is_consistent():
-    assert _live_findings("account-bench", sorted(rco.BENCH_ONLY_PAYLOAD)) == []
-
-
-def test_live_bench_worker_lacking_the_sandbox_pair_is_flagged():
-    assert [m for m in _live_findings("account-bench", []) if "lacks STRIPE_SANDBOX" in m]
-
-
-def test_live_production_worker_holding_the_sandbox_pair_is_flagged():
-    found = _live_findings("account-eu", sorted(rco.BENCH_ONLY_PAYLOAD))
-    assert len([m for m in found if "which no deploy pushes" in m]) == 2

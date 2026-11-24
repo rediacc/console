@@ -111,7 +111,7 @@ def offline_plants() -> list[
         return found
 
     def bench_payload(i: g.Inputs, found):
-        i.bench_payload.remove("STRIPE_WEBHOOK_SECRET")
+        i.bench_payload.remove("ACCOUNT_JWT_SECRET")
         return found
 
     def drop_profile(i: g.Inputs, found):
@@ -312,7 +312,7 @@ def fake_get(
         workers = [w for t in targets for w in (t.account_worker, t.proxy_worker)]
     if secrets is None:
         secrets = {
-            t.account_worker: [*sorted(live.pushed_names(t)), "__ARCHIVE_API_KEY", "EXECUTOR_MODE"]
+            t.account_worker: [*sorted(live.pushed_names()), "__ARCHIVE_API_KEY", "EXECUTOR_MODE"]
             for t in targets
         }
         secrets.update({t.proxy_worker: [] for t in targets})
@@ -361,7 +361,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
     base = fake_get(inputs, targets)
 
     def secrets_with(worker: str, names: list[str]):
-        s = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
+        s = {t.account_worker: sorted(live.pushed_names()) for t in targets}
         s.update({t.proxy_worker: [] for t in targets})
         s[worker] = names
         return fake_get(inputs, targets, secrets=s)
@@ -391,14 +391,8 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         ),
         (
             "live: a legacy name on bench",
-            secrets_with("account-bench", [*sorted(live.pushed_names(targets[-1])), "JWT_SECRET"]),
+            secrets_with("account-bench", [*sorted(live.pushed_names()), "JWT_SECRET"]),
             {("bench-eu", "secrets")},
-            set(),
-        ),
-        (
-            "live: the bench-only sandbox keys on a production Worker",
-            secrets_with("account-eu", [*pushed, *sorted(g.BENCH_ONLY_PAYLOAD)]),
-            {("eu", "secrets")},
             set(),
         ),
         (

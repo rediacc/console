@@ -7,7 +7,6 @@ import inspect
 import json
 import subprocess
 import threading
-import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
@@ -717,38 +716,3 @@ def test_a_failed_shared_build_refuses_the_deploy_before_vite():
     refusal = src.index("raise DeployError(", guard)
     assert refusal < src.index('"vite build",')
     assert "stale dist" in src[guard : refusal + 160]
-
-
-def _consent_switches(directory):
-    """{config or config#env: STRIPE_CONSENT_COLLECTION} over every account wrangler config in `directory`, each `[env.<name>.vars]` table read as a config of its own, since wrangler deploys it with --env."""
-    seen = {}
-    for config in sorted(directory.glob("wrangler*.toml")):
-        doc = tomllib.loads(config.read_text(encoding="utf-8"))
-        seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
-        for env_name, env in (doc.get("env") or {}).items():
-            seen["%s#%s" % (config.name, env_name)] = (env.get("vars") or {}).get(
-                "STRIPE_CONSENT_COLLECTION"
-            )
-    return seen
-
-
-def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
-    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
-    seen = _consent_switches(paths.from_root("workers", "account"))
-    assert seen, "no account wrangler config found"
-    assert seen.get(deploy_bench.CONFIG) == "1", seen
-    # The regional benches (wrangler.bench-<r>.toml) bill the same sandbox pair and carry the switch too.
-    on = [name for name, value in seen.items() if value == "1"]
-    assert deploy_bench.CONFIG in on, seen
-    assert all(name.startswith("wrangler.bench") for name in on), seen
-
-
-def test_control_an_env_table_switch_is_seen(tmp_path):
-    (tmp_path / "wrangler.eu.toml").write_text(
-        '[vars]\nREGION = "eu"\n\n[env.preview.vars]\nSTRIPE_CONSENT_COLLECTION = "1"\n',
-        encoding="utf-8",
-    )
-    assert _consent_switches(tmp_path) == {
-        "wrangler.eu.toml": None,
-        "wrangler.eu.toml#preview": "1",
-    }

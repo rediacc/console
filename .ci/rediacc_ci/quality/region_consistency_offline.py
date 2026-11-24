@@ -105,8 +105,6 @@ CHANNEL_VARS: dict[str, dict[str, str | None]] = {
         "ALLOWED_EMAIL_DOMAINS": None,
         "TURNSTILE_ENABLED": "false",
         "EMAIL_CAPTURE_D1": "true",
-        # Checkout asks for Terms consent on bench first, where only the sandbox pair bills (PLAN-terms-acceptance X2).
-        "STRIPE_CONSENT_COLLECTION": "1",
     },
 }
 PROXY_ENVIRONMENT = {SHARED: "edge", BENCH: "bench"}
@@ -116,11 +114,6 @@ SHAPE_EXCEPTIONS: dict[tuple[str, str], str] = {
         "bench builds its keyless portal into ./bench/dist so a bench build can never ship to "
         "stable (wrangler.bench-eu.toml, 2026-10-28 incident)"
     ),
-}
-# Payload keys only bench pushes, with the reason: the regional Workers run live billing, so they get no sandbox pair.
-BENCH_ONLY_PAYLOAD: dict[str, str] = {
-    "STRIPE_SANDBOX_SECRET_KEY": "bench bills against the Stripe sandbox, never the live account",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET": "bench bills against the Stripe sandbox, never the live account",
 }
 
 
@@ -764,7 +757,7 @@ def check_profiles(
             "profile",
             "deploy_bench.secrets_payload() pushes %s, which no regional Worker gets" % n,
         )
-        for n in sorted(payload - pushed - BENCH_ONLY_PAYLOAD.keys())
+        for n in sorted(payload - pushed)
     )
     return f
 
