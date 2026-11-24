@@ -37,6 +37,46 @@ def test_start_appends_a_row_and_a_second_start_within_the_hour_appends_its_own(
         assert "round %s started" % row["round"] in got.out
 
 
+def test_a_single_start_appends_exactly_one_row(wl):
+    """Control of the test above: one start gives one row, so two rows there come from the second start."""
+    survey = str(wl.base / "1121-1-20261123T1800Z.md")
+    first = wl.cli("--writers-now-start", wlfix.ME, survey)
+    assert first.rc == 0, first.err
+    assert len(ledger_rows(wl)) == 1
+
+
+def test_a_short_write_still_leaves_whole_terminated_lines(tmp_path, monkeypatch):
+    """A write that stops after 7 bytes is continued, so the next append does not join onto a torn line (review 1f2320c0.1)."""
+    real_write = WN.os.write
+
+    def short(fd, data):
+        return real_write(fd, bytes(data)[:7])
+
+    monkeypatch.setattr(WN.os, "write", short)
+    WN.append_round(tmp_path, "aaaa1111", "/tmp/s1.md", NOW)
+    WN.append_round(tmp_path, "bbbb2222", "/tmp/s2.md", NOW + datetime.timedelta(minutes=5))
+    text = (tmp_path / WN.LEDGER_REL).read_text(encoding="utf-8")
+    assert text.endswith("\n")
+    assert [WN.json.loads(line)["session"] for line in text.splitlines()] == [
+        "aaaa1111",
+        "bbbb2222",
+    ]
+
+
+def test_a_full_write_is_one_call_per_row(tmp_path, monkeypatch):
+    """Control: with no short write, each row is written by exactly one os.write."""
+    calls = []
+    real_write = WN.os.write
+
+    def counting(fd, data):
+        calls.append(len(data))
+        return real_write(fd, data)
+
+    monkeypatch.setattr(WN.os, "write", counting)
+    WN.append_round(tmp_path, "aaaa1111", "/tmp/s1.md", NOW)
+    assert len(calls) == 1
+
+
 def test_start_refuses_a_missing_survey_and_writes_nothing(wl):
     got = wl.cli("--writers-now-start", wlfix.ME)
     assert got.rc == 2

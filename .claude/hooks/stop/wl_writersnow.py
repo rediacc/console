@@ -94,7 +94,7 @@ def new_round_id() -> str:
 
 
 def append_round(root, session, survey, now, round_id=None, **extra) -> dict:
-    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle, so two sessions starting rounds at once each keep their own line."""
+    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle (continued only after a short write), so two sessions starting rounds at once each keep their own line."""
     row = {
         "round": round_id or new_round_id(),
         "session": str(session),
@@ -106,7 +106,10 @@ def append_round(root, session, survey, now, round_id=None, **extra) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
     try:
-        os.write(fd, (json.dumps(row, separators=(",", ":")) + "\n").encode("utf-8"))
+        # A short write (a disk filling mid-line) would leave the line unterminated and join the next append onto it, so the rest is written until the whole line is down.
+        pending = (json.dumps(row, separators=(",", ":")) + "\n").encode("utf-8")
+        while pending:
+            pending = pending[os.write(fd, pending) :]
     finally:
         os.close(fd)
     return row
