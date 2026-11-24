@@ -2160,7 +2160,7 @@ def lease_rows(root):
 
 
 def _hold_row(world, lease_id):
-    """{"item", "reason", "open", "note"} for a lease with a hold, else None. `open` is whether the hold still parks the lease, and `note` says why not ("" when it does). An unreadable hold has an empty item and stays open, since `gc` keeps the tree it names; a worklist that cannot be read leaves a readable hold open for the same reason."""
+    """{"item", "reason", "open", "note"} for a lease with a hold, else None. `open` is whether the hold still parks the lease, and `note` says why not ("" when it does). An unreadable hold has an empty item and stays open with the note 'gc keeps the tree', since a record that cannot be read cannot be shown closed; a worklist that cannot be read leaves a readable hold open for the same reason."""
     hold = world.holds.get(lease_id)
     if hold is None:
         return None

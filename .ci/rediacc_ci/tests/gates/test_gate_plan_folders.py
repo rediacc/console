@@ -292,7 +292,7 @@ def test_a_finished_plan_an_open_item_binds_is_held_not_f2(gate, tmp_path):
 
 
 def test_the_move_refusal_offers_plan_revive_only_for_a_record(gate, tmp_path):
-    """`worklist.py --plan-revive` refuses anything but a compacted or parked record, so the refusal of a plain plan must not offer it. The twin, a compacted record, keeps the line. A record belongs in agent/plans/ (it compacts in place), so the twin sits in _done/: that is the one place the mover reaches a record's bindings."""
+    """`worklist.py --plan-revive` refuses anything but a compacted or parked record, so the refusal of a plain plan must not offer it. The twin, a compacted record, keeps the line. The twin, a record, sits in _done/ where a compacted plan lives; the mover reaches every plan's bindings through `_binding_refusal`, whatever its folder."""
     record_rel = "agent/plans/_done/PLAN-rec.md"
     record = "# PLAN: rec\nStatus: compacted\nFirst-Seen: 2026-10-01\n\n## Boxes\n"
     root = _seed(tmp_path, {_HELD_REL: _HELD, record_rel: record})

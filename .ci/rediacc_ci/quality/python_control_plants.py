@@ -3,7 +3,7 @@
 WHY THIS EXISTS, and it is a defect this repo predicted and then could not see. A control proves a gate can fail by feeding it a MUTATED fixture. If the mutation silently does nothing, the gate is handed the CLEAN input, stays green, and the control reports a pass for an assertion it never made. `check:ci-control-vacuity` catches that -- on the bash side only. Its own comment at
 `.ci/scripts/quality/check-control-vacuity.sh:183-193` says, verbatim, that of the 21 Python gates ZERO built a control mutant by substitution, and that "what must not happen is that changing silently".
 
-IT CHANGED, AND IT CHANGED SILENTLY. 21 became 50. The tripwire its author installed was a COUNT PRINTED INSIDE A SUCCESS MESSAGE, which the shadow gate (commit:936280cd35) classifies as chatter rather than a finding, so nothing ever read the alarm. Measured 2026-09-08: 61 substitution-built plant sites across 11 Python gate modules, three proof assertions between them, and one already-vacuous mutant
+IT CHANGED, AND IT CHANGED SILENTLY. 21 became 50. The tripwire its author installed was a COUNT PRINTED INSIDE A SUCCESS MESSAGE, which the shadow gate (commit:936280cd35, since deleted) classified as chatter rather than a finding, so nothing ever read the alarm. Measured 2026-09-08: 61 substitution-built plant sites across 11 Python gate modules, three proof assertions between them, and one already-vacuous mutant
 sitting in the tree (`review_turn_capacity.py`, `.replace("max_turns=140",
 "max_turns=140")`, inside the port of the very gate `control_vacuity` then used as its
 own control; retired 2026-10-02).

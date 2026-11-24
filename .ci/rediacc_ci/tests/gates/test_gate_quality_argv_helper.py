@@ -19,7 +19,7 @@ ENTRY_ALIAS = paths.repo_root() / ".ci" / "scripts" / "quality" / "_gate_args.py
 def _load():
     name = "gate_args_under_test"
     spec = importlib.util.spec_from_file_location(name, HELPER)
-    if spec is None or spec.loader is None:
+    if not HELPER.is_file() or spec is None or spec.loader is None:
         refusal = "cannot load %s: the helper under test is missing or unreadable" % HELPER
         raise ImportError(refusal)
     module = importlib.util.module_from_spec(spec)

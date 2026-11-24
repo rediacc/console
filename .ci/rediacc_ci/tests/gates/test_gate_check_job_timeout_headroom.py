@@ -67,7 +67,7 @@ exit 0
 
 
 def _copy_imports(tmp: Path) -> None:
-    """What the script imports: the `.ci` hop, the package marker, the registry reader and the registry, and the retrying `gh` reader with what it imports."""
+    """What the script imports: the package markers, the registry reader and the registry, and the retrying `gh` reader with what it imports."""
     for rel in (
         ".ci/rediacc_ci/quality/__init__.py",
         ".ci/rediacc_ci/__init__.py",

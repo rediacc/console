@@ -17,7 +17,7 @@ THE CONTRACT, the one `check_record_paths.py` carries in its own `parse_args`:
   * a SWITCH is a bare flag (`--selftest`);
   * a VALUED flag takes the next argument (`--root <dir>`), and a missing value, or a value that itself starts with `--`, is refused rather than swallowing the next flag;
   * a VARIADIC flag takes every bare argument after it up to the next `--flag` (`--paths a b/ c/*.sh`) and needs at least one;
-  * `equals` names the valued flags that ALSO accept the `--flag=value` spelling, because a module that only reads `--flag value` would otherwise ignore `--flag=value` silently, which is the failure this file exists to end;
+  * `equals` names the flags that accept the `--flag=value` spelling (list such a flag in `valued` too when it also takes `--flag value`), because a module that only reads `--flag value` would otherwise ignore `--flag=value` silently, which is the failure this file exists to end;
   * `positional` is a label (`"<path>"`) when bare arguments are taken, and None when they are not;
   * anything else exits 2 on stderr as `<prog>: unknown argument '<arg>' (accepted: ...)`, naming the whole accepted set so the fix is one read away.
 

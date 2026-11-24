@@ -480,7 +480,7 @@ def discover(root: pathlib.Path, dirs: tuple[str, ...]) -> list[pathlib.Path]:
 #
 # THE RULE (the plan's Context 6). A handler is a finding when it catches `Exception`, `BaseException` or everything (a bare `except:`), contains no `raise`, never reads the name it binds, and its LAST statement is `pass`, `continue`, a bare `return`, or a `return` / assignment of an empty value: None, False, 0, "", b"", an empty list, tuple, set or dict literal, or a no-argument `list()`, `dict()`, `set()`, `tuple()`, `str()` or `frozenset()`. False and 0 count because the SF5 writers waived exactly those shapes as swallows; a handler that returns a NON-empty sentinel ("unknown (the store could not be read)") already names its failure and is not one.
 #
-# THE WAIVER is the shell mode's marker, `# swallowed-failure-ok: <reason>`, on the line directly above the `except`, held to the same `validate_reason` bar. A waiver one line too high covers nothing.
+# THE WAIVER is the shell mode's marker, `# swallowed-failure-ok: <reason>`, on the line directly above the `except`, held to the same bar (`validate_blocker_quality`, the wrapper over `validate_reason`). A waiver one line too high covers nothing.
 #
 # THE RATCHET. `.ci/config/swallowed-except-baseline.json` maps a module to the count of unwaived findings it may still hold. A module above its row is red; a module BELOW its row is red too, telling the author to lower the row, which is what keeps the set shrinking. A module with no row allows 0. The row is hand-edited, never regenerated: a regeneration would absorb a fresh finding in a neighbouring module, and the counts are small enough to read.
 #

@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 ROOT_ENV = "GATE_ARGV_SCAN_ROOT"
 QUALITY_REL = ".ci/scripts/quality"
 EXTRA_ENTRY_POINTS = ("shape_cluster_diff.py",)
-# 175 entry points exist at 2026-11-23; fewer than this and the scan is not seeing the tree.
+# 172 `check_*.py` entry points plus EXTRA_ENTRY_POINTS exist at 2026-11-24; fewer than this and the scan is not seeing the tree.
 FLOOR = 150
 BOGUS = "--gate-argv-no-such-flag"
 

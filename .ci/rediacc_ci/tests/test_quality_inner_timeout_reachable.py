@@ -1,6 +1,6 @@
 """`.ci/scripts/quality/check_inner_timeout_reachable.py`, driven in-process and as the real entry point.
 
-The in-process half runs the gate's own controls. The entry-point half builds a miniature repository in a temporary directory -- the gate script and `_cipath.py` copied in, `.ci/rediacc_ci` linked to the real package -- because the gate finds its tree from its own file's location, and a fixture tree is the only way to watch the WHOLE invocation go red on a planted step module and green on its clean twin, without touching the working tree.
+The in-process half runs the gate's own controls. The entry-point half builds a miniature repository in a temporary directory -- a real package directory holding a COPY of `rediacc_ci/quality/inner_timeout_reachable.py` and a symlink to every other entry of `.ci/rediacc_ci` -- because the gate finds its tree from its own file's location, and a fixture tree is the only way to watch the WHOLE invocation go red on a planted step module and green on its clean twin, without touching the working tree.
 """
 
 import importlib

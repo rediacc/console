@@ -1,6 +1,6 @@
 """check:ci-gate-argv driven for real: the registered entry point, the real tree, and a copy of the real tree with one plant.
 
-The copy is the control that matters. A plant in a hand-written fixture proves the helpers work; a plant in a COPY of the real `.ci/scripts/quality` proves the real invocation, over the real 175 entry points and the real package.json, turns red on one bypass and on one bad registered call, and that the same copy without the plant is green.
+The copy is the control that matters. A plant in a hand-written fixture proves the helpers work; a plant in a COPY of the real `.ci/scripts/quality` proves the real invocation, over the real entry points and the real package.json, turns red on one bypass and on one bad registered call, and that the same copy without the plant is green.
 """
 
 import os

@@ -5,7 +5,7 @@ Counting hints cannot separate them." A rotation that always emits the SAME hint
 
 CONTROL-FIRST, same shape as the model.
 Before the real corpus is judged at all, every assertion below is driven against a synthetic fixture carrying one planted defect apiece -- a corpus under the population floor, a duplicate id, a malformed id, an oversized or first-person heading, a Source pointing at a file that does not exist, and a hint_pick stubbed to return a constant -- plus one healthy fixture that must stay silent under all of them.
-H7 (PLAN-experience-feedback P7, box C7b) judges every `Enforced-By:` pointer of a HINTS entry with `trap_registry.pointer_problem`, the resolver TRAPS.md is judged by, so "a live enforcer" means one thing in both corpora: a pointer naming a missing guard, an unscheduled gate or an untested rule reds, and JUDGMENT-ONLY is accepted as a declaration.
+H7 (PLAN-experience-feedback P7, box C7b) judges every `Enforced-By:` pointer of a HINTS entry with `wl_lessons.pointer_problem`, which shares the resolver TRAPS.md is judged by, so "a live enforcer" means one thing in both corpora: a pointer naming a missing guard, an unscheduled gate or an untested rule reds, and JUDGMENT-ONLY is accepted as a declaration.
 If any plant is not caught, this gate declares itself broken and exits non-zero WITHOUT judging the real corpus.
 
 Design: agent/plans/PLAN-stop-hook-behavioral-hints.md section 6.3;

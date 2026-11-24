@@ -80,7 +80,7 @@ lane: quality-static
 step: agent-browser exit status
 needs: none
 selftest: true
-`slow: true
+slow: true
 ---- end gate ----
 """
 

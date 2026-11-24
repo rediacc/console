@@ -977,7 +977,7 @@ def selftest(root, drift=False):
 
     # THE ANCESTRY RULE FOR COMMITS, both directions. An ORPHAN IS CONSTRUCTED rather than borrowed from this clone's reflog: the whole point is that a fresh CI checkout has no orphans, so a control that relied on finding one would silently stop testing anything there -- which is the exact failure mode this rule exists to close.
     tree = _git("rev-parse", "HEAD^{tree}").strip()
-    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one: "Author identity unknown -- Please tell the tool who is committing". A GitHub runner configures no git identity at any scope, so this control built its orphan fine on every developer machine and FAILED on the runner -- the exact environment-dependence it exists to catch, in the control itself. `-c` rather than env vars:
+    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one: "Author identity unknown" followed by git's "Please tell me who you are". A GitHub runner configures no git identity at any scope, so this control built its orphan fine on every developer machine and FAILED on the runner -- the exact environment-dependence it exists to catch, in the control itself. `-c` rather than env vars:
     # it is scoped to this one command and cannot leak into anything else the gate runs.
     orphan = _git(
         "-c",
