@@ -11,6 +11,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.deploy import preview_signer as ps
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -212,7 +213,7 @@ def test_a_failed_deploy_pushes_no_key(repo):
     assert not [a for a, _c, _s in fake.calls if a[3:5] == ["secret", "bulk"]]
 
 
-def _event(tmp_path: pathlib.Path, head: str, base: str = "rediacc/console") -> dict[str, str]:
+def _event(tmp_path: pathlib.Path, head: str, base: str = GH_REPO) -> dict[str, str]:
     path = tmp_path / "event.json"
     path.write_text(
         json.dumps(
@@ -232,7 +233,7 @@ def test_a_fork_head_is_refused_before_any_call_and_the_same_repository_passes(r
     with pytest.raises(ds.RefusedError, match="fork"):
         run(repo, fake, env=_event(tmp_path, "someone/console"))
     assert fake.calls == []
-    result, _out = run(repo, FakeWrangler(), env=_event(tmp_path, "rediacc/console"))
+    result, _out = run(repo, FakeWrangler(), env=_event(tmp_path, GH_REPO))
     assert result["worker"] == NAME + "-signer"
 
 
