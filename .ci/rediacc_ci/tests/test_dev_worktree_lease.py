@@ -2799,6 +2799,62 @@ def test_control_gc_superseded_by_names_an_unreadable_landed_diff_as_unreadable(
     assert "changes no path" not in err
 
 
+def test_gc_drop_refuses_an_unreadable_subject_once_and_keeps_the_tree(
+    gc_repo, monkeypatch, capsys
+):
+    """010ac8a8.1 and .3: a commit whose subject git cannot read is refused, never written with an empty subject, and a sha named twice is refused once for it."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop4")
+    gc_in_process(monkeypatch, gc_repo.root)
+    real = lease._quiet
+    monkeypatch.setattr(lease, "_quiet", lambda cwd, *a: None if a[0] == "log" else real(cwd, *a))
+    rc, _lines = lease.run_gc(
+        gc_repo.root, write=True, only="drop4", reason="replaced by another design entirely",
+        drop=[sha, sha],
+    )  # fmt: skip
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert err.count("could not read commit") == 1, err
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists()
+
+
+def test_control_gc_drop_reads_the_subject_when_git_can(gc_repo, monkeypatch, capsys):
+    """Silent control of 010ac8a8.1: the same drop with a readable subject records it."""
+    _tree, sha, _landed = superseded_fixture(gc_repo, "drop5")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, write=True, only="drop5", reason="replaced by another design entirely",
+        drop=[sha],
+    )  # fmt: skip
+    assert rc == 0, capsys.readouterr().err
+    assert "could not read commit" not in capsys.readouterr().err
+
+
+def test_gc_both_waivers_without_write_name_both_flags(gc_repo, monkeypatch, capsys):
+    """010ac8a8.2: the refusal label joins the two waiver flags when both are given."""
+    _tree, sha, landed = superseded_fixture(gc_repo, "drop6")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, only="drop6", superseded=[(sha, landed)], drop=[sha],
+        reason="replaced by another design entirely",
+    )  # fmt: skip
+    assert rc == 1
+    assert "--superseded-by/--drop records a waiver" in capsys.readouterr().err
+
+
+def test_control_gc_one_waiver_without_write_names_only_its_flag(gc_repo, monkeypatch, capsys):
+    _tree, sha, _landed = superseded_fixture(gc_repo, "drop7")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, only="drop7", drop=[sha], reason="replaced by another design entirely"
+    )
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "--drop records a waiver" in err
+    assert "--superseded-by/" not in err
+
+
 def test_gc_superseded_by_refuses_a_landed_commit_sharing_only_some_paths(gc_repo):
     """747e14b4.3: a landed commit that changes one of the lease commit's paths (a lockfile, a changelog) and misses another is no duplicate of it."""
     tree = make_tree(gc_repo, "sup10")

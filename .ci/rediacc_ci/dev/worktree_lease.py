@@ -1816,6 +1816,7 @@ def _resolve_superseded(world, lease_id, pairs, reason, drops=()):
         if sha in named:
             problems.append("unlanded commit %s is named twice" % sha[:SHA_SHOWN])
             continue
+        named.add(sha)
         shown = _quiet(world.root / key, "log", "-1", "--format=%s", sha)
         if shown is None:
             problems.append(
@@ -1823,7 +1824,6 @@ def _resolve_superseded(world, lease_id, pairs, reason, drops=()):
             )
             continue
         subject = shown.strip()
-        named.add(sha)
         rows.append(
             {
                 "sha": sha,
