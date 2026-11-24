@@ -19,9 +19,9 @@ THE BLOCK ASKS WHETHER PROMOTE WOULD PROCEED (agent/plans/PLAN-stop-hook-retro-2
 
   code-complete  a plan a `Plan-Box:` trailer of the development commits names still holds an open `[writer]` box: promote refuses at its step 5, so the merged state is an advisory naming the plan and its first open box. `open_writer_boxes` is the ONE reader: landing_promote._code_complete raises on its answer, so the hook and the verb cannot disagree.
   live run       a live background task of this session runs in the main checkout (`main_checkout_tasks`), which promote rebases: an advisory naming the tasks (the loop-next rule: a background task of this session downgrades it).
-  dirty tree     promote's tracked non-record dirt (landing_promote._dirty, through `_promote_dirt`, which never raises) in the main checkout, the landing tree or a landing submodule tree: when no dirty path is this session's own edit (`own_paths`, the `uc_files` union wl_uncommitted keeps), an advisory naming them; otherwise the block stands and names this session's own dirty paths, since committing them is a real action.
+  dirty tree     promote's tracked non-record dirt (landing_promote._dirty, through `_promote_dirt`, which never raises) in the main checkout, the landing tree or a landing submodule tree: when no dirty path is this session's own edit (`own_paths`, the `uc_files` union wl_uncommitted keeps), an advisory naming them; otherwise the block stands and names this session's own dirty paths, since committing them is a real action. A live run (above) is read first, so it downgrades this session's own dirt to an advisory too, and the dirt rides that advisory.
 
-A named plan that cannot be read keeps the block and names the reason: promote refuses on it too, and it is the session's to fix. So does any other failed read under the merged state (the open-box read, the development-commit listing, promote's dirty preflight): the block stands and names what could not be read.
+A named plan that cannot be read keeps the block and names the reason when nothing downgrades the state first (a live main-checkout run or a peer's dirt returns its advisory and drops the plan note): promote refuses on it too, and it is the session's to fix. So does any other failed read under the merged state (the open-box read, the development-commit listing, promote's dirty preflight): the block stands and names what could not be read.
 """
 
 from __future__ import annotations
@@ -559,7 +559,10 @@ def _record(root) -> tuple[dict | None, str]:
             type(exc).__name__,
             exc,
         )
-    record, problem = cp.read_landing_record(str(root))
+    try:
+        record, problem = cp.read_landing_record(str(root))
+    except Exception as exc:  # a reader that raises binds nothing, and the reason is named
+        return None, "the landing record's reader failed (%s: %s)" % (type(exc).__name__, exc)
     return record, ("the landing record binds nothing: %s" % problem if problem else "")
 
 
@@ -578,7 +581,7 @@ def notify_line(root, event: str, pr: int | None = None, sha: str = "") -> str:
         return ""
     landing = record["branch"]
     try:
-        where = _development_path(root)
+        where = _development_path(root) or "the main checkout"
     except StackReadError as exc:
         where = "the main checkout (%s)" % exc
     if event == "push":

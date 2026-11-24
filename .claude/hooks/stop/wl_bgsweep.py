@@ -524,10 +524,8 @@ def owner_context(event, cwd, session_id, task_ages, now=None):
             continue
         if mtime < since:
             continue
-        try:
-            data = jsonl.read_bytes()
-        except OSError:
-            continue
+        # No OSError guard: the stat above just answered, so a failed read is a real read failure, which findings() names (docstring) instead of dropping this agent's finished judgement without a word.
+        data = jsonl.read_bytes()
         hit = False
         for mm in re.finditer(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"', data):
             sid = mm.group(1).decode()

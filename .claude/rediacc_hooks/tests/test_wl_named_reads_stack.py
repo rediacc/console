@@ -123,6 +123,28 @@ def test_an_unloadable_reader_is_named(world, monkeypatch):
     assert "sf7-injected" in WS.notify_problem(landing)
 
 
+def test_a_reader_that_raises_is_named_not_propagated(world, monkeypatch):
+    _dev, landing, _rec = world
+
+    class Broken:
+        @staticmethod
+        def read_landing_record(_root):
+            raise RuntimeError("sf7-reader")
+
+    monkeypatch.setattr(WS, "_hooks_pkg", lambda: Broken)
+    assert WS.notify_line(landing, "cd-done") == ""
+    assert "sf7-reader" in WS.notify_problem(landing)
+
+
+def test_a_root_in_no_repository_names_the_main_checkout_not_an_empty_tree(world, monkeypatch):
+    _dev, landing, rec = world
+    rec.write_text(json.dumps({"path": str(landing), "branch": PR}), encoding="utf-8")
+    monkeypatch.setattr(WS, "_development_path", lambda _root: "")
+    text = WS.notify_line(landing, "merged", pr=7)
+    assert "the development tree (the main checkout)" in text
+    assert "()" not in text
+
+
 def test_a_valid_record_gives_the_message_and_no_problem(world):
     dev, landing, rec = world
     rec.write_text(json.dumps({"path": str(landing), "branch": PR}), encoding="utf-8")
@@ -204,3 +226,32 @@ def test_owner_context_lets_a_failed_read_raise(monkeypatch, tmp_path):
     monkeypatch.setattr(wl_roster, "load_metas", boom)
     with pytest.raises(OSError, match="sf7-metas"):
         B.owner_context({}, str(tmp_path), "deadbeef", {"bstub1": LIM + 600})
+
+
+class _Transcript:
+    def __init__(self, data):
+        self.data = data
+
+    def stat(self):
+        return os.stat_result((0, 0, 0, 0, 0, 0, 0, 0, 4_000_000_000, 0))
+
+    def read_bytes(self):
+        if isinstance(self.data, OSError):
+            raise self.data
+        return self.data
+
+
+def test_owner_context_lets_a_failed_transcript_read_raise(monkeypatch, tmp_path):
+    ages = {"bstub1": LIM + 600}
+    monkeypatch.setattr(
+        wl_roster,
+        "load_metas",
+        lambda *_a, **_k: {"a1": {"jsonl": _Transcript(OSError("sf7-jsonl"))}},
+    )
+    with pytest.raises(OSError, match="sf7-jsonl"):
+        B.owner_context({}, str(tmp_path), "deadbeef", ages)
+    # control: a readable transcript that does not name the shell answers empty
+    monkeypatch.setattr(
+        wl_roster, "load_metas", lambda *_a, **_k: {"a1": {"jsonl": _Transcript(b"{}")}}
+    )
+    assert B.owner_context({}, str(tmp_path), "deadbeef", ages) == ({}, set(), {})

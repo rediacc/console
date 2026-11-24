@@ -330,7 +330,7 @@ def _round_no(row: dict[str, Any]) -> int:
     """The row's round as an int; a missing or non-numeric round reads as 0 instead of raising, so one damaged ledger row never breaks the verdict."""
     try:
         return int(row.get("round") or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return 0
 
 

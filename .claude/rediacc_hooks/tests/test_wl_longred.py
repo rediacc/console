@@ -348,3 +348,14 @@ def test_a_damaged_round_number_reads_as_zero_and_never_raises():
     bad[1]["round"] = "x"
     assert L.stuck_rounds(bad, "Quality / Static") == [0, 0, 3]
     assert L.churn_rounds(bad) == [0, 3]
+
+
+def test_a_round_number_that_overflows_int_reads_as_zero_and_never_raises():
+    """6d8dc010.1: JSON `1e400` parses to infinity, and int(inf) raises OverflowError, which the verdict must survive. Control: a finite float still reads as its integer part."""
+    rows = [
+        row(1, at(1), reds=[red("Quality / Static")], fix=["Quality / Static"]),
+        row(2, at(2), reds=[red("Quality / Static")], fix=["Quality / Static"]),
+    ]
+    rows[0]["round"] = json.loads("1e400")
+    rows[1]["round"] = 2.0
+    assert L.stuck_rounds(rows, "Quality / Static") == [0, 2]
