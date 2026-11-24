@@ -550,6 +550,44 @@ async function asyncSelftest(): Promise<number> {
   );
   const none = await runPool([], 4, async () => 1);
   check(none.length === 0, 'CONTROL: an empty leg list yields no results (checkVerdict reds it)');
+  const ran: Leg[] = [];
+  const legsFx: Leg[] = [
+    { label: 'a', args: ['scripts/gate-bind.ts', '--write'] },
+    { label: 'b', args: ['scripts/other.ts'] },
+  ];
+  const quiet = console.log;
+  const quietErr = console.error;
+  console.log = () => undefined;
+  console.error = () => undefined;
+  const stopped = writeLegs(legsFx, [], (leg) => {
+    ran.push(leg);
+    return leg.label === 'a' ? 3 : 0;
+  });
+  const wrote: Leg[] = [];
+  const clean = writeLegs(legsFx, ['--allow-drop', 'step-x'], (leg) => {
+    wrote.push(leg);
+    return 0;
+  });
+  console.log = quiet;
+  console.error = quietErr;
+  check(
+    stopped === 3 && ran.length === 1 && clean === 0 && wrote.length === 2,
+    'CONTROL: the write legs stop at the first red one and return its rc, and run every leg when none is red (review 9969e4f0.2)'
+  );
+  check(
+    wrote[0].args.includes('step-x') && !wrote[1].args.includes('step-x'),
+    'CONTROL: writeLegs hands --allow-drop to the binder leg and to no other (review 6c817142.1)'
+  );
+  const hintOf = (labels: string[]): string => redHints(labels).join('|');
+  check(
+    /regenerating does not help/.test(hintOf(['selftest: x'])) &&
+      !/Regenerate with/.test(hintOf(['selftest: x'])) &&
+      /Regenerate with/.test(hintOf(['scripts/x.ts'])) &&
+      !/regenerating does not help/.test(hintOf(['scripts/x.ts'])) &&
+      redHints(['selftest: x', 'scripts/x.ts']).length === 2 &&
+      redHints([]).length === 0,
+    'CONTROL: a red selftest leg prints the selftest hint only, any other red leg the regenerate hint only (review f4d9c4bf.1)'
+  );
   return bad === 0 ? 0 : 1;
 }
 
@@ -851,6 +889,37 @@ export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
   return drops.length === 0 ? leg : { ...leg, args: [...leg.args, ...drops] };
 }
 
+/** The `--write` legs in order, stopping at the first red one: its rc, or 0 when every leg ran clean. The binder leg receives `--allow-drop` through withAllowDrops. `run` is the seam the selftest drives (review 9969e4f0.2, 6c817142.1). */
+export function writeLegs(
+  legs: readonly Leg[],
+  argv: readonly string[],
+  run: (leg: Leg) => number
+): number {
+  for (const leg of legs) {
+    console.log(`gen:gates --write: ${leg.label}`);
+    const rc = run(withAllowDrops(leg, argv));
+    if (rc !== 0) {
+      console.error(`gen:gates --write: STOPPED at "${leg.label}" (rc=${rc}); later legs not run`);
+      return rc;
+    }
+  }
+  return 0;
+}
+
+/** What a red `--check` prints: a selftest leg red means the check cannot be trusted and regenerating does not help; any other red leg means a declaration copy drifted and regenerating does (review f4d9c4bf.1). */
+export function redHints(redLabels: readonly string[]): string[] {
+  const hints: string[] = [];
+  if (redLabels.some((label) => label.startsWith('selftest: ')))
+    hints.push(
+      'gen:gates --check: a leg script failed its own selftest, so its check cannot be trusted. Run the named script with --selftest and fix the control it reports; regenerating does not help.'
+    );
+  if (redLabels.some((label) => !label.startsWith('selftest: ')))
+    hints.push(
+      'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
+    );
+  return hints;
+}
+
 async function gates(argv: string[]): Promise<number> {
   const write = argv.includes('--write');
   if (write && argv.includes('--check')) {
@@ -867,16 +936,8 @@ async function gates(argv: string[]): Promise<number> {
   const first = manifestPass(write);
   if (write) {
     if (first !== 0) return first;
-    for (const leg of WRITE_LEGS) {
-      console.log(`gen:gates --write: ${leg.label}`);
-      const rc = runLeg(withAllowDrops(leg, argv));
-      if (rc !== 0) {
-        console.error(
-          `gen:gates --write: STOPPED at "${leg.label}" (rc=${rc}); later legs not run`
-        );
-        return rc;
-      }
-    }
+    const wrote = writeLegs(WRITE_LEGS, argv, runLeg);
+    if (wrote !== 0) return wrote;
     console.log(
       `gen:gates --write: ${WRITE_LEGS.length + 1} producer(s) ran; now run: npm run gen:gates -- --check`
     );
@@ -900,16 +961,7 @@ async function gates(argv: string[]): Promise<number> {
   for (const [label, rc] of verdicts)
     console.log(`  ${rc === 0 ? 'PASS' : 'FAIL'}  ${label}${rc === 0 ? '' : ` (rc=${rc})`}`);
   if (checkVerdict(verdicts) !== 0) {
-    if (red.some(([label]) => label.startsWith('selftest: '))) {
-      console.error(
-        'gen:gates --check: a leg script failed its own selftest, so its check cannot be trusted. Run the named script with --selftest and fix the control it reports; regenerating does not help.'
-      );
-    }
-    if (red.some(([label]) => !label.startsWith('selftest: '))) {
-      console.error(
-        'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
-      );
-    }
+    for (const hint of redHints(red.map(([label]) => label))) console.error(hint);
     return 1;
   }
   return 0;
