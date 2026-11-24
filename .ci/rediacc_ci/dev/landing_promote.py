@@ -140,7 +140,7 @@ def _is_record(path, globs):
 
 
 def _porcelain_path(line):
-    """The path a porcelain row names: its last field, and for a rename (`R  old -> new`) the new path."""
+    """The path a porcelain row names: everything after the status token (so a path holding a space stays whole), and for a rename (`R  old -> new`) the new path."""
     return line.split(None, 1)[-1].split(" -> ")[-1]
 
 
