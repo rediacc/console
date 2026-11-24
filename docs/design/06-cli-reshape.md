@@ -25,7 +25,7 @@ This is no longer a target. It is a transcript of the shipped tree, generated fr
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
                 access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
-                remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
+                remote {enable disable status refresh versions restore}    ssh {set show remove}
 rdc machine:    add remove list status setup scan-keys health repair prune converge restart-services
                 provision deprovision
                 access {set remove show push}
@@ -50,6 +50,7 @@ rdc server:     install status upgrade backup licence {mint} bundle
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
+rdc preview:    use leave status
 rdc subscription: login register logout status notices retire refresh proxy-token
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
@@ -85,7 +86,8 @@ Thirty-four differences. The first six are deliberate and each is traceable to a
 | `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
 | no `server` noun | `server {install status upgrade backup licence {mint} bundle}` | Installs the self-hosted account server (Elite) as a repository on a machine, then checks, upgrades (forking a rollback point first), backs up and licenses it. `bundle` builds the offline bundle on a connected machine, `licence mint` issues the certificate for an offline install's request (`licence <domain>` still applies one), and `install --offline` and `machine setup --offline` consume the bundle, so they are flags rather than leaves. A whole program landing after this transcript was drawn; `rdc serve` (the executor) is a different thing. |
 | `repo` with no `permission` | `repo permission {grant revoke show}` | A repository's Rediaccfile `up()` and `down()` run as the unprivileged universal user; `grant` widens what they may reach (a path with `--path`, or root with `--root`), `revoke` narrows it and `show` prints the grant in effect. Each runs a repository_permission_* renet function on the machine holding the repository, so all three are machine-plane and proxy-capable. |
-| `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
+| `config remote` with a `master-password change` verb | `config remote` without it | The password slot of the config key was removed (migration 0095 deleted the password rows), so the verb that re-wrapped the key under a new password has nothing left to change. |
+| no `preview` noun | `preview {use leave status}` | Tests a pull request's build on the operator's own machines: `use` switches this config to a preview's CLI and server, `leave` returns to the published builds, and `status` shows which preview the config is on. |
 | `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |
 | `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
 | no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |

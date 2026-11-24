@@ -7374,7 +7374,19 @@
           "flags": "--host <host>",
           "descriptionKey": "commands.serve.optionHost",
           "mandatory": false,
-          "defaultValue": "0.0.0.0"
+          "defaultValue": null
+        },
+        {
+          "flags": "--tls-cert <path>",
+          "descriptionKey": "commands.serve.optionTlsCert",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--tls-key <path>",
+          "descriptionKey": "commands.serve.optionTlsKey",
+          "mandatory": false,
+          "defaultValue": null
         },
         {
           "flags": "--mode <mode>",
