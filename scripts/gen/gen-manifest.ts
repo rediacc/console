@@ -588,6 +588,20 @@ async function asyncSelftest(): Promise<number> {
       redHints([]).length === 0,
     'CONTROL: a red selftest leg prints the selftest hint only, any other red leg the regenerate hint only (review f4d9c4bf.1)'
   );
+  check(
+    /rule leg is red \(manifest rules\)/.test(hintOf(['manifest rules'])) &&
+      !/Regenerate with/.test(hintOf(['manifest rules'])) &&
+      /Regenerate with/.test(hintOf(['lock matches the manifest'])) &&
+      !/rule leg/.test(hintOf(['lock matches the manifest'])) &&
+      redHints(['manifest rules', 'lock matches the manifest']).length === 2,
+    'CONTROL: a red rule leg prints the rule hint and never "Regenerate", and a red copy leg still prints only the regenerate hint'
+  );
+  check(
+    RULE_LEG_LABELS.has('manifest rules') &&
+      !RULE_LEG_LABELS.has('lock matches the manifest') &&
+      RULE_LEG_LABELS.size === 5,
+    'CONTROL: the rule legs are the five checks --write cannot repair, by label, and no copy leg is among them'
+  );
   return bad === 0 ? 0 : 1;
 }
 
@@ -770,6 +784,8 @@ function manifestPass(write: boolean): number {
 interface Leg {
   label: string;
   args: string[];
+  /** A rule leg judges the declarations themselves (a dead glob, a step with no registration), so `--write` cannot repair it; every other check leg compares a generated copy with its source, which `--write` re-emits. */
+  rule?: true;
 }
 
 const WRITE_LEGS: readonly Leg[] = [
@@ -784,13 +800,21 @@ const CHECK_LEGS: readonly Leg[] = [
     label: 'workflow regions and shards match the headers',
     args: ['scripts/gate-bind.ts', '--dry-run', '--fail-on-drift'],
   },
-  { label: 'every header binds to its registrations', args: ['scripts/gate-bind.ts'] },
-  { label: 'manifest and CI surface agree', args: ['scripts/gates/check-ci-parity.ts'] },
-  { label: 'manifest rules', args: ['scripts/gates/check-gate-manifest.ts'] },
+  { label: 'every header binds to its registrations', args: ['scripts/gate-bind.ts'], rule: true },
+  {
+    label: 'manifest and CI surface agree',
+    args: ['scripts/gates/check-ci-parity.ts'],
+    rule: true,
+  },
+  { label: 'manifest rules', args: ['scripts/gates/check-gate-manifest.ts'], rule: true },
   { label: 'doc tables match the lock', args: ['scripts/gen/gen-docs.ts'] },
   { label: 'doc regions', args: ['scripts/gates/check-doc-region-parity.ts'] },
-  { label: 'step env', args: ['scripts/gates/check-ci-step-env-parity.ts'] },
-  { label: 'no orphan step keys', args: ['scripts/gates/check-workflow-orphan-step-keys.ts'] },
+  { label: 'step env', args: ['scripts/gates/check-ci-step-env-parity.ts'], rule: true },
+  {
+    label: 'no orphan step keys',
+    args: ['scripts/gates/check-workflow-orphan-step-keys.ts'],
+    rule: true,
+  },
 ];
 
 /**
@@ -906,14 +930,27 @@ export function writeLegs(
   return 0;
 }
 
-/** What a red `--check` prints: a selftest leg red means the check cannot be trusted and regenerating does not help; any other red leg means a declaration copy drifted and regenerating does (review f4d9c4bf.1). */
-export function redHints(redLabels: readonly string[]): string[] {
+/** The labels of the check legs `--write` cannot repair. */
+export const RULE_LEG_LABELS: ReadonlySet<string> = new Set(
+  CHECK_LEGS.filter((l) => l.rule === true).map((l) => l.label)
+);
+
+/** What a red `--check` prints: a selftest leg red means the check cannot be trusted; a rule leg red means a declaration is wrong and its own output names the finding; any other red leg means a generated copy drifted and regenerating repairs it (review f4d9c4bf.1). Only that last case may say "Regenerate": on 2026-11-24 a red `manifest rules` leg (a traced path naming a deleted file) printed the regenerate hint, and `--write` could never converge it. */
+export function redHints(
+  redLabels: readonly string[],
+  ruleLabels: ReadonlySet<string> = RULE_LEG_LABELS
+): string[] {
   const hints: string[] = [];
   if (redLabels.some((label) => label.startsWith('selftest: ')))
     hints.push(
       'gen:gates --check: a leg script failed its own selftest, so its check cannot be trusted. Run the named script with --selftest and fix the control it reports; regenerating does not help.'
     );
-  if (redLabels.some((label) => !label.startsWith('selftest: ')))
+  const rules = redLabels.filter((label) => ruleLabels.has(label));
+  if (rules.length > 0)
+    hints.push(
+      `gen:gates --check: a rule leg is red (${rules.join(', ')}): a declaration is wrong, not a copy stale. Fix the finding its output names above; regenerating does not help.`
+    );
+  if (redLabels.some((label) => !label.startsWith('selftest: ') && !ruleLabels.has(label)))
     hints.push(
       'gen:gates --check: a declaration copy disagrees with its source. Regenerate with: npm run gen:gates -- --write'
     );

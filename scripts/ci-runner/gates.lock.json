@@ -4050,7 +4050,6 @@
       ".ci/scripts/test/**",
       ".ci/tutorials/**/*.sh",
       ".ci/tutorials/*.sh",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh"
     ],
     "lists": [
@@ -4062,7 +4061,7 @@
     "names": [
       ".ci/**/*.sh",
       ".ci/*.sh",
-      "scripts/**/*.sh",
+      "scripts/**",
       "scripts/*.sh"
     ],
     "pathsOrigin": "traced",
@@ -4304,7 +4303,6 @@
       ".devcontainer/**",
       ".npmrc",
       "package.json",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh"
     ],
     "lists": [
