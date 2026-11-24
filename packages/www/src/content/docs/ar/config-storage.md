@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ar
-sourceHash: "221b5fec50ec0ce2"
-sourceCommit: "95e9d5c4cc79b4c0efe343cf3174b82676ef95b4"
+sourceHash: "d3fbda10a9432f55"
+sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
 ---
 
 # تخزين الإعدادات
