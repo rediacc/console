@@ -88,7 +88,9 @@ describe('applyExecutorEvents', () => {
   });
 
   it('does not match a GUID-less event to an orphan with no archived name (control)', () => {
-    const byName = parseExecutorEvents(line({ machine: 'm1', repo: 'gamma', guid: null, at: null }));
+    const byName = parseExecutorEvents(
+      line({ machine: 'm1', repo: 'gamma', guid: null, at: null })
+    );
     expect(applyExecutorEvents(ROWS, byName, 'm1')).toEqual(ROWS);
   });
 
@@ -110,7 +112,9 @@ describe('applyExecutorEvents', () => {
   });
 
   it('ignores a GUID-less event of another machine (control)', () => {
-    const byName = parseExecutorEvents(line({ machine: 'm2', repo: 'alpha', guid: null, at: null }));
+    const byName = parseExecutorEvents(
+      line({ machine: 'm2', repo: 'alpha', guid: null, at: null })
+    );
     expect(applyExecutorEvents(ROWS, byName, 'm1')).toEqual(ROWS);
   });
 });
