@@ -163,7 +163,7 @@ def superseded_target(status):
 def judge_rows(root, rows, label=REGISTER_REL):
     """R1 to R4 over the parsed rows. Returns a list of finding strings."""
     out = []
-    seen = {}
+    seen: dict[str, int] = {}
     for row in rows:
         rid = row["id"]
         if rid in seen:
@@ -260,7 +260,7 @@ def corpus_files(root):
 
 def cited_ids(root, files):
     """{id: [rel:line, ...]} over the corpus. The extractor R6 is floored on."""
-    hits = {}
+    hits: dict[str, list[str]] = {}
     for rel in files:
         try:
             text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")

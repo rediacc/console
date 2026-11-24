@@ -50,7 +50,8 @@ def compare(en_doc, loc_doc):
 
     Keys absent from the locale are NOT a finding here: missing translations are a different defect with its own gate, and folding them in would make this check fire on every partially-translated file and get switched off.
     """
-    en_flat, loc_flat = {}, {}
+    en_flat: dict = {}
+    loc_flat: dict = {}
     flatten(en_doc, [], en_flat)
     flatten(loc_doc, [], loc_flat)
     bad = []
@@ -150,7 +151,7 @@ def main(argv=None):
         except (OSError, ValueError) as exc:
             print("cannot read %s: %s" % (loc_path, exc), file=sys.stderr)
             return 1
-        flat = {}
+        flat: dict = {}
         flatten(en_doc, [], flat)
         compared += len(flat)
         for key, en_value, loc_value in compare(en_doc, loc_doc):

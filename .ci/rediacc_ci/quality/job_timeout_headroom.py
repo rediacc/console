@@ -72,7 +72,7 @@ def job_timeouts(root):
     Deliberately regex-based rather than yaml.safe_load: the shape being read is two fixed keys at one indentation level, and this keeps the gate free of a PyYAML dependency. A parse that finds nothing raises rather than returning
     {} -- an empty map would make every downstream comparison vacuous.
     """
-    found = {}
+    found: dict[str, int] = {}
     files = sorted((root / ".github/workflows").glob("*.yml"))
     for path in files:
         name = None
@@ -252,7 +252,7 @@ def refresh(lane_durations_path, limit):
     baseline_jobs = section.get("jobs")
     if not isinstance(baseline_jobs, dict):
         baseline_jobs = {}
-    seen = {}
+    seen: dict[str, int] = {}
     skipped = 0
     measured = 0
     for run_id in ids:

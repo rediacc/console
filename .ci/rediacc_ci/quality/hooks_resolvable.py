@@ -52,12 +52,14 @@ PATH_RE = re.compile(r"(?:\$CLAUDE_PROJECT_DIR/)?(\.claude/[A-Za-z0-9_./-]+\.(?:
 LIFECYCLE = ".claude/rediacc_hooks/lifecycle.py"
 
 
-def lifecycle(root):
+def lifecycle(root, rel=LIFECYCLE):
     """The pattern table, loaded by path because `.claude` is on no import path.
 
     A hard failure rather than a fallback. Silently treating the file as absent would flatten nothing, resolve the two wrapper scripts and report every other hook as checked, which is the shape this whole gate exists to refuse.
     """
-    spec = importlib.util.spec_from_file_location("hook_lifecycle", root / LIFECYCLE)
+    spec = importlib.util.spec_from_file_location("hook_lifecycle", root / rel)
+    if spec is None or spec.loader is None:
+        raise ImportError("%s cannot be loaded as a Python module" % rel)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -86,7 +88,7 @@ def expand_commands(cmds, table):
     """The same commands with every collapsed entry replaced by the members it runs."""
     if table is None:
         return list(cmds)
-    out = []
+    out: list[str] = []
     for cmd in cmds:
         out.extend(m["command"] for m in table.expand(cmd))
     return out
@@ -246,6 +248,15 @@ def head_verdicts(text, checks):
 
 def controls(root):
     """Prove the detector fires in BOTH directions before any real read."""
+    # The loader refuses a file that is no Python module instead of failing on a missing attribute; the real table loads.
+    try:
+        lifecycle(root, "not_a_python_module.txt")
+    except ImportError:
+        pass
+    else:
+        return "a path with no Python loader was accepted as the lifecycle table"
+    if not hasattr(lifecycle(root), "HEAD_SCRIPT"):
+        return f"{LIFECYCLE} loaded but declares no HEAD_SCRIPT"
     if not verdicts(root, [".claude/hooks/__a_hook_that_does_not_exist__.sh"]):
         return "planted a nonexistent hook path and the detector stayed silent"
     # A .sh, deliberately: the control must not collide with the .py mode check below. Using a Python hook here made mutating ANY python hook trip the control instead of the finding, which refuses a verdict correctly but tests nothing. A GUARD THAT STILL EXISTS AS A .sh, RE-KEYED 2026-09-07. This was `block-admin-merge.sh`, which the W5 cutover moved to `.claude/oracles/`, and the

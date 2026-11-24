@@ -102,7 +102,7 @@ def scan(files):
 
 def run_controls():
     """Prove the rule fires on each dead shape and stays quiet on each live one."""
-    failures = []
+    failures: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         planted = pathlib.Path(tmp) / "planted.test.ts"
         planted.write_text(

@@ -251,7 +251,7 @@ def vacuity_problems(scanned: dict, raw: int) -> list[str]:
 
 def diff_problems(scanned: dict, ledger: dict) -> list[str]:
     """G-A0. The ledger and the tree, in both directions."""
-    out = []
+    out: list = []
     plans = ledger.get("plans") or {}
     out.extend(
         f"{rel} carries {scanned[rel]['open']} open and {scanned[rel]['done']} ticked "
@@ -959,8 +959,8 @@ def selftest() -> int:
             "is GONE at HEAD",
         ),
     ]
-    for label, b, h, needle in a1_cases:
-        got = tp(b, h)
+    for label, before, head_plans, needle in a1_cases:
+        got = tp(before, head_plans)
         hit = any(needle in g for g in got)
         print(f"  {'PASS' if hit else 'FAIL'}  {label}")
         if not hit:
@@ -984,8 +984,8 @@ def selftest() -> int:
             {"agent/PLAN-a.md": open_row},
         ),
     ]
-    for label, b, h in a1_pairs:
-        got = tp(b, h)
+    for label, before, head_plans in a1_pairs:
+        got = tp(before, head_plans)
         print(f"  {'PASS' if got == [] else 'FAIL'}  {label}")
         if got:
             bad += 1
@@ -1035,7 +1035,7 @@ def selftest() -> int:
         bad += 1
 
     # THE THREE DOORS, each a control that must NOT fire. Without these the rule above would red on exactly the tidying it wants.
-    a5_pairs = [
+    a5_pairs: list[tuple[str, dict, dict, dict]] = [
         (
             "G-A5 CONTROL: an aged HUSK -- every box survives elsewhere -- is silent",
             {"agent/PLAN-a.md": open_row},
@@ -1055,8 +1055,8 @@ def selftest() -> int:
             {"age": 999},
         ),
     ]
-    for label, b, h, kw in a5_pairs:
-        got = tp(b, h, **kw)
+    for label, before, head_plans, kw in a5_pairs:
+        got = tp(before, head_plans, **kw)
         print(f"  {'PASS' if got == [] else 'FAIL'}  {label}")
         if got:
             bad += 1
@@ -1094,7 +1094,7 @@ def selftest() -> int:
         bad += 1
 
     # G-A0 must fire in both directions, and stay silent on agreement.
-    tree = {
+    tree: dict = {
         "p.md": {
             "status": "executing",
             "owner": "x",
@@ -1104,10 +1104,10 @@ def selftest() -> int:
             "done_sigs": ["cc"],
         }
     }
-    same = {"plans": {"p.md": dict(tree["p.md"])}}
-    cases = [
+    ledger_same = {"plans": {"p.md": dict(tree["p.md"])}}
+    ledger_cases: list[tuple[str, dict, dict, str]] = [
         ("a plan with no ledger entry", tree, {"plans": {}}, "has no ledger entry"),
-        ("a ledger entry with no plan", {}, same, "not in agent/ any more"),
+        ("a ledger entry with no plan", {}, ledger_same, "not in agent/ any more"),
         (
             "a count the ledger disagrees with",
             tree,
@@ -1128,27 +1128,29 @@ def selftest() -> int:
             "folder is",
         ),
     ]
-    for label, t, led, needle in cases:
-        got = diff_problems(t, led)
+    for label, plans_in, led, needle in ledger_cases:
+        got = diff_problems(plans_in, led)
         hit = any(needle in g for g in got)
         print(f"  {'PASS' if hit else 'FAIL'}  {label} is reported")
         if not hit:
             bad += 1
             print(f"        got {got}")
-    ok = diff_problems(tree, same) == []
+    ok = diff_problems(tree, ledger_same) == []
     print(f"  {'PASS' if ok else 'FAIL'}  CONTROL: a ledger that agrees is silent")
     if not ok:
         bad += 1
 
     # `folder` is derived here and nowhere else, so the derivation is controlled here too. A path outside the four legal folders answers "" rather than guessing, which is what keeps a session note out of the plan corpus.
-    for label, rel, want in (
+    for label, rel, expected_folder in (
         ("legacy", "agent/PLAN-x.md", "agent"),
         ("active", "agent/plans/PLAN-x.md", "agent/plans"),
         ("terminal", "agent/plans/_done/PLAN-x.md", "agent/plans/_done"),
         ("not a plan folder", "agent/abcd1234/STATE.md", ""),
     ):
-        ok = PL.folder_of(rel) == want
-        print(f"  {'PASS' if ok else 'FAIL'}  folder_of reads a {label} path as {want!r}")
+        ok = PL.folder_of(rel) == expected_folder
+        print(
+            f"  {'PASS' if ok else 'FAIL'}  folder_of reads a {label} path as {expected_folder!r}"
+        )
         if not ok:
             bad += 1
 

@@ -91,7 +91,7 @@ def offences_in(job):
     steps = job.get("steps") if isinstance(job, dict) else None
     if not isinstance(steps, list):
         return []
-    out = []
+    out: list[tuple[str, str]] = []
     deep_now = None  # None = nothing checked out into the default path yet
     for step in steps:
         if not isinstance(step, dict):

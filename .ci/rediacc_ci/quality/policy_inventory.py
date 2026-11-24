@@ -209,6 +209,7 @@ def _py_constant(root: pathlib.Path, name: str) -> object:
     tree = ast.parse(_read(root / PY_SEAM))
     for node in tree.body:
         targets = []
+        value: ast.expr | None
         if isinstance(node, ast.Assign):
             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
             value = node.value
@@ -267,7 +268,7 @@ def source_files(root: pathlib.Path) -> tuple[list[str], str]:
             return sorted(seen), "git ls-files (tracked + untracked)"
     except OSError:
         pass
-    out = []
+    out: list[str] = []
     for dirpath, dirnames, filenames in paths.walk_tree(root):
         dirnames[:] = [d for d in dirnames if d not in WALK_SKIP]
         out.extend(
@@ -531,16 +532,16 @@ def comment_blocks(rel: str, source: str) -> list[tuple[int, str, int]]:
     run_lines: list[tuple[int, str]] = []
     for i, line in enumerate(source.splitlines(), 1):
         stripped = line.strip()
-        text = None
+        comment: str | None = None
         if stripped.startswith(("//", "/*", "*", "#")):
-            text = stripped
+            comment = stripped
         elif "//" in line and not rel.endswith(SHELL_EXTS):
-            text = line[line.index("//") :]
+            comment = line[line.index("//") :]
         elif rel.endswith(SHELL_EXTS) and " #" in line:
             code = _strip_comment(rel, line)
             if len(code) < len(line):
-                text = line[len(code) :]
-        if text is None:
+                comment = line[len(code) :]
+        if comment is None:
             if run_lines:
                 out.append(
                     (
@@ -556,7 +557,7 @@ def comment_blocks(rel: str, source: str) -> list[tuple[int, str, int]]:
                 (run_lines[0][0], "\n".join(_strip_marker(t) for _, t in run_lines), len(run_lines))
             )
             run_lines = []
-        run_lines.append((i, text))
+        run_lines.append((i, comment))
     if run_lines:
         out.append(
             (run_lines[0][0], "\n".join(_strip_marker(t) for _, t in run_lines), len(run_lines))

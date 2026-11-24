@@ -1305,17 +1305,17 @@ jobs:
     ]
     bad = 0
     for label, doc, needle in cases:
-        got = probe(doc)
-        hit = any(needle in g for g in got)
+        refusals = probe(doc)
+        hit = any(needle in g for g in refusals)
         print(f"  {'PASS' if hit else 'FAIL'}  {label} is refused")
         if not hit:
             bad += 1
-            print(f"        got {got}")
-    got = probe(clean)
-    ok3 = got == []
+            print(f"        refusals {refusals}")
+    refusals = probe(clean)
+    ok3 = refusals == []
     print(f"  {'PASS' if ok3 else 'FAIL'}  CONTROL: a well-formed allowlist is silent")
     if not ok3:
-        print(f"        got {got}")
+        print(f"        refusals {refusals}")
         bad += 1
 
     # ---- the pre-image relation, in BOTH directions -------------------------- This is the second escape hatch, and it is younger and more dangerous than the allowlist: an allowlist entry says "do not look", while a pre-image row says "look somewhere ELSE", so a wrong row makes assertion 9 report a clean resolution for a read that resolves to nothing. Every way of writing one
@@ -1339,12 +1339,12 @@ jobs:
         ),
     ]
     for label, doc, needle in pre_cases:
-        got = probe_pre(doc)
-        hit = any(needle in g for g in got)
+        refusals = probe_pre(doc)
+        hit = any(needle in g for g in refusals)
         print(f"  {'PASS' if hit else 'FAIL'}  {label} is refused")
         if not hit:
             bad += 1
-            print(f"        got {got}")
+            print(f"        refusals {refusals}")
     ok_pre_clean = probe_pre({"preimage": {"STORE_A": "GH_OLD_A"}}) == []
     print(f"  {'PASS' if ok_pre_clean else 'FAIL'}  CONTROL: a well-formed pre-image is silent")
     if not ok_pre_clean:
@@ -1447,13 +1447,15 @@ jobs:
             "AFTER the read",
         ),
     ]
-    for label, doc, needle in r13:
-        got, seen = read_order_in(doc, "x.yml")
-        ok = (got == [] and seen == 1) if needle is None else any(needle in m for m in got)
+    for label, doc, wanted in r13:
+        refusals, seen = read_order_in(doc, "x.yml")
+        ok = (
+            (refusals == [] and seen == 1) if wanted is None else any(wanted in m for m in refusals)
+        )
         print(f"  {'PASS' if ok else 'FAIL'}  {label}")
         if not ok:
             bad += 1
-            print(f"        got {got}")
+            print(f"        refusals {refusals}")
 
     missing_file = load_exemptions(Path("/nonexistent/ex.json"))[1]
     ok4 = any("refusing to pass vacuously" in m for m in missing_file)

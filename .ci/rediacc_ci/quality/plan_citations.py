@@ -479,7 +479,8 @@ def citations(text):
 
     THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line first, because a path fragment inspected as hex would be rewritten out from under the citation resolver. Plans before gates before objects for the same reason -- each later shape is a superset of characters the earlier one owns.
     """
-    out, spans = [], []
+    out: list[tuple[str, str]] = []
+    spans: list[tuple[int, int]] = []
 
     def take(rx, kind, group=0):
         for m in rx.finditer(text or ""):
@@ -803,7 +804,7 @@ def absent_submodules(root):
     # production (root IS ROOT) and diverge in any fixture, which is how a control
     # for this function came back naming three submodules the fixture never had.
     # A helper whose two halves read different trees is a helper that cannot be tested, and an untestable filter that excuses a whole directory is the last thing this gate should carry.
-    out = []
+    out: list[str] = []
     manifest = pathlib.Path(root) / ".gitmodules"
     if not manifest.is_file():
         return out

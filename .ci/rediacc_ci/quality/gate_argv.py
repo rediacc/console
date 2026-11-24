@@ -35,7 +35,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeGuard
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, controls_first, plant
@@ -111,7 +111,7 @@ def _parents(tree: ast.AST) -> dict[ast.AST, ast.AST]:
     return out
 
 
-def _is_sys_argv(node: ast.AST) -> bool:
+def _is_sys_argv(node: ast.AST) -> TypeGuard[ast.Attribute]:
     return (
         isinstance(node, ast.Attribute)
         and node.attr == "argv"
@@ -189,7 +189,7 @@ def main_block(tree: ast.Module) -> ast.If | None:
     return None
 
 
-def _is_parse_call(node: ast.AST) -> bool:
+def _is_parse_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
     return (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
@@ -266,14 +266,14 @@ def decl_of_parse(call: ast.Call, consts: dict[str, ast.AST]) -> tuple[Decl | No
 def delegate_module(tree: ast.Module, block: ast.If, root: pathlib.Path) -> pathlib.Path | None:
     """The `rediacc_ci` module whose attribute the `__main__` block calls (`X.main(...)`), if any."""
     imported: dict[str, str] = {}
-    for node in tree.body:
+    for item in tree.body:
         if (
-            isinstance(node, ast.ImportFrom)
-            and node.module
-            and node.module.startswith("rediacc_ci")
+            isinstance(item, ast.ImportFrom)
+            and item.module
+            and item.module.startswith("rediacc_ci")
         ):
-            for alias in node.names:
-                imported[alias.asname or alias.name] = "%s.%s" % (node.module, alias.name)
+            for alias in item.names:
+                imported[alias.asname or alias.name] = "%s.%s" % (item.module, alias.name)
     # The `__main__` block, plus one hop into a module-level function it calls (`main(sys.argv[1:])` whose body calls `X.main(rest)`).
     local = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
     scopes: list[ast.AST] = [block]
@@ -666,9 +666,10 @@ def selftest(verbose: bool = True) -> int:
         'if __name__ == "__main__":\n    raise SystemExit(main())\n'
     )
     ctl.check("CONTROL: plain argparse is accepted", (plain.form, plain.problems), ("argparse", []))
+    plain_decl = plain.decl or Decl()
     ctl.check(
         "CONTROL: ...with --x valued and --y a switch",
-        (plain.decl.valued, "--y" in plain.decl.switches),
+        (plain_decl.valued, "--y" in plain_decl.switches),
         (("--x",), True),
     )
     late = _entry_of(
