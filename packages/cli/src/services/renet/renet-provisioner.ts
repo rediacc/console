@@ -63,8 +63,9 @@ export const REMOTE_RENET_PATH = REMOTE_CURRENT_PATH;
 
 /**
  * Version-specific install path used by `acquireRemoteRenet` as the
- * committed binary location. Exported so the backup reconciler's dry-run
- * can match the exact ExecStart= path a real deploy would write.
+ * committed binary location (the slot `current` points at). Persistent
+ * artifacts such as scheduled backup units name REMOTE_RENET_PATH instead,
+ * so an upgrade never leaves them on a replaced binary.
  */
 export const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
 
