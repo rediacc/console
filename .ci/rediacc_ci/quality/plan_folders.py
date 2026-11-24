@@ -413,8 +413,8 @@ def selftest() -> int:
     )
     tally.check(
         "M7 the rewrite touches unfenced lines only",
-        PL.apply_remap(fenced, {"abc123def": "fedcba987"}),
-        "commit:fedcba987 x\n```\nabc123def quoted\n```\n20261007 1234567890ab\n",
+        PL.apply_remap(fenced, {"abc123def": "abcdef987"}),
+        "commit:abcdef987 x\n```\nabc123def quoted\n```\n20261007 1234567890ab\n",
     )
     tally.check("M8 an empty mapping is the identity", PL.apply_remap(fenced, {}), fenced)
     digits = "3253893064" + "ab" + "0" * 28

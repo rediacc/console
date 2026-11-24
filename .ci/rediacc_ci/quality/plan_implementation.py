@@ -1772,16 +1772,16 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
         is None,
     )
     gr0_old = (
-        "GR0 Precondition: the CI-Complete-only push guard (72eb06b56, f8dcd7973) is on the branch "
+        "GR0 Precondition: the CI-Complete-only push guard (abc123e01, abc123e02) is on the branch "
         "this plan ships on, and reachable from a remote ref before GR11. Files: none owned"
     )
-    gr0_new = plant(plant(gr0_old, "72eb06b56", "1442ce94c"), "f8dcd7973", "d54b2d279")
+    gr0_new = plant(plant(gr0_old, "abc123e01", "abcdef001"), "abc123e02", "abcdef002")
     gr0_rows = [{"plan": "agent/plans/PLAN-g.md", "sig": "5186d28c", "box": gr0_old}]
     gr0_map = {
-        "72eb06b56": "28" * 20,
-        "1442ce94c": "28" * 20,
-        "f8dcd7973": "2f" * 20,
-        "d54b2d279": "2f" * 20,
+        "abc123e01": "28" * 20,
+        "abcdef001": "28" * 20,
+        "abc123e02": "2f" * 20,
+        "abcdef002": "2f" * 20,
     }
 
     def gr0_canon_full(token):
@@ -1801,7 +1801,7 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
             "agent/plans/PLAN-g.md",
             "6f6a5f0f",
             (),
-            plant(gr0_new, "1442ce94c", "99c1bb4dc"),
+            plant(gr0_new, "abcdef001", "abcdef003"),
             gr0_canon_full,
         )
         is None,
@@ -2415,7 +2415,7 @@ CITE_LINE_RE = re.compile(r"(\.[A-Za-z0-9]{1,6}):\d+(?:[-,]\d+)*")
 def cite_key(text, canon=None):
     """The box text with every citation reduced to its basename: directory prefixes and line suffixes dropped, markdown emphasis removed, whitespace folded. PURE when `canon` is None.
 
-    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 5159ee73a replaced GR0's pre-rebase shas (72eb06b56, f8dcd7973) with their rebased successors (1442ce94c, d54b2d279), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
+    A COMMIT CITATION RE-SPELLED BY A REBASE is the same task too. Measured on 1003-1: 5159ee73a replaced GR0's pre-rebase shas with their rebased successors (1442ce94c, d54b2d279), which re-signed the box (5186d28c -> 6f6a5f0f) and left it "closed with no row". `canon(token)` answers a sha-shaped token's full successor (`successor_of`) or "" for a token it cannot map, and every mapped token is replaced by that spelling on BOTH sides, so only a rebase-equivalent commit compares equal.
 
     A box whose citations are only RE-SPELLED is the same task. Measured on 0930-1: 26577164b rewrote `pr-merge.md:108` to `.claude/commands/pr-merge.md:111` inside the ticked box V3, which re-signed it (7a6762cd -> 4d461643). Its investigation row kept the old sig, `--plan-investigate` accepts only open boxes, so no verb could ever re-key it and P-A2 named it "closed with no row" for good.
     """

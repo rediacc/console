@@ -13,7 +13,7 @@ EMPTY, pip was handed the literal `PyYAML==`, and CI reported
 
 THE SHAPE, and it is why an unset variable is worse than a missing file: bash expands an undefined name to the empty string without a word of complaint, so the failure always surfaces somewhere downstream wearing somebody else's name. A step copied between jobs without the step that feeds it is the usual cause.
 
-WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or is emitted by toolchain.sh. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME) are never provisioned by this tree, so they cannot be flagged, and no allowlist is needed to protect them. That is what keeps this at zero false
+WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or is emitted by the toolchain pins step. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME) are never provisioned by this tree, so they cannot be flagged, and no allowlist is needed to protect them. That is what keeps this at zero false
 positives across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
 
 ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use $RENET_BINARY, which no workflow line defines: the renet build step writes it to $GITHUB_ENV. Without following the script named in the run block this gate reports nine confident findings that are all wrong. (The first version DID -- because `m.lstrip('./')` strips every leading dot AND slash, turning
@@ -37,6 +37,7 @@ selftest: true
 from __future__ import annotations
 
 import contextlib
+import os
 import pathlib
 import re
 import sys
@@ -67,20 +68,32 @@ MODULE = re.compile(r"python3\s+(?:-\w+\s+)*-m\s+(rediacc_ci(?:\.[A-Za-z_][\w]*)
 GHENV_PY = re.compile(r'["\']([A-Z][A-Z0-9_]{2,})=')
 
 
+# The two spellings of the step that writes the toolchain pins into $GITHUB_ENV: the shell twin and the module that replaced it.
+TOOLCHAIN_STEPS = ("toolchain.sh --env", "rediacc_ci.core.toolchain pairs")
+
+
 def toolchain_names(root: pathlib.Path = ROOT) -> set[str]:
-    """Names `toolchain.sh --env` writes into $GITHUB_ENV."""
-    # Through the shared runner: `toolchain.sh` is a shell script that spawns
-    # children of its own, and a plain `subprocess.run(capture_output=True,
-    # timeout=...)` kills only the script and then blocks in communicate() on
-    # pipes a grandchild still holds. A spawn failure comes back as rc 127 with empty stdout, which yields the same empty set the OSError arm returned.
+    """Names `python3 -m rediacc_ci.core.toolchain pairs` writes into $GITHUB_ENV.
+
+    An empty answer is a refusal, not an empty set: with no names, every pin variable would read as unprovisioned anywhere and the gate would judge nothing.
+    """
+    # Through the shared runner: a plain `subprocess.run(capture_output=True,
+    # timeout=...)` kills only the child and then blocks in communicate() on
+    # pipes a grandchild still holds.
     r = ci_proc.run(
-        [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
+        [sys.executable, "-m", "rediacc_ci.core.toolchain", "pairs"],
         cwd=str(root),
+        env={**os.environ, "PYTHONPATH": str(root / ".ci")},
         timeout=60,
     )
-    if r.timed_out:
-        return set()
-    return {ln.split("=", 1)[0] for ln in r.stdout.split("\n") if "=" in ln}
+    names = {ln.split("=", 1)[0] for ln in r.stdout.split("\n") if "=" in ln}
+    if r.timed_out or r.returncode != 0 or not names:
+        raise RuntimeError(
+            "the toolchain pins could not be listed (timed out: %s, rc %s, %d name(s)); "
+            "refusing a verdict. Rerun: PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs"
+            % (r.timed_out, r.returncode, len(names))
+        )
+    return names
 
 
 def module_names(root: pathlib.Path, run: str) -> set[str]:
@@ -146,7 +159,7 @@ def scan(root: pathlib.Path, tools: set[str]):
                 if not isinstance(run, str):
                     continue
                 defs |= set(ASSIGN.findall(run)) | set(GHENV.findall(run))
-                if "toolchain.sh --env" in run:
+                if any(step in run for step in TOOLCHAIN_STEPS):
                     defs |= tools
                 for rel in SCRIPT.findall(run):
                     sp = root / rel.removeprefix("./")
@@ -215,6 +228,40 @@ def selftest() -> int:
             "CONTROL: the job that provides it is not flagged", not any("provider" in x for x in f)
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
+
+    # CONTROL on the toolchain step: the module spelling of the pins step provisions the pin names, and a job without it is caught on the same name.
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        (fx / ".github" / "workflows").mkdir(parents=True)
+        (fx / ".github" / "workflows" / "w.yml").write_text(
+            yaml.safe_dump(
+                {
+                    "jobs": {
+                        "pinned": {
+                            "steps": [
+                                {
+                                    "run": 'PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"'
+                                },
+                                {"run": "pip install ruff==${PIN_X_VERSION}"},
+                            ]
+                        },
+                        "unpinned": {"steps": [{"run": "pip install ruff==${PIN_X_VERSION}"}]},
+                    }
+                }
+            )
+        )
+        per_job, anywhere = scan(fx, {"PIN_X_VERSION"})
+        f = findings(per_job, anywhere)
+        check(
+            "PLANT: a job without the pins step is caught on a pin name",
+            any("unpinned" in x for x in f),
+            str(f),
+        )
+        check(
+            "CONTROL: the module spelling of the pins step provisions the pin names",
+            not any("`pinned`" in x for x in f),
+            str(f),
+        )
 
     # CONTROL on the PATH form of the script hop, through a PLANTED script: a real one goes stale as the bash twins retire (build-renet.sh on 2026-10-04, simulate-promotion.sh on 2026-10-08 each took this control red when deleted). A job that runs a script writing `$GITHUB_ENV` provides that name; the same job without the hop does not.
     with tempfile.TemporaryDirectory() as td:

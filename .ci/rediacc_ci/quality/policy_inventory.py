@@ -33,7 +33,7 @@ THE FOUR DIRECTIONS, and each is a different failure:
      the path is a reader the next move will leave behind, and it is invisible
      to directions 1-3 because it needs no list entry to work.
 
-PLUS THE PROSE, which is direction 4 pointed at comments rather than code (W4 P4c). Two rules, and the first one was written because a comment in `scripts/gates/check-suppression-liveness.ts` still said "Today POLICY_DIR is '' and this is a provable no-op" for two days after `b80552370` made POLICY_DIR `.ci/policy`. A comment that states a value is a claim a reader will act on:
+PLUS THE PROSE, which is direction 4 pointed at comments rather than code (W4 P4c). Two rules, and the first one was written because a comment in `scripts/gates/check-suppression-liveness.ts` still said "Today POLICY_DIR is '' and this is a provable no-op" for two days after the move of the policy lists made POLICY_DIR `.ci/policy`. A comment that states a value is a claim a reader will act on:
 
   5. No comment may assert a POLICY_DIR value differing from the one in
      `scripts/lib/policy-paths.ts`, which is the ORACLE here and is read out of
@@ -612,7 +612,7 @@ def prose_findings(
                 )
         for offset, cited in root_path_citations(text, names, policy_dir):
             findings.append(
-                "%s:%d cites a policy file as %s; it lives in %s/ and has since b80552370"
+                "%s:%d cites a policy file as %s; it lives in %s/ and has since the policy lists moved"
                 % (rel, start + offset, cited, policy_dir)
             )
     return findings, swept
@@ -874,7 +874,7 @@ _TS_JSDOC = """/**
 
 # The CURRENT value, in backticks, in a comment that must stay clean. Copied verbatim from the header of `.ci/scripts/quality/check_policy_inventory.py`'s own subject when `test-policy-path.sh` still carried it at line 21.
 _CURRENT_CLAIM = (
-    "# THE MOVE LANDED 2026-09-06 at b80552370: POLICY_DIR is `.ci/policy` and all\n"
+    "# THE MOVE LANDED 2026-09-06: POLICY_DIR is `.ci/policy` and all\n"
     "# fifteen are there. `.ci-trigger` stayed at root with its own recorded reason.\n"
 )
 # `scripts/gates/check-suppression-liveness.ts:61-63`, verbatim: the finding this box exists to absorb.

@@ -101,7 +101,7 @@ FIXTURE_WORKTREE = {
     "agent/plans/PLAN-movedbad.md": _stub("movedbad"),
     "agent/plans/_done/PLAN-movedbad.md": FIXTURE_HEAD["movedbad"]
     .replace("[ ]", "[x]")
-    .replace("store", "store (done 2026-10-08: c2ca68dfe)"),
+    .replace("store", "store (done 2026-10-08: abcdef0fe)"),
     "agent/plans/PLAN-deleted.md": None,
     QUEUE_REL: _sliced_queue(FIXTURE_QUEUE),
 }

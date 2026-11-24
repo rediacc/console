@@ -137,7 +137,7 @@ PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
 RENAME_TABLE = ROOT / "scripts" / "ops" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
-# Where the region fan-ins live since ca8d42f5c (2026-10-08) ported the Worker-deploy bash twins: `SUFFIXED_PREFIXES` in a module here, each prefix read as `<PREFIX>_<SUFFIX>`.
+# Where the region fan-ins live since c34439827f (2026-10-08) ported the Worker-deploy bash twins: `SUFFIXED_PREFIXES` in a module here, each prefix read as `<PREFIX>_<SUFFIX>`.
 DEPLOY_PY_DIR = ROOT / ".ci" / "rediacc_ci" / "deploy"
 
 # Call sites live in two places. .ci/breakpoint/workflow/ is a REAL bws-secrets caller that this gate used to miss entirely, because it globbed .github only (recorded as a blind spot in the migration plan's Part 16).
@@ -230,7 +230,7 @@ NOT_SHADOWED = {"GITHUB_TOKEN", "BWS_ACCESS_TOKEN"}
 def suffixed_prefixes(directory: Path) -> list[tuple[Path, str]]:
     """(module, prefix) for every string in a module-level `SUFFIXED_PREFIXES` tuple or list under `directory`.
 
-    RETARGETED 2026-10-08. Assertion 7 grepped `.ci/scripts/deploy/*.sh` for `VAR="PREFIX_${SUFFIX}"`; ca8d42f5c ported those scripts, and the port names its fan-ins as DATA, `SUFFIXED_PREFIXES`, read through `<PREFIX>_<SUFFIX>`. Read by `ast`, so a prefix in a comment or a docstring is not a construction, and a nested assignment of the same name is not the module's.
+    RETARGETED 2026-10-08. Assertion 7 grepped `.ci/scripts/deploy/*.sh` for `VAR="PREFIX_${SUFFIX}"`; c34439827f ported those scripts, and the port names its fan-ins as DATA, `SUFFIXED_PREFIXES`, read through `<PREFIX>_<SUFFIX>`. Read by `ast`, so a prefix in a comment or a docstring is not a construction, and a nested assignment of the same name is not the module's.
     """
     out: list[tuple[Path, str]] = []
     for module in sorted(directory.glob("*.py")):

@@ -144,6 +144,15 @@ GLOB_ROOTS = {
             "the same _TAILED_ROOTS glob as .claude/hooks/stop/"
         ),
     ),
+    ".ci/rediacc_ci/testrun/onprem_suites/": (
+        ("",),
+        (
+            "every module of the package is imported by "
+            ".ci/rediacc_ci/testrun/onprem_suites/__init__.py:load_all(), which walks "
+            "pkgutil.iter_modules over the package path; onprem_scenarios.py calls it, so no "
+            "suite is named as an import"
+        ),
+    ),
     "agent/*/effort-tune/*/judge-rules/": (
         ("test_judge_rule_",),
         (

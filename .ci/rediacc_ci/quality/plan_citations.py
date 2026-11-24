@@ -1357,7 +1357,7 @@ def selftest(root, drift=False):
     )
     ck(
         "CONTROL: one more character IS",
-        any(k == "object" for k, _t in citations("session d1589e0bc wrote this")),
+        any(k == "object" for k, _t in citations("session abcdef0bc wrote this")),
     )
     # THE SCOPE PREDICATE, both directions. A narrowed scope is the one change that can quietly turn a working gate into one that reads nothing, so the boundary is pinned rather than described.
     ck("a plan is in scope", in_scope(scoped[0]))
