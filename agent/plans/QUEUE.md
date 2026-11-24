@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 97 plans done, 1292 of 1842 boxes done (70%).
+Promoted: 11 of 97 plans done, 1294 of 1842 boxes done (70%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -134,7 +134,7 @@ Promoted: 11 of 97 plans done, 1292 of 1842 boxes done (70%).
 | 72 | PLAN-rmcp-policy-record.md | 15/26 | 11 open |
 | 73 | PLAN-rmcp-decide.md | 1/9 | 8 open |
 | 74 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
-| 75 | PLAN-rmcp-executor-hardening.md | 12/21 | 9 open |
+| 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
 | 76 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
 | 77 | PLAN-console-ai-providers.md | 2/15 | 13 open |
 | 78 | PLAN-console-ai-assistant.md | 0/15 | 15 open |
