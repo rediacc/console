@@ -52,7 +52,12 @@ import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { registerJobRoutes } from './job-routes.js';
-import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
+import {
+  clusterSubjectOf,
+  isReadOnlyCommand,
+  PolicyDenied,
+  resolveExecutorTarget,
+} from './policy.js';
 import { SessionError } from './sessions.js';
 
 /**
@@ -66,6 +71,16 @@ import { SessionError } from './sessions.js';
  */
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
+/** A refusal's reason followed by the step past it, when the decision names one (D21). */
+function decisionMessage(error: PolicyDenied): string {
+  const { next } = error.decision;
+  if (next?.run) return `${error.message} Next step: ${next.run}`;
+  if (next?.confirm) {
+    return `${error.message} Retry with ${next.confirm.argument}="${next.confirm.value}" to confirm.`;
+  }
+  return error.message;
+}
+
 /** Turn any thrown value into an HTTP status plus a message worth reading. */
 function statusFor(error: unknown): {
   status: 400 | 401 | 403 | 404 | 500;
@@ -73,7 +88,9 @@ function statusFor(error: unknown): {
   code?: string;
 } {
   if (error instanceof AuthError) return { status: error.status, message: error.message };
-  if (error instanceof PolicyDenied) return { status: 403, message: error.message };
+  if (error instanceof PolicyDenied) {
+    return { status: 403, message: decisionMessage(error), code: error.decision.code };
+  }
   if (error instanceof SessionError) {
     return { status: 404, message: error.message, ...(error.code ? { code: error.code } : {}) };
   }
@@ -230,28 +247,29 @@ export function createServeApp(deps: ServeDeps): Hono {
       if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
       const config = await deps.loadConfig(principal, configSessionId);
       requestConfig = requestScopedConfig(deps, config);
-      const repoName = targetFrom(
-        entry.repoOption,
-        entry.repoPositional,
+      const machineName = targetFrom(
+        entry.machineOption,
+        entry.machinePositional,
         request.params,
         request.positionals
       );
-      deps.authorize({
-        principal,
-        commandPath: request.pathKey,
-        config,
-        machineName: targetFrom(
-          entry.machineOption,
-          entry.machinePositional,
-          request.params,
-          request.positionals
-        ),
-        repoName,
-        // Resolved once per request, from the verified principal: team rules in the policy document match on it.
-        teamSlug: principal.teamSlug,
-        // Computed here, from the config the command will run against, never taken from the client. The CLI's own grand-repo guard runs only in an agent's local process, which a proxied command never reaches.
-        isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
-      });
+      // Resolved here, from the config the command will run against, never taken from the client: the one repo resolver every path uses decides grand, fork or unresolved (unresolved counts as grand) and the ops-VM exemption.
+      const target = await resolveExecutorTarget(
+        entry,
+        {
+          ref: targetFrom(
+            entry.repoOption,
+            entry.repoPositional,
+            request.params,
+            request.positionals
+          ),
+          machine: machineName,
+          subject: clusterSubjectOf(entry, request.positionals),
+        },
+        requestConfig
+      );
+      // The principal's team slug, resolved by the account server, picks the team tier of the policy.
+      deps.authorize({ principal, commandPath: request.pathKey, config, machineName, target });
     } catch (error) {
       const { status, message, code } = statusFor(error);
       return c.json({ error: message, ...(code ? { code } : {}) }, status);

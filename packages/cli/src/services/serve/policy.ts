@@ -1,50 +1,58 @@
 /**
- * Authorization at the executor.
+ * Authorization at the executor: its enforcement point for the one decision function, `decide`
+ * (packages/shared/src/policy/decide.ts; agent/plans/PLAN-rmcp-decide.md Design 3).
  *
- * This is where the local guardrail environment variables
- * (REDIACC_ALLOW_GRAND_REPO and friends) are replaced by something an
- * enterprise can actually rely on. Those variables were trust-rooted in the
- * caller's own /proc ancestry, which is fine for a laptop and meaningless
- * across a network: the client asserting "I am allowed" is not evidence.
+ * The local guardrail environment variables (REDIACC_ALLOW_GRAND_REPO and friends) are
+ * trust-rooted in the caller's own /proc ancestry, which is fine for a laptop and meaningless
+ * across a network: a client asserting its own permission is not evidence. Here, authorization is
+ * data. The rules of a remote config live in their own ENCRYPTED policy record
+ * (PLAN-rmcp-policy-record.md), so Rediacc cannot read them and a member who may push the config
+ * cannot rewrite them; they are evaluated against a principal the ACCOUNT SERVER resolved, not one
+ * the client claimed.
  *
- * Here, authorization is data. The rules of a remote config live in their own
- * ENCRYPTED policy record (PLAN-rmcp-policy-record.md), so Rediacc cannot read
- * them and a member who may push the config cannot rewrite them; they are
- * evaluated against a principal the ACCOUNT SERVER resolved, not one the client
- * claimed. The client-side prompts remain, but they are UX; this is the
- * enforcement.
+ * The answer comes from the same `decide` the CLI and both MCP servers reach, so a command is
+ * refused or allowed the same way on every path (D18). A console or `--proxy` caller is a human
+ * principal; a remote-MCP grant is an agent principal whose opt-ins come from its grant row (D23).
  */
 
 import { CLI_CONTRACT, type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
+  type DecisionCommand,
+  type DecisionOverrides,
+  type DecisionPrincipal,
+  type DecisionTarget,
+  decide,
   type EffectivePolicy,
-  evaluateEffectivePolicy,
   findStaleCommandGlobs,
-  MISSING_POLICY_DEFAULT,
+  MUTATES_GRAND_BY_DEFINITION,
   mergePolicies,
   type PolicyDecision,
   type PolicyDocument,
   PolicyDocumentSchema,
   staleDenyRefusal,
 } from '@rediacc/shared/policy';
-import { parseRef } from '@rediacc/shared/ref';
-import { configService } from '../config/config-resources.js';
 import { boundEffectivePolicy } from '../config/policy-record.js';
 import {
   createOutputState,
   createRequestConfigScope,
   runInRequestContext,
 } from '../core/request-context.js';
+import { DecisionError } from '../policy/enforce.js';
+import { resolveTarget, type TargetRef } from '../policy/target.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** Every command this binary actually has, for checking policy globs against. */
 const LIVE_COMMANDS: readonly string[] = CLI_CONTRACT.commands.map((c) => c.pathKey);
 
-/** Raised when policy refuses a command. Carries the reason for CLI and audit. */
-export class PolicyDenied extends Error {
-  constructor(readonly decision: PolicyDecision) {
-    super(decision.reason);
+/**
+ * Raised when `decide` answers anything but `allow` at the executor. It is the enforcement step's
+ * `DecisionError`, so it carries the whole decision (verdict, stable code, next step) for the HTTP
+ * answer and the audit.
+ */
+export class PolicyDenied extends DecisionError {
+  constructor(...args: ConstructorParameters<typeof DecisionError>) {
+    super(...args);
     this.name = 'PolicyDenied';
   }
 }
@@ -56,7 +64,7 @@ function refuseStaleDeny(document: PolicyDocument): void {
 }
 
 /**
- * The policy a command is authorized against.
+ * The policy a command is authorized against, or `null` when there is none.
  *
  * A config the container loader opened carries the effective policy it read
  * from the policy records (org ceiling, team narrowing), bound to the document;
@@ -65,16 +73,16 @@ function refuseStaleDeny(document: PolicyDocument): void {
  * policy. A LOCAL-file config (no `remote` block) keeps its own `policy` field
  * as the ceiling (D24).
  */
-function effectivePolicyOf(config: RdcConfig): EffectivePolicy | undefined {
+function effectivePolicyOf(config: RdcConfig): EffectivePolicy | null {
   const bound = boundEffectivePolicy(config);
   if (bound) {
     if (bound.org) refuseStaleDeny(bound.org);
     if (bound.team) refuseStaleDeny(bound.team);
-    return bound.org || bound.team ? bound : undefined;
+    return bound.org || bound.team ? bound : null;
   }
-  if (config.remote !== undefined) return undefined;
+  if (config.remote !== undefined) return null;
   const document = readPolicyDocument(config);
-  return document ? mergePolicies(document) : undefined;
+  return document ? mergePolicies(document) : null;
 }
 
 /**
@@ -114,82 +122,152 @@ function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
   return parsed.data;
 }
 
+/**
+ * The agent opt-ins one grant row carries (PLAN-rmcp-agent-grants.md Design 2, `overrides_json`):
+ * `allowGrandRepos` is `true` for every repo or a list of repo names, `allowClusterOps` a switch.
+ */
+export interface AgentGrantOverrides {
+  allowGrandRepos: boolean | readonly string[];
+  allowClusterOps: boolean;
+}
+
+function grandReposOf(
+  repos: AgentGrantOverrides['allowGrandRepos']
+): DecisionOverrides['grandRepos'] {
+  if (repos === true) return '*';
+  if (repos === false || repos.length === 0) return null;
+  return repos;
+}
+
+/**
+ * A grant row's opt-ins in the overrides shape `decide` takes (`source: 'grant'`). `true` covers
+ * every name, `false` or an empty list grants nothing. The policy ceiling still applies on top
+ * (D20: an opt-in never exceeds the policy).
+ */
+export function grantOverrides(grant: AgentGrantOverrides): DecisionOverrides {
+  const grandRepos = grandReposOf(grant.allowGrandRepos);
+  const clusterOps = grant.allowClusterOps ? '*' : null;
+  return {
+    grandRepos,
+    clusterOps,
+    source: grandRepos === null && clusterOps === null ? 'none' : 'grant',
+  };
+}
+
+/** The opt-ins of a human principal: none, since the opt-in rule binds agents only (D22). */
+const NO_OVERRIDES: DecisionOverrides = { grandRepos: null, clusterOps: null, source: 'none' };
+
 export interface AuthorizeArgs {
+  /** The principal the account server resolved; its `teamSlug` picks the team tier of the policy. */
   principal: SessionPrincipal;
   /** Space-separated contract path, e.g. "repo fork". */
   commandPath: string;
   config: RdcConfig;
-  machineName?: string;
-  repoName?: string;
   /**
-   * Whether this command MUTATES a grand (root) repo. Computed by the executor
-   * with resolveGrandRepoMutation(), never taken from the client; undefined for
-   * a command the CLI's grand-repo guard does not cover (every read).
+   * The resolved target (`resolveExecutorTarget`), computed by the executor from the config the
+   * command will run against and never taken from the client. Absent for a route that names no
+   * repo (`job logs`, `job cancel`): the target is then `machineName` alone, which a grand-guarded
+   * command reads as a grand (fail closed).
    */
-  isGrandRepo?: boolean;
-  /** Team slug the principal acts under, when the org models one. */
-  teamSlug?: string;
+  target?: DecisionTarget;
+  machineName?: string;
+  /** Present only for a remote-MCP grant principal: makes the principal an agent with these opt-ins. */
+  agentGrant?: AgentGrantOverrides;
+  /** Set on the retry after a `needs_confirmation` answer was confirmed. */
+  confirmation?: { granted: boolean };
+}
+
+function principalOf(args: AuthorizeArgs): DecisionPrincipal {
+  const { principal } = args;
+  return {
+    kind: args.agentGrant ? 'agent' : 'human',
+    userEmail: principal.userEmail,
+    orgRole: principal.orgRole,
+    ...(principal.teamSlug ? { teamSlug: principal.teamSlug } : {}),
+  };
+}
+
+/** The contract fields `decide` reads. */
+function decisionCommandOf(entry: ContractCommand): DecisionCommand {
+  return {
+    pathKey: entry.pathKey,
+    ...(entry.destructive ? { destructive: true } : {}),
+    ...(entry.grandGuard ? { grandGuard: true } : {}),
+    ...(entry.forkBlocked ? { forkBlocked: true } : {}),
+    ...(entry.agentBlocked ? { agentBlocked: true } : {}),
+  };
 }
 
 /**
- * Decide whether this principal may run this command, and throw if not.
+ * Decide whether this principal may run this command, and throw `PolicyDenied` for any answer but
+ * `allow`.
  *
- * The destructive flag comes from the CONTRACT, not from the request: a client
- * cannot talk its way out of a destructive-command rule by omitting a field.
+ * The command's flags (destructive, grand-guarded, fork-blocked, agent-blocked) come from the
+ * CONTRACT, not from the request: a client cannot talk its way out of a rule by omitting a field.
  */
 export function authorize(args: AuthorizeArgs): PolicyDecision {
   const entry = getCommand(args.commandPath);
-  const effective = effectivePolicyOf(args.config);
-
-  if (!effective) return authorizeWithoutDocument(args);
-
-  const context = {
-    userEmail: args.principal.userEmail,
-    teamSlug: args.teamSlug,
-    orgRole: args.principal.orgRole,
-    commandPath: args.commandPath,
-    machineName: args.machineName,
-    repoName: args.repoName,
-    destructive: entry?.destructive ?? false,
+  if (!entry) throw new Error(`There is no "rdc ${args.commandPath}" command to authorize.`);
+  const machineOnly: DecisionTarget = {
+    ...(args.machineName ? { machine: args.machineName } : {}),
+    isOpsVm: false,
   };
-  const decision = evaluateEffectivePolicy(effective, context);
-  if (!decision.allowed) throw new PolicyDenied(decision);
-
-  // Grand-ness is judged on its own so its refusal can name the way out, which the shared evaluator's reason does not.
-  if (
-    args.isGrandRepo &&
-    !evaluateEffectivePolicy(effective, { ...context, isGrandRepo: true }).allowed
-  ) {
-    throw new PolicyDenied({ allowed: false, reason: grandRepoRefusal(args) });
-  }
-  return decision;
+  const decision = decide({
+    principal: principalOf(args),
+    command: decisionCommandOf(entry),
+    target: args.target ?? machineOnly,
+    policy: effectivePolicyOf(args.config),
+    overrides: args.agentGrant ? grantOverrides(args.agentGrant) : NO_OVERRIDES,
+    confirmation: args.confirmation ?? { granted: false },
+  });
+  if (decision.verdict !== 'allow') throw new PolicyDenied(decision);
+  return { allowed: true, reason: decision.reason };
 }
 
-/** The decision when the config carries no policy document at all. */
-function authorizeWithoutDocument(args: AuthorizeArgs): PolicyDecision {
-  // A grand-repo mutation is refused by default: with no document there is no `allowGrandRepos` to opt in with, whatever the role. This is the executor's copy of the CLI's agent grand-repo guard, which cannot run here (the executor is not an agent, and a proxied command never reaches the local guard).
-  if (args.isGrandRepo) {
-    throw new PolicyDenied({ allowed: false, reason: grandRepoRefusal(args) });
-  }
-  const allowed = MISSING_POLICY_DEFAULT[args.principal.orgRole];
-  const decision: PolicyDecision = {
-    allowed,
-    reason: allowed
-      ? `No policy document exists yet, and ${args.principal.orgRole}s are allowed by default. Author one in the console under Permissions.`
-      : `No policy document exists yet, so only owners and admins may run commands through the executor. Ask an owner to grant your team access under Permissions.`,
-  };
-  if (!allowed) throw new PolicyDenied(decision);
-  return decision;
+/**
+ * The name a cluster opt-in must cover: the command's cluster or datastore positional as typed.
+ * Absent for a cluster verb that names a machine (`cluster join`), which only a `*` opt-in covers.
+ */
+export function clusterSubjectOf(
+  entry: ContractCommand,
+  positionals: Record<string, unknown>
+): string | undefined {
+  const named = entry.positionals.find((p) => p.kind === 'cluster' || p.kind === 'datastore-ref');
+  const value = named ? positionals[named.name] : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
-function grandRepoRefusal(args: AuthorizeArgs): string {
-  const target = args.repoName
-    ? `would change ${args.repoName}, which is a grand repo (not a fork)`
-    : 'would change a grand repo (not a fork)';
-  return (
-    `"rdc ${args.commandPath}" ${target}, and the executor refuses grand-repo changes by default. ` +
-    `Fork it first (rdc repo fork <name> --tag <tag>) and target the fork, or allow grand repos in the policy (allowGrandRepos).`
-  );
+/**
+ * Resolve the target of a command at the executor, through the one repo resolver every path uses
+ * (services/policy/target.ts): a fork is a repo whose config record names another repo as its
+ * grand, a ref that does not parse or resolve comes back `unresolved` (which `decide` treats as a
+ * grand), and an ops-VM placement is marked so the grand-repo rule skips it.
+ *
+ * `config` is the request-scoped config (the container tier); without it the lookups read the
+ * daemon's enrolled config, as the dispatched command will.
+ *
+ * `repo promote <fork>` lands on the grand the fork replaces, so its target names that grand.
+ */
+export async function resolveExecutorTarget(
+  entry: ContractCommand,
+  input: TargetRef,
+  config: RdcConfig | undefined
+): Promise<DecisionTarget> {
+  const resolve = () => resolveTarget(input);
+  const target = config
+    ? await runInRequestContext(
+        {
+          output: createOutputState(),
+          stdout: [],
+          stderr: [],
+          config: createRequestConfigScope(config),
+        },
+        resolve
+      )
+    : await resolve();
+  if (!target.repo || !MUTATES_GRAND_BY_DEFINITION.has(entry.pathKey)) return target;
+  const [grandName = target.repo.name] = target.repo.name.split(':');
+  return { ...target, repo: { name: grandName, state: 'grand' } };
 }
 
 /**
@@ -199,62 +277,4 @@ function grandRepoRefusal(args: AuthorizeArgs): string {
  */
 export function isReadOnlyCommand(entry: ContractCommand): boolean {
   return entry.timeout === 'read' && entry.destructive !== true;
-}
-
-/**
- * Commands whose effect lands on the GRAND repo whatever their ref names:
- * `repo promote <fork>` swaps the fork into its grand's place.
- */
-const MUTATES_GRAND_BY_DEFINITION: ReadonlySet<string> = new Set(['repo promote']);
-
-/**
- * Whether a command would mutate a grand repo, decided at the executor.
- *
- * The COMMAND set is the CLI guard's own: the contract's `grandGuard`, the same
- * COMMAND_METADATA flag `assertCommandPolicy` reads (utils/command-policy.ts).
- * A command without it (every read, and `repo fork`, the safe way off a grand
- * repo) returns undefined and is never refused on grand-ness.
- *
- * The REPO test is the CLI guard's own too: a repo is a fork exactly when its
- * config record has a `grandGuid` naming another repository, looked up through
- * configService.getRepository with the same `name[:tag]` key the action bodies
- * pass. Unlike the local guard, it FAILS CLOSED: a ref that does not parse,
- * does not resolve, or is absent counts as grand, because an executor facing
- * the network must not wave through what it could not identify.
- *
- * `config` is the request-scoped config (the container tier); without it the
- * lookup reads the daemon's enrolled config, as the dispatched command will.
- */
-export async function resolveGrandRepoMutation(
-  entry: ContractCommand,
-  repoRef: string | undefined,
-  config?: RdcConfig
-): Promise<boolean | undefined> {
-  if (!entry.grandGuard) return undefined;
-  if (MUTATES_GRAND_BY_DEFINITION.has(entry.pathKey)) return true;
-  if (!repoRef) return true;
-
-  let key: string;
-  try {
-    const parsed = parseRef(repoRef);
-    key = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
-  } catch {
-    return true;
-  }
-
-  const lookup = () => configService.getRepository(key);
-  const repo = config
-    ? await runInRequestContext(
-        {
-          output: createOutputState(),
-          stdout: [],
-          stderr: [],
-          config: createRequestConfigScope(config),
-        },
-        lookup
-      )
-    : await lookup();
-
-  const isFork = !!(repo?.grandGuid && repo.grandGuid !== repo.repositoryGuid);
-  return !isFork;
 }

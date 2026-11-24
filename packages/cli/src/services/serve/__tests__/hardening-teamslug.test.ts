@@ -1,7 +1,8 @@
 /**
- * Design 3 of PLAN-rmcp-executor-hardening: the executor passes the principal's
- * team slug to authorize, so a policy document's `teams` rules match. Before the
- * fix the command route passed no slug and every team rule was dead.
+ * Design 3 of PLAN-rmcp-executor-hardening: the principal authorize receives
+ * carries its team slug, and authorize picks the policy's team tier from it, so a
+ * policy document's `teams` rules match. Before the fix the command route passed
+ * no slug and every team rule was dead.
  *
  * The real AuthVerifier, policy and Hono app run; the account server, the config
  * loader and the executor are fakes.
@@ -105,7 +106,7 @@ describe('team rules reach authorize', () => {
     const body = (await response.json()) as { error: string };
     expect(response.status).toBe(403);
     expect(body.error).toMatch(/denies|not allowed|policy/i);
-    expect(seen[0]?.teamSlug).toBe('team-a');
+    expect(seen[0]?.principal.teamSlug).toBe('team-a');
   });
 
   it("allows repo delete for another team's member (control)", async () => {
@@ -113,7 +114,7 @@ describe('team rules reach authorize', () => {
     const response = await repoDelete('rdt_team_b');
     await response.text();
     expect(response.status).toBe(200);
-    expect(seen[0]?.teamSlug).toBe('team-b');
+    expect(seen[0]?.principal.teamSlug).toBe('team-b');
   });
 
   it('drops a slug the account server reports without a team id', async () => {

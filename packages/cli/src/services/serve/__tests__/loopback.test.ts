@@ -357,7 +357,7 @@ describe('proxy loopback', () => {
     boot({ executor });
 
     await expect(runCli(['repo', 'status', 'demo'], MEMBER_TOKEN)).rejects.toThrow(
-      /only owners and admins/i
+      /No policy is configured; members may not run.*An owner or admin must grant access/i
     );
 
     // Policy is enforced BEFORE execution, not after.
