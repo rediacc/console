@@ -20,7 +20,9 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import importlib.util
+import os
 import pathlib
+import time
 from typing import Any
 
 
@@ -421,15 +423,64 @@ def _landing_nodes(wl_ci, top, worklist, session_id, landing_branch):
 UNREADABLE_RELEASE = -1
 
 
+# THE RELEASE SIDECAR (agent/plans/PLAN-tooling-speed.md SP8). Every stop of every session in a development tree whose landing PR had merged re-read the PR's merge commit and two workflows' run lists: three gh calls, 3.0 s of a 9.7 s stop measured 2026-11-24. A merged PR's merge commit never changes, so it is kept for good; a release verdict is kept for RELEASE_VERDICT_TTL_S, the same window the `.prlink` sidecar already holds the PR node itself for (wl_standdown.FOCUS_PR_TTL_S), so the promote line can trail a release by at most that long. A failed read is never kept. Only the real gh path reads or writes it: a caller's `gh` seam always asks.
+RELEASE_VERDICT_TTL_S = 180
+
+
+RELEASE_CACHE_KEEP = 32
+
+
+def _release_cache_path():
+    return (
+        pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist" / ".landing-release.json"
+    )
+
+
+def _release_cached(key):
+    """The sidecar's entry for `key` ({"sha", "verdict", "at"}, or {} when absent); {} too when wl_gh carries no cache helpers."""
+    import wl_gh
+
+    load = getattr(wl_gh, "cache_load", None)
+    entry = ((load and load(_release_cache_path())) or {}).get(key)
+    return entry if isinstance(entry, dict) else {}
+
+
+def _release_keep(key, entry):
+    import wl_gh
+
+    load, write = getattr(wl_gh, "cache_load", None), getattr(wl_gh, "cache_write", None)
+    if not (load and write):
+        return
+    cache = load(_release_cache_path()) or {}
+    cache.pop(key, None)
+    cache[key] = entry
+    write(_release_cache_path(), dict(list(cache.items())[-RELEASE_CACHE_KEEP:]))
+
+
 def landing_released(top, nodes, gh=None):
     """The landing PR's number once it is MERGED (and none is open) and its release at the merged sha is fully green (D3), else 0. Read from the development tree, which promotes; a failed read answers `UNREADABLE_RELEASE` (-1), which is not `> 0`, so promote is never named on a guess and the caller can still tell it from 0."""
     state, pr, _body = landing_pr(nodes)
     if state != "MERGED":
         return 0
-    sha, err = merged_sha(top, pr, gh)
-    if err:
-        return UNREADABLE_RELEASE
+    key = "%s#%s" % (top, pr)
+    hit = _release_cached(key) if gh is None else {}
+    sha = str(hit.get("sha") or "")
+    if sha and hit.get("verdict"):
+        try:
+            fresh = time.time() - float(hit.get("at") or 0) <= RELEASE_VERDICT_TTL_S
+        except (TypeError, ValueError):
+            fresh = False
+        if fresh:
+            return pr if hit["verdict"] == CI_GREEN else 0
+    if not sha:
+        sha, err = merged_sha(top, pr, gh)
+        if err:
+            return UNREADABLE_RELEASE
     verdict, _detail, err = read_release(top, sha, gh)
+    if gh is None:
+        _release_keep(
+            key, {"sha": sha} if err else {"sha": sha, "verdict": verdict, "at": time.time()}
+        )
     if err:
         # An unreadable release is not a pending one (review a77a0f9e.1): the caller names it instead of reading it as "not released yet".
         return UNREADABLE_RELEASE

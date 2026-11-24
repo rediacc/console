@@ -131,11 +131,39 @@ def _cherry(root, upstream: str, head: str) -> list[str] | None:
     return [line[:1] for line in out.splitlines() if line[:1] in "+-"]
 
 
+# A merged PR stays merged, so a yes is kept for good in this sidecar beside the worklist and every later stop skips the gh call (0.65 s per stop, measured 2026-11-24, agent/plans/PLAN-tooling-speed.md SP8). A no and a failed read are never kept.
+MERGED_CACHE_KEEP = 32
+
+
+def _merged_cache_path():
+    return (
+        pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist" / ".landing-merged.json"
+    )
+
+
+def _merged_cached(wl_gh, key) -> bool:
+    load = getattr(wl_gh, "cache_load", None)
+    return bool(load) and (load(_merged_cache_path()) or {}).get(key) is True
+
+
+def _merged_keep(wl_gh, key) -> None:
+    load, write = getattr(wl_gh, "cache_load", None), getattr(wl_gh, "cache_write", None)
+    if not (load and write):
+        return
+    cache = load(_merged_cache_path()) or {}
+    cache.pop(key, None)
+    cache[key] = True
+    write(_merged_cache_path(), dict(list(cache.items())[-MERGED_CACHE_KEEP:]))
+
+
 def gh_pr_merged(root, branch: str) -> bool:
     """Whether a MERGED PR is headed by `branch`, read through wl_gh. Raises StackReadError when gh cannot say: an unanswered question is not "no merged PR"."""
+    key = "%s#%s" % (root, branch)
     try:
         import wl_gh
 
+        if _merged_cached(wl_gh, key):
+            return True
         rows, err = wl_gh.call(
             [
                 "pr",
@@ -161,6 +189,8 @@ def gh_pr_merged(root, branch: str) -> bool:
             "gh could not say whether a merged PR is headed by %s (%s)"
             % (branch, err or "no answer")
         )
+    if rows:
+        _merged_keep(wl_gh, key)
     return bool(rows)
 
 
