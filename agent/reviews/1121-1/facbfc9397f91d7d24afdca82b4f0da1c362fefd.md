@@ -22,7 +22,7 @@ Body-Sig: d3f23a5a4ea40036
 Anchor: in-diff
 Claim: The new entry "agent/worklist/ace763dd.jsonl:AWS_KEY_ID" exempts every AWS_KEY_ID finding in that whole file, not just the deactivated SES key, so any further AWS access key id appended to that store (for example by compaction or the markdown sync) passes check:ci-tracked-credentials instead of going red.
 Class: security
-Resolution: open
+Resolution: fixed 5775bcdaf2a53f9c71111ba08cacea77c87ae36e | d778be9d 2026-11-24T19:44:08Z
 
 ### facbfc93.2 [low] .ci/config/tracked-credentials-baseline.json:2
 Anchor: in-diff
