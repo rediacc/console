@@ -192,6 +192,10 @@ def session_subagents_dir(cwd, session_id):
     return hits[0] / "subagents"
 
 
+# {meta path: ((st_mtime_ns, st_size), (agent id, entry) or None)}: one parse per meta file per process. A stop called load_metas seven times over 4,334 metas, about 1 s of reads and JSON (agent/plans/PLAN-tooling-speed.md SP8, measured 2026-11-24); a file whose mtime or size moved is read again, so a rewritten meta (a resume, a finish) is never served stale.
+_META_MEMO: dict[str, Any] = {}
+
+
 def load_metas(sub_dir):
     """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop.
 
@@ -210,11 +214,22 @@ def load_metas(sub_dir):
         return out
     for meta in paths:
         try:
+            st = meta.stat()
+        except OSError:
+            continue
+        sig = (st.st_mtime_ns, st.st_size)
+        hit = _META_MEMO.get(str(meta))
+        if hit is not None and hit[0] == sig:
+            if hit[1] is not None:
+                out[hit[1][0]] = dict(hit[1][1])
+            continue
+        try:
             info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
-            spawned = meta.stat().st_mtime
         except (OSError, ValueError):
             continue
+        spawned = st.st_mtime
         if not isinstance(info, dict):
+            _META_MEMO[str(meta)] = (sig, None)
             continue
         aid = meta.name[len("agent-") : -len(".meta.json")]
         out[aid] = {
@@ -230,6 +245,7 @@ def load_metas(sub_dir):
             # The harness's own mark, written as an agent ends and gone from the meta it rewrites on a resume.
             "finished": info.get("finished") is True,
         }
+        _META_MEMO[str(meta)] = (sig, (aid, dict(out[aid])))
     return out
 
 
