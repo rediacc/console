@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T13:44:19.732Z",
+  "generatedAt": "2026-11-24T16:47:58.718Z",
   "legs": [
     {
       "index": 1,
@@ -521,6 +521,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_cadence.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_checks_silent_failure.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_continuity_surface.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_core_profiler_guard.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_first_touch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
@@ -1007,6 +1008,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_no_app_admin_perm.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_page_density.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_prose_style.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_python_gate_deps.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_rubric_calibration.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_scope_scripts_reachability.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_setup_idempotency.py",

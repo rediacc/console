@@ -444,6 +444,7 @@
       "dependents": [
         "cmd/detectwasm",
         "cmd/modelsign",
+        "pkg/detect/errtext",
         "pkg/models"
       ]
     },
@@ -479,6 +480,7 @@
         "cmd/detectwasm",
         "cmd/modelsign",
         "pkg/detect",
+        "pkg/detect/errtext",
         "pkg/models"
       ]
     },

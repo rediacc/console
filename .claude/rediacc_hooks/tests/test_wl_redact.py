@@ -9,6 +9,7 @@ Every fixture is synthetic: the AWS id fixture is AWS's documented example (pref
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import pytest
@@ -136,7 +137,7 @@ def test_compaction_redacts_a_legacy_line_written_before_the_door(store):
     legacy = {
         "ev": "add",
         "id": "0badf00d",
-        "at": "2026-11-01T00:00:00Z",
+        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "by": "eeeeffff",
         "s": " ",
         "o": "eeeeffff",

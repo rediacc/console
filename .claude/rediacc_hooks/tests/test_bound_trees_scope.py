@@ -13,6 +13,8 @@ import subprocess
 
 import pytest
 
+from rediacc_hooks import wellknown
+
 CP = importlib.import_module("rediacc_hooks.commit_policy")
 VM = importlib.import_module("rediacc_hooks.guards.block_vm_unverified_push")
 RENET = importlib.import_module("rediacc_hooks.guards.block_renet_untested_push")
@@ -20,7 +22,7 @@ BACKUP = importlib.import_module("rediacc_hooks.guards.block_backup_unverified_p
 
 GUARDS = pathlib.Path(__file__).resolve().parents[1] / "guards"
 DEV, PR = "1121-1", "1121-2"
-ORIGIN = "https://github.com/rediacc/console.git"
+ORIGIN = "%s/%s.git" % (wellknown.GH_ORIGIN, wellknown.GH_REPO)
 GIT_ENV = {
     "GIT_AUTHOR_NAME": "t",
     "GIT_AUTHOR_EMAIL": "t@example.invalid",

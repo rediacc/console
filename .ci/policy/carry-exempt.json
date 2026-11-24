@@ -201,7 +201,7 @@
     },
     {
       "id": "check:ci-tutorial-caption-sync",
-      "reason": "Fetches each tutorial's words.json from the media CDN (check-tutorial-caption-sync.ts:204; traced 2026-11-24 connecting to media.rediacc.com:443) and compares it with the tracked captions, so a publish to the CDN flips the verdict at an identical tree.",
+      "reason": "Fetches each tutorial's words.json from the media CDN (check-tutorial-caption-sync.ts:204; traced 2026-11-24 connecting to the media CDN host on port 443) and compares it with the tracked captions, so a publish to the CDN flips the verdict at an identical tree.",
       "kind": "network"
     }
   ]
