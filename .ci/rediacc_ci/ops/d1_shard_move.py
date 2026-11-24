@@ -296,7 +296,16 @@ class Scope:
 
 
 # Tenant tables with no subscription column and an `org_id` column: they move with the org, selected by `org_id`.
-ORG_KEYED = ("config_stores", "audit_compaction_state", "console_runs", "console_command_history")
+ORG_KEYED = (
+    "config_stores",
+    "audit_compaction_state",
+    "console_runs",
+    "console_command_history",
+    "forensics_incidents",
+    "forensics_eviction_holds",
+    "forensics_support_grants",
+    "forensics_investigations",
+)
 
 
 def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:

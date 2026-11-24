@@ -204,6 +204,31 @@ def test_an_org_keyed_table_is_scoped_by_org_id_and_is_empty_without_an_org() ->
         mod.scope_where("unknown_table", ["id", "name"], scope)
 
 
+@pytest.mark.parametrize(
+    "table",
+    [
+        "forensics_incidents",
+        "forensics_eviction_holds",
+        "forensics_support_grants",
+        "forensics_investigations",
+    ],
+)
+def test_forensics_tables_move_with_the_org(table: str, template: pathlib.Path) -> None:
+    """The four forensics tables carry only `org_id`: each is selected by it, empty without an org, and registered as tenant data."""
+    assert table in mod.ORG_KEYED
+    assert table in mod.load_tenant_tables()
+    db = mod.SqliteExecutor(template)
+    columns = mod.read_schema(db).columns[table]
+    db.close()
+    where = mod.scope_where(table, columns, mod.Scope([S1], [O1]))
+    assert where is not None
+    assert where.startswith("org_id IN")
+    assert mod.scope_where(table, columns, mod.Scope([S1], [])) is None
+    # Control: a table outside ORG_KEYED with the same shape still refuses.
+    with pytest.raises(mod.MoveError):
+        mod.scope_where("not_registered", ["id", "org_id"], mod.Scope([S1], [O1]))
+
+
 # --- the move ---------------------------------------------------------------------------------------
 
 
