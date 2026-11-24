@@ -1,24 +1,19 @@
-## SESSION d778be9d 2026-11-24T07:52:06Z
+## SESSION d778be9d 2026-11-24T08:14:01Z
 
-# STATE d778be9d (2026-11-24 ~07:55Z, effort high, near compaction)
+# STATE d778be9d (2026-11-24 ~08:20Z, effort high)
 
 ## Big pieces
-- Operator 2026-11-24: this session carries ALL work, no leftovers; other sessions are gone. ace763dd is PAUSED (06:03Z) and still owns the former d778be9d items via /migrate; `worklist.py --migrate d778be9d ace763dd` is refused as LIVE until its brief is 90 min old (~08:10Z) -- retry then, then follow agent/ace763dd/STATE.md Next action (P1 #7000becb, PLAN-console-ai-feedback.md:1 reword, check:ci-pytest + check:cli-examples reruns). Release held tree agent-a2c20e76d194a9769 (#bdd23e50) and gc it with --drop cb8283ec39b9 (superseded by account 4c6f5848).
-- PR #605 merged 2026-11-22; no PR open; landing tree on main (its modified submodule pointers are not this session's).
-- Landed today on 1121-1: ace763dd leases (c3b992ee52..838416b29f), plan moves d4c2cb2129, console seed fixes (5 commits), renet 21b2744838, account seed fixes 95e86eeae8, S4 45ad4375b6. Stripe secrets: operator ASKED:2026-11-24T07:38Z "Leave them as they are" (closed).
-- Releases (operator ASKED:2026-11-24T07:48Z, recorded on #25c199d4): Latest = stable documented; bodies from Release-Note trailers (start at last tag with a Release), v4.0.1 left as is; trailer on feat/fix/perf in console+account+renet, checked at commit, land and CI; one generated changelog page, English notes.
-
-## Delegated
-- ae8007ceb74e34a96 #65313b5a: port 6 PLAN-preview-signer commits (N2 2df4a7f5, D1 d2efe573, D2 ae54f093) from lease agent-a8d935b9332ecc51f onto HEAD; owns .github/workflows/ci.yml, .ci/rediacc_ci/deploy/**, deploy tests; accept test_deploy_*.py + check:ci-workflows. Then land, gc both trees, tick the 3 boxes.
-- adc913dd456c3f5bf #01fa01bc: PLAN-armed-actions AA1 da8a433a + AA2 (wl_armed.py, wl_cli.py, wl_store.py); then start AA3/AA4/AA5 writers, AA6 e8c3b0f2 lead proof.
-- aa74462cfcb99aa77 #daad370e: bench token-ip rebind code read from bws automatically (CLI/scripts/ops); accept real `./rdc.sh --config eu-bench machine list` rc 0.
-- ab6ecf5ccb8b78421 #25c199d4: write agent/plans/PLAN-release-notes.md (main checkout, uncommitted); lead then runs check:ci-plan-boxes/record --update, adds QUEUE Promoted entry, commits.
+- Operator: this session carries ALL work; high effort means MANY parallel writers (staff every startable cluster). Next /writers-now must be a FULL round over all Promoted plans (hourly rule; last round 07:24Z was filtered to PLAN-armed-actions).
+- PLAN-armed-actions: AA1 0240965167, AA2 190c8ade62 + rows 36fa83a5f8, AA4 ab1d076e64, AA5 c4e1653595 landed; AA3 writer afd4f4bb931129835 (#6e62427c) running; AA6 lead live proof after. Plan ticks for AA1 da8a433a, AA2 b48d4f0c, AA4 da7de199, AA5 ec0a85bb not yet written (--plan-investigate + --plan-tick with landed shas).
+- Preview port writer ae8007ceb74e34a96 (#65313b5a) running: N2 2df4a7f5, D1 d2efe573, D2 ae54f093.
+- Background task b1um3o9pw retries `worklist.py --migrate d778be9d ace763dd` each minute; when it succeeds follow agent/ace763dd/STATE.md Next action (P1 #7000becb, PLAN-console-ai-feedback.md:1 reword, check:ci-pytest/check:cli-examples, release held tree agent-a2c20e76d194a9769 and gc --drop cb8283ec39b9).
+- Landed today: bench rebind automation 5b8a058e54 271e7ea313 + doc 080be39a0d; PLAN-release-notes eb564f912e (Promoted 98); audit id caps 45ad4375b6 68e17d51b6 (owed: consoleTargetSchema record at packages/shared/src/audit/console-events.ts:39 unbounded); seed fixes (console 5, account 95e86eeae8, renet 21b2744838).
 
 ## Owed ticks
-- PLAN-armed-actions AA1-AA6; PLAN-preview-signer N2/D1/D2 after the port; PLAN-simple-two-tree-loop B4 c098ad09, B7 445f8e25 partial.
-- Review findings of landed seed commits: mark fixed per Fixes-Review lines (worklist.py --review-mark d778be9d <id> fixed <landed sha>).
+- PLAN-armed-actions AA1/AA2/AA4/AA5 plan ticks (above); review findings of landed seed commits: --review-mark per Fixes-Review line.
 
 ## Next action
-1. Land each delegated report as it arrives (spot-check, cherry-pick, tests, gc, tick); commit PLAN-release-notes.
-2. ~08:10Z migrate ace763dd and continue its list.
-3. One dev ci:quick, then git push -u origin 1121-1 (backup).
+1. Land AA3 and the preview port as they report; write the AA plan ticks; run AA6.
+2. Full /writers-now round with many parallel writers.
+3. After migration: ace763dd's list.
+4. One dev ci:quick, then git push -u origin 1121-1.
