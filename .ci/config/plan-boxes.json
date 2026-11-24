@@ -121,17 +121,18 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 2,
+      "done": 4,
       "open_sigs": [
         "26dc6529",
+        "e8c3b0f2"
+      ],
+      "done_sigs": [
         "b48d4f0c",
         "da7de199",
         "da8a433a",
-        "e8c3b0f2",
         "ec0a85bb"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-ask-flow-preemptive-settled-check.md": {
       "status": "compacted",
