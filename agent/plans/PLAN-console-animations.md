@@ -69,10 +69,11 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Depends on: AN3, PLAN-console-run-index.md#RI8.
   Accept: `(cd private/account/web && npx vitest run src/components/console/runs/__tests__/run-block-animation.test.tsx)` rc 0: a running block with `cow_reflink` open shows the clone scene, a folded block shows none.
     (ticked) 2026-11-24T20:30:02Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
-- [ ] AN5 [writer] Translate the scene captions into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
+- [x] AN5 [writer] Translate the scene captions into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/console.json
   Depends on: AN3.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run ci -- --narrow` rc 0.
+    (ticked) 2026-11-24T21:03:10Z by d778be9d: AN5 landed 24d722c5ea; check:i18n rc 0; vitest animations and i18n 22 passed
 - [ ] AN6 [writer] Step coverage gate (D7): .ci/rediacc_ci/quality/step_phase_coverage.py with its `---- gate ----` header (lane quality-code, selftest true) and its gate test, the control planting an unmapped renet step id and a stale json id.
   Owns: .ci/rediacc_ci/quality/step_phase_coverage.py, .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py
   Depends on: AN2, PLAN-tooling-code-reduction.md#CR2.

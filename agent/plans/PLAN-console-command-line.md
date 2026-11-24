@@ -71,38 +71,46 @@ Shared files edited after their earlier owner lands: CommandForm.tsx (PLAN-conso
   Depends on: CL2.
   Accept: `(cd packages/shared && npx vitest run src/command-line/__tests__/recipe.test.ts src/command-line/__tests__/history.test.ts)` rc 0: an undeclared `$var` and a `term` step are problems, a default fills, Up then Down restores the draft.
     (ticked) 2026-11-23T18:17:59Z by ace763dd: commit:e20b39e7ed landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] CL4 [writer] The plain box (D4): `CommandLine` and `useCommandLine` under components/console/command-line/, a `ResourceSource` over `configOptions`, history from the run index plan's `useRunHistory`, the `dir="ltr"` rule, English strings in console.json; and `aria-activedescendant` on the existing Combobox input.
+- [x] CL4 [writer] The plain box (D4): `CommandLine` and `useCommandLine` under components/console/command-line/, a `ResourceSource` over `configOptions`, history from the run index plan's `useRunHistory`, the `dir="ltr"` rule, English strings in console.json; and `aria-activedescendant` on the existing Combobox input.
   Owns: private/account/web/src/components/console/command-line/**, private/account/web/src/components/console/Combobox.tsx, private/account/web/src/components/console/__tests__/combobox.test.tsx, private/account/web/src/i18n/locales/en/console.json
   Depends on: CL3, PLAN-console-run-index.md#RI7.
   Accept: `(cd private/account/web && npx vitest run src/components/console/command-line src/components/console/__tests__/combobox.test.tsx)` rc 0: Tab accepts the highlighted row, Up and Down move the list then the history, Esc closes then clears, no key acts while composing, `aria-activedescendant` names the highlighted option in both components.
-- [ ] CL5 [writer] Enter routing (D5): `routeCommand(entry)` in components/console/command-line/route.ts returning run, open-config or copy-with-reason, with run delegating to the exec path and the confirmation of PLAN-console-confirm-stepup.md.
+    (ticked) 2026-11-24T21:44:01Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL5 [writer] Enter routing (D5): `routeCommand(entry)` in components/console/command-line/route.ts returning run, open-config or copy-with-reason, with run delegating to the exec path and the confirmation of PLAN-console-confirm-stepup.md.
   Owns: private/account/web/src/components/console/command-line/route.ts, private/account/web/src/components/console/command-line/__tests__/route.test.ts
   Depends on: CL4.
   Accept: `(cd private/account/web && npx vitest run src/components/console/command-line/__tests__/route.test.ts)` rc 0 over every contract command: each lands in exactly one route, and a copy carries a non-empty blocked reason.
-- [ ] CL6 [writer] Panel prompt (D6): the box rendered in the run panel's prompt slot, Enter on a runnable line opening the confirmation and adding the run to the feed.
+    (ticked) 2026-11-24T21:44:02Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL6 [writer] Panel prompt (D6): the box rendered in the run panel's prompt slot, Enter on a runnable line opening the confirmation and adding the run to the feed.
   Owns: private/account/web/src/components/console/runs/RunPanel.tsx, private/account/web/src/components/console/command-line/PanelPrompt.tsx, private/account/web/src/components/console/command-line/__tests__/panel-prompt.test.tsx
   Depends on: CL5, PLAN-console-run-index.md#RI8, PLAN-console-confirm-stepup.md#CF4, PLAN-console-confirm-stepup.md#CF6.
   Accept: `(cd private/account/web && npx vitest run src/components/console/command-line/__tests__/panel-prompt.test.tsx)` rc 0: a destructive line opens the red dialog, a read-only line runs at once and shows a block.
-- [ ] CL7 [writer] Two-way form binding (D6): the box above each command form in CommandPage, CommandForm taking external values and reporting changes, CliEquivalent.tsx removed and RunHistory's copy line built by `buildCliCommand` directly.
+    (ticked) 2026-11-24T21:44:03Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL7 [writer] Two-way form binding (D6): the box above each command form in CommandPage, CommandForm taking external values and reporting changes, CliEquivalent.tsx removed and RunHistory's copy line built by `buildCliCommand` directly.
   Owns: private/account/web/src/pages/console/CommandPage.tsx, private/account/web/src/components/console/CommandForm.tsx, private/account/web/src/components/console/CliEquivalent.tsx, private/account/web/src/components/console/RunHistory.tsx, private/account/web/src/components/console/command-line/__tests__/form-binding.test.tsx
   Depends on: CL5, PLAN-console-confirm-stepup.md#CF5.
   Accept: `(cd private/account/web && npx vitest run src/components/console/command-line/__tests__/form-binding.test.tsx)` rc 0: typing a flag sets the field, editing the field rewrites the line, a line naming another command navigates; `git grep -n "CliEquivalent" -- private/account/web/src` prints nothing.
-- [ ] CL8 [writer] Cmd+K command mode (D6): a palette query starting with `rdc ` lists the core's suggestions and diagnostics, Tab completes, Enter routes through `routeCommand`.
+    (ticked) 2026-11-24T21:44:04Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL8 [writer] Cmd+K command mode (D6): a palette query starting with `rdc ` lists the core's suggestions and diagnostics, Tab completes, Enter routes through `routeCommand`.
   Owns: private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/components/console/__tests__/command-palette-rdc-mode.test.tsx
   Depends on: CL5.
   Accept: `(cd private/account/web && npx vitest run src/components/console/__tests__/command-palette-rdc-mode.test.tsx)` rc 0: `rdc repo` lists subcommands with summaries, a plain query still ranks pages and commands.
-- [ ] CL9 [writer] Recipes leaf (D7): `console.recipes` in `RdcConfigSchema` and `/console/recipes` as one committed identifier row in the sensitivity registry.
+    (ticked) 2026-11-24T21:44:05Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL9 [writer] Recipes leaf (D7): `console.recipes` in `RdcConfigSchema` and `/console/recipes` as one committed identifier row in the sensitivity registry.
   Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/config-schema/__tests__/console-recipes.test.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/config-schema/__tests__/console-recipes.test.ts src/config-schema/__tests__/coverage.test.ts)` rc 0 and `npm run check:ci-schema-coverage` rc 0.
-- [ ] CL10 [writer] Recipe step-up grant (D8): `routes/console-recipes.ts` with `POST /console/recipes/grant` behind `requireElevated()`, one mount line in console.ts, and console-stepup.ts accepting the grant for exactly its listed destructive steps.
+    (ticked) 2026-11-24T21:44:21Z by d778be9d: CL9 landed; console-recipes and coverage tests pass, check:ci-schema-coverage rc 0
+- [x] CL10 [writer] Recipe step-up grant (D8): `routes/console-recipes.ts` with `POST /console/recipes/grant` behind `requireElevated()`, one mount line in console.ts, and console-stepup.ts accepting the grant for exactly its listed destructive steps.
   Owns: private/account/src/routes/console-recipes.ts, private/account/src/routes/console.ts, private/account/src/services/console-stepup.ts, private/account/tests/integration/console-recipe-grant.test.ts
   Depends on: PLAN-console-confirm-stepup.md#CF3.
   Accept: `(cd private/account && npx vitest run tests/integration/console-recipe-grant.test.ts)` rc 0: a listed step passes without a fresh elevation, an unlisted destructive step is refused, a changed body hash is refused, a grant past 60 minutes is refused, another user's grant is refused.
-- [ ] CL11 [writer] Recipes UI (D7, D8): a recipes dialog opened from the panel prompt listing, editing (the core's diagnostics under the text area) and saving recipes through the shared config session, and a runner asking variables once, taking the grant once when a step is destructive, and running steps through the panel.
+    (ticked) 2026-11-24T21:44:06Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
+- [x] CL11 [writer] Recipes UI (D7, D8): a recipes dialog opened from the panel prompt listing, editing (the core's diagnostics under the text area) and saving recipes through the shared config session, and a runner asking variables once, taking the grant once when a step is destructive, and running steps through the panel.
   Owns: private/account/web/src/components/console/recipes/**
   Depends on: CL3, CL6, CL9, CL10.
   Accept: `(cd private/account/web && npx vitest run src/components/console/recipes)` rc 0: a save pushes a new config version, a run with two destructive steps asks step-up once, a failed step stops the run.
+    (ticked) 2026-11-24T21:44:07Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
 - [ ] CL12 [writer] Shell completions (D9): `rdc completion bash|zsh|fish|pwsh` and the hidden `rdc __complete` in packages/cli/src/commands/completion.ts, registered in cli.ts, a plane entry in command-planes.ts, a `none` row in command-safety.ts, English help strings in cli.json, then the contract, command-tree.json and the CLI reference pages regenerated.
   Owns: packages/cli/src/commands/completion.ts, packages/cli/src/commands/__tests__/completion*.test.ts, packages/cli/src/cli.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/command-safety.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/scripts/command-tree.json, packages/shared/src/cli-contract/data/**, packages/www/src/content/docs/*/cli-application.md
   Depends on: CL2.
@@ -111,10 +119,11 @@ Shared files edited after their earlier owner lands: CommandForm.tsx (PLAN-conso
   Owns: private/account/web/src/i18n/locales/*/console.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: CL4, CL6, CL7, CL8, CL11, CL12.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0, `npm run check:ci-i18n-cli-key-usage` rc 0, and `npm run ci -- --narrow` rc 0.
-- [ ] CL14 [writer] Keyboard and IME contract tests (C28): arrow, Tab, Esc, history and `aria-activedescendant` on the panel prompt, the form line and Cmd+K; composition through CDP `Input.imeSetComposition` then `Input.insertText` asserting no suggestion is accepted mid-composition and the committed text lands; an Arabic page keeps the box `dir="ltr"`.
+- [x] CL14 [writer] Keyboard and IME contract tests (C28): arrow, Tab, Esc, history and `aria-activedescendant` on the panel prompt, the form line and Cmd+K; composition through CDP `Input.imeSetComposition` then `Input.insertText` asserting no suggestion is accepted mid-composition and the committed text lands; an Arabic page keeps the box `dir="ltr"`.
   Owns: private/account/e2e/tests/27-console/27-05-command-line-keyboard.test.ts, private/account/e2e/tests/27-console/27-06-command-line-ime.test.ts
   Depends on: CL6, CL7, CL8.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-05-command-line-keyboard.test.ts tests/27-console/27-06-command-line-ime.test.ts --project=chromium)` rc 0.
+    (ticked) 2026-11-24T21:44:08Z by d778be9d: landed in 2f4a1cec99: console command line cluster, web vitest console and pages 953 passed, web tsc rc 0, keyboard and IME e2e passed in the lease
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) so CL-L1 drives the bundle this branch builds; cli-bench runs as additional verification for `rdc completion`.
   Accept: live-proof bench account-smoke
 - [ ] CL-L1 [live] eu bench: type `rdc repo fork <repo> --tag t1` in the panel prompt with Tab completion of the repo name, run it, then run a two-step recipe holding one destructive step (step-up asked once), and source `./rdc.sh --config eu-bench completion bash` in a bash shell to complete a bench repo name. Local-route: deploy-bench, bench-cli -- the branch account Worker serves the eu bench portal and the CLI from this tree reads the eu-bench config.

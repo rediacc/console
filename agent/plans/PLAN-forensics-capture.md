@@ -93,10 +93,11 @@ D14. **Budget.** Basic and Standard cost at most 3% throughput on an iperf3 run 
   Depends on: FC4.
   Accept: `cd private/renet && go test ./pkg/netaudit/trigger/` rc 0: no fire during warm-up, a fire at 11x baseline, expiry after 24 h.
     (ticked) 2026-11-23T18:18:17Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] FC7 [writer] Write `renet netaudit serve|status` and `renet forensics level` in cmd/renet, the `rediacc-netaudit.service` template of D11 in pkg/netaudit, and its registration through a new `netaudit_units.go` calling `proxy.RegisterUnitInstaller`.
+- [x] FC7 [writer] Write `renet netaudit serve|status` and `renet forensics level` in cmd/renet, the `rediacc-netaudit.service` template of D11 in pkg/netaudit, and its registration through a new `netaudit_units.go` calling `proxy.RegisterUnitInstaller`.
   Owns: private/renet/cmd/renet/netaudit*.go, private/renet/pkg/netaudit/unit.go, private/renet/pkg/netaudit/unit_test.go
   Depends on: FC2, FC3, FC5, FC6.
   Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/netaudit/...` rc 0; a unit test asserts `Slice=system.slice` and the two writable paths; `./build.sh dev` rc 0.
+    (ticked) 2026-11-24T21:25:37Z by d778be9d: FC7 present: renet netaudit serve, status and forensics level commands with units (07c84b60eb); go test ./cmd/renet/ ./pkg/netaudit/... rc 0; build.sh dev not run
 - [x] FC8 [writer] Add `CPUFeatures` (`cpu_features`) to `SystemInfo` from golang.org/x/sys/cpu (D13) and regenerate list-types.generated.ts.
   Owns: private/renet/pkg/list/system.go, private/renet/pkg/list/types.go, private/renet/pkg/list/system_test.go, packages/shared/src/renet-contract/data/list-types.generated.ts
   Depends on: none.

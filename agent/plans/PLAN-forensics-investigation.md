@@ -79,10 +79,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Owns: private/account/src/routes/root.ts, private/account/tests/integration/forensics-support-grant.test.ts
   Depends on: FI3.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-support-grant.test.ts)` rc 0 (support read without a grant 403, an expired or revoked grant 403, a grant for repo A refuses repo B, each support view appears in the org's audit list).
-- [ ] FI6 [writer] The `forensics:read` and `incident:manage` scopes: the ApiTokenScope members, the account zod enum, owner-and-admin-only minting, and a CLI login that grants them only after an elevated browser approval.
+- [x] FI6 [writer] The `forensics:read` and `incident:manage` scopes: the ApiTokenScope members, the account zod enum, owner-and-admin-only minting, and a CLI login that grants them only after an elevated browser approval.
   Owns: packages/shared/src/subscription/types.ts, private/account/src/types/api-token.ts, private/account/tests/integration/forensics-scopes.test.ts
   Depends on: none.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-scopes.test.ts)` rc 0 (a member cannot mint either scope, an unelevated approval omits them); `(cd private/account && npm run typecheck)` rc 0.
+    (ticked) 2026-11-24T21:44:10Z by d778be9d: FI6 elevated CLI-login grant landed 2f4a1cec99 (migration 0107); forensics-scopes and device-code vitest pass, drizzle-kit check rc 0
 - [ ] FI7 [writer] Read verbs (D7): `rdc incident status|export`, `rdc repo flows <ref> --since --until`, `rdc repo opens <ref> --since --until` and `rdc forensics verify` over `services/forensics/`, severity `none` entries in command-safety.ts, English keys in en/cli.json, the regenerated contract and command tree.
   Owns: packages/cli/src/commands/incident.ts, packages/cli/src/commands/forensics.ts, packages/cli/src/commands/repo-flows.ts, packages/cli/src/commands/repo.ts, packages/cli/src/cli.ts, packages/cli/src/services/forensics/**, packages/cli/src/commands/__tests__/incident*.test.ts, packages/cli/src/commands/__tests__/forensics*.test.ts, packages/cli/src/commands/__tests__/repo-flows*.test.ts, packages/cli/src/config/command-safety.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/scripts/command-tree.json, packages/shared/src/cli-contract/data/**
   Depends on: FI1, FI3, FI6, PLAN-console-contract-semantics.md#CS2.

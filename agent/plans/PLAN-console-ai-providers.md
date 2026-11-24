@@ -79,10 +79,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/cli-contract/__tests__)` rc 0 and `npm run check:ci-cli-contract` rc 0.
     (ticked) 2026-11-23T18:18:08Z by ace763dd: commit:7e3922b7e6 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] AP4 [writer] Dependencies: `ai`, `@ai-sdk/anthropic` and `@ai-sdk/openai-compatible` at exact versions past the release-age window in packages/cli/package.json, the lockfile written by `npm run pins -- lockfiles`, each licence read as Apache-2.0 from the installed package.json and quoted in the commit body with the CLI bundle size before and after.
+- [x] AP4 [writer] Dependencies: `ai`, `@ai-sdk/anthropic` and `@ai-sdk/openai-compatible` at exact versions past the release-age window in packages/cli/package.json, the lockfile written by `npm run pins -- lockfiles`, each licence read as Apache-2.0 from the installed package.json and quoted in the commit body with the CLI bundle size before and after.
   Owns: packages/cli/package.json, package-lock.json
   Depends on: PLAN-rmcp-local-mcp.md#LM1.
   Accept: `npm run check:deps` rc 0, `npm run check:ci-lockfile` rc 0 and `npm run check:ci-runtime-imports-are-deps` rc 0.
+    (ticked) 2026-11-24T21:44:10Z by d778be9d: AP4 ai, @ai-sdk/anthropic, @ai-sdk/openai-compatible pinned outside the freshness window; lockfile, deps, security audit gates rc 0
 - [ ] AP5 [writer] Provider adapter `packages/cli/src/services/ai/provider.ts`: a profile becomes an AI SDK model for either format with base URL, auth scheme and headers applied and the D5 guard re-run at call time, tested against a local mock HTTP server speaking Anthropic Messages and OpenAI chat with streamed tool calls.
   Owns: packages/cli/src/services/ai/provider.ts, packages/cli/src/services/ai/__tests__/provider.test.ts
   Depends on: AP1, AP4.

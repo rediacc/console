@@ -114,10 +114,11 @@ D9. **Status bar and pages.** A thin bar under the content while the panel is cl
   Depends on: RI7.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/jobs.test.tsx)` rc 0; `git grep -n "jobs-machine" -- private/account/web/src` prints nothing.
     (ticked) 2026-11-24T15:53:04Z by d778be9d: landed account 3bc95f5c (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
-- [ ] RI11 [writer] Translations of the panel, status bar and Jobs strings into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
+- [x] RI11 [writer] Translations of the panel, status bar and Jobs strings into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/console.json
   Depends on: RI8, RI9, RI10.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run ci -- --narrow` rc 0.
+    (ticked) 2026-11-24T21:25:36Z by d778be9d: RI11 present: run panel, status bar and Jobs strings translated in all 12 locales (account a8bf4533 via 0c71be615c); 386 of 386 en keys in each; check:ci-i18n-account-key-usage rc 0
 - [x] RI12 [writer] E2e of the panel against the TEST_MODE mock: a run from a command page appears as a running block, folds to one line when done, the filters narrow the feed, and the status bar shows a pill while the panel is closed.
   Owns: private/account/e2e/tests/27-console/27-03-run-panel.test.ts
   Depends on: RI2, RI9, RI10.
