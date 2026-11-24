@@ -171,12 +171,24 @@ def _guards(body: list[ast.stmt]) -> bool:
     raises = False
     names = False
     for stmt in body:
-        for node in ast.walk(stmt):
+        for node in _walk_own_scope(stmt):
             if isinstance(node, ast.Raise):
                 raises = True
             if isinstance(node, ast.Constant) and node.value == GUARD_NAME:
                 names = True
     return raises and names
+
+
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+
+def _walk_own_scope(node: ast.AST):
+    """`ast.walk` that does not enter a nested def, lambda or class: a raise defined there only runs if it is called, so it guards nothing (the swallowed-failures sibling, review 3982781b.4)."""
+    if isinstance(node, _SCOPES):
+        return
+    yield node
+    for child in ast.iter_child_nodes(node):
+        yield from _walk_own_scope(child)
 
 
 def guarded_in(fmt: str, text: str) -> str:

@@ -5,6 +5,7 @@ THE BUILDER IS PYTHON NOW. This gate used to read the bash `build-linux-pkg.sh` 
 The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
+import ast
 import contextlib
 import io
 
@@ -287,3 +288,17 @@ def test_resolve_root_honours_a_scratch_override_and_ignores_one_outside_temp(
     assert rsc.resolve_root() == str(scratch)
     monkeypatch.setenv("SIGNING_COVERAGE_ROOT", "/usr")
     assert rsc.resolve_root() != "/usr"
+
+
+def test_a_raise_inside_a_nested_def_is_no_guard() -> None:
+    """A branch whose only raise sits in a nested def refuses nothing until that def runs, so it is not a guard."""
+    body = ast.parse(
+        "def later():\n    raise SystemExit('RELEASE_SIGNING_REQUIRED')\nx = 'RELEASE_SIGNING_REQUIRED'\n"
+    ).body
+    assert rsc._guards(body) is False
+
+
+def test_a_raise_in_the_branch_itself_is_a_guard() -> None:
+    """Control: the raise and the name in the branch's own scope still make a guard."""
+    body = ast.parse("raise SystemExit('RELEASE_SIGNING_REQUIRED')\n").body
+    assert rsc._guards(body) is True
