@@ -80,7 +80,15 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     lines = []
     for repo in commit_repos(cmd, cwd, root):
         tree = commit_policy.owning_tree(repo, _bound_paths(root)) or root
-        pending = R.operation_pending(tree, pathlib.Path(repo))
+        try:
+            pending = R.operation_pending(tree, pathlib.Path(repo))
+        except Exception as exc:
+            # One repository's failed read must not drop the review line of every other repository.
+            lines.append(
+                "per-commit review NOT started in %s (%s: %s)"
+                % (repo, type(exc).__name__, str(exc)[:160])
+            )
+            continue
         if pending:
             # Said, never silent: the reviews are deferred, not skipped, and a reader of this line must not take it for "covered".
             lines.append(

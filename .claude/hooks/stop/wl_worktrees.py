@@ -1,6 +1,6 @@
 """wl_worktrees: the Stop hook follows lease trees (agent/plans/PLAN-worktree-lease.md Design 7).
 
-`survey` joins three sources per store, the console's and each `<common>/modules/**` one: `git worktree list --porcelain`, the pins under `refs/worktrees/`, and the records in `<common>/rediacc-worktrees/<id>.json`. wl_checks turns the answer into `worktree-unlanded` (block, owner session only) and `worktree-orphan` (advisory, which also carries a peer's lease as one line).
+`survey` joins three sources per store, the console's and each `<common>/modules/**` one: `git worktree list --porcelain`, the pins under `refs/worktrees/`, and the records in `<common>/rediacc-worktrees/<id>.json`. wl_checks turns the answer into `worktree-unlanded` (block, the owner session only, except a landing-cut lease, which blocks its lander and never its owner) and `worktree-orphan` (advisory, which also carries a peer's lease as one line).
 
 THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (the session id or its prefix), `agent` (the id inside `agent-<id>`, or ""), `base` ({"." or `private/<name>`: sha}), `tree` (`development` or `landing`, the `--tree` it was cut with), `cut_from` and `created_at`, and optionally `lander`.
 
@@ -239,9 +239,14 @@ def read_holds(common):
     return out
 
 
+TAG_MIN_CHARS = 4
+
+
 def _tags_agree(owner, tag):
-    """Whether two session id prefixes name one session: both non-empty and one a prefix of the other."""
-    return bool(owner) and bool(tag) and (owner.startswith(tag) or tag.startswith(owner))
+    """Whether two session id prefixes name one session: both at least TAG_MIN_CHARS long and one a prefix of the other, so a one- or two-character tag never agrees with every owner that starts with it."""
+    if len(owner or "") < TAG_MIN_CHARS or len(tag or "") < TAG_MIN_CHARS:
+        return False
+    return owner.startswith(tag) or tag.startswith(owner)
 
 
 def resolve_open_item(items, ref):

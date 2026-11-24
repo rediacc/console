@@ -435,7 +435,9 @@ def fold_rollup() -> bool:
         import wl_resprofile
 
         return wl_resprofile.fold() is not None
-    except Exception:
+    except Exception as exc:
+        # False stays the answer (a failed fold never takes the sampler down), but the reason is said so a rollup that stops refreshing is seen.
+        sys.stderr.write("ressample: rollup fold failed (%s: %s)\n" % (type(exc).__name__, exc))
         return False
 
 

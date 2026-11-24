@@ -26,7 +26,7 @@ import sys
 import pytest
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.test_review_commit_hook import World
+from rediacc_hooks.tests.test_review_commit_hook import HOOK, World
 from rediacc_hooks.tests.test_wl_retro import boundary, compact, ledger_rows
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -504,6 +504,44 @@ def test_post_bash_names_the_deferral_instead_of_calling_it_covered(reviewworld)
     assert "per-commit review deferred" in out
     assert "cherry-pick is in progress" in out
     assert "none due" not in out
+
+
+def _load_review_hook():
+    spec = importlib.util.spec_from_file_location("review_commit_hook_under_test", HOOK)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_a_failed_operation_read_names_the_repo_instead_of_dropping_the_line(
+    reviewworld, monkeypatch
+):
+    """e96e54fc.1: operation_pending raising for one repository answers 'NOT started' for it. Control: the same call with the real reader answers without that text."""
+    w = reviewworld
+    w.commit()
+    hook = _load_review_hook()
+
+    def boom(_tree, _repo):
+        raise RuntimeError("sf-pending")
+
+    monkeypatch.setattr(hook.R, "operation_pending", boom)
+    lines = hook.trigger_lines("git commit -m x", str(w.repo), str(w.repo), trigger=lambda *_a: [])
+    assert any("per-commit review NOT started" in x and "sf-pending" in x for x in lines), lines
+    monkeypatch.undo()
+    lines = hook.trigger_lines("git commit -m x", str(w.repo), str(w.repo), trigger=lambda *_a: [])
+    assert not any("sf-pending" in x for x in lines), lines
+
+
+def test_operation_in_progress_fails_open_when_git_errors_and_names_a_halt_when_it_answers(
+    tmp_path, monkeypatch
+):
+    """e96e54fc.2: a git that errors mid-halt reads as no operation (documented fail-open); the control is the same halted repo answered by a working git."""
+    repo = tmp_path / "r"
+    base_repo(repo)
+    (repo / ".git" / "MERGE_HEAD").write_text("0" * 40 + "\n", encoding="utf-8")
+    assert G.operation_in_progress(repo) == "merge"
+    monkeypatch.setattr(G, "run_git", lambda *_a, **_k: (128, "", "fatal: boom"))
+    assert G.operation_in_progress(repo) == ""
 
 
 def _clean_reviewer(_prompt, _cfg, _log):

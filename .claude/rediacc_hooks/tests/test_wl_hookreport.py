@@ -12,6 +12,8 @@ import types
 
 import pytest
 import wl_hookreport as H
+import wl_resprofile
+import wl_ressample
 import wl_retro
 import wl_trapfires
 
@@ -342,3 +344,17 @@ def test_read_ledger_rereads_when_a_rotation_lands_between_glob_and_live_read(tr
 
     monkeypatch.setattr(H, "read_jsonl", racing)
     assert len(H.read_ledger(root)) == len(rows), "rows rolled mid-read were lost"
+
+
+def test_a_failed_rollup_fold_says_why_on_stderr_and_a_clean_one_is_quiet(monkeypatch, capsys):
+    """a66ada74.3: fold_rollup answers False on a failure and names the reason; the control is a fold that answers."""
+
+    def boom():
+        raise RuntimeError("fold-injected")
+
+    monkeypatch.setattr(wl_resprofile, "fold", boom)
+    assert wl_ressample.fold_rollup() is False
+    assert "rollup fold failed (RuntimeError: fold-injected)" in capsys.readouterr().err
+    monkeypatch.setattr(wl_resprofile, "fold", lambda: {"ok": 1})
+    assert wl_ressample.fold_rollup() is True
+    assert capsys.readouterr().err == ""

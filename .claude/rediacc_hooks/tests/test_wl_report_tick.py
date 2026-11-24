@@ -101,6 +101,34 @@ def test_a_capture_with_no_tick_line_indexes_an_empty_list(tmp_path):
     assert _capture(tmp_path, "Nothing here names a box.", "none")["boxes"] == []
 
 
+def _capture_interim(store, body, agent, interim):
+    return RP.capture(
+        store,
+        "0101-1",
+        agent_id="a%s0123456789abcdef" % agent,
+        agent_type="general-purpose",
+        agent_name=agent,
+        session="deadbeef",
+        body=body,
+        transcript="",
+        interim=interim,
+    )
+
+
+def test_a_substantive_capture_with_a_shell_armed_is_indexed_armed_not_interim(tmp_path):
+    """73a0be94.1: `armed` is written for a report with substance, `interim` only for a silent capture. Controls: nothing armed writes neither key, and a silent capture writes `interim` only."""
+    body = "Waiting on the restart-services shell. " * 30
+    armed = _capture_interim(tmp_path, body, "arm", "bdy2q4ke7")
+    assert armed["armed"] == "bdy2q4ke7"
+    assert "interim" not in armed
+    plain = _capture_interim(tmp_path, body + "Second shell.", "plain", "")
+    assert "armed" not in plain
+    assert "interim" not in plain
+    silent = _capture_interim(tmp_path, "", "quiet", "bdy2q4ke7")
+    assert silent["interim"] == "bdy2q4ke7"
+    assert "armed" not in silent
+
+
 def _ticks(n, commits=1):
     return "".join(
         "TICK PLAN-a.md#%08x done commits=%s landed=all owed=-\n  close: nothing\n"
