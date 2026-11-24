@@ -26,7 +26,7 @@ The levels, each a superset of the one before:
 No writer limit (operator ruling #3ca908ee, PLAN-unlimited-writers.md): no guard, Stop-hook check or lease-tool count caps live writers at any effort level; the harness concurrent-subagent ceiling is the only bound, and file ownership (`block_plan_concurrency`) still decides who edits what.
 
 ```stop-hook
-effort: high
+effort: quiet
 ```
 
 ## In flight
@@ -34,21 +34,21 @@ effort: high
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort high; judge full; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort quiet; judge off; cadence on; agent_hint off; agent_pushback off.
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 713 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 721 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 6 live (session ace763dd): worker:ab538721bdf572ebd, worker:aaeb57ebb7175a344, worker:a577ab9d99d557090, worker:af3d54c37af7ec7d1, worker:a0766620aa8ffa390, worker:ac7bbbe2d87dc9a0d.
-- Leased items: 4: #0c034c06 (worker:ab538721bdf572ebd, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #7a330222 (worker:aaeb57ebb7175a344, ace763dd), #f1aaed05 (worker:a577ab9d99d557090, ace763dd).
+- Writers: 0 live (session ace763dd).
+- Leased items: 7: #0c034c06 (worker:ab538721bdf572ebd, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #afccedc4 (worker:a9eca231c9e83ef0b, ace763dd), #b11e20c1 (worker:a9eca231c9e83ef0b, ace763dd), #bf5202b8 (worker:a9c36895cedc0219a, ace763dd), #f1aaed05 (worker:a577ab9d99d557090, ace763dd), #fd3bd8b3 (worker:a9eca231c9e83ef0b, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
