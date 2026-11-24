@@ -1,19 +1,23 @@
-## SESSION d778be9d 2026-11-24T22:32:59Z
+## SESSION d778be9d 2026-11-24T23:50:49Z
 
-# STATE d778be9d (2026-11-24 ~23:35Z, effort high, operator AWAY since ~20:55Z)
+# STATE d778be9d (2026-11-25 ~00:55 local / 23:52Z, effort high, operator AWAY since ~20:55Z)
 
 ## Big pieces
-- Hourly writers-now rounds now real (cadence fix 913af37d87). Latest round db96eab1, survey /tmp/writers-now/1121-1-20261124T2202Z-r4.md (503 open boxes), rules /tmp/writers-now/db96eab1-rules.md. Next round due ~23:02Z+60.
-- Running writers (each leased in the worklist): CL-T2 rmcp-decide D4/D5 af86e9b1675781354; RV-ACC a7130cd735b1104fd; RV-A a3b8796d01ebe7b72; RV-B aa0ef9a670ae725db; CF7 page + CommandForm findings (4d406f1b.1, :180, contract-coverage:188) a505a7cbfc3cb2d0f; rmcp-decide D3 a4cedbc0087fbbcee; CL-E enterprise bench proofs afa1d2c40fd648c50 (then rerun V5 f2291749, V8 966c5266 on bench); CL13 translations a72d22c0773c58ae9 (resumed after API error; check:i18n red until it lands); hot guards adbced1bd6bfc5d74 (resumed); gate re-trace af57af2e30689c63f (owns review 9a666914.1 class: 28 narrowed gate path sets, proof /tmp/m/trace-proof.txt); red-gate fixer adad7d5647ae0b548.
-- Held (#4db4f961): RV-C, RV-E, RV-H, CL-AD1 DO17, CL-Q2, CL-V2 (AP2/AP5/AP8/AP9 need a DEPS-WAIVED ruling: ask operator when back).
-- API errors ("No response from API") killed 8 writers today; each resumed via SendMessage; Stop-hook resume-dead-agent check now names them.
-- Account migrations used: 0104-0108 (next free 0109). en console.json conflicts: union keys. Web tsc needs `npm run build` in packages/shared first.
+- SECURITY: review b2f0bd2f.1 -- D3 (landed b2f0bd2f7d) lets the executor allow grand-repo changes for a no-policy owner; writer ad848c0ddfbcac47c (#003ca390) restores the executor's fail-closed refusal. Product question parked #d4e288e2 (DEFAULT keep fail-closed).
+- Review findings writer a3dd7115ee2945eb1 (#a3a3...): 05db4e68.1 (forged roster-cache finished entry bypasses commit guard) and aa3f2a5f.1 (MCP single-check test must run the child CLI check).
+- Gate re-trace af57af2e30689c63f (#e32de9b1): 26/28 narrowed gates confirmed, source-rules restored, test-workers widened; running rotations then commit with Fixes-Review 9a666914.1.
+- Pytest reds writer af110ca1809cd8bc9 (#7afabbe8): 27 failures + shard coverage + lane budget.
+- Round 315bd55a survey ab412ecddd6990554 -> /tmp/writers-now/1121-1-20261124T2349Z-r5.md (84 seeds).
+- Landed tonight since 22:00Z: console command line complete (CL4-CL14), CF7 complete (server, page, keys, review fixes), D3 + proxied agent check, D2/D4/D5 partial, enterprise deploy-record fix 32eea66a0f + proof reset, hot guards (commit 0.24 s, spawn 0.9 s), red-gate fixer 10 commits, recipes/command-line/account review fixes, lint green (dbe2521e48). Tick batch ab71afbebe.
+- Bench reruns owed #172d84b5: enterprise proof release --bench (V5 f2291749), then cost --bench (V8 966c5266).
+- Deferred to operator: #fe286806 AP2/AP5/AP8/AP9 deps waiver (DEFAULT waive), #d4e288e2 executor no-policy grand (DEFAULT fail-closed).
+- Account migrations used 0104-0108; next 0109 (recipe grants table for review 7d23726b.2).
 
 ## Owed ticks
-- Partial: CL12 cdd211d1 (cli docs via CL13), CF7 d4e548d5 (page half), FI6 done, ciquick-cpu 64e50145 (re-trace), W3 c3833792 (W8 curator run). #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
+- #ba941b1f D4/D2 remainder (confirm channel, role source, errors.agent keys, source-rules registration); #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
 
 ## Armed
 - #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park dead AWS_IAM_ADMIN_* bws entries. #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
-1. Land each writer as it reports (account first; migrations from 0109; tests; gitlink; investigate+plan-tick checking rc; review-mark Fixes-Review; gc). 2. When load < 24: start the held clusters. 3. After re-trace + fixer land: CL-GATES, DO1/DO3. 4. Commit tick batches; ci:quick; push.
+1. Land the executor fix first (security), mark b2f0bd2f.1. 2. Land other writers as they report. 3. Survey returns: start clusters (load permitting), bench runner for V5/V8. 4. ci:quick once reds are fixed; push.
