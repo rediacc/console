@@ -167,6 +167,20 @@ RECORDS = [
 ]
 
 
+def test_an_unreadable_program_keeps_its_unknown_record_after_an_earlier_unknown_word(tmp_path):
+    """0228ca2d.2: `deno test` is a program the walk cannot read, and an earlier run's unexpandable word must not stand in for it."""
+    got = _records("rm $(g); deno test", tmp_path)
+    assert ("", "unknown", "", None, False) in got, got
+
+
+def test_control_one_unknown_record_per_run_not_two_for_one_run(tmp_path):
+    """Control: a run whose own word is already unknown adds no second program-unknown record."""
+    got = _records("deno test $(g)", tmp_path)
+    unknown = [r for r in got if r[1] == "unknown"]
+    assert unknown, got
+    assert sum(1 for r in unknown if r[2] == "") <= 1, got
+
+
 @pytest.mark.parametrize(("label", "cmd", "want"), RECORDS, ids=[c[0] for c in RECORDS])
 def test_write_records_carry_word_index_and_append(tmp_path, label, cmd, want):
     (tmp_path / "sub").mkdir()

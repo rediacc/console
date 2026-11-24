@@ -9316,7 +9316,8 @@ def write_records(cmd, cwd):
                 for word in _git_pathspecs(words):
                     put(word, run, "git")
         literals, unknown = _program_writes(run, cmd, cwd)
-        if unknown and not any(w.how == "unknown" for w in out):
+        # The program-unknown record is suppressed only by an unknown record of THIS run (a word it could not expand already says it): one from an earlier run of the command is no reading of this program (review 0228ca2d.2).
+        if unknown and not any(w.how == "unknown" and w.run is run for w in out):
             out.append(Write("", "unknown", "", run, None, False))
         for word in literals:
             put(word, run, "interpreter")
