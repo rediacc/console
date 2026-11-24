@@ -88,6 +88,13 @@ describe('applyExecutorEvents', () => {
     expect(joined.slice(0, 3)).toEqual(ROWS.slice(0, 3));
   });
 
+  it('does not match an event that carries neither a GUID nor a repo name', () => {
+    const anonymous = parseExecutorEvents(
+      line({ machine: 'm1', repo: null, guid: null, at: '2026-11-20T13:00:00Z' })
+    );
+    expect(applyExecutorEvents(ROWS, anonymous, 'm1')).toEqual(ROWS);
+  });
+
   it('does not match a GUID-less event to an orphan with no archived name (control)', () => {
     const byName = parseExecutorEvents(
       line({ machine: 'm1', repo: 'gamma', guid: null, at: null })
@@ -148,11 +155,13 @@ describe('tagged archived names (review 0ba0b83a.1)', () => {
 describe('archivedNames (review 0ba0b83a.2)', () => {
   it('keys archived records by lowercase GUID and composes name:tag', async () => {
     const { configService } = await import('../../config/config-resources.js');
-    const spy = vi.spyOn(configService, 'listArchivedRepositories').mockResolvedValue([
-      { name: 'alpha', tag: 'v2', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000001' },
-      { name: 'beta', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000002' },
-      { name: 'noguid' },
-    ] as never);
+    const spy = vi
+      .spyOn(configService, 'listArchivedRepositories')
+      .mockResolvedValue([
+        { name: 'alpha', tag: 'v2', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000001' },
+        { name: 'beta', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000002' },
+        { name: 'noguid' },
+      ] as never);
     try {
       const names = await archivedNames();
       expect(names.get('abcdef00-0000-4000-8000-000000000001')).toBe('alpha:v2');

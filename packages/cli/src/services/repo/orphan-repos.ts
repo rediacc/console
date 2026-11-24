@@ -188,8 +188,9 @@ export async function readExecutorEvents(file: string): Promise<ExecutorEvent[]>
 }
 
 /** A GUID-less event names the repo as the executor saw it: the whole archived ref (`name` or `name:tag`) or its name part. */
-function namesEvent(ref: string | null, repo: string): boolean {
-  return ref !== null && (ref === repo || ref.split(':')[0] === repo);
+function namesEvent(ref: string | null, repo: string | null): boolean {
+  // A GUID-less event that names no repo cannot place itself on any orphan.
+  return ref !== null && repo !== null && (ref === repo || ref.split(':')[0] === repo);
 }
 
 /**
