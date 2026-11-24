@@ -193,14 +193,21 @@ def _run(relative: str, tail: list[str]) -> tuple[subprocess.CompletedProcess, l
     scratch = tempfile.mkdtemp(prefix="suite-", dir=runtmp.shared("hook-suite-tmpdir-"))
     try:
         env = dict(os.environ, TMPDIR=scratch)
-        done = subprocess.run(
-            argv,
-            capture_output=True,
-            stdin=subprocess.DEVNULL,
-            timeout=SUITE_TIMEOUT_S,
-            check=False,
-            env=env,
-        )
+        try:
+            done = subprocess.run(
+                argv,
+                capture_output=True,
+                stdin=subprocess.DEVNULL,
+                timeout=SUITE_TIMEOUT_S,
+                check=False,
+                env=env,
+            )
+        except subprocess.TimeoutExpired as expired:
+            # A suite that outlives its budget is a verdict about THAT suite (exit 124, the `timeout(1)` convention, with what it had printed), never a traceback out of the harness.
+            note = ("\n%s timed out after %d s\n" % (relative, SUITE_TIMEOUT_S)).encode()
+            done = subprocess.CompletedProcess(
+                argv, 124, expired.stdout or b"", (expired.stderr or b"") + note
+            )
         leftovers = sorted(n for n in os.listdir(scratch) if not _SHARED_TOOL_CACHE.match(n))
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
@@ -362,3 +369,21 @@ def test_the_reachability_assertion_fires_on_each_broken_link():
             "the disappearance it exists to detect." % label
         )
         assert "NOWHERE" in problem, problem
+
+
+def test_a_suite_that_outlives_its_budget_is_a_verdict_about_that_suite(tmp_path, monkeypatch):
+    """The timeout arm of `_run`: exit 124 with the suite named and what it printed, where a bare `TimeoutExpired` would be a traceback about the harness. The quick suite is the control: the same call returns its own exit code and no timeout note."""
+    slow = tmp_path / "slow.py"
+    slow.write_text("import sys, time\nprint('partial', flush=True)\ntime.sleep(30)\n")
+    quick = tmp_path / "quick.py"
+    quick.write_text("print('done')\n")
+    monkeypatch.setattr(sys.modules[__name__], "SUITE_TIMEOUT_S", 1)
+
+    done, _ = _run(str(slow), [])
+    assert done.returncode == 124
+    assert b"timed out after 1 s" in done.stderr
+    assert str(slow).encode() in done.stderr
+
+    done, _ = _run(str(quick), [])
+    assert done.returncode == 0
+    assert b"timed out" not in done.stderr

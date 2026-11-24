@@ -31,6 +31,7 @@ TEXT_FORMATS = [
     "scripts/setup.ps1",
     "patches/fix.patch",
     "native/probe.c",
+    "pkg/detect/kernels/kernels_amd64.s",
     "tests/tick_tracking_fixtures/report/coordinator-report-01.body",
     "tests/tick_tracking_fixtures/planbox/control-4b3e830f0.msg",
     "tests/tick_tracking_fixtures/planbox/sampler.report",

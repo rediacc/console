@@ -373,11 +373,6 @@ _TABLE_ROW_RE = re.compile(r"^\|\s*(L\d+|SINGLES)\s*\|([^|]*)\|([^|]*)\|", re.IG
 _BOX_ID_RE = re.compile(r"^L\d+$")
 
 
-def lessons_plan_name(date):
-    """`PLAN-lessons-<YYYYMMDD>.md` for a `YYYYMMDD` or `YYYY-MM-DD` date."""
-    return "%s%s.md" % (LESSONS_PLAN_PREFIX, str(date).replace("-", ""))
-
-
 def lessons_plans(root):
     """[(date `YYYYMMDD`, repo-relative path)] of every `agent/plans/PLAN-lessons-<date>.md`, newest first. Folders under agent/plans/ (`_done`, `_removed`) count too: a finished weekly plan still marks the week as covered."""
     base = pathlib.Path(root) / "agent" / "plans"

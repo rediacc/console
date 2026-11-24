@@ -47,7 +47,7 @@ def _plan(root: pathlib.Path, date8: str, rows, ticked=False) -> pathlib.Path:
     text = h.weekly_plan_text(rows, date8, "deadbeef")
     if ticked:
         text = text.replace("- [ ] ", "- [x] ")
-    path = root / "agent" / "plans" / h.lessons_plan_name(date8)
+    path = root / "agent" / "plans" / ("%s%s.md" % (h.LESSONS_PLAN_PREFIX, date8))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path

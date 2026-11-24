@@ -9066,7 +9066,11 @@ def find_starts(run, ops):
         return ops
     out: list[str] = []
     for a in ops:
-        out.extend(run.launch.starts if "{}" in a else [a])
+        if a.endswith("/{}") and "{}" not in a[:-3]:
+            # A copy's landing `<dir>/{}`: the `{}` is the NAME the copy gives the walked file inside `<dir>`, so the landing stays under `<dir>` whatever the find walks. Reading it as the starting points dropped `<dir>` and read `cp {} /tmp/` as a write under the walked directory.
+            out.append(a[:-2] + "_")
+        else:
+            out.extend(run.launch.starts if "{}" in a else [a])
     return out
 
 
