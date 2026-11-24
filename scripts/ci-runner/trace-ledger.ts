@@ -1314,13 +1314,13 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     seconds: 1.4,
   },
   'check:ci-i18n-hashes': {
-    tracedAt: '2026-11-17T14:57Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
+    tracedAt: '2026-11-24T20:58Z',
+    tree: '713b0eebd77d986eda5059efa3b7b1a50585aa15',
     verdict: 'paths',
     reads: 12,
-    listed: 1,
+    listed: 4,
     coveragePct: 0.1,
-    seconds: 9.1,
+    seconds: 0.6,
   },
   'check:ci-i18n-ledger-growth': {
     tracedAt: '2026-11-24T08:49Z',
