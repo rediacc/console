@@ -3,7 +3,7 @@
   "_comment": [
     "Observed peak CPU / RAM / wall clock per CI job, and the input to",
     "check_runner_advice.py. Refresh with:",
-    "    npm run check:ci-runner-advice -- --refresh --branch main",
+    "    PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice --refresh --branch main",
     "which harvests the `PROFILER_BASELINE_V1` rows the runner profiler writes",
     "as `::notice` annotations (.ci/scripts/ci/profiler/panel.sh). The GATE",
     "itself never touches the network: it compares these committed numbers",

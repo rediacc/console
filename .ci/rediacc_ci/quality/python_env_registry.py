@@ -596,7 +596,7 @@ def main(argv=None) -> int:
     if "--write-baseline" not in argv:
         log.error(
             "python_env_registry is the `python_reads` writer, not a gate: pass --write-baseline "
-            "(the check runs as `npm run check:ci-env-registry`)"
+            "(the check runs as `PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry`)"
         )
         return 2
     allowed = []

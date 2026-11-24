@@ -114,7 +114,7 @@ BOOTSTRAP_WARNING = (
     "Runner sizing is UNENFORCED on this run. The baseline is PRISTINE (refreshed_at null, "
     "zero jobs), which is the as-committed state, so no job has a measurement to check yet "
     "and there is nothing this gate could be right or wrong about. Seed it from runs that "
-    "COMPLETED, with: npm run check:ci-runner-advice -- --refresh --branch main --runs 20 . "
+    "COMPLETED, with: PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice --refresh --branch main --runs 20 . "
     "The harvest writes only if it finds at least 5 jobs, so once this file is seeded it is "
     "enforced and this warning cannot come back."
 )
@@ -815,7 +815,7 @@ def main(argv=None):
         print(
             "VACUOUS INPUT: baseline names %d job(s), expected at least %d. A sizing check\n"
             "over an empty baseline exits 0 and reads exactly like full coverage. Seed it:\n"
-            "  npm run check:ci-runner-advice -- --refresh --branch main\n"
+            "  PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice --refresh --branch main\n"
             "This is NOT the pristine bootstrap state (refreshed_at null AND zero jobs), so\n"
             "the bootstrap exception does not apply: something has already written here, and\n"
             "a half-written baseline is a defect rather than a starting point."
@@ -863,7 +863,7 @@ def main(argv=None):
     if stale is not None:
         problems.append(
             "the baseline itself is stale (%s), so these numbers no longer describe\n"
-            "  reality. Refresh it: npm run check:ci-runner-advice -- --refresh --branch main"
+            "  reality. Refresh it: PYTHONPATH=.ci python3 -m rediacc_ci.quality.runner_advice --refresh --branch main"
             % (
                 "refreshed_at is missing or unparseable"
                 if stale < 0

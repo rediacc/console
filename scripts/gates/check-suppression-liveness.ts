@@ -567,7 +567,7 @@ const PROBES: Probe[] = [
     why: (entry, u) =>
       `no workflow invokes "${entry}" any more (oracle: ${u.source}); the exemption holds a hole open for a gate that no longer runs in CI.`,
     fix: (entry, e) => [
-      `remove line ${e.line} ("${entry}") from .ci/policy/.ci-parity-exempt, then: npm run check:ci-parity`,
+      `remove line ${e.line} ("${entry}") from .ci/policy/.ci-parity-exempt, then: npm run gen:gates -- --check`,
     ],
   },
   {

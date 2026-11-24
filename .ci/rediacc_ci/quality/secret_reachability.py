@@ -202,7 +202,7 @@ def refresh(root, baseline_path):
     data = {
         "_comment": [
             "Which secrets each repository can actually READ, not merely reference.",
-            "Refresh: npm run check:ci-secret-reachability -- --refresh (needs an org-admin token).",
+            "Refresh: PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability --refresh (needs an org-admin token).",
             "Written because Claude Review failed in account and renet for eleven days:",
             "both reference ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, an org secret scoped to console alone.",
         ],
