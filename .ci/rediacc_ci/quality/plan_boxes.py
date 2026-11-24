@@ -21,7 +21,7 @@ WHY A LEDGER AND NOT A GREP. Two reasons, both measured on this tree.
 
 WHAT IS ASSERTED (agent/plans/PLAN-plan-file-lifecycle.md's G-A0..G-A6):
 
-THE `G-` PREFIX IS LOAD-BEARING, ADOPTED 2026-09-08 (box X0.1). Three id schemes collided on the same-looking token, and two adjacent plan boxes ended up pointing at OPPOSITE FILES because of it: `A5`/`A6` here are GATE RULES, while `docs/ci-overhaul/04-decisions.md` section A item 6 (`:22-23`, "Do not stick on what I say. Better ideas are welcomed") is an OPERATOR RULING. W12 P2.7
+THE `G-` PREFIX IS LOAD-BEARING, ADOPTED 2026-09-08 (box X0.1). Three id schemes collided on the same-looking token, and two adjacent plan boxes ended up pointing at OPPOSITE FILES because of it: `A5`/`A6` here are GATE RULES, while `docs/ci-overhaul/04-decisions.md` section A item 6 (`:22-23`, the ruling that better ideas than the operator's own are welcomed) is an OPERATOR RULING. W12 P2.7
 cited "A5 in 04-decisions.md", where `grep -cE 'A5'` on that file returns 0 -- it meant this file all along. So gate rules are `G-A<n>`, operator decisions are `D-A<n>`, and a bare `A5` is now wrong in both directions rather than ambiguous in both.
 
   G-A0  every plan on disk has a ledger entry whose status, owner, open/done counts and

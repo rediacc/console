@@ -43,7 +43,7 @@ WHICH ROUTES ARE LOAD-BEARING TODAY, measured by ablation on 2026-09-08 rather t
   manual  load-bearing, exactly once: `.claude/rediacc_hooks/run_tests.py` has no
           other route at all.
 
-ANTI-VACUITY. There are 9 refusals, all of them the same shape: the gate would rather say "I cannot see my subject" than emit a green nobody can act on. Zero Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML, an empty `testpaths` or `python_files`, a missing wiring file, zero files admitted by `wired`, zero collected by `pytest`, and a declared glob root that no longer exists.
+ANTI-VACUITY. There are 9 refusals, all of them the same shape: the gate would rather report that its subject is not visible than emit a green nobody can act on. Zero Python files, zero referrers, a missing `pyproject.toml`, one that is not TOML, an empty `testpaths` or `python_files`, a missing wiring file, zero files admitted by `wired`, zero collected by `pytest`, and a declared glob root that no longer exists.
 
 THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own AST, counts the `RefusalError` raise sites and compares them against the digit in the paragraph above, because the first draft said "nine" while the code had eleven. A docstring that miscounts its own refusals is how a reader concludes a condition is covered when it is not.
 

@@ -166,7 +166,7 @@ def refresh(root, baseline_path):
             ".secrets[]|[.name,.visibility]|@tsv",
         ]
     )
-    # `is None`, NOT falsy. `gh()` returns None when the call FAILED and stdout when it succeeded -- and an org with zero Actions secrets produces EMPTY stdout, which is falsy. So `if not listing` read "the migration finished" as "you lack an admin token", and the record became permanently unrefreshable at the exact moment the thing it tracks reached its terminal state.
+    # `is None`, NOT falsy. `gh()` returns None when the call FAILED and stdout when it succeeded -- and an org with zero Actions secrets produces EMPTY stdout, which is falsy. So `if not listing` read "the migration finished" as "the caller lacks an admin token", and the record became permanently unrefreshable at the exact moment the thing it tracks reached its terminal state.
     #
     # Not hypothetical: the org secrets were deleted 2026-09-05, this record was last refreshed 2026-09-02, and the gate has been red ever since with an error message blaming the operator's credentials. Measured 2026-09-09 with an admin:org token in hand: `gh api orgs/rediacc/actions/secrets --jq .total_count` returns 0 and exits 0.
     if listing is None:

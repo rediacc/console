@@ -68,7 +68,7 @@ SPECIMENS = {
     "lesson-curator": "cluster the pending hint proposals into HINTS diffs and resolve the ones a guard or gate already enforces",
 }
 
-# Neutral haystacks. Every one of them is ordinary work that no specialist owns. They run inline on EVERY invocation, never behind a flag: a control you have to remember to run is how a control stops controlling anything.
+# Neutral haystacks. Every one of them is ordinary work that no specialist owns. They run inline on EVERY invocation, never behind a flag: a control that has to be remembered is how a control stops controlling anything.
 CONTROLS = (
     "fix a typo in the README",
     "update CLAUDE.md session defaults and the worklist stop hook docs",
@@ -142,7 +142,7 @@ def evaluate(matcher, corpus, uniq, specimens, names, min_score, min_margin) -> 
     """Findings, one string per problem. Empty means every agent is reachable."""
     out: list[str] = []
 
-    # (a) Universe equality, both directions. This is the assertion that makes "prove your new agent is reachable" a build requirement.
+    # (a) Universe equality, both directions. This is the assertion that makes "prove a new agent is reachable" a build requirement.
     out.extend(
         f"UNPROVEN: {missing} has no specimen. Add one line to SPECIMENS phrased the way "
         "a session would state that task, so the agent is provably reachable."

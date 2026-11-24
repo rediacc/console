@@ -133,7 +133,7 @@ def offenders(text):
                 )
             )
         elif guard is not None and last is None:
-            # ANTI-VACUITY. Both sequencing checks above are guarded on having parsed a number, so an edit that makes the loop unreadable would skip them SILENTLY and the file would pass while nothing had been verified. A conditional fallback whose loop cannot be parsed is reported as unverifiable rather than waved through: this gate must not be able to say "fine" when it means "I
+            # ANTI-VACUITY. Both sequencing checks above are guarded on having parsed a number, so an edit that makes the loop unreadable would skip them SILENTLY and the file would pass while nothing had been verified. A conditional fallback whose loop cannot be parsed is reported as unverifiable rather than waved through: this gate must not be able to say "fine" when it means "the check
             # could not tell".
             bad.append(
                 (

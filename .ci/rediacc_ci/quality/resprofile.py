@@ -303,7 +303,7 @@ def kill_trigger_fired(base: dict | None) -> str | None:
 
 
 def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
-    """(records written today, a phrase saying where I looked).
+    """(records written today, a phrase saying where the search looked).
 
     Counted rather than merely existence-checked: bash_env.sh creates the day folder before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a missing one beside a populated exit.jsonl -- is the exact signature of the hole.
     """

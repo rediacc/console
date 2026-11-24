@@ -3,7 +3,7 @@
 WHY THIS EXISTS. check_workflow_submodule_deps.py imported PyYAML, ran green on the author's machine, and died on the runner with ModuleNotFoundError. The author's environment had the module; a clean Ubuntu runner does not. Nothing compared what a script imports against what its job installs, so the gap was invisible until the job crashed -- and it crashed in the commit that added
 a gate against checks which silently do not run.
 
-WHY A DOCUMENT WAS NOT ENOUGH. The obvious remedy is a line in TRAPS.md saying "install your dependencies". A document an agent can skip is not a control, and this repo has the receipts: the stop-hook suite's own setup() carried a comment recording that 30 cases were once lost to an inherited GITHUB_ACTIONS, and a new call site was still added without the pin. The lesson was
+WHY A DOCUMENT WAS NOT ENOUGH. The obvious remedy is a line in TRAPS.md saying "install the dependencies". A document an agent can skip is not a control, and this repo has the receipts: the stop-hook suite's own setup() carried a comment recording that 30 cases were once lost to an inherited GITHUB_ACTIONS, and a new call site was still added without the pin. The lesson was
 written down and then walked past. This asserts the property instead.
 
 WHAT IT CHECKS. For every workflow step that runs a repo .py file, it reads that file's top-level imports, drops the standard library and the script's own neighbours, and requires anything left to be named by a `pip install` earlier in the same job.

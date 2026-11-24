@@ -1499,7 +1499,7 @@ a secret and the log. If the value itself is the question, reduce it to a digest
 ## Local gates read the WORKING TREE, CI reads the TRACKED tree, so a half-staged pair passes here and fails there
 Trap-Id: working-tree-green-tracked-tree-red
 Enforced-By: gate:check:ci-gen-gates
-Residue: Both directions of the split are now gated, by two legs of `check:ci-gen-gates` -- the parity leg catches a tracked file with no manifest entry, and the manifest-rules leg's `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
+Residue: Both directions of the split are now gated, by two legs of `check:ci-gen-gates` -- the parity leg catches a tracked file with no manifest entry, and the manifest-rules leg's `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before a commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
 
 `npm run ci:quick` was 307/307 and CI came back red on the commit it had just blessed. The failing step was "Validate parity between the local gate set and the CI quality surface":
 

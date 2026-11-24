@@ -389,7 +389,7 @@ def _planrec_cli(argv):
     root = C.project_root(C.project_start())
     if len(argv) == 2:
         # NO PATH IS A LISTING, not a usage error. The 33-plan wave this exists
-        # for is a READ before it is a write -- "what can I compact, and what
+        # for is a READ before it is a write -- "which plans can be compacted, and what
         # would each one refuse" -- and answering that from the tool is cheaper and more honest than a session grepping statuses by hand. It is also the only mode of these verbs whose effect is a printed line rather than a file, which is what lets the identity suite drive them without planting a git repository per verb.
         recs = CK.plan_records(root)
         if mode == "--plan-revive":
@@ -2036,7 +2036,7 @@ def _item_cli(argv, worklist):
                 was_verified = True
                 verified = " (worker verified against the harness's running tasks)"
             else:
-                # Name BOTH causes, and annotate the ids. The message used to offer only "you named an Agent", which sends a caller hunting
+                # Name BOTH causes, and annotate the ids. The message used to offer only "an Agent was named", which sends a caller hunting
                 # for a task id that does not exist when the real cause is the
                 # second one: the sidecar event is a SNAPSHOT, so a task started moments ago is legitimately absent from it.
                 #
@@ -2148,9 +2148,9 @@ def _migrate_cli(argv):
 
     THE VERB BEHIND /migrate. Its whole reason to exist is a machine switch: the event log now travels in git, so a session's remaining work arrives on the new machine, but it arrives OWNED BY A SESSION THAT IS NOT RUNNING THERE -- visible, and blocking nobody. This re-tags it to the session in front of the operator.
 
-    RE-TAG, chosen by the operator over an alias, and the consequence is the point: after the move the items are MINE, so the Stop hook blocks on them exactly as it would on work I typed myself. The originals are ticked with a note naming the new id; nothing is deleted, and the log still says who did the work.
+    RE-TAG, chosen by the operator over an alias, and the consequence is the point: after the move the items belong to the session that ran the verb, so the Stop hook blocks on them exactly as it would on work that session typed itself. The originals are ticked with a note naming the new id; nothing is deleted, and the log still says who did the work.
 
-    NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing is one command and the move is another, because "continue everything you find" is precisely the shape that would sweep up a colleague's session.
+    NOTHING MOVES WITHOUT A NAMED PREDECESSOR. There is no `--all`: the listing is one command and the move is another, because "continue everything found" is precisely the shape that would sweep up a colleague's session.
     """
     if len(argv) < 2:
         sys.stderr.write(M.CLI_MIGRATE_USAGE)
@@ -2438,12 +2438,12 @@ def _reassign_cli(argv):
 
     THREE RULES, each one guarding a way this could become a weapon:
 
-    * `<me>` faces the same identity check as every other verb, so you cannot
-      reassign work TO a fiction and make the problem worse.
+    * `<me>` faces the same identity check as every other verb, so work cannot be
+      reassigned TO a fiction and make the problem worse.
     * `<phantom>` must have no `.lastevent-<prefix>.json` -- it must never have
       stopped. This is what stops --reassign becoming a way to steal a LIVE
-      peer's items, which CLAUDE.md forbids in as many words ("never tick or
-      remove an item that is not yours").
+      peer's items, which CLAUDE.md forbids in as many words (an item of another
+      session is never ticked or removed).
     * OPEN items only. History is left exactly as it was:
       the phantom really did write those events, and a log that lies about that
       is worse than one that is untidy.
@@ -2905,7 +2905,7 @@ def main():
         root = C.project_root(C.project_start())
         # NO BRANCH GUARD any more (2026-08-18): the document is keyed on the session alone, so a detached HEAD -- which this operator gets on every interactive rebase -- no longer makes the one artifact designed to survive compaction unwritable.
         if not S.agent_session_dir(root, prefix).is_dir():
-            # NEVER auto-created (operator decision 2026-07-30): bootstrapping is a judgement call a tool must not make. MY OWN directory since the split: a session joining a checkout a peer bootstrapped still has nowhere of its own to write, and creating it for them would make that decision on their behalf.
+            # NEVER auto-created (operator decision 2026-07-30): bootstrapping is a judgement call a tool must not make. THIS SESSION'S OWN directory since the split: a session joining a checkout a peer bootstrapped still has nowhere of its own to write, and creating it for them would make that decision on their behalf.
             sys.stderr.write(M.CLI_STATE_NO_DIR % (prefix, prefix))
             sys.exit(2)
         # isatty FIRST: reading an interactive terminal is the hang this verb was reported for, and refusing beats blocking even now that a bare `--state` no longer reaches the hook path.
@@ -2966,7 +2966,7 @@ def main():
                 sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
             sys.exit(2)
         target = S.agent_state_path(root, prefix)
-        # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of my replaced body. It used to carry the branch as well (findings 3688784930/3688787780, when the document itself was per branch); the branch left the document's path, so it left the slot's name with it.
+        # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of the replaced body. It used to carry the branch as well (findings 3688784930/3688787780, when the document itself was per branch); the branch left the document's path, so it left the slot's name with it.
         backup = S.agent_state_backup_path(wl, prefix)
         reaped_path = S.agent_state_reaped_path(wl, prefix)
         pdir = C.projects_dir(root)
@@ -3058,7 +3058,7 @@ def main():
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(merged)
             os.replace(tmp, target)
-        # Name the backup ONLY when a previous document existed AND the copy actually landed (findings 3688770247/3688779150/3688787850: the old line advertised a recovery path that a failed write had never created, which is worse than no promise at all). The condition is "there was a document", not "I replaced my own section": since the merge, a write that only APPENDS a section
+        # Name the backup ONLY when a previous document existed AND the copy actually landed (findings 3688770247/3688779150/3688787850: the old line advertised a recovery path that a failed write had never created, which is worse than no promise at all). The condition is "there was a document", not "the session replaced its own section": since the merge, a write that only APPENDS a section
         # still rewrites the file, so the backup is real and worth naming either way.
         if had_prev:
             if backed_up:
@@ -3435,7 +3435,7 @@ def main():
         # THE ROSTER. `.sessions` is the registry of who exists here -- it is what peer reporting reads and what the liveness ladder counts -- and until now an unvalidated command-line string populated it. A phantom identity that briefs itself looks exactly like a real session.
         _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
-        # A lone id is a MISREAD of this verb, not a short brief. The word reads both ways (publish a brief / brief me on X) and the argument shape is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes and the roster then advertises it as live activity. Shape only, no store read: this branch stays self-contained on purpose (see above), and a
+        # A lone id is a MISREAD of this verb, not a short brief. The word reads both ways (publish a brief / a briefing on X) and the argument shape is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes and the roster then advertises it as live activity. Shape only, no store read: this branch stays self-contained on purpose (see above), and a
         # bare hex token is never a real brief either way.
         if (
             len(sys.argv) == 4

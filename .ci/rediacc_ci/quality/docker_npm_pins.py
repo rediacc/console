@@ -316,7 +316,7 @@ def main() -> int:
 
     # THE TREE MUST BE ALL THERE BEFORE ANY VERDICT IS HONEST, and this gate learned it the same way check_syncpack_sources.py did -- from CI, on its first run.
     #
-    # quality-static checks out NO submodules. private/account/Dockerfile then simply vanishes from the enumeration, its two exclusions match nothing, and the dead-scaffold arm fires: two confident findings telling the reader to delete entries that are entirely correct (job 100870135489). A missing file is "cannot verify", never "your entry is dead".
+    # quality-static checks out NO submodules. private/account/Dockerfile then simply vanishes from the enumeration, its two exclusions match nothing, and the dead-scaffold arm fires: two confident findings telling the reader to delete entries that are entirely correct (job 100870135489). A missing file is "cannot verify", never "the entry is dead".
     #
     # Checked against the paths the CONFIG names, not against what the scan found: asking the enumeration whether the enumeration is complete answers itself.
     absent = sorted({k.split(":", 1)[0] for k in excl} - set(scanned()))

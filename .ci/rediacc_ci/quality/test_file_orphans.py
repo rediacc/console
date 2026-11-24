@@ -183,7 +183,7 @@ def registration_route_selfcheck(toks):
 def collected_roots():
     """The pytest roots, read from pyproject.toml's `testpaths`.
 
-    A SECOND WAY OF BEING REACHED, and without it this gate is wrong about an entire testing style. Everywhere else in this repo a test file is wired by something NAMING it -- a workflow step, a package.json key, a case list in test-hooks.sh -- so "nothing mentions you" is a sound proxy for "nothing runs you". pytest does not work that way: it COLLECTS by convention from the roots
+    A SECOND WAY OF BEING REACHED, and without it this gate is wrong about an entire testing style. Everywhere else in this repo a test file is wired by something NAMING it -- a workflow step, a package.json key, a case list in test-hooks.sh -- so "nothing mentions the file" is a sound proxy for "nothing runs the file". pytest does not work that way: it COLLECTS by convention from the roots
     the ini names, and a correctly wired pytest file is mentioned nowhere.
 
     Adding the two pytest roots to SEARCH_DIRS on 2026-09-06 therefore reported all eight of them as orphans at once -- eight files that a green `check:ci-pytest` had just collected and passed. Eight simultaneous findings of the same shape is a gate being wrong, not a tree being broken.

@@ -162,7 +162,7 @@ def main() -> int:
     # the enumeration and the two `private/account/{e2e,web}` exclusions look DEAD.
     # That is what happened on the first CI run (job 100494921545, ci-quality `quality-branch`, which checks out no submodules): two confident findings telling the reader to delete entries that are entirely correct.
     #
-    # So check the directories named by the config, not the manifests found in them. A missing one is "cannot verify", never "clean" and never "your entry is dead".
+    # So check the directories named by the config, not the manifests found in them. A missing one is "cannot verify", never "clean" and never "the entry is dead".
     named = {g.split("/package.json")[0] for g in globs if g != "package.json"}
     named |= {rel.rsplit("/", 1)[0] for rel in excl}
     absent = sorted(d for d in named if "*" not in d and not (ROOT / d).is_dir())

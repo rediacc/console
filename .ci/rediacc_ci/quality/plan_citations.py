@@ -793,9 +793,9 @@ def absent_submodules(root):
     with no `submodules:` key, which is GitHub Actions' default of false. So in CI
     `private/renet/**` is an empty directory, and every `private/renet/pkg/...:NNN` citation in the corpus resolved to "does not exist": 22 findings on the first real run, every one of them a correct pointer into code the lane had chosen not to fetch.
 
-    That direction of wrongness is the expensive one. A false POSITIVE here asks a reader to DELETE a citation that is perfectly good, and the gate's own advice block tells them how ("a file:line that moved needs re-reading"). Follow it and you lose the pointer permanently.
+    That direction of wrongness is the expensive one. A false POSITIVE here asks a reader to DELETE a citation that is perfectly good, and the gate's own advice block tells them how ("a file:line that moved needs re-reading"). Following it loses the pointer permanently.
 
-    SCOPED TO THIS GATE ON PURPOSE, and this is the part not to "simplify" later. The obvious fix is to teach `citation_state()` about submodules, and that would be wrong: it is shared with the stop hook's own claim-verification (`worklist.py`, `wl_planrec.py`, `test-completion-evidence.py`), where a session DOES have the submodule checked out, so "I cannot verify this" must stay a
+    SCOPED TO THIS GATE ON PURPOSE, and this is the part not to "simplify" later. The obvious fix is to teach `citation_state()` about submodules, and that would be wrong: it is shared with the stop hook's own claim-verification (`worklist.py`, `wl_planrec.py`, `test-completion-evidence.py`), where a session DOES have the submodule checked out, so "this cannot be verified here" must stay a
     refusal rather than become a skip. Widening the shared resolver would teach the anti-hallucination check to wave through exactly the claims it exists to catch. So the filter lives here, in the caller, and the resolver keeps failing closed.
     """
     # `-f <root>/.gitmodules`, NOT the bare relative name. `_git` anchors every call to the module-level ROOT, so a bare `.gitmodules` reads the real repo's
@@ -971,7 +971,7 @@ def selftest(root, drift=False):
 
     # THE ANCESTRY RULE FOR COMMITS, both directions. An ORPHAN IS CONSTRUCTED rather than borrowed from this clone's reflog: the whole point is that a fresh CI checkout has no orphans, so a control that relied on finding one would silently stop testing anything there -- which is the exact failure mode this rule exists to close.
     tree = _git("rev-parse", "HEAD^{tree}").strip()
-    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one: "Author identity unknown -- Please tell me who you are". A GitHub runner configures no git identity at any scope, so this control built its orphan fine on every developer machine and FAILED on the runner -- the exact environment-dependence it exists to catch, in the control itself. `-c` rather than env vars:
+    # THE IDENTITY IS SUPPLIED, because `commit-tree` refuses without one: "Author identity unknown -- Please tell the tool who is committing". A GitHub runner configures no git identity at any scope, so this control built its orphan fine on every developer machine and FAILED on the runner -- the exact environment-dependence it exists to catch, in the control itself. `-c` rather than env vars:
     # it is scoped to this one command and cannot leak into anything else the gate runs.
     orphan = _git(
         "-c",

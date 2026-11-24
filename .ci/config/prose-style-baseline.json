@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2650,
- "files": 662,
+ "count": 2592,
+ "files": 634,
  "by_rule": {
-  "R1": 1419,
+  "R1": 1402,
   "R11": 136,
   "R14": 1,
-  "R18": 12,
+  "R18": 11,
   "R19": 55,
-  "R2": 596,
-  "R7": 431
+  "R2": 581,
+  "R7": 406
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -304,11 +304,6 @@
   ".ci/rediacc_ci/quality/config_migrations.py": {
    "R7": [
     "9d4a9677d2a6dd38"
-   ]
-  },
-  ".ci/rediacc_ci/quality/dead_python.py": {
-   "R2": [
-    "c386daf5b08bed0b"
    ]
   },
   ".ci/rediacc_ci/quality/env_manifest.py": {
@@ -689,11 +684,6 @@
     "00dd20f7b6b2f87d"
    ]
   },
-  ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": {
-   "R7": [
-    "891a21da008fe175"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
    "R7": [
     "2ce20239c0bbd1ef",
@@ -785,11 +775,6 @@
    "R2": [
     "2923b4e84b7e2448",
     "68f58ab30dcba290"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_quality_typecheck_workers.py": {
-   "R7": [
-    "b852d49155f5d14d"
    ]
   },
   ".ci/rediacc_ci/tests/test_release_reprobe_r2_sentinel.py": {
@@ -899,136 +884,9 @@
     "1c40036f407fea89"
    ]
   },
-  ".ci/scripts/quality/check_agent_hint_liveness.py": {
-   "R1": [
-    "2ee409dbc99e0c1d",
-    "e30a2135c7cf3acf"
-   ]
-  },
-  ".ci/scripts/quality/check_bws_map.py": {
-   "R7": [
-    "a18bb701833b8ccc",
-    "f5ec7f758c9db6af"
-   ]
-  },
-  ".ci/scripts/quality/check_ci_watch_recipe.py": {
-   "R7": [
-    "349b13db5a83f34b"
-   ]
-  },
-  ".ci/scripts/quality/check_decision_ids.py": {
-   "R7": [
-    "88377e9cc34775c7"
-   ]
-  },
-  ".ci/scripts/quality/check_docker_npm_pins.py": {
-   "R1": [
-    "86077760c515e121"
-   ]
-  },
-  ".ci/scripts/quality/check_dockerfile_mirror_resilience.py": {
-   "R2": [
-    "512b49b534be7679"
-   ]
-  },
-  ".ci/scripts/quality/check_e2e_case_blind_assertions.py": {
-   "R7": [
-    "af7ee98f6334ea7c",
-    "d86afcd6e7d87ee8"
-   ]
-  },
-  ".ci/scripts/quality/check_guard_mention_anchoring.py": {
-   "R7": [
-    "252f8e8932499d0f"
-   ]
-  },
-  ".ci/scripts/quality/check_i18n_value_types.py": {
-   "R7": [
-    "ba4885dfc31a7ca5"
-   ]
-  },
-  ".ci/scripts/quality/check_inner_timeout_reachable.py": {
-   "R7": [
-    "9771ca57b50358d9"
-   ]
-  },
-  ".ci/scripts/quality/check_plan_boxes.py": {
-   "R2": [
-    "4682c96cc0b045f9"
-   ],
-   "R7": [
-    "71f5a3ec6bf9b339"
-   ]
-  },
-  ".ci/scripts/quality/check_plan_citations.py": {
-   "R1": [
-    "76257ef1b0a4dc6f",
-    "bd8d627ced1e1a71"
-   ],
-   "R2": [
-    "0197e8593d5ad0cb",
-    "0ecebe94656aa31d"
-   ],
-   "R7": [
-    "4cd92ea5ee79ca21",
-    "c3a06638b82f9578"
-   ]
-  },
   ".ci/scripts/quality/check_plan_record.py": {
    "R1": [
     "41627431f85092f3"
-   ]
-  },
-  ".ci/scripts/quality/check_policy_inventory.py": {
-   "R7": [
-    "53a79cb1df0c059c"
-   ]
-  },
-  ".ci/scripts/quality/check_python_control_plants.py": {
-   "R1": [
-    "187c3b04345c2604"
-   ]
-  },
-  ".ci/scripts/quality/check_python_gate_deps.py": {
-   "R1": [
-    "91ce3889851d89d6"
-   ]
-  },
-  ".ci/scripts/quality/check_resprofile.py": {
-   "R2": [
-    "562504b34fefa180"
-   ],
-   "R7": [
-    "c863ee7cbc3ab377",
-    "e80829255c304d8c"
-   ]
-  },
-  ".ci/scripts/quality/check_runner_advice.py": {
-   "R7": [
-    "72007b7a553fc2fc"
-   ]
-  },
-  ".ci/scripts/quality/check_secret_reachability.py": {
-   "R1": [
-    "9b6ca8b9231e3556"
-   ],
-   "R7": [
-    "30cce58631de7d0e"
-   ]
-  },
-  ".ci/scripts/quality/check_syncpack_sources.py": {
-   "R1": [
-    "393d9c429b438777"
-   ]
-  },
-  ".ci/scripts/quality/check_test_file_orphans.py": {
-   "R1": [
-    "ce7a1458122c66e6"
-   ]
-  },
-  ".ci/scripts/quality/check_tutorial_no_skips.py": {
-   "R7": [
-    "56543cb26a02b689"
    ]
   },
   ".ci/tutorials/tutorial-topics-investigation.md": {
@@ -1450,7 +1308,6 @@
     "577deeb3131bee60"
    ],
    "R7": [
-    "a04177a292d63f3a",
     "ac99d9e2086d8c22"
    ]
   },
@@ -1590,25 +1447,8 @@
    ]
   },
   ".claude/hooks/stop/worklist.py": {
-   "R1": [
-    "1b1ee4420cbaa6c9",
-    "32801a47d45a5e48",
-    "461f15e281854ca8",
-    "f844d56173591678"
-   ],
    "R2": [
-    "2fd823313c60d152",
-    "52d85b55bbdb1ce4",
-    "85869c0d06879408",
-    "86b390a438e9aff7",
-    "879e1e762b06a8bd",
-    "8aa269394ecdecce",
     "e799bdc9b3d02ad7"
-   ],
-   "R7": [
-    "2b9f0334088aff80",
-    "9b320fdf1139283f",
-    "f27fa5d81b4d782f"
    ]
   },
   ".claude/hooks/stop/worklist_messages.py": {
@@ -3079,7 +2919,6 @@
     "860a7f54eb7022ae",
     "97945ea3011f9545",
     "9faeeefb0f6c42f4",
-    "a409aff3701d07d7",
     "a6b14b40fd6b28f0",
     "a7e6caf76cf418c9",
     "a89f53920eb37946",
@@ -4275,20 +4114,9 @@
     "f418bbd3d6cac951"
    ]
   },
-  "packages/shared/src/config-crypto/__tests__/slots.test.ts": {
-   "R2": [
-    "267407672bf22fa6"
-   ]
-  },
   "packages/shared/src/config-crypto/constants.ts": {
    "R7": [
     "1ca17a1dbe8b5c2b"
-   ]
-  },
-  "packages/shared/src/config-crypto/slots.ts": {
-   "R2": [
-    "2e47d174159f81ab",
-    "a802e543ce971a63"
    ]
   },
   "packages/shared/src/config-schema/__tests__/undefined-keys.test.ts": {
@@ -4794,8 +4622,6 @@
    "R1": [
     "036f8d562a2d581c",
     "23b227d945e0b77a",
-    "26fff267b1bf6ac7",
-    "5081be969e9d6a37",
     "5c4068915cdec45b",
     "a1b19ea7afa081a2",
     "b86aedb09aaf7aac",

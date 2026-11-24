@@ -12,7 +12,7 @@ THE CLASS IS: A DISCLOSURE IS NOT A CONTROL.
 
 WHY THIS IS A NEW GATE AND NOT A WIDENED `control_vacuity`. Three reasons in descending force. The live gate there is the BASH twin (`package.json`), and `.ci/rediacc_ci/tests/test_quality_control_vacuity.py:189` requires the two implementations to print identical bytes -- so teaching it Python means writing an AST-equivalent predicate in bash, which with grep is exactly the
 false-positive machine that would flag `datetime.replace(tzinfo=...)`. Invariant
-5 forbids deleting the twin until W7 P5, so widening would mean MAINTAINING that bash Python-parser. And the question is genuinely different: `control_vacuity` asks "is there a proof?", this asks "did you use the harness?" -- stronger, and
+5 forbids deleting the twin until W7 P5, so widening would mean MAINTAINING that bash Python-parser. And the question is genuinely different: `control_vacuity` asks "is there a proof?", this asks "was the harness used?" -- stronger, and
 with no false positives by construction.
 
 THE PREDICATE. Inside a CONTROL REGION, a call `X.replace(...)` or `re.sub(..., X)` where `X` is a BARE NAME is a finding. `plant(...)` and `plant_re(...)` are not.
