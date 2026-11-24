@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
@@ -56,8 +56,11 @@ function inventory(texts: string[]): Found {
   const found: Found = { codes: new Set<string>(), other: new Set<string>() };
   const constants = new Set<string>();
   for (const text of texts) {
-    for (const m of text.matchAll(/\berrorCode:\s*'([A-Z][A-Z0-9_]+)'/g)) found.codes.add(m[1]);
-    for (const m of text.matchAll(/\bcode(?::| =)\s*'([A-Z][A-Z0-9_]+)'/g)) found.codes.add(m[1]);
+    for (const m of text.matchAll(
+      /\b(?:[eE]rrorCode|code)\s*(?::|=(?!=))\s*'([A-Z][A-Z0-9_]+)'/g
+    )) {
+      found.codes.add(m[1]);
+    }
     for (const m of text.matchAll(/\b([A-Z][A-Z0-9_]*_CODE)\s*=\s*'([A-Z][A-Z0-9_]+)'/g)) {
       found.codes.add(m[2]);
       constants.add(m[1]);
@@ -116,7 +119,11 @@ describe('error origins', () => {
     expect([...other].filter((a) => !Object.hasOwn(DYNAMIC_FIRST_ARGS, a))).toEqual([]);
     // The scan sees real codes, so an empty inventory cannot pass.
     expect(codes.size).toBeGreaterThan(20);
-    expect(relative(SRC_DIR, join(SRC_DIR, 'types'))).toBe('types');
+  });
+
+  it('sees a code set by assignment, not only by object literal (review 5b54f55b.1)', () => {
+    const { codes } = inventory(["errorCode = 'ASSIGNED_ONE'; if (x.code === 'COMPARED_ONE') {}"]);
+    expect([...codes]).toEqual(['ASSIGNED_ONE']);
   });
 
   it('reports an unlisted code (control)', () => {

@@ -51,7 +51,8 @@ export function resolveServeBind(
   options: ServeBindOptions,
   readFile: (path: string) => Buffer = readFileSync
 ): ServeBind {
-  const hostname = options.host ?? DEFAULT_HOST[options.mode];
+  // Node's listen takes the bare address, so a bracketed IPv6 literal loses its brackets here.
+  const hostname = (options.host ?? DEFAULT_HOST[options.mode]).replace(/^\[(.*)\]$/, '$1');
   const { tlsCert, tlsKey } = options;
 
   if ((tlsCert === undefined) !== (tlsKey === undefined)) {

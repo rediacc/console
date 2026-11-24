@@ -43,7 +43,7 @@ import {
   runInRequestContext,
 } from '../../core/request-context.js';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../../executor/types.js';
-import { dispatchCommand, prepareCommand } from '../command-dispatch.js';
+import { dispatchCommand, prepareCommand, withUnsavedWrite } from '../command-dispatch.js';
 
 function sessionConfig(): RdcConfig {
   return {
@@ -100,6 +100,16 @@ describe('WB0: a config write the executor cannot save fails before the host job
     expect(outcome.stderr).not.toContain('did not save the change');
     // The session's config is untouched: no half-registered repo.
     expect(config.resources?.repositories).toEqual({});
+  });
+
+  it('a success whose config write was refused fails with the write code (review 87c7ff68.1)', () => {
+    const ok = { success: true, exitCode: 0, durationMs: 1 } satisfies ExecuteResult;
+    expect(withUnsavedWrite(ok, CONFIG_WRITE_UNAVAILABLE)).toMatchObject({
+      success: false,
+      exitCode: 1,
+      errorCode: CONFIG_WRITE_UNAVAILABLE,
+    });
+    expect(withUnsavedWrite(ok, undefined)).toBe(ok);
   });
 
   it('control: a state-only write under a request scope still applies in memory', async () => {

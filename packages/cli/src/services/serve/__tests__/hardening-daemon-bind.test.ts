@@ -71,9 +71,11 @@ describe('daemon bind', () => {
   });
 
   it('accepts other loopback spellings without TLS (control)', () => {
-    for (const host of ['localhost', '127.0.0.2', '::1', '[::1]']) {
+    for (const host of ['localhost', '127.0.0.2', '::1']) {
       expect(resolveServeBind({ mode: 'daemon', host }).hostname).toBe(host);
     }
+    // A bracketed literal is unbracketed, since Node's listen cannot resolve '[::1]' (review 8dfddee9.1).
+    expect(resolveServeBind({ mode: 'daemon', host: '[::1]' }).hostname).toBe('::1');
     expect(isLoopbackHost('0.0.0.0')).toBe(false);
     expect(isLoopbackHost('::')).toBe(false);
     expect(isLoopbackHost('128.0.0.1')).toBe(false);

@@ -38,6 +38,7 @@ import {
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
+import { omitKey } from '../../../utils/omit-key.js';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
 import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
@@ -46,7 +47,6 @@ import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
-import { omitKey } from '../../../utils/omit-key.js';
 
 export const OWNER_TOKEN = 'rdt_owner';
 export const EXECUTOR_TOKEN = 'rdt_executor';
@@ -351,8 +351,12 @@ export async function createFakeConfigStore(
     return json({ ...rotated, version: body.version, sdkEpoch });
   };
 
+  /** The X-Config-Token a call carries; empty when it carries none, which `claim` answers 401. */
+  const configTokenOf = (init?: RequestInit): string =>
+    ((init?.headers ?? {}) as Partial<Record<string, string>>)['X-Config-Token'] ?? '';
+
   const configCall = (href: string, init?: RequestInit): Promise<Response> => {
-    const claimed = claim((init?.headers as Record<string, string>)['X-Config-Token']);
+    const claimed = claim(configTokenOf(init));
     if (claimed instanceof Response) return Promise.resolve(claimed);
     let kind = 'config';
     if (href.endsWith('/configs/session')) kind = 'session';

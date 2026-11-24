@@ -35,7 +35,7 @@ import {
   createExecutorGrantRecorder,
 } from '../services/serve/container-config.js';
 import { serveCrypto } from '../services/serve/crypto.js';
-import type { ServeDeps } from '../services/serve/deps.js';
+import type { ExecutorAuditEvent, ServeDeps } from '../services/serve/deps.js';
 import { authorize } from '../services/serve/policy.js';
 import { createServeApp } from '../services/serve/server.js';
 import { SessionStore } from '../services/serve/sessions.js';
@@ -106,10 +106,7 @@ export function registerServeCommand(program: Command): void {
             executorToken,
             // A record the audit route refused or could not take is never swallowed: a refused `started` record means the command did not run, a refused `finished` one means it ran unrecorded.
             onFailure: (error, event) => {
-              outputService.warn(
-                `Could not record "${event.commandPath}" for ${event.principal.userEmail}: ` +
-                  `${error instanceof Error ? error.message : String(error)}`
-              );
+              outputService.warn(auditFailureNotice(error, event));
             },
           }),
         };
@@ -140,6 +137,17 @@ export function registerServeCommand(program: Command): void {
         handleError(error);
       }
     });
+}
+
+/** The warning the daemon prints for an audit record the account server did not take. */
+export function auditFailureNotice(
+  error: unknown,
+  event: Pick<ExecutorAuditEvent, 'commandPath' | 'principal'>
+): string {
+  return (
+    `Could not record "${event.commandPath}" for ${event.principal.userEmail}: ` +
+    `${error instanceof Error ? error.message : String(error)}`
+  );
 }
 
 /**

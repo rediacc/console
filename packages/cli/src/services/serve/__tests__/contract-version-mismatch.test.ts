@@ -116,7 +116,8 @@ describe('contract version mismatch', () => {
       },
       body: JSON.stringify({
         ...(version.body ? { contractVersion: version.body } : {}),
-        pathKey: 'machine list',
+        pathKey: 'repo list',
+        params: { machine: 'm1' },
         positionals: {},
       }),
     });
@@ -147,7 +148,9 @@ describe('contract version mismatch', () => {
     boot();
     const response = await post({ body: CLI_CONTRACT_VERSION });
 
-    expect(response.status).not.toBe(409);
-    await response.text();
+    // The request reaches the command stream: a 200 whose body is the result line (review ad69d23b.1).
+    const text = await response.text();
+    expect(response.status, text).toBe(200);
+    expect(text).toContain('"kind":"result"');
   });
 });

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const stdoutChunks: string[] = [];
 
@@ -21,13 +21,15 @@ const { handleError, setOutputFormat } = await import('../errors.js');
 const { CliExitError } = await import('../cli-exit-error.js');
 const { ERROR_CODES } = await import('../../types/errors.js');
 
-vi.spyOn(process, 'exit').mockImplementation(() => {
+const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
   throw new Error('process.exit called');
 });
-vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
-  stdoutChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
-  return true;
-});
+const writeSpy = vi
+  .spyOn(process.stdout, 'write')
+  .mockImplementation((chunk: string | Uint8Array) => {
+    stdoutChunks.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+    return true;
+  });
 
 function envelopeOf(error: unknown): { errors: Record<string, unknown>[] } {
   stdoutChunks.length = 0;
@@ -39,6 +41,11 @@ function envelopeOf(error: unknown): { errors: Record<string, unknown>[] } {
 describe('error envelope origin', () => {
   beforeEach(() => {
     vi.stubEnv('REDIACC_FEEDBACK_HINT', '0');
+  });
+
+  afterAll(() => {
+    exitSpy.mockRestore();
+    writeSpy.mockRestore();
   });
 
   afterEach(() => {

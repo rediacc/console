@@ -463,7 +463,11 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
 
   if (!outcome.failed) {
     const result = lastResult ?? inertResult(Date.now() - started);
-    return { result: withRequestedExit(result, context.exitCode), ...common };
+    const settled = withUnsavedWrite(
+      withRequestedExit(result, context.exitCode),
+      context.config?.writeFailure
+    );
+    return { result: settled, ...common };
   }
 
   const failure = withWriteFailure(
@@ -486,6 +490,19 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
 function withWriteFailure(failure: ExecuteResult, writeFailure: string | undefined): ExecuteResult {
   if (!writeFailure || failure.errorCode) return failure;
   return { ...failure, errorCode: writeFailure };
+}
+
+/**
+ * A command that caught the refused or failed config write and still exited 0
+ * did not save its change, so the served result fails with the write's code
+ * instead of reporting a success the config store never saw.
+ */
+export function withUnsavedWrite(
+  result: ExecuteResult,
+  writeFailure: string | undefined
+): ExecuteResult {
+  if (!writeFailure || !result.success || result.errorCode) return result;
+  return { ...result, success: false, exitCode: result.exitCode || 1, errorCode: writeFailure };
 }
 
 /** The overlaps a refused start carried (JobOverlapRefusedError), or undefined for any other error. */

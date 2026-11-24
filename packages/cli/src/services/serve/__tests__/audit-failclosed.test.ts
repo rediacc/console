@@ -77,7 +77,7 @@ describe('WB8: audit fails closed for mutating commands', () => {
     executor = undefined;
   });
 
-  async function boot() {
+  async function boot(acceptFirst = 0) {
     const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const renet = fakeRenet(() => ({
       success: true,
@@ -89,6 +89,8 @@ describe('WB8: audit fails closed for mutating commands', () => {
     // The audit route never answers; every other account call reaches the fake store.
     const unreachableAudit = ((_url: string | URL, init?: RequestInit) => {
       auditAttempts.push(String(init?.body));
+      // The first `acceptFirst` deliveries are accepted, so the pre-dispatch record can land while the outcome cannot.
+      if (auditAttempts.length <= acceptFirst) return Promise.resolve(new Response('{}'));
       return Promise.reject(
         Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNREFUSED' } })
       );
@@ -144,5 +146,26 @@ describe('WB8: audit fails closed for mutating commands', () => {
     expect(result.stderr).toMatch(
       /WARNING: "rdc repo list" ran WITHOUT an audit record: .*ECONNREFUSED/
     );
+  });
+
+  it('a mutating command whose outcome record fails still ran, and says audit_failed (review b32c1cdd.3)', async () => {
+    const { renet } = await boot(1);
+
+    const result = await executor!.command('repo delete', { yes: true }, { ref: 'shop' });
+
+    expect(renet.calls.length).toBeGreaterThan(0);
+    expect(result.stderr).toMatch(
+      /audit_failed: "rdc repo delete" ran, but its audit record could not be delivered: .*ECONNREFUSED/
+    );
+  });
+
+  it('control: a read whose outcome record is delivered carries no audit notice', async () => {
+    await boot(2);
+
+    const result = await executor!.command('repo list', { machine: 'm1' }, {});
+
+    expect(result.result.success).toBe(true);
+    expect(result.stderr).not.toContain('audit_failed');
+    expect(result.stderr).not.toContain('WITHOUT an audit record');
   });
 });
