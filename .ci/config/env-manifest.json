@@ -1438,6 +1438,10 @@
       "WORKLIST_REPORT_SILENT_FLOOR",
       "WORKLIST_REPORT_SURFACE_MAX",
       "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES",
+      "WORKLIST_RESUME_AGENT_TAIL",
+      "WORKLIST_RESUME_LOOKBACK_H",
+      "WORKLIST_RESUME_PARENT_TAIL",
+      "WORKLIST_RESUME_SELF_MAX",
       "WORKLIST_ROSTER_MAX",
       "WORKLIST_SCHED_RED_TTL_S",
       "WORKLIST_SESSION_ID",
@@ -4068,7 +4072,8 @@
         "WORKLIST_REPORT_SCAN_LOOKBACK_DAYS",
         "WORKLIST_REPORT_SILENT_FLOOR",
         "WORKLIST_REPORT_SURFACE_MAX",
-        "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES"
+        "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES",
+        "WORKLIST_RESUME_SELF_MAX"
       ],
       ".claude/hooks/stop/wl_resprofile.py": [
         "BASHCOV_CALL",
@@ -4079,6 +4084,11 @@
       ".claude/hooks/stop/wl_review.py": [
         "COMMIT_REVIEW_CHILD",
         "TMPDIR"
+      ],
+      ".claude/hooks/stop/wl_roster_resume.py": [
+        "WORKLIST_RESUME_AGENT_TAIL",
+        "WORKLIST_RESUME_LOOKBACK_H",
+        "WORKLIST_RESUME_PARENT_TAIL"
       ],
       ".claude/hooks/stop/wl_rules.py": [
         "TMPDIR"
@@ -5176,6 +5186,34 @@
         "class": "harness",
         "defaults": [
           "str(16 * 1024 * 1024)"
+        ]
+      },
+      "WORKLIST_RESUME_AGENT_TAIL": {
+        "kind": "tuning",
+        "class": "harness",
+        "defaults": [
+          "str(64 * 1024)"
+        ]
+      },
+      "WORKLIST_RESUME_LOOKBACK_H": {
+        "kind": "tuning",
+        "class": "harness",
+        "defaults": [
+          "'24'"
+        ]
+      },
+      "WORKLIST_RESUME_PARENT_TAIL": {
+        "kind": "tuning",
+        "class": "harness",
+        "defaults": [
+          "str(8 * 1024 * 1024)"
+        ]
+      },
+      "WORKLIST_RESUME_SELF_MAX": {
+        "kind": "tuning",
+        "class": "harness",
+        "defaults": [
+          "'2'"
         ]
       },
       "WORKLIST_ROSTER_MAX": {
