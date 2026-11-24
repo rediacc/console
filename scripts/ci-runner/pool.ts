@@ -326,12 +326,20 @@ export const LOAD_POLL_MS = 2_000;
 /** Mutable state of one pool's load wait. */
 export interface LoadWaitState {
   since?: number;
+  /** When the load was last read: a wait unread for longer than LOAD_GAP_POLLS polls was not held through the gap, so its clock restarts. */
+  seen?: number;
   expired: boolean;
 }
+
+/** Polls of silence after which a running hold clock is dropped (the pool only reads the load while a gate is ready). */
+const LOAD_GAP_POLLS = 5;
 
 /** One reading's verdict: `wait` holds every start, `go` admits. Pure apart from `state` and `gate.say`. */
 export function loadVerdict(gate: LoadGate, state: LoadWaitState, now: number): 'go' | 'wait' {
   const load = gate.read();
+  const gap = (gate.pollMs ?? LOAD_POLL_MS) * LOAD_GAP_POLLS;
+  if (state.seen !== undefined && now - state.seen > gap) state.since = undefined;
+  state.seen = now;
   const margin = gate.margin ?? LOAD_MARGIN;
   const limit = gate.cores * (1 + margin);
   if (load === undefined || !(load > limit)) {

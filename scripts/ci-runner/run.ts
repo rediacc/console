@@ -125,6 +125,8 @@ import {
   type GateCost,
   type GateResult,
   type LoadGate,
+  type LoadWaitState,
+  loadVerdict,
   type PoolLease,
   planAdmission,
   releasedGrant,
@@ -3697,6 +3699,22 @@ async function selftest(): Promise<number> {
       require_(
         unread.ok && unread.startedAt[0] < 100 && unread.said.length === 0,
         `a machine that reports no load must never hold, got ${JSON.stringify(unread)}`
+      );
+      // A hold clock left armed across a gap with no reading must restart, not end the next wait at once (review c2c50947.1).
+      const gate: LoadGate = { read: () => 8, cores: 4, maxWaitMs: 120_000, pollMs: 2_000 };
+      const state: LoadWaitState = { expired: false };
+      const steady = [0, 2_000, 4_000].map((t) => loadVerdict(gate, state, t));
+      const afterGap = loadVerdict(gate, state, 400_000);
+      const stillHeld = loadVerdict(gate, state, 402_000);
+      const edge: LoadWaitState = { expired: false };
+      let control = 'wait';
+      for (let t = 0; t <= 120_000; t += 2_000) control = loadVerdict(gate, edge, t);
+      require_(
+        steady.every((v) => v === 'wait') &&
+          afterGap === 'wait' &&
+          stillHeld === 'wait' &&
+          control === 'go',
+        `a hold clock must survive polls, restart after a silent gap, and still end at the bound, got ${JSON.stringify({ steady, afterGap, stillHeld, control })}`
       );
     }
     // CORE RELEASE (W12, pool.ts releasedGrant): an elastic gate granted 18 of 24 cores whose workers drop to 4 busy gives cores back, and a queued 15-core gate starts BEFORE it ends; a gate whose workers stay busy keeps its grant, and so does one the reader cannot see.
