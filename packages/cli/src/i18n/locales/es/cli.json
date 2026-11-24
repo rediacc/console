@@ -3530,6 +3530,7 @@
       "preview": "Vistas previas de PR",
       "repo": "Ciclo de vida de repositorios",
       "serve": "Servicio ejecutor",
+      "completion": "Autocompletado del shell",
       "shortcuts": "Comandos Rápidos (Atajos)",
       "storage": "Gestión de Almacenamiento",
       "subscription": "Gestión de Suscripciones",

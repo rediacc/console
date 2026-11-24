@@ -4049,6 +4049,7 @@
       "server": "Server Installation",
       "job": "Detached Jobs",
       "serve": "Executor Service",
+      "completion": "Shell Completion",
       "tools": "Local Tools",
       "legal": "Legal Documents and Terms",
       "version": "Version Information",

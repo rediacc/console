@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3188,
+    "keyCount": 3189,
     "sourceCommit": "6299d4888d0398dfc6bf0bd3db18948185168d41"
   },
   "hashes": {
@@ -2727,6 +2727,7 @@
     "docs.pageTitle": "e4a7f240",
     "docs.sectionTitles.backup": "772b3e6d",
     "docs.sectionTitles.cluster": "6a98b88c",
+    "docs.sectionTitles.completion": "236fcec0",
     "docs.sectionTitles.config": "5f639876",
     "docs.sectionTitles.credits": "30d8e1db",
     "docs.sectionTitles.datastore": "15b635b7",

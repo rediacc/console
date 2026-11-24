@@ -3530,6 +3530,7 @@
       "preview": "PR-Vorschauen",
       "repo": "Repository-Lebenszyklus",
       "serve": "Executor-Dienst",
+      "completion": "Shell-Vervollständigung",
       "shortcuts": "Schnellbefehle (Shortcuts)",
       "storage": "Speicherverwaltung",
       "subscription": "Abonnementverwaltung",

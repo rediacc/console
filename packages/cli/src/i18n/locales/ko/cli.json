@@ -3530,6 +3530,7 @@
       "preview": "PR 프리뷰",
       "repo": "저장소 라이프사이클",
       "serve": "실행기 서비스",
+      "completion": "셸 자동 완성",
       "shortcuts": "빠른 명령 (단축키)",
       "storage": "스토리지 관리",
       "subscription": "구독 관리",

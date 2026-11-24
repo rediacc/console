@@ -3530,6 +3530,7 @@
       "preview": "PR 预览",
       "repo": "仓库生命周期",
       "serve": "执行器服务",
+      "completion": "Shell 补全",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
       "subscription": "订阅管理",
