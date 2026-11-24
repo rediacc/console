@@ -22,16 +22,16 @@ Body-Sig: 5f8be20e6fa18587
 Anchor: in-diff
 Claim: pendingCaret is only cleared when inputRef.current is set, so if a suggestion is applied before any keydown on the input (inputRef still null), the stale caret target survives and is applied on a later render, moving the caret unexpectedly.
 Class: other
-Resolution: open
+Resolution: fixed 3dad0703780ee784776929f6b226778b79adbe4a | d778be9d 2026-11-24T23:01:50Z
 
 ### 71abb9dd.2 [low] web/src/components/console/CommandPalette.tsx:217
 Anchor: in-diff
 Claim: The comment says a command-mode query starts with `rdc` and a space, but RDC_LINE `/^\s*rdc\s/` also accepts leading whitespace and a tab after `rdc`, so the documented rule and the code disagree.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 3dad0703780ee784776929f6b226778b79adbe4a | d778be9d 2026-11-24T23:01:50Z
 
 ### 71abb9dd.3 [low] web/src/components/console/CommandPalette.tsx:472
 Anchor: in-diff
 Claim: If navigator.clipboard is unavailable (non-secure context), the synchronous TypeError from calling writeText escapes after the palette has already closed, and no test covers the clipboard-failure branch of this copy path.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 3dad0703780ee784776929f6b226778b79adbe4a | d778be9d 2026-11-24T23:01:50Z
