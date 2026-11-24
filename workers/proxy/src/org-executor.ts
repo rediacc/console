@@ -27,7 +27,7 @@ import {
   bounded,
   busyRefusal,
   containerRequest,
-  destroyContainer,
+  destroyQuietly,
   dispatchesRunning,
   durationMs,
   type EgressReportAnswer,
@@ -35,9 +35,9 @@ import {
   EXECUTOR_PORT,
   type ExecutorRecord,
   type ExitResult,
-  errorSummary,
   executorEnv,
   flagOom,
+  forwardFailure,
   isBusyPath,
   isOomExit,
   isRefusal,
@@ -60,7 +60,8 @@ import {
   releaseLease,
   StallError,
   type StartAnswer,
-  trackBody,
+  stallWarn,
+  trackedResponse,
   UNREACHABLE_AT_KEY,
   UNREACHABLE_KEY,
   warnIfThrows,
@@ -338,23 +339,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       }
       stage = 'forward';
       const response = await container.getTcpPort(EXECUTOR_PORT).fetch(containerRequest(request));
-      if (response.body === null) {
-        done();
-        return response;
-      }
-      return new Response(trackBody(response.body, done), {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
+      return trackedResponse(response, done);
     } catch (error) {
       done();
-      // The message stays the fixed forward-failure string any alert matches; the stage rides as a field.
-      console.warn('proxy: org executor forward failed', { stage, ...errorSummary(error) });
-      return Response.json(
-        { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
-        { status: 502 }
-      );
+      return forwardFailure(stage, error);
     }
   }
 
@@ -578,13 +566,12 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const wasSize = this.record?.size;
     this.record = undefined;
     this.draining = false;
-    try {
-      if (!result.clean && isOomExit(result.error)) {
-        console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
-        await flagOom(this.ctx.storage, wasSize);
-      }
-    } catch {
-      console.warn('proxy: org executor exit bookkeeping failed');
+    if (!result.clean && isOomExit(result.error)) {
+      console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
+      await warnIfThrows(
+        () => flagOom(this.ctx.storage, wasSize),
+        'proxy: org executor exit bookkeeping failed'
+      );
     }
     // The record is deleted whatever the OOM flags did. If this delete also fails, the stale record is harmless: `recover` finds no running container and clears it, so a dead container is never recovered as running.
     await warnIfThrows(
@@ -604,17 +591,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.generation += 1;
     this.record = undefined;
     const container = this.ctx.container;
-    try {
-      if (container?.running) await destroyContainer(container, reason);
-    } catch (error) {
-      logStall(error);
-      console.warn(`proxy: org executor destroy failed: ${reason}`);
-    }
-    try {
-      await this.ctx.storage.delete(RECORD_KEY);
-    } catch {
-      console.warn('proxy: org executor record not cleared');
-    }
+    if (container?.running) await destroyQuietly(container, reason);
+    await warnIfThrows(
+      () => this.ctx.storage.delete(RECORD_KEY),
+      'proxy: org executor record not cleared'
+    );
   }
 
   /**
@@ -647,12 +628,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.record = record;
     this.generation += 1;
     this.exited = undefined;
-    try {
-      await registerEgress(this.ctx, container, record.orgId, record.placement);
-    } catch (error) {
-      logStall(error);
-      console.warn('proxy: org executor intercept not re-registered');
-    }
+    await stallWarn(
+      () => registerEgress(this.ctx, container, record.orgId, record.placement),
+      'proxy: org executor intercept not re-registered'
+    );
     this.attachMonitor(container);
     const lease = await acquireLease(this.capacity(), record.orgId, record.placement, record.size);
     if (lease === 'failed' || !lease.ok) {

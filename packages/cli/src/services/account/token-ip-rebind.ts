@@ -152,6 +152,22 @@ async function rebindWithCode(
   writeStderr(`${t('errors.subscription.ipRebind.moved', { ip: result.boundIp })}\n`);
 }
 
+type CodeOutcome = { code: string; detail: null } | { code: ''; detail: string };
+
+function judgeCodeOutcome(
+  status: number | null,
+  signal: NodeJS.Signals | null,
+  stdout: string
+): CodeOutcome {
+  if (status !== 0)
+    return { code: '', detail: signal ? `signal ${signal}` : `exit ${String(status)}` };
+  const code = stdout.trim();
+  if (!TOTP_PATTERN.test(code)) {
+    return { code: '', detail: t('errors.subscription.ipRebind.codeCommandMalformed') };
+  }
+  return { code, detail: null };
+}
+
 /**
  * Run the REDIACC_IP_REBIND_CODE_COMMAND program once with the active config
  * name and return the six digits it printed. Its stdin is closed, its stdout
@@ -193,16 +209,9 @@ function codeFromCommand(command: string): Promise<string> {
     const settle = (status: number | null, signal: NodeJS.Signals | null): void => {
       if (settled) return;
       settled = true;
-      if (status !== 0) {
-        fail(signal ? `signal ${signal}` : `exit ${String(status)}`, stderr);
-        return;
-      }
-      const code = stdout.trim();
-      if (!TOTP_PATTERN.test(code)) {
-        fail(t('errors.subscription.ipRebind.codeCommandMalformed'), stderr);
-        return;
-      }
-      resolve(code);
+      const outcome = judgeCodeOutcome(status, signal, stdout);
+      if (outcome.detail === null) resolve(outcome.code);
+      else fail(outcome.detail, stderr);
     };
     child.on('close', settle);
     // 'close' waits for the pipes to end, and a grandchild that inherited them holds them open past the

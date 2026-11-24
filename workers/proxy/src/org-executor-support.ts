@@ -414,6 +414,46 @@ export async function registerEgress(
   );
 }
 
+/** The forwarded response with its body counted in flight until it closes; a bodiless response closes at once. */
+export function trackedResponse(response: Response, done: () => void): Response {
+  if (response.body === null) {
+    done();
+    return response;
+  }
+  return new Response(trackBody(response.body, done), {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
+/** The 502 for a forward that threw. The log message stays the fixed forward-failure string any alert matches; the stage rides as a field. */
+export function forwardFailure(stage: 'touch' | 'lease' | 'forward', error: unknown): Response {
+  console.warn('proxy: org executor forward failed', { stage, ...errorSummary(error) });
+  return Response.json(
+    { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
+    { status: 502 }
+  );
+}
+
+/** Run a step whose failure must not stop the caller: a throw is logged through `logStall`, then as `message`, and swallowed. */
+export async function stallWarn(run: () => Promise<unknown>, message: string): Promise<void> {
+  try {
+    await run();
+  } catch (error) {
+    logStall(error);
+    console.warn(message);
+  }
+}
+
+/** Destroy the container, logging and swallowing a failure: the caller is stopping it anyway. */
+export function destroyQuietly(container: Container, reason: string): Promise<void> {
+  return stallWarn(
+    () => destroyContainer(container, reason),
+    `proxy: org executor destroy failed: ${reason}`
+  );
+}
+
 /** Run a storage step whose failure must not stop the caller: a throw, synchronous or from the promise, is logged as `message` and swallowed. */
 export async function warnIfThrows(run: () => Promise<unknown>, message: string): Promise<void> {
   try {

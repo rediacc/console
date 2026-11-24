@@ -19,7 +19,7 @@ import { deadlineFetch } from './account-fetch.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** Where the executor posts run events, relative to the account server. */
-export const RUN_EVENTS_PATH = '/account/api/v1/console/runs/events';
+const RUN_EVENTS_PATH = '/account/api/v1/console/runs/events';
 
 /** The least time between two progress events of one run. */
 export const PROGRESS_INTERVAL_MS = 15_000;
@@ -30,9 +30,9 @@ export const RUN_EVENT_ATTEMPTS = 3;
 /** Detached runs remembered for a terminal poll. */
 const MAX_DETACHED = 1000;
 
-export type RunState = 'running' | 'detached' | 'succeeded' | 'failed' | 'cancelled';
+type RunState = 'running' | 'detached' | 'succeeded' | 'failed' | 'cancelled';
 
-export interface RunBegin {
+interface RunBegin {
   principal: SessionPrincipal;
   /** The command request's id; one is minted when the request carried none. */
   runId?: string;
@@ -43,7 +43,7 @@ export interface RunBegin {
   cek?: () => Promise<Uint8Array | undefined>;
 }
 
-export interface RunOutcome {
+interface RunOutcome {
   state: Exclude<RunState, 'running'>;
   exitCode?: number;
   errorCode?: string;
@@ -52,7 +52,7 @@ export interface RunOutcome {
   stderr?: string;
 }
 
-export interface RunHandle {
+interface RunHandle {
   readonly runId: string;
   /** A step began; reported by the next progress event. */
   step(name: string): void;
