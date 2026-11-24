@@ -834,6 +834,17 @@ jobs:
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
 
+      - name: Load gate toolchain pins
+        run: |
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
+
+      # pr_head_ref_completeness imports yaml, so the job installs it at the pin like every sibling lane.
+      - name: PyYAML for the PR_HEAD_REF gate
+        run: |
+          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+
       - name: Block legacy-peer-deps workarounds
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.npmrc
 
@@ -1860,6 +1871,19 @@ jobs:
           natives: 'true'
           build-packages: 'true'
 
+      - name: Load gate toolchain pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
+
+      # The tutorial healthcheck headroom gate imports yaml, so this lane installs it at the pin the pins step above exports.
+      - name: PyYAML for the tutorial healthcheck gate
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+
       - name: Check account portal (typecheck + build)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.account_portal
@@ -1986,16 +2010,6 @@ jobs:
       # A tutorial app healthcheck sized while watching a fast machine aborts the
       # whole non-resumable 18-cast recording on a slower one. Static, because no
       # CI gate can afford to record 18 casts against a VM fleet.
-      # PyYAML IS NOT ACQUIRED HERE, and the attempt to add it is recorded because it
-      # would have BROKEN CI. This gate imports yaml and exits 1 with "PyYAML is
-      # required for this gate but is not installed", so the failure mode is loud, not
-      # silent; the only exposure is to whatever the runner image ships. Adding the same
-      # pinned install its siblings use (ci-quality.yml:273 and :295) does not work in
-      # THIS lane: PYYAML_VERSION is exported by the "Load gate toolchain pins" step
-      # (python3 -m rediacc_ci.core.toolchain pairs >> $GITHUB_ENV), and quality-packages has no
-      # such step -- measured 0 occurrences -- so the pin would expand to empty and
-      # `PyYAML==` would fail every run. Fixing it properly means giving this lane the
-      # toolchain-pin load, which belongs with the W2.6 lane work, not to a one-line edit.
       - name: Tutorial healthcheck headroom
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_healthcheck_headroom

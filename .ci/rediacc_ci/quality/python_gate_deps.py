@@ -208,13 +208,26 @@ def third_party_imports(script: pathlib.Path) -> set[str]:
     # A module under .ci/rediacc_ci runs as `PYTHONPATH=.ci python3 -m rediacc_ci.x`, so the package root is on the path without any sys.path hop in the file.
     if script.is_relative_to(REPO / ".ci" / "rediacc_ci"):
         local = local | {"rediacc_ci"}
+    # A gate that anchors `.claude` on its own file (`parent / "hooks" / "stop"`, `rediacc_hooks`) names the hop by a variable no literal-directory arm above can resolve; the two hook trees are first-party by name.
+    if "rediacc_hooks" in body:
+        local = local | {"rediacc_hooks"}
+    if '"hooks" / "stop"' in body:
+        local = local | {p.stem for p in (REPO / ".claude" / "hooks" / "stop").glob("*.py")}
     return {n for n in names if n not in stdlib and n not in local}
+
+
+MODULE_RE = re.compile(r"python3?\s+-m\s+([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)")
 
 
 def scripts_a_step_runs(text: str) -> list[pathlib.Path]:
     out = []
     for token in re.findall(r"[\w./-]+\.py", text):
         candidate = REPO / token.removeprefix("./")
+        if candidate.is_file():
+            out.append(candidate)
+    # `PYTHONPATH=.ci python3 -m pkg.mod` runs `.ci/pkg/mod.py`, which the path form above never sees.
+    for module in MODULE_RE.findall(text):
+        candidate = REPO / ".ci" / (module.replace(".", "/") + ".py")
         if candidate.is_file():
             out.append(candidate)
     return out
@@ -282,6 +295,26 @@ def run_controls() -> list[str]:
                 "a step running a script with an uninstalled third-party import was not flagged"
             )
 
+        module = ".".join(rel.relative_to(".ci").with_suffix("").parts)
+        planted.write_text(
+            f"jobs:\n  bad:\n    steps:\n      - run: PYTHONPATH=.ci python3 -m {module}\n"
+        )
+        found, _ = scan([planted])
+        if not found:
+            failures.append(
+                "a `python3 -m` step running a module with an uninstalled third-party import was not flagged"
+            )
+        planted.write_text(
+            "jobs:\n  good:\n    steps:\n"
+            f'      - run: python3 -m pip install --user "PyYAML=={_pyyaml_pin()}"\n'
+            f"      - run: PYTHONPATH=.ci python3 -m {module}\n"
+        )
+        found, _ = scan([planted])
+        if found:
+            failures.append(
+                "a `python3 -m` step whose job installs the dependency was still flagged"
+            )
+
         planted.write_text(
             "jobs:\n  good:\n    steps:\n"
             f'      - run: python3 -m pip install --user "PyYAML=={_pyyaml_pin()}"\n'
@@ -290,6 +323,16 @@ def run_controls() -> list[str]:
         found, _ = scan([planted])
         if found:
             failures.append("a step whose job installs the dependency was still flagged")
+
+        hop = tmpdir / "hop_gate.py"
+        hop.write_text(
+            'import yaml\nparent = root / "hooks" / "stop"\n'
+            "from rediacc_hooks import execcount\nimport wl_hookreport\n"
+        )
+        if third_party_imports(hop) != {"yaml"}:
+            failures.append(
+                "the .claude hook trees were not first-party, or the hop hid a real third-party import"
+            )
 
         planted.write_text("jobs:\n  unrelated:\n    steps:\n      - run: echo hello\n")
         found, _ = scan([planted])
