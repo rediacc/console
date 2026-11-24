@@ -2103,3 +2103,11 @@ The 403 was Cloudflare's own block page. Bench sits behind ONE WAF custom rule t
 A second, different refusal follows it: with the new IP allowed, the eu-bench login is still tied to the old one, and the CLI asks for an authenticator code. That is the agent's own step too: `npm run login:bench` moves the login headlessly (see the `human-remedy-read-as-operator-step` entry above).
 
 A post-bash hint (`.claude/hooks/stop/wl_benchblock.py`) now names both commands on every output that shows either refusal from a bench command, and the ops-health machines check appends the allowlist command to a bench 403. Before recording any "rate limit" against bench, look for Cloudflare's "Attention Required" page or a bare `HTTP 403`: a rate limit answers 429.
+
+## A full disk is freed by its biggest sources, not by `worktree gc`
+Trap-Id: full-disk-recipe
+Enforced-By: file:.ci/rediacc_ci/dev/worktree_lease.py, file:.ci/rediacc_ci/release/cache_prune.py
+Residue: sizes in the refusal are measured with `du` under a 20-second timeout, so a source that cannot be measured is named as such; Docker Desktop's own disk is reclaimed only by the image prune it prints.
+Documented-In: doc:docs/agent-reference/release-process.md#Local edge release (`release:local`)
+
+On 2026-11-24 a 566 GB disk at 98% refused every lease and `./run.sh worktree gc --write` freed nothing: the space sat in `~/.cache/go-build` (106 GB), the `.ci/cache/release/<sha>` clones of `release:local` (24 GB, never pruned), Docker images (62 GB, one in use) and `~/.cache/rediacc` (17 GB). The refusal now prints each source with its size and the safe command: `npm run release:prune-cache`, `go clean -cache` while no writer builds, and `docker image prune -a --filter until=168h`. The arm64 SEA container ran as root over the bind-mounted clone and left root-owned files; it now runs with `--user <uid>:<gid>`.

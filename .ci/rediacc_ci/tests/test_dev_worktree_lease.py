@@ -3424,6 +3424,27 @@ def test_lease_refuses_below_the_disk_floor_and_leaves_nothing(repo, monkeypatch
     assert not (repo.root / ".git" / lease.RECORD_DIR / "low.json").exists()
 
 
+def test_refusal_prints_each_reclaimable_source_with_its_command(repo, monkeypatch):
+    fake_free(monkeypatch, 1_000_000)
+    sizes = {"release": 24 * lease.GB}
+
+    def du(path):
+        return sizes.get(pathlib.Path(path).name)
+
+    lines = lease.reclaim_sources(repo.root, du=du, docker=lambda: "62 GB (61 GB reclaimable)")
+    text = "\n".join(lines)
+    assert "24.0 GB: release:local clones" in text
+    assert "npm run release:prune-cache" in text
+    assert "go clean -cache" in text
+    assert "docker image prune -a --filter until=168h" in text
+    assert "62 GB (61 GB reclaimable)" in text
+    assert "size not measured: lease trees" in text
+    with pytest.raises(lease.LeaseRefusedError) as raised:
+        lease._check_disk(repo.root, sources=lambda _root: lines)
+    assert "npm run release:prune-cache" in str(raised.value)
+    assert "./run.sh worktree gc --write" in str(raised.value)
+
+
 def test_lease_is_made_at_the_disk_floor(repo, monkeypatch):
     """Control: the floor plus two leases, rounded up to a whole 4096-byte block as fake_free does, is enough, so the refusal reads the free space."""
     fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES)

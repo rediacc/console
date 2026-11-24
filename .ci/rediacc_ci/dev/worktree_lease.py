@@ -197,18 +197,83 @@ def _free_bytes(path):
     return stat.f_bavail * stat.f_frsize
 
 
-def _check_disk(root):
+DU_TIMEOUT = 20
+
+
+def _du_bytes(path):
+    """Size of `path` in bytes by `du -sk`, or None when it is absent, unreadable or measured past DU_TIMEOUT."""
+    if not os.path.lexists(path):
+        return None
+    try:
+        done = subprocess.run(
+            ["du", "-sk", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=DU_TIMEOUT,
+            check=False,
+        )
+        return int(done.stdout.split()[0]) * 1024
+    except (OSError, subprocess.SubprocessError, ValueError, IndexError):
+        return None
+
+
+def _docker_images_size():
+    """The `docker system df` Images row as `<size> (<reclaimable> reclaimable)`, or None when docker does not answer in time."""
+    try:
+        done = subprocess.run(
+            ["docker", "system", "df", "--format", "{{.Type}}|{{.Size}}|{{.Reclaimable}}"],
+            capture_output=True,
+            text=True,
+            timeout=DU_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for line in done.stdout.splitlines():
+        kind, _, rest = line.partition("|")
+        if kind == "Images":
+            size, _, reclaimable = rest.partition("|")
+            return "%s (%s reclaimable)" % (size, reclaimable)
+    return None
+
+
+def reclaim_sources(root, du=_du_bytes, docker=_docker_images_size):
+    """One line per disk source worth freeing, with its size and the safe command; a source that cannot be measured says so. `du` and `docker` are the measuring seams."""
+    home = pathlib.Path(os.path.expanduser("~"))
+    gocache = pathlib.Path(os.environ.get("GOCACHE") or home / ".cache" / "go-build")
+
+    def size(path):
+        found = du(path)
+        return "%.1f GB" % (found / GB) if found is not None else "size not measured"
+
+    images = docker()
+    return [
+        "%s: lease trees, landed ones only: `./run.sh worktree gc --write`"
+        % size(root / spike.HOLDER),
+        "%s: release:local clones, records and out dirs (`%s`): `npm run release:prune-cache`; a root-owned path it cannot delete is printed with its `sudo rm -rf` line"
+        % (size(root / ".ci" / "cache" / "release"), ".ci/cache/release"),
+        "%s: Go build cache (%s): `go clean -cache`, only while no writer is building"
+        % (size(gocache), gocache),
+        "%s: Docker images: `docker image prune -a --filter until=168h`"
+        % (images or "size not measured"),
+        "%s: `~/.cache/rediacc`: inspect `du -sh ~/.cache/rediacc/*` and delete what a re-run recreates"
+        % size(home / ".cache" / "rediacc"),
+    ]
+
+
+def _check_disk(root, sources=reclaim_sources):
     """Refuse a lease that would leave less than FREE_FLOOR_BYTES plus one more lease free on the worktree filesystem. Runs before anything is created, so a refusal leaves nothing behind."""
     free = _free_bytes(root)
     needed = FREE_FLOOR_BYTES + 2 * LEASE_ESTIMATE_BYTES
     if free < needed:
         message = (
-            "only %.1f GB free on the worktree filesystem; a lease costs about %.1f GB and %.1f GB must stay free after it (the %.1f GB floor plus room for one more lease). Free space with `./run.sh worktree gc --write`"
+            "only %.1f GB free on the worktree filesystem; a lease costs about %.1f GB and %.1f GB must stay free after it (the %.1f GB floor plus room for one more lease). Reclaimable sources (`./run.sh worktree gc --write` alone often frees nothing):\n  - %s"
             % (
                 free / GB,
                 LEASE_ESTIMATE_BYTES / GB,
                 (needed - LEASE_ESTIMATE_BYTES) / GB,
                 FREE_FLOOR_BYTES / GB,
+                "\n  - ".join(sources(root)),
             )
         )
         raise LeaseRefusedError(message)

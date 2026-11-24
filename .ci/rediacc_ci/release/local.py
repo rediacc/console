@@ -56,7 +56,7 @@ from rediacc_ci import paths
 from rediacc_ci import proc as child_proc
 from rediacc_ci.core import awscli, bws_env, gh_retry
 from rediacc_ci.deploy import deploy_record
-from rediacc_ci.release import create_github_release, local_gates, order
+from rediacc_ci.release import cache_prune, create_github_release, local_gates, order
 
 SELF = "rediacc_ci.release.local"
 CHANNEL = "edge"
@@ -353,6 +353,10 @@ def _table() -> tuple[Step, ...]:
                 "--rm",
                 "--platform",
                 "linux/arm64",
+                "--user",
+                "{uid}:{gid}",
+                "-e",
+                "HOME=/tmp",
                 "-v",
                 "{clone}:/w",
                 "-w",
@@ -1211,6 +1215,8 @@ def base_context(
         account_pointer=account,
         repo=m.group(1) if m else "",
         clone=str(root / CLONE_REL / tree),
+        uid=str(os.getuid()),
+        gid=str(os.getgid()),
         workers_only="true" if workers_only else "",
         branch_release="",
         build_meta="",
@@ -2525,7 +2531,15 @@ def main(
     ctx["run_id"] = "%s-%s" % (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()), uuid.uuid4().hex[:8])
     ctx["out"] = str(root / CLONE_REL / ("out-%s" % ctx["run_id"]))
     run = Run(root, ctx, runner=runner, internal={**INTERNAL, **(internal or {})})
-    rc = run.execute(steps)
+    store = root / CLONE_REL
+    try:
+        with cache_prune.run_lock(store):
+            rc = run.execute(steps)
+    except cache_prune.PruneRefusedError as err:
+        print("%s: refused: %s" % (SELF, err), file=sys.stderr)
+        return 2
+    if rc == 0 and not run.failed:
+        _prune_after(store)
     if run.failed:
         print(
             "%s: stopped at %s; the release record names every step's rc and wall time"
@@ -2535,6 +2549,21 @@ def main(
     for line in sealed_untagged(run):
         print("%s: %s" % (SELF, line), file=sys.stderr)
     return rc
+
+
+def _prune_after(store: pathlib.Path) -> None:
+    """After a successful run: drop the older clones, records and out directories. A path it cannot delete is named with its `sudo rm` line and never fails the release."""
+    try:
+        _deleted, stuck = cache_prune.prune(store)
+    except (cache_prune.PruneRefusedError, OSError) as err:
+        print("%s: cache prune skipped: %s" % (SELF, err), file=sys.stderr)
+        return
+    for path in stuck:
+        print(
+            "%s: cache prune could not delete %s; run: %s"
+            % (SELF, path, cache_prune.sudo_line(path)),
+            file=sys.stderr,
+        )
 
 
 def sealed_untagged(run: Run) -> list[str]:
