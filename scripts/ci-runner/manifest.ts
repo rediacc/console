@@ -2673,7 +2673,8 @@ export const GATES: readonly GateSpec[] = [
     // check:types's project set through tsc's incremental caches, so the quick lane reads the test tsconfigs (a TS2322 in a CLI test file reached CI on 2026-10-01 because check:types is slow). Measured 2026-10-01 on 24 cores: cold 28.6 s, warm 8.6-8.9 s, about 90 CPU-s warm.
     id: 'check:types:incremental',
     run: 'npm run check:types:incremental',
-    // Not slow: 20.3-24.4 s on 2026-10-07 made it slow, but the kept ci:quick clone keeps its incremental build warm, and check:ci-gate-manifest's tier oracle measured a typical 4.9 s there on 2026-11-06, inside the pre-push lane. The cold cost (28.6 s above) is paid once per kept clone, on the first run after it is created or its caches are cleared.
+    // Slow (2026-11-24): the recorded runs on this host took 20.5-106 s while writers shared the machine; a quiet warm run takes 12 s, so it leaves the pre-push lane.
+    slow: true,
     // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
     cores: { min: 1, max: 'all' },
     gate: true,
@@ -13451,7 +13452,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/rediacc_ci/quality/gate_args.py',
       '.ci/rediacc_ci/quality/label_inventory.py',
       '.ci/rediacc_ci/review/pr_labels.py',
-      '.ci/scripts/ci/report-nightly-status.cjs',
       '.github/labels.yml',
       '.npmrc',
       'package.json',

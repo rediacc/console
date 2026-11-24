@@ -39,7 +39,6 @@
     "check:ci-editorconfig": ".ci/scripts/quality/check_editorconfig.py",
     "check:ci-audit-coverage": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.audit_coverage",
     "check:ci-cli-contract": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract",
-    "check:ci-cli-contract-coverage": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract_coverage",
     "check:ci-command-tree": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.command_tree",
     "check:ci-command-planes": "tsx packages/cli/scripts/check-command-planes.ts",
     "check:ci-design-tree": "tsx scripts/gates/check-design-tree.ts",

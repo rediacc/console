@@ -2787,6 +2787,7 @@
   {
     "id": "check:types:incremental",
     "run": "npm run check:types:incremental",
+    "slow": true,
     "cores": {
       "min": 1,
       "max": "all"
@@ -14483,7 +14484,6 @@
       ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/label_inventory.py",
       ".ci/rediacc_ci/review/pr_labels.py",
-      ".ci/scripts/ci/report-nightly-status.cjs",
       ".github/labels.yml",
       ".npmrc",
       "package.json"

@@ -2026,7 +2026,7 @@ jobs:
       # error code an origin: what the web console and the executor read.
       - name: CLI contract coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-cli-contract-coverage
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract_coverage
 
   # ============================================================================
   # L7 i18n -- alone. Needs full history (translation freshness diffs against
