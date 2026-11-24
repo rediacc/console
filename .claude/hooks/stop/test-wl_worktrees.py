@@ -1314,7 +1314,7 @@ def hook_state(fix):
 def control_real_hook(tmp):
     """The real Stop hook over a fixture: the wiring, the effort row and the stand-down keep."""
     sys.path[:0] = [str(_CI.parent), str(SOURCE)]
-    from rediacc_hooks.tests import test_wl_ci_status as ci_status
+    from rediacc_hooks.tests import ci_status_world as ci_status
     from rediacc_hooks.tests import wlfix
 
     needle = "UNLANDED LEASE"
