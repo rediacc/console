@@ -28,4 +28,4 @@ Resolution: open
 Anchor: in-diff
 Claim: TestFileOpen_StandardLevelRecordsNothing asserts zero events with no positive control in the same run, so it still passes if the hook never fires at all (for example if the open never reaches the program), and its 300 ms sleep is the only wait before the check.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed da64628549b4632435bf3efd5d6d1aac09e1d845 | d778be9d 2026-11-24T09:58:33Z

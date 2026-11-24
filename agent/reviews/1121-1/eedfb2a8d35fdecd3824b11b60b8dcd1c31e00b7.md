@@ -22,7 +22,7 @@ Body-Sig: 0d5e2545d4efe065
 Anchor: in-diff
 Claim: PREVIEW_BUILD is `z.string().min(1).optional()` and PREVIEW_NAME rejects '' via its regex, so an empty value (e.g. `PREVIEW_BUILD=` in a deploy env) refuses the whole env on every environment, although the file's own comment says every other env field reads an empty value as unset.
 Class: other
-Resolution: open
+Resolution: fixed 8773a702badaf3e5366217e786277ef19e8793e8 | d778be9d 2026-11-24T09:58:27Z
 
 ### eedfb2a8.2 [low] src/services/preview-subscription.service.ts:104
 Anchor: in-diff

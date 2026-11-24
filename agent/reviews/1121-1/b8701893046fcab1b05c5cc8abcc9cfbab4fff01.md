@@ -22,4 +22,4 @@ Body-Sig: 3bfc6c0ae7cfa8b4
 Anchor: in-diff
 Claim: The header says this module holds "its two error classes", but the commit adds ExecutorSessionUnknownError here, so the file now defines a third error class and the header count is stale; the header's helper list also omits the newly moved fetchWithTimeout, throwIfSessionUnknown and describeProxyFailure.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 85343ed6dd9e0f169642c37b18f63cf64460bb9f | d778be9d 2026-11-24T09:58:16Z

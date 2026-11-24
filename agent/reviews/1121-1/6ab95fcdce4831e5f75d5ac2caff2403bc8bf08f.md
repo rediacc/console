@@ -22,4 +22,4 @@ Body-Sig: 0297de9e2304ffc3
 Anchor: in-diff
 Claim: The new case is described as a copy INTO the directory 'named by the walked file', but its command is `cp {} agent/reviews/` with no `/{}` destination, so the new `a.endswith("/{}")` branch in find_starts is never exercised; the case already passes on the pre-fix code (the destination is kept as-is and is under the review directory), so it cannot fail without the fix.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 1b717fd7c13fcacbc93b537c5e942d7bbadc8a15 | d778be9d 2026-11-24T10:10:25Z

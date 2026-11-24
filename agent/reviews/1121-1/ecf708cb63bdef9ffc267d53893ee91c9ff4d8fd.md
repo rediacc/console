@@ -22,4 +22,4 @@ Body-Sig: b612c8531527cda1
 Anchor: in-diff
 Claim: The cpuFeatureNames doc says a machine with no enabled features reports an empty list rather than an absent one, but CPUFeatures is tagged `json:"cpu_features,omitempty"`, so encoding/json omits the key whenever the non-nil empty slice has length 0; the field is absent in exactly that case.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 7f2220a40597304cb1b6e7c26bc66ffc6d87bae0 | d778be9d 2026-11-24T09:58:33Z

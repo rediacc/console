@@ -22,4 +22,4 @@ Body-Sig: 4f9a0e0093fc5dd9
 Anchor: in-diff
 Claim: A daemon started with --host '[::1]' passes isLoopbackHost (the brackets are stripped only for the check), then returns the raw '[::1]' as hostname, which Node's listen does not resolve, so the daemon fails at startup on that edge path; the test at hardening-daemon-bind.test.ts asserts hostname equals the bracketed input and so locks this in.
 Class: other
-Resolution: open
+Resolution: fixed 44036f09878c3995969abf668126aa1dcf996b31 | d778be9d 2026-11-24T09:58:17Z

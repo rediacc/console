@@ -28,7 +28,7 @@ Resolution: open
 Anchor: in-diff
 Claim: The doc says a failure 'leaves the machine as it was', but the pin command runs before recordPreviewTouch; if the record write throws, the pin marker stays on the slot and the provision fails with the marker in place.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 07bc0bfbf014bf6bd3de628fcdad7a79cb3da001 | d778be9d 2026-11-24T11:06:26Z
 
 ### 90577e42.3 [medium] packages/cli/src/services/renet/renet-execution.ts:285
 Anchor: in-diff
@@ -40,7 +40,7 @@ Resolution: open
 Anchor: in-diff
 Claim: previewTouchOption's refusal for an unnamed or invalid machine name, and its no-overlay branch, have no test: the new test file only passes previewTouch directly to the provisioner and never calls this function.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 07bc0bfbf014bf6bd3de628fcdad7a79cb3da001 | d778be9d 2026-11-24T11:06:26Z
 
 ### 90577e42.5 [medium] packages/cli/src/services/renet/renet-provisioner.ts:325
 Anchor: in-diff
