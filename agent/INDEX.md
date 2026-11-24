@@ -471,7 +471,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
-| `agent/plans/PLAN-armed-actions.md` | approved | 92 | 6 | 0 | 26814 |
+| `agent/plans/PLAN-armed-actions.md` | approved | 92 | 6 | 0 | 27283 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 800 | 2 | 49 | 116356 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 59 | 0 | 9 | 13031 |
@@ -515,7 +515,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 132 | 5 | 10 | 25878 |
-| `agent/plans/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68133 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
 | `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56949 |
 | `agent/plans/PLAN-console-run-index.md` | approved | 125 | 14 | 1 | 24668 |
@@ -533,7 +532,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 483 | 18 | 29 | 67161 |
-| `agent/plans/PLAN-executor-durable-object-policy.md` | done | 487 | 0 | 18 | 66043 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 76 | 9 | 1 | 14042 |
@@ -696,6 +694,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-config-server-key.md` | done | 78 | 0 | 7 | 10681 |
 | `agent/plans/_done/PLAN-config-sync-hardening.md` | done | 483 | 0 | 20 | 60520 |
 | `agent/plans/_done/PLAN-config-team-scoping.md` | done | 245 | 0 | 11 | 31530 |
+| `agent/plans/_done/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68141 |
 | `agent/plans/_done/PLAN-converge-preflight-and-repo-recovery.md` | done | 95 | 0 | 19 | 34222 |
 | `agent/plans/_done/PLAN-deferred-findings-block-merge.md` | done | 250 | 0 | 17 | 28410 |
 | `agent/plans/_done/PLAN-docker-pin-digest.md` | done | 120 | 0 | 9 | 20082 |
@@ -704,6 +703,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-drop-free-license-ip-prefix-hash.md` | done | 39 | 0 | 6 | 6672 |
 | `agent/plans/_done/PLAN-e2e-browse-at-ci.md` | done | 49 | 0 | 8 | 7958 |
 | `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 509 | 0 | 10 | 52656 |
+| `agent/plans/_done/PLAN-executor-durable-object-policy.md` | done | 487 | 0 | 18 | 66043 |
 | `agent/plans/_done/PLAN-fast-loop.md` | done | 112 | 0 | 19 | 17517 |
 | `agent/plans/_done/PLAN-github-pr-review-restore.md` | done | 129 | 0 | 13 | 36107 |
 | `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 40 | 0 | 4 | 4697 |
