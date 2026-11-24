@@ -33,6 +33,7 @@ import re
 import shutil
 import sys
 import tempfile
+import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, controls_first
@@ -353,7 +354,9 @@ def _fixture() -> tuple[dict, dict[str, dict]]:
     return contract, bundles
 
 
-def _write(root: pathlib.Path, contract: object, bundles: dict[str, object]) -> pathlib.Path:
+def _write(
+    root: pathlib.Path, contract: object, bundles: typing.Mapping[str, object]
+) -> pathlib.Path:
     if root.exists():
         shutil.rmtree(root)
     data = root / DATA_SUBDIR

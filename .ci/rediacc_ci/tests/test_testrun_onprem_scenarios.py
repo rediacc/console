@@ -433,7 +433,10 @@ def test_a_refusal_for_another_reason_does_not_pass_the_tls_refusal(
 
 
 def test_a_timed_out_other_org_call_is_not_a_refusal(
-    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+    rt: FakeRuntime,
+    stack_env: pathlib.Path,
+    lines: list[dict],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Review d9974c2f.1: exit 124 (the helper's timeout) must not read as the other org's token being refused."""
     real = rt.run
@@ -443,7 +446,7 @@ def test_a_timed_out_other_org_call_is_not_a_refusal(
             return done(argv, 124, "", "timed out")
         return real(argv, env=env, cwd=cwd, timeout=timeout)
 
-    rt.run = run
+    monkeypatch.setattr(rt, "run", run)
     _main(rt, stack_env, lines, "--suite", "daemon")
     verdict = _verdict(lines, "other_org_token_refused")
     assert verdict["ok"] is False

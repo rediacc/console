@@ -105,7 +105,8 @@ def prune(
     if dry_run:
         return doomed, []
     with run_lock(store):
-        deleted, stuck = [], []
+        deleted: list[pathlib.Path] = []
+        stuck: list[pathlib.Path] = []
         for path in doomed:
             remover(path)
             (stuck if os.path.lexists(path) else deleted).append(path)

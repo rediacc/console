@@ -431,7 +431,9 @@ def test_enable_takes_the_machine_secret_id_on_argv_and_the_secret_only_in_its_e
 
 def test_control_the_argv_leak_check_sees_a_secret_on_argv():
     """Silent control: the leak check is not vacuous, a planted secret on an argv is found."""
-    planted = [(["rdc.sh", "config", "remote", "enable", "--machine-secret", MS_SECRET], {})]
+    planted: list[tuple[list[str], dict[str, str]]] = [
+        (["rdc.sh", "config", "remote", "enable", "--machine-secret", MS_SECRET], {})
+    ]
     assert _argv_leaks(planted, MS_SECRET) == [planted[0][0]]
     assert _argv_leaks(planted, "RM1-NOT-PRESENT") == []
 

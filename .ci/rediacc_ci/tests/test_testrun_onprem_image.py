@@ -180,7 +180,9 @@ def test_the_image_dialing_the_probe_host_elsewhere_is_a_finding() -> None:
     assert len(mod.find_egress(other)) == 2
 
 
-def test_a_survivor_of_the_teardown_fails_a_clean_window(tmp_path: pathlib.Path) -> None:
+def test_a_survivor_of_the_teardown_fails_a_clean_window(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Review e0c242d9.1: a container that outlives cleanup is no pass."""
     rt = FakeDocker()
     real = rt.run
@@ -190,7 +192,7 @@ def test_a_survivor_of_the_teardown_fails_a_clean_window(tmp_path: pathlib.Path)
             return done(argv, 1, "", "device busy")
         return real(argv, env=env, cwd=cwd, timeout=timeout)
 
-    rt.run = run
+    monkeypatch.setattr(rt, "run", run)
     assert _go(rt, tmp_path) == 1
 
 

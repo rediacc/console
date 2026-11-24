@@ -115,7 +115,7 @@ def test_main_exits_1_and_prints_the_sudo_line_for_a_path_it_cannot_delete(
     monkeypatch.setattr(
         cache_prune.prune,
         "__kwdefaults__",
-        {**cache_prune.prune.__kwdefaults__, "remover": lambda _path: None},
+        {**(cache_prune.prune.__kwdefaults__ or {}), "remover": lambda _path: None},
     )
     assert cache_prune.main([], root=root) == 1
     out = capsys.readouterr().out

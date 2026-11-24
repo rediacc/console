@@ -1041,9 +1041,12 @@ def test_a_word_named_preview_keeps_its_pr_numbered_database(tmp_path) -> None:
 
 
 def test_a_word_named_preview_without_a_pr_number_is_refused_before_any_call(tmp_path) -> None:
-    for label, extra in (("unset", {}), ("letters", {"PR_NUMBER": "4x"})):
+    for label, pr in (("unset", None), ("letters", "4x")):
         root = fixture(tmp_path / label)
-        proc, calls, _config = _run_live(root, "new", *_word_inputs(root), **extra)
+        if pr is None:
+            proc, calls, _config = _run_live(root, "new", *_word_inputs(root))
+        else:
+            proc, calls, _config = _run_live(root, "new", *_word_inputs(root), PR_NUMBER=pr)
         assert proc.returncode == 1, label
         assert "needs PR_NUMBER (digits)" in proc.stderr, label
         assert _calls(calls) == [], label

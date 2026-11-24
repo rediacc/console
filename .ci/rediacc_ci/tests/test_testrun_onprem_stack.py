@@ -30,7 +30,7 @@ class FakeRuntime(mod.Runtime):
         self.fail = fail
         self.groups: list[tuple[list[str], dict[str, str]]] = []
         self.killed: list[int] = []
-        self.starts: dict[int, str] = {}
+        self.starts: dict[int, str | None] = {}
         self.runs: list[tuple[list[str], dict[str, str] | None]] = []
         self.rustfs_started = False
         self.rustfs_up = False

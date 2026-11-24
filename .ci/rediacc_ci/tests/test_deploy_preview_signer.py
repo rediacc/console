@@ -95,7 +95,7 @@ class FakeWrangler:
 
 def run(repo: pathlib.Path, fake: FakeWrangler, **kw):
     out = io.StringIO()
-    kwargs = {
+    kwargs: dict[str, typing.Any] = {
         "name": NAME,
         "pr": PR,
         "db_id": DB_ID,
@@ -179,7 +179,7 @@ def test_the_key_reaches_wrangler_only_on_stdin_and_never_the_output(repo, tmp_p
     for argv, _cwd, _stdin in fake.calls:
         assert not any(PRIVATE in a or PUBLIC in a for a in argv)
     bulk = [stdin for argv, _cwd, stdin in fake.calls if argv[3:5] == ["secret", "bulk"]]
-    assert json.loads(bulk[0]) == {ps.PRIVATE_KEY: PRIVATE, ps.PUBLIC_KEY: PUBLIC}
+    assert json.loads(bulk[0] or "") == {ps.PRIVATE_KEY: PRIVATE, ps.PUBLIC_KEY: PUBLIC}
     assert PRIVATE not in out
     assert PUBLIC not in out
     assert ds.REDACTED in out, "the leaky wrangler's echo was redacted"
