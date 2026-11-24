@@ -1,0 +1,90 @@
+/**
+ * custom/no-direct-guard-call (agent/plans/PLAN-rmcp-decide.md D5).
+ *
+ * The positive fixtures are the three shapes that reopen a second decision path: a retired guard
+ * imported, the policy evaluator called beside decide(), and enforce() called from a command file.
+ * The negative fixtures are the files allowed to do each, plus look-alikes the rule must leave
+ * alone (an unrelated `enforce`, an `authorize` of another module).
+ */
+
+export const ruleId = 'custom/no-direct-guard-call';
+
+const COMMAND_FILE = 'packages/cli/src/commands/repo.ts';
+
+export default async ({ sourceRuleTester, runCases }) => {
+  const { noDirectGuardCall } = await import('../no-direct-guard-call.js');
+
+  return [
+    runCases(sourceRuleTester(), ruleId, noDirectGuardCall, {
+      valid: [
+        // The decision function and the evaluator's composer call the evaluator.
+        {
+          code: "import { evaluateEffectivePolicy } from './merge.js';\nexport const d = (p, c) => evaluateEffectivePolicy(p, c);\n",
+          filename: 'packages/shared/src/policy/decide.ts',
+        },
+        {
+          code: "import { evaluatePolicy } from './evaluate.js';\nexport const e = (p, c) => evaluatePolicy(p.org, c);\n",
+          filename: 'packages/shared/src/policy/merge.ts',
+        },
+        // The CLI enforcement point calls enforce().
+        {
+          code: "import { enforce } from '../services/policy/enforce.js';\nexport const f = (a) => enforce(a);\n",
+          filename: 'packages/cli/src/utils/command-policy.ts',
+        },
+        // An allowEnforce entry admits a named exception.
+        {
+          code: "import { enforce } from '../services/policy/enforce.js';\nexport const f = (a) => enforce(a);\n",
+          filename: 'packages/cli/src/commands/repo-admin-orphan.ts',
+          options: [{ allowEnforce: ['src/commands/repo-admin-orphan.ts'] }],
+        },
+        // An `enforce` from another module is not the enforcement step.
+        {
+          code: "import { enforce } from '../utils/limits.js';\nexport const f = (a) => enforce(a);\n",
+          filename: COMMAND_FILE,
+        },
+        // Importing DecisionError from the enforcement module is fine; only the call is gated.
+        {
+          code: "import { DecisionError } from '../services/policy/enforce.js';\nexport const isDecision = (e) => e instanceof DecisionError;\n",
+          filename: COMMAND_FILE,
+        },
+        // A guard the plan keeps (repo create) is not retired.
+        {
+          code: "import { assertAgentRepoCreate } from '../utils/agent-guard.js';\nexport const g = (n) => assertAgentRepoCreate(n, undefined);\n",
+          filename: COMMAND_FILE,
+        },
+      ],
+      invalid: [
+        {
+          code: "import { assertCommandPolicy, CMD } from '../utils/command-policy.js';\nexport const g = (n) => assertCommandPolicy(CMD.REPO_UP, n);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'retiredGuard' }],
+        },
+        {
+          code: "import { assertOrphanDeletePolicy } from '../utils/command-policy.js';\n",
+          filename: 'packages/cli/src/commands/repo-admin-orphan.ts',
+          errors: [{ messageId: 'retiredGuard' }],
+        },
+        {
+          code: "import { resolveGrandRepoMutation as r } from './policy.js';\n",
+          filename: 'packages/cli/src/services/serve/server.ts',
+          errors: [{ messageId: 'retiredGuard' }],
+        },
+        {
+          code: "import { evaluateEffectivePolicy } from '@rediacc/shared/policy';\nexport const a = (p, c) => evaluateEffectivePolicy(p, c);\n",
+          filename: 'packages/cli/src/services/serve/policy.ts',
+          errors: [{ messageId: 'directEvaluate' }],
+        },
+        {
+          code: "import * as policy from '@rediacc/shared/policy';\nexport const a = (p, c) => policy.evaluatePolicy(p, c);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEvaluate' }],
+        },
+        {
+          code: "import { enforce as check } from '../services/policy/enforce.js';\nexport const f = (a) => check(a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
+      ],
+    }),
+  ];
+};
