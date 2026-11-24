@@ -1,20 +1,22 @@
-## SESSION d778be9d 2026-11-24T18:26:32Z
+## SESSION d778be9d 2026-11-24T19:13:15Z
 
-# STATE d778be9d (2026-11-24 ~19:30Z, effort high)
+# STATE d778be9d (2026-11-24 ~19:35Z, effort high)
 
 ## Big pieces
-- Operator 2026-11-24: hourly /writers-now was faked by copied surveys; cadence fix landed 913af37d87 (round counts only with a real survey). Real round 8ea1105a ran: survey /tmp/writers-now/1121-1-20261124T1737Z-real.md (541 boxes: CODE 253, BENCH 111, VM 45, PROD 44, HOSTINGER 40, GITHUB 27, OPERATOR 9, TIME 7, PRESENT 5). Shared writer rules /tmp/writers-now/8ea1105a-rules.md.
-- Wave running (each leased in the worklist): writers CL-A, K, M, Q, R, S, W, Z, AB, AG, AH; bench runner ad4a666105ce8f7b9 (#4eedc530); review-findings writer a95a8df7c09adb32b (#0ee0c0bb). Done: CL-F (P3 blocked #a69a332d), CL-C (N5 present, needs ct-tests on pushed head #86721e90), CL-I (nothing), CL-X (AC2 landed 572e82512f, ticked, tick batch uncommitted), hostinger runner (3 partial reads, 37 untouched: no VERIFIED vm:check; findings #fc004173 incl. VM disk 16.3 GiB short).
-- ci:quick: group A/B/C fixes landed; still red: check:ci-label-refs (re-red after landing C; investigate), check:ci-pytest leftovers, plan-bindings (#5f4130cf, bench runner has it), ops-health (eu-bench machine list wants REBIND_CODE). Lease agent-aa99a2f0968abb157 holds 2 empty duplicate commits (58ca972ac6, fcf126f511): content already landed; gc it with a note.
-- PRESENT batch (RI11 2a6ccb08, FC7 903acad2, B4 c098ad09, R3 a2ae6f1c, M1 f8c4c1ae) not yet ticked; --arm-from-survey not yet run.
+- Operator asks 2026-11-24 (#e71ea797, writer a7cb911c584d8cc1d, lease): (1) auto-mark boxes when a sub-agent finishes (SubagentStop captures TICK lines -> pending queue -> `worklist.py --apply-ticks`); (2) refused --plan-investigate/--plan-tick must exit non-zero (today "Nothing was written." exit 0 hid failed ticks); (3) auto-resume agents dead on "API Error: No response from API" (Stop-hook RESUME block; SubagentStop block-to-continue if it fires on failure). Docs read: SubagentStop gives agent_id, agent_transcript_path, last_assistant_message; block keeps the subagent running; docs silent on failure firing. Three writers died on API errors today; each resumed by SendMessage.
+- Round 8ea1105a wave (survey /tmp/writers-now/1121-1-20261124T1737Z-real.md, rules /tmp/writers-now/8ea1105a-rules.md). Running: CL-A (a6871471b60df0de1, waiting on its trace), K, M, Q, R, W, AB, AG (resumed). Landed+ticked: AC2 572e82512f, AX1/AX3 632a6492a3, W1 (docs regen 8761c681ad), T1 bench, M1, R3, FN1 63e1c7cb27 (account migration renumbered to 0105). Blocked/tracked: d1-eu P3 #a69a332d, N5 ct-tests #86721e90, bench proofs V5/V8 red #d67a6786, eu-bench lacks a test machine #d4846908, round findings #fc004173.
+- Round 8c010031 (hourly) delta survey running: af75490451507e32f (#0dcb73d2) -> /tmp/writers-now/1121-1-20261124T1858Z-r2.md (58 seeds). PRESENT left: B4 c098ad09, RI11 2a6ccb08 (needs real locale path), FC7 903acad2 (go test first).
+- ci:quick red items: check:ci-label-refs (re-red after group C landing), check:ci-pytest leftovers, plan-bindings, ops-health. Lease agent-aa99a2f0968abb157 holds only 2 empty duplicate commits.
+- Review-findings writer a95a8df7c09adb32b (#0ee0c0bb) resumed after API error.
 
 ## Owed ticks
-- Uncommitted tick batch: PLAN-console-ai-credits AC2 (plan file, plan-boxes.json, INDEX.md, plan-investigation.jsonl). #e5dd564f, #748b837e, #7a8152c4, #ab9f5552, #135b55bf, #5f4130cf; partial RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8.
+- Uncommitted tick batch (plan files, plan-boxes.json, INDEX.md, plan-investigation.jsonl): AC2, AX1, AX3, W1, T1, M1, R3, FN1. #e5dd564f, #748b837e, #7a8152c4, #ab9f5552, #135b55bf, #5f4130cf; partial RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8.
 
 ## Armed
 - #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park AWS_IAM_ADMIN_* bws entries. #0f42f15e NOT-BEFORE 2026-12-01 delete inactive SES key + baseline entry.
 
 ## Next action
-1. As each writer reports: land (submodules first, re-run `worktree land` to 0), tests, gitlink commit, investigate+plan-tick with landed sha, review-mark, gc --id, close its item.
-2. PRESENT batch + --arm-from-survey; commit the tick batch in one commit.
-3. Fix check:ci-label-refs; free VM disk; ci:quick once; push.
+1. Commit the tick batch now (plans + ledgers) with --review-commit.
+2. Each report: land (submodules first; account migrations collide on number -> renumber), tests, gitlink, investigate (note >= 40 chars, fileline:path:N) + plan-tick and CHECK exit code, gc.
+3. Delta survey returns: PRESENT batch, staff newly startable clusters.
+4. label-refs fix; ci:quick; push.
