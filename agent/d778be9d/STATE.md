@@ -1,22 +1,19 @@
-## SESSION d778be9d 2026-11-24T21:05:17Z
+## SESSION d778be9d 2026-11-24T21:57:57Z
 
-# STATE d778be9d (2026-11-24 ~22:10Z, effort high, operator AWAY since ~20:55Z)
+# STATE d778be9d (2026-11-24 ~23:05Z, effort high, operator AWAY since ~20:55Z)
 
 ## Big pieces
-- Throttle (operator urgent): landed ed6cdfea86..894e0478ab (per-chain git memo 44->5 git execs, gate-cores lease share, host_slot on /run/user/1000/rediacc-cores). Follow-up writer adbced1bd6bfc5d74 (#342aec5f): cache block_commit_of_live_writer_file (2.4 s/commit) and block_plan_concurrency (10.7 s/spawn, re-reads 1.9 GB lead transcript), githooks inside host_slot, 3 mcp-registry source-rules findings. Load now ~3.
-- Auto-mark/resume landed e31b42fa63 (SubagentStop TICK queue, --apply-ticks, resume-dead-agent). SubagentStop measured not firing on API-error deaths.
-- Both leaked AWS ids baselined (dead keys, operator rulings). AN5 translations landed 24d722c5ea and ticked.
-- Red-gate fixer adad7d5647ae0b548 (#909aa57a): gen:gates --check drift, env-registry tests, record-paths readers, standdown keep resume-dead-agent, shard placement, baseline R18 note, PLUS review 9a666914.1 (check:ci-test-gate-wiring lost manifest.ts from traced paths; sweep the other re-traced gates). That finding stays open until its fix lands.
-- CL-Q writer a0797ad6073649be8 still running (resumed after API error).
-- Hourly round f6384366: survey a9e938f0aa32f56d8 (#9dbe7c6c) -> /tmp/writers-now/1121-1-20261124T2058Z-r3.md (94 seeds). Next clusters likely CL-T rmcp-decide D3-D6 (needs DEPS-WAIVED), CL-N CF7, CL-AD DO1/DO3/DO17, CL-E bench proof fixes.
+- Throttle landed (ed6cdfea86..894e0478ab); hot-guards writer adbced1bd6bfc5d74 (#342aec5f) caching block_commit_of_live_writer_file and block_plan_concurrency. Disk freed to 145G (go clean -cache). Load ~7.
+- Review 9a666914.1 CLASS: re-trace 9a66691457 narrowed 28 gates' path sets (proof /tmp/m/trace-proof.txt). Owner: re-trace writer af57af2e30689c63f (#e32de9b1): restore inputs, fix tracer, test, Fixes-Review trailer. Red-gate fixer adad7d5647ae0b548 (#909aa57a) told to leave it.
+- Landed tonight (ticked unless noted): CL-Q 9 boxes (CL12 partial: cli docs), FI6 (0107), AP4, AN5, RI11, FC7, CF7 server half (0108, partial), plus earlier AC2/AX/W1/T1/M1/R3/FN1/CL-K/AN/AI1-2/FI2/LM1-2/B4.
+- Running: CL13 translations a72d22c0773c58ae9 (#3ce4d86b; check:i18n red until it lands), CF7 page + review 4d406f1b.1 a505a7cbfc3cb2d0f, rmcp-decide D3 a4cedbc0087fbbcee (#ae1481db, tick needs DEPS-WAIVED), enterprise bench proof fixes afa1d2c40fd648c50 (#7595d34f; rerun V5 f2291749 and V8 966c5266 on bench after), plus the three above.
+- Account migrations used: 0104 ai_credits, 0105 security_incidents, 0106 forensics_incidents, 0107 device_code_elevated, 0108 config_policy_stepup_minimum.
 
 ## Owed ticks
-- PRESENT: RI11 2a6ccb08 (commit:0c71be615c fileline:private/account/web/src/i18n/locales/de/console.json:152), FC7 903acad2 (commit:07c84b60eb fileline:private/renet/cmd/renet/netaudit_units.go:13 after go test). Plan ticks since 464d935dbf uncommitted (AN5). #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
+- Uncommitted plan ticks since 464d935dbf (AN5, RI11, FC7, CL-Q x9, FI6, AP4) + investigation rows: commit with plan-record/plan-boxes --update. #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
 
 ## Armed
-- #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park AWS_IAM_ADMIN_* bws entries (verified dead: InvalidClientTokenId). #0f42f15e 2026-12-01 asia key delete.
+- #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park dead AWS_IAM_ADMIN_* bws entries. #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
-1. Survey returns: PRESENT batch, staff the startable clusters (load is low; disk 34G free = ~4 leases; free Go build cache 114G when no writer builds).
-2. Land fixer, hot-guards and CL-Q as they report; mark 9a666914.1 fixed with the landed sha.
-3. Commit tick batch; ci:quick; push.
+1. Commit the tick batch now. 2. Land each writer as it reports (account picks first; renumber migrations from 0109; union en console.json; rebuild packages/shared before web tsc). 3. After the fixer + re-trace land: CL-GATES (W3.3, CR1-CR5) and CL-AD; next hourly writers-now round ~22:58Z+60. 4. ci:quick; push.
