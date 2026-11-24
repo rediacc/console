@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T16:47:58.718Z",
+  "generatedAt": "2026-11-24T22:09:08.356Z",
   "legs": [
     {
       "index": 1,
@@ -172,6 +172,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_standdown_class.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stop_speed_gh.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py"
@@ -891,6 +892,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_regression_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_prompt_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_rulings.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_standdown_resume_dead.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_store_status.py"
       ]
     },
