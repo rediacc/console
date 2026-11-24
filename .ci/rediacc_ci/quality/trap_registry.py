@@ -126,7 +126,7 @@ US (0x1f) RATHER THAN TAB as the field separator: tab is IFS whitespace in bash,
 A SUITE CASE IS ATTRIBUTED TO A RULE when the string it asserts on appears in that rule's body: the needle is text the rule PRODUCES, so matching it is evidence the case exercises that rule and not a neighbour. Attribution by section order alone would credit any rule with its neighbour's coverage. Firing cases carry the needle as their last quoted argument; silent cases carry no
 needle at all, so they are attributed to the most recent firing case that resolved to a rule. That is the file's actual layout (one rule per contiguous block) and it fails SAFE: an unattributable silent case credits nobody rather than crediting the wrong rule. The suite writes them across continuation lines, so an unjoined read would see every needle as belonging to no call at all.
 
-TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script, gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file (a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives). A deeper closure would eventually call anything reachable from
+TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script, gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file (a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives), or, for a `.py` target, a module a hop-1 Python file loads by its stem (`import <stem>`, `from <stem> import`), since Python never names the file it imports. A deeper closure would eventually call anything reachable from
 anything "live", which is how a liveness check stops meaning anything.
 
 F1 IS CHECKED LAST so a truncated corpus reports its content problems too. Zero entries is a FAILURE, never a pass: a gate that saw nothing has verified nothing.
@@ -447,6 +447,21 @@ def nearest(word: str, pool: list[str]) -> str:
     return ", ".join("'%s'" % c for c in close) if close else "none close"
 
 
+def python_import_re(path: str) -> "re.Pattern[str] | None":
+    """For a `.py` target, the statement a hop-1 Python file uses to load it: `import <stem>` or `from <stem> import`.
+
+    A Python module is reached by its STEM, never by its file name, so the basename search alone misses the commonest hop 2 there is. `file:.claude/hooks/stop/wl_planbind.py` passed only while the manifest listed that path under the plan-bindings gate's hand-declared `paths`; 9a66691457 traced those sets away, and the gate that imports the module on every run (`import wl_planbind as B` in rediacc_ci.quality.plan_bindings, a hop-1 leaf) was then judged unreachable. The match is a statement at the start of a line, so a stem merely mentioned in a comment or docstring does not count as a load.
+    """
+    if not path.endswith(".py"):
+        return None
+    stem = re.escape(pathlib.PurePosixPath(path).stem)
+    return re.compile(
+        r"^[ \t]*(?:import[ \t]+%s(?![A-Za-z0-9_])|from[ \t]+%s[ \t]+import(?![A-Za-z0-9_]))"
+        % (stem, stem),
+        re.MULTILINE,
+    )
+
+
 class Registry:
     """The artifacts a pointer resolves against, resolved once.
 
@@ -647,10 +662,14 @@ class Registry:
             return True
         if self.manifest.is_file() and base in read_text(self.manifest):
             return True
+        imported = python_import_re(path)
         for candidate in self.live_l1_files():
             if candidate == self.file_root / path:
                 continue
-            if base in read_text(candidate):
+            text = read_text(candidate)
+            if base in text:
+                return True
+            if imported is not None and candidate.suffix == ".py" and imported.search(text):
                 return True
         return path.endswith(".py") and pathlib.PurePosixPath(path).stem in self.dispatched_guards(
             path
@@ -1207,7 +1226,7 @@ CONTROL_MANIFEST = """export const GATES = [
     id: 'check:ctl-direct',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry',
     gate: true,
-    leaves: ['sub/ctl-guard.sh'],
+    leaves: ['sub/ctl-guard.sh', 'sub/ctl_gate.py'],
   },
   {
     id: 'check:ctl-keyless',
@@ -2106,6 +2125,13 @@ def selftest() -> int:
         (files / "sub" / "ctl-guard.sh").write_text("#!/bin/bash\necho real\n", encoding="utf-8")
         (files / "sub" / "ctl-orphan.sh").write_text("x\n", encoding="utf-8")
         (files / "sub" / "blank.sh").write_text("a\n\nc\n", encoding="utf-8")
+        # A hop-1 Python leaf that LOADS one module by its stem and only MENTIONS another.
+        (files / "sub" / "ctl_gate.py").write_text(
+            "import os\nimport ctl_lib as L\nfrom ctl_from import thing\n# ctl_mention is named here, never loaded\nX = 'import ctl_quoted'\n",
+            encoding="utf-8",
+        )
+        for stem in ("ctl_lib", "ctl_from", "ctl_mention", "ctl_quoted", "ctl_lib_extra"):
+            (files / "sub" / ("%s.py" % stem)).write_text("X = 1\n", encoding="utf-8")
         (base / "manifest.ts").write_text(CONTROL_MANIFEST, encoding="utf-8")
         (base / "package.json").write_text(
             '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true" } }\n',
@@ -2195,6 +2221,26 @@ def selftest() -> int:
         )
         ctl.falsy(
             "PLANT: a file nothing names is not live", registry.file_is_live("sub/ctl-orphan.sh")
+        )
+        ctl.truthy(
+            "CONTROL: a module a hop-1 Python leaf imports by its stem is live at hop 2",
+            registry.file_is_live("sub/ctl_lib.py"),
+        )
+        ctl.truthy(
+            "CONTROL: a `from <stem> import` load is live at hop 2",
+            registry.file_is_live("sub/ctl_from.py"),
+        )
+        ctl.falsy(
+            "PLANT: a stem only mentioned in a comment is not a load",
+            registry.file_is_live("sub/ctl_mention.py"),
+        )
+        ctl.falsy(
+            "PLANT: a stem inside a string literal mid-line is not a load",
+            registry.file_is_live("sub/ctl_quoted.py"),
+        )
+        ctl.falsy(
+            "PLANT: a longer stem sharing the prefix is not loaded by `import ctl_lib`",
+            registry.file_is_live("sub/ctl_lib_extra.py"),
         )
 
         # -- the whole scan, both directions --------------------------------
