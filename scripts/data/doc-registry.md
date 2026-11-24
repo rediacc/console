@@ -593,7 +593,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/dispatch.py | (none) | via .claude/hooks/chain-head.sh | py |
 | .claude/rediacc_hooks/execcount.py | (none) | (nothing) | py |
 | .claude/rediacc_hooks/git/artifacts.py | (none) | via .claude/hooks/context/onboard.py | py |
-| .claude/rediacc_hooks/git/githooks.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/git/githooks.py | (none) | via .claude/hooks/stop/wl_store.py | py |
 | .claude/rediacc_hooks/git/release_run.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/guards/_backup_push.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
@@ -1013,6 +1013,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_queue_settings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_queue_slots.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_receipt_hold.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_redact.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_regression_gate.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_remaining_bank.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_report_inbox.py | (none) | via pytest (testpaths) | py |

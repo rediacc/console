@@ -776,7 +776,7 @@ def _append_lines(path, lock_path, payloads):
 
     The one implementation is `rediacc_ci.core.jsonl_append.append_lines` (one os.write per batch; a last byte that is not a newline gets one prepended, so a torn fragment stays its own unparseable line). `_flock` is passed so a lockless platform still gets the worklist's own refusal.
     """
-    _jsonl_append().append_lines(path, lock_path, payloads, lock=_flock)
+    _jsonl_append().append_lines(path, lock_path, _redact_payloads(payloads), lock=_flock)
 
 
 # --------------------------------------------------------------------------- THE TRACKED STORE. agent/worklist/<writer8>.jsonl, one append-only file per WRITER identity, committed like every other artifact under agent/.
@@ -876,6 +876,7 @@ def _journal_append(path, payloads, root=None):
 
 def append_store_lines(path, lock_path, payloads, root=None):
     """Append JSONL to a tracked store file AND its journal twin. The one write path for any sidecar living in store_dir (epics.jsonl)."""
+    payloads = _redact_payloads(payloads)
     _append_lines(path, lock_path, payloads)
     _journal_append(path, payloads, root)
 
@@ -1014,9 +1015,10 @@ def append_events(worklist, payloads, writer=None, root=None):
         root = C.project_root(C.project_start())
     br = _branch_of(root)
     hh = host_hash()
+    # Redacted BEFORE either write, so the tracked file and its journal twin carry the same clean bytes.
+    payloads = _redact_payloads(payloads)
     for ev in payloads:
         if isinstance(ev, dict):
-            _redact_secret_shapes(ev)
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
@@ -1545,7 +1547,7 @@ def load(worklist, sync=True):
                     try:
                         size = os.fstat(fd).st_size
                         blob = b"" if not size or os.pread(fd, 1, size - 1) == b"\n" else b"\n"
-                        blob += (json.dumps(ev, separators=(",", ":")) + "\n").encode("utf-8")
+                        blob += _store_line(ev).encode("utf-8")
                         os.write(fd, blob)
                     finally:
                         os.close(fd)
@@ -2062,14 +2064,23 @@ def snapshot_events(fold, by="compact"):
 
 
 # Shapes that must never reach a TRACKED file. Not an exhaustive secret detector and not sold as one: it catches the classes that have actually turned up in this repo's own artifacts, at the door, where the cost of a false positive is retyping one note.
+#
+# ONE TABLE, (kind, pattern). The kind is what a redaction leaves behind (`[redacted:<kind>]`) and what secret_kinds_in names, so a reader learns WHAT was there and never the value. check:ci-tracked-credentials reads this block textually (each `re.compile(r"...")`, keyed by its literal prefix) and fails when a shape here is one it cannot detect; that gate is in turn wider than this table
+# was until 2026-11-24 (ASIA/AIDA/AROA ids, gho_/ghu_/ghs_/ghr_ tokens, Stripe `sk_live_`/`sk_test_` keys), so those rows are here too. The rows the gate keys on keep a literal prefix (`ghp_`, `AKIA`, ...); the widening rows open with a group, which the gate's prefix read skips rather than mistaking for an untaught shape. Keep every pattern free of a double quote and
+# of a flags argument, or the gate's read stops seeing it.
+#
+# THE PATTERN STRING IS A CONTRACT. secret_shapes_in returns each row's `.pattern`, and the pre-push backup scan (.claude/rediacc_hooks/git/githooks.py) compares one against its own `PEM_SHAPE` to judge a header by the key body after it, so the private-key row's pattern stays the bare header. The redactor consumes the body separately (`_PEM_BLOCK_RE`).
 _SECRET_SHAPES = (
-    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY"),
-    re.compile(r"\bghp_[A-Za-z0-9]{36}\b"),
-    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"),
-    re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
-    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
-    re.compile(r"\bwhsec_[A-Za-z0-9]{24,}"),
-    re.compile(r"\bsk-[A-Za-z0-9]{32,}"),
+    ("private-key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY")),
+    ("github-token", re.compile(r"\bghp_[A-Za-z0-9]{36}\b")),
+    ("github-token", re.compile(r"\b(gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b")),
+    ("github-token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}")),
+    ("aws-key-id", re.compile(r"\bAKIA[A-Z0-9]{16}\b")),
+    ("aws-key-id", re.compile(r"\b(ASIA|AIDA|AROA)[A-Z0-9]{16}\b")),
+    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}")),
+    ("stripe-webhook-secret", re.compile(r"\bwhsec_[A-Za-z0-9]{24,}")),
+    ("api-key", re.compile(r"\bsk-[A-Za-z0-9]{32,}")),
+    ("stripe-key", re.compile(r"\b(sk_live|sk_test)_[A-Za-z0-9]{20,}")),
 )
 
 _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
@@ -2077,28 +2088,79 @@ _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
 
 _AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
 
+# A private key's header AND BODY. The header alone is a shape; the base64 lines after it are the secret, so this consumes the header, any RFC1421 `Proc-Type:`/`DEK-Info:` lines and every base64 run of 16+ characters (a length no prose word reaches) across real or escaped newlines, up to an optional END line.
+_PEM_BLOCK_RE = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    r"(?:(?:\s|\\[nr])*(?:(?:Proc-Type|DEK-Info):[^\n\\]*|[A-Za-z0-9+/=]{16,}))*"
+    r"(?:(?:\s|\\[nr])*-----END [A-Z ]*PRIVATE KEY-----)?"
+)
+
 
 def redact_secret_shapes(text):
-    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart), any other shape becomes `[redacted]`."""
+    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart, and too short for any detector to read as an id), a private key loses its body with its header, any other shape becomes `[redacted:<kind>]`."""
     out = _AWS_KEY_ID_KEEP.sub(r"\1...\2", str(text))
-    for shape in _SECRET_SHAPES:
-        out = shape.sub("[redacted]", out)
+    out = _PEM_BLOCK_RE.sub("[redacted:private-key]", out)
+    for kind, shape in _SECRET_SHAPES:
+        out = shape.sub("[redacted:%s]" % kind, out)
     return out
 
 
+def _redact_walk(v):
+    """(`v` with every string redacted, whether anything changed). Keys, nested values, lists and tuples are all walked; a changed container comes back as a dict or list, the shape json writes anyway."""
+    if isinstance(v, str):
+        if not secret_shapes_in(v):
+            return v, False
+        return redact_secret_shapes(v), True
+    if isinstance(v, dict):
+        pairs = [(_redact_walk(k), _redact_walk(x)) for k, x in v.items()]
+        if not any(kc or xc for (_, kc), (_, xc) in pairs):
+            return v, False
+        return {k: x for (k, _), (x, _) in pairs}, True
+    if isinstance(v, (list, tuple)):
+        items = [_redact_walk(x) for x in v]
+        if not any(c for _, c in items):
+            return v, False
+        return [x for x, _ in items], True
+    return v, False
+
+
 def _redact_secret_shapes(ev):
-    """Redact one event in place AT THE DOOR, over its serialized JSON so keys, nested values and any container type json writes are all covered: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes. No shape's pattern matches a quote or a backslash, so a match never spans a JSON delimiter or escape, and the replacements carry neither, so the text stays valid JSON."""
-    text = json.dumps(ev)
-    if not secret_shapes_in(text):
-        return
-    clean = json.loads(redact_secret_shapes(text))
-    ev.clear()
-    ev.update(clean)
+    """Redact one event in place. Walks the DECODED strings rather than the serialized JSON: a token right after a newline sits behind a `\\n` escape in JSON text, where `\\b` sees no word boundary, and a private key's body spans newlines only the decoded string shows."""
+    clean, changed = _redact_walk(ev)
+    if changed:
+        ev.clear()
+        ev.update(clean)
+
+
+def _redact_payloads(payloads):
+    """The payload list every tracked append writes: dicts redacted IN PLACE (so a journal twin written from the same list is clean too), a bare string replaced."""
+    out = []
+    for p in payloads:
+        if isinstance(p, dict):
+            _redact_secret_shapes(p)
+            out.append(p)
+        else:
+            out.append(_redact_walk(p)[0])
+    return out
+
+
+def _store_line(ev):
+    """One redacted JSONL line, for every writer that serializes events itself (compaction, the legacy import, the markdown sync) instead of going through `_append_lines`. On 2026-11-10 `compact` re-published an AWS key id from an item added before the door existed, because these writers each called json.dumps on their own."""
+    if isinstance(ev, dict):
+        _redact_secret_shapes(ev)
+    return json.dumps(ev, separators=(",", ":")) + "\n"
 
 
 def secret_shapes_in(text):
-    """Which secret shapes a string carries. Names the SHAPE, never the match: echoing the value back is the thing being prevented."""
-    return [r.pattern for r in _SECRET_SHAPES if r.search(str(text or ""))]
+    """Which secret shapes a string carries, as each row's pattern string (the pre-push scan keys on the private-key one). Names the SHAPE, never the match: echoing the value back is the thing being prevented."""
+    s = str(text or "")
+    return list(dict.fromkeys(r.pattern for _kind, r in _SECRET_SHAPES if r.search(s)))
+
+
+def secret_kinds_in(text):
+    """Which secret KINDS a string carries, each once: the names a redaction leaves behind, for a message a person reads."""
+    s = str(text or "")
+    return list(dict.fromkeys(kind for kind, r in _SECRET_SHAPES if r.search(s)))
 
 
 def compact_store(worklist, root=None, me=None, projects_dir=None):
@@ -2175,7 +2237,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         fd, tmp = tempfile.mkstemp(dir=str(d), prefix="compact")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in payload:
-                f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+                f.write(_store_line(ev))
         os.replace(tmp, target)
         for f in clear:
             if f == target:
@@ -2271,7 +2333,7 @@ def import_legacy(worklist, again=False, root=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     with open(target, "w", encoding="utf-8") as f:
         for ev in payload:
-            f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+            f.write(_store_line(ev))
     # Journalled too: the legacy log is renamed below, so a branch without this file would otherwise hold no copy of it at all.
     _journal_append(target, payload, root)
     moved = legacy.with_suffix(".jsonl.imported-%s" % re.sub(r"[^0-9A-Za-z]", "", C.stamp_now()))
@@ -2724,7 +2786,7 @@ def compact(worklist):
         fd, tmp = tempfile.mkstemp(dir=str(ep.parent), prefix=ep.name)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in out:
-                f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+                f.write(_store_line(ev))
         os.replace(tmp, ep)
         print("events log compacted to %d record(s)" % len(out))
 
