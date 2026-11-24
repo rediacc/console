@@ -1,28 +1,25 @@
-## SESSION d778be9d 2026-11-24T12:13:53Z
+## SESSION d778be9d 2026-11-24T13:50:35Z
 
-# STATE d778be9d (2026-11-24 ~12:15Z, effort high)
+# STATE d778be9d (2026-11-24 ~13:55Z, effort high)
 
 ## Big pieces
-- Session carries ALL work. Operator: high effort = many parallel writers; load-reducing tooling first; disk recipe as hint (landed, TRAPS full-disk-recipe).
-- BACKUP: the operator's own window runs the COMMIT_POLICY_OK backup-ref sync for all repos at about 12:38Z, after a one-hour wait. Armed #c9d14191 checks `./run.sh backup-ref status` at 12:45Z. Leaked SES IDs verified dead (73cb9b0e inactive since 05:24Z, b28ffa44 gone); no rotation needed.
-- Root AWS keys: writer a4dbffb2ac0060fe3 (#5455c28d, operator-approved 2026-11-24) creates IAM user rediacc-ops-automation, bws AWS_OPS_ACCESS_KEY_ID/_SECRET, repoints code, deactivates root keys; edits in MAIN checkout, lead commits.
-- Landed today (selection): Stop hook 9.3s->3.2s; CL-A W2.6 d94e69ed45 + gen:gates fix 21716828e1; CL-M RI0/3/5/6; review-mark follows rebased copies; ~300 review findings closed; disk recipe; FS13.
-- Landing hazard #12ba0402: re-run `./run.sh worktree land <id>` after every pick and require 0 remaining.
+- Session carries ALL work. Operator: high effort = many parallel writers; load-reducing tooling first.
+- Backup caught up (operator override push): console/account/renet 0 ahead at 12:50Z. Public origin push still to do: needs ci:quick receipt, vm:check for VM paths, and the commit-policy hook will refuse the two commits with dead AWS key IDs (6568fea45d test fixture, f5df11bb04 STATE) unless the operator overrides again.
+- Root AWS keys replaced (ddd28bb5f2, account 9b0abeaa via bf2f65e712): user rediacc-ops-automation, bws AWS_OPS_*; root keys Inactive. Follow-ups #135b55bf; armed #9dd95005 parks old bws entries after 2026-11-25T13:00Z.
+- Operator ASKED:2026-11-24T13:43Z: one shared machine secret for every config's enrollment (reverses the user-supplied ruling); writer a1ae6465e131d4035 (#44344aec) in MAIN checkout, lead commits its edits.
+- Landed this stretch: CL-P console-ia IA1-IA8 ticked; CL-N EH8 EHOP5 ticked (EHOP3 partial, loosened smoke); W2.2/W2.6 ticked (operator accepted 85); busy-path fix dcfce0210f; ~150 more findings closed.
 
 ## Armed
-- #c9d14191 (aid 59bad1b9) NOT-BEFORE 2026-11-24T12:45Z: ./run.sh backup-ref status after the operator push.
-- #0f42f15e (aid 00a40948) NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key via ./run.sh rotation delete ses-asia.
+- #9dd95005 NOT-BEFORE 2026-11-25T13:00Z: park AWS_IAM_ADMIN_* bws entries.
+- #0f42f15e NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key.
 
 ## Delegated
-- a4dbffb2ac0060fe3 #5455c28d root-key replacement (main checkout).
-- a031a1c7d36d59ac4 #53b1dc75 hooks findings wave 2.
-- ab88b60ef21f6ce7b #fc2c7ae4 CL-N EH8 EHOP5 EHOP3 (resumed after timeout).
-- a1e04cfb223bcf02e #19200be7 CL-P console-ia (resumed twice; IA1 = account 4deda7f9).
+- a1ae6465e131d4035 #44344aec shared machine secret + login_bench repoint (main checkout).
 
 ## Owed ticks
-- #ab9f5552 CR3 continuation-line corrections; #44344aec login_bench + l1vm key; #7a8152c4 CL-M follow-ups; renet BPF rebuild check covers only socketisolation objects (ci-build-renet.yml:136-139); D1 B1 N5 N1 A4d FS11 SP7 SP8 live halves; ~600 low/medium findings still open (/tmp/m/rv4/*.txt).
+- EHOP3 strict smoke; D1 B1 N5 N1 A4d FS11 SP7 SP8 live halves; #ab9f5552; #7a8152c4; #135b55bf; ~450 low/medium findings open (regenerate lists from agent/reviews/1121-1 Resolution: open).
 
 ## Next action
-1. Land CL-N, CL-P, hooks wave 2 and the root-key edits as they report; mark findings from trailers.
-2. At 12:45Z confirm the backup caught up; then ci:quick + vm:check --changed, push 1121-1 to origin.
-3. Round 8ba1c743: next findings writers (cli, misc, ci, account remainders) and CL-K/CL-O/CL-S once CL-P lands.
+1. Next findings wave (hooks incl. stop-hook files, ci, cli/misc, account web); land and mark from trailers.
+2. Commit the machine-secret writer's edits when it reports.
+3. ci:quick, vm:check --changed, then ask the operator about the origin push override.
