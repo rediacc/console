@@ -67,14 +67,16 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
 
 ## Tasks
 
-- [ ] AI1 [writer] Add assistant-ui, use-stick-to-bottom, Streamdown and transformers.js to the account web app at versions older than the freshness window with the lockfile written by the pinned npm, set `microphone=(self)`, `'wasm-unsafe-eval'` and `https://media.rediacc.com` in the account worker headers, add `interactive-widget=resizes-content` to the viewport, and register the four AI locale namespaces.
+- [x] AI1 [writer] Add assistant-ui, use-stick-to-bottom, Streamdown and transformers.js to the account web app at versions older than the freshness window with the lockfile written by the pinned npm, set `microphone=(self)`, `'wasm-unsafe-eval'` and `https://media.rediacc.com` in the account worker headers, add `interactive-widget=resizes-content` to the viewport, and register the four AI locale namespaces.
   Owns: private/account/web/package.json, private/account/web/package-lock.json, private/account/web/index.html, private/account/web/src/i18n/config.ts, workers/account/src/index.ts
   Depends on: none.
   Accept: `npm run check:deps`, `npm run check:ci-lockfile`, `npm run check:ci-security-audit` and `npm run check:ci-runtime-imports-are-deps` rc 0; `(cd private/account/web && npm run typecheck && npm run build)` rc 0, with the main chunk size before and after quoted in the tick.
-- [ ] AI2 [writer] Add `aiModesDisabled: ('auto'|'skip')[]` to `PolicyRuleSchema` and merge it as a union in `mergePolicies`, with tests that a team cannot re-enable a mode the org disabled.
+    (ticked) 2026-11-24T20:30:22Z by d778be9d: AI1 packages headers viewport namespaces landed e2e08abb68; lockfile, deps and security audit gates rc 0
+- [x] AI2 [writer] Add `aiModesDisabled: ('auto'|'skip')[]` to `PolicyRuleSchema` and merge it as a union in `mergePolicies`, with tests that a team cannot re-enable a mode the org disabled.
   Owns: packages/shared/src/policy/schema.ts, packages/shared/src/policy/merge.ts, packages/shared/src/policy/__tests__/ai-modes.test.ts
   Depends on: PLAN-rmcp-policy-record.md#S1.
   Accept: `(cd packages/shared && npx vitest run src/policy/__tests__/ai-modes.test.ts)` rc 0.
+    (ticked) 2026-11-24T20:30:16Z by d778be9d: AI2 aiModesDisabled landed e2e08abb68; shared policy vitest 352 passed, account policy-flags 13 passed
 - [ ] AI3 [writer] The executor autonomy gate, approvals and UI tools: the typed `plan` and `present` tools with their `AiEventSchema` members, per-conversation mode, decide() with an agent principal for every loop-issued command, risk grouping into batch cards and single popups, single-use approval tokens bound to the argv hash, grand repos popped up in every mode, disabled modes refused, and exact-only chat allow rules.
   Owns: packages/cli/src/services/ai/autonomy.ts, packages/cli/src/services/ai/approvals.ts, packages/cli/src/services/ai/ui-tools.ts, packages/cli/src/services/ai/loop.ts (the gate and UI-tool registration only), packages/shared/src/cli-contract/wire.ts (new AiEventSchema members only), packages/cli/src/services/ai/__tests__/autonomy.test.ts, packages/cli/src/services/ai/__tests__/approvals.test.ts, packages/cli/src/services/ai/__tests__/ui-tools.test.ts
   Depends on: AI2, PLAN-rmcp-decide.md#D3, PLAN-console-ai-providers.md#AP7.

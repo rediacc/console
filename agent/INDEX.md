@@ -505,12 +505,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 135 | 15 | 0 | 26828 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 137 | 13 | 2 | 27130 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 93 | 8 | 1 | 15365 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 134 | 13 | 2 | 22322 |
-| `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
+| `agent/plans/PLAN-console-animations.md` | approved | 94 | 4 | 5 | 13320 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
@@ -545,7 +545,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-capture.md` | approved | 128 | 5 | 8 | 20436 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 129 | 9 | 6 | 23918 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
-| `agent/plans/PLAN-forensics-investigation.md` | approved | 132 | 16 | 1 | 30327 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 133 | 15 | 2 | 30478 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
@@ -613,7 +613,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 89 | 8 | 1 | 14973 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
-| `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
+| `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 73 | 11 | 2 | 17718 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
@@ -630,7 +630,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
 | `agent/plans/PLAN-silent-failure-sweep.md` | approved | 219 | 1 | 9 | 28737 |
-| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 186 | 4 | 8 | 39535 |
+| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 188 | 2 | 10 | 39819 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 160 | 3 | 8 | 22890 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
@@ -665,7 +665,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 145 | 5 | 15 | 27643 |
-| `agent/plans/PLAN-weekly-lessons.md` | approved | 65 | 6 | 2 | 8759 |
+| `agent/plans/PLAN-weekly-lessons.md` | approved | 69 | 2 | 6 | 9255 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |

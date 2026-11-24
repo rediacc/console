@@ -49,22 +49,26 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
 
 ## Tasks
 
-- [ ] AN1 [writer] Install `tw-animate-css` in private/account/web and import it in app.css after `tailwindcss` (D5), with the lockfile written by the pinned npm.
+- [x] AN1 [writer] Install `tw-animate-css` in private/account/web and import it in app.css after `tailwindcss` (D5), with the lockfile written by the pinned npm.
   Owns: private/account/web/package.json, private/account/web/package-lock.json, private/account/web/src/styles/app.css
   Depends on: none.
   Accept: before the change, `(cd private/account/web && npm run build)` rc 0 and `grep -c "@keyframes enter" private/account/web/dist/assets/*.css` prints 0; after it, the same build rc 0 and the count is at least 1; `npm run check:ci-lockfile` rc 0.
-- [ ] AN2 [writer] Phase map (D1, D2): run-phases.json and `phaseFor(events)` in lib/run-phases.ts returning the scene, the phase, the failed flag, or `indeterminate` when no step has arrived.
+    (ticked) 2026-11-24T20:29:40Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
+- [x] AN2 [writer] Phase map (D1, D2): run-phases.json and `phaseFor(events)` in lib/run-phases.ts returning the scene, the phase, the failed flag, or `indeterminate` when no step has arrived.
   Owns: private/account/web/src/lib/run-phases.ts, private/account/web/src/lib/run-phases.json, private/account/web/src/lib/__tests__/run-phases.test.ts
   Depends on: none.
   Accept: `(cd private/account/web && npx vitest run src/lib/__tests__/run-phases.test.ts)` rc 0: a fork stream yields clone then start, a migrate stream yields transfer, stop, transfer, cutover, an empty stream yields indeterminate, a `plain` id keeps the previous scene, a failed step sets the flag.
-- [ ] AN3 [writer] Scenes (D3, D4): `RunAnimation` and the clone, transfer, start, stop, cutover and indeterminate scenes as inline SVG with CSS keyframes under components/console/animations/, a static end frame under reduced motion, English captions in console.json.
+    (ticked) 2026-11-24T20:29:49Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
+- [x] AN3 [writer] Scenes (D3, D4): `RunAnimation` and the clone, transfer, start, stop, cutover and indeterminate scenes as inline SVG with CSS keyframes under components/console/animations/, a static end frame under reduced motion, English captions in console.json.
   Owns: private/account/web/src/components/console/animations/**, private/account/web/src/i18n/locales/en/console.json
   Depends on: AN2.
   Accept: `(cd private/account/web && npx vitest run src/components/console/animations)` rc 0: each scene renders for its phase, reduced motion renders no element with an `animation` class and shows the caption, a failed phase renders the error tone.
-- [ ] AN4 [writer] Mount `RunAnimation` in the animation slot of RunBlock for running and just-finished blocks, folding with the block.
+    (ticked) 2026-11-24T20:29:56Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
+- [x] AN4 [writer] Mount `RunAnimation` in the animation slot of RunBlock for running and just-finished blocks, folding with the block.
   Owns: private/account/web/src/components/console/runs/RunBlock.tsx, private/account/web/src/components/console/runs/__tests__/run-block-animation.test.tsx
   Depends on: AN3, PLAN-console-run-index.md#RI8.
   Accept: `(cd private/account/web && npx vitest run src/components/console/runs/__tests__/run-block-animation.test.tsx)` rc 0: a running block with `cow_reflink` open shows the clone scene, a folded block shows none.
+    (ticked) 2026-11-24T20:30:02Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
 - [ ] AN5 [writer] Translate the scene captions into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/console.json
   Depends on: AN3.
@@ -73,10 +77,11 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Owns: .ci/rediacc_ci/quality/step_phase_coverage.py, .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py
   Depends on: AN2, PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.step_phase_coverage` rc 0 on the tree; `PYTHONPATH=.ci python3 -m rediacc_ci.quality.step_phase_coverage --selftest` rc 0 with both controls failing as planted; `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py` rc 0.
-- [ ] AN7 [writer] E2e: a routed NDJSON stream carrying fork step events shows the clone scene in the run block, then the start scene; under `reducedMotion: 'reduce'` emulation the static frame and caption show; a stream with no steps shows the indeterminate scene.
+- [x] AN7 [writer] E2e: a routed NDJSON stream carrying fork step events shows the clone scene in the run block, then the start scene; under `reducedMotion: 'reduce'` emulation the static frame and caption show; a stream with no steps shows the indeterminate scene.
   Owns: private/account/e2e/tests/27-console/27-04-run-animations.test.ts
   Depends on: AN4.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-04-run-animations.test.ts)` rc 0.
+    (ticked) 2026-11-24T20:30:09Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) so AN-L1 drives the bundle this branch builds.
   Accept: live-proof bench account-smoke
 - [ ] AN-L1 [live] eu bench: from the console, `repo fork` of a bench repo shows the clone scene then the start scene in its run block, `repo down` of the fork shows the stop scene, and a dialog opens with the tw-animate-css fade. Local-route: deploy-bench -- the branch account Worker serves the eu bench portal and the browser is driven from this machine.
