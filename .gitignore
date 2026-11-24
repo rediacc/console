@@ -211,3 +211,6 @@ agent/reggate/*.lock
 /www-assets/
 /account-web-assets/
 /cli-npm/
+
+# The on-premise test stack's state: env file, token files, account database and logs (rediacc_ci.testrun.onprem_stack).
+/.onprem/

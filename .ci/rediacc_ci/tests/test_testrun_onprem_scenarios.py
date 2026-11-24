@@ -460,3 +460,39 @@ def test_an_https_body_that_only_mentions_daemon_fails(
     verdict = _verdict(lines, "non_loopback_host_with_tls_serves_https")
     assert verdict["ok"] is False
     assert "does not name the daemon" in verdict["detail"]
+
+
+# ── smoke: repo list against a container machine ────────────────────────────
+
+NO_RENET = "renet is not installed on onprem-1; run 'rdc machine setup onprem-1'"
+
+
+def _repo_list_verdict(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict], machines: str
+) -> dict:
+    with stack_env.open("a", encoding="utf-8") as handle:
+        handle.write("ONPREM_MACHINES=%s\n" % machines)
+    rt.rdc_rc["repo list"] = 1
+    rt.stdout["repo list"] = NO_RENET
+    rt.stdout["config current"] = "Active config: onprem-stack"
+    rt.stdout["machine list"] = '[{"name":"onprem-1"}]'
+    _main(rt, stack_env, lines, "--suite", "smoke")
+    return next(line for line in lines if line["scenario"] == "repo_list")
+
+
+def test_smoke_repo_list_names_the_machine_and_accepts_the_unprovisioned_container(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+) -> None:
+    verdict = _repo_list_verdict(rt, stack_env, lines, "container")
+    assert verdict["ok"] is True
+    repo_calls = [argv for argv, _ in rt.calls if "repo" in argv]
+    assert repo_calls
+    assert all(argv[-2:] == ["-m", "onprem-1"] for argv in repo_calls)
+
+
+def test_smoke_repo_list_control_a_vm_machine_must_list(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+) -> None:
+    # The same refusal on a provisioned-machine run is a failure: only the container machine is excused.
+    verdict = _repo_list_verdict(rt, stack_env, lines, "vm")
+    assert verdict["ok"] is False

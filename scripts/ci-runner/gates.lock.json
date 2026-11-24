@@ -16343,6 +16343,18 @@
     }
   },
   {
+    "id": "test:onprem",
+    "run": "npm run test:onprem",
+    "gate": false,
+    "leaves": [
+      ".ci/rediacc_ci/testrun/onprem_lane.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: the CI step is the onprem-lane job of .github/workflows/ci-ops-test.yml, which is outside paritySurface() (only ci.yml#review-gate and ci-quality.yml are in it), so a step pointer would fail R3; the lane also needs a Docker daemon and a built server image that the quick local run does not have."
+    }
+  },
+  {
     "id": "build:packages",
     "run": "npm run build:packages",
     "gate": false,

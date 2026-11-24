@@ -15278,6 +15278,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
+  // PLAN-rmcp-executor-hardening EHOP3. The on-premise lane: the stack with a container machine, every registered scenario suite, then teardown. It needs a Docker daemon and builds the on-premise server image, so it is no member of the quick gate set; its CI step is the `onprem-lane` job of ci-ops-test.yml.
+  {
+    id: 'test:onprem',
+    run: 'npm run test:onprem',
+    gate: false,
+    leaves: ['.ci/rediacc_ci/testrun/onprem_lane.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: the CI step is the onprem-lane job of .github/workflows/ci-ops-test.yml, which is outside paritySurface() (only ci.yml#review-gate and ci-quality.yml are in it), so a step pointer would fail R3; the lane also needs a Docker daemon and a built server image that the quick local run does not have.',
+    },
+  },
+
   // Prerequisite nodes. They validate nothing, so gate:false; they run only when something that needs them is selected.
   //
   // build:www is what closes F5. check:ci-seo's built-HTML link scan self-skips without packages/www/dist (ci-quality.yml:738-740) and the old `&&` chain never built www, so that scan has been vacuous locally for its whole life.

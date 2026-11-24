@@ -531,11 +531,21 @@ class Stack:
             passthrough = [
                 n
                 for n in env
-                if n.startswith(("ACCOUNT_", "CONFIG_R2_"))
+                if (n.startswith(("ACCOUNT_", "CONFIG_R2_")) and n != "CONFIG_R2_ENDPOINT")
                 or n in {"ROOT_EMAIL", "PORT", "TEST_MODE", "ON_PREMISE_MODE"}
             ]
-            argv = ["docker", "run", "-d", "--name", ACCOUNT_CONTAINER, "--network", "host"]
+            # The port is PUBLISHED on loopback rather than sharing the host network: on Docker Desktop a host-network container binds inside the VM, so the stack's own health check never reached it (measured 2026-11-24, `curl 127.0.0.1:4910` refused while the server answered inside the container). The blob store lives on the host, so the container reaches it as host.docker.internal.
+            port = opts.account_port
+            argv = ["docker", "run", "-d", "--name", ACCOUNT_CONTAINER]
+            argv += ["-p", "127.0.0.1:%d:%d" % (port, port)]
+            argv += ["--add-host", "host.docker.internal:host-gateway"]
             argv += ["-v", "%s:/data" % self.layout.dir, "-e", "DATABASE_PATH=/data/account.db"]
+            endpoint = env.get("CONFIG_R2_ENDPOINT", "")
+            if endpoint:
+                argv += [
+                    "-e",
+                    "CONFIG_R2_ENDPOINT=" + endpoint.replace("127.0.0.1", "host.docker.internal"),
+                ]
             for name in passthrough:
                 argv += ["-e", name]
             argv.append(IMAGE)
@@ -654,6 +664,8 @@ class Stack:
 
     def enroll(self, account_url: str, seeded: Seeded, machine: dict[str, str]) -> None:
         log.step("Enrolling the daemon's config...")
+        # A config left by an earlier `up` makes `config init` refuse, so every start begins from an empty config home, as it begins from an empty account database.
+        shutil.rmtree(self.layout.daemon_home, ignore_errors=True)
         env = self.cli_env(account_url, seeded.enroll)
         self.rdc(env, "config", "init", CONFIG_NAME)
         self.rdc(
@@ -662,6 +674,12 @@ class Stack:
             "--user", machine["ONPREM_MACHINE_USER"],
             "--port", machine["ONPREM_MACHINE_PORT"],
         )  # fmt: skip
+        if machine.get("ONPREM_MACHINE_KEY"):
+            # The machine's throwaway key is the only one its sshd accepts; without it the CLI answers SSH_AUTH_FAILED.
+            self.rdc(
+                env, "--config", CONFIG_NAME, "config", "ssh", "set",
+                "--key", machine["ONPREM_MACHINE_KEY"],
+            )  # fmt: skip
         # The secret reaches the CLI through its environment, never argv.
         self.rdc(
             {**env, "REDIACC_MACHINE_SECRET": seeded.machine_secret},
