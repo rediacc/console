@@ -516,7 +516,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
-| `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56949 |
+| `agent/plans/PLAN-console-private.md` | proposed | 335 | 32 | 0 | 57212 |
 | `agent/plans/PLAN-console-run-index.md` | approved | 127 | 12 | 3 | 25090 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 72 | 11 | 1 | 13895 |
@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 93 | 18 | 1 | 28936 |
+| `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 483 | 18 | 29 | 67161 |
@@ -570,7 +570,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-multi-region-bench.md` | approved | 339 | 8 | 15 | 57347 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
-| `agent/plans/PLAN-nightly-green.md` | proposed | 75 | 14 | 1 | 17805 |
+| `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-onprem-relicence-inbox.md` | approved | 80 | 2 | 11 | 13942 |
@@ -609,7 +609,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 118 | 15 | 0 | 26395 |
-| `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 65 | 9 | 0 | 12110 |
+| `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 89 | 8 | 1 | 14973 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
