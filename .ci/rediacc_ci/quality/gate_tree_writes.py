@@ -297,31 +297,46 @@ def referrers(root: pathlib.Path, file: str, line: int) -> tuple[list[str], str 
             continue
         try:
             other = ast.parse((root / rel).read_text(encoding="utf-8"))
-        except (OSError, SyntaxError):
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            # A file this gate cannot read may still call the function: when its text names it, it counts as a referrer, so an unlisted one makes the site UNRESOLVED instead of vanishing.
+            try:
+                text = (root / rel).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if re.search(r"\b%s\b" % re.escape(fn), text):
+                out.append(rel)
             continue
         mods: set[str] = set()
+        dotted: set[str] = set()
         names: set[str] = set()
         for node in ast.walk(other):
             if isinstance(node, ast.ImportFrom):
                 base = node.module or ""
                 for a in node.names:
                     sub = (base + "." if base else "") + a.name
-                    if _module_file(root, sub, rel, node.level) == file:
+                    if a.name == "*":
+                        if _module_file(root, base, rel, node.level) == file:
+                            names.add(fn)
+                    elif _module_file(root, sub, rel, node.level) == file:
                         mods.add(a.asname or a.name)
                     elif a.name == fn and _module_file(root, base, rel, node.level) == file:
                         names.add(a.asname or a.name)
             elif isinstance(node, ast.Import):
                 for a in node.names:
-                    if _module_file(root, a.name, rel, 0) == file and (
-                        a.asname or "." not in a.name
-                    ):
+                    if _module_file(root, a.name, rel, 0) != file:
+                        continue
+                    if a.asname or "." not in a.name:
                         mods.add(a.asname or a.name)
+                    else:
+                        dotted.add(a.name)
         for node in ast.walk(other):
             if (
                 isinstance(node, ast.Attribute)
                 and node.attr == fn
-                and isinstance(node.value, ast.Name)
-                and node.value.id in mods
+                and (
+                    (isinstance(node.value, ast.Name) and node.value.id in mods)
+                    or ast.unparse(node.value) in dotted
+                )
             ) or (isinstance(node, ast.Name) and node.id in names):
                 out.append(rel)
                 break
@@ -431,7 +446,10 @@ def classify(
         )
     if site.origin in SAFE_ORIGINS:
         if pragma is not None and pragma[0] in ("safe", "callers") and not needed:
-            return "STALE", "a `safe` pragma on a site the scanner resolves as %s" % site.origin
+            return "STALE", "a `%s` pragma on a site the scanner resolves as %s" % (
+                pragma[0],
+                site.origin,
+            )
         return "SAFE", site.origin
     if gated:
         return "MODE-GATED", "only under %s" % " / ".join("|".join(c) for c in gated)

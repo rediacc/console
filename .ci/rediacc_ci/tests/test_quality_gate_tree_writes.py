@@ -337,3 +337,26 @@ def test_env_doc_write_is_exempt_for_exactly_the_two_registry_writers():
     pragmas = [ln for ln in text.splitlines() if "tree-write:" in ln]
     assert len(pragmas) == 4
     assert all("tree-write: callers " in ln for ln in pragmas)
+
+
+def _referrer_tree(tmp_path: pathlib.Path) -> None:
+    files = {
+        "pkg/__init__.py": "",
+        "pkg/lib.py": "def put(x):\n    return x\n",
+        "unparsed.py": "def (:\nput(1)\n",
+        "dotted.py": "import pkg.lib\npkg.lib.put(1)\n",
+        "star.py": "from pkg.lib import *\nput(2)\n",
+        "quiet.py": "x = 1\n",
+    }
+    for rel, body in files.items():
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+
+
+def test_referrers_count_an_unparseable_file_a_dotted_import_and_a_star_import(tmp_path):
+    """Reviews 8a37ddf8.1 and .2: each of the three shapes is a referrer; the file that never names the function is not."""
+    _referrer_tree(tmp_path)
+    files, fn = gate.referrers(tmp_path, "pkg/lib.py", 2)
+    assert fn == "put"
+    assert files == ["dotted.py", "star.py", "unparsed.py"]
