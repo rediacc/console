@@ -1456,9 +1456,13 @@ jobs:
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # A fork head never gets a preview signer (PLAN-preview-signer D14), and it holds no secret to deploy
+    # with anyway: the same-repository condition skips it here instead of failing at the Bitwarden step.
+    # preview_signer refuses a fork head on its own as well.
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       needs.initialize.result == 'success' &&
       needs.stage-artifacts.result == 'success'
     # NO `environment:` BLOCK, and its absence is the point.
@@ -1526,7 +1530,8 @@ jobs:
           client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
-          repositories: console,account
+          # renet: its history feeds the on-disk format backstop below (PLAN-preview-signer D12).
+          repositories: console,account,renet
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1566,6 +1571,27 @@ jobs:
       - name: Install www worker dependencies
         run: npm install
         working-directory: workers/www
+
+      # deploy_www deploys the preview's own signer (rediacc_ci.deploy.preview_signer) from workers/signer,
+      # whose lockfile pins the wrangler that bundles it.
+      - name: Install the signer Worker's dependencies
+        run: npm ci --prefix workers/signer
+
+      # The private/renet diff between the PR base and head over the files that hold an on-disk format
+      # constant (deploy_www.FORMAT_CONSTANTS). deploy_www refuses a change to one that carries no
+      # .ci/config/preview-format-change.json (PLAN-preview-signer D12). An unchanged gitlink is an empty diff.
+      - name: Diff private/renet for the format backstop
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "${BASE_SHA}"
+          base="$(git rev-parse "${BASE_SHA}:private/renet")"
+          head="$(git rev-parse "HEAD:private/renet")"
+          if [ "${base}" = "${head}" ]; then : > "${RUNNER_TEMP}/renet.diff"; exit 0; fi
+          git submodule update --init --filter=blob:none --no-checkout private/renet
+          git -C private/renet fetch --no-tags --filter=blob:none origin "${base}" "${head}"
+          read -r -a files <<<"$(PYTHONPATH=.ci python3 -c 'from rediacc_ci.deploy import deploy_www as d; print(" ".join(d.FORMAT_CONSTANTS))')"
+          git -C private/renet diff "${base}" "${head}" -- "${files[@]}" > "${RUNNER_TEMP}/renet.diff"
 
       - name: Download preview pages artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
@@ -1616,8 +1642,16 @@ jobs:
       # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
       # Deploy the single combined preview Worker (static assets + embedded account server) under its word name.
+      # For a word name deploy_www also deploys `<name>-signer` (a fresh delegated key, certified by signer-bench-eu
+      # for this preview's pv- subscriptions only) between the D1 migration and the Worker deploy, and renders
+      # PREVIEW_BUILD from the staged manifest and the format marker. The manifest is the one the preview pages
+      # artifact carries (cd-stage.yml "Copy CLI manifest to pages"): the separate cli-manifest artifact is
+      # uploaded on push runs only, and a pull_request run never has it.
       - name: Deploy preview worker
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "${PREVIEW_NAME}"
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "${PREVIEW_NAME}"
+          --manifest "${GITHUB_WORKSPACE}/workers/www/dist/cli/manifest.json"
+          --renet-diff "${RUNNER_TEMP}/renet.diff"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
@@ -1630,10 +1664,10 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
-      # The preview Worker holds NO licence private key (PLAN-enterprise-isolation S3): it signs
-      # through its LICENSE_SIGNER service binding to signer-bench-eu (deploy_www.PREVIEW_TOML), which
-      # signs with the production key. Only the public half is pushed, and it is the job output the
-      # smoke test verifies against.
+      # The preview Worker holds NO licence private key: it signs through its LICENSE_SIGNER binding to its
+      # own `<name>-signer` (deploy_www.word_preview_toml), which holds a delegated key certified for this
+      # preview only, never the production key (PLAN-preview-signer D1, D2). Only the production public
+      # half is pushed, which the smoke test verifies the delegation chain against.
       - name: Set preview worker secrets
         id: preview-secrets
         env:
