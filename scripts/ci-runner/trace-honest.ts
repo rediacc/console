@@ -23,7 +23,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { GateCores, gateCoresSelftest } from './gate-cores.js';
 import { CARRY_EXEMPT_REL, exemptIdsOf, GLOBAL_INPUTS, matchGlob } from './input-hash.js';
+import { openLease, type RunnerLease } from './lease-client.js';
 import {
   attribute,
   LOCK_REL,
@@ -263,12 +265,14 @@ function git(root: string, args: readonly string[]): string | undefined {
 function runPlain(
   cmd: string,
   cwd: string,
-  timeoutS: number
+  timeoutS: number,
+  env: NodeJS.ProcessEnv = process.env
 ): Promise<{ exit: number; tail: string }> {
   return new Promise((resolve) => {
     const chunks: string[] = [];
     const child = spawn('bash', ['-c', cmd], {
       cwd,
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: true,
     });
@@ -759,6 +763,9 @@ async function pool<T>(
   );
 }
 
+/** The broker main opened, closed by the entry point so a live broker never holds the event loop (or its tokens) past the run. */
+let openedLease: RunnerLease | undefined;
+
 async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   if (args.selftest) return selftest();
@@ -875,10 +882,22 @@ async function main(argv: string[]): Promise<number> {
   const findings: Finding[] = [];
   let traced = 0;
   let sparsed = 0;
+  // Every gate draws its width from the machine-wide core lease (gate-cores.ts): without it six traced vitest gates each took all 24 cores at load 134 (PR-TASK 79b7e92e).
+  const warn = (text: string): void => {
+    process.stderr.write(text);
+  };
+  openedLease = await openLease({ root: REPO_ROOT, warn });
+  console.error(`trace-honest: ${openedLease.note}`);
+  const cores = new GateCores(openedLease, args.jobs, { warn });
   if (args.mode !== 'sparse') {
     await pool(selected, args.jobs, async ({ id, why }) => {
       const e = byId.get(id) as LockEntry;
-      const run = await traceCommand(e.run, view.root, { timeoutS: args.timeoutS, label: id });
+      const grant = await cores.take(id);
+      const run = await traceCommand(e.run, view.root, {
+        timeoutS: args.timeoutS,
+        label: id,
+        env: grant.env,
+      }).finally(() => cores.give(grant));
       const f = traceFindings(
         e,
         attribute(run.access, view),
@@ -897,13 +916,15 @@ async function main(argv: string[]): Promise<number> {
   if (args.mode !== 'trace') {
     const cost = costOf(args.root);
     const top = [...selected].sort((a, b) => cost(b.id) - cost(a.id)).slice(0, args.sparseTop);
+    const serialCores = new GateCores(openedLease, 1, { warn });
     for (const { id } of top) {
       const e = byId.get(id) as LockEntry;
-      const real = await runPlain(e.run, view.root, args.timeoutS);
+      const grant = await serialCores.take(id);
+      const real = await runPlain(e.run, view.root, args.timeoutS, grant.env);
       let dir: string | undefined;
       try {
         dir = buildSparse(view, e, leafFilesOf(e));
-        const sparse = await runPlain(e.run, dir, args.timeoutS);
+        const sparse = await runPlain(e.run, dir, args.timeoutS, grant.env);
         sparsed++;
         const mutated = verifyLinked(dir);
         if (mutated.length > 0) {
@@ -951,6 +972,7 @@ async function main(argv: string[]): Promise<number> {
         });
       } finally {
         if (dir !== undefined) removeSparse(dir);
+        await serialCores.give(grant);
       }
     }
   }
@@ -1544,18 +1566,25 @@ async function selftest(): Promise<number> {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+  const coreFailures = await gateCoresSelftest();
+  check(
+    coreFailures.length === 0,
+    `gate-cores: per-gate grants out of the machine-wide lease (4 tokens, third take waits until a give; an unleased run still names each width)${coreFailures.length === 0 ? '' : `: ${coreFailures.join('; ')}`}`
+  );
   console.log(`trace-honest selftest: ${n - bad}/${n} passed`);
   return bad === 0 ? 0 : 1;
 }
 
 if (isEntryPoint(import.meta.filename)) {
-  main(process.argv.slice(2)).then(
-    (code) => {
-      process.exitCode = code;
-    },
-    (err: unknown) => {
-      console.error(`trace-honest: ${(err as Error).stack ?? String(err)}`);
-      process.exitCode = 1;
-    }
-  );
+  main(process.argv.slice(2))
+    .then(
+      (code) => {
+        process.exitCode = code;
+      },
+      (err: unknown) => {
+        console.error(`trace-honest: ${(err as Error).stack ?? String(err)}`);
+        process.exitCode = 1;
+      }
+    )
+    .finally(() => openedLease?.close());
 }

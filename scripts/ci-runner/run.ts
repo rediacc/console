@@ -62,6 +62,7 @@ import {
   refusingNewGates,
 } from './exec';
 import { findingsSelftest, receiptFindings } from './findings';
+import { gateCoresSelftest } from './gate-cores';
 import { retiredFieldFindings } from './gate-spec';
 import {
   GATE_TIMEOUT_FLOOR_MS,
@@ -3786,6 +3787,10 @@ async function selftest(): Promise<number> {
   // THE LEASE CLIENT against fake brokers (lease-client.ts).
   const leaseCheck = await leaseClientSelftest(os.tmpdir());
   for (const f of leaseCheck.failures) require_(false, `lease-client: ${f}`);
+
+  // PER-GATE GRANTS for launchers outside the pool (gate-cores.ts, PR-TASK 79b7e92e): a full 4-token lease makes a third take wait until a give, and an unleased run still names every gate's width.
+  const gateCoreFailures = await gateCoresSelftest();
+  require_(gateCoreFailures.length === 0, `gate-cores: ${gateCoreFailures.join('; ')}`);
 
   // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule, the carried-input rule and the chain. 22 assertions.
   {
