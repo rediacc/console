@@ -7,7 +7,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "a3fd7846239902e2"
+sourceHash: "fa2550ea14e2d031"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3907,6 +3907,18 @@ rdc serve [options]
 | `--tls-key <path>` | {{t:cli.commands.serve.optionTlsKey}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.serve.optionMode}} | {{t:cli.docs.optionLabels.no}} | `daemon` |
 
+
+---
+
+<a id="cli-local-group-completion"></a>
+## 24. {{t:cli.docs.sectionTitles.completion}}
+
+{{t:cli.commands.completion.description}}
+
+<a id="cli-local-completion"></a>
+```bash
+rdc completion <shell>
+```
 
 ---
 

@@ -28,6 +28,7 @@ const LOCAL_GROUPS = [
   'tools',
   'ops',
   'serve',
+  'completion',
 ];
 
 const TARGET_DOC_CATEGORIES = new Set([
