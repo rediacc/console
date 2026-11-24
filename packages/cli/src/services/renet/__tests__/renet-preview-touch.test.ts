@@ -209,6 +209,43 @@ describe('the first replacement of a server while a preview is active', () => {
   });
 });
 
+describe('the upload guard against a pending pin', () => {
+  const preview = '2.5.0-preview.abc1234';
+
+  async function guarded(guard: () => void) {
+    state.version = preview;
+    const file = path.join(dir, 'renet');
+    fs.writeFileSync(file, renetBytes(preview));
+    const mod = await import('../renet-provisioner.js');
+    mod.renetProvisioner.clearCache();
+    const sftp = remote(null, { hash: 'oldhash', version: '2.4.0' });
+    const result = await mod.renetProvisioner.provision(
+      CONFIG,
+      { localBinaryPath: file, previewTouch: { machine: 'vm1' }, uploadGuard: guard },
+      sftp as never
+    );
+    return { result, sftp };
+  }
+
+  it('leaves neither the pin nor its record behind when the guard refuses', async () => {
+    const { result, sftp } = await guarded(() => {
+      throw new Error('renet source is dirty');
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('renet source is dirty');
+    expect(sftp.exec.mock.calls.some(([c]) => c.includes('echo "PREVIEW_PIN'))).toBe(false);
+    expect(touchMock).not.toHaveBeenCalled();
+    expect(stageMock).not.toHaveBeenCalled();
+  });
+
+  it('pins and records as before when the guard admits', async () => {
+    const { result, sftp } = await guarded(() => undefined);
+    expect(result).toMatchObject({ success: true });
+    expect(sftp.exec.mock.calls.some(([c]) => c.includes('echo "PREVIEW_PIN'))).toBe(true);
+    expect(touchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('the replacement guard around a preview renet', () => {
   it('admits a release replacing a -preview. renet that sorts above it', async () => {
     const { result } = await provision('2.4.0', renetBytes('2.4.0'), {

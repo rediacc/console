@@ -235,6 +235,25 @@ describe('ensureRebound', () => {
       expect((error as Error).message).toContain('ENOENT');
     });
 
+    it('a program that leaves a grandchild holding the pipe open still settles', async () => {
+      program('sleep 15 &\necho 246810');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      await ensureRebound(input(rebind));
+
+      expect(rebind).toHaveBeenCalledWith('246810');
+    }, 15_000);
+
+    it('a failing program that leaves a grandchild holding the pipe is still a refusal', async () => {
+      program('sleep 15 &\necho boom >&2\nexit 3');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      const error = await ensureRebound(input(rebind)).catch((e: unknown) => e);
+
+      expect(rebind).not.toHaveBeenCalled();
+      expect((error as Error).message).toContain('exit 3');
+    }, 15_000);
+
     it('an explicit REDIACC_IP_REBIND_CODE wins over the program (control)', async () => {
       program('echo 999999');
       process.env[IP_REBIND_CODE_ENV] = CODE;

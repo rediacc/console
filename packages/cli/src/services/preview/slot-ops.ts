@@ -18,7 +18,7 @@ import { recordPreviewTouch } from './state.js';
 
 /**
  * Pin the slot of the renet the machine runs, then record its slot, version and hash under
- * `preview.touched`, both before anything is uploaded, so a failure leaves the machine as it was. A machine
+ * `preview.touched`, both before anything is uploaded. The pin marker is written first, so a failed record write leaves the marker on the slot; it is inert (it only keeps the slot through later installs) and the next provision pins the same slot again. A machine
  * already running a preview renet, and one the local binary already matches, record nothing: a server never
  * touched never enters the list.
  */

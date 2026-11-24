@@ -48,6 +48,9 @@ export const IP_REBIND_CODE_COMMAND_ENV = 'REDIACC_IP_REBIND_CODE_COMMAND';
 /** The code program's ceiling: it may fetch a vault entry and wait out the end of a 30 s step. */
 const CODE_COMMAND_TIMEOUT_MS = 120_000;
 
+/** How long the pipes may stay open after the program itself exited, before a grandchild holding them is cut loose. */
+const CODE_COMMAND_DRAIN_MS = 2000;
+
 /** The tail of the program's stderr a failure quotes (the program's own diagnostics, never a code). */
 const CODE_COMMAND_STDERR_TAIL = 600;
 
@@ -150,12 +153,6 @@ async function rebindWithCode(
 }
 
 /**
- * For a wrong or reused code, the line to print before asking again. Every
- * other refusal is final and is thrown from here with its localized message;
- * an error this module does not recognise (401, CLIENT_IP_UNKNOWN, a network
- * failure) is rethrown as the server or transport reported it.
- */
-/**
  * Run the REDIACC_IP_REBIND_CODE_COMMAND program once with the active config
  * name and return the six digits it printed. Its stdin is closed, its stdout
  * is read and never echoed, and its stderr is quoted only when it fails.
@@ -192,7 +189,10 @@ function codeFromCommand(command: string): Promise<string> {
       stderr += chunk.toString('utf8');
     });
     child.on('error', (error) => fail(error.message, stderr));
-    child.on('close', (status, signal) => {
+    let settled = false;
+    const settle = (status: number | null, signal: NodeJS.Signals | null): void => {
+      if (settled) return;
+      settled = true;
       if (status !== 0) {
         fail(signal ? `signal ${signal}` : `exit ${String(status)}`, stderr);
         return;
@@ -203,10 +203,26 @@ function codeFromCommand(command: string): Promise<string> {
         return;
       }
       resolve(code);
+    };
+    child.on('close', settle);
+    // 'close' waits for the pipes to end, and a grandchild that inherited them holds them open past the
+    // timeout, which kills only the direct child. After the program exits the pipes get a short drain, then go.
+    child.on('exit', (status, signal) => {
+      setTimeout(() => {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        settle(status, signal);
+      }, CODE_COMMAND_DRAIN_MS).unref();
     });
   });
 }
 
+/**
+ * For a wrong or reused code, the line to print before asking again. Every
+ * other refusal is final and is thrown from here with its localized message;
+ * an error this module does not recognise (401, CLIENT_IP_UNKNOWN, a network
+ * failure) is rethrown as the server or transport reported it.
+ */
 function describeRebindFailure(error: unknown): string | null {
   const e = error as Partial<AccountFetchError>;
   const details = e.details ?? {};

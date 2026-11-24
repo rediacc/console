@@ -378,12 +378,12 @@ class RenetProvisionerService {
     });
     const versionRejected = this.buildVersionRejectedResult(config.host, remote, current, context);
     if (versionRejected) return versionRejected;
+    // The only point where a binary is about to leave this workstation: the guard runs here, ahead of the pin and its record so a refusal leaves neither behind, and a no-op provision (hashes already match) never pays for it.
+    if (remote.hash !== context.localHash) await options?.uploadGuard?.();
     await this.pinAndRecordPreviewTouch(sftp, options, remote, current, context);
 
     const stagingPath = this.buildStagingPath();
     if (remote.hash !== context.localHash) {
-      // The only point where a binary is about to leave this workstation: the guard runs here, so a no-op provision (hashes already match) never pays for it.
-      await options?.uploadGuard?.();
       await stageRenetBinary(sftp, config, stagingPath, context.binary, context.localHash, {
         installRoot: REMOTE_INSTALL_ROOT,
         currentPath: REMOTE_CURRENT_PATH,
