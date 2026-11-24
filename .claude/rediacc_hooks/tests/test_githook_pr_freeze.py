@@ -504,3 +504,54 @@ def test_stop_modules_import_from_the_stop_directory_and_leave_sys_path_as_found
     assert [m.__name__ for m in mods] == ["wl_core", "wl_store"]
     assert "wl_review" in sys.modules
     assert stop not in sys.path
+
+
+def _gh_answers(monkeypatch, answers):
+    """Plants `subprocess.run` with the scripted (rc, stdout, stderr) answers, one per call, and the nap as a recorder; returns (argv calls, naps)."""
+    calls: list = []
+    naps: list = []
+
+    def fake_run(argv, **_kw):
+        calls.append(argv)
+        rc, out, err = answers[min(len(calls), len(answers)) - 1]
+        return subprocess.CompletedProcess(argv, rc, out, err)
+
+    monkeypatch.setattr(PF.subprocess, "run", fake_run)
+    monkeypatch.setattr(PF.time, "sleep", naps.append)
+    return calls, naps
+
+
+def test_open_pr_retries_a_5xx_once_after_the_two_second_pause(tmp_path, monkeypatch):
+    calls, naps = _gh_answers(
+        monkeypatch, [(1, "", "gh: Server Error (HTTP 502)"), (0, '[{"number": 7}]', "")]
+    )
+    assert PF.open_pr(tmp_path, BRANCH) == (7, "")
+    assert (len(calls), naps) == (2, [2])
+
+
+def test_open_pr_answers_a_4xx_at_once_without_a_retry(tmp_path, monkeypatch):
+    calls, naps = _gh_answers(monkeypatch, [(1, "", "gh: Not Found (HTTP 404)"), (0, "[]", "")])
+    number, why = PF.open_pr(tmp_path, BRANCH)
+    assert number is None
+    assert "exited 1" in why
+    assert (len(calls), naps) == (1, [])
+
+
+def test_open_pr_reports_a_spawn_failure_at_once_never_as_no_pr(tmp_path, monkeypatch):
+    calls: list = []
+
+    def broken(argv, **_kw):
+        calls.append(argv)
+        raise FileNotFoundError("gh")
+
+    monkeypatch.setattr(PF.subprocess, "run", broken)
+    monkeypatch.setattr(PF.time, "sleep", lambda _s: calls.append("nap"))
+    number, why = PF.open_pr(tmp_path, BRANCH)
+    assert number is None
+    assert why.startswith("gh could not run")
+    assert len(calls) == 1
+
+
+def test_open_pr_control_no_open_pr_is_none_with_no_error(tmp_path, monkeypatch):
+    _gh_answers(monkeypatch, [(0, "[]", "")])
+    assert PF.open_pr(tmp_path, BRANCH) == (None, "")

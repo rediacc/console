@@ -60,7 +60,7 @@ DEFECT = (
     'TRUNCATING = frozenset(("redirect", "append", "tee", "in-place", "truncate"))',
 )
 
-# The `shellscan.write_records` readings that open their target from byte zero: a redirect that does not append (`>`, `>|`, `&>`; an "append" record is `>>` or `&>>`, which keep what is there), a `tee` whose record does not append (`-a`, `--append`, a bundle holding `a`), an in-place editor (sed, gsed, `perl -i`, over the words as bash expands them, #6378e10e) and `truncate`. `dd of=` is the "option" record of a `dd` run (`_record_truncates`).
+# The `shellscan.write_records` readings that open their target from byte zero: a redirect that does not append (`>`, `>|`, `&>`, `>&`; an "append" record is `>>` or `&>>`, which keep what is there), a `tee` whose record does not append (`-a`, `--append`, a bundle holding `a`), an in-place editor (sed, gsed, `perl -i`, over the words as bash expands them, #6378e10e) and `truncate`. `dd of=` is the "option" record of a `dd` run (`_record_truncates`).
 TRUNCATING = frozenset(("redirect", "tee", "in-place", "truncate"))
 
 # A round-log path. A target is a round log when its BASENAME is one and not a briefing (`_is_log`), which is the 2026-08 anchoring finding this file records twice carried to the walk: the verb and the path are one run, never two words on a line.

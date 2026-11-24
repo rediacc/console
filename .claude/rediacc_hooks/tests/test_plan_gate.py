@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import subprocess
+import threading
 import time
 
 import pytest
@@ -797,6 +798,18 @@ def test_merged_plan_prs_parses_each_body_through_the_plan_line_reader(tmp_path,
     assert "down" in err, err
 
 
+def _main_thread_naps(monkeypatch) -> list[float]:
+    """The naps this thread takes through `time.sleep`, recorded exactly: the patch is process-wide, so another thread's short naps are dropped at the source and the retry's pause sequence can be asserted whole."""
+    naps: list[float] = []
+    main = threading.get_ident()
+    monkeypatch.setattr(
+        time,
+        "sleep",
+        lambda seconds: naps.append(seconds) if threading.get_ident() == main else None,
+    )
+    return naps
+
+
 def _counting_gh(tmp_path, first_failure: str):
     """A gh stub that counts its calls in `calls` and fails the first one with `first_failure` on stderr; later calls print an empty list. Returns the counter file."""
     calls = tmp_path / "calls"
@@ -815,27 +828,24 @@ def _counting_gh(tmp_path, first_failure: str):
 
 def test_merged_plan_prs_retries_one_transient_failure_and_answers(tmp_path, monkeypatch):
     calls = _counting_gh(tmp_path, "HTTP 502: Bad Gateway")
-    naps: list[float] = []
-    monkeypatch.setattr(time, "sleep", naps.append)
+    naps = _main_thread_naps(monkeypatch)
     monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
     got, err = _REAL_MERGED(str(tmp_path))
     assert (got, err) == ([], ""), (got, err)
     assert len(calls.read_text(encoding="utf-8").splitlines()) == 2, "one retry after the 502"
-    # time.sleep is patched process-wide, so a stray thread's short naps land here too: only the 2 s retry pause counts.
-    assert [n for n in naps if n == 2] == [2], naps
+    assert naps == [2], naps
 
 
 def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
     """Control for the retry above: a 4xx is final, so the call count stays at one and nothing sleeps."""
     calls = _counting_gh(tmp_path, "HTTP 404: Not Found")
-    naps: list[float] = []
-    monkeypatch.setattr(time, "sleep", naps.append)
+    naps = _main_thread_naps(monkeypatch)
     monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
     got, err = _REAL_MERGED(str(tmp_path))
     assert got is None, got
     assert "404" in err, err
     assert len(calls.read_text(encoding="utf-8").splitlines()) == 1
-    assert [n for n in naps if n == 2] == [], naps
+    assert naps == [], naps
 
 
 def test_the_fail_safe_settings_carry_no_batch_keys():

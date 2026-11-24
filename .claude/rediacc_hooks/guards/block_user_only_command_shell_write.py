@@ -254,7 +254,7 @@ _LIST_WRITES = {
 
 
 def _list_write(runs, analysis, cmd, cwd, records):
-    """A short description of the first write to the exception list itself, or "". `records` is the chain's one walk (`shellscan.write_records`); the copy and interpreter shapes keep their own readings."""
+    """A short description of the first write to the exception list itself, or "". `records` is the chain's one walk (`shellscan.write_records`); the copy and interpreter shapes keep their own readings, and a redirect is also tested here as typed, ahead of the records, which read it expanded."""
     for _op, target in _redirects(analysis):
         if _is_list(target, base=_base(None, cwd)):
             return "a redirect into %s" % target
@@ -313,7 +313,7 @@ def _program(run, cmd, cwd, holds):
 
 
 def _offending(cmd, cwd, records=None):
-    """(kind, description) of the first refused write, kind "list" or "flag", or None. `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
+    """(kind, description) of the first refused write, kind "list" or "flag", or None. `records` is the chain's one walk (`shellscan.event_write_records(ev)`, the once-per-Event form of `shellscan.write_records`); without it the walk is made here by `write_records`."""
     if records is None:
         records = shellscan.write_records(cmd, cwd)
     analysis = shellscan._analyse(cmd)

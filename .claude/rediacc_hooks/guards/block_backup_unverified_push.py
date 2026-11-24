@@ -18,7 +18,7 @@ THE ESCAPE is an environment assignment on the push itself, read from the shared
 
   Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`. A transcript that cannot be read proves nothing, so the escape is refused then.
 
-THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/backup-check-push-reasons.jsonl (ts, branch, head, tree, renet, account, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 64 is the last pre-bash slot, so every other guard, `block_vm_unverified_push` at 63 and `block_unasked_release` at 62 included, has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing.
+THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/backup-check-push-reasons.jsonl (ts, branch, head, tree, renet, account, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 63 follows every other push-receipt guard but one, `block_vm_unverified_push` at 62 and `block_unasked_release` at 61 included, so those have already admitted the command when the line is written; `block_renet_untested_push` (65) runs after it. A push a VERIFIED receipt admits writes nothing.
 
 SCOPE is `block_vm_unverified_push`'s: a command-position `git push` in this checkout; not a `--dry-run`, a delete, the GitLab mirror push of `origin/main`, a submodule push or another repository. The git-level `pre-push` hook (box J10) backs this up for pushes that never pass through the Bash tool.
 

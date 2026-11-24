@@ -10,7 +10,7 @@ policy that differs by tool. Each row below is the single declaration both halve
     message     the edit half's refusal and the shell half's, (edit, shell)
     sanctioned  the one writer the refusal points at
 
-Three rows are judged by path alone (review_file, live_proof_ledger, roundlog): their edit half is `edit_run(ev, RULE)` and nothing else. Three judge the CONTENT a write leaves (user_only_command, suppressions, protected_files), so their row carries `path=None` and their predicate stays in the guard, where its DEFECT plant reaches it; the row still names the pair and its
+Three rows are judged by path alone (review_file, live_proof_ledger, roundlog): their edit half is one `edit_run(ev, RULE)` call and nothing else (the round log's passes `exists_only=True, raw=False`, the two options its own reading needs). Three judge the CONTENT a write leaves (user_only_command, suppressions, protected_files), so their row carries `path=None` and their predicate stays in the guard, where its DEFECT plant reaches it; the row still names the pair and its
 sanctioned door, so `ROWS` enumerates every twin.
 
 THE SHELL HALVES READ THE SAME ROW. A shell half binds the row's landing test and its shell message, and asks the test of each word it reads as a write target. The walk itself is `shellscan.event_write_records(ev)` (`shellscan.write_records`, made once per Event: each write's path, reading, word, run, argv index and append flag), which block_live_proof_ledger_shell_write reads for every shell shape but interpreter code, and block_suppressions_shell_write and block_user_only_command_shell_write for their word writes; each guard keeps the

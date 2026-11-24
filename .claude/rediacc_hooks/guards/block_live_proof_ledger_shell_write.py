@@ -5,7 +5,7 @@ added to that same command is still refused.
 
 WHAT COUNTS AS A WRITE, read by the lexer (`shellscan`) and never by a regex over the raw text, so `cat`, `jq`, `grep`, `git diff`, `git add` and a commit message naming the ledger all pass:
   - an output redirection (`>`, `>>`, `>|`) whose target lands on the ledger, as typed and as bash expands it;
-  - `tee`, an in-place `sed`/`perl`, `truncate`, `dd of=` or `rm` naming it, and a copier (`cp`, `mv`, `install`, `rsync`, `ln`) whose destination lands on it (`shellscan.copy_landings`, so a copy into `agent/ledgers/` of a file named `live-proof.jsonl` counts);
+  - `tee`, an in-place `sed`/`perl`, `truncate`, `dd of=` or `rm` naming it, and a copier (`cp`, `mv`, `install`, `rsync`, `ln`) whose destination lands on it (`shellscan.copy_landings`, reached through the walk's `run_word_writes`, so a copy into `agent/ledgers/` of a file named `live-proof.jsonl` counts);
   - any other command's output word (`shellscan.output_landings`): an output option of a listed reader (`sort -o`), or any word of a command that table does not list as a reader (`touch`, `rm`);
   the redirect, tee, in-place, copy, truncate, `dd of=`, `rm` and output-word readings are the chain's one walk (`shellscan.event_write_records`, made once per Event and shared with every guard of the chain), each tested where it lands; interpreter code is this guard's own reading;
   - interpreter code: a Python program whose write targets, or whose appending calls (`append_lines`, `.write`, `json.dump`), name the ledger, a call of `ledger_path`, or the `LEDGER` constant; other interpreters, and Python that does not parse, by a line that names the ledger beside write code. A program that imports the recorder and passes `write=True`,
