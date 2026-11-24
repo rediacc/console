@@ -357,6 +357,7 @@
       "BRANCH_MAX_AGE_DAYS",
       "BUCKET",
       "BUDGET_CHECK_SUMMARY_PATH",
+      "BUMP_TYPE",
       "BWS_FETCH",
       "BWS_PREWARM",
       "BWS_RESOLVE",
@@ -475,14 +476,9 @@
       "NEEDS",
       "NEXT_VERSION",
       "NFPM_ARCH",
-      "NIGHTLY_BUDGET_EXCLUDE_PATTERNS",
       "NIGHTLY_CONCLUSION",
-      "NIGHTLY_EVENT",
       "NIGHTLY_HEAD_SHA",
-      "NIGHTLY_JOB_BUDGET_MIN",
-      "NIGHTLY_RUN_BUDGET_MIN",
       "NIGHTLY_RUN_ID",
-      "NIGHTLY_URL",
       "NODE_MAJOR",
       "NOTICE",
       "NPM_DIR",
@@ -2400,6 +2396,9 @@
       ],
       ".ci/rediacc_ci/ops/r2_bucket_copy.py": [
         "CLOUDFLARE_R2_ENDPOINT"
+      ],
+      ".ci/rediacc_ci/ops/rebind_code.py": [
+        "REDIACC_BWS_PROFILES"
       ],
       ".ci/rediacc_ci/ops/rebind_login.py": [
         "REDIACC_BWS_PROFILES"
