@@ -90,3 +90,20 @@ def test_install_refuses_a_binary_that_is_not_executable(monkeypatch, tmp_path) 
     binary.chmod(0o644)
     with pytest.raises(aws_cli.RefusalError, match="not executable"):
         aws_cli.run_install()
+
+
+@pytest.mark.parametrize("failing", ["install", "which"])
+def test_a_failed_bootstrap_is_an_error_annotation_and_exit_1(
+    monkeypatch, tmp_path, capsys, failing
+) -> None:
+    """7d0ce757.3: a failing bootstrap.sh is a refusal, not a CalledProcessError traceback."""
+    _install_env(monkeypatch, tmp_path, "false")
+
+    def fake_run(argv, **_kw):
+        return subprocess.CompletedProcess(argv, 3 if failing in argv else 0, stdout="", stderr="")
+
+    monkeypatch.setattr(aws_cli.subprocess, "run", fake_run)
+    assert aws_cli.main(["install"]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("::error::")
+    assert "exited 3" in out

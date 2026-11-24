@@ -66,13 +66,17 @@ def run_pin() -> None:
 
 
 def run_install() -> None:
-    subprocess.run(["bash", ".ci/bootstrap.sh", "install", "aws"], check=True)
+    installed = subprocess.run(["bash", ".ci/bootstrap.sh", "install", "aws"], check=False)
+    if installed.returncode != 0:
+        raise RefusalError("`.ci/bootstrap.sh install aws` exited %d" % installed.returncode)
     found = subprocess.run(
         ["bash", ".ci/bootstrap.sh", "which", "aws", "--pin"],
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
     )
+    if found.returncode != 0:
+        raise RefusalError("`.ci/bootstrap.sh which aws --pin` exited %d" % found.returncode)
     aws_bin = found.stdout.strip()
     if not (aws_bin and os.path.isfile(aws_bin) and os.access(aws_bin, os.X_OK)):
         raise RefusalError("the pinned aws CLI is not executable at %s" % aws_bin)

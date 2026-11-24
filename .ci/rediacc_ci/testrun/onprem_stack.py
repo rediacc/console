@@ -326,6 +326,7 @@ class Stack:
         return any(self.state[key] for key in self.state)
 
     def record_group(self, name: str, pgid: int) -> None:
+        """Record a started group with its leader's start time. A leader already unreadable here (`start` None) has exited, so only its surviving members remain, and teardown signals the group without the recycled-id check: the id stays reserved while any member lives, and a recycled leader pid cannot be told apart without a start time to compare."""
         self.state["groups"].append(
             {"name": name, "pgid": pgid, "start": self.rt.group_start(pgid)}
         )
