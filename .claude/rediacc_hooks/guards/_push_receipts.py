@@ -13,7 +13,7 @@ A ROW is `Row(id, guard, order, receipt, verdict, admit, refusals, escape, kinds
     escape     the operator-ASKED environment variable, None when only a receipt admits; `kinds` are its admitted kinds and `why_names` what the why must name
     ledger     where an admitted escape is appended
     touched    the predicate over the pushed range that decides whether the push needs this receipt
-    reader     the tree-based receipt reader: `read(row_id, root, tree)` returns what it reads for that tree
+    reader     the tree-based receipt reader: `read(row_id, root, tree)` returns what it reads for that tree; the vm:check and backup rows name their verdict function `admit` here (checked to resolve), and `readers` serves `read` for them
     origins    the guard attribute mapping an origin kind to a reader of carried entries, None when the row has none
 
 SPECS ARE STRINGS, resolved on use (`resolve`): `guard:<attr>` is an attribute of the row's guard, `ci:<module>:<attr>` a `rediacc_ci` module through `syspath.import_from_ci`, `stop:<module>:<attr>` a Stop-hook module. The guards import this module, so a direct reference back to them would be an import cycle; a spec is resolved only when a reader is asked for, and `admit_parity` resolves every one, so a renamed reader turns the parity test red rather than failing at a push.
@@ -23,6 +23,7 @@ THE SEAM FOR ATTESTED RECEIPTS (PLAN-two-track-merge-dev R4). The ci:quick row's
 
 import dataclasses
 import datetime
+import functools
 import importlib
 import json
 import pathlib
@@ -158,7 +159,11 @@ def resolve(r, spec):
 def readers(row_id):
     """{"tree": the row's tree reader, <origin kind>: origin reader, ...}: every reader the row admits through, under one interface (module docstring, THE SEAM)."""
     r = row(row_id)
-    out = {"tree": resolve(r, r.reader)}
+    # vm:check and backup name their verdict function (`admit`) in `reader`; their tree reading is `read`, which `readers` hands back as a `(root, tree)` callable so no caller takes the verdict function for a reader (review edfc3e69.1).
+    tree_reader = (
+        functools.partial(read, r.id) if r.id in ("vm:check", "backup") else resolve(r, r.reader)
+    )
+    out = {"tree": tree_reader}
     if r.origins:
         out.update(getattr(guard_module(r), r.origins))
     return out

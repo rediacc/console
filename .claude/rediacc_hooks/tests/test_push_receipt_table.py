@@ -158,6 +158,27 @@ def test_readers_put_the_ci_receipt_verifier_beside_the_tree_reader():
     assert set(PR.readers("vm:check")) == {"tree"}
 
 
+def test_the_vm_and_backup_tree_readers_read_a_receipt_and_are_not_the_verdict_function(
+    monkeypatch,
+):
+    """edfc3e69.1/.2: `readers(...)["tree"]` is a `(root, tree)` reader: it returns the per-tree archive its module reads, and it is neither row's `admit`. Control: a tree with no archive reads None."""
+    tree = "e" * 40
+    doc = {"tree": tree, "verdict": "VERIFIED"}
+    held = {"archive": None}
+    fake = types.SimpleNamespace(
+        read_archive=lambda _root, _tree: held["archive"], read_latest=lambda _root: None
+    )
+    monkeypatch.setattr(PR, "_vm_tier", lambda: fake)
+    monkeypatch.setattr(PR, "_backup_trigger", lambda: fake)
+    for row_id in ("vm:check", "backup"):
+        reader = PR.readers(row_id)["tree"]
+        assert reader is not PR.resolve(PR.row(row_id), PR.row(row_id).reader), row_id
+        held["archive"] = None
+        assert reader("/root", tree) is None, row_id
+        held["archive"] = doc
+        assert reader("/root", tree) == doc, row_id
+
+
 def test_a_new_origin_kind_registers_through_the_same_interface(monkeypatch):
     ci = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 

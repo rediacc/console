@@ -1516,6 +1516,16 @@ STATIC: list[Case] = [
         "review-file-shell-write: a launched copy INTO the directory, named by the walked file",
     ),
     case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find /tmp -name '*.md' -exec cp /tmp/x.md agent/reviews/{} \;"),
+        "review-file-shell-write: a launched copy whose landing is `<review dir>/{}` stays in the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp /tmp/x.md /tmp/out/{} \;"),
+        "review-file-shell-write CONTROL: a landing `<other dir>/{}` is not the walked directory",
+    ),
+    case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json("echo find agent/reviews -exec sed -i s/high/low/ {} +"),
         "review-file-shell-write CONTROL: prose naming a launched sed -i",
