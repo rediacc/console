@@ -43,7 +43,8 @@ class FakeRuntime(onprem_stack.Runtime):
         self.other_token_refused = False
         self.lsof = "node 1 u 3u IPv4 TCP 127.0.0.1:8480 (LISTEN)"
 
-    def run(self, argv, env=None, **_unused) -> subprocess.CompletedProcess:
+    def run(self, argv, env=None, cwd=None, timeout=600) -> subprocess.CompletedProcess:
+        del cwd, timeout  # the fake takes the real signature and ignores both
         self.calls.append((argv, env))
         if argv[0] == "lsof":
             return done(argv, 0 if self.lsof else 1, self.lsof)

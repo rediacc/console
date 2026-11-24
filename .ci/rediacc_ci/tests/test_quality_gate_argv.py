@@ -73,6 +73,7 @@ def test_shared_parser_is_accepted_with_its_declared_set(tmp_path):
 def test_plain_argparse_is_accepted(tmp_path):
     got = entry(tmp_path, ARGPARSE)
     assert (got.form, got.problems) == ("argparse", [])
+    assert got.decl is not None
     assert "--selftest" in got.decl.switches
     assert got.decl.valued == ("--root",)
 

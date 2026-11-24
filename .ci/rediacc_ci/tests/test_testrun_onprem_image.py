@@ -30,7 +30,8 @@ class FakeDocker(onprem_stack.Runtime):
         self.health = 200
         self.slept = 0.0
 
-    def run(self, argv, env=None, **_unused) -> subprocess.CompletedProcess:
+    def run(self, argv, env=None, cwd=None, timeout=600) -> subprocess.CompletedProcess:
+        del cwd, timeout  # the fake takes the real signature and ignores both
         self.calls.append(argv)
         self.envs.append(env)
         joined = " ".join(argv)

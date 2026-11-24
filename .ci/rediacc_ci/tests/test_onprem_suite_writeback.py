@@ -50,12 +50,13 @@ class FakeStore(onprem_stack.Runtime):
         self.host_job_despite_pause = False
 
     def device2(self, env: dict[str, str] | None) -> bool:
-        return bool(env) and str(env["XDG_CONFIG_HOME"]).endswith("device2")
+        return env is not None and str(env.get("XDG_CONFIG_HOME", "")).endswith("device2")
 
     def push(self) -> None:
         self.versions += self.versions_per_push
 
-    def run(self, argv, env=None, **_unused) -> subprocess.CompletedProcess:
+    def run(self, argv, env=None, cwd=None, timeout=600) -> subprocess.CompletedProcess:
+        del cwd, timeout  # the fake takes the real signature and ignores both
         self.calls.append(argv)
         if argv[0] == "docker":
             self.paused = argv[1] == "pause"
@@ -242,7 +243,7 @@ def test_a_record_the_second_device_cannot_read_fails_create(
 
 
 def test_a_delete_that_leaves_the_record_visible_fails(
-    store: FakeStore, home: pathlib.Path
+    store: FakeStore, home: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ctx = _ctx(store, home)
 
@@ -254,13 +255,15 @@ def test_a_delete_that_leaves_the_record_visible_fails(
             store.repos.add(argv[argv.index("delete") + 1])
         return out
 
-    store.run = run
+    monkeypatch.setattr(store, "run", run)
     verdict = _run(ctx, "delete_pushes_one_version")
     assert verdict["ok"] is False
     assert "still shows" in verdict["detail"]
 
 
-def test_a_fork_the_second_device_cannot_see_fails(store: FakeStore, home: pathlib.Path) -> None:
+def test_a_fork_the_second_device_cannot_see_fails(
+    store: FakeStore, home: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     ctx = _ctx(store, home)
     original = store.run
 
@@ -270,7 +273,7 @@ def test_a_fork_the_second_device_cannot_see_fails(store: FakeStore, home: pathl
             store.repos = {r for r in store.repos if ":" not in r}
         return out
 
-    store.run = run
+    monkeypatch.setattr(store, "run", run)
     verdict = _run(ctx, "fork_pushes_one_version")
     assert verdict["ok"] is False
     assert ":t1" in verdict["detail"]
@@ -325,7 +328,7 @@ def test_a_host_job_started_despite_the_failed_record_fails(
 
 
 def test_the_account_is_resumed_even_when_the_command_raises(
-    store: FakeStore, home: pathlib.Path
+    store: FakeStore, home: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original = store.run
 
@@ -334,7 +337,7 @@ def test_the_account_is_resumed_even_when_the_command_raises(
             raise OSError("spawn failed")
         return original(argv, env=env, **kw)
 
-    store.run = run
+    monkeypatch.setattr(store, "run", run)
     verdict = _run(_ctx(store, home), "account_unreachable_fails_without_a_host_job")
     assert verdict["ok"] is False
     assert store.signals[-1] == (ACCOUNT_PGID, signal.SIGCONT)

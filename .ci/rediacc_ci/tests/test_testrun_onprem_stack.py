@@ -45,7 +45,8 @@ class FakeRuntime(mod.Runtime):
     def kill_group(self, pgid: int) -> None:
         self.killed.append(pgid)
 
-    def run(self, argv, env=None, **_unused) -> subprocess.CompletedProcess:
+    def run(self, argv, env=None, cwd=None, timeout=600) -> subprocess.CompletedProcess:
+        del cwd, timeout  # the fake takes the real signature and ignores both
         self.runs.append((argv, env))
         joined = " ".join(argv)
         if argv[0] == "ssh-keygen":

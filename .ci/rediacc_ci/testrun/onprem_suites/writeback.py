@@ -231,7 +231,7 @@ def racing_pushes_keep_both_edits(ctx: Context) -> Result:
     return passed(code=0)
 
 
-def pause_account(ctx: Context) -> Callable[[], None]:
+def pause_account(ctx: Context) -> Callable[[], object]:
     """Stop the account server from answering without losing its state: SIGSTOP its process group (a from-source stack), else `docker pause` (the image). Returns the function that resumes it."""
     try:
         pgid = ctx.group_pgid("account")

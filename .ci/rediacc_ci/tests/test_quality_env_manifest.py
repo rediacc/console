@@ -147,7 +147,7 @@ def test_an_unregistered_read_reds_the_one_gate():
 
     Taking a real read's rows out of the document is the same input to the gate as a new read the rows were never written for, and it plants nothing into the tracked tree.
     """
-    victim = {}
+    victim: dict = {}
 
     def mutate(data):
         module, name = _a_python_read(data)

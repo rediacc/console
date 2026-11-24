@@ -147,6 +147,7 @@ def render(events: list[dict], as_json: bool) -> str:
 def run(args: argparse.Namespace, argv: list[str] | None = None) -> int:
     root = paths.repo_root()
     try:
+        rows: list[dict] | None
         if args.target == ONPREM_TARGET:
             rows = read_sqlite(onprem_sqlite(args))
             where = "onprem"
