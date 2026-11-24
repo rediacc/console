@@ -16,8 +16,10 @@
  */
 
 import { CLI_CONTRACT, type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
+import { POLICY_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
+  type Decision,
   type DecisionCommand,
   type DecisionOverrides,
   type DecisionPrincipal,
@@ -212,16 +214,60 @@ export function authorize(args: AuthorizeArgs): PolicyDecision {
     ...(args.machineName ? { machine: args.machineName } : {}),
     isOpsVm: false,
   };
+  const command = decisionCommandOf(entry);
+  const target = args.target ?? machineOnly;
+  const policy = effectivePolicyOf(args.config);
   const decision = decide({
     principal: principalOf(args),
-    command: decisionCommandOf(entry),
-    target: args.target ?? machineOnly,
-    policy: effectivePolicyOf(args.config),
+    command,
+    target,
+    policy,
     overrides: args.agentGrant ? grantOverrides(args.agentGrant) : NO_OVERRIDES,
     confirmation: args.confirmation ?? { granted: false },
   });
+  if (decision.verdict === 'deny') throw new PolicyDenied(decision);
+  if (policy === null && mutatesGrand(command, target)) {
+    throw new PolicyDenied(noPolicyGrandRefusal(command, target));
+  }
   if (decision.verdict !== 'allow') throw new PolicyDenied(decision);
   return { allowed: true, reason: decision.reason };
+}
+
+/**
+ * Whether a command would change a grand repo: the grand-repo rule's own test in `decide` (a
+ * `grandGuard` command whose target is not a fork, an unresolved or absent repo counting as grand,
+ * `repo promote` always landing on the grand, an ops-VM placement exempt).
+ */
+function mutatesGrand(command: DecisionCommand, target: DecisionTarget): boolean {
+  if (!command.grandGuard || target.isOpsVm) return false;
+  if (MUTATES_GRAND_BY_DEFINITION.has(command.pathKey)) return true;
+  return target.repo?.state !== 'fork';
+}
+
+/**
+ * The executor's one deviation from `decide`: with NO policy document, a grand-repo change is
+ * refused whatever the principal's role, where the decision table's row null-human-owner-grand
+ * lets an owner or admin through. That row trusts the principal kind, and the executor cannot tell
+ * an agent from a human: every console and `--proxy` caller arrives as a human principal, and the
+ * client-side agent check (enforceProxiedAgentCommand in cli.ts) does not bind an agent that calls
+ * the executor API directly. So the executor fails closed, as it did before `decide` (security
+ * review finding b2f0bd2f.1), and the way past is a policy that sets `allowGrandRepos`, which then
+ * goes through `decide` like every other case with a document.
+ */
+function noPolicyGrandRefusal(command: DecisionCommand, target: DecisionTarget): Decision {
+  const repoName = target.repo?.name;
+  const subject = repoName
+    ? `would change ${repoName}, a grand repo (not a fork)`
+    : 'would change a grand repo (not a fork)';
+  return {
+    verdict: 'deny',
+    code: 'GRAND_REPO_DENIED',
+    reason:
+      `"rdc ${command.pathKey}" ${subject}, and the executor refuses grand-repo changes with no policy: ` +
+      `grand-repo changes need an org policy with allowGrandRepos. ` +
+      `Target a fork instead, or author such a policy in the console under Permissions.`,
+    next: { run: `rdc repo fork ${repoName ?? POLICY_DEFAULTS.REPO_NAME_PLACEHOLDER} --tag <tag>` },
+  };
 }
 
 /**

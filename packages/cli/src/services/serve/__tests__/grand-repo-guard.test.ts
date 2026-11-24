@@ -6,10 +6,11 @@
  * decision function (`decide`, PLAN-rmcp-decide.md D3). A policy that does not
  * set `allowGrandRepos` refuses a grand-repo mutation, a ref the executor cannot
  * identify counts as grand, `repo promote` always lands on the grand, and an
- * ops-VM placement is exempt. A console or `--proxy` caller is a human principal,
- * so an owner of an org with no policy may change a grand repo, exactly as on
- * the CLI (D18); an agent driving `--proxy` meets the CLI's own enforcement point
- * before the request leaves its process.
+ * ops-VM placement is exempt. With NO policy document the executor refuses a
+ * grand-repo mutation even for an owner, deviating from decide()'s
+ * null-human-owner-grand row: every console or `--proxy` caller looks human, so
+ * the executor cannot tell an agent calling its API directly from a person
+ * (security review finding b2f0bd2f.1).
  *
  * F1. The executor audits AFTER a command ran. The Phase 1 trial ran with an
  * executor token lacking `audit:write`: the event was rejected (403) and the
@@ -289,12 +290,42 @@ describe('executor pre-run refusals', () => {
       expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
     });
 
-    it('lets an owner of an org with no policy change a grand repo, as the CLI does (D18)', async () => {
+    it.each([
+      ['repo up', { ref: 'shop' }],
+      ['repo delete', { ref: 'shop' }],
+      ['repo up', { ref: 'nosuchrepo' }],
+      ['repo promote', { 'fork-ref': 'shop:trial' }],
+    ])(
+      'refuses "%s" on a grand repo for an owner of an org with no policy (%o)',
+      async (pathKey, positionals) => {
+        boot({});
+        const { status, error, code } = await run(pathKey, positionals);
+
+        expect(status).toBe(403);
+        expect(code).toBe('GRAND_REPO_DENIED');
+        expect(error).toMatch(
+          /no policy: grand-repo changes need an org policy with allowGrandRepos/
+        );
+        expect(error).toMatch(/Next step: rdc repo fork \S+ --tag <tag>/);
+        expect(executed).toHaveLength(0);
+      }
+    );
+
+    it('runs a fork mutation for an owner of an org with no policy', async () => {
       boot({});
-      const { status } = await run('repo up', { ref: 'shop' });
+      const { status, success } = await run('repo up', { ref: 'shop:trial' });
 
       expect(status).toBe(200);
+      expect(success).toBe(true);
       expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
+    });
+
+    it('still allows a read of a grand repo with no policy', async () => {
+      boot({});
+      const { status, success } = await run('repo status', { ref: 'shop' });
+
+      expect(status).toBe(200);
+      expect(success).toBe(true);
     });
 
     it('exempts a grand repo placed on an ops VM', async () => {

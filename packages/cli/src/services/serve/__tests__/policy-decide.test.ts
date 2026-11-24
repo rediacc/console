@@ -86,6 +86,46 @@ const grantOf = (overrides: Partial<AgentGrantOverrides> = {}): AgentGrantOverri
   ...overrides,
 });
 
+describe('authorize: no policy document (the executor fails closed on a grand repo)', () => {
+  const base = { principal: OWNER, commandPath: 'repo up', config: configWith() } as const;
+  const FORK: DecisionTarget = { ...GRAND, repo: { name: 'shop:trial', state: 'fork' } };
+
+  it("refuses an owner on a grand repo, unlike decide()'s null-human-owner-grand row", () => {
+    const result = outcome({ ...base, target: GRAND });
+    expect(result).toMatchObject({ verdict: 'deny', code: 'GRAND_REPO_DENIED' });
+    expect((result as Decision).reason).toMatch(
+      /no policy: grand-repo changes need an org policy with allowGrandRepos/
+    );
+  });
+
+  it('refuses an unresolved target and a route that names no repo', () => {
+    const unresolved: DecisionTarget = { ...GRAND, repo: { name: 'nope', state: 'unresolved' } };
+    expect(outcome({ ...base, target: unresolved })).toMatchObject({ code: 'GRAND_REPO_DENIED' });
+    expect(outcome({ ...base, machineName: 'm1' })).toMatchObject({ code: 'GRAND_REPO_DENIED' });
+  });
+
+  it('refuses an agent grant opted in to every grand repo, destructive or not', () => {
+    const agentGrant = grantOf({ allowGrandRepos: true });
+    expect(outcome({ ...base, target: GRAND, agentGrant })).toMatchObject({
+      code: 'GRAND_REPO_DENIED',
+    });
+    const destructive = { ...base, commandPath: 'repo delete', target: GRAND, agentGrant };
+    expect(outcome({ ...destructive, confirmation: { granted: true } })).toMatchObject({
+      code: 'GRAND_REPO_DENIED',
+    });
+  });
+
+  it('allows an owner on a fork, a read of a grand, and an ops-VM grand (controls)', () => {
+    expect(outcome({ ...base, target: FORK })).toBe('allow');
+    expect(outcome({ ...base, commandPath: 'repo status', target: GRAND })).toBe('allow');
+    expect(outcome({ ...base, target: { ...GRAND, isOpsVm: true } })).toBe('allow');
+  });
+
+  it('allows an owner on a grand once a policy sets allowGrandRepos (control)', () => {
+    expect(outcome({ ...base, config: configWith(GRAND_OK), target: GRAND })).toBe('allow');
+  });
+});
+
 describe('authorize: a remote-MCP grant principal', () => {
   const base = { principal: OWNER, commandPath: 'repo up', target: GRAND } as const;
 
