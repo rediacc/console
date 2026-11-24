@@ -2106,7 +2106,7 @@ A post-bash hint (`.claude/hooks/stop/wl_benchblock.py`) now names both commands
 
 ## A full disk is freed by its biggest sources, not by `worktree gc`
 Trap-Id: full-disk-recipe
-Enforced-By: file:.ci/rediacc_ci/dev/worktree_lease.py, file:.ci/rediacc_ci/release/cache_prune.py
+Enforced-By: file:.ci/rediacc_ci/dev/worktree_lease.py
 Residue: sizes in the refusal are measured with `du` under a 20-second timeout, so a source that cannot be measured is named as such; Docker Desktop's own disk is reclaimed only by the image prune it prints.
 Documented-In: doc:docs/agent-reference/release-process.md#Local edge release (`release:local`)
 
