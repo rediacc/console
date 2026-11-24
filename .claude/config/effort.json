@@ -105,6 +105,10 @@
       "block": "smart",
       "advise": "low"
     },
+    "armed-action-due": {
+      "block": "smart",
+      "advise": "low"
+    },
     "undefaulted": {
       "block": "smart",
       "advise": "low"

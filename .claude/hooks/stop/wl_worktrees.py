@@ -588,14 +588,15 @@ def lands_it(record, session_id, role):
     return C.owned_by_me(str(record.get("owner") or "")[:8] or None, session_id)
 
 
-def survey(root, session_id, items, live_fn, cache, role=""):
-    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, `cache` is what the last stop returned, and `role` is this stop's tree role (wl_prscope.tree_role: `landing`, `development` or "").
+def survey(root, session_id, items, live_fn, cache, role="", armed=None):
+    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, `cache` is what the last stop returned, `role` is this stop's tree role (wl_prscope.tree_role: `landing`, `development` or ""), and `armed` maps a lease id to the armed action covering it right now ({"item", "aid", "state"}; wl_checks.armed_lease_cover, agent/plans/PLAN-armed-actions.md Design 6).
 
-    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `parked` [{"id", "item", "reason"}] (leases this session owns that a hold keeps from blocking while its item is open), `orphans` [(id, why)], `doubts` [text] and `cache`.
+    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `armed` (the same rows plus "item", "aid" and "state", for leases an armed action covers, which block nothing), `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `parked` [{"id", "item", "reason"}] (leases this session owns that a hold keeps from blocking while its item is open), `orphans` [(id, why)], `doubts` [text] and `cache`.
     """
     world = read_world(root)
     out: dict[str, Any] = {
         "unlanded": [],
+        "armed": [],
         "held": [],
         "unknown": [],
         "peers": [],
@@ -674,14 +675,25 @@ def survey(root, session_id, items, live_fn, cache, role=""):
         out["cache"][lease_id] = entry
         # Dirty paths alone block too: a finished lease with edits and no commit still holds work that only `worktree land` carries into the main tree.
         if entry["dirty"] or entry["commits"]:
-            out["unlanded"].append(
-                {
-                    "id": lease_id,
-                    "path": str(record.get("path") or ""),
-                    "dirty": entry["dirty"],
-                    "commits": entry["commits"],
-                }
-            )
+            row = {
+                "id": lease_id,
+                "path": str(record.get("path") or ""),
+                "dirty": entry["dirty"],
+                "commits": entry["commits"],
+            }
+            # An armed action naming this lease makes the hold legitimate while it covers (wl_armed.covers): the row is listed armed, and `armed-action-due` blocks once the trigger fires. An uncovered row (no arm, or one expired, voided or started) still blocks.
+            cover = (armed or {}).get(lease_id)
+            if cover:
+                out["armed"].append(
+                    dict(
+                        row,
+                        item=str(cover.get("item") or ""),
+                        aid=str(cover.get("aid") or ""),
+                        state=str(cover.get("state") or "armed"),
+                    )
+                )
+            else:
+                out["unlanded"].append(row)
     return out
 
 
@@ -696,6 +708,29 @@ def unlanded_lines(got):
         lines.append(
             "    %s (%s): %d dirty path(s); unlanded commits: %s; ./run.sh worktree land %s"
             % (row["id"], row["path"], row["dirty"], commits or "none", row["id"])
+        )
+    return "\n".join(lines)
+
+
+def armed_lines(got):
+    """One line per lease an armed action covers, naming the item and the arm that holds it."""
+    lines = []
+    for row in got.get("armed", ()):
+        commits = ", ".join(
+            "%s %s" % (repo, " ".join(sha[:SHA_SHOWN] for sha in row["commits"][repo]))
+            for repo in sorted(row["commits"])
+        )
+        lines.append(
+            "    %s (%s): %d dirty path(s); unlanded commits: %s; armed on #%s (aid %s, %s)"
+            % (
+                row["id"],
+                row["path"],
+                row["dirty"],
+                commits or "none",
+                row["item"],
+                row["aid"],
+                row["state"],
+            )
         )
     return "\n".join(lines)
 

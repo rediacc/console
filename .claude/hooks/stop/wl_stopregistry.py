@@ -40,6 +40,7 @@ REGISTRY = (
     Segment("pending-ask", "always"),
     Segment("sweep-moment", "rotating"),
     Segment("defer-expired", "rotating"),
+    Segment("armed-actions", "rotating"),
     Segment("defer-justify", "rotating"),
     Segment("completion", "rotating"),
     Segment("work-gate", "rotating"),

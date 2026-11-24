@@ -135,6 +135,8 @@ _BUILD_ONLY = frozenset(
         "plan-adopted",
         # No /writers-now round of this session in the last hour while Promoted boxes are open (operator ruling #ac2de21f, wl_writersnow.due): the round is how the development tree starts writers.
         "writers-now-due",
+        # An armed action of this session fired, expired or went void (agent/plans/PLAN-armed-actions.md Design 10): it starts held development work the moment its trigger fires; the landing tree finishes and does not start (ruling B2), and it owns no development arms.
+        "armed-action-due",
         # A commit landed on the live branch names a still-open box with no investigation row (wl_boxaudit): the tick duty of the plan the branch builds.
         "plan-box-owed",
         _QUEUE_SLOT,

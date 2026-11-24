@@ -227,6 +227,15 @@ def main():
     if wl_checks.check_tier("a-key-nobody-defined") != wl_checks.T_HYGIENE:
         fails.append("check_tier does not default an unknown key to T_HYGIENE")
 
+    # 7. Pinned placements a later edit must argue against. `armed-action-due` (agent/plans/PLAN-armed-actions.md Design 4) is held work whose trigger cleared, the generalisation of an expired DEFAULT, so it shares `defer-expired`'s tier and stays off the invariant tier (a pause must be able to hold a held landing, Design 5).
+    fails.extend(
+        "%s is not on T_MISSION (tier %s)" % (key, wl_checks.check_tier(key))
+        for key in ("armed-action-due", "defer-expired")
+        if wl_checks.check_tier(key) != wl_checks.T_MISSION
+    )
+    if "armed-action-due" in ALWAYS_KEYS:
+        fails.append("armed-action-due is pinned always; Design 5 keeps it out of the FLOOR")
+
     for f in fails:
         print("FAIL: %s" % f)
     print(

@@ -21,6 +21,7 @@ from typing import Any
 
 import wl_admit
 import wl_agents as A
+import wl_armed as WA
 import wl_backlog
 import wl_bgsweep
 import wl_boxready
@@ -2354,6 +2355,12 @@ def _agent_state_because(astate, aage):
             " (it carries no '## Big pieces' section; copy the plans the SessionStart"
             " block marks ! BIG PIECE !, or write 'none' when no plan has an open box)"
         )
+    if astate == "unarmed":
+        # Also age-irrelevant (agent/plans/PLAN-armed-actions.md Design 8): the session holds live arms and the recovery document does not name them, so a compacted session would not know which held starts are its own.
+        return (
+            " (this session holds live armed actions and the document has no '## Armed' section"
+            " naming each #<id>; `worklist.py --armed-list <me>` prints them)"
+        )
     return ""
 
 
@@ -2529,6 +2536,8 @@ PRIORITY_LADDER = (
                 # Ready `[writer]` boxes no writer serves (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
                 "idle-capacity",
                 "defer-expired",
+                # An armed action of this session fired, expired or went void and is not started (agent/plans/PLAN-armed-actions.md Design 4): held work whose trigger cleared is the asked-for work, beside the expired DEFAULT it generalises.
+                "armed-action-due",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
                 "cl-producing",
@@ -2874,10 +2883,6 @@ def _same_checkout(pid, root, proc):
     return cwd == os.path.realpath(root)
 
 
-RECEIPT_ARCHIVE_REL = os.path.join(".ci", "cache", "receipts")
-_TREE_RE = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
-
-
 def _git_out(root, *args):
     """Stripped stdout of `git -C root <args>`, None when git fails or cannot be run."""
     try:
@@ -2893,52 +2898,12 @@ def _git_out(root, *args):
     return got.stdout.strip()
 
 
-def _receipt_vouches_for_tree(receipt, tree):
-    """True when the receipt's `headTree` is `tree`, or the receipt's `advances` reach `tree` from it: steps are read in order and a step counts when its `from` is a tree already reached, the shape `block_unverified_push.advance_chain` walks. Only the reachability is read here; the push guard still verifies every step when the push is made."""
-    if not isinstance(receipt, dict) or not isinstance(receipt.get("headTree"), str):
-        return False
-    reached = {receipt["headTree"]}
-    steps = receipt.get("advances")
-    for step in steps if isinstance(steps, list) else []:
-        if (
-            isinstance(step, dict)
-            and step.get("from") in reached
-            and isinstance(step.get("to"), str)
-        ):
-            reached.add(step["to"])
-    return tree in reached
-
-
-def green_receipt_on_unpushed_head(root, receipt_path=None):
+def green_receipt_on_unpushed_head(root):
     """True only when a green pre-push receipt (`exitCode` 0) judged the tree HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it.
-    The receipt is read per tree, the way the push guard reads it: the archive copy `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then the latest file, and it speaks for HEAD when its `headTree` is HEAD's tree or its `advances` chain reaches it, so a record-only commit after a green run still reads as a receipt.
+    The receipt is read by `wl_armed.receipt_green_for_head`, the push guard's reading shared with the `CI-QUICK:verified` trigger (agent/plans/PLAN-armed-actions.md Design 2): the archive copy `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then the latest file, speaking for HEAD when its `headTree` is HEAD's tree or its `advances` chain reaches it, so a record-only commit after a green run still reads as a receipt.
     A missing or malformed receipt, a red one, a receipt for another tree, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
-    tree = _git_out(root, "rev-parse", "HEAD^{tree}")
-    if not tree or not _TREE_RE.match(tree):
-        return False
-    latest = pathlib.Path(
-        receipt_path or pathlib.Path(root) / ".ci" / "cache" / "prepush-receipt.json"
-    )
-    archive = pathlib.Path(root) / RECEIPT_ARCHIVE_REL / ("%s.json" % tree)
-    receipt = None
-    for path in (archive, latest):
-        try:
-            doc = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if path == archive and not (
-            isinstance(doc, dict) and doc.get("headTree") == tree and doc.get("whole") is True
-        ):
-            return False
-        receipt = doc
-        break
-    # `type(...) is int`: JSON `false` and `0.0` compare equal to 0 but are not an exit code a run wrote.
-    if (
-        not isinstance(receipt, dict)
-        or type(receipt.get("exitCode")) is not int
-        or receipt["exitCode"] != 0
-        or not _receipt_vouches_for_tree(receipt, tree)
-    ):
+    green, _evidence = WA.receipt_green_for_head(root)
+    if not green:
         return False
     try:
         pushed = subprocess.run(
@@ -2973,10 +2938,137 @@ def release_local_running(root, proc="/proc"):
     return False
 
 
-def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, merged=False):
-    """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
+# ---- ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 4-6, wl_armed). A held item carries a trigger and a prepared action; the stop that first sees every token hold appends the latch (`armfire`), and `armed-action-due` blocks until `--armed-start` or `--disarm`. Before the fire the hold is legitimate waiting: the unlanded-lease block and an expired deferral's demand stand down for what an arm covers, and `wake-timer` makes sure a stop will come.
+
+
+def armed_blocks_now():
+    """True when `armed-action-due` blocks at this stop's effort level. A fired arm covers its item and lease only while it does (Design 6), so exactly one check blocks on the held work at every level. With no level active (a direct call outside a stop) the effort reader answers BLOCK."""
+    return wl_effort.verdict("armed-action-due", wl_effort.active()) == wl_effort.BLOCK
+
+
+def armed_sweep(worklist, session_id, fold, event, root, state_doc, now=None):
+    """Judge this session's live arms once per stop: record the EXIT tasks the event lists running, latch every arm whose trigger fired, expired or went void, and answer {"arms", "due", "unfired", "blocks", "error"}.
+
+    `arms` [(rec, arm)] carries each arm with this stop's latch applied, `due` [(rec, arm, verdict, why)] the latched arms not yet started, `unfired` [(rec, arm)] the arms still waiting. A reader that raises is recorded as a read failure and leaves `due` and `unfired` empty with `error` set: nothing fires on a blind reading, and the caller says so instead of reading it as quiet."""
+    out = {"arms": [], "due": [], "unfired": [], "blocks": armed_blocks_now(), "error": ""}
+    me8 = (session_id or "unknown")[:8]
+    try:
+        arms = WA.session_arms(getattr(fold, "items", []) or [], session_id)
+        if not arms:
+            state_doc.pop("armed_seen", None)
+            return out
+        ctx = WA.make_ctx(root, fold, event, seen=state_doc.setdefault("armed_seen", {}), now=now)
+        WA.note_running(ctx.seen, arms, ctx.running, ctx.now)
+        due = WA.sweep(worklist, me8, getattr(fold, "items", []) or [], session_id, ctx)
+    except Exception as exc:
+        note_read_failure("armed-actions", exc)
+        out["error"] = "%s: %s" % (type(exc).__name__, exc)
+        out["arms"] = WA.session_arms(getattr(fold, "items", []) or [], session_id)
+        return out
+    latched = {rec["id"]: arm for rec, arm, _v, _w in due}
+    out["due"] = due
+    out["arms"] = [(rec, latched.get(rec["id"], arm)) for rec, arm in arms]
+    out["unfired"] = [(rec, arm) for rec, arm in arms if rec["id"] not in latched]
+    return out
+
+
+def armed_world(ns):
+    """`armed_sweep` for this stop, run once by whichever segment needs it first (the roster's lease cover, the wake-up timer, the deferral demand, the armed-actions block) and kept in `ns`."""
+    got = ns.get("_armed_world")
+    if got is None:
+        got = armed_sweep(
+            ns["worklist"], ns["session_id"], ns["fold"], ns["event"], ns["root"], ns["state_doc"]
+        )
+        ns["_armed_world"] = got
+    return got
+
+
+def armed_lease_cover(arms, now, blocks):
+    """{lease id: {"item", "aid", "state"}} for every arm that names a lease and covers it now (wl_armed.covers): unfired before its expiry, or fired while `armed-action-due` blocks (`blocks`)."""
+    out = {}
+    for rec, arm in arms:
+        lease = str(arm.get("lease") or "")
+        if lease and WA.covers(arm, now, blocks):
+            out[lease] = {
+                "item": rec["id"],
+                "aid": arm.get("aid") or "",
+                "state": arm.get("verdict") or WA.ARMED,
+            }
+    return out
+
+
+def armed_defer_cover(due, blocks):
+    """The `[?]` item ids a fired `DEFER-CLOSED` arm already answers (Design 6): `armed-action-due` names the held action for them, so `defer-expired` does not demand the same DEFAULT a second time. Empty when the armed block is off at this level."""
+    if not blocks:
+        return set()
+    ids = set()
+    for _rec, arm, verdict, _why in due:
+        if verdict != WA.FIRED:
+            continue
+        for token in arm.get("when") or []:
+            if token.startswith("DEFER-CLOSED:#"):
+                ids.add(token.split("#", 1)[1])
+    return ids
+
+
+def armed_brief_problem(root, arm):
+    """Empty when the arm's brief is at HEAD and hashes to the sha recorded at arm time; else the problem in words (Design 4: a brief is re-checked at fire time)."""
+    run = str(arm.get("run") or "")
+    if not run:
+        return ""
+    try:
+        now_sha = WA.brief_sha(pathlib.Path(root) / run)
+    except OSError as exc:
+        return "is missing from the checkout (%s)" % type(exc).__name__
+    if arm.get("sha") and now_sha != arm["sha"]:
+        return "changed since the arm (sha %s at the arm, %s now)" % (arm["sha"], now_sha)
+    if _git_out(root, "cat-file", "-e", "HEAD:%s" % run) is None:
+        return "is not committed at HEAD"
+    return ""
+
+
+def armed_row_text(rec, arm, verdict, why, me8, root, push_owed):
+    """One row of the `armed-action-due` block. `push_owed` is a thunk answering `green_receipt_on_unpushed_head(root)`, read only for a `worktree land` command."""
+    rid = rec["id"]
+    text = S.brief_text(rec, 120)
+    evidence = (why or "")[:400]
+    run, cmd = str(arm.get("run") or ""), str(arm.get("cmd") or "")
+    rearm = ("--run %s" % run) if run else ('--run-cmd "%s"' % cmd)
+    if verdict == WA.EXPIRED:
+        return M.V_ARMED_EXPIRED % (rid, text, evidence, me8, rid, me8, rid, rearm)
+    if verdict == WA.VOID:
+        return M.V_ARMED_VOID % (rid, text, evidence, me8, rid, me8, rid, rearm)
+    start = ".claude/hooks/stop/worklist.py --armed-start %s %s" % (me8, rid)
+    if run:
+        step = "%s, then: cat %s" % (start, run)
+    else:
+        step = "%s, then: %s" % (start, cmd)
+        if "worktree land" in cmd and push_owed():
+            step = (
+                "git push first (a green ci:quick receipt vouches for HEAD and HEAD is not on its "
+                "upstream; landing before the push voids it), then %s" % step
+            )
+    row = M.V_ARMED_ROW_FIRED % (rid, text, evidence, step)
+    problem = armed_brief_problem(root, arm)
+    if problem:
+        row += "\n" + M.V_ARMED_BRIEF_DRIFT % (run, problem, me8, rid, me8, rid, run)
+    return row
+
+
+def worktree_check(
+    worklist, session_id, state_doc, fold, roster, event, vadd, merged=False, armed=None
+):
+    """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease.
+
+    `armed` maps a lease id to the armed action covering it (`armed_lease_cover`); None reads the cover from the fold's arms as they stand, unlatched."""
     root = C.project_root(C.project_start(event))
     cwd = event.get("cwd")
+    if armed is None:
+        armed = armed_lease_cover(
+            WA.session_arms(getattr(fold, "items", []) or [], session_id),
+            C.utcnow(),
+            armed_blocks_now(),
+        )
     try:
         import wl_worktrees
 
@@ -2988,8 +3080,10 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
             lambda: wl_worktrees.live_work(roster, cwd, session_id),
             state_doc.get("worktrees") or {},
             role=wl_prscope.tree_role(C.landing_record(pathlib.Path(root)), own_tree(event)),
+            armed=armed,
         )
         report = wl_worktrees.report_lines(got)
+        held_by_arm = wl_worktrees.armed_lines(got)
     except Exception as exc:
         text = M.N_WORKTREE_REPORT % ("  the survey raised %s: %s" % (type(exc).__name__, exc))
         outq_add(worklist, session_id, state_doc, "worktree-orphan", text, 3)
@@ -3032,6 +3126,10 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
             M.V_WORKTREE_UNLANDED % (len(got["unlanded"]), wl_worktrees.unlanded_lines(got))
             + _lease_rebase_text(root, session_id, merged),
             subject=[row["id"] for row in got["unlanded"]],
+        )
+    if held_by_arm:
+        outq_add(
+            worklist, session_id, state_doc, "worktree-orphan", M.N_WORKTREE_ARMED % held_by_arm, 3
         )
     if report:
         outq_add(
@@ -3110,6 +3208,7 @@ _COMPACTION_ASTATES = (
     "stale",
     "waitled",
     "unfocused",
+    "unarmed",
     "no-dir",
 )
 
@@ -4764,6 +4863,8 @@ def _stop_roster(ns):
             % (len(_stuck), wl_stuckshell.STUCK_SHELL_MIN, wl_stuckshell.render(_stuck), me8),
         )
 
+    # The armed actions are judged here, before any check that stands down for them: a lease an arm covers is listed armed rather than blocking, with this stop's latch already applied.
+    _armed = armed_world(ns)
     worktree_check(
         worklist,
         session_id,
@@ -4773,6 +4874,7 @@ def _stop_roster(ns):
         event,
         vadd,
         merged=_loop is not None and _loop.kind in (wl_prscope.MERGED, wl_prscope.ON_MAIN),
+        armed=armed_lease_cover(_armed["arms"], C.utcnow(), _armed["blocks"]),
     )
 
 
@@ -4804,6 +4906,8 @@ def _stop_wake_timer(ns):
     vadd = ns["vadd"]
     # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
     # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
+    # An armed action still waiting on its trigger is a wait too (agent/plans/PLAN-armed-actions.md Design 5): a time, receipt or tick trigger has no task to exit, so with no timer the stop at which it holds never comes. The condition is `(live_bg or unfired arms) and not _wakers`.
+    _unfired = armed_world(ns)["unfired"]
     if live_bg and not _wakers:
         vadd(
             "wake-timer",
@@ -4813,6 +4917,21 @@ def _stop_wake_timer(ns):
                 len(live_bg),
                 ", ".join(
                     str(b.get("description") or b.get("id") or "?")[:60] for b in live_bg[:4]
+                ),
+                wl_wake.harness_timeout_ms(),
+                wl_wake.arm_command(me8),
+            ),
+        )
+    elif _unfired and not _wakers:
+        vadd(
+            "wake-timer",
+            True,
+            M.V_WAKE_TIMER_ARMS
+            % (
+                len(_unfired),
+                ", ".join(
+                    "#%s on %s" % (rec["id"], " AND ".join(arm.get("when") or []))[:90]
+                    for rec, arm in _unfired[:4]
                 ),
                 wl_wake.harness_timeout_ms(),
                 wl_wake.arm_command(me8),
@@ -5067,6 +5186,10 @@ def _stop_defer_expired(ns):
         expired += wl_defersettle.accelerated(state_doc, deferred_recs, expired)
     # A DEFAULT that cannot run yet is not demanded yet: the clock, not the operator, holds it.
     expired = [r for r in expired if not C.not_before_pending(r["line"], r.get("upd", ""))]
+    # A fired DEFER-CLOSED arm already names the held action for its deferral, so this demand stands down for it while `armed-action-due` blocks (agent/plans/PLAN-armed-actions.md Design 6); once the arm is started or disarmed the deferral is demanded here again.
+    _armed = armed_world(ns)
+    _defer_armed = armed_defer_cover(_armed["due"], _armed["blocks"])
+    expired = [r for r in expired if r["id"] not in _defer_armed]
     if expired:
         shown = expired[: S.DEFER_EXEC_PER_STOP]
         vadd(
@@ -5094,6 +5217,30 @@ def _stop_defer_expired(ns):
             ),
         )
     ns.update(R.exports(locals(), ("expired", "r", "shown")))
+
+
+def _stop_armed_actions(ns):
+    """Segment "armed-actions" of run_stop (wl_stopregistry.REGISTRY; agent/plans/PLAN-armed-actions.md Design 4): one `armed-action-due` block naming every arm of this session that fired, expired or went void and is not yet started, each with its one next step. Silent before the fire, and silent again after `--armed-start` or `--disarm`."""
+    me8 = ns["me8"]
+    root = ns["root"]
+    vadd = ns["vadd"]
+    # A sweep that raised fired nothing and left `due` empty; `armed_sweep` recorded it through note_read_failure, so the stop's one `check-read-failed` advisory names it and a blind armed check is not read as quiet.
+    _armed = armed_world(ns)
+    if _armed["due"]:
+        _push_owed = functools.lru_cache(maxsize=1)(lambda: green_receipt_on_unpushed_head(root))
+        vadd(
+            "armed-action-due",
+            False,
+            M.V_ARMED_ACTION_DUE
+            % (
+                len(_armed["due"]),
+                "\n".join(
+                    armed_row_text(rec, arm, verdict, why, me8, root, _push_owed)
+                    for rec, arm, verdict, why in _armed["due"]
+                ),
+            ),
+            subject=[rec["id"] for rec, _a, _v, _w in _armed["due"]],
+        )
 
 
 def _stop_defer_justify(ns):
@@ -6525,6 +6672,7 @@ def _stop_idle_capacity(ns):
         "stale",
         "waitled",
         "unfocused",
+        "unarmed",
     ):
         vadd(
             "agent-state",
@@ -8469,6 +8617,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     _stop_sweep_moment(ns)
     R.begin("defer-expired")
     _stop_defer_expired(ns)
+    R.begin("armed-actions")
+    _stop_armed_actions(ns)
     R.begin("defer-justify")
     _stop_defer_justify(ns)
     R.begin("completion")

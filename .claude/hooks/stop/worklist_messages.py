@@ -3426,6 +3426,53 @@ N_WORKTREE_RECEIPT = (
     "Land these once the push is out:\n%s"
 )
 
+N_WORKTREE_ARMED = (
+    "UNLANDED LEASE, held by an armed action (agent/plans/PLAN-armed-actions.md Design 6): each "
+    "lease below waits on its item's trigger, and `armed-action-due` names the landing the moment "
+    "the trigger fires. The hold lapses, and `worktree-unlanded` blocks again, when the arm "
+    "expires, is voided or is started:\n%s"
+)
+
+# The armed-actions Stop check (agent/plans/PLAN-armed-actions.md Design 4). One block per stop: the header, then one row per due arm, each row from V_ARMED_ROW_FIRED, V_ARMED_EXPIRED or V_ARMED_VOID.
+V_ARMED_ACTION_DUE = (
+    "ARMED ACTION DUE: %d held start(s) of this session have reached their trigger. Each row names "
+    "the one next step; `--armed-start` consumes a fired arm, `--disarm` drops an expired or void "
+    "one, and the row stops blocking either way:\n%s"
+)
+# Fields: item id, item text, the trigger evidence, the next step.
+V_ARMED_ROW_FIRED = "    #%s %s\n      fired: %s\n      next: %s"
+# Fields: item id, item text, the evidence, session prefix, item id, session prefix, item id, the run part of the re-arm.
+V_ARMED_EXPIRED = (
+    "    #%s %s\n"
+    "      EXPIRED before every token held: %s\n"
+    "      nothing will start it now; drop it, or re-arm with a trigger that can still fire:\n"
+    "        .claude/hooks/stop/worklist.py --disarm %s %s --why <text>\n"
+    "        .claude/hooks/stop/worklist.py --arm %s %s --when <token> [--when ...] %s"
+)
+V_ARMED_VOID = (
+    "    #%s %s\n"
+    "      VOID, its trigger can never fire: %s\n"
+    "      drop it, or re-arm on a condition that still exists:\n"
+    "        .claude/hooks/stop/worklist.py --disarm %s %s --why <text>\n"
+    "        .claude/hooks/stop/worklist.py --arm %s %s --when <token> [--when ...] %s"
+)
+# A fired arm whose brief no longer matches what was armed (Design 4: re-checked at fire time). Fields: the brief path, the problem, session prefix, item id, session prefix, item id, the brief path.
+V_ARMED_BRIEF_DRIFT = (
+    "      BRIEF %s %s: re-read it, rewrite and commit it, then re-arm so the sha matches:\n"
+    "        .claude/hooks/stop/worklist.py --disarm %s %s --why 'brief rewritten'\n"
+    "        .claude/hooks/stop/worklist.py --arm %s %s --when <token> --run %s"
+)
+# A waiting arm with no wake-up timer (Design 5, `wake-timer`). Fields: arm count, the items, harness timeout ms, the arm command.
+V_WAKE_TIMER_ARMS = (
+    "NO WAKE-UP TIMER: %d armed action(s) of this session wait on a trigger (%s) and nothing "
+    "re-invokes the session when it fires. The harness re-invokes a session only when a background "
+    "task exits, so arm the session's timer, one per session, as a BACKGROUND Bash call "
+    "(run_in_background: true, timeout: %d):\n"
+    "    %s\n"
+    "Each wake-up is a stop, and the stop at which the trigger holds latches the arm and names its "
+    "action."
+)
+
 CLI_STATUS_NONE = (
     "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
     "agent started since it; an id that finished its turn is not live."
