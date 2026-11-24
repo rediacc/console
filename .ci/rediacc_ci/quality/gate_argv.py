@@ -468,8 +468,8 @@ def registered_calls(root: pathlib.Path) -> list[tuple[str, str, list[str]]]:
         rel = str(path.relative_to(root))
         for m in ENTRY_CALL_RE.finditer(text):
             args = _tokens(m.group(2))
-            # Only an argument list that opens with a flag is a call; prose that names an entry point ("check_x.py holds in place.") is not.
-            if args and args[0].startswith("-"):
+            # Only an argument list that carries a flag is a call; prose that names an entry point ("check_x.py holds in place.") carries none.
+            if any(a.startswith("-") for a in args):
                 line = text.count("\n", 0, m.start()) + 1
                 calls.append(("%s:%d" % (rel, line), m.group(1), args))
         for m in NPM_CALL_RE.finditer(text):
@@ -477,7 +477,7 @@ def registered_calls(root: pathlib.Path) -> list[tuple[str, str, list[str]]]:
             last = target.split("&&")[-1]
             hit = ENTRY_CALL_RE.search(last)
             extra = _tokens(m.group(2))
-            if hit and extra and extra[0].startswith("-"):
+            if hit and any(a.startswith("-") for a in extra):
                 line = text.count("\n", 0, m.start()) + 1
                 calls.append(("%s:%d" % (rel, line), hit.group(1), _tokens(hit.group(2)) + extra))
     return calls
