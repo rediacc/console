@@ -3013,12 +3013,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 18,
+      "open": 3,
+      "done": 20,
       "open_sigs": [
         "42df7aae",
-        "8a962af3",
-        "974ce45c",
         "c9342fbd",
         "e613a81c"
       ],
@@ -3035,8 +3033,10 @@
         "4eb71b94",
         "6d2451be",
         "8096acb7",
+        "8a962af3",
         "907e373d",
         "96885146",
+        "974ce45c",
         "d26a392f",
         "dbd3b053",
         "f4bd2ebc",
@@ -3659,23 +3659,20 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 11,
+      "open": 12,
+      "done": 14,
       "open_sigs": [
         "23b9879e",
         "260b0e88",
         "355bdf16",
         "36e579e1",
-        "4a27020d",
         "5a78f987",
         "8091f645",
-        "8bad4837",
         "97d391d0",
         "afcf2128",
         "bb52ef45",
         "c0384c17",
         "c16682a2",
-        "d6681b4e",
         "f5114899"
       ],
       "done_sigs": [
@@ -3684,10 +3681,13 @@
         "2d18b009",
         "339974a3",
         "371d43ee",
+        "4a27020d",
         "5b4f8c75",
         "615205ac",
+        "8bad4837",
         "af7eb301",
         "c3196ed4",
+        "d6681b4e",
         "da90ee93",
         "fee5a0be"
       ]
@@ -3735,26 +3735,26 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 8,
+      "open": 5,
+      "done": 12,
       "open_sigs": [
         "43ed1e7b",
         "4eed4a7d",
-        "5b1cee9c",
-        "5d5d5243",
         "6f6ad235",
         "8af4e51e",
-        "92637737",
-        "a8f5898f",
-        "dce1cf95"
+        "a8f5898f"
       ],
       "done_sigs": [
         "0fef13a4",
         "264bb001",
         "2b4e97ab",
+        "5b1cee9c",
+        "5d5d5243",
         "673d0d14",
+        "92637737",
         "a3f2f92a",
         "d4f01da9",
+        "dce1cf95",
         "e25b9816",
         "f85930c0"
       ]
@@ -4157,20 +4157,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 4,
+      "open": 3,
+      "done": 6,
       "open_sigs": [
-        "148d8826",
         "2a514e1f",
         "919eedac",
-        "af5dac4c",
-        "b1053da4"
+        "af5dac4c"
       ],
       "done_sigs": [
         "043c9409",
         "0f1de698",
         "1041d74d",
-        "502060dc"
+        "148d8826",
+        "502060dc",
+        "b1053da4"
       ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {

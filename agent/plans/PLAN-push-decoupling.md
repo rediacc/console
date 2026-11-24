@@ -136,22 +136,24 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-release-hold.py` and `python3 .claude/hooks/stop/test-wl_worktrees.py` exit 0 with new cases: a record-only commit after a green receipt still reads as a green receipt on an unpushed head; a code commit does not; a landing order is kept while ci:quick runs and still rewritten while vm:check runs.
     (ticked) 2026-11-22T16:53:07Z by ace763dd: commit:65f35528b fileline:.claude/hooks/stop/wl_checks.py:2756 -- tree comparison through headTree and advances, ci:quick hold removed, vm:check hold kept; .claude/rediacc_hooks/tests/test_wl_receipt_hold.py and test_wl_judge*.py 158 passed, test-release-hold.py FAILURES 0. DEPS-WAIVED: R4 names only R2 (ticked) in its Depends on line
-- [ ] R5 [writer] `vm:check --commit <sha>` runs from the kept clone with its own renet build, CLI build and gateway record, under the shared fleet lock (D1.4, D1.5)
+- [x] R5 [writer] `vm:check --commit <sha>` runs from the kept clone with its own renet build, CLI build and gateway record, under the shared fleet lock (D1.4, D1.5)
     Owns: .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_vm_check.py, .ci/rediacc_ci/tests/test_vm_check_list_evidence.py
     Depends on: L1.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_drills_vm_check.py .ci/rediacc_ci/tests/test_vm_check_list_evidence.py` exits 0 with new cases on the fake host: a pinned run builds and reads only clone paths, files its receipt under the pinned tree, and leaves the main checkout's gateway record untouched; a lease is still refused; the lock file name is unchanged.
+    (ticked) 2026-11-24T05:42:37Z by ace763dd: commit:0dde424246b3 landed for box 8a962af3; investigation present@13373b2b33
 - [x] R6 [writer] The backup drill takes `--commit <sha>` and `record_drill` records the pinned tree and pointers (D1.4)
     Owns: .ci/rediacc_ci/drills/backup_check_trigger.py, .ci/rediacc_ci/tests/test_drills_backup_check_trigger.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_drills_backup_check_trigger.py` exits 0 with new cases: a receipt taken from a clone at an ancestor names that tree and its submodule pointers while the main checkout sits at a later commit; a call with no pin records what it records today.
     (ticked) 2026-11-19T02:13:15Z by d778be9d: commit:1e70b16a96 backup drill --commit; record_drill records pinned tree and pointers; 169 passed rc 0 on the landed tree
-- [ ] R7 [writer] The receipt-in-flight hold stands down for a pinned vm:check and stays for an unpinned one (D1.3)
+- [x] R7 [writer] The receipt-in-flight hold stands down for a pinned vm:check and stays for an unpinned one (D1.3)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_judge.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/test-release-hold.py
     Depends on: R4, R5.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-release-hold.py` exits 0 with new cases: a lock payload naming a pinned commit keeps a landing order; a payload with no pin rewrites it as today; an unreadable payload counts as unpinned.
+    (ticked) 2026-11-24T05:42:38Z by ace763dd: commit:2862f561d95c landed for box 974ce45c; investigation present@13373b2b33
 - [x] R8 [writer] `release:local --commit <sha>` builds its context and judges every gate at the named ancestor (D1.8)
     Owns: .ci/rediacc_ci/release/local.py, .ci/rediacc_ci/release/local_gates.py, .ci/rediacc_ci/tests/test_release_local.py, .ci/rediacc_ci/tests/test_release_local_gates.py
     Depends on: none.

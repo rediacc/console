@@ -55,7 +55,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 98 plans done, 1287 of 1872 boxes done (68%).
+Promoted: 11 of 98 plans done, 1298 of 1872 boxes done (69%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -111,8 +111,8 @@ Promoted: 11 of 98 plans done, 1287 of 1872 boxes done (68%).
 | 50 | PLAN-root-api-token.md | 13/15 | 2 open |
 | 51 | PLAN-site-entry-points.md | 8/11 | 3 open |
 | 52 | PLAN-root-grants.md | 11/19 | 8 open |
-| 53 | PLAN-push-decoupling.md | 18/23 | 5 open |
-| 54 | PLAN-stop-hook-store-status.md | 4/9 | 5 open |
+| 53 | PLAN-push-decoupling.md | 20/23 | 3 open |
+| 54 | PLAN-stop-hook-store-status.md | 6/9 | 3 open |
 | 55 | PLAN-rdc-feedback.md | 18/21 | 3 open |
 | 56 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
 | 57 | PLAN-email-sender-separation.md | 12/18 | 6 open |
@@ -132,9 +132,9 @@ Promoted: 11 of 98 plans done, 1287 of 1872 boxes done (68%).
 | 71 | PLAN-console-command-line.md | 3/16 | 13 open |
 | 72 | PLAN-console-ia.md | 0/10 | 10 open |
 | 73 | PLAN-console-animations.md | 0/9 | 9 open |
-| 74 | PLAN-rmcp-policy-record.md | 11/26 | 15 open |
+| 74 | PLAN-rmcp-policy-record.md | 14/26 | 12 open |
 | 75 | PLAN-rmcp-decide.md | 1/9 | 8 open |
-| 76 | PLAN-rmcp-writeback.md | 8/17 | 9 open |
+| 76 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
 | 77 | PLAN-rmcp-executor-hardening.md | 12/21 | 9 open |
 | 78 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
 | 79 | PLAN-console-ai-providers.md | 2/15 | 13 open |

@@ -586,7 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 417 | 3 | 28 | 70182 |
-| `agent/plans/PLAN-push-decoupling.md` | approved | 256 | 5 | 18 | 36239 |
+| `agent/plans/PLAN-push-decoupling.md` | approved | 258 | 3 | 20 | 36489 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-rdc-feedback.md` | approved | 231 | 3 | 18 | 49012 |
@@ -615,9 +615,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 54 | 6 | 2 | 9466 |
-| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 158 | 15 | 11 | 38500 |
+| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 161 | 12 | 14 | 38875 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
-| `agent/plans/PLAN-rmcp-writeback.md` | approved | 93 | 9 | 8 | 20133 |
+| `agent/plans/PLAN-rmcp-writeback.md` | approved | 97 | 5 | 12 | 20633 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 327 | 8 | 11 | 35091 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
@@ -642,7 +642,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
 | `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13916 |
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 216 | 0 | 8 | 29276 |
-| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 205 | 5 | 4 | 25900 |
+| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 207 | 3 | 6 | 26150 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-stripe-disable.md` | approved | 86 | 4 | 4 | 14718 |
 | `agent/plans/PLAN-stripe-removal.md` | active | 35 | 3 | 0 | 2957 |
