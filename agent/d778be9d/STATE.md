@@ -1,26 +1,20 @@
-## SESSION d778be9d 2026-11-24T17:53:54Z
+## SESSION d778be9d 2026-11-24T18:26:32Z
 
-# STATE d778be9d (2026-11-24 ~18:10Z, effort high)
+# STATE d778be9d (2026-11-24 ~19:30Z, effort high)
 
 ## Big pieces
-- OPERATOR 2026-11-24: /writers-now must really run hourly. Root cause: writers-now-due counted any round row; five rounds today were cp copies of the 08:25 survey. FIXED and landed (wl_writersnow judge_round: survey written after start with a new digest; --writers-now-start refuses a copied survey; 36 tests pass; #eed6e757 ticked). Optional: pass root=ns["root"] at the due() call in wl_checks.py ~7052.
-- Real round 8ea1105a in flight: survey agent aab40f730dd809e85 (#0452dd84) writes /tmp/writers-now/1121-1-20261124T1737Z-real.md (50 seeds).
-- ci:quick red (27 at /tmp/m/ciquick.log). Green again: lint, lint:unused, format, max-lines, source-rules, language-policy, python-types, literal-sources, fixture-timestamps, shard coverage, renet-test-map, workflow-invariants, plan-citations, tracked-credentials. Still red: check:ci-pytest (label-refs floor 5<8, record-paths readers, core.toolchain count 5 vs 3, trap-registry cache_prune.py, onprem order dependence), plan-bindings (#5f4130cf), ops-health (peer ace763dd), group C gates.
-- Backup push waits on ci:quick; operator override may be needed for dead-key-ID commits 6568fea45d, f5df11bb04.
-
-## Delegated
-- aa99a2f0968abb157 #5435843f: red-gate group C.
-- a95a8df7c09adb32b #0ee0c0bb: review findings 9f76a380.1, 9f76a380.3, facbfc93.1.
-- aab40f730dd809e85 #0452dd84: writers-now survey.
-
-## Armed
-- #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park AWS_IAM_ADMIN_* bws entries.
-- #0f42f15e NOT-BEFORE 2026-12-01 delete inactive rediacc-ses-asia key + baseline entry.
+- Operator 2026-11-24: hourly /writers-now was faked by copied surveys; cadence fix landed 913af37d87 (round counts only with a real survey). Real round 8ea1105a ran: survey /tmp/writers-now/1121-1-20261124T1737Z-real.md (541 boxes: CODE 253, BENCH 111, VM 45, PROD 44, HOSTINGER 40, GITHUB 27, OPERATOR 9, TIME 7, PRESENT 5). Shared writer rules /tmp/writers-now/8ea1105a-rules.md.
+- Wave running (each leased in the worklist): writers CL-A, K, M, Q, R, S, W, Z, AB, AG, AH; bench runner ad4a666105ce8f7b9 (#4eedc530); review-findings writer a95a8df7c09adb32b (#0ee0c0bb). Done: CL-F (P3 blocked #a69a332d), CL-C (N5 present, needs ct-tests on pushed head #86721e90), CL-I (nothing), CL-X (AC2 landed 572e82512f, ticked, tick batch uncommitted), hostinger runner (3 partial reads, 37 untouched: no VERIFIED vm:check; findings #fc004173 incl. VM disk 16.3 GiB short).
+- ci:quick: group A/B/C fixes landed; still red: check:ci-label-refs (re-red after landing C; investigate), check:ci-pytest leftovers, plan-bindings (#5f4130cf, bench runner has it), ops-health (eu-bench machine list wants REBIND_CODE). Lease agent-aa99a2f0968abb157 holds 2 empty duplicate commits (58ca972ac6, fcf126f511): content already landed; gc it with a note.
+- PRESENT batch (RI11 2a6ccb08, FC7 903acad2, B4 c098ad09, R3 a2ae6f1c, M1 f8c4c1ae) not yet ticked; --arm-from-survey not yet run.
 
 ## Owed ticks
-- #e5dd564f, #748b837e, #7a8152c4, #ab9f5552, #135b55bf, #5f4130cf; partial boxes RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8.
+- Uncommitted tick batch: PLAN-console-ai-credits AC2 (plan file, plan-boxes.json, INDEX.md, plan-investigation.jsonl). #e5dd564f, #748b837e, #7a8152c4, #ab9f5552, #135b55bf, #5f4130cf; partial RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8.
+
+## Armed
+- #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park AWS_IAM_ADMIN_* bws entries. #0f42f15e NOT-BEFORE 2026-12-01 delete inactive SES key + baseline entry.
 
 ## Next action
-1. Survey returns: PRESENT batch, --arm-from-survey, then one lease writer per startable CODE cluster plus bench/hostinger runners in ONE message; --add-many, lease to real ids.
-2. Each report: land (0 remaining), tests, review-mark from Fixes-Review trailers, gc --id.
-3. Fix remaining check:ci-pytest failures; ci:quick once; push.
+1. As each writer reports: land (submodules first, re-run `worktree land` to 0), tests, gitlink commit, investigate+plan-tick with landed sha, review-mark, gc --id, close its item.
+2. PRESENT batch + --arm-from-survey; commit the tick batch in one commit.
+3. Fix check:ci-label-refs; free VM disk; ci:quick once; push.
