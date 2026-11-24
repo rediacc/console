@@ -122,3 +122,18 @@ def test_floor_is_enforced(tmp_path: pathlib.Path) -> None:
     r = _run(wf, cfg, floor="2")
     assert r.returncode == 1
     assert "floor is 2" in r.stderr
+
+
+def test_an_unimportable_bws_map_is_an_instrument_error(monkeypatch):
+    gate.bws_map_gate.cache_clear()
+    monkeypatch.setattr(gate, "BWS_MAP_MODULE", "rediacc_ci.quality.no_such_bws_map_module")
+    try:
+        with pytest.raises(gate.InstrumentError):
+            gate.bws_map_gate()
+    finally:
+        gate.bws_map_gate.cache_clear()
+
+
+def test_the_real_bws_map_imports_as_the_control():
+    gate.bws_map_gate.cache_clear()
+    assert callable(gate.bws_map_gate().parse_requests)

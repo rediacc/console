@@ -420,3 +420,18 @@ def test_a_malformed_python_baseline_is_refused_not_read_as_empty(tmp_path, monk
 
 def test_the_python_floor_is_60() -> None:
     assert mod.PY_FLOOR == 60
+
+
+@pytest.mark.parametrize(
+    ("reason", "rc"),
+    [("fine", 1), ("the default is the conservative answer when the probe is unreachable", 0)],
+    ids=["short-waiver-is-red", "real-waiver-is-green"],
+)
+def test_python_mode_verdict_follows_the_waiver_reason(tmp_path, monkeypatch, reason, rc) -> None:
+    _hook_tree(tmp_path, 0, None)
+    waived = _handler("        return []\n").replace(
+        "    except", "    # swallowed-failure-ok: %s\n    except" % reason
+    )
+    (tmp_path / mod.DEFAULT_PY_DIR / "m00.py").write_text(waived, encoding="utf-8")
+    monkeypatch.setenv(mod.PY_ROOT_ENV, str(tmp_path))
+    assert mod.py_mode() == rc

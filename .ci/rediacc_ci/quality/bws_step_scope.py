@@ -118,7 +118,14 @@ class Report:
 @functools.cache
 def bws_map_gate() -> types.ModuleType:
     """`rediacc_ci.quality.bws_map`, the gate whose `parse_requests` this one reuses."""
-    module = importlib.import_module(BWS_MAP_MODULE)
+    try:
+        module = importlib.import_module(BWS_MAP_MODULE)
+    except ImportError as exc:
+        msg = "%s cannot be imported (%s); this gate reuses its parse_requests" % (
+            BWS_MAP_MODULE,
+            exc,
+        )
+        raise InstrumentError(msg) from exc
     if not callable(getattr(module, "parse_requests", None)):
         msg = (
             "%s no longer defines parse_requests; this gate reuses it and cannot parse a fetch without it"
