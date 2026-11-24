@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "Avvio provisioning cluster VM in corso...",
   "commands.preview.description": "Passa questa configurazione a un'anteprima di una pull request: rdc e il renet di ogni server che rdc tocca passano alle build dell'anteprima, e `rdc preview leave` torna a quelle pubblicate. Esegui `rdc preview use <name>` con il nome che ti è stato dato.",
   "commands.preview.descriptionShort": "Prova la build di una PR sulle tue macchine e torna indietro",
-  "commands.preview.leave.description": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dal tuo account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine.",
+  "commands.preview.leave.description": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dall'account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine.",
   "commands.preview.leave.descriptionShort": "Torna a rdc e renet pubblicati",
   "commands.preview.leave.machine": "Riporta indietro solo questo server",
   "commands.preview.msg.banner": "L'anteprima {{name}} è attiva (le sue licenze terminano il {{date}}). Esegui `rdc preview leave` per tornare a rdc e renet pubblicati.",

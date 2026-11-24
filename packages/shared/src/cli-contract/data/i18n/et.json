@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "VM-klastri ettevalmistamine...",
   "commands.preview.description": "Lülita see konfiguratsioon pull requesti eelvaatele: rdc ja renet igas serveris, mida rdc puudutab, lähevad üle eelvaate järkudele ning `rdc preview leave` toob tagasi avaldatud järgud. Käivita `rdc preview use <name>` sulle antud nimega.",
   "commands.preview.descriptionShort": "Testi PR-i järgu oma masinatel ja lülitu tagasi",
-  "commands.preview.leave.description": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti sinu päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine.",
+  "commands.preview.leave.description": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine.",
   "commands.preview.leave.descriptionShort": "Naase avaldatud rdc ja renet juurde",
   "commands.preview.leave.machine": "Lülita tagasi ainult see server",
   "commands.preview.msg.banner": "Eelvaade {{name}} on aktiivne (selle litsentsid lõpevad {{date}}). Käivita `rdc preview leave`, et naasta avaldatud rdc ja renet juurde.",

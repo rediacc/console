@@ -1853,7 +1853,7 @@
       "description": "Lülita see konfiguratsioon pull requesti eelvaatele: rdc ja renet igas serveris, mida rdc puudutab, lähevad üle eelvaate järkudele ning `rdc preview leave` toob tagasi avaldatud järgud. Käivita `rdc preview use <name>` sulle antud nimega.",
       "descriptionShort": "Testi PR-i järgu oma masinatel ja lülitu tagasi",
       "leave": {
-        "description": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti sinu päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine.",
+        "description": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine.",
         "descriptionShort": "Naase avaldatud rdc ja renet juurde",
         "machine": "Lülita tagasi ainult see server"
       },

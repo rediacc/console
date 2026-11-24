@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "VM kümesi oluşturma başlatılıyor...",
   "commands.preview.description": "Bu yapılandırmayı bir çekme isteğinin önizlemesine geçirir: rdc ve rdc'nin dokunduğu her sunucudaki renet önizlemenin derlemelerine geçer, `rdc preview leave` ise yayımlanmış sürümlere döndürür. Size verilen adla `rdc preview use <name>` komutunu çalıştırın.",
   "commands.preview.descriptionShort": "Bir PR derlemesini kendi makinelerinizde deneyin ve geri dönün",
-  "commands.preview.leave.description": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşturulan depoları gerçek hesabınızdan yeniden lisanslar. Erişilemeyen bir sunucu listede kalır; daha sonra --machine ile tamamlayın.",
+  "commands.preview.leave.description": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşturulan depoları gerçek hesaptan yeniden lisanslar. Erişilemeyen bir sunucu listede kalır; daha sonra --machine ile tamamlayın.",
   "commands.preview.leave.descriptionShort": "Yayımlanmış rdc ve renet'e dön",
   "commands.preview.leave.machine": "Yalnızca bu sunucuyu geri al",
   "commands.preview.msg.banner": "{{name}} önizlemesi etkin (lisansları {{date}} tarihinde bitiyor). Yayımlanmış rdc ve renet'e dönmek için `rdc preview leave` komutunu çalıştırın.",

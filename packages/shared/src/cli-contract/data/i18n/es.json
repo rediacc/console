@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "Iniciando aprovisionamiento del clúster de VM...",
   "commands.preview.description": "Cambiar esta configuración a una vista previa de un pull request: rdc y el renet de cada servidor que rdc toca pasan a las compilaciones de la vista previa, y `rdc preview leave` vuelve a las publicadas. Ejecute `rdc preview use <name>` con el nombre que le dieron.",
   "commands.preview.descriptionShort": "Probar la compilación de un PR en tus propias máquinas y volver atrás",
-  "commands.preview.leave.description": "Listar los servidores que ejecutan el renet de la vista previa, preguntar y devolver exactamente esos; después restaurar el rdc anterior y volver a licenciar, desde su cuenta real, los repositorios creados en la vista previa. Un servidor inaccesible sigue en la lista; termínelo después con --machine.",
+  "commands.preview.leave.description": "Listar los servidores que ejecutan el renet de la vista previa, preguntar y devolver exactamente esos; después restaurar el rdc anterior y volver a licenciar, desde la cuenta real, los repositorios creados en la vista previa. Un servidor inaccesible sigue en la lista; termínelo después con --machine.",
   "commands.preview.leave.descriptionShort": "Volver a rdc y renet publicados",
   "commands.preview.leave.machine": "Devolver solo este servidor",
   "commands.preview.msg.banner": "La vista previa {{name}} está activa (sus licencias terminan el {{date}}). Ejecute `rdc preview leave` para volver a rdc y renet publicados.",

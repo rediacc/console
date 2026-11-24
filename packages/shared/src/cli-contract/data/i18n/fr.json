@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "Démarrage du provisionnement du cluster VM...",
   "commands.preview.description": "Basculer cette configuration vers un aperçu d'une pull request : rdc et le renet de chaque serveur que rdc touche passent aux builds de l'aperçu, et `rdc preview leave` revient aux versions publiées. Lancez `rdc preview use <name>` avec le nom qui vous a été communiqué.",
   "commands.preview.descriptionShort": "Tester le build d'une PR sur vos propres machines, puis revenir en arrière",
-  "commands.preview.leave.description": "Lister les serveurs qui exécutent le renet de l'aperçu, demander confirmation et rebasculer exactement ceux-là ; puis restaurer le rdc précédent et relicencier, depuis votre compte réel, les dépôts créés sur l'aperçu. Un serveur injoignable reste dans la liste ; terminez-le plus tard avec --machine.",
+  "commands.preview.leave.description": "Lister les serveurs qui exécutent le renet de l'aperçu, demander confirmation et rebasculer exactement ceux-là ; puis restaurer le rdc précédent et relicencier, depuis le compte réel, les dépôts créés sur l'aperçu. Un serveur injoignable reste dans la liste ; terminez-le plus tard avec --machine.",
   "commands.preview.leave.descriptionShort": "Revenir au rdc et au renet publiés",
   "commands.preview.leave.machine": "Ne rebasculer que ce serveur",
   "commands.preview.msg.banner": "L'aperçu {{name}} est actif (ses licences se terminent le {{date}}). Lancez `rdc preview leave` pour revenir au rdc et au renet publiés.",

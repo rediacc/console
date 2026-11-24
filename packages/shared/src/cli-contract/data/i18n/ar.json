@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "جارٍ بدء إنشاء مجموعة VM...",
   "commands.preview.description": "ينقل هذا الإعداد إلى معاينة لطلب سحب: يتحول rdc وrenet على كل خادم يلمسه rdc إلى بنيات المعاينة، ويعيدك `rdc preview leave` إلى الإصدارات المنشورة. شغّل `rdc preview use <name>` بالاسم الذي حصلت عليه.",
   "commands.preview.descriptionShort": "اختبر بناء طلب سحب على أجهزتك ثم ارجع إلى الإصدار السابق",
-  "commands.preview.leave.description": "يعرض الخوادم التي تشغّل renet الخاص بالمعاينة، ويطلب التأكيد، ثم يعيد هذه الخوادم فقط؛ بعد ذلك يستعيد rdc السابق ويعيد ترخيص المستودعات المنشأة في المعاينة من حسابك الحقيقي. يبقى الخادم الذي يتعذر الوصول إليه في القائمة؛ أكمله لاحقًا باستخدام --machine.",
+  "commands.preview.leave.description": "يعرض الخوادم التي تشغّل renet الخاص بالمعاينة، ويطلب التأكيد، ثم يعيد هذه الخوادم فقط؛ بعد ذلك يستعيد rdc السابق ويعيد ترخيص المستودعات المنشأة في المعاينة من الحساب الحقيقي. يبقى الخادم الذي يتعذر الوصول إليه في القائمة؛ أكمله لاحقًا باستخدام --machine.",
   "commands.preview.leave.descriptionShort": "العودة إلى rdc وrenet المنشورين",
   "commands.preview.leave.machine": "إعادة هذا الخادم فقط",
   "commands.preview.msg.banner": "المعاينة {{name}} نشطة (تنتهي تراخيصها في {{date}}). شغّل `rdc preview leave` للعودة إلى rdc وrenet المنشورين.",

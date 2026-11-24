@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "正在开始创建 VM 集群...",
   "commands.preview.description": "将此配置切换到某个拉取请求的预览：rdc 以及 rdc 所操作的每台服务器上的 renet 都会换成预览的构建，`rdc preview leave` 则切回已发布版本。请用你拿到的名称运行 `rdc preview use <name>`。",
   "commands.preview.descriptionShort": "在自己的机器上测试 PR 构建，并可随时切回",
-  "commands.preview.leave.description": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用你的真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。",
+  "commands.preview.leave.description": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。",
   "commands.preview.leave.descriptionShort": "切回已发布的 rdc 和 renet",
   "commands.preview.leave.machine": "只切回这台服务器",
   "commands.preview.msg.banner": "预览 {{name}} 已启用（其许可证于 {{date}} 到期）。运行 `rdc preview leave` 即可切回已发布的 rdc 和 renet。",

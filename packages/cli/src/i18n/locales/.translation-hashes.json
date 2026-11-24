@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 3170,
-    "sourceCommit": "8dfddee9b9f0f724fbb0ba9f6e59de47bb0e84f9"
+    "sourceCommit": "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1454,7 +1454,7 @@
     "commands.ops.up.starting": "0b6e10e0",
     "commands.preview.description": "ff9f4fc0",
     "commands.preview.descriptionShort": "dddf8328",
-    "commands.preview.leave.description": "70b6e7ce",
+    "commands.preview.leave.description": "d0ed2fc6",
     "commands.preview.leave.descriptionShort": "e8ef6272",
     "commands.preview.leave.machine": "e859c1c4",
     "commands.preview.msg.banner": "ed181340",

@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "A iniciar provisionamento do cluster de VMs...",
   "commands.preview.description": "Mude esta configuração para uma pré-visualização de um pull request: o rdc e o renet de cada servidor que o rdc toca passam para as compilações da pré-visualização, e `rdc preview leave` volta às publicadas. Execute `rdc preview use <name>` com o nome que lhe foi dado.",
   "commands.preview.descriptionShort": "Teste a compilação de um PR nas suas próprias máquinas e volte atrás",
-  "commands.preview.leave.description": "Listar os servidores que executam o renet da pré-visualização, pedir confirmação e devolver exatamente esses; depois restaurar o rdc anterior e voltar a licenciar, a partir da sua conta real, os repositórios criados na pré-visualização. Um servidor inacessível continua na lista; conclua-o mais tarde com --machine.",
+  "commands.preview.leave.description": "Listar os servidores que executam o renet da pré-visualização, pedir confirmação e devolver exatamente esses; depois restaurar o rdc anterior e voltar a licenciar, a partir da conta real, os repositórios criados na pré-visualização. Um servidor inacessível continua na lista; conclua-o mais tarde com --machine.",
   "commands.preview.leave.descriptionShort": "Voltar ao rdc e ao renet publicados",
   "commands.preview.leave.machine": "Devolver apenas este servidor",
   "commands.preview.msg.banner": "A pré-visualização {{name}} está ativa (as suas licenças terminam em {{date}}). Execute `rdc preview leave` para voltar ao rdc e ao renet publicados.",

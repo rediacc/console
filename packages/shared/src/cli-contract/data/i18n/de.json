@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "VM-Cluster-Bereitstellung wird gestartet...",
   "commands.preview.description": "Diese Konfiguration auf eine Vorschau eines Pull Requests umstellen: rdc und das renet auf jedem Server, den rdc anfasst, wechseln zu den Builds der Vorschau, und `rdc preview leave` führt zu den veröffentlichten zurück. `rdc preview use <name>` mit dem Namen ausführen, den du erhalten hast.",
   "commands.preview.descriptionShort": "Einen PR-Build auf den eigenen Maschinen testen und wieder zurückwechseln",
-  "commands.preview.leave.description": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die in der Vorschau erstellten Repositories über dein echtes Konto neu lizenzieren. Ein nicht erreichbarer Server bleibt aufgelistet; später mit --machine abschließen.",
+  "commands.preview.leave.description": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die in der Vorschau erstellten Repositories über das echte Konto neu lizenzieren. Ein nicht erreichbarer Server bleibt aufgelistet; später mit --machine abschließen.",
   "commands.preview.leave.descriptionShort": "Zu den veröffentlichten rdc und renet zurückkehren",
   "commands.preview.leave.machine": "Nur diesen Server zurückwechseln",
   "commands.preview.msg.banner": "Vorschau {{name}} ist aktiv (ihre Lizenzen enden am {{date}}). Mit `rdc preview leave` geht es zurück zu den veröffentlichten rdc und renet.",
