@@ -101,13 +101,13 @@
     },
     {
       "id": "check:ci-docker-image-freshness",
-      "reason": "Asks hub.docker.com for each pinned image's tags and push times (through scripts/lib/docker-hub.ts:233 createHubReader) and judges them against Date.now() (check-docker-image-freshness.ts:952), so a new upstream push or the calendar flips it at an identical tree.",
-      "kind": "network"
+      "reason": "Asks hub.docker.com for each pinned image's tags and push times (through scripts/lib/docker-hub.ts:233 createHubReader) and judges them against Date.now() (check-docker-image-freshness.ts:952), and it reads each submodule's history (git submodule--helper status, git describe, traced 2026-11-24), so a new upstream push, the calendar or a submodule's history flips it at an identical tree.",
+      "kind": "history"
     },
     {
       "id": "check:ci-i18n-www-translation-freshness",
-      "reason": "Diffs each translation's English source against the blob at the sourceCommit named in its frontmatter (validate-translation-freshness.js:149, getFileAtCommit), so the verdict depends on which commits the checkout holds, not on tracked file bytes alone.",
-      "kind": "history"
+      "reason": "Fetches origin main (git fetch --no-tags origin +refs/heads/main, traced 2026-11-24 connecting to github.com:443) and diffs each translation's English source against the blob at the sourceCommit named in its frontmatter (validate-translation-freshness.js:149, getFileAtCommit), so the verdict depends on what the remote serves and which commits the checkout holds, not on tracked file bytes alone.",
+      "kind": "network"
     },
     {
       "id": "check:ci-renet-types",
@@ -178,6 +178,31 @@
       "id": "check:ci-review-resolutions",
       "reason": "Walks merge-base(origin/base, HEAD)..HEAD and reads the current branch name to find the review files that apply, so the verdict depends on repository history and branch state rather than on tracked file content alone.",
       "kind": "history"
+    },
+    {
+      "id": "check:ci-aws-resolver",
+      "reason": "Reads untracked cache state under .ci/cache (traced 2026-11-18 by path-trace, trace-ledger.ts), so its verdict can move with no tracked input moving.",
+      "kind": "cache"
+    },
+    {
+      "id": "check:ci-dkim-notify",
+      "reason": "Resolves each region's DKIM TXT and bounce MX records against the public resolvers 1.1.1.1 and 8.8.8.8 (check-dkim-notify.ts, node:dns/promises Resolver; traced 2026-11-24 connecting to 1.1.1.1:53), so a DNS change flips the verdict at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-pin-freshness",
+      "reason": "Compares every registry leaf with its upstream source (check-pin-freshness.ts; traced 2026-11-24 connecting to 48 registry and release hosts), and an upstream that moved or did not answer turns it red, so the verdict moves with nothing in the tree moving.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-real-provider-pins",
+      "reason": "Asks api.github.com for each pinned provider's releases (check-real-provider-pin-freshness.ts; traced 2026-11-24 connecting to 140.82.121.6:443), so a new upstream release flips it at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-tutorial-caption-sync",
+      "reason": "Fetches each tutorial's words.json from the media CDN (check-tutorial-caption-sync.ts:204; traced 2026-11-24 connecting to media.rediacc.com:443) and compares it with the tracked captions, so a publish to the CDN flips the verdict at an identical tree.",
+      "kind": "network"
     }
   ]
 }

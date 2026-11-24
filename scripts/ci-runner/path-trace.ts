@@ -1219,6 +1219,15 @@ export function attribute(access: Access, view: RepoView): Attribution {
     }
     if (sub === 'diff') {
       const d = diffRead(cmd.rest);
+      // An absolute path inside the checkout is the same pathspec as its relative spelling (git accepts both): placed relative to the exec's directory, `git diff --quiet /abs/root/a.json` reads a.json, as the relative form does (check:ci-subscription-schema, traced 2026-11-24). An absolute path outside the root stays as written, so it matches nothing tracked and keeps the read whole-tree.
+      if (base !== undefined) {
+        const rel = (p: string): string =>
+          path.posix.isAbsolute(p) && under(p, view.root) && !view.gitDirs.some((g) => under(p, g))
+            ? path.posix.relative(path.posix.join(view.root, base), p) || '.'
+            : p;
+        d.positionals = d.positionals.map(rel);
+        d.pathspecs = d.pathspecs.map(rel);
+      }
       // F2 B4: with no revision flag and every positional a tracked path, git reads them as pathspecs, and the comparison is the worktree against the index: the content of those paths.
       if (!d.revisionFlag && d.positionals.every(trackedPath)) {
         const specs = [...d.positionals, ...d.pathspecs];
@@ -3618,6 +3627,24 @@ async function selftest(): Promise<number> {
       b4pc.reason.includes('refs/heads/main'),
     `B4: the diff's own "is a/one.txt a ref?" probes (git's lookup rules, packed-refs) are no history read; CONTROL: the same process reading another ref is (got ${shape(b4p)} | ${shape(b4pc)})`
   );
+  // An absolute spelling of a tracked path is that path, from the root and from a subdirectory alike; CONTROL: an absolute path outside the checkout is no tracked path, and the read stays whole-tree.
+  const b4abs = pv([ex(7, ['git', 'diff', '--quiet', '/r/a/one.txt']), open(7, '/r/.git/index')]);
+  const b4absSub = pv([
+    ex(7, ['git', 'diff', '--quiet', '/r/a/one.txt'], '/r/b'),
+    open(7, '/r/.git/index'),
+  ]);
+  const b4absOut = pv([
+    ex(7, ['git', 'diff', '--quiet', '/elsewhere/a/one.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b4abs.kind === 'paths' &&
+      b4abs.paths.join(',') === 'a/one.txt' &&
+      b4absSub.kind === 'paths' &&
+      b4absSub.paths.join(',') === 'a/one.txt' &&
+      b4absOut.kind === 'whole-tree',
+    `B4: git diff --quiet /r/a/one.txt is the content of a/one.txt from / and from b/; CONTROL: /elsewhere/a/one.txt stays whole-tree (got ${shape(b4abs)} | ${shape(b4absSub)} | ${shape(b4absOut)})`
+  );
   const b4c = pv([ex(7, ['git', 'diff', '--quiet', 'HEAD']), open(7, '/r/.git/index')]);
   const b4cached = pv([ex(7, ['git', 'diff', '--cached', '--quiet', 'a/one.txt'])]);
   check(
@@ -4499,12 +4526,14 @@ async function selftest(): Promise<number> {
     'a glob reaching a probe cites the record, a sibling directory does not, and the prefix is check_record_paths.py literal_prefix'
   );
 
-  // 53bbd61a.1: the real record set must not read check:ci-python-gate-deps' bare `agent` list entry as a citation, which is what lets that gate stay paths-traced.
+  // 53bbd61a.1: a bare `agent` list entry cites only a record whose literal prefix IS `agent` (check_record_paths.py literal_prefix: `agent/*/STATE.md`, added 2026-11-23 by PLAN-stop-hook-retro-20261123 R20261123.4, cuts back to `agent`), never one below a deeper directory such as agent/reviews/** or agent/worklist/*.jsonl. Since that record landed, check:ci-python-gate-deps' `lists: ['agent']` cites it, so a re-trace leaves that gate whole-tree until the record or literal_prefix changes.
   const realRecords = readRecordGlobs(REPO_ROOT);
+  const bareAgent = recordCitations(['agent'], realRecords);
   check(
-    recordCitations(['agent'], realRecords).length === 0 &&
-      recordCitations(['agent/reviews'], realRecords).length === 1,
-    'the real record set does not cite a bare `agent` list entry, and CONTROL: agent/reviews is cited'
+    bareAgent.every((g) => recordPrefix(g) === 'agent') &&
+      !bareAgent.includes('agent/reviews/**') &&
+      recordCitations(['agent/reviews'], realRecords).includes('agent/reviews/**'),
+    `a bare \`agent\` list entry cites only records whose literal prefix is \`agent\` (got ${JSON.stringify(bareAgent)}), and CONTROL: agent/reviews is cited`
   );
 
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);
