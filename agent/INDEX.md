@@ -517,7 +517,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
 | `agent/plans/PLAN-console-private.md` | proposed | 335 | 32 | 0 | 57212 |
-| `agent/plans/PLAN-console-run-index.md` | approved | 127 | 12 | 3 | 25090 |
+| `agent/plans/PLAN-console-run-index.md` | approved | 131 | 8 | 7 | 26142 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 72 | 11 | 1 | 13895 |
 | `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 95 | 17 | 5 | 21461 |

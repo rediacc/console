@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 791 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 853 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 13 live (session d778be9d): worker:aea285b132cd0a1d6, worker:a7df3706a3595c2f0, worker:a0529d639a467d62c, worker:a0c30a95f248076b5, worker:a84132d9ad5fc2dc6, worker:a97dbd97efdd4c93e, worker:a9f2b627dd2e1a1c0, worker:a9e91107b6092ecfd, worker:ad3b3f100ec235676, worker:a2851eaa856841a05, worker:a6168cf862412cad5, worker:a875f1906d5b8c1eb, and 1 more.
-- Leased items: 15: #00b4f93a (worker:ad3b3f100ec235676, d778be9d), #16c463bd (worker:a0529d639a467d62c, d778be9d), #26ed959e (worker:a0529d639a467d62c, d778be9d), #2edf5700 (worker:a0c30a95f248076b5, d778be9d), #3132f371 (worker:a9e70263dc17aa761, d778be9d), #36e8cf6b (worker:aea285b132cd0a1d6, d778be9d), #3f773103 (worker:a97dbd97efdd4c93e, d778be9d), #5dc38f93 (worker:a84132d9ad5fc2dc6, d778be9d), #7087ca5a (worker:a6168cf862412cad5, d778be9d), #8b9a94a4 (worker:a9e91107b6092ecfd, d778be9d), #a2b404cb (worker:a875f1906d5b8c1eb, d778be9d), #cf0c6696 (worker:a7df3706a3595c2f0, d778be9d), and 3 more.
+- Writers: 2 live (session d778be9d): worker:adb89484ec7d269d2, worker:aea285b132cd0a1d6.
+- Leased items: 7: #0c612fa5 (worker:ada05431140d06264, d778be9d), #19200be7 (worker:a1e04cfb223bcf02e, d778be9d), #1cd473a4 (worker:adb89484ec7d269d2, d778be9d), #36e8cf6b (worker:aea285b132cd0a1d6, d778be9d), #53b1dc75 (worker:a031a1c7d36d59ac4, d778be9d), #d6c28fe7 (worker:ab7f0983351a35520, d778be9d), #fc2c7ae4 (worker:ab88b60ef21f6ce7b, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 97 plans done, 1278 of 1842 boxes done (69%).
+Promoted: 11 of 97 plans done, 1282 of 1842 boxes done (69%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -127,7 +127,7 @@ Promoted: 11 of 97 plans done, 1278 of 1842 boxes done (69%).
 | 65 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
 | 66 | PLAN-console-confirm-stepup.md | 8/11 | 3 open |
 | 67 | PLAN-console-audit-r2.md | 7/13 | 6 open |
-| 68 | PLAN-console-run-index.md | 3/15 | 12 open |
+| 68 | PLAN-console-run-index.md | 7/15 | 8 open |
 | 69 | PLAN-console-command-line.md | 3/16 | 13 open |
 | 70 | PLAN-console-ia.md | 0/10 | 10 open |
 | 71 | PLAN-console-animations.md | 0/9 | 9 open |

@@ -1314,26 +1314,26 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 3,
+      "open": 8,
+      "done": 7,
       "open_sigs": [
         "09278b8b",
         "1a6ed135",
         "2a6ccb08",
-        "2eb32ea8",
         "43ed1e7b",
-        "4e98ee40",
         "51e9efbe",
-        "6df32246",
         "7363da52",
         "c6f93f15",
-        "cfb7b82c",
-        "e8787a57"
+        "cfb7b82c"
       ],
       "done_sigs": [
         "03716829",
+        "2eb32ea8",
         "31b9464b",
-        "4649d86b"
+        "4649d86b",
+        "4e98ee40",
+        "6df32246",
+        "e8787a57"
       ]
     },
     "agent/plans/PLAN-consolidation-pressure.md": {
