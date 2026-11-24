@@ -60,8 +60,9 @@ Out of scope: same-machine concurrent forks (netns-per-cluster, dropped by the o
 - [ ] A5 [live] Teardown after A4: `rdc cluster destroy lab-a`. Accept: `virsh -c qemu:///system list --all` shows no `lab-a` VM, and a second `linode_cluster_validation verify` (non-billable) still reports zero survivors.
 - [ ] LP-bench [live] Fresh bench receipt for the regenerated contracts and the new `cluster create` option, after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   Accept: live-proof bench cli-bench
-- [ ] LP-hostinger [live] Fresh hostinger receipt for the `kube_install` FunctionDef change; hostinger runs no cluster, so the receipt proves the docker path still works with the new renet.
+- [x] LP-hostinger [live] Fresh hostinger receipt for the `kube_install` FunctionDef change; hostinger runs no cluster, so the receipt proves the docker path still works with the new renet.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:57Z by ace763dd: live-proof lp-8c4f11e43e50 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-cluster-live-proofs.md box 20b04d56 proven live on hostinger
 
 ## Risks
 

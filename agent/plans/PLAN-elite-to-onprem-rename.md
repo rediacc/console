@@ -79,8 +79,9 @@ Operator ASKED:2026-11-16T09:23Z: new name "onprem (Recommended)"; the agent per
 - [ ] L3 [live] Run the renamed drill once on the ops VM fleet: `./run.sh drill backup-onprem-compose`. Accept: rc 0.
 - [ ] LP-bench [live] Deploy the batch to bench with deploy_bench and record the receipt through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Provision the branch renet on hostinger through `--config eu-bench` after the VERIFIED vm:check of V1, and record the receipt through `worklist.py --live-proof`.
+- [x] LP-hostinger [live] Provision the branch renet on hostinger through `--config eu-bench` after the VERIFIED vm:check of V1, and record the receipt through `worklist.py --live-proof`.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:55Z by ace763dd: live-proof lp-f6ee3be51c99 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-elite-to-onprem-rename.md box 8d922eb9 proven live on hostinger
 
 ## Risks
 

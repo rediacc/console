@@ -63,8 +63,9 @@ Each red below is from the 2026-11-15 run 43690553925 (`/tmp/n604-log.txt` holds
 - [ ] H1 [writer] Point the validator's remedy line at the real command (Context 9), then re-check the audio with the tree synced. Accept: `grep -c sync-media-from-r2.sh packages/www/scripts/validate-tutorial-audio.js` prints 0, and `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only && npm run validate:tutorial-audio -w packages/www` rc 0 (a missing mp3 here becomes a narration box for the media-pipeline agent).
 - [ ] T1 [live] After the merge and two housekeeping captures on main, refresh both time-budget baselines. GitHub-only: CI parity -- both refreshes read the gate-cost captures and unit-duration artifacts that CI runs on main upload, and nothing local produces them
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh && PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --refresh`, then both with `--check` rc 0.
-- [ ] LP-hostinger [live] Fresh hostinger receipt for the renet tree carrying A1's pin.
+- [x] LP-hostinger [live] Fresh hostinger receipt for the renet tree carrying A1's pin.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:54Z by ace763dd: live-proof lp-ae1393f3f2e0 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-nightly-green.md box ffd1c3b5 proven live on hostinger
 
 ## Risks
 

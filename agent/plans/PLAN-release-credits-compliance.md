@@ -50,8 +50,9 @@ The investigation is Context 1-4; the rest of the plan makes what `rdc credits` 
 - [ ] M2 [writer] Wire M1 as the `mirror-third-party-src` step after `upload-cli-r2` in `release/local.py` (profile `r2-artifacts`) and as the matching step in `cd-stage.yml`. Accept: `.ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_release_local.py` rc 0 and `npm run release:local -- --channel edge --dry-run` lists `mirror-third-party-src` after `upload-cli-r2`.
 - [ ] M3 [live] First real mirror upload through the agent's release path: `npm run release:local -- --channel edge` (Context 9). Accept: for every embedded component, `curl -fsSI <mirrorUrl>` answers 200 and `curl -fsS <mirrorUrl> | sha256sum` equals its `sourceSha256`; the rsync build recipe and each static-library source package also answer 200.
 - [ ] V1 [live] Prove the shipped notice on the binary M3 published: download it from the edge manifest, verify its sha256, run `rdc credits --licenses` under an empty HOME. Accept: rc 0; the output has no `NOT GENERATED`, no `Full license text:`, no `22.x`, carries `Node.js v24.` matching `rdc credits -o json`'s runtime row, and lists Go modules with no `rediacc/renet` line.
-- [ ] LP-hostinger [live] Fresh hostinger receipt for the inventory and credits changes.
+- [x] LP-hostinger [live] Fresh hostinger receipt for the inventory and credits changes.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:56Z by ace763dd: live-proof lp-82360ac56c85 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-release-credits-compliance.md box b7e90764 proven live on hostinger
 
 ## Risks
 

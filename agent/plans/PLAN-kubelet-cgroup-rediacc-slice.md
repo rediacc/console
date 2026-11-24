@@ -45,8 +45,9 @@ No plan covers it: `grep -rlI -E 'KubeletCgroupRoot|hugetlb' agent/plans` hits n
 - [ ] K5 [live] Suites 15, 16 and 17 on the local KVM fleet with K2-K4 landed. The ops VMs are shared with another agent: use the suites' own machines, no `ops down`, and do not assume exclusive use. Cluster verbs need `REDIACC_ALLOW_CLUSTER_OPS` in the launching shell. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test tests/kube/17-multinode-cluster.test.ts` rc 0, and the same with `tests/kube/15-k8s-repo.test.ts` and `tests/kube/16-datastore-cluster.test.ts`
 - [ ] K6 [live] Fresh-state proof: on the K5 control VM, before the k3s install, record `cat /sys/fs/cgroup/cgroup.subtree_control`; the proof counts only if hugetlb is absent there (else use a VM with no docker repo started since boot, after a reboot). After install, record kubelet Ready, the same file now listing hugetlb, then `systemctl daemon-reload`, a restart of an unrelated unit in `rediacc.slice`, a k3s restart and a reboot, each followed by `kubectl get nodes` Ready. Accept: the before/after file contents and the four Ready checks recorded in the plan's Context with the date
 - [ ] V1 [live] VM tier for the renet surface before the live receipt. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V1 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V1 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:59Z by ace763dd: live-proof lp-8a7050876414 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-kubelet-cgroup-rediacc-slice.md box 677924f9 proven live on hostinger
 
 ## Risks
 

@@ -433,8 +433,9 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after HO1 lands the Elite repo.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after HO1 lands the Elite repo.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:03:01Z by ace763dd: live-proof lp-298e4fb21f01 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-enterprise-tenants.md box 4d22e145 proven live on hostinger
 
 ### Production: only after an explicit operator go, once bench is green
 

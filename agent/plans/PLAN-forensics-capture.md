@@ -113,8 +113,9 @@ D14. **Budget.** Basic and Standard cost at most 3% throughput on an iperf3 run 
 - [ ] FC11 [lead] Land the renet commits submodule-first, bump the gitlink, and run the VM battery on the touched areas.
   Depends on: FC1, FC2, FC3, FC4, FC5, FC6, FC7, FC8, FC9, FC10.
   Accept: `npm run vm:check -- --changed` VERIFIED receipt; `npm run check:ci-renet` rc 0.
-- [ ] LP-hostinger [live] On hostinger, set one paid repo to Full, generate outbound traffic and a `.env` read inside it, and show the flow, DNS name, file open and a valid chain through `renet netaudit status` and the spool verifier.
+- [x] LP-hostinger [live] On hostinger, set one paid repo to Full, generate outbound traffic and a `.env` read inside it, and show the flow, DNS name, file open and a valid chain through `renet netaudit status` and the spool verifier.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:03:01Z by ace763dd: live-proof lp-bd3af689b84a VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-forensics-capture.md box f2169bfa proven live on hostinger
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench and confirm the regenerated list-types contract serves machine status; `cli-bench` is the additional check.
   Accept: live-proof bench account-smoke
 

@@ -114,8 +114,9 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
 - [ ] FD13 [lead] Land renet and account submodule-first with the gitlink bumps, run the VM battery, then publish the first bundle to edge at 10%, read the canary result on hostinger, and promote to stable through `publish_models`.
   Depends on: FD6, FD8, FD9, FD10, FD11, FD12.
   Accept: `npm run vm:check -- --changed` VERIFIED receipt; `curl -sI https://data.rediacc.com/models/channels/stable.json` shows `max-age=60`; `renet models status` on hostinger names the stable version.
-- [ ] LP-hostinger [live] On hostinger, install the stable bundle, drive an outbound spike from one paid repo and read the machine finding with its explanation, then publish a bad canary to edge and show it refused with the previous bundle kept.
+- [x] LP-hostinger [live] On hostinger, install the stable bundle, drive an outbound spike from one paid repo and read the machine finding with its explanation, then publish a bad canary to edge and show it refused with the previous bundle kept.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:03:00Z by ace763dd: live-proof lp-bbcf0d396b8c VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-forensics-detection.md box 95b5b05b proven live on hostinger
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) and show a server finding written from a shipped batch; `cli-bench` covers the signed server bundle as additional verification.
   Accept: live-proof bench account-smoke
 

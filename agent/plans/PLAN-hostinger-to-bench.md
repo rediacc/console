@@ -99,8 +99,9 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 - [ ] D1 [writer] PLAN-product-domain-rename: L10 closes as superseded by this plan; L11 gains a dependency on C7 and its Accept moves to `--config eu-bench`; b38b0881 deactivation waits on C7. docs/agent-reference/bench-login.md gains "bench carries hostinger production data: reset guard, pins, escrow". Accept: `npm run check:ci-plan-record` rc 0
 - [ ] LP-bench [live] Fresh bench receipt after the bench guard and pin boxes (W1, W2, L5) and the hostinger re-licence land on bench.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Fresh hostinger receipt after the re-licence and the first scheduled run through eu-bench (C7).
+- [x] LP-hostinger [live] Fresh hostinger receipt after the re-licence and the first scheduled run through eu-bench (C7).
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:02:59Z by ace763dd: live-proof lp-1c120cbc779f VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-hostinger-to-bench.md box d3e497f3 proven live on hostinger
 
 ## Risks
 1. Bench runs unmerged account code; once rediacc-backups-eu is gone a deployed GC or retention bug could remove the only off-site copy (hostinger still holds the live data). An R2 bucket lock on the protected prefix is a possible follow-up.

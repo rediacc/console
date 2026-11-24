@@ -205,8 +205,9 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
 - [x] LP-bench [live] Fresh bench receipt after LB1 and H4.
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:05:29Z by d778be9d: live-proof lp-82f0a1bfbf38 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
-- [ ] LP-hostinger [live] Fresh hostinger receipt after LR1.
+- [x] LP-hostinger [live] Fresh hostinger receipt after LR1.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:52Z by ace763dd: live-proof lp-e9d0feb25206 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-d1-scaling.md box ece48a5d proven live on hostinger
 
 ## Not verified
 

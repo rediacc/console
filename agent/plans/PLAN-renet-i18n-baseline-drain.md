@@ -50,8 +50,9 @@ console#606 lists "Renet i18n baseline (`private/renet/pkg/i18n/baseline.json`, 
 - [ ] B11 [writer] `pkg/license`, `pkg/proxy`, `pkg/hub`, `pkg/dockergrant`, `pkg/dockerproxy`, `pkg/dockerpolicy`, `pkg/subscription`, `pkg/sandbox`, `pkg/dns` (230). Accept: `cd private/renet && make i18n-check && go test` over those packages rc 0 and the `jq` count for those prefixes prints 0.
 - [ ] B12 [writer] Every remaining entry (about 150 across the small packages). Accept: `cd private/renet && make i18n-check && go test ./...` rc 0 and `jq '.entries | length' pkg/i18n/baseline.json` prints 0.
 - [ ] D1 [writer] Delete the baseline mechanism (Design, fourth bullet) and update `.claude/agents/pr-babysitter.md:217`. Accept: `cd private/renet && go test ./pkg/i18n/... ./cmd/renet/... && make i18n-check` rc 0, `git -C private/renet grep -n -e 'baseline.json' -e FilterAgainstBaseline -- ':!pkg/i18n/locale_quality*'` prints nothing, and a planted `fmt.Errorf("planted english text")` in a scratch copy makes `make i18n-check` exit 1 (control recorded in the tick).
-- [ ] LP-hostinger [live] Fresh hostinger receipt after D1, with renet built from the drained tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after D1, with renet built from the drained tree.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:07Z by ace763dd: live-proof lp-d0b076c4756a VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-renet-i18n-baseline-drain.md box 6a441214 proven live on hostinger
 
 ## Risks
 

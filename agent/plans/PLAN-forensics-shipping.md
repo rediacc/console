@@ -121,8 +121,9 @@ D10. **Console.** `PUT /portal/forensics/repos/:guid/level` (owner or admin, the
   Accept: `wrangler r2 bucket lock list forensics-bench` run with the evidence account's admin credentials lists the `raw/`, `days/` and `hold/` rules; a DELETE of a fresh `raw/` object with the Worker's token answers 403; door:operator-only for the account creation.
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), mint a session from a bench repo licence, upload batches through the granted URLs, force the compaction through the queue, and read the day file back with forensics-verify.ts; `./rdc.sh --config eu-bench subscription notices` showing the 80% notice (cli-bench) is additional verification.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Deploy the branch's renet to hostinger with the netaudit collector at Standard, see a batch every 30 seconds land in forensics-eu, block egress to the account host for 10 minutes and see every spooled batch arrive afterwards with no recorded gap.
+- [x] LP-hostinger [live] Deploy the branch's renet to hostinger with the netaudit collector at Standard, see a batch every 30 seconds land in forensics-eu, block egress to the account host for 10 minutes and see every spooled batch arrive afterwards with no recorded gap.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:04Z by ace763dd: live-proof lp-51126b28ff12 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-forensics-shipping.md box 017dfba2 proven live on hostinger
 
 ## Risks
 

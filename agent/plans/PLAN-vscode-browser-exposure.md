@@ -47,8 +47,9 @@ Today `rdc vscode connect --browser` serves code-server from inside the repo san
 - [ ] V5 [writer] e2e on the VM fleet: expose, admit with a fresh token, refuse a stale one, idle reaper stops the container. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --test tests/vscode-expose.test.ts --fail-on-skip` rc 0
 - [ ] V6 [live] Repeat the spike's idle test against the product path on hostinger: an editor session left idle 15 minutes is still usable and the reaper stops the container after the portal tab closes. Accept: the browser check and `docker ps` on the repo daemon recorded here
 - [ ] V7 [live] Tear down the spike repo `vscode-spike` on hostinger once a delete cannot re-render the production backup units through the bench config (agent/plans/PLAN-backup-schedule-origin-guard.md). Accept: `./rdc.sh --config eu-bench repo list -m hostinger` no longer lists vscode-spike and every unit still carries `--expect-account-server https://eu.rediacc.cloud`
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V1-V3 land.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V1-V3 land.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:03Z by ace763dd: live-proof lp-79199c7af404 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-vscode-browser-exposure.md box de4e368a proven live on hostinger
 - [ ] LP-bench [live] Fresh bench receipt after V4 lands.
   Accept: live-proof bench account-smoke
 

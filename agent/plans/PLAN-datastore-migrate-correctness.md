@@ -69,8 +69,9 @@ Out of scope: #42 router-on-cluster, the rehearse and replicate-remove live re-r
 - [ ] A3 [writer] e2e: suite 23a gains an assertion after the default migrate (test 5) that neither machine's `<datastore>/repositories/` holds any GUID other than live repos, which catches a surviving phase-1 base. Accept: `npx tsc --noEmit -p packages/e2e-tests` rc 0
 - [ ] V1 [live] Run suite 23a on the local KVM fleet after A2 and A3 land (the ops VMs are shared with another agent: use only the suite's own machines and repos, no `ops down`). Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test tests/23a-cli-migrate-routing.test.ts` rc 0
 - [ ] V2 [live] VM tier for the renet and cli surfaces before the live receipt. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V2 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V2 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:05Z by ace763dd: live-proof lp-a599e66c890e VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-datastore-migrate-correctness.md box b9a5b860 proven live on hostinger
 
 ## Risks
 

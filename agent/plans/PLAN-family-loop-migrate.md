@@ -64,8 +64,9 @@ A failure part-way leaves the family's placement on the source, the source image
 - [ ] F6 [writer] Only if M1 refutes sharing: make a seeded push keep extents shared (delta path against the seed, per Design), with a renet test that a seeded push of a fork writes only the fork's changed ranges. If M1 confirms sharing, tick with M1's numbers and no code. Accept: `cd private/renet && go test ./cmd/renet -run 'TestPushSeed' -count=1` rc 0, or M1's tick evidence quoted
 - [ ] V1 [live] Run suite 23c on the KVM fleet after F2-F4 land; only the suite's own repos, no `ops down`, and wait until machines 11 and 12 are free (11 carries another agent's work at conversion time). Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test tests/23c-cli-migrate-family.test.ts` rc 0
 - [ ] V2 [live] VM tier before the live receipt. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V2 on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V2 on the same tree.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:52Z by ace763dd: live-proof lp-8150beccee9a VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-family-loop-migrate.md box c0964415 proven live on hostinger
 
 ## Risks
 

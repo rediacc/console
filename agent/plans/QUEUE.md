@@ -41,21 +41,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 648 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 43 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
+  - epic 79b7e92e, no plan, 660 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 2 live (session ace763dd): worker:a0c4c180fcceafe94, worker:a24c61c9694292d07.
-- Leased items: 5: #6ac78a2f (worker:a0c4c180fcceafe94, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #921c7c4e (worker:a0c4c180fcceafe94, ace763dd), #da3e7457 (worker:a24c61c9694292d07, ace763dd), #e205396a (worker:a0c4c180fcceafe94, ace763dd).
+- Writers: 3 live (session ace763dd): worker:a52a844adc86e39bf, worker:a060be91ce9069134, worker:a52bc1a7aaa7626f7.
+- Leased items: 4: #04597d0e (worker:a52bc1a7aaa7626f7, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #c88abe45 (worker:a52a844adc86e39bf, ace763dd), #da3e7457 (worker:a060be91ce9069134, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
+Promoted: 10 of 98 plans done, 1283 of 1872 boxes done (68%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -76,7 +76,7 @@ Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 | 15 | PLAN-backup-plane-shared-bucket-hardening.md | 7/7 | done |
 | 16 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
 | 17 | PLAN-backup-download-from-store.md | 9/9 | done |
-| 18 | PLAN-free-license.md | 11/13 | 2 open |
+| 18 | PLAN-free-license.md | 12/13 | 1 open |
 | 19 | PLAN-backup-integrity.md | 52/56 | 4 open |
 | 20 | PLAN-backup-critical-tier.md | 49/51 | 2 open |
 | 21 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
@@ -97,16 +97,16 @@ Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 | 36 | PLAN-ciquick-green-then-batch.md | 7/7 | done |
 | 37 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 38 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
-| 39 | PLAN-d1-scaling.md | 19/31 | 12 open |
+| 39 | PLAN-d1-scaling.md | 20/31 | 11 open |
 | 40 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 41 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 42 | PLAN-account-notices.md | 16/17 | 1 open |
-| 43 | PLAN-enterprise-tenants.md | 28/47 | 19 open |
+| 43 | PLAN-enterprise-tenants.md | 29/47 | 18 open |
 | 44 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
-| 45 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
+| 45 | PLAN-onprem-relicence-inbox.md | 11/13 | 2 open |
 | 46 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 47 | PLAN-d1-eu-jurisdiction.md | 5/22 | 17 open |
-| 48 | PLAN-hostinger-to-bench.md | 14/22 | 8 open |
+| 48 | PLAN-hostinger-to-bench.md | 15/22 | 7 open |
 | 49 | PLAN-multi-region-bench.md | 15/23 | 8 open |
 | 50 | PLAN-root-api-token.md | 13/15 | 2 open |
 | 51 | PLAN-site-entry-points.md | 8/11 | 3 open |
@@ -148,10 +148,10 @@ Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 | 87 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
 | 88 | PLAN-rmcp-docs.md | 1/20 | 19 open |
 | 89 | PLAN-stripe-disable.md | 4/8 | 4 open |
-| 90 | PLAN-forensics-capture.md | 7/13 | 6 open |
-| 91 | PLAN-forensics-shipping.md | 5/16 | 11 open |
-| 92 | PLAN-forensics-detection.md | 5/15 | 10 open |
-| 93 | PLAN-forensics-investigation.md | 0/17 | 17 open |
+| 90 | PLAN-forensics-capture.md | 8/13 | 5 open |
+| 91 | PLAN-forensics-shipping.md | 6/16 | 10 open |
+| 92 | PLAN-forensics-detection.md | 6/15 | 9 open |
+| 93 | PLAN-forensics-investigation.md | 1/17 | 16 open |
 | 94 | PLAN-forensics-alerts-notices.md | 1/15 | 14 open |
 | 95 | PLAN-forensics-reports.md | 0/14 | 14 open |
 | 96 | PLAN-forensics-docs-legal.md | 0/13 | 13 open |
@@ -262,40 +262,40 @@ Promoted: 10 of 98 plans done, 1274 of 1872 boxes done (68%).
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
-2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-3. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
-4. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, not started
-5. agent/plans/PLAN-console-private.md -- P1, proposed, not started
-6. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-7. agent/plans/PLAN-nightly-green.md -- P1, proposed, not started
-8. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, not started
-9. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
-10. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-11. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
-12. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, not started
-13. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, not started
-14. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, not started
-15. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
-16. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-17. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
-18. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
-19. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
-20. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
-21. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
-22. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
-23. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
-24. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
-25. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-26. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-27. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-28. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, not started, dep-blocked
-29. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
-30. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-31. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-32. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-33. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
-34. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
-35. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
-36. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
-37. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
+2. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, in progress (1 of 4 boxes ticked)
+3. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+4. agent/plans/PLAN-nightly-green.md -- P1, proposed, in progress (1 of 15 boxes ticked)
+5. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, in progress (1 of 10 boxes ticked)
+6. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, in progress (1 of 8 boxes ticked)
+7. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, in progress (1 of 7 boxes ticked)
+8. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, in progress (1 of 16 boxes ticked)
+9. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, in progress (1 of 12 boxes ticked)
+10. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, in progress (1 of 13 boxes ticked)
+11. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, in progress (1 of 8 boxes ticked)
+12. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
+13. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, in progress (1 of 19 boxes ticked), dep-blocked
+14. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, in progress (1 of 10 boxes ticked), dep-blocked
+15. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, in progress (1 of 16 boxes ticked)
+16. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, in progress (1 of 9 boxes ticked)
+17. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, in progress (1 of 9 boxes ticked), dep-blocked
+18. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+19. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+20. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
+21. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
+22. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+23. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
+24. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
+25. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+26. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
+27. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
+28. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
+29. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
+30. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+31. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+32. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+33. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+34. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+35. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+36. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+37. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->

@@ -120,8 +120,9 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Accept: the VERIFIED vm:check receipt and the gitlink commit sha quoted in the tick.
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), generate outbound traffic from a bench repo at Standard, open its investigation after a passkey step-up, verify the window, declare an incident (fork, hold, lock rule, Full) and read it back with `./rdc.sh --config eu-bench incident status` and `repo flows`; cli-bench runs as additional verification.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] On hostinger, run `rdc forensics level <ref> full` against one paid repo through the branch CLI and renet, see `renet netaudit status` report Full with `set_by` naming the call, then set it back to its previous level.
+- [x] LP-hostinger [live] On hostinger, run `rdc forensics level <ref> full` against one paid repo through the branch CLI and renet, see `renet netaudit status` report Full with `set_by` naming the call, then set it back to its previous level.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:02:56Z by ace763dd: live-proof lp-4d5b1af05825 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-forensics-investigation.md box 19042123 proven live on hostinger
 
 ## Risks
 
