@@ -1,4 +1,4 @@
-# PLAN: Console AI feedback offers -- an rdc feedback report offered only for Rediacc-origin failures, drafted from the server run record, previewed exactly and sent by the account worker on the user's click
+# PLAN: Console AI feedback offers -- a feedback report (the rdc feedback command) offered only for Rediacc-origin failures, drafted from the server run record, previewed exactly and sent by the account worker on the user's click
 Status: approved -- operator /ask 2026-11-23 in session 9b22c347, worklist #b785e9ff (agent/programs/console-rework/02-decisions.md)
 Owner: 9b22c347
 First-Seen: 2026-11-23
