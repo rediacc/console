@@ -30,6 +30,7 @@ class FakeRuntime(mod.Runtime):
         self.fail = fail
         self.groups: list[tuple[list[str], dict[str, str]]] = []
         self.killed: list[int] = []
+        self.starts: dict[int, str] = {}
         self.runs: list[tuple[list[str], dict[str, str] | None]] = []
         self.rustfs_started = False
         self.rustfs_up = False
@@ -43,6 +44,9 @@ class FakeRuntime(mod.Runtime):
         self.groups.append((argv, env))
         self.next_pid += 1
         return self.next_pid
+
+    def group_start(self, pgid: int) -> str | None:
+        return self.starts.get(pgid, "t%d" % pgid)
 
     def kill_group(self, pgid: int) -> None:
         self.killed.append(pgid)
@@ -392,6 +396,32 @@ def test_a_group_that_is_already_gone_counts_as_stopped(layout: mod.Layout) -> N
     stack = _recorded(layout, rt, pgids=(10,))
     assert stack.teardown() == []
     assert stack.state["groups"] == []
+
+
+def test_a_recycled_group_id_is_never_signalled(layout: mod.Layout) -> None:
+    """Review b7004c9a.4/e52259aa.1: a pgid whose leader start time changed since it was recorded belongs to another process."""
+    rt = FakeRuntime()
+    stack = _recorded(layout, rt, pgids=(10, 11))
+    rt.starts[10] = "recycled"
+    assert stack.teardown() == []
+    assert rt.killed == [11]
+    assert stack.state["groups"] == []
+
+
+def test_a_group_with_the_recorded_start_time_is_still_signalled(layout: mod.Layout) -> None:
+    """Silent control for the recycled-id test: an unchanged start time reaches kill_group."""
+    rt = FakeRuntime()
+    stack = _recorded(layout, rt, pgids=(10,))
+    assert stack.teardown() == []
+    assert rt.killed == [10]
+
+
+def test_group_start_reads_the_proc_start_time_of_a_live_process() -> None:
+    """The real reader returns a tick count for this process and None for a pid that does not exist."""
+    start = mod.Runtime().group_start(os.getpid())
+    assert start is not None
+    assert start.isdigit()
+    assert mod.Runtime().group_start(2**22 + 999) is None
 
 
 def test_the_vm_machines_are_recorded_and_undone_on_down(layout: mod.Layout) -> None:

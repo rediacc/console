@@ -151,6 +151,16 @@ class Runtime:
         """Send `sig` to a process group; a group that is gone raises ProcessLookupError."""
         os.killpg(pgid, sig)
 
+    def group_start(self, pgid: int) -> str | None:
+        """The start time (clock ticks since boot, /proc field 22) of the process whose pid is `pgid`, or None when it is gone or unreadable. A group started with its own session has its leader's pid as id, so a recycled id shows up as a different start time."""
+        try:
+            stat = pathlib.Path("/proc/%d/stat" % pgid).read_text(encoding="utf-8")
+        except (OSError, ValueError):
+            return None
+        # The comm field may hold spaces and parentheses; everything after the last `)` is space-separated, with starttime as its 20th field.
+        fields = stat.rpartition(")")[2].split()
+        return fields[19] if len(fields) > 19 else None
+
     def kill_group(self, pgid: int) -> None:
         """SIGTERM the group, wait, then SIGKILL what is left; a group that is already gone is done."""
         try:
@@ -316,7 +326,9 @@ class Stack:
         return any(self.state[key] for key in self.state)
 
     def record_group(self, name: str, pgid: int) -> None:
-        self.state["groups"].append({"name": name, "pgid": pgid})
+        self.state["groups"].append(
+            {"name": name, "pgid": pgid, "start": self.rt.group_start(pgid)}
+        )
         self.save()
 
     def record_container(self, name: str) -> None:
@@ -341,6 +353,13 @@ class Stack:
         failures: list[str] = []
         left_groups: list[dict] = []
         for entry in reversed(self.state["groups"]):
+            # A recorded leader start time that no longer matches means the group is gone and its id was recycled: signalling it would hit an unrelated process.
+            recorded_start = entry.get("start")
+            if (
+                recorded_start is not None
+                and self.rt.group_start(int(entry["pgid"])) != recorded_start
+            ):
+                continue
             try:
                 self.rt.kill_group(int(entry["pgid"]))
             except ProcessLookupError:
