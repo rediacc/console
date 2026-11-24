@@ -1470,7 +1470,7 @@ N_LESSONS_WEEKLY_DISPATCH = (
     "save that file verbatim as agent/plans/PLAN-lessons-%(date)s.md, run "
     "`worklist.py --promote %(me8)s PLAN-lessons-%(date)s.md '<who ordered it and why>'`, "
     "and commit both together. Proposals resolve as the plan's boxes are ticked "
-    "(`worklist.py --plan-tick`): a tick whose evidence names a commit sha that resolves "
+    "(`worklist.py --plan-tick`): a tick whose evidence names a commit sha that exists in the repo "
     "resolves the ids its box's cluster-table row lists, and any other tick prints NOT resolved "
     "with the per-id commands."
 )

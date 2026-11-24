@@ -125,6 +125,10 @@ check("review_items: its last note names the finding", F in view["live0001"][1],
 check("review_items: a lease with no live worker is no longer [>]", view["dead0001"][0], "!")
 check("review_items: an open item is not [>]", view["open0001"][0], " ")
 check("review_items: the item text names it too", F in view["text0001"][1], True)
+lease_note_view = K.review_items(
+    [dict(item("note0001", ">", "w-live"), text="item", lease_note="fixing %s" % F)], {"w-live"}
+)
+check("review_items: the lease note names it too", F in lease_note_view["note0001"][1], True)
 leased_view = R._leased_items(view)
 check("branch_state sees only the live-leased items", sorted(leased_view), ["live0001", "text0001"])
 dead_only = R._leased_items(K.review_items(recs, set()))

@@ -204,6 +204,7 @@ def pinned_vm_check_cases(tmp):
         (b"not json", "garbage"),
         (b"[1]", "list"),
         (b'{"commit": 7}', "number"),
+        (('{"commit": "%s\\n"}' % sha).encode(), "trailing newline"),
     ):
         check(
             "vm_check_pin: an unreadable payload (%s) reads no pin" % label,

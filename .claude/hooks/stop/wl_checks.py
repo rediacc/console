@@ -1736,7 +1736,7 @@ _EXCLUSION_WORDING = re.compile(
 def claimed_text(text):
     """`text` reduced to the lines that CLAIM items for the task: a line with exclusion wording is dropped, and so is everything under a heading or lead-in line (ending in `:`) that carries it, up to the next blank line or heading.
 
-    The auto-lease reads item ids out of a live task's prompt. A brief that says `Excluded (in flight elsewhere): #a, #b` names those ids to keep the task off them, so they are not leased to it (2026-11-23: #889cb685 was leased to a read-only survey agent that way). `Take #c` on its own line still claims #c.
+    The auto-lease reads item ids out of a live task's prompt. A brief that says `Excluded (in flight elsewhere): #a, #b` names those ids to keep the task off them, so they are not leased to it (2026-11-23: #889cb685 was leased to a read-only survey agent that way). `Take #c` on its own line, after a blank line or a heading, still claims #c; a line that carries exclusion wording of its own (`Take #c; do not touch the lockfile`) is dropped whole, because dropping only the excluded clause would keep the ids of `Excluded: #a; #b`.
     """
     keep = []
     in_block = False
@@ -2836,7 +2836,7 @@ def vm_check_holder(raw, proc="/proc"):
 
 
 # A pinned vm:check (`--commit <sha>`, agent/plans/PLAN-push-decoupling.md D1.4) names its commit in the lock payload as a full sha; a short or non-hex value is no pin.
-VM_CHECK_PIN = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+VM_CHECK_PIN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})")
 
 
 def vm_check_pin(raw):
@@ -2845,7 +2845,7 @@ def vm_check_pin(raw):
         got = json.loads(raw.decode("utf-8", "replace")).get("commit")
     except (ValueError, AttributeError):
         return ""
-    return got if isinstance(got, str) and VM_CHECK_PIN.match(got) else ""
+    return got if isinstance(got, str) and VM_CHECK_PIN.fullmatch(got) else ""
 
 
 def vm_check_running(path=None):
