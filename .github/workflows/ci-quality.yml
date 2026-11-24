@@ -2007,6 +2007,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-cli-contract
 
+      # Every contract command carries a severity, a summary of 1 to 100
+      # characters translated in all 13 bundles, a real preview flag, and every
+      # error code an origin: what the web console and the executor read.
+      - name: CLI contract coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-cli-contract-coverage
+
   # ============================================================================
   # L7 i18n -- alone. Needs full history (translation freshness diffs against
   # origin/main), the account submodule, built packages, AND a ~100s R2 audio

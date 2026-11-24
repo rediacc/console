@@ -7735,6 +7735,20 @@
     }
   },
   {
+    "id": "check:ci-cli-contract-coverage",
+    "run": "npm run check:ci-cli-contract-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/cli_contract_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "CLI contract coverage"
+    }
+  },
+  {
     "id": "check:ci-command-tree",
     "run": "npm run check:ci-command-tree",
     "gate": true,

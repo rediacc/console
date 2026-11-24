@@ -7319,6 +7319,20 @@ export const GATES: readonly GateSpec[] = [
       step: 'CLI contract',
     },
   },
+  // >>> gen-manifest: region 18
+  {
+    id: 'check:ci-cli-contract-coverage',
+    run: 'npm run check:ci-cli-contract-coverage',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/cli_contract_coverage.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-packages',
+      step: 'CLI contract coverage',
+    },
+  },
+  // <<< gen-manifest: region 18
   {
     id: 'check:ci-command-tree',
     run: 'npm run check:ci-command-tree',
@@ -7948,7 +7962,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale German contamination',
     },
   },
-  // >>> gen-manifest: region 18
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-locale-sources',
     run: 'npm run check:ci-locale-sources',
@@ -7961,7 +7975,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale sources',
     },
   },
-  // <<< gen-manifest: region 18
+  // <<< gen-manifest: region 19
   {
     id: 'check:ci-config-migrations',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.config_migrations',
@@ -8153,7 +8167,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CI fetch integrity',
     },
   },
-  // >>> gen-manifest: region 19
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-aws-credential-bridge',
     run: 'npm run check:ci-aws-credential-bridge',
@@ -8178,7 +8192,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Worker secret names',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-builder-env-contract',
     run: 'npm run check:ci-builder-env-contract',
@@ -8791,7 +8805,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -8819,7 +8833,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 21
   {
     id: 'check:ci-real-provider-pins',
     env: {
@@ -9021,7 +9035,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Run account backup tests',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-subscription-schema',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.subscription_schema',
@@ -9034,7 +9048,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check subscription schema consistency',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-pricing-consistency',
     run: 'npm run check:ci-pricing-consistency',
@@ -9526,7 +9540,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Raw translation keys',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -9542,7 +9556,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -10233,7 +10247,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Suppression liveness — are our allowlist entries still needed?',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-pr-condition-ledger',
     env: {
@@ -10249,7 +10263,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'PR-condition ledger is current',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
@@ -10478,7 +10492,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
@@ -10491,7 +10505,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-workflow-invariants',
     run: 'npm run check:ci-workflow-invariants',
@@ -10549,7 +10563,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -10562,7 +10576,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-locale-config-divergence',
     run: 'npm run check:ci-locale-config-divergence',
@@ -11196,7 +11210,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-pathspec-scope',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pathspec_scope',
@@ -11209,7 +11223,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
