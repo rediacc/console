@@ -3045,6 +3045,66 @@ def test_the_body_start_is_eighty_characters_not_eighty_bytes():
     assert "x" * 81 not in str(e.value)
 
 
+# --- release reset ------------------------------------------------------
+# The rehearsal reset (box V5): a version's rollout and re-smoke rows taken out of each bench control database, proof companies only, over a recording fake.
+
+
+ROWS_RESET = [
+    {"id": "c00000001", "name": "proof-ring-canary", "state": "active"},
+    {"id": "c00000002", "name": "proof-ring-small", "state": "active"},
+    {"id": "c00000003", "name": "acme", "state": "active"},
+]
+
+
+class ResetDb:
+    def __init__(self, held: dict[str, list[str]]):
+        self.held = held
+        self.asked: list[tuple[str, str, list]] = []
+
+    def __call__(self, database, sql, params):
+        self.asked.append((database, sql, list(params)))
+        if sql == lab.RESET_ROLLOUT_SQL:
+            return [{"company_id": c} for c in self.held.get(database, [])]
+        return []
+
+    def deletes(self) -> list[tuple[str, str, list]]:
+        return [a for a in self.asked if a[1].startswith("DELETE")]
+
+
+def test_reset_release_takes_the_version_out_of_every_bench_control_database():
+    db = ResetDb({"control-bench-eu": ["c00000001", "c00000002"], "control-bench-us": []})
+    got = lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert got == ["c00000001", "c00000002"]
+    assert db.deletes() == [
+        ("control-bench-eu", lab.RESET_DELETE_ROLLOUT_SQL, ["4.0.1"]),
+        ("control-bench-eu", lab.RESET_DELETE_RESMOKE_SQL, ["ring-resmoke", "4.0.1"]),
+        ("control-bench-us", lab.RESET_DELETE_ROLLOUT_SQL, ["4.0.1"]),
+        ("control-bench-us", lab.RESET_DELETE_RESMOKE_SQL, ["ring-resmoke", "4.0.1"]),
+    ]
+    # The deploy records `proof cost` reads are never deleted.
+    assert all("deploy-record" not in sql for _db, sql, _p in db.deletes())
+
+
+@pytest.mark.parametrize("cid", ["c00000003", "c0000000f"], ids=["not-proof", "unknown"])
+def test_reset_release_refuses_a_row_of_a_company_the_lab_did_not_create(cid):
+    db = ResetDb({"control-bench-eu": ["c00000001"], "control-bench-us": [cid]})
+    with pytest.raises(proof.LabError, match=cid):
+        lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert db.deletes() == []
+
+
+def test_reset_release_is_bound_on_the_live_lab(monkeypatch):
+    seen: list[str] = []
+
+    def reset(version: str) -> list[str]:
+        seen.append(version)
+        return []
+
+    monkeypatch.setattr(lab, "reset_release", reset)
+    assert _lab().reset_release("4.0.1") == []
+    assert seen == ["4.0.1"]
+
+
 # --- cost ---------------------------------------------------------------
 # The cost readers (box V8): deploy records with durations, company usage rows, the image rebuild timing and the Cloudflare limits re-read, over fakes. Nothing is queried, built or fetched.
 

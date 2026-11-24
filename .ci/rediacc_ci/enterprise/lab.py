@@ -76,6 +76,7 @@ SEAMS: dict[str, Seam] = {
     "S2": Seam("rediacc_ci.deploy.deploy_signer", "the regional signers and their binding"),
     "V1": Seam(__name__, "the caller-side signer probe"),
     "K2": Seam("rediacc_ci.release.rings_run", "the ring runner"),
+    "V5": Seam(__name__, "the release rehearsal reset"),
     "C2": Seam("rediacc_ci.enterprise.lifecycle", "list, update, suspend, export and remove"),
     "A1": Seam(__name__, "the owner mail a bench company captured"),
     "V3": Seam(__name__, "the www lookup entry reader"),
@@ -107,6 +108,7 @@ _GROUPS: dict[str, tuple[str, ...]] = {
         "turnstile_domains",
     ),
     "K2": ("target_version", "versions", "caller_version", "release"),
+    "V5": ("reset_release",),
     "V6": ("mint", "present"),
     "V7": (
         "container_app", "durable_object", "console_command", "egress_ips", "set_allowlist",
@@ -2531,6 +2533,48 @@ def request_from(
             % (method, path, start)
         )
     return answer.status
+
+
+# ==== box V5: the release rehearsal reset (`proof release`)
+#
+# `reset_release(version)` takes `version`'s progress out of every bench control database, so a rehearsal meets companies that have not taken it: the `rollout` rows of that version and its `ring-resmoke` audit rows, the two things of a version's progress the ring runner reads (`rings_run.read_world`). The proof rehearses the version edge runs, so without the reset a stop latched by an earlier rehearsal of the same version stops the next one before its planted failure (the 2026-11-24 `proof release --bench` run was stopped by the 2026-11-22 stop of `proof-ring-canary`), and a rehearsal that finished leaves nothing to stop. The `deploy-record` audit rows stay: `proof cost` reads them.
+#
+# Only proof companies: a row naming a company that is not a `proof-*` company of the bench control databases (or is in none of them) is a `LabError` naming its id, raised before anything is deleted, so the reset never rewrites the history of a company the lab did not create. Returns the ids whose rows were taken out.
+
+
+RESET_ROLLOUT_SQL = "SELECT DISTINCT company_id FROM rollout WHERE version = ?"
+RESET_DELETE_ROLLOUT_SQL = "DELETE FROM rollout WHERE version = ?"
+RESMOKE_ACTION = "ring-resmoke"
+RESET_DELETE_RESMOKE_SQL = (
+    "DELETE FROM audit WHERE action = ? AND json_extract(detail, '$.version') = ?"
+)
+
+
+def reset_release(
+    version: str,
+    *,
+    query: Query = d1_query,
+    companies: Companies = all_companies,
+) -> list[str]:
+    names = {str(r.get("id")): str(r.get("name") or "") for r in companies(BENCH)}
+    databases = sorted(registry.databases(BENCH).values())
+    held = {
+        database: {
+            str(r.get("company_id") or "") for r in query(database, RESET_ROLLOUT_SQL, [version])
+        }
+        for database in databases
+    }
+    ids = sorted(set().union(*held.values()))
+    foreign = [c for c in ids if not names.get(c, "").startswith(PROOF_COMPANY_PREFIX)]
+    if foreign:
+        raise proof.LabError(
+            "the rollout rows of %s name %s, not a proof company of the bench control databases; "
+            "the lab rewrites no other company's history" % (version, ", ".join(foreign))
+        )
+    for database in databases:
+        query(database, RESET_DELETE_ROLLOUT_SQL, [version])
+        query(database, RESET_DELETE_RESMOKE_SQL, [RESMOKE_ACTION, version])
+    return ids
 
 
 # ==== box V8: deploy records, usage, the image rebuild and the limits (`proof cost`)
