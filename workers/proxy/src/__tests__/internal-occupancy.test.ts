@@ -17,9 +17,9 @@ function issuer(verify: (credential: string) => Promise<boolean>): Service<Execu
 
 function capacity(count: () => unknown, calls: { n: number }): Env['EXECUTOR_CAPACITY'] {
   const stub = {
-    count: async () => {
+    count: () => {
       calls.n += 1;
-      return count();
+      return Promise.resolve(count());
     },
   };
   return {
@@ -66,7 +66,11 @@ describe('/v1/internal/occupancy', () => {
       ISSUER: issuer(async (credential) => credential === GOOD),
       EXECUTOR_CAPACITY: capacity(() => COUNT, calls),
     });
-    for (const headers of [{}, { 'x-rediacc-internal': 'forged' }, { 'x-rediacc-internal': '' }] as Array<Record<string, string>>) {
+    for (const headers of [
+      {},
+      { 'x-rediacc-internal': 'forged' },
+      { 'x-rediacc-internal': '' },
+    ] as Record<string, string>[]) {
       expect(await call(e, headers)).toEqual({ status: 404, text: 'Not Found' });
     }
     expect(calls.n).toBe(0);

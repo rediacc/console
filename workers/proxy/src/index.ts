@@ -265,6 +265,36 @@ async function viaOrgExecutor(
   return stub.fetch(request);
 }
 
+/** The routes that need no tenant token: health, readiness, and the account-only internal occupancy read. Undefined for any other path. */
+async function operationalRoute(
+  pathname: string,
+  request: Request,
+  env: Env,
+  span: RuntimeSpan | undefined
+): Promise<Response | undefined> {
+  if (pathname === '/v1/health') {
+    span?.setAttribute('rediacc.proxy.outcome', 'health');
+    return Response.json({ ok: true });
+  }
+  if (pathname === '/v1/ready') {
+    const answer = await readiness(env);
+    span?.setAttribute(
+      'rediacc.proxy.outcome',
+      answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
+    );
+    return Response.json(answer.body, { status: answer.status });
+  }
+  if (pathname === '/v1/internal/occupancy') {
+    const answered = await internalOccupancy(request, env);
+    span?.setAttribute(
+      'rediacc.proxy.outcome',
+      answered.status === 200 ? 'occupancy' : `occupancy:${answered.status}`
+    );
+    return answered;
+  }
+  return undefined;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -277,28 +307,8 @@ export default {
       return denied;
     }
 
-    if (url.pathname === '/v1/health') {
-      span?.setAttribute('rediacc.proxy.outcome', 'health');
-      return Response.json({ ok: true });
-    }
-
-    if (url.pathname === '/v1/ready') {
-      const answer = await readiness(env);
-      span?.setAttribute(
-        'rediacc.proxy.outcome',
-        answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
-      );
-      return Response.json(answer.body, { status: answer.status });
-    }
-
-    if (url.pathname === '/v1/internal/occupancy') {
-      const answered = await internalOccupancy(request, env);
-      span?.setAttribute(
-        'rediacc.proxy.outcome',
-        answered.status === 200 ? 'occupancy' : `occupancy:${answered.status}`
-      );
-      return answered;
-    }
+    const operational = await operationalRoute(url.pathname, request, env, span);
+    if (operational) return operational;
 
     const tenant = await resolveTenant(request, env);
     if ('reason' in tenant) {

@@ -198,7 +198,6 @@ describe('/v1/ready occupancy (D52, EH8)', () => {
     expect(counts).toBe(0);
   });
 
-
   it('answers not ready, instead of hanging, when the issuer probe or server-info stalls', async () => {
     vi.useFakeTimers();
     try {
