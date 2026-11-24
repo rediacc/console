@@ -42,6 +42,7 @@ Three changes the operator asked for together:
     (ticked) 2026-11-23T20:01:40Z by ace763dd: commit:3f47702097 landed; test_wl_writersnow + test_wl_stuckshell 32 passed rc=0, effort-table rc=0, always-tier rc=0
 - [x] WN4 [writer] Stuck shell-waiter: an agent waiting on a shell is STUCK after its final report or after 45 minutes of shell runtime; the `stuck-shell` check names agent, shell and both moves; the roster no longer counts it live. Accept: tests for (a) report-captured waiter -> STUCK, (b) 46-minute waiter -> STUCK, (c) 10-minute waiter with no report -> live (control); the 2026-11-23 a7f511c739e4aa739 shape reproduced as a fixture fires.
     (ticked) 2026-11-23T19:23:45Z by ace763dd: commit:490fbdbf06 landed; test_wl_stuckshell 9 passed rc=0 incl. the 2026-11-23 a7f511c739e4aa739 fixture, test-always-tier rc=0
-- [ ] WN5 [lead] One hour at effort high with no operator-typed /writers-now: the hook starts a round by itself and the round's survey lists at least one seed-sourced item. Accept: the two writers-now-rounds.jsonl rows and the seed line quoted here.
+- [x] WN5 [lead] One hour at effort high with no operator-typed /writers-now: the hook starts a round by itself and the round's survey lists at least one seed-sourced item. Accept: the two writers-now-rounds.jsonl rows and the seed line quoted here.
+    (ticked) 2026-11-24T06:10:51Z by ace763dd: commit:469a0be338 rounds b56c0387 at 2026-11-24T03:31:24Z (seed_count 123) and 736e74a8 at 2026-11-24T05:10:59Z (seed_count 64), the second started after the writers-now-due block fired with no operator-typed command; survey 1121-1-20261124T0510Z.md seed S1 CODE N1: reflow the three over-long strings of .ci/config/secret-supply.json (lines 483, 503, 523)
 
 ## Outcome

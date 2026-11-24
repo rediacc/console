@@ -669,7 +669,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |
-| `agent/plans/PLAN-writers-now-cadence.md` | approved | 47 | 1 | 4 | 7717 |
+| `agent/plans/PLAN-writers-now-cadence.md` | approved | 48 | 0 | 5 | 8121 |
 | `agent/plans/PLAN-www-bundle-determinism.md` | compacted | 38 | 0 | 0 | 2592 |
 | `agent/plans/PLAN-www-funnel-truthfulness.md` | proposed | 68 | 12 | 0 | 17392 |
 | `agent/plans/PLAN-zot-manifest-list-commit.md` | proposed | 69 | 8 | 1 | 11423 |

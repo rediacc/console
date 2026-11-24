@@ -4693,13 +4693,12 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 4,
-      "open_sigs": [
-        "4ee421d9"
-      ],
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
       "done_sigs": [
         "0b762e5b",
+        "4ee421d9",
         "6371c3a2",
         "bde91ce4",
         "c0044c0c"
