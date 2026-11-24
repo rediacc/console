@@ -972,6 +972,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",
+        "pytest:.ci/rediacc_ci/tests/test_onprem_suite_orphan.py",
         "pytest:.ci/rediacc_ci/tests/test_onprem_suite_writeback.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
