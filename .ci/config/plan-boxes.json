@@ -1175,23 +1175,23 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 12,
+      "open": 2,
+      "done": 14,
       "open_sigs": [
-        "29e1cfa4",
         "bfdbf3ea",
-        "c0384c17",
-        "cdd211d1"
+        "c0384c17"
       ],
       "done_sigs": [
         "000d2c8a",
         "17182281",
+        "29e1cfa4",
         "5f7091ef",
         "906ab12b",
         "932be950",
         "a52bc105",
         "a6495dca",
         "aa151661",
+        "cdd211d1",
         "d095dc6b",
         "d87a3213",
         "f042c83e",
@@ -1203,12 +1203,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 8,
+      "open": 2,
+      "done": 9,
       "open_sigs": [
         "70fb8afa",
-        "c0384c17",
-        "d4e548d5"
+        "c0384c17"
       ],
       "done_sigs": [
         "131deecd",
@@ -1217,6 +1216,7 @@
         "92222a65",
         "acade276",
         "d279e26a",
+        "d4e548d5",
         "f73618ef",
         "f99c01b1"
       ]
@@ -3516,11 +3516,10 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 1,
+      "open": 7,
+      "done": 2,
       "open_sigs": [
         "26e29ac5",
-        "3e83af32",
         "516df172",
         "795eb35a",
         "99480236",
@@ -3529,6 +3528,7 @@
         "c1822dd6"
       ],
       "done_sigs": [
+        "3e83af32",
         "b3c86ecb"
       ]
     },
