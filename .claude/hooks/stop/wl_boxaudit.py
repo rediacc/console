@@ -371,7 +371,11 @@ def audit(root, me, plan=None, *, reports=True):
     lease_shas = sorted({s for _rid, row in rep for s in row.commits})
     landed_of = PB.landed_map(root, lease_shas, rev="HEAD", since=base or None) or {}
     progress = PB.read_progress(root)
-    inv_rows = R.read_investigations(root)
+    # The latest investigation row per (plan, sig), indexed once: `R.investigation_for` scans every row, and asking it per box cost 943 scans of the whole ledger (0.66 s a stop under the profiler, 2026-11-24, PLAN-tooling-speed.md SP8). A later row overwrites an earlier one, so this is `investigation_for`'s "latest"; a row with an unhashable plan or sig can never equal a string key and is skipped.
+    inv_last: dict[Any, Any] = {}
+    for r in R.read_investigations(root):
+        with contextlib.suppress(TypeError):
+            inv_last[(r.get("plan"), r.get("sig"))] = r
     lp_rows = LP.verified_rows(root)
     out = []
     descends_memo: dict[tuple[str, str], bool] = {}
@@ -398,7 +402,7 @@ def audit(root, me, plan=None, *, reports=True):
         a.landed = _oldest_first(root, a.landed)
         a.cmap = PB.clause_map(root, rel, sig, progress)
         a.progress = PB.box_state(root, rel, sig, progress)
-        a.inv = R.investigation_for(root, rel, sig, inv_rows)
+        a.inv = inv_last.get((rel, sig))
         # A receipt proves the live half of the code that landed only when it was taken on that code: a VERIFIED row whose head does not descend from every landed commit of the box is an older receipt (7692f2db had 19 of them, all before its landed code).
         a.lp = [
             r
