@@ -508,6 +508,34 @@ export {
 } from './secrets-schema.js';
 
 // =============================================================================
+// Console (team recipes, PLAN-console-command-line.md D7)
+// =============================================================================
+
+/** Upper bound of one recipe body; a recipe is a short list of `rdc` lines, not a script store. */
+export const CONSOLE_RECIPE_BODY_MAX_CHARS = 16_384;
+
+/**
+ * One team recipe: `# description` lines, `$name = ...` declarations and one
+ * `rdc` line per step, parsed by `parseRecipe` (packages/shared/src/command-line/recipe.ts).
+ */
+export const ConsoleRecipeSchema = z.object({
+  description: z.string().max(200).optional(),
+  body: z.string().min(1, 'A recipe body cannot be empty').max(CONSOLE_RECIPE_BODY_MAX_CHARS),
+  updatedAt: z.iso.datetime(),
+});
+
+/**
+ * Console settings stored in the config. `recipes` is keyed by recipe name and
+ * field-committed as one value (sensitivity.ts '/console/recipes'), like
+ * `access`. `.loose()` keeps keys a newer client adds under `console`.
+ */
+export const ConsoleSchema = z
+  .object({
+    recipes: z.record(resourceName, ConsoleRecipeSchema).optional(),
+  })
+  .loose();
+
+// =============================================================================
 // Top-level RdcConfig v3
 // =============================================================================
 
@@ -532,6 +560,8 @@ export const RdcConfigSchema = z
      * Field-committed as one value (sensitivity.ts '/access'), like `policy`.
      */
     access: AccessSchema.optional(),
+    /** Console settings: the team's recipes (PLAN-console-command-line.md D7). */
+    console: ConsoleSchema.optional(),
     infra: InfraTopSchema.optional(),
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
@@ -584,6 +614,7 @@ type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
 type PreviewOverlay = z.infer<typeof PreviewOverlaySchema>;
 type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 type EncryptionState = z.infer<typeof EncryptionSchema>;
+type ConsoleRecipe = z.infer<typeof ConsoleRecipeSchema>;
 
 export type {
   AcmeCertCache,
@@ -593,6 +624,7 @@ export type {
   ClusterConfig,
   ClusterKvm,
   ClusterPool,
+  ConsoleRecipe,
   EncryptedBlob,
   EncryptionState,
   InfraConfig,
