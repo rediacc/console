@@ -13,7 +13,7 @@ import type {
   ContractPositional,
 } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
-import { isSensitiveKey } from '@rediacc/shared/telemetry';
+import { MASKED, maskParams } from '@rediacc/shared/cli-contract/mask';
 
 const REDACTED = '<redacted>';
 const MACHINE = '<machine>';
@@ -83,9 +83,14 @@ function optionMask(opt: ContractOption | undefined, sensitive: boolean): string
   return opt?.kinds?.includes('machine') ? MACHINE : undefined;
 }
 
-/** A known option answers from the contract; an unknown one fails closed on its name. */
-function isSensitiveOption(opt: ContractOption | undefined, name: string): boolean {
-  return opt ? opt.sensitive === true : isSensitiveKey(name.replace(/^-+/, ''));
+/** The shared masking rule decides: a known option answers from the contract, an unknown one fails closed on its name. */
+function isSensitiveOption(
+  cmd: ContractCommand | undefined,
+  opt: ContractOption | undefined,
+  name: string
+): boolean {
+  const key = opt?.long ?? name.replace(/^-+/, '');
+  return maskParams(cmd, { [key]: '' })[key] === MASKED;
 }
 
 /** Whether the token after an option is that option's value. */
@@ -139,7 +144,7 @@ function redactOption(
   const inline = token.startsWith('--') && token.includes('=');
   const name = inline ? token.slice(0, token.indexOf('=')) : token;
   const opt = findOption(cmd, name);
-  const sensitive = isSensitiveOption(opt, name);
+  const sensitive = isSensitiveOption(cmd, opt, name);
   const mask = optionMask(opt, sensitive);
   if (inline) return { emit: [mask ? `${name}=${mask}` : token], consumed: 1 };
   const next = argv[i + 1];
