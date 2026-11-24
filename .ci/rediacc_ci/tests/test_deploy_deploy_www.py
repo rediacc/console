@@ -987,3 +987,40 @@ def test_a_failed_preview_deploy_pushes_no_secret(tmp_path) -> None:
     proc, calls, _config = _run_live(root, "new", "--name", "pr-9", FAKE_NPX_FAIL_ON_CALL="5")
     assert proc.returncode != 0
     assert not any("secret put" in c for c in _calls(calls)), calls
+
+
+# ---- word-named previews (PLAN-preview-signer D5). Port only: the twin predates the names. ----
+
+
+def test_a_word_named_preview_keeps_its_pr_numbered_database(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", "pv-able-baker-charlie", PR_NUMBER="42")
+    assert proc.returncode == 0, proc.stderr
+    names = _calls(calls)
+    assert "npx --no-install wrangler d1 create account-pr-42 --location eeur" in names
+    assert "account-pv-" not in calls, "the database never takes the word name"
+
+
+def test_a_word_named_preview_without_a_pr_number_is_refused_before_any_call(tmp_path) -> None:
+    for label, extra in (("unset", {}), ("letters", {"PR_NUMBER": "4x"})):
+        root = fixture(tmp_path / label)
+        proc, calls, _config = _run_live(root, "new", "--name", "pv-able-baker-charlie", **extra)
+        assert proc.returncode == 1, label
+        assert "needs PR_NUMBER (digits)" in proc.stderr, label
+        assert _calls(calls) == [], label
+
+
+def test_a_signer_name_is_never_deployed_as_the_www_preview(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", "--name", "pv-able-baker-charlie-signer", PR_NUMBER="42"
+    )
+    assert proc.returncode == 1
+    assert "-signer name" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_the_old_pr_name_still_derives_its_database_from_the_name() -> None:
+    """The control: a pr-<n> name is the twin's lane and ignores PR_NUMBER."""
+    assert port.preview_db_name("pr-7", "") == ("account-pr-7", "")
+    assert port.preview_db_name("pr-7", "99") == ("account-pr-7", "")

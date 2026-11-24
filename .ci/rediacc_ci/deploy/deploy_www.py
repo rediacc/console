@@ -70,6 +70,11 @@ THREE FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL THREE ARE REPRODUCED
 None is repaired here. This wave's acceptance rule is agreement with the live twin; changing what a deploy creates is a cutover-box decision.
 
 -----------------------------------------------------------------------------
+A WORD-NAMED PREVIEW KEEPS ITS PR-NUMBERED DATABASE (PLAN-preview-signer D5)
+-----------------------------------------------------------------------------
+`--name pv-<w>-<w>-<w>` (the name `rediacc_ci.deploy.preview_name` derives) deploys that Worker, and its D1 is still `account-pr-<PR_NUMBER>`: the database is internal, and the seed, the PR-close cleanup and the housekeeping sweep find it by number. A word name without a digits-only `PR_NUMBER` is refused before any call, and so is a `-signer` name. No twin counterpart; every other name keeps the twin's behaviour above.
+
+-----------------------------------------------------------------------------
 THE UUID IS LOOKED UP TWICE AND THE SECOND LOOKUP IS THE LOAD-BEARING ONE
 -----------------------------------------------------------------------------
 The first `get_d1_uuid` only decides whether to delete. After `d1 create` the lookup runs again and an empty answer is fatal, which is the ONE place this script refuses on its own account rather than on a child's exit status. Every other failure path is a bare `set -e` on an unguarded `npx`.
@@ -95,7 +100,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common, wrangler
-from rediacc_ci.deploy import deploy_record
+from rediacc_ci.deploy import deploy_record, preview_name
 from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
 if typing.TYPE_CHECKING:
@@ -232,6 +237,20 @@ def db_name_for(worker_name: str) -> str:
     `removeprefix` IS the `#` expansion: it strips only when the prefix is present and leaves everything else alone. That is fact 3 in the module docstring, and it is why `--name staging` is accepted.
     """
     return DB_NAME_TEMPLATE % worker_name.removeprefix(NAME_PREFIX)
+
+
+def preview_db_name(worker_name: str, pr_number: str) -> tuple[str | None, str]:
+    """The D1 name for a preview Worker, or (None, refusal).
+
+    A word-named preview (`pv-<w>-<w>-<w>`) keeps the PR-numbered database `account-pr-<PR_NUMBER>`; any other name goes through `db_name_for`, as in the twin.
+    """
+    if not preview_name.is_preview_worker(worker_name):
+        return db_name_for(worker_name), ""
+    if worker_name.endswith("-signer"):
+        return None, "the www preview is never deployed under a -signer name"
+    if not pr_number.isascii() or not pr_number.isdigit():
+        return None, "a word-named preview needs PR_NUMBER (digits) for its account-pr-<n> database"
+    return DB_NAME_TEMPLATE % pr_number, ""
 
 
 def is_protected(db_name: str) -> bool:
@@ -444,7 +463,10 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
     """The `if [[ -n "${ARG_NAME:-}" ]]` arm (twin :60-141)."""
     log.step("Deploying preview worker: %s" % worker_name)
 
-    db_name = db_name_for(worker_name)
+    db_name, refusal = preview_db_name(worker_name, os.environ.get("PR_NUMBER", ""))
+    if db_name is None:
+        log.error(refusal)
+        return 1
     if is_protected(db_name):
         # UNREACHABLE (fact 1). Reproduced rather than dropped.
         log.error("CRITICAL: refusing to delete production/edge database: %s" % db_name)
