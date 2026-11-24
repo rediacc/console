@@ -295,8 +295,8 @@ class Scope:
     entries: set[str] = field(default_factory=set)
 
 
-# Tenant tables with one row per org and no subscription column: they move with the org, selected by `org_id`.
-ORG_KEYED = ("config_stores", "audit_compaction_state")
+# Tenant tables with no subscription column and an `org_id` column: they move with the org, selected by `org_id`.
+ORG_KEYED = ("config_stores", "audit_compaction_state", "console_runs", "console_command_history")
 
 
 def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:
