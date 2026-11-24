@@ -46,7 +46,7 @@
  * NAME-SHAPED SCOPE (PLAN-ciquick-cpu W2.4). A gate that declares `lists` or `names` reads tracked NAMES, not content (scripts/ci-runner/input-hash.ts), so it is scoped even with no `paths`, and a changed file matching nothing it declares can still move its input: an add under a listed directory. It is selected exactly when its `list`/`name` lines differ between the base and the judged state, built by the same `listLines`/`nameLines` input-hash.ts hashes with, from the two listings the change set supplies (`ChangeSet.listings`). A change set that cannot list either side selects every such gate and says so in the note: the fail-open direction, never a silent drop. `refs` does not scope a gate (a ref is not a tree read): a gate declaring only `refs` stays unscoped, and a path-scoped gate that declares `refs` is selected by any non-empty change set, since the commit a ref names may have moved with it.
  */
 import { isEntryPoint } from '../lib/entry-point.js';
-import { type LsEntry, listLines, matchGlob, nameLines } from './input-hash';
+import { GLOBAL_INPUTS, type LsEntry, listLines, matchGlob, nameLines } from './input-hash';
 
 /** The narrow shape `select()` needs. Structural, so `GateSpec` satisfies it. */
 export interface PathScopedSpec {
@@ -173,7 +173,7 @@ function nameShape(entries: readonly NameEntry[], s: PathScopedSpec): string {
  * a second thing to drift.
  *
  * THE FAIL-OPEN CLAUSE IS `spec.paths === undefined`, NOT `!spec.paths?.length`. An
- * entry that declares `paths: []` has said something -- "nothing selects me" -- and
+ * entry that declares `paths: []` has said something -- "nothing but the GLOBAL_INPUTS selects me" -- and
  * conflating that with saying nothing is how a typo becomes an exemption. Neither form
  * is in the lock today; the distinction is written down before one appears.
  */
@@ -198,10 +198,12 @@ export function selectChanged<T extends PathScopedSpec>(
     namesScoped(s) && (!listed || nameShape(before ?? [], s) !== nameShape(after ?? [], s));
   const byPaths = (s: PathScopedSpec): boolean =>
     s.paths !== undefined && changeSet.files.some((f) => matches(f, s.paths ?? []));
+  // THE GLOBAL INPUTS SELECT EVERY SCOPED GATE, because input-hash.ts hashes them into every scoped gate's inputs and path-trace.ts drops a read inside them for exactly that reason. Selection that honoured only `paths` dropped a gate the hash said was touched: after 9a66691457 traced check:ci-test-gate-wiring, its read of scripts/ci-runner/manifest.ts was dropped as global, and a manifest.ts change no longer selected the gate that judges manifest.ts (review 9a666914.1).
+  const globalTouched = changeSet.files.some((f) => matches(f, GLOBAL_INPUTS));
   // A ref may move with any change; it never scopes a gate, so it only widens one that paths or names already scope.
   const byRefs = (s: PathScopedSpec): boolean =>
     changeSet.files.length > 0 && arr(s.refs).length > 0;
-  const matched = scoped.filter((s) => byPaths(s) || nameMoved(s) || byRefs(s));
+  const matched = scoped.filter((s) => globalTouched || byPaths(s) || nameMoved(s) || byRefs(s));
   const nameMatched = named.filter(nameMoved).length;
   // Order is preserved from `specs` rather than concatenating the two buckets: the pool uses array index as a scheduling tiebreaker, so reordering here would change the run without changing the set.
   const keep = new Set<T>([...unscoped, ...matched]);
@@ -349,6 +351,15 @@ export function selectSelftest(matches: (file: string, globs: readonly string[])
   check(
     emptyRefused,
     'an empty change set is refused before any gate (refs-declaring ones included) is judged, so no refs gate is selected on empty input (65ac06bf.1)'
+  );
+  const global = pick(cs(['scripts/ci-runner/manifest.ts'], base));
+  check(
+    global.includes('g:paths') && global.includes('g:lists') && global.includes('g:names'),
+    `a change inside GLOBAL_INPUTS (which every scoped gate hashes) must select every scoped gate, its paths, lists and names alike, got ${global.join(',')} (review 9a666914.1)`
+  );
+  check(
+    !pick(cs(['scripts/gates/x.ts'], base)).includes('g:paths'),
+    "CONTROL: a change outside GLOBAL_INPUTS and outside a gate's paths still leaves that gate unselected"
   );
   const shape = selectChanged(specs, cs(['cfg/b.json'], [...base, ent('cfg/b.json')]), matches);
   check(
