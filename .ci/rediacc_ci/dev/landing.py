@@ -308,6 +308,13 @@ def _create(root, path, branch, seed):
         raise LandingRefusedError(message) from exc
 
 
+def _moved(stuck):
+    """What to tell the operator about the trees `_give_back` could not switch back."""
+    if not stuck:
+        return "nothing moved"
+    return "%s stays detached" % ", ".join(stuck)
+
+
 def _give_back(trees, branch):
     """Switch each of `trees` back to `branch` and return the trees where that failed (named, never silent)."""
     stuck = []
@@ -350,13 +357,15 @@ def _switch_over(root, path, branch, seed, next_name, today):
             spike.must(tree, "switch", "--quiet", "--detach")
             detached.append(tree)
     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
-        _give_back(detached, branch)
-        message = "the main checkout could not be detached, so nothing moved: %s" % exc
+        stuck = _give_back(detached, branch)
+        message = "the main checkout could not be detached, so %s: %s" % (_moved(stuck), exc)
         raise LandingRefusedError(message) from exc
     try:
         _create(root, path, branch, seed)
-    except LandingRefusedError:
-        _give_back([root, *subs], branch)
+    except LandingRefusedError as exc:
+        stuck = _give_back([root, *subs], branch)
+        if stuck:
+            raise LandingRefusedError("%s (%s)" % (exc, _moved(stuck))) from exc
         raise
     done = spike.git(root, "switch", "--quiet", "--no-track", "-c", cut, "refs/heads/%s" % branch)
     if done.returncode != 0:

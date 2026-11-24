@@ -312,6 +312,7 @@ def test_the_settings_file_is_ignored_when_it_is_the_first_dirty_row(two):
     )
     spike.write(target, '{"changed": true}\n')
     assert run_promote(two.main) == "gh pr ready 42"
+    assert target.read_text(encoding="utf-8") == '{"changed": true}\n'
 
 
 @pytest.mark.parametrize(
@@ -716,6 +717,16 @@ def test_gc_control_an_unbound_linked_tree_stays_rule_1(tmp_path):
     assert "landing: " not in row, done.stdout
 
 
+def test_a_hotfix_on_top_of_the_merge_is_judged_at_the_main_tip(two):
+    """Review e876c65d.1: merged is an ancestor of origin/main but not its tip, so the fix returns the tip; reverting `_release_sha` to `return merged` fails here."""
+    old_tip = spike.must(two.main, "rev-parse", "origin/main")
+    hotfix = commit(two.merger, "hotfix.txt", None, "hotfix on top of the merge")
+    spike.must(two.merger, "push", "-q", "origin", "main")
+    spike.must(two.main, "fetch", "-q", "origin")
+    assert hotfix != old_tip
+    assert promote_mod._release_sha(two.main, old_tip) == hotfix
+
+
 def test_the_release_is_judged_at_the_main_tip_when_it_contains_the_merge(two):
     """A hotfix on top of the merge: the merge's own release stays red, main's tip released green with it inside."""
     tip = spike.must(two.main, "rev-parse", "origin/main")
@@ -740,6 +751,33 @@ def test_record_paths_and_hook_ledgers_are_not_dirt():
     # Controls: an excepted record and a code file still count as dirt.
     assert not promote_mod._is_record("agent/worklist/epics.jsonl", globs)
     assert not promote_mod._is_record(".ci/rediacc_ci/dev/landing.py", globs)
+
+
+def test_dirty_judges_a_staged_rename_by_both_paths(two):
+    """Reviews 9188db83.1, 9188db83.2, 912adb6a.2: `_dirty` itself reads the policy file and judges both ends of a rename."""
+    policy_file = two.main / ".ci" / "policy" / "record-paths.json"
+    spike.write(policy_file, '{"records": [{"glob": "agent/x/*.txt"}]}\n')
+    spike.write(two.main / "agent" / "x" / "a.txt", "a\n")
+    kept = ["agent/x/a.txt", ".ci/policy/record-paths.json"]
+    spike.must(two.main, "add", "-f", "--", *kept)
+    spike.must(two.main, "commit", "--no-gpg-sign", "-qm", "record fixtures", "--", *kept)
+    # Both ends records: not dirt.
+    spike.must(two.main, "mv", "agent/x/a.txt", "agent/x/b.txt")
+    assert promote_mod._dirty(two.main) == []
+    spike.must(two.main, "mv", "agent/x/b.txt", "agent/x/a.txt")
+    # A tracked code file renamed onto a record path: the code file's deletion is dirt.
+    spike.must(two.main, "mv", "d1.txt", "agent/x/c.txt")
+    rows = promote_mod._dirty(two.main)
+    assert len(rows) == 1, rows
+    assert "d1.txt" in rows[0]
+
+
+def test_a_release_run_without_a_head_sha_does_not_count(two):
+    """Review f029cf99.2: a gh row that lacks headSha is not a run at the merged sha."""
+    gh = fake_gh(runs={"ci.yml": [{"headSha": None, **GREEN}]})
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"no .* run at the merged sha"):
+        run_promote(two.main, gh=gh)
+    untouched(two)
 
 
 def test_a_staged_rename_is_judged_by_its_new_path():

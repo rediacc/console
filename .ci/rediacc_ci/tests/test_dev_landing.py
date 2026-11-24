@@ -234,6 +234,37 @@ def test_failed_detach_gives_back_the_trees_already_detached(repo, monkeypatch):
     assert spike.out(repo / SUB, "symbolic-ref", "--short", "HEAD") == PR
 
 
+def test_failed_detach_names_a_tree_that_stayed_detached(repo, monkeypatch):
+    """Review f029cf99.1: when the give-back of an already detached submodule tree fails, the refusal names it instead of claiming nothing moved."""
+    git(repo, "switch", "-q", PR)
+    git(repo, "submodule", "update", "-q", "--init")
+    git(repo / SUB, "switch", "-q", "-c", PR)
+    real_must, real_git = spike.must, spike.git
+
+    def fake_must(cwd, *args):
+        if "--detach" in args and pathlib.Path(cwd) == repo:
+            message = "forced failure"
+            raise RuntimeError(message)
+        return real_must(cwd, *args)
+
+    def fake_git(cwd, *args):
+        if (
+            "--detach" not in args
+            and args[:2] == ("switch", "--quiet")
+            and pathlib.Path(cwd) == repo / SUB
+        ):
+            return subprocess.CompletedProcess(args, 1, "", "cannot switch back")
+        return real_git(cwd, *args)
+
+    monkeypatch.setattr(spike, "must", fake_must)
+    monkeypatch.setattr(spike, "git", fake_git)
+    with pytest.raises(landing.LandingRefusedError, match="stays detached") as caught:
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=Seeded(), next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+    assert str(repo / SUB) in str(caught.value)
+
+
 @pytest.mark.parametrize("where", ["main", "--detach"])
 def test_reuse_on_main_after_the_merge_names_promote(repo, where):
     # The landing tree may sit on main for a hotfix after the merge (PLAN-simple-two-tree-loop ruling 10); with no open PR the refusal names promote, not the missing PR.

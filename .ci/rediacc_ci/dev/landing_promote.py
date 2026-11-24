@@ -144,19 +144,26 @@ def _porcelain_path(line):
     return line.split(None, 1)[-1].split(" -> ")[-1]
 
 
+def _porcelain_paths(line):
+    """Every path a porcelain row touches: a rename (`R  old -> new`) deletes the old path and writes the new one, so both count."""
+    return line.split(None, 1)[-1].split(" -> ")
+
+
+def _exempt(path, globs):
+    return path in LOCAL_ONLY or _is_record(path, globs)
+
+
 def _dirty(tree):
     # Tracked changes only (operator ruling ASKED:2026-11-22T18:55Z): untracked files of other work always sit in the
     # main checkout, and git itself refuses a rebase or switch that would overwrite one, so none is lost.
     text = spike.must(tree, "status", "--porcelain", "--untracked-files=no")
-    # The path is the last field: spike.must strips the output, so the first porcelain line loses its
-    # leading status space and a fixed `line[3:]` slice would cut into the path.
+    # The paths come after the status token: spike.must strips the output, so the first porcelain line loses its
+    # leading status space and a fixed `line[3:]` slice would cut into the path. A row is dirt unless every path it names is exempt.
     globs = _record_globs(tree)
     return [
         line
         for line in text.splitlines()
-        if line
-        and _porcelain_path(line) not in LOCAL_ONLY
-        and not _is_record(_porcelain_path(line), globs)
+        if line and not all(_exempt(path, globs) for path in _porcelain_paths(line))
     ]
 
 
