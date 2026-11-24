@@ -3709,6 +3709,8 @@
         "notFirstUse": "Ce jeton n'est pas lié à l'adresse IP de sa première utilisation, il ne peut donc pas être transféré vers une autre. Vérifiez la liaison IP du jeton dans le portail web.",
         "nonInteractive": "Votre adresse IP a changé et cette connexion ne fonctionne que depuis l'ancienne. Pour la transférer ici, fournissez le code de votre application d'authentification : lancez n'importe quelle commande rdc dans un terminal interactif (par exemple `rdc subscription status`), ou définissez `REDIACC_IP_REBIND_CODE` sur le code actuel à 6 chiffres et relancez la commande. Ou lancez `rdc subscription login` pour vous reconnecter.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` doit contenir le code à 6 chiffres de votre application d'authentification.",
+        "codeCommandFailed": "Le programme de `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) n'a fourni aucun code d'authentification ({{detail}}) : cette connexion n'a donc pas pu être transférée vers la nouvelle adresse IP. Corrigez le programme, définissez `REDIACC_IP_REBIND_CODE` sur le code actuel à 6 chiffres, ou lancez `rdc subscription login` pour vous reconnecter.",
+        "codeCommandMalformed": "il a affiché autre chose qu'un code à 6 chiffres",
         "stillMismatched": "Le serveur de comptes voit toujours une autre adresse IP après le transfert. Votre connexion alterne peut-être entre plusieurs adresses (par exemple IPv4 et IPv6). Relancez la commande ou lancez `rdc subscription login`.",
         "attemptsExhausted": "Trois codes erronés d'affilée. Relancez la commande pour réessayer, ou lancez `rdc subscription login` pour vous reconnecter."
       }

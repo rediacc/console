@@ -3709,6 +3709,8 @@
         "notFirstUse": "Questo token non è legato all'indirizzo IP da cui è stato usato la prima volta, quindi non si può spostare su un altro. Controlla il vincolo IP del token nel portale web.",
         "nonInteractive": "Il tuo indirizzo IP è cambiato e questo accesso funziona solo da quello vecchio. Per spostarlo qui, fornisci il codice della tua app di autenticazione: esegui un qualsiasi comando rdc in un terminale interattivo (per esempio `rdc subscription status`), oppure imposta `REDIACC_IP_REBIND_CODE` sul codice attuale a 6 cifre ed esegui di nuovo il comando. Oppure esegui `rdc subscription login` per accedere di nuovo.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` deve essere il codice a 6 cifre della tua app di autenticazione.",
+        "codeCommandFailed": "Il programma in `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) non ha fornito alcun codice di autenticazione ({{detail}}), quindi non è stato possibile spostare questo accesso sul nuovo indirizzo IP. Correggi il programma, imposta `REDIACC_IP_REBIND_CODE` sul codice attuale a 6 cifre oppure esegui `rdc subscription login` per accedere di nuovo.",
+        "codeCommandMalformed": "ha stampato qualcosa di diverso da un codice a 6 cifre",
         "stillMismatched": "Dopo lo spostamento il server degli account vede ancora un indirizzo IP diverso. La tua connessione potrebbe alternare più indirizzi (per esempio IPv4 e IPv6). Esegui di nuovo il comando oppure esegui `rdc subscription login`.",
         "attemptsExhausted": "Tre codici errati di fila. Esegui di nuovo il comando per riprovare, oppure esegui `rdc subscription login` per accedere di nuovo."
       }

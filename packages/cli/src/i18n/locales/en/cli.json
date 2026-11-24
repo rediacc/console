@@ -3705,6 +3705,8 @@
         "notFirstUse": "This token is not tied to the IP address it was first used from, so it cannot be moved to a new one. Check the token's IP binding in the web portal.",
         "nonInteractive": "Your IP address changed, and this login only works from the old one. To move it here, enter the code from your authenticator app: run any Rediacc CLI command in an interactive terminal (for example `rdc subscription status`), or set `REDIACC_IP_REBIND_CODE` to the current 6-digit code and run the command again. Or run `rdc subscription login` to sign in again.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` must be the 6-digit code from your authenticator app.",
+        "codeCommandFailed": "The program in `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) did not supply an authenticator code ({{detail}}), so this login could not be moved to the new IP address. Fix the program, set `REDIACC_IP_REBIND_CODE` to the current 6-digit code, or run `rdc subscription login` to sign in again.",
+        "codeCommandMalformed": "it printed something other than a 6-digit code",
         "stillMismatched": "The account server still sees a different IP address after the move. Your connection may be switching between addresses (for example IPv4 and IPv6). Run the command again, or run `rdc subscription login`.",
         "attemptsExhausted": "Three wrong codes in a row. Run the command again to retry, or run `rdc subscription login` to sign in again."
       }

@@ -3709,6 +3709,8 @@
         "notFirstUse": "此令牌并未绑定到首次使用时的 IP 地址，因此无法迁移到其他地址。请在网页门户中检查该令牌的 IP 绑定设置。",
         "nonInteractive": "你的 IP 地址已变化，而此登录只能从原来的地址使用。要把它迁移到这里，请提供身份验证器应用中的验证码：在交互式终端中运行任意 rdc 命令（例如 `rdc subscription status`），或将 `REDIACC_IP_REBIND_CODE` 设为当前的 6 位验证码后重新运行命令。也可以运行 `rdc subscription login` 重新登录。",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` 必须是身份验证器应用中的 6 位验证码。",
+        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` 中的程序（{{command}}）没有给出验证码（{{detail}}），因此无法把此登录迁移到新的 IP 地址。请修复该程序，或将 `REDIACC_IP_REBIND_CODE` 设为当前的 6 位验证码，或运行 `rdc subscription login` 重新登录。",
+        "codeCommandMalformed": "它输出的不是 6 位验证码",
         "stillMismatched": "迁移之后，账户服务器看到的仍是另一个 IP 地址。你的连接可能在多个地址之间切换（例如 IPv4 和 IPv6）。请再次运行该命令，或运行 `rdc subscription login`。",
         "attemptsExhausted": "连续三次输入了错误的验证码。要重试，请再次运行该命令，或运行 `rdc subscription login` 重新登录。"
       }

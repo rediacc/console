@@ -3709,6 +3709,8 @@
         "notFirstUse": "See token ei ole seotud IP-aadressiga, kust seda esimest korda kasutati, seega ei saa seda teisele aadressile tõsta. Kontrolli tokeni IP-sidumist veebiportaalis.",
         "nonInteractive": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle siia tõstmiseks anna autentimisrakenduse kood: käivita interaktiivses terminalis mis tahes rdc käsk (näiteks `rdc subscription status`) või määra `REDIACC_IP_REBIND_CODE` väärtuseks praegune 6-kohaline kood ja käivita käsk uuesti. Või käivita uuesti sisselogimiseks `rdc subscription login`.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` peab olema autentimisrakenduse 6-kohaline kood.",
+        "codeCommandFailed": "Programm muutujas `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) ei andnud autentimiskoodi ({{detail}}), seega ei saanud seda sisselogimist uuele IP-aadressile tõsta. Paranda programm, määra `REDIACC_IP_REBIND_CODE` väärtuseks praegune 6-kohaline kood või käivita uuesti sisselogimiseks `rdc subscription login`.",
+        "codeCommandMalformed": "see väljastas midagi muud kui 6-kohalise koodi",
         "stillMismatched": "Kontoserver näeb pärast tõstmist endiselt teist IP-aadressi. Sinu ühendus võib vahetada aadresse (näiteks IPv4 ja IPv6 vahel). Käivita käsk uuesti või käivita `rdc subscription login`.",
         "attemptsExhausted": "Kolm valet koodi järjest. Uuesti proovimiseks käivita käsk uuesti või logi `rdc subscription login` abil uuesti sisse."
       }

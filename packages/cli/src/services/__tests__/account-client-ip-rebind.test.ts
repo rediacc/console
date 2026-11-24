@@ -7,6 +7,9 @@
  * makes is visible and a surplus one runs the queue dry (which fails loudly).
  */
 
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const STORED_TOKEN = 'rdc_stored_token';
@@ -380,5 +383,50 @@ describe('accountServerFetch TOKEN_IP_MISMATCH rebind', () => {
 
     expect(mockSuspendSpinner).toHaveBeenCalledTimes(1);
     expect(spinnerState.promptedInside).toEqual([true]);
+  });
+
+  describe('REDIACC_IP_REBIND_CODE_COMMAND', () => {
+    let dir: string;
+    let marker: string;
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'rdc-rebind-cmd-'));
+      marker = join(dir, 'ran-with');
+      const program = join(dir, 'code.sh');
+      writeFileSync(program, `#!/bin/sh\nprintf '%s' "$1" > '${marker}'\necho 654321\n`);
+      chmodSync(program, 0o755);
+      process.env.REDIACC_IP_REBIND_CODE_COMMAND = program;
+      delete process.env.REDIACC_IP_REBIND_CODE;
+      setTty(false, false);
+    });
+
+    afterEach(() => {
+      delete process.env.REDIACC_IP_REBIND_CODE_COMMAND;
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('rebind required: runs the program once with the config name, moves the token, replays the request', async () => {
+      queue(DATA_PATH, mismatch(), ok('after'));
+      queue(API_TOKEN_IP_REBIND_PATH, moved('203.0.113.11'));
+
+      const result = await accountServerFetch<{ value: string }>(DATA_PATH);
+
+      expect(result).toEqual({ value: 'after' });
+      expect(sent).toHaveLength(3);
+      expect(rebindCalls().map((r) => r.body)).toEqual([{ code: '654321' }]);
+      expect(readFileSync(marker, 'utf8')).toBe('rediacc');
+      expect(mockAskInput).not.toHaveBeenCalled();
+      expect(stderrText()).toContain('203.0.113.11');
+      expect(stderrText()).not.toContain('654321');
+    });
+
+    it('no rebind needed (control): the program never runs', async () => {
+      queue(DATA_PATH, ok('direct'));
+
+      await expect(accountServerFetch(DATA_PATH)).resolves.toEqual({ value: 'direct' });
+
+      expect(sent).toHaveLength(1);
+      expect(existsSync(marker)).toBe(false);
+    });
   });
 });

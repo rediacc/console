@@ -3709,6 +3709,8 @@
         "notFirstUse": "Dieses Token ist nicht an die IP-Adresse seiner ersten Verwendung gebunden und lässt sich daher nicht auf eine neue übertragen. Prüfen Sie die IP-Bindung des Tokens im Webportal.",
         "nonInteractive": "Ihre IP-Adresse hat sich geändert, und diese Anmeldung gilt nur für die alte. Um sie hierher zu übertragen, geben Sie den Code aus Ihrer Authenticator-App an: Führen Sie einen beliebigen rdc-Befehl in einem interaktiven Terminal aus (zum Beispiel `rdc subscription status`), oder setzen Sie `REDIACC_IP_REBIND_CODE` auf den aktuellen 6-stelligen Code und führen Sie den Befehl erneut aus. Oder melden Sie sich mit `rdc subscription login` neu an.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` muss der 6-stellige Code aus Ihrer Authenticator-App sein.",
+        "codeCommandFailed": "Das Programm in `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) hat keinen Authenticator-Code geliefert ({{detail}}), daher konnte diese Anmeldung nicht auf die neue IP-Adresse übertragen werden. Korrigieren Sie das Programm, setzen Sie `REDIACC_IP_REBIND_CODE` auf den aktuellen 6-stelligen Code, oder melden Sie sich mit `rdc subscription login` neu an.",
+        "codeCommandMalformed": "es hat etwas anderes als einen 6-stelligen Code ausgegeben",
         "stillMismatched": "Der Kontoserver sieht nach der Übertragung weiterhin eine andere IP-Adresse. Ihre Verbindung wechselt möglicherweise zwischen Adressen (zum Beispiel IPv4 und IPv6). Führen Sie den Befehl erneut aus oder führen Sie `rdc subscription login` aus.",
         "attemptsExhausted": "Dreimal hintereinander ein falscher Code. Führen Sie den Befehl erneut aus, oder melden Sie sich mit `rdc subscription login` neu an."
       }
