@@ -274,7 +274,7 @@ SES_REGION_KEY = "AWS_SES_REGION"
 def step_env_names(suffix: str) -> tuple[str, ...]:
     """Every environment name the secrets step reads for a region whose `secretSuffix` is `suffix`, each one required non-empty.
 
-    The minters' credentials (`CF_MANAGEMENT_TOKEN` for the bucket token, the aws CLI's `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, bound from the IAM admin pair, for the SES user), the wrangler push's `CLOUDFLARE_API_TOKEN`, `AWS_SES_FROM` (optional on the Worker, but its domain scopes the SES user's policy), and every required SHARED key under the name the environment carries it: the OTLP credential as `OBS_OTLP_CREDENTIALS_<SUFFIX>`. `AWS_SES_REGION` is absent because it comes from regions.json, and `AWS_SES_CONFIGURATION_SET` because it is optional everywhere.
+    The minters' credentials (`CF_MANAGEMENT_TOKEN` for the bucket token, the aws CLI's `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, bound from the ops pair `AWS_OPS_ACCESS_KEY_ID` and `AWS_OPS_SECRET_ACCESS_KEY` (IAM user rediacc-ops-automation), for the SES user), the wrangler push's `CLOUDFLARE_API_TOKEN`, `AWS_SES_FROM` (optional on the Worker, but its domain scopes the SES user's policy), and every required SHARED key under the name the environment carries it: the OTLP credential as `OBS_OTLP_CREDENTIALS_<SUFFIX>`. `AWS_SES_REGION` is absent because it comes from regions.json, and `AWS_SES_CONFIGURATION_SET` because it is optional everywhere.
     """
     shared = [
         "%s_%s" % (OTLP_KEY, suffix) if k == OTLP_KEY else k
@@ -716,8 +716,14 @@ class CloudflareMinter:
 Aws = Callable[[list[str]], tuple[int, str]]
 
 
+# The managed policy every `rediacc-ses-*` user carries as its permissions boundary: SES send only. The ops IAM user that runs this minter (rediacc-ops-automation, bound by the enterprise-mint profile) may create such a user or put its inline policy ONLY with this boundary attached (an `iam:PermissionsBoundary` condition), so the key cannot mint a user stronger than SES send.
+SES_BOUNDARY_POLICY = "policy/rediacc/rediacc-ses-send-boundary"
+
+
 class IamMinter:
     """Creates a send-only IAM user on the shared SES sender. `aws(argv) -> (rc, stdout)`; no secret is ever an argument, and the secret key arrives on stdout.
+
+    A new user is created with the `SES_BOUNDARY_POLICY` permissions boundary, whose ARN takes the account id from `aws sts get-caller-identity` (a call that needs no permission); the ops key's policy refuses a `create-user` without it.
 
     Resumable: a user an earlier run created is reused, the policy put is an overwrite, and every access key the user already holds is deleted before the new one is created. `provision` calls `ses_user` only when the store holds no SES pair, so any such key is one the store never received: its secret is lost, and leaving it live would leave an unrecoverable credential behind (and IAM's two-key limit would block the mint).
     """
@@ -748,8 +754,20 @@ class IamMinter:
     def _call(self, argv: list[str]) -> str:
         rc, out = self._aws(argv)
         if rc != 0:
-            raise SecretsError("aws iam %s exited %d; its output is withheld" % (argv[2], rc))
+            raise SecretsError(
+                "aws %s %s exited %d; its output is withheld" % (argv[1], argv[2], rc)
+            )
         return out
+
+    def boundary_arn(self) -> str:
+        out = self._call([awscli.AWS, "sts", "get-caller-identity", "--output", "json"])
+        try:
+            account = str(json.loads(out)["Account"])
+        except (ValueError, KeyError, TypeError):
+            account = ""
+        if not account.isdigit():
+            raise SecretsError("aws sts get-caller-identity answered an unexpected shape")
+        return "arn:aws:iam::%s:%s" % (account, SES_BOUNDARY_POLICY)
 
     def _exists(self, user: list[str]) -> bool:
         rc, _out = self._aws([awscli.AWS, "iam", "get-user", *user, "--output", "json"])
@@ -768,7 +786,10 @@ class IamMinter:
     def ses_user(self, user_name: str) -> tuple[str, str]:
         user = ["--user-name", user_name]
         if not self._exists(user):
-            rc, _out = self._aws([awscli.AWS, "iam", "create-user", *user])
+            boundary = self.boundary_arn()
+            rc, _out = self._aws(
+                [awscli.AWS, "iam", "create-user", *user, "--permissions-boundary", boundary]
+            )
             if rc != 0:
                 # `get-user` exits non-zero for AccessDenied and throttling as well as NoSuchEntity, and stderr is dropped, so a user that exists reaches this create. Raised outside any except block, so the error carries no context.
                 raise SecretsError(

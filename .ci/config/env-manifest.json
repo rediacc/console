@@ -146,6 +146,8 @@
       "AWS_ACCESS_KEY_ID",
       "AWS_IAM_ADMIN_ACCESS_KEY_ID",
       "AWS_IAM_ADMIN_SECRET_ACCESS_KEY",
+      "AWS_OPS_ACCESS_KEY_ID",
+      "AWS_OPS_SECRET_ACCESS_KEY",
       "AWS_SECRET_ACCESS_KEY",
       "AWS_SES_ACCESS_KEY_ID",
       "AWS_SES_ACCESS_KEY_ID_ASIA",
@@ -4042,6 +4044,9 @@
         "WORKLIST_PROOFCHECK_MAX_FIRES",
         "WORKLIST_PROOFCHECK_TTL_MIN"
       ],
+      ".claude/hooks/stop/wl_prscope.py": [
+        "TMPDIR"
+      ],
       ".claude/hooks/stop/wl_reggate.py": [
         "WORKLIST_REGGATE_CAP",
         "WORKLIST_REGGATE_DEBT_GRACE_MIN",
@@ -4091,6 +4096,9 @@
       ],
       ".claude/hooks/stop/wl_snapshot.py": [
         "WORKLIST_DEAD_HOURS"
+      ],
+      ".claude/hooks/stop/wl_stack.py": [
+        "TMPDIR"
       ],
       ".claude/hooks/stop/wl_store.py": [
         "WORKLIST_AGENT_ADOPT_MAX_MIN",

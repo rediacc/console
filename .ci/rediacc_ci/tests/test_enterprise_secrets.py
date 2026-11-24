@@ -726,6 +726,7 @@ def test_iam_minter_creates_a_send_only_user_with_no_secret_in_argv():
     verbs = [c[2] for c in calls]
     assert verbs == [
         "get-user",
+        "get-caller-identity",
         "create-user",
         "put-user-policy",
         "list-access-keys",
@@ -733,6 +734,10 @@ def test_iam_minter_creates_a_send_only_user_with_no_secret_in_argv():
     ]
     for argv in calls:
         assert "iam-secret-VALUE" not in "\0".join(argv)
+    create = calls[verbs.index("create-user")]
+    assert create[create.index("--permissions-boundary") + 1] == (
+        "arn:aws:iam::%s:policy/rediacc/rediacc-ses-send-boundary" % FakeIam.ACCOUNT
+    )
     put = calls[verbs.index("put-user-policy")]
     policy = json.loads(put[put.index("--policy-document") + 1])
     stmt = policy["Statement"][0]
@@ -795,7 +800,9 @@ def test_a_failing_seam_leaves_no_cause_no_context_and_no_value_in_the_traceback
 
 
 class FakeIam:
-    """A stateful `aws iam` transport: users and their access keys survive between runs."""
+    """A stateful `aws iam` transport: users and their access keys survive between runs. `aws sts get-caller-identity` answers ACCOUNT."""
+
+    ACCOUNT = "123456789012"
 
     def __init__(self, fail_verb=None):
         self.users: dict[str, list[str]] = {}
@@ -806,14 +813,19 @@ class FakeIam:
     def __call__(self, args):
         self.calls.append(list(args))
         verb = args[2]
-        user = args[args.index("--user-name") + 1]
         if verb == self.fail_verb:
             return 254, "boom"
+        if args[1] == "sts" and verb == "get-caller-identity":
+            return 0, json.dumps(
+                {"Account": self.ACCOUNT, "Arn": "arn:aws:iam::%s:user/x" % self.ACCOUNT}
+            )
+        user = args[args.index("--user-name") + 1]
         if verb == "get-user":
             if user not in self.users:
                 return 254, "NoSuchEntity"
             return 0, json.dumps({"User": {"UserName": user}})
         if verb == "create-user":
+            assert "--permissions-boundary" in args, "a rediacc-ses-* user is created bounded"
             if user in self.users:
                 return 254, "EntityAlreadyExists"
             self.users[user] = []
@@ -969,6 +981,19 @@ def test_a_malformed_otlp_value_mints_and_writes_nothing(otlp):
     assert minter.r2_calls == []
     assert minter.ses_calls == []
     assert push.calls == []
+
+
+def test_iam_minter_refuses_an_unexpected_caller_identity_before_create_user():
+    iam = FakeIam()
+
+    def aws(args):
+        if args[1] == "sts":
+            return 0, json.dumps({"Arn": "no-account"})
+        return iam(args)
+
+    with pytest.raises(es.SecretsError, match="get-caller-identity"):
+        es.IamMinter(aws=aws, ses_region="eu-central-1", from_domain="d").ses_user("rediacc-ses-x")
+    assert "create-user" not in [c[2] for c in iam.calls]
 
 
 def test_iam_minter_names_the_get_user_ambiguity_when_create_user_fails():
