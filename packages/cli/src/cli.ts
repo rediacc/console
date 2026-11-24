@@ -67,6 +67,7 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
+import { enforceProxiedAgentCommand } from './utils/command-policy.js';
 import { getOutputFormat, handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
@@ -312,6 +313,8 @@ export function createCli(): Command {
         const commandPath = commandPathOf(actionCommand);
         const entry = getCommand(commandPath);
         assertProxyCapable(commandPath, entry?.proxyCapable ?? false, entry?.proxyBlockedReason);
+        // The executor cannot tell an agent from a human, so the agent's opt-in is judged here, before the request leaves (PLAN-rmcp-decide.md D22).
+        if (entry) await enforceProxiedAgentCommand(commandPath, entry, actionCommand);
 
         // Never returns: it ends the process with the executor's exit code.
         await runCommandThroughProxy(commandPath, actionCommand, {

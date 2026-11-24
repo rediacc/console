@@ -5,11 +5,20 @@
  * This module provides the runtime enforcement and typed path constants.
  */
 import path from 'node:path';
+import type { ContractCommand } from '@rediacc/shared/cli-contract';
+import type { DecisionCommand } from '@rediacc/shared/policy';
+import type { Command } from 'commander';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditLog } from '../services/core/audit-log.js';
+import { paramsFromCommand, positionalsFromCommand } from '../services/executor/proxy-command.js';
+import { DecisionError, enforce } from '../services/policy/enforce.js';
+import { readEnvOverrides } from '../services/policy/overrides-env.js';
+import type { TargetRef } from '../services/policy/target.js';
+import { ERROR_CODES } from '../types/errors.js';
 import { isAgentEnvironment } from './agent-guard.js';
+import { CliExitError } from './cli-exit-error.js';
 import { isClusterAllowedByEnv } from './cluster-env.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
@@ -283,6 +292,74 @@ export async function assertOrphanDeletePolicy(
   if (!policy?.grandGuard || isFork) return;
   if (await isOpsVmMachine(machineName)) return;
   enforceGrandGuard(guid);
+}
+
+/** A positional or flag value as the name it carries, or undefined. */
+function refValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+/** The bound value of a positional or option named by the contract, or undefined. */
+function boundValue(bag: Record<string, unknown>, name: string | null): string | undefined {
+  return name ? refValue(bag[name]) : undefined;
+}
+
+/** The repo ref and machine an action names, through the contract's positional or flag binding. */
+function proxiedTarget(entry: ContractCommand, actionCommand: Command): TargetRef {
+  const params = paramsFromCommand(entry, actionCommand);
+  const positionals = positionalsFromCommand(entry, actionCommand);
+  const ref = boundValue(positionals, entry.repoPositional) ?? boundValue(params, entry.repoOption);
+  const machine =
+    boundValue(positionals, entry.machinePositional) ?? boundValue(params, entry.machineOption);
+  return { ...(ref ? { ref } : {}), ...(machine ? { machine } : {}) };
+}
+
+/** The contract fields `decide` reads. */
+function decisionCommandOf(commandPath: string, entry: ContractCommand): DecisionCommand {
+  return {
+    pathKey: commandPath,
+    destructive: entry.destructive === true,
+    grandGuard: entry.grandGuard === true,
+    forkBlocked: entry.forkBlocked === true,
+    agentBlocked: entry.agentBlocked === true,
+  };
+}
+
+/**
+ * The agent half of a command sent through `--proxy`, judged on this side of the wire
+ * (agent/plans/PLAN-rmcp-decide.md D22).
+ *
+ * The executor sees the caller's account, never whether an agent typed the command, so it cannot
+ * ask for the opt-in a human set; this step does, before the request leaves. The decision is
+ * `decide`'s, through `enforce`, with the ceiling left open (no policy, owner): the executor
+ * judges the real policy with the real principal, so this step adds only the agent rules. The
+ * target resolves through the one resolver against the local config; a proxy client usually holds
+ * none, so the ref is `unresolved` and counts as grand, and a command that names no repo is judged
+ * as one that lands on a grand. A human caller is not judged here.
+ *
+ * @throws CliExitError carrying the decision code for any verdict but `allow`
+ */
+export async function enforceProxiedAgentCommand(
+  commandPath: string,
+  entry: ContractCommand,
+  actionCommand: Command
+): Promise<void> {
+  if (!isAgentEnvironment()) return;
+  try {
+    await enforce({
+      principal: { kind: 'agent', userEmail: '', orgRole: 'owner' },
+      command: decisionCommandOf(commandPath, entry),
+      target: proxiedTarget(entry, actionCommand),
+      policy: null,
+      overrides: readEnvOverrides(),
+    });
+  } catch (error) {
+    if (!(error instanceof DecisionError)) throw error;
+    const { code, reason, next } = error.decision;
+    throw new CliExitError(ERROR_CODES.VALIDATION_ERROR, reason, {
+      details: [code, ...(next?.run ? [next.run] : [])],
+    });
+  }
 }
 
 /**
