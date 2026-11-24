@@ -9,7 +9,7 @@
     ["no path", {"tool_name": "Write", "tool_input": {"content": ""}}]
   ],
   "CASES": [
-    {"//": "Review 7359200f.1: blank over a file that is already blank changes nothing."},
+    {"//": "Review 7359200f.1: a Write that names no path is not refused (no file, so nothing is blanked)."},
     ["no path", {"tool_name": "Write", "tool_input": {"content": ""}}, false]
   ]
 }

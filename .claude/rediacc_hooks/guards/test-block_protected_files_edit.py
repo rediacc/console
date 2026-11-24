@@ -7,8 +7,6 @@ Both directions, because a one-sided control is satisfiable by a broken hook: on
 """
 
 import atexit
-import importlib
-import importlib.util
 import pathlib
 import shutil
 import subprocess
@@ -22,13 +20,6 @@ from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_review_file_edit.py uses).
-_SYSPATH = importlib.util.spec_from_file_location(
-    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
-)
-if _SYSPATH is None or _SYSPATH.loader is None:
-    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
-_syspath = importlib.util.module_from_spec(_SYSPATH)
-_SYSPATH.loader.exec_module(_syspath)
 STEM = "block_protected_files_edit"
 NEEDLE = "protected hook file"
 

@@ -8,8 +8,6 @@ The Edit, MultiEdit and copy cases need a file on disk, so every case runs again
     test-block_user_only_command.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
-import importlib
-import importlib.util
 import json
 import pathlib
 import subprocess
@@ -22,13 +20,6 @@ from rediacc_hooks.guards import _edit_suite
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
-_SYSPATH = importlib.util.spec_from_file_location(
-    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
-)
-if _SYSPATH is None or _SYSPATH.loader is None:
-    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
-_syspath = importlib.util.module_from_spec(_SYSPATH)
-_SYSPATH.loader.exec_module(_syspath)
 NEEDLE = "a user-only command is an operator decision: the operator edits it with !"
 
 K = "disable-model-invocation"

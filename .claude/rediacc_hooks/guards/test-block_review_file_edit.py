@@ -7,8 +7,6 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
 """
 
 import atexit
-import importlib
-import importlib.util
 import pathlib
 import shutil
 import subprocess
@@ -22,13 +20,6 @@ from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
-_SYSPATH = importlib.util.spec_from_file_location(
-    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
-)
-if _SYSPATH is None or _SYSPATH.loader is None:
-    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
-_syspath = importlib.util.module_from_spec(_SYSPATH)
-_SYSPATH.loader.exec_module(_syspath)
 R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
 L = "agent/reviews/1231-9/clean.jsonl"
