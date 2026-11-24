@@ -399,6 +399,11 @@
       "scripts/lib/submodule-presence.ts",
       "tsconfig.json"
     ],
+    "lists": [
+      "scripts",
+      "scripts/gates",
+      "scripts/lib"
+    ],
     "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-translation-completeness.ts"
@@ -1037,14 +1042,11 @@
       "packages/locales/package.json",
       "packages/provisioning/package.json",
       "packages/shared/package.json",
+      "packages/shared/src/auth/**/*.ts",
+      "packages/shared/src/auth/*.ts",
       "packages/shared/src/backup/duration.ts",
-      "packages/shared/src/cli-contract/core.ts",
-      "packages/shared/src/cli-contract/data/contract.generated.ts",
-      "packages/shared/src/cli-contract/discovery.ts",
-      "packages/shared/src/cli-contract/i18n.ts",
-      "packages/shared/src/cli-contract/index.ts",
-      "packages/shared/src/cli-contract/load.ts",
-      "packages/shared/src/cli-contract/validation.ts",
+      "packages/shared/src/cli-contract/**/*.ts",
+      "packages/shared/src/cli-contract/*.ts",
       "packages/shared/src/config-crypto/**/*.ts",
       "packages/shared/src/config-crypto/*.ts",
       "packages/shared/src/config-schema/access.ts",
@@ -1083,6 +1085,7 @@
       "packages/shared/src/subscription/renewal-manifest.ts",
       "packages/shared/src/subscription/signing-keys.ts",
       "packages/shared/src/subscription/validation.ts",
+      "packages/shared/src/telemetry/utils.ts",
       "packages/shared/src/validation/cidr.ts",
       "packages/shared/tsconfig.json",
       "packages/www/package.json",
@@ -3740,10 +3743,19 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.control_vacuity",
     "gate": true,
     "paths": [
-      ".ci/scripts/quality/**",
-      ".ci/rediacc_ci/quality/control_vacuity.py"
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/**",
+      ".ci/scripts/**"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/control_vacuity.py"
     ],
@@ -3759,11 +3771,23 @@
     "run": "npm run check:ci-devcontainer-scripts",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/devcontainer_scripts.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".devcontainer/**",
-      ".ci/scripts/quality/check_devcontainer_scripts.py",
-      ".ci/rediacc_ci/quality/devcontainer_scripts.py"
+      ".npmrc",
+      "package.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/devcontainer_scripts.py"
     ],
@@ -3778,12 +3802,6 @@
     "id": "check:ci-shell-size",
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.shell_size",
     "gate": true,
-    "paths": [
-      "**/*.sh",
-      ".ci/scripts/quality/check_shell_size.py",
-      ".ci/rediacc_ci/quality/shell_size.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/shell_size.py"
     ],
@@ -3799,11 +3817,21 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.devbox_exec",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
       ".ci/rediacc_ci/core/devbox.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
       ".ci/rediacc_ci/quality/devbox_exec.py",
-      ".ci/scripts/quality/check_devbox_exec.py"
+      ".ci/rediacc_ci/quality/gate_args.py"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/devbox_exec.py"
     ],
@@ -3819,15 +3847,59 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_pins",
     "gate": true,
     "paths": [
+      ".ci/bootstrap.sh",
+      ".ci/breakpoint/**/*.sh",
+      ".ci/breakpoint/*.sh",
+      ".ci/config/constants.sh",
+      ".ci/config/well-known.generated.sh",
+      ".ci/docker/run-in-tts.sh",
+      ".ci/docker/service/env.sh",
+      ".ci/docker/web/entrypoint.sh",
+      ".ci/media/**/*.sh",
+      ".ci/media/*.sh",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/quality/toolchain_pins.py",
+      ".ci/scripts/deploy/upload-media-to-r2.sh",
+      ".ci/scripts/infra/ci-pull-images.sh",
+      ".ci/scripts/infra/ci-start-elite.sh",
+      ".ci/scripts/infra/ci-stop-elite.sh",
+      ".ci/scripts/lib/toolchain.sh",
+      ".ci/scripts/test/**",
+      ".ci/tutorials/**/*.sh",
+      ".ci/tutorials/*.sh",
+      ".devcontainer/**",
+      ".github/**/*.yml",
+      ".github/*.yml",
+      ".gitignore",
+      "run.sh"
+    ],
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality",
+      ".ci/scripts",
+      ".ci/scripts/quality",
+      ".ci/scripts/quality/lib",
+      ".ci/scripts/security",
+      ".github/workflows"
+    ],
+    "names": [
+      ".ci/**/*.sh",
+      ".ci/*.sh",
+      ".ci/scripts/quality/**",
+      ".ci/scripts/security/**",
+      ".devcontainer/*",
       ".devcontainer/**",
       ".github/workflows/**",
-      ".ci/scripts/**",
-      ".ci/**/*.sh",
-      ".ci/config/constants.sh",
-      "run.sh",
-      ".ci/rediacc_ci/quality/*.py"
+      ".github/workflows/*.yml",
+      "run.sh"
     ],
-    "pathsOrigin": "declared",
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/toolchain_pins.py"
     ],
@@ -3843,14 +3915,23 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.toolchain_env_dockerfile_sync",
     "gate": true,
     "paths": [
-      ".devcontainer/toolchain.env",
-      ".devcontainer/Dockerfile",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py",
-      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py",
+      ".devcontainer/Dockerfile",
       "package.json",
       "packages/cli/package.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py"
     ],
@@ -3866,12 +3947,23 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.host_toolchain_coverage",
     "gate": true,
     "paths": [
-      ".ci/rediacc_ci/quality/toolchain_pins.py",
-      ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/host_toolchain_coverage.py",
-      ".ci/scripts/quality/check_host_toolchain_coverage.py"
+      ".ci/rediacc_ci/quality/toolchain_pins.py",
+      ".claude/rediacc_hooks/guards/block_host_toolchain_run.py"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/host_toolchain_coverage.py"
     ],
@@ -3887,12 +3979,32 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.git_op_conditionals",
     "gate": true,
     "paths": [
-      ".claude/hooks/**/*.sh",
-      ".ci/scripts/quality/*.py",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/git_op_conditionals.py",
-      ".claude/rediacc_hooks/**/*.py"
+      ".ci/scripts/**",
+      ".claude/**",
+      ".gitignore"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "names": [
+      ".ci/scripts/quality/**",
+      ".ci/scripts/quality/**/*.py",
+      ".ci/scripts/quality/*.py",
+      ".claude/hooks/**",
+      ".claude/rediacc_hooks/**/*.py",
+      ".claude/rediacc_hooks/*.py"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/git_op_conditionals.py"
     ],
@@ -3908,10 +4020,46 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.go_tool_path",
     "gate": true,
     "paths": [
-      ".ci/**",
-      "scripts/**"
+      ".ci/bootstrap.sh",
+      ".ci/breakpoint/**/*.sh",
+      ".ci/breakpoint/*.sh",
+      ".ci/config/constants.sh",
+      ".ci/config/well-known.generated.sh",
+      ".ci/docker/run-in-tts.sh",
+      ".ci/docker/service/env.sh",
+      ".ci/docker/web/entrypoint.sh",
+      ".ci/media/**/*.sh",
+      ".ci/media/*.sh",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/quality/go_tool_path.py",
+      ".ci/scripts/deploy/upload-media-to-r2.sh",
+      ".ci/scripts/infra/ci-pull-images.sh",
+      ".ci/scripts/infra/ci-start-elite.sh",
+      ".ci/scripts/infra/ci-stop-elite.sh",
+      ".ci/scripts/lib/toolchain.sh",
+      ".ci/scripts/test/**",
+      ".ci/tutorials/**/*.sh",
+      ".ci/tutorials/*.sh",
+      "scripts/ops/rebind-code.sh",
+      "scripts/pre-commit-check.sh"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "names": [
+      ".ci/**/*.sh",
+      ".ci/*.sh",
+      "scripts/**/*.sh",
+      "scripts/*.sh"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/go_tool_path.py"
     ],
@@ -3927,15 +4075,45 @@
     "run": "npm run check:ci-gate-prerequisites",
     "gate": true,
     "paths": [
-      ".github/workflows/**",
+      ".ci/bootstrap.sh",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/deploy/write_once_guard_check.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/ci_gate_prerequisites.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/release/install_script_check.py",
+      ".github/**/*.yml",
+      ".github/*.yml",
+      ".npmrc",
       "package.json",
-      "packages/*/package.json",
-      "workers/*/package.json",
-      ".ci/scripts/quality/**",
-      "scripts/**",
-      ".ci/**"
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/validate-tutorial-cast-output.js",
+      "scripts/ci/write-shard-receipt.cjs",
+      "workers/account/package.json",
+      "workers/mta-sts/package.json",
+      "workers/ops-health/package.json",
+      "workers/proxy/package.json",
+      "workers/signer/package.json",
+      "workers/www/package.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality",
+      ".github/workflows",
+      "packages",
+      "packages/cli",
+      "scripts",
+      "workers"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/ci_gate_prerequisites.py"
     ],
@@ -3951,13 +4129,24 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.pr_head_ref_completeness",
     "gate": true,
     "paths": [
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/pr_head_ref_completeness.py",
-      ".github/workflows/**",
-      "package.json",
       ".ci/scripts/**",
+      ".github/**/*.yml",
+      ".github/*.yml",
+      "package.json",
       "scripts/**"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality",
+      ".github/workflows"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/pr_head_ref_completeness.py"
     ],
@@ -4046,15 +4235,36 @@
     "run": "npm run check:ci-hook-integrity",
     "gate": true,
     "paths": [
-      ".claude/hooks/**",
-      "scripts/data/hook-inventory-baseline.json",
-      "scripts/data/hook-coverage-baseline.json",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
       ".ci/rediacc_ci/quality/hook_integrity.py",
-      ".ci/scripts/quality/check_hook_integrity.py",
+      ".claude/hooks/chain-head.sh",
+      ".claude/hooks/post-bash/**",
+      ".claude/hooks/trapguard/dispatch.py",
+      ".claude/rediacc_hooks/dispatch.py",
+      ".claude/rediacc_hooks/guards/**",
+      ".claude/rediacc_hooks/hookio.py",
+      ".claude/rediacc_hooks/shellscan.py",
+      ".claude/rediacc_hooks/tests/hookcases.py",
+      ".claude/rediacc_hooks/tests/test_hooks_delegates.py",
+      ".claude/rediacc_hooks/tests/test_hooks_fixtures.py",
+      ".claude/rediacc_hooks/tests/test_hooks_procs.py",
+      ".npmrc",
+      "package.json",
       "scripts/data/hook-audit-scope.json",
-      ".claude/rediacc_hooks/**"
+      "scripts/data/hook-coverage-baseline.json",
+      "scripts/data/hook-inventory-baseline.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/hook_integrity.py"
     ],
@@ -4070,14 +4280,37 @@
     "run": "npm run check:ci-pipefail-grep-q",
     "gate": true,
     "paths": [
-      ".ci/scripts/**",
-      "scripts/**",
-      ".claude/hooks/**",
+      ".ci/media/**/*.sh",
+      ".ci/media/*.sh",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/quality/pipefail_grep_q.py",
+      ".ci/scripts/deploy/upload-media-to-r2.sh",
+      ".ci/scripts/infra/ci-pull-images.sh",
+      ".ci/scripts/infra/ci-start-elite.sh",
+      ".ci/scripts/infra/ci-stop-elite.sh",
+      ".ci/scripts/lib/toolchain.sh",
+      ".ci/scripts/test/**",
+      ".claude/hooks/chain-head.sh",
       ".devcontainer/**",
-      ".ci/media/**",
-      ".ci/rediacc_ci/quality/pipefail_grep_q.py"
+      ".npmrc",
+      "package.json",
+      "scripts/ops/rebind-code.sh",
+      "scripts/pre-commit-check.sh"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "names": [
+      "**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/pipefail_grep_q.py"
     ],
@@ -4093,18 +4326,62 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_watch_recipe",
     "gate": true,
     "paths": [
-      ".claude/skills/ci-watch/**",
-      ".claude/commands/**",
-      ".claude/agents/**",
-      ".claude/hooks/**",
-      "docs/agent-reference/**",
+      ".ci/config/well-known.env",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/ci/ci_diagnose.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/core/__init__.py",
+      ".ci/rediacc_ci/core/gh_retry.py",
+      ".ci/rediacc_ci/core/ghx.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/proc.py",
+      ".ci/rediacc_ci/quality/__init__.py",
       ".ci/rediacc_ci/quality/ci_watch_recipe.py",
-      ".ci/scripts/quality/check_ci_watch_recipe.py",
-      ".claude/**",
-      ".ci/scripts/ci/**",
-      ".ci/scripts/quality/lib/**"
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/well_known.py",
+      ".ci/scripts/ci/ci-trace.py",
+      ".ci/scripts/quality/lib/check_sanctioned_registry.py",
+      ".claude/agents/**",
+      ".claude/commands/**",
+      ".claude/hooks/chain-head.sh",
+      ".claude/hooks/lib/sanctioned.py",
+      ".claude/hooks/stop/wl_ci.py",
+      ".claude/hooks/stop/wl_common.py",
+      ".claude/hooks/stop/wl_core.py",
+      ".claude/hooks/stop/wl_gh.py",
+      ".claude/hooks/stop/wl_leasehelp.py",
+      ".claude/hooks/stop/wl_plandeps.py",
+      ".claude/hooks/stop/wl_prsignals.py",
+      ".claude/hooks/stop/wl_resprofile.py",
+      ".claude/hooks/stop/wl_store.py",
+      ".claude/output-styles/standing-orders.md",
+      ".claude/rediacc_hooks/__init__.py",
+      ".claude/rediacc_hooks/commit_policy.py",
+      ".claude/rediacc_hooks/shellscan.py",
+      ".claude/rediacc_hooks/syspath.py",
+      ".claude/rediacc_hooks/wellknown.py",
+      ".claude/skills/**",
+      "docs/agent-reference/**"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/core",
+      ".ci/rediacc_ci/quality",
+      ".ci/scripts/ci",
+      ".ci/scripts/quality/lib",
+      ".claude",
+      ".claude/hooks/stop",
+      ".claude/rediacc_hooks"
+    ],
+    "names": [
+      ".claude/**",
+      "docs/agent-reference/**",
+      "docs/agent-reference/*.md"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/ci_watch_recipe.py"
     ],
@@ -4120,14 +4397,23 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_doc_coverage",
     "gate": true,
     "paths": [
-      ".ci/scripts/ci/ci-trace.py",
-      ".claude/skills/ci-watch/**",
-      "scripts/ci-runner/run.ts",
-      "docs/agent-reference/ci-gates.md",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
       ".ci/rediacc_ci/quality/cli_doc_coverage.py",
-      ".ci/scripts/quality/check_cli_doc_coverage.py"
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/scripts/ci/ci-trace.py",
+      ".claude/skills/ci-watch/SKILL.md",
+      "docs/agent-reference/ci-gates.md"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/cli_doc_coverage.py"
     ],
@@ -4424,15 +4710,6 @@
     "leaves": [
       ".ci/rediacc_ci/ci/freshness.py"
     ],
-    "paths": [
-      ".ci/config/freshness.json",
-      ".ci/config/lane-durations.json",
-      ".ci/config/gate-costs.json",
-      ".ci/rediacc_ci/ci/freshness.py",
-      ".ci/rediacc_ci/ci/budget_report.py",
-      ".ci/rediacc_ci/ci/gate_costs.py"
-    ],
-    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -4567,12 +4844,6 @@
     "run": "npm run check:ci-shell-lint",
     "slow": true,
     "gate": true,
-    "paths": [
-      "**/*.sh",
-      ".devcontainer/toolchain.env",
-      ".ci/rediacc_ci/security/shellcheck.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/security/shellcheck.py"
     ],
@@ -4902,10 +5173,17 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_control_plants",
     "gate": true,
     "paths": [
-      ".ci/rediacc_ci/**",
-      ".ci/scripts/quality/**"
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/quality/**",
+      ".ci/scripts/**"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/python_control_plants.py"
     ],
@@ -5168,14 +5446,48 @@
     "run": "npm run check:ci-actions-allowlist",
     "gate": true,
     "paths": [
-      ".github/workflows/*.yml",
-      ".github/actions/**/action.yml",
-      ".ci/breakpoint/workflow/*.yml",
+      ".ci/breakpoint/workflow/breakpoint.yml",
       ".ci/config/actions-allowlist.json",
+      ".ci/config/well-known.env",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/core/__init__.py",
+      ".ci/rediacc_ci/core/gh_retry.py",
+      ".ci/rediacc_ci/core/ghx.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/proc.py",
+      ".ci/rediacc_ci/quality/__init__.py",
       ".ci/rediacc_ci/quality/actions_allowlist.py",
-      ".ci/scripts/quality/check_actions_allowlist.py"
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/quality/seams.py",
+      ".ci/rediacc_ci/well_known.py",
+      ".github/**/*.yml",
+      ".github/*.yml",
+      ".npmrc",
+      "package.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/breakpoint/workflow",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/core",
+      ".ci/rediacc_ci/quality",
+      ".github/actions",
+      ".github/actions/app-token",
+      ".github/actions/apt-mirror",
+      ".github/actions/bws-scrub",
+      ".github/actions/bws-secrets",
+      ".github/actions/free-disk-space",
+      ".github/actions/profiler",
+      ".github/actions/profiler/nest-probe",
+      ".github/actions/renet-test-binary",
+      ".github/actions/setup-aws",
+      ".github/actions/setup-node-npm",
+      ".github/actions/setup-workspace",
+      ".github/workflows"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/actions_allowlist.py"
     ],
@@ -5796,13 +6108,6 @@
     },
     "run": "npm run check:ci-plan-boxes",
     "gate": true,
-    "paths": [
-      "agent/plans/**",
-      ".ci/config/plan-boxes.json",
-      ".ci/rediacc_ci/quality/plan_boxes.py",
-      ".ci/scripts/quality/check_plan_boxes.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/plan_boxes.py"
     ],
@@ -6207,13 +6512,6 @@
     "run": "npm run check:ci-plan-citations",
     "slow": true,
     "gate": true,
-    "paths": [
-      "agent/plans/**",
-      "agent/INDEX.md",
-      ".ci/rediacc_ci/quality/plan_citations.py",
-      ".ci/scripts/quality/check_plan_citations.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/plan_citations.py"
     ],
@@ -6232,14 +6530,6 @@
     },
     "run": "npm run check:ci-plan-record",
     "gate": true,
-    "paths": [
-      "agent/plans/**",
-      "agent/INDEX.md",
-      ".ci/scripts/quality/check_plan_record.py",
-      ".claude/hooks/stop/wl_planrec.py",
-      ".claude/hooks/stop/wl_planindex.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/scripts/quality/check_plan_record.py"
     ],
@@ -6301,19 +6591,6 @@
     "id": "check:ci-plan-bindings",
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_bindings",
     "gate": true,
-    "paths": [
-      ".ci/rediacc_ci/quality/plan_bindings.py",
-      "agent/plans/**",
-      "agent/INDEX.md",
-      "agent/worklist/**",
-      ".ci/scripts/quality/check_plan_bindings.py",
-      ".claude/hooks/stop/wl_planbind.py",
-      ".claude/hooks/stop/wl_plandeps.py",
-      ".claude/hooks/stop/wl_planfile.py",
-      ".claude/hooks/stop/wl_planrec.py",
-      ".claude/hooks/stop/wl_store.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/plan_bindings.py"
     ],
@@ -6426,13 +6703,6 @@
     "id": "check:ci-operator-rulings",
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.operator_rulings",
     "gate": true,
-    "paths": [
-      ".ci/rediacc_ci/quality/operator_rulings.py",
-      "agent/RULES.md",
-      ".ci/scripts/quality/check_operator_rulings.py",
-      ".claude/hooks/stop/wl_ruling.py"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/operator_rulings.py"
     ],
@@ -6448,10 +6718,28 @@
     "run": "npm run check:ci-lint-rule-units",
     "gate": true,
     "paths": [
-      "eslint-rules/**",
-      "scripts/gates/check-lint-rule-units.ts"
+      ".npmrc",
+      "eslint-rules/**/*.js",
+      "eslint-rules/*.js",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-lint-rule-units.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/jsx-entities.ts",
+      "scripts/lib/rule-host.ts",
+      "tsconfig.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "eslint-rules",
+      "eslint-rules/__tests__",
+      "eslint-rules/i18n",
+      "eslint-rules/i18n/shared",
+      "eslint-rules/lib",
+      "scripts",
+      "scripts/gates",
+      "scripts/lib"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-lint-rule-units.ts"
     ],
@@ -6587,13 +6875,47 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.syncpack_sources",
     "gate": true,
     "paths": [
-      ".syncpackrc.json",
       ".ci/config/syncpack-source-exclusions.json",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/gate_args.py",
+      ".ci/rediacc_ci/quality/seams.py",
       ".ci/rediacc_ci/quality/syncpack_sources.py",
-      "**/package.json",
-      "private/account"
+      ".ci/tutorials/apps/heartbeat/app/package.json",
+      ".gitmodules",
+      ".syncpackrc.json",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/json/templates/monitoring/heartbeat/app/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "private/account",
+      "private/elite",
+      "private/homebrew-tap",
+      "private/renet",
+      "workers/account/package.json",
+      "workers/mta-sts/package.json",
+      "workers/ops-health/package.json",
+      "workers/proxy/package.json",
+      "workers/signer/package.json",
+      "workers/www/package.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "names": [
+      "**/*package.json",
+      "*package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/syncpack_sources.py"
     ],
@@ -6986,14 +7308,26 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_duplication",
     "gate": true,
     "paths": [
-      ".ci/**",
+      ".ci/config/scope-mirrors.json",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/quality/__init__.py",
+      ".ci/rediacc_ci/quality/prose_duplication.py",
+      ".ci/rediacc_ci/quality/scope_mirrors.py",
+      ".ci/rediacc_ci/quality/shrink_only.py",
       ".claude/agents/pr-babysitter.md",
+      ".claude/commands/landing.md",
       ".claude/commands/pr-babysit.md",
-      ".claude/commands/pr-merge.md",
-      "CLAUDE.md",
-      "package.json"
+      "CLAUDE.md"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "",
+      ".ci",
+      ".ci/rediacc_ci",
+      ".ci/rediacc_ci/quality"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/prose_duplication.py"
     ],
@@ -7218,6 +7552,7 @@
       ".ci/rediacc_ci/housekeeping/**",
       ".ci/rediacc_ci/infra/**",
       ".ci/rediacc_ci/legal/entity.py",
+      ".ci/rediacc_ci/ops/build_server.py",
       ".ci/rediacc_ci/ops/cf_usage_report.py",
       ".ci/rediacc_ci/ops/d1_size_report.py",
       ".ci/rediacc_ci/ops/portal_captcha.py",
@@ -8152,20 +8487,6 @@
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_scope_coverage",
     "slow": true,
     "gate": true,
-    "paths": [
-      ".ci/rediacc_ci/quality/lint_scope_coverage.py",
-      "**/*.js",
-      "**/*.cjs",
-      "**/*.mjs",
-      "**/*.ts",
-      "**/*.tsx",
-      "package.json",
-      "biome.json",
-      ".ci/scripts/quality/check_lint_scope_coverage.py",
-      ".gitignore",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/lint_scope_coverage.py"
     ],
@@ -8212,12 +8533,6 @@
     "leaves": [
       ".ci/rediacc_ci/quality/durable_paths_tracked.py"
     ],
-    "paths": [
-      ".gitignore",
-      ".ci/rediacc_ci/quality/durable_paths_tracked.py",
-      ".ci/scripts/quality/check_durable_paths_tracked.py"
-    ],
-    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -8301,6 +8616,7 @@
       ".ci/rediacc_ci/housekeeping/**",
       ".ci/rediacc_ci/infra/**",
       ".ci/rediacc_ci/legal/entity.py",
+      ".ci/rediacc_ci/ops/build_server.py",
       ".ci/rediacc_ci/ops/cf_usage_report.py",
       ".ci/rediacc_ci/ops/d1_size_report.py",
       ".ci/rediacc_ci/ops/portal_captcha.py",
@@ -8646,22 +8962,6 @@
     "slow": true,
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_tree_writes",
     "gate": true,
-    "paths": [
-      ".ci/rediacc_ci/**",
-      ".ci/scripts/**",
-      "scripts/**",
-      "packages/*/scripts/**",
-      "eslint-rules/**",
-      ".ci/breakpoint/scripts/**",
-      ".claude/hooks/**",
-      "package.json",
-      "scripts/ci-runner/gates.lock.json",
-      ".ci/config/tree-write-mutators.json",
-      "**/.gitignore",
-      "packages/*/src/**",
-      "packages/shared/**"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/gate_tree_writes.py"
     ],
@@ -8744,11 +9044,17 @@
     "run": "npm run check:ci-fixture-event-timestamps",
     "gate": true,
     "paths": [
-      ".claude/rediacc_hooks/tests/**",
+      ".claude/rediacc_hooks/tests/**/*.py",
+      ".claude/rediacc_hooks/tests/*.py",
       ".npmrc",
       "package.json",
       "scripts/gates/check-fixture-event-timestamps.ts",
       "tsconfig.json"
+    ],
+    "lists": [
+      ".claude/rediacc_hooks/tests",
+      "scripts",
+      "scripts/gates"
     ],
     "pathsOrigin": "traced",
     "leaves": [
@@ -9753,11 +10059,13 @@
       "packages/cli/src/services/renet/**/*.ts",
       "packages/cli/src/services/renet/*.ts",
       "packages/cli/src/services/repo-migrate-license.ts",
-      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/repo/**/*.ts",
+      "packages/cli/src/services/repo/*.ts",
       "packages/cli/src/services/serve/account-fetch.ts",
       "packages/cli/src/services/serve/audit.ts",
       "packages/cli/src/services/serve/auth.ts",
       "packages/cli/src/services/serve/bind.ts",
+      "packages/cli/src/services/serve/busy.ts",
       "packages/cli/src/services/serve/command-dispatch.ts",
       "packages/cli/src/services/serve/config-writeback.ts",
       "packages/cli/src/services/serve/container-config.ts",
@@ -9768,6 +10076,7 @@
       "packages/cli/src/services/serve/job-routes.ts",
       "packages/cli/src/services/serve/policy.ts",
       "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/run-index.ts",
       "packages/cli/src/services/serve/server.ts",
       "packages/cli/src/services/serve/sessions.ts",
       "packages/cli/src/services/server/**/*.ts",
@@ -9866,6 +10175,7 @@
       "packages/cli/src/services/preview",
       "packages/cli/src/services/provision",
       "packages/cli/src/services/renet",
+      "packages/cli/src/services/repo",
       "packages/cli/src/services/serve",
       "packages/cli/src/services/server",
       "packages/cli/src/services/server/bundle",
@@ -10125,11 +10435,13 @@
       "packages/cli/src/services/renet/**/*.ts",
       "packages/cli/src/services/renet/*.ts",
       "packages/cli/src/services/repo-migrate-license.ts",
-      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/repo/**/*.ts",
+      "packages/cli/src/services/repo/*.ts",
       "packages/cli/src/services/serve/account-fetch.ts",
       "packages/cli/src/services/serve/audit.ts",
       "packages/cli/src/services/serve/auth.ts",
       "packages/cli/src/services/serve/bind.ts",
+      "packages/cli/src/services/serve/busy.ts",
       "packages/cli/src/services/serve/command-dispatch.ts",
       "packages/cli/src/services/serve/config-writeback.ts",
       "packages/cli/src/services/serve/container-config.ts",
@@ -10140,6 +10452,7 @@
       "packages/cli/src/services/serve/job-routes.ts",
       "packages/cli/src/services/serve/policy.ts",
       "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/run-index.ts",
       "packages/cli/src/services/serve/server.ts",
       "packages/cli/src/services/serve/sessions.ts",
       "packages/cli/src/services/server/**/*.ts",
@@ -10239,6 +10552,7 @@
       "packages/cli/src/services/preview",
       "packages/cli/src/services/provision",
       "packages/cli/src/services/renet",
+      "packages/cli/src/services/repo",
       "packages/cli/src/services/serve",
       "packages/cli/src/services/server",
       "packages/cli/src/services/server/bundle",
@@ -11612,13 +11926,16 @@
       ".npmrc",
       "package.json",
       "packages/cli/package.json",
+      "packages/cli/tsconfig.json",
       "packages/e2e-tests/package.json",
       "packages/json/package.json",
       "packages/locales/package.json",
       "packages/provisioning/package.json",
       "packages/shared/package.json",
+      "packages/shared/tsconfig.json",
       "packages/www/package.json",
-      "private/account"
+      "private/account",
+      "tsconfig.json"
     ],
     "lists": [
       "",
@@ -11756,12 +12073,6 @@
     "id": "check:ci-renet-govulncheck",
     "run": "npm run check:ci-renet-govulncheck",
     "gate": true,
-    "paths": [
-      "private/renet",
-      ".ci/rediacc_ci/private/run_renet.py",
-      ".ci/rediacc_ci/core/common.py"
-    ],
-    "pathsOrigin": "declared",
     "slow": true,
     "mutex": [
       "renet-bin"
@@ -13359,22 +13670,40 @@
     "run": "npm run check:ci-baseline-key-semantics",
     "gate": true,
     "paths": [
-      "scripts/gates/check-baseline-key-semantics.ts",
-      "scripts/data/dead-translation-keys-baseline.json",
-      "scripts/data/dead-css-baseline.json",
-      "scripts/data/sentence-wrapping-baseline.json",
-      "scripts/data/em-dash-surfaces-baseline.json",
-      "scripts/data/locale-de-contamination-baseline.json",
-      "scripts/data/docker-image-freshness-baseline.json",
-      "scripts/data/static-nowrap-baseline.json",
-      "scripts/data/hook-coverage-baseline.json",
-      "scripts/data/css-dom-refs-baseline.json",
-      "scripts/data/hook-inventory-baseline.json",
       ".ci/scripts/quality/runner-sizing-baseline.json",
-      "scripts/data/*-baseline.json",
-      ".ci/scripts/quality/*-baseline.json"
+      ".npmrc",
+      "package.json",
+      "scripts/data/css-dom-refs-baseline.json",
+      "scripts/data/dead-css-baseline.json",
+      "scripts/data/dead-translation-keys-baseline.json",
+      "scripts/data/docker-image-freshness-baseline.json",
+      "scripts/data/domain-layout-baseline.json",
+      "scripts/data/em-dash-surfaces-baseline.json",
+      "scripts/data/enumeration-vacuity-baseline.json",
+      "scripts/data/hook-coverage-baseline.json",
+      "scripts/data/hook-inventory-baseline.json",
+      "scripts/data/locale-de-contamination-baseline.json",
+      "scripts/data/package-key-budget-baseline.json",
+      "scripts/data/sentence-wrapping-baseline.json",
+      "scripts/data/static-nowrap-baseline.json",
+      "scripts/gates/check-baseline-key-semantics.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      ".ci/scripts/quality",
+      "scripts",
+      "scripts/data",
+      "scripts/gates",
+      "scripts/lib"
+    ],
+    "names": [
+      ".ci/scripts/quality/**",
+      ".ci/scripts/quality/*-baseline.json",
+      "scripts/data/**",
+      "scripts/data/*-baseline.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-baseline-key-semantics.ts"
     ],
@@ -13390,11 +13719,16 @@
     "run": "npm run check:ci-test-gate-wiring",
     "gate": true,
     "paths": [
+      ".npmrc",
       "package.json",
-      "scripts/ci-runner/manifest.ts",
-      "scripts/gates/check-test-gate-wiring.ts"
+      "scripts/gates/check-test-gate-wiring.ts",
+      "tsconfig.json"
     ],
-    "pathsOrigin": "declared",
+    "lists": [
+      "scripts",
+      "scripts/gates"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-test-gate-wiring.ts"
     ],
@@ -14865,13 +15199,6 @@
     "id": "check:ci-language-policy",
     "run": "npm run check:ci-language-policy",
     "gate": true,
-    "paths": [
-      ".ci/**",
-      ".claude/**",
-      "scripts/ops/**",
-      "scripts/dev/**"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       ".ci/rediacc_ci/quality/language_policy.py"
     ],
@@ -15287,14 +15614,18 @@
       ".ci/scripts/test/smoke-test-preview.ts",
       ".github/actions/profiler/index.js",
       ".npmrc",
-      "eslint-rules/**",
+      "eslint-rules/**/*.js",
+      "eslint-rules/*.js",
       "package.json",
       "packages/cli/**",
-      "packages/e2e-tests/**",
+      "packages/e2e-tests/**/*.ts",
+      "packages/e2e-tests/*.ts",
       "packages/locales/index.js",
       "packages/locales/package.json",
-      "packages/provisioning/**",
-      "packages/shared/**",
+      "packages/provisioning/**/*.ts",
+      "packages/provisioning/*.ts",
+      "packages/shared/**/*.ts",
+      "packages/shared/*.ts",
       "packages/www/scripts/**",
       "packages/www/src/__tests__/react-compiler-runtime-alias.test.ts",
       "packages/www/src/components/AccountCta.tsx",
@@ -15323,6 +15654,7 @@
       "packages/www/src/components/Sidebar.tsx",
       "packages/www/src/components/TutorialVideoPlayer.tsx",
       "packages/www/src/components/__tests__/RegionPickerModal.test.tsx",
+      "packages/www/src/components/__tests__/pricing-no-checkout.test.ts",
       "packages/www/src/components/icons/ClipboardIcons.tsx",
       "packages/www/src/components/icons/PlatformIcons.tsx",
       "packages/www/src/components/pricing-plans.ts",
@@ -15338,7 +15670,8 @@
       "packages/www/src/components/solution-pages/roi-compute.ts",
       "packages/www/src/components/solution-pages/slider-configs.ts",
       "packages/www/src/components/tutorial-video/preferences.ts",
-      "packages/www/src/config/**",
+      "packages/www/src/config/**/*.ts",
+      "packages/www/src/config/*.ts",
       "packages/www/src/content.config.ts",
       "packages/www/src/data/tutorial-transcripts/**",
       "packages/www/src/hooks/useCaptchaGuard.ts",
@@ -15357,23 +15690,41 @@
       "packages/www/src/integrations/route-manifest-generator.ts",
       "packages/www/src/lib/__tests__/legal-pages.test.ts",
       "packages/www/src/lib/legal-pages.ts",
-      "packages/www/src/pages/**",
-      "packages/www/src/plugins/**",
-      "packages/www/src/scripts/**",
-      "packages/www/src/utils/**",
+      "packages/www/src/pages/**/*.ts",
+      "packages/www/src/pages/*.ts",
+      "packages/www/src/plugins/**/*.ts",
+      "packages/www/src/plugins/*.ts",
+      "packages/www/src/scripts/**/*.ts",
+      "packages/www/src/scripts/*.ts",
+      "packages/www/src/utils/**/*.ts",
+      "packages/www/src/utils/*.ts",
       "packages/www/vitest.config.ts",
       "private/account",
-      "scripts/**",
+      "scripts/**/*.ts",
+      "scripts/*.ts",
       "tsconfig.json",
       "workers/**"
     ],
     "lists": [
       ".ci",
       ".github/actions",
-      "packages"
+      "eslint-rules",
+      "eslint-rules/i18n",
+      "eslint-rules/i18n/shared",
+      "eslint-rules/lib",
+      "packages",
+      "scripts",
+      "scripts/data",
+      "scripts/gates",
+      "scripts/lib"
     ],
     "names": [
-      "**"
+      ".ci/**",
+      ".github/actions/**",
+      "eslint-rules/**",
+      "packages/**",
+      "scripts/**",
+      "workers/**"
     ],
     "pathsOrigin": "traced",
     "leaves": [
@@ -15580,11 +15931,13 @@
       "packages/cli/src/services/renet/**/*.ts",
       "packages/cli/src/services/renet/*.ts",
       "packages/cli/src/services/repo-migrate-license.ts",
-      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/repo/**/*.ts",
+      "packages/cli/src/services/repo/*.ts",
       "packages/cli/src/services/serve/account-fetch.ts",
       "packages/cli/src/services/serve/audit.ts",
       "packages/cli/src/services/serve/auth.ts",
       "packages/cli/src/services/serve/bind.ts",
+      "packages/cli/src/services/serve/busy.ts",
       "packages/cli/src/services/serve/command-dispatch.ts",
       "packages/cli/src/services/serve/config-writeback.ts",
       "packages/cli/src/services/serve/container-config.ts",
@@ -15596,6 +15949,7 @@
       "packages/cli/src/services/serve/job-routes.ts",
       "packages/cli/src/services/serve/policy.ts",
       "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/run-index.ts",
       "packages/cli/src/services/serve/server.ts",
       "packages/cli/src/services/serve/sessions.ts",
       "packages/cli/src/services/server/**/*.ts",
@@ -15953,6 +16307,8 @@
       "packages/cli/src/services/provision",
       "packages/cli/src/services/renet",
       "packages/cli/src/services/renet/__tests__",
+      "packages/cli/src/services/repo",
+      "packages/cli/src/services/repo/__tests__",
       "packages/cli/src/services/serve",
       "packages/cli/src/services/serve/__tests__",
       "packages/cli/src/services/server",
@@ -16753,16 +17109,26 @@
     "id": "check:ci-package-key-budget",
     "run": "npm run check:ci-package-key-budget",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/data/package-key-budget-baseline.json",
+      "scripts/gates/check-package-key-budget.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "lists": [
+      "scripts",
+      "scripts/ci-runner",
+      "scripts/gates",
+      "scripts/lib"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-package-key-budget.ts"
     ],
-    "paths": [
-      "scripts/gates/check-package-key-budget.ts",
-      "package.json",
-      "scripts/ci-runner/manifest.ts",
-      "scripts/data/package-key-budget-baseline.json"
-    ],
-    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
@@ -16809,19 +17175,6 @@
     "leaves": [
       ".ci/rediacc_ci/quality/gh_retry_gate.py"
     ],
-    "paths": [
-      ".ci/**",
-      "scripts/**",
-      ".claude/**",
-      ".github/workflows/**",
-      ".github/actions/**",
-      "package.json",
-      "packages/*/package.json",
-      "*.sh",
-      "Dockerfile*",
-      ".devcontainer/**"
-    ],
-    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
