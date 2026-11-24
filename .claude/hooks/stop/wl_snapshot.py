@@ -4,7 +4,7 @@
     python3 .claude/hooks/stop/wl_snapshot.py --plan     list the finished logs and the bytes a fold would take off the per-stop read
     python3 .claude/hooks/stop/wl_snapshot.py --write    fold them (wl_store.compact_store) when at least one qualifies; otherwise change nothing
 
-agent/plans/PLAN-tooling-code-reduction.md CR9, design D7. Every Stop reads and folds every file in agent/worklist/ (12 MB on 2026-11-23, 9 MB of it one long session). A session whose newest event is older than WORKLIST_DEAD_HOURS (24) and whose liveness is not "live" cannot append again, so its log only has to be READ once: `--write` folds the whole store (the fold is global, an item one session added and another ticked only folds correctly with every file) into the compactor's own file and unlinks the finished logs. The next Stop then opens the snapshot instead of them.
+agent/plans/PLAN-tooling-code-reduction.md CR9, design D7. Every Stop reads and folds every file in agent/worklist/ (12 MB on 2026-11-23, 9 MB of it one long session). A session whose newest event is older than WORKLIST_DEAD_HOURS (24) (a log with no event of its own counts as old enough, as in compact_store) and whose liveness is not "live" cannot append again, so its log only has to be READ once: `--write` folds the whole store (the fold is global, an item one session added and another ticked only folds correctly with every file) into the compactor's own file and unlinks the finished logs. The next Stop then opens the snapshot instead of them.
 
 THE SELECTION IS wl_store.compact_store's, spelled out here so `--plan` can print it without writing; test_wl_snapshot.py runs both on one store and asserts they agree, so the two cannot drift. epics.jsonl is a sidecar, not a writer's event log, and is never selected (compact_store used to unlink it: fixed in the commit that added this module).
 
@@ -74,7 +74,8 @@ def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=Non
     stamp = pathlib.Path(stamp)
     now = time.time() if now is None else now
     try:
-        if now - stamp.stat().st_mtime < HOUSEKEEPING_SECONDS:
+        # A stamp dated in the future (a clock once set ahead) is stale, not fresh: it would skip the run until the clock caught up.
+        if 0 <= now - stamp.stat().st_mtime < HOUSEKEEPING_SECONDS:
             return {}
     except FileNotFoundError:
         pass
@@ -85,7 +86,9 @@ def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=Non
         stamp.touch()
         os.utime(stamp, (now, now))
     except OSError as exc:
+        # No stamp means no once-a-day guard: running the steps now would repeat them (and their failures) on every Stop, so the stamp failure is the one named.
         failures["snapshot-stamp"] = exc
+        return failures
     steps = (
         ("snapshot-fold", lambda: _fold_quiet(worklist, root, me, projects_dir)),
         ("hook-ledger-rotate", rotate or wl_hookreport.rotate),

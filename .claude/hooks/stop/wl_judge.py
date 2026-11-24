@@ -1369,16 +1369,18 @@ _ORDER_FILE = re.compile(
 )
 
 
-# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading".
+# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading". The verb opens a sentence and its noun follows within the same clause (no comma, semicolon, "and" or "then" between), so an order that finishes work and then lists items is a work order and does not match (review 7e85a025.2).
 _STATUS_ORDER_RE = re.compile(
-    r"(?i)\b(?:list|enumerate|restate|report|name)\b[^.]{0,60}\b(?:open items?|items?|ids?|states?)\b|\bRemaining (?:heading|section)\b"
+    r"(?i)(?:^|(?<=[.!?]\s))\s*(?:list|enumerate|restate|report|name)\b"
+    r"(?:(?!,|;|\band\b|\bthen\b)[^.]){0,60}\b(?:open items?|items?|ids?|states?)\b"
+    r"|\bRemaining (?:heading|section)\b"
 )
 
 
 def settle_status_demand(out, open_ids=None):
     """`out` with a `continue` that only demands a status table read as `stop`, its text kept as `status_demand` (wl_checks queues it under `judge-status-demand`); anything else unchanged.
 
-    It fires when the reason or the order matches STATUS_SHAPE and the order names no file, no verb (a flag, a backticked command, a command word) and no open item (`open_ids`, the facts' `tracked`; with none given, any `#<hex>` counts as one, so the rule fails toward letting the continue stand)."""
+    It fires when the ORDER matches STATUS_SHAPE or _STATUS_ORDER_RE, or when there is no order and the reason matches STATUS_SHAPE (a status-shaped reason beside a non-empty order never fires by itself), and the order names no file, no verb (a flag, a backticked command, a command word) and no open item (`open_ids`, the facts' `tracked`; with none given, any `#<hex>` counts as one, so the rule fails toward letting the continue stand)."""
     if out.get("verdict") != "continue":
         return out
     reason = str(out.get("reason") or "")

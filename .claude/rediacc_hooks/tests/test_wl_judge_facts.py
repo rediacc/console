@@ -486,6 +486,33 @@ def test_control_a_continue_ordering_a_named_file_or_verb_stands(order):
     assert J.settle_status_demand(dict(out), OPEN) == out
 
 
+@pytest.mark.parametrize(
+    "order",
+    [
+        "Finish the migration.",
+        "Finish the migration, then list the items you touched.",
+        "Finish the migration and list the open items.",
+    ],
+)
+def test_control_a_work_order_with_no_file_or_verb_stands_under_a_status_shaped_reason(order):
+    out = dict(STATUS_DEMAND, next_action=order)
+    assert J.settle_status_demand(dict(out), OPEN) == out
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        "List every open item with its state.",
+        "Fix nothing. Enumerate the ids under the Remaining section.",
+        "Report the open items.",
+    ],
+)
+def test_an_order_phrased_as_a_status_table_without_the_shape_words_reads_as_stop(order):
+    reason = "the judge wants more"  # not STATUS_SHAPE: only the order can fire
+    out = dict(STATUS_DEMAND, reason=reason, next_action=order)
+    assert J.settle_status_demand(dict(out), OPEN)["verdict"] == "stop"
+
+
 def test_control_a_continue_ordering_work_on_an_open_item_stands():
     out = dict(STATUS_DEMAND, next_action="Finish #a1a1a1a1 before restating anything.")
     assert J.settle_status_demand(dict(out), OPEN) == out

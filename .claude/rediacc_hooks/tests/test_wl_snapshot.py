@@ -6,6 +6,7 @@ Each test builds a disposable store (WORKLIST_STORE_DIR) with a finished writer,
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import types
 
@@ -180,6 +181,30 @@ def test_housekeeping_names_a_failed_step_and_does_not_raise_or_skip_the_other(s
     # Control: a clean run names nothing, and a failed one is not retried inside the window.
     assert hk(store, store.tmp / "stamp2", 1000.0) == {}
     assert hk(store, store.tmp / "stamp", 1001.0, boom) == {}
+
+
+def test_a_stamp_dated_in_the_future_is_stale_not_fresh(store):
+    stamp = store.tmp / "stamp"
+    calls = []
+    hk(store, stamp, 1000.0)
+    os.utime(stamp, (5000.0, 5000.0))  # clock once set ahead
+    assert hk(store, stamp, 1000.0 + 3600, lambda: calls.append("ran")) == {}
+    assert calls == ["ran"]
+    assert stamp.stat().st_mtime == 1000.0 + 3600
+    # control: a stamp one hour old stays fresh
+    assert hk(store, stamp, 1000.0 + 2 * 3600, lambda: calls.append("again")) == {}
+    assert calls == ["ran"]
+
+
+def test_an_unwritable_stamp_is_named_and_the_steps_do_not_run_every_stop(store):
+    calls = []
+    stamp = store.tmp / "no-such-dir" / "stamp"
+    failures = hk(store, stamp, 1000.0, lambda: calls.append("rotate"))
+    assert set(failures) == {"snapshot-stamp"}
+    assert calls == []
+    # control: a writable stamp runs the steps
+    assert hk(store, store.tmp / "stamp", 1000.0, lambda: calls.append("rotate")) == {}
+    assert calls == ["rotate"]
 
 
 def test_housekeeping_fold_writes_nothing_to_stdout(store, capsys):
