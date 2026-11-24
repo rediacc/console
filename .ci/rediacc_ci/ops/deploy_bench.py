@@ -260,35 +260,6 @@ def otlp_credentials_valid(value: str) -> bool:
     )
 
 
-TEST_KEY_PREFIXES = ("sk_test_", "rk_test_")
-
-
-def stripe_pair() -> tuple[str, str]:
-    """The (secret key, webhook secret) bound as the bench Worker's STRIPE_SANDBOX_* pair, or ("", "") when the pair is absent.
-
-    The deploy-bench-<region> profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
-    """
-    key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY") or ""
-    hook = os.environ.get("STRIPE_SANDBOX_WEBHOOK_SECRET") or ""
-    if not key and not hook:
-        print("Stripe sandbox pair absent: bench keeps the Stripe secrets blank")
-        return "", ""
-    if not key or not hook:
-        missing = "STRIPE_SANDBOX_WEBHOOK_SECRET" if key else "STRIPE_SANDBOX_SECRET_KEY"
-        raise DeployError(
-            "the Stripe sandbox pair is half-set (%s is empty): set both or neither" % missing
-        )
-    if not key.startswith(TEST_KEY_PREFIXES):
-        raise DeployError(
-            "STRIPE_SANDBOX_SECRET_KEY is not a Stripe test key (expected the sk_test_ or rk_test_ "
-            "prefix): bench never takes a live key"
-        )
-    print(
-        "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET"
-    )
-    return key, hook
-
-
 def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
     """The `wrangler secret bulk` body, keys in the order the bash emitted them. Raises DeployError on a missing or empty required value. Only the backup bucket and its endpoint follow REGION; every other value is the profile's."""
     signing = {
@@ -316,7 +287,6 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
     )
     endpoint, backup_key, backup_secret = _backup_values()
     backup_bucket, backup_jurisdiction = bench_backup_binding(region)
-    stripe_key, stripe_hook = stripe_pair()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):
@@ -336,11 +306,6 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
         "ACCOUNT_BACKUP_STORE_KEK": signing["ACCOUNT_BACKUP_STORE_KEK"],
-        # The live Stripe names stay empty so the worker never presents itself as live billing, as edge does; the sandbox pair (test keys only, checked in stripe_pair) rides the names the app reads for a sandbox, empty when the vault holds none.
-        "STRIPE_SECRET_KEY": "",
-        "STRIPE_WEBHOOK_SECRET": "",
-        "STRIPE_SANDBOX_SECRET_KEY": stripe_key,
-        "STRIPE_SANDBOX_WEBHOOK_SECRET": stripe_hook,
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL") or "",
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",

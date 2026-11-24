@@ -89,7 +89,7 @@ def test_derive_reads_regions_json(region, suffix, ses, jur, worker):
     assert d["SUFFIX"] == suffix
     assert d["AWS_SES_REGION"] == ses
     assert d["R2_JURISDICTION"] == jur
-    # The shared Worker takes Stripe, which is the pusher's `stable` channel, and has one bucket.
+    # The shared Worker runs on the pusher's `stable` channel and has one bucket.
     assert d["TARGET"] == "stable"
     assert d["BACKUP_BUCKET_STABLE"] == row["backupR2"]["name"]
     assert "BACKUP_BUCKET_EDGE" not in d
@@ -109,7 +109,7 @@ def test_the_per_channel_profiles_are_gone():
     ]
 
 
-def test_every_region_has_a_profile_binding_its_suffix_and_stripe():
+def test_every_region_has_a_profile_binding_its_suffix():
     for region, suffix, key_value in (
         ("eu", "EU", "STABLE"),
         ("us", "US", "EDGE"),
@@ -120,10 +120,11 @@ def test_every_region_has_a_profile_binding_its_suffix_and_stripe():
             "AWS_SES_ACCESS_KEY_ID",
             "AWS_SES_SECRET_ACCESS_KEY",
             "OBS_OTLP_CREDENTIALS",
-            "STRIPE_WEBHOOK_SECRET",
         ):
             assert "%s_%s" % (prefix, suffix) in names
-        assert "STRIPE_SECRET_KEY" in names
+        assert not [n for n in names if n.startswith("STRIPE")], (
+            "the shared Worker takes no Stripe secret"
+        )
         # One backup pair, and the old edge pair is never bound.
         assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE" in names
         assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE" not in names

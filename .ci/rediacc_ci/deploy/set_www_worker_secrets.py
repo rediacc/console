@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
-Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not twenty-four `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes twenty-two runtime secrets into the www Worker (stable or edge) in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not twenty-two `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (the live Stripe pair and the EU SES pair, on every target), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
+THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which SES credentials land here is `cd-deploy-worker.yml`'s choice (the EU SES pair, on every target), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
@@ -27,7 +27,7 @@ Note the doubled name: the twin's message already begins with the script name, s
 `:?` IS AN UNSET-OR-EMPTY TEST, so `WORKER_NAME=` refuses exactly as an absent
 one does. Driven in the differential: a port testing `"WORKER_NAME" in os.environ` would sail past the empty case and then run `wrangler secret bulk --name ''` against whatever Worker wrangler picks by default.
 
-THE SIBLING SCRIPTS ARE NOT THE SAME SCRIPT, and the differences are load bearing rather than cosmetic. Against `set-preview-worker-secrets.sh`: this one demands STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET too (thirteen guards, not eleven), carries the nine SELLER_* keys (twenty-four keys, not fifteen), takes its Worker name whole instead of composing `pr-<n>`, prints a DIFFERENT
+THE SIBLING SCRIPTS ARE NOT THE SAME SCRIPT, and the differences are load bearing rather than cosmetic. Against `set-preview-worker-secrets.sh`: this one carries the nine SELLER_* keys (twenty-two keys, not twelve), takes its Worker name whole instead of composing `pr-<n>`, prints a DIFFERENT
 explanation under a failed guard, and ends with no log line at all. Each of those is pinned separately in the differential, because "the same file with a longer list" is exactly the assumption that would port it wrong.
 
 K=5 LEDGER: the ledger (deleted in commit:936280cd35).
@@ -54,7 +54,7 @@ SELF = "rediacc_ci.deploy.set_www_worker_secrets"
 # The twin's message repeated its script name after the variable; the port repeats its own module name (`SELF`) in that place, and the differential's `as_twin` maps it back to the twin's name before comparing.
 MISSING_WORKER_NAME = "WORKER_NAME: %s: WORKER_NAME must be set" % SELF
 
-# The twenty-four `--arg <var> "${<ENV>:-}"` pairs (:92-115) in the twin's ORDER,
+# The twenty-two `--arg <var> "${<ENV>:-}"` pairs (:92-115) in the twin's ORDER,
 # which is also the key order of the object it builds (:116-140). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin. The differential re-derives this list from the twin's source and compares.
 #
 # (environment variable this script READS, jq variable it binds it to). ONE NAME EVERYWHERE: the variable read is the key written, which is what the Worker's zod schema declares (private/account/src/types/env.ts).
@@ -65,8 +65,6 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub"),
     ("ACCOUNT_SERVER_API_KEY", "api_key"),
     ("ACCOUNT_JWT_SECRET", "jwt"),
-    ("STRIPE_SECRET_KEY", "stripe"),
-    ("STRIPE_WEBHOOK_SECRET", "stripe_wh"),
     ("ROOT_EMAIL", "admin"),
     ("AWS_SES_ACCESS_KEY_ID", "ses_key"),
     ("AWS_SES_SECRET_ACCESS_KEY", "ses_secret"),
@@ -85,12 +83,11 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("SELLER_EMAIL", "seller_email"),
 )
 
-# The thirteen `_require_nonempty` calls (:77-89), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
+# The eleven `_require_nonempty` calls (:77-89), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off; `required: true` on the GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because
+# WHY THESE ELEVEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off; `required: true` on the GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because
 # zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
 #
-# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: the one www Worker takes live billing, so it is never legitimately empty for www.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -103,8 +100,6 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "AWS_SES_SECRET_ACCESS_KEY",
     "AWS_SES_REGION",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
 )
 
 # The two explanation lines under a guard failure (:68-69), byte for byte, including their two-space indent. NOT the preview sibling's wording: that one offers two possibilities ("either accepts ... or rejects"), this one states the single behaviour the www schema has and names where to look.
@@ -134,7 +129,7 @@ class GuardError(Exception):
 
 
 def check_nonempty(env: dict[str, str], worker_name: str) -> None:
-    """The thirteen guards, in the twin's order. Raises on the FIRST empty one.
+    """The eleven guards, in the twin's order. Raises on the FIRST empty one.
 
     An ABSENT variable and an EMPTY one are the same case, because the twin
     reads `"${NAME:-}"` into the check.
@@ -162,7 +157,7 @@ def jq_input(env: dict[str, str]) -> str:
     """The values as one JSON object keyed by jq variable, in `KEYS` order, for jq's stdin. ASCII only (`ensure_ascii`), so a value the environment decoded with surrogate escapes still reaches jq, which re-encodes each string exactly as it encoded the twin's `--arg`.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
-    empty string rather than an error: the thirteen guards have already refused the ones that must not be empty, and the eleven remaining (the two SES presentation fields and the nine SELLER_* ones) are legitimately absent on a Worker that issues no invoices.
+    empty string rather than an error: the eleven guards have already refused the ones that must not be empty, and the eleven remaining (the two SES presentation fields and the nine SELLER_* ones) are legitimately absent on a Worker that issues no invoices.
     """
     return json.dumps({var: env.get(key, "") for key, var in KEYS})
 

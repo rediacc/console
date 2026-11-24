@@ -161,13 +161,11 @@ class Step:
         )
 
 
-# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`). The www Worker takes live billing: the live key and the live EU webhook secret, a pair that stays together.
+# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`).
 WWW_BINDS = (
     "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY",
     "AWS_SES_REGION_EU > AWS_SES_REGION",
-    "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET",
 )
 TURNSTILE = ("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY",)
 # The www pages build reads the same widget's site key under Astro's public spelling; seven www forms render no widget without it (production 2026-11-12).
@@ -727,27 +725,6 @@ def _table() -> tuple[Step, ...]:
             _retag(
                 "--image-path", server, "edge", "{version}", "--push-latest", "--skip-if-exists"
             ),
-        ),
-        Step(
-            "stripe-sync",
-            "publish",
-            ("npx", "--no-install", "tsx", "scripts/stripe-sync.ts"),
-            profiles=("release-local",),
-            cwd="clone:private/account",
-        ),
-        Step(
-            "stripe-webhook",
-            "publish",
-            (
-                "npx",
-                "--no-install",
-                "tsx",
-                "private/account/scripts/verify-webhook.ts",
-                "--expected-url",
-                "https://{domain}/account/api/v1/webhooks/stripe",
-            ),
-            profiles=("release-local",),
-            per_region=True,
         ),
         Step(
             "cleanup-channel-tags",

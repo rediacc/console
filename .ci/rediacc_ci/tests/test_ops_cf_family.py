@@ -778,9 +778,6 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     # PLAN-terms-acceptance E2: the port pushes the commercial register's name with the other SELLER_* fields; the retired bash never held it. A fake value.
     bound["SELLER_REGISTER_NAME"] = "fake-register-name-for-tests"
     bound["SALES_NOTIFY_EMAIL"] = "sales@example.invalid"
-    # f4fbdece81 / 0360a85606: the port binds the Stripe sandbox pair as the Worker's STRIPE_SANDBOX_* secrets (a test-prefixed key, or the push is refused); the retired bash never held them. Fake values, never real keys.
-    bound["STRIPE_SANDBOX_SECRET_KEY"] = "sk_test_fake-stripe-sandbox-key-for-tests"
-    bound["STRIPE_SANDBOX_WEBHOOK_SECRET"] = "whsec_fake-stripe-sandbox-hook-for-tests"
     # PLAN-email-sender-separation E1: the contact and alerts senders and recipients the port pushes; the retired bash never held them. Reserved-domain values.
     bound["CONTACT_FROM_EMAIL"] = "contact@example.invalid"
     bound["ALERTS_FROM_EMAIL"] = "alerts@example.invalid"
@@ -798,14 +795,15 @@ PORT_ONLY_SECRETS = (
     "CLOUDFLARE_ACCOUNT_ID",
     "SELLER_REGISTER_NAME",
     "SALES_NOTIFY_EMAIL",
-    "STRIPE_SANDBOX_SECRET_KEY",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET",
     # PLAN-email-sender-separation E1: the contact and alerts senders and recipients.
     "CONTACT_FROM_EMAIL",
     "ALERTS_FROM_EMAIL",
     "CONTACT_NOTIFY_EMAIL",
     "ALERTS_NOTIFY_EMAIL",
 )
+
+# DECLARED DELTA (Stripe removal): the account Worker takes no Stripe secret, so the port pushes none; the retired bash golden still records these two blank live names, dropped from its side of the comparison.
+STRIPE_RETIRED = ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET")
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
 RETIRED_BENCH_SENDER = "noreply@notify.rediacc.com"
@@ -851,7 +849,7 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
         if isinstance(call.get("stdin"), dict):
             # DECLARED DELTA (PLAN-enterprise-isolation S4): the account Worker signs through LICENSE_SIGNER and holds no licence private key, so the port stopped pushing ACCOUNT_ED25519_PRIVATE_KEY; the retired bash golden still records it.
-            dropped = {*PORT_ONLY_SECRETS, "ACCOUNT_ED25519_PRIVATE_KEY"}
+            dropped = {*PORT_ONLY_SECRETS, "ACCOUNT_ED25519_PRIVATE_KEY", *STRIPE_RETIRED}
             call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in dropped}
             # DECLARED DELTA (71f25f3e8f): the port's bench sender default moved to notify.rediacc.cloud; the retired bash golden records the old sender, mapped forward so every other stdin key still compares verbatim.
             if call["stdin"].get("AWS_SES_FROM") == RETIRED_BENCH_SENDER:
@@ -891,10 +889,6 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
     }
     out_mapped = out_p.replace(version_line, "", 1)
-    # DECLARED DELTA (f4fbdece81): the port announces the Stripe sandbox pair it binds, a line the retired bash never printed; asserted once, then dropped.
-    stripe_line = "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET\n"
-    assert out_mapped.count(stripe_line) == 1
-    out_mapped = out_mapped.replace(stripe_line, "", 1)
     # DECLARED DELTA (finding 87f7acb9): the secret-name listing that precedes the retired-key deletion is echoed (the fake prints an empty list); asserted once, then dropped.
     assert out_mapped.count("[]\n") == 1
     out_mapped = out_mapped.replace("[]\n", "", 1)
@@ -925,7 +919,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     # And no wrangler child of the port inherits the account-wide trio, where every one of the bash's did.
     assert any(set(R2_TO_BACKUP) <= set(c.get("cf_env") or ()) for c in bash_calls)
     assert not any(set(R2_TO_BACKUP) & set(c.get("cf_env") or ()) for c in port_calls)
-    assert secrets["STRIPE_SECRET_KEY"] == ""
+    assert not [name for name in secrets if name.startswith("STRIPE")], sorted(secrets)
     # Self-destruct output is a delta (the bash sent it to /dev/null). The portal build line is the other: bench is built with no Turnstile sitekey since the operator ruling of 2026-10-13, and the bash still names its key.
     bash_build = "→ Building account portal SPA (Turnstile sitekey: 0x4AAAAAAC46Rczgin0T1o04)"
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
@@ -1194,7 +1188,6 @@ def _payload_env(monkeypatch) -> None:
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", '{"user": "u", "pass": "p"}')
-    monkeypatch.setattr(deploy_bench, "stripe_pair", lambda: ("", ""))
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", h.R2_ENDPOINT)
 
 

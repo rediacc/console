@@ -267,10 +267,7 @@ def test_the_www_secrets_bind_the_eu_ses_pair_under_the_unsuffixed_names() -> No
     step = next(s for s in EDGE if s.id == "www-secrets")
     assert "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID" in step.binds
     assert "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY" in step.binds
-    # The live key and its live webhook secret, from one store side: a mixed pair (live key, sandbox secret) fails open.
-    assert "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY" in step.binds
-    assert "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET" in step.binds
-    assert not [b for b in step.binds if "SANDBOX" in b]
+    assert not [b for b in step.binds if "STRIPE" in b], "the www Worker takes no Stripe secret"
 
 
 def test_the_www_steps_deploy_and_bind_the_worker_the_wrangler_config_names() -> None:
@@ -1296,12 +1293,12 @@ def test_every_bind_is_declared_by_the_profiles_of_its_step() -> None:
                 step.profiles,
             )
             checked += 1
-    assert checked >= 7, "the binds this test exists for are gone; it checked %d" % checked
+    assert checked >= 6, "the binds this test exists for are gone; it checked %d" % checked
 
 
 def test_bind_refusals_names_an_undeclared_or_empty_store() -> None:
-    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SECRET_KEY": "x"}
-    assert local.bind_refusals(["STRIPE_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
+    env = {"REDIACC_BWS_PROFILES": "release-local", "AWS_SES_ACCESS_KEY_ID_EU": "x"}
+    assert local.bind_refusals(["AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID"], env) == []
     (empty,) = local.bind_refusals(["AWS_SES_REGION_EU > AWS_SES_REGION"], env)
     assert "AWS_SES_REGION_EU" in empty
     assert "empty" in empty

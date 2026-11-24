@@ -473,9 +473,6 @@ def _bench_env(monkeypatch, **overrides):
         "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
         **overrides,
     }
-    # Both Stripe variables are cleared here, never inherited from the runner: a half-set pair on a lane (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
-    for name in ("STRIPE_SANDBOX_SECRET_KEY", "STRIPE_SANDBOX_WEBHOOK_SECRET"):
-        monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
@@ -720,86 +717,6 @@ def test_a_failed_shared_build_refuses_the_deploy_before_vite():
     refusal = src.index("raise DeployError(", guard)
     assert refusal < src.index('"vite build",')
     assert "stale dist" in src[guard : refusal + 160]
-
-
-def _clear_stripe(monkeypatch):
-    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
-    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
-
-
-def test_a_sandbox_stripe_pair_is_bound_under_the_worker_names(monkeypatch, capsys):
-    _bench_env(
-        monkeypatch,
-        STRIPE_SANDBOX_SECRET_KEY="sk_test_abc",
-        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
-    )
-    payload = deploy_bench.secrets_payload()
-    assert payload["STRIPE_SANDBOX_SECRET_KEY"] == "sk_test_abc"
-    assert payload["STRIPE_SANDBOX_WEBHOOK_SECRET"] == "whsec_abc"
-    assert payload["STRIPE_SECRET_KEY"] == ""
-    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
-    out = capsys.readouterr()
-    assert "sk_test_abc" not in out.out + out.err
-    assert "whsec_abc" not in out.out + out.err
-
-
-def test_the_live_stripe_names_in_the_environment_are_never_bound(monkeypatch):
-    _bench_env(monkeypatch, STRIPE_SECRET_KEY="sk_live_x", STRIPE_WEBHOOK_SECRET="whsec_x")
-    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
-    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
-    payload = deploy_bench.secrets_payload()
-    assert payload["STRIPE_SECRET_KEY"] == ""
-    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
-
-
-def test_a_restricted_test_key_is_accepted(monkeypatch):
-    _bench_env(
-        monkeypatch,
-        STRIPE_SANDBOX_SECRET_KEY="rk_test_abc",
-        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
-    )
-    assert deploy_bench.secrets_payload()["STRIPE_SANDBOX_SECRET_KEY"] == "rk_test_abc"
-
-
-@pytest.mark.parametrize("key", ["sk_live_SECRETVALUE", "rk_live_SECRETVALUE", "garbage"])
-def test_a_non_test_stripe_key_is_refused_without_printing_it(monkeypatch, capsys, key):
-    _bench_env(
-        monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_SECRETHOOK"
-    )
-    with pytest.raises(deploy_bench.DeployError, match="not a Stripe test key") as err:
-        deploy_bench.secrets_payload()
-    out = capsys.readouterr()
-    shown = str(err.value) + out.out + out.err
-    assert "SECRETVALUE" not in shown
-    assert "SECRETHOOK" not in shown
-    assert key not in shown
-
-
-def test_an_absent_stripe_pair_keeps_the_blanks_and_says_so(monkeypatch, capsys):
-    _bench_env(monkeypatch)
-    _clear_stripe(monkeypatch)
-    payload = deploy_bench.secrets_payload()
-    for name in (
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET",
-        "STRIPE_SANDBOX_SECRET_KEY",
-        "STRIPE_SANDBOX_WEBHOOK_SECRET",
-    ):
-        assert payload[name] == ""
-    assert "Stripe sandbox pair absent" in capsys.readouterr().out
-
-
-@pytest.mark.parametrize(
-    ("key", "hook", "missing"),
-    [
-        ("sk_test_abc", "", "STRIPE_SANDBOX_WEBHOOK_SECRET"),
-        ("", "whsec_abc", "STRIPE_SANDBOX_SECRET_KEY"),
-    ],
-)
-def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missing):
-    _bench_env(monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET=hook)
-    with pytest.raises(deploy_bench.DeployError, match=missing):
-        deploy_bench.secrets_payload()
 
 
 def _consent_switches(directory):

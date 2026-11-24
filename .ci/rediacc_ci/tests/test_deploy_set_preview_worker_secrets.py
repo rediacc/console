@@ -63,7 +63,7 @@ sys.stdout.write("Finished processing secrets JSON file.\\n")
 
 # `jq` is a real prerequisite (the port shells out to it), and `uname` / `dirname` are kept so a tool leaking in shows up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname")
-OK_LINE = "✓ Set 14 secrets on pr-123 in one bulk call\n"
+OK_LINE = "✓ Set 12 secrets on pr-123 in one bulk call\n"
 
 
 def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
@@ -141,7 +141,7 @@ def guard_text(name: str, worker: str = "pr-123") -> str:
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """ONE CALL, PINNED AGAINST LITERAL BYTES: the argv, then the fourteen keys in order, the four legitimately-empty ones present as empty strings, and no licence private key."""
+    """ONE CALL, PINNED AGAINST LITERAL BYTES: the argv, then the twelve keys in order, the two legitimately-empty ones present as empty strings, and no licence private key."""
     proc, calls = _run(tmp_path)
     assert proc.returncode == 0
     assert calls.splitlines()[0] == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpr-123"
@@ -152,8 +152,6 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
         '  "ACCOUNT_SERVER_API_KEY": "ak",\n'
         '  "ACCOUNT_JWT_SECRET": "jw",\n'
-        '  "STRIPE_SECRET_KEY": "",\n'
-        '  "STRIPE_WEBHOOK_SECRET": "",\n'
         '  "ROOT_EMAIL": "root@example.invalid",\n'
         '  "AWS_SES_ACCESS_KEY_ID": "sk",\n'
         '  "AWS_SES_SECRET_ACCESS_KEY": "ss",\n'
@@ -182,23 +180,6 @@ def test_the_worker_name_is_the_pr_number_prefixed(tmp_path: pathlib.Path) -> No
     proc, calls = _run(tmp_path, PR_NUMBER="9001")
     assert "--name\tpr-9001" in calls
     assert proc.stderr == OK_LINE.replace("pr-123", "pr-9001")
-
-
-def test_stripe_is_deliberately_not_demanded(tmp_path: pathlib.Path) -> None:
-    """A preview without billing is a legitimate state: adding Stripe to the guard list would turn every preview red."""
-    proc, calls = _run(tmp_path)
-    assert proc.returncode == 0
-    assert '"STRIPE_SECRET_KEY": ""' in document(calls)
-    assert "STRIPE_SECRET_KEY" not in port.REQUIRED_NONEMPTY
-    assert "STRIPE_WEBHOOK_SECRET" not in port.REQUIRED_NONEMPTY
-
-
-def test_a_present_stripe_key_reaches_the_document(tmp_path: pathlib.Path) -> None:
-    # PASSED AS A DICT: ruff's S106 keys on the argument name.
-    stripe = {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_WEBHOOK_SECRET": "whsec_x"}
-    _proc, calls = _run(tmp_path, env_over=stripe)
-    assert '"STRIPE_SECRET_KEY": "sk_test_x"' in document(calls)
-    assert '"STRIPE_WEBHOOK_SECRET": "whsec_x"' in document(calls)
 
 
 def test_every_one_of_the_ten_guards_fires_with_its_own_name(tmp_path: pathlib.Path) -> None:
@@ -268,7 +249,7 @@ def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path)
     proc, _calls = _run(tmp_path, FAKE_NPX_RC="7")
     assert proc.returncode == 7
     assert proc.stderr == "wrangler: failed to set secrets\n"
-    assert "Set 14 secrets" not in proc.stderr
+    assert "Set 12 secrets" not in proc.stderr
     assert proc.stdout == ""
 
 
@@ -289,7 +270,7 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 
 
 def test_the_closing_line_counts_what_is_actually_sent() -> None:
-    assert len(port.KEYS) == port.SECRET_COUNT_CLAIM == 14
+    assert len(port.KEYS) == port.SECRET_COUNT_CLAIM == 12
 
 
 def test_pure_helpers() -> None:
