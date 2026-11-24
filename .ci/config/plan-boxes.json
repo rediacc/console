@@ -121,16 +121,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 4,
-      "open_sigs": [
-        "26dc6529",
-        "e8c3b0f2"
-      ],
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
       "done_sigs": [
+        "26dc6529",
         "b48d4f0c",
         "da7de199",
         "da8a433a",
+        "e8c3b0f2",
         "ec0a85bb"
       ]
     },
@@ -3643,8 +3642,8 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 14,
+      "open": 11,
+      "done": 15,
       "open_sigs": [
         "23b9879e",
         "260b0e88",
@@ -3654,7 +3653,6 @@
         "8091f645",
         "97d391d0",
         "afcf2128",
-        "bb52ef45",
         "c0384c17",
         "c16682a2",
         "f5114899"
@@ -3670,6 +3668,7 @@
         "615205ac",
         "8bad4837",
         "af7eb301",
+        "bb52ef45",
         "c3196ed4",
         "d6681b4e",
         "da90ee93",
@@ -4172,16 +4171,16 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 4,
+      "open": 3,
+      "done": 5,
       "open_sigs": [
         "0bfa0623",
-        "28f87597",
         "97a9c407",
         "b823b7bb"
       ],
       "done_sigs": [
         "2624faf1",
+        "28f87597",
         "5fced6ed",
         "b282bdd7",
         "f2db8fd0"

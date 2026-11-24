@@ -41,21 +41,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 759 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 774 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 2 live (session d778be9d): worker:ae8007ceb74e34a96, worker:afd4f4bb931129835.
-- Leased items: 3: #65313b5a (worker:ae8007ceb74e34a96, d778be9d), #6e62427c (worker:afd4f4bb931129835, d778be9d), #73b32419 (worker:bad7z4t8h, ace763dd).
+- Writers: 1 live (session d778be9d): worker:a839c925c81bcf4cb.
+- Leased items: 2: #e1885643 (worker:a839c925c81bcf4cb, d778be9d), #e44be537 (worker:abfa461e09322fcac, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 97 plans done, 1267 of 1842 boxes done (68%).
+Promoted: 11 of 97 plans done, 1271 of 1842 boxes done (69%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -130,7 +130,7 @@ Promoted: 10 of 97 plans done, 1267 of 1842 boxes done (68%).
 | 69 | PLAN-console-command-line.md | 3/16 | 13 open |
 | 70 | PLAN-console-ia.md | 0/10 | 10 open |
 | 71 | PLAN-console-animations.md | 0/9 | 9 open |
-| 72 | PLAN-rmcp-policy-record.md | 14/26 | 12 open |
+| 72 | PLAN-rmcp-policy-record.md | 15/26 | 11 open |
 | 73 | PLAN-rmcp-decide.md | 1/9 | 8 open |
 | 74 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
 | 75 | PLAN-rmcp-executor-hardening.md | 12/21 | 9 open |
@@ -145,7 +145,7 @@ Promoted: 10 of 97 plans done, 1267 of 1842 boxes done (68%).
 | 84 | PLAN-rmcp-orphan-recovery.md | 2/8 | 6 open |
 | 85 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
 | 86 | PLAN-rmcp-docs.md | 1/20 | 19 open |
-| 87 | PLAN-stripe-disable.md | 4/8 | 4 open |
+| 87 | PLAN-stripe-disable.md | 5/8 | 3 open |
 | 88 | PLAN-forensics-capture.md | 8/13 | 5 open |
 | 89 | PLAN-forensics-shipping.md | 7/16 | 9 open |
 | 90 | PLAN-forensics-detection.md | 6/15 | 9 open |
@@ -155,7 +155,7 @@ Promoted: 10 of 97 plans done, 1267 of 1842 boxes done (68%).
 | 94 | PLAN-forensics-docs-legal.md | 0/13 | 13 open |
 | 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 96 | PLAN-writers-now-cadence.md | 5/5 | done |
-| 97 | PLAN-armed-actions.md | 4/6 | 2 open |
+| 97 | PLAN-armed-actions.md | 6/6 | done |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

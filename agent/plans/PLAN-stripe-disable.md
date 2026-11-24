@@ -72,10 +72,11 @@ D6. **Errors carry an origin.** `BILLING_DISABLED` is a `user` origin row in the
 - [ ] SD6 [lead] Correction lines on the neighbouring plans named under Ordering: PLAN-terms-region-notice.md, PLAN-portal-analytics.md, PLAN-www-funnel-truthfulness.md, PLAN-account-sidebar-redesign.md and PLAN-root-grants.md R5, each dated and citing this plan, box lines unchanged; then `npm run check:ci-plan-boxes -- --update` and `npm run check:ci-plan-record -- --update`.
   Depends on: none.
   Accept: both checks rc 0 after the regeneration; `git grep -n "PLAN-stripe-disable.md" -- agent/plans` lists the five plans.
-- [ ] SD7 [writer] The CLI hint stops pointing at self-serve billing: doctor-subscription's "check billing" text names the account owner or Rediacc instead, in all 13 CLI locales by a sonnet writer.
+- [x] SD7 [writer] The CLI hint stops pointing at self-serve billing: doctor-subscription's "check billing" text names the account owner or Rediacc instead, in all 13 CLI locales by a sonnet writer.
   Owns: packages/cli/src/commands/doctor-subscription.ts, packages/cli/src/i18n/locales/*/cli.json
   Depends on: SD1.
   Accept: `(cd packages/cli && npm test)` rc 0; `npm run check:ci-i18n-cli-key-usage` rc 0.
+    (ticked) 2026-11-24T08:55:28Z by d778be9d: landed 725843fbfc,0460482871; doctor-subscription vitest 6 passed, cli npm test 6931 passed
 - [ ] LP-bench [live] Deploy the branch to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) and run the console smoke; additional verification: `POST /portal/checkout`, `/portal/billing` and `/portal/subscription/change` return 410 `BILLING_DISABLED`, the subscription page shows the contact copy, and an admin plan edit appears on the customer page.
   Accept: live-proof bench account-smoke
 

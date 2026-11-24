@@ -471,7 +471,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
-| `agent/plans/PLAN-armed-actions.md` | approved | 96 | 2 | 4 | 27722 |
+| `agent/plans/PLAN-armed-actions.md` | approved | 106 | 0 | 6 | 29302 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 800 | 2 | 49 | 116356 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 59 | 0 | 9 | 13031 |
@@ -615,7 +615,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 54 | 6 | 2 | 9466 |
-| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 161 | 12 | 14 | 38875 |
+| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 162 | 11 | 15 | 39008 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 97 | 5 | 12 | 20633 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
@@ -644,7 +644,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 216 | 0 | 8 | 29276 |
 | `agent/plans/PLAN-stop-hook-store-status.md` | approved | 207 | 3 | 6 | 26150 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
-| `agent/plans/PLAN-stripe-disable.md` | approved | 86 | 4 | 4 | 14718 |
+| `agent/plans/PLAN-stripe-disable.md` | approved | 87 | 3 | 5 | 14857 |
 | `agent/plans/PLAN-stripe-removal.md` | active | 35 | 3 | 0 | 2992 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
