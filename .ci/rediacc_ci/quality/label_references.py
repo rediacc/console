@@ -100,7 +100,8 @@ MIN_DISTINCT_ENV = "LABEL_REFS_MIN_DISTINCT"
 
 DEFAULT_LABELS_FILE = ".github/labels.yml"
 # Space-separated for the test seam; defaults to the real surfaces.
-DEFAULT_SCAN_DIRS = ".github .ci"
+# `scripts` joined on 2026-11-24: a6840066e8 retired `.ci/scripts/ci/report-nightly-status.cjs`, whose `nightly-red`, `bug` and `automated` were three of the sweep's eight labels, and the live consumer of the same three is `scripts/ci/report-budget-check.cjs`, which the sweep never read. The floor went red at five, which is the floor doing its job: the corpus had lost a consumer surface.
+DEFAULT_SCAN_DIRS = ".github .ci scripts"
 # "The tree carries well over this many distinct referenced labels; finding fewer means the sweep itself broke (wrong root, bad glob), not a clean tree."
 DEFAULT_MIN_DISTINCT = 8
 
