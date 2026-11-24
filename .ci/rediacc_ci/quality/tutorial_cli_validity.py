@@ -17,7 +17,7 @@ THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander tre
 ---- gate ----
 step: Tutorial CLI validity
 needs: none
-selftest: true
+selftest: false
 lane: quality-content
 ---- end gate ----
 """

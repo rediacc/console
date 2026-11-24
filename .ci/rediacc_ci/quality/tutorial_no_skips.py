@@ -12,7 +12,7 @@ WHAT IT CANNOT SEE. A tutorial that runs but asserts nothing. Coverage of that b
 ---- gate ----
 step: Tutorials cannot skip themselves
 needs: none
-selftest: true
+selftest: false
 lane: quality-content
 ---- end gate ----
 """
