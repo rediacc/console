@@ -141,9 +141,13 @@ def test_a_record_glob_only_in_the_gate_table_or_trace_ledger_makes_no_reader(ga
     assert not reads("trace-ledger")
 
 
+#: A record glob the real gate table still carries as a literal: the subject of the real-tree control below.
+TABLE_RECORD = ".ci/config/plan-boxes.json"
+
+
 def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
-    """The five gates that import the gate table, against the real policy and lock: the table still holds an agent/worklist/** literal, and none of them is derived as a reader of the worklist record."""
-    assert "'agent/worklist/**'" in MANIFEST.read_text(encoding="utf-8"), (
+    """The five gates that import the gate table, against the real policy and lock: the table still holds a record glob literal, and none of them is derived as a reader of that record. The subject was agent/worklist/** until 9a66691457 dropped check:ci-plan-bindings' declared paths, the last place the table named it; .ci/config/plan-boxes.json is a record glob the table still names (check:ci-plan-boxes' paths)."""
+    assert "'%s'" % TABLE_RECORD in MANIFEST.read_text(encoding="utf-8"), (
         "the control's subject moved"
     )
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
@@ -161,10 +165,11 @@ def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
                 paths.from_root(".ci", "policy", "record-paths.json").read_text(encoding="utf-8")
             )
         )
-        if r["glob"] == WORKLIST
+        if r["glob"] == TABLE_RECORD
     ]
+    assert len(records) == 1, "SETUP: %s is no record glob in the policy" % TABLE_RECORD
     derived = gate.derive_readers(chosen, records, ROOT)[0]
-    assert derived[WORKLIST] == {}, derived[WORKLIST]
+    assert derived[TABLE_RECORD] == {}, derived[TABLE_RECORD]
 
 
 def test_the_seven_table_importers_listing_agent_are_flagged_through_declared(tmp_path):
