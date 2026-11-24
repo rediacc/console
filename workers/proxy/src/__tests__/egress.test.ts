@@ -18,6 +18,7 @@ import {
   EXECUTOR_TOKEN_PLACEHOLDER,
   forwardAccountEgress,
   MAX_CONFIG_PUSH_BODY_BYTES,
+  MAX_SESSION_BODY_BYTES,
 } from '../egress';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 import type { EgressReportAnswer } from '../org-executor';
@@ -488,6 +489,32 @@ describe('config write-back routes (PLAN-rmcp-writeback.md WB5)', () => {
     expect(response.status).toBe(413);
     expect(await response.json()).toMatchObject({ reason: 'body-too-large' });
     expect(seen).toHaveLength(0);
+  });
+
+  it('refuses an oversize session handshake body 413 body-too-large with nothing forwarded', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/session', {
+        method: 'POST',
+        body: new Uint8Array(MAX_SESSION_BODY_BYTES + 1),
+      }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ reason: 'body-too-large' });
+    expect(seen).toHaveLength(0);
+  });
+
+  it('admits a session handshake body of exactly the cap (control for the refusal)', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/session', { method: 'POST', body: new Uint8Array(MAX_SESSION_BODY_BYTES) }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(200);
+    expect(seen).toHaveLength(1);
   });
 
   it('admits a push body of exactly the cap (control for the refusal)', async () => {

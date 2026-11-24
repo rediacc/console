@@ -49,7 +49,7 @@ const CONFIG_PULL_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}$/;
 const CONFIG_SESSION_PATH = `${API}/configs/session`;
 
 /** The most of a session handshake body forwarded; the call carries no meaningful body. */
-const MAX_SESSION_BODY_BYTES = 4096;
+export const MAX_SESSION_BODY_BYTES = 4096;
 
 /** The most of a config push body forwarded: the account route's own cap, `MAX_CONFIG_PUSH_BODY_BYTES` (private/account/src/dto/config.dto.ts, 4 MiB of base64 blob plus 1 MiB of envelope). A larger body is refused 413 here, before the account server sees it. */
 export const MAX_CONFIG_PUSH_BODY_BYTES = 4 * 1024 * 1024 + 1024 * 1024;
