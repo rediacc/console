@@ -115,10 +115,15 @@ SIGNATURES = (
     (
         "secret-expired",
         "operator",
+        # A line that reports the expiry as handled (`cache token is expired, refreshing`) is no refused credential: the line must carry a failure word and no refresh word.
         re.compile(
-            r"(?i)\b(?:token|secret|credential|password|api[ _-]?key|certificate)s?\b[^\n]{0,40}?"
+            r"(?i)^(?!.*\b(?:refresh|renew|rotat|retry|retrying|will expire)\w*)"
+            r"(?=.*\b(?:error|fail|failed|denied|refus|reject|invalid|unauthori[sz]ed|cannot|could not|unable)\w*)"
+            r".*(?:"
+            r"\b(?:token|secret|credential|password|api[ _-]?key|certificate)s?\b[^\n]{0,40}?"
             r"\b(?:has|have|is|are) expired\b"
             r"|\bexpired (?:token|secret|credential|password|api[ _-]?key|certificate)s?\b"
+            r")"
         ),
         "a secret or credential has expired (rotate it; a rerun repeats it)",
         0,
@@ -129,7 +134,8 @@ SIGNATURES = (
         re.compile(
             r"(?i)recent account payments have failed|spending limit needs to be increased"
             r"|\b402 Payment Required\b|\(HTTP 402\)|\bbilling (?:issue|problem|error|hard limit)\b"
-            r"|\binsufficient (?:credits?|funds|balance)\b|exceeded your current quota"
+            r"|^(?=.*\b(?:error|fail|failed|denied|refus|reject|unauthori[sz]ed|cannot|could not|unable|http 4\d\d)\w*)"
+            r".*\binsufficient (?:credits?|funds|balance)\b|exceeded your current quota"
             r"|credit balance is too low"
         ),
         "a provider refused on billing or quota (the account needs the operator)",

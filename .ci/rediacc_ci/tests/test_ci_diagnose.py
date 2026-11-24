@@ -1499,5 +1499,33 @@ def test_hub_token_exchange_warning_is_no_auth_401():
         "DOCKERHUB_TOKEN is set without DOCKERHUB_USERNAME, so it cannot be exchanged for a Hub API token "
         "(a raw token is always HTTP 401); reading anonymously"
     )
-    assert D.classify([warn, "dependency check failed: nginx pin is stale"])[1] != "auth-401"
+    dependency = "dependency check failed: nginx pin is stale"
+    assert D.classify([warn]) == ("unknown", "")
+    assert D.classify([warn, dependency]) == D.classify([dependency])
+    assert D.classify([warn, dependency])[1] != "auth-401"
     assert D.classify([warn, "request failed: HTTP 401"])[1] == "auth-401"
+
+
+def test_an_expiry_the_log_reports_as_handled_is_no_operator_verdict():
+    """Review 65dcaec1.2 and b74a99a2.6: `cache token is expired, refreshing` is no refused credential."""
+    handled = "cache token is expired, refreshing it"
+    assert (
+        D.classify([handled, "dependency check failed: nginx pin is stale"])[1] != "secret-expired"
+    )
+    assert D.classify([handled])[0] != "operator-only"
+    # Control: the refusal itself still reads operator-only.
+    assert D.classify(["Error: the BWS access token has expired"]) == (
+        "operator-only",
+        "secret-expired",
+    )
+
+
+def test_ordinary_application_text_about_balance_is_no_billing_refusal():
+    """Review b74a99a2.5: an `insufficient balance` line with no failure word is application output."""
+    assert (
+        D.classify(["ledger: insufficient balance for the fixture transfer"])[0] != "operator-only"
+    )
+    assert D.classify(["Error: Insufficient credits to run this job"]) == (
+        "operator-only",
+        "billing-refused",
+    )
