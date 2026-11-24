@@ -3155,6 +3155,30 @@
         "b7e90764"
       ]
     },
+    "agent/plans/PLAN-release-notes.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "1afb47d2",
+        "1ddce289",
+        "23dbc7b1",
+        "34551fcb",
+        "8d7cedfd",
+        "9c7aec4a",
+        "a098b831",
+        "b09f5412",
+        "b5b16d18",
+        "beb30812",
+        "c487943c",
+        "df472d27",
+        "fcd7d0ae"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-release-path-protection-2027.md": {
       "status": "approved",
       "owner": "d778be9d",

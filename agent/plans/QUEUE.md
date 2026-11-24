@@ -41,14 +41,14 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 736 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 746 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 6 live (session d778be9d): worker:ae8007ceb74e34a96, worker:adc0cd74982cfdd65, worker:adc913dd456c3f5bf, worker:ad024c645cbe946bf, worker:a82184340774430c9, worker:a843a17820bf6df50.
-- Leased items: 7: #01fa01bc (worker:adc913dd456c3f5bf, d778be9d), #0e89a7d9 (worker:a843a17820bf6df50, d778be9d), #65313b5a (worker:ae8007ceb74e34a96, d778be9d), #73b32419 (worker:bad7z4t8h, ace763dd), #c93398ca (worker:a82184340774430c9, d778be9d), #d1560f1c (worker:ad024c645cbe946bf, d778be9d), #f4665baf (worker:adc0cd74982cfdd65, d778be9d).
+- Writers: 4 live (session d778be9d): worker:adc913dd456c3f5bf, worker:aa74462cfcb99aa77, worker:ab6ecf5ccb8b78421, worker:ae8007ceb74e34a96.
+- Leased items: 5: #01fa01bc (worker:adc913dd456c3f5bf, d778be9d), #25c199d4 (worker:ab6ecf5ccb8b78421, d778be9d), #65313b5a (worker:ae8007ceb74e34a96, d778be9d), #73b32419 (worker:bad7z4t8h, ace763dd), #daad370e (worker:aa74462cfcb99aa77, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
@@ -286,14 +286,15 @@ Promoted: 10 of 97 plans done, 1263 of 1842 boxes done (68%).
 25. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
 26. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
 27. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
-28. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
-29. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
-30. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-31. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-32. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-33. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-34. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-35. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-36. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
-37. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+28. agent/plans/PLAN-release-notes.md -- P2, approved, not started
+29. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
+30. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
+31. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+32. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+33. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+34. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+35. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+36. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+37. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+38. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
