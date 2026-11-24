@@ -209,6 +209,9 @@ class Matcher:
 
     def classify(self, tool, text):
         chain = TOOL_CHAIN.get(tool)
+        # A tool no chain serves has no candidate guard. Without this the `chain` None below equals the None a guard without a literal CHAIN reports, so such a refusal was attributed to a guard that serves no tool.
+        if chain is None:
+            return UNMAPPED
         flat = _squash(text)
         scored = []
         for name, frags in self.modules.items():
@@ -369,6 +372,9 @@ def selftest():
         (g / "block_g.py").write_text(
             'from rediacc_hooks.guards import _shared\nCHAIN = "pre-bash"\nORDER = 20\nX = "  the review row of this guard adds its own closing line."\n'
         )
+        (g / "block_h.py").write_text(
+            'MSG = "BLOCKED: a guard without a chain says this unique line."\n'
+        )
         (g / "block_f.py").write_text(
             'from rediacc_hooks.guards import block_a\nCHAIN = "pre-bash"\nORDER = 1\n'
         )
@@ -446,6 +452,14 @@ def selftest():
                 m.classify(
                     "Read",
                     "PreToolUse:Read hook error: BLOCKED: a force push rewrites the remote branch history.",
+                ),
+                UNMAPPED,
+            ),
+            (
+                "chainless guard, chainless tool",
+                m.classify(
+                    "Read",
+                    "PreToolUse:Read hook error: BLOCKED: a guard without a chain says this unique line.",
                 ),
                 UNMAPPED,
             ),
