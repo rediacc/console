@@ -12,6 +12,19 @@ import { resolveRequiredDirOption } from './shared/require-path-option.js';
 // Cache for loaded locale data
 const localeCache = new Map();
 
+const FLAT_PLURAL_SUFFIX = /_(zero|one|two|few|many)$/;
+
+/**
+ * i18next flat plurals (`key`, `key_other`, and in ru or ar `key_few` and the like) hold a different CLDR category set per locale by design, the same as a nested plural group. Every `key_<category>` whose `key_other` sits beside it counts as that one `key_other` leaf.
+ */
+const collapseFlatPlurals = (keys) => {
+  const all = new Set(keys);
+  return keys.map((key) => {
+    const stem = key.replace(FLAT_PLURAL_SUFFIX, '');
+    return stem !== key && all.has(`${stem}_other`) ? `${stem}_other` : key;
+  });
+};
+
 /**
  * Get all supported language directories
  */
@@ -71,7 +84,7 @@ const loadLocaleKeys = (filePath) => {
   try {
     const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     const groups = new Set();
-    const keys = new Set(flattenKeys(content, '', groups));
+    const keys = new Set(collapseFlatPlurals(flattenKeys(content, '', groups)));
     // Which leaves are plural groups: a group against a plain string is a shape mismatch.
     keys.groups = groups;
     localeCache.set(filePath, keys);

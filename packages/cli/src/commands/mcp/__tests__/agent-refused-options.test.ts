@@ -116,7 +116,12 @@ describe('agent-refused options', () => {
   });
 
   // The refusing commands that are not MCP tools at all. Exact, so a tool renamed or mapped wrongly shows up as a new entry here, and a command that becomes a tool leaves the list and its schema is checked (review 2b807c97.1).
-  const NOT_MCP_TOOLS = ['config edit', 'config field get', 'repo permission grant', 'repo prune'];
+  const NOT_MCP_TOOLS = [
+    'config edit',
+    'config field get',
+    'repo permission grant',
+    'repo prune',
+  ] as const;
 
   it('exposes no refused option in any MCP tool schema', () => {
     const tools = new Map(buildAllTools().map((tool) => [tool.name, tool]));

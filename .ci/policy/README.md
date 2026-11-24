@@ -90,7 +90,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
-| `.language-policy-allowlist` | name per line | 40 | 41 | both |
+| `.language-policy-allowlist` | name per line | 41 | 42 | both |
 | `.pins-upgrade-blocklist` | name per line | 23 | 24 | both |
 | `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
 | `.profiler-coverage-allowlist` | name per line | 60 | 5 | both |

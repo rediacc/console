@@ -200,6 +200,7 @@ const ACCOUNT_WEB_EXTRA_UNTRANSLATED_PATTERNS = [
   '^Tag$',
   '^(Business|Community|Enterprise|Professional)$',
   '^Pro$',
+  '^Standard$', // the same word in de, et, fr and it (forensicsLevelStandard)
   '^Clustering$',
   '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
   '^Commit$',
