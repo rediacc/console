@@ -74,6 +74,12 @@ describe('ConsoleAuditEventSchema', () => {
       ).success;
     expect(at(200)).toBe(true);
     expect(at(201)).toBe(false);
+    const store = (n: number) =>
+      ConsoleAuditEventSchema.safeParse(
+        event('console.policy.saved', { storeId: 's'.repeat(n), configId: 'c-1', version: 2 }),
+      ).success;
+    expect(store(200)).toBe(true);
+    expect(store(201)).toBe(false);
   });
 
   it('refuses an unknown type', () => {

@@ -46,7 +46,7 @@ const requestId = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/);
 const severity = z.enum(['none', 'caution', 'destructive']);
 
 const actorSchema = z.strictObject({
-  userId: z.string().min(1),
+  userId: z.string().min(1).max(200),
   kind: z.enum(['human', 'agent']),
 });
 
@@ -54,9 +54,9 @@ const envelope = {
   v: z.literal(1),
   id: z.string().min(1).max(100),
   ts: z.iso.datetime(),
-  orgId: z.string().min(1),
+  orgId: z.string().min(1).max(200),
   /** Null for an event that belongs to the org and no team. */
-  teamId: z.string().min(1).nullable(),
+  teamId: z.string().min(1).max(200).nullable(),
   actor: actorSchema,
   target: consoleTargetSchema,
 };
@@ -99,7 +99,7 @@ const policySaved = z.strictObject({
   ...envelope,
   type: z.literal('console.policy.saved'),
   data: z.strictObject({
-    storeId: z.string().min(1),
+    storeId: z.string().min(1).max(200),
     configId: z.string().min(1).max(200),
     version: z.number().int().min(0),
   }),
