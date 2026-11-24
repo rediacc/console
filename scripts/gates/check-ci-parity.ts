@@ -136,6 +136,9 @@ export interface Invocation {
   argv: string[];
 }
 
+/** The lock wrapper a heavy gate's `run` starts with; the command after its `--` is what the gate runs. */
+export const HEAVY_LOCK_SCRIPT = '.ci/rediacc_ci/core_lease.py';
+
 /**
  * The leaf commands a shell command ultimately executes, each with its argv, with `npm run`
  * expanded transitively through root and workspace manifests.
@@ -145,9 +148,6 @@ export interface Invocation {
  * names `check:version` -- identical bodies, different keys. A key-level
  * comparison reports those as breaks; a leaf-level one does not.
  */
-/** The lock wrapper a heavy gate's `run` starts with; the command after its `--` is what the gate runs. */
-export const HEAVY_LOCK_SCRIPT = '.ci/rediacc_ci/core_lease.py';
-
 export function resolveInvocations(
   cmd: string,
   u: ScriptUniverse,

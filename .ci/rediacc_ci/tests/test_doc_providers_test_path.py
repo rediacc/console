@@ -56,3 +56,43 @@ def test_programs_named_test_are_not_test_paths():
         "scripts/lib/my_test.ts",
     ]:
         assert not is_test_path(path), path
+
+
+def _fixture_refusal() -> re.Pattern[str]:
+    body = re.search(
+        r"const isNamerCandidate = \(f: string\): boolean => \{\n(.*?)\n\};\n", SOURCE, re.DOTALL
+    )
+    assert body, "isNamerCandidate definition not found in doc-providers.ts"
+    refusals = [
+        m
+        for m in re.findall(r"if \(/(.+)/\.test\(f\)\) return false;", body.group(1))
+        if "fixtures" in m
+    ]
+    assert len(refusals) == 1, (
+        "expected one tests/fixtures refusal in isNamerCandidate, got %r" % refusals
+    )
+    return re.compile(refusals[0].replace("\\/", "/"))
+
+
+def test_a_test_fixture_never_names_a_json_file():
+    """Review 2e7076b2.1: a guard fixture that quotes a path must not win the wiring tier over the loader that binds it."""
+    refusal = _fixture_refusal()
+    for path in [
+        ".claude/rediacc_hooks/tests/fixtures/guard-case.py",
+        "tests/fixtures/loader.ts",
+        "scripts/lib/tests/fixtures/x.mjs",
+    ]:
+        assert refusal.search(path), path
+
+
+def test_a_program_outside_tests_fixtures_still_names_a_json_file():
+    """Control: the refusal is the `tests/fixtures/` directory only, not any path that merely mentions tests or fixtures."""
+    refusal = _fixture_refusal()
+    for path in [
+        "scripts/lib/doc-providers.ts",
+        "scripts/lib/fixtures/x.ts",
+        "scripts/tests/x.ts",
+        "scripts/lib/mytests/fixtures/x.ts",
+        "scripts/lib/tests/fixturesx.ts",
+    ]:
+        assert not refusal.search(path), path
