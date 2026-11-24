@@ -308,7 +308,7 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "LIVE_CONSOLE_STORE_PASSWORD": {
+    "LIVE_CONSOLE_RECOVERY_CODE": {
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) run only locally through `bws_env exec --profile live-console`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
@@ -344,7 +344,7 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-eu run only locally through `bws_env exec --profile live-console-edge-eu`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "LIVE_CONSOLE_EDGE_EU_STORE_PASSWORD": {
+    "LIVE_CONSOLE_EDGE_EU_RECOVERY_CODE": {
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-eu run only locally through `bws_env exec --profile live-console-edge-eu`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
@@ -376,7 +376,7 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-us run only locally through `bws_env exec --profile live-console-edge-us`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "LIVE_CONSOLE_EDGE_US_STORE_PASSWORD": {
+    "LIVE_CONSOLE_EDGE_US_RECOVERY_CODE": {
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-us run only locally through `bws_env exec --profile live-console-edge-us`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
@@ -408,7 +408,7 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-asia run only locally through `bws_env exec --profile live-console-edge-asia`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "LIVE_CONSOLE_EDGE_ASIA_STORE_PASSWORD": {
+    "LIVE_CONSOLE_EDGE_ASIA_RECOVERY_CODE": {
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-asia run only locally through `bws_env exec --profile live-console-edge-asia`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },

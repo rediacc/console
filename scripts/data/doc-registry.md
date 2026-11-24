@@ -2103,7 +2103,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LIVE_CONSOLE_EDGE_ASIA_ORG_B_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_ASIA_ORG_B_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_EDGE_ASIA_ORG_B_TOTP_SECRET` | secret | - |
-| `LIVE_CONSOLE_EDGE_ASIA_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_ASIA_RECOVERY_CODE` | secret | - |
 | `LIVE_CONSOLE_EDGE_EU_D1_DATABASE` | secret | - |
 | `LIVE_CONSOLE_EDGE_EU_ORG_A_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_EU_ORG_A_PASSWORD` | secret | - |
@@ -2111,7 +2111,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LIVE_CONSOLE_EDGE_EU_ORG_B_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_EU_ORG_B_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_EDGE_EU_ORG_B_TOTP_SECRET` | secret | - |
-| `LIVE_CONSOLE_EDGE_EU_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_EU_RECOVERY_CODE` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_D1_DATABASE` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_A_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_A_PASSWORD` | secret | - |
@@ -2122,7 +2122,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_C_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_EDGE_US_ORG_C_TOTP_SECRET` | secret | - |
-| `LIVE_CONSOLE_EDGE_US_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_EDGE_US_RECOVERY_CODE` | secret | - |
 | `LIVE_CONSOLE_MACHINE` | secret | - |
 | `LIVE_CONSOLE_ORG_A_EMAIL` | secret | - |
 | `LIVE_CONSOLE_ORG_A_PASSWORD` | secret | - |
@@ -2131,7 +2131,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LIVE_CONSOLE_ORG_B_PASSWORD` | secret | - |
 | `LIVE_CONSOLE_ORG_B_TOTP_SECRET` | secret | - |
 | `LIVE_CONSOLE_PROBE_SSH_KEY` | secret | - |
-| `LIVE_CONSOLE_STORE_PASSWORD` | secret | - |
+| `LIVE_CONSOLE_RECOVERY_CODE` | secret | - |
 | `LOCALAPPDATA` | machine-local | - |
 | `LOCAL_CI_DIR` | harness | - |
 | `LOCAL_LIB_DIR` | harness | - |
