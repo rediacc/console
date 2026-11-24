@@ -1,29 +1,28 @@
-## SESSION d778be9d 2026-11-24T10:20:26Z
+## SESSION d778be9d 2026-11-24T12:13:53Z
 
-# STATE d778be9d (2026-11-24 ~11:20Z, effort high)
+# STATE d778be9d (2026-11-24 ~12:15Z, effort high)
 
 ## Big pieces
-- Session carries ALL work. Operator: high effort = many parallel writers; load-reducing tooling plans FIRST; disk recipe must land as a hint (#eb5c46c7).
-- Review backlog: ~250 findings closed today via Fixes-Review trailers (loop: git log --format='%h %(trailers:key=Fixes-Review,valueonly)' <range> then --review-mark fixed <sha>, submodule shas for account/renet). Open lists /tmp/m/rv3/*.txt (788 before the latest landings). 104 of 436 reviewed commits are not ancestors (pre-rebase): --review-mark refuses them; writer addda7887bb155b9f fixing (#48c72397); refused ids in /tmp/m/rv2/marks-refused.txt.
-- Landing hazard #12ba0402: a background git process takes .git/index.lock and `cherry-pick --continue` can skip a commit: after every land run `./run.sh worktree land <id>` again and require 0 remaining picks.
-- Disk: 41 GB free after pruning; a lease costs 4.4 GB with a 14.4 GB floor.
+- Session carries ALL work. Operator: high effort = many parallel writers; load-reducing tooling first; disk recipe as hint (landed, TRAPS full-disk-recipe).
+- BACKUP: the operator's own window runs the COMMIT_POLICY_OK backup-ref sync for all repos at about 12:38Z, after a one-hour wait. Armed #c9d14191 checks `./run.sh backup-ref status` at 12:45Z. Leaked SES IDs verified dead (73cb9b0e inactive since 05:24Z, b28ffa44 gone); no rotation needed.
+- Root AWS keys: writer a4dbffb2ac0060fe3 (#5455c28d, operator-approved 2026-11-24) creates IAM user rediacc-ops-automation, bws AWS_OPS_ACCESS_KEY_ID/_SECRET, repoints code, deactivates root keys; edits in MAIN checkout, lead commits.
+- Landed today (selection): Stop hook 9.3s->3.2s; CL-A W2.6 d94e69ed45 + gen:gates fix 21716828e1; CL-M RI0/3/5/6; review-mark follows rebased copies; ~300 review findings closed; disk recipe; FS13.
+- Landing hazard #12ba0402: re-run `./run.sh worktree land <id>` after every pick and require 0 remaining.
 
 ## Armed
-- none live.
+- #c9d14191 (aid 59bad1b9) NOT-BEFORE 2026-11-24T12:45Z: ./run.sh backup-ref status after the operator push.
+- #0f42f15e (aid 00a40948) NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key via ./run.sh rotation delete ses-asia.
 
 ## Delegated
-- aea285b132cd0a1d6 #36e8cf6b CL-A ciquick-cpu W2/W3.
-- a23bd5f9e712a8d37 #85b299f0 tooling-code-reduction CR1 CR3 CR4 CR5.
-- adb89484ec7d269d2 #1cd473a4 Stop-hook wall time (resumed after API timeout).
-- a2fdf0df3add577b7 #eb5c46c7 disk refusal hints + release clone prune.
-- addda7887bb155b9f #48c72397 review-mark rebased copies.
-- a031a1c7d36d59ac4 #53b1dc75 hooks findings wave 2; ada05431140d06264 #0c612fa5 account findings wave 2; a9e32b8227cffd31b #701029d8 misc+cli findings wave 2.
-- ab7f0983351a35520 #d6c28fe7 CL-M run-index RI0 RI3 RI5 RI6; ab88b60ef21f6ce7b #fc2c7ae4 CL-N EH8 EHOP5 EHOP3 (Owns widened); a1e04cfb223bcf02e #19200be7 CL-P console-ia.
+- a4dbffb2ac0060fe3 #5455c28d root-key replacement (main checkout).
+- a031a1c7d36d59ac4 #53b1dc75 hooks findings wave 2.
+- ab88b60ef21f6ce7b #fc2c7ae4 CL-N EH8 EHOP5 EHOP3 (resumed after timeout).
+- a1e04cfb223bcf02e #19200be7 CL-P console-ia (resumed twice; IA1 = account 4deda7f9).
 
 ## Owed ticks
-- #e44be537 SES key rotation; #44344aec login_bench --master-password + l1vm key; D1 B1 N5 N1 A4d FS11 SP7 live/GitHub halves; ci findings 66 untouched, guards remainder.
+- #ab9f5552 CR3 continuation-line corrections; #44344aec login_bench + l1vm key; #7a8152c4 CL-M follow-ups; renet BPF rebuild check covers only socketisolation objects (ci-build-renet.yml:136-139); D1 B1 N5 N1 A4d FS11 SP7 SP8 live halves; ~600 low/medium findings still open (/tmp/m/rv4/*.txt).
 
 ## Next action
-1. Land each report (submodules first, gitlink commit), re-run land to confirm 0 remaining, test, mark from trailers, gc.
-2. When disk/load allow: findings writers for ci remainder and guards remainder; wave-2 clusters CL-K CL-O CL-S.
-3. Then ci:quick, vm:check --changed (unblocks the hostinger runner), push.
+1. Land CL-N, CL-P, hooks wave 2 and the root-key edits as they report; mark findings from trailers.
+2. At 12:45Z confirm the backup caught up; then ci:quick + vm:check --changed, push 1121-1 to origin.
+3. Round 8ba1c743: next findings writers (cli, misc, ci, account remainders) and CL-K/CL-O/CL-S once CL-P lands.
