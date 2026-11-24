@@ -81,6 +81,14 @@ def build(base):
     fixed = commit_all(repo, "fix: the stand-down")
     git(repo, "update-ref", "refs/remotes/origin/old", old)
     git(repo, "update-ref", "refs/remotes/origin/main", fixed)
+    # A base whose wl_git.py only MENTIONS the stand-down in a comment does not carry it.
+    write(
+        repo,
+        WL_GIT_REL,
+        "# def operation_in_progress(root) is coming\ndef rebase_state(root):\n    return None\n",
+    )
+    commented = commit_all(repo, "chore: a comment naming the stand-down")
+    git(repo, "update-ref", "refs/remotes/origin/commented", commented)
     git(repo, "reset", "-q", "--hard", old)
     write(repo, "src/app.ts", "topic\n")
     commit_all(repo, "feat: topic")
@@ -109,9 +117,13 @@ def main():
     # Under the TMPDIR the suite is given, and removed whatever the rows answer: check:ci-guard-mutations refuses a pristine run that leaves an entry there.
     base = pathlib.Path(tempfile.mkdtemp(prefix="guard-rebase-dirt-"))
     try:
-        return rows_hold(base)
+        rc = rows_hold(base)
     finally:
         shutil.rmtree(base, ignore_errors=True)
+    if base.exists():
+        print("FAIL the fixture directory %s could not be removed" % base, file=sys.stderr)
+        return 1
+    return rc
 
 
 def rows_hold(base):
@@ -150,7 +162,39 @@ def rows_hold(base):
             2,
             DIRT_MARK,
         ),
+        (
+            "a base that only names the stand-down in a comment",
+            "git rebase origin/commented",
+            repo,
+            False,
+            2,
+            STANDDOWN_MARK,
+        ),
+        (
+            "git pull --rebase from a base without the stand-down",
+            "git pull --rebase origin old",
+            repo,
+            False,
+            2,
+            STANDDOWN_MARK,
+        ),
         ("CONTROL: a base with the stand-down", "git rebase origin/main", repo, False, 0, ""),
+        (
+            "CONTROL: git pull --rebase from a base with the stand-down",
+            "git pull --rebase origin main",
+            repo,
+            False,
+            0,
+            "",
+        ),
+        (
+            "CONTROL: git pull --rebase=false starts no rebase",
+            "git pull --rebase=false origin old",
+            repo,
+            False,
+            0,
+            "",
+        ),
         ("CONTROL: --continue starts nothing", "git rebase --continue", repo, False, 0, ""),
         ("CONTROL: --abort starts nothing", "git rebase --abort", repo, False, 0, ""),
         (

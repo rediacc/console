@@ -22,6 +22,7 @@ FAIL CLOSED: a status probe that fails, a command that moves git's idea of the w
 import functools
 import importlib
 import os
+import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 from rediacc_hooks.guards import tables
@@ -54,7 +55,7 @@ TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 # Each planted, the stand-down probe stops refusing: `carried` answers the base carries the stand-down whatever it holds, `main` reads every tree as linked, so a rebase of the main checkout onto a base without it goes through (box R20261123.3).
 MUTANTS = {
     "standdown-carried": (
-        '    return STANDDOWN_PROBE[1] in (text or "")\n',
+        '    return re.search(r"^%s\\b" % re.escape(STANDDOWN_PROBE[1]), text or "", re.MULTILINE) is not None\n',
         "    return True\n",
     ),
     "standdown-main": (
@@ -189,6 +190,26 @@ def starts_integration(sub, args):
     return False
 
 
+def pull_rebases(args):
+    """Whether the words after `git pull` ask for a rebase (`--rebase`, `-r`, `--rebase=<mode>` but not `--rebase=false`)."""
+    head = args[: args.index("--")] if "--" in args else args
+    for word in head:
+        key, _, value = word.partition("=")
+        if key in PULL_REBASE_WORDS and value not in ("false", "no"):
+            return True
+    return False
+
+
+def pull_rebase_args(args):
+    """The `git rebase` operands standing for the rebase `git pull --rebase <args>` would start: `<remote>/<branch>` when the pull names both, else none (the rebase then reads `@{upstream}`)."""
+    head = args[: args.index("--")] if "--" in args else args
+    operands = [a for a in head if not a.startswith("-")]
+    if len(operands) >= 2:
+        branch = operands[1].lstrip("+").removeprefix("refs/heads/")
+        return ["%s/%s" % (operands[0], branch)]
+    return []
+
+
 def dirty_paths(repo):
     """The tracked paths `git rebase` would refuse or stop on in `repo`, staged gitlinks included; None when the probe itself fails. wl_git's answer, so the guard and `--git rebase-preflight` never disagree."""
     return _wl_git().dirty_paths(repo)
@@ -211,15 +232,15 @@ def rebase_onto(args):
 
 
 def is_main_checkout(repo):
-    """Whether `repo` sits at the top of its repository's MAIN checkout (the tree holding the common `.git`), the tree whose `.claude/` every hook is read from. A linked tree and a submodule answer False."""
+    """Whether `repo` sits at the top of its repository's MAIN checkout (the tree holding the common `.git`), the tree whose `.claude/` every hook is read from. A linked tree and a submodule answer False. Its only caller runs after `dirty_paths` read `git status` in the same repository (a failed read is already refused as BLIND), so an empty common-dir answer here is a submodule or bare store, not a failed probe (review 055f887a.3)."""
     top = os.path.realpath(commit_policy.toplevel(repo) or repo)
     main = commit_policy.main_checkout(repo)
     return bool(main) and os.path.realpath(main) == top
 
 
 def carries_standdown(text):
-    """Whether a base's copy of STANDDOWN_PROBE[0] (`text`, None when the base has no such file) defines the stand-down."""
-    return STANDDOWN_PROBE[1] in (text or "")
+    """Whether a base's copy of STANDDOWN_PROBE[0] (`text`, None when the base has no such file) defines the stand-down: the `def` at the start of a line, so a comment or a string that only names it does not count (review 055f887a.2)."""
+    return re.search(r"^%s\b" % re.escape(STANDDOWN_PROBE[1]), text or "", re.MULTILINE) is not None
 
 
 def standdown_refusal(repo, args, verb):
@@ -313,7 +334,13 @@ def refusal(cmd, root, base):
                 listed.append("  ... and %d more" % (len(real) - SHOWN))
             return MESSAGE, {"verb": verb, "where": where, "paths": "\n".join(listed)}
         # A clean tree still refuses a rebase whose halted steps would run hooks without the stand-down (box R20261123.3).
-        stale = standdown_refusal(repo, args, verb) if sub == "rebase" else None
+        # `git pull --rebase` starts the same rebase onto its fetched upstream, read here as the remote-tracking ref the pull names (or `@{upstream}`) because the fetch has not run yet.
+        if sub == "rebase":
+            stale = standdown_refusal(repo, args, verb)
+        elif sub == "pull" and pull_rebases(args):
+            stale = standdown_refusal(repo, pull_rebase_args(args), verb)
+        else:
+            stale = None
         if stale:
             return STANDDOWN, stale
     return None
