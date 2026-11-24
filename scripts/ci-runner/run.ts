@@ -1946,17 +1946,6 @@ const SELFTEST_ASSERTION_FLOOR = 413;
 const SELFTEST_REQUIRE_FLOOR = 150;
 
 /**
- * The runner's anti-vacuity control, wired into the `ci` npm key itself so it
- * cannot sit behind a flag nothing invokes -- the exact failure
- * check-gate-reachability recorded for check-i18n-cross-locale, which shipped
- * broken behind a flag no caller passed.
- *
- * A planted failing gate must produce: exit 1, BOTH captured streams printed
- * verbatim, the gate named in the summary, and its dependent reported skipped
- * rather than passed. If any leg does not fire, the runner's green means
- * nothing, so this refuses to proceed.
- */
-/**
  * W12 (agent/plans/PLAN-ciquick-cpu.md): core release through the real pool loop. Budget C 24 with no epsilon; an elastic gate (min 2, max 18) that the area rule grants 18 beside a queued fixed 15-core gate, so 18 + 15 > 24 holds the second until cores come back. The busy reader is the seam run.ts fills from /proc (`startBusySampler`); here it reports a constant width. Returns the failures, empty when every case holds.
  */
 async function coreReleaseSelftest(): Promise<string[]> {
@@ -2121,6 +2110,16 @@ interface ListRow {
   needs: string[];
   heavy?: true;
   cores?: GateSpec['cores'];
+}
+
+/** The load gate of a run: only a run sized to the machine (no `--jobs`, no grant it was launched under) waits on the machine's load; a width someone chose, or a nested runner under a grant, is a ceiling the caller owns (review c2c50947.3). */
+function loadGateFor(jobs: number | undefined, granted: boolean): LoadGate | undefined {
+  if (jobs !== undefined || granted) return undefined;
+  return {
+    read: () => os.loadavg()[0],
+    cores: Math.max(1, os.availableParallelism()),
+    say: (m) => process.stderr.write(`${m}\n`),
+  };
 }
 
 function listRows(specs: readonly GateSpec[], selected: ReadonlySet<string>): ListRow[] {
@@ -2371,6 +2370,17 @@ async function defaultSchedSelftest(): Promise<string[]> {
   return failures;
 }
 
+/**
+ * The runner's anti-vacuity control, wired into the `ci` npm key itself so it
+ * cannot sit behind a flag nothing invokes -- the exact failure
+ * check-gate-reachability recorded for check-i18n-cross-locale, which shipped
+ * broken behind a flag no caller passed.
+ *
+ * A planted failing gate must produce: exit 1, BOTH captured streams printed
+ * verbatim, the gate named in the summary, and its dependent reported skipped
+ * rather than passed. If any leg does not fire, the runner's green means
+ * nothing, so this refuses to proceed.
+ */
 async function selftest(): Promise<number> {
   // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
   const processCheck = runnerProcessSelftest();
@@ -2528,7 +2538,7 @@ async function selftest(): Promise<number> {
   // operator by an instrument that could not have shown otherwise.
   //
   // A unit test on select() cannot see that; only the real argv path can. The first draft of this spawned `process.execPath run.ts`, which fails because node cannot execute TypeScript -- so it drives main() in-process with argv set and stdout captured. Same path, no interpreter, no subprocess.
-  const listGateLines = async (argv: string[]): Promise<number> => {
+  const listOutput = async (argv: string[]): Promise<string> => {
     const realArgv = process.argv;
     const realWrite = process.stdout.write.bind(process.stdout);
     let captured = '';
@@ -2543,8 +2553,26 @@ async function selftest(): Promise<number> {
       process.argv = realArgv;
       (process.stdout as { write: unknown }).write = realWrite;
     }
-    return captured.split('\n').filter((l) => l.startsWith('gate ')).length;
+    return captured;
   };
+  const listGateLines = async (argv: string[]): Promise<number> =>
+    (await listOutput(argv)).split('\n').filter((l) => l.startsWith('gate ')).length;
+  // `--list --json` prints the rows as JSON and not the text table (review a8eb317e.1): one object per selected gate carrying `slow` and `needs`, and no `gate ` text line.
+  const jsonList = await listOutput(['--list', '--json', '--only', 'check:ci-npmrc']);
+  const jsonRows = ((): unknown => {
+    try {
+      return JSON.parse(jsonList);
+    } catch {
+      return null;
+    }
+  })();
+  require_(
+    Array.isArray(jsonRows) &&
+      jsonRows.some((r) => (r as ListRow).id === 'check:ci-npmrc') &&
+      jsonRows.every((r) => typeof (r as ListRow).slow === 'boolean') &&
+      !jsonList.split('\n').some((l) => l.startsWith('gate ')),
+    `--list --json must print the rows as JSON and not the text table, got ${jsonList.slice(0, 200)}`
+  );
   const onlyOne = await listGateLines(['--list', '--only', 'check:ci-npmrc']);
   require_(
     onlyOne === 1,
@@ -3658,6 +3686,12 @@ async function selftest(): Promise<number> {
           falling.startedAt[0] < 1_000 &&
           falling.said.length === 1,
         `a load that falls must end the wait before the bound, got ${JSON.stringify(falling)}`
+      );
+      require_(
+        loadGateFor(undefined, false) !== undefined &&
+          loadGateFor(2, false) === undefined &&
+          loadGateFor(undefined, true) === undefined,
+        'the load gate is built only for a run with no --jobs and no inherited grant'
       );
       const unread = await loadRun(() => undefined, 150);
       require_(
@@ -5494,14 +5528,7 @@ async function runGraph(
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
       busyCores: busySampler?.busyCores,
       // Only a run sized to the machine waits on its load: a width someone chose, or a nested runner under a grant, is a ceiling the caller owns.
-      load:
-        opts.jobs === undefined && grantFromEnv() === undefined
-          ? {
-              read: () => os.loadavg()[0],
-              cores: Math.max(1, os.availableParallelism()),
-              say: (m) => process.stderr.write(`${m}\n`),
-            }
-          : undefined,
+      load: loadGateFor(opts.jobs, grantFromEnv() !== undefined),
       exec: async (spec, grant: Grant) =>
         softenLocalWarn(
           spec,
