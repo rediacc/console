@@ -55,7 +55,8 @@ describe('console.recipes in the config', () => {
   });
 
   it('control: a config without console still parses', () => {
-    const { console: _omit, ...rest } = configWith({});
+    const rest: Record<string, unknown> = { ...configWith({}) };
+    delete rest.console;
     expect(RdcConfigSchema.safeParse(rest).success).toBe(true);
   });
 
