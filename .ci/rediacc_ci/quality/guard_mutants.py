@@ -8,9 +8,12 @@ The declarations are Python literals, so Python reads them: an escaped quote, a 
 import ast
 import json
 import pathlib
+import re
 import sys
 
 DECLARATIONS = ("DEFECT", "MUTANTS")
+# A top-level declaration, plain or annotated (`DEFECT: tuple[str, str] = ...`); the parse decides what it holds.
+DECLARATION_LINE = re.compile(r"^(?:%s)\b" % "|".join(DECLARATIONS), re.MULTILINE)
 
 
 def _pair(value: object) -> tuple[str, str] | None:
@@ -110,8 +113,9 @@ def scan(guards_dir: str) -> list[dict]:
     for path in sorted(pathlib.Path(guards_dir).glob("*.py")):
         if path.name.startswith("test-"):
             continue
-        src = path.read_text(encoding="utf-8")
-        if not any(("\n%s = " % d) in ("\n" + src) for d in DECLARATIONS):
+        # Decoded from the raw bytes: read_text would turn CRLF into LF, and the spans index the bytes the gate plants into.
+        src = path.read_bytes().decode("utf-8")
+        if not DECLARATION_LINE.search(src):
             continue
         try:
             decl = read_declarations(src)

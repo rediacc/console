@@ -34,6 +34,7 @@ import sys
 from typing import Any
 
 from rediacc_ci import paths
+from rediacc_ci.quality import python_control_plants as pcp
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_python_control_plants.py")
@@ -308,3 +309,16 @@ def test_the_root_override_under_a_tmpdir_moved_onto_the_repository_is_ignored(g
             1, _run(pathlib.Path(tmp)), "CONTROL: the private tree still reaches the gate"
         )
     gate.log_pass("TMPDIR and a shared /tmp directory leave the seam bounded")
+
+
+def test_a_module_that_cannot_be_parsed_is_a_finding_not_a_skip(tmp_path):
+    """Review d31194f4.2: an unparseable module beside parsed ones is reported by name."""
+    quality = tmp_path / ".ci" / "rediacc_ci" / "quality"
+    quality.mkdir(parents=True)
+    (quality / "good.py").write_text("x = 1\n", encoding="utf-8")
+    (quality / "broken.py").write_text("def (:\n", encoding="utf-8")
+    modules, _sites, findings = pcp.scan(tmp_path)
+    assert modules == 1
+    assert len(findings) == 1
+    assert "broken.py" in findings[0]
+    assert "cannot be scanned" in findings[0]

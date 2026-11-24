@@ -217,7 +217,12 @@ def scan(root: pathlib.Path):
                 continue
             try:
                 tree = ast.parse(p.read_text(encoding="utf-8"))
-            except (SyntaxError, OSError):
+            except (SyntaxError, OSError, UnicodeDecodeError) as exc:
+                # A module this gate cannot read is a finding: skipped, a raw substitution in it would pass beside the modules that parsed.
+                findings.append(
+                    "%s: cannot be scanned (%s: %s)"
+                    % (os.path.relpath(path, str(root)), type(exc).__name__, exc)
+                )
                 continue
             modules += 1
             sites += harness_sites(tree)

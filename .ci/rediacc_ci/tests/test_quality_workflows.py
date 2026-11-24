@@ -11,7 +11,7 @@ import pathlib
 import pytest
 
 from rediacc_ci.quality import workflows as mod
-from rediacc_ci.quality.guard_mutants import read_declarations
+from rediacc_ci.quality.guard_mutants import read_declarations, scan
 from rediacc_ci.tests import differential as diff
 
 BANNED_GREPS = [
@@ -278,3 +278,22 @@ def test_a_plain_defect_is_still_read():
 def test_a_second_declaration_is_an_error():
     out = read_declarations('DEFECT = ("aaa", "bbb")\nDEFECT = ("ccc", "ddd")\n')
     assert any("declared twice" in e for e in out["errors"])
+
+
+def test_scan_lists_a_guard_that_annotates_its_declaration(tmp_path):
+    """Review 40bf6c74.1: the file prefilter no longer drops `DEFECT: T = ...`."""
+    (tmp_path / "g.py").write_text('DEFECT: tuple[str, str] = ("aaa", "bbb")\nx = "aaa"\n')
+    (tmp_path / "plain.py").write_text("x = 1\n")
+    rows = scan(str(tmp_path))
+    assert [r["stem"] for r in rows] == ["g"]
+    assert rows[0]["plants"][0]["spans"]
+
+
+def test_scan_spans_index_the_raw_bytes_of_a_crlf_guard(tmp_path):
+    """Review 40bf6c74.2: with CRLF line endings the spans still point at `old` in the file's own bytes."""
+    raw = b'DEFECT = ("needle", "other")\r\nline = 1\r\nuse = "needle"\r\n'
+    (tmp_path / "g.py").write_bytes(raw)
+    spans = scan(str(tmp_path))[0]["plants"][0]["spans"]
+    assert spans
+    for start, end in spans:
+        assert raw[start:end] == b"needle"
