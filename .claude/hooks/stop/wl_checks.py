@@ -104,6 +104,11 @@ REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILI
 COMMIT_REMIND_MIN = wl_uncommitted.COMMIT_REMIND_MIN
 
 
+def wake_arm_label(rec, arm) -> str:
+    """`#<id> on <when>` for an unfired wake-up arm, capped at 90 characters (the cap covers the whole line, a long `when` list included)."""
+    return ("#%s on %s" % (rec["id"], " AND ".join(arm.get("when") or [])))[:90]
+
+
 def cadence_on(settings) -> bool:
     """True when the cadence gate may pause a stop. Env `WORKLIST_CADENCE` set to `on` or `off` overrides (the test seam, the twin of WORKLIST_JUDGE: the fixtures run with it `off`); any other value is ignored and the effort level's bundle decides. The fence takes no `cadence:` line (agent/plans/PLAN-simple-two-tree-loop.md B5)."""
     seam = os.environ.get("WORKLIST_CADENCE", "")
@@ -2193,7 +2198,7 @@ def handle_post_compact(event):
 
             _ctxb = _RT.ctx()
             _me8 = _ctxb.session_slug(sid)
-            # NOT WHILE A REBASE IS HALTED (worklist #b07162cf): the row is a line of the TRACKED retro ledger, and one unstaged tracked change makes `git rebase --continue` refuse. Said in the briefing, never silent.
+            # NOT WHILE A GIT OPERATION IS HALTED (worklist #b07162cf; a rebase, merge, cherry-pick or revert, whichever operation_in_progress names): the row is a line of the TRACKED retro ledger, and one unstaged tracked change makes `git rebase --continue` refuse. Said in the briefing, never silent.
             _op = _ctxb.operation_in_progress(root)
             if _op:
                 msg += (
@@ -4929,10 +4934,7 @@ def _stop_wake_timer(ns):
             M.V_WAKE_TIMER_ARMS
             % (
                 len(_unfired),
-                ", ".join(
-                    "#%s on %s" % (rec["id"], " AND ".join(arm.get("when") or []))[:90]
-                    for rec, arm in _unfired[:4]
-                ),
+                ", ".join(wake_arm_label(rec, arm) for rec, arm in _unfired[:4]),
                 wl_wake.harness_timeout_ms(),
                 wl_wake.arm_command(me8),
             ),

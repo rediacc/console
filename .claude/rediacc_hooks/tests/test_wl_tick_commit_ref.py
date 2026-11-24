@@ -456,3 +456,29 @@ def test_r6_a_probe_that_cannot_run_is_named_never_read_as_absent(wl):
     assert "refs/remotes/origin/main" in got.err, got.err[:600]
     assert last_refusal(wl)["why"] == "no-commit-ref"
     assert state_of(wl, item) == "open"
+
+
+class _FakeGit:
+    """A run_git that answers rev-parse with a sha, show-ref with 1 (no extra ref) and merge-base with `ancestor_rc`."""
+
+    def __init__(self, ancestor_rc: int, ancestor_err: str = ""):
+        self.ancestor_rc, self.ancestor_err = ancestor_rc, ancestor_err
+
+    def run_git(self, argv, **_kw):
+        if argv[0] == "rev-parse":
+            return 0, "a" * 40, ""
+        if argv[0] == "show-ref":
+            return 1, "", ""
+        if argv[0] == "merge-base":
+            return self.ancestor_rc, "", self.ancestor_err
+        return 0, "", ""
+
+
+def test_r6_a_failed_ancestry_probe_names_its_exit_code_and_stderr():
+    """26dc7587.1: the refusal names the git call, the repo, the exit code and stderr, like every other probe; exit 0 is a landed answer."""
+    cli = wlfix.import_wl("wl_cli")
+    landed, why = cli._commit_ref_landed(_FakeGit(128, "fatal: bad object"), "/r", "aaaa", "")
+    assert landed is False
+    assert "exited 128: fatal: bad object" in why
+    assert "merge-base --is-ancestor" in why
+    assert cli._commit_ref_landed(_FakeGit(0), "/r", "aaaa", "") == (True, "")

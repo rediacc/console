@@ -237,7 +237,7 @@ _LANDING_READS: dict[tuple[str, int, int], tuple[dict | None, str]] = {}
 
 
 def _local_commit_policy():
-    """Self-contained twin of wl_core._commit_policy. Keep in lockstep."""
+    """The loader twin of wl_core._commit_policy: it finds rediacc_hooks.commit_policy by the repo's syspath.py, so it needs the repo layout but not wl_core. Keep in lockstep."""
     import importlib.util
 
     helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
@@ -253,7 +253,7 @@ def _local_commit_policy():
 
 
 def _local_read_landing_record(tree):
-    """Self-contained twin of wl_core.read_landing_record. Keep in lockstep."""
+    """The twin of wl_core.read_landing_record without the wl_core import: the same lstat reads and the same commit_policy validation, cached per record version. The key names the record path, which sits in the landing worktree's own git dir, so another worktree never shares an entry. Keep in lockstep."""
     dirs = _local_git_dirs(pathlib.Path(tree))
     if dirs is None:
         return None, ""
@@ -268,7 +268,7 @@ def _local_read_landing_record(tree):
     if key not in _LANDING_READS:
         try:
             policy = _local_commit_policy()
-        except (ImportError, OSError, SyntaxError) as exc:
+        except Exception as exc:
             return (
                 None,
                 "commit_policy, the landing record's validator, could not be loaded (%s: %s)"

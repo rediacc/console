@@ -587,3 +587,13 @@ def test_13i_control_a_subagent_with_no_stream_fires(wl):
     label = "13i CONTROL: a subagent with no stream must get the check-in"
     assert_in(got, "PURE BACKGROUND WAIT", label)
     assert_in(got, MARK + ": no transcript stream for this subagent", label)
+
+
+def test_the_wake_arm_label_caps_the_whole_line_not_its_argument_tuple():
+    """134743b9.1: the cap once sliced the `%` argument tuple, so a long `when` list went out untruncated; the short label is the control."""
+    checks = wlfix.import_wl("wl_checks")
+    long = checks.wake_arm_label({"id": "abc12345"}, {"when": ["w%02d" % i for i in range(60)]})
+    assert len(long) == 90
+    assert long.startswith("#abc12345 on w00 AND w01")
+    short = checks.wake_arm_label({"id": "abc12345"}, {"when": ["ci", "pr"]})
+    assert short == "#abc12345 on ci AND pr"

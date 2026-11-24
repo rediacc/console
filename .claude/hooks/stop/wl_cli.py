@@ -1452,14 +1452,16 @@ def _commit_ref_landed(wl_git, repo, sha, branch):
     if why:
         return False, why
     for tip in tips:
-        held = wl_git.is_ancestor(repo, full, tip)
-        if held:
+        rc, _out, err = wl_git.run_git(["merge-base", "--is-ancestor", full, tip], cwd=repo)
+        if rc == 0:
             return True, ""
-        if held is None:
-            return False, "git merge-base --is-ancestor %s %s in %s could not run" % (
+        if rc != 1:
+            return False, "git merge-base --is-ancestor %s %s in %s exited %d: %s" % (
                 full[:12],
                 tip,
                 repo,
+                rc,
+                err[:200],
             )
     rc, out, err = wl_git.run_git(
         ["log", "-F", "--grep=" + COMMIT_REF_PICKED_LINE % full, "--format=%H", "-n", "1", "HEAD"],
