@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Lista as imagens de repositório de uma máquina e indica se cada uma é órfã, sem nenhuma configuração que a cite",
             "description": "Mostra as imagens de repositório de uma máquina e indica se cada uma está órfã, ou seja, se nenhuma configuração a menciona.",
-            "none": "Nenhuma imagem de repositório em {{machine}}"
+            "none": "Nenhuma imagem de repositório em {{machine}}",
+            "executorEventsOption": "Lê os eventos do executor (linhas JSON da ferramenta executor_orphans) e marca como criada pelo executor a imagem órfã que eles nomeiam",
+            "executorReason": "Criada pelo executor hospedado, gravação da configuração descartada (evento {{at}})",
+            "executorEventsBadLine": "Arquivo de eventos do executor: a linha {{line}} não é um objeto JSON",
+            "executorEventsUnreadable": "Não foi possível ler o arquivo de eventos do executor {{file}}: {{error}}"
           },
           "delete": {
             "description": "Exclui uma imagem de repositório órfã pelo GUID. Um GUID mencionado por qualquer configuração é recusado, assim como uma imagem montada ou em execução, a menos que --force-delete-mounted seja usado.",

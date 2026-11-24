@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Bir makinedeki depo imajlarını ve her birinin hiçbir yapılandırmanın anmadığı yetim bir imaj olup olmadığını listeler",
             "description": "Bir makinedeki depo imajlarını listeler ve her birinin sahipsiz olup olmadığını, yani hiçbir yapılandırmada geçip geçmediğini gösterir.",
-            "none": "{{machine}} üzerinde depo imajı yok"
+            "none": "{{machine}} üzerinde depo imajı yok",
+            "executorEventsOption": "Yürütücünün olaylarını (executor_orphans aracının JSON satırları) okur ve bunların adını verdiği sahipsiz imajı yürütücü tarafından oluşturulmuş olarak işaretler",
+            "executorReason": "Barındırılan yürütücü tarafından oluşturuldu, yapılandırma yazımı atıldı (olay {{at}})",
+            "executorEventsBadLine": "Yürütücü olay dosyası: {{line}}. satır bir JSON nesnesi değil",
+            "executorEventsUnreadable": "Yürütücü olay dosyası {{file}} okunamıyor: {{error}}"
           },
           "delete": {
             "description": "Sahipsiz bir depo imajını GUID ile siler. Herhangi bir yapılandırmada geçen GUID reddedilir; bağlı ya da çalışan bir imaj da --force-delete-mounted verilmedikçe reddedilir.",

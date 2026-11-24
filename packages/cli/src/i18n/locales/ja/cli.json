@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "マシン上のリポジトリイメージを一覧表示し、どの設定からも参照されていない孤立イメージかどうかを示す",
             "description": "マシン上のリポジトリイメージを一覧表示し、それぞれがどの設定にも登録されていない孤立イメージかどうかを示します。",
-            "none": "{{machine}} にリポジトリイメージはありません"
+            "none": "{{machine}} にリポジトリイメージはありません",
+            "executorEventsOption": "エグゼキューターのイベント(executor_orphans ツールの JSON 行)を読み込み、そこに名前のある孤立イメージをエグゼキューター作成として示す",
+            "executorReason": "ホスト型エグゼキューターが作成、設定の書き込みは破棄済み(イベント {{at}})",
+            "executorEventsBadLine": "エグゼキューターのイベントファイル: {{line}} 行目が JSON オブジェクトではありません",
+            "executorEventsUnreadable": "エグゼキューターのイベントファイル {{file}} を読み込めません: {{error}}"
           },
           "delete": {
             "description": "孤立したリポジトリイメージを GUID で 1 つ削除します。いずれかの設定に登録されている GUID は拒否されます。マウント中または実行中のイメージも、--force-delete-mounted を指定しない限り拒否されます。",

@@ -1471,6 +1471,7 @@ List the repository images on a machine and whether each one is an orphan that n
 
 **Options:**
 
+- `--executor-events <file>`: Read the executor's events (JSON lines from the executor_orphans tool) and mark an orphan they name as executor-created
 - `--debug`: Enable debug output
 
 ### rdc repo admin orphan delete <ref>

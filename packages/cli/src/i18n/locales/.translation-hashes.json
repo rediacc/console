@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3172,
+    "keyCount": 3176,
     "sourceCommit": "5b8a058e54dc23662110e06a81475259ee5ca1e3"
   },
   "hashes": {
@@ -1577,6 +1577,10 @@
     "commands.repo.admin.orphan.description": "e26258cf",
     "commands.repo.admin.orphan.list.description": "515b9713",
     "commands.repo.admin.orphan.list.descriptionShort": "8afd5939",
+    "commands.repo.admin.orphan.list.executorEventsBadLine": "e46c4474",
+    "commands.repo.admin.orphan.list.executorEventsOption": "7e7348d8",
+    "commands.repo.admin.orphan.list.executorEventsUnreadable": "23a07f4c",
+    "commands.repo.admin.orphan.list.executorReason": "ed3112d4",
     "commands.repo.admin.orphan.list.none": "797c2426",
     "commands.repo.admin.ownership.completed": "cb3c7a24",
     "commands.repo.admin.ownership.description": "2165559b",

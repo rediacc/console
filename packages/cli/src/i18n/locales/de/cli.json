@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Zeigt die Repository-Images einer Maschine und ob jedes davon verwaist ist, also von keiner Konfiguration genannt wird",
             "description": "Zeigt die Repository-Images einer Maschine und ob jedes davon verwaist ist, also von keiner Konfiguration genannt wird.",
-            "none": "Keine Repository-Images auf {{machine}}"
+            "none": "Keine Repository-Images auf {{machine}}",
+            "executorEventsOption": "Liest die Ereignisse des Executors (JSON-Zeilen des Werkzeugs executor_orphans) und kennzeichnet ein darin genanntes verwaistes Image als vom Executor erstellt",
+            "executorReason": "Vom gehosteten Executor erstellt, Konfigurationsschreibvorgang verworfen (Ereignis {{at}})",
+            "executorEventsBadLine": "Executor-Ereignisdatei: Zeile {{line}} ist kein JSON-Objekt",
+            "executorEventsUnreadable": "Die Executor-Ereignisdatei {{file}} lässt sich nicht lesen: {{error}}"
           },
           "delete": {
             "description": "Löscht ein verwaistes Repository-Image anhand seiner GUID. Eine GUID, die irgendeine Konfiguration nennt, wird abgelehnt, ebenso ein eingehängtes oder laufendes Image, außer mit --force-delete-mounted.",

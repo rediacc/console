@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Näitab masina hoidlate kujutisi ja seda, kas iga kujutis on omanikuta ehk ükski konfiguratsioon seda ei nimeta",
             "description": "Näitab masina hoidlate kujutisi ja seda, kas iga kujutis on omanikuta ehk ükski konfiguratsioon seda ei nimeta.",
-            "none": "Masinas {{machine}} pole hoidlate kujutisi"
+            "none": "Masinas {{machine}} pole hoidlate kujutisi",
+            "executorEventsOption": "Loeb täitja sündmused (tööriista executor_orphans JSON-read) ja märgib neis nimetatud orbkujutise täitja loodud kujutiseks",
+            "executorReason": "Loonud majutatud täitja, konfiguratsiooni kirjutamine jäeti ära (sündmus {{at}})",
+            "executorEventsBadLine": "Täitja sündmuste fail: rida {{line}} ei ole JSON-objekt",
+            "executorEventsUnreadable": "Täitja sündmuste faili {{file}} ei saa lugeda: {{error}}"
           },
           "delete": {
             "description": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi. GUID, mida mõni konfiguratsioon nimetab, lükatakse tagasi, samuti ühendatud või töötav kujutis, kui --force-delete-mounted pole antud.",

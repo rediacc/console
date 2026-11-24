@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'f166ac6a35483877';
+export const CLI_CONTRACT_VERSION = '77ddcb18fb8a8fda';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "f166ac6a35483877",
+  "version": "77ddcb18fb8a8fda",
   "languages": [
     "ar",
     "de",
@@ -10694,6 +10694,17 @@ export const CLI_CONTRACT: CliContract = {
       "summary": "List the repository images on a machine and whether each one is an orphan that no config names",
       "severity": "none",
       "options": [
+        {
+          "flags": "--executor-events <file>",
+          "long": "executor-events",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.orphan.list.executorEventsOption",
+          "label": "Read the executor's events (JSON lines from the executor_orphans tool) and mark an orphan they name as executor-created"
+        },
         {
           "flags": "--debug",
           "long": "debug",

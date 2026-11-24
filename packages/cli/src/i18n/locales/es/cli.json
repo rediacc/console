@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Muestra las imágenes de repositorio de una máquina e indica si cada una está huérfana, es decir, si ninguna configuración la nombra",
             "description": "Muestra las imágenes de repositorio de una máquina e indica si cada una está huérfana, es decir, si ninguna configuración la nombra.",
-            "none": "No hay imágenes de repositorio en {{machine}}"
+            "none": "No hay imágenes de repositorio en {{machine}}",
+            "executorEventsOption": "Lee los eventos del ejecutor (líneas JSON de la herramienta executor_orphans) y marca como creada por el ejecutor la imagen huérfana que nombran",
+            "executorReason": "Creada por el ejecutor alojado, escritura de configuración descartada (evento {{at}})",
+            "executorEventsBadLine": "Archivo de eventos del ejecutor: la línea {{line}} no es un objeto JSON",
+            "executorEventsUnreadable": "No se puede leer el archivo de eventos del ejecutor {{file}}: {{error}}"
           },
           "delete": {
             "description": "Elimina una imagen de repositorio huérfana por su GUID. Se rechaza un GUID que nombre cualquier configuración, y también una imagen montada o en ejecución, salvo con --force-delete-mounted.",

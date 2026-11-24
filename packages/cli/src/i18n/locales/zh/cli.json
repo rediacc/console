@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "列出机器上的仓库镜像，并标明每个镜像是否为没有任何配置引用的孤立镜像",
             "description": "列出机器上的仓库镜像，并标明每个镜像是否为孤立镜像，即没有任何配置引用它。",
-            "none": "{{machine}} 上没有仓库镜像"
+            "none": "{{machine}} 上没有仓库镜像",
+            "executorEventsOption": "读取执行器事件(executor_orphans 工具输出的 JSON 行),并把其中点名的孤立镜像标记为由执行器创建",
+            "executorReason": "由托管执行器创建,配置写入已丢弃(事件 {{at}})",
+            "executorEventsBadLine": "执行器事件文件:第 {{line}} 行不是 JSON 对象",
+            "executorEventsUnreadable": "无法读取执行器事件文件 {{file}}:{{error}}"
           },
           "delete": {
             "description": "按 GUID 删除一个孤立的仓库镜像。任何配置引用的 GUID 都会被拒绝；已挂载或正在运行的镜像也会被拒绝，除非指定 --force-delete-mounted。",

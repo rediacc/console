@@ -9,10 +9,12 @@
  * with the GUID, never a raw filesystem removal.
  */
 
+import { readFile } from 'node:fs/promises';
 import {
   getRepositories,
   type RepositoryInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { t } from '../../i18n/index.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import type { ExecuteResult } from '../executor/types.js';
@@ -112,5 +114,82 @@ export function deleteRepoImageByGuid(
     params: { repository: guid },
     debug: options.debug,
     ...(options.quietSpinners ? { quietSpinners: true } : {}),
+  });
+}
+
+/** One line of `executor_orphans list --json` (.ci/rediacc_ci/ops/executor_orphans.py): an executor-created repo, fork or machine. */
+export interface ExecutorEvent {
+  machine: string | null;
+  repo: string | null;
+  guid: string | null;
+  at: string | null;
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/** Parse the tool's JSON lines (blank lines skipped). A line that is not a JSON object is a hard error naming its number. */
+export function parseExecutorEvents(text: string): ExecutorEvent[] {
+  const events: ExecutorEvent[] = [];
+  for (const [index, line] of text.split('\n').entries()) {
+    if (line.trim() === '') continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      parsed = null;
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error(
+        t('commands.repo.admin.orphan.list.executorEventsBadLine', { line: index + 1 })
+      );
+    }
+    const row = parsed as Record<string, unknown>;
+    events.push({
+      machine: textOrNull(row.machine),
+      repo: textOrNull(row.repo),
+      guid: textOrNull(row.guid),
+      at: textOrNull(row.at),
+    });
+  }
+  return events;
+}
+
+export async function readExecutorEvents(file: string): Promise<ExecutorEvent[]> {
+  let text: string;
+  try {
+    text = await readFile(file, 'utf8');
+  } catch (error) {
+    throw new Error(
+      t('commands.repo.admin.orphan.list.executorEventsUnreadable', {
+        file,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+  return parseExecutorEvents(text);
+}
+
+/**
+ * Join the executor's events onto the verdicts: an orphaned image whose GUID (or, for an event carrying no GUID, whose
+ * name) an event on this machine names gets the executor reason with the event time. A protected image keeps its
+ * verdict and reason, and an unmatched orphan keeps its own reason: another cause produced it.
+ */
+export function applyExecutorEvents(
+  rows: MachineRepoVerdict[],
+  events: ExecutorEvent[],
+  machine: string
+): MachineRepoVerdict[] {
+  const onMachine = events.filter((e) => e.machine === null || e.machine === machine);
+  return rows.map((row) => {
+    if (row.verdict !== 'orphaned') return row;
+    const guid = row.guid.toLowerCase();
+    const hit = onMachine.find((e) => (e.guid ?? e.repo ?? '').toLowerCase() === guid);
+    if (!hit) return row;
+    return {
+      ...row,
+      reason: t('commands.repo.admin.orphan.list.executorReason', { at: hit.at ?? '-' }),
+    };
   });
 }

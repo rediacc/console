@@ -1926,7 +1926,11 @@
           "list": {
             "descriptionShort": "Mostra le immagini di repository di una macchina e indica per ciascuna se è orfana, cioè non nominata da alcuna configurazione",
             "description": "Mostra le immagini di repository di una macchina e indica per ciascuna se è orfana, cioè non nominata da alcuna configurazione.",
-            "none": "Nessuna immagine di repository su {{machine}}"
+            "none": "Nessuna immagine di repository su {{machine}}",
+            "executorEventsOption": "Legge gli eventi dell'executor (righe JSON dello strumento executor_orphans) e segna come creata dall'executor l'immagine orfana che nominano",
+            "executorReason": "Creata dall'executor ospitato, scrittura della configurazione scartata (evento {{at}})",
+            "executorEventsBadLine": "File degli eventi dell'executor: la riga {{line}} non è un oggetto JSON",
+            "executorEventsUnreadable": "Impossibile leggere il file degli eventi dell'executor {{file}}: {{error}}"
           },
           "delete": {
             "description": "Elimina un'immagine di repository orfana tramite il suo GUID. Un GUID nominato da una configurazione viene rifiutato, così come un'immagine montata o in esecuzione, salvo con --force-delete-mounted.",

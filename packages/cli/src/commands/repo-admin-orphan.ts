@@ -19,7 +19,12 @@ import { isValidGuid } from '@rediacc/shared/validation';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
-import { classifyMachineRepos, deleteRepoImageByGuid } from '../services/repo/orphan-repos.js';
+import {
+  applyExecutorEvents,
+  classifyMachineRepos,
+  deleteRepoImageByGuid,
+  readExecutorEvents,
+} from '../services/repo/orphan-repos.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
 import { assertOrphanDeletePolicy } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -44,9 +49,15 @@ function parseOrphanRef(ref: string): { guid: string; machine: string } {
   return { guid: guid.toLowerCase(), machine };
 }
 
-async function handleOrphanList(machine: string, options: { debug?: boolean }): Promise<void> {
+async function handleOrphanList(
+  machine: string,
+  options: { debug?: boolean; executorEvents?: string }
+): Promise<void> {
   await assertMachineExists(machine);
-  const rows = await classifyMachineRepos(machine, options);
+  const classified = await classifyMachineRepos(machine, options);
+  const rows = options.executorEvents
+    ? applyExecutorEvents(classified, await readExecutorEvents(options.executorEvents), machine)
+    : classified;
   const format = getOutputFormat();
   if (rows.length === 0 && format === 'table') {
     outputService.info(t('commands.repo.admin.orphan.list.none', { machine }));
@@ -124,8 +135,9 @@ export function registerRepoAdminOrphan(admin: Command): void {
     .summary(t('commands.repo.admin.orphan.list.descriptionShort'))
     .description(t('commands.repo.admin.orphan.list.description'))
     .argument('<machine>', t('options.machineName'))
+    .option('--executor-events <file>', t('commands.repo.admin.orphan.list.executorEventsOption'))
     .option('--debug', t('options.debug'))
-    .action(async (machine: string, options: { debug?: boolean }) => {
+    .action(async (machine: string, options: { debug?: boolean; executorEvents?: string }) => {
       try {
         await handleOrphanList(machine, options);
       } catch (error) {

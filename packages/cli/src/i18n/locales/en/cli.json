@@ -1804,7 +1804,11 @@
           "list": {
             "descriptionShort": "List the repository images on a machine and whether each one is an orphan that no config names",
             "description": "List the repository images on a machine and whether each one is an orphan that no config names.",
-            "none": "No repository images on {{machine}}"
+            "none": "No repository images on {{machine}}",
+            "executorEventsOption": "Read the executor's events (JSON lines from the executor_orphans tool) and mark an orphan they name as executor-created",
+            "executorReason": "Created by the hosted executor, config write discarded (event {{at}})",
+            "executorEventsBadLine": "Executor events file, line {{line}} is not a JSON object",
+            "executorEventsUnreadable": "Cannot read the executor events file {{file}}: {{error}}"
           },
           "delete": {
             "description": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
