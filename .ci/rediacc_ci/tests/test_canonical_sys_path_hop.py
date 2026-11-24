@@ -124,6 +124,17 @@ EXEMPT: dict[str, str] = {
         "guards import the same engine the same scoped way, so the argument is "
         "identical rather than duplicated by accident."
     ),
+    ".ci/rediacc_ci/ops/rebind_code.py": (
+        "BLOCKER: the CLI spawns this one path itself, with no shell and no PYTHONPATH "
+        "(`REDIACC_IP_REBIND_CODE_COMMAND`, exported by rdc.sh for the bench configs; "
+        "packages/cli/src/services/account/token-ip-rebind.ts), so `PYTHONPATH=.ci "
+        "python3 -m` is not available to it. `import _cipath` resolves only to a file "
+        "beside a script whose directory is not a package, and `paths.on_sys_path` sits "
+        "behind the very hop it would replace. 8cde2fae79 chose this hop over the bash "
+        "shim scripts/ops/rebind-code.sh and its language-policy allowlist entry, and "
+        "test_ops_rebind_code.py runs the file by path with PYTHONPATH unset. The "
+        "exemption dies the day rdc.sh stops naming this file as the program."
+    ),
 }
 
 #: relpath -> the hop fingerprints frozen there. DEBT, not permission. The total may
