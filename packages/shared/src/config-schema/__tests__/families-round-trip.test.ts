@@ -68,6 +68,7 @@ const CARRIED_SECTIONS = [
   'credentials',
   'resources',
   'access',
+  'console',
   'infra',
   'state',
 ] as const;
@@ -121,6 +122,15 @@ function allFamiliesConfig(): RdcConfig {
           publicKey:
             'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4f fixture',
           machines: { m1: true },
+        },
+      },
+    },
+    console: {
+      recipes: {
+        'fork-up': {
+          description: 'Fork a repo and start it',
+          body: '$repo = required "Repository"\nrdc repo fork $repo --tag t1',
+          updatedAt: '2026-11-24T18:00:00.000Z',
         },
       },
     },
@@ -298,6 +308,7 @@ describe('resource families round trip', () => {
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.access).toEqual(original.access);
+    expect(rebuilt.console).toEqual(original.console);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);
 
