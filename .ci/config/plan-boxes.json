@@ -2495,16 +2495,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "9c610a87"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
         "185b202a",
         "2556f2e9",
         "67e0500b",
         "9a772925",
+        "9c610a87",
         "bac0a9c4",
         "be499a0a"
       ]
