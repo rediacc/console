@@ -436,7 +436,7 @@ def read_landing_record(tree):
     if key not in _LANDING_READS:
         try:
             policy = _commit_policy()
-        except (ImportError, OSError, SyntaxError) as exc:
+        except Exception as exc:
             return (
                 None,
                 "commit_policy, the landing record's validator, could not be loaded (%s: %s)"

@@ -253,7 +253,7 @@ def _local_commit_policy():
 
 
 def _local_read_landing_record(tree):
-    """The twin of wl_core.read_landing_record without the wl_core import: the same lstat reads and the same commit_policy validation, cached per record version. The key names the record path, which sits in the landing worktree's own git dir, so another worktree never shares an entry. Keep in lockstep."""
+    """The twin of wl_core.read_landing_record without the wl_core import: the same lstat reads and the same commit_policy validation, cached per record version. The key names the record path, which sits in the landing tree's own git dir, so another tree never shares an entry. Keep in lockstep."""
     dirs = _local_git_dirs(pathlib.Path(tree))
     if dirs is None:
         return None, ""

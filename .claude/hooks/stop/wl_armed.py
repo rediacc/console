@@ -380,7 +380,8 @@ def receipt_vouches_for_tree(receipt, tree) -> bool:
     for step in steps if isinstance(steps, list) else []:
         if (
             isinstance(step, dict)
-            and step.get("from") in reached
+            and isinstance(step.get("from"), str)
+            and step["from"] in reached
             and isinstance(step.get("to"), str)
         ):
             reached.add(step["to"])

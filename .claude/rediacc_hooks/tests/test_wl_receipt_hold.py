@@ -216,3 +216,13 @@ def test_a_running_ci_quick_no_longer_holds_the_lease(repo, tmp_path, monkeypatc
     queued, blocked = _worktree_check(monkeypatch, repo)
     assert [b[0] for b in blocked] == ["worktree-unlanded"]
     assert not any("ci:quick" in text for text in queued)
+
+
+def test_a_malformed_advance_step_reads_false_instead_of_raising():
+    """aff2b777.1: a list or dict `from` is unhashable; the receipt reads False. The well-formed step is the control."""
+    armed = wlfix.import_wl("wl_armed")
+    good = {"headTree": "a", "advances": [{"from": "a", "to": "b"}]}
+    assert armed.receipt_vouches_for_tree(good, "b") is True
+    for bad_from in ([1], {"x": 1}):
+        bad = {"headTree": "a", "advances": [{"from": bad_from, "to": "b"}]}
+        assert armed.receipt_vouches_for_tree(bad, "b") is False

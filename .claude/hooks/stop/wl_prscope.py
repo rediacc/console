@@ -467,7 +467,8 @@ def landing_released(top, nodes, gh=None):
     sha = str(hit.get("sha") or "")
     if sha and hit.get("verdict"):
         try:
-            fresh = time.time() - float(hit.get("at") or 0) <= RELEASE_VERDICT_TTL_S
+            # A stamp in the future (the clock stepped back) is no age at all: it is re-read, never held fresh.
+            fresh = 0 <= time.time() - float(hit.get("at") or 0) <= RELEASE_VERDICT_TTL_S
         except (TypeError, ValueError):
             fresh = False
         if fresh:

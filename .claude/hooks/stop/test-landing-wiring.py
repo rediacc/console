@@ -221,6 +221,8 @@ class World:
                     }
                 )
             (base / name).write_text(json.dumps(rows), encoding="utf-8")
+        # A planted release is a new world: the release sidecar (wl_prscope.RELEASE_VERDICT_TTL_S) must not answer for the previous one.
+        (base / "tmp" / "claude-worklist" / ".landing-release.json").unlink(missing_ok=True)
 
     def effort(self, level):
         self.fix.settings(effort=level)

@@ -54,6 +54,25 @@ def test_a_stale_verdict_rereads_the_release_but_not_the_merge_commit(counted, m
     assert calls == {"sha": 1, "release": 2}
 
 
+def test_a_verdict_stamped_in_the_future_is_reread(counted, monkeypatch):
+    """6fcda58e.2: a clock stepped back leaves a stamp ahead of now; the entry is not fresh. The unstepped clock is the control (test_a_fresh_verdict_is_served_without_gh)."""
+    calls, _answer = counted
+    PS.landing_released("/top", _merged())
+    real = PS.time.time
+    monkeypatch.setattr(PS.time, "time", lambda: real() - 3600)
+    assert PS.landing_released("/top", _merged()) == 12
+    assert calls == {"sha": 1, "release": 2}
+
+
+def test_a_sidecar_owned_by_another_user_is_not_read(tmp_path, monkeypatch):
+    """6fcda58e.3: the cache reads only its own user's file; the same file read as its owner is the control."""
+    path = tmp_path / "side.json"
+    path.write_text('{"k": true}', encoding="utf-8")
+    assert GH.cache_load(path) == {"k": True}
+    monkeypatch.setattr(GH.os, "getuid", lambda: GH.os.lstat(path).st_uid + 1)
+    assert GH.cache_load(path) is None
+
+
 def test_control_a_failed_release_read_is_not_kept(counted):
     calls, answer = counted
     answer["err"] = "fixture: HTTP 502"
