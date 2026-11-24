@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-23T18:54:30.536Z",
+  "generatedAt": "2026-11-23T23:48:33.821Z",
   "legs": [
     {
       "index": 1,
@@ -107,6 +107,7 @@
         "github.com/rediacc/renet/pkg/netaudit",
         "github.com/rediacc/renet/pkg/netaudit/collector",
         "github.com/rediacc/renet/pkg/netaudit/internal/atomicfile",
+        "github.com/rediacc/renet/pkg/netaudit/ship",
         "github.com/rediacc/renet/pkg/netaudit/spool",
         "github.com/rediacc/renet/pkg/netaudit/trigger",
         "github.com/rediacc/renet/pkg/orchestration",
