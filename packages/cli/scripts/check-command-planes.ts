@@ -96,6 +96,7 @@ const DOMAIN_MODULES = new Map<string, string>([
   ['feedback', 'commands/feedback.ts'],
   ['legal', 'commands/legal.ts'],
   ['version', 'commands/version.ts'],
+  ['completion', 'commands/completion.ts'],
   ['tools', 'commands/tools.ts'],
   ['job', 'commands/job.ts'],
   ['machine', 'commands/machine/index.ts'],

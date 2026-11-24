@@ -2281,6 +2281,12 @@ Print the CLI version, platform, update channel and the active license: the plan
 
 > MCP tool
 
+### rdc completion <shell>
+
+Print a completion script for the named shell. Command, flag and choice words come from the CLI contract and complete without starting the CLI; machine, repository and other config resource names come from the hidden __complete lookup, kept per shell session until the config file changes. Load it with eval "$(rdc completion bash)" or eval "$(rdc completion zsh)", rdc completion fish | source, or rdc completion pwsh | Out-String | Invoke-Expression.
+
+> MCP excluded: Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.
+
 ### rdc vscode connect <target>
 
 Open VS Code on a machine or inside a repository.

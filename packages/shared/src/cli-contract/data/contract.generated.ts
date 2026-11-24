@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '77ddcb18fb8a8fda';
+export const CLI_CONTRACT_VERSION = '3ee31a5bff0e6c2f';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "77ddcb18fb8a8fda",
+  "version": "3ee31a5bff0e6c2f",
   "languages": [
     "ar",
     "de",
@@ -3810,6 +3810,42 @@ export const CLI_CONTRACT: CliContract = {
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
       "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "completion"
+      ],
+      "pathKey": "completion",
+      "domain": "completion",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.completion.description",
+      "label": "Print a completion script for the named shell. Command, flag and choice words come from the CLI contract and complete without starting the CLI; machine, repository and other config resource names come from the hidden __complete lookup, kept per shell session until the config file changes. Load it with eval \"$(rdc completion bash)\" or eval \"$(rdc completion zsh)\", rdc completion fish | source, or rdc completion pwsh | Out-String | Invoke-Expression.",
+      "summaryKey": "commands.completion.descriptionShort",
+      "summary": "Print a shell completion script for bash, zsh, fish or PowerShell",
+      "severity": "none",
+      "options": [],
+      "positionals": [
+        {
+          "name": "shell",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.completion.shellArgument",
+          "label": "Shell to print the script for: bash, zsh, fish or pwsh"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,

@@ -63,6 +63,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'mcp', domain: 'TOOLS' },
   { name: 'credits', domain: 'TOOLS' },
   { name: 'version', domain: 'TOOLS' },
+  // Shell completion scripts; the hidden `__complete` lookup is answered outside the tree (cli.ts).
+  { name: 'completion', domain: 'TOOLS' },
   { name: 'legal', domain: 'TOOLS' },
   { name: 'feedback', domain: 'TOOLS' },
   // The enterprise proxy executor daemon.

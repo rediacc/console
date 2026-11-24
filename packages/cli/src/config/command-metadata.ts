@@ -844,6 +844,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  completion: {
+    mcpExcludeReason:
+      'Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.',
+  },
   // Files a report with the account service: a write, and never idempotent (each send can consume the daily limit).
   'feedback report': {
     mcpSurface: {

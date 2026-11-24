@@ -161,8 +161,9 @@ describe('command plane coverage', () => {
     // 226 -> 228, other 45 -> 47: `feedback list|show` read the account service and reach no machine (PLAN-rdc-feedback C4).
     // 228 -> 231, machine 123 -> 124, other 47 -> 49: `preview use|status` read and write the config, the installed rdc and the preview's public endpoints; `preview leave` also switches each touched server's renet back over SSH (PLAN-preview-signer C2, C3).
     // 231 -> 230, other 49 -> 48: `config remote master-password change` is deleted with the password key slot (PLAN-rmcp-policy-record K4, D39).
-    expect(COMMANDS.length).toBe(230);
-    expect(counts).toEqual({ config: 58, machine: 124, other: 48 });
+    // 230 -> 231, other 48 -> 49: `completion` prints a shell script built from the contract and reaches no machine (PLAN-console-command-line CL12).
+    expect(COMMANDS.length).toBe(231);
+    expect(counts).toEqual({ config: 58, machine: 124, other: 49 });
   });
 
   it('records the interactive commands', () => {

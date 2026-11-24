@@ -61,6 +61,8 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   legal: { plane: 'other' },
   feedback: { plane: 'other' },
   version: { plane: 'other' },
+  // Prints a shell completion script built from the generated contract; reads no config and reaches no machine.
+  completion: { plane: 'other' },
   tools: { plane: 'other' },
   update: { plane: 'other' },
   // `use` and `status` read and write this config, the installed CLI and the preview's public endpoints. `leave` also switches each touched server's renet back over SSH, so it reaches a machine; it asks before it does and replaces the local CLI, so it is interactive and never offered to a headless executor.

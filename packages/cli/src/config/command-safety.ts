@@ -67,6 +67,7 @@ export const COMMAND_SEVERITY: Readonly<Record<string, CommandSeverity>> = {
   'cluster snapshot create': 'caution',
   'cluster snapshot list': 'none',
   'cluster status': 'none',
+  completion: 'none',
   'config access add': 'caution',
   'config access list': 'none',
   'config access ranges': 'caution',

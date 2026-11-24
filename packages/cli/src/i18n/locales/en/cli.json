@@ -125,6 +125,24 @@
         }
       }
     },
+    "completion": {
+      "descriptionShort": "Print a shell completion script for bash, zsh, fish or PowerShell",
+      "description": "Print a completion script for the named shell. Command, flag and choice words come from the CLI contract and complete without starting the CLI; machine, repository and other config resource names come from the hidden __complete lookup, kept per shell session until the config file changes. Load it with eval \"$(rdc completion bash)\" or eval \"$(rdc completion zsh)\", rdc completion fish | source, or rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell to print the script for: bash, zsh, fish or pwsh",
+      "complete": {
+        "descriptionShort": "Print the names of one config resource kind, one per line (internal)",
+        "kindOption": "Resource kind whose names to print: machine, repo, datastore, cluster, provider or strategy",
+        "configOption": "Config whose file is read (default: REDIACC_CONFIG, else rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Unknown shell \"{{shell}}\". Supported shells: {{shells}}.",
+        "unknownKind": "Unknown resource kind \"{{kind}}\". Kinds read from the config file: {{kinds}}.",
+        "configMissing": "Config file not found: {{path}}",
+        "configInvalid": "Config file {{path}} is not a valid config: {{error}}",
+        "remoteConfig": "Config file {{path}} points at a remote config; its resource names live on the server and are not completed.",
+        "unsafeWord": "The contract word \"{{word}}\" cannot be written into a shell completion script."
+      }
+    },
     "credits": {
       "descriptionShort": "Show third-party attributions and license compliance info",
       "description": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",

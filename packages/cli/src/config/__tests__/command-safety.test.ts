@@ -13,6 +13,7 @@ import {
   walkContractCommands,
 } from '../../../scripts/lib/command-tree-lib.js';
 import { cli } from '../../cli.js';
+import { omitKey } from '../../utils/omit-key.js';
 import { COMMAND_METADATA } from '../command-metadata.js';
 import {
   COMMAND_PREVIEW,
@@ -21,7 +22,6 @@ import {
   type CommandSeverity,
   NOT_PREVIEW,
 } from '../command-safety.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 interface Cmd {
   pathKey: string;
@@ -66,8 +66,8 @@ const badPreviewFlags = (cmds: Cmd[], prev: Prev): string[] =>
     .map(([k]) => k);
 
 describe('command safety table', () => {
-  it('walks 230 commands', () => {
-    expect(COMMANDS.length).toBe(230);
+  it('walks 231 commands', () => {
+    expect(COMMANDS.length).toBe(231);
   });
 
   it('has a severity for every command, and the check names a missing one', () => {

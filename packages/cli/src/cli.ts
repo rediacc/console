@@ -3,6 +3,11 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { registerBackupCommands } from './commands/backup.js';
 import { registerClusterCommands } from './commands/cluster/index.js';
+import {
+  createCompleteProgram,
+  isCompleteInvocation,
+  registerCompletionCommand,
+} from './commands/completion.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerCreditsCommand } from './commands/credits.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
@@ -434,6 +439,7 @@ export function createCli(): Command {
   registerLegalCommand(cli);
   registerFeedbackCommand(cli);
   registerVersionCommand(cli);
+  registerCompletionCommand(cli);
   registerClusterCommands(cli);
   registerTermCommands(cli);
   registerVSCodeCommands(cli);
@@ -516,5 +522,9 @@ export function createCli(): Command {
   return cli;
 }
 
-/** The CLI process's program. One process, one parse. */
-export const cli = createCli();
+/**
+ * The CLI process's program. One process, one parse. `rdc __complete` (the shell
+ * completion name lookup) gets a program holding only that command, so it never
+ * builds the full tree and stays out of the contract.
+ */
+export const cli = isCompleteInvocation(process.argv) ? createCompleteProgram() : createCli();
