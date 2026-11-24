@@ -1120,18 +1120,18 @@ def selftest() -> int:
         len(py_rows(handler("        return []\n", "OSError"))),
         0,
     )
-    waived = py_rows(
+    py_waived = py_rows(
         "def f():\n    try:\n        g()\n    # swallowed-failure-ok: the default is the conservative answer when the probe is unreachable\n"
         "    except Exception:\n        return []\n"
     )
     ctl.check(
         "CONTROL: a waiver directly above the except makes a WAIVER row",
-        [r.kind for r in waived],
+        [r.kind for r in py_waived],
         ["WAIVER"],
     )
     ctl.truthy(
         "CONTROL: a 30+ character waiver reason clears the bar",
-        validate_blocker_quality("x", waived[0].reason, "m.py"),
+        validate_blocker_quality("x", py_waived[0].reason, "m.py"),
     )
     ctl.falsy(
         "PLANT: a short waiver reason is refused",

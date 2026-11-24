@@ -65,7 +65,7 @@ def resolve(tree, words):
 
 def invocations(text):
     """Every `rdc ...` command line in a script, already shell-unquoted."""
-    found = []
+    found: list[str] = []
     for raw in text.splitlines():
         line = raw.strip()
         if line.startswith("#"):

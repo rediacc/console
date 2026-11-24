@@ -164,7 +164,7 @@ def _has_own_vacuity_guard(node: ast.Call) -> bool:
     targets = {t.id for t in assign.targets if isinstance(t, ast.Name)}
     if not targets:
         return False
-    fn = node
+    fn: ast.AST | None = node
     while fn is not None and not isinstance(fn, ast.FunctionDef):
         fn = getattr(fn, "parent", None)
     if fn is None:
@@ -188,7 +188,11 @@ def findings_for(source: str) -> list[str]:
     out = []
     for node in ast.walk(tree):
         recv = _is_substitution(node)
-        if recv is None:
+        if (
+            recv is None
+            or not isinstance(node, ast.Call)
+            or not isinstance(node.func, ast.Attribute)
+        ):
             continue
         if not _enclosing_control(node, regions):
             continue
@@ -204,7 +208,8 @@ def findings_for(source: str) -> list[str]:
 
 def scan(root: pathlib.Path):
     """(modules, sites, findings) over the two globs."""
-    modules, sites, findings = 0, 0, []
+    modules, sites = 0, 0
+    findings: list[str] = []
     for pattern in SCOPE:
         for path in sorted(glob.glob(str(root / pattern))):
             p = pathlib.Path(path)

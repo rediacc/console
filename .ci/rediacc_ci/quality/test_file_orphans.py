@@ -58,7 +58,7 @@ SEARCH_DIRS = (
 NAME_RE = re.compile(r"^test[-_].*\.(py|sh|ts)$")
 
 # Files that legitimately run only by hand, each with a stated reason. Adding to this list is a deliberate act; forgetting to wire a NEW test file is not, which is the asymmetry that makes this gate work.
-EXEMPT = {
+EXEMPT: dict[str, str] = {
     # <basename>: reason
 }
 
@@ -218,7 +218,7 @@ def delegate_globbed(rel):
 
 
 def discover():
-    out = []
+    out: list[pathlib.Path] = []
     for d in SEARCH_DIRS:
         base = REPO / d
         if not base.is_dir():

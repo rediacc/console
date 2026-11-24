@@ -55,7 +55,7 @@ BUILTIN = {"GITHUB_TOKEN"}
 #
 # Keep this list tiny. "It is failing and green is wanted" is not a reason; that is the escape hatch that turned the cli-manifest guard into decoration for its whole life. EMPTY, and that is the healthy state. It held one entry, ANTHROPIC_API_KEY, excusing a reference to a credential that did not exist. On 2026-09-02 the operator ruled out usage-based API billing, so the key will
 # never exist and the REFERENCE was deleted rather than excused -- which is the right end for every entry here: a suppression outlives its reason silently, a deleted reference cannot.
-OPTIONAL = {}
+OPTIONAL: dict = {}
 
 # KNOWN-UNREACHABLE, with an EXPIRY. These are real defects that this session cannot fix, because the remedy is a GitHub secret operation and that is an operator power. Blocking every CI run on something no engineer here can action would make the gate a hostage rather than a guard.
 #

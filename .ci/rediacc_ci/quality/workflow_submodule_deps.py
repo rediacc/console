@@ -395,7 +395,7 @@ def job_commands(job: dict) -> list[str]:
 
 def scan(workflow_files: list[pathlib.Path], subs: list[str], scripts: dict[str, str]):
     """Returns (findings, jobs_scanned)."""
-    findings = []
+    findings: list[tuple[str, str, str]] = []
     jobs_scanned = 0
     # The lookbehind rejects a WORD character only. It must NOT reject a preceding slash: the defect this gate exists for names its file as '../../../../../private/renet/pkg/prune/datastore.go', and excluding a leading slash made the rule blind to every relative reference -- which is most of them. The gate ran green against a replay of the real bug until this was found, so the
     # replay, not the green, is what proved it.

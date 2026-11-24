@@ -392,32 +392,32 @@ def load_registry(path):
             "%s has no `%s` section, so every WORKLIST_* name in the tree would read as "
             "unregistered." % (env_doc.shown(p), SECTION)
         )
-    p = "%s `%s`" % (env_doc.shown(p), SECTION)
+    label = "%s `%s`" % (env_doc.shown(p), SECTION)
     names = obj.get("names")
     if not isinstance(names, dict) or not names:
         raise RefusalError(
             "%s registers no names. An empty registry would report the entire tree "
-            "as unregistered, which is not a verdict anybody can act on." % p
+            "as unregistered, which is not a verdict anybody can act on." % label
         )
     exclusions = obj.get("exclusions")
     if not isinstance(exclusions, dict) or not exclusions:
         raise RefusalError(
             "%s declares no exclusions. agent/ and docs/ NAME these variables in "
             "prose; scanning them would register every name any plan ever discussed. "
-            "The exclusions belong here with their reasons, not in the gate." % p
+            "The exclusions belong here with their reasons, not in the gate." % label
         )
     sealed = obj.get("sealed_modules")
     if not isinstance(sealed, dict) or not sealed:
         raise RefusalError(
             "%s declares no sealed_modules. Those are the modules whose limits may not be "
             "retuned from the environment at all; a registry without them would enforce "
-            "'registered' where the operator asked for 'no escape hatches'." % p
+            "'registered' where the operator asked for 'no escape hatches'." % label
         )
     foreign = obj.get("foreign_reads", {})
     if not isinstance(foreign, dict):
         raise RefusalError(
             "%s: `foreign_reads` is not an object, so the names read outside this scan cannot "
-            "be told apart from dead ones" % p
+            "be told apart from dead ones" % label
         )
     return obj
 

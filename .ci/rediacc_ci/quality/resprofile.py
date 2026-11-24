@@ -113,9 +113,10 @@ def selftest() -> int:
         _fired is not None and "Resprofile:" in _fired,
         str(_fired)[:120],
     )
+    _loaded = load_baseline()
     check(
         "a missing baseline is PRISTINE, not an error",
-        load_baseline() is None or load_baseline().get("format") == 1,
+        _loaded is None or _loaded.get("format") == 1,
     )
 
     # The retirement trigger's "acted on" test, in both directions. Its whole job is to tell work from talk about work, so a control that only plants real code would miss the exact case that got through on the first try.
@@ -385,7 +386,7 @@ def main(argv: list[str]) -> int:
         )
         return 2
 
-    if pristine:
+    if base is None:
         print(
             f"⚠ pristine: {len(caps)} capture(s), {j} judgeable, {len(findings)} finding(s) -- nothing enforced until `check_resprofile.py --seed {cdir}` records a baseline from real numbers."
         )
@@ -393,7 +394,8 @@ def main(argv: list[str]) -> int:
             print(f"    {f['class']}  {f['why']}")
         return 0
 
-    enforced, reported = [], []
+    enforced: list[tuple[dict, str]] = []
+    reported: list[tuple[dict, str]] = []
     for f in findings:
         cls = f["class"]
         stats = base.get("classes", {}).get(cls, {"F": 0, "J": 0})

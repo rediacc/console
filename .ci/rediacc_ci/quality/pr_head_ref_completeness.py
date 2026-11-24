@@ -337,14 +337,15 @@ def narrow_by_if(triggers: set[str], condition) -> set[str]:
         clause = strip_parens(conjunct)
         disjuncts = split_top(clause, "||")
         if len(disjuncts) > 1:
-            names: set[str] | None = set()
+            names: set[str] = set()
+            every_disjunct_is_an_event_test = True
             for disjunct in disjuncts:
                 found = set(EVENT_EQ.findall(strip_parens(disjunct)))
                 if not found:
-                    names = None
+                    every_disjunct_is_an_event_test = False
                     break
                 names |= found
-            if names is not None:
+            if every_disjunct_is_an_event_test:
                 out &= names
             continue
         m = EVENT_EQ.fullmatch(clause)
@@ -723,7 +724,7 @@ def controls() -> None:
         )
 
         def hits_for(wf_dir: Path) -> list[tuple[str, str, str, bool]]:
-            out = []
+            out: list = []
             for wf in wf_dir.glob("*.yml"):
                 doc = yaml.safe_load(wf.read_text(encoding="utf-8"))
                 for job in (doc.get("jobs") or {}).values():

@@ -174,7 +174,7 @@ def scan(root: pathlib.Path, tools: set[str]):
 
 
 def findings(per_job, anywhere) -> list[str]:
-    out = []
+    out: list[str] = []
     for (wf, j), (defs, uses) in sorted(per_job.items()):
         out.extend(
             f"{wf}: job `{j}` uses ${u} in a run: block, but nothing in that job "

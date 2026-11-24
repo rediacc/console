@@ -254,7 +254,7 @@ def runs_on(workflow_dir):
     nothing RAISES rather than returning {} -- an empty map would make every
     comparison below vacuous while the gate printed a clean line.
     """
-    found = {}
+    found: dict = {}
     files = sorted(pathlib.Path(workflow_dir).glob("*.yml"))
     for path in files:
         in_jobs = False
@@ -580,8 +580,8 @@ def merge_rows(rows, where):
 
     Returns (merged, contributing, warnings): the baseline records, the set of run ids that contributed to each, and anything worth printing.
     """
-    merged = {}
-    contributing = {}
+    merged: dict = {}
+    contributing: dict = {}
     warnings = []
     for run_id, fields in rows:
         if not usable(fields):
@@ -701,7 +701,7 @@ def refresh(baseline_path, workflow_dir, branch, event, limit):
         print("CANNOT READ THE WORKFLOWS: %s" % exc, file=sys.stderr)
         return 1
 
-    where = {}
+    where: dict = {}
     for workflow, job in pairs:
         where.setdefault(job, set()).add(workflow)
 
