@@ -37,7 +37,7 @@ import traceback
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_hooks import guards, hookio
+from rediacc_hooks import _gitmemo, guards, hookio
 
 
 def run_one(stem, payload, cwd=None, env=None):
@@ -139,7 +139,14 @@ def run_chain(chain, payload, cwd=None, env=None, ledger=None):
     Returns (rc, stdout, stderr). rc is 2 if any guard REFUSED (a refusal always wins, since that is a decision and a crash is not), 1 if any guard crashed and none refused, 0 otherwise.
 
     `ledger`, when given, receives one line for this run (see the module docstring); None records nothing.
+
+    The guards run inside `_gitmemo.chain_memo()`, so a read-only git question (`rev-parse`, a reading `symbolic-ref`) is asked once per chain run however many guards ask it (68 forks to 8 on an `echo hi` payload, PR-TASK 79b7e92e).
     """
+    with _gitmemo.chain_memo():
+        return _run_chain(chain, payload, cwd, env, ledger)
+
+
+def _run_chain(chain, payload, cwd, env, ledger):
     started = time.perf_counter()
     modules = guards.by_chain(chain)
     if not modules:
