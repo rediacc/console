@@ -590,3 +590,10 @@ def test_every_family_target_is_a_stable_fixed_point():
     h = _hints()
     for fam in set(h.SOURCE_FAMILIES.values()):
         assert h.source_family(fam) == fam, fam
+
+
+def test_stuck_shell_proposals_cluster_with_the_roster_family():
+    h = _hints()
+    assert h.source_family("stuck-shell") == "roster"
+    assert h.source_family("no-such-check-key") == "no-such-check-key"
+    assert h.source_family("") == h.UNSOURCED_FAMILY

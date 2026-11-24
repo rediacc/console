@@ -468,6 +468,14 @@ def stack_cases(tmp, tag, mutate=None):
         )
     w.effort("low")
     w.settle()
+    got = w.stop(w.fix.proj)
+    out.append(
+        (
+            "CONTROL merged landing, effort low: the development stop does say LANDING MERGED",
+            "LANDING MERGED" in got.out,
+            True,
+        )
+    )
     got = w.stop(w.landing)
     out.append(
         (

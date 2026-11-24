@@ -250,6 +250,7 @@ print(json.dumps([
     S.is_final({"bytes": n, "armed": "bdy2q4ke7"}),
     S.is_final({"bytes": n}),
     S.is_final({"bytes": n, "armed": "bdy2q4ke7", "boxes": ["PLAN-x.md#abcd1234"]}),
+    S.is_final({"bytes": n, "interim": True, "boxes": ["PLAN-x.md#abcd1234"]}),
 ]))
 """
 
@@ -265,7 +266,7 @@ def test_a_long_report_with_an_armed_shell_is_not_final() -> None:
         text=True,
         check=True,
     )
-    assert json.loads(proc.stdout) == [False, True, True]
+    assert json.loads(proc.stdout) == [False, True, True, False]
 
 
 NEWEST_SNIPPET = r"""
@@ -296,3 +297,9 @@ def test_the_newest_report_decides_not_an_older_final_looking_one() -> None:
         check=True,
     )
     assert json.loads(proc.stdout) == [True, True, True]
+
+
+def test_stuck_shell_survives_standdown_in_every_profile_set() -> None:
+    std = wlfix.import_wl("wl_standdown")
+    assert "stuck-shell" in std.CORE
+    assert "stuck-shell-not-a-key" not in std.CORE

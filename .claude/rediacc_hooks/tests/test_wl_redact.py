@@ -182,6 +182,15 @@ def test_a_pem_header_without_its_closing_dashes_loses_its_body_too() -> None:
     assert "[redacted:private-key]" in out
 
 
+def test_a_pem_header_with_a_partial_dash_run_loses_its_body_too() -> None:
+    for dashes in ("-", "--", "---", "----"):
+        out = S.redact_secret_shapes(
+            "-----BEGIN RSA PRIVATE KEY%s\n%s\n%s\n" % (dashes, _B64, _B64)
+        )
+        assert _B64 not in out, dashes
+        assert "[redacted:private-key]" in out
+
+
 def test_control_prose_after_a_pem_header_is_kept() -> None:
     out = S.redact_secret_shapes("-----BEGIN RSA PRIVATE KEY----- appears in the docs")
     assert out == "[redacted:private-key] appears in the docs"

@@ -50,7 +50,8 @@ def is_final(entry):
     import wl_report as RPT
 
     if entry.get("boxes"):
-        return True
+        # A TICK block wins over an armed shell (the report closes the work), but not over `interim`: a mid-task report that ticks one box still waits on its next shell.
+        return not entry.get("interim")
     return (
         not entry.get("silent")
         and not entry.get("relay")

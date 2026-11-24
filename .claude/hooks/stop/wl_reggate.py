@@ -769,7 +769,7 @@ def _gate_key(scripts, rel):
 
 
 def prove_cli(root):
-    """`wl_reggate.py --prove`: run `npm run <key>` for every new or changed check script that has no recorded verdict at its content hash, and record each exit. The Stop hook only READS these verdicts (prove_new_gate), so a gate's minutes-long run never sits on the stop path (agent/plans/PLAN-tooling-speed.md D3). Returns the printed lines."""
+    """`wl_reggate.py --prove`: run `npm run <key>` for every check script that is new or dirty relative to HEAD and has no recorded verdict at its content hash (a script changed in an earlier commit is skipped), and record each exit. The Stop hook only READS these verdicts (prove_new_gate), so a gate's minutes-long run never sits on the stop path (agent/plans/PLAN-tooling-speed.md D3). Returns the printed lines."""
     scripts = package_scripts(root)
     out = []
     for pat in CHECK_SCRIPT_GLOBS:

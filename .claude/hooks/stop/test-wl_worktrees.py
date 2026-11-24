@@ -730,7 +730,7 @@ def control_hold(tmp):
     check("a hold naming a prefix of an open id does not hold", ids(got["unlanded"]), ["w1"])
     write_hold(main, "w1", "ac")
     got = read(tmp, main, items=[open_item])
-    check("a one-letter prefix hold holds nothing", ids(got["unlanded"]), ["w1"])
+    check("a two-letter prefix hold holds nothing", ids(got["unlanded"]), ["w1"])
     write_hold(main, "w1", "ac6a4f6b")
     got = read(tmp, main, items=[{**open_item, "owner": "babe0000"}])
     check("another session's item does not hold it", ids(got["unlanded"]), ["w1"])
@@ -761,13 +761,18 @@ def control_hold(tmp):
     got = read(tmp, main, items=[open_item])
     check("a damaged hold blocks", ids(got["unlanded"]), ["w1"])
     check("a damaged hold is said", "w1: its hold record could not be read" in got["doubts"], True)
-    (main / ".git/rediacc-worktrees/w1.hold").write_text('{"item": "x"}', encoding="utf-8")
-    got = read(tmp, main, items=[open_item])
-    check(
-        "a hold with no reason reads as damaged",
-        "w1: its hold record could not be read" in got["doubts"],
-        True,
-    )
+    for name, body in (
+        ("a hold with an item and no reason", '{"item": "ac6a4f6b"}'),
+        ("a hold with a reason and no item", '{"reason": "r"}'),
+        ("a hold with neither item nor reason", '{"item": "x"}'),
+    ):
+        (main / ".git/rediacc-worktrees/w1.hold").write_text(body, encoding="utf-8")
+        got = read(tmp, main, items=[open_item])
+        check(
+            name + " reads as damaged",
+            "w1: its hold record could not be read" in got["doubts"],
+            True,
+        )
 
 
 def control_landed(tmp):

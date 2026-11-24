@@ -67,6 +67,7 @@ CORE = frozenset(
         "cl-owner",
         # Two live writers already breaking a plan mutex or sharing files (agent/plans/PLAN-plan-priority-concurrency.md section 5c): waiting does not resolve it.
         "roster-concurrency",
+        # A shell command stuck past its limit holds the turn itself: standing down to WAIT would sit behind the very command that never returns.
         "stuck-shell",
         "ladder-gone",
         "ladder-idle",

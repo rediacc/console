@@ -2092,7 +2092,7 @@ _AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})
 
 # A private key's header AND BODY. The header alone is a shape; the base64 lines after it are the secret, so this consumes the header (its closing dashes optional, a mangled paste still carries the body), any RFC1421 `Proc-Type:`/`DEK-Info:` lines and every base64 run of 16+ characters (a length no prose word reaches) across real or escaped newlines, plus a shorter final line when the END line follows it, up to an optional END line.
 _PEM_BLOCK_RE = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY(?:-----)?"
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-{0,5}"
     r"(?:(?:\s|\\[nr])*(?:(?:Proc-Type|DEK-Info):[^\n\\]*|[A-Za-z0-9+/=]{16,}))*"
     r"(?:(?:\s|\\[nr])*[A-Za-z0-9+/=]{1,15}(?=(?:\s|\\[nr])*-----END))?"
     r"(?:(?:\s|\\[nr])*-----END [A-Z ]*PRIVATE KEY-----)?"
