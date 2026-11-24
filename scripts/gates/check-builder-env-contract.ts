@@ -216,12 +216,6 @@ const EXEMPT: Exemption[] = [
     direction: 'exported-not-read',
     reason: 'BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.',
   },
-  {
-    name: 'PR_NUMBER',
-    direction: 'read-not-exported',
-    reason:
-      'BLOCKER: set as JOB-level env on deploy-preview in ci.yml (one definition serving ~8 steps), not repeated in the step env block. This gate parses the STEP block only.',
-  },
 ];
 
 // ── Extractors, exported so a selftest can drive them directly ─────────────
