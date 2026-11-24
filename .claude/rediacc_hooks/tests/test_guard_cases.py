@@ -4,6 +4,7 @@ Both directions: a forwarded name must resolve to the table's own object (withou
 """
 
 import ast
+import importlib.util
 import json
 import pathlib
 import subprocess
@@ -12,6 +13,7 @@ import sys
 import pytest
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import _write_rules
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 TABLES = HOOKS / "tests" / "guard_cases"
@@ -137,3 +139,25 @@ def test_no_guard_regrows_an_inline_table_except_the_clock_readers():
         "these guards define a test table inline; put it in tests/guard_cases/<stem>.py "
         'and forward it with `__getattr__ = tables("<stem>", ...)`: %s' % inline
     )
+
+
+def _load_ledger_shell_guard():
+    spec = importlib.util.spec_from_file_location(
+        "ledger_shell_write_under_test", guards.HERE / "block_live_proof_ledger_shell_write.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_ledger_shell_guard_refuses_to_load_on_a_row_with_no_path(monkeypatch):
+    """Review 6453becc.2: a ROWS row with no path must stop the import, not leave a None ledger path."""
+    rows = dict(_write_rules.ROWS)
+    rows["live_proof_ledger"] = rows["live_proof_ledger"]._replace(path=None)
+    monkeypatch.setattr(_write_rules, "ROWS", rows)
+    with pytest.raises(RuntimeError, match="names no path"):
+        _load_ledger_shell_guard()
+
+
+def test_control_ledger_shell_guard_loads_on_the_real_row():
+    assert _load_ledger_shell_guard().LEDGER_PATH is not None
