@@ -1519,6 +1519,7 @@ jobs:
             AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
             AWS_SES_FROM > BWS_AWS_SES_FROM
             AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
+            PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1534,6 +1535,19 @@ jobs:
 
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
+
+      # PLAN-preview-signer D5: the preview's public name is `pv-<w>-<w>-<w>`, derived from the PR number with
+      # PREVIEW_NAME_KEY (rediacc_ci.deploy.preview_name), so the host cannot be guessed from the PR number. It is
+      # masked before first use and kept in this job's env only: the runner drops a job output that carries a
+      # masked string, so every job that needs the name derives it again (smoke-test-preview,
+      # ops-cleanup-preview.yml). A failed derivation fails the step; there is no pr-<n> fallback.
+      - name: Derive the preview name
+        env:
+          PREVIEW_NAME_KEY: ${{ env.BWS_PREVIEW_NAME_KEY }}
+        run: |
+          name="$(PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr "${PR_NUMBER}")"
+          echo "::add-mask::${name}"
+          echo "PREVIEW_NAME=${name}" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/setup-node-npm
         with:
@@ -1601,9 +1615,9 @@ jobs:
       #
       # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
-      # Deploy single combined pr-N Worker (static assets + embedded account server)
+      # Deploy the single combined preview Worker (static assets + embedded account server) under its word name.
       - name: Deploy preview worker
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "${PREVIEW_NAME}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
@@ -1651,15 +1665,15 @@ jobs:
           names: |
             BWS_ACCOUNT_X25519_PRIVATE_KEY
 
+      # The summary names no address: the run page is as public as the repository, and the word name is what
+      # keeps a preview unguessable (PLAN-preview-signer ruling 7). The operator looks the name up.
       - name: Deployment summary
         run: |
           {
             echo "## Preview Deployment"
             echo ""
-            echo "**URL:** https://pr-${PR_NUMBER}.rediacc.workers.dev"
-            echo "**Console:** https://pr-${PR_NUMBER}.rediacc.workers.dev/console/"
-            echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health"
             echo "**PR:** #${PR_NUMBER}"
+            echo "**Address:** https://<name>.rediacc.workers.dev, where <name> is printed by \`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr ${PR_NUMBER}\` with PREVIEW_NAME_KEY set"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
@@ -1715,6 +1729,20 @@ jobs:
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
+
+      # Derived again here, not taken from deploy-preview: a masked value cannot travel as a job output (see
+      # "Derive the preview name" in deploy-preview).
+      - name: Derive the preview name
+        env:
+          PREVIEW_NAME_KEY: ${{ env.BWS_PREVIEW_NAME_KEY }}
+        run: |
+          name="$(PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr "${PR_NUMBER}")"
+          echo "::add-mask::${name}"
+          {
+            echo "PREVIEW_NAME=${name}"
+            echo "PREVIEW_URL=https://${name}.rediacc.workers.dev"
+          } >> "$GITHUB_ENV"
 
       # No app-token step here on purpose: this job checks out no submodules
       # and `.npmrc` sets allow-git=none, so nothing needs authenticated git.
@@ -1747,7 +1775,7 @@ jobs:
       - name: Run license smoke test
         run: npx tsx .ci/scripts/test/smoke-test-preview.ts
         env:
-          PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
+          # PREVIEW_URL is in the job env, written by "Derive the preview name".
           SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
           # Read in this job, not taken from a deploy-preview job output: the bws-secrets action masks the value,
           # and the runner drops a job output that carries a masked string (the step output came through empty).

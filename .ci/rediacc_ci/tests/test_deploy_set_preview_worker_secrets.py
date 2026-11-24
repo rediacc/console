@@ -28,9 +28,9 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_preview_worker_secrets.py"
 
-# The ten values the script refuses to deploy without, plus the PR number. Two characters each, and visibly not credentials.
+# The ten values the script refuses to deploy without, plus the preview name. Two characters each, and visibly not credentials.
 FIXTURE_ENV = {
-    "PR_NUMBER": "123",
+    "PREVIEW_NAME": "pv-able-baker-charlie",
     "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
     "ACCOUNT_X25519_PRIVATE_KEY": "x1",
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
@@ -63,7 +63,7 @@ sys.stdout.write("Finished processing secrets JSON file.\\n")
 
 # `jq` is a real prerequisite (the port shells out to it), and `uname` / `dirname` are kept so a tool leaking in shows up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname")
-OK_LINE = "✓ Set 12 secrets on pr-123 in one bulk call\n"
+OK_LINE = "✓ Set 12 secrets on pv-able-baker-charlie in one bulk call\n"
 
 
 def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
@@ -132,7 +132,7 @@ def document(calls: str) -> str:
     return match.group(1)
 
 
-def guard_text(name: str, worker: str = "pr-123") -> str:
+def guard_text(name: str, worker: str = "pv-able-baker-charlie") -> str:
     return (
         f"{port.SELF}: {name} is EMPTY for WORKER_NAME={worker}.\n"
         "  The Worker's schema either accepts an empty value and silently disables the\n"
@@ -144,7 +144,10 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     """ONE CALL, PINNED AGAINST LITERAL BYTES: the argv, then the twelve keys in order, the two legitimately-empty ones present as empty strings, and no licence private key."""
     proc, calls = _run(tmp_path)
     assert proc.returncode == 0
-    assert calls.splitlines()[0] == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpr-123"
+    assert (
+        calls.splitlines()[0]
+        == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpv-able-baker-charlie"
+    )
     assert document(calls) == (
         "{\n"
         '  "ACCOUNT_ED25519_PUBLIC_KEY": "e2",\n'
@@ -176,10 +179,11 @@ def test_no_licence_private_key_is_pushed_or_required(tmp_path: pathlib.Path) ->
     assert "ACCOUNT_ED25519_PUBLIC_KEY" in port.REQUIRED_NONEMPTY
 
 
-def test_the_worker_name_is_the_pr_number_prefixed(tmp_path: pathlib.Path) -> None:
-    proc, calls = _run(tmp_path, PR_NUMBER="9001")
-    assert "--name\tpr-9001" in calls
-    assert proc.stderr == OK_LINE.replace("pr-123", "pr-9001")
+def test_the_worker_name_is_the_preview_name(tmp_path: pathlib.Path) -> None:
+    proc, calls = _run(tmp_path, PREVIEW_NAME="pv-delta-echo-foxtrot")
+    assert "--name\tpv-delta-echo-foxtrot" in calls
+    assert proc.stderr == OK_LINE.replace("pv-able-baker-charlie", "pv-delta-echo-foxtrot")
+    assert "pr-" not in calls, "no Worker name is built from a PR number"
 
 
 def test_every_one_of_the_ten_guards_fires_with_its_own_name(tmp_path: pathlib.Path) -> None:
@@ -223,25 +227,29 @@ def test_missing_npx_refuses_after_jq(tmp_path: pathlib.Path) -> None:
     assert proc.stderr == "✗ Required command 'npx' is not available\n"
 
 
-def test_the_tool_checks_run_before_the_pr_number_check(tmp_path: pathlib.Path) -> None:
-    proc, _calls = _run(tmp_path, drop="jq", drop_env=("PR_NUMBER",))
+def test_the_tool_checks_run_before_the_name_check(tmp_path: pathlib.Path) -> None:
+    proc, _calls = _run(tmp_path, drop="jq", drop_env=("PREVIEW_NAME",))
     assert proc.stderr == "✗ Required command 'jq' is not available\n"
 
 
-def test_a_missing_or_empty_pr_number_refuses_without_a_call(tmp_path: pathlib.Path) -> None:
-    """`:?` semantics: unset and empty refuse alike, so a Worker literally named `pr-` is never written."""
-    unset = tmp_path / "unset"
-    unset.mkdir()
-    empty = tmp_path / "empty"
-    empty.mkdir()
-    for proc, calls in (
-        _run(unset, drop_env=("PR_NUMBER",)),
-        _run(empty, PR_NUMBER=""),
-    ):
-        assert proc.returncode == 1
-        assert proc.stderr == port.MISSING_PR_NUMBER + "\n"
+def test_a_missing_empty_or_misshapen_name_refuses_without_a_call(tmp_path: pathlib.Path) -> None:
+    """Unset, empty, the old `pr-<n>` shape and the signer Worker's name all refuse before wrangler, and the refused value is not echoed."""
+    refusal = f"{port.SELF}: PREVIEW_NAME must be a preview Worker name (pv-<word>-<word>-<word>)\n"
+    cases: dict[str, dict] = {
+        "unset": {"drop_env": ("PREVIEW_NAME",)},
+        "empty": {"PREVIEW_NAME": ""},
+        "old": {"PREVIEW_NAME": "pr-123"},
+        "signer": {"PREVIEW_NAME": "pv-able-baker-charlie-signer"},
+        "two-words": {"PREVIEW_NAME": "pv-able-baker"},
+    }
+    for label, kwargs in cases.items():
+        case = tmp_path / label
+        case.mkdir()
+        proc, calls = _run(case, **kwargs)
+        assert proc.returncode == 1, label
+        assert proc.stderr == refusal, label
         assert proc.stdout == ""
-        assert calls == "", "a missing PR number still reached wrangler"
+        assert calls == "", f"{label}: a refused name still reached wrangler"
 
 
 def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
@@ -275,7 +283,10 @@ def test_the_closing_line_counts_what_is_actually_sent() -> None:
 
 def test_pure_helpers() -> None:
     assert port.SELF == "rediacc_ci.deploy.set_preview_worker_secrets"
-    assert port.worker_name("42") == "pr-42"
+    assert port.worker_name("pv-able-baker-charlie") == "pv-able-baker-charlie"
+    assert port.worker_name("42") is None
+    assert port.worker_name("pr-42") is None
+    assert port.worker_name("pv-able-baker-charlie-signer") is None
     assert port.jq_argv() == ["jq", port.jq_filter()], (
         "the program only; the values travel on stdin"
     )
@@ -305,7 +316,7 @@ def test_pure_helpers() -> None:
 def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch) -> None:
     """`argv` is visible in `ps` for the length of the call, and the twin, like this port until #a2d19f74, passed every value to `jq --arg`. Every child this module starts is recorded: jq runs for real, wrangler is answered by the recorder, and no sentinel value may appear in any argv while every one of them must reach wrangler's stdin."""
     sentinels = {
-        name: "SENTINEL-%s-4b1d" % name.lower() for name in FIXTURE_ENV if name != "PR_NUMBER"
+        name: "SENTINEL-%s-4b1d" % name.lower() for name in FIXTURE_ENV if name != "PREVIEW_NAME"
     }
     for name, value in {**FIXTURE_ENV, **sentinels}.items():
         monkeypatch.setenv(name, value)

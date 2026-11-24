@@ -143,8 +143,8 @@ def test_slow_worker_still_becomes_ready(gate):
     gate.log_pass("a slow start is not mistaken for a flap")
 
 
-def test_override_does_not_need_a_pr_number(gate):
-    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied through sed. It has to work with PR_NUMBER unset, or the tests above are quietly exercising a different code path than CI does."""
+def test_override_does_not_need_a_preview_name(gate):
+    """PREVIEW_URL_OVERRIDE exists so this script is testable without being copied through sed. It has to work with PREVIEW_NAME unset, or the tests above are quietly exercising a different code path than CI does."""
     with stub("steady") as url:
         result = run_wait(
             gate,
@@ -153,17 +153,17 @@ def test_override_does_not_need_a_pr_number(gate):
                 "MAX_ATTEMPTS": "9",
                 "PROBE_INTERVAL_SECONDS": "0.1",
             },
-            drop=("PR_NUMBER",),
+            drop=("PREVIEW_NAME",),
         )
-    gate.assert_eq(result.rc, 0, "the override works with PR_NUMBER unset")
-    gate.log_pass("the override needs no PR_NUMBER")
+    gate.assert_eq(result.rc, 0, "the override works with PREVIEW_NAME unset")
+    gate.log_pass("the override needs no PREVIEW_NAME")
 
 
-def test_pr_number_still_required_without_override(gate):
-    result = run_wait(gate, {}, drop=("PR_NUMBER", "PREVIEW_URL_OVERRIDE"))
-    gate.assert_eq(result.rc, 1, "PR_NUMBER is still mandatory when no override is given")
-    gate.assert_contains(result.combined, "PR_NUMBER", "the failure names the missing variable")
-    gate.log_pass("the override did not make PR_NUMBER optional in CI")
+def test_preview_name_still_required_without_override(gate):
+    result = run_wait(gate, {}, drop=("PREVIEW_NAME", "PREVIEW_URL_OVERRIDE"))
+    gate.assert_eq(result.rc, 1, "PREVIEW_NAME is still mandatory when no override is given")
+    gate.assert_contains(result.combined, "PREVIEW_NAME", "the failure names the missing variable")
+    gate.log_pass("the override did not make PREVIEW_NAME optional in CI")
 
 
 def test_ci_defaults_are_still_strict(gate):

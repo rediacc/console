@@ -6,9 +6,7 @@ Blocks until a per-PR preview Worker answers both `/health` and `.well-known/ser
 REAL HTTP, NOT A STUBBED BINARY. The external tool the twin shells out to is `curl`, a generic HTTP client with no state and no credential of its own -- unlike `wrangler`/`aws`/`gh`, faking the BINARY would just reimplement `urllib.request` under a different name. So this port makes the HTTP calls directly with `urllib.request`, matching `curl -fsSL`'s semantics (raise on a non-2xx
 status, follow redirects, no output), and the differential proves parity by pointing both sides' target URL at the SAME local stub server via `PREVIEW_URL_OVERRIDE`, exactly as the existing bash gate test already does.
 
-REWORDED, NOT BYTE-IDENTICAL, on the missing-PR_NUMBER path only: the twin's
-`${VAR:?msg}` diagnostic carries a bash line number that is not worth
-reproducing (same reasoning as every other port's module docstring). Every other path -- the per-attempt log lines, the final success/failure line -- is byte-identical, because those are this port's own literal strings, not bash's.
+THE TARGET IS THE PREVIEW'S WORD NAME (PLAN-preview-signer D5): `https://<PREVIEW_NAME>.rediacc.workers.dev`, where `PREVIEW_NAME` is the `pv-<w>-<w>-<w>` name `rediacc_ci.deploy.preview_name` derives and the job masks. The twin built `pr-<PR_NUMBER>`; a missing or misshapen name is refused (exit 1) without echoing it, and no URL is ever built from a PR number. Every other path -- the per-attempt log lines, the final success/failure line -- is byte-identical, because those are this port's own literal strings, not bash's.
 """
 
 from __future__ import annotations
@@ -20,6 +18,7 @@ import urllib.error
 import urllib.request
 
 from rediacc_ci.core import common, https
+from rediacc_ci.deploy import preview_name
 
 SELF = "rediacc_ci.deploy.wait_for_preview_worker"
 
@@ -62,11 +61,14 @@ def main(argv: list[str]) -> int:
     if override:
         preview_url = override
     else:
-        pr_number = os.environ.get("PR_NUMBER", "")
-        if not pr_number:
-            print(f"{SELF}: PR_NUMBER is required", file=sys.stderr)
+        name = os.environ.get("PREVIEW_NAME", "")
+        if not preview_name.is_preview_worker(name) or name.endswith("-signer"):
+            print(
+                f"{SELF}: PREVIEW_NAME must be a preview Worker name (pv-<word>-<word>-<word>)",
+                file=sys.stderr,
+            )
             return 1
-        preview_url = f"https://pr-{pr_number}.rediacc.workers.dev"
+        preview_url = f"https://{name}.rediacc.workers.dev"
 
     required_streak = int(os.environ.get("REQUIRED_STREAK", "3"))
     max_attempts = int(os.environ.get("MAX_ATTEMPTS", "60"))

@@ -535,10 +535,6 @@
     "MAIL_CONTACT_PASSWORD": {
       "kind": "no-github-twin",
       "reason": "The contact mailbox password written by the mailbox setup (agent/plans/PLAN-email-sender-separation.md H1) for the operator's mail client; no workflow, profile or script reads it."
-    },
-    "PREVIEW_NAME_KEY": {
-      "kind": "no-github-twin",
-      "reason": "The HMAC key deploy/preview_name.py and housekeeping/cleanup_versions.py derive pv-<word> preview Worker names from (agent/plans/PLAN-preview-signer.md N3). Neither workflow supplies it yet, so the cleanup reports it missing and keeps every word-named preview until a workflow fetches it."
     }
   },
   "no_fetch_jobs": {}
