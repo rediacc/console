@@ -94,30 +94,35 @@ D9. **Status bar and pages.** A thin bar under the content while the panel is cl
   Depends on: PLAN-rmcp-writeback.md#WB5.
   Accept: `(cd workers/proxy && npx vitest run src/__tests__/egress.test.ts)` rc 0 with the route admitted, a query string refused, and `GET` on the same path refused.
     (ticked) 2026-11-24T11:14:31Z by d778be9d: landed a3374e2608; shared mask 6, cli serve 475, workers/proxy 402 passed on the landed tree; live proof RI-L1 on eu bench owed separately. DEPS-WAIVED: prerequisite boxes waived by survey f8c0541b (tail boxes only)
-- [ ] RI7 [writer] Web data layer and history (D7, D9): `listRuns`, `getRun` and history calls in api/console.ts, `useRuns` and `useRunHistory`, RunHistory.tsx, CommandPage.tsx and CommandPalette.tsx reading server history, lib/run-history.ts and its test deleted, and CommandPage handing its requestId and job id to the panel context.
+- [x] RI7 [writer] Web data layer and history (D7, D9): `listRuns`, `getRun` and history calls in api/console.ts, `useRuns` and `useRunHistory`, RunHistory.tsx, CommandPage.tsx and CommandPalette.tsx reading server history, lib/run-history.ts and its test deleted, and CommandPage handing its requestId and job id to the panel context.
   Owns: private/account/web/src/api/console.ts, private/account/web/src/hooks/useRuns.ts, private/account/web/src/hooks/useRunHistory.ts, private/account/web/src/hooks/__tests__/use-runs.test.ts, private/account/web/src/hooks/__tests__/use-run-history.test.ts, private/account/web/src/lib/run-history.ts, private/account/web/src/lib/__tests__/run-history.test.ts, private/account/web/src/components/console/RunHistory.tsx, private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/pages/console/CommandPage.tsx
   Depends on: RI0, RI2.
   Accept: `(cd private/account/web && npx vitest run src/hooks/__tests__/use-runs.test.ts src/hooks/__tests__/use-run-history.test.ts)` rc 0 (a sensitive param leaves the browser masked); `git grep -n "run-history" -- private/account/web/src` prints nothing; `(cd private/account/web && npm run typecheck)` rc 0.
-- [ ] RI8 [writer] Block-stream panel (D8): RunPanel, RunBlock, RunFilters and the panel context with the prompt slot and the animation slot under components/console/runs/, reusing `useJobStream` for job-backed running blocks and `StepsCard` for steps, opening the sealed tail when unlocked, English strings in console.json.
+    (ticked) 2026-11-24T15:53:02Z by d778be9d: landed account cf510407 (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
+- [x] RI8 [writer] Block-stream panel (D8): RunPanel, RunBlock, RunFilters and the panel context with the prompt slot and the animation slot under components/console/runs/, reusing `useJobStream` for job-backed running blocks and `StepsCard` for steps, opening the sealed tail when unlocked, English strings in console.json.
   Owns: private/account/web/src/components/console/runs/**, private/account/web/src/i18n/locales/en/console.json
   Depends on: RI4, RI7.
   Accept: `(cd private/account/web && npx vitest run src/components/console/runs)` rc 0: a finished block renders one line, a running one renders steps and output, each filter narrows the feed, a locked session shows the tail as locked.
-- [ ] RI9 [writer] Status bar and mount (D9): RunStatusBar with one pill per running run, mounted with RunPanel in Layout.tsx inside `ConsoleScope`, rendered only for console-allowed users.
+    (ticked) 2026-11-24T15:53:03Z by d778be9d: landed account ee25971f (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
+- [x] RI9 [writer] Status bar and mount (D9): RunStatusBar with one pill per running run, mounted with RunPanel in Layout.tsx inside `ConsoleScope`, rendered only for console-allowed users.
   Owns: private/account/web/src/components/Layout.tsx, private/account/web/src/components/console/runs/RunStatusBar.tsx, private/account/web/src/components/console/runs/__tests__/run-status-bar.test.tsx
   Depends on: RI8.
   Accept: `(cd private/account/web && npx vitest run src/components/console/runs/__tests__/run-status-bar.test.tsx src/components/__tests__)` rc 0: two running runs give two pills, a click opens the panel focused on that run, a user without console access sees neither.
-- [ ] RI10 [writer] Jobs page reads the index (D9): the machine input is removed, the page lists index rows with the panel's filter chips, and job-backed rows link to job detail.
+    (ticked) 2026-11-24T15:53:05Z by d778be9d: landed account ffa40bbf (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
+- [x] RI10 [writer] Jobs page reads the index (D9): the machine input is removed, the page lists index rows with the panel's filter chips, and job-backed rows link to job detail.
   Owns: private/account/web/src/pages/console/Jobs.tsx, private/account/web/src/pages/console/__tests__/jobs.test.tsx
   Depends on: RI7.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/jobs.test.tsx)` rc 0; `git grep -n "jobs-machine" -- private/account/web/src` prints nothing.
+    (ticked) 2026-11-24T15:53:04Z by d778be9d: landed account 3bc95f5c (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
 - [ ] RI11 [writer] Translations of the panel, status bar and Jobs strings into the 12 other locales of console.json, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/console.json
   Depends on: RI8, RI9, RI10.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run ci -- --narrow` rc 0.
-- [ ] RI12 [writer] E2e of the panel against the TEST_MODE mock: a run from a command page appears as a running block, folds to one line when done, the filters narrow the feed, and the status bar shows a pill while the panel is closed.
+- [x] RI12 [writer] E2e of the panel against the TEST_MODE mock: a run from a command page appears as a running block, folds to one line when done, the filters narrow the feed, and the status bar shows a pill while the panel is closed.
   Owns: private/account/e2e/tests/27-console/27-03-run-panel.test.ts
   Depends on: RI2, RI9, RI10.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-03-run-panel.test.ts)` rc 0.
+    (ticked) 2026-11-24T15:53:06Z by d778be9d: landed account 9b4b7dac (gitlink 0c71be615c); web vitest 1404 passed, account and web tsc rc 0; RI12 e2e 27-03 rc 0 against the dev stack. DEPS-WAIVED per survey f8c0541b
 - [ ] LP-bench [live] Deploy the branch's proxy and account Workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) so RI-L1 runs against the keep-awake, recorder and routes this branch builds; account-smoke and cli-bench run as additional verification.
   Accept: live-proof bench proxy-ready
 - [ ] RI-L1 [live] eu bench: start a synchronous run longer than 3 minutes from the console, close the browser at once, reopen after 4 minutes on a second device as a teammate, and see the row end `succeeded` with its tail; the executor log shows no idle stop during the dispatch. Local-route: deploy-proxy-bench, deploy-bench -- the branch Workers serve the eu bench and the console is driven from this machine.
