@@ -413,6 +413,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/lib/translation-diff.ts',
       'tsconfig.json',
     ],
+    lists: ['packages/cli/src/i18n/locales/en', 'scripts', 'scripts/gates', 'scripts/lib'],
     pathsOrigin: 'traced',
     leaves: ['scripts/gates/check-translation-hashes.ts'],
     ci: {
