@@ -372,6 +372,12 @@ export function prepareCommand(
   return { entry, argv: buildArgv(entry, params, positionals) };
 }
 
+/** The renet functions that make an image; their call params carry the new GUID (audit.ts MADE_GUID_PARAM). */
+const IMAGE_MAKING_FUNCTIONS: ReadonlySet<string> = new Set([
+  'repository_create',
+  'repository_fork',
+]);
+
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
   const { argv } = args.prepared;
   const started = Date.now();
@@ -385,6 +391,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let functionName: string | undefined;
   let machineName: string | undefined;
   let functionParams: Record<string, unknown> | undefined;
+  let madeImage = false;
 
   // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
   const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
@@ -392,9 +399,14 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
-      functionName = options.functionName;
-      machineName = options.machineName;
-      functionParams = options.params;
+      // An image-making call (create, fork) is what the audit event traces an orphaned image back to, so a later call of the same command (fork then up) does not displace it.
+      const makesImage = IMAGE_MAKING_FUNCTIONS.has(options.functionName);
+      if (makesImage || !madeImage) {
+        functionName = options.functionName;
+        machineName = options.machineName;
+        functionParams = options.params;
+        madeImage = makesImage;
+      }
       let result: ExecuteResult;
       try {
         result = await args.executor.execute({
