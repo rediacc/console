@@ -67,6 +67,15 @@ describe('ConsoleAuditEventSchema', () => {
     expect(parse({ method: 'totp' })).toBe(false);
   });
 
+  it('caps configId at 200 characters, like pathKey', () => {
+    const at = (n: number) =>
+      ConsoleAuditEventSchema.safeParse(
+        event('console.config.saved', { configId: 'c'.repeat(n), action: 'push', version: 3 }),
+      ).success;
+    expect(at(200)).toBe(true);
+    expect(at(201)).toBe(false);
+  });
+
   it('refuses an unknown type', () => {
     expect(ConsoleAuditEventSchema.safeParse(event('console.unknown', {})).success).toBe(false);
   });

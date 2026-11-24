@@ -88,7 +88,7 @@ const configSaved = z.strictObject({
   ...envelope,
   type: z.literal('console.config.saved'),
   data: z.strictObject({
-    configId: z.string().min(1),
+    configId: z.string().min(1).max(200),
     action: z.enum(['push', 'restore']),
     version: z.number().int().min(0).optional(),
   }),
@@ -100,7 +100,7 @@ const policySaved = z.strictObject({
   type: z.literal('console.policy.saved'),
   data: z.strictObject({
     storeId: z.string().min(1),
-    configId: z.string().min(1),
+    configId: z.string().min(1).max(200),
     version: z.number().int().min(0),
   }),
 });
@@ -122,7 +122,7 @@ const commandReveal = z.strictObject({
 });
 
 const editorReveal = z.strictObject({
-  configId: z.string().min(1),
+  configId: z.string().min(1).max(200),
   leafCount: z.number().int().min(0),
   revealUntil: z.iso.datetime(),
   method: stepUpMethod.nullable(),
