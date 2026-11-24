@@ -113,10 +113,11 @@ D10. **Console.** `PUT /portal/forensics/repos/:guid/level` (owner or admin, the
   Owns: workers/account/wrangler.*.toml, workers/account/enterprise.template.toml, private/account/wrangler.toml, regions.json, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/tests/gates/test_gate_region_consistency*.py, .ci/config/secret-supply.json
   Depends on: PLAN-tooling-code-reduction.md#CR2.
   Accept: `npm run check:ci-region-consistency` rc 0, with a control case in test_gate_region_consistency that drops the forensics bucket var from one target and fails; `npm run check:ci-regions-sync` rc 0.
-- [ ] FS13 [writer] Claim entitlement in renet per D9: `entitlement_claim.go` implementing PLAN-forensics-capture.md's `Entitlement` from the licence claim, writing the claim's `level` into `/etc/rediacc/forensics/<guid>.json` with `set_by: account`.
+- [x] FS13 [writer] Claim entitlement in renet per D9: `entitlement_claim.go` implementing PLAN-forensics-capture.md's `Entitlement` from the licence claim, writing the claim's `level` into `/etc/rediacc/forensics/<guid>.json` with `set_by: account`.
   Owns: private/renet/pkg/netaudit/entitlement_claim.go, private/renet/pkg/netaudit/entitlement_claim_test.go
   Depends on: FS2, FS8, PLAN-forensics-capture.md#FC4, PLAN-forensics-capture.md#FC5.
   Accept: `(cd private/renet && go test ./pkg/netaudit/...)` rc 0 with cases: a claim with `enabled: false` yields no entitlement and an unentitled repo writes no section, a COMMUNITY licence without a claim records nothing; `npm run check:ci-renet` rc 0.
+    (ticked) 2026-11-24T09:41:37Z by d778be9d: landed renet 67bfdb6f (gitlink c7d516e565); go test netaudit/license/i18n rc 0, check:ci-renet rc 0. DEPS-WAIVED: forensics-capture holds only tail boxes for these files (survey f8c0541b)
 - [ ] FSL1 [lead] Operator-only Cloudflare setup per D4: the evidence account with Rediacc admins only, `forensics-eu`, `forensics-us`, `forensics-asia` and `forensics-bench` with their jurisdictions, the lock and lifecycle rules, one Object Read and Write token and one read-only token for those buckets, the bws entries, and the `forensics-compact-<region>` queues in the main account.
   Depends on: none.
   Accept: `wrangler r2 bucket lock list forensics-bench` run with the evidence account's admin credentials lists the `raw/`, `days/` and `hold/` rules; a DELETE of a fresh `raw/` object with the Worker's token answers 403; door:operator-only for the account creation.
