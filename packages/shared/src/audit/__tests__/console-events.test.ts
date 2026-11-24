@@ -70,16 +70,43 @@ describe('ConsoleAuditEventSchema', () => {
   it('caps configId at 200 characters, like pathKey', () => {
     const at = (n: number) =>
       ConsoleAuditEventSchema.safeParse(
-        event('console.config.saved', { configId: 'c'.repeat(n), action: 'push', version: 3 }),
+        event('console.config.saved', { configId: 'c'.repeat(n), action: 'push', version: 3 })
       ).success;
     expect(at(200)).toBe(true);
     expect(at(201)).toBe(false);
     const store = (n: number) =>
       ConsoleAuditEventSchema.safeParse(
-        event('console.policy.saved', { storeId: 's'.repeat(n), configId: 'c-1', version: 2 }),
+        event('console.policy.saved', { storeId: 's'.repeat(n), configId: 'c-1', version: 2 })
       ).success;
     expect(store(200)).toBe(true);
     expect(store(201)).toBe(false);
+  });
+
+  it('caps every identifier of the envelope and of policy and editor-reveal data (reviews 45ad4375, 68e17d51)', () => {
+    const ok = (e: unknown) => ConsoleAuditEventSchema.safeParse(e).success;
+    const run = event('console.stepup', DATA['console.stepup']) as Record<string, unknown>;
+    const long = (n: number) => 'x'.repeat(n);
+    expect(ok({ ...run, actor: { userId: long(200), kind: 'human' } })).toBe(true);
+    expect(ok({ ...run, actor: { userId: long(201), kind: 'human' } })).toBe(false);
+    expect(ok({ ...run, orgId: long(200) })).toBe(true);
+    expect(ok({ ...run, orgId: long(201) })).toBe(false);
+    expect(ok({ ...run, teamId: long(200) })).toBe(true);
+    expect(ok({ ...run, teamId: long(201) })).toBe(false);
+    const policy = (configId: string) =>
+      ok(event('console.policy.saved', { storeId: 's-1', configId, version: 2 }));
+    expect(policy(long(200))).toBe(true);
+    expect(policy(long(201))).toBe(false);
+    const reveal = (configId: string) =>
+      ok(
+        event('console.reveal', {
+          configId,
+          leafCount: 1,
+          revealUntil: '2026-11-22T10:02:00.000Z',
+          method: null,
+        })
+      );
+    expect(reveal(long(200))).toBe(true);
+    expect(reveal(long(201))).toBe(false);
   });
 
   it('refuses an unknown type', () => {
@@ -169,6 +196,23 @@ describe('consoleTargetOf', () => {
       params: { value: 'hunter2', undeclared: 'x', machine: ['a', 'b'] },
     });
     expect(target).toEqual({ machine: ['a', 'b'] });
+  });
+
+  it('drops a free-text positional such as a config value (review d5a94540.1)', () => {
+    const setEntry = {
+      positionals: [
+        { ...positional('key'), kind: 'plain' },
+        { ...positional('value'), kind: 'plain' },
+        positional('ref'),
+      ],
+      options: [],
+    } as unknown as Pick<ContractCommand, 'positionals' | 'options'>;
+    const target = consoleTargetOf(setEntry, {
+      positionals: { key: 'k', value: 'hunter2', ref: 'mail' },
+      params: {},
+    });
+    expect(JSON.stringify(target)).not.toContain('hunter2');
+    expect(target).toEqual({ ref: 'mail' });
   });
 
   it('drops a non-string value', () => {

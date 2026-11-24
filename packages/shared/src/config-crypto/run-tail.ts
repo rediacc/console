@@ -25,7 +25,8 @@ function tailKey(cek: Uint8Array): Promise<CryptoKey> {
 }
 
 function tailAad(orgId: string, runId: string): Uint8Array {
-  return encoder.encode(`${orgId}|${runId}`);
+  // JSON keeps the pair unambiguous when an id contains the separator.
+  return encoder.encode(JSON.stringify([orgId, runId]));
 }
 
 /**

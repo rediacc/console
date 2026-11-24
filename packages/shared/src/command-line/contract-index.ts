@@ -128,6 +128,11 @@ export function shellQuote(token: string): string {
   return `'${token.replaceAll("'", `'\\''`)}'`;
 }
 
+/** Quote a value token: like shellQuote, and a leading '-' is quoted too so parse() never reads it as a flag. */
+export function shellQuoteValue(token: string): string {
+  return token.startsWith('-') ? `'${token.replaceAll("'", `'\\''`)}'` : shellQuote(token);
+}
+
 /** One next word under a path prefix: a domain at the root, a subcommand below it. */
 export interface PathChild {
   word: string;

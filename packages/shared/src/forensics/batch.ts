@@ -158,7 +158,7 @@ export type HeaderDecode = { ok: true; header: BatchHeader } | { ok: false; erro
 export function decodeHeader(bytes: Uint8Array): HeaderDecode {
   let source: string;
   try {
-    source = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    source = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
     return { ok: false, error: 'header is not valid UTF-8' };
   }

@@ -3,8 +3,8 @@
  *
  * Order of the sections: domains, then subcommands with their summaries, then
  * the next required positional, then flags with common before advanced, then
- * the next optional positional; a value slot lists `choices` first, then resource
- * names when the source is unlocked, else one inert "Unlock to suggest" row.
+ * the next optional positional; a value slot lists `choices` first, then the resource
+ * names of every unlocked kind, plus one inert "Unlock to suggest" row when any kind is locked.
  * Within the list a prefix match ranks before a subsequence match and ties keep
  * contract order.
  */
@@ -20,7 +20,7 @@ import {
   optionKinds,
   type PathChild,
   positionalKinds,
-  shellQuote,
+  shellQuoteValue,
 } from './contract-index.js';
 import { type ParsedLine, parse } from './parse.js';
 import type { LineState, ResourceContext } from './state.js';
@@ -138,7 +138,7 @@ function valueSlot(kind: 'choice' | 'value', value: string, index: number, targe
     suggestion: {
       kind,
       label: value,
-      insert: `${shellQuote(value)} `,
+      insert: `${shellQuoteValue(value)} `,
       start: target.start,
       end: target.end,
     },

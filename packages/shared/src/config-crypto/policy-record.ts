@@ -108,13 +108,14 @@ export async function decryptPolicyRecord(
   cek: CryptoKey,
   pointer: Pick<PolicyRecordBinding, 'storeId' | 'configId' | 'teamId'>
 ): Promise<unknown> {
-  const aad = policyRecordAad({
-    ...pointer,
-    version: record.version,
-    cekGeneration: record.cekGeneration,
-  });
   let plaintext: Uint8Array;
   try {
+    // A malformed served version or generation fails the binding check, which is a tamper signal too.
+    const aad = policyRecordAad({
+      ...pointer,
+      version: record.version,
+      cekGeneration: record.cekGeneration,
+    });
     plaintext = await aesDecryptFromString(cek, record.blob, aad);
   } catch {
     throw new PolicyRecordIntegrityError();

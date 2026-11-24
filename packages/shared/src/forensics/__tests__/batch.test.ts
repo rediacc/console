@@ -416,6 +416,15 @@ describe('header encoding', () => {
     expect(decodeHeader(reordered).ok).toBe(false);
   });
 
+  it('refuses a header with a leading UTF-8 BOM (review 913c41da.1)', () => {
+    const canonical = encodeHeader(header);
+    const withBom = new Uint8Array(canonical.length + 3);
+    withBom.set([0xef, 0xbb, 0xbf]);
+    withBom.set(canonical, 3);
+    expect(decodeHeader(withBom).ok).toBe(false);
+    expect(decodeHeader(canonical).ok).toBe(true);
+  });
+
   it('refuses bytes that are not UTF-8 and not an object', () => {
     expect(decodeHeader(new Uint8Array([0xff, 0xfe]))).toEqual({
       ok: false,

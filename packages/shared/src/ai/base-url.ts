@@ -7,7 +7,7 @@
  * executor's own host. Accepted: `https` only, a public host, no embedded
  * credentials. Refused: any `.internal` or `localhost` name, and loopback,
  * link-local, private (RFC 1918, IPv6 unique-local) and unspecified address
- * literals, including IPv4-mapped IPv6 forms.
+ * literals, including IPv4-mapped, NAT64 and 6to4 IPv6 forms.
  *
  * This is a static check on the URL text. A public-looking hostname whose DNS
  * answer is private is not caught here; the executor's egress layer is the
@@ -86,15 +86,32 @@ function expandV6(literal: string): number[] | null {
   return groups.every((g) => !Number.isNaN(g)) ? groups : null;
 }
 
-function classifyV6(groups: readonly number[]): BaseUrlRefusal | null {
-  if (groups.every((g) => g === 0)) return 'unspecified';
-  if (groups.slice(0, 7).every((g) => g === 0) && groups[7] === 1) return 'loopback';
+const allZero = (groups: readonly number[]): boolean => groups.every((g) => g === 0);
+
+function v4Of(hi: number, lo: number): BaseUrlRefusal | null {
+  return classifyV4([hi >> 8, hi & 255, lo >> 8, lo & 255]);
+}
+
+/** The IPv4 range an IPv6 literal embeds, as `[refusal]`, or null when it embeds none. */
+function embeddedV4(groups: readonly number[]): [BaseUrlRefusal | null] | null {
   // IPv4-mapped ::ffff:a.b.c.d and the deprecated IPv4-compatible ::a.b.c.d
-  const mapped =
-    groups.slice(0, 5).every((g) => g === 0) && (groups[5] === 0xffff || groups[5] === 0);
-  if (mapped) {
-    return classifyV4([groups[6] >> 8, groups[6] & 255, groups[7] >> 8, groups[7] & 255]);
+  if (allZero(groups.slice(0, 5)) && (groups[5] === 0xffff || groups[5] === 0)) {
+    return [v4Of(groups[6], groups[7])];
   }
+  // NAT64 64:ff9b::a.b.c.d carries the target IPv4 in its last 32 bits.
+  if (groups[0] === 0x64 && groups[1] === 0xff9b && allZero(groups.slice(2, 6))) {
+    return [v4Of(groups[6], groups[7])];
+  }
+  // 6to4 2002:a.b:c.d::/48 carries the IPv4 in groups 1 and 2.
+  if (groups[0] === 0x2002) return [v4Of(groups[1], groups[2])];
+  return null;
+}
+
+function classifyV6(groups: readonly number[]): BaseUrlRefusal | null {
+  if (allZero(groups)) return 'unspecified';
+  if (allZero(groups.slice(0, 7)) && groups[7] === 1) return 'loopback';
+  const embedded = embeddedV4(groups);
+  if (embedded) return embedded[0];
   if ((groups[0] & 0xffc0) === 0xfe80) return 'link-local';
   if ((groups[0] & 0xfe00) === 0xfc00) return 'private-address';
   return null;

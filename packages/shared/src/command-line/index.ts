@@ -12,6 +12,7 @@ export {
   optionKinds,
   positionalKinds,
   shellQuote,
+  shellQuoteValue,
 } from './contract-index.js';
 export { type Diagnostic, type DiagnosticCode, diagnose } from './diagnose.js';
 export { HistoryCursor } from './history.js';

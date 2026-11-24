@@ -167,9 +167,10 @@ type ConsoleAuditEvent = z.infer<typeof ConsoleAuditEventSchema>;
 export type { ConsoleAuditEvent };
 
 /**
- * The target of a console run: its positionals, and the options whose
- * contract entry names a resource (`kinds`) and is not `sensitive`. Every
- * other param is dropped, so a secret passed through a mislabelled or
+ * The target of a console run: its positionals that name something (a
+ * `plain` positional is free text, such as `config set <key> <value>`, so it
+ * is dropped), and the options whose contract entry names a resource
+ * (`kinds`) and is not `sensitive`. Every other param is dropped, so a secret passed through a mislabelled or
  * unlabelled option never reaches an audit object.
  */
 export function consoleTargetOf(
@@ -177,16 +178,17 @@ export function consoleTargetOf(
   request: Pick<CommandRequest, 'params' | 'positionals'>
 ): ConsoleTarget {
   const target: ConsoleTarget = {};
+  const keep = (key: string, raw: unknown): void => {
+    const value = asTargetValue(raw);
+    if (value !== undefined) target[key] = value;
+  };
   for (const positional of entry.positionals) {
-    const value = asTargetValue(request.positionals[positional.name]);
-    if (value !== undefined) target[positional.name] = value;
+    if (positional.kind !== 'plain') keep(positional.name, request.positionals[positional.name]);
   }
   for (const option of entry.options) {
-    if (option.sensitive === true || option.kinds === undefined || option.kinds.length === 0) {
-      continue;
+    if (option.sensitive !== true && (option.kinds?.length ?? 0) > 0) {
+      keep(option.long, request.params[option.long]);
     }
-    const value = asTargetValue(request.params[option.long]);
-    if (value !== undefined) target[option.long] = value;
   }
   return target;
 }

@@ -64,6 +64,19 @@ describe('policy record', () => {
     ).rejects.toBeInstanceOf(PolicyRecordIntegrityError);
   });
 
+  it('reports a malformed served version as an integrity failure (review 6eea934f.1)', async () => {
+    const cek = await generateAesKey();
+    const record = await encryptPolicyRecord(policy, cek, binding);
+    const served = { ...record, version: '3' as unknown as number };
+    await expect(decryptPolicyRecord(served, cek, pointer)).rejects.toBeInstanceOf(
+      PolicyRecordIntegrityError
+    );
+    const generation = { ...record, cekGeneration: -1 };
+    await expect(decryptPolicyRecord(generation, cek, pointer)).rejects.toBeInstanceOf(
+      PolicyRecordIntegrityError
+    );
+  });
+
   it('refuses a blob sealed under another CEK', async () => {
     const record = await encryptPolicyRecord(policy, await generateAesKey(), binding);
     await expect(

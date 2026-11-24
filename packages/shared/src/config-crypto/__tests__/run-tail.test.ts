@@ -17,6 +17,12 @@ describe('run tail sealing', () => {
     await expect(openRunTail(cek, 'org2', 'run1', sealed)).rejects.toThrow();
   });
 
+  it('does not confuse (org a|b, run c) with (org a, run b|c) (review 7d41f658.1)', async () => {
+    const sealed = await sealRunTail(cek, 'a|b', 'c', 'secret output');
+    await expect(openRunTail(cek, 'a', 'b|c', sealed)).rejects.toThrow();
+    expect(await openRunTail(cek, 'a|b', 'c', sealed)).toBe('secret output');
+  });
+
   it('fails to open without the sealing CEK', async () => {
     const sealed = await sealRunTail(cek, 'org1', 'run1', 'secret output');
     await expect(openRunTail(randomBytes(32), 'org1', 'run1', sealed)).rejects.toThrow();

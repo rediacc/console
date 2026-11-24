@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getForensicsQuotaBytesForPlan,
   getPlanMetadata,
+  getStorageQuotaBytesForPlan,
   PLAN_LIMITS,
   PLAN_METADATA,
   PLAN_ORDER,
@@ -34,6 +35,20 @@ describe('forensicsQuotaBytes', () => {
   it('reads the plan value and falls back to COMMUNITY for an unknown plan', () => {
     expect(getForensicsQuotaBytesForPlan('BUSINESS')).toBe(125 * GiB);
     expect(getForensicsQuotaBytesForPlan('NOPE')).toBe(PLAN_LIMITS.COMMUNITY.forensicsQuotaBytes);
+  });
+
+  it('treats an inherited object key as an unknown plan (review 68e1565f.2)', () => {
+    for (const code of ['toString', 'constructor', '__proto__']) {
+      expect(getForensicsQuotaBytesForPlan(code), code).toBe(
+        PLAN_LIMITS.COMMUNITY.forensicsQuotaBytes
+      );
+      expect(getStorageQuotaBytesForPlan(code), code).toBe(PLAN_LIMITS.COMMUNITY.storageQuotaBytes);
+      expect(getPlanMetadata(code).displayName, code).toBe(PLAN_METADATA.COMMUNITY.displayName);
+    }
+  });
+
+  it('pins selfServe per plan (review 68e1565f.1)', () => {
+    expect(PLAN_ORDER.filter((code) => PLAN_METADATA[code].selfServe)).toEqual([]);
   });
 });
 

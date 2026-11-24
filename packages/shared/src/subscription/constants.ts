@@ -73,7 +73,7 @@ export const PLAN_LIMITS: Record<
 
 /** Plan-default backup storage quota in bytes (COMMUNITY fallback). */
 export function getStorageQuotaBytesForPlan(planCode: string): number {
-  if (planCode in PLAN_LIMITS) {
+  if (Object.hasOwn(PLAN_LIMITS, planCode)) {
     return PLAN_LIMITS[planCode as PlanCode].storageQuotaBytes;
   }
   return PLAN_LIMITS.COMMUNITY.storageQuotaBytes;
@@ -81,7 +81,7 @@ export function getStorageQuotaBytesForPlan(planCode: string): number {
 
 /** Plan-default forensic-capture quota in bytes (COMMUNITY fallback, which is 0). */
 export function getForensicsQuotaBytesForPlan(planCode: string): number {
-  if (planCode in PLAN_LIMITS) {
+  if (Object.hasOwn(PLAN_LIMITS, planCode)) {
     return PLAN_LIMITS[planCode as PlanCode].forensicsQuotaBytes;
   }
   return PLAN_LIMITS.COMMUNITY.forensicsQuotaBytes;
@@ -239,7 +239,7 @@ export function keepWithinAbovePlan(
   planCode: string | null | undefined,
   requestedSeconds: number
 ): { knob: 'keepWithinSeconds'; requested: number; limit: number } | undefined {
-  if (!planCode || !(planCode in PLAN_BACKUP_KEEP_WITHIN)) return undefined;
+  if (!planCode || !Object.hasOwn(PLAN_BACKUP_KEEP_WITHIN, planCode)) return undefined;
   const limit = PLAN_BACKUP_KEEP_WITHIN[planCode as PlanCode].limitSeconds;
   return requestedSeconds > limit
     ? { knob: 'keepWithinSeconds', requested: requestedSeconds, limit }
@@ -464,7 +464,7 @@ export const MACHINE_ID_GRACE_PERIOD_MS = MACHINE_ID_GRACE_PERIOD_DAYS * 24 * 60
  * Returns COMMUNITY limit if plan code is invalid.
  */
 export function getMaxMachines(planCode: string): number {
-  if (planCode in PLAN_MAX_MACHINES) {
+  if (Object.hasOwn(PLAN_MAX_MACHINES, planCode)) {
     return PLAN_MAX_MACHINES[planCode as PlanCode];
   }
   return PLAN_MAX_MACHINES.COMMUNITY;
@@ -486,7 +486,7 @@ export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof (typeof PLAN_LIMITS)[PlanCo
  * Returns COMMUNITY resources if plan code is invalid.
  */
 export function getPlanLimits(planCode: string): (typeof PLAN_LIMITS)[PlanCode] {
-  if (planCode in PLAN_LIMITS) {
+  if (Object.hasOwn(PLAN_LIMITS, planCode)) {
     return PLAN_LIMITS[planCode as PlanCode];
   }
   return PLAN_LIMITS.COMMUNITY;
@@ -497,7 +497,7 @@ export function getPlanLimits(planCode: string): (typeof PLAN_LIMITS)[PlanCode] 
  * Returns COMMUNITY features if plan code is invalid.
  */
 export function getPlanFeatures(planCode: string): FeatureFlags {
-  if (planCode in PLAN_FEATURES) {
+  if (Object.hasOwn(PLAN_FEATURES, planCode)) {
     return PLAN_FEATURES[planCode as PlanCode];
   }
   return PLAN_FEATURES.COMMUNITY;
@@ -644,7 +644,7 @@ export const PLAN_METADATA: Record<PlanCode, PlanMetadata> = {
  * Returns COMMUNITY pricing if plan code is invalid.
  */
 export function getPlanPricing(planCode: string): PlanPricing {
-  if (planCode in PLAN_PRICING) {
+  if (Object.hasOwn(PLAN_PRICING, planCode)) {
     return PLAN_PRICING[planCode as PlanCode];
   }
   return PLAN_PRICING.COMMUNITY;
@@ -655,7 +655,7 @@ export function getPlanPricing(planCode: string): PlanPricing {
  * Returns COMMUNITY metadata if plan code is invalid.
  */
 export function getPlanMetadata(planCode: string): PlanMetadata {
-  if (planCode in PLAN_METADATA) {
+  if (Object.hasOwn(PLAN_METADATA, planCode)) {
     return PLAN_METADATA[planCode as PlanCode];
   }
   return PLAN_METADATA.COMMUNITY;

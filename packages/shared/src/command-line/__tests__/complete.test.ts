@@ -151,6 +151,12 @@ describe('complete: command arguments', () => {
     expect(rows[0].insert).toBe(`'my repo' `);
   });
 
+  it('quotes a leading dash so an accepted row stays a value (review e20b39e7.1)', () => {
+    const rows = at('rdc repo fork ', () => ['-x', 'plain']);
+    expect(rows.find((r) => r.label === '-x')?.insert).toBe(`'-x' `);
+    expect(rows.find((r) => r.label === 'plain')?.insert).toBe('plain ');
+  });
+
   it('a locked source yields exactly the one inert unlock row for a value slot', () => {
     const rows = at('rdc repo fork ', locked);
     const unlock = rows.filter((r) => r.kind === 'unlock');

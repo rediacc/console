@@ -80,8 +80,15 @@ describe('validateBaseUrl', () => {
     ['https://[fd12:3456::1]/v1', 'private-address'],
     ['https://[::ffff:10.1.2.3]/v1', 'private-address'],
     ['https://[::ffff:a9fe:a9fe]/v1', 'link-local'],
+    ['https://[64:ff9b::a9fe:a9fe]/v1', 'link-local'],
+    ['https://[2002:c0a8:101::]/v1', 'private-address'],
   ])('refuses the address literal %s as %s', (url, reason) => {
     expect(refused(url)).toBe(reason);
+  });
+
+  it('control: NAT64 and 6to4 literals embedding a public IPv4 are accepted', () => {
+    expect(validateBaseUrl('https://[64:ff9b::808:808]/v1').ok).toBe(true);
+    expect(validateBaseUrl('https://[2002:808:808::]/v1').ok).toBe(true);
   });
 
   it('carries a message for each refusal', () => {
