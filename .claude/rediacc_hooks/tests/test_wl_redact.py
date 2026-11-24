@@ -3,7 +3,7 @@
 THE LEAK. agent/worklist/ace763dd.jsonl carried a full AWS access key id written by `compact` on 2026-11-10: the door redaction in `append_events` covered the verbs, but compaction, the legacy import and the markdown sync each serialised events with their own `json.dumps` and never passed it, so an item added before the door existed was re-published verbatim by every compaction. The
 redactor's table also lagged check:ci-tracked-credentials, which reds on ASIA/AIDA/AROA ids, gho_/ghu_/ghs_/ghr_ tokens and Stripe `sk_live_` keys the store let through.
 
-Every fixture is synthetic: AKIAIOSFODNN7EXAMPLE is AWS's documented example id, and each token is built from a repeated alphabet at runtime.
+Every fixture is synthetic: the AWS id fixture is AWS's documented example (prefix AKIA plus IOSFODNN7EXAMPLE), and each token is built from a repeated alphabet at runtime.
 """
 
 from __future__ import annotations
