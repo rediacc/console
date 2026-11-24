@@ -448,15 +448,39 @@ with open(os.path.join(_FAKE_DOCKER_DIR, "docker"), "w", encoding="utf-8") as fh
     fh.write('#!/bin/sh\nif [ "$1" = ps ]; then echo fixture-box; fi\nexit 0\n')
 os.chmod(os.path.join(_FAKE_DOCKER_DIR, "docker"), 0o700)
 _HB_PATH = "%s:%s" % (_FAKE_DOCKER_DIR, _path_without("go", REAL))
+
+
 # INSIDE THE REPO ROOT, NOT UNDER /tmp: the guard walks the token's ancestors as STRINGS, so a `..` path climbs through the real checkout's parents and finds a `node_modules` there (measured: the plain control read as host-built). Under the root the walk stops at the root. The `.tmp` suffix is matched by the existing gitignore rule, and atexit removes it.
 # A run killed by a signal skips atexit and leaves its directory behind: every directory whose pid is no longer alive is swept at the next start (review 3d240dbf.1).
-for _stale in glob.glob(os.path.join(REPO, ".hostguard-fixture.*.tmp")):
-    try:
-        os.kill(int(_stale.rsplit(".", 2)[-2]), 0)
-    except ProcessLookupError:
-        shutil.rmtree(_stale, ignore_errors=True)
-    except (ValueError, PermissionError):
-        pass
+def _sweep_stale_fixtures(directory):
+    """Removes each `.hostguard-fixture.<pid>.tmp` under `directory` whose pid is dead; a live pid, a pid it may not signal and a name that carries no pid are kept."""
+    for stale in glob.glob(os.path.join(directory, ".hostguard-fixture.*.tmp")):
+        try:
+            os.kill(int(stale.rsplit(".", 2)[-2]), 0)
+        except ProcessLookupError:
+            shutil.rmtree(stale, ignore_errors=True)
+        except (ValueError, PermissionError):
+            pass
+
+
+_sweep_stale_fixtures(REPO)
+# The sweep itself (review 5def89ce.2): a dead pid's directory is removed, a live pid's and a pid-less name's are kept.
+_dead = subprocess.Popen([sys.executable, "-c", "pass"])
+_dead.wait()
+_SWEEP = tempfile.mkdtemp(dir=RUN_TMP)
+for _name in (_dead.pid, os.getpid(), "nopid"):
+    os.makedirs(os.path.join(_SWEEP, ".hostguard-fixture.%s.tmp" % _name))
+_sweep_stale_fixtures(_SWEEP)
+cases.append(
+    (
+        [False, True, True],
+        [
+            os.path.isdir(os.path.join(_SWEEP, ".hostguard-fixture.%s.tmp" % n))
+            for n in (_dead.pid, os.getpid(), "nopid")
+        ],
+        "stale sweep: a dead pid's fixture directory goes, a live pid's and a pid-less one stay",
+    )
+)
 _HB_ROOT = os.path.join(REPO, ".hostguard-fixture.%d.tmp" % os.getpid())
 atexit.register(shutil.rmtree, _HB_ROOT, ignore_errors=True)
 _HB_BUILT = os.path.join(_HB_ROOT, "built")
