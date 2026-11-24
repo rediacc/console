@@ -1310,7 +1310,56 @@ def _fold_events(events, statuses=None):
             if isinstance(ev.get("lw"), list):
                 # COMPACT CARRY-OVER of the lease history below: a compacted log has no lease events for a done item, and the judge's `item-writers` fix-set is joined on exactly that history.
                 records[rid]["lease_workers"] = [str(w) for w in ev["lw"] if w]
+            if isinstance(ev.get("am"), dict) and ev["am"].get("aid"):
+                # COMPACT CARRY-OVER of a live arm (agent/plans/PLAN-armed-actions.md Design 1): the arm, its latch and its start stamp, so an arm survives compact_store with the same `aid`.
+                records[rid]["arm"] = dict(ev["am"])
             cli_ids.add(rid)
+        elif kind in ("arm", "armfire", "armstart", "disarm"):
+            # ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 1). `aid` names one arm generation: an event naming another `aid` than the item's current arm is stale and ignored, a second `armfire` for one `aid` is a no-op (first wins), and an `arm` replayed with the `aid` the item already carries (a compaction's `am` plus a peer's surviving copy) keeps the latch.
+            rec = records.get(ev.get("id"))
+            aid = str(ev.get("aid") or "")
+            if rec is None or not aid:
+                continue
+            cur = rec.get("arm") if isinstance(rec.get("arm"), dict) else None
+            if kind == "arm":
+                if cur is not None and cur.get("aid") == aid:
+                    continue
+                rec["arm"] = {
+                    "aid": aid,
+                    "when": [str(t) for t in ev.get("when") or []],
+                    "run": str(ev.get("run") or ""),
+                    "cmd": str(ev.get("cmd") or ""),
+                    "sha": str(ev.get("sha") or ""),
+                    "lease": str(ev.get("lease") or ""),
+                    "exp": str(ev.get("exp") or ""),
+                    "at": at,
+                    "by": str(ev.get("by") or ""),
+                    "fired_at": "",
+                    "verdict": "",
+                    "why": "",
+                    "started_at": "",
+                }
+                rec["upd"] = at
+                continue
+            if cur is None or cur.get("aid") != aid:
+                continue
+            if kind == "armfire":
+                verdict = str(ev.get("v") or "")
+                if not cur.get("verdict") and verdict in ("fired", "expired", "void"):
+                    cur["verdict"] = verdict
+                    cur["why"] = str(ev.get("why") or "")
+                    cur["fired_at"] = at
+                # Hook-written: it never stamps `upd`, so a latch does not reset the liveness ladder.
+                continue
+            if kind == "armstart":
+                if cur.get("verdict") and not cur.get("started_at"):
+                    cur["started_at"] = at
+                    rec["upd"] = at
+                continue
+            # disarm
+            rec.pop("arm", None)
+            rec["upd"] = at
+            continue
         elif kind == "reassign":
             # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who actually wrote the item. Only the `o` field moves; `by` on the original events still names the phantom, because it really did write them.
             rec = records.get(ev.get("id"))
@@ -1656,6 +1705,69 @@ def tomb_item(worklist, by, item_id, why):
     )
 
 
+def arm_item(worklist, by, item_id, when, run="", cmd="", sha="", lease="", exp="", at=None):
+    """Append one `arm` event (agent/plans/PLAN-armed-actions.md Design 1) and return its `aid`. `when` is the validated token list (`wl_armed.parse_when`); the caller sets exactly one of `run` (a brief path) and `cmd` (a command line)."""
+    import wl_armed as A
+
+    at = at or C.stamp_now()
+    aid = A.arm_id(item_id, at, list(when))
+    append_events(
+        worklist,
+        [
+            {
+                "ev": "arm",
+                "id": item_id,
+                "at": at,
+                "by": by,
+                "aid": aid,
+                "when": list(when),
+                "run": run,
+                "cmd": cmd,
+                "sha": sha,
+                "lease": lease,
+                "exp": exp,
+            }
+        ],
+    )
+    return aid
+
+
+def armfire_item(worklist, by, item_id, aid, verdict, why):
+    """Append the latch of one arm: `v` is fired, expired or void, `why` the evidence each token read. Written by the Stop hook only (`wl_armed.sweep`); any other verdict raises ValueError."""
+    if verdict not in ("fired", "expired", "void"):
+        raise ValueError("armfire verdict %r is not fired, expired or void" % (verdict,))
+    append_events(
+        worklist,
+        [
+            {
+                "ev": "armfire",
+                "id": item_id,
+                "at": C.stamp_now(),
+                "by": by,
+                "aid": aid,
+                "v": verdict,
+                "why": str(why or ""),
+            }
+        ],
+    )
+
+
+def armstart_item(worklist, by, item_id, aid):
+    """Append the `armstart` that consumes a latched arm."""
+    append_events(
+        worklist,
+        [{"ev": "armstart", "id": item_id, "at": C.stamp_now(), "by": by, "aid": aid}],
+    )
+
+
+def disarm_item(worklist, by, item_id, aid, why):
+    """Append the `disarm` that removes an arm."""
+    append_events(
+        worklist,
+        [{"ev": "disarm", "id": item_id, "at": C.stamp_now(), "by": by, "aid": aid, "why": why}],
+    )
+
+
 def deferral_justification(rec):
     """The merged WHY/HOW/... record for a [?] item: the event's `j` field where the CLI wrote one, overlaid on a token-parse of the text, which is what a markdown-written deferral or a compacted log still carries. The event field wins per key; the parse fills the gaps."""
     parsed = C.parse_justification(rec.get("text", ""))
@@ -1919,6 +2031,15 @@ def snapshot_events(fold, by="compact"):
             add_ev["lw"] = list(r["lease_workers"])
         if r.get("mg"):
             add_ev["mg"] = r["mg"]
+        # A LIVE ARM rides its item's `add` (agent/plans/PLAN-armed-actions.md Design 1): the fold drops unknown events and this builder re-emits only what it names, so an arm left out here is lost at the first compaction. A started arm is consumed and a done or tombstoned item makes its arm inert, so neither is carried.
+        _arm = r.get("arm")
+        if (
+            isinstance(_arm, dict)
+            and _arm.get("aid")
+            and not _arm.get("started_at")
+            and r["state"] not in ("x", "~")
+        ):
+            add_ev["am"] = dict(_arm)
         out.append(add_ev)
         # ONLY FOR AN ITEM THAT IS ACTUALLY IN FLIGHT. The fold's lease arm sets
         # state = ">" unconditionally, and a DONE item that was leased at some
@@ -2733,8 +2854,10 @@ def loop_state(worklist, session_id):
 AGENT_OWED_RE = re.compile(r"^##[ \t]+Owed ticks\b", re.MULTILINE | re.IGNORECASE)
 
 
-def agent_state_shape(body, owed=None):
-    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | ok, plus a detail string.
+def agent_state_shape(body, owed=None, armed=None):
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | unarmed | ok, plus a detail string.
+
+    `armed` is the ids of the items this session holds live arms on (`armed_item_ids`, agent/plans/PLAN-armed-actions.md Design 8). When it is non-empty, a body with no `## Armed` section naming each `#<id>` is `unarmed`; None or [] demands nothing. Both the write path and the Stop check's read (`agent_state_state`, given a fold) pass it: an arm is the session's own held work, and the document that survives compaction must name it.
 
     `owed` is the [(plan, sig, verdict)] the box audit finds tickable-now or live-owed in plans this session owns (`wl_boxaudit.owned_owed_cached`, agent/plans/PLAN-tick-tracking.md T12). When it is non-empty, a body with no `## Owed ticks` section is `owing`, refused like `unfocused`; None or [] demands nothing, so every caller that passes no audit keeps today's verdict. Only the write path passes it (`worklist.py --state`, through `_owed_for_state`): the owed demand is a WRITE-TIME rule, and the Stop check's read (`agent_state_state`) deliberately passes none, so a document written before a box became owed is not turned stale by the audit between writes (review a94cd7a7.1).
 
@@ -2746,12 +2869,19 @@ def agent_state_shape(body, owed=None):
 
     The subject is ONE SECTION, not the whole document, so the cap is flat again (see AGENT_STATE_MAX_CHARS).
     """
-    problems = agent_state_problems(body, owed)
+    problems = agent_state_problems(body, owed, armed)
     return problems[0] if problems else ("ok", "%d chars" % len((body or "").strip()))
 
 
-def agent_state_problems(body, owed=None):
-    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing; [] when the body is fine (R20261101.3).
+def armed_item_ids(fold, session_id):
+    """The ids of the items `session_id` owns that carry a live arm (armed, or latched and not started), for the STATE.md `## Armed` demand."""
+    import wl_armed as A
+
+    return [rec["id"] for rec, _arm in A.session_arms(getattr(fold, "items", []), session_id)]
+
+
+def agent_state_problems(body, owed=None, armed=None):
+    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing, unarmed; [] when the body is fine (R20261101.3).
 
     `agent_state_shape` returns the first of these, so the Stop check and the guard keep their one verdict. `--state` prints all of them: a body with two faults reported one per attempt, and four refusals in 20 s were spent while the context was nearly full. A thin body fails nothing else (too short to judge), and a body with no `## Next action` section cannot be `waitled`.
     """
@@ -2802,6 +2932,27 @@ def agent_state_problems(body, owed=None):
                 ),
             )
         )
+    if armed:
+        import wl_armed as A
+
+        missing = A.unnamed_arms(text, list(armed))
+        if missing is None:
+            out.append(
+                (
+                    "unarmed",
+                    "no '## Armed' section, and this session holds %d live arm(s): %s. Name each "
+                    "(`worklist.py --armed-list <me>` prints them)"
+                    % (len(armed), ", ".join("#" + a for a in list(armed)[:8])),
+                )
+            )
+        elif missing:
+            out.append(
+                (
+                    "unarmed",
+                    "the '## Armed' section does not name %d live arm(s): %s"
+                    % (len(missing), ", ".join("#" + a for a in missing[:8])),
+                )
+            )
     return out
 
 
@@ -2959,7 +3110,7 @@ def state_items_sig(fold, session_id):
 
 
 def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=None):
-    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'waitled'|'unfocused'|'stale'|'ok', age_min, my_body).
+    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'waitled'|'unfocused'|'unarmed'|'stale'|'ok', age_min, my_body). `unarmed` is read only when `fold` is passed (the session's live arms come from it).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a real operator decision that way: the rediacc-autopilot App had already been created, the operator had said so, and after a compact it was reported as blocked-on-operator. The transcript is not the recovery mechanism, because the thing that failed IS the transcript being summarised.
 
@@ -3002,7 +3153,9 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=No
             return "missing", None, ""
     body = mine["body"]
     age = max(0.0, (time.time() - mine["ts"]) / 60.0)
-    verdict, _detail = agent_state_shape(body)
+    # The live arms are read only with a fold (agent/plans/PLAN-armed-actions.md Design 8): a caller holding none (the post-compact briefing) judges the shape alone.
+    armed = armed_item_ids(fold, session_id) if fold is not None and session_id else None
+    verdict, _detail = agent_state_shape(body, None, armed)
     if verdict != "ok":
         return verdict, int(age), body
     if age <= AGENT_STATE_STALE_MIN:
