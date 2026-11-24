@@ -5,6 +5,9 @@
  */
 
 import type { JobPollResponse } from '@rediacc/shared/cli-contract/wire';
+import { t } from '../../i18n/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { isTerminalState } from './proxy-follow.js';
 import type { RenetEvent } from './types.js';
 
@@ -50,7 +53,7 @@ export function toArrayBuffer(data: Uint8Array): ArrayBuffer {
 const DEFAULT_PROXY_REQUEST_TIMEOUT_MS = 60_000;
 
 /** The host of a request URL; an unparseable URL yields its text up to any query or fragment, so the wrapped network error is never replaced by a URL TypeError and a query token is never echoed. */
-export function hostOf(url: string): string {
+function hostOf(url: string): string {
   try {
     return new URL(url).host;
   } catch {
@@ -65,7 +68,7 @@ export function proxyRequestTimeoutMs(): number {
 }
 
 /** What went wrong in a failed fetch, from undici's `cause` ("ECONNREFUSED", "ENOTFOUND", ...) when it has one. */
-export function describeFetchFailure(error: unknown): string {
+function describeFetchFailure(error: unknown): string {
   const cause = error instanceof Error ? error.cause : undefined;
   const source = cause ?? error;
   if (!(source instanceof Error)) return String(source);
@@ -82,4 +85,67 @@ export function deliverPage(
 ): boolean {
   for (const entry of poll.events) onEvent(entry.event, entry.line + 1);
   return isTerminalState(poll.status.state) && !poll.more;
+}
+
+/** The executor's wire code for a session it does not hold (packages/cli/src/services/serve/sessions.ts). */
+const SESSION_UNKNOWN_CODE = 'EXECUTOR_SESSION_UNKNOWN';
+
+/** A command the executor refused because it no longer holds the named session. */
+export class ExecutorSessionUnknownError extends Error {
+  constructor(readonly detail: string) {
+    super(detail);
+    this.name = 'ExecutorSessionUnknownError';
+  }
+}
+
+/** `fetchImpl(url, init)` with a deadline; a timeout or a network failure becomes a retryable NETWORK_ERROR naming the host. */
+export async function fetchWithTimeout(
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+  url: string,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetchImpl(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    const host = hostOf(url);
+    const message = timedOut
+      ? t('errors.proxy.timeout', { host, seconds: Math.ceil(timeoutMs / 1000) })
+      : t('errors.proxy.unreachable', { host, reason: describeFetchFailure(error) });
+    const failure = new CliExitError(ERROR_CODES.NETWORK_ERROR, message, { retryable: true });
+    failure.cause = error;
+    throw failure;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** A 404 carrying EXECUTOR_SESSION_UNKNOWN becomes the error the re-grant catches; any other 404 is described as before. */
+export async function throwIfSessionUnknown(response: Response): Promise<void> {
+  const text = await response.clone().text();
+  let code: unknown;
+  try {
+    code = (JSON.parse(text) as { code?: unknown }).code;
+  } catch {
+    // Not JSON: an ordinary 404, described by the caller.
+    return;
+  }
+  if (code === SESSION_UNKNOWN_CODE) throw new ExecutorSessionUnknownError(text.slice(0, 500));
+}
+
+/** Turn a non-OK response into an operator-readable message. */
+export async function describeProxyFailure(response: Response): Promise<string> {
+  const text = await response.text().catch(() => '');
+  const detail = text.slice(0, 500);
+
+  if (response.status === 401 || response.status === 403) {
+    return `Proxy rejected this request (${response.status}). The token may be expired, or policy may not allow this command. ${detail}`;
+  }
+  return `Proxy request failed (${response.status} ${response.statusText}). ${detail}`;
 }

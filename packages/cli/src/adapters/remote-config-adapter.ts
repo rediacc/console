@@ -11,15 +11,11 @@
 import {
   blindPointer,
   type ConfigBinding,
-  ConfigEnvelopeTooNewError,
-  cekUnwrap,
   derivePointerBlindingKey,
-  deriveWrappingKey,
   ENVELOPE_VERSION,
   type EncryptedConfigPayload,
   fromBase64,
   importAesKey,
-  LEGACY_ENVELOPE_VERSION,
   selectiveDecrypt,
   unwrapEnvelopeConfigKey,
 } from '@rediacc/shared/config-crypto';
@@ -41,7 +37,6 @@ import {
 import {
   loginTokenFor,
   REFRESHABLE_AUTH_REASONS,
-  RemoteTokenRefreshError,
   refreshDeviceToken,
 } from '../services/config/device-token-refresh.js';
 import {
@@ -54,15 +49,10 @@ import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
 import {
   classifyFetchError,
-  isNetworkError,
   RemoteAuthError,
-  RemoteConfigUndecryptableError,
-  RemotePasskeySecretMissingError,
   RemotePreconditionError,
   RemoteRollbackError,
   RemoteStaleSlotError,
-  RemoteTeamForbiddenError,
-  RemoteTeamNotFoundError,
   RemoteTokenExpiredError,
 } from './remote-config-errors.js';
 import type {
@@ -74,6 +64,14 @@ import type {
   RemoteVersionInfo,
   SessionMaterial,
 } from './remote-config-types.js';
+import {
+  buildSyncRecord,
+  classifyDecryptFailure,
+  optionalFields,
+  refuseRollback,
+  renewalFailure,
+  unwrapDeviceCek,
+} from './remote-config-support.js';
 import type { RemoteTokenStorage, SyncRecord, TokenLease } from './remote-token-storage.js';
 
 export {
@@ -99,13 +97,6 @@ export type {
   RemoteConfigEntry,
   RemoteVersionInfo,
 } from './remote-config-types.js';
-
-/** `fields` without its undefined entries, for spreading into a request body or record. */
-function optionalFields<T extends Record<string, number | undefined>>(fields: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(fields).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
-}
 
 // ─── Adapter ────────────────────────────────────────────────────────────
 
@@ -149,10 +140,11 @@ export class RemoteConfigAdapter {
     const { envelope } = pulled.data;
 
     const seen = this.syncRecord(lease);
-    this.refuseRollback(seen, envelope);
+    refuseRollback(this.remote.configId, seen, envelope);
     // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
     await lease.recordSync(
-      this.syncRecordOf(
+      buildSyncRecord(
+        this.bindingKey(),
         envelope,
         Math.max(seen?.highWater ?? 0, envelope.version),
         pulled.data.cekGeneration ?? seen?.cekGeneration,
@@ -165,51 +157,6 @@ export class RemoteConfigAdapter {
       );
     }
     return result;
-  }
-
-  /**
-   * Refuse a pull older than what this device saw: the version and the envelope version are both
-   * authentic (each version's AAD names them), so a lower one than recorded is an old copy served back.
-   */
-  private refuseRollback(seen: SyncRecord | undefined, envelope: PulledEnvelope['envelope']): void {
-    if (!seen) return;
-    if (envelope.version < seen.highWater) {
-      throw new RemoteRollbackError(
-        t('commands.config.remote.rollback', {
-          configId: this.remote.configId,
-          version: String(envelope.version),
-          highWater: String(seen.highWater),
-        })
-      );
-    }
-    if (envelope.envelopeVersion < seen.envelopeVersion) {
-      throw new RemoteRollbackError(
-        t('commands.config.remote.envelopeDowngrade', { configId: this.remote.configId })
-      );
-    }
-  }
-
-  /** The sync record of a pulled or pushed envelope: its version, salt, (v4) content-key wrap, and the generation. */
-  private syncRecordOf(
-    envelope: Pick<PulledEnvelope['envelope'], 'envelopeVersion' | 'commitments'> & {
-      wrappedConfigKey?: string;
-      configKeyVersion?: number;
-      cekGeneration?: number;
-    },
-    highWater: number,
-    cekGeneration: number | undefined,
-    previous: SyncRecord | undefined
-  ): SyncRecord {
-    const configKey = envelopeConfigKeyWrap(envelope);
-    return {
-      binding: this.bindingKey(),
-      highWater,
-      envelopeVersion: envelope.envelopeVersion,
-      fckSalt: envelope.commitments.fckSalt,
-      ...(configKey ? { configKey } : {}),
-      ...(cekGeneration === undefined ? {} : { cekGeneration }),
-      ...(previous?.policyHighWater ? { policyHighWater: previous.policyHighWater } : {}),
-    };
   }
 
   /**
@@ -408,7 +355,7 @@ export class RemoteConfigAdapter {
     try {
       decrypted = await selectiveDecrypt(payload, cek, sdkDerived, this.binding());
     } catch (error) {
-      const failure = this.classifyDecryptFailure(error, this.remote.configId);
+      const failure = classifyDecryptFailure(this.remote.storeId, error, this.remote.configId);
       throw await this.staleOr(lease, failure, data.cekGeneration);
     }
 
@@ -471,7 +418,8 @@ export class RemoteConfigAdapter {
       });
 
       await lease.recordSync(
-        this.syncRecordOf(
+        buildSyncRecord(
+          this.bindingKey(),
           encrypted.envelope,
           pushed.data.version,
           sealedGeneration,
@@ -632,67 +580,7 @@ export class RemoteConfigAdapter {
   /** Derive CEK from passkey_secret + server_secret */
   private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
     const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
-    if (!passkeySecretStr) {
-      throw new RemotePasskeySecretMissingError();
-    }
-
-    const passkeySecret = fromBase64(passkeySecretStr);
-    const wrappingKey = await deriveWrappingKey(passkeySecret, serverSecret);
-
-    const tokenData = lease.data;
-    if (!tokenData?.wrappedCek) {
-      throw new RemoteTokenExpiredError();
-    }
-
-    // A wrong slot secret (or a rotated CEK this device never re-wrapped for) surfaces here as an AES-GCM auth failure. Translate it into an actionable "re-enroll" message rather than leaking a raw OperationError.
-    try {
-      return await cekUnwrap(tokenData.wrappedCek, wrappingKey);
-    } catch {
-      throw new RemoteStaleSlotError();
-    }
-  }
-
-  /**
-   * Turn a selectiveDecrypt failure into something the user can act on.
-   *
-   * The two failure modes carry different meanings and different recoveries, and
-   * the protocol does distinguish them: the CEK layer (the v4 content-key wrap
-   * and the blob tag under the v4 AAD, the v3 AAD, or the v2 blob HMAC) fails
-   * when the blob is not the one sealed for this config, version and team, or was
-   * sealed under a different CEK than the slot handed this device, while a
-   * failure PAST it means the CEK layer opened and the server-derived session
-   * layer did not.
-   */
-  private classifyDecryptFailure(error: unknown, configId: string): Error {
-    const detail = error instanceof Error ? error.message : String(error);
-
-    // The envelope-version guard already names its own problem.
-    if (detail.includes('envelope version')) return error as Error;
-
-    // An envelope newer than this rdc reads is a version gap, not a wrong slot key.
-    if (error instanceof ConfigEnvelopeTooNewError) {
-      return new RemoteConfigUndecryptableError(
-        t('commands.config.remote.envelopeTooNew', {
-          configId,
-          envelope: error.envelopeVersion,
-          legacy: LEGACY_ENVELOPE_VERSION,
-          current: ENVELOPE_VERSION,
-        })
-      );
-    }
-
-    if (error instanceof Error && error.name === 'ConfigIntegrityError') {
-      return new RemoteConfigUndecryptableError(
-        t('commands.config.remote.integrityFailed', {
-          configId,
-          storeId: this.remote.storeId,
-        })
-      );
-    }
-
-    return new RemoteConfigUndecryptableError(
-      t('commands.config.remote.undecryptableSession', { configId, detail })
-    );
+    return unwrapDeviceCek(passkeySecretStr, serverSecret, lease.data?.wrappedCek);
   }
 
   /**
@@ -775,27 +663,8 @@ export class RemoteConfigAdapter {
         serverKey: this.transport?.serverKey,
       });
     } catch (error) {
-      throw this.renewalFailure(error, refusal);
+      throw renewalFailure(this.configName, this.remote.teamId, error, refusal);
     }
     await lease.update(token);
-  }
-
-  /** The error a failed renewal raises; see refreshDeviceToken for what it passes through. */
-  private renewalFailure(error: unknown, refusal: RemoteAuthError): unknown {
-    // A rotation revoked this device's token and left it no slot at the new generation (T10, F11).
-    if (error instanceof RemoteTokenRefreshError && error.code === 'stale_cek_generation') {
-      return new RemoteStaleSlotError({ cause: error });
-    }
-    if (error instanceof RemoteTokenRefreshError) return error;
-    const e = error as { status?: unknown; code?: unknown } | null;
-    if (e?.status === 403 && e.code === 'team_forbidden') {
-      return new RemoteTeamForbiddenError(this.configName);
-    }
-    if (e?.status === 404 && e.code === 'team_not_found') {
-      return new RemoteTeamNotFoundError(this.configName, this.remote.teamId);
-    }
-    // The server answered the config request a moment ago, so a renewal that could not reach it is reported as the refusal it was meant to cure (never as unreachable: that would let a read serve the offline cache after a 401).
-    if (isNetworkError(error)) return Object.assign(refusal, { cause: error });
-    return error;
   }
 }

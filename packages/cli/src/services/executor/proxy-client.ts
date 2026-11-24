@@ -36,20 +36,20 @@ import {
   VersionMismatchSchema,
 } from '@rediacc/shared/cli-contract/wire';
 import { cekHandoffEncrypt, exportAesKey, fromBase64 } from '@rediacc/shared/config-crypto';
-import { t } from '../../i18n/index.js';
-import { ERROR_CODES } from '../../types/errors.js';
-import { CliExitError } from '../../utils/cli-exit-error.js';
 import { VERSION } from '../../version.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { TicketStore } from '../jobs/ticket-store.js';
 import { annotatePolled } from './job-span.js';
+import type { ProxyClientOptions, ReattachTarget } from './proxy-client-options.js';
 import {
   deliverPage,
-  describeFetchFailure,
-  hostOf,
+  describeProxyFailure,
+  ExecutorSessionUnknownError,
+  fetchWithTimeout,
   ProxyStreamTruncatedError,
   ProxyVersionMismatchError,
   proxyRequestTimeoutMs,
+  throwIfSessionUnknown,
   toArrayBuffer,
 } from './proxy-client-support.js';
 import {
@@ -77,17 +77,6 @@ import type { RenetEvent } from './types.js';
 /** The header naming the executor session a command draws its config key from. */
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
-/** The executor's wire code for a session it does not hold (packages/cli/src/services/serve/sessions.ts). */
-const SESSION_UNKNOWN_CODE = 'EXECUTOR_SESSION_UNKNOWN';
-
-/** A command the executor refused because it no longer holds the named session. */
-class ExecutorSessionUnknownError extends Error {
-  constructor(readonly detail: string) {
-    super(detail);
-    this.name = 'ExecutorSessionUnknownError';
-  }
-}
-
 /** The waits before start retry 1, 2 and 3: the head of the poll ladder (2 s, then 3 s, then 4.5 s). */
 const START_RETRY_DELAYS_MS = [2000, 3000, 4500] as const;
 
@@ -99,38 +88,8 @@ interface ClientStreamState extends StreamState {
   unorderedSkip: number;
 }
 
+export type { ProxyClientOptions, ReattachTarget } from './proxy-client-options.js';
 export { nextPollDelayMs, type ProxyCommandOutcome };
-
-export interface ProxyClientOptions {
-  /** Base URL of the executor, e.g. https://proxy.rediacc.com or http://localhost:8080 */
-  baseUrl: string;
-  /** Resolves the bearer token presented to the executor. */
-  getToken: () => Promise<string>;
-  /** Contract version this client was built against. */
-  contractVersion: string;
-  /** Injectable for tests. */
-  fetchImpl?: typeof fetch;
-  /** Milliseconds the executor has to answer a request. Defaults to REDIACC_PROXY_TIMEOUT_MS, then 60s. */
-  timeoutMs?: number;
-  /**
-   * Unwraps this device's config key (CEK). Called only when the executor is a
-   * CONTAINER, which holds no key of its own and can open the config only with
-   * one granted per session. A daemon derives its own and is never sent one.
-   */
-  getCek?: () => Promise<CryptoKey>;
-  /** Test seams: the poll pacing and the ticket store (`null` writes no ticket). */
-  sleep?: (ms: number) => Promise<void>;
-  random?: () => number;
-  /** How long consecutive failed polls are retried before the follow is given up with the ticket kept. */
-  lostBudgetMs?: number;
-  ticketStore?: TicketStore | null;
-  /**
-   * Where a granted session is kept for the next run. Absent keeps none beyond
-   * this process; the `rdc --proxy` entry (proxy-command.ts) passes the file
-   * cache beside the config tokens.
-   */
-  sessionCache?: ProxySessionCache;
-}
 
 /**
  * Grants already made by this process, keyed by executor and token, so a
@@ -143,11 +102,6 @@ const grantedSessions = new Map<string, Promise<string | undefined>>();
 /** Forget every grant this process made. For tests. */
 export function resetProxySessions(): void {
   grantedSessions.clear();
-}
-
-/** Where to re-attach a dropped stream: the machine the command ran on. */
-export interface ReattachTarget {
-  machine: string;
 }
 
 export class ProxyClient {
@@ -235,7 +189,7 @@ export class ProxyClient {
     if (info.mode !== 'container' || !getCek) return { mode: 'daemon' };
 
     const opened = await this.post(PROXY_ROUTES.session, {});
-    if (!opened.ok) throw new Error(await this.describeFailure(opened));
+    if (!opened.ok) throw new Error(await describeProxyFailure(opened));
     const { sessionId, publicKey } = (await opened.json()) as {
       sessionId: string;
       publicKey: string;
@@ -251,7 +205,7 @@ export class ProxyClient {
     const sealed = await cekHandoffEncrypt(await exportAesKey(await getCek()), executorKey);
 
     const granted = await this.post(PROXY_ROUTES.sessionCek(sessionId), sealed);
-    if (!granted.ok) throw new Error(await this.describeFailure(granted));
+    if (!granted.ok) throw new Error(await describeProxyFailure(granted));
     return { mode: 'container', sessionId };
   }
 
@@ -376,19 +330,19 @@ export class ProxyClient {
   /** The command response's body, or the refusal it carried. */
   private async commandBody(response: Response): Promise<ReadableStream<Uint8Array>> {
     if (response.status === 409) await this.throwVersionMismatch(response);
-    if (response.status === 404) await this.throwIfSessionUnknown(response);
-    if (!response.ok) throw new Error(await this.describeFailure(response));
+    if (response.status === 404) await throwIfSessionUnknown(response);
+    if (!response.ok) throw new Error(await describeProxyFailure(response));
     if (!response.body) throw new ProxyStreamTruncatedError(0);
     return response.body;
   }
 
   /** Probe the executor. Used by `--proxy` startup checks and the loopback harness. */
   async serverInfo(): Promise<ServerInfo> {
-    const response = await this.request(`${this.baseUrl}${PROXY_ROUTES.serverInfo}`, {
+    const response = await this.fetchTimed(`${this.baseUrl}${PROXY_ROUTES.serverInfo}`, {
       headers: await this.headers(),
     });
     if (!response.ok) {
-      throw new Error(await this.describeFailure(response));
+      throw new Error(await describeProxyFailure(response));
     }
     return (await response.json()) as ServerInfo;
   }
@@ -639,14 +593,14 @@ export class ProxyClient {
     const query = `machine=${encodeURIComponent(machine)}&sinceLine=${sinceLine}&maxLines=${POLL_MAX_LINES}`;
     let response: Response;
     try {
-      response = await this.request(`${this.baseUrl}${PROXY_ROUTES.jobPoll(jobId)}?${query}`, {
+      response = await this.fetchTimed(`${this.baseUrl}${PROXY_ROUTES.jobPoll(jobId)}?${query}`, {
         headers: await this.headers(),
       });
     } catch {
       return undefined;
     }
     if (!response.ok) {
-      if (response.status < 500) throw new Error(await this.describeFailure(response));
+      if (response.status < 500) throw new Error(await describeProxyFailure(response));
       return undefined;
     }
     const parsed = JobPollResponseSchema.safeParse(await response.json().catch(() => undefined));
@@ -683,26 +637,8 @@ export class ProxyClient {
    * rethrown as a NETWORK_ERROR naming the executor host and undici's cause, which fetch itself drops
    * behind a bare "fetch failed".
    */
-  private async request(url: string, init: RequestInit): Promise<Response> {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, this.timeoutMs);
-    try {
-      return await this.fetchImpl(url, { ...init, signal: controller.signal });
-    } catch (error) {
-      const host = hostOf(url);
-      const message = timedOut
-        ? t('errors.proxy.timeout', { host, seconds: Math.ceil(this.timeoutMs / 1000) })
-        : t('errors.proxy.unreachable', { host, reason: describeFetchFailure(error) });
-      const failure = new CliExitError(ERROR_CODES.NETWORK_ERROR, message, { retryable: true });
-      failure.cause = error;
-      throw failure;
-    } finally {
-      clearTimeout(timer);
-    }
+  private fetchTimed(url: string, init: RequestInit): Promise<Response> {
+    return fetchWithTimeout(this.fetchImpl, this.timeoutMs, url, init);
   }
 
   private async post(
@@ -710,7 +646,7 @@ export class ProxyClient {
     body: unknown,
     extraHeaders: Record<string, string> = {}
   ): Promise<Response> {
-    return this.request(`${this.baseUrl}${path}`, {
+    return this.fetchTimed(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: {
         ...(await this.headers()),
@@ -719,19 +655,6 @@ export class ProxyClient {
       },
       body: JSON.stringify(body),
     });
-  }
-
-  /** A 404 carrying EXECUTOR_SESSION_UNKNOWN becomes the error the re-grant catches; any other 404 is described as before. */
-  private async throwIfSessionUnknown(response: Response): Promise<void> {
-    const text = await response.clone().text();
-    let code: unknown;
-    try {
-      code = (JSON.parse(text) as { code?: unknown }).code;
-    } catch {
-      // Not JSON: an ordinary 404, described by the caller.
-      return;
-    }
-    if (code === SESSION_UNKNOWN_CODE) throw new ExecutorSessionUnknownError(text.slice(0, 500));
   }
 
   private async headers(): Promise<Record<string, string>> {
@@ -753,16 +676,5 @@ export class ProxyClient {
       );
     }
     throw new ProxyVersionMismatchError(this.contractVersion, 'unknown', 'unknown');
-  }
-
-  /** Turn a non-OK response into an operator-readable message. */
-  private async describeFailure(response: Response): Promise<string> {
-    const text = await response.text().catch(() => '');
-    const detail = text.slice(0, 500);
-
-    if (response.status === 401 || response.status === 403) {
-      return `Proxy rejected this request (${response.status}). The token may be expired, or policy may not allow this command. ${detail}`;
-    }
-    return `Proxy request failed (${response.status} ${response.statusText}). ${detail}`;
   }
 }
