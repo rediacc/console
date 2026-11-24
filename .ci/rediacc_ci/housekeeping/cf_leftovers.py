@@ -296,12 +296,23 @@ def referenced_by(name: str, texts: dict[str, str], kind: str = "") -> list[str]
     return [rel for rel, text in texts.items() if pat.search(text)]
 
 
-def _total_pages(body: dict) -> int | None:
-    """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`, else None."""
-    info = body.get("result_info") or {}
-    total = info.get("total_pages")
-    if total is None and info.get("total_count") and info.get("per_page"):
+def _total_pages(body: dict, path: str = "listing") -> int:
+    """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`. A body with no `result_info` is the whole listing on one page (1); a `result_info` that names no usable count raises."""
+    info = body.get("result_info")
+    if info is None:
+        return 1
+    total = info.get("total_pages") if isinstance(info, dict) else None
+    if (
+        total is None
+        and isinstance(info, dict)
+        and info.get("total_count")
+        and info.get("per_page")
+    ):
         total = math.ceil(info["total_count"] / info["per_page"])
+    if not isinstance(total, int) or isinstance(total, bool) or total < 1:
+        raise CfError(
+            "%s: result_info carries no usable total_pages, so the listing's end is unknown" % path
+        )
     return total
 
 
@@ -312,29 +323,18 @@ def listing_by_page(path: str, token: str, get=fetch) -> list:
     page = 1
     while True:
         body = get("%s%spage=%d" % (path, sep, page), token)
-        chunk = body.get("result") or []
-        items.extend(chunk)
-        total = _total_pages(body)
-        if total is None:
-            if chunk:
-                raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
-            return items
-        if page >= total:
+        items.extend(body.get("result") or [])
+        if page >= _total_pages(body, path):
             return items
         page += 1
 
 
 def followed(path: str, token: str, get=fetch) -> list:
-    """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone."""
+    """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone. A body without `result_info` is the whole listing."""
     body = get(path, token)
     items = list(body.get("result") or [])
-    total = _total_pages(body)
-    if total is None:
-        if items:
-            raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
-        return items
     sep = "&" if "?" in path else "?"
-    for page in range(2, total + 1):
+    for page in range(2, _total_pages(body, path) + 1):
         items.extend(get("%s%spage=%d" % (path, sep, page), token).get("result") or [])
     return items
 

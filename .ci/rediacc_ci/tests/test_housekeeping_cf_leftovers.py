@@ -213,6 +213,43 @@ def test_pagination_follows_total_pages():
     assert [i["id"] for i in cfl.listing("/x", TOKEN, get)] == ["a", "b"]
 
 
+def test_followed_without_result_info_returns_the_items_as_the_whole_listing():
+    calls = []
+
+    def get(path, _token):
+        calls.append(path)
+        return {"success": True, "result": [{"id": "a"}, {"id": "b"}]}
+
+    assert [i["id"] for i in cfl.followed("/c", TOKEN, get)] == ["a", "b"]
+    assert calls == ["/c"]
+
+
+def test_listing_by_page_without_result_info_returns_the_items():
+    def get(_path, _token):
+        return {"success": True, "result": [{"id": "a"}]}
+
+    assert [i["id"] for i in cfl.listing_by_page("/p", TOKEN, get)] == ["a"]
+
+
+def test_followed_with_valid_result_info_paginates():
+    pages = {1: [{"id": "a"}], 2: [{"id": "b"}], 3: [{"id": "c"}]}
+
+    def get(path, _token):
+        n = int(path.split("page=")[1]) if "page=" in path else 1
+        return {"success": True, "result": pages[n], "result_info": {"total_pages": 3}}
+
+    assert [i["id"] for i in cfl.followed("/c", TOKEN, get)] == ["a", "b", "c"]
+
+
+@pytest.mark.parametrize("info", [{}, {"per_page": 20}, {"total_pages": "x"}, "bad"])
+def test_followed_with_malformed_result_info_raises(info):
+    def get(_path, _token):
+        return {"success": True, "result": [{"id": "a"}], "result_info": info}
+
+    with pytest.raises(cfl.CfError):
+        cfl.followed("/c", TOKEN, get)
+
+
 def test_configured_reads_env_blocks(tmp_path):
     (tmp_path / "workers" / "w").mkdir(parents=True)
     (tmp_path / "workers" / "w" / "wrangler.toml").write_text(
@@ -661,7 +698,8 @@ def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
 
     with pytest.raises(cfl.CfError, match="total_pages"):
         cfl.listing_by_page("/p", TOKEN, page([{"name": "a"}], {}))
-    assert cfl.listing_by_page("/p", TOKEN, page([], {})) == []
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.listing_by_page("/p", TOKEN, page([], {}))
     seen: list = []
 
     def counted(path, _token):
@@ -677,9 +715,14 @@ def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
 
 
 def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
-    """Review 9900887b.1: items with no page count are refused; an empty listing is the control."""
+    """Review 9900887b.1: a `result_info` with no page count is refused; a body with no `result_info` at all is the whole listing."""
     with pytest.raises(cfl.CfError, match="total_pages"):
-        cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}]})
+        cfl.followed(
+            "/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}], "result_info": {}}
+        )
+    assert cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}]}) == [
+        {"id": 1}
+    ]
     assert cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": []}) == []
     counted = {
         "success": True,
