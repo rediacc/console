@@ -1,7 +1,9 @@
 /**
- * The pure parts of the `--proxy` client: its two error classes and the small
- * helpers that hold no client state (request timeout, host and failure text for
- * a wrapped network error, the Web Crypto buffer view, page delivery).
+ * The pure parts of the `--proxy` client: its three error classes (version
+ * mismatch, truncated stream, unknown session) and the small helpers that hold
+ * no client state (request timeout and fetchWithTimeout, the session-unknown
+ * check, host and failure text for a wrapped network error, the Web Crypto
+ * buffer view, page delivery).
  */
 
 import type { JobPollResponse } from '@rediacc/shared/cli-contract/wire';

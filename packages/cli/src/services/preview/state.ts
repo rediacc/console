@@ -113,7 +113,8 @@ export async function enterPreview(
   configName = getEffectiveConfigName()
 ): Promise<PreviewOverlay> {
   assertPreviewName(overlay.name);
-  const preview = PreviewOverlaySchema.parse(overlay);
+  // The pointer answers this host beside the preview token file, so the name fixes it (D5), whatever host the caller passed.
+  const preview = PreviewOverlaySchema.parse({ ...overlay, host: previewHostFor(overlay.name) });
   await updateConfigAtPointer(configName, '/preview', (config) => {
     if (config.preview) {
       throw new ValidationError(t('errors.preview.alreadyActive', { name: config.preview.name }));
@@ -185,9 +186,10 @@ export async function leavePreview(
         })
       );
     }
+    // The token file goes before the block does: a failed delete leaves the overlay, so a retry still finds the name.
+    rmSync(previewTokenFile(configName, preview.name, configDir), { force: true });
     removed = preview;
     return withPreview(config, undefined);
   });
-  if (removed) rmSync(previewTokenFile(configName, removed.name, configDir), { force: true });
   return removed;
 }

@@ -157,6 +157,35 @@ describe('preview overlay state', () => {
     expect(readPreviewOverlay(CONFIG, configDir)).toBeUndefined();
   });
 
+  it('stores the host the name fixes, whatever host the caller passed (review 3528937b.4)', async () => {
+    const stored = await enterPreview({ ...overlay(), host: 'https://evil.example' }, CONFIG);
+    expect(stored.host).toBe(previewHostFor(NAME));
+    expect(readPreviewOverlay(CONFIG, configDir)?.host).toBe(previewHostFor(NAME));
+  });
+
+  it('keeps the overlay when the preview token file cannot be removed (review 3528937b.3)', async () => {
+    await enterPreview(overlay(), CONFIG);
+    // A directory where the token file belongs makes the delete fail.
+    const tokenPath = previewTokenFile(CONFIG, NAME, configDir);
+    mkdirSync(join(tokenPath, 'blocker'), { recursive: true });
+    await expect(leavePreview(CONFIG, configDir)).rejects.toThrow();
+    expect(readPreviewOverlay(CONFIG, configDir)?.name).toBe(NAME);
+    rmSync(tokenPath, { recursive: true, force: true });
+    expect((await leavePreview(CONFIG, configDir))?.name).toBe(NAME);
+  });
+
+  it('answers no account pointer for a malformed preview block (review 3528937b.2)', () => {
+    const file = JSON.parse(readFileSync(configPath(), 'utf8')) as Record<string, unknown>;
+    writeFileSync(
+      configPath(),
+      JSON.stringify({ ...file, preview: { name: NAME, host: 7, channel: NAME } })
+    );
+    expect(readAccountPointer(CONFIG, configDir)).toEqual({});
+    // Control: with no preview block the real account answers.
+    writeFileSync(configPath(), JSON.stringify(file));
+    expect(readAccountPointer(CONFIG, configDir).accountServer).toBe(REAL_ACCOUNT.accountServer);
+  });
+
   it('refuses a second use while on a preview', async () => {
     await enterPreview(overlay(), CONFIG);
     await expect(enterPreview(overlay('pv-other-blue-lake'), CONFIG)).rejects.toThrow(

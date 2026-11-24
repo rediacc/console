@@ -89,6 +89,28 @@ describe('ProxyClient over the attach window', () => {
     expect(store.tickets()).toHaveLength(0);
   });
 
+  it('drops an ai line of a command stream and still renders the events around it (review a4348b2e.1)', async () => {
+    const { client } = setup(() =>
+      ndjson([
+        { kind: 'event', event: { type: 'output', msg: 'before\n' } },
+        { kind: 'ai', ai: { type: 'text_delta', text: 'not a renet event' } },
+        { kind: 'event', event: { type: 'output', msg: 'after\n' } },
+        {
+          kind: 'result',
+          result: { success: true, exitCode: 0, durationMs: 1, state: 'succeeded', attached: true },
+          stdout: 'ok',
+        },
+      ])
+    );
+    const rendered: unknown[] = [];
+    const outcome = await client.run('repo create', {}, {}, (e) => rendered.push(e));
+    expect(outcome.success).toBe(true);
+    expect(rendered).toEqual([
+      { type: 'output', msg: 'before\n' },
+      { type: 'output', msg: 'after\n' },
+    ]);
+  });
+
   it('retries a POST dropped before the job line with the same request id, and the fake starts one job', async () => {
     const started = new Map<string, string>();
     const { client, ids, sleeps } = setup((call, requestId) => {

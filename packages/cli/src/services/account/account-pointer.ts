@@ -44,7 +44,7 @@ interface RawPreview {
  * While the config holds a preview block, the pointer answers the preview's host and channel and its
  * own token file, and nothing from the `account` section: the real server's E2E key belongs to the
  * real server, and an on-prem releases URL does not serve the preview channel. A block that is not a
- * well-formed preview is ignored here; the strict config parse refuses it on the next load.
+ * well-formed preview answers nothing (readAccountPointer returns `{}`); the strict config parse refuses it on the next load.
  */
 function previewPointer(
   preview: RawPreview | undefined,
@@ -93,6 +93,8 @@ export function readAccountPointer(
     };
     const overlay = previewPointer(parsed.preview, configName, configDir);
     if (overlay) return overlay;
+    // A block that is present but malformed answers nothing, never the real server's pointers the config is not on.
+    if (parsed.preview !== undefined) return {};
     const account = { ...(parsed.account ?? {}) };
     account.accountServer ??= parsed.remote?.apiUrl;
     if (account.accountServer === undefined) delete account.accountServer;

@@ -50,14 +50,31 @@ export class ProxySessionCache {
     this.now = options.now ?? Date.now;
   }
 
-  /** The live entry for this executor and bearer, or undefined. */
+  /** The live entry for this executor and bearer, or undefined; a file that cannot be read is no entry. */
   async get(baseUrl: string, token: string): Promise<ProxySessionEntry | undefined> {
-    const entry = (await this.read())[keyOf(baseUrl, token)];
+    const file = await this.read().catch(() => ({}) as CacheFile);
+    const entry = file[keyOf(baseUrl, token)];
     return entry && entry.expiresAt > this.now() ? entry : undefined;
   }
 
-  /** Record what this run learned; the entry lives one session TTL from now. */
+  /**
+   * Record what this run learned; the entry lives one session TTL from now. The cache only saves a
+   * grant, so a file that cannot be read or written (an unwritable config dir) costs the next run a
+   * fresh grant and never fails the command that already ran.
+   */
   async set(baseUrl: string, token: string, entry: Omit<ProxySessionEntry, 'expiresAt'>) {
+    try {
+      await this.store(baseUrl, token, entry);
+    } catch {
+      // Best effort by design.
+    }
+  }
+
+  private async store(
+    baseUrl: string,
+    token: string,
+    entry: Omit<ProxySessionEntry, 'expiresAt'>
+  ): Promise<void> {
     const file = await this.read();
     const now = this.now();
     // Stale entries are dropped on every write, so the file holds only live sessions.
@@ -70,11 +87,15 @@ export class ProxySessionCache {
 
   /** Forget this executor and bearer's entry (the executor no longer holds the session). */
   async delete(baseUrl: string, token: string): Promise<void> {
-    const file = await this.read();
-    const key = keyOf(baseUrl, token);
-    if (!(key in file)) return;
-    delete file[key];
-    await this.write(file);
+    try {
+      const file = await this.read();
+      const key = keyOf(baseUrl, token);
+      if (!(key in file)) return;
+      delete file[key];
+      await this.write(file);
+    } catch {
+      // Best effort: an entry that cannot be dropped expires with its TTL.
+    }
   }
 
   private async read(): Promise<CacheFile> {
