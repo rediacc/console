@@ -10,6 +10,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
+import { composeRef } from '@rediacc/shared/ref';
 import {
   getRepositories,
   type RepositoryInfo,
@@ -24,6 +25,8 @@ import { analyzePrune } from './prune.js';
 /** One image on the machine, judged against every readable config. */
 export interface MachineRepoVerdict {
   guid: string;
+  /** The ref the current config's archive record gives the GUID (`name` or `name:tag`), else null: no config entry names an orphan. */
+  name: string | null;
   verdict: 'orphaned' | 'protected';
   reason: string;
   mounted: boolean;
@@ -51,6 +54,17 @@ async function configuredGrandGuids(): Promise<Set<string>> {
   return grands;
 }
 
+/** GUID (lowercase) -> the ref of the current config's archive record for it: the one name an orphaned image can still carry. */
+async function archivedNames(): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  for (const record of await configService.listArchivedRepositories()) {
+    if (record.repositoryGuid) {
+      names.set(record.repositoryGuid.toLowerCase(), composeRef(record.name, record.tag));
+    }
+  }
+  return names;
+}
+
 /** Why analyzePrune listed a GUID in neither bucket: it refused the whole scan (an unreadable config, warned). */
 const SCAN_REFUSED = 'config scan refused: a config could not be read (see the warning above)';
 const GRAND_OF_FORK = 'grand lineage of a configured fork';
@@ -75,11 +89,13 @@ export async function classifyMachineRepos(
   const orphaned = new Map(analysis.orphaned.map((c) => [c.guid, c.reason]));
   const protectedReasons = new Map(analysis.protected.map((c) => [c.guid, c.reason]));
   const grands = await configuredGrandGuids();
+  const names = await archivedNames();
 
   return repos.map((repo) => {
     const guid = repo.name;
     const base = {
       guid,
+      name: names.get(guid.toLowerCase()) ?? null,
       mounted: Boolean(repo.mounted),
       running: isRepoRunning(repo),
       containers: repo.container_count,
@@ -172,20 +188,24 @@ export async function readExecutorEvents(file: string): Promise<ExecutorEvent[]>
 }
 
 /**
- * Join the executor's events onto the verdicts: an orphaned image whose GUID (or, for an event carrying no GUID, whose
- * name) an event on this machine names gets the executor reason with the event time. A protected image keeps its
- * verdict and reason, and an unmatched orphan keeps its own reason: another cause produced it.
+ * Join the executor's events onto the verdicts. Only an event whose machine is `machine` counts: an event naming no
+ * machine cannot place the image on this one. An event carrying a GUID matches the image with that GUID; an event
+ * carrying none (one recorded before the executor shipped the GUID) matches the orphan whose archived name is the
+ * event's repo name. A matched orphan gets the executor reason with the event time. A protected image keeps its verdict
+ * and reason, and an unmatched orphan keeps its own reason: another cause produced it.
  */
 export function applyExecutorEvents(
   rows: MachineRepoVerdict[],
   events: ExecutorEvent[],
   machine: string
 ): MachineRepoVerdict[] {
-  const onMachine = events.filter((e) => e.machine === null || e.machine === machine);
+  const onMachine = events.filter((e) => e.machine === machine);
   return rows.map((row) => {
     if (row.verdict !== 'orphaned') return row;
     const guid = row.guid.toLowerCase();
-    const hit = onMachine.find((e) => (e.guid ?? e.repo ?? '').toLowerCase() === guid);
+    const hit = onMachine.find((e) =>
+      e.guid === null ? row.name !== null && e.repo === row.name : e.guid.toLowerCase() === guid
+    );
     if (!hit) return row;
     return {
       ...row,
