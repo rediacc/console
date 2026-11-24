@@ -49,6 +49,12 @@ export class PolicyDenied extends Error {
   }
 }
 
+/** A policy document whose deny rule names a command that does not exist protects nothing, so it is refused. */
+function refuseStaleDeny(document: PolicyDocument): void {
+  const stale = findStaleCommandGlobs(document, LIVE_COMMANDS);
+  if (stale.deny.length > 0) throw new Error(staleDenyRefusal(stale.deny));
+}
+
 /**
  * The policy a command is authorized against.
  *
@@ -62,11 +68,8 @@ export class PolicyDenied extends Error {
 function effectivePolicyOf(config: RdcConfig): EffectivePolicy | undefined {
   const bound = boundEffectivePolicy(config);
   if (bound) {
-    for (const document of [bound.org, bound.team]) {
-      if (!document) continue;
-      const stale = findStaleCommandGlobs(document, LIVE_COMMANDS);
-      if (stale.deny.length > 0) throw new Error(staleDenyRefusal(stale.deny));
-    }
+    if (bound.org) refuseStaleDeny(bound.org);
+    if (bound.team) refuseStaleDeny(bound.team);
     return bound.org || bound.team ? bound : undefined;
   }
   if (config.remote !== undefined) return undefined;
@@ -106,8 +109,7 @@ function readPolicyDocument(config: RdcConfig): PolicyDocument | undefined {
     );
   }
 
-  const stale = findStaleCommandGlobs(parsed.data, LIVE_COMMANDS);
-  if (stale.deny.length > 0) throw new Error(staleDenyRefusal(stale.deny));
+  refuseStaleDeny(parsed.data);
 
   return parsed.data;
 }

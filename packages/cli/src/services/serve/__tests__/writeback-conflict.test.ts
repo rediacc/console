@@ -69,7 +69,7 @@ function addMachine(name: string) {
     resources: {
       ...config.resources,
       machines: {
-        ...config.resources.machines,
+        ...config.resources?.machines,
         [name]: { ip: '10.9.9.9', user: 'root', port: 22 },
       },
     },
@@ -101,12 +101,11 @@ describe('WB3: conflict replay and chain exhaustion', () => {
     expect(store.puts.map((put) => put.status)).toEqual([409, 200]);
     const stored = await store.current();
     // The other device's machine and this command's archive are both in the store.
-    expect(Object.keys(stored.resources.machines).sort((x, y) => x.localeCompare(y))).toEqual([
-      'laptop-added',
-      'm1',
-    ]);
-    expect(Object.keys(stored.resources.repositories)).toEqual(['b']);
-    expect(stored.resources.deletedRepositories?.[0]?.repositoryGuid).toBe(
+    expect(
+      Object.keys(stored.resources?.machines ?? {}).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['laptop-added', 'm1']);
+    expect(Object.keys(stored.resources?.repositories ?? {})).toEqual(['b']);
+    expect(stored.resources?.deletedRepositories?.[0]?.repositoryGuid).toBe(
       '00000000-0000-4000-8000-000000000001'
     );
   });
@@ -130,7 +129,9 @@ describe('WB3: conflict replay and chain exhaustion', () => {
       Array.from({ length: MAX_CONFLICT_REPLAYS + 1 }, () => 409)
     );
     expect(
-      Object.keys((await store.current()).resources.repositories).sort((x, y) => x.localeCompare(y))
+      Object.keys((await store.current()).resources?.repositories ?? {}).sort((x, y) =>
+        x.localeCompare(y)
+      )
     ).toEqual(['a', 'b']);
   });
 
@@ -152,7 +153,7 @@ describe('WB3: conflict replay and chain exhaustion', () => {
     expect(store.exhausted).toBe(1);
     expect(store.mints).toHaveLength(2);
     expect(store.mints.every((mint) => mint.write === true)).toBe(true);
-    expect((await store.current()).resources.repositories).toEqual({});
+    expect((await store.current()).resources?.repositories).toEqual({});
   });
 
   it('a second exhaustion fails the command before any host call', async () => {
@@ -174,6 +175,6 @@ describe('WB3: conflict replay and chain exhaustion', () => {
     // The spent session token, then the spent re-mint: two refusals, one re-mint, no third try.
     expect(store.exhausted).toBe(2);
     expect(store.mints).toHaveLength(2);
-    expect(Object.keys((await store.current()).resources.repositories)).toEqual(['b']);
+    expect(Object.keys((await store.current()).resources?.repositories ?? {})).toEqual(['b']);
   });
 });

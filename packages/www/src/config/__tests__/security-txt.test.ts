@@ -19,43 +19,54 @@ function fields(text: string): Map<string, string[]> {
   return out;
 }
 
-/** Returns the problems found in a security.txt body, empty when it is valid at `now`. */
-function problems(text: string, now: Date): string[] {
+/** Returns the problems with the Expires field of a security.txt body at `now`. */
+function expiresProblems(expires: string[], now: Date): string[] {
+  if (expires.length !== 1) return ['exactly one Expires field is required'];
+  const at = new Date(expires[0]);
+  if (Number.isNaN(at.getTime())) return [`Expires is not a date: ${expires[0]}`];
   const found: string[] = [];
-  const f = fields(text);
-  if (!(f.get('contact') ?? []).includes('mailto:security@rediacc.com')) {
-    found.push('Contact must include mailto:security@rediacc.com');
+  const days = (at.getTime() - now.getTime()) / DAY_MS;
+  if (days < MIN_DAYS_AHEAD) {
+    found.push(
+      `Expires is ${Math.floor(days)} days away (minimum ${MIN_DAYS_AHEAD}); bump Expires in ${SECURITY_TXT_PATH}`
+    );
   }
-  const expires = f.get('expires') ?? [];
-  if (expires.length !== 1) {
-    found.push('exactly one Expires field is required');
-  } else {
-    const at = new Date(expires[0]);
-    if (Number.isNaN(at.getTime())) {
-      found.push(`Expires is not a date: ${expires[0]}`);
-    } else {
-      const days = (at.getTime() - now.getTime()) / DAY_MS;
-      if (days < MIN_DAYS_AHEAD) {
-        found.push(
-          `Expires is ${Math.floor(days)} days away (minimum ${MIN_DAYS_AHEAD}); bump Expires in ${SECURITY_TXT_PATH}`
-        );
-      }
-      if (days > MAX_DAYS_AHEAD) {
-        found.push('Expires is more than a year ahead (RFC 9116 section 2.5.5)');
-      }
-    }
+  if (days > MAX_DAYS_AHEAD) {
+    found.push('Expires is more than a year ahead (RFC 9116 section 2.5.5)');
   }
-  for (const name of ['canonical', 'policy']) {
-    for (const value of f.get(name) ?? []) {
-      if (!value.startsWith('https://')) found.push(`${name} must be an https URL`);
-    }
-    if ((f.get(name) ?? []).length === 0) found.push(`${name} is required`);
-  }
+  return found;
+}
+
+/** Returns the problems with one https link field (Canonical or Policy) of a security.txt body. */
+function httpsFieldProblems(name: string, values: string[]): string[] {
+  const found = values
+    .filter((value) => !value.startsWith('https://'))
+    .map(() => `${name} must be an https URL`);
+  if (values.length === 0) found.push(`${name} is required`);
+  return found;
+}
+
+/** Returns the problems with the Canonical and Policy link fields of a security.txt body. */
+function linkProblems(f: Map<string, string[]>): string[] {
+  const found = [
+    ...httpsFieldProblems('canonical', f.get('canonical') ?? []),
+    ...httpsFieldProblems('policy', f.get('policy') ?? []),
+  ];
   const policy = (f.get('policy') ?? [])[0] ?? '';
   if (!policy.endsWith('/en/docs/security-disclosure-policy')) {
     found.push('Policy must point at the security-disclosure-policy docs page');
   }
   return found;
+}
+
+/** Returns the problems found in a security.txt body, empty when it is valid at `now`. */
+function problems(text: string, now: Date): string[] {
+  const f = fields(text);
+  const found: string[] = [];
+  if (!(f.get('contact') ?? []).includes('mailto:security@rediacc.com')) {
+    found.push('Contact must include mailto:security@rediacc.com');
+  }
+  return [...found, ...expiresProblems(f.get('expires') ?? [], now), ...linkProblems(f)];
 }
 
 describe('security.txt', () => {

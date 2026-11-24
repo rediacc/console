@@ -131,7 +131,7 @@ describe('WB8: audit fails closed for mutating commands', () => {
     expect(auditAttempts).toHaveLength(AUDIT_DELIVERY_ATTEMPTS);
     expect(new Set(auditAttempts).size).toBe(1);
     // Nothing was written: the repo is still registered.
-    expect(Object.keys((await store.current()).resources.repositories)).toEqual(['shop']);
+    expect(Object.keys((await store.current()).resources?.repositories ?? {})).toEqual(['shop']);
   });
 
   it('repo list still runs, and its result says it ran without an audit record', async () => {

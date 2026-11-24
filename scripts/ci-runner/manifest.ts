@@ -2788,7 +2788,13 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-pr-head-ref-completeness',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pr_head_ref_completeness',
     gate: true,
-    paths: ['.ci/rediacc_ci/quality/pr_head_ref_completeness.py', '.github/workflows/**', 'package.json', '.ci/scripts/**', 'scripts/**'],
+    paths: [
+      '.ci/rediacc_ci/quality/pr_head_ref_completeness.py',
+      '.github/workflows/**',
+      'package.json',
+      '.ci/scripts/**',
+      'scripts/**',
+    ],
     pathsOrigin: 'declared',
     leaves: ['.ci/rediacc_ci/quality/pr_head_ref_completeness.py'],
     ci: {
@@ -4550,7 +4556,12 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tmpfs-health',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tmpfs_health',
     gate: true,
-    paths: ['.ci/rediacc_ci/quality/tmpfs_health.py', '.ci/scripts/quality/**', '.npmrc', 'package.json'],
+    paths: [
+      '.ci/rediacc_ci/quality/tmpfs_health.py',
+      '.ci/scripts/quality/**',
+      '.npmrc',
+      'package.json',
+    ],
     pathsOrigin: 'traced',
     leaves: ['.ci/rediacc_ci/quality/tmpfs_health.py'],
     ci: {
@@ -4684,7 +4695,13 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-cost-guard',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.proxy_cost_guard',
     gate: true,
-    paths: ['.ci/rediacc_ci/quality/proxy_cost_guard.py', '.ci/scripts/quality/**', '.npmrc', 'package.json', 'workers/proxy/**'],
+    paths: [
+      '.ci/rediacc_ci/quality/proxy_cost_guard.py',
+      '.ci/scripts/quality/**',
+      '.npmrc',
+      'package.json',
+      'workers/proxy/**',
+    ],
     pathsOrigin: 'traced',
     leaves: ['.ci/rediacc_ci/quality/proxy_cost_guard.py'],
     ci: {
@@ -5639,7 +5656,13 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tutorial-no-skips',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_no_skips',
     gate: true,
-    paths: ['.ci/rediacc_ci/quality/tutorial_no_skips.py', '.ci/scripts/quality/**', '.ci/tutorials/**', '.npmrc', 'package.json'],
+    paths: [
+      '.ci/rediacc_ci/quality/tutorial_no_skips.py',
+      '.ci/scripts/quality/**',
+      '.ci/tutorials/**',
+      '.npmrc',
+      'package.json',
+    ],
     pathsOrigin: 'traced',
     leaves: ['.ci/rediacc_ci/quality/tutorial_no_skips.py'],
     ci: {

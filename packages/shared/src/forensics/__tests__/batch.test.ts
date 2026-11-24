@@ -411,9 +411,8 @@ describe('header encoding', () => {
   it('refuses a non-canonical byte form of a valid header', () => {
     const spaced = new TextEncoder().encode(JSON.stringify(header, null, 1));
     expect(decodeHeader(spaced)).toEqual({ ok: false, error: 'header is not in canonical form' });
-    const reordered = new TextEncoder().encode(
-      JSON.stringify({ seq: header.seq, ...header, sections: [] })
-    );
+    const { seq, ...rest } = header;
+    const reordered = new TextEncoder().encode(JSON.stringify({ seq, ...rest, sections: [] }));
     expect(decodeHeader(reordered).ok).toBe(false);
   });
 

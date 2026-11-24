@@ -20,11 +20,7 @@
  * an executor or CLI that read it would let any member with write access rewrite the policy.
  */
 
-import {
-  decryptPolicyRecord,
-  type PolicyRecord,
-  PolicyRecordIntegrityError,
-} from '@rediacc/shared/config-crypto';
+import { decryptPolicyRecord, type PolicyRecord } from '@rediacc/shared/config-crypto';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
   type EffectivePolicy,
@@ -224,5 +220,3 @@ export function bindEffectivePolicy(config: RdcConfig, effective: EffectivePolic
 export function boundEffectivePolicy(config: RdcConfig): EffectivePolicy | undefined {
   return bound.get(config);
 }
-
-export { PolicyRecordIntegrityError };

@@ -124,7 +124,7 @@ describe('WB7: a job settled after an executor restart still writes back', () =>
     expect(created.result.success).toBe(true);
     expect(renet.calls).toHaveLength(1);
     // The registration was saved before the job ran.
-    expect(Object.keys((await store.current()).resources.repositories)).toEqual(['fresh']);
+    expect(Object.keys((await store.current()).resources?.repositories ?? {})).toEqual(['fresh']);
 
     // The executor restarts: a new process holds no session, no key and no config.
     await first.close();
@@ -143,7 +143,7 @@ describe('WB7: a job settled after an executor restart still writes back', () =>
 
     // The rollback step ran under the restarted executor's write-capable scope: the store no longer holds the repo.
     expect(claimed).toContain('rollbackCreate');
-    expect((await store.current()).resources.repositories).toEqual({});
+    expect((await store.current()).resources?.repositories).toEqual({});
     expect(store.puts.map((put) => put.status)).toEqual([200, 200]);
     expect(store.puts[1]?.removedKeys.length).toBeGreaterThan(0);
   });

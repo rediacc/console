@@ -99,8 +99,8 @@ describe('WB1: a dispatched write is pushed back to config storage', () => {
     // What the store now holds: the repo archived with its GUID and credential, gone from the live map, the other repo untouched.
     const stored = await store.current();
     expect(store.version()).toBe(6);
-    expect(Object.keys(stored.resources.repositories)).toEqual(['keep']);
-    expect(stored.resources.deletedRepositories?.[0]).toMatchObject({
+    expect(Object.keys(stored.resources?.repositories ?? {})).toEqual(['keep']);
+    expect(stored.resources?.deletedRepositories?.[0]).toMatchObject({
       repositoryGuid: SHOP_GUID,
       credential: 'shop-credential',
     });
@@ -138,7 +138,9 @@ describe('WB1: a dispatched write is pushed back to config storage', () => {
     expect(deleted.result.errorCode).toBe('CONFIG_WRITE_FAILED');
     expect(store.version()).toBe(5);
     expect(
-      Object.keys((await store.current()).resources.repositories).sort((x, y) => x.localeCompare(y))
+      Object.keys((await store.current()).resources?.repositories ?? {}).sort((x, y) =>
+        x.localeCompare(y)
+      )
     ).toEqual(['keep', 'shop']);
   });
 });

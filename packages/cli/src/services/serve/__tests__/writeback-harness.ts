@@ -76,7 +76,7 @@ const PRINCIPALS: Record<string, unknown> = {
 };
 
 /** A PUT the fake accepted or refused, with what it carried. */
-export interface PutRecord {
+interface PutRecord {
   version: number;
   status: number;
   removedKeys: string[];
@@ -107,7 +107,7 @@ interface StoredEnvelope {
 }
 
 /** The store's CEK generation: the one the fake's key belongs to, named by /session and every pull. */
-export const FAKE_CEK_GENERATION = 1;
+const FAKE_CEK_GENERATION = 1;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -486,7 +486,7 @@ function buf(data: Uint8Array): ArrayBuffer {
 }
 
 /** The result line of a /v1/command response. */
-export interface CommandResultLine {
+interface CommandResultLine {
   kind: 'result';
   result: {
     success: boolean;

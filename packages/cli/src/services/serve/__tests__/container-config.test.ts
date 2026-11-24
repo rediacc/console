@@ -905,7 +905,7 @@ describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', 
     ...config,
     resources: {
       ...config.resources,
-      machines: { ...config.resources.machines, m2: { ip: '10.1.1.2', user: 'root', port: 22 } },
+      machines: { ...config.resources?.machines, m2: { ip: '10.1.1.2', user: 'root', port: 22 } },
     },
   });
 
@@ -914,7 +914,7 @@ describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', 
     expect(store.storedEnvelope().envelopeVersion).toBe(4);
     const pulledWrap = store.storedEnvelope().wrappedConfigKey;
     const session = await openDirect(store);
-    expect(session.config.resources.machines).toHaveProperty('m1');
+    expect(session.config.resources?.machines).toHaveProperty('m1');
 
     await session.write(addMachine);
     expect(store.puts).toHaveLength(1);
@@ -922,11 +922,11 @@ describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', 
     // A fresh wrap (new IV) of the same key at the same version: the store's copy still opens under the session key.
     expect(store.puts[0]?.wrappedConfigKey).toBeTruthy();
     expect(store.puts[0]?.wrappedConfigKey).not.toBe(pulledWrap);
-    expect((await store.current()).resources.machines).toHaveProperty('m2');
+    expect((await store.current()).resources?.machines).toHaveProperty('m2');
 
     // The second write reuses the wrap the first one recorded, and proves the deletion against it.
     await session.write((config) => {
-      const machines = { ...config.resources.machines };
+      const machines = { ...config.resources?.machines };
       delete machines.m2;
       return { ...config, resources: { ...config.resources, machines } };
     });

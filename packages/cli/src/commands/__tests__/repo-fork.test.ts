@@ -106,7 +106,9 @@ vi.mock('../../services/config/network-id-discovery.js', async (orig) => {
 });
 
 const { handleForkAction } = await import('../repo-fork.js');
-const { JobDispatchedError, setCommandJobDeps } = await import('../../services/jobs/command-job.js');
+const { JobDispatchedError, setCommandJobDeps } = await import(
+  '../../services/jobs/command-job.js'
+);
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 
 const PARENT = {
@@ -373,7 +375,7 @@ describe('repo fork: a started job keeps its registration', () => {
   let ticketDir: string;
   /** A ticket store whose record of the finished job cannot be written, so recording the dispatched job fails. */
   class FinishFailsStore extends TicketStore {
-    override append(...args: Parameters<TicketStore['append']>) {
+    override append(...args: Parameters<InstanceType<typeof TicketStore>['append']>) {
       if (args[0] === 'finished') throw new Error('disk full');
       return super.append(...args);
     }

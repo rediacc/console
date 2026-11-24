@@ -55,7 +55,7 @@ function racingWriteback(start: RdcConfig): {
             resources: {
               ...stored.resources,
               machines: {
-                ...stored.resources.machines,
+                ...stored.resources?.machines,
                 laptop: { ip: '10.0.0.7', user: 'root', port: 22 },
               },
             },
@@ -90,38 +90,35 @@ describe('save() under a request scope replays its edit, not its document', () =
       ...read,
       resources: {
         ...read.resources,
-        machines: { ...read.resources.machines, m1: { ip: '10.0.0.2', user: 'root', port: 22 } },
+        machines: { ...read.resources?.machines, m1: { ip: '10.0.0.2', user: 'root', port: 22 } },
       },
     }));
-    expect(Object.keys(stored.resources.machines).sort((x, y) => x.localeCompare(y))).toEqual([
-      'laptop',
-      'm1',
-      'old',
-    ]);
-    expect(stored.resources.machines.m1?.ip).toBe('10.0.0.2');
+    expect(
+      Object.keys(stored.resources?.machines ?? {}).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['laptop', 'm1', 'old']);
+    expect(stored.resources?.machines?.m1?.ip).toBe('10.0.0.2');
   });
 
   it('a key the caller dropped is deleted on the newest copy, the concurrent one kept', async () => {
     const stored = await saveInScope((read) => {
-      const { old: _dropped, ...machines } = read.resources.machines;
+      const { old: _dropped, ...machines } = read.resources?.machines ?? {};
       return { ...read, resources: { ...read.resources, machines } };
     });
-    expect(Object.keys(stored.resources.machines).sort((x, y) => x.localeCompare(y))).toEqual([
-      'laptop',
-      'm1',
-    ]);
+    expect(
+      Object.keys(stored.resources?.machines ?? {}).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['laptop', 'm1']);
   });
 
   it('an edit made in place on the loaded object is still pushed', async () => {
     const stored = await saveInScope((read) => {
-      read.resources.machines.m1 = { ip: '10.0.0.3', user: 'root', port: 22 };
+      const machines = read.resources?.machines;
+      if (!machines) throw new Error('the loaded config has no machines');
+      machines.m1 = { ip: '10.0.0.3', user: 'root', port: 22 };
       return read;
     });
-    expect(stored.resources.machines.m1?.ip).toBe('10.0.0.3');
-    expect(Object.keys(stored.resources.machines).sort((x, y) => x.localeCompare(y))).toEqual([
-      'laptop',
-      'm1',
-      'old',
-    ]);
+    expect(stored.resources?.machines?.m1?.ip).toBe('10.0.0.3');
+    expect(
+      Object.keys(stored.resources?.machines ?? {}).sort((x, y) => x.localeCompare(y))
+    ).toEqual(['laptop', 'm1', 'old']);
   });
 });

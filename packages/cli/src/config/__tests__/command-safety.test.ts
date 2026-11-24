@@ -112,7 +112,7 @@ describe('command safety table', () => {
     const { 'repo gc': _gc, ...withoutGc } = COMMAND_PREVIEW;
     expect(unclassifiedPreview(COMMANDS, withoutGc, NOT_PREVIEW)).toEqual(['repo gc']);
     expect(Object.keys(NOT_PREVIEW)).toEqual(['config edit']);
-    expect(NOT_PREVIEW['config edit']?.length).toBeGreaterThan(0);
+    expect(NOT_PREVIEW['config edit'].length).toBeGreaterThan(0);
   });
 
   it('names a real option as every preview flag, and the check names a bad one', () => {

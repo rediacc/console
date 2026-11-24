@@ -16,9 +16,9 @@ import { currentRequestContext } from './request-context.js';
 /** The served result's error code for a config change the executor has no store to save to. */
 export const CONFIG_WRITE_UNAVAILABLE = 'CONFIG_WRITE_UNAVAILABLE';
 /** The served result's error code for a push that kept losing the compare-and-swap. */
-export const CONFIG_CONFLICT = 'CONFIG_CONFLICT';
+const CONFIG_CONFLICT = 'CONFIG_CONFLICT';
 /** The served result's error code for a push the config store refused or never answered. */
-export const CONFIG_WRITE_FAILED = 'CONFIG_WRITE_FAILED';
+const CONFIG_WRITE_FAILED = 'CONFIG_WRITE_FAILED';
 
 /**
  * A version-bumping config write the executor cannot persist: the request scope

@@ -99,7 +99,7 @@ describe('WB0: a config write the executor cannot save fails before the host job
     // The removed warning is gone: a refusal replaces "success, but not saved".
     expect(outcome.stderr).not.toContain('did not save the change');
     // The session's config is untouched: no half-registered repo.
-    expect(config.resources.repositories).toEqual({});
+    expect(config.resources?.repositories).toEqual({});
   });
 
   it('control: a state-only write under a request scope still applies in memory', async () => {

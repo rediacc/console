@@ -1518,26 +1518,26 @@ export async function runPool(
     const pass: Admission = loadHeld
       ? { launch: [], held: [] }
       : admit(
-      ready.map((spec) => candidate(spec.id)),
-      [...inFlight.values()],
-      {
-        ...cfg,
-        pending,
-        borrowable:
-          reading === undefined
-            ? undefined
-            : reclaimableCores(now, reading, [...borrows.values()], view?.runs ?? 1),
-        leaseFree: finite(view?.free),
-        leaseShare: finite(view?.share),
-        leaseTotal: finite(view?.total),
-        settleUntil:
-          view !== undefined && lease?.openedAt !== undefined
-            ? lease.openedAt + SETTLE_MS
-            : undefined,
-        leaseHeldSince: leaseSince,
-      },
-      now
-    );
+          ready.map((spec) => candidate(spec.id)),
+          [...inFlight.values()],
+          {
+            ...cfg,
+            pending,
+            borrowable:
+              reading === undefined
+                ? undefined
+                : reclaimableCores(now, reading, [...borrows.values()], view?.runs ?? 1),
+            leaseFree: finite(view?.free),
+            leaseShare: finite(view?.share),
+            leaseTotal: finite(view?.total),
+            settleUntil:
+              view !== undefined && lease?.openedAt !== undefined
+                ? lease.openedAt + SETTLE_MS
+                : undefined,
+            leaseHeldSince: leaseSince,
+          },
+          now
+        );
     let leaseWait = loadHeld;
     for (const [id, why] of pass.held) {
       if (why === 'lease') {

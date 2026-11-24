@@ -23,18 +23,21 @@ function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+function applyKey(target: Plain, read: Plain, saved: Plain, key: string): void {
+  const before = read[key];
+  const after = saved[key];
+  if (key in read && same(before, after)) return;
+  const here = target[key];
+  if (isPlain(before) && isPlain(after) && isPlain(here)) {
+    applyInto(here, before, after, new Set());
+  } else {
+    target[key] = structuredClone(after);
+  }
+}
+
 function applyInto(target: Plain, read: Plain, saved: Plain, skip: ReadonlySet<string>): void {
   for (const key of Object.keys(saved)) {
-    if (skip.has(key)) continue;
-    const before = read[key];
-    const after = saved[key];
-    if (key in read && same(before, after)) continue;
-    const here = target[key];
-    if (isPlain(before) && isPlain(after) && isPlain(here)) {
-      applyInto(here, before, after, new Set());
-    } else {
-      target[key] = structuredClone(after);
-    }
+    if (!skip.has(key)) applyKey(target, read, saved, key);
   }
   for (const key of Object.keys(read)) {
     if (skip.has(key) || key in saved) continue;

@@ -91,7 +91,7 @@ export interface MarginViolation {
 export function marginViolations(table: readonly AiPriceRow[] = PRICE_TABLE): MarginViolation[] {
   const violations: MarginViolation[] = [];
   for (const row of table) {
-    const checks: Array<[MarginViolation['direction'], number, number]> = [
+    const checks: [MarginViolation['direction'], number, number][] = [
       ['in', row.creditsPerMTokIn, row.providerUsdPerMTokIn],
       ['out', row.creditsPerMTokOut, row.providerUsdPerMTokOut],
     ];

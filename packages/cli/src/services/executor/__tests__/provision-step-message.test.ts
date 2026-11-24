@@ -55,13 +55,13 @@ describe('renet step message', () => {
 
   it('says "updated" when the binary was replaced', async () => {
     const lines = await run(true);
-    expect(lines.some((l) => /^Renet updated \(/.test(l))).toBe(true);
+    expect(lines.some((l) => l.startsWith('Renet updated ('))).toBe(true);
     expect(lines.some((l) => /provisioned/i.test(l))).toBe(false);
   });
 
   it('does not claim a provision when the machine already ran this build', async () => {
     const lines = await run(false);
-    expect(lines.some((l) => /^Renet unchanged/.test(l))).toBe(true);
+    expect(lines.some((l) => l.startsWith('Renet unchanged'))).toBe(true);
     expect(lines.some((l) => /provisioned|updated/i.test(l))).toBe(false);
   });
 });

@@ -27,7 +27,7 @@ describe('price table', () => {
       creditsPerMTokOut: base.providerUsdPerMTokOut * 1000,
     };
     const found = marginViolations([control]);
-    expect(found.map((v) => v.direction).sort()).toEqual(['in', 'out']);
+    expect(found.map((v) => v.direction).sort((x, y) => x.localeCompare(y))).toEqual(['in', 'out']);
   });
 
   it('holds a premium row to the larger margin', () => {

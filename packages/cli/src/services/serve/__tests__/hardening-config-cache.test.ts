@@ -68,6 +68,7 @@ async function fakeStore(cek: CryptoKey) {
       sdkEpoch,
       sdkDerived,
       cek,
+      cekGeneration: 1,
       teamId,
     });
   const stored = new Map<string, { version: number; payload: Awaited<ReturnType<typeof seal>> }>();
@@ -111,6 +112,12 @@ async function fakeStore(cek: CryptoKey) {
             lastModified: '',
           })),
         })
+      );
+    }
+    // No config in this fake carries a policy record: the store answers the way it does for a config with none.
+    if (new URL(href).pathname.endsWith('/policy')) {
+      return Promise.resolve(
+        Response.json({ code: 'policy_not_found', error: 'no policy record' }, { status: 404 })
       );
     }
     const configId = decodeURIComponent(new URL(href).pathname.split('/').pop() ?? '');
@@ -163,7 +170,7 @@ async function grantedSession(sessions: SessionStore, who: SessionPrincipal, cek
   return sessionId;
 }
 
-const machinesOf = (config: RdcConfig) => Object.keys(config.resources.machines ?? {});
+const machinesOf = (config: RdcConfig) => Object.keys(config.resources?.machines ?? {});
 
 describe('container config cache keyed by (session, team)', () => {
   it("serves one user's team-A then team-B requests two different configs", async () => {

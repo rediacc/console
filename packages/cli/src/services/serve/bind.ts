@@ -32,7 +32,7 @@ export interface ServeBind {
 }
 
 /** The address each mode binds when --host is absent. */
-export const DEFAULT_HOST = { daemon: '127.0.0.1', container: '0.0.0.0' } as const;
+const DEFAULT_HOST = { daemon: '127.0.0.1', container: '0.0.0.0' } as const;
 
 /** True for an address only this host can reach: 127.0.0.0/8, ::1 and `localhost`. */
 export function isLoopbackHost(host: string): boolean {

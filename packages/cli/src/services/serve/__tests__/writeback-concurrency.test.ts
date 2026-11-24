@@ -74,7 +74,7 @@ function storedConfig(): RdcConfig {
 /** The archive edit `repo delete` makes, for the control's direct writes. */
 function archiveEdit(name: string) {
   return (config: RdcConfig): RdcConfig => {
-    const repositories = { ...config.resources.repositories };
+    const repositories = { ...config.resources?.repositories };
     delete repositories[name];
     return { ...config, resources: { ...config.resources, repositories } };
   };
@@ -129,8 +129,8 @@ describe('WB2: one session writes one push at a time, on one chain', () => {
     // One mint: the session's. No write needed a fresh chain.
     expect(store.mints).toHaveLength(1);
     const stored = await store.current();
-    expect(stored.resources.repositories).toEqual({});
-    expect(stored.resources.deletedRepositories).toHaveLength(NAMES.length);
+    expect(stored.resources?.repositories).toEqual({});
+    expect(stored.resources?.deletedRepositories).toHaveLength(NAMES.length);
   });
 
   it('control: the same ten writes without the serialization collide on the version', async () => {
@@ -150,6 +150,6 @@ describe('WB2: one session writes one push at a time, on one chain', () => {
     await Promise.all(NAMES.map((name) => session.write(archiveEdit(name))));
 
     expect(store.puts.map((put) => put.status)).toEqual(NAMES.map(() => 200));
-    expect((await store.current()).resources.repositories).toEqual({});
+    expect((await store.current()).resources?.repositories).toEqual({});
   });
 });

@@ -73,14 +73,14 @@ export interface ExecutorGrant {
 }
 
 /** The config a session's commands run against, as the store addresses it (the envelope AAD binding). */
-export interface ConfigTarget {
+interface ConfigTarget {
   storeId: string;
   configId: string;
   teamId: string | null;
 }
 
 /** Runs async sections one at a time, in arrival order. A failed section does not stop the next. */
-export class SerialQueue {
+class SerialQueue {
   private tail: Promise<unknown> = Promise.resolve();
 
   run<T>(section: () => Promise<T>): Promise<T> {
@@ -103,7 +103,7 @@ interface StoreAnswer {
 }
 
 /** A chain the store refused again after its one re-mint. */
-export class ChainExhaustedError extends Error {
+class ChainExhaustedError extends Error {
   constructor(readonly reason: string) {
     super(`the config token chain was refused (${reason}) again after a fresh mint`);
     this.name = 'ChainExhaustedError';

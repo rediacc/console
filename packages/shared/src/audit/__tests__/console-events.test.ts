@@ -98,7 +98,7 @@ describe('ConsoleAuditEventSchema', () => {
 function positional(name: string): ContractPositional {
   return {
     name,
-    kind: 'ref',
+    kind: 'repo-ref',
     required: true,
     variadic: false,
     descriptionKey: null,

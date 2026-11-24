@@ -9,13 +9,9 @@ import { preDeployProvisioning } from '../backup-schedule.js';
  */
 describe('preDeployProvisioning unit path', () => {
   it('renders units with the stable current path, not the versioned install slot', async () => {
-    const path = await preDeployProvisioning(
-      'm1',
-      {} as never,
-      {} as never,
-      '',
-      { dryRun: true } as never
-    );
+    const path = await preDeployProvisioning('m1', {} as never, {} as never, '', {
+      dryRun: true,
+    } as never);
     expect(path).toBe(REMOTE_RENET_PATH);
     expect(path).not.toBe(REMOTE_INSTALL_PATH);
   });

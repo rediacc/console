@@ -168,7 +168,11 @@ const RULES = [
 
   // The GATE BINDER, which is executed by a gated job and also WRITES ci-quality.yml. It is the one file under scripts/ that both runs as a gate and generates the workflow other gates are stepped from, so a delta touching only it changes what every lane runs. check:ci-scope-scripts-reachability caught it as 'reduced'.
   { name: 'scripts-gate-bind', match: matchPrefix('scripts/gate-bind.ts'), full: 'harness' },
-  { name: 'scripts-gen-manifest', match: (p) => p === 'scripts/gen/gen-manifest.ts', full: 'harness' },
+  {
+    name: 'scripts-gen-manifest',
+    match: (p) => p === 'scripts/gen/gen-manifest.ts',
+    full: 'harness',
+  },
 
   // The E2E dependency probe's analysis step (spec W T2.12): ct-e2e-probe.yml's aggregate job runs it over the probe legs' results, so a delta touching only it changes that gated job's output.
   {

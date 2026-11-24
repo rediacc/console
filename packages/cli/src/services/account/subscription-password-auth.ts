@@ -5,8 +5,8 @@ import { outputService } from '../core/output.js';
 
 /** Environment names of the headless login. Secrets are read from the environment or stdin, never argv. */
 export const LOGIN_EMAIL_ENV = 'REDIACC_LOGIN_EMAIL';
-export const LOGIN_PASSWORD_ENV = 'REDIACC_LOGIN_PASSWORD';
-export const LOGIN_TOTP_ENV = 'REDIACC_LOGIN_TOTP';
+const LOGIN_PASSWORD_ENV = 'REDIACC_LOGIN_PASSWORD';
+const LOGIN_TOTP_ENV = 'REDIACC_LOGIN_TOTP';
 
 const SESSION_COOKIE = 'access_token';
 const API = '/account/api/v1';
@@ -57,7 +57,7 @@ export async function resolvePasswordLoginInput(
   return { email, password, ...(totp ? { totp } : {}) };
 }
 
-export interface SessionReply<T> {
+interface SessionReply<T> {
   status: number;
   body: T;
   cookie?: string;
@@ -68,7 +68,7 @@ type Reply<T> = SessionReply<T>;
  * One account API call over plain fetch (TLS), carrying the session cookie when given. Plain fetch,
  * not the tunnelled client: the tunnel drops Set-Cookie, and the cookie is this session's only proof.
  */
-export async function sessionRequest<T>(
+async function sessionRequest<T>(
   serverUrl: string,
   method: 'GET' | 'POST' | 'PUT',
   path: string,
@@ -118,7 +118,7 @@ function refusal(step: string, reply: Reply<{ error?: string; code?: string }>):
 }
 
 /** Log in with email and password (plus a 2FA code when required) and return the session cookie. */
-export async function openSession(serverUrl: string, input: PasswordLoginInput): Promise<string> {
+async function openSession(serverUrl: string, input: PasswordLoginInput): Promise<string> {
   const login = await post<{
     requiresTwoFactor?: boolean;
     challengeToken?: string;

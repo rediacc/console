@@ -20,7 +20,9 @@ export async function timedStep<T>(
   const spinner = startSpinner(spinnerText);
   try {
     const result = await fn();
-    const successText = t(typeof successKey === 'function' ? successKey(result) : successKey, { duration: formatDuration(Date.now() - start) });
+    const successText = t(typeof successKey === 'function' ? successKey(result) : successKey, {
+      duration: formatDuration(Date.now() - start),
+    });
     if (spinner) {
       stopSpinner(true, successText);
     } else {

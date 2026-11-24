@@ -301,6 +301,22 @@ async function resendWithFreshToken(
   return response;
 }
 
+/** The body to forward: none for GET and HEAD, bounded by `maxBody` when the route sets one, else read whole; `too-large` when it exceeds the bound. */
+async function readEgressBody(
+  request: Request,
+  maxBody: number | undefined
+): Promise<ArrayBuffer | undefined | 'too-large'> {
+  if (request.method === 'GET' || request.method === 'HEAD') return undefined;
+  if (maxBody === undefined) return request.arrayBuffer();
+  const declared = Number(request.headers.get('content-length'));
+  const bytes =
+    Number.isFinite(declared) && declared > maxBody
+      ? undefined
+      : await boundedBytes(request, maxBody);
+  if (bytes === undefined) return 'too-large';
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 /** Forward one intercepted container request for the account server, when the allowlist admits it. */
 export async function forwardAccountEgress(
   request: Request,
@@ -324,19 +340,8 @@ export async function forwardAccountEgress(
     headers.set('authorization', swapped);
   }
 
-  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  let body: ArrayBuffer | undefined;
-  if (hasBody && route.maxBody !== undefined) {
-    const declared = Number(request.headers.get('content-length'));
-    const bytes =
-      Number.isFinite(declared) && declared > route.maxBody
-        ? undefined
-        : await boundedBytes(request, route.maxBody);
-    if (bytes === undefined) return refuseEgress('body-too-large', request.method, url, 413);
-    body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-  } else if (hasBody) {
-    body = await request.arrayBuffer();
-  }
+  const body = await readEgressBody(request, route.maxBody);
+  if (body === 'too-large') return refuseEgress('body-too-large', request.method, url, 413);
   const send = (): Promise<Response> => {
     const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
       method: request.method,

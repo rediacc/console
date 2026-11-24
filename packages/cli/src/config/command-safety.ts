@@ -12,7 +12,7 @@
 
 export type CommandSeverity = 'none' | 'caution' | 'destructive';
 
-export type PreviewPolarity = 'opt-in' | 'default';
+type PreviewPolarity = 'opt-in' | 'default';
 
 export interface CommandPreview {
   /** Long option name without dashes, e.g. `dry-run`. */
@@ -288,11 +288,3 @@ export const NOT_PREVIEW: Readonly<Record<string, string>> = {
   'config edit':
     '--apply writes the edited projection back to the config; the editor session is the review, and there is no run to preview.',
 };
-
-export function getCommandSeverity(pathKey: string): CommandSeverity | undefined {
-  return COMMAND_SEVERITY[pathKey];
-}
-
-export function getCommandPreview(pathKey: string): CommandPreview | undefined {
-  return COMMAND_PREVIEW[pathKey];
-}

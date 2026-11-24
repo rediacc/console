@@ -126,10 +126,10 @@ describe('WB11: a create job settled after the container disk was dropped still 
     expect(created.result.success).toBe(true);
     expect(renet.calls).toHaveLength(1);
     // The registration was saved before the job ran.
-    expect(Object.keys((await store.current()).resources.repositories)).toEqual(['fresh']);
+    expect(Object.keys((await store.current()).resources?.repositories ?? {})).toEqual(['fresh']);
 
     // The machine's status file names the repository the job creates.
-    const family = Object.values((await store.current()).resources.repositories)[0];
+    const family = Object.values((await store.current()).resources?.repositories ?? {})[0];
     jobRecord.repoGuid = family?.tags[family.grand]?.repositoryGuid;
     expect(jobRecord.repoGuid).toBeTruthy();
 
@@ -153,7 +153,7 @@ describe('WB11: a create job settled after the container disk was dropped still 
 
     // The ticket was gone, so no step was claimed on the machine; the rollback ran from the job record under the write-capable scope.
     expect(claimed).toEqual([]);
-    expect((await store.current()).resources.repositories).toEqual({});
+    expect((await store.current()).resources?.repositories).toEqual({});
     expect(store.puts.map((put) => put.status)).toEqual([200, 200]);
     expect(store.puts[1]?.removedKeys.length).toBeGreaterThan(0);
   });

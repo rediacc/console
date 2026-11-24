@@ -118,6 +118,10 @@
       "ignore": [
         // BLOCKER: esbuild bundling script invoked by `npm run build:bundle`; it imports the root-hoisted transitive esbuild (rebuilt by install:natives), intentionally undeclared in this workspace to avoid pinning a second esbuild version
         "bundle.mjs"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: the serve hardening test mints its throwaway self-signed TLS pair with the host's openssl (src/services/serve/__tests__/hardening-daemon-bind.test.ts); a host tool, not an npm dependency
+        "openssl"
       ]
     },
     "packages/e2e-tests": {
