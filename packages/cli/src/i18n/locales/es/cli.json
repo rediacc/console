@@ -641,6 +641,24 @@
         "none": "No hay clústeres configurados. Agrega uno con: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Imprimir un script de autocompletado para bash, zsh, fish o PowerShell",
+      "description": "Imprime un script de autocompletado para el shell indicado. Las palabras de comandos, opciones y valores salen del contrato de la CLI y se completan sin iniciarla; los nombres de recursos de la configuración, como máquinas y repositorios, vienen de la consulta oculta __complete y se guardan por sesión de shell hasta que cambia el archivo de configuración. Cárgalo con eval \"$(rdc completion bash)\" o eval \"$(rdc completion zsh)\", rdc completion fish | source, o rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell para el que se imprime el script: bash, zsh, fish o pwsh",
+      "complete": {
+        "descriptionShort": "Imprimir los nombres de un tipo de recurso de la configuración, uno por línea (interno)",
+        "kindOption": "Tipo de recurso cuyos nombres se imprimen: machine, repo, datastore, cluster, provider o strategy",
+        "configOption": "Configuración cuyo archivo se lee (predeterminada: REDIACC_CONFIG; si no, rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Shell desconocido \"{{shell}}\". Shells admitidos: {{shells}}.",
+        "unknownKind": "Tipo de recurso desconocido \"{{kind}}\". Tipos que se leen del archivo de configuración: {{kinds}}.",
+        "configMissing": "No se encontró el archivo de configuración: {{path}}",
+        "configInvalid": "El archivo de configuración {{path}} no es una configuración válida: {{error}}",
+        "remoteConfig": "El archivo de configuración {{path}} apunta a una configuración remota; los nombres de sus recursos están en el servidor y no se autocompletan.",
+        "unsafeWord": "La palabra del contrato \"{{word}}\" no se puede escribir en un script de autocompletado de shell."
+      }
+    },
     "config": {
       "access": {
         "add": {

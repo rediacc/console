@@ -641,6 +641,24 @@
         "none": "Nenhum cluster configurado. Adicione um com: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Imprimir um script de conclusão para bash, zsh, fish ou PowerShell",
+      "description": "Imprime um script de conclusão para a shell indicada. As palavras de comandos, opções e escolhas vêm do contrato da CLI e completam-se sem iniciar a CLI; os nomes de recursos da configuração, como máquinas e repositórios, vêm da consulta oculta __complete e ficam guardados por sessão da shell até o ficheiro de configuração mudar. Carregue-o com eval \"$(rdc completion bash)\" ou eval \"$(rdc completion zsh)\", rdc completion fish | source, ou rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell para a qual imprimir o script: bash, zsh, fish ou pwsh",
+      "complete": {
+        "descriptionShort": "Imprimir os nomes de um tipo de recurso da configuração, um por linha (interno)",
+        "kindOption": "Tipo de recurso cujos nomes são impressos: machine, repo, datastore, cluster, provider ou strategy",
+        "configOption": "Configuração cujo ficheiro é lido (predefinição: REDIACC_CONFIG, caso contrário rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Shell desconhecida \"{{shell}}\". Shells suportadas: {{shells}}.",
+        "unknownKind": "Tipo de recurso desconhecido \"{{kind}}\". Tipos lidos do ficheiro de configuração: {{kinds}}.",
+        "configMissing": "Ficheiro de configuração não encontrado: {{path}}",
+        "configInvalid": "O ficheiro de configuração {{path}} não é uma configuração válida: {{error}}",
+        "remoteConfig": "O ficheiro de configuração {{path}} aponta para uma configuração remota; os nomes dos seus recursos estão no servidor e não são completados.",
+        "unsafeWord": "A palavra do contrato \"{{word}}\" não pode ser escrita num script de conclusão da shell."
+      }
+    },
     "config": {
       "access": {
         "add": {

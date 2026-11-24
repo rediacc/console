@@ -641,6 +641,24 @@
         "none": "尚未配置集群。使用以下命令添加：rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "输出 bash、zsh、fish 或 PowerShell 的补全脚本",
+      "description": "输出指定 shell 的补全脚本。命令、标志和选项取值来自 CLI 契约，无需启动 CLI 即可补全；机器、仓库等配置资源的名称来自隐藏的 __complete 查询，会在每个 shell 会话内缓存，直到配置文件发生变化。可用 eval \"$(rdc completion bash)\" 或 eval \"$(rdc completion zsh)\"、rdc completion fish | source、rdc completion pwsh | Out-String | Invoke-Expression 加载。",
+      "shellArgument": "要输出脚本的 shell：bash、zsh、fish 或 pwsh",
+      "complete": {
+        "descriptionShort": "按行输出某一类配置资源的名称，每行一个（内部命令）",
+        "kindOption": "要输出名称的资源类型：machine、repo、datastore、cluster、provider 或 strategy",
+        "configOption": "读取其文件的配置（默认：REDIACC_CONFIG，否则为 rediacc）"
+      },
+      "errors": {
+        "unknownShell": "未知的 shell“{{shell}}”。支持的 shell：{{shells}}。",
+        "unknownKind": "未知的资源类型“{{kind}}”。从配置文件读取的类型：{{kinds}}。",
+        "configMissing": "未找到配置文件：{{path}}",
+        "configInvalid": "配置文件 {{path}} 不是有效的配置：{{error}}",
+        "remoteConfig": "配置文件 {{path}} 指向远程配置，其资源名称保存在服务器上，不会被补全。",
+        "unsafeWord": "契约词“{{word}}”无法写入 shell 补全脚本。"
+      }
+    },
     "config": {
       "access": {
         "add": {

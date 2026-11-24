@@ -641,6 +641,24 @@
         "none": "Кластеры не настроены. Добавьте один командой: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Вывести скрипт автодополнения для bash, zsh, fish или PowerShell",
+      "description": "Выводит скрипт автодополнения для указанной оболочки. Слова команд, флагов и вариантов берутся из контракта CLI и дополняются без запуска CLI; имена ресурсов конфигурации, например машин и репозиториев, приходят из скрытого запроса __complete и хранятся в рамках сеанса оболочки, пока не изменится файл конфигурации. Загрузите скрипт командой eval \"$(rdc completion bash)\" или eval \"$(rdc completion zsh)\", rdc completion fish | source либо rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Оболочка, для которой выводится скрипт: bash, zsh, fish или pwsh",
+      "complete": {
+        "descriptionShort": "Вывести имена ресурсов одного типа из конфигурации, по одному в строке (служебная)",
+        "kindOption": "Тип ресурса, имена которого выводятся: machine, repo, datastore, cluster, provider или strategy",
+        "configOption": "Конфигурация, файл которой читается (по умолчанию: REDIACC_CONFIG, иначе rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Неизвестная оболочка «{{shell}}». Поддерживаются: {{shells}}.",
+        "unknownKind": "Неизвестный тип ресурса «{{kind}}». Типы, читаемые из файла конфигурации: {{kinds}}.",
+        "configMissing": "Файл конфигурации не найден: {{path}}",
+        "configInvalid": "Файл {{path}} не является допустимой конфигурацией: {{error}}",
+        "remoteConfig": "Файл конфигурации {{path}} указывает на удалённую конфигурацию; имена её ресурсов хранятся на сервере и не дополняются.",
+        "unsafeWord": "Слово контракта «{{word}}» нельзя записать в скрипт автодополнения оболочки."
+      }
+    },
     "config": {
       "access": {
         "add": {

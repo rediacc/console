@@ -641,6 +641,24 @@
         "none": "Yapılandırılmış küme yok. Şununla bir tane ekleyin: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "bash, zsh, fish veya PowerShell için kabuk tamamlama betiği yazdır",
+      "description": "Belirtilen kabuk için bir tamamlama betiği yazdırır. Komut, bayrak ve seçenek sözcükleri CLI sözleşmesinden gelir ve CLI başlatılmadan tamamlanır; makineler ve depolar gibi yapılandırma kaynaklarının adları gizli __complete sorgusundan gelir ve yapılandırma dosyası değişene kadar kabuk oturumu boyunca saklanır. Betiği eval \"$(rdc completion bash)\" veya eval \"$(rdc completion zsh)\", rdc completion fish | source ya da rdc completion pwsh | Out-String | Invoke-Expression ile yükleyin.",
+      "shellArgument": "Betiğin yazdırılacağı kabuk: bash, zsh, fish veya pwsh",
+      "complete": {
+        "descriptionShort": "Bir yapılandırma kaynağı türünün adlarını satır başına bir tane olacak şekilde yazdır (dahili)",
+        "kindOption": "Adları yazdırılacak kaynak türü: machine, repo, datastore, cluster, provider veya strategy",
+        "configOption": "Dosyası okunacak yapılandırma (varsayılan: REDIACC_CONFIG, yoksa rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Bilinmeyen kabuk \"{{shell}}\". Desteklenen kabuklar: {{shells}}.",
+        "unknownKind": "Bilinmeyen kaynak türü \"{{kind}}\". Yapılandırma dosyasından okunan türler: {{kinds}}.",
+        "configMissing": "Yapılandırma dosyası bulunamadı: {{path}}",
+        "configInvalid": "{{path}} yapılandırma dosyası geçerli bir yapılandırma değil: {{error}}",
+        "remoteConfig": "{{path}} yapılandırma dosyası uzak bir yapılandırmaya işaret ediyor; kaynak adları sunucuda duruyor ve tamamlanmaz.",
+        "unsafeWord": "\"{{word}}\" sözleşme sözcüğü kabuk tamamlama betiğine yazılamaz."
+      }
+    },
     "config": {
       "access": {
         "add": {

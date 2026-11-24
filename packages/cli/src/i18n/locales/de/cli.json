@@ -641,6 +641,24 @@
         "none": "Keine Cluster konfiguriert. Fügen Sie einen hinzu mit: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Ein Shell-Vervollständigungsskript für bash, zsh, fish oder PowerShell ausgeben",
+      "description": "Gibt ein Vervollständigungsskript für die genannte Shell aus. Befehls-, Flag- und Auswahlwörter stammen aus dem CLI-Vertrag und werden vervollständigt, ohne die CLI zu starten; Namen von Konfigurationsressourcen wie Maschinen und Repositories kommen aus der versteckten Abfrage __complete und werden pro Shell-Sitzung zwischengespeichert, bis sich die Konfigurationsdatei ändert. Laden mit eval \"$(rdc completion bash)\" oder eval \"$(rdc completion zsh)\", rdc completion fish | source oder rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell, für die das Skript ausgegeben wird: bash, zsh, fish oder pwsh",
+      "complete": {
+        "descriptionShort": "Namen eines Konfigurationsressourcentyps zeilenweise ausgeben (intern)",
+        "kindOption": "Ressourcentyp, dessen Namen ausgegeben werden: machine, repo, datastore, cluster, provider oder strategy",
+        "configOption": "Konfiguration, deren Datei gelesen wird (Standard: REDIACC_CONFIG, sonst rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Unbekannte Shell \"{{shell}}\". Unterstützte Shells: {{shells}}.",
+        "unknownKind": "Unbekannter Ressourcentyp \"{{kind}}\". Aus der Konfigurationsdatei gelesene Typen: {{kinds}}.",
+        "configMissing": "Konfigurationsdatei nicht gefunden: {{path}}",
+        "configInvalid": "Die Konfigurationsdatei {{path}} ist keine gültige Konfiguration: {{error}}",
+        "remoteConfig": "Die Konfigurationsdatei {{path}} verweist auf eine Remote-Konfiguration; deren Ressourcennamen liegen auf dem Server und werden nicht vervollständigt.",
+        "unsafeWord": "Das Vertragswort \"{{word}}\" lässt sich nicht in ein Shell-Vervollständigungsskript schreiben."
+      }
+    },
     "config": {
       "access": {
         "add": {

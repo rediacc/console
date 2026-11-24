@@ -641,6 +641,24 @@
         "none": "クラスターが設定されていません。次のコマンドで追加してください: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "bash、zsh、fish、PowerShell 向けのシェル補完スクリプトを出力する",
+      "description": "指定したシェル用の補完スクリプトを出力します。コマンド、フラグ、選択肢の語は CLI コントラクトから取得され、CLI を起動せずに補完されます。マシンやリポジトリなどの設定リソース名は、非表示の __complete による照会から取得され、設定ファイルが変わるまでシェルセッションごとに保持されます。読み込みは eval \"$(rdc completion bash)\" または eval \"$(rdc completion zsh)\"、rdc completion fish | source、rdc completion pwsh | Out-String | Invoke-Expression のいずれかで行います。",
+      "shellArgument": "スクリプトを出力するシェル: bash、zsh、fish、pwsh のいずれか",
+      "complete": {
+        "descriptionShort": "設定リソースの種類ごとに名前を1行に1つずつ出力する（内部用）",
+        "kindOption": "名前を出力するリソースの種類: machine、repo、datastore、cluster、provider、strategy のいずれか",
+        "configOption": "ファイルを読み込む設定（既定: REDIACC_CONFIG、なければ rediacc）"
+      },
+      "errors": {
+        "unknownShell": "不明なシェル「{{shell}}」です。対応シェル: {{shells}}。",
+        "unknownKind": "不明なリソース種類「{{kind}}」です。設定ファイルから読み取れる種類: {{kinds}}。",
+        "configMissing": "設定ファイルが見つかりません: {{path}}",
+        "configInvalid": "設定ファイル {{path}} は有効な設定ではありません: {{error}}",
+        "remoteConfig": "設定ファイル {{path}} はリモート設定を指しています。リソース名はサーバー上にあるため、補完されません。",
+        "unsafeWord": "コントラクトの語「{{word}}」はシェル補完スクリプトに書き込めません。"
+      }
+    },
     "config": {
       "access": {
         "add": {

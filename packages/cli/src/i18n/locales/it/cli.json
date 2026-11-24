@@ -641,6 +641,24 @@
         "none": "Nessun cluster configurato. Aggiungine uno con: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Stampa uno script di completamento per bash, zsh, fish o PowerShell",
+      "description": "Stampa uno script di completamento per la shell indicata. Le parole di comandi, flag e scelte provengono dal contratto della CLI e si completano senza avviarla; i nomi delle risorse della configurazione, come macchine e repository, arrivano dalla ricerca nascosta __complete e restano in memoria per la sessione della shell finché il file di configurazione non cambia. Caricalo con eval \"$(rdc completion bash)\" o eval \"$(rdc completion zsh)\", rdc completion fish | source oppure rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell per cui stampare lo script: bash, zsh, fish o pwsh",
+      "complete": {
+        "descriptionShort": "Stampa i nomi di un tipo di risorsa della configurazione, uno per riga (interno)",
+        "kindOption": "Tipo di risorsa di cui stampare i nomi: machine, repo, datastore, cluster, provider o strategy",
+        "configOption": "Configurazione di cui leggere il file (predefinita: REDIACC_CONFIG, altrimenti rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Shell sconosciuta \"{{shell}}\". Shell supportate: {{shells}}.",
+        "unknownKind": "Tipo di risorsa sconosciuto \"{{kind}}\". Tipi letti dal file di configurazione: {{kinds}}.",
+        "configMissing": "File di configurazione non trovato: {{path}}",
+        "configInvalid": "Il file di configurazione {{path}} non è una configurazione valida: {{error}}",
+        "remoteConfig": "Il file di configurazione {{path}} punta a una configurazione remota; i nomi delle sue risorse risiedono sul server e non vengono completati.",
+        "unsafeWord": "La parola del contratto \"{{word}}\" non può essere scritta in uno script di completamento della shell."
+      }
+    },
     "config": {
       "access": {
         "add": {

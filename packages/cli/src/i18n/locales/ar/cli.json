@@ -641,6 +641,24 @@
         "none": "لا توجد عناقيد مُعدَّة. أضف واحداً بـ: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "طباعة سكربت إكمال تلقائي لـ bash وzsh وfish وPowerShell",
+      "description": "طباعة سكربت الإكمال التلقائي للصدفة المحددة. تأتي كلمات الأوامر والخيارات والقيم المسموحة من مواصفات CLI وتكتمل دون تشغيل CLI، أما أسماء موارد التكوين مثل الأجهزة والمستودعات فتأتي من الأمر الداخلي المخفي __complete وتُحفظ طوال جلسة الصدفة حتى يتغير ملف التكوين. حمّله بـ eval \"$(rdc completion bash)\" أو eval \"$(rdc completion zsh)\" أو rdc completion fish | source أو rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "الصدفة المراد طباعة السكربت لها: bash أو zsh أو fish أو pwsh",
+      "complete": {
+        "descriptionShort": "طباعة أسماء نوع واحد من موارد التكوين، اسم في كل سطر (داخلي)",
+        "kindOption": "نوع المورد المراد طباعة أسمائه: machine أو repo أو datastore أو cluster أو provider أو strategy",
+        "configOption": "التكوين الذي يُقرأ ملفه (الافتراضي: REDIACC_CONFIG، وإلا rediacc)"
+      },
+      "errors": {
+        "unknownShell": "صدفة غير معروفة \"{{shell}}\". الصدفات المدعومة: {{shells}}.",
+        "unknownKind": "نوع مورد غير معروف \"{{kind}}\". الأنواع التي تُقرأ من ملف التكوين: {{kinds}}.",
+        "configMissing": "ملف التكوين غير موجود: {{path}}",
+        "configInvalid": "ملف التكوين {{path}} ليس تكوينًا صالحًا: {{error}}",
+        "remoteConfig": "ملف التكوين {{path}} يشير إلى تكوين بعيد، وأسماء موارده موجودة على الخادم ولا يتم إكمالها.",
+        "unsafeWord": "لا يمكن كتابة الكلمة \"{{word}}\" من مواصفات CLI داخل سكربت إكمال تلقائي للصدفة."
+      }
+    },
     "config": {
       "access": {
         "add": {

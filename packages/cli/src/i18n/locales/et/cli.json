@@ -641,6 +641,24 @@
         "none": "Ühtegi klastrit pole seadistatud. Lisa üks käsuga: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Prindi käsukesta automaattäiendusskript (bash, zsh, fish või PowerShell)",
+      "description": "Prindib nimetatud käsukesta automaattäiendusskripti. Käskude, lippude ja valikute sõnad pärinevad CLI lepingust ja täienevad ilma CLI-d käivitamata; konfiguratsiooniressursside nimed, nagu masinad ja hoidlad, tulevad peidetud päringust __complete ning on käsukestasessiooni jooksul vahemälus, kuni konfiguratsioonifail muutub. Laadi see käsuga eval \"$(rdc completion bash)\" või eval \"$(rdc completion zsh)\", rdc completion fish | source või rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Käsukest, mille skript prinditakse: bash, zsh, fish või pwsh",
+      "complete": {
+        "descriptionShort": "Prindi ühe konfiguratsiooniressursi liigi nimed, üks rea kohta (sisemine)",
+        "kindOption": "Ressursi liik, mille nimed prinditakse: machine, repo, datastore, cluster, provider või strategy",
+        "configOption": "Konfiguratsioon, mille faili loetakse (vaikimisi: REDIACC_CONFIG, muidu rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Tundmatu käsukest \"{{shell}}\". Toetatud käsukestad: {{shells}}.",
+        "unknownKind": "Tundmatu ressursiliik \"{{kind}}\". Konfiguratsioonifailist loetavad liigid: {{kinds}}.",
+        "configMissing": "Konfiguratsioonifaili ei leitud: {{path}}",
+        "configInvalid": "Konfiguratsioonifail {{path}} ei ole kehtiv konfiguratsioon: {{error}}",
+        "remoteConfig": "Konfiguratsioonifail {{path}} viitab kaugkonfiguratsioonile; selle ressursinimed asuvad serveris ja neid ei täideta automaatselt.",
+        "unsafeWord": "Lepingu sõna \"{{word}}\" ei saa käsukesta automaattäiendusskripti kirjutada."
+      }
+    },
     "config": {
       "access": {
         "add": {
