@@ -245,7 +245,7 @@ export function containerRequest(request: Request): Request {
 }
 
 /** The name and message of a caught error, for a log line. Never the request or its content. */
-export function errorSummary(error: unknown): { name: string; message: string } {
+function errorSummary(error: unknown): { name: string; message: string } {
   if (error instanceof Error) return { name: error.name, message: error.message };
   return { name: typeof error, message: String(error) };
 }
@@ -323,7 +323,7 @@ export function busyRefusal(): Response {
 }
 
 /** Destroy the container, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. */
-export function destroyContainer(container: Container, reason: string): Promise<void> {
+function destroyContainer(container: Container, reason: string): Promise<void> {
   return within(
     container.destroy(reason),
     CONTAINER_CALL_TIMEOUT_MS,
@@ -332,7 +332,7 @@ export function destroyContainer(container: Container, reason: string): Promise<
 }
 
 /** The response body, byte for byte, with `done` called once when it closes, errors or is cancelled, rather than when the headers arrive. */
-export function trackBody(
+function trackBody(
   body: ReadableStream<Uint8Array>,
   done: () => void
 ): ReadableStream<Uint8Array> {
