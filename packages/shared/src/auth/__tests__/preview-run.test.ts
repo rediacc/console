@@ -30,4 +30,10 @@ describe('isPreviewRun', () => {
     expect(isPreviewRun(DEFAULT, { apply: 1 })).toBe(false);
     expect(isPreviewRun(DEFAULT, { apply: '' })).toBe(false);
   });
+
+  it('a null act flag reads as acting, while an absent or false one is a preview (review 0c72428e.1)', () => {
+    expect(isPreviewRun(DEFAULT, { apply: null })).toBe(false);
+    expect(isPreviewRun(DEFAULT, { apply: undefined })).toBe(true);
+    expect(isPreviewRun(OPT_IN, { 'dry-run': null })).toBe(false);
+  });
 });
