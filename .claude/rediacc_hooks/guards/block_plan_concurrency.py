@@ -201,14 +201,15 @@ def run(event):
         cheap = not names_work and declared is None and not X.exclusive_plans(root)
         serving: set[str] = set()
         live: dict[str, list[str]] | None = X.LivePlans()
-        if not cheap:
-            import wl_store as S
+        # ONE ESTIMATE PER RUN: `live_plans` asks `live_estimate` again inside, and each ask re-read the whole roster (10.7 s per spawn for the two on the 2026-11-24 lead session); the pin serves the second ask from the first.
+        with wl_roster.pinned_estimate(cwd, session_id) as (_rows, metas):
+            if not cheap:
+                import wl_store as S
 
-            fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
-            by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
-            serving = set() if runner else X.spawn_plans(text, by_id)
-            live = X.live_plans(cwd, session_id, fold)
-        _rows, metas = wl_roster.live_estimate(cwd, session_id)
+                fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
+                by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
+                serving = set() if runner else X.spawn_plans(text, by_id)
+                live = X.live_plans(cwd, session_id, fold)
         claims_path = C.worklist_for(C.project_start({"cwd": cwd})).with_suffix(X.CLAIMS_SUFFIX)
     except Exception as exc:
         event.warn_raw(
