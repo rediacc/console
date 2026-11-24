@@ -251,7 +251,10 @@ export type ApiTokenScope =
   // `backup:manage` declares the server-enforced GFS retention policy, which SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a token minted to show a usage bar must not be able to shrink history.
   | 'backup:manage'
   // `backup:restore` mints a restore session for one lineage from an API token (POST /backups/restore-session), so the CLI can rebuild an image straight from the chunk store with no machine. Privileged (owner/admin), team-scoped tokens only, and never part of a member's CLI login: it turns a token into a download credential.
-  | 'backup:restore';
+  | 'backup:restore'
+  // Forensics plane (PLAN-forensics-investigation D7): `forensics:read` reads the incident timeline, flows, file opens and chain material (`rdc incident status|export`, `rdc repo flows|opens`, `rdc forensics verify`); `incident:manage` declares and closes incidents. Both privileged (owner/admin only).
+  | 'forensics:read'
+  | 'incident:manage';
 
 /**
  * API token for machine authentication.
