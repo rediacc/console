@@ -212,6 +212,8 @@ def _du_bytes(path):
             timeout=DU_TIMEOUT,
             check=False,
         )
+        if done.returncode != 0:
+            return None
         return int(done.stdout.split()[0]) * 1024
     except (OSError, subprocess.SubprocessError, ValueError, IndexError):
         return None

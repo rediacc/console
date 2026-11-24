@@ -2799,6 +2799,17 @@ def test_control_gc_superseded_by_names_an_unreadable_landed_diff_as_unreadable(
     assert "changes no path" not in err
 
 
+def test_du_bytes_is_none_for_a_partly_unreadable_tree_and_measures_a_readable_one(
+    tmp_path, monkeypatch
+):
+    """05003da0.4: du exits non-zero with a partial total when it cannot read part of a tree; that is no measurement."""
+    (tmp_path / "f").write_text("x" * 5000)
+    assert lease._du_bytes(tmp_path) > 0
+    partial = subprocess.CompletedProcess(["du"], 1, stdout="4\t%s\n" % tmp_path, stderr="denied")
+    monkeypatch.setattr(lease.subprocess, "run", lambda *_a, **_k: partial)
+    assert lease._du_bytes(tmp_path) is None
+
+
 def test_gc_drop_refuses_an_unreadable_subject_once_and_keeps_the_tree(
     gc_repo, monkeypatch, capsys
 ):

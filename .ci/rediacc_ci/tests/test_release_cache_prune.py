@@ -101,5 +101,28 @@ def test_main_reports_stuck_with_rc_1_and_dry_run_deletes_nothing(store, tmp_pat
     assert not old.exists()
 
 
+def test_main_exits_1_and_prints_the_sudo_line_for_a_path_it_cannot_delete(
+    store, tmp_path, capsys, monkeypatch
+):
+    """05003da0.3: the stuck branch of main, which the dry-run test above never reaches."""
+    root = tmp_path
+    clones = root / cache_prune.CLONE_REL
+    clones.parent.mkdir(parents=True, exist_ok=True)
+    store.rename(clones)
+    old = _clone(clones, "a", 30)
+    _clone(clones, "c", 1)
+    # prune() bound the default remover at definition time, so pass it through the same seam.
+    monkeypatch.setattr(
+        cache_prune.prune,
+        "__kwdefaults__",
+        {**cache_prune.prune.__kwdefaults__, "remover": lambda _path: None},
+    )
+    assert cache_prune.main([], root=root) == 1
+    out = capsys.readouterr().out
+    assert "cannot delete %s; run: %s" % (old, cache_prune.sudo_line(old)) in out
+    assert "1 stuck" in out
+    assert old.is_dir()
+
+
 def test_missing_store_is_a_noop(tmp_path):
     assert cache_prune.candidates(tmp_path / "none", NOW) == []

@@ -21,7 +21,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.release import local
+from rediacc_ci.release import cache_prune, local
 from rediacc_ci.security import ci_workflow_invariants as inv
 
 ROOT = paths.repo_root()
@@ -1051,6 +1051,81 @@ def test_a_refusal_from_the_gates_stops_before_any_step(
     ]
     # The gates refused; the release-run record was never written, and only the always-run release record followed.
     assert ran == ["gates", "release-record"]
+
+
+class StubRun:
+    """A Run whose execute returns a fixed rc, recording that the lock was held while it ran."""
+
+    rc = 0
+    held: typing.ClassVar[list[bool]] = []
+    store: typing.ClassVar[pathlib.Path]
+
+    def __init__(self, root, ctx, **_kw) -> None:
+        del root, ctx
+        self.failed = "gates" if self.rc else ""
+        self.ctx: dict[str, typing.Any] = {}
+
+    def execute(self, steps) -> int:
+        del steps
+        try:
+            with cache_prune.run_lock(self.store):
+                self.held.append(False)
+        except cache_prune.PruneRefusedError:
+            self.held.append(True)
+        return self.rc
+
+
+def _stubbed_main(monkeypatch, tmp_path, rc):
+    root = _tmp_root(tmp_path)
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setattr(local, "_release_run_module", stub_release_run)
+    StubRun.rc, StubRun.held = rc, []
+    StubRun.store = root / local.CLONE_REL
+    monkeypatch.setattr(local, "Run", StubRun)
+    pruned: list[pathlib.Path] = []
+    monkeypatch.setattr(local, "_prune_after", pruned.append)
+    return root, pruned
+
+
+def test_a_release_run_holds_the_cache_lock_and_prunes_only_after_a_green_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """05003da0.1: the run executes under run_lock, and the prune follows a green run only."""
+    root, pruned = _stubbed_main(monkeypatch, tmp_path, 0)
+    assert local.main(["--channel", "edge"], root=root, runner=FakeRunner(VERSION_ANSWERS)) == 0
+    assert StubRun.held == [True], "the lock was not held while the run executed"
+    assert pruned == [root / local.CLONE_REL]
+    # Control: a failed run prunes nothing.
+    root2, pruned2 = _stubbed_main(monkeypatch, tmp_path / "red", 1)
+    assert local.main(["--channel", "edge"], root=root2, runner=FakeRunner(VERSION_ANSWERS)) == 1
+    assert pruned2 == []
+
+
+def test_a_release_run_refuses_with_rc_2_while_another_run_holds_the_cache_lock(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, pruned = _stubbed_main(monkeypatch, tmp_path, 0)
+    with cache_prune.run_lock(root / local.CLONE_REL):
+        rc = local.main(["--channel", "edge"], root=root, runner=FakeRunner(VERSION_ANSWERS))
+    assert rc == 2
+    assert "refused" in capsys.readouterr().err
+    assert StubRun.held == []
+    assert pruned == []
+
+
+def test_the_arm64_sea_container_runs_as_the_caller_with_a_writable_home(
+    tmp_path: pathlib.Path,
+) -> None:
+    """05003da0.2: base_context carries the caller's uid and gid and the step argv substitutes them."""
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], False)
+    assert ctx["uid"] == str(os.getuid())
+    assert ctx["gid"] == str(os.getgid())
+    (step,) = [s for s in local.STEPS if s.id == "sea-linux-arm64"]
+    argv = local.child_argv(step, ctx)
+    at = argv.index("--user")
+    assert argv[at + 1] == "%s:%s" % (os.getuid(), os.getgid())
+    assert "HOME=/tmp" in argv
 
 
 def test_a_failed_deploy_rolls_back_its_armed_region_and_still_writes_the_records(
