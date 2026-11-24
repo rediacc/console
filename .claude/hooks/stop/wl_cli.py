@@ -2843,15 +2843,20 @@ def _writers_now_start_cli(argv):
     start = C.project_start()
     root = pathlib.Path(C.project_root(start) or os.getcwd())
     items = S.load(C.worklist_for(start), sync=False).items
-    row, _text = WN.start_round(
-        root,
-        me,
-        survey,
-        C.utcnow(),
-        items,
-        WN.gather_reviews(root),
-        lambda since: WN.gather_reports(start, me, since),
-    )
+    # Recorded absolute, so the Stop hook's survey check reads the same file whatever its working directory.
+    survey = str(pathlib.Path(survey).absolute())
+    try:
+        row, _text = WN.start_round(
+            root,
+            me,
+            survey,
+            C.utcnow(),
+            items,
+            WN.gather_reviews(root),
+            lambda since: WN.gather_reports(start, me, since),
+        )
+    except WN.CopiedSurveyError as exc:
+        _die2(str(exc))
     print(M.CLI_WRITERS_NOW_STARTED % {"round": row["round"], "at": row["at"], "survey": survey})
     print(M.CLI_WRITERS_NOW_SEEDS % {"n": row["seed_count"], "path": row["seeds"]})
     print("ledger: %s" % WN.LEDGER_REL)

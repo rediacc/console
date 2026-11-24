@@ -267,8 +267,14 @@ DEV = PS.LoopState(kind=PS.LIVE, role=PS.DEVELOPMENT)
 
 
 def rounds_at(tmp_path, *minutes_ago, session=ME8):
+    """One round per age, each with its own survey written a minute after its start, so each round counts."""
     for m in minutes_ago:
-        WN.append_round(tmp_path, session, "/tmp/s.md", NOW - datetime.timedelta(minutes=m))
+        at = NOW - datetime.timedelta(minutes=m)
+        survey = tmp_path / ("s-%s-%d.md" % (session, m))
+        WN.append_round(tmp_path, session, str(survey), at)
+        survey.write_text("survey %s %d\n" % (session, m), encoding="utf-8")
+        stamp = (at + datetime.timedelta(minutes=1)).timestamp()
+        WN.os.utime(survey, (stamp, stamp))
     return WN.read_rounds(tmp_path)
 
 
@@ -354,7 +360,9 @@ def test_stop_hook_control_a_round_ten_minutes_ago_is_silent(wl) -> None:
     wl.brief_now()
     wl.hand_now()
     plant_promoted(wl)
-    WN.append_round(wl.proj, wlfix.ME, "/tmp/s.md", WN.C.utcnow() - datetime.timedelta(minutes=10))
+    # A survey still being written (no file yet, 10 minutes in) counts as in progress.
+    survey = wl.base / "wn" / "in-progress.md"
+    WN.append_round(wl.proj, wlfix.ME, str(survey), WN.C.utcnow() - datetime.timedelta(minutes=10))
     wl.check_quiet("WRITERS-NOW DUE", "a round inside the hour")
 
 
@@ -402,3 +410,94 @@ def test_an_unreadable_report_body_comes_back_as_none_with_the_error(monkeypatch
     assert got[0][0]["read_error"].startswith("FileNotFoundError")
     (tmp_path / "gone.md").write_text("owed=C1:live\n", encoding="utf-8")  # control: readable
     assert WN.gather_reports(tmp_path, ME8, SINCE)[0][1] == "owed=C1:live\n"
+
+
+# ---- a round counts only once its survey is real (operator report 2026-11-24, PR-TASK 79b7e92e) ----
+
+SURVEY_TEXT = "# survey\n\n| box | group |\n|---|---|\n| B1 | CODE |\n"
+
+
+def write_survey(path, text, at):
+    """Write `text` to `path` with its mtime set to `at` (a datetime), the way a survey agent or a `cp` leaves it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    stamp = at.timestamp()
+    WN.os.utime(path, (stamp, stamp))
+    return path
+
+
+def two_rounds(tmp_path, second_text, second_written, second_ago=20):
+    """A real round 70 minutes ago, then a round `second_ago` minutes ago whose survey holds `second_text` written `second_written` minutes ago (None: never written)."""
+    first = tmp_path / "wn" / "r1.md"
+    t1 = NOW - datetime.timedelta(minutes=70)
+    WN.append_round(tmp_path, ME8, str(first), t1)
+    write_survey(first, SURVEY_TEXT, t1 + datetime.timedelta(minutes=5))
+    second = tmp_path / "wn" / "r2.md"
+    t2 = NOW - datetime.timedelta(minutes=second_ago)
+    WN.append_round(tmp_path, ME8, str(second), t2)
+    if second_written is not None:
+        write_survey(second, second_text, NOW - datetime.timedelta(minutes=second_written))
+    return WN.read_rounds(tmp_path)
+
+
+def test_a_copied_survey_does_not_count_and_the_message_says_copied(tmp_path) -> None:
+    # cp before --writers-now-start: the same bytes, older than the round.
+    rows = two_rounds(tmp_path, SURVEY_TEXT, second_written=21)
+    fires, facts = WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)
+    assert fires
+    assert "written before the round started" in WN.due_fields(facts, ME8)["last"]
+
+
+def test_a_survey_copied_after_the_start_still_does_not_count(tmp_path) -> None:
+    # The same bytes written after the start: the digest catches it.
+    rows = two_rounds(tmp_path, SURVEY_TEXT, second_written=10)
+    fires, facts = WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)
+    assert fires
+    assert "same content as the previous round" in WN.due_fields(facts, ME8)["last"]
+
+
+def test_control_a_real_survey_written_after_the_start_counts(tmp_path) -> None:
+    rows = two_rounds(tmp_path, SURVEY_TEXT + "| B2 | LIVE |\n", second_written=10)
+    assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
+
+
+def test_a_missing_survey_counts_for_30_minutes_then_stops(tmp_path) -> None:
+    rows = two_rounds(tmp_path, "", second_written=None, second_ago=20)
+    assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
+    later = tmp_path / "later"
+    rows = two_rounds(later, "", second_written=None, second_ago=40)
+    fires, facts = WN.due(rows, ME8, NOW, 4, DEV, root=later)
+    assert fires
+    assert "survey never written" in WN.due_fields(facts, ME8)["last"]
+
+
+def test_the_message_names_an_old_round_as_older_than_the_window(tmp_path) -> None:
+    first = tmp_path / "wn" / "r1.md"
+    t1 = NOW - datetime.timedelta(minutes=70)
+    WN.append_round(tmp_path, ME8, str(first), t1)
+    write_survey(first, SURVEY_TEXT, t1 + datetime.timedelta(minutes=5))
+    fires, facts = WN.due(WN.read_rounds(tmp_path), ME8, NOW, 4, DEV, root=tmp_path)
+    assert fires
+    assert "older than 60 min" in WN.due_fields(facts, ME8)["last"]
+
+
+def test_start_refuses_an_existing_survey_identical_to_the_previous_rounds(wl) -> None:
+    first = wl.base / "wn" / "1121-1-20261124T0825Z.md"
+    got = wl.cli("--writers-now-start", wlfix.ME, str(first))
+    assert got.rc == 0, got.err
+    first.write_text(SURVEY_TEXT, encoding="utf-8")
+    copied = wl.base / "wn" / "1121-1-20261124T0930Z.md"
+    copied.write_text(SURVEY_TEXT, encoding="utf-8")
+    got = wl.cli("--writers-now-start", wlfix.ME, str(copied))
+    assert got.rc != 0
+    assert "a copied survey is not a round" in got.err
+    assert "writers-now-due" in got.err
+    assert len(ledger_rows(wl)) == 1
+    assert not (wl.base / "wn" / "1121-1-20261124T0930Z-seeds.md").exists()
+    # Control: a fresh path starts the round and records the previous survey's digest.
+    fresh = wl.base / "wn" / "1121-1-20261124T0931Z.md"
+    got = wl.cli("--writers-now-start", wlfix.ME, str(fresh))
+    assert got.rc == 0, got.err
+    rows = ledger_rows(wl)
+    assert len(rows) == 2
+    assert rows[1]["prev_survey_digest"] == WN.survey_digest(first)
