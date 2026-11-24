@@ -8,14 +8,9 @@ INTENTIONAL DELTAS (Rule T), each a `test_delta_*` that fails on the bash behavi
 from __future__ import annotations
 
 import json
-import os
 import pathlib
-import subprocess
 import typing
 
-import pytest
-
-from rediacc_ci import paths
 from rediacc_ci.testrun import seed_smoke
 from rediacc_ci.tests import testrun_support as ts
 
@@ -207,43 +202,3 @@ def test_delta_token_is_masked(tmp_path: pathlib.Path) -> None:
     old, new, _, _ = both(tmp_path)
     assert "::add-mask::" not in old.out
     assert "::add-mask::rdt_smoke_12_" in new.out
-
-
-# --- smoke-test-preview.ts reads PREVIEW_HAS_SIGNER strictly (review findings 5aecfcdc.2 and 5aecfcdc.3) ---
-
-
-def _smoke_flag(flag: str | None) -> subprocess.CompletedProcess:
-    """Run the smoke script against a dead port with PREVIEW_HAS_SIGNER=`flag` (None leaves it unset)."""
-    env = {
-        **os.environ,
-        "PREVIEW_URL": "http://127.0.0.1:1",
-        "SMOKE_TEST_TOKEN": "x",
-        "ACCOUNT_ED25519_PUBLIC_KEY": "x",
-    }
-    env.pop("PREVIEW_HAS_SIGNER", None)
-    if flag is not None:
-        env["PREVIEW_HAS_SIGNER"] = flag
-    return subprocess.run(
-        ["npx", "tsx", ".ci/scripts/test/smoke-test-preview.ts"],
-        cwd=paths.repo_root(),
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=90,
-    )
-
-
-@pytest.mark.parametrize("flag", ["1", "True", "yes"])
-def test_smoke_refuses_a_signer_flag_that_is_not_true_or_false(flag: str) -> None:
-    done = _smoke_flag(flag)
-    assert done.returncode == 1
-    assert 'PREVIEW_HAS_SIGNER must be unset, "true" or "false"' in done.stderr
-
-
-@pytest.mark.parametrize("flag", [None, "", "true", "false"])
-def test_smoke_control_accepts_unset_empty_true_and_false(flag: str | None) -> None:
-    """CONTROL: the accepted spellings get past the flag check to the first network step."""
-    done = _smoke_flag(flag)
-    assert "PREVIEW_HAS_SIGNER must be" not in done.stderr
-    assert "License Smoke Test" in done.stdout

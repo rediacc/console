@@ -174,6 +174,7 @@
       "BENCH_STORE_MASTER_PASSWORD_ASIA",
       "BENCH_STORE_MASTER_PASSWORD_EU",
       "BENCH_STORE_MASTER_PASSWORD_US",
+      "BENCH_STORE_RECOVERY_CODE_EU",
       "BWS_ACCESS_TOKEN",
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
@@ -251,6 +252,8 @@
       "LIVE_CONSOLE_ORG_B_TOTP_SECRET",
       "LIVE_CONSOLE_PROBE_SSH_KEY",
       "LIVE_CONSOLE_STORE_PASSWORD",
+      "MAIL_ALERTS_PASSWORD",
+      "MAIL_CONTACT_PASSWORD",
       "MATRIX_SECRET_SUFFIX",
       "NFPM_APK_KEY_FILE",
       "NFPM_DEB_KEY_FILE",
@@ -274,6 +277,7 @@
       "OPS_HEALTH_READ_TOKEN",
       "OTEL_ENDPOINT",
       "PGPASSWORD",
+      "PREVIEW_NAME_KEY",
       "R2_PUBLIC_DATA_ACCESS_KEY_ID",
       "R2_PUBLIC_DATA_SECRET_ACCESS_KEY",
       "REDIACC_LOGIN_EMAIL",
@@ -500,7 +504,6 @@
       "PLATFORM",
       "POINTER_BUMP_ONLY",
       "PRESET",
-      "PREVIEW_HAS_SIGNER",
       "PREVIEW_URL",
       "PREVIEW_URL_OVERRIDE",
       "PROBE_GREP",
@@ -1952,7 +1955,6 @@
         "SELLER_REGISTER_NAME",
         "SELLER_REGISTRATION_NUMBER",
         "SELLER_VAT_NUMBER",
-        "STRIPE_SECRET_KEY",
         "SUFFIX",
         "TARGET",
         "WORKER_NAME"
@@ -2317,9 +2319,7 @@
         "SELLER_POSTAL_CODE",
         "SELLER_REGISTER_NAME",
         "SELLER_REGISTRATION_NUMBER",
-        "SELLER_VAT_NUMBER",
-        "STRIPE_SANDBOX_SECRET_KEY",
-        "STRIPE_SANDBOX_WEBHOOK_SECRET"
+        "SELLER_VAT_NUMBER"
       ],
       ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
         "BRANCH"
@@ -3592,6 +3592,9 @@
         "PATH"
       ],
       ".ci/rediacc_ci/tests/test_ops_executor_orgs.py": [
+        "PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_ops_executor_orphans.py": [
         "PATH"
       ],
       ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
