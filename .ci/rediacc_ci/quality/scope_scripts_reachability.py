@@ -215,7 +215,8 @@ LABEL_TAIL = re.compile(r'"?\).*$')
 PY_CONSTANT = re.compile(r"^([A-Z][A-Z0-9_]*)\s*[=:]")
 
 # The two floors. `ci_scanned` had one from the start; the dispatch half did not, and the module docstring records what that cost.
-CI_SCAN_FLOOR = 20
+# Measured at 18 references on the real tree after the Stripe sandbox and sync steps left the workflows; 20 sat just under the old count and a deleted step tipped it. The floor only has to separate a working enumeration from a collapsed one, which finds none.
+CI_SCAN_FLOOR = 10
 DISPATCH_FLOOR = 1
 
 

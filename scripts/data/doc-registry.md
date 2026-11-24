@@ -1349,7 +1349,7 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 | `ci.yml` | 1 | `initialize` | - |
 | `ci.yml` | 2 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `cd-preflight`, `check-release-state`, `label-guide`, `quality`, `run-sh-tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml` |
 | `ci.yml` | 3 | `build-cli`, `build-docker-fast`, `e2e-dependency-probe`, `ops-tests`, `package-tests`, `review-gate`, `tests` | `ci-build-cli.yml`, `ci-build-docker.yml`, `ci-ops-test.yml`, `ct-e2e-probe.yml`, `ct-tests.yml` |
-| `ci.yml` | 4 | `build-docker`, `elite-run-test`, `stripe-sandbox`, `update-flow-test` | `ci-build-docker.yml`, `ct-update-flow.yml` |
+| `ci.yml` | 4 | `build-docker`, `elite-run-test`, `update-flow-test` | `ci-build-docker.yml`, `ct-update-flow.yml` |
 | `ci.yml` | 5 | `stage-artifacts` | `cd-stage.yml` |
 | `ci.yml` | 6 | `deploy-preview`, `validate-install`, `validate-promote` | `ct-install-methods.yml` |
 | `ci.yml` | 7 | `smoke-test-preview` | - |
@@ -1404,7 +1404,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 |---|---|---|---|
 | `.syncpackrc-reasons.json` | root | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `.syncpackrc.json` | root | wiring: `package.json` | yes -- repoint in `package.json` |
-| `biome.json` | root | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `biome.json` | root | code: `scripts/lib/pins/drivers/pin-manifests.ts` | no -- hardcoded in `scripts/lib/pins/drivers/pin-manifests.ts` |
 | `css-custom-data.json` | root | wiring: `.vscode/settings.json` | yes -- repoint in `.vscode/settings.json` |
 | `knip.jsonc` | root | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `package-lock.json` | root | wiring: `.github/actions/setup-workspace/action.yml` | yes -- repoint in `.github/actions/setup-workspace/action.yml` |
@@ -1413,7 +1413,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `tsconfig.json` | root | wiring: `.github/workflows/ci.yml` | yes -- repoint in `.github/workflows/ci.yml` |
 | `.ci/config/account-env-retired-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/account_env_retired.py` | no -- hardcoded in `.ci/rediacc_ci/quality/account_env_retired.py` |
 | `.ci/config/account-raw-key-allowlist.json` | .ci/config | code: `scripts/gates/check-account-raw-keys.ts` | no -- hardcoded in `scripts/gates/check-account-raw-keys.ts` |
-| `.ci/config/actions-allowlist.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/actions-allowlist.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_allowlist.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_allowlist.py` |
 | `.ci/config/actions-retention.json` | .ci/config | wiring: `.github/workflows/ops-claude-review.yml` | yes -- repoint in `.github/workflows/ops-claude-review.yml` |
 | `.ci/config/actions-vars.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
 | `.ci/config/agent-session-archival.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
@@ -1446,13 +1446,13 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `.ci/config/legal-documents.json` | .ci/config | code: `scripts/gen/gen-legal.ts` | no -- hardcoded in `scripts/gen/gen-legal.ts` |
 | `.ci/config/merged-prs.json` | .ci/config | code: `scripts/lib/suppression-liveness.ts` | no -- hardcoded in `scripts/lib/suppression-liveness.ts` |
-| `.ci/config/model-invocation-exceptions.json` | .ci/config | wiring: `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command.json` | yes -- repoint in `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command.json` |
+| `.ci/config/model-invocation-exceptions.json` | .ci/config | code: `.claude/rediacc_hooks/model_invocation.py` | no -- hardcoded in `.claude/rediacc_hooks/model_invocation.py` |
 | `.ci/config/ops-health.json` | .ci/config | code: `.ci/rediacc_ci/ops/ops_health.py` | no -- hardcoded in `.ci/rediacc_ci/ops/ops_health.py` |
 | `.ci/config/pin-major-grace.json` | .ci/config | code: `scripts/lib/pins/status.ts` | no -- hardcoded in `scripts/lib/pins/status.ts` |
 | `.ci/config/pins.json` | .ci/config | wiring: `knip.jsonc` | yes -- repoint in `knip.jsonc` |
-| `.ci/config/plan-boxes.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/plan-boxes.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_implementation.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_implementation.py` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_implementation.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_implementation.py` |
-| `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/plan-lifecycle.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_housekeeping.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_housekeeping.py` |
 | `.ci/config/plan-priority-seed-baseline.json` | .ci/config | code: `.ci/scripts/quality/check_plan_record.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_record.py` |
 | `.ci/config/plant-proof-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/plant_proofs.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plant_proofs.py` |
 | `.ci/config/proof-tiers.json` | .ci/config | code: `.ci/rediacc_ci/proof/surfaces.py` | no -- hardcoded in `.ci/rediacc_ci/proof/surfaces.py` |
@@ -1472,23 +1472,23 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/secret-supply.json` | .ci/config | wiring: `.github/workflows/cd-deploy-account.yml` | yes -- repoint in `.github/workflows/cd-deploy-account.yml` |
 | `.ci/config/settings.json` | .ci/config | wiring: `pyproject.toml` | yes -- repoint in `pyproject.toml` |
 | `.ci/config/swallowed-except-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/swallowed_failures.py` | no -- hardcoded in `.ci/rediacc_ci/quality/swallowed_failures.py` |
-| `.ci/config/syncpack-source-exclusions.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/syncpack-source-exclusions.json` | .ci/config | code: `.ci/rediacc_ci/quality/language_policy.py` | no -- hardcoded in `.ci/rediacc_ci/quality/language_policy.py` |
 | `.ci/config/tracked-credentials-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/language_policy.py` | no -- hardcoded in `.ci/rediacc_ci/quality/language_policy.py` |
-| `.ci/config/tree-write-mutators.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/css-dom-refs-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/dead-css-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/dead-translation-keys-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `.ci/config/tree-write-mutators.json` | .ci/config | code: `.ci/rediacc_ci/quality/gate_tree_writes.py` | no -- hardcoded in `.ci/rediacc_ci/quality/gate_tree_writes.py` |
+| `scripts/data/css-dom-refs-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/dead-css-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/dead-translation-keys-baseline.json` | scripts/data | code: `scripts/gates/check-dead-translation-keys.ts` | no -- hardcoded in `scripts/gates/check-dead-translation-keys.ts` |
 | `scripts/data/doc-registry-preport.json` | scripts/data | code: `scripts/gen/gen-docs.ts` | no -- hardcoded in `scripts/gen/gen-docs.ts` |
-| `scripts/data/docker-image-freshness-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/domain-layout-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/docker-image-freshness-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/domain-layout-baseline.json` | scripts/data | code: `scripts/gates/check-domain-partition.ts` | no -- hardcoded in `scripts/gates/check-domain-partition.ts` |
 | `scripts/data/domains.json` | scripts/data | code: `.ci/rediacc_ci/ops/__init__.py` | no -- hardcoded in `.ci/rediacc_ci/ops/__init__.py` |
-| `scripts/data/em-dash-surfaces-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/enumeration-vacuity-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/hook-audit-scope.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/hook-coverage-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/hook-inventory-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/em-dash-surfaces-baseline.json` | scripts/data | code: `scripts/gates/check-em-dash-surfaces.ts` | no -- hardcoded in `scripts/gates/check-em-dash-surfaces.ts` |
+| `scripts/data/enumeration-vacuity-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/hook-audit-scope.json` | scripts/data | code: `.ci/rediacc_ci/quality/hook_integrity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_integrity.py` |
+| `scripts/data/hook-coverage-baseline.json` | scripts/data | code: `.ci/rediacc_ci/quality/hook_integrity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_integrity.py` |
+| `scripts/data/hook-inventory-baseline.json` | scripts/data | code: `.ci/rediacc_ci/quality/hook_integrity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_integrity.py` |
 | `scripts/data/literal-sources.json` | scripts/data | code: `.ci/rediacc_ci/quality/literal_sources.py` | no -- hardcoded in `.ci/rediacc_ci/quality/literal_sources.py` |
-| `scripts/data/locale-de-contamination-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/locale-de-contamination-baseline.json` | scripts/data | code: `scripts/gates/check-locale-de-contamination.ts` | no -- hardcoded in `scripts/gates/check-locale-de-contamination.ts` |
 | `scripts/data/nis2-directive-2022-2555-de.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-en.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-es.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
@@ -1496,11 +1496,11 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `scripts/data/nis2-directive-2022-2555-fr.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-it.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-pt.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
-| `scripts/data/package-key-budget-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
-| `scripts/data/sentence-wrapping-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/package-key-budget-baseline.json` | scripts/data | code: `.ci/rediacc_ci/quality/docker_npm_pins.py` | no -- hardcoded in `.ci/rediacc_ci/quality/docker_npm_pins.py` |
+| `scripts/data/sentence-wrapping-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
 | `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/wl_shapedup.py` | no -- hardcoded in `.claude/hooks/stop/wl_shapedup.py` |
 | `scripts/data/shape-duplication-seed.json` | scripts/data | code: `.ci/rediacc_ci/quality/plan_citations.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_citations.py` |
-| `scripts/data/static-nowrap-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/static-nowrap-baseline.json` | scripts/data | code: `scripts/gates/check-layout-overflow.ts` | no -- hardcoded in `scripts/gates/check-layout-overflow.ts` |
 | `.ci/policy/carry-exempt.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/deps-major-exceptions.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/fixed-widths.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
@@ -2491,7 +2491,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RESULT_RUN_SH_TESTS` | ci-runner | - |
 | `RESULT_SMOKE_TEST_PREVIEW` | ci-runner | - |
 | `RESULT_STAGE_ARTIFACTS` | ci-runner | - |
-| `RESULT_STRIPE_SANDBOX` | ci-runner | - |
 | `RESULT_TESTS` | ci-runner | - |
 | `RESULT_UPDATE_FLOW_TEST` | ci-runner | - |
 | `RESULT_VALIDATE_INSTALL` | ci-runner | - |
@@ -2948,7 +2947,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `_DEVBOX_DOCKER` | harness | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-1413 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+1412 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

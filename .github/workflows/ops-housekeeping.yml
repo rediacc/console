@@ -11,8 +11,6 @@ name: Housekeeping
 #   cleanup            - rediacc_ci.housekeeping.cleanup_versions (releases, tags,
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
-#   stripe-cleanup     - Stripe sandbox orphan sweep. No sandbox webhook is verified: the
-#                        edge hosts it pointed at are gone with the product-domain rename.
 #   cf-leftovers       - rediacc_ci.housekeeping.cf_leftovers: a report-only listing of Workers
 #                        scripts, edge/bench D1 databases, routes and custom domains no
 #                        wrangler config accounts for. Deletes nothing; findings never fail it.
@@ -149,71 +147,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-
-  stripe-cleanup:
-    name: Stripe sandbox cleanup
-    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
-    # cap, so the 30-minute timeout below was unreachable -- a long run was
-    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
-    # .ci/scripts/security/check_workflow_gates.py.
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # pull-requests: read is for cleanup-orphans.ts, which is handed
-    # GH_TOKEN: github.token and shells out to `gh pr view --json state`.
-    # It requireEnv()s the token, so an unscoped one fails the step rather
-    # than degrading. The App token minted here is preset: readonly and
-    # carries no pull_requests scope, so it cannot serve that call.
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Fetch secrets from Bitwarden
-        # LIVE: the BWS_ values below are read by this job's steps, flipped from
-        # secrets.* by the cutover. The secrets.* reads that remain are the
-        # comparator's, which must keep reading GitHub or it compares a value with
-        # itself and passes forever.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-            GITHUB_APP_ID > BWS_APP_ID
-            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
-      - uses: ./.github/actions/setup-node-npm
-
-      - name: Install dependencies
-        run: npm ci && npm run install:natives
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - uses: ./.github/actions/app-token
-        id: app-token-stripe
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,account
-
-      - name: Initialize account submodule
-        run: git submodule update --init private/account
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Cleanup orphaned Stripe sandbox resources
-        run: npx tsx scripts/cleanup-orphans.ts
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          GH_TOKEN: ${{ github.token }}
 
   cf-leftovers:
     name: Cloudflare leftovers report

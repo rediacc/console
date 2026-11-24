@@ -337,7 +337,6 @@ jobs:
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
-            STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             GITHUB_APP_ID > BWS_APP_ID
             CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
@@ -406,26 +405,6 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         run: npm install
         working-directory: private/account
-
-      # Stripe sync is skipped in workers-only mode. Stripe product changes require a full release.
-      - name: Sync Stripe products/prices
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        run: npx tsx scripts/stripe-sync.ts
-        working-directory: private/account
-        env:
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
-
-      - name: Verify Stripe webhook endpoints (per-region)
-        if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
-        shell: bash
-        run: |
-          jq -r '.regions[] | .domain' regions.json | while read -r domain; do
-            echo "Verifying webhook for ${domain}..."
-            npx tsx private/account/scripts/verify-webhook.ts --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
-          done
-        env:
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
-
 
       # -----------------------------------------------------------------------
       # Step 2: Bump version & commit (includes all submodules)

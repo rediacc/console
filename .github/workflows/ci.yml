@@ -801,114 +801,6 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
-  # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
-  # Seeds products/prices, creates webhook endpoint, deploys Cloudflare Worker
-  # Only runs on pull_request events
-  # ============================================================================
-  stripe-sandbox:
-    name: Stripe Sandbox
-    # First checkout on GITHUB_TOKEN; the private/account submodule comes in on
-    # the readonly-preset App token.
-    permissions:
-      contents: read
-    # T2.2 (PLAN-ci-time-budget, D-W6): quality dropped from needs so this
-    # starts as soon as review-gate clears, instead of waiting on the whole
-    # Quality lane. The watchdog already force-cancels the run on a Quality
-    # failure, so the exposure is a burned runner, not a bad deploy.
-    needs: [initialize, review-gate]
-    runs-on: ubuntu-latest  # Needs Docker for account server
-    timeout-minutes: 15
-    if: >-
-      always() &&
-      github.event_name == 'pull_request' &&
-      needs.initialize.result == 'success' &&
-      needs.initialize.outputs.pointer_bump_only != 'true' &&
-      needs.review-gate.result == 'success'
-    outputs:
-      account_server_url: ${{ steps.deploy.outputs.account_server_url }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # .ci/scripts, because the compare step below RUNS one. It used to be
-          # 18 inline lines and needed no file; extracting it to
-          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-          # into "No such file or directory" three steps later (job 100795527686).
-          sparse-checkout: |
-            .github/actions
-            .ci/config
-            .ci/scripts
-
-      - name: Fetch secrets from Bitwarden
-        # LIVE: the BWS_ values below are read by this job's steps, flipped from
-        # secrets.* by the cutover. The secrets.* reads that remain are the
-        # comparator's, which must keep reading GitHub or it compares a value with
-        # itself and passes forever.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            GITHUB_APP_ID > BWS_APP_ID
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,account
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Initialize account submodule
-        run: git submodule update --init --depth 1 private/account
-
-      - uses: ./.github/actions/setup-node-npm
-        with:
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci && npm run install:natives
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Setup Stripe sandbox
-        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }} --skip-webhook
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-
-      # The signing pair is minted for this run (agent/plans/PLAN-production-key-only.md
-      # D6): the production private key never reaches this job, and the sandbox server's
-      # licences verify nothing outside it.
-      - name: Start account server
-        id: deploy
-        run: |
-          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
-          eval "$pair"
-          PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
-        env:
-          ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-
-      - name: Verify account server health
-        run: curl -sf http://localhost:3000/health
-
-      - name: Cleanup
-        if: always()
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop
-
-
-  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-renet (unified), build-docker (parallel reusable workflows)
   # Fast path (tests): initialize -> build-renet -> build-docker-fast -> tests
@@ -1618,7 +1510,6 @@ jobs:
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
@@ -1710,14 +1601,6 @@ jobs:
       #
       # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
-      # Create Stripe webhook pointing to pr-N
-      - name: Setup Stripe webhook
-        id: stripe-webhook
-        run: npx tsx scripts/setup-sandbox.ts --pr-number "${PR_NUMBER}"
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
@@ -1750,8 +1633,6 @@ jobs:
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
           AWS_SES_ACCESS_KEY_ID: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SES_SECRET_ACCESS_KEY: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
@@ -2097,7 +1978,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -2140,7 +2021,6 @@ jobs:
           RESULT_BUILD_CLI: ${{ needs.build-cli.result }}
           RESULT_QUALITY: ${{ needs.quality.result }}
           RESULT_REVIEW_GATE: ${{ needs.review-gate.result }}
-          RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
           RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
           RESULT_CD_PREFLIGHT: ${{ needs.cd-preflight.result }}

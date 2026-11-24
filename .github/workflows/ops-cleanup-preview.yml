@@ -13,7 +13,7 @@ jobs:
   cleanup:
     name: Cleanup Preview
     runs-on: ubuntu-slim
-    # Checkout only. Cloudflare/Stripe/Turnstile work runs on API tokens, and
+    # Checkout only. Cloudflare/Turnstile work runs on API tokens, and
     # the private submodule is fetched with the App token. The `actions: read`
     # this replaces was never exercised by any step in this job.
     #
@@ -49,7 +49,6 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             GITHUB_APP_ID > BWS_APP_ID
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
@@ -113,12 +112,6 @@ jobs:
 
       - name: Install account dependencies
         run: npm install --prefix private/account
-
-      - name: Cleanup Stripe sandbox
-        run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
       # Delete the per-PR Turnstile widget minted during deploy. The script
       # itself treats a missing widget (already deleted by the housekeeping

@@ -1894,6 +1894,8 @@ const jsonTokens = (text: string): RegExp[] => {
 const isNamerCandidate = (f: string): boolean => {
   if (NOT_A_DISCOVERER.some((d) => f.startsWith(d))) return false;
   if (GENERATED_PROJECTIONS.includes(f)) return false;
+  // A test fixture is data a test feeds a program, not a program writing a location down; left in, a guard fixture that quotes a path wins the wiring tier over the loader that binds it.
+  if (/(?:^|\/)tests\/fixtures\//.test(f)) return false;
   const ext = path.extname(f);
   return WIRING_EXT.includes(ext) || f.startsWith('.vscode/') || CODE_EXT.includes(ext);
 };

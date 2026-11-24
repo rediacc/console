@@ -3397,9 +3397,8 @@ jobs:
       fail-fast: false
       matrix:
         # T2.13 (PLAN-ci-time-budget): 4 legs from the committed
-        # .ci/config/shards/test-account-e2e.json. Leg 1 carries the 10-stripe
-        # mutex unit (only that leg starts `stripe listen`) and leg 2 carries
-        # the @webauthn coverage-floor bundle; rediacc_ci.testrun.account_e2e derives both
+        # .ci/config/shards/test-account-e2e.json. Leg 2 carries
+        # the @webauthn coverage-floor bundle; rediacc_ci.testrun.account_e2e derives it
         # from the leg's actual file list rather than trusting these numbers,
         # so this comment is documentation, not a contract the script relies on.
         # The leg holding the @real-provider spec (the pinned Bitwarden extension
@@ -3421,8 +3420,6 @@ jobs:
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            STRIPE_SANDBOX_WEBHOOK_SECRET > BWS_STRIPE_SANDBOX_WEBHOOK_SECRET
             GITHUB_APP_ID > BWS_APP_ID
             ROOT_EMAIL > BWS_ROOT_EMAIL
       - uses: ./.github/actions/app-token
@@ -3472,26 +3469,6 @@ jobs:
         with:
           path: ~/.cache/rediacc/real-provider
           key: real-provider-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('private/account/e2e/real-provider.lock.json') }}
-      - name: Install Stripe CLI
-        # Leg 1 holds the 10-stripe mutex unit (test-account-e2e.json); the
-        # other three never call `stripe`, so skipping the install there is a
-        # pure time saving -- rediacc_ci.testrun.account_e2e's own file-derived check is
-        # what actually keeps a second `stripe listen` off the sandbox.
-        if: env.STRIPE_SANDBOX_SECRET_KEY != '' && matrix.shard == 1
-        shell: bash
-        run: |
-          # -f, and retries: `-s` alone makes an HTTP error SILENT and pipes the
-          # error page into gpg, and a single attempt makes one network blip a
-          # hard job failure. Same class as the sm-action download that killed
-          # run 33753814832.
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 10 \
-            https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public \
-            | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg >/dev/null
-          echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
-          # Pinned: an unpinned install pulled 1.52.0, whose `stripe listen` refuses to start without an event selector, and broke this leg silently (run 36288155344). A bump is a deliberate edit here, with rediacc_ci.testrun.account_e2e checked against the new CLI.
-          sudo apt-get update -qq && sudo apt-get install -y -qq stripe=1.52.0
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
       # The portal's backend signs with an ED25519 pair minted for this step
       # alone (agent/plans/PLAN-production-key-only.md D6): no renet verifies
       # what it signs, so the production private key has no business here.
@@ -3506,8 +3483,6 @@ jobs:
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()

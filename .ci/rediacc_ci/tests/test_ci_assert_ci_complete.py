@@ -27,11 +27,25 @@ def all_green() -> dict[str, str]:
 
 
 def run_both(
-    env_extra: dict[str, str], *, tty: str | None = None
+    env_extra: dict[str, str],
+    *,
+    tty: str | None = None,
+    twin_stand_in: tuple[int, str, str] | None = None,
 ) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
+    """`twin_stand_in` is what the retired twin answered where the port deliberately differs: it is the answer a `regolden --source port` run records for the twin's side, so a delta case survives a re-record."""
     old_env = diff.env_for(**env_extra)
     new_env = diff.env_for(**env_extra, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.twin_streams(TWIN, "bash %s" % TWIN, env=old_env, tty=tty, timeout=30)
+    old = diff.twin_streams(
+        TWIN,
+        "bash %s" % TWIN,
+        env=old_env,
+        tty=tty,
+        timeout=30,
+        port=lambda: (
+            twin_stand_in
+            or diff.bash_streams("python3 -m %s" % MODULE, env=new_env, tty=tty, timeout=30)
+        ),
+    )
     new = diff.bash_streams("python3 -m %s" % MODULE, env=new_env, tty=tty, timeout=30)
     return old, new
 
@@ -131,7 +145,7 @@ def test_delta_pointer_bump_still_judges_run_sh_tests() -> None:
         env = all_green()
         env["POINTER_BUMP_ONLY"] = "true"
         env["RESULT_RUN_SH_TESTS"] = verdict
-        old, new = run_both(env)
+        old, new = run_both(env, twin_stand_in=(0, "", "✓ All CI jobs passed successfully!\n"))
         assert old[0] == 0, "the twin's hole closed: %r" % (old,)
         assert old[2] == "✓ All CI jobs passed successfully!\n"
         assert new[0] == 1
@@ -165,7 +179,15 @@ def test_pointer_bump_is_the_exact_string_true() -> None:
 def test_arguments_are_ignored_by_both() -> None:
     old_env = diff.env_for(**all_green())
     new_env = diff.env_for(**all_green(), PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.twin_streams(TWIN, "bash %s --help extra" % TWIN, env=old_env, timeout=30)
+    old = diff.twin_streams(
+        TWIN,
+        "bash %s --help extra" % TWIN,
+        env=old_env,
+        timeout=30,
+        port=lambda: diff.bash_streams(
+            "python3 -m %s --help extra" % MODULE, env=new_env, timeout=30
+        ),
+    )
     new = diff.bash_streams("python3 -m %s --help extra" % MODULE, env=new_env, timeout=30)
     assert old == new
     assert old[0] == 0

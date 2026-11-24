@@ -86,7 +86,7 @@ jobs:
     name: Build account portal
     runs-on: ubuntu-latest
     # Checkout only against GITHUB_TOKEN; the private submodules come in on the
-    # cd-preset App token, and every deploy credential is Cloudflare/AWS/Stripe
+    # cd-preset App token, and every deploy credential is Cloudflare/AWS
     # from Bitwarden. No GitHub API write anywhere in this file.
     permissions:
       contents: read
@@ -295,10 +295,6 @@ jobs:
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_TURNSTILE_SECRET_KEY > BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
-            STRIPE_WEBHOOK_SECRET_ASIA > BWS_STRIPE_WEBHOOK_SECRET_ASIA
-            STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
-            STRIPE_WEBHOOK_SECRET_US > BWS_STRIPE_WEBHOOK_SECRET_US
             OBS_OTLP_CREDENTIALS_ASIA > BWS_OBS_OTLP_CREDENTIALS_ASIA
             OBS_OTLP_CREDENTIALS_EU > BWS_OBS_OTLP_CREDENTIALS_EU
             OBS_OTLP_CREDENTIALS_US > BWS_OBS_OTLP_CREDENTIALS_US
@@ -464,24 +460,6 @@ jobs:
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.turnstile_drift
 
-      # Preflight: the production price catalog is only updated by a manual
-      # stripe-sync run per regional Stripe account. Fail the deploy if the
-      # target account's lookup keys drift from shared PLAN_PRICING, so code
-      # expecting new prices can never ship before the sync ran.
-      - name: Verify Stripe prices match shared constants (${{ matrix.id }})
-        working-directory: private/account
-        env:
-          # ONE live key serves all three regions since the collapse, so the old
-          # STRIPE_KEY_{EU,US,ASIA} fan-in bound the same value three times and the
-          # `${!key_var}` indirection chose between identical things -- on a SUFFIX
-          # that resolve-account-deploy-config.sh no longer emits, so it was empty
-          # and the lookup silently found nothing. Deleted rather than repaired:
-          # the indirection had no remaining purpose, and it was one of the runtime
-          # -constructed names that no static scan can see. The shared Worker set
-          # takes live billing, so the check reads the live key, never the sandbox.
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
-        run: npx tsx scripts/check-live-prices.ts
-
       # ---- Proxy Worker and console executor (agent/plans/PLAN-proxy-cd-six-targets.md
       # Design item 9). Forward: record-before, a bootstrap proxy deploy only when
       # the proxy Worker does not exist yet, the account Worker and its secrets,
@@ -576,8 +554,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # Region-aware secrets: resolved via indirection from SUFFIX. TARGET is
           # `stable`, the script's name for the shared Worker set, which takes
-          # the live Stripe key and the region's webhook secret, the _STABLE
-          # backup pair and bucket, and the region's _STABLE config server key
+          # the _STABLE backup pair and bucket, and the region's _STABLE config server key
           # and KEK (US and ASIA carry their edge values under that name, see
           # the fetch above).
           SUFFIX: ${{ matrix.secretSuffix }}
@@ -593,7 +570,7 @@ jobs:
           # Restored 2026-09-02 from the Bitwarden map, which is the naming
           # authority: every name below that the store holds is exported under
           # EXACTLY the stored spelling. HEAD carried an older contract
-          # (SECRET_ED25519_*, STRIPE_KEY_EU) that the deploy script no longer reads.
+          # (SECRET_ED25519_*) that the deploy script no longer reads.
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           FREE_LICENSE_HMAC_KEY: ${{ env.BWS_FREE_LICENSE_HMAC_KEY }}
@@ -638,10 +615,6 @@ jobs:
           SELLER_REGISTER_NAME: ${{ env.BWS_SELLER_REGISTER_NAME }}
           SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
           SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET_ASIA: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_ASIA }}
-          STRIPE_WEBHOOK_SECRET_EU: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
-          STRIPE_WEBHOOK_SECRET_US: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_US }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_account_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job
         if: always()

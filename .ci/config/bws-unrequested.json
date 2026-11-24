@@ -234,23 +234,23 @@
     },
     "STRIPE_PUBLISHABLE_KEY": {
       "kind": "no-github-twin",
-      "reason": "public by design and there is no client-side Stripe integration at all -- payment is server-created hosted Checkout, so no publishable key ever reaches a browser."
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
     },
     "STRIPE_SANDBOX_PUBLISHABLE_KEY": {
       "kind": "no-github-twin",
-      "reason": "public by design; same reasoning as the live publishable key."
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
     },
     "STRIPE_SANDBOX_WEBHOOK_SECRET_ID": {
       "kind": "no-github-twin",
-      "reason": "an endpoint identifier, and a useless one: setup-sandbox.ts:76-125 destroys and re-mints the preview endpoint on every run."
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
     },
     "STRIPE_WEBHOOK_SECRET": {
       "kind": "no-github-twin",
-      "reason": "unsuffixed leftover holding the EU endpoint's value; deploys use the regional entries. The name is a homograph across three namespaces -- never find-and-replace across it."
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
     },
     "STRIPE_WEBHOOK_SECRET_ID": {
       "kind": "no-github-twin",
-      "reason": "an endpoint identifier, not a credential."
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
     },
     "ROOT_API_TOKEN_EU": {
       "kind": "no-github-twin",
@@ -499,6 +499,46 @@
     "BENCH_STORE_MASTER_PASSWORD_ASIA": {
       "kind": "no-github-twin",
       "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-asia` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "STRIPE_SANDBOX_SECRET_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "STRIPE_SANDBOX_WEBHOOK_SECRET": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "STRIPE_SECRET_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "STRIPE_WEBHOOK_SECRET_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "STRIPE_WEBHOOK_SECRET_EU": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "STRIPE_WEBHOOK_SECRET_US": {
+      "kind": "no-github-twin",
+      "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
+    },
+    "BENCH_STORE_RECOVERY_CODE_EU": {
+      "kind": "no-github-twin",
+      "reason": "The eu bench config store's recovery code, read by agents through the bench-login-eu profile (secret-supply.json binds it as BENCH_STORE_RECOVERY_CODE); no workflow fetches it."
+    },
+    "MAIL_ALERTS_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The alerts mailbox password written by the mailbox setup (agent/plans/PLAN-email-sender-separation.md H1) for the operator's mail client; no workflow, profile or script reads it."
+    },
+    "MAIL_CONTACT_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The contact mailbox password written by the mailbox setup (agent/plans/PLAN-email-sender-separation.md H1) for the operator's mail client; no workflow, profile or script reads it."
+    },
+    "PREVIEW_NAME_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The HMAC key deploy/preview_name.py and housekeeping/cleanup_versions.py derive pv-<word> preview Worker names from (agent/plans/PLAN-preview-signer.md N3). Neither workflow supplies it yet, so the cleanup reports it missing and keeps every word-named preview until a workflow fetches it."
     }
   },
   "no_fetch_jobs": {}

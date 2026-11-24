@@ -61,7 +61,7 @@ inputs:
       One secret per line, by NAME as spelled in .ci/config/bws-secret-map.json.
       Optionally `NAME > ENV_NAME` to export under a different variable name,
       which is how one Bitwarden secret serves several regional slots
-      (STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU). Without `>` the env var is
+      (AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID). Without `>` the env var is
       the name itself.
     required: true
 

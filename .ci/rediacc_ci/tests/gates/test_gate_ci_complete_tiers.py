@@ -44,7 +44,6 @@ FASTPATH_SKIPS = {
     "RESULT_UPDATE_FLOW_TEST": "skipped",
     "RESULT_DEPLOY_PREVIEW": "skipped",
     "RESULT_SMOKE_TEST_PREVIEW": "skipped",
-    "RESULT_STRIPE_SANDBOX": "skipped",
     "RESULT_PACKAGE_TESTS": "skipped",
     # label-guide is PR-gated, so a pointer-bump run skips it like the rest.
     "RESULT_LABEL_GUIDE": "skipped",
@@ -65,7 +64,6 @@ TWIN_BASELINE_NAMES = frozenset(
         "RUN_SH_TESTS",
         "QUALITY",
         "REVIEW_GATE",
-        "STRIPE_SANDBOX",
         "PACKAGE_TESTS",
         "CHECK_RELEASE_STATE",
         "STAGE_ARTIFACTS",
