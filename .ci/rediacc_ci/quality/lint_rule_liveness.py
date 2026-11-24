@@ -39,7 +39,8 @@ import pathlib
 import subprocess
 import sys
 
-DRIVER = "lint-rule-liveness.mjs"
+# One repo-relative literal, so gate_tree_writes resolves the spawn edge to the driver (a path joined from separate parts is not followed).
+DRIVER = ".ci/scripts/quality/lint-rule-liveness.mjs"
 
 # Checked BEFORE node starts. Without scripts/lib/rule-host.ts there is nothing to run the custom/i18n/i18n-source rules with; without source-rules.ts there is no universe of ruleIds to prove; without biome-plugins/ or the biome binary there is no GritQL half to prove either. Either way the gate would otherwise report that zero enabled rules or plugins are unhealthy, which is exactly what a healthy repo looks like.
 REQUIRED = (
@@ -66,7 +67,7 @@ def main(argv=None):
 
     # cwd is the repo root on purpose: several rules resolve their paths against process.cwd() rather than against the linted file, and a wrong cwd makes some of them throw and others silently no-op -- i.e. look dead.
     return subprocess.run(
-        ["node", str(root / ".ci" / "scripts" / "quality" / DRIVER)],
+        ["node", str(root / DRIVER)],
         cwd=str(root),
         check=False,
     ).returncode

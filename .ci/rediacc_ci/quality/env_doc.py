@@ -76,12 +76,16 @@ def write(path: pathlib.Path, obj: dict) -> bool:
     text = dump(obj)
     if path.is_file() and path.read_text(encoding="utf-8") == text:
         return False
+    # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(".%s.%d.tmp" % (path.name, os.getpid()))
     try:
+        # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
         tmp.write_text(text, encoding="utf-8")
+        # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
         os.replace(tmp, path)
     finally:
         if tmp.exists():
+            # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
             tmp.unlink()
     return True

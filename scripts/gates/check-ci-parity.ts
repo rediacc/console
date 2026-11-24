@@ -145,6 +145,9 @@ export interface Invocation {
  * names `check:version` -- identical bodies, different keys. A key-level
  * comparison reports those as breaks; a leaf-level one does not.
  */
+/** The lock wrapper a heavy gate's `run` starts with; the command after its `--` is what the gate runs. */
+export const HEAVY_LOCK_SCRIPT = '.ci/rediacc_ci/core_lease.py';
+
 export function resolveInvocations(
   cmd: string,
   u: ScriptUniverse,
@@ -180,6 +183,18 @@ export function resolveInvocations(
     let prog = toks[0] ?? '';
     let rest = toks.slice(1);
     // `npx tsx <file>` and `npx node <file>` RUN THE FILE, the way `tsx <file>` does. gate-bind spells a local bin through npx in a workflow step (a step has no node_modules/.bin on PATH), and before this arm the resolver read `tsx` as a bare tool run through npx, so a direct-run .ts gate resolved to the leaf `tsx` and its correct `leaves:` read as a pointer to a step that runs something else.
+    // The machine-wide heavy lock wraps a gate's command without changing what it runs: `python3 .ci/rediacc_ci/core_lease.py heavy-lock -- <command>` is `<command>`, so every leaf below `--` is a leaf of the entry. Read as a plain `python3 <script>` it resolved to core_lease.py alone and the gate's own closure went unread.
+    if (
+      (prog === 'python3' || prog === 'python') &&
+      rest[0] === HEAVY_LOCK_SCRIPT &&
+      rest[1] === 'heavy-lock' &&
+      rest[2] === '--' &&
+      rest.length > 3
+    ) {
+      toks = rest.slice(3);
+      prog = toks[0] ?? '';
+      rest = toks.slice(1);
+    }
     if (prog === 'npx') {
       const i = rest.findIndex((a) => !a.startsWith('-'));
       if (i >= 0 && (rest[i] === 'tsx' || rest[i] === 'node')) {
@@ -731,6 +746,24 @@ function control(): void {
     // CONTROL: a bare tool run through npx is still the tool, so the arm cannot widen to every npx run.
     if (leaves('npx biome check .')[0] !== 'biome') {
       fail('a bare tool run through npx stopped resolving to the tool');
+    }
+    // The heavy-lock wrapper is transparent: the command after `--` supplies the leaf, and a wrapper with a different script or verb is still the script it names.
+    if (
+      leaves(
+        'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npx tsx scripts/gen/gen-x.ts'
+      )[0] !== 'scripts/gen/gen-x.ts'
+    ) {
+      fail('the heavy-lock wrapper hides the command it wraps');
+    }
+    if (
+      leaves(
+        'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npx tsx scripts/gen/gen-x.ts'
+      ).includes('python3')
+    ) {
+      fail('the heavy-lock wrapper leaves the bare interpreter among the leaves');
+    }
+    if (leaves('python3 scripts/gen/gen-x.ts heavy-lock -- npx biome check .')[0] === 'biome') {
+      fail('a wrapper other than the heavy lock was read through');
     }
   }
 

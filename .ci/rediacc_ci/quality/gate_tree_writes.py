@@ -728,6 +728,8 @@ FIXTURE: dict[str, str] = {
     "c1/a/b/gate.mjs": "import fs from 'node:fs';\nimport path from 'node:path';\nconst HERE = import.meta.dirname;\nconst ROOT = path.resolve(HERE, '../../..');\nfor (const fx of [{ file: 'x.ts' }]) fs.appendFileSync(path.join(ROOT, fx.file), 'code');\nfs.writeFileSync(path.join(ROOT, 'private/account/src/__x.ts'), '');\n",
     "c1m/gate.mjs": "import fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\nconst ROOT = path.resolve(import.meta.dirname, '..');\nconst mirrorRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'biome-plugin-liveness-'));\nfor (const fx of [{ file: 'x.ts' }]) fs.writeFileSync(path.join(mirrorRoot, fx.file, ROOT), '');\n",
     "c2/gate.py": 'import pathlib\n\nfrom rediacc_ci import paths\n\nprobe = pathlib.Path(paths.repo_root()) / "enum_probe.py"\nprobe.write_text("x")\n',
+    "c2s/gate.py": 'import pathlib\nimport tempfile\n\nfrom rediacc_ci.quality import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
+    "c2u/gate.py": 'import pathlib\nimport tempfile\n\nfrom elsewhere import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.somewhere_else()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
     "c2m/gate.py": 'import pathlib\nimport tempfile\n\nwith tempfile.TemporaryDirectory() as tmp:\n    root = pathlib.Path(tmp)\n    (root / ".github").mkdir(parents=True)\n',
     "c3/gate.py": 'import shutil\n\nfrom rediacc_ci import paths\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(paths.repo_root())\n',
     "c3m/gate.py": 'import shutil\nimport tempfile\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(tempfile.mkdtemp())\n',
@@ -763,6 +765,8 @@ CONTROL_LOCK: list[dict] = [
     {"id": "c1m", "run": "node c1m/gate.mjs", "gate": True},
     {"id": "c2", "run": "c2/gate.py", "gate": True},
     {"id": "c2m", "run": "c2m/gate.py", "gate": True},
+    {"id": "c2s", "run": "c2s/gate.py", "gate": True},
+    {"id": "c2u", "run": "c2u/gate.py", "gate": True},
     {"id": "c3", "run": "c3/gate.py", "gate": True},
     {"id": "c3m", "run": "c3m/gate.py", "gate": True},
     {"id": "c4", "run": "c4/entry.py", "gate": True},
@@ -860,6 +864,16 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
             record,
             "C2': `root = pathlib.Path(tmp)` is green whatever it is called",
             not _red(res, "c2m") and _buckets(res, "c2m") == ["SAFE"],
+        )
+        _call(
+            record,
+            "C2 (seams): a temp dir under `seams.system_temp_base()` is green",
+            not _red(res, "c2s") and set(_buckets(res, "c2s")) == {"SAFE"},
+        )
+        _call(
+            record,
+            "C2 (unknown base): a temp dir under a base this analyzer cannot resolve is still red",
+            bool(_red(res, "c2u")),
         )
         _call(
             record,
