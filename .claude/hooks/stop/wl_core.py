@@ -1300,7 +1300,9 @@ try:
     _resprofile.install()
 except Exception as _profiler_exc:
     # Only Exception: SystemExit and KeyboardInterrupt are the hook's own to raise and must propagate. The failure is named once on stderr and never changes the exit code or stdout of the hook it measures.
-    sys.stderr.write(
-        "wl_core: resprofile profiler not armed (%s: %s)\n"
-        % (type(_profiler_exc).__name__, _profiler_exc)
-    )
+    # A closed or broken stderr cannot carry the line; the hook's exit code stays its own.
+    with contextlib.suppress(OSError, ValueError):
+        sys.stderr.write(
+            "wl_core: resprofile profiler not armed (%s: %s)\n"
+            % (type(_profiler_exc).__name__, _profiler_exc)
+        )
