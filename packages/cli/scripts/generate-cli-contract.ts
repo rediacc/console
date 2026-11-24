@@ -489,6 +489,11 @@ const commands: ContractCommand[] = walked.map((w) => {
 
   const summary = resolveSummary(w.pathKey, liveCommand.summary());
   const summaryKey = summary ? resolveSummaryKey(w.path, summary) : null;
+  if (summary && summaryKey === null) {
+    curationProblems.push(
+      `${w.pathKey}: summary has no English key. Add commands.<path>.descriptionShort with the same text`
+    );
+  }
   const severity = resolveSeverity(w.pathKey);
   const preview = resolvePreview(w.pathKey, options);
 
