@@ -48,7 +48,7 @@ export type McpErrorCode = McpLayerErrorCode | (string & {});
 
 const SURFACES: ReadonlySet<string> = new Set(['proxy', 'executor', 'in-memory', 'local']);
 const BASES: ReadonlySet<string> = new Set(['caller-disk', 'terminal']);
-const ANNOTATION_KEYS = ['destructiveHint', 'readOnlyHint', 'idempotentHint', 'openWorldHint'];
+const ANNOTATION_KEYS = ['destructiveHint', 'readOnlyHint', 'idempotentHint', 'openWorldHint'] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

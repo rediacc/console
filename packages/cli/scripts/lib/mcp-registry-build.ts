@@ -51,7 +51,7 @@ export function surfaceDisagreement(
   const cmd = contract.commands.find((c) => c.pathKey === tool.commandPath);
   if (!cmd) return `${tool.name}: command "${tool.commandPath}" is not in the CLI contract`;
   if (tool.surface.kind === 'proxy' && !cmd.proxyCapable) {
-    return `${tool.name}: mcpSurface is proxy but "${tool.commandPath}" is not proxyCapable (${cmd.proxyBlockedReason ?? 'no reason'})`;
+    return `${tool.name}: mcpSurface is proxy but "${tool.commandPath}" is not proxyCapable${cmd.proxyBlockedReason ? ` (${cmd.proxyBlockedReason})` : ''}`;
   }
   if (tool.surface.kind !== 'proxy' && cmd.proxyCapable) {
     return `${tool.name}: mcpSurface is ${tool.surface.kind} but "${tool.commandPath}" is proxyCapable; mark it proxy`;
@@ -60,8 +60,8 @@ export function surfaceDisagreement(
 }
 
 function inputSchemaOf(tool: ToolDef): Record<string, unknown> {
-  const { $schema: _drop, ...schema } = z.toJSONSchema(z.object(tool.schema as z.ZodRawShape));
-  return schema;
+  const json = z.toJSONSchema(z.object(tool.schema as z.ZodRawShape));
+  return Object.fromEntries(Object.entries(json).filter(([key]) => key !== '$schema'));
 }
 
 function entryOf(tool: ToolDef): RegistryEntry {
