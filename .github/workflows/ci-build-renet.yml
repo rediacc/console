@@ -711,7 +711,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-renet, extract-renet]
     # Plain checkout, an artifact from this same run and the local docker
-    # daemon. No registry, no secrets, no GitHub API.
+    # daemon. No registry credential, no secrets, no GitHub API; the image
+    # build's base image (workers/proxy/Dockerfile, a digest-pinned node:slim)
+    # is one anonymous Docker Hub pull.
     permissions:
       contents: read
     if: ${{ !cancelled() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success') }}
