@@ -540,9 +540,6 @@ def _planbind():
     return importlib.import_module("wl_planbind")
 
 
-#: The line `wl_planbind.render` closes every refusal with. `worklist.py --plan-revive` refuses anything that is not a compacted or parked record ("is not a record (its Status is not compacted or parked)"), so on a plain plan the line names an exit that does not open.
-
-
 def _is_record(text: str) -> bool:
     """`wl_planrec.is_record`, the predicate `--plan-revive` itself refuses on, imported by name at call time like `_planbind`."""
     paths.on_sys_path(paths.hooks_stop_dir())

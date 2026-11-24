@@ -828,7 +828,12 @@ _BOX_RE = re.compile(r"^\s*[-*+] \[[ xX?>]\]")
 def _bare(tok):
     """A correction token without the markdown and sentence punctuation around it."""
     # A leading `.` belongs to the path (`.ci/`, `.claude/`), so only quotes and brackets come off the front; sentence punctuation comes off the end.
-    return tok.strip("`'\"()").rstrip(".,;:")
+    # Stripped until nothing moves: a closing backtick followed by a full stop (`` `X`. ``) needs the stop off before the backtick can come off (review 5a0ffe4f.1).
+    while True:
+        bare = tok.strip("`'\"()").rstrip(".,;:")
+        if bare == tok:
+            return bare
+        tok = bare
 
 
 def corrections_for(lines, idx):
@@ -1247,6 +1252,11 @@ def selftest(root, drift=False):
         ck(
             "a correction of a dot-leading path (.ci/, .claude/) excuses it: the leading dot is part of the path, not punctuation",
             len(fx_problems([dot_tick])) == 1 and fx_problems([dot_tick, dot_fix]) == [],
+        )
+        dot_stop = "    (corrected 2026-11-23, fx) `.ci/lib.txt:99` now at `.ci/lib.txt:2`."
+        ck(
+            "a correction whose replacement is followed by a closing backtick and a full stop still resolves (review 5a0ffe4f.1)",
+            fx_problems([dot_tick, dot_stop]) == [],
         )
         ck(
             "CONTROL: a correction whose replacement does NOT resolve excuses nothing",
