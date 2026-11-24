@@ -3126,7 +3126,8 @@ def test_gc_discard_dirty_names_the_rules_that_still_keep_the_tree(repo):
 
 SEED_KEYS = "private/account/.cache/public-keys.env"
 KEYS_SOURCE = (
-    "# rediacc public-key cache\n"
+    "# rediacc public-key cache v2: production store entries only\n"
+    "# note: BWS_NOTE_SECRET=commented\n"
     "ACCOUNT_ED25519_PUBLIC_KEY=pubA\n"
     "ACCOUNT_X25519_PUBLIC_KEY=pubB\n"
     "ACCOUNT_ED25519_PRIVATE_KEY=secret\n"
@@ -3163,6 +3164,8 @@ def test_seed_public_keys_copies_the_public_lines_and_drops_the_rest(tmp_path):
     assert "ACCOUNT_X25519_PUBLIC_KEY=pubB" in copied
     assert "secret" not in copied
     assert "BWS_ACCESS_TOKEN" not in copied
+    assert copied.startswith("# rediacc public-key cache v2")
+    assert "commented" not in copied, "a free comment line may carry a secret and does not travel"
 
 
 def test_seed_public_keys_controls(tmp_path):

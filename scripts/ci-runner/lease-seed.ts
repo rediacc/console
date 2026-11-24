@@ -102,7 +102,7 @@ export function seedReceipt(lease: string, live: string): string {
   return `${RECEIPT}: copied from the main checkout for --narrow`;
 }
 
-/** Public keys only (the account Ed25519 and X25519 public halves: comment lines and `ACCOUNT_*_PUBLIC_KEY=` lines are kept, any other line is dropped, so the copy holds nothing secret whatever the source file grows), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
+/** Public keys only (the account Ed25519 and X25519 public halves: the cache's version header comment and `ACCOUNT_*_PUBLIC_KEY=` lines are kept, any other line, a comment included, is dropped, so the copy holds nothing secret whatever the source file grows), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
 const PUBLIC_KEYS = 'private/account/.cache/public-keys.env';
 
 export function seedPublicKeys(lease: string, live: string): string {
@@ -120,11 +120,15 @@ export function seedPublicKeys(lease: string, live: string): string {
   return `${PUBLIC_KEYS}: copied from the main checkout`;
 }
 
-/** The lines of a public-key cache that may travel: comments and `ACCOUNT_*_PUBLIC_KEY=` assignments. */
+/** The lines of a public-key cache that may travel: the version header (`resolve_renet_account_key` reads the first line to accept the cache) and `ACCOUNT_*_PUBLIC_KEY=` assignments. A free comment is dropped, since it could carry anything. */
 export function publicKeyLines(text: string): string[] {
   return text
     .split('\n')
-    .filter((line) => line.startsWith('#') || /^ACCOUNT_[A-Z0-9_]*_PUBLIC_KEY=/.test(line));
+    .filter(
+      (line) =>
+        line.startsWith('# rediacc public-key cache') ||
+        /^ACCOUNT_[A-Z0-9_]*_PUBLIC_KEY=/.test(line)
+    );
 }
 
 export function seedLease(lease: string, live: string, commit: string): string[] {
