@@ -1,19 +1,22 @@
-## SESSION d778be9d 2026-11-22T04:36:52Z
+## SESSION d778be9d 2026-11-24T07:27:00Z
 
-# STATE d778be9d (2026-11-22 ~04:45Z)
+# STATE d778be9d (2026-11-24 ~07:35Z, effort high)
 
 ## Big pieces
-- PR #605 (landing /home/developer/console-landing, 1104-1): pushed up to 727a01071; run 44938534372 attempt 1 all green except a mac upload timeout; attempt 2 re-ran the preview smoke and hit "Repo license issuance: Inner HTTP 500". Cause: previews can never get a licence signed (preview D1 vs signer-bench-eu reading account-bench, host allowlist) and refusals surfaced as 500. Landed in landing, NOT pushed yet: account 76fb934 + gitlink b69748d25 (coded signer refusals, #8e42e148), 468f2c835 (www comment), 0226e1bd7 (preview smoke skips 3 licence checks until PLAN-preview-signer T1).
-- Security gap (PLAN-preview-signer Context 11): previews bind signer-bench-eu (production key) with the shared tier; removing the binding needs an account "signerless" mode. Writer aa37f33095e0a697c (#855d7340) doing account signerless mode + deploy_www unwire.
-- Operator ruling ASKED:2026-11-22T04:23Z "Per-preview signer, as a plan": PLAN-preview-signer committed 4e2c352b4, QUEUE Promoted 87.
-- Dev branch 1121-1: many fixes landed today; dev ci:quick still red on plan citations, guard-mutations (load/limit), PR-state reds; backup push needed for the devcontainer image (6359c982.1, #c276a9df).
+- PR #605 MERGED 2026-11-22T15:30Z (session ace763dd finished it); all d778be9d work is in main (preview signerless e3e31719e + account 62c35fa, coded signer refusals 76fb934, smoke skip 0226e1bd7). No PR open; landing tree on main with modified submodule pointers (not this session's). Release at the merged sha not green yet.
+- Operator 2026-11-24: this session now carries ALL work, no leftovers. ace763dd is PAUSED (06:03Z) and holds the former d778be9d items; worklist.py --migrate d778be9d ace763dd refused as LIVE until ~08:10Z (brief 90 min). Its plan: agent/ace763dd/STATE.md.
+- Landed from ace763dd leases: c3b992ee52 2b7b88d98d 8c331e3318 52a4073829 838416b29f. Held tree agent-a2c20e76d194a9769 (old draft cb8283e, superseded by account 4c6f5848): release after migration, gc --drop.
+- Running: #65313b5a writer ae8007ceb74e34a96 ports 6 PLAN-preview-signer commits (N2 2df4a7f5, D1 d2efe573, D2 ae54f093); #f4665baf agent adc0cd74982cfdd65 fixes box 0e4aa275 so done plans move; #01fa01bc writer adc913dd456c3f5bf PLAN-armed-actions AA1+AA2.
+- writers-now round /tmp/writers-now/1121-1-20261124T0724Z.md: 37 seed findings with no box, grouped N1-N14 (most in private/account; N6 renet; N10 S19 Stripe secret retirement needs an operator decision).
 
 ## Owed ticks
-- PLAN-simple-two-tree-loop B4 c098ad09 and B7 445f8e25 partial (residue #814b5237). PLAN-ciquick-cpu PRESENT checks J0 273b8bc6, L1 1f6b75da, W4.2 51ceeb4f, W2.5 3cc088a8; L0 c71522b8 partial (#2bb0442a).
-- #8e42e148, #23d7f955, #e9c304da: landing-branch only; tick after promote.
+- PLAN-armed-actions AA1 da8a433a, AA2 (writer), AA3-AA5 after, AA6 e8c3b0f2 lead live proof.
+- PLAN-preview-signer N2 2df4a7f5, D1 d2efe573, D2 ae54f093 after the port lands.
+- PLAN-simple-two-tree-loop B4 c098ad09, B7 445f8e25 partial (residue in ace763dd's items after migration).
 
 ## Next action
-1. When writer aa37f33095e0a697c reports: land its account commit in the landing account branch (git -C private/account cherry-pick -x <sha>; objects are shared) and bump the gitlink; land its console commit in both trees; landing ci:quick; push account (TURBO_PUSH_REASON red-fix) then console; watch CI with ci-trace --wait.
-2. On green: wl_review.py --check, wl_prreview, /pr-merge.
-3. Dev branch: stale plan citations (list in #0c167815), guard-mutations idle run, ci:quick, backup push, pin the new devcontainer digest.
-4. #814b5237 residue (B4/B7/B10 leftovers, B9 prose).
+1. Land each writer report; commit the plan-move agent's edits after its gates pass.
+2. Start review-finding writers for N1-N14 (account cluster, console cluster, renet N6); park S19 as an operator [?].
+3. After AA1+AA2 land: AA3, AA4, AA5 writers; then AA6.
+4. ~08:10Z migrate ace763dd, then its Next action list.
+5. One dev ci:quick, then git push -u origin 1121-1 (backup).
