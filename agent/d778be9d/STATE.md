@@ -13,6 +13,8 @@
 - #0f42f15e NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key and drop its tracked-credentials baseline entry.
 
 ## Delegated
+- a95a8df7c09adb32b: review findings 9f76a380.1, 9f76a380.3, facbfc93.1 (lease; land, mark fixed).
+- aab40f730dd809e85 #0452dd84: real writers-now survey /tmp/writers-now/1121-1-20261124T1737Z-real.md.
 - aa99a2f0968abb157 #5435843f red-gate group C (+ secret-supply long lines, cli-examples/command-tree).
 - aa4b0ba0c89fb92c2 #eed6e757 writers-now-due requires a real survey.
 
