@@ -276,6 +276,19 @@ CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
         ["PLAN-e.md is exclusive"],
     ),
     (
+        "h1d CONTROL: a landing-cut Handover brief that also serves an exclusive plan through an item ref keeps that refusal (not a file rule)",
+        {
+            **HANDOVER_WORLD,
+            "writers": ["Plan: PLAN-f.md"],
+            "items": [E_ITEM],
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF + "\nwork #e0e0e0e0"),
+        2,
+        ["PLAN-e.md is exclusive", "cannot start while other plans are live"],
+    ),
+    (
         "h2 a Handover brief whose lease was cut from the development tree is judged by the plan rules",
         {
             **HANDOVER_WORLD,

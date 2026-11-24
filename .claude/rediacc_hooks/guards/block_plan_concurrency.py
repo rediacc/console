@@ -44,6 +44,9 @@ CHAIN = "pre-agent"
 OWN_SUITE = True
 ORDER = 3
 
+# The refusal kinds of `wl_planconc.spawn_verdict` that are file rules, the only ones a landing-cut handover is admitted past (rule 7).
+HANDOVER_WAIVED_KINDS = frozenset(("mutex", "overlap"))
+
 __getattr__ = tables("block_plan_concurrency", "FIXTURES", "ENVS", "EDGE_CASES")
 
 # The mutex refusal, planted away: the differential's mutex EDGE_CASE must then stop speaking.
@@ -234,8 +237,8 @@ def run(event):
                 root=root,
                 isolated=isolated,
             )
-        if not verdict.allow and admitted_lease:
-            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, and a planless spawn meets only file rules here (an exclusive plan's mutex is over its files), so none refuses it; the claim row is still appended.
+        if not verdict.allow and admitted_lease and verdict.kind in HANDOVER_WAIVED_KINDS:
+            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, so the FILE rules (an exclusive plan's mutex, an Owns overlap) do not refuse it; the claim row is still appended. Any other refusal (a brief that also serves a plan through an item ref, a missing Owns on such a plan) is not a file rule and stands.
             verdict = X.Verdict(True, "handover", (), verdict.note)
         return verdict
 
