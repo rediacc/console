@@ -115,15 +115,23 @@ describe('agent-refused options', () => {
     expect(countSites('  if (isAgentEnvironment()) {\n  agent: isAgentEnvironment,\n')).toBe(2);
   });
 
+  // The refusing commands that are not MCP tools at all. Exact, so a tool renamed or mapped wrongly shows up as a new entry here, and a command that becomes a tool leaves the list and its schema is checked (review 2b807c97.1).
+  const NOT_MCP_TOOLS = ['config edit', 'config field get', 'repo permission grant', 'repo prune'];
+
   it('exposes no refused option in any MCP tool schema', () => {
     const tools = new Map(buildAllTools().map((tool) => [tool.name, tool]));
+    const unmapped = new Set<string>();
     for (const site of Object.values(CLASSIFIED)) {
       for (const { command, option } of site.refuses) {
         const tool = tools.get(command.replaceAll(' ', '_'));
-        if (!tool) continue;
+        if (!tool) {
+          unmapped.add(command);
+          continue;
+        }
         expect(Object.keys(tool.schema), `${command} advertises --${option}`).not.toContain(option);
       }
     }
+    expect([...unmapped].sort((a, b) => a.localeCompare(b))).toEqual(NOT_MCP_TOOLS);
   });
 
   it('keeps config_show a tool without reveal (control: the check sees the tool)', () => {
