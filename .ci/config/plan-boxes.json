@@ -763,18 +763,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 27,
+      "open": 9,
+      "done": 29,
       "open_sigs": [
         "092a3f70",
         "5cdc0693",
         "64e50145",
-        "782a0661",
         "786d5fb9",
         "81e84eee",
         "8b0b595e",
         "b825470a",
-        "bf120930",
         "c71522b8",
         "d9ea085a"
       ],
@@ -789,6 +787,7 @@
         "675a2e8e",
         "6c7831aa",
         "7495bae1",
+        "782a0661",
         "7b08f012",
         "812f66ef",
         "824b964d",
@@ -799,6 +798,7 @@
         "a7ed2bb8",
         "b32de811",
         "bcfd79af",
+        "bf120930",
         "cabc2dbe",
         "cea31a23",
         "d4495ac9",
@@ -1250,21 +1250,22 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 0,
+      "open": 2,
+      "done": 8,
       "open_sigs": [
+        "76161d51",
+        "c0384c17"
+      ],
+      "done_sigs": [
         "244f241d",
         "3021c8d2",
         "545050ab",
         "7088d68a",
-        "76161d51",
         "aae9d062",
-        "c0384c17",
         "c70661a0",
         "ca2d9dce",
         "dce46532"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-console-private.md": {
       "status": "proposed",

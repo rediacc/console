@@ -494,7 +494,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
-| `agent/plans/PLAN-ciquick-cpu.md` | approved | 211 | 11 | 27 | 37930 |
+| `agent/plans/PLAN-ciquick-cpu.md` | approved | 213 | 9 | 29 | 38472 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 34 | 0 | 7 | 7626 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
@@ -515,7 +515,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |
-| `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
+| `agent/plans/PLAN-console-ia.md` | approved | 100 | 2 | 8 | 18211 |
 | `agent/plans/PLAN-console-private.md` | proposed | 335 | 32 | 0 | 57212 |
 | `agent/plans/PLAN-console-run-index.md` | approved | 131 | 8 | 7 | 26142 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |

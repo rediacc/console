@@ -47,38 +47,46 @@ D6. **Collision test, not a gate.** private/account/web/src/lib/__tests__/nav-la
 
 ## Tasks
 
-- [ ] IA1 [writer] Strings (D1): the five label changes, the three heading changes, `console:navStorages` deleted, and every new key of D1 in English, then the same in the 12 other locales naturalized by a sonnet writer per docs/i18n/CONVENTIONS.md; private/account/e2e/tests/27-console/27-01-console.test.ts:307 now finds `Config file`, and the two backup-storage unit tests find `Backup quota`.
+- [x] IA1 [writer] Strings (D1): the five label changes, the three heading changes, `console:navStorages` deleted, and every new key of D1 in English, then the same in the 12 other locales naturalized by a sonnet writer per docs/i18n/CONVENTIONS.md; private/account/e2e/tests/27-console/27-01-console.test.ts:307 now finds `Config file`, and the two backup-storage unit tests find `Backup quota`.
   Owns: private/account/web/src/i18n/locales/*/nav.json, private/account/web/src/i18n/locales/*/console.json, private/account/web/src/i18n/locales/*/backupStorage.json, private/account/web/src/i18n/locales/.translation-hashes.json, private/account/web/src/pages/__tests__/backup-storage-*.test.tsx, private/account/e2e/tests/27-console/27-01-console.test.ts
   Depends on: PLAN-console-contract-semantics.md#CS11.
   Accept: `npm run i18n:generate-hashes` then `npm run check:i18n:hashes`, `npm run check:i18n:completeness` and `npm run check:ci-i18n-naturalization` rc 0; `(cd private/account/web && npm test)` rc 0; `git grep -n navStorages -- private/account/web/src` prints nothing.
-- [ ] IA2 [writer] Classifier and badge (D2): `runsWhere()` and `RunsWhereBadge`, plus `useSummary()` and `useBlockedReason()` in contract-i18n.tsx reading `summaryKey` and `proxyBlockedReasonKey` with the English fields as fallback.
+    (ticked) 2026-11-24T12:47:10Z by d778be9d: landed account 50df1217 (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA2 [writer] Classifier and badge (D2): `runsWhere()` and `RunsWhereBadge`, plus `useSummary()` and `useBlockedReason()` in contract-i18n.tsx reading `summaryKey` and `proxyBlockedReasonKey` with the English fields as fallback.
   Owns: private/account/web/src/lib/runs-where.ts, private/account/web/src/lib/__tests__/runs-where.test.ts, private/account/web/src/components/console/RunsWhereBadge.tsx, private/account/web/src/lib/contract-i18n.tsx
   Depends on: PLAN-console-contract-semantics.md#CS11.
   Accept: `(cd private/account/web && npx vitest run src/lib/__tests__/runs-where.test.ts)` rc 0, asserting that the three classes partition every contract command, that each class matches its rule, and a fixture control per class (a config-plane interactive command lands in `terminal`).
-- [ ] IA3 [writer] All commands page (D3): three sections with terminal folded, `groupByPath()` sub-groups, summaries and badges on cards, the Config file link on browser cards, and search across sections.
+    (ticked) 2026-11-24T12:47:11Z by d778be9d: landed account 53355271 (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA3 [writer] All commands page (D3): three sections with terminal folded, `groupByPath()` sub-groups, summaries and badges on cards, the Config file link on browser cards, and search across sections.
   Owns: private/account/web/src/pages/console/Commands.tsx, private/account/web/src/lib/command-groups.ts, private/account/web/src/lib/__tests__/command-groups.test.ts, private/account/web/src/pages/console/__tests__/commands-page.test.tsx
   Depends on: IA1, IA2.
   Accept: `(cd private/account/web && npx vitest run src/lib/__tests__/command-groups.test.ts src/pages/console/__tests__/commands-page.test.tsx)` rc 0, covering section order, terminal folded by default, a sub-group formed only at two or more members, and a search hit inside terminal unfolding it.
-- [ ] IA4 [writer] Palette rows (D2, D3): the badge and the translated summary on every command row, ranking unchanged.
+    (ticked) 2026-11-24T12:47:12Z by d778be9d: landed account fecab172 (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA4 [writer] Palette rows (D2, D3): the badge and the translated summary on every command row, ranking unchanged.
   Owns: private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/components/console/__tests__/command-palette.test.ts
   Depends on: IA1, IA2.
   Accept: `(cd private/account/web && npx vitest run src/components/console/__tests__/command-palette.test.ts)` rc 0 with a row of each class rendering its badge.
-- [ ] IA5 [writer] Command page and form (D4): the badge in place of the raw plane badge, Run disabled for terminal-only commands with the translated contract reason, and `notProxyCapableHint` deleted from the 13 locales.
+    (ticked) 2026-11-24T12:47:13Z by d778be9d: landed account 3e51d42d (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA5 [writer] Command page and form (D4): the badge in place of the raw plane badge, Run disabled for terminal-only commands with the translated contract reason, and `notProxyCapableHint` deleted from the 13 locales.
   Owns: private/account/web/src/pages/console/CommandPage.tsx, private/account/web/src/components/console/CommandForm.tsx, private/account/web/src/components/console/__tests__/command-form-runs-where.test.tsx, private/account/web/src/i18n/locales/*/console.json
   Depends on: IA1, IA2.
   Accept: `(cd private/account/web && npx vitest run src/components/console/__tests__/command-form-runs-where.test.tsx)` rc 0: a terminal-only machine command (`repo sync upload`) and an `other`-plane command both render Run disabled with their own reason, a container command keeps Run enabled; `npm run check:ci-i18n-account-key-usage` rc 0.
-- [ ] IA6 [writer] Landing (D5): the domain grid replaced by the locked unlock call to action, the unlocked resource counts with links, the palette hint and the All commands entry.
+    (ticked) 2026-11-24T12:47:14Z by d778be9d: landed account 33c32477 (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA6 [writer] Landing (D5): the domain grid replaced by the locked unlock call to action, the unlocked resource counts with links, the palette hint and the All commands entry.
   Owns: private/account/web/src/pages/console/Console.tsx, private/account/web/src/pages/console/__tests__/console-landing.test.tsx
   Depends on: IA1, IA2.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/console-landing.test.tsx)` rc 0 with a locked case (call to action, no counts) and an unlocked case (counts equal to the fixture families, the All commands link carrying the contract's count).
-- [ ] IA7 [writer] Nav label collision test (D6) with the one O2 allowlist pair and a control fixture where "Config" and "Config file" in different groups fail.
+    (ticked) 2026-11-24T12:47:15Z by d778be9d: landed account f0c57d33 (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA7 [writer] Nav label collision test (D6) with the one O2 allowlist pair and a control fixture where "Config" and "Config file" in different groups fail.
   Owns: private/account/web/src/lib/__tests__/nav-label-collisions.test.ts
   Depends on: IA1.
   Accept: `(cd private/account/web && npx vitest run src/lib/__tests__/nav-label-collisions.test.ts)` rc 0 across 13 locales, and the test fails with the O2 allowlist row removed.
-- [ ] IA8 [writer] E2E for the new structure: All commands shows the three sections with terminal folded, a terminal-only command page shows Run disabled with its reason, and the landing shows the All commands entry.
+    (ticked) 2026-11-24T12:47:15Z by d778be9d: landed account 570d1a3b (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
+- [x] IA8 [writer] E2E for the new structure: All commands shows the three sections with terminal folded, a terminal-only command page shows Run disabled with its reason, and the landing shows the All commands entry.
   Owns: private/account/e2e/tests/27-console/27-01-console.test.ts
   Depends on: IA3, IA5, IA6.
   Accept: `npx playwright test tests/27-console/27-01-console.test.ts` in private/account/e2e rc 0 against the local account dev stack.
+    (ticked) 2026-11-24T12:47:16Z by d778be9d: landed account b43d586e (gitlink 8e87753bfc); account+web tsc rc 0, web console 597 passed, Web Console e2e 22 passed. DEPS-WAIVED per survey f8c0541b
 - [ ] IA9 [lead] Plan-record refresh after the plan file is committed: `npm run check:ci-plan-boxes -- --update` and `npm run check:ci-plan-record -- --update`.
   Depends on: none.
   Accept: both checks rc 0 after the regeneration and `npm run check:ci-prose-style` rc 0 on this file.
