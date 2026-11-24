@@ -20,11 +20,13 @@ SHARED_HOSTS = "@PREVIEW_HOST@"
 CERT_VALIDITY_DAYS = "7"
 CERT_MAX_TOTAL_ISSUANCES = "500"
 
+# A preview keeps no logs: the operator ruling of 2026-10-23 is that Cloudflare keeps no copy of any Worker's logs
+# (persist = false), and a Worker that keeps no copy must export to a destination. A preview has none, so its logs are off.
 [observability]
 enabled = true
 
 [observability.logs]
-enabled = true
+enabled = false
 invocation_logs = false
 
 # The preview's own account database: its subscriptions, read, and the delegation_certs cache, written.

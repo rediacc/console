@@ -151,6 +151,9 @@ export function crossChannelGuardProblem(
  * Region-and-channel fan-ins (`SUFFIXED_CHANNEL_PREFIXES`), counted when channelFanInFloor was
  * added: 1/0/0, one prefix (`ACCOUNT_CONFIG_SERVER_KEY`) in the account builder and none in the
  * other two. `ACCOUNT_BACKUP_STORE_KEK` raised the account builder to 2.
+ *
+ * Plain fan-ins in the account builder: 4 until the Stripe credentials left the deploy, 3 since
+ * (`AWS_SES_ACCESS_KEY_ID`, `AWS_SES_SECRET_ACCESS_KEY`, `OBS_OTLP_CREDENTIALS`).
  */
 const PAIRS: Pair[] = [
   {
@@ -158,7 +161,7 @@ const PAIRS: Pair[] = [
     builder: '.ci/rediacc_ci/deploy/set_account_worker_secrets.py',
     exportFloor: 35,
     readFloor: 25,
-    fanInFloor: 4,
+    fanInFloor: 3,
     channelFanInFloor: 2,
     channel: 'STABLE',
   },
