@@ -1,19 +1,19 @@
-## SESSION d778be9d 2026-11-24T21:57:57Z
+## SESSION d778be9d 2026-11-24T22:32:59Z
 
-# STATE d778be9d (2026-11-24 ~23:05Z, effort high, operator AWAY since ~20:55Z)
+# STATE d778be9d (2026-11-24 ~23:35Z, effort high, operator AWAY since ~20:55Z)
 
 ## Big pieces
-- Throttle landed (ed6cdfea86..894e0478ab); hot-guards writer adbced1bd6bfc5d74 (#342aec5f) caching block_commit_of_live_writer_file and block_plan_concurrency. Disk freed to 145G (go clean -cache). Load ~7.
-- Review 9a666914.1 CLASS: re-trace 9a66691457 narrowed 28 gates' path sets (proof /tmp/m/trace-proof.txt). Owner: re-trace writer af57af2e30689c63f (#e32de9b1): restore inputs, fix tracer, test, Fixes-Review trailer. Red-gate fixer adad7d5647ae0b548 (#909aa57a) told to leave it.
-- Landed tonight (ticked unless noted): CL-Q 9 boxes (CL12 partial: cli docs), FI6 (0107), AP4, AN5, RI11, FC7, CF7 server half (0108, partial), plus earlier AC2/AX/W1/T1/M1/R3/FN1/CL-K/AN/AI1-2/FI2/LM1-2/B4.
-- Running: CL13 translations a72d22c0773c58ae9 (#3ce4d86b; check:i18n red until it lands), CF7 page + review 4d406f1b.1 a505a7cbfc3cb2d0f, rmcp-decide D3 a4cedbc0087fbbcee (#ae1481db, tick needs DEPS-WAIVED), enterprise bench proof fixes afa1d2c40fd648c50 (#7595d34f; rerun V5 f2291749 and V8 966c5266 on bench after), plus the three above.
-- Account migrations used: 0104 ai_credits, 0105 security_incidents, 0106 forensics_incidents, 0107 device_code_elevated, 0108 config_policy_stepup_minimum.
+- Hourly writers-now rounds now real (cadence fix 913af37d87). Latest round db96eab1, survey /tmp/writers-now/1121-1-20261124T2202Z-r4.md (503 open boxes), rules /tmp/writers-now/db96eab1-rules.md. Next round due ~23:02Z+60.
+- Running writers (each leased in the worklist): CL-T2 rmcp-decide D4/D5 af86e9b1675781354; RV-ACC a7130cd735b1104fd; RV-A a3b8796d01ebe7b72; RV-B aa0ef9a670ae725db; CF7 page + CommandForm findings (4d406f1b.1, :180, contract-coverage:188) a505a7cbfc3cb2d0f; rmcp-decide D3 a4cedbc0087fbbcee; CL-E enterprise bench proofs afa1d2c40fd648c50 (then rerun V5 f2291749, V8 966c5266 on bench); CL13 translations a72d22c0773c58ae9 (resumed after API error; check:i18n red until it lands); hot guards adbced1bd6bfc5d74 (resumed); gate re-trace af57af2e30689c63f (owns review 9a666914.1 class: 28 narrowed gate path sets, proof /tmp/m/trace-proof.txt); red-gate fixer adad7d5647ae0b548.
+- Held (#4db4f961): RV-C, RV-E, RV-H, CL-AD1 DO17, CL-Q2, CL-V2 (AP2/AP5/AP8/AP9 need a DEPS-WAIVED ruling: ask operator when back).
+- API errors ("No response from API") killed 8 writers today; each resumed via SendMessage; Stop-hook resume-dead-agent check now names them.
+- Account migrations used: 0104-0108 (next free 0109). en console.json conflicts: union keys. Web tsc needs `npm run build` in packages/shared first.
 
 ## Owed ticks
-- Uncommitted plan ticks since 464d935dbf (AN5, RI11, FC7, CL-Q x9, FI6, AP4) + investigation rows: commit with plan-record/plan-boxes --update. #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
+- Partial: CL12 cdd211d1 (cli docs via CL13), CF7 d4e548d5 (page half), FI6 done, ciquick-cpu 64e50145 (re-trace), W3 c3833792 (W8 curator run). #e5dd564f #748b837e #7a8152c4 #ab9f5552 #135b55bf #5f4130cf.
 
 ## Armed
 - #9dd95005 NOT-BEFORE 2026-11-25T13:00Z park dead AWS_IAM_ADMIN_* bws entries. #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
-1. Commit the tick batch now. 2. Land each writer as it reports (account picks first; renumber migrations from 0109; union en console.json; rebuild packages/shared before web tsc). 3. After the fixer + re-trace land: CL-GATES (W3.3, CR1-CR5) and CL-AD; next hourly writers-now round ~22:58Z+60. 4. ci:quick; push.
+1. Land each writer as it reports (account first; migrations from 0109; tests; gitlink; investigate+plan-tick checking rc; review-mark Fixes-Review; gc). 2. When load < 24: start the held clusters. 3. After re-trace + fixer land: CL-GATES, DO1/DO3. 4. Commit tick batches; ci:quick; push.
