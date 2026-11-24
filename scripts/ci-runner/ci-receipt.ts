@@ -7,7 +7,7 @@
  *   npx tsx scripts/ci-runner/ci-receipt.ts fetch [--branch <b> ...] [--limit <n>]       (local)
  *   npx tsx scripts/ci-runner/ci-receipt.ts verify <file>                                 (local: the verifier on one file)
  *
- * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's own record instead: the writer reads `repos/<repo>/actions/jobs/<job.check_run_id>` through `gh api` on github.token (the lane holds `actions: read` for it) and takes each earlier step's conclusion by name. The receipt step runs under the standard guard, never `success()`, so no failed step can skip it, a drift step's included: the drift waiver reads a skipped step as passed, and test_release_nightly_drift_waiver.py holds every step after a drift step to `!cancelled()`. A failed or skipped gate is omitted and the rest of the lane is still receipted. A step whose record is missing, not yet completed, or whose name is not unique reads `unknown` and is omitted. The record must name this run and attempt and show the receipt step itself in progress, or the writer exits 1, since a record read from any other job is not this lane's outcome; a record it could not read at all is UNCHECKED and exits 1 too. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
+ * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's own record instead: the writer reads `repos/<repo>/actions/jobs/<job.check_run_id>` through `gh api` on github.token (the lane holds `actions: read` for it) and takes each earlier step's conclusion by name. The receipt step runs under the standard guard, never `success()`, so no failed step can skip it, a drift step's included: the drift waiver reads a skipped step as passed, and test_release_nightly_drift_waiver.py holds every step after a drift step to `!cancelled()`. A failed or skipped gate is omitted and the rest of the lane is still receipted. A step whose record is missing, not yet completed, or whose name is not unique reads `unknown` and is omitted. The record is fetched by this job's own `check_run_id` and must name this run and attempt and show the receipt step itself in progress, or the writer exits 1, so a wrong id is refused by those checks (a same-run, same-attempt record of a sibling lane that shows its own receipt step in progress is not told apart by them, only by the id); a record it could not read at all is UNCHECKED and exits 1 too. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
  *
  * FETCH. Recent completed `ci.yml` runs on the named branches (default: the current branch and main) are listed through `gh`, each run's `ci-receipt-*` artifact is downloaded, and every file is verified with `gh attestation verify <file> --repo rediacc/console --signer-workflow rediacc/console/.github/workflows/ci-quality.yml --source-digest <sha>` before anything is written. A verified file is stored content-addressed as `.ci/cache/ci-receipts/<sha256>.json`, byte for byte, and a prior the runner reads is written beside the local archive as `.ci/cache/receipts/ci-<tree>.json`. An unverifiable file is never stored. A run whose download failed for any reason other than "no such artifact" is UNCHECKED, and any unchecked run, refused file, or a fetch that stored nothing exits 1.
  *
@@ -218,7 +218,10 @@ export function signingJobs(workflow: string): string[] {
     // Any other inline value (an expression, a flow map spread over lines) cannot be read here, so it is named: a false name fails the signer check loudly, while a missed grant would let a job that runs code sign.
     if (value !== '') return true;
     const pad = ' '.repeat(indent);
-    return block.some((l) => l.startsWith(pad) && !l.startsWith(`${pad} `) && signs(pair(l)));
+    // A line the block does not read as `key: value` (a `write-all` scalar on the line after `permissions:`) is named, like any other shape this parser cannot read (review e7ce4979.1).
+    return block.some(
+      (l) => l.startsWith(pad) && !l.startsWith(`${pad} `) && (pair(l) === null || signs(pair(l)))
+    );
   };
   const blockAfter = (from: number, indent: number): string[] => {
     const out: string[] = [];
@@ -574,6 +577,16 @@ function laneHashes(
   });
 }
 
+/** Why a job record is not this run's and attempt's, or null. Only judged in Actions, where the run and attempt are known (review 60625cca.2). */
+export function jobRecordMismatch(
+  jobRun: JobRun,
+  run: { id: string; attempt: string },
+  inActions: boolean
+): string | null {
+  if (!inActions || (jobRun.runId === run.id && jobRun.attempt === run.attempt)) return null;
+  return `the job record names run ${jobRun.runId} attempt ${jobRun.attempt}, but this is run ${run.id} attempt ${run.attempt}; another job's outcomes are not this lane's`;
+}
+
 /**
  * The job record the writer judges outcomes from. In Actions it is always read live, `gh api repos/<GITHUB_REPOSITORY>/actions/jobs/<RECEIPT_JOB_ID>` with the token in GH_TOKEN (env, never argv); `--steps <file>` (a saved record) serves a local dry run only and is refused in Actions, where it would let a receipt name outcomes nothing observed.
  */
@@ -638,13 +651,9 @@ function write(args: string[]): number {
     );
     return 1;
   }
-  if (
-    process.env.GITHUB_ACTIONS === 'true' &&
-    (jobRun.runId !== run.id || jobRun.attempt !== run.attempt)
-  ) {
-    process.stderr.write(
-      `ci-receipt write: ${lane}: the job record names run ${jobRun.runId} attempt ${jobRun.attempt}, but this is run ${run.id} attempt ${run.attempt}; another job's outcomes are not this lane's\n`
-    );
+  const mismatch = jobRecordMismatch(jobRun, run, process.env.GITHUB_ACTIONS === 'true');
+  if (mismatch !== null) {
+    process.stderr.write(`ci-receipt write: ${lane}: ${mismatch}\n`);
     return 1;
   }
   const lo = laneOutcomes(steps, jobRun);
@@ -980,6 +989,23 @@ function coreCases(): { failures: string[]; count: number } {
       'error' in parseJobRun('{"steps": [{"name": "a"}]}'),
     'CONTROL: a record with no steps array, no JSON, or a step lacking its status is refused'
   );
+  const rec = { runId: '7', attempt: '2', steps: [] };
+  check(
+    jobRecordMismatch(rec, { id: '7', attempt: '2' }, true) === null &&
+      jobRecordMismatch(rec, { id: '8', attempt: '2' }, true) !== null &&
+      jobRecordMismatch(rec, { id: '7', attempt: '3' }, true) !== null &&
+      jobRecordMismatch(rec, { id: '8', attempt: '3' }, false) === null,
+    'CONTROL: in Actions a record of another run or attempt is refused; a matching one and a local dry run pass (review 60625cca.2)'
+  );
+  const savedActions = process.env.GITHUB_ACTIONS;
+  process.env.GITHUB_ACTIONS = 'true';
+  const stepsRead = readJobRun(['--steps', '/nonexistent']);
+  if (savedActions === undefined) delete process.env.GITHUB_ACTIONS;
+  else process.env.GITHUB_ACTIONS = savedActions;
+  check(
+    'error' in stepsRead && stepsRead.error.includes('refused in Actions'),
+    'CONTROL: --steps is refused in Actions (review 60625cca.2)'
+  );
   check(
     jobSteps(wf, 'absent') === null,
     'an absent job reads as null, never as a job with no steps'
@@ -1244,6 +1270,17 @@ function coreCases(): { failures: string[]; count: number } {
     const got = JSON.stringify(inlinePerms(inline));
     check(got === want, `signingJobs on job permissions: ${inline} -> ${got}, want ${want}`);
   }
+  check(
+    JSON.stringify(
+      signingJobs(
+        permWf('').replace(
+          '    permissions:\n      contents: read\n',
+          '    permissions:\n      write-all\n'
+        )
+      )
+    ) === '["gates","sign"]',
+    'CONTROL: a write-all scalar on the line after permissions: names the job (review e7ce4979.1)'
+  );
   check(
     JSON.stringify(
       signingJobs(
