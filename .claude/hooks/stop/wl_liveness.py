@@ -696,6 +696,21 @@ def _age_min(stamp):
     return a if a is not None else 0.0
 
 
+def _arm_covers(rec):
+    """True when the item carries an arm (with an `aid`) that covers it right now. A module that cannot be imported covers nothing."""
+    arm = rec.get("arm")
+    if not isinstance(arm, dict) or not arm.get("aid"):
+        return False
+    try:
+        import datetime
+
+        import wl_armed as A
+
+        return A.covers(arm, datetime.datetime.now(datetime.UTC), True)
+    except Exception:
+        return False
+
+
 def ladder(fold, session_id, event, state_doc):
     """(pings, investigates, resolves, gones, idles, doc_changed).
 
@@ -734,6 +749,9 @@ def ladder(fold, session_id, event, state_doc):
             continue
         if C.lease_state(rec["line"]) != "fresh":
             continue  # expired leases are open items already
+        # AN ARMED HOLD IS NOT A QUIET WORKER (agent/plans/PLAN-armed-actions.md Design 6): while the item's arm covers it, the arm's own check owns the nag, so no rung fires.
+        if _arm_covers(rec):
+            continue
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
         # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind a live plan's mutex or Owns, which wl_roster reports (`queue-slot` names it once the holder finishes), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while it waited.

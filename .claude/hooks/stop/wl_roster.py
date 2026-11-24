@@ -586,8 +586,33 @@ def transcript_armed(jsonl, now):
     return armed[-1] if armed else ""
 
 
-def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None):
-    """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN."""
+ARMED_COVERER = "armed:"
+
+
+def armed_coverer(rec, worker, start, now, armed_blocks=True):
+    """`armed:<aid>` for a finished worker's item whose arm still covers it AND whose final report is captured, else "" (agent/plans/PLAN-armed-actions.md Design 6).
+
+    The report is the evidence the work was handed over, so a worker that died without one stays `leased_dead`; an expired, void or started arm covers nothing (`wl_armed.covers`)."""
+    import wl_armed as A
+    import wl_stuckshell as S
+
+    arm = rec.get("arm")
+    if not isinstance(arm, dict) or not arm.get("aid"):
+        return ""
+    if not A.covers(arm, datetime.datetime.fromtimestamp(now, datetime.UTC), armed_blocks):
+        return ""
+    entries = S.report_entries(start)
+    if not entries or latest_report(entries, worker) is None:
+        return ""
+    return ARMED_COVERER + str(arm["aid"])
+
+
+def roster(
+    event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None, armed_blocks=True
+):
+    """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN.
+
+    `armed_blocks` is whether `armed-action-due` blocks at the current effort level; it bounds how long a FIRED arm still covers its item."""
     now = time.time() if now is None else now
     cwd = cwd or event.get("cwd") or ""
     start = C.project_start({"cwd": cwd})
@@ -768,7 +793,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         if w and (w in metas or w in live):
             coverer = covered_by(w)
             for r in recs:
-                (covered if coverer else leased_dead).append((r["id"], w, coverer))
+                own = coverer or armed_coverer(r, w, start, now, armed_blocks)
+                (covered if own else leased_dead).append((r["id"], w, own))
         elif w and w in workflows:
             # A WORKFLOW LEASE is covered by its agents' stream (agent/plans/PLAN-stop-hook-continuity.md P1.9). It is in the event, so "no meta and not in the event" was simply false and dropped the roster to UNKNOWN.
             import wl_liveness as L
@@ -843,7 +869,11 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     status_due, status_rows = [], {}
     # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while a live plan holds it, so its own lease expiry bounds it.
     # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
-    for w in sorted({w for _i, w, _c in covered} - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
+    for w in sorted(
+        {w for _i, w, c in covered if not c.startswith(ARMED_COVERER)}
+        - {QUEUE_WORKER, LH.LEAD_WORKER}
+        - set(workflows)
+    ):
         at, src = status_at(w)
         age = None if at is None else max(0.0, (now - at) / 60.0)
         status_rows[w] = (age, src)
@@ -851,7 +881,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             status_due.append(w)
 
     # Silence: a supervised live agent whose transcript stopped growing with nothing in flight, or whose last --status found no growth.
-    supervised = set(writers) | {c for _i, _w, c in covered if c}
+    supervised = set(writers) | {
+        c for _i, _w, c in covered if c and not c.startswith(ARMED_COVERER)
+    }
     silent = []
     for aid in sorted(supervised):
         row = live.get(aid)
@@ -876,7 +908,13 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         and live[a]["quiet_min"] is not None
         and live[a]["quiet_min"] < STATUS_PING_MIN
     }
-    verified = sorted((({c for _i, _w, c in covered if c} | leased_live) - owing) | fresh_readers)
+    verified = sorted(
+        (
+            ({c for _i, _w, c in covered if c and not c.startswith(ARMED_COVERER)} | leased_live)
+            - owing
+        )
+        | fresh_readers
+    )
 
     defects = bool(unleased or leased_dead or status_due or silent or queue_start or plan_conflicts)
     if defects:
