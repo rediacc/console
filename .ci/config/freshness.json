@@ -20,7 +20,7 @@
     "budget_report --check judges, so the check that follows a refresh is green by construction",
     "(the reverse order left any-status main runs in the file and reddened drift:job-max).",
     "hook-ledger.json is the one entry fed by LOCAL data: its producer folds the ignored guard",
-    "chain ledger (.ci/cache/hook-ledger/chains.jsonl, written by dispatch.run_chain), so --refresh",
+    "chain ledger (.ci/cache/hook-ledger/chains.jsonl, written by dispatch.run_chain), so --snapshot",
     "runs on a checkout that ran hooks and fails loud in CI, and its nightly check refuses a snapshot",
     "past 14 days or out of step with the guards on disk (PLAN-tooling-code-reduction.md CR8)."
   ],

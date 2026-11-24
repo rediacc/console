@@ -6,7 +6,7 @@
 
 Running `npm run login:bench` is an agent's own step, never the operator's (operator order 2026-10-30). It is the remedy whenever an `eu-bench` command answers that the login is "tied to another network address", that the IP address changed, or "Not logged in": run it, then rerun the command. The CLI's own text for that error tells a human to type an authenticator code in an interactive terminal; for `eu-bench` that code is derived from the vault, so nobody is asked for it.
 
-Three places carry this so a session does not have to remember it:
+Four places carry this so a session does not have to remember it:
 
 - `rediacc_ci.ops.live_proof record` runs `npm run login:bench` once when an `eu-bench` step fails that way, retries the step, and names the remedy if the login itself fails.
 - The trapguard rule `bench-login-is-the-agents-step` (`.claude/hooks/trapguard/dispatch.py`) adds the remedy to the context after any `./rdc.sh --config eu-bench` call that printed the error.
@@ -26,7 +26,7 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
 5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench-eu.rediacc.cloud`.
-6. Runs `./rdc.sh --config eu-bench config remote enable --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench-eu.rediacc.cloud`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it. The tool still passes the password-slot flag that the removal of password key slots deleted, so this step waits on the operator-created recovery code and a machine secret (`--machine-secret <id>`, PLAN-rmcp-policy-record.md).
+6. Always runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench-eu.rediacc.cloud` with `REDIACC_STORE_MASTER_PASSWORD` in the child environment. `config remote status` is not consulted first, because it reports connected even when this device has lost its key for the store. Exit 0 is done (a first link, or this device enrolled again against the same store); exit 2 is done only when the output says the config is linked and this device can already open it; any other failure exits 1 naming the step.
 7. Prints `./rdc.sh --config eu-bench config remote status`.
 
 ## The secrets
