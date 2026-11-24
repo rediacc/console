@@ -4618,7 +4618,6 @@
       ".npmrc",
       "package.json",
       "run.sh",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh"
     ],
     "lists": [
@@ -6885,7 +6884,6 @@
       "packages/www/public/install.sh",
       "rdc.sh",
       "run.sh",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh",
       "workers/proxy/Dockerfile"
     ],
@@ -8412,7 +8410,6 @@
       "package.json",
       "rdc.sh",
       "run.sh",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh"
     ],
     "lists": [
@@ -9318,8 +9315,7 @@
       ".ci/scripts/infra/ci-start-elite.sh",
       ".ci/scripts/infra/ci-stop-elite.sh",
       ".ci/scripts/lib/toolchain.sh",
-      ".ci/scripts/test/**",
-      "scripts/ops/rebind-code.sh"
+      ".ci/scripts/test/**"
     ],
     "lists": [
       "",
@@ -11145,7 +11141,6 @@
       "scripts/lib/console.ts",
       "scripts/lib/repo-root.ts",
       "scripts/lib/submodule-presence.ts",
-      "scripts/ops/rebind-code.sh",
       "scripts/pre-commit-check.sh",
       "tsconfig.json"
     ],

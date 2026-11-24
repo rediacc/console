@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 
 import pytest
 
@@ -113,7 +114,7 @@ def test_unbound_reexecutes_once_under_the_regions_profile(monkeypatch):
 
 
 def test_rdc_sh_exports_the_program_for_exactly_the_mapped_configs():
-    """rdc.sh's bench `case` arm names the same configs rebind_code maps and points at the wrapper that runs this module."""
+    """rdc.sh's bench `case` arm names the same configs rebind_code maps and points at this module's own executable path, with no bash wrapper between."""
     line = next(
         ln
         for ln in paths.from_root("rdc.sh").read_text(encoding="utf-8").splitlines()
@@ -121,7 +122,27 @@ def test_rdc_sh_exports_the_program_for_exactly_the_mapped_configs():
     )
     arm = line.split(" in ", 1)[1].split(")", 1)[0]
     assert {c.strip() for c in arm.split("|")} == set(rebind_code.CONFIG_REGIONS)
-    assert "scripts/ops/rebind-code.sh" in line
-    wrapper = paths.from_root("scripts", "ops", "rebind-code.sh")
-    assert "rediacc_ci.ops.rebind_code" in wrapper.read_text(encoding="utf-8")
-    assert os.access(wrapper, os.X_OK)
+    assert "$ROOT_DIR/.ci/rediacc_ci/ops/rebind_code.py}" in line
+    program = paths.from_root(".ci", "rediacc_ci", "ops", "rebind_code.py")
+    assert program.read_text(encoding="utf-8").startswith("#!/usr/bin/env python3\n")
+    assert os.access(program, os.X_OK)
+
+
+def test_the_program_runs_by_path_with_no_pythonpath():
+    """The CLI spawns the path itself, with no shell and no PYTHONPATH: the module's own hop must resolve `rediacc_ci`. An unknown config is refused (rc 2) before any vault read, so this needs no secret."""
+    program = paths.from_root(".ci", "rediacc_ci", "ops", "rebind_code.py")
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", rebind_code.SEED_ENV)}
+    done = subprocess.run(
+        [str(program), "not-a-bench"],
+        env=env,
+        cwd="/",
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert done.returncode == 2, done.stderr
+    assert done.stdout == ""
+    assert "no vault seed is mapped" in done.stderr
+    assert "ModuleNotFoundError" not in done.stderr

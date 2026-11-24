@@ -1,9 +1,10 @@
+#!/usr/bin/env python3
 """Print the current authenticator code that moves a bench config's API token to this host's new IP.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.rebind_code <config>     # eu-bench, us-bench, asia-bench or bench
-    scripts/ops/rebind-code.sh <config>                               # the same, as one executable path
+    .ci/rediacc_ci/ops/rebind_code.py <config>                        # the same, as one executable path
 
-WHY. The account server binds a first-use API token to its first caller's address and answers any other with 403 TOKEN_IP_MISMATCH; the CLI moves the token with the token creator's authenticator code (`packages/cli/src/services/account/token-ip-rebind.ts`). The creator of a bench config's token is the bench root that `npm run login:bench` signs in as, and its seed is the bench's `BENCH_ROOT_TOTP_SEED_<REGION>` vault entry, so bench needs no human for the move (operator 2026-11-24). `rdc.sh` exports `REDIACC_IP_REBIND_CODE_COMMAND=scripts/ops/rebind-code.sh` for a bench config, and the CLI runs this program only when the server actually refuses the token for its address, then replays the refused request: the original command continues.
+WHY. The account server binds a first-use API token to its first caller's address and answers any other with 403 TOKEN_IP_MISMATCH; the CLI moves the token with the token creator's authenticator code (`packages/cli/src/services/account/token-ip-rebind.ts`). The creator of a bench config's token is the bench root that `npm run login:bench` signs in as, and its seed is the bench's `BENCH_ROOT_TOTP_SEED_<REGION>` vault entry, so bench needs no human for the move (operator 2026-11-24). `rdc.sh` exports `REDIACC_IP_REBIND_CODE_COMMAND=.ci/rediacc_ci/ops/rebind_code.py` for a bench config (the CLI spawns that one path with no shell, so this file is executable and puts its own `.ci` on sys.path), and the CLI runs this program only when the server actually refuses the token for its address, then replays the refused request: the original command continues.
 
 THE STEPS, in order:
 
@@ -18,10 +19,15 @@ SECRETS. Stdout carries the six digits and nothing else, for the CLI that reads 
 from __future__ import annotations
 
 import os
+import pathlib
 import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+
+# THE HOP, WRITTEN BY HAND EXACTLY ONCE. Run by path, this file cannot import the package that would put
+# `.ci` on sys.path until `.ci` is on sys.path. Under `-m` the entry is already there and a second copy is harmless.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci import log, paths
 from rediacc_ci.ops import bench_preflight, login_bench, totp

@@ -4370,7 +4370,6 @@ export const GATES: readonly GateSpec[] = [
       '.npmrc',
       'package.json',
       'run.sh',
-      'scripts/ops/rebind-code.sh',
       'scripts/pre-commit-check.sh',
     ],
     lists: [
@@ -6513,7 +6512,6 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/public/install.sh',
       'rdc.sh',
       'run.sh',
-      'scripts/ops/rebind-code.sh',
       'scripts/pre-commit-check.sh',
       'workers/proxy/Dockerfile',
     ],
@@ -7890,7 +7888,6 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
       'rdc.sh',
       'run.sh',
-      'scripts/ops/rebind-code.sh',
       'scripts/pre-commit-check.sh',
     ],
     lists: [
@@ -8720,7 +8717,6 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/infra/ci-stop-elite.sh',
       '.ci/scripts/lib/toolchain.sh',
       '.ci/scripts/test/**',
-      'scripts/ops/rebind-code.sh',
     ],
     lists: [
       '',
@@ -10454,7 +10450,6 @@ export const GATES: readonly GateSpec[] = [
       'scripts/lib/console.ts',
       'scripts/lib/repo-root.ts',
       'scripts/lib/submodule-presence.ts',
-      'scripts/ops/rebind-code.sh',
       'scripts/pre-commit-check.sh',
       'tsconfig.json',
     ],

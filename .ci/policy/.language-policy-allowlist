@@ -202,6 +202,3 @@ file:scripts/pre-commit-check.sh
 
 # BLOCKER: the H2 privdrop probe deployed as a repository's Rediaccfile by the drill's per-repo fork runner (drills/privdrop_probe.py); renet sources it as bash and calls its up/down functions, and the probe's whole point is what that bash lifecycle can read as the dropped user, so a Python port would test a different process
 file:.ci/rediacc_ci/drills/privdrop-probe/Rediaccfile
-
-# BLOCKER: a one-line exec into rediacc_ci.ops.rebind_code; the path itself is the contract, exported by rdc.sh:170 as REDIACC_IP_REBIND_CODE_COMMAND and spawned directly by the CLI without a shell (packages/cli/src/services/account/token-ip-rebind.ts), so the program must be an executable file at a stable path that resolves PYTHONPATH from its own location
-shim:scripts/ops/rebind-code.sh

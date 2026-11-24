@@ -167,7 +167,7 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
 else
     log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
     log_step "Starting CLI (config $(selected_config_name "$@"))"
-    case "$(selected_config_name "$@")" in eu-bench | us-bench | asia-bench | bench) export REDIACC_IP_REBIND_CODE_COMMAND="${REDIACC_IP_REBIND_CODE_COMMAND:-$ROOT_DIR/scripts/ops/rebind-code.sh}" ;; esac # a bench token refused for a changed IP moves itself with the vault-derived code (.ci/rediacc_ci/ops/rebind_code.py)
+    case "$(selected_config_name "$@")" in eu-bench | us-bench | asia-bench | bench) export REDIACC_IP_REBIND_CODE_COMMAND="${REDIACC_IP_REBIND_CODE_COMMAND:-$ROOT_DIR/.ci/rediacc_ci/ops/rebind_code.py}" ;; esac # a bench token refused for a changed IP moves itself with the vault-derived code (.ci/rediacc_ci/ops/rebind_code.py)
 fi
 
 # Run the compiled CLI bundle, passing through all arguments

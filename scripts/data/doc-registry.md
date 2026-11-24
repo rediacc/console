@@ -1102,7 +1102,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
-| .ci/policy/.language-policy-allowlist | 42 | # comment |
+| .ci/policy/.language-policy-allowlist | 41 | # comment |
 | .ci/policy/.pins-upgrade-blocklist | 24 | inline |
 | .ci/policy/.plan-housekeeping-allowlist | 3 | # comment |
 | .ci/policy/.profiler-coverage-allowlist | 5 | # comment |
