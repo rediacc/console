@@ -1416,19 +1416,7 @@ export function insertHeader(
 }
 
 /**
- * Bind every file, separating a declaration from a BLOCK THAT DOES NOT PARSE.
- *
- * THE IMPORT GUARD. A file whose header is malformed used to be indistinguishable from a
- * file with no header at all: both bound to null and both were skipped in silence. That
- * made a typo strictly worse than an absent declaration, because the gate stayed
- * hand-registered AND nothing said so -- the gate was not wrong, it was invisible.
- *
- * Split out of `main` so the separation itself is controllable. Inlined, the only proof
- * it worked was that a clean tree stayed green, which is the same output a loop that
- * collected nothing would produce.
- */
-/**
- * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then an optional `python3 .ci/rediacc_ci/core_lease.py heavy-lock --` wrapper, then `npm run <script>` and plain arguments, with no shell operator anywhere. An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
+ * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then an optional `python3 .ci/rediacc_ci/core_lease.py heavy-lock --` wrapper, then `npm run <script>` and plain arguments. No shell operator, command substitution, backtick, backslash or newline is admitted anywhere (review 1e7d515b.3). An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
  */
 export function isNpmHop(run: string): boolean {
   // A value expands at most a plain `$NAME` or `${NAME}`: `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
@@ -1440,6 +1428,13 @@ export function isNpmHop(run: string): boolean {
   return new RegExp(
     `^(?:[A-Za-z_][A-Za-z0-9_]*=${value}[ \\t]+)*(?:${wrapper})?npm run[ \\t]+${word}(?:[ \\t]+${word})*[ \\t]*$`
   ).test(run);
+}
+
+/** Whether a hop's `npm run <script>` names `id`: a wrapped or env-prefixed lock whose npm script drifted from the header is refused (review 4db12448.1). */
+function npmHopScript(run: string, id: string): boolean {
+  return new RegExp(`npm run[ \\t]+${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[ \\t]|$)`).test(
+    run
+  );
 }
 
 /**
@@ -1468,6 +1463,10 @@ export function registrationProblems(
           `'${b.id}' is registered there as "${scripts[b.id]}"`
       );
     }
+  } else if (lockEntry !== undefined && !npmHopScript(lockEntry.run, b.id)) {
+    problems.push(
+      `${b.file}: gates.lock.json hops through "${lockEntry.run}", which is not \`npm run ${b.id}\``
+    );
   } else if (scripts[b.id] === undefined) {
     problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
   } else if (scripts[b.id] !== b.run) {
@@ -1479,6 +1478,18 @@ export function registrationProblems(
   return problems;
 }
 
+/**
+ * Bind every file, separating a declaration from a BLOCK THAT DOES NOT PARSE.
+ *
+ * THE IMPORT GUARD. A file whose header is malformed used to be indistinguishable from a
+ * file with no header at all: both bound to null and both were skipped in silence. That
+ * made a typo strictly worse than an absent declaration, because the gate stayed
+ * hand-registered AND nothing said so -- the gate was not wrong, it was invisible.
+ *
+ * Split out of `main` so the separation itself is controllable. Inlined, the only proof
+ * it worked was that a clean tree stayed green, which is the same output a loop that
+ * collected nothing would produce.
+ */
 export function scanDeclarations(
   files: string[],
   readFile: (f: string) => string
@@ -1597,6 +1608,27 @@ function selftest(endToEnd = false): number {
       !isNpmHop('X=1\nnpm run check:ci-a') &&
       isNpmHop('X="${CI_RUNNER_CORES}" npm run check:ci-a') &&
       isNpmHop("X='$(literal)' npm run check:ci-a")
+  );
+  ck(
+    'CONTROL: a hop whose npm script drifted from the header id is refused, wrapped or not (review 4db12448.1)',
+    registrationProblems(
+      modB,
+      { run: 'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-drifted' },
+      { [modB.id]: modB.run }
+    ).some((p) => p.includes('hops through')) &&
+      registrationProblems(
+        modB,
+        { run: `python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run ${modB.id}` },
+        { [modB.id]: modB.run }
+      ).length === 0
+  );
+  ck(
+    'CONTROL: an argument that expands or runs code is not a plain hop argument (review 96ca7df3.1)',
+    !isNpmHop('npm run check:ci-a -- $FOO') &&
+      !isNpmHop('npm run check:ci-a -- $(x)') &&
+      !isNpmHop('npm run check:ci-a -- `x`') &&
+      !isNpmHop('npm run check:ci-a -- a\\b') &&
+      isNpmHop('npm run check:ci-a -- --flag=1')
   );
   ck(
     'CONTROL: a drifted compound lock run is a direct run and is refused against the header',
@@ -3274,7 +3306,7 @@ function main(argv: string[]): void {
 
   const scanned = scanDeclarations(present, read);
   const malformed = scanned.malformed;
-  // A header with no npm key is a header-declared gate (D2): its emitted step runs `run` itself, `npx`-spelled, since `npm run <id>` would exit 1 with nothing on either stream.
+  // A header with no npm key is a header-declared gate (D2): its emitted step runs `run` itself, `npx`-spelled, since `npm run <id>` would exit 1 on a missing script (npm prints its "Missing script" error on stderr only, nothing on stdout).
   const declared: Bound[] = scanned.declared.map((b) =>
     pkg.scripts[b.id] === undefined ? { ...b, direct: true as const } : b
   );
