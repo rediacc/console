@@ -25,12 +25,16 @@ import time
 from typing import NamedTuple
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import host_slots
 from rediacc_ci.dev import worktree_spike as spike
 
 BASE_BRANCH = "main"
 RECORD_DIR = "rediacc-worktrees"
 SEED_ENTRY = pathlib.PurePath("scripts", "ci-runner", "lease-seed.ts")
 TSX = pathlib.PurePath("node_modules", ".bin", "tsx")
+# The seed's hold on the machine-wide core pool (host_slots, PR-TASK 79b7e92e). A writer wave spawns up to ten leases in one message, and ten seeds syncing dependencies and building packages at once were part of the load 134 on 24 cores of 2026-11-24. Two cores per seed lets a wave seed in parallel without taking the machine. The wait is bounded: past it the seed runs anyway and says so, because a long ci:quick holding the pool must not stall a lease for its whole run.
+SEED_SLOTS = 2
+SEED_SLOT_WAIT_S = 120.0
 # A link is not a directory, so a `.venv/` ignore rule misses it. These stay anchored, because a linked tree reads the main checkout's info/exclude.
 EXCLUDE_LINES = ("/.ci/cache/toolchain", "/.ci/cache/bin", "/.venv")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -308,6 +312,18 @@ def _add_tree(store, path, sha, lease_id):
     )
 
 
+def _seed_process(argv, code, env):
+    return subprocess.run(
+        argv,
+        cwd=str(code),
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=sys.stderr,
+        check=False,
+        timeout=spike.GIT_TIMEOUT,
+    )
+
+
 def _run_seed(path, root, tip):
     code = paths.CI_DIR.parent
     tsx, entry = code / TSX, code / SEED_ENTRY
@@ -316,15 +332,23 @@ def _run_seed(path, root, tip):
             message = "the seed needs %s" % needed
             raise LeaseRefusedError(message)
     env = {k: v for k, v in os.environ.items() if k not in spike.SCRUBBED_ENV}
-    done = subprocess.run(
-        [str(tsx), str(entry), str(path), str(root), tip],
-        cwd=str(code),
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=sys.stderr,
-        check=False,
-        timeout=spike.GIT_TIMEOUT,
-    )
+    argv = [str(tsx), str(entry), str(path), str(root), tip]
+    label = "lease seed %s" % pathlib.Path(path).name
+    with contextlib.ExitStack() as stack:
+        try:
+            cores = stack.enter_context(
+                host_slots.host_slot(SEED_SLOTS, label=label, timeout=SEED_SLOT_WAIT_S)
+            )
+            run_env = {**env, **cores.env}
+        except TimeoutError:
+            print(
+                "worktree lease: no %d free core slot(s) within %ds; %s runs unthrottled"
+                % (SEED_SLOTS, SEED_SLOT_WAIT_S, label),
+                file=sys.stderr,
+                flush=True,
+            )
+            run_env = env
+        done = _seed_process(argv, code, run_env)
     if done.returncode != 0:
         message = "lease-seed.ts exited %d" % done.returncode
         raise LeaseRefusedError(message)
