@@ -3350,20 +3350,62 @@ def _citation_ok(repo, evidence, project=None):
     )
 
 
-REBASED_COPY_DEPTH = 400
+def _branch_range(repo, tip="HEAD"):
+    """`merge-base(origin/main, tip)..tip`, the commits the branch carries; the whole history of `tip` when origin/main is unknown or shares no base with it."""
+    base = ""
+    if git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
+        base = git_out(repo, "merge-base", "origin/main", tip)
+    return ("%s..%s" % (base, tip)) if base else tip
 
 
-def rebased_copy_below(repo, pid, fix):
-    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix f00dbd623 for e2a16724.1 was refused)."""
-    if not pid or pid == "(none)":
-        return ""
-    rc, out = git(repo, "rev-list", "--no-merges", "-n", str(REBASED_COPY_DEPTH), fix)
-    if rc != 0:
-        return ""
-    for sha in out.split():
-        if patch_id(repo, sha) == pid:
-            return sha
-    return ""
+_COPY_PATCH_IDS: dict = {}
+
+
+def _range_patch_ids(repo, rng):
+    """`patch_ids(repo, rng)`, kept per resolved range for the life of the process: a batch of marks over one branch reads the branch's patch-ids once."""
+    ends = tuple(
+        git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % end) for end in rng.split("..")
+    )
+    key = (os.path.realpath(repo), ends)
+    if key not in _COPY_PATCH_IDS:
+        _COPY_PATCH_IDS[key] = patch_ids(repo, rng)
+    return _COPY_PATCH_IDS[key]
+
+
+def branch_copies(repo, sha, pid, tip="HEAD"):
+    """The commits on the branch (`_branch_range`) that carry the reviewed commit `sha`: `[sha]` when it is an ancestor of `tip`, else every copy a rebase or a cherry-pick made of it, found by its stable patch-id `pid` and by the `(cherry picked from commit <sha>)` line `cherry-pick -x` writes. [] when the work is not on the branch at all.
+
+    THE COPY IS SEARCHED OVER THE WHOLE BRANCH, NOT A FIXED DEPTH BELOW THE FIX (finding #48c72397, measured 2026-11-24). The earlier lookup walked 400 commits below the fix; on 1121-1, rebased onto main after PR #605 merged, the copy of d6184ab0 sat 730 commits below fix 252bab372c, and 45 genuine fixes were refused as "does not descend". A lease's commits land by `cherry-pick -x`, and that copy carries the reviewed sha in its message even when a conflict changed its patch-id.
+    """
+    if git(repo, "merge-base", "--is-ancestor", sha, tip)[0] == 0:
+        return [sha]
+    rng = _branch_range(repo, tip)
+    found = []
+    rc, out = git(
+        repo,
+        "log",
+        "--format=%H",
+        "--fixed-strings",
+        "--grep=(cherry picked from commit %s)" % sha,
+        rng,
+    )
+    if rc == 0:
+        found.extend(out.split())
+    if pid and SHA40.match(pid):
+        ids = _range_patch_ids(repo, rng)
+        if ids is None:
+            rc, out = git(repo, "rev-list", "--no-merges", rng)
+            ids = {c: patch_id(repo, c) for c in out.split()} if rc == 0 else {}
+        found.extend(c for c, p in ids.items() if p == pid and c not in found)
+    return found
+
+
+def absent_verdict(repo, review, tip="HEAD"):
+    """The verdict the tool computes for a reviewed commit `branch_copies` finds nowhere on the branch."""
+    return (
+        "reviewed commit %s is not on this branch: not an ancestor of %s, and no commit of %s carries its patch-id or a cherry-pick line naming it"
+        % (review.sha8, tip, _branch_range(repo, tip))
+    )
 
 
 WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$")
@@ -3804,13 +3846,18 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             raise ValueError("the fix cannot be the reviewed commit itself")
         if git(repo, "merge-base", "--is-ancestor", fix, "HEAD")[0] != 0:
             raise ValueError("%s is not on this branch (not an ancestor of HEAD)" % fix[:12])
-        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[
-            0
-        ] != 0 and not rebased_copy_below(repo, review.patch_id, fix):
-            raise ValueError(
-                "%s does not descend from the reviewed commit %s (nor from a rebased copy of it)"
-                % (fix[:12], review.sha8)
-            )
+        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[0] != 0:
+            copies = branch_copies(repo, review.sha, review.patch_id)
+            if not copies:
+                raise ValueError(
+                    "%s, so no fix descends from it; close the finding with `not-a-bug`, which records that verdict itself"
+                    % absent_verdict(repo, review)
+                )
+            if not any(git(repo, "merge-base", "--is-ancestor", c, fix)[0] == 0 for c in copies):
+                raise ValueError(
+                    "%s does not descend from the reviewed commit %s nor from its copy on this branch (%s)"
+                    % (fix[:12], review.sha8, ", ".join(c[:12] for c in copies))
+                )
         touched = git_out(
             repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--find-renames", fix
         ).splitlines()
@@ -3892,6 +3939,14 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 )
             )
         resolution = "fixed %s | %s" % (fix, stamp)
+    elif kind == "not-a-bug" and not branch_copies(repo, review.sha, review.patch_id):
+        # The reviewed work was dropped from the branch, so the finding names code the branch does not carry: the tool states that verdict itself, and any evidence given rides after it (finding #48c72397).
+        given = normalise_claim(" ".join(args), 200).replace("|", "/")
+        verdict = absent_verdict(repo, review) + (" -- %s" % given if given else "")
+        resolution = "not-a-bug | %s | %s" % (
+            normalise_claim(verdict, 400).replace("|", "/"),
+            stamp,
+        )
     elif kind == "not-a-bug":
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")
         if len(evidence) < 20:

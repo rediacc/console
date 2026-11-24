@@ -579,3 +579,197 @@ def test_the_cut_short_note_counts_the_commits_of_a_found_successor(tmp_path, mo
     assert R.move_search_note(str(repo), reviewed, "HEAD", "config.py") == ""
     note = R.move_search_note(str(repo), reviewed, "HEAD", "config.py", successors)
     assert "read only the newest 3 of the 4 commits" in note
+
+
+# --------------------------------------------------------------------------- a reviewed commit's copy on the branch (finding #48c72397)
+# Measured 2026-11-24 on 1121-1: after a rebase onto main, a reviewed commit's copy sat 730 commits below the fix, past the old 400-commit walk, and 45 genuine fixes were refused as "does not descend". The copy is now searched over `merge-base(origin/main, HEAD)..HEAD` by stable patch-id and by the `(cherry picked from commit <sha>)` line, in the repository the record names; a reviewed commit with no copy on the branch closes as `not-a-bug` with a verdict the tool computes.
+
+
+@pytest.fixture
+def _shallow_walk(monkeypatch):
+    # The old lookup walked a fixed depth below the fix. A depth of 2 puts every copy below past it, so a pass here is the branch-wide search and not the walk.
+    monkeypatch.setattr(R, "REBASED_COPY_DEPTH", 2, raising=False)
+    R.__dict__.get("_COPY_PATCH_IDS", {}).clear()
+
+
+def _fillers(repo, n=3):
+    for i in range(n):
+        _commit(repo, "chore: filler %d" % i, **{"filler_%d_dot_txt" % i: "%d\n" % i})
+
+
+def _copy_record(root, sha, pid, repo_label="console"):
+    fid = "%s.1" % sha[:8]
+    finding = R.Finding(
+        id=fid,
+        severity="medium",
+        file="f.py",
+        line=1,
+        anchor="in-diff",
+        claim="the value is computed from the wrong offset",
+        resolution="open",
+    )
+    review = R.Review(
+        sha=sha,
+        subject="s",
+        repo=repo_label,
+        branch=BRANCH,
+        patch_id=pid or "(none)",
+        reviewed_at="2026-11-24T00:00:00Z",
+        model="m",
+        verdict="findings",
+        findings=[finding],
+    )
+    R.write_atomic(R.review_path(root, BRANCH, sha), R.render(review))
+    return fid
+
+
+def _copy_resolution(root, sha):
+    return R.read_review(R.review_path(root, BRANCH, sha))[0].findings[0].resolution
+
+
+def _copy_init(repo):
+    repo.mkdir()
+    _git(repo, "init", "-q", "--initial-branch=main")
+    _commit(repo, "seed", seed_dot_txt="seed\n")
+
+
+def _publish_main(repo):
+    _git(repo, "update-ref", "refs/remotes/origin/main", "main")
+
+
+def _rebased_world(tmp_path):
+    """BRANCH carries the reviewed commit, main moves, BRANCH is rebased onto it: the record names a sha the branch no longer holds."""
+    repo = tmp_path / "repo"
+    _copy_init(repo)
+    _publish_main(repo)
+    _git(repo, "checkout", "-q", "-b", BRANCH)
+    reviewed = _commit(repo, "feat: f", f_dot_py="a = 1\nb = 2\n")
+    pid = R.patch_id(repo, reviewed)
+    _git(repo, "checkout", "-q", "main")
+    moved = _commit(repo, "chore(main): move main", main_dot_txt="m\n")
+    _publish_main(repo)
+    _git(repo, "checkout", "-q", BRANCH)
+    _git(repo, "rebase", "-q", "main")
+    copy = _git(repo, "rev-parse", "HEAD")
+    assert copy != reviewed
+    return repo, reviewed, pid, copy, moved
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_a_fix_far_above_a_rebased_copy_is_admitted_by_patch_id(tmp_path):
+    repo, reviewed, pid, _copy, _moved = _rebased_world(tmp_path)
+    fid = _copy_record(repo, reviewed, pid)
+    _fillers(repo)
+    fix = _commit(repo, "fix: offset", f_dot_py="a = 1\nb = 3\n")
+    R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert _copy_resolution(repo, reviewed).startswith("fixed %s | %s " % (fix, ME))
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_control_a_fix_that_does_not_descend_from_the_copy_is_refused(tmp_path):
+    repo, reviewed, pid, copy, moved = _rebased_world(tmp_path)
+    fid = _copy_record(repo, reviewed, pid)
+    with pytest.raises(
+        ValueError, match=r"does not descend from the reviewed commit .*%s" % copy[:12]
+    ):
+        R.mark(repo, BRANCH, fid, "fixed", [moved], ME)
+    assert _copy_resolution(repo, reviewed) == "open"
+
+
+def _cherry_world(tmp_path, with_line):
+    """The reviewed commit lives on a lease's detached line; BRANCH carries a copy whose content (so patch-id) differs, as a conflict-resolved `cherry-pick -x` leaves it."""
+    repo = tmp_path / "repo"
+    _copy_init(repo)
+    _publish_main(repo)
+    _git(repo, "checkout", "-q", "-b", BRANCH)
+    base = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-q", "--detach", base)
+    reviewed = _commit(repo, "feat: f", f_dot_py="a = 1\nb = 2\n")
+    pid = R.patch_id(repo, reviewed)
+    _git(repo, "checkout", "-q", BRANCH)
+    message = "feat: f"
+    if with_line:
+        message += "\n\n(cherry picked from commit %s)" % reviewed
+    copy = _commit(repo, message, f_dot_py="a = 1\nb = 2\nc = 0\n")
+    assert R.patch_id(repo, copy) != pid
+    return repo, reviewed, pid, copy
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_a_cherry_picked_copy_is_found_by_its_x_line(tmp_path):
+    repo, reviewed, pid, _copy = _cherry_world(tmp_path, with_line=True)
+    fid = _copy_record(repo, reviewed, pid)
+    _fillers(repo)
+    fix = _commit(repo, "fix: offset", f_dot_py="a = 1\nb = 3\nc = 0\n")
+    R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert _copy_resolution(repo, reviewed).startswith("fixed %s" % fix)
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_control_without_the_x_line_the_commit_is_not_on_the_branch(tmp_path):
+    repo, reviewed, pid, _copy = _cherry_world(tmp_path, with_line=False)
+    fid = _copy_record(repo, reviewed, pid)
+    fix = _commit(repo, "fix: offset", f_dot_py="a = 1\nb = 3\nc = 0\n")
+    with pytest.raises(ValueError, match="is not on this branch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_a_submodule_record_finds_the_copy_in_the_submodule(tmp_path):
+    sub_src = tmp_path / "sub_src"
+    _copy_init(sub_src)
+    _git(sub_src, "checkout", "-q", "-b", BRANCH)
+    reviewed = _commit(sub_src, "feat: f", f_dot_py="a = 1\nb = 2\n")
+    pid = R.patch_id(sub_src, reviewed)
+    _git(sub_src, "checkout", "-q", "main")
+    _commit(sub_src, "chore(main): move main", main_dot_txt="m\n")
+    sup = tmp_path / "sup"
+    _copy_init(sup)
+    _git(sup, "checkout", "-q", "-b", BRANCH)
+    _git(sup, "submodule", "add", "-q", str(sub_src), "private/sub")
+    sub = sup / "private" / "sub"
+    _git(sub, "checkout", "-q", "-B", BRANCH, "origin/%s" % BRANCH)
+    _git(sub, "rebase", "-q", "origin/main")
+    assert _git(sub, "rev-parse", "HEAD") != reviewed
+    fid = _copy_record(sup, reviewed, pid, repo_label="private/sub")
+    _fillers(sub)
+    fix = _commit(sub, "fix: offset", f_dot_py="a = 1\nb = 3\n")
+    R.mark(sup, BRANCH, fid, "fixed", [fix], ME)
+    assert _copy_resolution(sup, reviewed).startswith("fixed %s" % fix)
+
+
+def _dropped_world(tmp_path):
+    repo = tmp_path / "repo"
+    _copy_init(repo)
+    _publish_main(repo)
+    _git(repo, "checkout", "-q", "-b", BRANCH)
+    base = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "checkout", "-q", "--detach", base)
+    reviewed = _commit(repo, "feat: f", f_dot_py="a = 1\nb = 2\n")
+    pid = R.patch_id(repo, reviewed)
+    _git(repo, "checkout", "-q", BRANCH)
+    _commit(repo, "feat: other work", g_dot_py="x = 1\n")
+    return repo, reviewed, pid
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_a_dropped_commit_closes_as_not_a_bug_with_a_computed_verdict(tmp_path):
+    repo, reviewed, pid = _dropped_world(tmp_path)
+    fid = _copy_record(repo, reviewed, pid)
+    fix = _commit(repo, "fix: offset", f_dot_py="a = 1\nb = 3\n")
+    with pytest.raises(ValueError, match=r"is not on this branch.*not-a-bug"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    R.mark(repo, BRANCH, fid, "not-a-bug", [], ME)
+    resolution = _copy_resolution(repo, reviewed)
+    assert resolution.startswith(
+        "not-a-bug | reviewed commit %s is not on this branch" % reviewed[:8]
+    ), resolution
+    assert R.RESOLUTION_BY_KIND["not-a-bug"].match(resolution)
+
+
+@pytest.mark.usefixtures("_shallow_walk")
+def test_control_a_commit_on_the_branch_still_needs_not_a_bug_evidence(tmp_path):
+    repo, reviewed, pid, _copy, _moved = _rebased_world(tmp_path)
+    fid = _copy_record(repo, reviewed, pid)
+    with pytest.raises(ValueError, match="20 characters"):
+        R.mark(repo, BRANCH, fid, "not-a-bug", [], ME)
