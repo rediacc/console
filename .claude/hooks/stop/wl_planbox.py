@@ -697,6 +697,216 @@ def listing(root, kind):
     return "\n".join(out) + "\n"
 
 
+# ---- the pending-tick queue: SubagentStop writes, `--apply-ticks` reads ----------
+#
+# THE GAP THIS CLOSES (operator 2026-11-24): a writer's report names its boxes in TICK lines, and nothing turned those lines into ticks; the lead re-read each report and retyped `--plan-investigate`/`--plan-tick`. The SubagentStop hook now queues each `present`/`done` TICK row here, and `worklist.py --apply-ticks` runs the two verbs per READY row.
+#
+# THE HOOK NEVER TICKS. `--plan-tick` rewrites the plan, the box ledger and the index with no lock, and two sub-agents finishing together would race it; the lead runs the verb, one process at a time.
+#
+# APPEND-ONLY, NO LOCK, NO REWRITE. One `os.write` of one line under PIPE_BUF on an O_APPEND handle is atomic (wl_report's argument), so a queue row and an `applied` row never tear. Removing an applied row would mean a read-filter-rewrite, and a SubagentStop append landing between the read and the rename would vanish; an `applied` event folded at read time cannot lose one.
+PENDING_TICK_STATES = ("present", "done")
+PENDING_LINE_MAX = 1024
+PENDING_CLOSE_MAX = 300
+PENDING_STATE_REL = (".claude", "hooks", "context", "state")
+
+
+def pending_path(root, me8):
+    """`<root>/.claude/hooks/context/state/<me8>-pending-ticks.jsonl` (gitignored), the lead session's queue."""
+    return Path(root, *PENDING_STATE_REL, "%s-pending-ticks.jsonl" % str(me8 or "")[:8])
+
+
+def _pending_key(agent, row):
+    raw = "\x00".join(
+        (str(agent or ""), row.plan, row.sig, row.state, ",".join(row.commits), row.close or "")
+    )
+    import hashlib
+
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _append_json_line(path, obj):
+    """One line, one `os.write`, O_APPEND. Shrinks `close` rather than dropping a field when the line would pass PENDING_LINE_MAX."""
+    import os
+
+    for _ in range(4):
+        data = (json.dumps(obj, separators=(",", ":"), ensure_ascii=False) + "\n").encode("utf-8")
+        if len(data) <= PENDING_LINE_MAX:
+            break
+        obj = dict(
+            obj, close=str(obj.get("close") or "")[: max(0, len(obj.get("close") or "") // 2)]
+        )
+    else:
+        raise ValueError("pending-tick line %d bytes exceeds %d" % (len(data), PENDING_LINE_MAX))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(
+        str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_BINARY", 0), 0o644
+    )
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
+
+
+def queueable(rows):
+    """The TICK rows a SubagentStop queues: grammar rows (never the legacy prose reader, whose state is a guess) in a closing state with nothing owed."""
+    return [r for r in rows if not r.legacy and r.state in PENDING_TICK_STATES and not r.owed]
+
+
+def queue_ticks(root, me8, agent, rows, at):
+    """Append one `tick` row per queueable TICK row; returns the rows written. A row whose key is already queued (the same report seen twice) is not appended again."""
+    path = pending_path(root, me8)
+    have = {r.get("key") for r in read_pending(path)}
+    wrote = []
+    for row in queueable(rows):
+        key = _pending_key(agent, row)
+        if key in have:
+            continue
+        obj = {
+            "ev": "tick",
+            "key": key,
+            "at": at,
+            "agent": str(agent or "")[:64],
+            "plan": row.plan,
+            "sig": row.sig,
+            "state": row.state,
+            "commits": list(row.commits)[:12],
+            "landed": row.landed if row.landed == "all" else list(row.landed),
+            "close": (row.close or "")[:PENDING_CLOSE_MAX],
+        }
+        _append_json_line(path, obj)
+        have.add(key)
+        wrote.append(obj)
+    return wrote
+
+
+def mark_applied(root, me8, key, outcome, at):
+    """Append the `applied` event that retires one queued row. `outcome` is `ticked` or `closed` (the box was no longer open)."""
+    _append_json_line(
+        pending_path(root, me8), {"ev": "applied", "key": key, "outcome": outcome, "at": at}
+    )
+
+
+def read_pending(path):
+    """Every parseable row of the queue file, in order; [] when it does not exist. A torn or foreign line is skipped."""
+    try:
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    out = []
+    for line in text.splitlines():
+        try:
+            obj = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and obj.get("key"):
+            out.append(obj)
+    return out
+
+
+def pending_rows(root, me8):
+    """The queued `tick` rows no `applied` event has retired, oldest first."""
+    rows = read_pending(pending_path(root, me8))
+    done = {r["key"] for r in rows if r.get("ev") == "applied"}
+    seen, out = set(), []
+    for r in rows:
+        if r.get("ev") == "tick" and r["key"] not in done and r["key"] not in seen:
+            seen.add(r["key"])
+            out.append(r)
+    return out
+
+
+def _git(root, *args):
+    try:
+        done = subprocess.run(
+            ["git", "--no-optional-locks", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=GIT_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done
+
+
+def _repos(root):
+    """`[(key, path)]`: the console first, then every submodule checkout under `private/`, the trees a lease commit can live in."""
+    out = [(".", Path(root))]
+    priv = Path(root, "private")
+    try:
+        subs = sorted(p for p in priv.iterdir() if (p / ".git").exists())
+    except OSError:
+        subs = []
+    out += [("private/%s" % p.name, p) for p in subs]
+    return out
+
+
+def landing_of(root, sha):
+    """`(key, landed sha)` when lease commit `sha` is reachable from HEAD in the console or a submodule (itself an ancestor, or named by a `-x` line), `(key, None)` when its repo knows it but HEAD holds no landing, `(None, None)` when no repo knows it, and `("?", None)` when git could not answer."""
+    s = (sha or "").strip().lower()
+    if not _HEX_ARG_RE.match(s):
+        return None, None
+    for key, path in _repos(root):
+        known = _git(path, "rev-parse", "--verify", "--quiet", s + "^{commit}")
+        if known is None:
+            return "?", None
+        if known.returncode != 0:
+            continue
+        full = known.stdout.strip()
+        anc = _git(path, "merge-base", "--is-ancestor", full, "HEAD")
+        if anc is None:
+            return "?", None
+        if anc.returncode == 0:
+            return key, full
+        mapping = landed_map(path, [s], rev="HEAD")
+        if mapping is None:
+            return "?", None
+        return key, mapping.get(s)
+    return None, None
+
+
+def box_open(root, plan, sig):
+    """True when `sig` is still an open box of `plan`, False when the plan resolves and holds no such open box, None when the plan does not resolve."""
+    import wl_planrec as R
+
+    try:
+        resolved = resolve_plan(root, plan)
+    except PlanBoxError:
+        return None
+    if resolved is None:
+        return None
+    return any(b[3] == sig for b in R.open_boxes(resolved[1]))
+
+
+def readiness(root, row):
+    """`(verdict, detail, picks)` for one queued row. Verdicts: `ready` (every commit landed, or none was named), `waiting` (a commit is not landed yet), `closed` (the box is no longer open), `refused` (the plan or a commit cannot be found). `picks` is `[(key, landed sha)]` for a ready row."""
+    is_open = box_open(root, row.get("plan"), row.get("sig"))
+    if is_open is None:
+        return "refused", "plan %s does not resolve under agent/plans/" % row.get("plan"), []
+    if is_open is False:
+        return (
+            "closed",
+            "box %s is not an open box of %s (ticked already, or never one)"
+            % (row.get("sig"), row.get("plan")),
+            [],
+        )
+    picks, waiting = [], []
+    for sha in row.get("commits") or []:
+        key, landed = landing_of(root, sha)
+        if key == "?":
+            return "refused", "git could not say whether %s landed" % sha, []
+        if key is None:
+            return "refused", "no repository here knows commit %s" % sha, []
+        if not landed:
+            waiting.append("%s (%s)" % (sha[:12], key))
+            continue
+        picks.append((key, landed))
+    if waiting:
+        return "waiting", "not landed yet: %s" % ", ".join(waiting), []
+    return "ready", "", picks
+
+
 def main(argv):
     """`wl_planbox.py check --root <dir>`: the commit message on stdin, each refusal on stderr, exit 1 when refused. The lease commit-msg hook runs this as a process, so its sibling imports resolve without a `sys.path` entry in the hook."""
     if len(argv) != 3 or argv[0] != "check" or argv[1] != "--root":

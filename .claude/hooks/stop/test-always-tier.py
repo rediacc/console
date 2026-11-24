@@ -63,6 +63,8 @@ ALWAYS_KEYS = frozenset(
         "roster-concurrency",
         # I3 -- a shell waiter the roster no longer counts live (wl_stuckshell, agent/plans/PLAN-writers-now-cadence.md WN4): its final report is captured or its shell outlived the bound. On 2026-11-23 such a writer showed "waiting on 1 shell" for hours while every check read it as live; a rotating key would let the same silence read as a pass.
         "stuck-shell",
+        # I3 -- a sub-agent an API error killed (wl_roster_resume, operator 2026-11-24). Measured 2026-11-24: SubagentStop did not fire for such a death, so this block is the only place it surfaces; a rotating key would let the dead writer read as a finished one.
+        "resume-dead-agent",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",
         # I2 -- a scheduled workflow red on main (wl_schedred): the release pipeline is the party blocked (promote-stable counts only green scheduled runs) and it cannot see this session stop, so a rotating key would let the red sit another night behind unrelated checks.
@@ -114,6 +116,8 @@ HYGIENE_KEYS = frozenset(
         "lessons-weekly",
         # The hourly /writers-now cadence (PLAN-writers-now-cadence.md WN2): a clock duty like lessons-weekly, parked in the landing tree and the merge phase. Hygiene on purpose, so a red CI, a dead writer or an unread report is answered before the next round starts.
         "writers-now-due",
+        # Writer TICK rows whose commits landed, queued at SubagentStop for `worklist.py --apply-ticks` (operator 2026-11-24). Record-keeping the lead runs in one command; it blocks only at `high` (effort.json), so asked-for work outranks it.
+        "ready-ticks",
     }
 )
 

@@ -2634,6 +2634,8 @@ PRIORITY_LADDER = (
                 "roster-concurrency",
                 # A shell waiter whose final report is captured or whose shell outlived wl_stuckshell.STUCK_SHELL_MIN (agent/plans/PLAN-writers-now-cadence.md WN4): the roster no longer counts it live, and the item it holds waits on a landing only the lead can do. Same roster family.
                 "stuck-shell",
+                # A lead's sub-agent an API error killed, not resumed since (wl_roster_resume, operator 2026-11-24): its work stops where the error cut it, and only the lead's SendMessage restarts it. Same roster family: a verdict about in-flight work whose silence would read as a finished writer.
+                "resume-dead-agent",
                 # A trapguard rule raised and was skipped (wl_trapfires, PLAN-trap-enforcement.md section 4.3.4): the dispatcher fails open per rule, and this is what keeps that from being silent.
                 "trapguard-errors",
             }
@@ -4852,6 +4854,34 @@ def _stop_roster(ns):
                     me8,
                 ),
             )
+
+    # AGENTS AN API ERROR KILLED (wl_roster_resume, operator 2026-11-24): a hook cannot resume a sub-agent, so the block names each one with the SendMessage line that does, until the transcript shows it was sent. Computed in every roster state, independent of `_roster`, because a dead agent is exactly the one the harness no longer lists as running.
+    try:
+        import wl_roster_resume
+
+        _dead_api = wl_roster_resume.stop_rows(event, session_id)
+        if _dead_api:
+            vadd(
+                "resume-dead-agent",
+                True,
+                M.V_RESUME_DEAD % (len(_dead_api), wl_roster_resume.render(_dead_api)),
+            )
+    except Exception as exc:
+        note_read_failure("resume-dead-agent", exc)
+
+    # TICKS A WRITER REPORTED, READY TO APPLY (wl_planbox's pending-tick queue, filled at SubagentStop): every lease commit landed, or none named, and the box still open.
+    try:
+        import wl_planbox
+
+        _ready = [
+            r
+            for r in wl_planbox.pending_rows(root, me8)
+            if wl_planbox.readiness(root, r)[0] in ("ready", "closed")
+        ]
+        if _ready:
+            vadd("ready-ticks", False, M.V_READY_TICKS % (len(_ready), me8))
+    except Exception as exc:
+        note_read_failure("ready-ticks", exc)
 
     # STUCK SHELL-WAITERS (agent/plans/PLAN-writers-now-cadence.md WN4, wl_stuckshell): an agent waiting on a shell whose final report is captured, or whose shell outlived STUCK_SHELL_MIN, is not live; name it with its shell and both moves. Computed in every roster state, a roster that could not be built included.
     import wl_stuckshell

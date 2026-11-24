@@ -13,6 +13,7 @@ import os
 import pathlib
 import re
 import select
+import subprocess
 import sys
 import tempfile
 import time
@@ -820,6 +821,226 @@ def _plantick_cli(argv):
         }
     )
     _lessons_resolve(root, me, lessons)
+
+
+_CLOSE_PTR_RE = re.compile(
+    r"(?<![\w-])(blob|tree|commit|ancestor|fileline|gate|plan|trap):([^\s,;'\"`()]+)"
+)
+_NPM_RUN_RE = re.compile(r"\bnpm run\s+([A-Za-z0-9:_.-]+)")
+_ACCEPT_GATE_RE = re.compile(r"(?<![\w-])(check:[A-Za-z0-9:_.-]+)")
+
+
+def _box_accept(text, sig):
+    """The `Accept:` text under the open box `sig` (its indented continuation lines), or ""."""
+    import wl_planrec as R
+
+    lines = text.splitlines()
+    for i, _line, _body, s in R.open_boxes(text):
+        if s != sig:
+            continue
+        out = []
+        for raw in lines[i + 1 :]:
+            if not raw.strip() or not raw[:1].isspace():
+                break
+            if "Accept:" in raw:
+                out.append(raw.split("Accept:", 1)[1])
+        return " ".join(out)
+    return ""
+
+
+def _first_changed(root, key, landed):
+    """`fileline:<path>:1` for the first file `landed` adds or modifies in repo `key`, or ""."""
+    repo = pathlib.Path(root) if key == "." else pathlib.Path(root) / key
+    try:
+        out = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "diff-tree",
+                "--no-commit-id",
+                "--name-only",
+                "--diff-filter=AM",
+                "-r",
+                landed,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    first = next((x for x in out.splitlines() if x), "")
+    if not first:
+        return ""
+    return "fileline:%s:1" % (first if key == "." else "%s/%s" % (key, first))
+
+
+def tick_pointers(root, rel, text, row, picks):
+    """The `<kind>:<token>` pointers an applied TICK row's investigation cites: the landed console commit and the first file each landed commit changed, every pointer the TICK close line names (`kind:token`, a bare `path:line`, `npm run <gate>`), the box's `Accept:` gates, and `plan:<rel>` only when fewer than two kinds resolve otherwise. Each one is resolved here first, so one dead token in a close line cannot sink the whole row; a row left with fewer than two kinds is the verb's own refusal."""
+    import wl_planrec as R
+
+    cands = []
+    for key, landed in picks:
+        if key == ".":
+            cands.append(("commit", landed[:12]))
+        fl = _first_changed(root, key, landed)
+        if fl:
+            cands.append(tuple(fl.split(":", 1)))
+    close = str(row.get("close") or "")
+    cands.extend((m.group(1), m.group(2).rstrip(".")) for m in _CLOSE_PTR_RE.finditer(close))
+    cands.extend(
+        ("fileline", "%s:%s" % (m.group(1), m.group(2))) for m in CK.CITE_RE.finditer(close)
+    )
+    accept = _box_accept(text, row.get("sig"))
+    for src in (close, accept):
+        cands += [("gate", g) for g in _NPM_RUN_RE.findall(src)]
+    cands += [("gate", g) for g in _ACCEPT_GATE_RE.findall(accept)]
+    out, kinds = [], set()
+    for kind, tok in dict.fromkeys(cands):
+        try:
+            ok, _why = R.resolve(root, kind, tok)
+        except (ValueError, OSError):
+            ok = False
+        if ok:
+            out.append("%s:%s" % (kind, tok))
+            kinds.add(kind)
+    if len(kinds) < 2:
+        out.append("plan:%s" % rel)
+    return out
+
+
+def _applyticks_cli(argv):
+    """--apply-ticks <me> [--write] (operator 2026-11-24): turn the TICK rows finished writers reported into ticks.
+
+    The SubagentStop hook queues each `present`/`done` TICK row (wl_planbox pending-tick queue); this verb takes each READY row (every lease commit reachable from HEAD by ancestry or its `-x` line, or no commit named) and runs `--plan-investigate ... present` when the box has no investigation row, then `--plan-tick`, as processes, so each verb's own refusals and exit codes stand. A dry run prints the commands. `--write` runs them, prints OK or REFUSED with the reason per row, retires the OK rows (and rows whose box is already closed) with an `applied` event, keeps the refused ones, and exits 1 when any row was refused. NEVER COMMITS.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_APPLYTICKS_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    flags = argv[2:]
+    for f in flags:
+        if f != "--write":
+            die("unknown argument %r\n\n%s" % (f, M.CLI_APPLYTICKS_USAGE))
+    write = "--write" in flags
+
+    import shlex
+
+    import wl_planbox as PB
+    import wl_planrec as R
+
+    root = C.project_root(C.project_start())
+    me8 = me[:8]
+    rows = PB.pending_rows(root, me8)
+    print(
+        "apply-ticks: %d pending row(s) in %s%s"
+        % (len(rows), PB.pending_path(root, me8), "" if write else " (dry run)")
+    )
+    tool = str(pathlib.Path(__file__).resolve().parent / "worklist.py")
+    refused = counts = 0
+    tally = {"ok": 0, "ready": 0, "wait": 0, "closed": 0, "refused": 0}
+    for row in rows:
+        counts += 1
+        label = "%s#%s %s (agent %s)" % (
+            row.get("plan"),
+            row.get("sig"),
+            row.get("state"),
+            str(row.get("agent") or "?")[-12:],
+        )
+        verdict, detail, picks = PB.readiness(root, row)
+        if verdict == "waiting":
+            tally["wait"] += 1
+            print("  WAIT     %s: %s" % (label, detail))
+            continue
+        if verdict == "refused":
+            tally["refused"] += 1
+            refused += 1
+            print("  REFUSED  %s: %s" % (label, detail))
+            continue
+        if verdict == "closed":
+            tally["closed"] += 1
+            print("  CLOSED   %s: %s%s" % (label, detail, "; retired" if write else ""))
+            if write:
+                PB.mark_applied(root, me8, row["key"], "closed", C.stamp_now())
+            continue
+        resolved = PB.resolve_plan(root, row["plan"])
+        rel, text = resolved
+        pointers = tick_pointers(root, rel, text, row, picks)
+        cites = " ".join(p.split(":", 1)[1] if p.startswith("fileline:") else p for p in pointers)
+        landed = " ".join("%s%s" % ("" if k == "." else k + "@", s[:12]) for k, s in picks)
+        # Neither the agent id nor the raw close line is written into the plan: an agent id is a hex run a citation reader takes for a commit, and a close line may cite a lease sha that never lands under that name. The pointers carry what the close line held, each already resolved.
+        evidence = "writer TICK %s: %s%s" % (
+            row["state"],
+            ("landed %s; " % landed) if landed else "",
+            cites,
+        )
+        cmds = []
+        if R.investigation_for(root, rel, row["sig"]) is None:
+            note = "post-landing: a writer reported TICK %s%s, read against the tree at HEAD" % (
+                row["state"],
+                (", landed " + landed) if landed else "",
+            )
+            cmds.append(
+                ["--plan-investigate", me, rel, row["sig"], "present", *pointers, "--", note]
+            )
+        cmds.append(["--plan-tick", me, rel, row["sig"], evidence])
+        if not write:
+            tally["ready"] += 1
+            print("  READY    %s" % label)
+            for cmd in cmds:
+                print("    worklist.py %s --write" % " ".join(shlex.quote(a) for a in cmd))
+            continue
+        why = ""
+        for cmd in cmds:
+            done = subprocess.run(
+                [sys.executable, tool, *cmd, "--write"],
+                cwd=str(root),
+                capture_output=True,
+                text=True,
+                errors="replace",
+                check=False,
+            )
+            if done.returncode != 0:
+                said = (done.stderr or done.stdout).split("Nothing was written", 1)[0]
+                why = "%s rc=%d: %s" % (
+                    cmd[0],
+                    done.returncode,
+                    " ".join(said.split())[:600] or "(no output)",
+                )
+                break
+        if why:
+            tally["refused"] += 1
+            refused += 1
+            print("  REFUSED  %s: %s (row kept)" % (label, why))
+            continue
+        PB.mark_applied(root, me8, row["key"], "ticked", C.stamp_now())
+        tally["ok"] += 1
+        print("  OK       %s ticked" % label)
+    print(
+        "apply-ticks: %d row(s): %d ticked, %d ready, %d waiting, %d closed, %d refused%s"
+        % (
+            counts,
+            tally["ok"],
+            tally["ready"],
+            tally["wait"],
+            tally["closed"],
+            tally["refused"],
+            ". Commit each ticked plan with .ci/config/plan-boxes.json and the investigation ledger."
+            if tally["ok"]
+            else "",
+        )
+    )
+    if write and refused:
+        sys.exit(1)
 
 
 def _lessons_resolve(root, me, lessons):
@@ -3924,6 +4145,9 @@ def main():
         return True
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
+        return True
+    if sys.argv[1:2] == ["--apply-ticks"]:
+        _applyticks_cli(sys.argv[1:])
         return True
     if sys.argv[1:2] == ["--live-proof"]:
         _liveproof_cli(sys.argv[1:])

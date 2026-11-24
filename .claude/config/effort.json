@@ -237,6 +237,14 @@
       "block": "smart",
       "advise": "low"
     },
+    "resume-dead-agent": {
+      "block": "low",
+      "advise": "quiet"
+    },
+    "ready-ticks": {
+      "block": "high",
+      "advise": "smart"
+    },
     "roster-unleased": {
       "block": "high",
       "advise": "low"

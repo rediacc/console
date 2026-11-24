@@ -2423,6 +2423,10 @@ Box progress (agent/plans/PLAN-tick-tracking.md):
                                 stale-investigation, live-owed, linked,
                                 untouched) from trailers, report TICK lines,
                                 live-proof rows, investigation and progress
+  --apply-ticks <me> [--write]  apply the TICK rows finished writers reported
+                                (queued at SubagentStop): each ready row runs
+                                --plan-investigate when the box has no row,
+                                then --plan-tick; refused rows are kept
 
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
   --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
@@ -2892,6 +2896,15 @@ CLI_BOXROW_DRY = "would append to %(ledger)s:\n  %(row)s\n(dry run: pass --write
 CLI_BOXROW_WROTE = "appended to %(ledger)s:\n  %(row)s\nCommit %(ledger)s; no plan file changed.\n"
 CLI_BOXROW_KEPT = "%(ledger)s already holds this row (appended %(at)s), so nothing was written.\n"
 
+CLI_APPLYTICKS_USAGE = (
+    "usage: worklist.py --apply-ticks <me> [--write]\n"
+    "  Lists the TICK rows finished writers reported (queued at SubagentStop in\n"
+    "  .claude/hooks/context/state/<me8>-pending-ticks.jsonl) with a verdict each:\n"
+    "  READY, WAIT (a lease commit is not landed yet), CLOSED, REFUSED. --write runs\n"
+    "  --plan-investigate (when the box has no row) and --plan-tick per ready row,\n"
+    "  retires each OK row, keeps each refused one, and exits 1 when any was refused.\n"
+)
+
 CLI_PLANINV_USAGE = (
     "usage: worklist.py --plan-investigate <me> <agent/plans/PLAN-x.md> <box>\n"
     "                   <absent|present|partial> [--owed <kind>]\n"
@@ -3099,6 +3112,21 @@ V_ROSTER_DEAD = (
     "live worker:\n"
     "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
     "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+# A lead's sub-agent an API error killed, not resumed since (wl_roster_resume): the hook cannot resume it, so the block prints the SendMessage that does. Gone once the transcript shows that SendMessage.
+V_RESUME_DEAD = (
+    "AGENT CUT BY AN API ERROR: %d sub-agent(s) stopped on an API or connection error and were "
+    "not resumed since. Each holds unfinished work; resume each by its id (a resume, never a "
+    "respawn):\n"
+    "%s"
+)
+
+# Queued TICK rows from writer reports whose commits landed (wl_planbox pending-tick queue).
+V_READY_TICKS = (
+    "READY TICKS: %d box tick(s) reported by finished writers are ready (commits landed, or none "
+    "named). Apply them, each through --plan-investigate and --plan-tick:\n"
+    "    .claude/hooks/stop/worklist.py --apply-ticks %s --write"
 )
 
 # A queued item no live plan holds any more is named here to start (agent/plans/PLAN-unlimited-writers.md: a queue lease exists only for work block_plan_concurrency refuses). R20260925.5: an item waiting on an open BLOCKED_BY blocker is skipped, and the last line names that token as the remedy.

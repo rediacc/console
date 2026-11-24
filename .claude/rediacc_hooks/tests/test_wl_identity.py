@@ -517,6 +517,8 @@ def drive_l1(fix) -> L1Drive:
             % (inv_rel, inv_selector, inv_rel, inv_rel),
             "[verdict: present]",
         ),
+        # Dry run (no --write): the fixture's pending-tick queue is empty, so the accepted run lists zero rows after the same _identity_or_die its --write mode runs.
+        ("--apply-ticks", "--apply-ticks @WHO@", "apply-ticks: 0 pending row(s)"),
         # A dry run (no --write) over the same fixture plan: it prints the five-part report and writes nothing. The fixture has no git repository, so the merge base is unresolvable and the report says so, after the same _identity_or_die its --write mode runs.
         ("--plan-preflight", "--plan-preflight @WHO@ %s" % inv_rel, "5. VERDICT:"),
         # Listing mode (a `<me>` and no plan): prints the open LP boxes after the same _identity_or_die its record and tick modes run, and runs no recorder.
