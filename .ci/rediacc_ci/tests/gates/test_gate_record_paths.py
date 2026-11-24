@@ -163,7 +163,8 @@ PLAN_RECORDS = (
 #: 2026-11-23 (PLAN-tooling-code-reduction CR2): 58 -> 56. check:ci-doc-region-parity, check:ci-gate-bind and check:ci-parity retired into check:ci-gen-gates, whose leaf spawns their scripts as legs; the derivation follows those legs (check_record_paths TS_LEG_RE), so it reads the plan files through the doc-region leg's `*.md` glob.
 #: 2026-11-24 (PLAN-tooling-code-reduction CR1-CR4 integration): 58 -> 59, the set as the derivation now reports it.
 #: Joined: the nine gates whose lock entry names `**` and that dcee36e930 declared as readers of the record set (agent-browser-exit, docker-npm-pins, go-module-sync, lint-rule-liveness, model-invocable-commands, plant-proofs, secret-supply, standalone-selftests, unverified-downloads), and check:ci-max-lines through plan-boxes.json alone.
-#: Left the derivation: dead-service-methods, git-history-depth, jq-boolean-default, merge-method-prose, no-inline-python, python-gate-deps, retired-commands, schema-call-sites and tracked-sidecars; the policy still declares each one a reader (record_paths reports them beyond the derivation), so a plan-only commit still re-runs them.
+#: Left the derivation: dead-service-methods, git-history-depth, jq-boolean-default, merge-method-prose, no-inline-python, python-gate-deps, retired-commands, schema-call-sites and tracked-sidecars.
+#: 2026-11-24 (after the 9a66691457 re-trace): 59 -> 59. Those nine leave the six plan records' declared readers too, and check:ci-source-rules leaves both sets: its traced `names` no longer reach agent/. check:ci-pipefail-grep-q joins every record through the `names: ['**']` its traced lock entry carries. A gate that re-trace narrowed and a later re-trace widens back is named by record_paths as an UNDECLARED READER, so the drop cannot go stale silently.
 PLAN_READERS = frozenset(
     {
         "check:ci-account-env-retired",
@@ -207,6 +208,7 @@ PLAN_READERS = frozenset(
         "check:ci-plan-implementation",
         "check:ci-plan-live-proof",
         "check:ci-plan-record",
+        "check:ci-pipefail-grep-q",
         "check:ci-plant-proofs",
         "check:ci-portal-sitekey-guard",
         "check:ci-prose-style",
@@ -218,7 +220,6 @@ PLAN_READERS = frozenset(
         "check:ci-shape-duplication",
         "check:ci-shell-commands",
         "check:ci-shell-format",
-        "check:ci-source-rules",
         "check:ci-standalone-selftests",
         "check:ci-trap-registry",
         "check:ci-tree-shape",
