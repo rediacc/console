@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3170,
-    "sourceCommit": "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+    "keyCount": 3172,
+    "sourceCommit": "5b8a058e54dc23662110e06a81475259ee5ca1e3"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2938,6 +2938,8 @@
     "errors.ssh.noPrivateKey": "5ac83b14",
     "errors.subscription.activationFailed": "8de746b0",
     "errors.subscription.ipRebind.attemptsExhausted": "d2ff037c",
+    "errors.subscription.ipRebind.codeCommandFailed": "a16ea5ac",
+    "errors.subscription.ipRebind.codeCommandMalformed": "e028f93f",
     "errors.subscription.ipRebind.disabled": "adac7e20",
     "errors.subscription.ipRebind.envCodeMalformed": "8d9c9a3c",
     "errors.subscription.ipRebind.locked": "356d3dc6",

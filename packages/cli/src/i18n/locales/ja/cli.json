@@ -3709,7 +3709,7 @@
         "notFirstUse": "このトークンは最初に使われた IP アドレスに紐づくタイプではないため、別のアドレスへ移せません。Web ポータルでトークンの IP バインド設定を確認してください。",
         "nonInteractive": "IP アドレスが変わりましたが、このログインは以前のアドレスからしか使えません。ここへ移すには、認証アプリのコードを渡してください。対話型ターミナルで任意の rdc コマンド (例: `rdc subscription status`) を実行するか、`REDIACC_IP_REBIND_CODE` に現在の 6 桁のコードを設定してコマンドを再実行します。または `rdc subscription login` を実行してログインし直してください。",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` には認証アプリの 6 桁のコードを設定してください。",
-        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` のプログラム ({{command}}) が認証コードを返さなかったため ({{detail}})、このログインを新しい IP アドレスへ移せませんでした。プログラムを修正するか、`REDIACC_IP_REBIND_CODE` に現在の 6 桁のコードを設定するか、`rdc subscription login` を実行してログインし直してください。",
+        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` に指定されたプログラム ({{command}}) が認証コードを返さなかったため ({{detail}})、このログインを新しい IP アドレスへ移せませんでした。プログラムを修正するか、`REDIACC_IP_REBIND_CODE` に現在の 6 桁のコードを設定するか、`rdc subscription login` でログインし直してください。",
         "codeCommandMalformed": "6 桁のコード以外のものを出力しました",
         "stillMismatched": "移動したあとも、アカウントサーバーには別の IP アドレスが見えています。接続が複数のアドレス (IPv4 と IPv6 など) を行き来している可能性があります。コマンドをもう一度実行するか、`rdc subscription login` を実行してください。",
         "attemptsExhausted": "3 回続けてコードが間違っていました。やり直すにはコマンドをもう一度実行するか、`rdc subscription login` を実行してログインし直してください。"

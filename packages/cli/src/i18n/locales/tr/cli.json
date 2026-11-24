@@ -3709,8 +3709,8 @@
         "notFirstUse": "Bu belirteç ilk kullanıldığı IP adresine bağlı değil, bu yüzden başka bir adrese taşınamaz. Belirtecin IP bağlamasını web portalından kontrol edin.",
         "nonInteractive": "IP adresiniz değişti ve bu oturum yalnızca eski adresten çalışıyor. Oturumu buraya taşımak için kimlik doğrulama uygulamanızdaki kodu verin: etkileşimli bir terminalde herhangi bir rdc komutu çalıştırın (örneğin `rdc subscription status`) ya da `REDIACC_IP_REBIND_CODE` değişkenine güncel 6 haneli kodu atayıp komutu yeniden çalıştırın. Ya da yeniden giriş yapmak için `rdc subscription login` çalıştırın.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE`, kimlik doğrulama uygulamanızdaki 6 haneli kod olmalıdır.",
-        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` içindeki program ({{command}}) bir doğrulama kodu vermedi ({{detail}}), bu yüzden oturum yeni IP adresine taşınamadı. Programı düzeltin, `REDIACC_IP_REBIND_CODE` değişkenine güncel 6 haneli kodu atayın ya da yeniden giriş yapmak için `rdc subscription login` çalıştırın.",
-        "codeCommandMalformed": "6 haneli bir kod dışında bir şey yazdırdı",
+        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` içindeki program ({{command}}) bir doğrulama kodu vermedi ({{detail}}); bu yüzden bu oturum yeni IP adresine taşınamadı. Programı düzeltin, `REDIACC_IP_REBIND_CODE` değişkenine güncel 6 haneli kodu yazın ya da `rdc subscription login` ile yeniden oturum açın.",
+        "codeCommandMalformed": "6 haneli bir kod yerine başka bir çıktı verdi",
         "stillMismatched": "Taşımadan sonra hesap sunucusu hâlâ farklı bir IP adresi görüyor. Bağlantınız adresler arasında gidip geliyor olabilir (örneğin IPv4 ile IPv6). Komutu yeniden çalıştırın ya da `rdc subscription login` çalıştırın.",
         "attemptsExhausted": "Art arda üç yanlış kod girildi. Yeniden denemek için komutu tekrar çalıştırın ya da yeniden giriş yapmak için `rdc subscription login` çalıştırın."
       }
