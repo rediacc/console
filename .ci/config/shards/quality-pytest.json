@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T23:48:33.224Z",
+  "generatedAt": "2026-11-24T00:48:12.093Z",
   "legs": [
     {
       "index": 1,
@@ -755,6 +755,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_gh_retry.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_list_e2e_probe_files.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_scheduled.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_workflow_invariants_upstream_module.py",
         "pytest:.ci/rediacc_ci/tests/test_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_core_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_build_tolerated.py",

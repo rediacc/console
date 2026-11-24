@@ -1049,6 +1049,11 @@ UPSTREAM_GATES = (
     "check:ci-ops-health",
     "check:deps",
 )
+# Upstream gates whose manifest step runs the Python module itself rather than `npm run <id>`
+# (scripts/ci-runner/manifest.ts `run:`); the step counts when it invokes that module.
+UPSTREAM_GATE_MODULES = {
+    "check:ci-ops-health": "rediacc_ci.quality.ops_health",
+}
 UPSTREAM_GATE_LABEL = "no-external-quality"
 UPSTREAM_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
 # The one `if:` an external step may carry: the lane's standard guard and the label hold, nothing that can tell a schedule from a pull request. Compared with parentheses removed, because gate-bind wraps its `when:` conjunct in them, and with at most one gate-bind shard conjunct (`matrix.shard == N`) removed, because a shard index cannot tell a cadence either.
@@ -1091,14 +1096,17 @@ def _guard(value: object) -> str:
 
 
 def upstream_gate_steps(quality_doc: object) -> dict[str, list[tuple[str, int, dict]]]:
-    """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`."""
+    """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`, or the gate's registered module (UPSTREAM_GATE_MODULES)."""
     found: dict[str, list[tuple[str, int, dict]]] = {gate: [] for gate in UPSTREAM_GATES}
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     for job, body in (jobs if isinstance(jobs, dict) else {}).items():
         for i, st in enumerate(_steps(body)):
             run = _text(st.get("run"))
             for gate in UPSTREAM_GATES:
-                if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run):
+                module = UPSTREAM_GATE_MODULES.get(gate)
+                if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run) or (
+                    module and re.search(r"\bpython3 -m %s(?![\w.])" % re.escape(module), run)
+                ):
                     found[gate].append((job, i, st))
     return found
 
