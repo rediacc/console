@@ -189,9 +189,9 @@ describe('MCP tool definitions', () => {
     });
   });
 
-  describe('repoArgField for grand repo guard', () => {
-    it('is set on guarded destructive tools', () => {
-      const guarded = [
+  describe('repoArgField names the repo field', () => {
+    it('is set on the destructive repo tools', () => {
+      const repoTools = [
         'repo_up',
         'repo_down',
         'repo_delete',
@@ -200,7 +200,7 @@ describe('MCP tool definitions', () => {
         // repo_exec replaced term_exec (w2b): the tool that used to build `term connect -m <machine> -c <cmd>` and whose argv silently went invalid when -m died. It is a real leaf now, so it is auto-derived.
         'repo_exec',
       ];
-      for (const name of guarded) {
+      for (const name of repoTools) {
         const tool = TOOLS.find((t) => t.name === name)!;
         expect(tool.repoArgField, `${name} should have repoArgField`).toBeDefined();
       }
@@ -221,7 +221,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('the positional-converted repo tools bind their repo to the <ref> arg', () => {
-      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the guard's repo field is the positional name, not a dead --name flag.
+      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the repo field is the positional name, not a dead --name flag.
       for (const name of [
         'repo_cat',
         'repo_status',
@@ -242,14 +242,14 @@ describe('MCP tool definitions', () => {
     });
 
     it('repo_checkout binds its repo to the <commit-or-branch-ref> positional', () => {
-      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the guard field is the positional name.
+      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the repo field is the positional name.
       expect(TOOLS.find((t) => t.name === 'repo_checkout')!.repoArgField).toBe(
         'commit-or-branch-ref'
       );
     });
 
     it('the backup tools bind their repo to the <ref> positional too', () => {
-      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on repo_push / repo_pull. Binding to the real positional actually enables it.
+      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the field named nothing on repo_push / repo_pull. It names the real positional now.
       expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('ref');
       expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('ref');
     });

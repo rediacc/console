@@ -1,12 +1,4 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { Placement } from '@rediacc/shared/config-schema';
-import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
-import { t } from '../../i18n/index.js';
-import { isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
-import {
-  isAncestryVerificationAvailable,
-  isOverrideLegitimate,
-} from '../../utils/process-ancestry.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
@@ -21,136 +13,18 @@ export function buildAllTools(): ToolDef[] {
   return [...buildToolsFromContract(), ...CUSTOM_TOOLS];
 }
 
-function guardError(msg: string): ToolResult {
-  return { content: [{ type: 'text', text: msg }], isError: true };
-}
-
 /**
- * Derive the CLI command path from a tool definition.
- * e.g., repo_up → "repo up", backup_push → "backup push"
+ * Execute a tool call via the rdc child process and format the MCP response.
+ *
+ * No repo guard runs here (agent/plans/PLAN-rmcp-decide.md Design 3): the child runs with
+ * `REDIACC_AGENT=1` (executor.ts) and meets the CLI's own command-policy check, so an MCP call and
+ * the same command typed by an agent get one check and one answer.
  */
-function getToolCommandPath(tool: ToolDef): string {
-  const argv = tool.command({
-    name: 'x',
-    machine: 'x',
-    size: '1G',
-    command: 'x',
-    parent: 'x',
-    tag: 'x',
-    repo: 'x',
-    storage: 'x',
-    storageName: 'x',
-  });
-  const cmdParts: string[] = [];
-  for (const part of argv) {
-    if (part === 'x' || part.startsWith('-')) break;
-    cmdParts.push(part);
-  }
-  return cmdParts.join(' ');
-}
-
-/** Check if a fork repo is running a fork-blocked command. */
-function checkForkBlocked(tool: ToolDef): ToolResult | null {
-  const cmdPath = getToolCommandPath(tool);
-  const meta = COMMAND_METADATA[cmdPath] as CommandMeta | undefined;
-  if (meta?.forkBlocked) {
-    return guardError(t('errors.agent.forkBlocked', { command: cmdPath }));
-  }
-  return null;
-}
-
-/**
- * Fetch repository config for guard checks.
- * Uses dynamic import to avoid loading config service at module level.
- */
-async function getRepoInfo(
-  repoName: string,
-  configName?: string
-): Promise<{ repositoryGuid: string; grandGuid?: string; placement?: Placement } | null> {
-  try {
-    const { configService } = await import('../../services/config/config-resources.js');
-    if (configName) {
-      configService.setRuntimeConfig(configName);
-    }
-    return (await configService.getRepository(repoName)) ?? null;
-  } catch {
-    return null; // config not available — let the command proceed
-  }
-}
-
-/** Determine if a repo is a fork based on its config. */
-function isForkRepo(repoInfo: { repositoryGuid: string; grandGuid?: string }): boolean {
-  return !!(repoInfo.grandGuid && repoInfo.grandGuid !== repoInfo.repositoryGuid);
-}
-
-/** Check if an env override is present but not legitimate, returning an error if so. */
-function checkOverrideLegitimacy(
-  guardErrorKey: string,
-  guardErrorKeyNonLinux: string,
-  templateVars: Record<string, string>
-): ToolResult | null {
-  if (isOverrideLegitimate()) return null;
-
-  const errorKey = isAncestryVerificationAvailable() ? guardErrorKey : guardErrorKeyNonLinux;
-  return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
-}
-
-/** Guard a grand (non-fork) repo, block unless a legitimate override is present. */
-function guardGrandRepo(repoName: string): ToolResult | null {
-  if (!isRepoAllowedByGrandEnv(repoName)) {
-    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
-  }
-  return checkOverrideLegitimacy(
-    'errors.agent.mcpGrandGuardOverride',
-    'errors.agent.mcpGrandGuardOverrideNonLinux',
-    { name: repoName }
-  );
-}
-
-/** Guard a named repo, block grand repos or fork-blocked commands. */
-async function guardNamedRepo(
-  tool: ToolDef,
-  repoName: string,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  const repoInfo = await getRepoInfo(repoName, options.configName);
-  if (!repoInfo) return null;
-
-  if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
-
-  // The development-only ops VM fleet is exempt, the same predicate the CLI's own grand guard reads.
-  const { isOpsVmPlacement } = await import('../../utils/ops-vm.js');
-  if (await isOpsVmPlacement(repoInfo.placement)) return null;
-
-  return guardGrandRepo(repoName);
-}
-
-/**
- * Block destructive ops on non-fork repos unless --allow-grand or env override.
- * Also blocks fork-incompatible commands on fork repos.
- */
-function applyGrandRepoGuard(
-  tool: ToolDef,
-  args: Record<string, unknown>,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  if (!tool.repoArgField) return Promise.resolve(null);
-
-  const repoName = args[tool.repoArgField] as string | undefined;
-  if (repoName) return guardNamedRepo(tool, repoName, options);
-
-  return Promise.resolve(null);
-}
-
-/** Execute a tool call via the rdc child process and format the MCP response. */
 async function executeTool(
   tool: ToolDef,
   args: Record<string, unknown>,
   options: McpServerOptions
 ): Promise<ToolResult> {
-  const guardResult = await applyGrandRepoGuard(tool, args, options);
-  if (guardResult) return guardResult;
-
   const argv = tool.command(args);
   const result = await executeRdcCommand(argv, {
     ...options,

@@ -52,7 +52,7 @@ export interface ToolDef {
   timeoutClass: 'read' | 'write';
   /** Where the tool is served (COMMAND_METADATA mcpSurface); the registry generator checks it against the contract. */
   surface: McpSurface;
-  /** Field name in args that contains the repository name. Used for grand repo guard in MCP. */
+  /** Field name in args that holds the repository ref. Metadata only: the MCP layer judges no repo; the child `rdc` does. */
   repoArgField?: string;
   /**
    * The attach window of the child `rdc` (PLAN-detached-jobs J8b): a machine job that finishes inside it returns
