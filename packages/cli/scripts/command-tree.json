@@ -3562,6 +3562,12 @@
                   "descriptionKey": "commands.repo.admin.orphan.list.description",
                   "options": [
                     {
+                      "flags": "--executor-events <file>",
+                      "descriptionKey": "commands.repo.admin.orphan.list.executorEventsOption",
+                      "mandatory": false,
+                      "defaultValue": null
+                    },
+                    {
                       "flags": "--debug",
                       "descriptionKey": "options.debug",
                       "mandatory": false,
