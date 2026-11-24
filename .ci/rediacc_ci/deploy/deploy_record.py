@@ -53,7 +53,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.core import awscli
 from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor, deploy_proxy, executor_artifacts
-from rediacc_ci.enterprise import registry
+from rediacc_ci.enterprise import control_db, registry
 
 SELF = "rediacc_ci.deploy.deploy_record"
 SCHEMA = 1
@@ -514,16 +514,23 @@ def control_execute_argv(database: str, sql: str) -> list[str]:
 
 
 def wrangler_control_write(database: str, sql: str) -> None:
-    """The production transport: `wrangler d1 execute <database> --remote` from a neutral directory, so no worker config is picked up. Raises RecordError; the swap point of the tests."""
+    """The production transport: `wrangler d1 execute <database> --remote` from a neutral directory, so no worker config is picked up. npx reads no PATH and finds no install from a temporary directory ("npx canceled due to missing packages", finding e69747ea), so the argv runs the pinned binary by its absolute path (`wrangler.resolve` over `control_db.wrangler_env`), as `rings_run.d1_query` does. Raises RecordError; the swap point of the tests."""
+    env = control_db.wrangler_env()
     with tempfile.TemporaryDirectory(prefix="deploy-record-") as tmp:
         try:
+            argv = wrangler_cmd.resolve(control_execute_argv(database, sql), pathlib.Path(tmp), env)
             proc = subprocess.run(
-                control_execute_argv(database, sql),
+                argv,
                 cwd=tmp,
+                env=env,
                 capture_output=True,
                 text=True,
                 check=False,
             )
+        except wrangler_cmd.WranglerNotInstalledError as exc:
+            raise RecordError(
+                "wrangler d1 execute %s could not run: %s" % (database, exc)
+            ) from None
         except OSError as exc:
             raise RecordError(
                 "wrangler d1 execute %s could not run: %s" % (database, exc)
@@ -1213,7 +1220,9 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         args.account_smoke_rc,
     )
     fetched = record["executor_manifest"].get("fetched_sha256")
-    if fetched is not None and fetched != record["executor_manifest"]["sha256"]:
+    # A bench company's image is built from the tree (`deploy_proxy.stage_bench`), never from the release's artifacts, so its staged manifest is not compared with the release's; both stay in the record.
+    tree_built = company is not None and company.bench
+    if fetched is not None and not tree_built and fetched != record["executor_manifest"]["sha256"]:
         problems.append(
             "the fetched executor manifest differs from the staged one the before record read"
         )

@@ -8,22 +8,21 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import pathlib
 import shutil
 import subprocess
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import awscli, common
+from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor as ce
 from rediacc_ci.deploy import deploy_account as da
 from rediacc_ci.deploy import deploy_proxy as dp
 from rediacc_ci.deploy import deploy_record as dr
 from rediacc_ci.deploy import executor_artifacts
-
-if TYPE_CHECKING:
-    import pathlib
 
 NAME = "acmecorp"
 COMPANY_ID = "c0a1b2c3d4e5f607"
@@ -547,6 +546,38 @@ def test_a_bench_company_record_goes_to_the_bench_control_database(root, fakes, 
     assert fakes["control"][0][0] == "control-bench-eu"
 
 
+@pytest.mark.parametrize(("bench", "rc", "status"), [(True, 0, "deployed"), (False, 1, "failed")])
+def test_only_a_bench_company_skips_the_staged_manifest_comparison(
+    root, fakes, tmp_path, bench, rc, status
+):
+    """A bench company's image is built from the tree, so its staged manifest differing from the release's is not a failure (the 2026-11-22 proof-ring-canary deploy failed on exactly that); a stable company's still is (control)."""
+    out = tmp_path / "before.json"
+    flags = ["--company-bench"] if bench else []
+    ns = dr._parser().parse_args(
+        [
+            "before",
+            *account_args(root),
+            *flags,
+            "--proxy-config",
+            str(proxy_cfg(root)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+    dr.cmd_before(ns, root)
+    staged = tmp_path / "staged.json"
+    tree = {name: {"sha256": "f" * 64} for name in MANIFEST_FILES}
+    staged.write_text(json.dumps({"files": tree}))
+    args = after_args(out, tmp_path, "--sink", "control", "--ring", "small")
+    args.manifest = str(staged)
+    assert dr.cmd_after(args, root) == rc
+    record = json.loads((tmp_path / "record.json").read_text())
+    assert record["executor_manifest"]["fetched_sha256"] == dict.fromkeys(MANIFEST_FILES, "f" * 64)
+    assert "'%s'" % status in fakes["control"][0][1]
+
+
 @pytest.mark.parametrize("sink", [[], ["--sink", "r2", "--channel", "edge"]])
 def test_a_company_record_refuses_every_sink_but_control(root, fakes, tmp_path, sink):
     before = company_before(root, tmp_path)
@@ -623,8 +654,13 @@ def test_the_control_transport_runs_wrangler_d1_execute_remote_from_a_neutral_di
         return subprocess.CompletedProcess(argv, 0, "[]", "")
 
     monkeypatch.setattr(subprocess, "run", fake)
+    pinned = pathlib.Path("/pinned/node_modules/.bin/wrangler")
+    monkeypatch.setattr(wrangler_cmd, "binary", lambda _cwd, _env=None: pinned)
     dr.wrangler_control_write("control-eu", "SELECT 1;")
     argv, kw = calls[0]
+    # The pinned binary by its absolute path: npx reads no PATH from a temporary directory (finding e69747ea).
+    assert argv[0] == str(pinned)
+    assert "npx" not in argv
     assert argv[-7:] == [
         "d1",
         "execute",
@@ -637,7 +673,18 @@ def test_the_control_transport_runs_wrangler_d1_execute_remote_from_a_neutral_di
     assert kw["cwd"] != str(paths.repo_root())
 
 
+def test_the_control_transport_names_a_missing_wrangler_before_any_child(monkeypatch):
+    def missing(_cwd, _env=None):
+        raise wrangler_cmd.WranglerNotInstalledError("wrangler is not installed for /tmp/x")
+
+    monkeypatch.setattr(wrangler_cmd, "binary", missing)
+    monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: pytest.fail("a child ran"))
+    with pytest.raises(dr.RecordError, match="control-eu could not run: wrangler is not installed"):
+        dr.wrangler_control_write("control-eu", "x")
+
+
 def test_the_control_transport_maps_a_duplicate_row_to_write_once(monkeypatch):
+    monkeypatch.setattr(wrangler_cmd, "binary", lambda _cwd, _env=None: pathlib.Path("/w"))
     monkeypatch.setattr(
         subprocess,
         "run",
