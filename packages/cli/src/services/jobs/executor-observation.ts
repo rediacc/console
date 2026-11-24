@@ -5,7 +5,8 @@
  * plan for every job it started. A client that left the attach window follows by polls, and the poll that first
  * sees the terminal state is an observer like any other: it records the finish and runs the steps the job owes,
  * once, through the same claim as `rdc job wait`. A job the executor holds no ticket for (started by another
- * process) owes nothing here.
+ * process) owes nothing here, bar one case: a failed or cancelled repository_create job is rolled back from the
+ * machine's job record alone (rollbackFromJobRecord).
  */
 
 import { repoNamesByGuid } from '@rediacc/shared/config-schema';

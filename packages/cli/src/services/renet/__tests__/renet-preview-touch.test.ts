@@ -385,3 +385,34 @@ describe('the pin, the prune and the switch-back in a real shell', () => {
     }
   });
 });
+
+describe('switchBackToPinnedSlot', () => {
+  const pinned = { slotDir: '/usr/lib/rediacc/renet/2.4.0', sha256: 'oldhash' };
+
+  async function switchBack(output: string) {
+    const mod = await import('../renet-provisioner.js');
+    const exec = vi.fn((_command: string) => Promise.resolve(output));
+    const refresh = vi.spyOn(mod.renetProvisioner, 'refreshRouter').mockResolvedValue(true);
+    const outcome = await mod.renetProvisioner.switchBackToPinnedSlot({ exec } as never, pinned);
+    return { outcome, exec, refresh };
+  }
+
+  it('runs the switch under the host install lock with its timeout exit, then moves the router onto the pinned binary', async () => {
+    const { outcome, exec, refresh } = await switchBack('SWITCHED\n');
+    expect(outcome).toBe('switched');
+    const command = exec.mock.calls[0][0];
+    expect(command).toContain("flock -w 120 -E 75 '/tmp/.rdc-renet-provision.lock' sh -c");
+    expect(command).toContain('/usr/lib/rediacc/renet/2.4.0/renet');
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(refresh.mock.calls[0][1]).toBe('/usr/lib/rediacc/renet/2.4.0/renet');
+  });
+
+  it.each(['SLOT_MISSING', 'HASH_MISMATCH'])(
+    'leaves the router alone when the body says %s',
+    async (token) => {
+      const { outcome, refresh } = await switchBack(`${token}\n`);
+      expect(outcome).toBe(token === 'SLOT_MISSING' ? 'slot_missing' : 'hash_mismatch');
+      expect(refresh).not.toHaveBeenCalled();
+    }
+  );
+});
