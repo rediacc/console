@@ -21,6 +21,7 @@ the few this module needs are restated here as literals rather than imported: `F
 WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 transcripts (plan F6), so their type is enough. Every other type is a writer, and so is ANY agent whose transcript shows an edit tool call, whatever its type claims. A reader promoted by evidence is never demoted again, which is the conservative direction for supervision.
 """
 
+import contextlib
 import datetime
 import functools
 import json
@@ -95,6 +96,10 @@ SCAN_STEP_BYTES = 8 * 1024 * 1024
 STATUS_TEXT_MAX = 600
 # Rows printed in the HONEST summary before a counted remainder line.
 SUMMARY_ROWS_MAX = 8
+# The directory under the git COMMON dir holding one `RosterCache` file per session, shared by the main checkout and every lease of it.
+ROSTER_CACHE_DIR = "rediacc-roster-cache"
+# Bumped when the file's shape changes; a file of another schema is read as empty, never migrated.
+ROSTER_CACHE_SCHEMA = 1
 
 
 def queue_order(rec):
@@ -375,27 +380,127 @@ def interrupted(rec):
     return False
 
 
+class RosterCache:
+    """What one session's transcripts already proved, kept across processes so a hot guard reads only what changed (PR-TASK 79b7e92e, operator 2026-11-24: load 134 on 24 cores).
+
+    MEASURED on the lead session of 2026-11-24 (8,767 roster files, 4.8 GB of subagent transcripts, a 1.9 GB lead transcript): block_commit_of_live_writer_file spent 1.33 s of every `git commit` re-proving 4,472 finished agents finished by reading each tail, and 0.79 s re-parsing live writers' whole transcripts; block_plan_concurrency spent 7.0 s of every spawn re-reading the lead transcript for completion notifications.
+
+    THREE MAPS, each keyed by the transcript's path:
+      `finished`   [inode, size, mtime_ns] at which `proven_finished` said a DURABLE True (`_finished_verdict`). Only that is kept: a True resting on the transcript and the clock stays True while the bytes do not move, since the clock only advances; a False can turn True with time alone, and a True resting on a teammate's idle edge rests on a file outside the transcript. A transcript that grew, shrank or was replaced has a new signature and is judged again, so a resumed agent is never served a stale "finished".
+      `edits`      the incremental `edit_paths` state: byte offset, inode, the reading (`root`, `strict`, the generator registry's signature) and the raw paths of the complete lines already read.
+      `delivered`  the `wl_report.delivered_ids` cursor of the lead transcript, per `require_result` reading; that function already restarts at 0 on a shrink or a new inode.
+
+    WHERE. `<git common dir>/rediacc-roster-cache/<session dir name>.json`: the common dir is shared by the main checkout and every lease, so a writer's commit in a lease reuses what the lead's guards proved. A tree with no git dir keeps the cache in memory for the one process.
+
+    CONCURRENT WRITERS. The write is a temp file in the same directory and an `os.replace`, so a reader sees a whole old file or a whole new one. Two processes that both add entries race and the later replace wins; the loser's entries are simply proved again next time, since every entry is an optimisation whose absence only costs a read. A file that does not parse is read as empty.
+    """
+
+    def __init__(self, path=None):
+        self.path = path
+        self.dirty = False
+        self.doc = {"v": ROSTER_CACHE_SCHEMA, "finished": {}, "edits": {}, "delivered": {}}
+        if path is None:
+            return
+        try:
+            doc = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if isinstance(doc, dict) and doc.get("v") == ROSTER_CACHE_SCHEMA:
+            for key in ("finished", "edits", "delivered"):
+                if isinstance(doc.get(key), dict):
+                    self.doc[key] = doc[key]
+
+    @staticmethod
+    def signature(st):
+        return [st.st_ino, st.st_size, st.st_mtime_ns]
+
+    def is_finished(self, jsonl, st):
+        return self.doc["finished"].get(str(jsonl)) == self.signature(st)
+
+    def mark_finished(self, jsonl, st):
+        self.doc["finished"][str(jsonl)] = self.signature(st)
+        self.dirty = True
+
+    def get(self, kind, key):
+        return self.doc[kind].get(key)
+
+    def put(self, kind, key, value):
+        if self.doc[kind].get(key) != value:
+            self.doc[kind][key] = value
+            self.dirty = True
+
+    def save(self):
+        """Write the file when anything changed. A write that fails costs only the next process a re-read, so it is swallowed."""
+        if not self.dirty or self.path is None:
+            return
+        path = pathlib.Path(self.path)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    json.dump(self.doc, fh, separators=(",", ":"))
+                os.replace(tmp, path)
+            except BaseException:
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp)
+                raise
+        except OSError:
+            return
+        self.dirty = False
+
+
+def roster_cache(root, sub_dir):
+    """The `RosterCache` of the session whose `subagents/` directory is `sub_dir`, persisted under `root`'s git common dir; an in-memory one when either cannot be located."""
+    if sub_dir is None:
+        return RosterCache()
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return RosterCache()
+    return RosterCache(dirs[1] / ROSTER_CACHE_DIR / ("%s.json" % pathlib.Path(sub_dir).parent.name))
+
+
+def finished_cached(cache, jsonl, now, name="", cwd="", session_id=""):
+    """`proven_finished`, answered from `cache` when the transcript has not moved since it was last proven finished, and recorded there when it is proven now."""
+    try:
+        st = jsonl.stat()
+    except (OSError, AttributeError):
+        return False
+    if cache.is_finished(jsonl, st):
+        return True
+    done, durable = _finished_verdict(jsonl, now, name, cwd, session_id)
+    if done and durable:
+        # The signature taken BEFORE the tail was read: a transcript that grew in between carries a newer one, which misses next time and is judged again.
+        cache.mark_finished(jsonl, st)
+    return done
+
+
 def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     """True only when the transcript's last record ENDED THE TURN and nothing was written after.
 
     The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the roster.
     """
+    return _finished_verdict(jsonl, now, name, cwd, session_id)[0]
+
+
+def _finished_verdict(jsonl, now, name="", cwd="", session_id=""):
+    """(`proven_finished`'s answer, whether a True answer is DURABLE). Durable means it rests on the transcript and the clock alone, so it holds for as long as the bytes do not move (`RosterCache`); a True resting on a teammate's idle edge, a file outside the transcript, is not."""
     import wl_liveness as L
 
     mtime = _mtime(jsonl)
     if mtime is None:
-        return False
+        return False, False
     rec = last_record(jsonl)
     if L._record_is_idle(rec) or interrupted(rec):
-        return now - mtime >= FINISHED_QUIET_S
+        return now - mtime >= FINISHED_QUIET_S, True
     # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still counted as nine live writers at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
     if not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60:
-        return True
+        return True, True
     if name:
         edge = L.idle_edge(cwd, session_id, name)
         if edge is not None and mtime <= edge + FINISHED_QUIET_S:
-            return True
-    return False
+            return True, False
+    return False, False
 
 
 def scan_transcript(jsonl, ent):
@@ -586,6 +691,10 @@ def transcript_waiting(jsonl, now):
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
     import wl_liveness as L
 
+    # THE HORIZON FIRST, from one stat: `transcript_armed` answers "" past it whatever the tail says, and the spawn guard asks this of every agent the event does not list (8,944 tail reads, 2.7 s per spawn on the 2026-11-24 lead session, nearly all of them agents quiet for hours).
+    mt = _mtime(jsonl)
+    if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
+        return ""
     if not L._record_is_idle(last_record(jsonl)):
         return ""
     return transcript_armed(jsonl, now)
@@ -1603,6 +1712,8 @@ def _python_text(shellscan, run, cmd, cwd):
     return text or ""
 
 
+# Once per process: every Bash call of every transcript asks for the lexer, and each uncached ask re-executed syspath.py from disk (415 loads, 0.12 s of one commit-guard run, measured 2026-11-24).
+@functools.lru_cache(maxsize=1)
 def _shellscan():
     """`rediacc_hooks.shellscan`, the guards' lexer, reached with `.claude` on sys.path the way that package expects."""
     import importlib.util
@@ -1635,6 +1746,11 @@ def edit_paths(jsonl, root, strict=False):
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
         return set()
+    return {p for p in _edit_paths_in(data, root, strict) if not in_lease_tree(p)}
+
+
+def _edit_paths_in(data, root, strict):
+    """The raw `edit_paths` set of the JSONL bytes `data`, before the lease-tree filter."""
     base = str(root).rstrip("/") + "/"
     out = set()
     for rec in wl_common.records(data.splitlines(), need=b'"tool_use"'):
@@ -1660,7 +1776,63 @@ def edit_paths(jsonl, root, strict=False):
                 # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
                 # A relative spelling is normalized too: a `..` path that climbs back into a lease tree dodged the lease filter the same way.
                 out.add(os.path.normpath(path).removeprefix(base))
-    return {p for p in out if not in_lease_tree(p)}
+    return out
+
+
+def _registry_signature(root):
+    """What `bash_write_paths`' regenerate route reads besides the transcript (the generator registry and the root package.json), as mtimes; a cached edit set read under another registry is read again."""
+    base = pathlib.Path(root)
+    sig = []
+    for rel in (GENERATED_ARTIFACTS, "package.json"):
+        try:
+            sig.append((base / rel).stat().st_mtime_ns)
+        except OSError:
+            sig.append(None)
+    return sig
+
+
+def edit_paths_cached(jsonl, root, cache, strict=False):
+    """`edit_paths`, reading only the bytes appended since `cache` last read this transcript.
+
+    The complete lines already read are kept as their raw path set with the byte offset after them; a transcript that shrank or was replaced, or one read under another `root`, `strict` or generator registry, is read again from 0. A trailing line with no newline yet is read every time and never consumed, exactly as the whole-file read sees it."""
+    try:
+        st = jsonl.stat()
+    except (OSError, AttributeError):
+        return set()
+    key = str(jsonl)
+    reading = [str(root), bool(strict), _registry_signature(root)]
+    ent = cache.get("edits", key)
+    if (
+        not isinstance(ent, dict)
+        or ent.get("ino") != st.st_ino
+        or not isinstance(ent.get("off"), int)
+        or ent["off"] > st.st_size
+        or ent.get("reading") != reading
+    ):
+        ent = {"ino": st.st_ino, "off": 0, "reading": reading, "paths": []}
+    paths = set(ent.get("paths") or ())
+    off = ent["off"]
+    tail = b""
+    if off < st.st_size:
+        try:
+            with jsonl.open("rb") as fh:
+                fh.seek(off)
+                blob = fh.read()
+        except OSError:
+            return set()
+        cut = blob.rfind(b"\n")
+        if cut >= 0:
+            paths |= _edit_paths_in(blob[: cut + 1], root, strict)
+            off += cut + 1
+        tail = blob[cut + 1 :]
+        cache.put(
+            "edits",
+            key,
+            {"ino": st.st_ino, "off": off, "reading": reading, "paths": sorted(paths)},
+        )
+    if tail.strip():
+        paths |= _edit_paths_in(tail, root, strict)
+    return {p for p in paths if not in_lease_tree(p)}
 
 
 class WriterPaths(set):
@@ -1773,19 +1945,44 @@ def lastevent_path(cwd, session_id):
     return wl.with_suffix(".lastevent-%s.json" % (session_id or "unknown")[:8])
 
 
+# {(cwd, session_id): (rows, metas)} while a `pinned_estimate` block is open.
+_PINNED: dict[Any, Any] = {}
+
+
+@contextlib.contextmanager
+def pinned_estimate(cwd, session_id):
+    """Compute `live_estimate(cwd, session_id)` once and serve it to every clock-free call for the same session inside the block.
+
+    block_plan_concurrency asks twice per spawn, once itself and once through `wl_planconc.live_plans`, and each ask cost 5 to 8 s on the 2026-11-24 lead session. The pin lives exactly as long as the `with`, so nothing outside the one guard run is ever answered from it; a call passing its own `now` is a different question and is computed."""
+    key = (str(cwd), str(session_id))
+    est = live_estimate(cwd, session_id)
+    _PINNED[key] = est
+    try:
+        yield est
+    finally:
+        _PINNED.pop(key, None)
+
+
 def live_estimate(cwd, session_id, now=None):
     """(rows, metas) for every agent the session is running right now, readers included; rows is None when it cannot tell.
 
     A PreToolUse payload or a CLI call carries no background-task list, so this ESTIMATES: the last Stop event's running subagents, plus every agent whose meta was written after that event (started this turn, which the event cannot know yet), minus any whose transcript is proven finished. With no event on disk at all, an agent counts when its transcript moved in the last STATUS_PING_MIN minutes.
     Each row carries `id`, `type`, `desc` and `writer`, by type only: there is no state doc here to cache an evidence scan in. The Stop hook recomputes from the authoritative event on the next stop either way.
+    The lead-transcript read and the durable finished verdicts go through the session's `RosterCache`.
     """
+    if now is None:
+        pinned = _PINNED.get((str(cwd), str(session_id)))
+        if pinned is not None:
+            return pinned
     now = time.time() if now is None else now
     sub_dir = session_subagents_dir(cwd, session_id)
     if sub_dir is None:
         return None, {}
     metas = load_metas(sub_dir)
     start = C.project_start({"cwd": cwd})
-    ro_types = read_only_types(C.project_root(start))
+    root = C.project_root(start)
+    ro_types = read_only_types(root)
+    cache = roster_cache(root, sub_dir)
     types, since, waiters = {}, None, {}
     stuck_memo: dict[Any, Any] = {}
 
@@ -1830,7 +2027,7 @@ def live_estimate(cwd, session_id, now=None):
             if wshell:
                 waiters[aid] = wshell
                 types[aid] = m["type"]
-    done = _completed_since(sub_dir, since)
+    done = _completed_since(sub_dir, since, cache=cache)
     rows = []
     for aid, typ in sorted(types.items()):
         m = metas.get(aid) or {}
@@ -1839,7 +2036,7 @@ def live_estimate(cwd, session_id, now=None):
             m
             and aid not in waiters
             and (
-                proven_finished(m["jsonl"], now, m.get("name", ""), cwd, session_id)
+                finished_cached(cache, m["jsonl"], now, m.get("name", ""), cwd, session_id)
                 or _done_after(done.get(_short(aid)), m)
             )
         ):
@@ -1857,6 +2054,7 @@ def live_estimate(cwd, session_id, now=None):
                 "waiting": waiters.get(aid, ""),
             }
         )
+    cache.save()
     return rows, metas
 
 
@@ -1866,21 +2064,30 @@ def _short(aid):
     return RPT.short_id(aid)
 
 
-def _completed_since(sub_dir, since, problems=None):
+def _completed_since(sub_dir, since, problems=None, cache=None):
     """{short agent id: epoch} of every COMPLETED task notification that reached the LEAD's transcript after `since` (the last Stop event's mtime), result or not. {} when there is no event or no transcript.
 
     The lead transcript sits beside the session's `subagents/` directory as `<session>.jsonl`. Reuses `wl_report.delivered_ids` without its non-empty `<result>` filter (agent/plans/PLAN-stop-hook-retro-20260924.md R.6).
+
+    INCREMENTAL through `cache` (a `RosterCache`): the cursor `delivered_ids` returns ({"ino", "off", "ids"}) is saved, so the next call reads only the bytes appended since. The lead transcript reached 1.9 GB on 2026-11-24 and a whole read cost 3.5 s, twice per spawn. `delivered_ids` itself restarts from 0 when the file shrank below the saved offset or carries another inode, so a replaced transcript is never answered from the old one's ids.
     """
     if since is None or sub_dir is None:
         return {}
     import wl_report as RPT
 
+    lead = sub_dir.parent.with_suffix(".jsonl")
+    key = "%s|all" % lead
+    cursor = cache.get("delivered", key) if cache is not None else None
     try:
-        ids, _cur = RPT.delivered_ids(sub_dir.parent.with_suffix(".jsonl"), require_result=False)
+        ids, cur = RPT.delivered_ids(
+            lead, cursor=cursor if isinstance(cursor, dict) else None, require_result=False
+        )
     except Exception as exc:
         if problems is not None:
             problems.append("lead transcript: %s: %s" % (type(exc).__name__, exc))
         return {}
+    if cache is not None and cur.get("ino") is not None:
+        cache.put("delivered", key, cur)
     return {k: v for k, v in ids.items() if v > since}
 
 

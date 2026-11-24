@@ -1038,6 +1038,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_review_two_trees.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_reviewclass.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_roster.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_roster_cache.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_rulings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_schedred.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_scratch.py | (none) | via pytest (testpaths) | py |

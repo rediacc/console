@@ -604,7 +604,7 @@ MUTATIONS = [
     (
         "every writer reads as finished",
         (
-            'if roster.proven_finished(jsonl, now, meta.get("name", ""), cwd, session_id):',
+            'if roster.finished_cached(cache, jsonl, now, meta.get("name", ""), cwd, session_id):',
             "if True:",
         ),
     ),
@@ -623,7 +623,10 @@ INCIDENT = "git commit -F m -- .ci/config/plan-boxes.json agent/INDEX.md agent/p
 code = RUNNER % (
     str(CLAUDE),
     str(GUARD),
-    ("roster.edit_paths(member_jsonl, root, strict=True)", "roster.edit_paths(member_jsonl, root)"),
+    (
+        "roster.edit_paths_cached(member_jsonl, root, cache, strict=True)",
+        "roster.edit_paths_cached(member_jsonl, root, cache)",
+    ),
     str(GUARD),
 )
 good, _ = run(INCIDENT, session=READER_SESSION)

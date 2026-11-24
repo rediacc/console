@@ -19,6 +19,8 @@ FAILS OPEN ONLY WHEN THE ROSTER CANNOT BE READ, and says so on stderr. A session
 
 MEASURED COST, 2026-10-08, on a session with 1,090 subagent metas and a 597 MB lead transcript: the liveness pass reads only each transcript's bounded tail (about one second warm), and full transcripts are read only for the agents that pass it. The lead transcript itself is never read, which is why the harness's completion notifications (`wl_roster._completed_since`) are not consulted: that read covers the whole file from offset 0. On the same session every one of the 1,088 finished agents was already proven finished by its own tail, and the two left were the two writers really running.
 
+CACHED ACROSS COMMITS (PR-TASK 79b7e92e). By 2026-11-24 the lead session held 4,472 finished agents, and re-proving each one from its tail cost 1.33 s of every commit, with 0.79 s more re-parsing live writers' whole transcripts. Both now go through `wl_roster.RosterCache`, one file per session under the git common dir (shared by every lease): a durable finished verdict is kept against the transcript's (inode, size, mtime_ns) and served while those do not move, and a live writer's edit set is kept with the byte offset it was read to, so only the appended lines are parsed. A transcript that grew is judged again, which is how a resumed writer stays live.
+
 NO ENVIRONMENT READ OF ITS OWN. The payload's `cwd` and `session_id` locate the session, as in `block_plan_concurrency`. The stop-hook modules are loaded by `importlib` inside `run`, after the command is known to be a commit, so the other Bash calls of the chain never pay for them.
 """
 
@@ -118,20 +120,22 @@ def live_writers(cwd, session_id, now=None):
         return root, []
     now = time.time() if now is None else now
     kids = roster.children_map(metas)
+    cache = roster.roster_cache(root, sub_dir)
     out = []
     for aid, meta in sorted(metas.items()):
         jsonl = meta.get("jsonl")
         if jsonl is None or not jsonl.exists():
             continue
-        if roster.proven_finished(jsonl, now, meta.get("name", ""), cwd, session_id):
+        if roster.finished_cached(cache, jsonl, now, meta.get("name", ""), cwd, session_id):
             continue
         paths = set()
         for member in [aid, *roster.descendants(aid, kids)]:
             member_jsonl = (metas.get(member) or {}).get("jsonl")
             if member_jsonl is not None:
-                paths |= roster.edit_paths(member_jsonl, root, strict=True)
+                paths |= roster.edit_paths_cached(member_jsonl, root, cache, strict=True)
         if paths:
             out.append((aid, meta, {os.path.normpath(os.path.join(root, p)) for p in paths}))
+    cache.save()
     return root, out
 
 
