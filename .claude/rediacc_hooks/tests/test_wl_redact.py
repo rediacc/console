@@ -119,6 +119,18 @@ def test_control_a_pem_header_quoted_in_prose_keeps_the_prose():
     assert "PRIVATE KEY" not in text
 
 
+def test_a_mangled_pem_header_with_many_dashes_still_loses_its_body():
+    """31a95127.2: six or more closing dashes used to stop the match before the base64 body; five is the control."""
+    for dashes in ("-----", "------", "-" * 12):
+        text = "see -----BEGIN RSA PRIVATE KEY%s\n%s\n-----END RSA PRIVATE KEY----- done" % (
+            dashes,
+            PEM_BODY,
+        )
+        got = S.redact_secret_shapes(text)
+        assert PEM_BODY[:16] not in got, dashes
+        assert "[redacted:private-key]" in got
+
+
 def test_compaction_redacts_a_legacy_line_written_before_the_door(store):
     """The 2026-11-10 path: an item already on disk unredacted is re-emitted by compact_store."""
     legacy = {

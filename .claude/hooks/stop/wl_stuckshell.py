@@ -46,7 +46,7 @@ def launched_at(jsonl, sid):
 
 
 def is_final(entry):
-    """True when a report index row is a final report: it names a box through a TICK line, or it is a closing summary (see the module docstring)."""
+    """True when a report index row is a final report: it names a box through a TICK line and is not `interim`, or it is a closing summary (see the module docstring). An `interim` row is never final, ticked boxes or not."""
     import wl_report as RPT
 
     if entry.get("boxes"):
