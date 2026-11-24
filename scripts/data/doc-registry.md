@@ -1042,6 +1042,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_standdown_class.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_state_document.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_stop_speed_git.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_stop_speed_planfile.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_stop_speed_reads.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_stop_speed_registry.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_store_journal.py | (none) | via pytest (testpaths) | py |

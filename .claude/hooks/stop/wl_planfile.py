@@ -291,6 +291,44 @@ def _token_index(prepared):
     return index
 
 
+_PREFIX_INDEX: dict[Any, Any] = {}
+
+
+def _need(k, t):
+    """The fewest shared tokens `c` with `c / k >= t`, the exact float comparison `match_item` makes; `k + 1` when no count reaches it."""
+    c = max(0, math.ceil(t * k - 1e-9))
+    while c > 0 and (c - 1) / k >= t:
+        c -= 1
+    while c <= k and c / k < t:
+        c += 1
+    return c
+
+
+def _prefix_index(prepared, index):
+    """{token: [position, ...]} over each indexed item's PREFIX: its `k - need + 1` rarest tokens, rarity being the posting length in `index`.
+
+    THE ITEM-SIDE PRUNE (measured 2026-11-24: 844 tasks against 5,764 items cost 4.5 s of a 20 s stop). An item of k tokens matches by the item-side test only when at least `need = _need(k, TASK_MATCH)` of its tokens are in the task, so at most `k - need` are outside it, and any `k - need + 1` of its tokens include one the task has. Indexing only the rarest ones keeps `the`/`and` out of the postings, which is what made the old task-side bound degrade to a scan of the whole store for every long task. Built once per prepared list, like `_token_index`.
+    """
+    key = id(prepared)
+    params = (P.MIN_MATCH_TOKENS, P.TASK_MATCH)
+    hit = _PREFIX_INDEX.get(key)
+    if hit is not None and hit[0] is prepared and hit[2] == params:
+        return hit[1]
+    pidx: dict[str, list[int]] = {}
+    for pos, (_iid, _state, it, _ids) in enumerate(prepared):
+        k = len(it)
+        if k < P.MIN_MATCH_TOKENS:
+            continue
+        need = _need(k, P.TASK_MATCH)
+        if need > k:
+            continue
+        for tok in sorted(it, key=lambda x: (len(index.get(x, ())), x))[: k - need + 1]:
+            pidx.setdefault(tok, []).append(pos)
+    _PREFIX_INDEX.clear()
+    _PREFIX_INDEX[key] = (prepared, pidx, params)
+    return pidx
+
+
 def _prepared(rows):
     """`prepare(rows)` once per rows list: plan_rows hands the same item rows to `reconcile` for every plan (40 on 2026-11-18, 7.6 s of re-tokenising)."""
     hit = _PREPARED.get(id(rows))
@@ -322,16 +360,28 @@ def match_item(task, prepared):
     best = None
     # Only items sharing a token can overlap; the index keeps fold order, so ties break exactly as the full scan did.
     index = _token_index(prepared)
-    # Exact pruning by pigeonhole: a match needs inter >= 0.7*|tt| or inter >= 0.7*|it| >= 0.7*MIN, so it shares at least m tokens with tt and therefore contains one of tt's (|tt| - m + 1) rarest tokens. Candidates come only from those postings.
-    m = max(
-        1,
-        min(
-            math.ceil(P.TASK_MATCH * len(tt) - 1e-9),
-            math.ceil(P.TASK_MATCH * P.MIN_MATCH_TOKENS - 1e-9),
-        ),
-    )
-    rare = sorted(tt, key=lambda tok: len(index.get(tok, ())))[: len(tt) - m + 1]
-    cand = sorted({i for tok in rare for i in index.get(tok, ())})
+    if 0 < P.TASK_MATCH <= 1:
+        # Exact pruning by pigeonhole, one bound per side of the test. Task side: a match with inter >= need(|tt|) leaves at most |tt| - need task tokens outside the item, so the item holds one of tt's (|tt| - need + 1) rarest tokens. Item side: the item holds one of its own prefix tokens (`_prefix_index`). The union is every possible match; the loop below applies the full test.
+        need = _need(len(tt), P.TASK_MATCH)
+        cand_set: set[int] = set()
+        if need <= len(tt):
+            for tok in sorted(tt, key=lambda tok: len(index.get(tok, ())))[: len(tt) - need + 1]:
+                cand_set.update(index.get(tok, ()))
+        pidx = _prefix_index(prepared, index)
+        for tok in tt:
+            cand_set.update(pidx.get(tok, ()))
+        cand = sorted(cand_set)
+    else:
+        # A threshold outside (0, 1] (the env seam) keeps the one shared bound: a match shares at least m tokens with tt, so it contains one of tt's (|tt| - m + 1) rarest tokens.
+        m = max(
+            1,
+            min(
+                math.ceil(P.TASK_MATCH * len(tt) - 1e-9),
+                math.ceil(P.TASK_MATCH * P.MIN_MATCH_TOKENS - 1e-9),
+            ),
+        )
+        rare = sorted(tt, key=lambda tok: len(index.get(tok, ())))[: len(tt) - m + 1]
+        cand = sorted({i for tok in rare for i in index.get(tok, ())})
     for pos in cand:
         iid, state, it, _ids = prepared[pos]
         inter = len(tt & it)
