@@ -332,10 +332,7 @@ function destroyContainer(container: Container, reason: string): Promise<void> {
 }
 
 /** The response body, byte for byte, with `done` called once when it closes, errors or is cancelled, rather than when the headers arrive. */
-function trackBody(
-  body: ReadableStream<Uint8Array>,
-  done: () => void
-): ReadableStream<Uint8Array> {
+function trackBody(body: ReadableStream<Uint8Array>, done: () => void): ReadableStream<Uint8Array> {
   const reader = body.getReader();
   let finished = false;
   const finish = () => {
