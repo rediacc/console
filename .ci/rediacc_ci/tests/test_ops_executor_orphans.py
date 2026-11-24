@@ -270,3 +270,41 @@ def test_missing_credentials_under_a_bound_profile_are_refused(
     monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
     monkeypatch.setenv("REDIACC_BWS_PROFILES", mod.PROFILE)
     assert _run("list", "--target", "stable", "--region", "eu") == 1
+
+
+def test_a_sqlite_path_with_uri_metacharacters_is_opened_read_only(
+    db: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """Review 8ce79813.1: `?` and `#` in the path are percent-encoded, not read as the query or fragment."""
+    odd = tmp_path / "w?x#y.db"
+    odd.write_bytes(db.read_bytes())
+    assert [e["repo"] for e in map(mod.to_event, mod.read_sqlite(odd))] == [
+        e["repo"] for e in map(mod.to_event, mod.read_sqlite(db))
+    ]
+    with pytest.raises(mod.RefusedError):
+        mod.read_sqlite(tmp_path / "missing?mode=rw.db")
+
+
+def test_a_region_with_the_onprem_target_is_refused(db: pathlib.Path) -> None:
+    """Review 8ce79813.3."""
+    assert _run("list", "--target", "onprem", "--sqlite", str(db), "--region", "eu") == 1
+    assert _run("list", "--target", "onprem", "--sqlite", str(db)) == 0
+
+
+def test_missing_credentials_with_no_bound_profile_reexecute_under_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review 8ce79813.2: no credentials and the profile not bound re-runs the same argv under the profile."""
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    seen: list[list[str]] = []
+
+    def reexec(_args: object, argv: list[str] | None) -> int:
+        seen.append(list(argv or []))
+        return 7
+
+    monkeypatch.setattr(mod, "_reexec", reexec)
+    argv = ["list", "--target", "stable", "--region", "eu"]
+    assert _run(*argv) == 7
+    assert seen == [argv]

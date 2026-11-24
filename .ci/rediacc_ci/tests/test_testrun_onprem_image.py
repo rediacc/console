@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import http.client
+import ipaddress
+import socket
 import subprocess
+import sys
+import time
 from typing import TYPE_CHECKING
 
 import pytest
@@ -41,8 +46,8 @@ class FakeDocker(onprem_stack.Runtime):
             return done(
                 argv, 0, "", self.proxy_log if argv[2] == mod.PROXY_NAME else self.account_log
             )
-        if "--rm" in argv and mod.PROBE_HOST in joined and self.probe_logged:
-            self.proxy_log += "EGRESS GET http://%s/\n" % mod.PROBE_HOST
+        if "--rm" in argv and mod.PROBE_URL in joined and self.probe_logged:
+            self.proxy_log += "EGRESS GET %s\n" % mod.PROBE_URL
         return done(argv)
 
     def http_get(self, *_unused) -> tuple[int, str]:
@@ -89,7 +94,7 @@ def test_a_container_that_dials_out_fails_the_run_the_control(tmp_path: pathlib.
 
 
 def test_the_probes_own_dial_is_not_a_finding() -> None:
-    log_text = "EGRESS GET http://%s/\n" % mod.PROBE_HOST
+    log_text = "EGRESS GET %s\n" % mod.PROBE_URL
     assert mod.find_egress(log_text) == []
     assert mod.probe_seen(log_text)
     assert mod.find_egress(log_text + "EGRESS GET http://other.example/\n") == [
@@ -167,3 +172,55 @@ def test_the_build_names_the_onprem_target(tmp_path: pathlib.Path) -> None:
 )
 def test_bad_usage_exits_2(argv: list[str], tmp_path: pathlib.Path) -> None:
     assert mod.main(argv, runtime=FakeDocker(), root=tmp_path) == 2
+
+
+def test_the_image_dialing_the_probe_host_elsewhere_is_a_finding() -> None:
+    """Review e0c242d9.4: only the exact probe request is the detector's own."""
+    other = "EGRESS GET http://%s/exfil\nEGRESS CONNECT %s:443\n" % (mod.PROBE_HOST, mod.PROBE_HOST)
+    assert len(mod.find_egress(other)) == 2
+
+
+def test_a_survivor_of_the_teardown_fails_a_clean_window(tmp_path: pathlib.Path) -> None:
+    """Review e0c242d9.1: a container that outlives cleanup is no pass."""
+    rt = FakeDocker()
+    real = rt.run
+
+    def run(argv, env=None, cwd=None, timeout=600):
+        if argv[:3] == ["docker", "rm", "-f"] and argv[-1] == mod.ACCOUNT_NAME:
+            return done(argv, 1, "", "device busy")
+        return real(argv, env=env, cwd=cwd, timeout=timeout)
+
+    rt.run = run
+    assert _go(rt, tmp_path) == 1
+
+
+def test_the_proxy_logs_a_method_it_has_no_handler_for() -> None:
+    """Review e0c242d9.2: PROPFIND and TRACE reach the refusal and print an EGRESS line, the real proxy program."""
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    program = mod.PROXY_PROGRAM.replace(str(ipaddress.IPv4Address(0)), "127.0.0.1").replace(
+        str(mod.PROXY_PORT), str(port)
+    )
+    proc = subprocess.Popen(
+        [sys.executable, "-u", "-c", program], stdout=subprocess.PIPE, text=True
+    )
+    try:
+        status = 0
+        for _ in range(50):
+            try:
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request("PROPFIND", "http://x.example/")
+                status = conn.getresponse().status
+                break
+            except OSError:
+                time.sleep(0.1)
+        assert status == 403
+        assert proc.stdout is not None
+        assert proc.stdout.readline().strip() == "EGRESS PROPFIND http://x.example/"
+    finally:
+        proc.kill()
+        proc.wait()
+        if proc.stdout:
+            proc.stdout.close()

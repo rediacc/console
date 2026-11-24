@@ -85,7 +85,9 @@ def read_sqlite(path: pathlib.Path) -> list[dict]:
     if not path.is_file():
         raise RefusedError("--sqlite %s is not a file" % path)
     try:
-        with contextlib.closing(sqlite3.connect("file:%s?mode=ro" % path, uri=True)) as conn:
+        with contextlib.closing(
+            sqlite3.connect("%s?mode=ro" % path.resolve().as_uri(), uri=True)
+        ) as conn:
             conn.row_factory = sqlite3.Row
             return [dict(r) for r in conn.execute(EVENTS_SQL)]
     except sqlite3.Error as exc:
@@ -149,6 +151,8 @@ def run(args: argparse.Namespace, argv: list[str] | None = None) -> int:
     try:
         rows: list[dict] | None
         if args.target == ONPREM_TARGET:
+            if args.region:
+                raise RefusedError("--region belongs to the remote targets, not --target onprem")
             rows = read_sqlite(onprem_sqlite(args))
             where = "onprem"
         else:

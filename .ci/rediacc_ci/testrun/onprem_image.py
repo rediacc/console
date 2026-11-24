@@ -5,7 +5,7 @@
 Builds the shipped image (`rediacc_ci.ops.build_server onprem`, tag `rediacc-server-onprem:dev`, the root `Dockerfile` `--target onprem`; never `private/account/Dockerfile`), then runs it where it has no route out and proves it never tries to leave:
 
   1. A Docker network created `--internal`: containers on it have no route to the outside, and its DNS cannot resolve an outside name.
-  2. A deny-all egress proxy on that network. It answers every request, CONNECT included, with 403 and prints one `EGRESS <method> <target>` line per attempt. The image's containers get `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY` pointing at it, so a client that honours them is LOGGED; a client that ignores them cannot connect and surfaces as a resolution error (`ENOTFOUND`, `EAI_AGAIN`) in its own log, which the audit reads too.
+  2. A deny-all egress proxy on that network. It answers every request, CONNECT included, with 403 and prints one `EGRESS <method> <target>` line per attempt. The image's containers get `HTTP_PROXY`, `HTTPS_PROXY` and `ALL_PROXY` pointing at it, so a client that honours them is LOGGED; a client that ignores them cannot connect, and one that reports it as a resolution error (`ENOTFOUND`, `EAI_AGAIN`) in its own log is caught by the audit's log read. A direct dial to an IP literal (ENETUNREACH or a timeout), or a client that swallows its error, leaves no line either way: the network has no route out, so such a dial fails, but this audit cannot see it.
   3. The image's account server on the on-premise entry, reachable from the host only through a forwarder container attached to both networks (an internal network publishes no port). The forwarder is not part of the image under test and is not audited.
   4. A DETECTOR SELF-CHECK before the observation window: a probe container dials a name that cannot exist through the proxy, and the run FAILS unless the proxy log shows that dial. A detector that cannot see a dial would turn every later "no egress" into a claim about nothing.
   5. The observation window (`--window`, default 30 s) with the server's health read through the forwarder, then the verdict: the run fails, listing them, on any `EGRESS` line other than the probe's and on any resolution error in the audited containers' logs.
@@ -41,8 +41,11 @@ PROXY_PORT = 3128
 ACCOUNT_PORT = 4910
 PUBLISHED_PORT = 4911
 DEFAULT_WINDOW_S = 30
-PROBE_HOST = "egress-probe.invalid"
 EGRESS_MARK = "EGRESS "
+PROBE_HOST = "egress-probe.invalid"
+# The one request the detector self-check makes; only this exact dial is the probe's, so the image dialing the same host at another path or method is still a finding.
+PROBE_URL = "http://%s/detector-self-check" % PROBE_HOST
+PROBE_LINE = "%s%s %s" % (EGRESS_MARK, "GET", PROBE_URL)
 # A client that ignores the proxy variables fails to resolve on an internal network; these are the codes Node and curl-style clients report.
 RESOLUTION_ERROR = re.compile(
     r"ENOTFOUND|EAI_AGAIN|Could not resolve host|Name or service not known"
@@ -62,8 +65,12 @@ def refuse(self):
 class H(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
-for m in ("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "CONNECT"):
-    setattr(H, "do_" + m, refuse)
+# Any method, TRACE and PROPFIND included: BaseHTTPRequestHandler answers a method with no do_ attribute 501 without calling a handler, so the attempt would print no EGRESS line.
+def any_method(self, name):
+    if name.startswith("do_"):
+        return lambda: refuse(self)
+    raise AttributeError(name)
+H.__getattr__ = any_method
 http.server.ThreadingHTTPServer(("0.0.0.0", %d), H).serve_forever()
 """
     % PROXY_PORT
@@ -85,14 +92,12 @@ def find_egress(proxy_log: str) -> list[str]:
     return [
         line.strip()
         for line in proxy_log.splitlines()
-        if line.startswith(EGRESS_MARK) and PROBE_HOST not in line
+        if line.startswith(EGRESS_MARK) and line.strip() != PROBE_LINE
     ]
 
 
 def probe_seen(proxy_log: str) -> bool:
-    return any(
-        line.startswith(EGRESS_MARK) and PROBE_HOST in line for line in proxy_log.splitlines()
-    )
+    return any(line.strip() == PROBE_LINE for line in proxy_log.splitlines())
 
 
 def find_resolution_errors(container: str, logs: str) -> list[str]:
@@ -165,7 +170,7 @@ class AirgapRun:
         # The probe container is not left behind and its own result is irrelevant: the proxy answers 403.
         self.rt.run(
             ["docker", "run", "--rm", "--network", NETWORK, "-e", "http_proxy=" + proxy, PROXY_IMAGE, "python3", "-c",
-             "import urllib.request as u; u.build_opener(u.ProxyHandler({'http': '%s'})).open('http://%s/', timeout=10)" % (proxy, PROBE_HOST)],
+             "import urllib.request as u; u.build_opener(u.ProxyHandler({'http': '%s'})).open('%s', timeout=10)" % (proxy, PROBE_URL)],
             timeout=120,
         )  # fmt: skip
         for _ in range(10):
@@ -255,8 +260,14 @@ class AirgapRun:
                 waited += 1
             findings = self.verdict()
         finally:
-            for line in self.teardown():
+            leftovers = self.teardown()
+            for line in leftovers:
                 log.error("teardown: " + line)
+        if leftovers:
+            log.error(
+                "%d piece(s) survived the teardown, so the run does not pass" % len(leftovers)
+            )
+            return 1
         if findings:
             for line in findings:
                 log.error(line)
