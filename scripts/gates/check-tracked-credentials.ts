@@ -37,10 +37,13 @@
  * use: a reseed that drains two findings and absorbs one satisfies "the total did not
  * grow" while violating "the set only loses members".
  *
- * The AWS half contributes ZERO baseline entries and is meant to stay that way. Its
- * honest bound really is none: the leak was redacted before this gate existed, and there
- * are no AWS-id fixtures here. Any AKIA/ASIA/AIDA/AROA id is therefore an addition and
- * reds on sight -- which is the class the operator actually asked about.
+ * The AWS half is meant to contribute no baseline entry. There are no AWS-id fixtures
+ * here, so any AKIA/ASIA/AIDA/AROA id is an addition and reds on sight -- which is the
+ * class the operator actually asked about. An AWS finding is therefore keyed on the VALUE,
+ * not the file: `<path>:AWS_KEY_ID:sha256=<12 hex>`, one id per distinct key id. The one
+ * operator-ruled exception (a deactivated key id in an append-only store) is pinned to
+ * that single value, so a second, different id appended to the same file still reds. A
+ * file-wide `<path>:AWS_KEY_ID` entry exempted every id the file would ever hold.
  *
  * TOKEN SHAPES ARE GATED TOO, and the reason they were nearly left out is worth keeping.
  * `ghp_` and `xox*` both matched on the first run and both hits were synthetic --
@@ -65,6 +68,7 @@
  * what package.json resolves to and check:ci-gen-gates enforces the mirror.
  */
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { envRoot } from '../lib/repo-root.js';
@@ -93,6 +97,8 @@ const KEY = 'credentialShapedFindings';
  * PCRE-ism is caught by the selftest instead of on the first real run.
  */
 const AWS_RE = /\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{16}\b/;
+/** Hex digits of sha256(id) an AWS finding carries: enough to tell two ids apart, never the id itself. */
+const AWS_DIGEST_HEX = 12;
 const PEM_BEGIN = /-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 /**
  * Token shapes, kept in step with .claude/hooks/stop/wl_store.py::_SECRET_SHAPES.
@@ -197,7 +203,18 @@ function candidates(root: string): string[] {
   }
 }
 
-/** Ids are `<path>:<shape>`, the form the shared guard expects. */
+/**
+ * One finding per DISTINCT AWS access key id in `text`, keyed `<path>:AWS_KEY_ID:sha256=<hex>`. The digest pins a baseline entry to one value, so the entry cannot exempt the next id the same file gains; the id itself is never part of the finding.
+ */
+export function awsKeyIdFindings(path: string, text: string): string[] {
+  const ids = new Set(text.match(new RegExp(AWS_RE.source, 'g')) ?? []);
+  return [...ids].map((id) => {
+    const digest = createHash('sha256').update(id).digest('hex').slice(0, AWS_DIGEST_HEX);
+    return `${path}:AWS_KEY_ID:sha256=${digest}`;
+  });
+}
+
+/** Ids are `<path>:<shape>` (an AWS id adds `:sha256=<hex>`), the form the shared guard expects. */
 export function scan(root: string): string[] {
   const ids = new Set<string>();
   for (const f of candidates(root)) {
@@ -207,7 +224,7 @@ export function scan(root: string): string[] {
     } catch {
       continue;
     }
-    if (AWS_RE.test(text)) ids.add(`${f}:AWS_KEY_ID`);
+    for (const id of awsKeyIdFindings(f, text)) ids.add(id);
     if (hasPemBody(text)) ids.add(`${f}:PEM_BODY`);
     if (TOKEN_RE.test(text)) ids.add(`${f}:TOKEN`);
   }
@@ -344,6 +361,28 @@ function selftest(): number {
     'the write path REFUSES a growing set',
     selftestVerdict({ additions: ['c.md:AWS_KEY_ID'] })?.kind === 'would-grow'
   );
+  // AN AWS ENTRY IS PINNED TO ONE VALUE. A file-wide `<path>:AWS_KEY_ID` entry exempted every id the file would ever hold.
+  const otherAwsId = 'AKIA' + 'Q7PL2MZX9RB4TN6C';
+  const one = awsKeyIdFindings('w.jsonl', `{"k":"${plantedAwsId}"}`);
+  const two = awsKeyIdFindings('w.jsonl', `{"k":"${plantedAwsId}"}\n{"k":"${otherAwsId}"}`);
+  check(
+    'an AWS finding carries a 12-hex value digest, never the id',
+    one.length === 1 && /^w\.jsonl:AWS_KEY_ID:sha256=[0-9a-f]{12}$/.test(one[0]),
+    one.join()
+  );
+  check(
+    'a second, different AWS id in a baselined file is an addition',
+    baselineAdditions(one, two).length === 1 && !baselineAdditions(one, two).includes(one[0]),
+    baselineAdditions(one, two).join()
+  );
+  // CONTROL: the same id again (an append-only store repeats lines) is no new finding, or the pinned entry reds on every compaction.
+  check(
+    'CONTROL: the same AWS id twice in one file is one finding',
+    baselineAdditions(one, awsKeyIdFindings('w.jsonl', `${plantedAwsId} ${plantedAwsId}`))
+      .length === 0
+  );
+  // CONTROL: or the digest could be a constant and the second id would still look new by accident of order.
+  check('CONTROL: two different ids get two different digests', new Set(two).size === 2);
   // CONTROL: draining must stay possible, or the backlog freezes instead of ratcheting.
   check('CONTROL: the write path ALLOWS a shrinking set', selftestVerdict({}) === null);
   // Proves the ERE half of the contract: git grep must ACCEPT both patterns. Without it
@@ -404,12 +443,11 @@ function main(): number {
         'SHRINK-ONLY. Credential SHAPES in tracked files. Entries here are legitimate, ' +
         'permanent test fixtures -- a validly-shaped key or token that a test cannot do ' +
         'without. Nothing separates a good fixture from a real credential by shape, so the ' +
-        'known ones are frozen and anything new reds. AWS_KEY_ID entries are NOT expected ' +
-        'here at all: there are no AWS-id fixtures in this repo, so one appearing means a ' +
-        'real access key id was committed to a PUBLIC remote -- rotate it, do not baseline ' +
-        'it. A TOKEN entry is only ever a fixture whose value is visibly synthetic (the one ' +
-        'here is the literal alphabet); a real-looking token belongs in a revocation, not ' +
-        'in this file.',
+        'known ones are frozen and anything new reds. There are no AWS-id fixtures here: a ' +
+        'new AWS_KEY_ID means a real key id reached a PUBLIC remote, so rotate it and do ' +
+        'not baseline it. The one AWS entry is pinned by sha256 to the deactivated ' +
+        'rediacc-ses-asia key id (operator ruling ASKED:2026-11-24T17:3xZ) and leaves when ' +
+        'that key is deleted. A TOKEN entry is only a visibly synthetic fixture.',
       current,
       firstSeed: process.argv.includes('--first-seed'),
       read: (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null),
