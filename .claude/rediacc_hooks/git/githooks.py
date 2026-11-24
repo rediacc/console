@@ -22,6 +22,7 @@ LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no pa
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import hashlib
 import importlib
@@ -1239,6 +1240,26 @@ def pre_commit(_argv: list[str]) -> int:
     return artifacts_pre_commit()
 
 
+# ONE CORE OF THE MACHINE-WIDE POOL FOR THE HEAVY PART OF A COMMIT HOOK (PR-TASK 79b7e92e, operator 2026-11-24: load 134 on 24 cores). A gen-docs verify (a full checkout-index of the commit's tree plus a node run) and an enrolled artifact's checker are the only parts of a commit that cost seconds of CPU, and ten lease writers committing at once ran them with nothing asking the pool `core_lease` keeps. The cheap selection that decides whether either runs takes no slot, so a commit that stages no provider input never waits on a busy machine. A pool that cannot be imported or opened runs the block unthrottled and says so: this is a throttle, never a verdict.
+CORE_SLOT_LABEL = "commit hook %s"
+
+
+@contextlib.contextmanager
+def _core_slot(what: str):
+    """Hold one token of `rediacc_ci.core.host_slots` for the block, yielding the env a child runs under (empty when unthrottled)."""
+    try:
+        slots = sp.import_from_ci("rediacc_ci.core.host_slots")
+    except ImportError as exc:
+        sys.stderr.write(
+            "commit-policy hook: rediacc_ci.core.host_slots cannot be imported (%s); %s runs unthrottled\n"
+            % (exc, what)
+        )
+        yield {}
+        return
+    with slots.host_slot(1, label=CORE_SLOT_LABEL % what) as slot:
+        yield slot.env
+
+
 def gen_docs_pre_commit() -> int:
     started = time.monotonic()
     repo = _repo()
@@ -1285,63 +1306,41 @@ def gen_docs_pre_commit() -> int:
                     % (verdict["staged"], verdict["providers"], time.monotonic() - started)
                 )
             return 0
-        shutil.rmtree(tree, ignore_errors=True)
-        out = _run(
-            ["git", "-c", "checkout.workers=-1", "checkout-index", "-a", "--prefix=%s/" % tree],
-            repo,
-            env,
-            VERIFY_TIMEOUT,
-        )
-        if out.returncode != 0:
-            return _unchecked(
-                "checking out the commit's tree failed: %s" % out.stderr.strip()[-600:]
-            )
-        tree_env = dict(env, GIT_DIR=git_dir, GIT_WORK_TREE=tree)
-        runs: list[list[str]] = [[]] + ([["--check-inputs"]] if verdict["machinery"] else [])
-        for extra in runs:
-            proc = _run(
-                [node, os.path.join(tree, GEN_ENTRY), *extra], tree, tree_env, VERIFY_TIMEOUT
-            )
-            if proc.returncode == 0:
-                continue
-            drifted = _DRIFT_RE.findall(proc.stderr)
-            if extra or not drifted:
-                return _unchecked(
-                    "`gen-docs.ts %s` exited %d on the commit's tree:\n%s"
-                    % (
-                        " ".join(extra) or "(verify)",
-                        proc.returncode,
-                        (proc.stderr or proc.stdout).strip()[-1500:],
-                    )
-                )
-            return _refuse(
-                "this commit leaves a generated doc region stale.\n\n"
-                "  It stages what a gen-docs provider reads:\n%s\n\n"
-                "  and gen-docs, run against the commit's own tree, reports:\n%s\n\n"
-                "  Fix: regenerate, then commit the regenerated file(s) WITH the input(s):\n"
-                "    %s\n"
-                "    git commit -F <msg> -- <the same paths> %s\n"
-                "  (or `git add -- %s` before a plain commit). If the drift persists after --write, the\n"
-                "  working tree holds an unstaged edit to another provider input that this commit leaves\n"
-                "  out; `git status` names it."
+        with _core_slot("gen-docs verify") as cores:
+            failed = _gen_docs_verify(node, repo, git_dir, tree, dict(env, **cores), verdict)
+        if failed is None:
+            sys.stderr.write(
+                "gen-docs pre-commit: %d of %d staged path(s) touch a region's inputs; the commit's tree verified clean%s (%.1fs)\n"
                 % (
-                    _hits_table(hits),
-                    "\n".join("    " + line for line in proc.stderr.strip().splitlines()[:12]),
-                    GEN_FIX,
-                    " ".join(drifted),
-                    " ".join(drifted),
+                    len(hits),
+                    verdict["staged"],
+                    ", provider inputs re-traced" if verdict["machinery"] else "",
+                    time.monotonic() - started,
                 )
             )
-        sys.stderr.write(
-            "gen-docs pre-commit: %d of %d staged path(s) touch a region's inputs; the commit's tree verified clean%s (%.1fs)\n"
+            return 0
+        kind, proc = failed
+        if kind == "unchecked":
+            return _unchecked(proc)
+        drifted = _DRIFT_RE.findall(proc.stderr)
+        return _refuse(
+            "this commit leaves a generated doc region stale.\n\n"
+            "  It stages what a gen-docs provider reads:\n%s\n\n"
+            "  and gen-docs, run against the commit's own tree, reports:\n%s\n\n"
+            "  Fix: regenerate, then commit the regenerated file(s) WITH the input(s):\n"
+            "    %s\n"
+            "    git commit -F <msg> -- <the same paths> %s\n"
+            "  (or `git add -- %s` before a plain commit). If the drift persists after --write, the\n"
+            "  working tree holds an unstaged edit to another provider input that this commit leaves\n"
+            "  out; `git status` names it."
             % (
-                len(hits),
-                verdict["staged"],
-                ", provider inputs re-traced" if verdict["machinery"] else "",
-                time.monotonic() - started,
+                _hits_table(hits),
+                "\n".join("    " + line for line in proc.stderr.strip().splitlines()[:12]),
+                GEN_FIX,
+                " ".join(drifted),
+                " ".join(drifted),
             )
         )
-        return 0
     except subprocess.TimeoutExpired as exc:
         return _unchecked(
             "`%s` timed out after %ss" % (" ".join(str(a) for a in exc.cmd[:3]), exc.timeout)
@@ -1352,7 +1351,55 @@ def gen_docs_pre_commit() -> int:
         shutil.rmtree(tree, ignore_errors=True)
 
 
+def _gen_docs_verify(node, repo, git_dir, tree, env, verdict):
+    """The verify half of `gen_docs_pre_commit`, run under one core slot: None when the commit's tree is clean, ("unchecked", why) when it could not be judged, ("drift", the gen-docs process) when a region drifted."""
+    shutil.rmtree(tree, ignore_errors=True)
+    out = _run(
+        ["git", "-c", "checkout.workers=-1", "checkout-index", "-a", "--prefix=%s/" % tree],
+        repo,
+        env,
+        VERIFY_TIMEOUT,
+    )
+    if out.returncode != 0:
+        return (
+            "unchecked",
+            "checking out the commit's tree failed: %s" % out.stderr.strip()[-600:],
+        )
+    tree_env = dict(env, GIT_DIR=git_dir, GIT_WORK_TREE=tree)
+    runs: list[list[str]] = [[]] + ([["--check-inputs"]] if verdict["machinery"] else [])
+    for extra in runs:
+        proc = _run([node, os.path.join(tree, GEN_ENTRY), *extra], tree, tree_env, VERIFY_TIMEOUT)
+        if proc.returncode == 0:
+            continue
+        if extra or not _DRIFT_RE.findall(proc.stderr):
+            return (
+                "unchecked",
+                "`gen-docs.ts %s` exited %d on the commit's tree:\n%s"
+                % (
+                    " ".join(extra) or "(verify)",
+                    proc.returncode,
+                    (proc.stderr or proc.stdout).strip()[-1500:],
+                ),
+            )
+        return ("drift", proc)
+    return None
+
+
 # THE REGISTRY'S ARTIFACTS (`artifacts.py` carries the why and the rules). The same shape as the doc-region check above, for every generated file that declares its inputs in `.ci/config/generated-artifacts.json`: no staged input is two git calls and silence; a staged input runs the entry's checker on a checkout of the commit's index, under the entry's budget. The scratch tree is this worktree's fixed directory, so a killed run's leftovers are removed by the next one, and it holds only LINKS to the working tree's build products, which `shutil.rmtree` unlinks and never follows.
+
+
+def _artifacts_selected(repo: str, env: dict) -> bool:
+    """Whether `ga.judge` will run a checker, from the same selection it makes. A registry or diff that cannot be read answers True: the judge then raises its own refusal, and holding a slot for that costs nothing."""
+    try:
+        text = ga.registry_text(repo, env)
+        if text is None:
+            return False
+        artifacts, problems = ga.parse(text)
+        if problems:
+            return True
+        return bool(ga.select(artifacts, ga.changed_paths(repo, env)))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return True
 
 
 def artifacts_pre_commit() -> int:
@@ -1364,9 +1411,15 @@ def artifacts_pre_commit() -> int:
     scratch = scratch_for(git_dir or repo)
     env = _gen_env(repo, scratch)
     try:
-        verdicts, staged, enrolled = ga.judge(
-            repo, git_dir, env, os.path.join(scratch, "artifacts-tree")
+        slot = (
+            _core_slot("artifact check")
+            if _artifacts_selected(repo, env)
+            else contextlib.nullcontext({})
         )
+        with slot as cores:
+            verdicts, staged, enrolled = ga.judge(
+                repo, git_dir, dict(env, **cores), os.path.join(scratch, "artifacts-tree")
+            )
     except ga.RegistryError as exc:
         return _refuse(
             "UNCHECKED: this commit could not be checked against the generated artifacts.\n%s\n"
