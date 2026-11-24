@@ -889,6 +889,7 @@ FIXTURE: dict[str, str] = {
     "c2/gate.py": 'import pathlib\n\nfrom rediacc_ci import paths\n\nprobe = pathlib.Path(paths.repo_root()) / "enum_probe.py"\nprobe.write_text("x")\n',
     "c2s/gate.py": 'import pathlib\nimport tempfile\n\nfrom rediacc_ci.quality import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
     "c2u/gate.py": 'import pathlib\nimport tempfile\n\nfrom elsewhere import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.somewhere_else()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
+    "c2v/gate.py": 'import pathlib\nimport tempfile\n\nfrom elsewhere import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
     "c2m/gate.py": 'import pathlib\nimport tempfile\n\nwith tempfile.TemporaryDirectory() as tmp:\n    root = pathlib.Path(tmp)\n    (root / ".github").mkdir(parents=True)\n',
     "c3/gate.py": 'import shutil\n\nfrom rediacc_ci import paths\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(paths.repo_root())\n',
     "c3m/gate.py": 'import shutil\nimport tempfile\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(tempfile.mkdtemp())\n',
@@ -934,6 +935,7 @@ CONTROL_LOCK: list[dict] = [
     {"id": "c2m", "run": "c2m/gate.py", "gate": True},
     {"id": "c2s", "run": "c2s/gate.py", "gate": True},
     {"id": "c2u", "run": "c2u/gate.py", "gate": True},
+    {"id": "c2v", "run": "c2v/gate.py", "gate": True},
     {"id": "c3", "run": "c3/gate.py", "gate": True},
     {"id": "c3m", "run": "c3m/gate.py", "gate": True},
     {"id": "c4", "run": "c4/entry.py", "gate": True},
@@ -1045,6 +1047,11 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
             record,
             "C2 (unknown base): a temp dir under a base this analyzer cannot resolve is still red",
             bool(_red(res, "c2u")),
+        )
+        _call(
+            record,
+            "C2 (same name, other module): `seams.system_temp_base()` from an unrelated module is still red (160a24a5.2)",
+            bool(_red(res, "c2v")),
         )
         _call(
             record,
