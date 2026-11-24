@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3176,
-    "sourceCommit": "5b8a058e54dc23662110e06a81475259ee5ca1e3"
+    "keyCount": 3188,
+    "sourceCommit": "6299d4888d0398dfc6bf0bd3db18948185168d41"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -511,6 +511,18 @@
     "commands.cluster.status.description": "122c70bb",
     "commands.cluster.status.descriptionShort": "59a1a34e",
     "commands.cluster.status.none": "0db6099d",
+    "commands.completion.complete.configOption": "8313efaa",
+    "commands.completion.complete.descriptionShort": "db911853",
+    "commands.completion.complete.kindOption": "ccd0e9e2",
+    "commands.completion.description": "74ed22c7",
+    "commands.completion.descriptionShort": "dbf7ff98",
+    "commands.completion.errors.configInvalid": "df0d5634",
+    "commands.completion.errors.configMissing": "7f12ea10",
+    "commands.completion.errors.remoteConfig": "3c0d8bfa",
+    "commands.completion.errors.unknownKind": "127eda65",
+    "commands.completion.errors.unknownShell": "dd00c9ef",
+    "commands.completion.errors.unsafeWord": "79e376bd",
+    "commands.completion.shellArgument": "5f64467f",
     "commands.config.access.add.description": "4ed6bc59",
     "commands.config.access.add.descriptionShort": "0787d3cc",
     "commands.config.access.add.optionNoRestrict": "e119d3f2",
