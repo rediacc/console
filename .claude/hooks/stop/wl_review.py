@@ -3377,8 +3377,14 @@ def branch_copies(repo, sha, pid, tip="HEAD"):
 
     THE COPY IS SEARCHED OVER THE WHOLE BRANCH, NOT A FIXED DEPTH BELOW THE FIX (finding #48c72397, measured 2026-11-24). The earlier lookup walked 400 commits below the fix; on 1121-1, rebased onto main after PR #605 merged, the copy of d6184ab0 sat 730 commits below fix 252bab372c, and 45 genuine fixes were refused as "does not descend". A lease's commits land by `cherry-pick -x`, and that copy carries the reviewed sha in its message even when a conflict changed its patch-id.
     """
-    if git(repo, "merge-base", "--is-ancestor", sha, tip)[0] == 0:
+    anc = git(repo, "merge-base", "--is-ancestor", sha, tip)[0]
+    if anc == 0:
         return [sha]
+    if anc != 1:
+        # Exit 1 is "not an ancestor"; anything else (128: the sha is missing from this repo) is a failed read, never an empty answer (finding cd54ad27.1).
+        raise ValueError(
+            "git merge-base --is-ancestor %s %s failed in %s (exit %s)" % (sha[:12], tip, repo, anc)
+        )
     rng = _branch_range(repo, tip)
     found = []
     rc, out = git(
@@ -3389,13 +3395,19 @@ def branch_copies(repo, sha, pid, tip="HEAD"):
         "--grep=(cherry picked from commit %s)" % sha,
         rng,
     )
-    if rc == 0:
-        found.extend(out.split())
+    if rc != 0:
+        raise ValueError(
+            "git log --grep for the cherry-pick line of %s failed in %s (exit %s)"
+            % (sha[:12], repo, rc)
+        )
+    found.extend(out.split())
     if pid and SHA40.match(pid):
         ids = _range_patch_ids(repo, rng)
         if ids is None:
             rc, out = git(repo, "rev-list", "--no-merges", rng)
-            ids = {c: patch_id(repo, c) for c in out.split()} if rc == 0 else {}
+            if rc != 0:
+                raise ValueError("git rev-list %s failed in %s (exit %s)" % (rng, repo, rc))
+            ids = {c: patch_id(repo, c) for c in out.split()}
         found.extend(c for c, p in ids.items() if p == pid and c not in found)
     return found
 

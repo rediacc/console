@@ -353,12 +353,12 @@ class Stack:
         failures: list[str] = []
         left_groups: list[dict] = []
         for entry in reversed(self.state["groups"]):
-            # A recorded leader start time that no longer matches means the group is gone and its id was recycled: signalling it would hit an unrelated process.
+            # A leader start time that differs from the recorded one means the id was recycled: signalling it would hit an unrelated process. A leader that has exited (None) is not proof of recycling: the group id stays reserved while any member lives, so the survivors are still signalled (finding c49521fb.1).
             recorded_start = entry.get("start")
-            if (
-                recorded_start is not None
-                and self.rt.group_start(int(entry["pgid"])) != recorded_start
-            ):
+            current_start = (
+                self.rt.group_start(int(entry["pgid"])) if recorded_start is not None else None
+            )
+            if current_start is not None and current_start != recorded_start:
                 continue
             try:
                 self.rt.kill_group(int(entry["pgid"]))

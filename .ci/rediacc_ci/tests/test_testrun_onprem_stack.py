@@ -408,6 +408,15 @@ def test_a_recycled_group_id_is_never_signalled(layout: mod.Layout) -> None:
     assert stack.state["groups"] == []
 
 
+def test_a_group_whose_leader_exited_is_still_signalled(layout: mod.Layout) -> None:
+    """Review c49521fb.1: an exited leader reads as no start time; the group id stays reserved while members live, so the survivors are signalled."""
+    rt = FakeRuntime()
+    stack = _recorded(layout, rt, pgids=(10,))
+    rt.starts[10] = None
+    assert stack.teardown() == []
+    assert rt.killed == [10]
+
+
 def test_a_group_with_the_recorded_start_time_is_still_signalled(layout: mod.Layout) -> None:
     """Silent control for the recycled-id test: an unchanged start time reaches kill_group."""
     rt = FakeRuntime()

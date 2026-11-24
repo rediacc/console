@@ -773,3 +773,17 @@ def test_control_a_commit_on_the_branch_still_needs_not_a_bug_evidence(tmp_path)
     fid = _copy_record(repo, reviewed, pid)
     with pytest.raises(ValueError, match="20 characters"):
         R.mark(repo, BRANCH, fid, "not-a-bug", [], ME)
+
+
+def test_branch_copies_refuses_a_sha_missing_from_the_repo(tmp_path):
+    """Review cd54ad27.1: a reviewed sha the repo does not hold makes merge-base exit 128, a failed read that must raise rather than read as "not on the branch"."""
+    repo = _repo(tmp_path)
+    with pytest.raises(ValueError, match="exit 128"):
+        R.branch_copies(str(repo), "0123456789abcdef0123456789abcdef01234567", None)
+
+
+def test_branch_copies_answers_an_ancestor_without_raising(tmp_path):
+    """Silent control: an ancestor sha answers itself."""
+    repo = _repo(tmp_path)
+    head = _git(repo, "rev-parse", "HEAD").strip()
+    assert R.branch_copies(str(repo), head, None) == [head]
