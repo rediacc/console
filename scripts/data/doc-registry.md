@@ -2207,7 +2207,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ON_PREMISE_PRIVATE_KEY` | secret | - |
 | `ON_PREMISE_PUBLIC_KEY` | product-runtime | - |
 | `OPS_ALERT_EMAILS` | secret | - |
-| `OPS_HEALTH_CONFIG` | secret | - |
+| `OPS_HEALTH_CONFIG` | gate-seam | - |
 | `OPS_HEALTH_INGEST_TOKEN` | secret | - |
 | `OPS_HEALTH_LOCK_HANDOFF` | harness | - |
 | `OPS_HEALTH_READ_TOKEN` | secret | - |

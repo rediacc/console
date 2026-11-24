@@ -8,8 +8,8 @@ import type {
   SubscriptionData,
 } from '@rediacc/shared/subscription';
 import type {
-  LicenseSigner as SignerService,
   SignerCaller,
+  LicenseSigner as SignerService,
   SignResult,
 } from '../../../private/account/src/services/license-signer.service.js';
 import { parseSignerCaller } from '../../../private/account/src/services/license-signer.service.js';
