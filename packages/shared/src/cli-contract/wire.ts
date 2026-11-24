@@ -413,4 +413,6 @@ export const PROXY_ROUTES = {
   aiChat: '/v1/ai/chat',
   /** Test a provider profile with one short call. */
   aiTest: '/v1/ai/test',
+  /** How many dispatches the executor is running, `{ busy: n }`. Asked only by the proxy's OrgExecutor alarm from inside; the forward refuses it from outside. */
+  busy: '/v1/busy',
 } as const;

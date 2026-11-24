@@ -204,7 +204,7 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
 
 /** A call into the container runtime that outlived CONTAINER_CALL_TIMEOUT_MS. The message is the reason a failed start reports. */
 export class StallError extends Error {
-  constructor(readonly step: 'health' | 'egress' | 'destroy') {
+  constructor(readonly step: 'health' | 'egress' | 'destroy' | 'busy') {
     super(`${step}-stalled`);
     this.name = 'StallError';
   }
@@ -270,6 +270,40 @@ async function healthy(
     abort.abort();
     return false;
   }
+}
+
+/** The executor's dispatch count route (PROXY_ROUTES.busy in packages/shared/src/cli-contract/wire.ts); only the alarm reaches it, never a caller. */
+export const BUSY_PATH = '/v1/busy';
+
+/** The longest the alarm holds a container awake on a dispatch count alone, so a dispatch that never ends cannot pin an instance forever. A literal, like `sleepAfter`. */
+export const MAX_DISPATCH_HOLD_MS = 60 * 60_000;
+
+/** How many dispatches the executor is running, asked of the container. Any failure or stall answers 0, so an unreachable count never keeps a container awake. */
+export async function dispatchesRunning(container: Container): Promise<number> {
+  const abort = new AbortController();
+  const ask = async (): Promise<number> => {
+    const response = await container
+      .getTcpPort(EXECUTOR_PORT)
+      .fetch(`http://container${BUSY_PATH}`, { signal: abort.signal });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return 0;
+    }
+    const body = (await response.json()) as { busy?: unknown };
+    return typeof body.busy === 'number' && body.busy > 0 ? body.busy : 0;
+  };
+  try {
+    return await within(ask(), CONTAINER_CALL_TIMEOUT_MS, () => new StallError('busy'));
+  } catch (error) {
+    logStall(error);
+    abort.abort();
+    return 0;
+  }
+}
+
+/** The answer to a request for the dispatch count that came from outside the Durable Object. */
+export function busyRefusal(): Response {
+  return Response.json({ error: 'Not found.', code: 'ROUTE_NOT_FOUND' }, { status: 404 });
 }
 
 /** Destroy the container, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. */

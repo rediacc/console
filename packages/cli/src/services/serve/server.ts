@@ -46,6 +46,7 @@ import { InvalidJobIdError } from '../executor/job-client.js';
 import { traceProxyRequest } from '../executor/proxy-trace.js';
 import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import { AuthError, type AuthVerifier } from './auth.js';
+import { createBusyCounter } from './busy.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
@@ -105,8 +106,15 @@ function defaultEgressReporter(): ReturnType<typeof createEgressReporter> {
 
 export function createServeApp(deps: ServeDeps): Hono {
   const app = new Hono();
+  // Dispatches running now, which the proxy's alarm asks before it stops an idle container.
+  const busy = createBusyCounter();
 
   app.get(PROXY_ROUTES.health, (c) => c.json({ ok: true }));
+
+  // The container tier only: a daemon has no Durable Object alarm to keep awake.
+  if (deps.mode === 'container') {
+    app.get(PROXY_ROUTES.busy, (c) => c.json({ busy: busy.count() }));
+  }
 
   app.get(PROXY_ROUTES.serverInfo, (c) => {
     const info: ServerInfo = {
@@ -307,7 +315,9 @@ export function createServeApp(deps: ServeDeps): Hono {
       },
     });
 
-    return streamText(c, async (stream) => {
+    return streamText(c, (stream) => busy.track(() => runDispatch(stream)));
+
+    async function runDispatch(stream: Parameters<Parameters<typeof streamText>[1]>[0]) {
       const write = async (streamLine: StreamLine) => {
         await stream.write(`${JSON.stringify(streamLine)}\n`);
       };
@@ -451,7 +461,7 @@ export function createServeApp(deps: ServeDeps): Hono {
       } finally {
         await ended;
       }
-    });
+    }
   });
 
   registerJobRoutes(app, deps, {

@@ -24,9 +24,12 @@ import {
 } from './org-executor-relocate';
 import {
   acquireLease,
+  BUSY_PATH,
   bounded,
+  busyRefusal,
   containerRequest,
   destroyContainer,
+  dispatchesRunning,
   durationMs,
   type EgressReportAnswer,
   EXECUTOR_IMAGE_KEY,
@@ -34,12 +37,12 @@ import {
   type ExecutorRecord,
   type ExitResult,
   errorSummary,
-  flagOom,
-  pollReady,
   executorEnv,
+  flagOom,
   isOomExit,
   isRefusal,
   logStall,
+  MAX_DISPATCH_HOLD_MS,
   OOM_HEAVY_KEY,
   OOM_KEY,
   ORG_KEY,
@@ -47,6 +50,7 @@ import {
   type PinAnswer,
   type PinnedExecutor,
   pinnedFrom,
+  pollReady,
   RECORD_KEY,
   RENEW_THROTTLE_MS,
   RETIRED_KEY,
@@ -67,6 +71,7 @@ import { INSTANCE_BY_SIZE } from './sizing';
 
 export {
   ACCOUNT_EGRESS_HOST,
+  BUSY_PATH,
   CONTAINER_CALL_TIMEOUT_MS,
   COORDINATOR_TIMEOUT_MS,
   durationMs,
@@ -76,6 +81,7 @@ export {
   type ExecutorRefusalCode,
   executorEnv,
   isOomExit,
+  MAX_DISPATCH_HOLD_MS,
   type OrgExecutorEnv,
   type PinAnswer,
   READY_TIMEOUT_MS,
@@ -103,6 +109,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private inFlight = 0;
   private lastActivity = 0;
   private lastRenew = 0;
+  /** When the alarm first held the container for a running dispatch with no request in flight, until the dispatches end or the hold is given up. */
+  private busyHoldSince: number | undefined;
   /** Set when the lease is lost and cannot be re-acquired, or the instance retired: in-flight requests finish, then the container is destroyed. */
   private draining = false;
   /** The placement the org moved to, once this instance retired. A retired instance never starts, never re-acquires and refuses every pin. */
@@ -303,6 +311,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   /** Forward a request to the container and stream its response back untouched, counting it in flight until the body closes. */
   override async fetch(request: Request): Promise<Response> {
+    // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running.
+    if (new URL(request.url).pathname === BUSY_PATH) return busyRefusal();
     await this.startupSettled();
     const container = this.ctx.container;
     if (this.isRetired()) return refusalResponse('EXECUTOR_RELOCATED');
@@ -357,17 +367,35 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const now = Date.now();
     const idleMs = durationMs(this.sleepAfter);
     if (this.inFlight > 0) {
+      this.busyHoldSince = undefined;
       await this.holdLease(true);
       await this.ctx.storage.setAlarm(now + idleMs);
       return;
     }
     if (now - this.lastActivity >= idleMs) {
+      // A dispatch outlives a client that left: the body closed, but the executor still runs the command.
+      if (await this.dispatchHolds(container, now)) {
+        await this.holdLease(true);
+        await this.ctx.storage.setAlarm(now + idleMs);
+        return;
+      }
+      this.busyHoldSince = undefined;
       const { orgId, placement } = this.record;
       await this.stopContainer('idle');
       await releaseLease(this.capacity(), orgId, placement);
       return;
     }
     await this.ctx.storage.setAlarm(this.lastActivity + idleMs);
+  }
+
+  /** Whether a running dispatch holds the container awake: the executor counts one and the hold has not passed MAX_DISPATCH_HOLD_MS. */
+  private async dispatchHolds(container: Container, now: number): Promise<boolean> {
+    if ((await dispatchesRunning(container)) === 0) {
+      this.busyHoldSince = undefined;
+      return false;
+    }
+    this.busyHoldSince ??= now;
+    return now - this.busyHoldSince < MAX_DISPATCH_HOLD_MS;
   }
 
   /** The image the deployed version names for the executor. */
