@@ -482,7 +482,7 @@ def _submodule_repo(repo, root):
         if not match or match.group(1) != owner or "%s/%s" % match.group(1, 2) == GH_REPO:
             return "", "the submodule `%s` URL `%s` is not `%s/%s/<name>`" % (
                 rel,
-                url,
+                _redact_url(url or ""),
                 GH_ORIGIN,
                 owner,
             )

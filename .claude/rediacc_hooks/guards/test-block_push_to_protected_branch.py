@@ -1731,6 +1731,26 @@ else:
     )
     fails += 1
 
+# `_redact_url` directly (review 040ac26b.1): a credential, a secret holding `@`, no credential, an `@` only in the path, and an ssh URL; a redaction that drops nothing fails the first two rows.
+_GUARD_SPEC = importlib.util.spec_from_file_location("redact_guard", _GUARD_FILE)
+if _GUARD_SPEC is None or _GUARD_SPEC.loader is None:
+    raise SystemExit("%s: cannot load %s" % (__file__, _GUARD_FILE))
+_GUARD_MOD = importlib.util.module_from_spec(_GUARD_SPEC)
+_GUARD_SPEC.loader.exec_module(_GUARD_MOD)
+REDACT_ROWS = [
+    ("https://user:p@ss@github.com/o/r.git", "https://github.com/o/r.git"),
+    ("https://token@github.com/o/r.git", "https://github.com/o/r.git"),
+    ("https://github.com/o/r.git", "https://github.com/o/r.git"),
+    ("https://github.com/o/r@v1.git", "https://github.com/o/r@v1.git"),
+    ("git@github.com:o/r.git", "git@github.com:o/r.git"),
+]
+for _url, _want in REDACT_ROWS:
+    _got = _GUARD_MOD._redact_url(_url)
+    if _got != _want:
+        print("*** FAIL *** _redact_url(%r) = %r, want %r" % (_url, _got, _want))
+        fails += 1
+print("redact rows: %d, all run" % len(REDACT_ROWS))
+
 # A count, not a concatenation: the case lists carry different tuple shapes.
 TOTAL = (
     len(CASES)
