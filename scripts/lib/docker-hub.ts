@@ -109,7 +109,7 @@ const LOCK_POLL_MS = 100;
 const TRANSIENT_TRIES = 3;
 const BACKOFF_MS = [2_000, 4_000];
 /** A lock older than this is a dead holder's. A live holder can sleep the whole wait budget and then spend a request timeout on every try, so the bound sits above that worst case, never at a guess of "a few requests". */
-const LOCK_STALE_MS = HUB_WAIT_BUDGET_MS + TRANSIENT_TRIES * HTTP_TIMEOUT_MS + 30_000;
+export const LOCK_STALE_MS = HUB_WAIT_BUDGET_MS + TRANSIENT_TRIES * HTTP_TIMEOUT_MS + 30_000;
 /** A JWT is not used within this long of its `exp`. */
 const TOKEN_MARGIN_MS = 60_000;
 /** The life assumed for a JWT whose `exp` cannot be read. */

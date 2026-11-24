@@ -395,7 +395,7 @@ export async function listHubTags(
 }
 
 /**
- * The index digest Docker Hub serves for `<image>:<tag>`, or a null digest with the cause.
+ * The raw tag answer for a tag, or null when it could not be read.
  *
  * A CACHED ANSWER MAY ONLY AGREE. The shared reader serves a tag answer up to six hours old, so a
  * re-push inside that time would read as a mismatch that no longer holds, or a bump made from a
@@ -411,6 +411,7 @@ export async function readAgreeing(
   return first;
 }
 
+/** The index digest Docker Hub serves for `<image>:<tag>` (with its push time), or a null digest with the cause. */
 async function hubTagDigest(repo: string, tag: string, pinned: Set<string>): Promise<TagAnswer> {
   const key = `${repo}:${tag}`;
   const url = hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag);

@@ -15,7 +15,9 @@ import process from 'node:process';
 import {
   createHubReader,
   type HubReaderOptions,
+  HUB_WAIT_BUDGET_MS,
   jwtExpiryMs,
+  LOCK_STALE_MS,
   limitClearsAt,
 } from './docker-hub.js';
 import { isEntryPoint } from './entry-point.js';
@@ -372,6 +374,11 @@ export async function hubReaderCases(): Promise<Array<{ label: string; ok: boole
     check(
       'a JWT `exp` is read, and a token with none reads null',
       jwtExpiryMs(jwt(100)) === 100_000 && jwtExpiryMs('opaque') === null
+    );
+    // A live holder can sleep the whole wait budget and then spend three 15 s request timeouts, so a lock younger than that is never a dead holder's (review 0b9643fc.3). The literals are the bound's own inputs, spelled out so a later edit back to a smaller number goes red.
+    check(
+      "a lock goes stale only after a live holder's worst case: the wait budget plus three request timeouts",
+      LOCK_STALE_MS > HUB_WAIT_BUDGET_MS + 3 * 15_000 && LOCK_STALE_MS > 90_000
     );
   } finally {
     for (const d of dirs) rmSync(d, { recursive: true, force: true });
