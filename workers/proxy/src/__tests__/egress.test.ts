@@ -205,6 +205,30 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
     expect(seen).toEqual([]);
   });
 
+  it('admits the run events route with the issued token (control: GET on it is refused)', async () => {
+    const { egress, seen, state } = entry(OWN);
+    const events = (method: string, query = '') =>
+      new Request(`${API}/console/runs/events${query}`, {
+        method,
+        headers: { authorization: `Bearer ${EXECUTOR_TOKEN_PLACEHOLDER}` },
+        ...(method === 'POST' ? { body: '{}' } : {}),
+      });
+
+    const ok = await egress.fetch(events('POST'));
+    expect(ok.status).toBe(200);
+    expect(seen[0]?.headers.get('authorization')).toBe('Bearer rdt_for_org-a');
+    expect(state.issues).toEqual(['org-a']);
+
+    const withQuery = await egress.fetch(events('POST', '?runId=x'));
+    expect(withQuery.status).toBe(403);
+    expect(await withQuery.json()).toMatchObject({ reason: 'query-not-allowed' });
+
+    const get = await egress.fetch(events('GET'));
+    expect(get.status).toBe(403);
+    expect(await get.json()).toMatchObject({ reason: 'route-not-allowed' });
+    expect(seen).toHaveLength(1);
+  });
+
   it('refuses a bearer call that is not the placeholder, before the issuer', async () => {
     const { egress, seen, state } = entry(OWN);
     const response = await egress.fetch(
