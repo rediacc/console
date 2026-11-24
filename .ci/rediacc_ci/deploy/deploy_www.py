@@ -74,6 +74,14 @@ A WORD-NAMED PREVIEW KEEPS ITS PR-NUMBERED DATABASE (PLAN-preview-signer D5)
 -----------------------------------------------------------------------------
 `--name pv-<w>-<w>-<w>` (the name `rediacc_ci.deploy.preview_name` derives) deploys that Worker, and its D1 is still `account-pr-<PR_NUMBER>`: the database is internal, and the seed, the PR-close cleanup and the housekeeping sweep find it by number. A word name without a digits-only `PR_NUMBER` is refused before any call, and so is a `-signer` name. No twin counterpart; every other name keeps the twin's behaviour above.
 
+A word-named preview also gets its own signer and its build identity (PLAN-preview-signer D1, D6, D12), and the generated config differs from the twin's in exactly those lines (`word_preview_toml`):
+
+  * `LICENSE_SIGNER` binds `<name>-signer` (entrypoint `LicenseSigner`, props `{tier = "shared", region = "eu"}`: the preview Worker is that signer's one shared caller), and `SIGNERLESS_PREVIEW` is gone. The signer is deployed by `rediacc_ci.deploy.preview_signer` after the D1 is (re)created and migrated, because it binds that database, and before this Worker's deploy, because wrangler refuses a service binding to a missing Worker.
+  * `PREVIEW_BUILD` is a JSON var `{name, version, sha256: {<platform>: <hex>}, formatChange}`: the version and one sha256 per platform from the staged channel manifest (`--manifest <path>`, the `cli/<channel>/manifest.json` the run staged), and `formatChange` from the committed marker `.ci/config/preview-format-change.json` (`{"formats": [...], "reason": "..."}`) or null. A manifest with no binary, a sha256 that is not 64 hex characters, or a malformed marker refuses the run.
+  * THE FORMAT BACKSTOP (D12 Option C). `--renet-diff <path>` is the unified diff of `private/renet` between the PR base and head. A changed line that sets a known on-disk format constant (`FORMAT_CONSTANTS`) with no marker file refuses the run before any call, so a forgotten marker never reaches a customer.
+
+All three are refused before any call when missing; nothing falls back to the signerless config.
+
 -----------------------------------------------------------------------------
 THE UUID IS LOOKED UP TWICE AND THE SECOND LOOKUP IS THE LOAD-BEARING ONE
 -----------------------------------------------------------------------------
@@ -91,7 +99,9 @@ K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 from __future__ import annotations
 
 import contextlib
+import json
 import os
+import pathlib
 import re
 import secrets
 import subprocess
@@ -100,11 +110,8 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common, wrangler
-from rediacc_ci.deploy import deploy_record, preview_name
+from rediacc_ci.deploy import deploy_record, deploy_signer, preview_name, preview_signer
 from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.deploy_www"
@@ -251,6 +258,155 @@ def preview_db_name(worker_name: str, pr_number: str) -> tuple[str | None, str]:
     if not pr_number.isascii() or not pr_number.isdigit():
         return None, "a word-named preview needs PR_NUMBER (digits) for its account-pr-<n> database"
     return DB_NAME_TEMPLATE % pr_number, ""
+
+
+# ---- a word-named preview's signer and build identity (PLAN-preview-signer D1, D6, D12) ----
+
+# The twin's signerless lines, and what a word-named preview carries in their place.
+SIGNERLESS_BLOCK = (
+    "# A preview binds no licence signer (PLAN-preview-signer, Context 11): PR-written code must never\n"
+    '# reach a signer holding the production key. This flag, admitted under ENVIRONMENT = "preview"\n'
+    "# alone, lets the account Worker serve without LICENSE_SIGNER; every signing route answers\n"
+    "# 503 SIGNER_NOT_CONFIGURED (private/account src/types/env.ts SIGNERLESS_PREVIEW).\n"
+    'SIGNERLESS_PREVIEW = "true"\n'
+)
+SIGNER_SERVICE = (
+    "\n# The preview's own signer (rediacc_ci.deploy.preview_signer): a fresh delegated key per deploy,\n"
+    "# certified by signer-bench-eu for this preview's pv- subscriptions only. Never the production key.\n"
+    "[[services]]\n"
+    'binding = "LICENSE_SIGNER"\n'
+    'service = "%s"\n'
+    'entrypoint = "LicenseSigner"\n'
+    'props = { tier = "shared", region = "eu" }\n'
+)
+FORMAT_MARKER = (".ci", "config", "preview-format-change.json")
+# The on-disk format constants of private/renet (Context 20): a PR that changes one may leave data the pre-preview renet refuses after `rdc preview leave`, so it must carry the marker.
+FORMAT_CONSTANTS = {
+    "pkg/functions/vault/schema.go": ("VaultSchemaID", "VaultVersion"),
+    "pkg/chunkstore/manifest.go": ("ManifestVersion",),
+    "pkg/chunkstore/journal.go": ("JournalVersion",),
+}
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+class PreviewBuildError(Exception):
+    """A word-named preview cannot be deployed: the manifest, the marker or the format backstop refused it."""
+
+
+def preview_build(name: str, manifest_text: str, marker_text: str | None) -> dict:
+    """`PREVIEW_BUILD` from the staged channel manifest and the optional marker file."""
+    try:
+        manifest = json.loads(manifest_text)
+    except ValueError as exc:
+        raise PreviewBuildError("the channel manifest is not JSON (%s)" % exc) from None
+    version = manifest.get("version") if isinstance(manifest, dict) else None
+    binaries = manifest.get("binaries") if isinstance(manifest, dict) else None
+    if not isinstance(version, str) or not version:
+        raise PreviewBuildError("the channel manifest names no version")
+    if not isinstance(binaries, dict) or not binaries:
+        raise PreviewBuildError("the channel manifest lists no binary")
+    sha256: dict[str, str] = {}
+    for platform, entry in sorted(binaries.items()):
+        digest = entry.get("sha256") if isinstance(entry, dict) else None
+        if not isinstance(digest, str) or not SHA256_RE.match(digest):
+            raise PreviewBuildError(
+                "the channel manifest's %s entry has no valid sha256" % platform
+            )
+        sha256[platform] = digest
+    return {
+        "name": name,
+        "version": version,
+        "sha256": sha256,
+        "formatChange": format_change(marker_text),
+    }
+
+
+def format_change(marker_text: str | None) -> dict | None:
+    """The marker file's `{formats, reason}`, or None when there is no marker."""
+    if marker_text is None:
+        return None
+    try:
+        marker = json.loads(marker_text)
+    except ValueError as exc:
+        raise PreviewBuildError("%s is not JSON (%s)" % ("/".join(FORMAT_MARKER), exc)) from None
+    formats = marker.get("formats") if isinstance(marker, dict) else None
+    reason = marker.get("reason") if isinstance(marker, dict) else None
+    if (
+        not isinstance(formats, list)
+        or not formats
+        or not all(isinstance(f, str) and f for f in formats)
+        or not isinstance(reason, str)
+        or not reason.strip()
+    ):
+        raise PreviewBuildError(
+            '%s must be {"formats": ["<format>", ...], "reason": "<one line>"}'
+            % "/".join(FORMAT_MARKER)
+        )
+    return {"formats": formats, "reason": reason.strip()}
+
+
+def format_constant_changes(diff_text: str) -> list[str]:
+    """`<file>: <constant>` for every changed line of a unified diff that sets a known format constant."""
+    found: list[str] = []
+    current = ""
+    for line in diff_text.splitlines():
+        if line.startswith(("+++ ", "--- ")):
+            path = line[4:].strip()
+            if path != "/dev/null":
+                current = path.split("/", 1)[1] if path[:2] in ("a/", "b/") else path
+            continue
+        if not line.startswith(("+", "-")):
+            continue
+        for suffix, names in FORMAT_CONSTANTS.items():
+            if not current.endswith(suffix):
+                continue
+            for constant in names:
+                if re.search(r"\b%s\b\s*=" % constant, line[1:]):
+                    hit = "%s: %s" % (suffix, constant)
+                    if hit not in found:
+                        found.append(hit)
+    return found
+
+
+def word_preview_toml(worker_name: str, db_name: str, db_uuid: str, build: dict) -> str:
+    """The twin's preview config with the signerless lines replaced by `PREVIEW_BUILD`, and the preview's own `LICENSE_SIGNER` appended."""
+    body = preview_toml(worker_name, db_name, db_uuid)
+    if body.count(SIGNERLESS_BLOCK) != 1:
+        raise PreviewBuildError("the preview config template lost its signerless block")
+    build_line = (
+        "# The build this preview serves (PLAN-preview-signer D6), returned by server-info as previewBuild.\nPREVIEW_BUILD = %s\n"
+        % json.dumps(json.dumps(build, sort_keys=True, separators=(",", ":")))
+    )
+    body = body.replace(SIGNERLESS_BLOCK, build_line)
+    return body + SIGNER_SERVICE % preview_signer.signer_name(worker_name)
+
+
+def word_preview_inputs(worker_name: str, args: dict, root: pathlib.Path) -> dict:
+    """Read and check `--manifest`, `--renet-diff` and the marker for a word-named preview; the `PREVIEW_BUILD` value."""
+    manifest_path = args.get("ARG_MANIFEST", "")
+    diff_path = args.get("ARG_RENET_DIFF", "")
+    if not manifest_path or manifest_path == "true":
+        raise PreviewBuildError(
+            "a word-named preview needs --manifest <staged cli/<channel>/manifest.json>"
+        )
+    if not diff_path or diff_path == "true":
+        raise PreviewBuildError(
+            "a word-named preview needs --renet-diff <private/renet diff, base..head>"
+        )
+    try:
+        manifest_text = pathlib.Path(manifest_path).read_text(encoding="utf-8")
+        diff_text = pathlib.Path(diff_path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise PreviewBuildError("could not read %s (%s)" % (exc.filename, exc.strerror)) from None
+    marker = root.joinpath(*FORMAT_MARKER)
+    marker_text = marker.read_text(encoding="utf-8") if marker.is_file() else None
+    changes = format_constant_changes(diff_text)
+    if changes and marker_text is None:
+        raise PreviewBuildError(
+            "this PR changes an on-disk format constant (%s) and carries no %s; add the marker so `rdc preview use` warns before a switch"
+            % (", ".join(changes), "/".join(FORMAT_MARKER))
+        )
+    return preview_build(worker_name, manifest_text, marker_text)
 
 
 def is_protected(db_name: str) -> bool:
@@ -459,14 +615,23 @@ def _run(argv: list[str]) -> int:
     return subprocess.run(argv, check=False).returncode
 
 
-def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
-    """The `if [[ -n "${ARG_NAME:-}" ]]` arm (twin :60-141)."""
+def _preview(worker_name: str, worker_dir: pathlib.Path, args: dict | None = None) -> int:
+    """The `if [[ -n "${ARG_NAME:-}" ]]` arm (twin :60-141), plus a word-named preview's signer and build identity."""
     log.step("Deploying preview worker: %s" % worker_name)
 
-    db_name, refusal = preview_db_name(worker_name, os.environ.get("PR_NUMBER", ""))
+    pr_number = os.environ.get("PR_NUMBER", "")
+    db_name, refusal = preview_db_name(worker_name, pr_number)
     if db_name is None:
         log.error(refusal)
         return 1
+    word = preview_name.is_preview_worker(worker_name)
+    build: dict | None = None
+    if word:
+        try:
+            build = word_preview_inputs(worker_name, args or {}, common.repo_root())
+        except PreviewBuildError as exc:
+            log.error(str(exc))
+            return 1
     if is_protected(db_name):
         # UNREACHABLE (fact 1). Reproduced rather than dropped.
         log.error("CRITICAL: refusing to delete production/edge database: %s" % db_name)
@@ -492,13 +657,37 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
 
     # `cat >wrangler.preview.toml <<TOML` (twin :90). RELATIVE to the worker directory, because the twin has already `cd`-ed there.
     config = worker_dir / PREVIEW_CONFIG
-    config.write_text(preview_toml(worker_name, db_name, db_uuid), encoding="utf-8")
+    if build is not None:
+        config.write_text(word_preview_toml(worker_name, db_name, db_uuid, build), encoding="utf-8")
+    else:
+        config.write_text(preview_toml(worker_name, db_name, db_uuid), encoding="utf-8")
 
     log.step("Applying migrations to %s..." % db_name)
     status = _run(migrations_argv(db_name))
     if status != 0:
         return status  # `set -e`, and the generated config is LEFT BEHIND
     log.info("Migrations applied to %s" % db_name)
+
+    if word:
+        # The signer binds the database just migrated, and wrangler refuses this Worker's LICENSE_SIGNER binding while the signer is missing.
+        log.step("Deploying the preview's own signer")
+        sys.stdout.flush()
+        try:
+            preview_signer.deploy(
+                common.repo_root(),
+                name=worker_name,
+                pr=pr_number,
+                db_id=db_uuid,
+                env=os.environ,
+                run=deploy_signer.run_process,
+            )
+        except deploy_signer.RefusedError as exc:
+            for line in exc.lines:
+                log.error(line)
+            return 1
+        except wrangler.WranglerNotInstalledError as exc:
+            log.error("%s: %s" % (SELF, exc))
+            return 1
 
     status = _run(preview_deploy_argv())
     if status != 0:
@@ -515,7 +704,7 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
 
 
 # Every `ARG_*` key `main` reads; any other flag is refused before a side effect.
-ACCEPTED_ARGS = frozenset({"ARG_NAME"})
+ACCEPTED_ARGS = frozenset({"ARG_NAME", "ARG_MANIFEST", "ARG_RENET_DIFF"})
 
 
 def main(argv: list[str]) -> int:
@@ -567,7 +756,7 @@ def main(argv: list[str]) -> int:
 
     worker_name = args.get("ARG_NAME", "")
     if worker_name:
-        return _preview(worker_name, worker_dir)
+        return _preview(worker_name, worker_dir, args)
 
     # Before the production deploy, never after: a keyless www dist refuses every form submission.
     refusal = www_sitekey_refusal(

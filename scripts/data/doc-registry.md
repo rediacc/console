@@ -1152,7 +1152,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/ci | 35 | .py 35 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 39 | .py 39 |
-| .ci/rediacc_ci/deploy | 42 | .py 42 |
+| .ci/rediacc_ci/deploy | 43 | .py 43 |
 | .ci/rediacc_ci/dev | 11 | .py 11 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 5 | .py 5 |
@@ -2267,6 +2267,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `POSTGRES_USER` | product-runtime | - |
 | `PR` | tombstone | - |
 | `PRESET` | ci-runner | - |
+| `PREVIEW_NAME` | ci-runner | - |
 | `PREVIEW_NAME_KEY` | secret | - |
 | `PREVIEW_URL` | ci-runner | - |
 | `PREVIEW_URL_OVERRIDE` | ci-runner | - |
