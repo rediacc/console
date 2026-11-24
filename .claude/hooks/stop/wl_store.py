@@ -869,6 +869,8 @@ def _journal_append(path, payloads, root=None):
     twin = journal_twin(path, root)
     if twin is None:
         return
+    # Redacted here too, in place and idempotently: the twin is a tracked file, so its own door does not lean on each caller having redacted the same list first.
+    payloads = _redact_payloads(payloads)
     with contextlib.suppress(OSError):
         twin.parent.mkdir(parents=True, exist_ok=True)
         _jsonl_append().append_lines(twin, twin.parent / ".lock", payloads, lock=_flock)
@@ -1317,7 +1319,7 @@ def _fold_events(events, statuses=None):
                 records[rid]["arm"] = dict(ev["am"])
             cli_ids.add(rid)
         elif kind in ("arm", "armfire", "armstart", "disarm"):
-            # ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 1). `aid` names one arm generation: an event naming another `aid` than the item's current arm is stale and ignored, a second `armfire` for one `aid` is a no-op (first wins), and an `arm` replayed with the `aid` the item already carries (a compaction's `am` plus a peer's surviving copy) keeps the latch.
+            # ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 1). `aid` names one arm generation: an `armfire`, `armstart` or `disarm` naming another `aid` than the item's current arm is stale and ignored, an `arm` naming a new `aid` starts a fresh generation (verdict and latch reset, which is how a deliberate re-arm works), a second `armfire` for one `aid` is a no-op (first wins), and an `arm` replayed with the `aid` the item already carries (a compaction's `am` plus a peer's surviving copy) keeps the latch.
             rec = records.get(ev.get("id"))
             aid = str(ev.get("aid") or "")
             if rec is None or not aid:
@@ -2088,10 +2090,11 @@ _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
 
 _AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
 
-# A private key's header AND BODY. The header alone is a shape; the base64 lines after it are the secret, so this consumes the header, any RFC1421 `Proc-Type:`/`DEK-Info:` lines and every base64 run of 16+ characters (a length no prose word reaches) across real or escaped newlines, up to an optional END line.
+# A private key's header AND BODY. The header alone is a shape; the base64 lines after it are the secret, so this consumes the header (its closing dashes optional, a mangled paste still carries the body), any RFC1421 `Proc-Type:`/`DEK-Info:` lines and every base64 run of 16+ characters (a length no prose word reaches) across real or escaped newlines, plus a shorter final line when the END line follows it, up to an optional END line.
 _PEM_BLOCK_RE = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----"
+    r"-----BEGIN [A-Z ]*PRIVATE KEY(?:-----)?"
     r"(?:(?:\s|\\[nr])*(?:(?:Proc-Type|DEK-Info):[^\n\\]*|[A-Za-z0-9+/=]{16,}))*"
+    r"(?:(?:\s|\\[nr])*[A-Za-z0-9+/=]{1,15}(?=(?:\s|\\[nr])*-----END))?"
     r"(?:(?:\s|\\[nr])*-----END [A-Z ]*PRIVATE KEY-----)?"
 )
 

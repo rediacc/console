@@ -163,3 +163,25 @@ def test_secret_shapes_in_keeps_the_bare_pem_header_pattern_the_pre_push_scan_ke
     assert S.secret_shapes_in(PEM) == [r"-----BEGIN [A-Z ]*PRIVATE KEY"]
     assert S.secret_shapes_in(STRIPE_KEY)
     assert S.secret_shapes_in(CONTROL) == []
+
+
+_B64 = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9w"
+
+
+def test_a_pem_key_with_a_short_final_line_is_redacted_to_its_footer() -> None:
+    text = (
+        "k -----BEGIN RSA PRIVATE KEY-----\n%s\n%s\nQUJDREVGR0hJ\n-----END RSA PRIVATE KEY----- end"
+        % (_B64, _B64)
+    )
+    assert S.redact_secret_shapes(text) == "k [redacted:private-key] end"
+
+
+def test_a_pem_header_without_its_closing_dashes_loses_its_body_too() -> None:
+    out = S.redact_secret_shapes("-----BEGIN RSA PRIVATE KEY\n%s\n%s\n" % (_B64, _B64))
+    assert _B64 not in out
+    assert "[redacted:private-key]" in out
+
+
+def test_control_prose_after_a_pem_header_is_kept() -> None:
+    out = S.redact_secret_shapes("-----BEGIN RSA PRIVATE KEY----- appears in the docs")
+    assert out == "[redacted:private-key] appears in the docs"

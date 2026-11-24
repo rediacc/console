@@ -2,9 +2,9 @@
 
 THE STORE IS THE ONLY TRUTH. Four events ride the worklist store (`wl_store.arm_item`, `armfire_item`, `armstart_item`, `disarm_item`), and `wl_store._fold_events` keeps `rec["arm"]`. This module holds the token grammar, the arm-time validation (`parse_when`), the stop-time evaluator (`evaluate`), the cover rule the nagging checks stand down on (`covers`), and `sweep`, which evaluates every unfired arm of a session and appends the latch.
 
-WHAT FIRES. Event tokens (NOT-BEFORE, REPORTED, EXIT, CI-QUICK:done, VM-CHECK:done, DEFER-CLOSED, TICKED, BOX) compare their artifact against the arm stamp, so an artifact older than the arm never fires it. State tokens (CI-QUICK:verified, VM-CHECK:verified, BENCH:deployed, PUSHED:head) are judged live with the push guards' readers. An arm fires on the first evaluation at which every token holds at once; the hook then appends one `armfire` and the latch alone decides from then on.
+WHAT FIRES. Event tokens (NOT-BEFORE, REPORTED, EXIT, CI-QUICK:done, VM-CHECK:done) compare their artifact against the arm stamp, so an artifact older than the arm never fires it. DEFER-CLOSED and TICKED are judged from the item's current state and BOX from HEAD's plan text, not against the arm stamp. State tokens (CI-QUICK:verified, VM-CHECK:verified, BENCH:deployed, PUSHED:head) are judged live with the push guards' readers. An arm fires on the first evaluation at which every token holds at once; the hook then appends one `armfire` and the latch alone decides from then on.
 
-Every reader that cannot judge says why in its evidence and holds the token unfired: a reader failure never fires an arm, and it never reads as a silent no either.
+Every file or git reader that cannot judge says why in its evidence and holds the token unfired: a reader failure never fires an arm, and it never reads as a silent no either. The three bool readers (VM-CHECK:verified, BENCH:deployed, PUSHED:head) answer yes or no with fixed evidence: a failure holds the token unfired, but the evidence does not name its cause.
 """
 
 from __future__ import annotations
@@ -388,7 +388,7 @@ def receipt_vouches_for_tree(receipt, tree) -> bool:
 
 
 def receipt_green_for_head(root) -> tuple[bool, str]:
-    """(green, evidence): a whole, green ci:quick receipt speaks for HEAD's tree, read the way the push guard reads it: the archive `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then `.ci/cache/prepush-receipt.json`; `exitCode` must be the int 0 and `headTree` (or its `advances` chain) must reach HEAD's tree. Whether HEAD is pushed is not read here."""
+    """(green, evidence): a whole, green ci:quick receipt speaks for HEAD's tree, read the way the push guard reads it: the archive `.ci/cache/receipts/<HEAD^{tree}>.json` first (when it exists but does not name that tree as a whole run the answer is False at once, and the latest receipt is not consulted), then `.ci/cache/prepush-receipt.json`; `exitCode` must be the int 0 and `headTree` (or its `advances` chain) must reach HEAD's tree. Whether HEAD is pushed is not read here."""
     rc, tree = _git(root, "rev-parse", "HEAD^{tree}")
     tree = tree.strip()
     if rc or not _TREE_RE.match(tree):

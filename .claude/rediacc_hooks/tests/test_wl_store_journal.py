@@ -193,3 +193,14 @@ def test_a_secret_used_as_a_nested_key_or_in_a_tuple_is_redacted() -> None:
     assert key not in json.dumps(ev)
     assert "AKIA...OQGI" in ev["map"]
     assert ev["pair"] == ["AKIA...OQGI", "y"]
+
+
+def test_the_journal_twin_is_redacted_by_its_own_door(repo) -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "VCE5"
+    target = S.store_dir(repo) / "x.jsonl"
+    S.store_dir(repo).mkdir(parents=True, exist_ok=True)
+    payload: list[Any] = [{"ev": "x", "t": key}]
+    S._journal_append(target, payload, repo)
+    twin = S.journal_twin(target, repo)
+    assert twin is not None
+    assert key not in twin.read_text()
