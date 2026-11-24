@@ -91,6 +91,20 @@ describe('console feedback additions', () => {
     ).toBe(false);
   });
 
+  it('preview request caps message and each env field, with at-limit controls (review fa5009b5.1)', () => {
+    const parse = (patch: Record<string, unknown>) =>
+      consoleFeedbackPreviewRequestSchema.safeParse({ runId: 'r1', ...patch }).success;
+    expect(parse({ message: 'x'.repeat(FEEDBACK_LIMITS.message) })).toBe(true);
+    expect(parse({ message: 'x'.repeat(FEEDBACK_LIMITS.message + 1) })).toBe(false);
+    const env = { cliVersion: '1', os: 'linux', arch: 'x64' };
+    expect(parse({ env })).toBe(true);
+    for (const key of ['cliVersion', 'os', 'arch'] as const) {
+      const limit = FEEDBACK_LIMITS[key];
+      expect(parse({ env: { ...env, [key]: 'x'.repeat(limit) } })).toBe(true);
+      expect(parse({ env: { ...env, [key]: 'x'.repeat(limit + 1) } })).toBe(false);
+    }
+  });
+
   it('preview response carries the body and a sha-256 digest', () => {
     const body = { ...valid, source: 'console' };
     expect(consoleFeedbackPreviewResponseSchema.safeParse({ body, digest }).success).toBe(true);

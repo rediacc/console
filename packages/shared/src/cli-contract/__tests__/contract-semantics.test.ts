@@ -8,6 +8,7 @@
  * committed contract currently carries.
  */
 import { describe, expect, it } from 'vitest';
+import { omitKey } from '../../utils/omit-key.js';
 import type { CliContract, ContractCommand, ContractOption } from '../types.js';
 import {
   CliContractSchema,
@@ -15,7 +16,6 @@ import {
   checkContractInvariants,
   SUMMARY_MAX_LENGTH,
 } from '../validation.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 function option(long: string, valueTaking: boolean): ContractOption {
   return {
@@ -114,6 +114,14 @@ describe('contract semantics: schema', () => {
 describe('contract semantics: invariants', () => {
   it('a clean contract has no problems', () => {
     expect(checkContractInvariants(contract([command()]))).toEqual([]);
+  });
+
+  it('counts a summary in code points, so a surrogate pair is one character', () => {
+    const emoji = String.fromCodePoint(0x1f600);
+    const atLimit = command({ summary: emoji.repeat(SUMMARY_MAX_LENGTH) });
+    expect(checkContractInvariants(contract([atLimit]))).toEqual([]);
+    const over = command({ summary: emoji.repeat(SUMMARY_MAX_LENGTH + 1) });
+    expect(checkContractInvariants(contract([over]))).toHaveLength(1);
   });
 
   it(`refuses a summary over ${SUMMARY_MAX_LENGTH} characters, and accepts one at the limit`, () => {

@@ -90,7 +90,7 @@ export const ENVELOPE_EXCLUSIONS = ['/schemaVersion', '/id', '/version', '/encry
 /**
  * Fields that never leave the device, so no sensitivity kind applies:
  * `policy` is the local-file ceiling (D24). RdcConfigSchema refuses it beside
- * a `remote` block, so it is never pushed, committed or synced; a remote
+ * a `remote` block and buildConfigPushPayload refuses to seal one, so it is never pushed, committed or synced; a remote
  * config's policy is its own record (PLAN-rmcp-policy-record.md Design 1).
  */
 export const LOCAL_ONLY_EXCLUSIONS = ['/policy'] as const;

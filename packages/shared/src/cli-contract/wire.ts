@@ -288,8 +288,9 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
      */
     line: z.number().int().positive().optional(),
     /**
-     * The AI tool call whose execution produced this event, present only inside an AI chat turn
-     * (PLAN-console-ai-providers.md D8). Absent on every command stream.
+     * The AI tool call whose execution produced this event, set only inside an AI chat turn
+     * (PLAN-console-ai-providers.md D8). A command stream never emits it; the schema leaves the
+     * field optional on every event line and does not enforce that.
      */
     toolCallId: z.string().min(1).optional(),
   }),

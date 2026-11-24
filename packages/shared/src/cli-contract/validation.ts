@@ -241,9 +241,11 @@ function checkProxyCapability(cmd: ContractCommand): string[] {
 function checkSemantics(cmd: ContractCommand): string[] {
   const problems: string[] = [];
 
-  if (cmd.summary.length > SUMMARY_MAX_LENGTH) {
+  // Characters are code points, so an emoji counts once, as the type doc says.
+  const summaryLength = [...cmd.summary].length;
+  if (summaryLength > SUMMARY_MAX_LENGTH) {
     problems.push(
-      `${cmd.pathKey}: summary is ${cmd.summary.length} characters, over ${SUMMARY_MAX_LENGTH}`
+      `${cmd.pathKey}: summary is ${summaryLength} characters, over ${SUMMARY_MAX_LENGTH}`
     );
   }
   if (cmd.preview) {

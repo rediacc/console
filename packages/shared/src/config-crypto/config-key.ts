@@ -14,8 +14,9 @@
  * swapped in from another config does not open.
  *
  * The field-commitment key and the pointer-blinding key of a v4 envelope derive from the content
- * key (selective.ts), so a holder of one config's content key can read and write that config and no
- * other.
+ * key (selective.ts), so a holder of one config's content key can verify and read that config and no
+ * other. Producing a v4 push also wraps the content key under the CEK, so a holder without the CEK
+ * cannot push through selectiveEncrypt.
  */
 
 import {

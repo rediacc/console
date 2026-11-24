@@ -49,6 +49,7 @@ export const feedbackReportSchema = z.object({
   source: feedbackSourceSchema.default('cli'),
 });
 type FeedbackReport = z.infer<typeof feedbackReportSchema>;
+
 export type { FeedbackReport };
 
 export const feedbackSubmitResponseSchema = z.object({
@@ -58,6 +59,7 @@ export const feedbackSubmitResponseSchema = z.object({
   duplicate: z.boolean(),
 });
 type FeedbackSubmitResponse = z.infer<typeof feedbackSubmitResponseSchema>;
+
 export type { FeedbackSubmitResponse };
 
 export const feedbackListItemSchema = z.object({
@@ -73,21 +75,25 @@ export const feedbackListItemSchema = z.object({
   lastSeenAt: z.string(),
 });
 type FeedbackListItem = z.infer<typeof feedbackListItemSchema>;
+
 export type { FeedbackListItem };
 
 export const feedbackListResponseSchema = z.object({ reports: z.array(feedbackListItemSchema) });
 type FeedbackListResponse = z.infer<typeof feedbackListResponseSchema>;
+
 export type { FeedbackListResponse };
 
 export const feedbackSettingsSchema = z.object({
   shareWithOrgAdmins: z.boolean(),
   /**
    * Whether the console may offer a bug report after a Rediacc-origin failure. Absent means the
-   * default, on; the account routes (AF3) store and return it once the column exists (AF2).
+   * default, on, but the schema carries no default, so a reader tests `!== false` rather than
+   * truthiness; the account routes (AF3) store and return it once the column exists (AF2).
    */
   offerBugReports: z.boolean().optional(),
 });
 type FeedbackSettings = z.infer<typeof feedbackSettingsSchema>;
+
 export type { FeedbackSettings };
 
 export const feedbackLimitErrorSchema = z.object({
@@ -96,6 +102,7 @@ export const feedbackLimitErrorSchema = z.object({
   resetAt: z.string(),
 });
 type FeedbackLimitError = z.infer<typeof feedbackLimitErrorSchema>;
+
 export type { FeedbackLimitError };
 
 /**
@@ -116,6 +123,7 @@ export const consoleFeedbackPreviewRequestSchema = z.object({
     .optional(),
 });
 type ConsoleFeedbackPreviewRequest = z.infer<typeof consoleFeedbackPreviewRequestSchema>;
+
 export type { ConsoleFeedbackPreviewRequest };
 
 export const consoleFeedbackPreviewResponseSchema = z.object({
@@ -124,6 +132,7 @@ export const consoleFeedbackPreviewResponseSchema = z.object({
   digest: z.string().regex(/^[0-9a-f]{64}$/),
 });
 type ConsoleFeedbackPreviewResponse = z.infer<typeof consoleFeedbackPreviewResponseSchema>;
+
 export type { ConsoleFeedbackPreviewResponse };
 
 /** Send posts the preview's inputs plus its digest; the worker rebuilds the body and refuses a mismatch. */
@@ -131,8 +140,10 @@ export const consoleFeedbackSendRequestSchema = consoleFeedbackPreviewRequestSch
   digest: z.string().regex(/^[0-9a-f]{64}$/),
 });
 type ConsoleFeedbackSendRequest = z.infer<typeof consoleFeedbackSendRequestSchema>;
+
 export type { ConsoleFeedbackSendRequest };
 
 export const consoleFeedbackDeclineRequestSchema = z.object({ runId: z.string().min(1) });
 type ConsoleFeedbackDeclineRequest = z.infer<typeof consoleFeedbackDeclineRequestSchema>;
+
 export type { ConsoleFeedbackDeclineRequest };

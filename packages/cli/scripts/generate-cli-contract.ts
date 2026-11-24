@@ -393,9 +393,9 @@ function resolveSummary(pathKey: string, liveSummary: string): string {
     curationProblems.push(
       `${pathKey}: no .summary(). Add .summary(t('commands.<path>.descriptionShort')) and its English key`
     );
-  } else if (liveSummary.length > SUMMARY_MAX_LENGTH) {
+  } else if ([...liveSummary].length > SUMMARY_MAX_LENGTH) {
     curationProblems.push(
-      `${pathKey}: summary is ${liveSummary.length} characters, over ${SUMMARY_MAX_LENGTH}`
+      `${pathKey}: summary is ${[...liveSummary].length} characters, over ${SUMMARY_MAX_LENGTH}`
     );
   }
   return liveSummary;

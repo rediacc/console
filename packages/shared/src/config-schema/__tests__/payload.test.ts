@@ -20,6 +20,7 @@ import {
 import {
   buildCommitEntries,
   buildConfigPushPayload,
+  ConfigPolicyFieldError,
   decryptConfigPullPayload,
   toFullConfig,
 } from '../payload.js';
@@ -119,6 +120,23 @@ describe('config push payload', () => {
     expect(decrypted.machines).toEqual(config.resources?.machines);
     expect(decrypted.ssh).toEqual(config.credentials?.ssh);
     expect(decrypted.version).toBe(5);
+  });
+
+  it('refuses to seal a config that carries a policy field (review f5936635.1)', async () => {
+    const { cek, sdkDerived } = await keys();
+    const config = { ...sampleConfig(), policy: { version: 1 } } as unknown as RdcConfig;
+    const options = {
+      storeId: STORE_ID,
+      version: config.version + 1,
+      sdkEpoch: 3,
+      sdkDerived,
+      cek,
+      cekGeneration: 1,
+    };
+    await expect(buildConfigPushPayload(config, options)).rejects.toBeInstanceOf(
+      ConfigPolicyFieldError
+    );
+    await expect(buildConfigPushPayload(sampleConfig(), options)).resolves.toBeDefined();
   });
 
   it('a tampered blob fails the integrity check', async () => {

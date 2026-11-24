@@ -249,7 +249,7 @@ describe('no password method', () => {
   ];
 
   const quoted = (list: string): string[] =>
-    [...list.matchAll(/'([a-z_-]+)'/g)].map((m) => m[1] as string);
+    [...list.matchAll(/['"]([A-Za-z0-9_-]+)['"]/g)].map((m) => m[1] as string);
 
   /** Every method literal a source declares, in the shapes the four sites use. */
   function methodLiterals(source: string): string[] {
@@ -258,7 +258,7 @@ describe('no password method', () => {
       /text\('method',\s*\{\s*enum:\s*\[([^\]]*)\]/g,
       /slotMethodSchema\s*=\s*z\.enum\(\[([^\]]*)\]/g,
       /method:\s*z\.literal\(([^)]*)\)/g,
-      /method:\s*('[a-z_-]+')/g,
+      /method:\s*(['"][A-Za-z0-9_-]+['"])/g,
     ];
     const found: string[] = [];
     for (const pattern of patterns) {
@@ -267,11 +267,19 @@ describe('no password method', () => {
     return found;
   }
 
-  it.each(SITES)('$what ($path) declares only passkey and recovery', ({ path }) => {
+  it.each(SITES)('$what ($path) declares only methods in SLOT_METHODS', ({ path }) => {
     const methods = methodLiterals(readFileSync(resolve(REPO, path), 'utf-8'));
     expect(methods.length).toBeGreaterThan(0);
     expect(methods.filter((m) => !(SLOT_METHODS as readonly string[]).includes(m))).toEqual([]);
   });
+
+  it.each([`'Password'`, `"password"`, `'password2'`])(
+    'the reader catches the method spelled %s (review 7a03ce8f.1)',
+    (literal) => {
+      const found = methodLiterals(`export const SLOT_METHODS = ['passkey', ${literal}] as const;`);
+      expect(found.filter((m) => !(SLOT_METHODS as readonly string[]).includes(m))).toHaveLength(1);
+    }
+  );
 
   it('the shared enum holds no password method', () => {
     expect(SLOT_METHODS as readonly string[]).not.toContain(FORBIDDEN);

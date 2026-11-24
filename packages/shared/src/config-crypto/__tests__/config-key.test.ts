@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { omitKey } from '../../utils/omit-key.js';
 import {
   blindPointer,
   type ConfigContentKey,
@@ -28,7 +29,6 @@ import {
 } from '../index.js';
 import type { EncryptedConfigPayload, FullConfig } from '../types.js';
 import { sealEnvelopeV3 } from './fixtures/envelope-v3.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 const bytesToHex = (data: Uint8Array): string =>
   Array.from(data, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -386,5 +386,33 @@ describe('envelope v4: commitments under the content key and the upgrade push', 
           '/credentials/token'
         ),
     });
+  });
+
+  it('a content-key rotation tombstones a removed field under the stored (old) key (review 9d2e9c54.1)', async () => {
+    const sdkKey = await generateAesKey();
+    const cek = await generateCek();
+    const oldKey = await generateConfigKey();
+    const configKey: ConfigContentKey = {
+      key: await generateConfigKey(),
+      version: 2,
+      cekGeneration: 0,
+    };
+    const payload = await selectiveEncrypt(fullConfig(CONFIG_A), sdkKey, cek, {
+      storeId: STORE,
+      sdkEpoch: 5913166,
+      commitEntries: [{ pointer: '/credentials/token', value: 'secret' }],
+      configKey,
+      prior: {
+        envelopeVersion: 4,
+        fckSalt: 'AAAAAAAAAAAAAAAAAAAAAA==',
+        removed: [{ pointer: '/credentials/old', value: 'gone' }],
+        configKey: oldKey,
+      },
+    });
+    const oldBlind = await derivePointerBlindingKey(oldKey, CONFIG_A);
+    const newBlind = await derivePointerBlindingKey(configKey.key, CONFIG_A);
+    const keys = Object.keys(payload.envelope.commitments.removed ?? {});
+    expect(keys).toEqual([await blindPointer(oldBlind, '/credentials/old')]);
+    expect(keys).not.toContain(await blindPointer(newBlind, '/credentials/old'));
   });
 });

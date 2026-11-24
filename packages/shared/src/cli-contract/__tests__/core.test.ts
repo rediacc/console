@@ -117,6 +117,14 @@ describe('core.ts', () => {
     expect(lines.filter((l) => !/^\s*import\s+type\b/.test(l))).toEqual([]);
   });
 
+  it('re-exports no value from another module (review 2b2746df.1)', () => {
+    const text = source('../core.ts');
+    const valueReexport = /\bexport\s+(?:\*|\{[^}]*\})\s*from\s*['"][^'"]+['"]/g;
+    expect(text.match(valueReexport) ?? []).toEqual([]);
+    expect('export { x } from "./a.js";'.match(valueReexport)).toHaveLength(1);
+    expect('export type { X } from "./a.js";'.match(valueReexport)).toBeNull();
+  });
+
   it('looks a command up by path key', () => {
     const index = indexContract(FIXTURE);
     expect(index.getCommand('repo up')?.pathKey).toBe('repo up');
