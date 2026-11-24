@@ -6495,8 +6495,8 @@
   {
     "id": "search-21062",
     "content": "15.2 leave",
-    "body": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用你的真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。 rdc preview leave [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --machine <name> | 只切回这台服务器 | 否 | - | <a id=\"cli-local-preview-status\"></a>",
-    "excerpt": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用你的真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。 rdc preview leave [options] | 标志 | 描述 | 必填 | 默认...",
+    "body": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。 rdc preview leave [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --machine <name> | 只切回这台服务器 | 否 | - | <a id=\"cli-local-preview-status\"></a>",
+    "excerpt": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。 rdc preview leave [options] | 标志 | 描述 | 必填 | 默认值...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "152-leave",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-21082",
     "content": "23. 执行器服务",
-    "body": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接 <a id=\"cli-local-serve\"></a> rdc serve [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -p, --port <port> | 监听端口 | 否 | 8080 | | --host <host> | 绑定地址（守护进程默认 127.0.0.1，容器中默认 0.0.0.0） | 否 | 0.0.0.0 | | --mode <mode> | 部署位置：daemon（客户主机）或 container | 否 | daemon | ---",
+    "body": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接 <a id=\"cli-local-serve\"></a> rdc serve [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -p, --port <port> | 监听端口 | 否 | 8080 | | --host <host> | 绑定地址（守护进程默认 127.0.0.1，容器中默认 0.0.0.0） | 否 | - | | --tls-cert <path> | PEM 证书文件；与 --tls-key 一起使用时提供 HTTPS | 否 | - | | --tls-key <path> | 与 --tls-cert 配套的 PEM 私钥文件 | 否 | - | | --mode <mode> | 部署位置：daemon（客户主机）或 container | 否 | daemon | ---",
     "excerpt": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接 <a id=\"cli-local-serve\"></a> rdc serve [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|----...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

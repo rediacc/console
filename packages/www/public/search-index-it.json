@@ -6495,7 +6495,7 @@
   {
     "id": "search-11630",
     "content": "15.2 leave",
-    "body": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dal tuo account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine. rdc preview leave [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --machine <name> | Riporta indietro solo questo server | No | - | <a id=\"cli-local-preview-status\"></a>",
+    "body": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dall'account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine. rdc preview leave [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --machine <name> | Riporta indietro solo questo server | No | - | <a id=\"cli-local-preview-status\"></a>",
     "excerpt": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzi...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-11650",
     "content": "23. Servizio executor",
-    "body": "Esegui questo processo come esecutore in modo che i client possano eseguire comandi tramite esso invece di connettersi da soli via SSH <a id=\"cli-local-serve\"></a> rdc serve [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | -p, --port <port> | Porta su cui restare in ascolto | No | 8080 | | --host <host> | Indirizzo a cui associarsi (predefinito 127.0.0.1 per un daemon, 0.0.0.0 in un container) | No | 0.0.0.0 | | --mode <mode> | Posizionamento: daemon (host del cliente) o container | No | daemon | ---",
+    "body": "Esegui questo processo come esecutore in modo che i client possano eseguire comandi tramite esso invece di connettersi da soli via SSH <a id=\"cli-local-serve\"></a> rdc serve [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | -p, --port <port> | Porta su cui restare in ascolto | No | 8080 | | --host <host> | Indirizzo a cui associarsi (predefinito 127.0.0.1 per un daemon, 0.0.0.0 in un container) | No | - | | --tls-cert <path> | File del certificato PEM; insieme a --tls-key serve HTTPS | No | - | | --tls-key <path> | File della chiave privata PEM per --tls-cert | No | - | | --mode <mode> | Posizionamento: daemon (host del cliente) o container | No | daemon | ---",
     "excerpt": "Esegui questo processo come esecutore in modo che i client possano eseguire comandi tramite esso invece di connettersi da soli via SSH <a id=\"cli-loca...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",

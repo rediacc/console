@@ -6495,7 +6495,7 @@
   {
     "id": "search-19490",
     "content": "15.2 leave",
-    "body": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşturulan depoları gerçek hesabınızdan yeniden lisanslar. Erişilemeyen bir sunucu listede kalır; daha sonra --machine ile tamamlayın. rdc preview leave [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --machine <name> | Yalnızca bu sunucuyu geri al | Hayır | - | <a id=\"cli-local-preview-status\"></a>",
+    "body": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşturulan depoları gerçek hesaptan yeniden lisanslar. Erişilemeyen bir sunucu listede kalır; daha sonra --machine ile tamamlayın. rdc preview leave [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --machine <name> | Yalnızca bu sunucuyu geri al | Hayır | - | <a id=\"cli-local-preview-status\"></a>",
     "excerpt": "Önizlemenin renet'ini çalıştıran sunucuları listeler, onay ister ve yalnızca bunları geri alır; ardından önceki rdc'yi geri yükler ve önizlemede oluşt...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-19510",
     "content": "23. Yürütücü hizmeti",
-    "body": "İstemcilerin SSH üzerinden kendileri bağlanmak yerine komutları bu süreç üzerinden çalıştırabilmesi için bu süreci yürütücü olarak çalıştır <a id=\"cli-local-serve\"></a> rdc serve [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -p, --port <port> | Dinlenecek port | Hayır | 8080 | | --host <host> | Bağlanılacak adres (daemon için varsayılan 127.0.0.1, konteynerde 0.0.0.0) | Hayır | 0.0.0.0 | | --mode <mode> | Konum: daemon (müşteri sunucusu) veya container | Hayır | daemon | ---",
+    "body": "İstemcilerin SSH üzerinden kendileri bağlanmak yerine komutları bu süreç üzerinden çalıştırabilmesi için bu süreci yürütücü olarak çalıştır <a id=\"cli-local-serve\"></a> rdc serve [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -p, --port <port> | Dinlenecek port | Hayır | 8080 | | --host <host> | Bağlanılacak adres (daemon için varsayılan 127.0.0.1, konteynerde 0.0.0.0) | Hayır | - | | --tls-cert <path> | PEM sertifika dosyası; --tls-key ile birlikte HTTPS sunar | Hayır | - | | --tls-key <path> | --tls-cert için PEM özel anahtar dosyası | Hayır | - | | --mode <mode> | Konum: daemon (müşteri sunucusu) veya container | Hayır | daemon | ---",
     "excerpt": "İstemcilerin SSH üzerinden kendileri bağlanmak yerine komutları bu süreç üzerinden çalıştırabilmesi için bu süreci yürütücü olarak çalıştır <a id=\"cli...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",

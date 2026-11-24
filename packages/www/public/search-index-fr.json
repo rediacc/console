@@ -6495,7 +6495,7 @@
   {
     "id": "search-10058",
     "content": "15.2 leave",
-    "body": "Lister les serveurs qui exécutent le renet de l'aperçu, demander confirmation et rebasculer exactement ceux-là ; puis restaurer le rdc précédent et relicencier, depuis votre compte réel, les dépôts créés sur l'aperçu. Un serveur injoignable reste dans la liste ; terminez-le plus tard avec --machine. rdc preview leave [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --machine <name> | Ne rebasculer que ce serveur | Non | - | <a id=\"cli-local-preview-status\"></a>",
+    "body": "Lister les serveurs qui exécutent le renet de l'aperçu, demander confirmation et rebasculer exactement ceux-là ; puis restaurer le rdc précédent et relicencier, depuis le compte réel, les dépôts créés sur l'aperçu. Un serveur injoignable reste dans la liste ; terminez-le plus tard avec --machine. rdc preview leave [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --machine <name> | Ne rebasculer que ce serveur | Non | - | <a id=\"cli-local-preview-status\"></a>",
     "excerpt": "Lister les serveurs qui exécutent le renet de l'aperçu, demander confirmation et rebasculer exactement ceux-là ; puis restaurer le rdc précédent et re...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-10078",
     "content": "23. Service exécuteur",
-    "body": "Exécute ce processus en tant qu'exécuteur afin que les clients puissent lancer des commandes via lui au lieu de se connecter eux-mêmes en SSH <a id=\"cli-local-serve\"></a> rdc serve [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | -p, --port <port> | Port sur lequel écouter | Non | 8080 | | --host <host> | Adresse à laquelle se lier (127.0.0.1 par défaut pour un daemon, 0.0.0.0 dans un conteneur) | Non | 0.0.0.0 | | --mode <mode> | Emplacement : daemon (hôte du client) ou container | Non | daemon | ---",
+    "body": "Exécute ce processus en tant qu'exécuteur afin que les clients puissent lancer des commandes via lui au lieu de se connecter eux-mêmes en SSH <a id=\"cli-local-serve\"></a> rdc serve [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | -p, --port <port> | Port sur lequel écouter | Non | 8080 | | --host <host> | Adresse à laquelle se lier (127.0.0.1 par défaut pour un daemon, 0.0.0.0 dans un conteneur) | Non | - | | --tls-cert <path> | Fichier de certificat PEM ; avec --tls-key, sert en HTTPS | Non | - | | --tls-key <path> | Fichier de clé privée PEM associé à --tls-cert | Non | - | | --mode <mode> | Emplacement : daemon (hôte du client) ou container | Non | daemon | ---",
     "excerpt": "Exécute ce processus en tant qu'exécuteur afin que les clients puissent lancer des commandes via lui au lieu de se connecter eux-mêmes en SSH <a id=\"c...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",

@@ -6495,7 +6495,7 @@
   {
     "id": "search-8486",
     "content": "15.2 leave",
-    "body": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti sinu päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine. rdc preview leave [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --machine <name> | Lülita tagasi ainult see server | Ei | - | <a id=\"cli-local-preview-status\"></a>",
+    "body": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates loodud hoidlad uuesti päris kontolt. Kättesaamatu server jääb loetellu; lõpeta see hiljem valikuga --machine. rdc preview leave [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --machine <name> | Lülita tagasi ainult see server | Ei | - | <a id=\"cli-local-preview-status\"></a>",
     "excerpt": "Loetleb serverid, mis kasutavad eelvaate renet'i, küsib kinnitust ja lülitab tagasi täpselt need; seejärel taastab eelmise rdc ja litsentsib eelvaates...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-8506",
     "content": "23. Käitaja teenus",
-    "body": "Käivita see protsess täiturina, et kliendid saaksid käske käivitada selle kaudu ise SSH kaudu ühendumise asemel <a id=\"cli-local-serve\"></a> rdc serve [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -p, --port <port> | Port, mida kuulata | Ei | 8080 | | --host <host> | Aadress, millega siduda (vaikimisi 127.0.0.1 deemonil, 0.0.0.0 konteineris) | Ei | 0.0.0.0 | | --mode <mode> | Paiknemine: daemon (kliendi host) või container | Ei | daemon | ---",
+    "body": "Käivita see protsess täiturina, et kliendid saaksid käske käivitada selle kaudu ise SSH kaudu ühendumise asemel <a id=\"cli-local-serve\"></a> rdc serve [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -p, --port <port> | Port, mida kuulata | Ei | 8080 | | --host <host> | Aadress, millega siduda (vaikimisi 127.0.0.1 deemonil, 0.0.0.0 konteineris) | Ei | - | | --tls-cert <path> | PEM-sertifikaadi fail; koos valikuga --tls-key pakutakse HTTPS-i | Ei | - | | --tls-key <path> | PEM-privaatvõtme fail --tls-cert jaoks | Ei | - | | --mode <mode> | Paiknemine: daemon (kliendi host) või container | Ei | daemon | ---",
     "excerpt": "Käivita see protsess täiturina, et kliendid saaksid käske käivitada selle kaudu ise SSH kaudu ühendumise asemel <a id=\"cli-local-serve\"></a> rdc serve...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

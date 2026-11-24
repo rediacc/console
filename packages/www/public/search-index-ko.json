@@ -6735,7 +6735,7 @@
   {
     "id": "search-14794",
     "content": "23. 실행기 서비스",
-    "body": "클라이언트가 직접 SSH로 연결하는 대신 이 프로세스를 통해 명령을 실행할 수 있도록 실행기로 구동합니다 <a id=\"cli-local-serve\"></a> rdc serve [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -p, --port <port> | 수신 대기할 포트 | 아니오 | 8080 | | --host <host> | 바인딩할 주소 (데몬은 기본값 127.0.0.1, 컨테이너는 0.0.0.0) | 아니오 | 0.0.0.0 | | --mode <mode> | 배치 위치: daemon(고객 호스트) 또는 container | 아니오 | daemon | ---",
+    "body": "클라이언트가 직접 SSH로 연결하는 대신 이 프로세스를 통해 명령을 실행할 수 있도록 실행기로 구동합니다 <a id=\"cli-local-serve\"></a> rdc serve [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -p, --port <port> | 수신 대기할 포트 | 아니오 | 8080 | | --host <host> | 바인딩할 주소 (데몬은 기본값 127.0.0.1, 컨테이너는 0.0.0.0) | 아니오 | - | | --tls-cert <path> | PEM 인증서 파일. --tls-key와 함께 지정하면 HTTPS로 제공합니다 | 아니오 | - | | --tls-key <path> | --tls-cert에 대응하는 PEM 개인 키 파일 | 아니오 | - | | --mode <mode> | 배치 위치: daemon(고객 호스트) 또는 container | 아니오 | daemon | ---",
     "excerpt": "클라이언트가 직접 SSH로 연결하는 대신 이 프로세스를 통해 명령을 실행할 수 있도록 실행기로 구동합니다 <a id=\"cli-local-serve\"></a> rdc serve [options] | 플래그 | 설명 | 필수 | 기본값 | |------|----------...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",

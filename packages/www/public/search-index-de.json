@@ -6495,7 +6495,7 @@
   {
     "id": "search-3757",
     "content": "15.2 leave",
-    "body": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die in der Vorschau erstellten Repositories über dein echtes Konto neu lizenzieren. Ein nicht erreichbarer Server bleibt aufgelistet; später mit --machine abschließen. rdc preview leave [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --machine <name> | Nur diesen Server zurückwechseln | Nein | - | <a id=\"cli-local-preview-status\"></a>",
+    "body": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die in der Vorschau erstellten Repositories über das echte Konto neu lizenzieren. Ein nicht erreichbarer Server bleibt aufgelistet; später mit --machine abschließen. rdc preview leave [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --machine <name> | Nur diesen Server zurückwechseln | Nein | - | <a id=\"cli-local-preview-status\"></a>",
     "excerpt": "Die Server auflisten, die das renet der Vorschau nutzen, nachfragen und genau diese zurückwechseln; danach das vorherige rdc wiederherstellen und die...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
@@ -6735,7 +6735,7 @@
   {
     "id": "search-3777",
     "content": "23. Executor-Dienst",
-    "body": "Diesen Prozess als Executor ausführen, damit Clients Befehle darüber ausführen können, statt sich selbst per SSH zu verbinden <a id=\"cli-local-serve\"></a> rdc serve [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | -p, --port <port> | Port, auf dem gelauscht werden soll | Nein | 8080 | | --host <host> | Adresse, an die gebunden wird (Standard: 127.0.0.1 für einen Daemon, 0.0.0.0 in einem Container) | Nein | 0.0.0.0 | | --mode <mode> | Platzierung: daemon (Kundenhost) oder container | Nein | daemon | ---",
+    "body": "Diesen Prozess als Executor ausführen, damit Clients Befehle darüber ausführen können, statt sich selbst per SSH zu verbinden <a id=\"cli-local-serve\"></a> rdc serve [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | -p, --port <port> | Port, auf dem gelauscht werden soll | Nein | 8080 | | --host <host> | Adresse, an die gebunden wird (Standard: 127.0.0.1 für einen Daemon, 0.0.0.0 in einem Container) | Nein | - | | --tls-cert <path> | PEM-Zertifikatsdatei; zusammen mit --tls-key wird HTTPS bereitgestellt | Nein | - | | --tls-key <path> | PEM-Datei mit dem privaten Schlüssel zu --tls-cert | Nein | - | | --mode <mode> | Platzierung: daemon (Kundenhost) oder container | Nein | daemon | ---",
     "excerpt": "Diesen Prozess als Executor ausführen, damit Clients Befehle darüber ausführen können, statt sich selbst per SSH zu verbinden <a id=\"cli-local-serve\">...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
