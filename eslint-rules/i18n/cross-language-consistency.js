@@ -12,18 +12,45 @@ import { resolveRequiredDirOption } from './shared/require-path-option.js';
 // Cache for loaded locale data
 const localeCache = new Map();
 
-const FLAT_PLURAL_SUFFIX = /_(zero|one|two|few|many)$/;
+const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'];
 
 /**
- * i18next flat plurals (`key`, `key_other`, and in ru or ar `key_few` and the like) hold a different CLDR category set per locale by design, the same as a nested plural group. Every `key_<category>` whose `key_other` sits beside it counts as that one `key_other` leaf.
+ * The CLDR categories `Intl.PluralRules` selects in `lang`, which is the set i18next asks a flat plural for (`key_<category>`). Null when the runtime has no plural data for `lang`, so the caller reports it rather than guessing a set.
  */
-const collapseFlatPlurals = (keys) => {
-  const all = new Set(keys);
-  return keys.map((key) => {
-    const stem = key.replace(FLAT_PLURAL_SUFFIX, '');
-    return stem !== key && all.has(`${stem}_other`) ? `${stem}_other` : key;
-  });
+const requiredPluralCategories = (lang) => {
+  try {
+    if (Intl.PluralRules.supportedLocalesOf([lang]).length === 0) return null;
+    return new Intl.PluralRules(lang).resolvedOptions().pluralCategories;
+  } catch {
+    return null;
+  }
 };
+
+/**
+ * i18next flat plurals: `key_other` with `key_one`, `key_few` and the like beside it, the bare `key` standing in for `one` (i18next falls back to it when `key_<category>` is missing). Each locale holds the categories ITS `Intl.PluralRules` selects, so the forms are not compared against the source locale key by key. A stem is a flat plural when the source locale holds `<stem>_other`.
+ */
+const flatPluralStems = (sourceKeys) =>
+  new Set(
+    [...sourceKeys]
+      .filter((key) => key.endsWith('_other'))
+      .map((key) => key.slice(0, -'_other'.length))
+  );
+
+/** True when `key` is `<stem>_<category>` for one of `stems`. */
+const isFlatPluralForm = (stems, key) => {
+  const cut = key.lastIndexOf('_');
+  return cut > 0 && PLURAL_CATEGORIES.includes(key.slice(cut + 1)) && stems.has(key.slice(0, cut));
+};
+
+/** Every [stem, category, key] form `lang` requires and `keys` lacks. The bare stem satisfies `one`. */
+const missingPluralForms = (stems, keys, categories) =>
+  [...stems].flatMap((stem) =>
+    categories
+      .filter(
+        (category) => !keys.has(`${stem}_${category}`) && !(category === 'one' && keys.has(stem))
+      )
+      .map((category) => [stem, category, `${stem}_${category}`])
+  );
 
 /**
  * Get all supported language directories
@@ -63,15 +90,24 @@ const flattenKeys = (obj, prefix = '', groups = new Set()) => {
 /** True when `key` is a plural group in the loaded locale keys. */
 const isGroup = (keys, key) => keys.groups?.has(key) === true;
 
-/** Every [messageId, key] difference between the source locale's keys and another locale's. */
-const keySetFindings = (englishKeys, langKeys) => [
-  ...[...englishKeys].filter((key) => !langKeys.has(key)).map((key) => ['missingInLanguage', key]),
-  // Same leaf, different shape: a plural group on one side, a plain string on the other.
-  ...[...englishKeys]
-    .filter((key) => langKeys.has(key) && isGroup(englishKeys, key) !== isGroup(langKeys, key))
-    .map((key) => ['shapeMismatch', key]),
-  ...[...langKeys].filter((key) => !englishKeys.has(key)).map((key) => ['extraInLanguage', key]),
-];
+/**
+ * Every [messageId, key] difference between the source locale's keys and another locale's. The forms of a flat plural (`stems`) are left out here; `missingPluralForms` checks them against each locale's own category set.
+ */
+const keySetFindings = (englishKeys, langKeys, stems = new Set()) => {
+  const compared = (keys) => [...keys].filter((key) => !isFlatPluralForm(stems, key));
+  return [
+    ...compared(englishKeys)
+      .filter((key) => !langKeys.has(key))
+      .map((key) => ['missingInLanguage', key]),
+    // Same leaf, different shape: a plural group on one side, a plain string on the other.
+    ...compared(englishKeys)
+      .filter((key) => langKeys.has(key) && isGroup(englishKeys, key) !== isGroup(langKeys, key))
+      .map((key) => ['shapeMismatch', key]),
+    ...compared(langKeys)
+      .filter((key) => !englishKeys.has(key))
+      .map((key) => ['extraInLanguage', key]),
+  ];
+};
 
 /**
  * Load and flatten keys from a locale file
@@ -84,7 +120,7 @@ const loadLocaleKeys = (filePath) => {
   try {
     const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
     const groups = new Set();
-    const keys = new Set(collapseFlatPlurals(flattenKeys(content, '', groups)));
+    const keys = new Set(flattenKeys(content, '', groups));
     // Which leaves are plural groups: a group against a plain string is a shape mismatch.
     keys.groups = groups;
     localeCache.set(filePath, keys);
@@ -128,6 +164,10 @@ export const crossLanguageConsistency = {
         'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
       shapeMismatch:
         'Key "{{key}}" is a plural group in one of {{source}} and {{language}} and a plain string in the other. See docs/i18n/CONVENTIONS.md.',
+      missingPluralForm:
+        'Flat plural "{{stem}}" in {{language}} has no "{{key}}", and Intl.PluralRules selects "{{category}}" there (i18next would fall back to the bare key). Add the form. See docs/i18n/CONVENTIONS.md.',
+      unknownPluralLocale:
+        'Locale directory "{{language}}" has no Intl.PluralRules data, so its flat plural forms cannot be checked. Name the directory by a BCP 47 tag the runtime knows. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -162,10 +202,29 @@ export const crossLanguageConsistency = {
      * Reports land on the Document node -- the offending key lives in another
      * file, so there is no position in this one to point at.
      */
-    const reportKeySetDiff = (node, lang, englishKeys, langKeys) => {
+    const reportKeySetDiff = (node, lang, englishKeys, langKeys, stems) => {
       const data = (key) => ({ key, source: sourceLanguage, language: lang });
       const report = (messageId, key) => context.report({ node, messageId, data: data(key) });
-      for (const [messageId, key] of keySetFindings(englishKeys, langKeys)) report(messageId, key);
+      for (const [messageId, key] of keySetFindings(englishKeys, langKeys, stems)) {
+        report(messageId, key);
+      }
+    };
+
+    /** Each flat plural form `lang` requires and lacks; the source locale itself goes through this too. */
+    const reportPluralForms = (node, lang, keys, stems) => {
+      if (stems.size === 0) return;
+      const categories = requiredPluralCategories(lang);
+      if (categories === null) {
+        context.report({ node, messageId: 'unknownPluralLocale', data: { language: lang } });
+        return;
+      }
+      for (const [stem, category, key] of missingPluralForms(stems, keys, categories)) {
+        context.report({
+          node,
+          messageId: 'missingPluralForm',
+          data: { stem, category, key, language: lang },
+        });
+      }
     };
 
     return {
@@ -175,6 +234,8 @@ export const crossLanguageConsistency = {
         // Get English keys from current file
         const englishFilePath = path.join(absoluteLocalesDir, sourceLanguage, `${namespace}.json`);
         const englishKeys = loadLocaleKeys(englishFilePath);
+        const stems = flatPluralStems(englishKeys);
+        reportPluralForms(node, sourceLanguage, englishKeys, stems);
 
         // Check each language
         for (const lang of languages) {
@@ -185,7 +246,9 @@ export const crossLanguageConsistency = {
             continue;
           }
 
-          reportKeySetDiff(node, lang, englishKeys, loadLocaleKeys(langFilePath));
+          const langKeys = loadLocaleKeys(langFilePath);
+          reportKeySetDiff(node, lang, englishKeys, langKeys, stems);
+          reportPluralForms(node, lang, langKeys, stems);
         }
       },
     };
