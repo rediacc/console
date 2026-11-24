@@ -132,6 +132,19 @@ describe('the audit events carry the command request id', () => {
     for (const event of events) expect(event.requestId).toBe(REQUEST_ID);
   });
 
+  // Review 123777d6.2: the observed call's params reach the outcome event, which is where the audit takes the repository identity from.
+  it('the outcome event carries the function and params the command actually called', async () => {
+    const events = await run('repo delete', { yes: true }, { ref: 'shop' }, REQUEST_ID, ok);
+    const outcome = events.find((event) => event.functionName === 'repository_delete');
+    expect(outcome?.functionParams).toMatchObject({ repository: 'shop:latest' });
+  });
+
+  it('control: a read names no repository in its function params', async () => {
+    const events = await run('repo list', { machine: 'm1' }, {}, REQUEST_ID, ok);
+    expect(events.length).toBeGreaterThanOrEqual(1);
+    for (const event of events) expect(event.functionParams?.repository).toBeUndefined();
+  });
+
   it('control: a request without an id ships events without the key', async () => {
     const events = await run('repo delete', { yes: true }, { ref: 'shop' }, undefined, ok);
     expect(events.length).toBeGreaterThanOrEqual(2);
