@@ -136,7 +136,11 @@ jobs:
       - name: Verify committed BPF objects match a clang rebuild
         run: |
           cd private/renet
-          git diff --exit-code -- pkg/ebpf/socketisolation_arm64_bpfel.o pkg/ebpf/socketisolation_x86_bpfel.o
+          committed=$(git ls-files -- 'pkg/ebpf/*_bpfel.o' | sort)
+          generated=$(find pkg/ebpf -name '*_bpfel.o' | sort)
+          [ -n "$committed" ] || { echo "::error::no committed BPF objects found"; exit 1; }
+          [ "$committed" = "$generated" ] || { echo "::error::committed and generated BPF object lists differ"; exit 1; }
+          git diff --exit-code -- $committed
 
       - name: Run renet unit tests (repodiff/delta/fiemap/kernel/procwalk)
         run: |
