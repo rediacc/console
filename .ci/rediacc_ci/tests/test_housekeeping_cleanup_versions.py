@@ -4563,3 +4563,25 @@ def test_phase_8b_keeps_a_word_named_channel_when_the_open_pr_list_is_unreadable
     )
     assert "KEEP R2 prefix %s: the open PR list is unreadable" % dead in result[2].decode()
     assert [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]] == []
+
+
+def test_phase_8b_age_branch_deletes_a_stale_word_named_channel_without_the_key() -> None:
+    """Reviews dc4708fc.1 and .3: the age limit applies to a word-named channel like any PR channel, key and PR list or not; the same channel, fresh, is kept (the control)."""
+    stale, fresh = _pv(3), _pv(4)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line(stale + "/") + pre_line(fresh + "/"),
+            ),
+            rule("--prefix cli/%s/" % stale, raw="%s\n" % ago(5.5)),
+            rule("--prefix cli/%s/" % fresh, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", rc=1), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=""),
+    )
+    err = result[2].decode()
+    assert ("Deleted s3://%s/cli/%s/ (stale 5d)" % (RELEASES_BUCKET, stale)) in err
+    rms = [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]]
+    assert [c[2] for c in rms] == ["s3://%s/cli/%s/" % (RELEASES_BUCKET, stale)]

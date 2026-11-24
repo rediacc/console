@@ -720,6 +720,19 @@ def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
     assert [i["n"] for i in cfl.listing_by_page("/p", TOKEN, counted)] == [1, 2, 3]
 
 
+def test_an_empty_listing_with_a_zero_count_is_an_empty_list_not_an_error():
+    """Review 40b07c7e.1: an account with no containers or pages answers `total_pages: 0` or `total_count: 0`."""
+    for info in ({"total_pages": 0}, {"total_count": 0, "per_page": 10}, {"total_count": 0}):
+        assert (
+            cfl.listing_by_page(
+                "/p",
+                TOKEN,
+                lambda _p, _t, info=info: {"success": True, "result": [], "result_info": info},
+            )
+            == []
+        )
+
+
 def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
     """Review 9900887b.1: a `result_info` with no page count is refused; a body with no `result_info` at all is the whole listing."""
     with pytest.raises(cfl.CfError, match="total_pages"):

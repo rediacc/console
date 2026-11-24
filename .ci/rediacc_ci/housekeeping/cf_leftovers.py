@@ -301,6 +301,9 @@ def _total_pages(body: dict, path: str = "listing") -> int:
     if info is None:
         return 1
     total = info.get("total_pages") if isinstance(info, dict) else None
+    # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it.
+    if total == 0 or (isinstance(info, dict) and total is None and info.get("total_count") == 0):
+        return 1
     if (
         total is None
         and isinstance(info, dict)

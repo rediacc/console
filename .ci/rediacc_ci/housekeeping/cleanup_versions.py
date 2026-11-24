@@ -1307,7 +1307,9 @@ class Housekeeping:
         return "no open PR derives it"
 
     def reap_preview_channel(self, prefix: str, name: str, now_epoch: int, max_age: int) -> bool:
-        """Phase 8b for one word-named channel prefix: deleted when older than the PR-channel age limit or when no open PR derives its name. True when it was (or would be) deleted."""
+        """Phase 8b for one word-named channel prefix: deleted when older than the PR-channel age limit or when no open PR derives its name. True when it was (or would be) deleted.
+
+        The age branch is deliberately not fail-closed: a channel idle past `R2_PR_MAX_AGE_DAYS` is deleted whatever PR derives it, as every `pr-N` channel is, so a missing key or an unreadable PR list cannot keep it. Only the orphan branch needs the key and the list, and keeps the channel without them (`preview_orphan`)."""
         last = self.r2_prefix_last_modified(prefix)
         if last == "":
             return False
