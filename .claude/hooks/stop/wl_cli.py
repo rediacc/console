@@ -2854,6 +2854,348 @@ def _writers_now_start_cli(argv):
     print("ledger: %s" % WN.LEDGER_REL)
 
 
+CLI_ARMED_USAGE = """usage:
+  worklist.py --arm <me> <id> --when <token> [--when <token> ...] (--run agent/<me8>/armed/<id>.md | --run-cmd "<line>") [--lease <lease-id>] [--expires +<hours>]
+  worklist.py --disarm <me> <id> --why <text>
+  worklist.py --armed-start <me> <id>
+  worklist.py --armed-list <me>
+  worklist.py --arm-from-survey <me> <survey.md>
+tokens (AND-combined): NOT-BEFORE:<ISO8601Z> REPORTED:<agent-id>|#<item> EXIT:<task-id> CI-QUICK:done|verified VM-CHECK:done|verified BENCH:deployed PUSHED:head NEEDS:<value> DEFER-CLOSED:#<id> TICKED:#<id> BOX:<plan-path>#<sig8>
+"""
+
+
+def _armed_world(root, worklist, fold, me):
+    """The arm-time view `wl_armed.parse_when` validates against: the store, the last Stop event's running task ids and this session's agent metas, each with the reason it could not be read."""
+    import wl_armed as A
+
+    world = A.ArmWorld(root=pathlib.Path(root), now=C.utcnow(), by_id=dict(fold.by_id))
+    try:
+        ev = json.loads(
+            worklist.with_suffix(".lastevent-%s.json" % me[:8]).read_text(encoding="utf-8")
+        )
+        world.running = {
+            str(b.get("id") or "")
+            for b in (ev.get("background_tasks") or [])
+            if isinstance(b, dict) and b.get("status") == "running"
+        }
+    except (OSError, ValueError, AttributeError) as exc:
+        world.running_why = "%s: %s" % (type(exc).__name__, exc)
+    try:
+        import wl_roster
+
+        sid = C.resolve_session_id() or me
+        sub = wl_roster.session_subagents_dir(os.getcwd(), sid)
+        if sub is None:
+            world.agents_why = "the subagents directory of session %s cannot be located" % sid[:8]
+        else:
+            world.agents = set(wl_roster.load_metas(sub))
+    except Exception as exc:
+        world.agents_why = "%s: %s" % (type(exc).__name__, exc)
+    return world
+
+
+def _armed_item(fold, item_id, me, die):
+    """The record `item_id` names, refused when absent or another session's."""
+    rec = fold.by_id.get(item_id)
+    if rec is None:
+        die("no item #%s (worklist.py --list shows ids)" % item_id)
+    if rec.get("owner") is not None and not C.owned_by_me(
+        rec["owner"], C.resolve_session_id() or me
+    ):
+        die("#%s is owned by %s; never arm another session's tracking" % (item_id, rec["owner"]))
+    return rec
+
+
+def _tracked(root, rel):
+    """True when git tracks `rel` in the checkout at `root`."""
+    import wl_armed as A
+
+    rc, _out = A._git(root, "ls-files", "--error-unmatch", "--", rel)
+    return rc == 0
+
+
+def _arm_one(worklist, root, fold, me, rec, tokens, run, cmd, lease, expires, die):
+    """Validate one arm against Design 2 and 7, append its `arm` event and print what was armed. Every refusal goes through `die` before anything is written."""
+    import wl_armed as A
+
+    item_id = rec["id"]
+    if rec.get("origin") != "cli":
+        die(
+            "#%s is a markdown-inbox item; an arm rides the store's `add` through compaction, so "
+            "arm a CLI item (--add)" % item_id
+        )
+    if rec.get("state") not in (" ", "?", ">"):
+        die(
+            "#%s is [%s]; only an open, deferred or leased item can be armed"
+            % (item_id, rec["state"])
+        )
+    if rec.get("state") == ">" and rec.get("worker") == "queue":
+        die(
+            "#%s is leased worker:queue, which already waits on a live plan; release it first:\n"
+            "    .claude/hooks/stop/worklist.py --lease %s %s release" % (item_id, me, item_id)
+        )
+    cur = A.live_arm(rec)
+    if cur is not None:
+        die(
+            "#%s already carries a live arm (aid %s, %s); one live arm per item. Disarm it first:\n"
+            "    .claude/hooks/stop/worklist.py --disarm %s %s --why <text>"
+            % (item_id, cur["aid"], cur.get("verdict") or "armed", me, item_id)
+        )
+    if bool(run) == bool(cmd):
+        die("an arm needs exactly one of --run <brief> and --run-cmd <line>")
+    world = _armed_world(root, worklist, fold, me)
+    try:
+        when = A.parse_when(tokens, world)
+    except A.TokenError as exc:
+        die("REFUSED: %s" % exc)
+    me8 = S.agent_session_slug(me)
+    sha = ""
+    if run:
+        want = A.brief_rel(me8, item_id)
+        if run.lstrip("./") != want:
+            die("--run must name the item's brief path %s, not %s" % (want, run))
+        path = pathlib.Path(root) / want
+        try:
+            sha = A.brief_sha(path)
+        except OSError as exc:
+            die("--run %s cannot be read (%s); write the brief first" % (want, exc))
+        run = want
+    if lease:
+        if not A.LEASE_ID_RE.match(lease):
+            die("--lease %r is not a lease id" % lease)
+        dirs = C._git_dirs(pathlib.Path(root))
+        if dirs is not None:
+            import wl_worktrees as WT
+
+            if lease in WT.read_holds(dirs[1]):
+                die(
+                    "lease %s carries a `.hold` record; the arm replaces it, so lift the hold first:\n"
+                    "    ./run.sh worktree unhold %s" % (lease, lease)
+                )
+    now = world.now
+    exp = A.default_expiry(now, when)
+    if expires:
+        m = re.fullmatch(r"\+(\d{1,3})", expires)
+        if not m or not 1 <= int(m.group(1)) <= A.MAX_EXPIRY_H:
+            die("--expires %r is not +<hours> between +1 and +%d" % (expires, A.MAX_EXPIRY_H))
+        exp = now + datetime.timedelta(hours=int(m.group(1)))
+        latest = max(
+            (A.parse_instant(t.split(":", 1)[1]) for t in when if t.startswith("NOT-BEFORE:")),
+            default=None,
+        )
+        if latest is not None and exp <= latest:
+            die(
+                "--expires %s ends at or before NOT-BEFORE %s; the arm could never fire"
+                % (expires, A.stamp(latest))
+            )
+    aid = S.arm_item(
+        worklist,
+        me,
+        item_id,
+        when,
+        run=run,
+        cmd=cmd,
+        sha=sha,
+        lease=lease,
+        exp=A.stamp(exp),
+        at=A.stamp(now),
+    )
+    print(
+        "armed #%s (aid %s) on %s; expires %s; runs %s"
+        % (item_id, aid, " AND ".join(when), A.stamp(exp), run or repr(cmd))
+    )
+    if run and not _tracked(root, run):
+        print(
+            "the brief is untracked; commit it so the arm's sha is checkable at HEAD:\n"
+            "    git add -- %s\n    git commit -F <msg> -- %s" % (run, run)
+        )
+    return aid
+
+
+def _armed_cli(argv):
+    """`--arm`, `--disarm`, `--armed-start`, `--armed-list`, `--arm-from-survey` (agent/plans/PLAN-armed-actions.md Design 7, 9). Every write goes through the store's append-only events; every refusal exits non-zero before anything is written."""
+    import wl_armed as A
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(1)
+
+    verb = argv[0]
+    if len(argv) < 2 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(CLI_ARMED_USAGE)
+        sys.exit(2)
+    me = argv[1]
+    if "wl_defersettle" not in _BROKEN and me == DS.ACTOR:
+        die(M.CLI_RESERVED_ACTOR % me)
+    _identity_or_die(me, die)
+    start = C.project_start()
+    worklist = C.worklist_for(start)
+    root = C.project_root(start)
+    fold = S.load(worklist, sync=True)
+    sid = C.resolve_session_id() or me
+
+    if verb == "--armed-list":
+        if len(argv) != 2:
+            sys.stderr.write(CLI_ARMED_USAGE)
+            sys.exit(2)
+        rows = A.session_arms(fold.items, sid)
+        if not rows:
+            print("no live arms for %s" % me)
+            return
+        for rec, arm in rows:
+            print(
+                "#%s aid=%s %s when=%s %s exp=%s%s"
+                % (
+                    rec["id"],
+                    arm["aid"],
+                    arm.get("verdict") or A.ARMED,
+                    " AND ".join(arm.get("when") or []),
+                    ("run=%s" % arm["run"]) if arm.get("run") else ("cmd=%r" % arm.get("cmd")),
+                    arm.get("exp"),
+                    (" lease=%s" % arm["lease"]) if arm.get("lease") else "",
+                )
+            )
+        return
+
+    if verb == "--arm-from-survey":
+        if len(argv) != 3:
+            sys.stderr.write(CLI_ARMED_USAGE)
+            sys.exit(2)
+        try:
+            text = pathlib.Path(argv[2]).read_text(encoding="utf-8")
+        except OSError as exc:
+            die("the survey %s cannot be read (%s)" % (argv[2], exc))
+        rows, problems = A.survey_rows(text)
+        if problems:
+            die("REFUSED: %s" % "; ".join(problems))
+        # EVERY ROW IS VALIDATED BEFORE ANY IS WRITTEN, so a bad row leaves no half-armed survey behind.
+        world = _armed_world(root, worklist, fold, me)
+        planned = []
+        for row in rows:
+            try:
+                when = A.parse_when(A.trigger_tokens(row["trigger"]), world)
+            except A.TokenError as exc:
+                die("REFUSED: row %r: %s" % (row["blocker"], exc))
+            draft = pathlib.Path(row["draft"])
+            try:
+                body = draft.read_text(encoding="utf-8")
+            except OSError as exc:
+                die(
+                    "REFUSED: row %r: the brief draft %s cannot be read (%s)"
+                    % (row["blocker"], draft, exc)
+                )
+            planned.append((row, when, body))
+        me8 = S.agent_session_slug(me)
+        written = []
+        for row, when, body in planned:
+            rid = S.add_item(
+                worklist,
+                me,
+                "Armed start behind %s: dependent boxes %s (%s)"
+                % (row["blocker"], row["sigs"], me8),
+            )
+            rel = A.brief_rel(me8, rid)
+            path = pathlib.Path(root) / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                "%s\n\n%s" % (A.start_line(me8, rid), body.lstrip("\n")), encoding="utf-8"
+            )
+            fold = S.load(worklist, sync=False)
+            _arm_one(worklist, root, fold, me, fold.by_id[rid], when, rel, "", "", "", die)
+            written.append(rel)
+        print(
+            "armed %d item(s) from %s; commit the briefs:\n    git add -- %s\n    git commit -F <msg> -- %s"
+            % (len(written), argv[2], " ".join(written), " ".join(written))
+        )
+        return
+
+    if len(argv) < 3:
+        sys.stderr.write(CLI_ARMED_USAGE)
+        sys.exit(2)
+    item_id = argv[2].lstrip("#")
+    rec = _armed_item(fold, item_id, me, die)
+    rest = argv[3:]
+
+    if verb == "--arm":
+        tokens, run, cmd, lease, expires = [], "", "", "", ""
+        i = 0
+        while i < len(rest):
+            flag = rest[i]
+            if flag in ("--when", "--run", "--run-cmd", "--lease", "--expires") and i + 1 < len(
+                rest
+            ):
+                val = rest[i + 1]
+                if flag == "--when":
+                    tokens.append(val)
+                elif flag == "--run":
+                    run = val
+                elif flag == "--run-cmd":
+                    cmd = val
+                elif flag == "--lease":
+                    lease = val
+                else:
+                    expires = val
+                i += 2
+                continue
+            die("unexpected argument %r\n%s" % (flag, CLI_ARMED_USAGE))
+        _arm_one(worklist, root, fold, me, rec, tokens, run, cmd, lease, expires, die)
+        return
+
+    arm = A.live_arm(rec)
+    if verb == "--disarm":
+        if len(rest) < 2 or rest[0] != "--why" or not " ".join(rest[1:]).strip():
+            die("--disarm needs --why <text>: the reason the held start is dropped")
+        if arm is None:
+            die("#%s carries no live arm to disarm" % item_id)
+        S.disarm_item(worklist, me, item_id, arm["aid"], " ".join(rest[1:]).strip())
+        print("disarmed #%s (aid %s)" % (item_id, arm["aid"]))
+        return
+
+    if verb == "--armed-start":
+        if rest:
+            die("unexpected argument %r\n%s" % (rest[0], CLI_ARMED_USAGE))
+        if arm is None:
+            die("#%s carries no live arm" % item_id)
+        verdict = arm.get("verdict") or ""
+        if not verdict:
+            die(
+                "REFUSED: #%s's arm (aid %s) has not fired; its trigger %s still holds it. The Stop "
+                "hook names it the moment it fires."
+                % (item_id, arm["aid"], " AND ".join(arm.get("when") or []))
+            )
+        if verdict != A.FIRED:
+            die(
+                "REFUSED: #%s's arm (aid %s) is %s (%s); there is nothing to start. Disarm and re-arm:\n"
+                "    .claude/hooks/stop/worklist.py --disarm %s %s --why <text>\n"
+                "    .claude/hooks/stop/worklist.py --arm %s %s --when <token> ..."
+                % (item_id, arm["aid"], verdict, arm.get("why", "")[:200], me, item_id, me, item_id)
+            )
+        S.armstart_item(worklist, me, item_id, arm["aid"])
+        print(
+            "started #%s (aid %s), fired on: %s" % (item_id, arm["aid"], arm.get("why", "")[:300])
+        )
+        if arm.get("run"):
+            path = pathlib.Path(root) / arm["run"]
+            try:
+                now_sha = A.brief_sha(path)
+            except OSError as exc:
+                now_sha = ""
+                print(
+                    "WARNING: the brief %s cannot be read (%s)" % (arm["run"], exc), file=sys.stderr
+                )
+            if now_sha and arm.get("sha") and now_sha != arm["sha"]:
+                print(
+                    "WARNING: the brief %s changed since the arm (sha %s, now %s); read it before acting"
+                    % (arm["run"], arm["sha"], now_sha),
+                    file=sys.stderr,
+                )
+            print("next: cat %s" % arm["run"])
+        else:
+            print("next: %s" % arm.get("cmd"))
+        return
+    die("unknown armed verb %s" % verb)
+
+
 def _print_resolved(pq, root, text):
     """The resolved settings, one `key: value (source)` line each in KNOWN_KEYS order, then what the level does to the checks (agent/plans/PLAN-stop-hook-effort.md) and any problem. `pq` is wl_planqueue, which carries wl_effort."""
     effort = pq.wl_effort
@@ -2940,7 +3282,9 @@ def main():
             sys.exit(2)
         # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
         owed = _owed_for_state(root, prefix)
-        problems = S.agent_state_problems(body, owed)
+        # THE ARMED DEMAND (agent/plans/PLAN-armed-actions.md Design 8): while this session holds live arms, the section must name each in `## Armed`, the same rule the Stop check reads with.
+        armed = S.armed_item_ids(S.load(wl, sync=False), C.resolve_session_id() or prefix)
+        problems = S.agent_state_problems(body, owed, armed)
         verdict, detail = problems[0] if problems else ("ok", "")
         if verdict == "waitled" and len(problems) == 1:
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.
@@ -3611,6 +3955,15 @@ def main():
         return True
     if sys.argv[1:2] == ["--writers-now-start"]:
         _writers_now_start_cli(sys.argv[1:])
+        return True
+    if sys.argv[1:2] and sys.argv[1] in (
+        "--arm",
+        "--disarm",
+        "--armed-start",
+        "--armed-list",
+        "--arm-from-survey",
+    ):
+        _armed_cli(sys.argv[1:])
         return True
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
