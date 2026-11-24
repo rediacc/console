@@ -76,16 +76,16 @@ def write(path: pathlib.Path, obj: dict) -> bool:
     text = dump(obj)
     if path.is_file() and path.read_text(encoding="utf-8") == text:
         return False
-    # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
+    # tree-write: callers .ci/rediacc_ci/quality/env_register.py|.ci/rediacc_ci/quality/python_env_registry.py only the registry writer verbs may call write(); any other caller is judged as a tree write
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(".%s.%d.tmp" % (path.name, os.getpid()))
     try:
-        # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
+        # tree-write: callers .ci/rediacc_ci/quality/env_register.py|.ci/rediacc_ci/quality/python_env_registry.py only the registry writer verbs may call write(); any other caller is judged as a tree write
         tmp.write_text(text, encoding="utf-8")
-        # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
+        # tree-write: callers .ci/rediacc_ci/quality/env_register.py|.ci/rediacc_ci/quality/python_env_registry.py only the registry writer verbs may call write(); any other caller is judged as a tree write
         os.replace(tmp, path)
     finally:
         if tmp.exists():
-            # tree-write: safe the registry writers only (python_env_registry --write-baseline, env_register.register) call write(); check:ci-env-registry never does
+            # tree-write: callers .ci/rediacc_ci/quality/env_register.py|.ci/rediacc_ci/quality/python_env_registry.py only the registry writer verbs may call write(); any other caller is judged as a tree write
             tmp.unlink()
     return True

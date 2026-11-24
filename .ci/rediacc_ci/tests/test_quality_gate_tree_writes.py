@@ -283,3 +283,57 @@ def test_a_refusal_names_the_module_a_reader_can_run(tmp_path, capsys):
         in err
     ), err
     assert "check-gate-tree-writes" not in err
+
+
+def _verdicts(tmp_path: pathlib.Path, run: str) -> gate.Result:
+    gate.build_fixture(tmp_path, ROOT)
+    lock = [{"id": "w", "run": run, "gate": True}]
+    (tmp_path / "lock.json").write_text(json.dumps(lock), encoding="utf-8")
+    return gate.analyze(tmp_path, tmp_path / "lock.json", tmp_path / "package.json", ROOT, {})
+
+
+def test_callers_pragma_exempts_only_the_listed_referrer(tmp_path):
+    """Review finding 160a24a5.1. Control: `cw/lib.py` lists its one referrer and is green. Plant: `cwm/lib.py` has the same shape but a second module (`cwm/bad.py`) references `put`, so the site is judged as a tree write again, for the listed entry too."""
+    control = _verdicts(tmp_path, "cw/ok.py")
+    assert control.findings == []
+    assert sorted(v.bucket for v in control.verdicts) == ["DECLARED"]
+    planted = _verdicts(tmp_path, "cwm/ok.py")
+    assert any("cwm/bad.py" in f and "does not list" in f for f in planted.findings), (
+        planted.findings
+    )
+    assert any("UNRESOLVED" in f for f in planted.findings)
+
+
+def test_a_safe_pragma_still_exempts_every_referrer(tmp_path):
+    """The old `safe` form on the same function is green whoever references it, which is why env_doc.write no longer uses it: this pins the hole the `callers` form closes."""
+    gate.build_fixture(tmp_path, ROOT)
+    lib = tmp_path / "cwm" / "lib.py"
+    lib.write_text(
+        lib.read_text(encoding="utf-8").replace(
+            "tree-write: callers cwm/ok.py", "tree-write: safe"
+        ),
+        encoding="utf-8",
+    )
+    lock = [{"id": "w", "run": "cwm/ok.py", "gate": True}]
+    (tmp_path / "lock.json").write_text(json.dumps(lock), encoding="utf-8")
+    res = gate.analyze(tmp_path, tmp_path / "lock.json", tmp_path / "package.json", ROOT, {})
+    assert res.findings == []
+
+
+def test_a_listed_file_that_stopped_referencing_is_a_bad_pragma(tmp_path):
+    res = _verdicts(tmp_path, "cws/ok.py")
+    assert any("BAD-PRAGMA" in f and "cws/gone.py" in f for f in res.findings), res.findings
+
+
+def test_env_doc_write_is_exempt_for_exactly_the_two_registry_writers():
+    """The real tree: the referrers of env_doc.write are the two writer verbs, and every tree-write pragma in env_doc.py is the `callers` form."""
+    files, fn = gate.referrers(ROOT, ".ci/rediacc_ci/quality/env_doc.py", 80)
+    assert fn == "write"
+    assert files == [
+        ".ci/rediacc_ci/quality/env_register.py",
+        ".ci/rediacc_ci/quality/python_env_registry.py",
+    ]
+    text = (ROOT / ".ci/rediacc_ci/quality/env_doc.py").read_text(encoding="utf-8")
+    pragmas = [ln for ln in text.splitlines() if "tree-write:" in ln]
+    assert len(pragmas) == 4
+    assert all("tree-write: callers " in ln for ln in pragmas)
