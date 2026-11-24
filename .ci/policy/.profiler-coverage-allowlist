@@ -106,9 +106,6 @@ ct-update-flow.yml:test-linux-x64
 # ops-housekeeping.yml
 ops-housekeeping.yml:cleanup
 #
-# ops-nightly-status.yml
-ops-nightly-status.yml:report
-#
 # cd-release-stable.yml
 cd-release-stable.yml:promote
 cd-release-stable.yml:verify-stable

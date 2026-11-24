@@ -16,7 +16,7 @@ name: Housekeeping
 #                        wrangler config accounts for. Deletes nothing; findings never fail it.
 #   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
 #                        artifact .ci/config/freshness.json registers against fresh
-#                        measurements, reported to the nightly-status issue.
+#                        measurements, reported to the rolling nightly-red issue.
 #   gate-costs-capture - a serial ci:quick plus one third of the slow gates, measuring
 #                        each gate's CPU, uploaded as the artifact gate_costs --refresh reads.
 
@@ -190,10 +190,9 @@ jobs:
   budget-check:
     name: CI time budget check
     # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
-    # (readonly, housekeeping, cd) grant `issues`, the same reason ops-nightly-status.yml
-    # gives for using its own job-scoped `github.token` instead of the App -- it cannot
-    # bypass the branch-protection ruleset and creates no further workflow runs, so it
-    # is the smaller grant for the same read (Actions API) plus post (an issue comment)
+    # (readonly, housekeeping, cd) grant `issues`, so this job uses its own job-scoped
+    # `github.token` instead of the App -- it cannot bypass the branch-protection
+    # ruleset and creates no further workflow runs, so it is the smaller grant for the same read (Actions API) plus post (an issue comment)
     # this job needs.
     runs-on: ubuntu-slim
     timeout-minutes: 10
@@ -237,9 +236,7 @@ jobs:
 
       # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
       # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
-      # header for why this posts its own dated section rather than reusing
-      # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
-      # (workflow_run: completed of "Console CI") with no payload this cron carries.
+      # header for why this posts its own dated section.
       - name: Report a stale or over-budget CI leg
         if: steps.budget-check.outputs.rc != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

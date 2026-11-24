@@ -29,7 +29,7 @@ WHY, in the twin's own words, because the failure was a silent fail-open:
     everything, so "empty" is treated as a failed read, never as a tree state.
 
     CREATE-ON-DEMAND. Exactly one label is legitimately absent until first use:
-    report-nightly-status.cjs creates `nightly-red` right before it opens the
+    report-budget-check.cjs creates `nightly-red` right before it opens the
     rolling issue, because createIssue with an unknown label fails the whole call.
     It is still declared in labels.yml (the guide must be able to explain it), so
     it would otherwise trip direction (a) forever. The allowlist below forgives
@@ -48,7 +48,7 @@ WHY, in the twin's own words, because the failure was a silent fail-open:
 
 THE THREE ALLOWLIST ENTRIES CARRY THEIR OWN BLOCKER REASONS, verbatim:
 
-    nightly-red: report-nightly-status.cjs calls issues.createLabel for
+    nightly-red: report-budget-check.cjs calls issues.createLabel for
     nightly-red immediately before opening the rolling issue, because
     issues.create with an unknown label fails the entire call; the label
     therefore does not exist until the first red night, and demanding it up front
@@ -91,7 +91,7 @@ THE ALLOWLIST IS SELF-EXPIRING, and the scoping of that is deliberate:
 
     a stale entry is a permanent hole, so both halves of every entry are
     re-verified. This is what makes the exemption self-expiring: delete
-    report-nightly-status.cjs and the allowlist fails rather than quietly
+    report-budget-check.cjs and the allowlist fails rather than quietly
     forgiving a label nothing creates any more.
 
     The "still declared" half is scoped to the REAL declaration file: a fixture
@@ -211,7 +211,7 @@ DESC_CAP = 100
 
 # "<label>|<script that creates it>". Absence is forgiven for these and ONLY these. Keep it this short. Each entry's BLOCKER reason is in the module docstring, where a reviewer reads it.
 CREATE_ON_DEMAND = (
-    "nightly-red|.ci/scripts/ci/report-nightly-status.cjs",
+    "nightly-red|scripts/ci/report-budget-check.cjs",
     "ci|.ci/rediacc_ci/review/pr_labels.py",
     "bump-none|.ci/rediacc_ci/review/pr_labels.py",
 )

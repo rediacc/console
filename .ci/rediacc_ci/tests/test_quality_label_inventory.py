@@ -82,7 +82,8 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
             src / ".ci" / "rediacc_ci" / "quality" / name,
             root / ".ci" / "rediacc_ci" / "quality" / name,
         )
-    (root / ".ci" / "scripts" / "ci" / "report-nightly-status.cjs").write_text(
+    (root / "scripts" / "ci").mkdir(parents=True, exist_ok=True)
+    (root / "scripts" / "ci" / "report-budget-check.cjs").write_text(
         'issues.createLabel({name: "nightly-red"})\n', encoding="utf-8"
     )
     (root / ".ci" / "rediacc_ci" / "review" / "pr_labels.py").write_text(
@@ -356,7 +357,7 @@ def test_the_allowlist_is_short_and_every_entry_names_a_creator():
         name, _, creator = entry.partition("|")
         assert name, entry
         assert creator, entry
-        assert creator.startswith(".ci/"), entry
+        assert creator.startswith((".ci/", "scripts/ci/")), entry
 
 
 def test_the_declaration_reader_keeps_the_twins_unquoting_order():

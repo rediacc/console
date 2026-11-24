@@ -10,7 +10,6 @@
     ".ci/scripts/build/sea-inject/verify.mjs",
     ".ci/scripts/ci/greenlight.cjs",
     ".ci/scripts/ci/label-guide-comment.cjs",
-    ".ci/scripts/ci/report-nightly-status.cjs",
     ".ci/scripts/ci/scope-engine.cjs",
     ".ci/scripts/ci/scope-map.cjs",
     ".ci/scripts/ci/skip-plan-reconcile.cjs",

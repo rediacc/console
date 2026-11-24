@@ -364,13 +364,6 @@ def test_the_watchdog_excludes_the_verdict_context_and_its_publisher_job():
         assert any(p in name for p in patterns), "%r is not excluded by %r" % (name, patterns)
 
 
-def test_the_nightly_report_excludes_the_verdict_context():
-    cjs = (_root() / ".ci/scripts/ci/report-nightly-status.cjs").read_text(encoding="utf-8")
-    tail = cjs.split("NIGHTLY_BUDGET_EXCLUDE_PATTERNS ||", 1)[1]
-    default = tail.split("'")[1]
-    assert "CI Verdict" in default.split(","), default
-
-
 def test_the_critical_path_skips_the_verdict_context():
     assert "CI Verdict" in budget_report.CRITICAL_PATH_EXCLUDE
     assert "Publish CI Verdict" in budget_report.CRITICAL_PATH_EXCLUDE

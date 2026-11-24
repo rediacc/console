@@ -51,7 +51,7 @@
   color: "D93F0B"
   description: "Marks a merged PR as rolled back; blocks stable promotion while one exists inside the soak window"
 
-# Automation / triage (referenced by report-nightly-status.cjs)
+# Automation / triage (referenced by report-budget-check.cjs)
 - name: bug
   color: "d73a4a"
   description: "Something isn't working"

@@ -174,6 +174,13 @@
       "workers/proxy/.gitignore",
       "workers/signer/.gitignore"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_budget_check_report.py": [
+      ".ci/config/ops-health.json",
+      ".ci/config/well-known.env",
+      "package.json",
+      "scripts/ci/report-budget-check.cjs",
+      "scripts/ci/well-known.cjs"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_bws_env.py": [
       ".ci/scripts/quality/check_bws_map.py"
     ],
@@ -2975,9 +2982,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_label_inventory.py": [
       ".ci/rediacc_ci/quality/label_inventory.py",
       ".ci/rediacc_ci/review/pr_labels.py",
-      ".ci/scripts/ci/report-nightly-status.cjs",
       ".ci/scripts/quality/check_label_inventory.py",
-      ".github/labels.yml"
+      ".github/labels.yml",
+      "scripts/ci/report-budget-check.cjs"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_label_references.py": [
       ".ci/**",
@@ -3169,15 +3176,6 @@
     ".ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py": [
       ".ci/config/well-known.env",
       ".ci/rediacc_ci/housekeeping/retry_failed_runs.py"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_nightly_status_report.py": [
-      ".ci/config/ci-alerts.json",
-      ".ci/config/well-known.env",
-      ".ci/scripts/ci/report-nightly-status.cjs",
-      ".github/workflows/ops-nightly-status.yml",
-      "package.json",
-      "scripts/ci/report-budget-check.cjs",
-      "scripts/ci/well-known.cjs"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_overrides_reasons.py": [
       ".npmrc",
@@ -9866,7 +9864,6 @@
     ],
     ".ci/rediacc_ci/tests/test_ci_publish_verdict.py": [
       ".ci/config/well-known.env",
-      ".ci/scripts/ci/report-nightly-status.cjs",
       ".ci/scripts/ci/watchdog-monitor.cjs",
       ".github/workflows/ops-watchdog-monitor.yml",
       "package.json",

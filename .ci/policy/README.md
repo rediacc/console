@@ -93,7 +93,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.language-policy-allowlist` | name per line | 40 | 41 | both |
 | `.pins-upgrade-blocklist` | name per line | 23 | 24 | both |
 | `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
-| `.profiler-coverage-allowlist` | name per line | 61 | 5 | both |
+| `.profiler-coverage-allowlist` | name per line | 60 | 5 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `carry-exempt.json` | JSON table | - | 0 | both |
@@ -355,7 +355,6 @@ git blame --line-porcelain -- <file> \
 | 121 | `edge-clone-d1.yml:read-regions` | 2026-08-05 | 31 |
 | 124 | `ops-housekeeping.yml:cleanup` | 2026-08-05 | 31 |
 | 125 | `ops-housekeeping.yml:stripe-cleanup` | 2026-08-05 | 31 |
-| 128 | `ops-nightly-status.yml:report` | 2026-08-05 | 31 |
 | 131 | `cd-release-stable.yml:promote` | 2026-08-05 | 31 |
 | 132 | `cd-release-stable.yml:verify-stable` | 2026-08-05 | 31 |
 | 138 | `ops-watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |

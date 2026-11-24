@@ -203,9 +203,9 @@
       "home": "scripts/ci",
       "stays": false,
       "owner": "W7",
-      "why": "Eight .cjs helpers W7 relocates so .ci becomes single-language: greenlight, label-guide-comment, report-nightly-status, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor. (A ninth, autopilot-guide-comment, was removed completely along with the rest of the Autopilot subsystem; see agent/plans/PLAN-remove-autopilot.md.)",
+      "why": "Seven .cjs helpers W7 relocates so .ci becomes single-language: greenlight, label-guide-comment, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor. (A ninth, autopilot-guide-comment, was removed completely along with the rest of the Autopilot subsystem; see agent/plans/PLAN-remove-autopilot.md.)",
       "notes": [
-        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the eight, and whoever moves it states where its rules sit.",
+        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the seven, and whoever moves it states where its rules sit.",
         "greenlight.cjs:421-423 lists 'scripts/drills', 'run.sh' and '.ci/legacy' in its own cache-key closure; relocating the file does not change those strings but relocating anything they name does."
       ]
     },

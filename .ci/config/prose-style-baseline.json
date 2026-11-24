@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2592,
- "files": 634,
+ "count": 2590,
+ "files": 633,
  "by_rule": {
   "R1": 1402,
   "R11": 136,
   "R14": 1,
   "R18": 11,
   "R19": 55,
-  "R2": 581,
-  "R7": 406
+  "R2": 580,
+  "R7": 405
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -830,14 +830,6 @@
   ".ci/scripts/ci/label-guide-comment.cjs": {
    "R1": [
     "ad01660953cc9246"
-   ]
-  },
-  ".ci/scripts/ci/report-nightly-status.cjs": {
-   "R2": [
-    "c914c4baff7bf1e5"
-   ],
-   "R7": [
-    "c87e2d184cbc0509"
    ]
   },
   ".ci/scripts/ci/scope-engine.cjs": {

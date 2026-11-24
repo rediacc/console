@@ -1,21 +1,57 @@
-// Post a CI time budget check failure (PLAN-ci-time-budget T3.3) to the SAME rolling "nightly is red" issue thread report-nightly-status.cjs already keeps -- reusing its label/title constants (read-only import; this file never edits that one) rather than opening a second thread for what is really one "CI health" surface.
+// Post a CI time budget check failure (PLAN-ci-time-budget T3.3) to a rolling "nightly is red" issue thread, labelled `nightly-red` and closed by hand: nothing closes it automatically since the nightly-status workflow was retired (PLAN-health-checks-local R3).
 //
-// WHY A SEPARATE POSTER AND NOT reportNightlyStatus ITSELF. That function reads NIGHTLY_RUN_ID/CONCLUSION/EVENT from a `workflow_run: completed` payload of "Console CI"; ops-housekeeping.yml's own 03:00 cron is a DIFFERENT trigger with no such payload, so this posts its own dated section onto the same issue instead of forcing an unrelated trigger shape through that function's env contract.
+// WHY A SEPARATE POSTER. ops-housekeeping.yml's own 03:00 cron has no `workflow_run` payload, so this posts its own dated section onto the open issue, or opens one when none is open.
 //
 // Env: BUDGET_CHECK_SUMMARY_PATH - a file holding budget_report.py --check's own stdout+stderr
+//      OPS_HEALTH_CONFIG - overrides the path of .ci/config/ops-health.json (the test suite uses it for the missing/empty cases)
 //
 // Usage (from actions/github-script):
 //   script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
 const fs = require('node:fs');
+const nodePath = require('node:path');
 const { WK_GH_ORIGIN } = require('./well-known.cjs');
-const {
-  ISSUE_LABEL,
-  ISSUE_TITLE,
-  ISSUE_LABELS,
-  loadMentions,
-  withMentions,
-} = require('../../.ci/scripts/ci/report-nightly-status.cjs');
+
+const ISSUE_LABEL = 'nightly-red';
+const ISSUE_TITLE = 'Nightly CI is red';
+// `bug` and `automated` already exist and are already used for triage; ISSUE_LABEL is created on demand the first time this fires.
+const ISSUE_LABELS = ['bug', 'automated', ISSUE_LABEL];
+
+// WHO GETS PINGED. A comment with no @mention and no assignee notifies nobody. The handles are `github_mentions` in .ci/config/ops-health.json, the one ops alert config.
+const ALERTS_CONFIG = nodePath.join(__dirname, '..', '..', '.ci', 'config', 'ops-health.json');
+const HANDLE_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\/[A-Za-z0-9._-]+)?$/;
+
+// Returns the `@handle` strings to mention. Never throws: a broken config must not stop the report itself from posting, but it must not pass silently either, so every degraded path logs a warning naming the file.
+const loadMentions = (core) => {
+  const file = process.env.OPS_HEALTH_CONFIG || ALERTS_CONFIG;
+  const warn = (msg) => {
+    const line = `ops-health: ${msg} -- this report mentions nobody.`;
+    console.log(`WARNING ${line}`);
+    if (core && typeof core.warning === 'function') core.warning(line);
+  };
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  } catch (e) {
+    warn(`could not read ${file} (${e.message})`);
+    return [];
+  }
+  const list = Array.isArray(parsed?.github_mentions) ? parsed.github_mentions : [];
+  const handles = [];
+  for (const raw of list) {
+    const handle = String(raw ?? '')
+      .trim()
+      .replace(/^@/, '');
+    if (HANDLE_RE.test(handle)) handles.push(`@${handle}`);
+    else warn(`ignoring invalid handle ${JSON.stringify(raw)} in ${file}`);
+  }
+  if (handles.length === 0) warn(`${file} lists no handle under "github_mentions"`);
+  return handles;
+};
+
+// Prefix a body with the mention line, or return it unchanged when there is nobody to mention.
+const withMentions = (mentions, reason, body) =>
+  mentions.length === 0 ? body : `${mentions.join(' ')} ${reason}\n\n${body}`;
 
 const readSummary = (path) => {
   if (!path) return '(no summary captured)';
@@ -34,10 +70,10 @@ const reportBudgetCheck = async ({ github, context, core }) => {
   const url = `${serverUrl}/${owner}/${repo}/actions/runs/${runId}`;
   const summary = readSummary(process.env.BUDGET_CHECK_SUMMARY_PATH);
   const today = new Date().toISOString().slice(0, 10);
-  // Anchored on the markdown link's closing bracket, the same dedupe technique report-nightly-status.cjs uses for its own `run <id>]` marker: a bare substring match would also hit a LONGER run id that happens to start with these digits.
+  // Anchored on the markdown link's closing bracket, so a bare substring match would also hit a LONGER run id that happens to start with these digits.
   const marker = `budget-check run ${runId}]`;
 
-  // This module posts only on failure, so every post mentions the handles in .ci/config/ci-alerts.json: a comment with no @mention notifies nobody.
+  // This module posts only on failure, so every post mentions the `github_mentions` handles: a comment with no @mention notifies nobody.
   const body = withMentions(
     loadMentions(core),
     'the CI time budget check failed.',
