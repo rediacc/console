@@ -6,7 +6,7 @@ WHY (agent/plans/PLAN-d1-eu-jurisdiction.md, Design 7). A relocated D1 is only p
 
 THE STEPS, in order:
 
-  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MACHINE_SECRET_ID, REDIACC_SMOKE_MACHINE_SECRET and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench-eu` is declared (.ci/config/secret-supply.json; it aliases the bench-login-eu entries, the bench probe being the bench account); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
+  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MACHINE_SECRET_ID, REDIACC_SMOKE_MACHINE_SECRET and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench-eu` is declared (.ci/config/secret-supply.json; it aliases the bench-login-eu entries, the bench probe being the bench account, and the machine secret is the ONE shared REDIACC_MACHINE_SECRET with the eu bench store's id REDIACC_MACHINE_SECRET_ID_BENCH_EU, operator ruling ASKED:2026-11-24T13:43Z); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
   2. Refuse a missing value or the placeholder `PLACEHOLDER-operator-fills`, naming the store entry, before anything runs.
   3. Create the probe config `region-smoke-<region>` (`config init`; "already exists" is fine), then `subscription login --server <origin>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and, with a seed, REDIACC_LOGIN_TOTP in the child environment.
   4. `config remote enable --machine-secret <id> --api-url <origin>` with REDIACC_MACHINE_SECRET (the id rides argv, the secret only the child environment; the first enable seeds the store from the local config; a later one is "already linked and this device can open it"), then `config remote refresh`: the read of the store through the region's Worker and D1.
@@ -271,6 +271,21 @@ def _subprocess_capture(
     return proc.returncode, proc.stdout or ""
 
 
+def cli_error_messages(out: str) -> list[str]:
+    """errors[].message of the CLI's `-o json` envelope in `out` (stdout with stderr merged, so the envelope starts at its first `{`); nothing when there is no envelope. Only those messages are surfaced, never the raw output, which can hold config content."""
+    start = out.find("{")
+    try:
+        envelope = json.loads(out[start:]) if start >= 0 else None
+    except ValueError:
+        return []
+    errors = envelope.get("errors") if isinstance(envelope, dict) else None
+    if not isinstance(errors, list):
+        return []
+    return [
+        e["message"] for e in errors if isinstance(e, dict) and isinstance(e.get("message"), str)
+    ]
+
+
 def smoke(
     region: str,
     values: Mapping[str, str],
@@ -322,7 +337,11 @@ def smoke(
         merge_stderr=True,
     )
     if rc != 0 and ALREADY_ENABLED not in out:
-        raise SmokeError("config remote enable failed (exit %d)" % rc)
+        said = cli_error_messages(out)
+        raise SmokeError(
+            "config remote enable failed (exit %d)%s"
+            % (rc, "; the CLI said: %s" % " | ".join(said)[:400] if said else "")
+        )
 
     log.step("Reading the store through %s (config remote refresh)" % server)
     rc = run(_rdc(config, "config", "remote", "refresh"), dict(clean))

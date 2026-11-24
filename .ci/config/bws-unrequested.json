@@ -424,10 +424,6 @@
       "kind": "no-github-twin",
       "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-eu`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
-    "BENCH_STORE_MASTER_PASSWORD_EU": {
-      "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-eu` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
-    },
     "LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL": {
       "kind": "no-github-twin",
       "reason": "Edge-us test org C of the live console probes: provisioned fresh for the executor connect-timeout check (agent/plans/PLAN-org-executor-connect-timeout-relocate.md, 2026-10-28) and stored in the vault, but no `.ci/config/secret-supply.json` profile binds it yet (live-console-edge-us binds orgs A and B only) and no workflow runs those probes, so no GitHub secret of that name exists to shadow."
@@ -500,14 +496,6 @@
       "kind": "no-github-twin",
       "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-asia`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
-    "BENCH_STORE_MASTER_PASSWORD_US": {
-      "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-us` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
-    },
-    "BENCH_STORE_MASTER_PASSWORD_ASIA": {
-      "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-asia` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
-    },
     "STRIPE_SANDBOX_SECRET_KEY": {
       "kind": "no-github-twin",
       "reason": "The Stripe integration was deleted from the product (account 2c9d41a and 80ce788), so no workflow, profile or script reads this name. The vault entry is left in place for the operator to retire; it is never fetched."
@@ -535,6 +523,30 @@
     "BENCH_STORE_RECOVERY_CODE_EU": {
       "kind": "no-github-twin",
       "reason": "The eu bench config store's recovery code, read by agents through the bench-login-eu profile (secret-supply.json binds it as BENCH_STORE_RECOVERY_CODE); no workflow fetches it."
+    },
+    "REDIACC_MACHINE_SECRET": {
+      "kind": "no-github-twin",
+      "reason": "The one `RM1-` machine secret every agent config-store enrollment uses (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret for every config), read by rediacc_ci.ops.login_bench and rediacc_ci.ops.region_smoke through the bench-login-<region> and region-smoke-bench-eu profiles and handed to `rdc config remote enable --machine-secret <id>` only in the child environment. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_EU": {
+      "kind": "no-github-twin",
+      "reason": "The id the eu bench account server gave its mint of the shared machine secret (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret for every config), scoped to the eu-bench config; bound as REDIACC_MACHINE_SECRET_ID by bench-login-eu and as REDIACC_SMOKE_MACHINE_SECRET_ID by region-smoke-bench-eu. No workflow fetches it."
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_US": {
+      "kind": "no-github-twin",
+      "reason": "The id the us bench account server gave its mint of the shared machine secret (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret for every config), scoped to the us-bench config; bound as REDIACC_MACHINE_SECRET_ID by bench-login-us. No workflow fetches it."
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The id the asia bench account server gave its mint of the shared machine secret (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret for every config), scoped to the asia-bench config; bound as REDIACC_MACHINE_SECRET_ID by bench-login-asia. No workflow fetches it."
+    },
+    "BENCH_STORE_RECOVERY_CODE_US": {
+      "kind": "no-github-twin",
+      "reason": "The us bench config store's recovery code (the slot added 2026-11-24 before migration 0095 deleted the password slot), read by agents through the bench-login-us profile (secret-supply.json binds it as BENCH_STORE_RECOVERY_CODE) to mint a machine secret; no workflow fetches it."
+    },
+    "BENCH_STORE_RECOVERY_CODE_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The asia bench config store's recovery code (the slot added 2026-11-24 before migration 0095 deleted the password slot), read by agents through the bench-login-asia profile (secret-supply.json binds it as BENCH_STORE_RECOVERY_CODE) to mint a machine secret; no workflow fetches it."
     },
     "MAIL_ALERTS_PASSWORD": {
       "kind": "no-github-twin",

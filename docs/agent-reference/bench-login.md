@@ -26,31 +26,34 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
 5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench-eu.rediacc.cloud`.
-6. Always runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench-eu.rediacc.cloud` with `REDIACC_STORE_MASTER_PASSWORD` in the child environment. `config remote status` is not consulted first, because it reports connected even when this device has lost its key for the store. Exit 0 is done (a first link, or this device enrolled again against the same store); exit 2 is done only when the output says the config is linked and this device can already open it; any other failure exits 1 naming the step.
+6. Always runs `./rdc.sh --config eu-bench config remote enable --machine-secret <REDIACC_MACHINE_SECRET_ID> --api-url https://bench-eu.rediacc.cloud` with `REDIACC_MACHINE_SECRET` in the child environment: the id rides argv, the secret never does, and the secret's scope names the store entry, so no `--config-id` is passed. `config remote status` is not consulted first, because it reports connected even when this device has lost its key for the store. Exit 0 is done (a first link, or this device enrolled again against the same store); exit 2 is done only when the output says the config is linked and this device can already open it; any other failure exits 1 naming the step.
 7. Prints `./rdc.sh --config eu-bench config remote status`.
 
 ## The secrets
 
-The `bench-login-eu` consumer in `.ci/config/secret-supply.json` binds four Bitwarden entries, mapped by id in `.ci/config/bws-secret-map.json`. The three bench entries carry the region in their store name (`BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `BENCH_STORE_MASTER_PASSWORD_EU`) and the profile maps each onto the unsuffixed name the tool reads:
+The `bench-login-eu` consumer in `.ci/config/secret-supply.json` binds five Bitwarden entries, mapped by id in `.ci/config/bws-secret-map.json`. The bench entries carry the region in their store name (`BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `REDIACC_MACHINE_SECRET_ID_BENCH_EU`) and the profile maps each onto the unsuffixed name the tool reads. Config-store enrollment uses ONE machine secret for every config (operator ruling ASKED:2026-11-24T13:43Z), so `REDIACC_MACHINE_SECRET` has no region suffix; the account server gives each store's mint its own id, so the id does:
 
 | Name | Holds | Reaches the CLI as |
 |---|---|---|
 | `ROOT_EMAIL` | the root address, the same on every environment | `REDIACC_LOGIN_EMAIL` |
 | `BENCH_ROOT_PASSWORD_EU` | the eu bench root password (its own, not the production one) | `REDIACC_LOGIN_PASSWORD` |
 | `BENCH_ROOT_TOTP_SEED_EU` | the base32 TOTP seed of the eu bench root, server-generated and written back by the re-enrol path | `REDIACC_LOGIN_TOTP`, the derived code only |
-| `BENCH_STORE_MASTER_PASSWORD_EU` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
+| `REDIACC_MACHINE_SECRET` | the one shared `RM1-` machine secret every config enrolls with | `REDIACC_MACHINE_SECRET` |
+| `REDIACC_MACHINE_SECRET_ID_BENCH_EU` | the eu bench store's id for that secret, scoped to the `eu-bench` config | the `--machine-secret` argument (an id, not a secret) |
 
-Every value travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of the four.
+Every secret travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of them.
 
 ## One bench per region
 
-The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `bench`) log in with `npm run login:bench -- --region us|asia`. Each bench, the eu one included, keeps its own root password, TOTP seed and store master password, named with the region suffix and bound by a region profile under the names `login_bench` reads:
+The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `bench`) log in with `npm run login:bench -- --region us|asia`. Each bench, the eu one included, keeps its own root password, TOTP seed and machine-secret id, named with the region suffix and bound by a region profile under the names `login_bench` reads, beside the one shared `REDIACC_MACHINE_SECRET`:
 
 | Profile | Entries |
 |---|---|
-| `bench-login-eu` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `BENCH_STORE_MASTER_PASSWORD_EU` |
-| `bench-login-us` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_US`, `BENCH_ROOT_TOTP_SEED_US`, `BENCH_STORE_MASTER_PASSWORD_US` |
-| `bench-login-asia` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_ASIA`, `BENCH_ROOT_TOTP_SEED_ASIA`, `BENCH_STORE_MASTER_PASSWORD_ASIA` |
+| `bench-login-eu` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `REDIACC_MACHINE_SECRET`, `REDIACC_MACHINE_SECRET_ID_BENCH_EU` |
+| `bench-login-us` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_US`, `BENCH_ROOT_TOTP_SEED_US`, `REDIACC_MACHINE_SECRET`, `REDIACC_MACHINE_SECRET_ID_BENCH_US` |
+| `bench-login-asia` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_ASIA`, `BENCH_ROOT_TOTP_SEED_ASIA`, `REDIACC_MACHINE_SECRET`, `REDIACC_MACHINE_SECRET_ID_BENCH_ASIA` |
+
+Each profile also binds its store's recovery code (`BENCH_STORE_RECOVERY_CODE_<R>`) as optional; `login_bench` does not read it. A store's recovery slot is the one headless way to unwrap its key, which minting a machine secret needs: `POST /configs/bootstrap-session` (`method: recovery`), then `POST /configs/machine-secrets` on an elevated session with the CEK wrapped under the shared secret. Minting the shared secret for a new store follows that path and stores the id the server answers as `REDIACC_MACHINE_SECRET_ID_<SCOPE>`.
 
 `deploy-bench-eu|us|asia` and `backup-push-bench-eu|us|asia` bind the region's `ACCOUNT_CONFIG_SERVER_KEY_BENCH_<R>`, `ACCOUNT_BACKUP_STORE_KEK_BENCH_<R>`, `ACCOUNT_BACKUP_S3_*_BENCH_<R>` and `BENCH_ROOT_PASSWORD_<R>`; the rest of each set is shared by every bench. The region entries are `optional` in those profiles until box L1 of `agent/plans/PLAN-multi-region-bench.md` writes them to the store. `WK_BENCH_ORIGIN` in `.ci/config/well-known.env` is the eu bench's origin; the other benches' hosts come from `regions.json`.
 

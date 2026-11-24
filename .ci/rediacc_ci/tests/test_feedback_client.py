@@ -270,7 +270,6 @@ def _bench_env():
         login_bench.EMAIL_ENV: "root@example.invalid",
         login_bench.PW_ENV: "bench-password-123",
         login_bench.TOTP_SEED_ENV: "JBSWY3DPEHPK3PXP",
-        login_bench.MASTER_PW_ENV: "master-password-123",
     }
 
 

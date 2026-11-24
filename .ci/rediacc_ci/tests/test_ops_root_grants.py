@@ -65,7 +65,8 @@ BENCH_ENV = {
     "ROOT_EMAIL": EMAIL,
     "BENCH_ROOT_PASSWORD": BENCH_PW,
     "BENCH_ROOT_TOTP_SEED": SEED,
-    "BENCH_STORE_MASTER_PASSWORD": MASTER_PW,
+    "REDIACC_MACHINE_SECRET": "RM1-fixture-secret",
+    "REDIACC_MACHINE_SECRET_ID": "fixture-secret-id",
 }
 ENVS = {
     "root-grants": READ_ENV,

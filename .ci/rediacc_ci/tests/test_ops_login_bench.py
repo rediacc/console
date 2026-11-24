@@ -6,7 +6,6 @@ from typing import ClassVar
 
 import pytest
 
-from rediacc_ci.enterprise import lab
 from rediacc_ci.ops import bench_preflight, login_bench, totp
 from rediacc_ci.well_known import (
     ACCOUNT_DEFAULT_ORIGIN,
@@ -21,8 +20,11 @@ VALUES = {
     login_bench.EMAIL_ENV: "operator@example.invalid",
     login_bench.PW_ENV: "pw-Secret-31337",
     login_bench.TOTP_SEED_ENV: SEED,
-    login_bench.MASTER_PW_ENV: "store-Secret-4242",
 }
+# The id rides argv by design; the secret never does.
+MS_ID = "0b6c8f6e-1d2a-4c55-9a8e-7f00d1e2c3b4"
+MS_SECRET = "RM1-0123ABCD-4567EFGH-89JKMNPQ-RSTVWXYZ"
+ENROLL = {login_bench.MS_ID_ENV: MS_ID, login_bench.MS_ENV: MS_SECRET}
 NEW_SEED = base64.b32encode(b"enrolled-seed-9876543").decode().rstrip("=")
 FIXED_NOW = 1_800_000_010.0  # 20 s left in the window
 
@@ -58,18 +60,10 @@ def _env(**overrides):
         "REDIACC_TOKEN": "tok-inherited",
         "REDIACC_ACCOUNT_SERVER": "http://localhost:1",
         **VALUES,
+        **ENROLL,
     }
     env.update(overrides)
     return env
-
-
-STORE_MADE = {"store": {"id": "store-1"}, "initialToken": "tok-initial"}
-
-
-def fake_crypto(request):
-    """The product helper's `setup` answer: a request body, and the CEK that never leaves the helper."""
-    assert request["op"] == "setup"
-    return {"body": {"slots": [{"kind": "password"}], "from": request["password"]}, "cek": "cek-1"}
 
 
 class FakeApi:
@@ -85,7 +79,6 @@ class FakeApi:
         status_body: dict | None = None,
         reread_status: int = 0,
         reread_body: dict | None = None,
-        setup: tuple[int, dict] | None = None,
     ):
         self.calls: list[tuple[str, dict]] = []
         self.gets: list[str] = []
@@ -95,7 +88,6 @@ class FakeApi:
         self.reread_status = reread_status
         self.reread_body = reread_body
         self.challenge = challenge
-        self.setup = setup if setup is not None else (201, STORE_MADE)
         self.verify = list(verify) if isinstance(verify, list) else [verify]
         self.fail = fail or {}
 
@@ -130,8 +122,6 @@ class FakeApi:
         if route == "/account/api/v1/portal/terms/accept":
             self.satisfied = self.accept_records
             return 201, {}
-        if route == login_bench.STORE_SETUP_PATH:
-            return self.setup
         if route == "2fa/enable":
             return 200, {"enabled": True, "backupCodes": ["bk-1111"]}
         return 200, {}
@@ -146,7 +136,6 @@ def _login(runner, argv=(), env=None, api=None, linked=None):
         sleep=lambda _s: None,
         capture=runner.capture,
         api=api or FakeApi(),
-        crypto=fake_crypto,
         config_exists=lambda _c, _e: True,
         linked_url=lambda _c, _e: linked,
     )
@@ -154,7 +143,7 @@ def _login(runner, argv=(), env=None, api=None, linked=None):
 
 def _secrets(env) -> list[str]:
     code = totp.code(SEED, at=FIXED_NOW)
-    return [*VALUES.values(), code, env.get("REDIACC_TOKEN", "")]
+    return [*VALUES.values(), MS_SECRET, code, env.get("REDIACC_TOKEN", "")]
 
 
 # ---- bench-only ---------------------------------------------------------------
@@ -243,7 +232,7 @@ def test_the_home_profile_bound_runs_an_eu_login_in_place(monkeypatch):
 # ---- placeholder and missing values ---------------------------------------------
 
 
-@pytest.mark.parametrize("name", login_bench.SOURCE_NAMES)
+@pytest.mark.parametrize("name", [*login_bench.SOURCE_NAMES, *login_bench.ENROLL_NAMES])
 def test_a_placeholder_value_is_refused_naming_its_bitwarden_entry(name):
     runner = FakeRunner()
     with pytest.raises(login_bench.LoginError) as caught:
@@ -277,7 +266,7 @@ def test_the_unset_refusal_names_the_profile_of_its_region():
     assert "BENCH_ROOT_PASSWORD_ASIA" in str(caught.value)
 
 
-@pytest.mark.parametrize("name", login_bench.SOURCE_NAMES)
+@pytest.mark.parametrize("name", [*login_bench.SOURCE_NAMES, *login_bench.ENROLL_NAMES])
 def test_a_missing_value_is_refused(name):
     env = _env()
     del env[name]
@@ -287,6 +276,61 @@ def test_a_missing_value_is_refused(name):
     assert caught.value.rc == 2
     assert name in str(caught.value)
     assert runner.calls == []
+
+
+@pytest.mark.parametrize(
+    ("region", "entry"),
+    [
+        ("eu", "REDIACC_MACHINE_SECRET_ID_BENCH_EU"),
+        ("us", "REDIACC_MACHINE_SECRET_ID_BENCH_US"),
+        ("asia", "REDIACC_MACHINE_SECRET_ID_BENCH_ASIA"),
+    ],
+)
+def test_a_missing_machine_secret_id_names_its_benchs_own_entry(region, entry):
+    """The secret is one shared entry; the id is per store, so the refusal names the region's id entry."""
+    env = _env()
+    del env[login_bench.MS_ID_ENV]
+    with pytest.raises(login_bench.LoginError) as caught:
+        login_bench.read_enroll_values(env, region)
+    assert caught.value.rc == 2
+    assert entry in str(caught.value)
+    assert "bench-login-%s" % region in str(caught.value)
+
+
+def test_a_missing_machine_secret_names_the_one_shared_entry():
+    env = _env()
+    del env[login_bench.MS_ENV]
+    with pytest.raises(login_bench.LoginError) as caught:
+        login_bench.read_enroll_values(env, "asia")
+    message = str(caught.value)
+    assert message.startswith("REDIACC_MACHINE_SECRET (")  # the shared entry, with its vault id
+    assert "REDIACC_MACHINE_SECRET_ID" not in message
+
+
+@pytest.mark.parametrize("region", login_bench.REGIONS)
+def test_each_bench_login_profile_binds_the_shared_secret_and_its_own_id(region):
+    """Red once: the profiles bound BENCH_STORE_MASTER_PASSWORD_<R> and no machine-secret pair. The secret is ONE entry for every config, the id is the region's own (operator ruling ASKED:2026-11-24T13:43Z)."""
+    supply = json.loads(
+        login_bench.paths.from_root(".ci", "config", "secret-supply.json").read_text(
+            encoding="utf-8"
+        )
+    )["consumers"][bench_preflight.profile_for(login_bench.PROFILE_ROLE, region)]
+    bound = {}
+    for spec in supply["required"]:
+        store, _, local = spec.partition(">")
+        bound[(local or store).strip()] = store.strip()
+    assert set(login_bench.SOURCE_NAMES) | set(login_bench.ENROLL_NAMES) <= set(bound)
+    assert bound[login_bench.MS_ENV] == "REDIACC_MACHINE_SECRET"
+    assert bound[login_bench.MS_ID_ENV] == "REDIACC_MACHINE_SECRET_ID_BENCH_%s" % region.upper()
+    assert not any("MASTER_PASSWORD" in store for store in bound.values())
+
+
+def test_read_values_leaves_the_enrollment_pair_to_its_own_reader():
+    """root_grants and feedback sign in through read_values and enroll nothing, so a profile without the pair still signs in."""
+    env = _env()
+    for name in login_bench.ENROLL_NAMES:
+        del env[name]
+    assert set(login_bench.read_values(env)) == set(login_bench.SOURCE_NAMES)
 
 
 def test_a_bad_seed_is_refused_without_echoing_it():
@@ -320,10 +364,9 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
         "config",
         "remote",
         "enable",
-        "--master-password",
+        "--machine-secret",
+        MS_ID,
         "--force",
-        "--config-id",
-        login_bench.CONFIG_ID,
         "--api-url",
         BENCH_ORIGIN,
     ]
@@ -351,8 +394,9 @@ def test_each_child_gets_only_its_own_values_by_name():
     assert login["REDIACC_LOGIN_EMAIL"] == VALUES[login_bench.EMAIL_ENV]
     assert login["REDIACC_LOGIN_PASSWORD"] == VALUES[login_bench.PW_ENV]
     assert login["REDIACC_LOGIN_TOTP"] == code
-    assert "REDIACC_STORE_MASTER_PASSWORD" not in login
-    assert enable["REDIACC_STORE_MASTER_PASSWORD"] == VALUES[login_bench.MASTER_PW_ENV]
+    assert "REDIACC_MACHINE_SECRET" not in login
+    assert enable["REDIACC_MACHINE_SECRET"] == MS_SECRET
+    assert login_bench.MS_ID_ENV not in enable
     assert "REDIACC_LOGIN_PASSWORD" not in enable
     for child in (access, login, enable, status):
         for name in login_bench.SOURCE_NAMES:
@@ -361,6 +405,35 @@ def test_each_child_gets_only_its_own_values_by_name():
             assert name not in child
     for child in (access, status):
         assert not set(child) & set(login_bench.CHILD_SECRET_NAMES)
+
+
+def _enable_call(runner):
+    return next((a, e) for a, e in runner.calls if "enable" in a)
+
+
+def _argv_leaks(calls, secret):
+    """The child argvs that carry `secret`."""
+    return [argv for argv, _e in calls if secret in "\0".join(argv)]
+
+
+def test_enable_takes_the_machine_secret_id_on_argv_and_the_secret_only_in_its_env():
+    """Red once against the master-password form: `--master-password` is gone from the CLI, so `npm run login:bench` exited 1 at its last step (operator ruling ASKED:2026-11-24T13:43Z)."""
+    runner = FakeRunner()
+    _login(runner)
+    argv, env = _enable_call(runner)
+    assert argv[argv.index("--machine-secret") + 1] == MS_ID
+    assert "--master-password" not in argv
+    assert "--config-id" not in argv  # the CLI refuses it beside --machine-secret
+    assert env["REDIACC_MACHINE_SECRET"] == MS_SECRET
+    assert "REDIACC_STORE_MASTER_PASSWORD" not in env
+    assert _argv_leaks(runner.calls, MS_SECRET) == []
+
+
+def test_control_the_argv_leak_check_sees_a_secret_on_argv():
+    """Silent control: the leak check is not vacuous, a planted secret on an argv is found."""
+    planted = [(["rdc.sh", "config", "remote", "enable", "--machine-secret", MS_SECRET], {})]
+    assert _argv_leaks(planted, MS_SECRET) == [planted[0][0]]
+    assert _argv_leaks(planted, "RM1-NOT-PRESENT") == []
 
 
 def test_a_failed_step_names_itself_and_stops():
@@ -641,7 +714,6 @@ def _enrol_login(api, cap=None, env=None, runner=None):
         sleep=lambda _s: None,
         capture=cap,
         api=api,
-        crypto=fake_crypto,
         config_exists=lambda _c, _e: True,
     )
     return runner, cap
@@ -656,7 +728,7 @@ def test_a_challenge_takes_the_normal_path_and_never_enrols():
     assert len(runner.calls) == 4
 
 
-def test_no_challenge_enrols_through_setup_store_and_enable_in_order():
+def test_no_challenge_enrols_the_seed_in_order():
     api = FakeApi(challenge=False)
     runner, cap = _enrol_login(api)
     assert [r for r, _b in api.calls] == [
@@ -1018,17 +1090,12 @@ def test_a_regional_bench_targets_its_own_host_config_and_database(region):
     assert target.config == f"{region}-bench"
     assert target.d1_name == bench["d1"]["name"]
     assert target.d1_config == f"wrangler.bench-{region}.toml"
-    assert target.config_id is None
     assert login_bench.parse_args([f"--region={region}"]) == (target.server, target.config)
 
 
 def test_control_the_home_bench_is_unchanged():
     target = login_bench.parse_target([])
-    assert (target.server, target.config, target.config_id) == (
-        login_bench.SERVER,
-        login_bench.CONFIG,
-        login_bench.CONFIG_ID,
-    )
+    assert (target.server, target.config) == (login_bench.SERVER, login_bench.CONFIG)
     assert target == login_bench.parse_target(["--region", "eu"])
     bench = _regions_bench()["eu"]
     assert (target.d1_name, target.d1_config) == (bench["d1"]["name"], "wrangler.bench-eu.toml")
@@ -1082,7 +1149,7 @@ def test_the_remedy_names_the_region_it_logs_in():
     assert argv[-3:] == ("--", "--region", "us")
 
 
-def test_a_regional_login_runs_rdc_on_its_config_and_enables_without_a_config_id():
+def test_a_regional_login_runs_rdc_on_its_config_and_enables_with_its_machine_secret():
     runner = FakeRunner()
     login_bench.login(
         ["--region", "us"],
@@ -1101,22 +1168,8 @@ def test_a_regional_login_runs_rdc_on_its_config_and_enables_without_a_config_id
     assert login_argv[-2:] == ["--server", "https://" + us["host"]]
     enable = next(a for a in rdc if "enable" in a)
     assert "--config-id" not in enable
+    assert enable[enable.index("--machine-secret") + 1] == MS_ID
     assert enable[-2:] == ["--api-url", "https://" + us["host"]]
-
-
-def test_control_the_home_login_still_passes_its_config_id():
-    runner = FakeRunner()
-    login_bench.login(
-        [],
-        _env(),
-        runner,
-        now=lambda: FIXED_NOW,
-        sleep=lambda _s: None,
-        capture=runner.capture,
-        api=FakeApi(),
-    )
-    enable = next(a for a, _ in runner.calls if "enable" in a)
-    assert enable[enable.index("--config-id") + 1] == login_bench.CONFIG_ID
 
 
 def test_the_mail_child_carries_its_region_for_every_region():
@@ -1196,87 +1249,7 @@ def test_seed_entry_names_each_benchs_own_entry(region, entry):
     assert login_bench.seed_entry(region) == entry
 
 
-# ---- a first link: the store is set up on the elevated session, and the rdc config is created ----------
-
-NO_STORE = (
-    1,
-    json.dumps(
-        {
-            "success": False,
-            "errors": [
-                {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Config storage is not configured for your organization. Set it up from the portal (Config Storage), then retry.",
-                }
-            ],
-        }
-    ),
-)
-
-
-def test_a_no_store_refusal_sets_the_store_up_on_an_elevated_session_and_enables_again():
-    runner = FakeRunner(enable=[NO_STORE, ENABLE_REENROLLED])
-    api = FakeApi()
-    _enrol_login(api, runner=runner)
-    routes = [r for r, _b in api.calls]
-    assert routes == [
-        "login",
-        "2fa/verify",
-        "reauth",
-        "reauth/verify",
-        login_bench.STORE_SETUP_PATH,
-    ]
-    assert api.calls[-1][1] == {
-        "slots": [{"kind": "password"}],
-        "from": VALUES[login_bench.MASTER_PW_ENV],
-    }
-    assert len(runner.captured) == 2
-    assert runner.captured[0][0] == runner.captured[1][0]
-    assert runner.calls[-1][0][-1] == "status"
-
-
-def test_an_enable_that_settles_never_touches_the_store_setup():
-    """Control: the same run without the refusal posts no setup and elevates nothing."""
-    api = FakeApi()
-    _enrol_login(api, runner=FakeRunner(enable=ENABLE_REENROLLED))
-    assert login_bench.STORE_SETUP_PATH not in [r for r, _b in api.calls]
-    assert "reauth" not in [r for r, _b in api.calls]
-
-
-def test_a_refusal_that_is_not_the_missing_store_is_not_repaired():
-    api = FakeApi()
-    refused = (1, NO_STORE[1].replace("Config storage is not configured", "Device refused"))
-    with pytest.raises(login_bench.LoginError) as caught:
-        _enrol_login(api, runner=FakeRunner(enable=refused))
-    assert caught.value.rc == 1
-    assert login_bench.STORE_SETUP_PATH not in [r for r, _b in api.calls]
-
-
-@pytest.mark.parametrize(
-    "setup",
-    [(200, STORE_MADE), (201, {"store": {"id": "s"}}), (201, {"initialToken": "t"}), (403, {})],
-)
-def test_a_store_setup_that_is_not_a_201_with_store_and_token_stops_the_run(setup):
-    runner = FakeRunner(enable=[NO_STORE, ENABLE_REENROLLED])
-    with pytest.raises(login_bench.LoginError, match="answered HTTP"):
-        _enrol_login(FakeApi(setup=setup), runner=runner)
-    assert len(runner.captured) == 1
-
-
-def test_a_second_no_store_refusal_after_the_setup_is_a_login_error():
-    runner = FakeRunner(enable=NO_STORE)
-    with pytest.raises(login_bench.LoginError, match="config remote enable"):
-        _enrol_login(FakeApi(), runner=runner)
-    assert len(runner.captured) == 2
-
-
-def test_a_setup_without_a_request_body_from_the_helper_is_refused():
-    with pytest.raises(login_bench.LoginError, match="no request body"):
-        login_bench.setup_store(FakeApi(), "pw", lambda _r: {})
-
-
-def test_the_setup_path_is_the_labs():
-    assert login_bench.STORE_SETUP_PATH == lab.SETUP_PATH
+# ---- a first link: the rdc config is created ----------
 
 
 def test_a_missing_regional_config_is_created_before_the_subscription_login():
@@ -1289,7 +1262,6 @@ def test_a_missing_regional_config_is_created_before_the_subscription_login():
         sleep=lambda _s: None,
         capture=runner.capture,
         api=FakeApi(),
-        crypto=fake_crypto,
         config_exists=lambda _c, _e: False,
     )
     argvs = [argv for argv, _e in runner.calls]
@@ -1324,13 +1296,6 @@ def test_the_config_file_is_looked_up_under_xdg_then_home(tmp_path):
 
 
 # --------------------------------------------------------------------------- review findings
-
-
-def test_the_real_crypto_helper_answers_the_shape_setup_store_reads():
-    """No fake: the product's own helper through tsx, so a renamed op or a changed return shape fails here and not in a live bench run."""
-    answer = login_bench._default_crypto({"op": "setup", "password": "pw-test-0123456789"})
-    assert isinstance(answer.get("body"), dict)
-    assert answer["body"].get("slots")
 
 
 def test_with_no_home_and_no_xdg_a_stray_relative_config_is_not_read(tmp_path, monkeypatch):

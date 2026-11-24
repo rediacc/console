@@ -84,7 +84,7 @@ BENCH_OWN_FAMILIES = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
 )
 # The bench root login entries, bound under the bench's own `_<REGION>` store name by its login and deploy profiles (`F_<R> > F`).
-BENCH_ROOT_FAMILIES = ("BENCH_ROOT_PASSWORD", "BENCH_ROOT_TOTP_SEED", "BENCH_STORE_MASTER_PASSWORD")
+BENCH_ROOT_FAMILIES = ("BENCH_ROOT_PASSWORD", "BENCH_ROOT_TOTP_SEED")
 # The signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29). The licence private key is not among them since PLAN-enterprise-isolation S4: account Workers sign through LICENSE_SIGNER and the deploy-signer profile carries the key.
 BENCH_UNALIASED = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
