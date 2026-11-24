@@ -266,7 +266,7 @@ class GateTally:
 def resolve_root() -> str:
     """`${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel || echo .)}`.
 
-    Three rungs, the twin's, and `$REDIACC_CI_ROOT` is not one of them. See the port notes: an environment that pointed the two implementations at two different trees would produce a differential nobody could interpret.
+    Three rungs, and `$REDIACC_CI_ROOT` is not one of them. `$SIGNING_COVERAGE_ROOT` is honoured only when it names a private scratch directory (`seams.scratch_root`); an override anywhere else is ignored and the next rung answers. The bash twin that honoured any value is retired, so no second implementation reads the variable.
     """
     override = seams.scratch_root("SIGNING_COVERAGE_ROOT", os.environ.get("SIGNING_COVERAGE_ROOT"))
     if override:

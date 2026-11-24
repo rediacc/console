@@ -2236,6 +2236,7 @@ def traced_leg_samples(
     untraced: set[str] = set()
     manifests: dict[tuple[str, str], dict[str, Any] | None] = {}
     locks: dict[str, str | None] = {}
+    unreadable: set[tuple[str, str]] = set()
     for run, jobs in zip(pr_runs, pr_jobs_by_run, strict=False):
         sha = run.get("head_sha")
         for job in jobs:
@@ -2257,12 +2258,18 @@ def traced_leg_samples(
                     manifests[key] = json.loads(text) if text is not None else None
                 except ValueError:
                     manifests[key] = None
+                    unreadable.add(key)
             manifest = manifests[key]
             if leg is None:
                 # A lane's one job. With a manifest at that commit the name should have carried its leg, so it cannot be matched; with none, its leg is the lane's step lock entries there.
                 if sha not in locks:
                     locks[sha] = show(sha, GATES_LOCK_REL_PATH)
-                solo = lock_leg_ids(locks[sha], lane) if manifest is None else None
+                # A manifest that exists but does not parse is still a manifest at that commit: untraced, never the lock leg.
+                solo = (
+                    lock_leg_ids(locks[sha], lane)
+                    if manifest is None and key not in unreadable
+                    else None
+                )
                 if not solo:
                     untraced.add(name)
                     continue

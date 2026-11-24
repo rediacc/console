@@ -262,6 +262,7 @@ def compare(baseline, result, unmatched):
 
 def _load_hookreport():
     """`wl_hookreport` from `.claude/hooks/stop`, the budgets' one implementation (PLAN-tooling-code-reduction.md CR8), through the same instrument-anchored `.claude` as the counter."""
+    saved = list(sys.path)
     paths.on_sys_path(str(_HOOK_PKG["parent"] / "hooks" / "stop"))
     try:
         import wl_hookreport
@@ -269,6 +270,9 @@ def _load_hookreport():
         raise RefusalError(
             "the budget reader .claude/hooks/stop/wl_hookreport.py is not importable (%s)" % exc
         ) from exc
+    finally:
+        # The module stays in sys.modules; the hook directory does not stay on the path for later imports.
+        sys.path[:] = saved
     return wl_hookreport
 
 
@@ -303,6 +307,13 @@ def run(root=None):
     return compare(baseline, result, unmatched), result, baseline
 
 
+def run_with_budgets(root=None, budgets=budget_findings):
+    """`run` plus the two-way budgets: (findings, result, baseline). `budgets` is the reader, a seam the selftest swaps."""
+    findings, result, baseline = run(root)
+    findings += budgets(baseline, root or paths.repo_root())
+    return findings, result, baseline
+
+
 def main(argv=None):
     argv = list(argv or [])
     if "--selftest" in argv:
@@ -312,8 +323,7 @@ def main(argv=None):
     if rc:
         return rc
     try:
-        findings, result, baseline = run()
-        findings += budget_findings(baseline, paths.repo_root())
+        findings, result, baseline = run_with_budgets()
     except RefusalError as exc:
         log.error("hook exec baseline: %s" % exc)
         return 1
@@ -557,7 +567,17 @@ def selftest():
         _load_counter().parse_entries is not None,
     )
 
-    hookreport = _load_hookreport()
+    try:
+        hookreport = _load_hookreport()
+    except RefusalError as exc:
+        check("CONTROL: the budget reader is importable (%s)" % exc, False)
+        return not check.ok
+    saved_path = list(sys.path)
+    _load_hookreport()
+    check(
+        "ANTI-SILENCER: loading the budget reader leaves sys.path as it was",
+        sys.path == saved_path,
+    )
     held = {"slack": 0.2, "max": {"block_x": 100}}
     budgets = {t: dict(held) for t in hookreport.TABLES}
     measured = {t: {"block_x": 95} for t in hookreport.TABLES}
@@ -581,6 +601,15 @@ def selftest():
         "VACUITY: a baseline with no budgets block is a REFUSAL",
         _budget_refuses({}),
     )
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp, _CLEAN_SETTINGS, clean)
+        planted, _, _ = run_with_budgets(root, lambda _b, _r: ["budget PLANT"])
+        control, _, _ = run_with_budgets(root, lambda _b, _r: [])
+        check(
+            "PLANT: a budget finding reaches the findings main reports",
+            planted == ["budget PLANT"],
+        )
+        check("CONTROL: and no budget finding adds none", control == [])
 
     return not check.ok
 

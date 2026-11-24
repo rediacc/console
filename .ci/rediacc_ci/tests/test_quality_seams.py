@@ -227,6 +227,35 @@ def test_a_root_seam_inside_temp_is_honoured(module, attr, seam, tmp_path):
     assert err == ""
 
 
+# (module, expression the module answers its root with, the seam naming it, the answer without the seam). 321c4189.3: the adopters whose root is a function or a private table, not a module attribute.
+ROOT_EXPR_SEAMS = [
+    ("gate_argv", "scan_root()", "GATE_ARGV_SCAN_ROOT", str(REPO)),
+    ("plan_lifecycle", "repo_root()", "PLAN_FOLDERS_ROOT", str(REPO)),
+    ("tree_shape", "repo_root()", "TREE_SHAPE_ROOT", str(REPO)),
+    (
+        "hook_exec_baseline",
+        "_HOOK_PKG['parent']",
+        "HOOK_EXEC_COUNTER_DIR",
+        str(REPO / ".claude"),
+    ),
+]
+_EXPR_ROWS = ROOT_EXPR_SEAMS
+
+
+@pytest.mark.parametrize(("module", "expr", "seam", "default"), _EXPR_ROWS)
+def test_an_expression_root_seam_outside_temp_is_ignored(module, expr, seam, default):
+    value, err = _attr(module, expr, {seam: os.fspath(_outside_temp())})
+    assert value == default, "%s still answers %s" % (module, value)
+    assert seam in err
+
+
+@pytest.mark.parametrize(("module", "expr", "seam"), [row[:3] for row in _EXPR_ROWS])
+def test_an_expression_root_seam_inside_temp_is_honoured(module, expr, seam, tmp_path):
+    value, err = _attr(module, expr, {seam: os.fspath(tmp_path)})
+    assert value == str(tmp_path.resolve()), "%s ignored its scratch seam" % module
+    assert err == ""
+
+
 @pytest.mark.parametrize("row", FLOOR_SEAMS, ids=[row[0] for row in FLOOR_SEAMS])
 def test_a_lowered_floor_without_a_scratch_root_is_ignored(row):
     module, attr, seam, _root_seam, default = row

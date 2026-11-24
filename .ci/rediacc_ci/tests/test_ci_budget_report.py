@@ -4389,3 +4389,41 @@ def test_a_refresh_names_the_p90_rule_and_each_over_budget_tail_it_set_aside(tmp
     _, calm = _job_p90_compute(9.8, 11, max_minutes=10.4, set_aside=1)
     assert br.refresh_lane_durations(path, limit=10, compute=calm) == 0
     assert "set aside (max" not in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- traced_leg_samples: an unparseable manifest (e9cb3e87.1)
+
+
+def _unindexed_job(name: str = "Quality / Go") -> dict[str, Any]:
+    return {
+        "name": name,
+        "conclusion": "success",
+        "started_at": "2026-11-20T10:00:00Z",
+        "completed_at": "2026-11-20T10:10:00Z",
+    }
+
+
+def _trace_unindexed(manifest_text: str | None) -> tuple[dict[str, Any], set[str]]:
+    lock = json.dumps([{"id": "g1", "ci": {"kind": "step", "job": "quality-go"}}])
+
+    def show(_sha: str, rel: str) -> str | None:
+        return lock if rel == br.GATES_LOCK_REL_PATH else manifest_text
+
+    return br.traced_leg_samples(
+        [{"head_sha": "a" * 40}],
+        [[_unindexed_job()]],
+        {"quality-go": re.compile(r"^Quality / Go")},
+        show,
+    )
+
+
+def test_an_unindexed_sample_with_an_unparseable_manifest_stays_untraced() -> None:
+    out, untraced = _trace_unindexed("{not json")
+    assert out == {}
+    assert untraced == {"Quality / Go"}
+
+
+def test_control_an_unindexed_sample_with_no_manifest_traces_to_the_lock_leg() -> None:
+    out, untraced = _trace_unindexed(None)
+    assert untraced == set()
+    assert out == {"Quality / Go": [(br.leg_plan_hash(["g1"]), 10.0)]}

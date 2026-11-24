@@ -276,3 +276,14 @@ def test_selftest_passes() -> None:
     Cheap, and it is the only thing that fails when someone edits a plant into a shape that no longer fires.
     """
     assert rsc.selftest() == 0
+
+
+def test_resolve_root_honours_a_scratch_override_and_ignores_one_outside_temp(
+    monkeypatch, tmp_path
+):
+    """321c4189.2: the override is honoured inside private scratch only; elsewhere the git toplevel answers."""
+    scratch = tmp_path.resolve()
+    monkeypatch.setenv("SIGNING_COVERAGE_ROOT", str(scratch))
+    assert rsc.resolve_root() == str(scratch)
+    monkeypatch.setenv("SIGNING_COVERAGE_ROOT", "/usr")
+    assert rsc.resolve_root() != "/usr"
