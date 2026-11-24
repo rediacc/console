@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import types
 from typing import Any
 
@@ -2781,6 +2782,99 @@ def test_ci_receipt_origin():
             True,
             "gh is not installed" in real,
             "CI ORIGIN: the real verifier with no gh refuses with the install line (got %r)" % real,
+        )
+    )
+
+    # A receipt for another tree, another repository, and a prior naming a path outside the content-addressed store: each refused by its own field. Each altered receipt is re-filed under its new hash and attested, so only the named check can refuse it.
+    def refiled(name, edit):
+        r, t, rcpt, d, _rl, at = ci_world(name)
+        doc = json.loads(d.decode("utf-8"))
+        edit(doc)
+        altered = (json.dumps(doc, indent=2) + "\n").encode("utf-8")
+        write_ci_raw(r, tree_of(rcpt), altered)
+        at[hashlib.sha256(altered).hexdigest()] = at[hashlib.sha256(d).hexdigest()]
+        return judge(r, t, rcpt, at)[0], (r, t, rcpt, at)
+
+    why, _w = refiled("ci-other-tree", lambda doc: doc.update(tree="0" * 40))
+    cases.append(
+        (
+            True,
+            "field tree" in why,
+            "CI ORIGIN: a receipt judging another tree is refused (got %r)" % why,
+        )
+    )
+    why, _w = refiled("ci-other-repo", lambda doc: doc.update(repo="someone/else"))
+    cases.append(
+        (
+            True,
+            "field repo" in why,
+            "CI ORIGIN: a receipt for another repository is refused (got %r)" % why,
+        )
+    )
+    root8, tree8, receipt8, _d8, _r8, att8 = ci_world("ci-foreign-path")
+    prior8 = root8 / ".ci" / "cache" / "receipts" / ("ci-%s.json" % tree_of(receipt8))
+    doc8 = json.loads(prior8.read_text(encoding="utf-8"))
+    doc8["ciReceipts"][0]["path"] = "../../../etc/passwd"
+    prior8.write_text(json.dumps(doc8), encoding="utf-8")
+    why, _ = judge(root8, tree8, receipt8, att8)
+    cases.append(
+        (
+            True,
+            "field ciReceipts.path" in why,
+            "CI ORIGIN: a receipt path outside .ci/cache/ci-receipts is refused (got %r)" % why,
+        )
+    )
+
+    # The real verifier's retry: a 5xx is retried and then admitted, a 4xx answers at once, a missing import is a refusal and not a raise.
+    sha_head = receipt["gates"][GM.V2_FX]["carriedFrom"]["head"]
+
+    def verifier_with(answers):
+        runs: list[Any] = []
+
+        def fake_run(argv, **_kw):
+            runs.append(argv)
+            code, err = answers[min(len(runs), len(answers)) - 1]
+            return subprocess.CompletedProcess(argv, code, "", err)
+
+        saved_run, saved_sleep = subprocess.run, time.sleep
+        subprocess.run, time.sleep = fake_run, lambda _s: None
+        try:
+            return GM.gh_attestation_verifier(data, sha_head, GM.CI_ATTESTATION_SPEC), len(runs)
+        finally:
+            subprocess.run, time.sleep = saved_run, saved_sleep
+
+    cases.append(
+        (
+            ("", 2),
+            verifier_with([(1, "gh: Server Error (HTTP 502)"), (0, "")]),
+            "CI ORIGIN: the real verifier retries a 5xx and admits the second answer",
+        )
+    )
+    got, ran = verifier_with([(1, "gh: Not Found (HTTP 404)"), (0, "")])
+    cases.append(
+        (
+            (True, 1),
+            ("exited 1" in got, ran),
+            "CI ORIGIN: the real verifier does not retry a 4xx (got %r)" % got,
+        )
+    )
+    saved_retry = GM._gh_retry
+
+    def no_import():
+        raise ImportError("planted")
+
+    GM._gh_retry = no_import
+    try:
+        got = GM.gh_attestation_verifier(data, sha_head, GM.CI_ATTESTATION_SPEC)
+    except ImportError as exc:
+        got = "RAISED %s" % exc
+    finally:
+        GM._gh_retry = saved_retry
+    cases.append(
+        (
+            True,
+            "could not be imported" in got,
+            "CI ORIGIN: a missing gh_retry is a refusal, not a raise (got %r)" % got,
         )
     )
 

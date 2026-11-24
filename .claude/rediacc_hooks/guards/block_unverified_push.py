@@ -1442,8 +1442,8 @@ def gh_attestation_verifier(data, source_digest, spec):
         pathlib.Path(path).write_bytes(data)
         argv = ["gh", "attestation", "verify", path, "--repo", spec["repo"]]
         argv += ["--signer-workflow", spec["signer_workflow"], "--source-digest", source_digest]
-        gh_retry = _gh_retry()
         try:
+            gh_retry = _gh_retry()
             proc = gh_retry.retry_transient(
                 lambda: subprocess.run(
                     [*argv, "--format", "json"],
@@ -1454,6 +1454,8 @@ def gh_attestation_verifier(data, source_digest, spec):
                 ),
                 lambda r: (r.stderr or "") if r.returncode != 0 else None,
             )
+        except ImportError as exc:
+            return "gh_retry could not be imported, so the receipt is not verified: %s" % exc
         except FileNotFoundError:
             return "gh is not installed (https://cli.github.com, then gh auth login)"
         except subprocess.TimeoutExpired:
