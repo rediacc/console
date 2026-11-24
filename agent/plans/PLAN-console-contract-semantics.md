@@ -97,10 +97,11 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
   Depends on: CS5.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/contract-version-mismatch.test.ts)` rc 0, and the mismatch case fails when the comparison at packages/cli/src/services/serve/server.ts:187 is short-circuited in a scratch copy.
     (ticked) 2026-11-23T18:17:39Z by ace763dd: commit:ad69d23bc8 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] CS9 [writer] Coverage gate (D8): `.ci/rediacc_ci/quality/cli_contract_coverage.py` with its CR2 header and a selftest, its gate test, and the version exclusion removed from cli_contract.py now that the version is deterministic.
+- [x] CS9 [writer] Coverage gate (D8): `.ci/rediacc_ci/quality/cli_contract_coverage.py` with its CR2 header and a selftest, its gate test, and the version exclusion removed from cli_contract.py now that the version is deterministic.
   Owns: .ci/rediacc_ci/quality/cli_contract_coverage.py, .ci/rediacc_ci/quality/cli_contract.py, .ci/rediacc_ci/tests/gates/test_gate_cli_contract_coverage.py
   Depends on: CS5, CS6, CS7, PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract_coverage` rc 0 on the tree; `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/gates/test_gate_cli_contract_coverage.py` rc 0 with controls (a missing severity, a 101-character summary, a summary key absent from one bundle, an error code without origin) each turning the gate red; `npm run check:ci-cli-contract` rc 0 with the version now diffed; `npm run check:ci-gate-reachability-coverage` rc 0.
+    (ticked) 2026-11-24T09:17:36Z by d778be9d: landed b2ffbf5527,b6917624b6; gate selftest 23 controls, 27 tests, check:ci-cli-contract rc 0. DEPS-WAIVED: CR2 code landed, open only for C4:operator
 - [x] CS10 [writer] Shared lazy entry (D6): `core.ts` with `indexContract`, `load.ts` with `loadCliContract`, the version file exported on its own subpath, and the root index re-exporting both so the CLI and worker keep their synchronous imports.
   Owns: packages/shared/src/cli-contract/core.ts, packages/shared/src/cli-contract/load.ts, packages/shared/src/cli-contract/index.ts, packages/shared/src/cli-contract/__tests__/**
   Depends on: CS5.

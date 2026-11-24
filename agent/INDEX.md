@@ -514,10 +514,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
-| `agent/plans/PLAN-console-contract-semantics.md` | approved | 132 | 5 | 10 | 25878 |
+| `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
 | `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56949 |
-| `agent/plans/PLAN-console-run-index.md` | approved | 125 | 14 | 1 | 24668 |
+| `agent/plans/PLAN-console-run-index.md` | approved | 127 | 12 | 3 | 25090 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 72 | 11 | 1 | 13895 |
 | `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 95 | 17 | 5 | 21461 |
@@ -557,7 +557,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 85 | 1 | 13 | 30265 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 712 | 16 | 65 | 132506 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 713 | 15 | 66 | 132657 |
 | `agent/plans/PLAN-hostinger-to-bench.md` | approved | 113 | 7 | 15 | 25093 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -614,7 +614,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
-| `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 54 | 6 | 2 | 9466 |
+| `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 162 | 11 | 15 | 39008 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 97 | 5 | 12 | 20633 |

@@ -1223,11 +1223,10 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 10,
+      "open": 4,
+      "done": 11,
       "open_sigs": [
         "55aa5fb8",
-        "62eb863d",
         "b823b7bb",
         "dd29c56a",
         "de25c15f"
@@ -1235,6 +1234,7 @@
       "done_sigs": [
         "32e5ed31",
         "60a6c3ca",
+        "62eb863d",
         "6b1532f2",
         "8281eb42",
         "96cb3030",
@@ -1314,16 +1314,14 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 1,
+      "open": 12,
+      "done": 3,
       "open_sigs": [
         "09278b8b",
         "1a6ed135",
         "2a6ccb08",
         "2eb32ea8",
-        "31b9464b",
         "43ed1e7b",
-        "4649d86b",
         "4e98ee40",
         "51e9efbe",
         "6df32246",
@@ -1333,7 +1331,9 @@
         "e8787a57"
       ],
       "done_sigs": [
-        "03716829"
+        "03716829",
+        "31b9464b",
+        "4649d86b"
       ]
     },
     "agent/plans/PLAN-consolidation-pressure.md": {
@@ -2255,8 +2255,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 65,
+      "open": 15,
+      "done": 66,
       "open_sigs": [
         "0b3361b6",
         "121aedb1",
@@ -2267,7 +2267,6 @@
         "50c5369e",
         "5c5ec96d",
         "75b25301",
-        "771c2d1a",
         "85f55665",
         "89250539",
         "b3cce7b6",
@@ -2303,6 +2302,7 @@
         "74f18f49",
         "752e2a42",
         "7641a1ef",
+        "771c2d1a",
         "80bab096",
         "824a75f7",
         "8279674f",
@@ -3622,19 +3622,19 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 2,
+      "open": 4,
+      "done": 4,
       "open_sigs": [
         "be8c82a5",
         "c12a54f8",
         "cd46b324",
-        "cde3cf11",
-        "dc978669",
-        "dedda4a6"
+        "cde3cf11"
       ],
       "done_sigs": [
         "32971876",
-        "cdaa1932"
+        "cdaa1932",
+        "dc978669",
+        "dedda4a6"
       ]
     },
     "agent/plans/PLAN-rmcp-policy-record.md": {

@@ -55,7 +55,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 97 plans done, 1271 of 1842 boxes done (69%).
+Promoted: 11 of 97 plans done, 1277 of 1842 boxes done (69%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -82,7 +82,7 @@ Promoted: 11 of 97 plans done, 1271 of 1842 boxes done (69%).
 | 21 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 22 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
 | 23 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
-| 24 | PLAN-health-checks-local.md | 65/81 | 16 open |
+| 24 | PLAN-health-checks-local.md | 66/81 | 15 open |
 | 25 | PLAN-backup-multi-target.md | 18/21 | 3 open |
 | 26 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
 | 27 | PLAN-renet-executor-tiered-license-check.md | 4/4 | done |
@@ -123,10 +123,10 @@ Promoted: 11 of 97 plans done, 1271 of 1842 boxes done (69%).
 | 62 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |
 | 63 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 64 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
-| 65 | PLAN-console-contract-semantics.md | 10/15 | 5 open |
+| 65 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
 | 66 | PLAN-console-confirm-stepup.md | 8/11 | 3 open |
 | 67 | PLAN-console-audit-r2.md | 7/13 | 6 open |
-| 68 | PLAN-console-run-index.md | 1/15 | 14 open |
+| 68 | PLAN-console-run-index.md | 3/15 | 12 open |
 | 69 | PLAN-console-command-line.md | 3/16 | 13 open |
 | 70 | PLAN-console-ia.md | 0/10 | 10 open |
 | 71 | PLAN-console-animations.md | 0/9 | 9 open |
@@ -142,7 +142,7 @@ Promoted: 11 of 97 plans done, 1271 of 1842 boxes done (69%).
 | 81 | PLAN-console-ai-in-pages.md | 0/10 | 10 open |
 | 82 | PLAN-rmcp-config-edit-removal.md | 0/9 | 9 open |
 | 83 | PLAN-rmcp-local-mcp.md | 0/13 | 13 open |
-| 84 | PLAN-rmcp-orphan-recovery.md | 2/8 | 6 open |
+| 84 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
 | 85 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
 | 86 | PLAN-rmcp-docs.md | 1/20 | 19 open |
 | 87 | PLAN-stripe-disable.md | 5/8 | 3 open |

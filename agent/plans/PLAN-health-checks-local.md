@@ -531,10 +531,11 @@ Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/
 - [ ] R2: Remove cf-usage-report.yml, only after L5 shows the cf-usage result.
   - Owns: .github/workflows/cf-usage-report.yml
   - Accept: the same two checks, for cf-usage-report.yml.
-- [ ] R3: Retire nightly-status.yml, .ci/scripts/ci/report-nightly-status.cjs and .ci/config/ci-alerts.json per D-alerts, only after D2, D3 and W6. The mention and label tests move to test_gate_budget_check_report.py; the nightly-only cases are deleted (test_gate_nightly_status_report.py, .ci/rediacc_ci/tests/test_ci_publish_verdict.py:367-371); label_inventory's `nightly-red` creator row points at report-budget-check.cjs; the prose baseline row is drained; doc-registry is updated.
+- [x] R3: Retire nightly-status.yml, .ci/scripts/ci/report-nightly-status.cjs and .ci/config/ci-alerts.json per D-alerts, only after D2, D3 and W6. The mention and label tests move to test_gate_budget_check_report.py; the nightly-only cases are deleted (test_gate_nightly_status_report.py, .ci/rediacc_ci/tests/test_ci_publish_verdict.py:367-371); label_inventory's `nightly-red` creator row points at report-budget-check.cjs; the prose baseline row is drained; doc-registry is updated.
   - Owns: those files
   - CONTROL: test_gate_budget_check_report asserts a failing budget post still mentions the `github_mentions` handles.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/gates/test_gate_budget_check_report.py .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py -q && npm run check:ci-label-inventory && .ci/scripts/quality/check_prose_style.py check --drain` rc 0.
+    (ticked) 2026-11-24T09:17:37Z by d778be9d: landed a6840066e8; budget/label/publish tests 73 passed, check:ci-workflows rc 0, gen-docs --check rc 0
 
 ### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-bench` for machine steps and `--config eu-remote` for the eu store reads and the backup schedule and bind (2026-11-07 ruling below), REDIACC_NO_PROVISION=1 unless the box says otherwise)
 (ruling ASKED:2026-11-07T03:55Z) Agents reach hostinger through `--config eu-bench`; eu-remote stays for what only it can reach (the eu store reads, backup schedule and strategy bind). check:ci-ops-health stays hard on every PR.
