@@ -55,7 +55,7 @@ async function configuredGrandGuids(): Promise<Set<string>> {
 }
 
 /** GUID (lowercase) -> the ref of the current config's archive record for it: the one name an orphaned image can still carry. */
-async function archivedNames(): Promise<Map<string, string>> {
+export async function archivedNames(): Promise<Map<string, string>> {
   const names = new Map<string, string>();
   for (const record of await configService.listArchivedRepositories()) {
     if (record.repositoryGuid) {
@@ -187,6 +187,11 @@ export async function readExecutorEvents(file: string): Promise<ExecutorEvent[]>
   return parseExecutorEvents(text);
 }
 
+/** A GUID-less event names the repo as the executor saw it: the whole archived ref (`name` or `name:tag`) or its name part. */
+function namesEvent(ref: string | null, repo: string): boolean {
+  return ref !== null && (ref === repo || ref.split(':')[0] === repo);
+}
+
 /**
  * Join the executor's events onto the verdicts. Only an event whose machine is `machine` counts: an event naming no
  * machine cannot place the image on this one. An event carrying a GUID matches the image with that GUID; an event
@@ -204,7 +209,7 @@ export function applyExecutorEvents(
     if (row.verdict !== 'orphaned') return row;
     const guid = row.guid.toLowerCase();
     const hit = onMachine.find((e) =>
-      e.guid === null ? row.name !== null && e.repo === row.name : e.guid.toLowerCase() === guid
+      e.guid === null ? namesEvent(row.name, e.repo) : e.guid.toLowerCase() === guid
     );
     if (!hit) return row;
     return {

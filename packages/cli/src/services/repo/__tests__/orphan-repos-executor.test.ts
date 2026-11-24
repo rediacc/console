@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   applyExecutorEvents,
+  archivedNames,
   type MachineRepoVerdict,
   parseExecutorEvents,
 } from '../orphan-repos.js';
@@ -124,5 +125,41 @@ describe('parseExecutorEvents', () => {
     expect(() => parseExecutorEvents(`${line({ machine: 'm1' })}\nnot json`)).toThrow(
       'Executor events file, line 2 is not a JSON object'
     );
+  });
+});
+
+describe('tagged archived names (review 0ba0b83a.1)', () => {
+  const tagged = [row(NAMED, 'orphaned', OLD_REASON, 'alpha:v2')];
+  const base = { machine: 'm1', guid: null, at: '2026-11-20T10:00:00Z' };
+
+  it('a GUID-less event matches the orphan whose archived ref is name:tag, by name or by whole ref', () => {
+    for (const repo of ['alpha', 'alpha:v2']) {
+      const events = parseExecutorEvents(line({ ...base, repo }));
+      expect(applyExecutorEvents(tagged, events, 'm1')[0].reason).not.toBe(OLD_REASON);
+    }
+  });
+
+  it('control: another repo name leaves the orphan reason alone', () => {
+    const events = parseExecutorEvents(line({ ...base, repo: 'beta' }));
+    expect(applyExecutorEvents(tagged, events, 'm1')[0].reason).toBe(OLD_REASON);
+  });
+});
+
+describe('archivedNames (review 0ba0b83a.2)', () => {
+  it('keys archived records by lowercase GUID and composes name:tag', async () => {
+    const { configService } = await import('../../config/config-resources.js');
+    const spy = vi.spyOn(configService, 'listArchivedRepositories').mockResolvedValue([
+      { name: 'alpha', tag: 'v2', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000001' },
+      { name: 'beta', repositoryGuid: 'ABCDEF00-0000-4000-8000-000000000002' },
+      { name: 'noguid' },
+    ] as never);
+    try {
+      const names = await archivedNames();
+      expect(names.get('abcdef00-0000-4000-8000-000000000001')).toBe('alpha:v2');
+      expect(names.get('abcdef00-0000-4000-8000-000000000002')).toBe('beta');
+      expect(names.size).toBe(2);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
