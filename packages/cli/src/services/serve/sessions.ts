@@ -171,6 +171,22 @@ export class SessionStore {
     return session.cek;
   }
 
+  /**
+   * The raw CEK bytes of a session, for sealing a run tail, or undefined when the session is
+   * unknown or holds no key. Never throws and does not refresh the idle clock: a recorder
+   * reading it must not keep a session alive.
+   */
+  async cekBytes(sessionId: string | undefined): Promise<Uint8Array | undefined> {
+    if (!sessionId) return undefined;
+    const cek = this.sessions.get(sessionId)?.cek;
+    if (!cek) return undefined;
+    try {
+      return new Uint8Array(await crypto.subtle.exportKey('raw', cek));
+    } catch {
+      return undefined;
+    }
+  }
+
   /** The identity a session acts for. */
   principal(sessionId: string): SessionPrincipal {
     return this.require(sessionId).principal;

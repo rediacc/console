@@ -37,6 +37,7 @@ import {
 import { serveCrypto } from '../services/serve/crypto.js';
 import type { ExecutorAuditEvent, ServeDeps } from '../services/serve/deps.js';
 import { authorize } from '../services/serve/policy.js';
+import { createRunIndex } from '../services/serve/run-index.js';
 import { createServeApp } from '../services/serve/server.js';
 import { SessionStore } from '../services/serve/sessions.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -101,6 +102,16 @@ export function registerServeCommand(program: Command): void {
             ? { recordGrant: createExecutorGrantRecorder({ accountUrl, executorToken }) }
             : {}),
           authorize,
+          runIndex: createRunIndex({
+            accountUrl,
+            executorToken,
+            // The index is a view: a lost event is reported and the command is untouched.
+            onFailure: (reason, event) => {
+              outputService.warn(
+                `Run index event ${event.seq} (${event.state}) of run ${event.runId} was not delivered: ${reason}`
+              );
+            },
+          }),
           audit: createExecutorAudit({
             accountUrl,
             executorToken,

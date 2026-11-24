@@ -115,6 +115,7 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
           return polled;
         });
         await auditFirstTerminal(ledger, deps, principal, machine, jobId, checked);
+        await recordJobEnd(deps, jobId, checked.status);
         return c.json(checked.body);
       } catch (error) {
         return pollFailure(c, error);
@@ -267,6 +268,20 @@ async function auditFirstTerminal(
     if (!(error instanceof AuditUnavailableError)) throw error;
     ledger.forget(jobId);
   }
+}
+
+/** A poll that sees a terminal state closes the run index row of a detached run this process remembers. */
+async function recordJobEnd(
+  deps: ServeDeps,
+  jobId: string,
+  status: { state: string; exitCode?: number }
+): Promise<void> {
+  const { state } = status;
+  if (state !== 'succeeded' && state !== 'failed' && state !== 'cancelled') return;
+  await deps.runIndex?.endJob(jobId, {
+    state,
+    ...(status.exitCode === undefined ? {} : { exitCode: status.exitCode }),
+  });
 }
 
 interface JobStatusForAudit {

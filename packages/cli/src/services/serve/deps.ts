@@ -14,6 +14,7 @@ import type { Executor } from '../executor/types.js';
 import type { AuthVerifier } from './auth.js';
 import type { EgressReportTarget, EgressUnreachableAnswer } from './egress-report.js';
 import type { AuthorizeArgs } from './policy.js';
+import type { RunIndex } from './run-index.js';
 import type { SessionPrincipal, SessionStore } from './sessions.js';
 
 /** The audit event the executor ships for every command it runs. */
@@ -102,4 +103,10 @@ export interface ServeDeps {
    * harness whose fake executor does not implement the job spool.
    */
   detach?: (entry: ContractCommand) => boolean;
+  /**
+   * Records every dispatched command in the account server's run index
+   * (run-index.ts). Never fails or delays a command; absent in a harness that does not
+   * want the account round trips.
+   */
+  runIndex?: RunIndex;
 }

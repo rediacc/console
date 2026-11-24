@@ -288,6 +288,25 @@ export function createServeApp(deps: ServeDeps): Hono {
       }
     }
 
+    // The run index records the command from here: authorized, audited, about to dispatch. A run refused above never reaches it.
+    const run = deps.runIndex?.begin({
+      principal,
+      ...(request.requestId ? { runId: request.requestId } : {}),
+      pathKey: request.pathKey,
+      ...(requestedMachine ? { machine: requestedMachine } : {}),
+      ...optionalRepo(
+        targetFrom(entry.repoOption, entry.repoPositional, request.params, request.positionals)
+      ),
+      // Read at sealing time, so the recorder never holds key material.
+      cek: () => {
+        try {
+          return deps.sessions.cekBytes(deps.sessions.sessionForExec(principal, configSessionId));
+        } catch {
+          return Promise.resolve(undefined);
+        }
+      },
+    });
+
     return streamText(c, async (stream) => {
       const write = async (streamLine: StreamLine) => {
         await stream.write(`${JSON.stringify(streamLine)}\n`);
@@ -320,6 +339,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           ...(request.background ? { background: true } : {}),
           // Announce the job the instant it starts, before any event, so a dropped request can be followed by polling it.
           onJobStarted: (jobId, machine, overlaps) => {
+            run?.job(jobId, machine);
             safeWrite({
               kind: 'job',
               jobId,
@@ -329,6 +349,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             });
           },
           onEvent: (event, line) => {
+            if (event.type === 'step_start' && event.name) run?.step(event.name);
             safeWrite({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
@@ -336,6 +357,8 @@ export function createServeApp(deps: ServeDeps): Hono {
         clearInterval(heartbeat);
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
+        // The run ends here whether or not the client is still reading.
+        const failedEnd = run?.end({ state: 'failed', exitCode: 1, stderr: message });
         // A dispatch that threw still ran, or tried to run, on the caller's behalf: its outcome is recorded on this path too. The function it may have reached is unknown here, so it records by path.
         const failedNotice = await auditOutcome(deps, entry, request.pathKey, {
           principal,
@@ -358,6 +381,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           },
           ...(failedNotice ? { stderr: failedNotice } : {}),
         });
+        await failedEnd;
         return;
       }
       clearInterval(heartbeat);
@@ -406,15 +430,27 @@ export function createServeApp(deps: ServeDeps): Hono {
         result = { ...result, errorGuidance: egressGuidance(answer, connectTarget) };
       }
 
-      await write({
-        kind: 'result',
-        result,
+      // Started before the result line is written, so a client that left (a write that throws) still produces the end event.
+      const ended = run?.end({
+        state: runStateOf(result, handedBack),
+        exitCode: result.exitCode,
+        ...(result.errorCode ? { errorCode: result.errorCode } : {}),
         stdout,
-        ...(dispatched.stdoutBytes
-          ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
-          : {}),
-        stderr: withNotices(stderr, [auditWarning, outcomeNotice]),
+        stderr,
       });
+      try {
+        await write({
+          kind: 'result',
+          result,
+          stdout,
+          ...(dispatched.stdoutBytes
+            ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
+            : {}),
+          stderr: withNotices(stderr, [auditWarning, outcomeNotice]),
+        });
+      } finally {
+        await ended;
+      }
     });
   });
 
@@ -533,6 +569,20 @@ function withNotices(stderr: string, notices: (string | undefined)[]): string {
  * something the client asserts, so a caller cannot dodge a scoped rule by
  * renaming a field.
  */
+/** The run index state a finished dispatch ends in. */
+function runStateOf(
+  result: { state?: string; success: boolean },
+  handedBack: boolean
+): 'detached' | 'cancelled' | 'succeeded' | 'failed' {
+  if (handedBack) return 'detached';
+  if (result.state === 'cancelled') return 'cancelled';
+  return result.success ? 'succeeded' : 'failed';
+}
+
+function optionalRepo(repo: string | undefined): { repo?: string } {
+  return repo ? { repo } : {};
+}
+
 function targetFrom(
   option: string | null,
   positional: string | null,
