@@ -14,9 +14,9 @@ Decide between keeping the dormant Stripe path behind BILLING_STRIPE (the parked
 
 ## Context (read 2026-11-23 against the tree)
 
-1. `private/account/src/services/billing.service.ts:393` and `:513` refuse checkout and plan change for every plan because `getPlanMetadata(plan).selfServe` is false (SD4, 68e1565f6b).
+1. The billing service (checkout and plan-change paths, since deleted by this removal) refused checkout and plan change for every plan because `getPlanMetadata(plan).selfServe` is false (SD4, 68e1565f6b).
 2. `private/account/src/middleware/require-stripe.ts` (SD1) answers 410 BILLING_DISABLED on `/portal/checkout`, `/portal/billing`, `/portal/subscription/change` and every `/admin/stripe/*` route; `routes/webhook.ts` 404s with the flag off.
-3. `private/account/src/routes/portal.ts:231,310` report `billing.selfServe` from the flag; the web (SD2, 55f19366e6) hides checkout and the admin Stripe routes when it is false.
+3. `private/account/src/routes/portal.ts:231,310` report `billing.selfServe` from the flag; the web (SD2) hides checkout and the admin Stripe routes when it is false.
 4. `getStripe` throws on an empty key, and every Stripe secret reads empty with the flag off.
 
 ## Design (only if removal is chosen)

@@ -16,7 +16,7 @@ Operator, 2026-11-22: "hint-proposals.jsonl stacks but do we solve improve the s
 ## Context (measured 2026-11-22, read-only investigation)
 
 1. `agent/ledgers/hint-proposals.jsonl` holds 217 rows, 2026-09-24 to 2026-11-22: per ISO week W39 5, W40 2, W41 31, W42 10, W43 20, W44 16, W45 39, W46 49, W47 45. The oldest is 58 days old, the median 14.
-2. None is resolved: `agent/ledgers/hint-resolutions.jsonl` does not exist, so `worklist.py --hint-resolve` (`.claude/hooks/stop/worklist.py:841`) has never run, and no `docs/agent-reference/HINTS.md` entry cites a `Proposal:` id.
+2. None is resolved: `agent/ledgers/hint-resolutions.jsonl` does not exist, so `worklist.py --hint-resolve` (`.claude/hooks/stop/wl_cli.py:547`) has never run, and no `docs/agent-reference/HINTS.md` entry cites a `Proposal:` id.
 3. 125 of the 217 rows carry no `id` field, so the resolve verb cannot name them.
 4. The lesson-curator (`.claude/agents/lesson-curator.md`) writes to `agent/<me8>/lessons/e<epoch>/`; no such directory exists and git holds no commit under `agent/*/lessons/`, so it has never run or never landed output.
 5. The only stop-report line, `hint-proposals` (`.claude/hooks/stop/wl_checks.py:7115`, text `N_HINT_PROPOSALS_PENDING` at `.claude/hooks/stop/worklist_messages.py:1438`), is `advise: high` in `.claude/config/effort.json:488`, so at the `smart` level it never shows. Its own comment records that 125 proposals waited with none promoted.

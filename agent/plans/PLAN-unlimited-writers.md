@@ -18,7 +18,7 @@ The writer cap (`wl_roster.WRITER_CAP = 25`, earlier `writer_cap: 4` in QUEUE.md
 2. `.claude/rediacc_hooks/guards/block_agent_cap.py` refuses a writer spawn when `wl_roster.writer_cap(root)` writers are live (`:85`).
 3. `.claude/hooks/stop/wl_planconc.py:980-988` refuses a spawn whose live writers plus same-message claims "fill writer_cap".
 4. `.claude/hooks/stop/wl_cli.py:1975-1995` refuses `--lease <id> worker:queue` while "N of 25 writer slots are busy".
-5. `.claude/hooks/stop/wl_checks.py:3572`, `:3753-3755`, `:3884`, `:4628-4647` gate CAP-SATURATED / CONCURRENCY-SATURATED waits on the cap; `worklist_messages.py:3063`, `:3097`, `:3102`, `:3239` render them and IDLE CAPACITY; `wl_standdown.py:5` (CAP_WAIT), `wl_boxready.py`, `wl_planqueue.py:1208` ("Writers: %d live of writer_cap %d").
+5. `.claude/hooks/stop/wl_checks.py:3572`, `:3753-3755`, `:3884`, `:4628-4647` gate CAP-SATURATED / CONCURRENCY-SATURATED waits on the cap; `.claude/hooks/stop/worklist_messages.py:3143`, `:3097`, `:3102`, `:3239` render them and IDLE CAPACITY; `.claude/hooks/stop/wl_standdown.py:5` (CONC_WAIT), `wl_boxready.py`, `.claude/hooks/stop/wl_planqueue.py:1208` ("Writers: %d live").
 6. `.ci/rediacc_ci/dev/worktree_lease.py` holds at most 25 trees on disk.
 7. CLAUDE.md rule 2/4 text ("max 4", "writer cap (25)", "fixed in code"), `.claude/commands/writers-now.md` (roster budget, `worker:queue` on a full cap), `.claude/commands/wisdom.md` ("Writers count against writer_cap").
 

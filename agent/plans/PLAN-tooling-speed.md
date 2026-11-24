@@ -86,7 +86,7 @@ D8. **wrangler-dev-e2e runs in CI.** A native-Linux job in ci-quality.yml (ubunt
 - [ ] SP7 [writer] wrangler-dev-e2e gets a native-Linux CI lane (D8): a ci-quality.yml job on ubuntu-latest runs `npm run check:ci-proxy-wrangler-dev-e2e`, the manifest entry's CI kind becomes that step, and the local refusal on Docker Desktop names the CI job. GitHub-only: native-runner -- the gate needs a native Linux docker daemon, and this host runs Docker Desktop on WSL2, which cannot_run() refuses.
   Owns: .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py, .github/workflows/ci-quality.yml
   Depends on: PLAN-tooling-code-reduction.md CR2 when the gate generator has landed, so the manifest entry is written through the gate header; before that, the manifest and lock edit goes through the current generator.
-  Accept: `npm run check:ci-parity` and `npm run check:ci-workflows` rc 0; one CI run on the branch shows the new job green, read with `.ci/scripts/ci/ci-trace.py`.
+  Accept: `npm run gen:gates -- --check` and `npm run check:ci-workflows` rc 0; one CI run on the branch shows the new job green, read with `.ci/scripts/ci/ci-trace.py`.
 - [ ] SP8 [live] Measure after SP1-SP4: wall p50 and p90 of real stops over one working day from the resprofile rollup, and processes per Bash call. Accept: Stop wall p50 under 5 s and p90 under 12 s, at most 4 processes per Bash call, both quoted with the rollup path in the tick evidence.
 
 ## Risks

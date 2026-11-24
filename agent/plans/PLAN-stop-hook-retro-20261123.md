@@ -123,7 +123,7 @@ The refusal goes away by itself once origin/main carries the stand-down. Add one
 - **#9a4823c8 (16:59:10Z, 16:59:16Z):** the operator's hotfix aa829a19d on main.
 - **#b07162cf (00:46:01Z, 00:46:12Z):** d9c3ad783c, rewritten by the rebase. The lead had to look up the new sha (45046206).
 
-**Root cause.** `commit_ref_problem` requires `merge-base --is-ancestor <sha> HEAD` (`.claude/hooks/stop/worklist.py:1683-1686`). It ignores origin/main, the landing branch, and the patch-equivalent copy that `wl_worktrees` already treats as landed via `git cherry` (`.claude/hooks/stop/wl_worktrees.py:9`).
+**Root cause.** `commit_ref_problem` requires `merge-base --is-ancestor <sha> HEAD` (`.claude/hooks/stop/wl_cli.py:1455-1458`). It ignores origin/main, the landing branch, and the patch-equivalent copy that `wl_worktrees` already treats as landed via `git cherry` (`.claude/hooks/stop/wl_worktrees.py:9`).
 
 **Fix.** A sha passes when one of these holds:
 - it is an ancestor of HEAD, `refs/remotes/origin/main`, or the landing record's branch;
@@ -195,6 +195,7 @@ A fabricated sha still fails the `rev-parse --verify` step.
   (corrected 2026-11-23, CR5 3f695f2703 moved the guard test tables out) .claude/rediacc_hooks/guards/block_unverified_push.py:2207-2213 now at .claude/rediacc_hooks/guards/block_unverified_push.py:1780-1808
     (ticked) 2026-11-23T04:52:00Z by ace763dd: commit:6b78fcc55e fileline:.claude/rediacc_hooks/guards/block_unverified_push.py:1 -- no-advance refusal names voiding paths and whole-lane vs advance; 7 new cases, suite 357 rc 0, 19 goldens re-recorded (1d367af7f1 24d540ed98)
 - [x] **R20261123.6** `commit_ref_problem` (`.claude/hooks/stop/worklist.py:1683`) accepts a `commit:<sha>` in any of these cases: it is an ancestor of HEAD, `refs/remotes/origin/main` or the landing record's branch; it has a patch-equivalent on HEAD (`git cherry`); or a `(cherry picked from commit <sha>)` trailer on HEAD names it. Fixtures, one per refused row: a landing-only sha (item #876420de), a main-only hotfix (item #9a4823c8) and a pre-rebase sha (item #b07162cf) each pass. A random 40-hex sha still fails. Test: .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py.
+    (corrected 2026-11-24, ace763dd) `.claude/hooks/stop/worklist.py:1683` now at `.claude/hooks/stop/wl_cli.py:1386`
     (ticked) 2026-11-23T04:52:05Z by ace763dd: commit:26dc7587c1 fileline:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py:1 -- commit: accepted when on origin/main, the landing branch, a patch-equivalent or a cherry-picked line; random sha refused; pytest 30 passed
 - [x] **R20261123.7** In `wl_worktrees`, judge a lease whose record `cut_from` equals the landing record's branch against `refs/heads/<landing branch>`, not the survey tree's HEAD (`.claude/hooks/stop/wl_worktrees.py:117-142`). Fixture: a lease cut from landing with one commit picked into landing gives no `worktree-unlanded`. Inverse: an unpicked commit is still listed. Test: .claude/hooks/stop/test-wl_worktrees.py.
     (ticked) 2026-11-23T04:52:08Z by ace763dd: commit:0fbab17947 fileline:.claude/hooks/stop/wl_worktrees.py:1 -- a landing-cut lease is judged against the landing branch; test-wl_worktrees 180 controls rc 0 (pre-fix 6 failures)

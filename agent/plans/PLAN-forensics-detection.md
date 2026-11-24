@@ -36,7 +36,7 @@ D5. **SIMD (F13): Go assembly, not archsimd.** `simd/archsimd` needs `GOEXPERIME
 Dispatch in `init` from `cpu.X86.HasAVX512F && HasAVX512BW && HasAVX512VL`, `cpu.X86.HasAVX2`, `cpu.ARM64.HasASIMD`; `RENET_SIMD=scalar|avx2|avx512|neon` may only lower the level, for tests. The `js,wasm` build uses the reference.
 
 D6. **Server detector: a WASM build of the same Go package.** A Worker cannot run native Go. A TypeScript port would be a second implementation that drifts. The executor container (Context 6) is one per org and sleeps, so scoring there would wake every org's container every few minutes. `GOOS=js GOARCH=wasm` builds `cmd/detectwasm` from the same `pkg/detect`, `pkg/models` and catalogs, exporting `score`, `explain` and `verifyBundle`; it runs in the Worker and in the on-premise Node server alike. The scalar path costs speed only on small batches.
-The artifact, Go's `wasm_exec.js` from the same toolchain and `detect-wasm.json` (renet commit, Go version, sha256) are committed in private/account; `check:ci-detect-wasm` rebuilds from the renet gitlink and compares.
+The artifact, Go's `wasm_exec.js` from the same toolchain and `detect-wasm.json` (renet commit, Go version, sha256) are committed in private/account; the detect-wasm gate (FD11) rebuilds from the renet gitlink and compares.
 
 D7. **Server run.** A `*/5 * * * *` cron (a Node interval on premise) walks new batches through PLAN-forensics-shipping.md's batch reader, which checks signature and chain, scores them with state rebuilt only from shipped data, and writes `forensics_findings` (source `server`) and `forensics_detector_state` in D1. Machine `finding` records found in batches are imported into the same table with source `machine`. A compromised host can stop sending or lie forward; the server still scores everything shipped before (F10).
 
@@ -106,7 +106,7 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
 - [ ] FD11 [writer] Add the gate `check:ci-detect-wasm` in `.ci/rediacc_ci/quality/detect_wasm.py` with a `---- gate ----` header (lane quality-go, `needs: submodules`, `selftest: true`) that rebuilds the WASM from the renet gitlink and compares it with private/account's committed artifact, its control flipping one byte of a copy and requiring rc 1, and place pkg/detect and pkg/models in the renet test map and shard.
   Owns: .ci/rediacc_ci/quality/detect_wasm.py, .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py, .ci/config/renet-test-map.json, .ci/config/shards/test-renet-go.json
   Depends on: PLAN-tooling-code-reduction.md#CR2.
-  Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py` rc 0 with the control case red as designed; `npm run check:ci-renet-test-map` rc 0; `npm run check:ci-detect-wasm` rc 0 after FD8.
+  Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py` rc 0 with the control case red as designed; `npm run check:ci-renet-test-map` rc 0; the detect-wasm gate rc 0 after FD8.
 - [ ] FD12 [writer] Add the new renet strings (D4 templates, models verbs, errors) and the CLI strings (`--signer`, fingerprint output, refusals) to all 13 locales of each tree, naturalized; the translation writer runs on sonnet.
   Owns: private/renet/pkg/i18n/locales/*.go, private/renet/pkg/i18n/locales/hashes.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: FD3, FD6, FD9, PLAN-forensics-capture.md#FC9.

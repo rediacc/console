@@ -324,7 +324,8 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 
 ### Phase 3: rehearsal
 - [ ] R1 [live] Region-loss across regions: companies placed on bench-us and bench-asia, then the four cuts of *Rehearsal use* on us with asia and eu as observers; record detect and restore times and every unnamed error. Accept: `./run.sh enterprise proof region-loss --bench` rc 0 with the two-region form and no `cross-region placement` gap note
-- [ ] R2 [live] Run the unblocked boxes on bench: 357547f9 (placement), V1 532e82c9, V2 cdf29e6f, LP-bench 89d70106, and the bench rehearsals of ML2 49a68721, L2 81675959, L3 223d8818 and six-targets L2 8ec6bd76. Accept: each box ticked in its own plan with this plan's receipt ids
+- [ ] R2 [live] Run the unblocked boxes on bench: 357547f9 (placement), V1 532e82c9, V2 cdf29e6f, LP-bench 89d70106, and the bench rehearsal of six-targets L2 8ec6bd76. Accept: each box ticked in its own plan with this plan's receipt ids
+    (corrected 2026-11-24, ace763dd) the multi-org and executor-policy bench rehearsals left this box (the sig window ends inside the closing words, so the box keeps its signature): those two plans are finished and their done state is recorded in their own plans.
 
 ### Phase 4: cost check and close
 - [x] D2 [writer] cf-spend-guard.json `report` gains a per-bench-proxy-application ceiling of 10 USD a month. Accept: pytest `-k cf_usage_report` rc 0

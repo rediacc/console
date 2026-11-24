@@ -143,6 +143,7 @@ Context: operator ruling 2026-11-21 (worklist #b095886f) folds four machine-load
     (ticked) 2026-11-23T18:17:50Z by ace763dd: commit:c2c509470b landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] L2 [writer] vm:check holds core-lease tokens for its battery and drills. Depends on: L0 (the diagnosis names whether the lease is the right instrument). Owns: .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_vm_check_core_lease.py. Accept: a test with `REDIACC_CORE_LEASE_TOKENS=4` where, while vm_check holds its tokens, a second lease client sees fewer free, and a control without vm_check sees all 4.
 - [x] L3 [writer] One machine-wide lock serializes check:deps, check:ci-account-server and build:www across trees. Depends on: PLAN-ci-quick-cpu-scheduling.md for manifest.ts, as W2 does. Owns: scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .ci/rediacc_ci/core_lease.py, .ci/rediacc_ci/tests/test_core_lease_heavy_lock.py. Accept: a test where two heavy gates started together run one after the other, and a control where a single heavy gate does not wait; `npx tsx scripts/gates/check-paths-origin.ts` and `npm run ci -- --only check:ci-parity` exit 0 after the lock regeneration.
+    (corrected 2026-11-24, ace763dd) check:ci-parity now at check:ci-gen-gates
     (ticked) 2026-11-23T18:17:51Z by ace763dd: commit:b56da8bbc6 landed; writer accept rc=0, lead re-verified on the landed tree
 
 ### W11-W19 impact baseline, core release, carried scheduling work, hook-test speed (2026-11-22, operator /ask)
@@ -160,6 +161,7 @@ Context: a read-only investigation on 2026-11-21 and 2026-11-22 (junit of 2026-1
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0 with a fixture where an elastic gate granted 18 of 24 cores drops to 4 busy workers and a queued 15-core gate starts before it ends, and a control where a gate whose workers stay busy keeps its grant.
     (ticked) 2026-11-23T06:57:55Z by ace763dd: commit:c428c052ea fileline:scripts/ci-runner/pool.ts:1 -- elastic gate releases idle cores before it ends; run.ts --selftest rc 0 (694) with release fixture and controls
 - [x] W13 [writer] Carry PLAN-ci-quick-cpu-scheduling.md P2's open half: `cores` confirmed as the default in both pool.ts and run.ts, check:ci-parity leaves `slow`, the `build:cli` and empirical dist `needs` edges, and the push recipe drops its pre-steps.
+    (corrected 2026-11-24, ace763dd) check:ci-parity now at check:ci-gen-gates
   Owns: scripts/ci-runner/pool.ts, scripts/ci-runner/run.ts, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, docs/agent-reference/ci-gates.md
   Depends on: W12.
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0; `npm run ci -- --quick --list --json` shows check:ci-parity without `slow` and the new edges; `grep -n "Default" scripts/ci-runner/pool.ts` names `cores`.
