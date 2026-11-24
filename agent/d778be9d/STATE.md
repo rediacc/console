@@ -1,14 +1,14 @@
-## SESSION d778be9d 2026-11-24T14:54:03Z
+## SESSION d778be9d 2026-11-24T16:16:41Z
 
-# STATE d778be9d (2026-11-24 ~15:10Z, effort high)
+# STATE d778be9d (2026-11-24 ~16:05Z, effort high)
 
 ## Big pieces
 - Session carries ALL work (ace763dd migrated). Operator: high effort = many parallel writers; load-reducing tooling first.
 - Backup caught up after the operator override push. Public origin push pending: ci:quick, vm:check --changed, then an operator override for the two commits holding dead AWS key IDs (6568fea45d fixture, f5df11bb04 STATE).
-- Root AWS keys replaced (ddd28bb5f2; account 9b0abeaa via bf2f65e712); follow-ups #135b55bf. Operator confirmed 2026-11-24: root keys stay only in bws (never in Workers or deployments).
-- Operator ASKED:2026-11-24T13:43Z: one shared machine secret for every config's enrollment; writer a1ae6465e131d4035 (#44344aec) edits the MAIN checkout, lead commits. The master password itself stays (local field crypto, portal unlock); only CLI password-slot enrollment was removed (a5d16e9ee9).
-- Ticked today: AA1-AA6, SD7, P-OP1, OR3, OR-OP1, RI0-RI3, RI5, RI6, CS9, R3, FS13, W2.2, W2.6, IA1-IA8, EH8, EHOP5. Latest landings: misc wave 4 (BPF rebuild check covers all 6 objects, record-paths declares 126 readers), account wave 4 53eb94d5bd, cli wave 4 + tsc fix 44ba8a08e4.
-- Review findings: ~420 closed today; ~580 open; lists /tmp/m/rv5/*.txt (regenerate from agent/reviews/1121-1 Resolution: open). A test-only fix needs --review-mark ... --test <path>; a fix in another file closes as not-a-bug citing it.
+- Root AWS keys replaced (ddd28bb5f2; account 9b0abeaa); root keys stay only in bws (operator confirmed). Follow-ups #135b55bf.
+- Shared machine secret landed 9fd513f0c4 (operator ASKED:2026-11-24T13:43Z): REDIACC_MACHINE_SECRET + per-store ids BENCH_EU/US/ASIA; login:bench rc 0 on all three; production not minted (#e5dd564f: browser session, captcha, no prod recovery code; also /auth/reauth/totp 500s because no Worker binds AUDIT_BUCKET).
+- Ticked today: AA1-AA6, SD7, P-OP1, OR3, OR-OP1, RI0-RI3, RI5-RI10, RI12, CS9, R3, FS9, FS10, FS13, W2.2, W2.6, IA1-IA8, EH8, EHOP5 (tick commit 997b0ee705). Partial: RI11, EHOP3, D1, B1, FS11, FS12 (held: needs evidence account FSL1), SP7, SP8.
+- Review findings: ~470 closed today; ~550 open; regenerate lists from agent/reviews/1121-1 (Resolution: open).
 - Landing hazard #12ba0402: re-run `./run.sh worktree land <id>` after every pick; run tsc after landing CLI work.
 
 ## Armed
@@ -16,14 +16,12 @@
 - #0f42f15e NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key.
 
 ## Delegated
-- a1ae6465e131d4035 #44344aec shared machine secret (main checkout).
-- a2bd682fb0b0b63c2 #1da84150 CL-O run-index web RI7-RI12; a73b5708d7986fba2 #d64607c5 CL-S forensics FS9 FS10 FS12.
-- findings wave 4: a7f56affee630cff3 #3a2f489c hooks; a978b2f51ffd59065 #9520e55f ci.
+- a6aac56d2b2ee4935 #1932ed9d account+web findings wave 5: finished, its account commits (afe65f95..0273e2f3) are NOT landed yet.
 
 ## Owed ticks
-- #3a102a4c fork GUID lost on fork+up; #7a8152c4; #ab9f5552; EHOP3 strict; live halves D1 B1 N5 N1 A4d FS11 SP7 SP8.
+- #e5dd564f; #7a8152c4; #ab9f5552; #135b55bf; EHOP3 strict; live halves D1 B1 N5 N1 A4d FS11 SP7 SP8.
 
 ## Next action
-1. Land each report (submodules first, gitlink, 0 remaining, tests incl. tsc, mark from trailers, gc).
-2. Commit the machine-secret writer's main-checkout edits when it reports.
-3. Hourly /writers-now round (next findings writers: misc 93, cli 58, account ~100, renet, guards); then ci:quick + vm:check --changed; ask the operator about the origin push override.
+1. Land the account wave-5 writer (agent-a6aac56d2b2ee4935: account picks, gitlink, tsc, mark from trailers, gc).
+2. Hourly /writers-now round: next findings writers (hooks ~73, ci ~84, misc ~90, cli ~45, account ~85) and remaining code clusters (CL-K console-confirm-stepup CF7/CF9; wave-3 clusters in survey section 4).
+3. ci:quick + vm:check --changed; ask the operator about the origin push override.
