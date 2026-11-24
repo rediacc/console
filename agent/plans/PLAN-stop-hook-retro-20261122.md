@@ -6,8 +6,8 @@ Priority: P2 -- 4 blocked stops in the window, each answered within 19 s; the co
 Concurrency: parallel -- R20261122.1 edits worklist_messages.py and wl_checks.py, R20261122.2 edits wl_report.py
 Owns: .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_report.py, .claude/rediacc_hooks/tests/test_wl_roster.py, .claude/rediacc_hooks/tests/test_wl_report_inbox.py, .claude/rediacc_hooks/tests/test_wl_retro.py, agent/plans/PLAN-stop-hook-retro-20261122.md
 First-Seen: 2026-11-22
-Owner: ace763dd (adopted from retro ab915bcf07b703610 20261122)
-Updated: 2026-11-22
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
+Updated: 2026-11-24
 
 **Scope.** The brief gives lead transcript bytes 0 to 13815810 of `ace763dd-04fa-45b1-aa44-0da57b775268.jsonl`. This range holds the blocks at 05:39:23, 05:43:52, 06:13:07 and 08:50:07 on 2026-11-22. The fifth blocklog row, `wake-timer` at 10:21:57, sits at offset 14217661, outside the range. That row is counted from the ledger only and its transcript text was not read.
 

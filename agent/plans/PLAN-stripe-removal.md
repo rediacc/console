@@ -5,7 +5,7 @@ Priority: P3 -- nothing runs this code today: BILLING_STRIPE defaults off (SD1) 
 Concurrency: parallel -- account and web files only
 Owns: agent/plans/PLAN-stripe-removal.md, private/account/src/**, private/account/tests/**, private/account/web/src/**, packages/shared/src/subscription/**
 Live-Proof: bench -- the account Worker deployed to bench answers 404 on every removed Stripe route and still serves the operator plan change
-Owner: ace763dd
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
 First-Seen: 2026-11-23
 
 ## Ask

@@ -5,7 +5,7 @@ Priority: P1 -- the cap turned free capacity into refusals on 2026-11-23 (`--lea
 Concurrency: parallel -- one writer owns the whole sweep (guards, the Stop hook and the lease verb read the cap together); its files are disjoint from every other live plan
 Owns: agent/plans/PLAN-unlimited-writers.md, .claude/hooks/stop/wl_roster.py, .claude/hooks/stop/wl_planconc.py, .claude/hooks/stop/wl_cli.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_standdown.py, .claude/hooks/stop/wl_boxready.py, .claude/hooks/stop/wl_planqueue.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/test-*.py, .claude/rediacc_hooks/guards/block_agent_cap.py, .claude/rediacc_hooks/guards/test-block_agent_cap*.py, .claude/rediacc_hooks/guards/block_plan_concurrency.py, .claude/rediacc_hooks/guards/test-block_plan_concurrency.py, .claude/rediacc_hooks/tests/**, .claude/settings.json, .claude/config/effort.json, .ci/rediacc_ci/dev/worktree_lease.py, .ci/rediacc_ci/tests/test_dev_worktree_lease.py, .ci/config/env-manifest.json, .ci/policy/hook-exec-baseline.json, CLAUDE.md, .claude/commands/*.md, .claude/skills/**, docs/agent-reference/**
 Live-Proof: none -- local agent tooling with no deployable surface, operator ruling #3ca908ee (closed with the operator's words)
-Owner: ace763dd
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
 First-Seen: 2026-11-23
 
 ## Ask

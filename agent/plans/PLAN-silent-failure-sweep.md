@@ -6,8 +6,8 @@ Priority: P1 -- a mistyped gate flag exits 0 and does nothing, and a failed Stop
 Concurrency: parallel -- SF1 edits only gate argument handling, and SF2 and SF3 edit Stop hook files that do not overlap; SF4-SF7 wait for the live writers that hold their files
 Owns: agent/plans/PLAN-silent-failure-sweep.md, .ci/rediacc_ci/gate_args.py, .ci/scripts/quality/**, .ci/rediacc_ci/quality/** (module mains, gate_argv.py, swallowed_failures.py), .ci/rediacc_ci/tests/test_gate_args*.py, .ci/rediacc_ci/tests/test_quality_gate_argv*.py, .ci/rediacc_ci/tests/gates/test_gate_gate_argv.py, .ci/rediacc_ci/tests/test_quality_swallowed_failures.py, .ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py, .ci/policy/swallowed-except-baseline.json, package.json (one gate entry, through gate:bind), scripts/ci-runner/manifest.ts (one gate entry, through gate:bind), scripts/ci-runner/gates.lock.json (one gate entry, through gate:bind), .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_admit.py, .claude/hooks/stop/wl_backlog.py, .claude/hooks/stop/wl_benchblock.py, .claude/hooks/stop/wl_checklist.py, .claude/hooks/stop/wl_ci.py, .claude/hooks/stop/wl_civerdict.py, .claude/hooks/stop/wl_handover.py, .claude/hooks/stop/wl_hints.py, .claude/hooks/stop/wl_lessons.py, .claude/hooks/stop/wl_liveness.py, .claude/hooks/stop/wl_lkg.py, .claude/hooks/stop/wl_planenforce.py, .claude/hooks/stop/wl_planfile.py, .claude/hooks/stop/wl_reggate.py, .claude/hooks/stop/wl_renettests.py, .claude/hooks/stop/wl_roster.py, .claude/hooks/stop/wl_ruling.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_core.py, .claude/hooks/stop/wl_review.py, .claude/hooks/stop/wl_schedred.py, .claude/hooks/stop/wl_histfirst.py, .claude/hooks/stop/wl_resprofile.py, .claude/hooks/stop/worklist.py, .claude/hooks/stop/wl_stack.py, .claude/hooks/stop/wl_bgsweep.py, .claude/rediacc_hooks/tests/test_wl_named_reads*.py
 First-Seen: 2026-11-23
-Owner: ace763dd
-Updated: 2026-11-23
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
+Updated: 2026-11-24
 
 ## Ask
 

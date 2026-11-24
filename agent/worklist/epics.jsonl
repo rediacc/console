@@ -140,3 +140,4 @@
 {"at":"2026-11-20T21:38:24Z","by":"98cec5a6","id":"422370f4","title":"Java4Shell CVE-2026-114938 triage (hostinger + templates)","covers":[],"order":null}
 {"at":"2026-11-22T18:04:15Z","by":"fee07197","id":"29d3123a","title":"Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane","covers":[],"order":null,"plan":"agent/plans/PLAN-tooling-speed.md"}
 {"at":"2026-11-22T18:04:15Z","by":"fee07197","id":"dfaac428","title":"Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger","covers":[],"order":null,"plan":"agent/plans/PLAN-tooling-code-reduction.md"}
+{"at":"2026-11-23T13:17:44Z","by":"9b22c347","id":"dcc5af7a","title":"Console rework program: plans and decisions (agent/programs/console-rework)","covers":[],"order":null,"plan":"agent/plans/PLAN-console-contract-semantics.md"}

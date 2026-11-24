@@ -6,8 +6,8 @@ Priority: P1 -- 217 hint proposals, 0 resolved, about 45 new each week, and the 
 Concurrency: parallel -- W1-W3 edit wl_hints.py and the curator, W4-W6 edit wl_checks.py, effort.json and worklist_messages.py, W7 edits QUEUE.md tooling
 Owns: .claude/hooks/stop/wl_hints.py, .claude/hooks/stop/worklist.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/ctx_budget.py, .claude/config/effort.json, .claude/agents/lesson-curator.md, .claude/rediacc_hooks/tests/test_wl_hints*.py, .claude/rediacc_hooks/tests/test_wl_lessons_weekly*.py, agent/plans/PLAN-weekly-lessons.md
 First-Seen: 2026-11-22
-Owner: ace763dd
-Updated: 2026-11-22
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
+Updated: 2026-11-24
 
 ## Ask
 

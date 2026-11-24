@@ -5,7 +5,7 @@ Priority: P1 -- on the night of 2026-11-23/24 four deliberate holds were recorde
 Concurrency: parallel -- AA1-AA2 (one writer) land the event model first; AA3, AA4 and AA5 are then file-disjoint from each other, and block_plan_concurrency decides any overlap with another live hook plan on wl_checks.py, wl_cli.py or effort.json
 Owns: agent/plans/PLAN-armed-actions.md, .claude/hooks/stop/wl_armed.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_cli.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_worktrees.py, .claude/hooks/stop/wl_stopregistry.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_standdown.py, .claude/hooks/stop/test-always-tier.py, .claude/config/effort.json, .claude/hooks/stop/wl_roster.py, .claude/hooks/stop/wl_liveness.py, .claude/hooks/stop/wl_writersnow.py, .claude/commands/writers-now.md, docs/agent-reference/plan-records.md, .claude/rediacc_hooks/tests/test_wl_armed_*.py, .claude/rediacc_hooks/tests/test_wl_standdown_class.py
 Live-Proof: none -- local agent tooling with no deployable surface; box AA6 [lead] is the proof the operator ordered as "one real hold armed, cleared by its event, and started by the hook with no operator prompt" in agent/ace763dd/order-armed-actions.md
-Owner: ace763dd
+Owner: d778be9d (adopted from ace763dd 2026-11-24)
 First-Seen: 2026-11-24
 
 ## Ask
