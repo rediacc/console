@@ -1,13 +1,13 @@
-## SESSION d778be9d 2026-11-24T16:38:36Z
+## SESSION d778be9d 2026-11-24T16:46:37Z
 
-# STATE d778be9d (2026-11-24 ~16:45Z, effort high)
+# STATE d778be9d (2026-11-24 ~17:15Z, effort high)
 
 ## Big pieces
 - Session carries ALL work (ace763dd migrated). Operator: high effort = many parallel writers; load-reducing tooling first.
-- PUSH IN FLIGHT: background ci:quick (task bamnnpinf, log /tmp/m/ciquick.log) for the backup push `git push -u origin 1121-1`. Do NOT commit anything until the push is done (any non-record commit voids the receipt). Held uncommitted, verified: .ci/rediacc_ci/quality/release_signing_coverage.py + its test (message /tmp/m/rsc.msg) and this STATE.md. The commit-policy hook may refuse the origin push for the two commits holding dead AWS key IDs (6568fea45d fixture, f5df11bb04 STATE): then ask the operator for a one-time override.
-- Root AWS keys replaced (ddd28bb5f2); shared machine secret landed 9fd513f0c4 (bench only; production not minted, #e5dd564f).
-- Ticked today: AA1-AA6, SD7, P-OP1, OR3, OR-OP1, RI0-RI3, RI5-RI10, RI12, CS9, R3, FS9, FS10, FS13, W2.2, W2.6, IA1-IA8, EH8, EHOP5. Partial: RI11, EHOP3, D1, B1, FS11, FS12 (held for FSL1), SP7, SP8.
-- Review findings: ~480 closed today; ~540 open (agent/reviews/1121-1, Resolution: open).
+- ci:quick on the tip was RED (27 gates; log /tmp/m/ciquick.log), so the backup push to origin waits. Three fixer writers run: A a9b883b6f3405e565 (#47bec63d: lint, lint:unused, format, max-lines, source-rules, language-policy), B a071212fced050b2e (#af10498c: python-types, pytest, shard coverage, fixture timestamps, literal-sources, renet-test-map), C aa99a2f0968abb157 (#5435843f: guard-mutations, trap-registry, budget-freshness, lane-budget, package-key-budget, workflow-invariants, label-refs, command-tree, account-portal).
+- Lead-owned reds: check:ci-plan-citations, check:ci-plan-bindings (PLAN-signer-bench-stop-binding-reattach.md), check:ci-prose-style (4 new), check:cli-examples, check:ci-tracked-credentials (dead AWS key ID in agent/worklist/ace763dd.jsonl:3777 and the AKIA example fixture in test_wl_redact.py: the gate only baselines synthetic fixtures; the real ID is dead, ask the operator), check:ci-ops-health (live state).
+- After all green: re-run ci:quick, push (operator override likely for the two key-ID commits), then staff the 12-writer wave in /tmp/writers-now/72a13099-staffing.md.
+- Landed today (selection): ticks AA1-AA6, SD7, P-OP1, OR3, OR-OP1, RI0-RI3, RI5-RI10, RI12, CS9, R3, FS9, FS10, FS13, W2.2, W2.6, IA1-IA8, EH8, EHOP5; root keys replaced; shared machine secret (bench); ~480 review findings closed.
 - Landing hazard #12ba0402: re-run `./run.sh worktree land <id>` after every pick; run tsc after landing CLI work.
 
 ## Armed
@@ -15,12 +15,12 @@
 - #0f42f15e NOT-BEFORE 2026-12-01: delete the inactive rediacc-ses-asia key.
 
 ## Delegated
-- a27fe54ff0246334f #9043bfda Plan agent: next writer wave for round 72a13099 into /tmp/writers-now/72a13099-staffing.md (read-only).
+- a9b883b6f3405e565 #47bec63d, a071212fced050b2e #af10498c, aa99a2f0968abb157 #5435843f (red-gate fixers above).
 
 ## Owed ticks
-- #e5dd564f; #748b837e (ops-health machines read; refresher running); #7a8152c4; #ab9f5552; #135b55bf; EHOP3 strict; live halves D1 B1 N5 N1 A4d FS11 SP7 SP8.
+- #e5dd564f; #748b837e; #7a8152c4; #ab9f5552; #135b55bf; RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8 partial.
 
 ## Next action
-1. When ci:quick ends: read rc; if green, `git push -u origin 1121-1` (operator override if the key-ID commits are refused); then commit /tmp/m/rsc.msg paths and STATE.md.
-2. Staff the wave from /tmp/writers-now/72a13099-staffing.md.
-3. vm:check --changed when the push range touches VM paths.
+1. Fix the lead-owned reds (plan files, prose, cli-examples); ask the operator about the tracked-credentials baseline.
+2. Land the three fixers (re-run land for 0 remaining), then ci:quick again, then push.
+3. Staff the 72a13099 wave.
