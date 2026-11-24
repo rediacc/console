@@ -183,3 +183,23 @@ def test_entry_guid_reads_the_named_entry_only() -> None:
     assert orphan.entry_guid(listing, "a") == GUID
     assert orphan.entry_guid(listing, "b") is None
     assert orphan.entry_guid("not json", "a") is None
+
+
+def test_entry_guid_reads_the_repository_field_not_a_neighbour() -> None:
+    """Review 6bb1e3c0.3: a GUID in another field of the entry is never the one settle() deletes."""
+    other = "11111111-2222-3333-4444-555555555555"
+    entry = {"name": "a", "parentGuid": other, "tags": {"latest": {"repositoryGuid": GUID}}}
+    assert orphan.entry_guid(json.dumps([entry]), "a") == GUID
+    assert orphan.entry_guid(json.dumps([{"name": "a", "parentGuid": other}]), "a") is None
+
+
+def test_a_planted_image_that_cannot_be_removed_fails_the_scenario(
+    stack: FakeStack, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 6bb1e3c0.1 and .2: settle()'s failed delete reaches the verdict."""
+    monkeypatch.setattr(
+        orphan, "settle", lambda _ctx, guid: "the planted image %s was not removed" % guid
+    )
+    verdict = _run(stack, tmp_path)
+    assert verdict["ok"] is False
+    assert "was not removed" in verdict["detail"]

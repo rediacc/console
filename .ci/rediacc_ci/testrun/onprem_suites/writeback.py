@@ -143,6 +143,7 @@ def create_pushes_one_version(ctx: Context) -> Result:
     if not result.ok:
         return result
     if name not in listed_repos(ctx, home):
+        _delete(ctx, name)
         return failed("the second device's repo list does not show %s" % name, result.code)
     removed = _delete(ctx, name)
     if removed.returncode != 0:
@@ -224,8 +225,14 @@ def racing_pushes_keep_both_edits(ctx: Context) -> Result:
         problems.append("the laptop's machine edit was lost")
     if name not in repos:
         problems.append("the served repo create was lost")
-    ctx.rdc("machine", "remove", laptop, "--yes", home=home)
-    _delete(ctx, name)
+    unplugged = ctx.rdc("machine", "remove", laptop, "--yes", home=home)
+    removed = _delete(ctx, name)
+    if unplugged.returncode != 0:
+        problems.append(
+            "cleanup: machine remove exited %d: %s" % (unplugged.returncode, _tail(unplugged))
+        )
+    if removed.returncode != 0:
+        problems.append("cleanup: repo delete exited %d: %s" % (removed.returncode, _tail(removed)))
     if problems:
         return failed("; ".join(problems), 0)
     return passed(code=0)

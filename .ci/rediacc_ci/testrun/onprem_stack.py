@@ -292,7 +292,7 @@ class Stack:
     def __init__(self, layout: Layout, runtime: Runtime | None = None) -> None:
         self.layout = layout
         self.rt = runtime or Runtime()
-        self.state: dict[str, list] = {"groups": [], "containers": [], "compose": []}
+        self.state: dict[str, list] = {"groups": [], "containers": [], "compose": [], "vms": []}
 
     # ── state file ──────────────────────────────────────────────────────────
 
@@ -323,6 +323,11 @@ class Stack:
         self.state["containers"].append(name)
         self.save()
 
+    def record_vms(self) -> None:
+        """The ops VMs `--machines vm` brings up, so a failed step or `down` undoes them too."""
+        self.state["vms"].append("ops-basic")
+        self.save()
+
     def record_compose(self, services: list[str]) -> None:
         self.state["compose"].append(services)
         self.save()
@@ -340,7 +345,7 @@ class Stack:
                 self.rt.kill_group(int(entry["pgid"]))
             except ProcessLookupError:
                 pass
-            except OSError as exc:
+            except (OSError, subprocess.TimeoutExpired) as exc:
                 failures.append("process group %s (%s): %s" % (entry["pgid"], entry["name"], exc))
                 left_groups.insert(0, entry)
         left_containers: list[str] = []
@@ -358,11 +363,18 @@ class Stack:
             if done.returncode != 0:
                 failures.append("compose %s: %s" % (" ".join(services), done.stderr.strip()))
                 left_compose.insert(0, services)
+        left_vms: list[str] = []
+        for name in reversed(self.state["vms"]):
+            done = self.rt.run([str(self.layout.root / "rdc.sh"), "ops", "down"], timeout=1800)
+            if done.returncode != 0:
+                failures.append("ops VMs: %s" % done.stderr.strip()[-300:])
+                left_vms.insert(0, name)
         self.state["groups"], self.state["containers"], self.state["compose"] = (
             left_groups,
             left_containers,
             left_compose,
         )
+        self.state["vms"] = left_vms
         return failures
 
     def forget_or_keep(self, failures: list[str]) -> None:
@@ -554,6 +566,7 @@ class Stack:
         if opts.machines == "vm":
             log.step("Bringing up the ops VMs (./rdc.sh ops up --basic)...")
             rdc = str(self.layout.root / "rdc.sh")
+            self.record_vms()
             done = self.rt.run([rdc, "ops", "up", "--basic"], timeout=3600)
             if done.returncode != 0:
                 raise StackError(

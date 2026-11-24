@@ -50,7 +50,10 @@ class FakeStore(onprem_stack.Runtime):
         self.host_job_despite_pause = False
 
     def device2(self, env: dict[str, str] | None) -> bool:
-        return env is not None and str(env.get("XDG_CONFIG_HOME", "")).endswith("device2")
+        if not env:
+            return False
+        # A non-empty env without XDG_CONFIG_HOME is a test that forgot it: KeyError, not "the first device".
+        return str(env["XDG_CONFIG_HOME"]).endswith("device2")
 
     def push(self) -> None:
         self.versions += self.versions_per_push
@@ -361,3 +364,51 @@ def test_no_secret_reaches_a_verdict(store: FakeStore, home: pathlib.Path) -> No
     text = json.dumps(lines)
     for secret in (EXECUTOR, ENROLL, MACHINE_SECRET):
         assert secret not in text
+
+
+def test_a_failed_race_cleanup_fails_the_scenario(
+    store: FakeStore, home: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 8419e215.1: a machine remove or repo delete that exits non-zero is no pass."""
+    original = store.run
+
+    def run(argv, env=None, **kw):
+        if "remove" in argv and "machine" in argv:
+            return done(argv, 1, "", "remove refused")
+        return original(argv, env=env, **kw)
+
+    monkeypatch.setattr(store, "run", run)
+    verdict = _run(_ctx(store, home), "racing_pushes_keep_both_edits")
+    assert verdict["ok"] is False
+    assert "cleanup: machine remove" in verdict["detail"]
+
+
+def test_create_that_is_not_listed_still_deletes_the_repo_it_made(
+    store: FakeStore, home: pathlib.Path
+) -> None:
+    """Review 8419e215.3: the served create already made the repo on the host, so a failed listing check removes it."""
+    store.second_device_sees_repos = False
+    verdict = _run(_ctx(store, home), "create_pushes_one_version")
+    assert verdict["ok"] is False
+    assert store.repos == set()
+    assert store.host_repos == set()
+
+
+def test_secrets_echoed_by_a_failing_command_are_scrubbed_from_the_verdict(
+    store: FakeStore, home: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 8419e215.2: the fake leaks every token into stderr, so a verdict free of them proves Context.scrub ran."""
+    leak = f"{EXECUTOR} {ENROLL} {MACHINE_SECRET}"
+    original = store.run
+
+    def run(argv, env=None, **kw):
+        if "create" in argv and "repo" in argv:
+            return done(argv, 1, "", "refused: " + leak)
+        return original(argv, env=env, **kw)
+
+    monkeypatch.setattr(store, "run", run)
+    verdict = _run(_ctx(store, home), "create_pushes_one_version")
+    assert verdict["ok"] is False
+    assert "refused" in verdict["detail"]
+    for secret in (EXECUTOR, ENROLL, MACHINE_SECRET):
+        assert secret not in json.dumps(verdict)

@@ -345,6 +345,7 @@ def test_daemon_suite_passes_on_a_healthy_daemon(
     # The non-loopback refusal exits non-zero; the TLS probe stays up and answers HTTPS only.
     rt.exit_codes = [2]
     rt.http[TLS_URL] = (200, '{"mode":"daemon"}')
+    (stack_env.parent / "probe.log").write_text("Error: pass --tls-cert and --tls-key\n")
     assert _main(rt, stack_env, lines, "--suite", "daemon") == 0, lines
     assert len(lines) == 7
 
@@ -417,3 +418,45 @@ def test_a_tls_daemon_that_exits_fails(
     verdict = _verdict(lines, "non_loopback_host_with_tls_serves_https")
     assert verdict["ok"] is False
     assert "exited 1" in verdict["detail"]
+
+
+def test_a_refusal_for_another_reason_does_not_pass_the_tls_refusal(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+) -> None:
+    """Review d9974c2f.2: a crash that never mentions the TLS pair is not the Design 9 refusal."""
+    rt.exit_codes = [2]
+    (stack_env.parent / "probe.log").write_text("TypeError: cannot read properties\n")
+    _main(rt, stack_env, lines, "--suite", "daemon")
+    verdict = _verdict(lines, "non_loopback_host_without_tls_refused")
+    assert verdict["ok"] is False
+    assert "not with the TLS refusal" in verdict["detail"]
+
+
+def test_a_timed_out_other_org_call_is_not_a_refusal(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+) -> None:
+    """Review d9974c2f.1: exit 124 (the helper's timeout) must not read as the other org's token being refused."""
+    real = rt.run
+
+    def run(argv, env=None, cwd=None, timeout=600):
+        if env and env.get("REDIACC_TOKEN") == OTHER:
+            return done(argv, 124, "", "timed out")
+        return real(argv, env=env, cwd=cwd, timeout=timeout)
+
+    rt.run = run
+    _main(rt, stack_env, lines, "--suite", "daemon")
+    verdict = _verdict(lines, "other_org_token_refused")
+    assert verdict["ok"] is False
+    assert "timed out" in verdict["detail"]
+
+
+def test_an_https_body_that_only_mentions_daemon_fails(
+    rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict]
+) -> None:
+    """Review d9974c2f.3: the TLS scenario needs mode daemon, not the word."""
+    rt.exit_codes = [2]
+    rt.http[TLS_URL] = (200, '{"note":"not a daemon"}')
+    _main(rt, stack_env, lines, "--suite", "daemon")
+    verdict = _verdict(lines, "non_loopback_host_with_tls_serves_https")
+    assert verdict["ok"] is False
+    assert "does not name the daemon" in verdict["detail"]

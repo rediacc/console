@@ -41,8 +41,19 @@ def entry_pointer(name: str) -> str:
     return "/resources/repositories/%s" % name
 
 
+def _guid_fields(entry: dict) -> list[str]:
+    """The GUIDs an entry names in the fields that carry a repository's own: `guid`, then each tag's `repositoryGuid` (the `latest` tag first). A GUID in any other field (a parent, a neighbour) is not read."""
+    found = [entry.get("guid")]
+    tags = entry.get("tags")
+    if isinstance(tags, dict):
+        for tag in sorted(tags, key=lambda t: t != "latest"):
+            body = tags[tag]
+            found.append(body.get("repositoryGuid") if isinstance(body, dict) else None)
+    return [g for g in found if isinstance(g, str) and GUID_RE.fullmatch(g)]
+
+
 def entry_guid(listing: str, name: str) -> str | None:
-    """The GUID of repository `name` in `rdc --output json repo list`: the first GUID inside its entry."""
+    """The GUID of repository `name` in `rdc --output json repo list`: the first one `_guid_fields` reads from its entry."""
     try:
         data = json.loads(listing)
     except ValueError:
@@ -50,8 +61,8 @@ def entry_guid(listing: str, name: str) -> str | None:
     entries = data if isinstance(data, list) else data.get("repositories", [])
     for entry in entries:
         if isinstance(entry, dict) and entry.get("name") == name:
-            found = GUID_RE.search(json.dumps(entry))
-            return found.group(0) if found else None
+            guids = _guid_fields(entry)
+            return guids[0] if guids else None
     return None
 
 
@@ -102,9 +113,9 @@ def listing_marks(ctx: Context, events_file: pathlib.Path, guid: str) -> str | N
     return None
 
 
-def settle(ctx: Context, guid: str) -> None:
-    """Remove the planted image; a failure is reported by the next run's listing, not hidden."""
-    ctx.rdc(
+def settle(ctx: Context, guid: str) -> str:
+    """Remove the planted image. Returns "" when the delete exited 0, else the failure text the scenario puts in its verdict."""
+    done = ctx.rdc(
         "repo",
         "admin",
         "orphan",
@@ -113,6 +124,13 @@ def settle(ctx: Context, guid: str) -> None:
         "--yes",
         "--force-delete-mounted",
     )
+    if done.returncode != 0:
+        return "the planted image %s was not removed (exit %d): %s" % (
+            guid,
+            done.returncode,
+            _tail(done),
+        )
+    return ""
 
 
 @scenario("orphan", "planted_orphan_is_named_by_tool_and_listing")
@@ -139,6 +157,17 @@ def planted_orphan_is_named_by_tool_and_listing(ctx: Context) -> Result:
             % (dropped.returncode, _tail(dropped)),
             dropped.returncode,
         )
+    result = _check_listing(ctx, name, guid)
+    leftover = settle(ctx, guid)
+    if leftover:
+        return failed(
+            "%s; %s" % (result.detail, leftover) if not result.ok else leftover, result.code
+        )
+    return result
+
+
+def _check_listing(ctx: Context, name: str, guid: str) -> Result:
+    """The two requirements of the scenario on a planted orphan `guid` named `name`."""
     try:
         events, _ = tool_events(ctx)
         event = named_by_tool(events, name)
@@ -155,5 +184,3 @@ def planted_orphan_is_named_by_tool_and_listing(ctx: Context) -> Result:
         return passed(reason)
     except (RuntimeError, ValueError) as exc:
         return failed(str(exc), None)
-    finally:
-        settle(ctx, guid)

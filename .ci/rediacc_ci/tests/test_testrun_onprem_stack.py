@@ -6,10 +6,12 @@ import json
 import os
 import pathlib
 import socket
+import ssl
 import stat
 import subprocess
 import sys
 import time
+import types
 
 import pytest
 
@@ -345,3 +347,111 @@ def test_port_answers_sees_a_real_listener() -> None:
         port = server.getsockname()[1]
         assert mod.Runtime().port_answers(port)
     assert not mod.Runtime().port_answers(port)
+
+
+class _SlowKillRuntime(FakeRuntime):
+    """kill_group of the named pgid raises what the real one raises when SIGKILL is ignored."""
+
+    def __init__(self, slow: int, gone: int = -1) -> None:
+        super().__init__()
+        self.slow, self.gone = slow, gone
+
+    def kill_group(self, pgid: int) -> None:
+        super().kill_group(pgid)
+        if pgid == self.slow:
+            raise subprocess.TimeoutExpired("child", 10)
+        if pgid == self.gone:
+            raise ProcessLookupError
+
+
+def _recorded(layout: mod.Layout, rt: FakeRuntime, *, pgids: tuple[int, ...]) -> mod.Stack:
+    stack = mod.Stack(layout, rt)
+    for n, pgid in enumerate(pgids):
+        stack.record_group("g%d" % n, pgid)
+    stack.record_container("c1")
+    return stack
+
+
+def test_a_group_that_ignores_sigkill_does_not_stop_the_rest_of_the_teardown(
+    layout: mod.Layout,
+) -> None:
+    """Review b7004c9a.2: TimeoutExpired from kill_group is a recorded failure, not an escape."""
+    rt = _SlowKillRuntime(slow=11)
+    stack = _recorded(layout, rt, pgids=(10, 11, 12))
+    failures = stack.teardown()
+    assert rt.killed == [12, 11, 10]
+    assert len(failures) == 1
+    assert "process group 11" in failures[0]
+    assert any(a[:3] == ["docker", "rm", "-f"] for a, _ in rt.runs)
+    assert [g["pgid"] for g in stack.state["groups"]] == [11]
+
+
+def test_a_group_that_is_already_gone_counts_as_stopped(layout: mod.Layout) -> None:
+    """Review e52259aa.2: ProcessLookupError drops the group from the state with no failure."""
+    rt = _SlowKillRuntime(slow=-1, gone=10)
+    stack = _recorded(layout, rt, pgids=(10,))
+    assert stack.teardown() == []
+    assert stack.state["groups"] == []
+
+
+def test_the_vm_machines_are_recorded_and_undone_on_down(layout: mod.Layout) -> None:
+    """Review b7004c9a.3: `--machines vm` records the VMs before `ops up`, so down runs `ops down`."""
+    rt = FakeRuntime()
+    assert _up(layout, rt, "--machines", "vm") == 0
+    assert any(a[1:3] == ["ops", "up"] for a, _ in rt.runs)
+    assert json.loads(layout.state_file.read_text())["vms"] == ["ops-basic"]
+    down_rt = FakeRuntime()
+    assert mod.main(["down"], runtime=down_rt, root=layout.root) == 0
+    assert any(a[1:3] == ["ops", "down"] for a, _ in down_rt.runs)
+    assert not layout.state_file.exists()
+
+
+def test_a_failed_ops_up_still_undoes_the_vms(layout: mod.Layout) -> None:
+    rt = FakeRuntime(fail="ops up")
+    assert _up(layout, rt, "--machines", "vm") == 1
+    assert any(a[1:3] == ["ops", "down"] for a, _ in rt.runs)
+
+
+def test_exited_reports_a_started_leader_and_none_for_a_stranger() -> None:
+    """Review d9974c2f.4: the real Runtime.exited, not the fake's."""
+    runtime = mod.Runtime()
+    pgid = runtime.spawn_group(
+        [sys.executable, "-c", "import sys; sys.exit(3)"],
+        dict(os.environ),
+        pathlib.Path.cwd(),
+        pathlib.Path(os.devnull),
+    )
+    for _ in range(50):
+        status = runtime.exited(pgid)
+        if status is not None:
+            break
+        time.sleep(0.1)
+    assert status == 3
+    assert runtime.exited(2**22 + 777) is None
+
+
+def test_http_get_https_honours_insecure_tls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review d9974c2f.4: the https branch builds a verifying context unless insecure_tls is set."""
+    seen: list[ssl.SSLContext] = []
+
+    class _Conn:
+        def __init__(
+            self, _host: str, _port: int, *, context: ssl.SSLContext, **_kw: object
+        ) -> None:
+            seen.append(context)
+
+        def request(self, *_a: object, **_k: object) -> None:
+            return
+
+        def getresponse(self) -> object:
+            return types.SimpleNamespace(status=200, read=lambda: b"daemon")
+
+        def close(self) -> None:
+            return
+
+    monkeypatch.setattr(mod.http.client, "HTTPSConnection", _Conn)
+    assert mod.Runtime().http_get("https://127.0.0.1:1/x", insecure_tls=True) == (200, "daemon")
+    assert mod.Runtime().http_get("https://127.0.0.1:1/x") == (200, "daemon")
+    assert seen[0].verify_mode == ssl.CERT_NONE
+    assert seen[0].check_hostname is False
+    assert seen[1].verify_mode == ssl.CERT_REQUIRED

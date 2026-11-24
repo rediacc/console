@@ -9,6 +9,7 @@ import ipaddress
 import pathlib
 from typing import TYPE_CHECKING
 
+from rediacc_ci.testrun.onprem_scenarios import TIMEOUT_RC
 from rediacc_ci.testrun.onprem_suites import Result, failed, passed, scenario
 
 if TYPE_CHECKING:
@@ -22,10 +23,27 @@ TLS_POLLS = 60
 # The wildcard address, the non-loopback `--host` of the Design 9 probes.
 ALL_INTERFACES = str(ipaddress.IPv4Address(0))
 EXTRA_MACHINE = "scenario-extra"
+# The refusal text of `rdc serve` for a non-loopback host without TLS names the flag that fixes it (`commands.serve.errors.tlsRequired`).
+TLS_REFUSAL_MARK = "--tls-cert"
+
+
+def _names_daemon(body: str) -> bool:
+    """Whether a server-info body names `mode: daemon` (the one test `server_info_is_daemon` and the TLS scenario share)."""
+    return '"mode":"daemon"' in body.replace(" ", "")
 
 
 def _daemon_url(ctx: Context) -> str:
     return ctx.value("ONPREM_DAEMON_URL")
+
+
+def _probe_log(ctx: Context) -> str:
+    """What the last `serve_probe` wrote, or "" when the log is not there."""
+    try:
+        return (pathlib.Path(ctx.value("ONPREM_DAEMON_HOME")) / "probe.log").read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return ""
 
 
 def _probe_port(ctx: Context, offset: int) -> int | str:
@@ -41,7 +59,7 @@ def server_info_is_daemon(ctx: Context) -> Result:
     code, body = ctx.http_get(_daemon_url(ctx) + "/v1/server-info")
     if code != 200:
         return failed("GET /v1/server-info answered %d" % code, code)
-    if '"mode":"daemon"' not in body.replace(" ", ""):
+    if not _names_daemon(body):
         return failed("server-info does not name mode daemon: %s" % body[:120], code)
     return passed(code=code)
 
@@ -103,6 +121,10 @@ def other_org_token_refused(ctx: Context) -> Result:
     other = ctx.rdc("repo", "list", token=ctx.token("other"), proxy=proxy)
     if other.returncode == 0:
         return failed("the token of another org was served", other.returncode)
+    if other.returncode == TIMEOUT_RC:
+        return failed(
+            "the call with the other org's token timed out, which is no refusal", TIMEOUT_RC
+        )
     return passed("refused with exit %d" % other.returncode, other.returncode)
 
 
@@ -138,6 +160,13 @@ def non_loopback_host_without_tls_refused(ctx: Context) -> Result:
         return failed("--host 0.0.0.0 without TLS kept serving instead of refusing")
     if code == 0:
         return failed("--host 0.0.0.0 without TLS exited 0", code)
+    log_text = _probe_log(ctx)
+    if TLS_REFUSAL_MARK not in log_text:
+        return failed(
+            "--host 0.0.0.0 without TLS exited %d, but not with the TLS refusal: %s"
+            % (code, log_text.strip()[-200:]),
+            code,
+        )
     return passed("refused with exit %d" % code, code)
 
 
@@ -197,7 +226,7 @@ def non_loopback_host_with_tls_serves_https(ctx: Context) -> Result:
                 "https://127.0.0.1:%d/v1/server-info" % port, insecure_tls=True
             )
             if status == 200:
-                if "daemon" not in body:
+                if not _names_daemon(body):
                     return failed(
                         "HTTPS server-info does not name the daemon: %s" % body[:120], status
                     )
