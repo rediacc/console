@@ -17,10 +17,15 @@ from __future__ import annotations
 
 import contextlib
 import io
+import re
 import subprocess
 import sys
 
 USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version [--current | --bump-type patch|minor|major]"
+
+# `--preview <sha>` is the one flag the frozen twin lacks, so USAGE stays byte-identical to it.
+PREVIEW_SUFFIX = "-preview."
+_SHA = re.compile(r"[0-9a-fA-F]{7,40}")
 
 
 def _split_version_core(core: str) -> tuple[str, str, str]:
@@ -58,6 +63,7 @@ def _latest_tag() -> str:
 def main(argv: list[str]) -> int:
     bump_type: str | None = None
     current_only = False
+    preview_sha: str | None = None
 
     i = 0
     while i < len(argv):
@@ -69,6 +75,14 @@ def main(argv: list[str]) -> int:
             bump_type = argv[i + 1] if i + 1 < len(argv) else ""
             if not bump_type:
                 print("Error: --bump-type requires a value", file=sys.stderr)
+                return 1
+            i += 2
+        elif arg == "--preview":
+            preview_sha = argv[i + 1] if i + 1 < len(argv) else ""
+            if not _SHA.fullmatch(preview_sha):
+                print(
+                    "Error: --preview requires a commit sha of 7 to 40 hex digits", file=sys.stderr
+                )
                 return 1
             i += 2
         else:
@@ -87,6 +101,10 @@ def main(argv: list[str]) -> int:
     current = latest_tag.removeprefix("v")
     # `${CURRENT%%-*}`: drop the first "-" and everything after it.
     version_core = current.split("-", 1)[0]
+
+    if preview_sha is not None and (current_only or not bump_type):
+        print("Error: --preview applies to --bump-type only", file=sys.stderr)
+        return 1
 
     if current_only:
         print(version_core)
@@ -119,7 +137,11 @@ def main(argv: list[str]) -> int:
         )
         return 1
 
-    print(f"{major_out}.{minor_out}.{patch_out}")
+    next_version = f"{major_out}.{minor_out}.{patch_out}"
+    if preview_sha is not None:
+        # A pull-request build stamps `X.Y.Z-preview.<sha7>`: it sorts below X.Y.Z, so it never collides with that release's renet slot (PLAN-preview-signer D7).
+        next_version += f"{PREVIEW_SUFFIX}{preview_sha[:7].lower()}"
+    print(next_version)
     return 0
 
 

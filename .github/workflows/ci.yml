@@ -184,6 +184,7 @@ jobs:
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
+      build_version: ${{ steps.preview.outputs.build_version || steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
       # Empty unless this commit explicitly earns NO release. Consumers must
       # test `!= 'true'`, never `== 'false'`: an absent value means the
@@ -392,6 +393,17 @@ jobs:
           CHECKS_TOKEN: ${{ github.token }}
         run: |
           PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
+
+      # A pull-request build is stamped X.Y.Z-preview.<sha7> (PLAN-preview-signer D7), so it never takes the next release's renet slot. Only the CLI and renet builds read build_version; the R2 layout, the tags and the channel stay keyed by next_version.
+      - name: Stamp preview build identity
+        id: preview
+        if: github.event_name == 'pull_request'
+        env:
+          BUMP_TYPE: ${{ steps.init.outputs.bump_type }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          VERSION=$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type "$BUMP_TYPE" --preview "$HEAD_SHA")
+          echo "build_version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Generate channel context
         id: staging
@@ -825,7 +837,7 @@ jobs:
     if: always() && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true'
     uses: ./.github/workflows/ci-build-renet.yml
     with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
+      next_version: ${{ needs.initialize.outputs.build_version }}
       skip_build: ${{ needs.initialize.outputs.renet_exists == 'true' }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
     secrets:
@@ -906,7 +918,7 @@ jobs:
     if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
+      next_version: ${{ needs.initialize.outputs.build_version }}
 
   # ============================================================================
   # UPDATE FLOW E2E
