@@ -252,7 +252,7 @@ def reclaim_sources(root, du=_du_bytes, docker=_docker_images_size):
     return [
         "%s: lease trees, landed ones only: `./run.sh worktree gc --write`"
         % size(root / spike.HOLDER),
-        "%s: release:local clones, records and out dirs (`%s`): `npm run release:prune-cache`; a root-owned path it cannot delete is printed with its `sudo rm -rf` line"
+        "%s: release:local clones, records and out dirs (`%s`): `PYTHONPATH=.ci python3 -m rediacc_ci.release.cache_prune`; a root-owned path it cannot delete is printed with its `sudo rm -rf` line"
         % (size(root / ".ci" / "cache" / "release"), ".ci/cache/release"),
         "%s: Go build cache (%s): `go clean -cache`, only while no writer is building"
         % (size(gocache), gocache),

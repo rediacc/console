@@ -3501,14 +3501,14 @@ def test_refusal_prints_each_reclaimable_source_with_its_command(repo, monkeypat
     lines = lease.reclaim_sources(repo.root, du=du, docker=lambda: "62 GB (61 GB reclaimable)")
     text = "\n".join(lines)
     assert "24.0 GB: release:local clones" in text
-    assert "npm run release:prune-cache" in text
+    assert "python3 -m rediacc_ci.release.cache_prune" in text
     assert "go clean -cache" in text
     assert "docker image prune -a --filter until=168h" in text
     assert "62 GB (61 GB reclaimable)" in text
     assert "size not measured: lease trees" in text
     with pytest.raises(lease.LeaseRefusedError) as raised:
         lease._check_disk(repo.root, sources=lambda _root: lines)
-    assert "npm run release:prune-cache" in str(raised.value)
+    assert "python3 -m rediacc_ci.release.cache_prune" in str(raised.value)
     assert "./run.sh worktree gc --write" in str(raised.value)
 
 

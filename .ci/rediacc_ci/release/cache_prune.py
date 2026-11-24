@@ -8,7 +8,7 @@ WHILE A RELEASE RUNS NOTHING IS DELETED. `release:local` holds an exclusive floc
 
 WHAT IT CANNOT DELETE IS REPORTED. A release step that wrote as root leaves root-owned files an unprivileged prune cannot remove; each such top-level path is printed with the exact `sudo rm -rf` line, and the exit code is 1.
 
-`python3 -m rediacc_ci.release.cache_prune [--dry-run] [--days N]`, or `npm run release:prune-cache`.
+`PYTHONPATH=.ci python3 -m rediacc_ci.release.cache_prune [--dry-run] [--days N]` from the repository root. It has no package.json key: the hand-written half of that file only shrinks (`check:ci-package-key-budget`).
 """
 
 from __future__ import annotations
@@ -114,7 +114,7 @@ def prune(
 
 
 def main(argv: list[str] | None = None, *, root: pathlib.Path | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="release:prune-cache")
+    parser = argparse.ArgumentParser(prog="rediacc_ci.release.cache_prune")
     parser.add_argument("--dry-run", action="store_true", help="list what would be deleted")
     parser.add_argument("--days", type=int, default=MAX_AGE_DAYS)
     args = parser.parse_args(argv)
@@ -122,14 +122,14 @@ def main(argv: list[str] | None = None, *, root: pathlib.Path | None = None) -> 
     try:
         deleted, stuck = prune(store, days=args.days, dry_run=args.dry_run)
     except PruneRefusedError as err:
-        print("release:prune-cache: refused: %s" % err, file=sys.stderr)
+        print("cache_prune: refused: %s" % err, file=sys.stderr)
         return 2
     verb = "would delete" if args.dry_run else "deleted"
     for path in deleted:
-        print("release:prune-cache: %s %s" % (verb, path))
+        print("cache_prune: %s %s" % (verb, path))
     for path in stuck:
-        print("release:prune-cache: cannot delete %s; run: %s" % (path, sudo_line(path)))
-    print("release:prune-cache: %s %d path(s), %d stuck" % (verb, len(deleted), len(stuck)))
+        print("cache_prune: cannot delete %s; run: %s" % (path, sudo_line(path)))
+    print("cache_prune: %s %d path(s), %d stuck" % (verb, len(deleted), len(stuck)))
     return 1 if stuck else 0
 
 

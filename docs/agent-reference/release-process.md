@@ -114,7 +114,7 @@ npm run release:local -- --channel edge --branch-release [--dry-run]
 
 Edge and bench need no ask. A stable deploy always needs `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`, the minute of the operator's answer in the transcript, enforced by the `block_unasked_release` guard (`ci-gates.md`, *Never push to `main` or cut a release unasked*).
 
-Each real run holds `.ci/cache/release/.run.lock` and, after a green run, calls `npm run release:prune-cache`, which keeps the newest release clone and records younger than 14 days, deletes the rest, refuses while a run holds the lock, and prints a `sudo rm -rf` line for any root-owned path it cannot remove.
+Each real run holds `.ci/cache/release/.run.lock` and, after a green run, prunes the release cache in-process (`cache_prune.prune`, also runnable as `PYTHONPATH=.ci python3 -m rediacc_ci.release.cache_prune`), which keeps the newest release clone and records younger than 14 days, deletes the rest, refuses while a run holds the lock, and prints a `sudo rm -rf` line for any root-owned path it cannot remove.
 
 The version comes from `resolve_version --bump-type` inside the entry, from the labels merged since the last tag (`versioning.md`).
 
