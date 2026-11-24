@@ -118,9 +118,12 @@ def test_one_record_version_is_validated_once(world, monkeypatch):
     policy = C._commit_policy()
     calls = []
     real = policy.read_landing_record
-    monkeypatch.setattr(
-        policy, "read_landing_record", lambda root: calls.append(root) or real(root)
-    )
+
+    def counted(root):
+        calls.append(root)
+        return real(root)
+
+    monkeypatch.setattr(policy, "read_landing_record", counted)
     for _ in range(5):
         C.landing_record(landing)
     assert len(calls) == 1
@@ -226,7 +229,12 @@ def test_branch_of_lets_an_unexpected_failure_raise(monkeypatch, tmp_path):
 def test_branch_of_caches_the_answer(monkeypatch, tmp_path):
     S._BRANCH_CACHE.clear()
     calls = []
-    monkeypatch.setattr(C, "git_branch", lambda root: calls.append(root) or "1121-1")
+
+    def branch(root):
+        calls.append(root)
+        return "1121-1"
+
+    monkeypatch.setattr(C, "git_branch", branch)
     assert S._branch_of(tmp_path) == "1121-1"
     assert S._branch_of(tmp_path) == "1121-1"
     assert len(calls) == 1

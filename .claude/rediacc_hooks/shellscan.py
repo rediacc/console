@@ -9162,7 +9162,7 @@ class Write(typing.NamedTuple):
     how     the reading that found it (`writes` lists them)
     word    the word as the command hands it over: the typed form, or the form bash expands it to, whichever this record was read from; a guard naming the write in a message or judging the word lexically reads this, never `path`
     run     the walked run that writes it
-    index   the position of the run's own word it was read from (`_word_index`: in `run.argv`, else `run.xargv`; a `{}` that stands for find's starts keeps the `{}`'s position), or None when it is no word of the run (a redirect target, a fed word)
+    word_index   the position of the run's own word it was read from (`_word_index`: in `run.argv`, else `run.xargv`; a `{}` that stands for find's starts keeps the `{}`'s position), or None when it is no word of the run (a redirect target, a fed word)
     append  True when the write keeps what the file holds (`>>`, `&>>`, `tee -a`/`--append`/a bundle holding `a`); every other write may replace it
     """
 
@@ -9170,7 +9170,7 @@ class Write(typing.NamedTuple):
     how: str
     word: str
     run: typing.Any
-    index: int | None
+    word_index: int | None
     append: bool
 
 

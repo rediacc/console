@@ -135,7 +135,8 @@ def pinned_vm_check_cases(tmp):
             [sys.executable, script, path, payload], stdout=subprocess.PIPE, text=True
         )
         try:
-            if child.stdout.readline().strip() != "held":
+            held_line = child.stdout.readline() if child.stdout is not None else ""
+            if held_line.strip() != "held":
                 FAILURES.append("%s: the holder child never took the lock" % label)
                 return None, order, [], []
             with mock.patch.object(wl_checks, "vm_check_lock_path", stub(path)):

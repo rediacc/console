@@ -221,7 +221,7 @@ def read_records(common, base):
 
 def read_holds(common):
     """{lease id: {"item", "reason", "session"}} from `<id>.hold`. A hold that cannot be read, or has no item or no reason, stays as `{"broken": True}`, which parks nothing, so a damaged hold blocks again rather than hiding a lease. `session` is the writer's id prefix, "" when the record names none (`hold_check` then refuses it)."""
-    out = {}
+    out: dict[str, dict] = {}
     for path in sorted((common / RECORD_DIR).glob("*" + HOLD_SUFFIX)):
         lease_id = path.name[: -len(HOLD_SUFFIX)]
         try:

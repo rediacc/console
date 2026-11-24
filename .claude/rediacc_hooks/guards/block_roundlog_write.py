@@ -53,6 +53,8 @@ DEFECT = (
 
 # The path, the briefing exemption, the passed tools (Edit and MultiEdit: targeted edits cannot silently truncate; only whole-file writes can) and the refusal are one row of `_write_rules.ROWS`, shared with the shell half.
 RULE = _write_rules.ROWS["roundlog"]
+if RULE.path is None:
+    raise RuntimeError("the roundlog row of _write_rules.ROWS names no path")
 TARGETED_TOOLS = RULE.passes
 ROUND_LOG = RULE.path.pattern
 MESSAGE = RULE.message[0]

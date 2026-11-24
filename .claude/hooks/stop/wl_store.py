@@ -1792,7 +1792,7 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
     if not p:
         return "unknown", "no prefix given"
     # A source that cannot be read is not evidence of absence: each failure is named in the evidence of whatever verdict the remaining sources reach, so "idle" read off a broken brief file says so (agent/plans/PLAN-silent-failure-sweep.md SF4).
-    unread = []
+    unread: list[str] = []
 
     def said(verdict, evidence):
         return verdict, evidence + ("" if not unread else " (unread: %s)" % "; ".join(unread))

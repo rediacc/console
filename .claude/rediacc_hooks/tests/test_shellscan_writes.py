@@ -90,7 +90,7 @@ def test_truncate_reads_its_size_and_reference_as_values_not_files(tmp_path):
 
 def _records(cmd, cwd):
     return [
-        (w.path.replace(str(cwd), "<CWD>"), w.how, w.word, w.index, w.append)
+        (w.path.replace(str(cwd), "<CWD>"), w.how, w.word, w.word_index, w.append)
         for w in shellscan.write_records(cmd, str(cwd))
     ]
 
@@ -299,7 +299,7 @@ def test_a_copy_is_listed_as_typed_and_as_expanded(tmp_path):
 def test_a_word_the_walk_cannot_expand_is_an_unknown_record(tmp_path):
     """Unknown is never dropped: `rm "$D"x.txt` with D unknown removes a file no path here names, so its expanded word is an "unknown" record (path "", the word with its unexpanded part marked, the argv index kept). Before CR5 step 2 it was left out."""
     got = [
-        (w.path, w.how, w.word, w.index)
+        (w.path, w.how, w.word, w.word_index)
         for w in shellscan.write_records('rm "$D"x.txt', str(tmp_path))
         if w.how == "unknown"
     ]

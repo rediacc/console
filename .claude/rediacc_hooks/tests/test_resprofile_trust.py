@@ -41,7 +41,7 @@ def child_env(tmp: pathlib.Path, **extra: str) -> dict[str, str]:
 
 
 def records(tmp: pathlib.Path) -> list[dict]:
-    out = []
+    out: list[dict] = []
     for f in sorted((tmp / "home" / ".claude" / "resprofile").glob("*/*/exit.jsonl")):
         out.extend(json.loads(line) for line in f.read_text(encoding="utf-8").splitlines())
     return out
@@ -476,6 +476,7 @@ def test_a_call_split_across_two_folds_adds_up(tmp_path, monkeypatch):
     with exit_f.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(rec("py:a.py", DAY1, call="10-111")) + "\n")
     roll = R.fold((exit_f, tmp_path / "rp" / "rollup.json"))
+    assert roll is not None
     assert roll["per_call"]["2025-11-23"]["max"] == 3
 
 
@@ -515,9 +516,7 @@ def test_bash_env_exports_one_call_id_to_the_whole_tree(tmp_path):
 @pytest.fixture(scope="module")
 def built_sup(tmp_path_factory):
     """The supervisor built from the repo source at the flags setup uses, plus -Wextra; a warning fails the build."""
-    gcc = shutil.which("gcc")
-    if gcc is None:
-        pytest.skip("no gcc on this machine")
+    gcc = shutil.which("gcc") or pytest.skip("no gcc on this machine")
     out = tmp_path_factory.mktemp("sup") / "bashcov-sup"
     src = REPO / ".devcontainer" / "bashcov-sup.c"
     subprocess.run(

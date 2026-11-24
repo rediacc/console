@@ -80,7 +80,7 @@ def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=Non
         pass
     except OSError as exc:
         return {"snapshot-stamp": exc}
-    failures = {}
+    failures: dict[str, Exception] = {}
     try:
         stamp.touch()
         os.utime(stamp, (now, now))

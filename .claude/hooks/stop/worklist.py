@@ -70,7 +70,7 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 _BROKEN = {}  # module name -> error string
-_MODS = {}
+_MODS: dict[str, Any] = {}
 
 
 class _BrokenModule:

@@ -112,7 +112,7 @@ def fragments(source, names=None):
 
 def _imports(source):
     """Paths (relative to rediacc_hooks/, no suffix) of the rediacc_hooks modules a module imports."""
-    names = set()
+    names: set[str] = set()
     for node in ast.walk(ast.parse(source)):
         if not isinstance(node, ast.ImportFrom) or not node.module:
             continue
@@ -196,7 +196,7 @@ class Matcher:
     def __init__(self, guards, modules):
         self.guards = guards
         self.modules = modules
-        owners = collections.Counter()
+        owners: collections.Counter[str] = collections.Counter()
         for frags in modules.values():
             owners.update(frags)
         self.weight = {f: len(f) / n for f, n in owners.items()}
@@ -333,7 +333,7 @@ def census(projects, guards_dir, since, until):
 
 def table(guards, rows):
     """(stem, chain, fires, first, last) per guard, never-fired guards included with 0, most-fired first."""
-    stats = {}
+    stats: dict = {}
     for _s, ts, _t, stem in rows:
         n, first, last = stats.get(stem, (0, ts, ts))
         stats[stem] = (n + 1, min(first, ts), max(last, ts))
@@ -373,7 +373,7 @@ def selftest():
             'from rediacc_hooks.guards import block_a\nCHAIN = "pre-bash"\nORDER = 1\n'
         )
         m = Matcher(*load_guards(g))
-        checks = [
+        checks: list[tuple[str, object, object]] = [
             # must fire: each guard's own text maps to it, across a re-wrapped line
             (
                 "own text",

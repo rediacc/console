@@ -33,15 +33,19 @@ def _run_stop(source: str) -> ast.FunctionDef:
 
 def marks_of(source: str) -> list[tuple[int, str, str]]:
     """(line, method, key) for every R.start / R.begin call in run_stop, in source order."""
-    return sorted(
-        (node.lineno, node.func.attr, node.args[0].value)
-        for node in ast.walk(_run_stop(source))
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and isinstance(node.func.value, ast.Name)
-        and node.func.value.id == "R"
-        and node.func.attr in ("start", "begin")
-    )
+    marks = []
+    for node in ast.walk(_run_stop(source)):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "R"
+            and node.func.attr in ("start", "begin")
+        ):
+            key = node.args[0]
+            assert isinstance(key, ast.Constant), "R.%s names its key by a literal" % node.func.attr
+            marks.append((node.lineno, node.func.attr, str(key.value)))
+    return sorted(marks)
 
 
 def inventory_problems(source: str) -> list[str]:

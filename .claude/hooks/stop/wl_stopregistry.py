@@ -76,7 +76,7 @@ REGISTRY = (
 KEYS = frozenset(s.key for s in REGISTRY)
 
 # One stop per process: the open segment, when it opened, and the milliseconds each closed segment took.
-_CLOCK = {"open": None, "since": 0.0, "ms": {}}
+_CLOCK: dict = {"open": None, "since": 0.0, "ms": {}}
 
 
 def _close(now):

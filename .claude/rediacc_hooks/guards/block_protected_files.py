@@ -400,10 +400,10 @@ def _assigned(run_, word):
 # A word bash drops (`unset X; rm $X ...`, `X=; rm $X ...`) holds no position the value could be lent from, since the test is the value among the expanded records, never a position (reviews d95ab97d.1, 335d582f.1); a typed word that bash also hands over as written (`'$D/../.claude'` beside `$D/../.claude`, one record for both texts) keeps its literal reading (review a62c7d11.1).
 def _held(write):
     """Is `write` read from a word its run holds itself (its argv or its expanded argv, at the record's index)? A word xargs feeds (`index` None) and a find start standing in a `{}`'s place are not: what reaches the command on stdin is `fed_by_stdin`'s, read from the feed's own text, and a find start is no operand of the rm (`find . -name '*.pyc' -exec rm -rf {} +` removes what the find matched, never the tree it walks)."""
-    if write.index is None:
+    if write.word_index is None:
         return False
     return any(
-        held is not None and write.index < len(held) and held[write.index] == write.word
+        held is not None and write.word_index < len(held) and held[write.word_index] == write.word
         for held in (write.run.argv, write.run.xargv)
     )
 

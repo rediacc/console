@@ -41,6 +41,8 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 
 # The path, the refusal and the recorder are one row of `_write_rules.ROWS`, shared with the edit half.
 RULE = _write_rules.ROWS["live_proof_ledger"]
+if RULE.path is None:
+    raise RuntimeError("the live_proof_ledger row of _write_rules.ROWS names no path")
 LEDGER_PATH = RULE.path
 LEDGER_NAME = "live-proof.jsonl"
 INTERPRETERS = shellscan.INTERPRETER_NAMES
