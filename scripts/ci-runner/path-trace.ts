@@ -1102,12 +1102,42 @@ export function attribute(access: Access, view: RepoView): Attribution {
   /**
    * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic `:(...)`, a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
    */
+  /** A `:(glob)` pathspec's pattern (magic already stripped) as the globs it reaches: `<dir>/<*suffix>` one level, `<dir>/**\/<*suffix>` one level plus deep, a literal through the git-default fold; anything else the whole set. A level that names nothing tracked today folds the way foldPathspec folds a dead glob. */
+  const foldGlobMagic = (
+    pat: string,
+    base: string,
+    ctx: 'names' | 'content'
+  ): { globs: string[]; lists: string[] } => {
+    const whole = { globs: ['**'], lists: [] };
+    if (pat.startsWith(':')) return whole;
+    if (!/[*?[]/.test(pat)) return foldPathspec(pat, base, ctx);
+    const m = /^((?:[^*?[{/]+\/)*)(\*\*\/)?(\*[^*?[{/]*)$/.exec(pat);
+    if (m === null) return whole;
+    const j = path.posix.normalize(path.posix.join(base === '' ? '.' : base, m[1] || '.'));
+    if (j === '..' || j.startsWith('../')) return whole;
+    const hdir = j === '.' ? '' : j.replace(/\/+$/, '');
+    if (hdir !== '' && hasForbidden(hdir))
+      return { globs: [cover(nearestDir(cleanDir(hdir)))], lists: [] };
+    const head = hdir === '' ? '' : `${hdir}/`;
+    const out = { globs: [] as string[], lists: [] as string[] };
+    const one = `${head}${m[3]}`;
+    if (alive(one)) out.globs.push(one);
+    else if (ctx === 'names' && (hdir === '' || isTrackedDir(hdir))) out.lists.push(hdir);
+    else out.globs.push(cover(nearestDir(hdir)));
+    if (m[2] !== undefined) {
+      const deep = `${head}**/${m[3]}`;
+      out.globs.push(alive(deep) ? deep : cover(nearestDir(hdir)));
+    }
+    return out;
+  };
   const foldPathspec = (
     spec: string,
     base: string,
     ctx: 'names' | 'content'
   ): { globs: string[]; lists: string[] } => {
     const whole = { globs: ['**'], lists: [] };
+    // `:(glob)` MAGIC ALONE IS MODELLED: under it `*` stays inside one segment and `**/` matches zero or more directories, so `h/*.x` reaches one level and `h/**/*.x` reaches one level plus every deeper one. Before this, check:ci-pipefail-grep-q's five `:(glob)<dir>/**/*.sh` pathspecs folded to `**`, and its traced entry carried `names: ['**']`, which made it a reader of every record path. Any other magic word, or a shape outside those two, still widens to the whole set.
+    if (spec.startsWith(':(glob)')) return foldGlobMagic(spec.slice(':(glob)'.length), base, ctx);
     if (spec.startsWith(':')) return whole;
     const j = path.posix
       .normalize(path.posix.join(base === '' ? '.' : base, spec))
@@ -3592,14 +3622,33 @@ async function selftest(): Promise<number> {
       !formatIsNames('%(path) %(eolinfo:index)'),
     `B3: --format with only %(objectmode) and %(path) is names; CONTROL: adding %(objectname) is content (got ${shape(b3f)} | ${shape(b3fc)})`
   );
-  const b3m = pv([ex(7, ['git', 'ls-files', '-z', ':(glob)**/*.ts']), open(7, '/r/.git/index')]);
+  // `:(glob)` magic is modelled: `<dir>/**/*.x` is one level plus deep, `<dir>/*.x` one level only (the shape check:ci-pipefail-grep-q's PATHSPECS use).
+  const b3g = pv([
+    ex(7, ['git', 'ls-files', '-z', ':(glob)c/**/*.txt', ':(glob)a/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3g.kind === 'paths' &&
+      JSON.stringify(b3g.names) === '["a/*.txt","c/**/*.txt"]' &&
+      JSON.stringify(b3g.lists) === '["c"]',
+    `B3: :(glob)c/**/*.txt is the listing of c (no c/*.txt today) plus c/**/*.txt, and :(glob)a/*.txt is a/*.txt alone, never the whole name set (got ${shape(b3g)})`
+  );
+  const b3gx = pv([
+    ex(7, ['git', 'ls-files', '-z', ':(glob)a/**/x/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3gx.kind === 'paths' && JSON.stringify(b3gx.names) === '["**"]',
+    `B3 CONTROL: a :(glob) shape outside the two modelled ones (a ** between literal segments) still widens to the whole name set (got ${shape(b3gx)})`
+  );
+  const b3m = pv([ex(7, ['git', 'ls-files', '-z', ':(icase)*.ts']), open(7, '/r/.git/index')]);
   const b3u = pv([
     ex(7, ['git', 'ls-files', '-s', '-t', '--', 'a/one.txt']),
     open(7, '/r/.git/index'),
   ]);
   check(
     b3m.kind === 'paths' && JSON.stringify(b3m.names) === '["**"]' && b3u.kind === 'whole-tree',
-    `B3 CONTROL: pathspec magic widens to the whole name set, and an unknown flag (-t) beside -s keeps it whole-tree content (got ${shape(b3m)} | ${shape(b3u)})`
+    `B3 CONTROL: any other pathspec magic (:(icase)) widens to the whole name set, and an unknown flag (-t) beside -s keeps it whole-tree content (got ${shape(b3m)} | ${shape(b3u)})`
   );
 
   // B4: `git diff --quiet <tracked file>` is the content of that path.
