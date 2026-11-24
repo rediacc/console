@@ -112,6 +112,17 @@ describe('keep-awake until the dispatch ends', () => {
     expect(await response.json()).toMatchObject({ code: 'ROUTE_NOT_FOUND' });
     expect(h.container.portUrls).toHaveLength(before);
   });
+
+  it('an encoded or slash-variant busy path is refused through fetch too', async () => {
+    const h = await clientGone({ running: 3 });
+    const before = h.container.portUrls.length;
+
+    for (const path of ['/v1/%62usy', '//v1/busy', '/v1//busy', '/v1/busy/']) {
+      const response = await h.executor.fetch(new Request(`https://proxy${path}`));
+      expect(response.status, path).toBe(404);
+    }
+    expect(h.container.portUrls).toHaveLength(before);
+  });
 });
 
 describe('isBusyPath (review 1cf0bd86.1)', () => {
