@@ -1224,7 +1224,7 @@ def control_landing_cut(tmp):
     check("a landing branch with no ref judges nothing", got["unlanded"], [])
     check(
         "and the doubt names the lease and the missing ref",
-        any("g1" in d and "refs/heads/1104-9" in d for d in got["doubts"]) or got["doubts"],
+        any("g1" in d and "refs/heads/1104-9" in d for d in got["doubts"]),
         True,
     )
 

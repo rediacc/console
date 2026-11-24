@@ -678,7 +678,7 @@ def wiring_controls():
     )
     control("C10d: the CI gate defines no allowlist, exemption or bypass structure", hatch, [])
     truthy(
-        "C10d2: and the control can see one -- the same pattern finds check_test_file_orphans' EXEMPT",
+        "C10d2: and the control can see one -- the same pattern finds test_file_orphans' EXEMPT",
         re.findall(
             r"(?mi)^(ALLOWLIST|ALLOW_LIST|EXEMPT|EXEMPTIONS|SUPPRESS\w*|BYPASS\w*|SKIP_\w+|IGNORE_\w+)\s*[:=]",
             (GATE_MODULE.parent / "test_file_orphans.py").read_text(encoding="utf-8"),

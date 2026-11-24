@@ -599,11 +599,14 @@ def write_budgets(budgets, measured):
             if k in old and v > old[k]:
                 grew.append("%s %s: %r > %r" % (table, k, v, old[k]))
                 continue
-            pin = (
-                round(v * (1 + slack / 2), 1)
-                if isinstance(v, float)
-                else math.ceil(round(v * (1 + slack / 2), 6))
-            )
+            if isinstance(v, float):
+                pin = round(v * (1 + slack / 2), 1)
+            else:
+                # Rounding up must stay inside the SHRANK rule (v >= pin * (1 - slack)), which a small integer breaks: v=1 at slack 0.2 would pin 2.
+                pin = min(
+                    math.ceil(round(v * (1 + slack / 2), 6)), math.floor(v / (1 - slack) + 1e-9)
+                )
+                pin = max(pin, v)
             new[k] = min(pin, old[k]) if k in old else pin
             if k not in old:
                 added.append("%s %s" % (table, k))

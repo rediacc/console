@@ -628,15 +628,22 @@ def resolve(root, kind, token):
         return CK.citation_state(root, token)
     if kind == "gate":
         scripts = _package_scripts(root)
-        if not scripts:
-            return False, "package.json has no scripts block to check against"
         if token in scripts:
             return True, "package.json scripts"
-        # A gate the runner runs directly (no npm key, e.g. check:ci-gen-gates) is real when the lock registers it with `gate: true`.
+        # A gate the runner runs directly (no npm key, e.g. check:ci-gen-gates) is real when the lock registers it with `gate: true`, with or without a scripts block.
         lock = pathlib.Path(root) / "scripts/ci-runner/gates.lock.json"
         try:
             data = json.loads(lock.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
+            if not scripts:
+                return (
+                    False,
+                    "package.json has no scripts block to check against, and %s could not be read (%s)"
+                    % (
+                        lock.name,
+                        exc,
+                    ),
+                )
             return False, "no such package.json script, and %s could not be read (%s)" % (
                 lock.name,
                 exc,

@@ -229,6 +229,16 @@ def test_write_budgets_lowers_and_adds_and_never_raises():
         H.write_budgets(budgets(), measured(120))
 
 
+def test_a_repin_of_a_small_integer_never_reads_as_shrunk_at_once():
+    """a0c83ac9.2: ceil(v * (1 + slack / 2)) alone pins v=1 at 2, which --check-budgets reports SHRANK. Control: a large value still gets its headroom."""
+    for v in (1, 2, 3, 4, 5, 9):
+        block, _added = H.write_budgets(budgets(ceiling=1000), measured(v))
+        pinned = {t: {"slack": 0.2, "max": block[t]["max"]} for t in H.TABLES}
+        assert H.budget_findings(pinned, measured(v)) == [], v
+    block, _added = H.write_budgets(budgets(ceiling=1000), measured(50))
+    assert block["guardLines"]["max"]["block_x"] == 55
+
+
 def test_the_live_budgets_are_green_and_a_planted_growth_reds():
     """The committed budgets against the committed tree, then one guard's ceiling planted under its measured lines."""
     root = H.CHECKOUT

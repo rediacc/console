@@ -127,7 +127,7 @@ _LOOP_DUTIES = frozenset(
         "bg-orphan",
     }
 ) | {_DEFER_EXPIRED}
-# The checks that start or adopt plan work: the development tree's PR loop keeps them, the landing tree ("finish, don't start") parks them.
+# The checks that start, adopt, schedule or settle plan work (writers-now-due, plan-box-owed and the queue slot sit beside the starters): the development tree's PR loop keeps them, the landing tree ("finish, don't start") parks them.
 _BUILD_ONLY = frozenset(
     {
         "idle-stall",
