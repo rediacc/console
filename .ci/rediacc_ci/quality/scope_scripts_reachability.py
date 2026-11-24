@@ -215,8 +215,8 @@ LABEL_TAIL = re.compile(r'"?\).*$')
 PY_CONSTANT = re.compile(r"^([A-Z][A-Z0-9_]*)\s*[=:]")
 
 # The two floors. `ci_scanned` had one from the start; the dispatch half did not, and the module docstring records what that cost.
-# Measured at 18 references on the real tree after the Stripe sandbox and sync steps left the workflows; 20 sat just under the old count and a deleted step tipped it. The floor only has to separate a working enumeration from a collapsed one, which finds none.
-CI_SCAN_FLOOR = 10
+# Measured at 18 references on the real tree after the Stripe sandbox and sync steps left the workflows; 20 sat just above that count and a deleted step tipped it. The floor only has to separate a working enumeration from a collapsed one, which finds none.
+CI_SCAN_FLOOR = 15
 DISPATCH_FLOOR = 1
 
 
@@ -630,8 +630,8 @@ def selftest() -> int:
     for label, sub, want in attribution:
         ctl.check("dispatch: %s" % label, dispatch_targets(runsh, sub), want)
 
-    # THE FLOORS ARE THE TWIN'S, and the dispatch one is the half that had none.
-    ctl.check("the .ci scan floor is 20", CI_SCAN_FLOOR, 20)
+    # THE DISPATCH FLOOR IS THE TWIN'S, and the half that had none; the .ci scan floor moved from the twin's 20 to 15 when the Stripe workflow steps left (see CI_SCAN_FLOOR).
+    ctl.check("the .ci scan floor is 15", CI_SCAN_FLOOR, 15)
     ctl.check("the dispatch floor is 1", DISPATCH_FLOOR, 1)
     ctl.check("six gated directories are scanned", len(GATED_DIRS), 6)
     # THE VERB MODULE MUST STAY IN THE LIST. Removing the dispatcher that held the `drill` arm took this half to zero references on 2026-09-06 and the gate stayed green.
