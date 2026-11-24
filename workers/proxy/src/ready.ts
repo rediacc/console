@@ -20,7 +20,7 @@ export const READY_CACHE_MS = 30_000;
 const REQUIRED_SCOPES = ['proxy:exec', 'audit:write'] as const;
 
 /** The header the account Worker attaches to its internal occupancy request. */
-export const INTERNAL_CREDENTIAL_HEADER = 'x-rediacc-internal';
+const INTERNAL_CREDENTIAL_HEADER = 'x-rediacc-internal';
 
 export interface ReadyEnv extends ForwardEnv {
   CF_VERSION_METADATA?: WorkerVersionMetadata;
