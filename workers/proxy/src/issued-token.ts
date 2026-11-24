@@ -31,6 +31,8 @@ export interface ExecutorIssuerRpc extends Rpc.WorkerEntrypointBranded {
   relocate(orgId: string, fromPlacement: number): Promise<RelocateAnswer>;
   /** Writes nothing: whether the issuer env parses and D1 answers, and what a token it issues would carry. */
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }>;
+  /** Whether `credential` is a live internal credential the account Worker minted for its occupancy read (D52): true only for an authentic, unexpired one, false for anything else. */
+  verifyInternal(credential: string): Promise<boolean>;
 }
 
 /** The share of a token's life after which it is renewed. */

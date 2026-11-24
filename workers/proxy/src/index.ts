@@ -27,7 +27,7 @@ import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
 import type { ExecutorRefusalCode, OrgExecutor, PinAnswer } from './org-executor';
 import { executorName, placementOf } from './placement';
-import { readiness } from './ready';
+import { internalOccupancy, readiness } from './ready';
 import {
   chooseSize,
   type ExecutorTier,
@@ -289,6 +289,15 @@ export default {
         answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
       );
       return Response.json(answer.body, { status: answer.status });
+    }
+
+    if (url.pathname === '/v1/internal/occupancy') {
+      const answered = await internalOccupancy(request, env);
+      span?.setAttribute(
+        'rediacc.proxy.outcome',
+        answered.status === 200 ? 'occupancy' : `occupancy:${answered.status}`
+      );
+      return answered;
     }
 
     const tenant = await resolveTenant(request, env);
