@@ -135,7 +135,7 @@ ANTI-VACUITY, and every clause is written for the FINISH LINE as well as today
     gate is not seeing the tree.
   * zero PLANTS discovered across the whole shell corpus: REFUSE. The day
     `sed -i` stops being the spelling, every file looks compliant.
-  * the Python delegate's entry point missing, or not named in package.json:
+  * the Python delegate's entry point missing, or not registered in the gate lock:
     REFUSE. A third of the class would be unscanned with nothing said.
   * zero UNPROVEN plants with a NON-EMPTY baseline: not a refusal, a FINDING --
     every baseline row reports as drainable, which is the correct and loud
@@ -174,9 +174,11 @@ from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 BASELINE_REL = ".ci/config/plant-proof-baseline.json"
 KEY = "plants"
 
-# The Python arm, delegated and ASSERTED. Both halves are checked: the entry point must exist, and package.json must still run it.
-PYTHON_DELEGATE = ".ci/scripts/quality/check_python_control_plants.py"
+# The Python arm, delegated and ASSERTED. Both halves are checked: the module must exist, and the gate registry (the generated lock of the manifest) must still run it under the delegate's id.
+PYTHON_DELEGATE = ".ci/rediacc_ci/quality/python_control_plants.py"
 PYTHON_DELEGATE_ID = "check:ci-python-control-plants"
+PYTHON_DELEGATE_MODULE = "rediacc_ci.quality.python_control_plants"
+REGISTRY_REL = "scripts/ci-runner/gates.lock.json"
 
 # How far from a plant a proof may sit, in LOGICAL lines. Eight covers every real shape here (the widest genuine gap measured is four) without letting an unrelated grep two controls away launder a plant.
 PROOF_WINDOW = 8
@@ -893,15 +895,22 @@ def python_delegate_state(root):
     """(exists, registered). Both must be true or the Python arm is a hole."""
     root = pathlib.Path(root)
     exists = (root / PYTHON_DELEGATE).is_file()
-    manifest = root / "package.json"
+    registry = root / REGISTRY_REL
     registered = False
-    if manifest.is_file():
+    if registry.is_file():
         try:
-            scripts = json.loads(manifest.read_text(encoding="utf-8")).get("scripts", {})
-        except (OSError, ValueError):
-            scripts = {}
-        name = PYTHON_DELEGATE_ID.split(":", 1)[1]
-        registered = PYTHON_DELEGATE in str(scripts.get("check:%s" % name, ""))
+            entries = json.loads(registry.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as err:
+            raise RefusalError(
+                "%s is unreadable (%s); the delegate's registration cannot be checked"
+                % (REGISTRY_REL, err)
+            ) from err
+        registered = any(
+            isinstance(e, dict)
+            and e.get("id") == PYTHON_DELEGATE_ID
+            and PYTHON_DELEGATE_MODULE in str(e.get("run", ""))
+            for e in entries
+        )
     return exists, registered
 
 
@@ -1142,8 +1151,9 @@ def run(root=None):
         )
     if not registered:
         raise RefusalError(
-            "%s exists but package.json no longer runs it as `%s`. A delegate nothing "
-            "invokes is a hole with a file in it." % (PYTHON_DELEGATE, PYTHON_DELEGATE_ID)
+            "%s exists but %s no longer runs it as `%s`. A delegate nothing "
+            "invokes is a hole with a file in it."
+            % (PYTHON_DELEGATE, REGISTRY_REL, PYTHON_DELEGATE_ID)
         )
     plants, stats = scan(root)
     baseline = read_baseline(baseline_path(root))
@@ -1273,8 +1283,12 @@ def _fixture(tmp, *, sh=_SH_PLAIN, ts=_TS_PLAIN, baseline=None, delegate=True, s
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_STUB_DELEGATE, encoding="utf-8")
     if scripts is None:
-        scripts = {PYTHON_DELEGATE_ID: PYTHON_DELEGATE}
-    (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+        scripts = {PYTHON_DELEGATE_ID: "PYTHONPATH=.ci python3 -m " + PYTHON_DELEGATE_MODULE}
+    registry = root / REGISTRY_REL
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps([{"id": k, "run": v} for k, v in scripts.items()]), encoding="utf-8"
+    )
     if baseline is not None:
         path = root / BASELINE_REL
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1576,7 +1590,7 @@ def selftest():
         root = _fixture(tmp, scripts={})
         check(
             "VACUITY: the delegate present but UNREGISTERED is a refusal too",
-            "package.json no longer runs it" in _refuses(root),
+            "no longer runs it" in _refuses(root),
         )
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp, sh="#!/usr/bin/env bash\necho hi\n")

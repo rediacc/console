@@ -93,7 +93,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.language-policy-allowlist` | name per line | 40 | 41 | both |
 | `.pins-upgrade-blocklist` | name per line | 23 | 24 | both |
 | `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
-| `.profiler-coverage-allowlist` | name per line | 63 | 5 | both |
+| `.profiler-coverage-allowlist` | name per line | 61 | 5 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `carry-exempt.json` | JSON table | - | 0 | both |

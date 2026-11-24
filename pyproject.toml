@@ -439,10 +439,6 @@ ignore = [
     # BLOCKER: queue_head() and pr_plan_set() are calls into Stop-hook code whose failure modes are not enumerable from here (file reads, plan parsing, git), and the gate must FAIL CLOSED with a named problem rather than crash or pass, so those two handlers catch any Exception and report it; the two import handlers beside them are narrowed
     "BLE001",
 ]
-".ci/scripts/quality/check_resprofile.py" = [
-    # BLOCKER: RESPROFILE_ROOT picks the root whose .claude/hooks/stop is hopped onto sys.path (test_gate_resprofile.py points it at a fixture root), so wl_profile can be imported only after ROOT is computed and the canonical resolver `paths.on_sys_path` has run; test_canonical_sys_path_hop.py forbids a hand-written sys.path.insert as the alternative
-    "E402",
-]
 ".ci/rediacc_ci/deploy/turnstile_drift.py" = [
     # BLOCKER: main() is the exit-code boundary of the drift check, and its docstring contract is that an unexpected exception is exit 2 (no verdict), never Python's default 1, which a workflow reads as drift; any narrower handler would turn an unknown crash back into exit 1
     "BLE001",

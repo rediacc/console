@@ -6416,8 +6416,6 @@
       "packages/cli/src/commands/config-reconcile.ts",
       "packages/cli/src/commands/config-remote-enable.ts",
       "packages/cli/src/commands/config-remote-handoff.ts",
-      "packages/cli/src/commands/config-remote-master-password-change.ts",
-      "packages/cli/src/commands/config-remote-master-password.ts",
       "packages/cli/src/commands/config-remote-reenroll.ts",
       "packages/cli/src/commands/config-remote-relay.ts",
       "packages/cli/src/commands/config-remote-unlink.ts",

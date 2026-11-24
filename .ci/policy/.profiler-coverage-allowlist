@@ -83,7 +83,6 @@ ci.yml:package-tests
 ci.yml:pipeline-sentinel
 ci.yml:review-gate
 ci.yml:smoke-test-preview
-ci.yml:stripe-sandbox
 ci.yml:validate-promote
 #
 # ops-cleanup-preview.yml
@@ -106,7 +105,6 @@ ct-update-flow.yml:test-linux-x64
 #
 # ops-housekeeping.yml
 ops-housekeeping.yml:cleanup
-ops-housekeeping.yml:stripe-cleanup
 #
 # ops-nightly-status.yml
 ops-nightly-status.yml:report

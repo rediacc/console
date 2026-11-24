@@ -127,6 +127,16 @@
       ]
     },
     {
+      "id": "census",
+      "paths": ["scripts/census/**"],
+      "home": "scripts/census",
+      "stays": true,
+      "why": "Measurement scripts that rebuild a recorded census from session transcripts, with the table they last wrote. scripts/census/guard-fires.py is the first: an operator command rather than a gate body or a shared module, so neither the gates rule nor the lib rule describes it.",
+      "notes": [
+        "scripts/gates/check-standalone-selftests.ts SELFTESTS names scripts/census/guard-fires.py by this path to run its --selftest, so a move must repoint that entry."
+      ]
+    },
+    {
       "id": "operator-bash",
       "paths": ["scripts/ops/**"],
       "home": "scripts/ops",

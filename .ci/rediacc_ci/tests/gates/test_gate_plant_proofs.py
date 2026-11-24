@@ -77,8 +77,17 @@ def _mirror(tmp):
     fixture = root / BASH_SUBJECT
     fixture.parent.mkdir(parents=True, exist_ok=True)
     fixture.write_text(BASH_FIXTURE, encoding="utf-8")
-    (root / "package.json").write_text(
-        json.dumps({"scripts": {pp.PYTHON_DELEGATE_ID: pp.PYTHON_DELEGATE}}),
+    registry = root / pp.REGISTRY_REL
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            [
+                {
+                    "id": pp.PYTHON_DELEGATE_ID,
+                    "run": "PYTHONPATH=.ci python3 -m " + pp.PYTHON_DELEGATE_MODULE,
+                }
+            ]
+        ),
         encoding="utf-8",
     )
     for args in (["init", "-q"], ["add", "-A", "-f"]):
