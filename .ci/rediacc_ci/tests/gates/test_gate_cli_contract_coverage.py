@@ -21,6 +21,8 @@ MODULE = "rediacc_ci.quality.cli_contract_coverage"
 SUT = paths.from_root(".ci", "rediacc_ci", "quality", "cli_contract_coverage.py")
 DATA_SUBDIR = "packages/shared/src/cli-contract/data"
 REAL_DATA = paths.from_root(*DATA_SUBDIR.split("/"))
+LANGUAGES_REL = "packages/shared/src/i18n/types.ts"
+REAL_TYPES = paths.from_root(*LANGUAGES_REL.split("/"))
 
 
 def _run(*args: str, root: pathlib.Path | None = None) -> harness.RunResult:
@@ -34,6 +36,9 @@ def _copy_root(tmp_path: pathlib.Path) -> pathlib.Path:
     """A root holding a byte-for-byte copy of the real contract data and nothing else."""
     root = tmp_path / "root"
     shutil.copytree(REAL_DATA, root / DATA_SUBDIR)
+    types = root / LANGUAGES_REL
+    types.parent.mkdir(parents=True)
+    shutil.copy(REAL_TYPES, types)
     return root
 
 
@@ -219,3 +224,18 @@ def test_unknown_argument_is_refused(gate):
     gate.assert_exit(2, result, "an unknown argument exits 2")
     gate.assert_contains(result.combined, "unknown argument", "names the refusal")
     gate.log_pass("unknown argument refused")
+
+
+def test_contract_dropping_a_shipped_language_is_caught(gate, tmp_path):
+    """b2ffbf55.1: a contract that drops a language and its bundle still has to name every shipped locale."""
+    gate.log_test("a shortened languages list reds against SUPPORTED_LANGUAGES")
+    _require_subject(gate)
+    root = _copy_root(tmp_path)
+    path, contract = _contract(root)
+    contract["languages"] = [lang for lang in contract["languages"] if lang != "ko"]
+    path.write_text(json.dumps(contract), encoding="utf-8")
+    (root / DATA_SUBDIR / "i18n" / "ko.json").unlink()
+    result = _run(root=root)
+    gate.assert_exit(1, result, "a dropped language must exit 1")
+    gate.assert_contains(result.combined, "missing ['ko']", "names the dropped language")
+    gate.log_pass("the dropped language is a finding")

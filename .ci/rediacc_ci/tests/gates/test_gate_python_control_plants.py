@@ -322,3 +322,19 @@ def test_a_module_that_cannot_be_parsed_is_a_finding_not_a_skip(tmp_path):
     assert len(findings) == 1
     assert "broken.py" in findings[0]
     assert "cannot be scanned" in findings[0]
+
+
+def test_a_non_utf8_module_and_an_unreadable_module_are_findings_not_skips(tmp_path):
+    """60e75746.1: UnicodeDecodeError and OSError name the module like a SyntaxError does."""
+    quality = tmp_path / ".ci" / "rediacc_ci" / "quality"
+    quality.mkdir(parents=True)
+    (quality / "good.py").write_bytes(b"x = 1\n")
+    (quality / "latin.py").write_bytes(b"x = '\xe9'\n")
+    # A dangling symlink matches the glob and fails to open: OSError.
+    (quality / "dangling.py").symlink_to(tmp_path / "nowhere.py")
+    modules, _sites, findings = pcp.scan(tmp_path)
+    assert modules == 1
+    named = {f.split(":")[0].rsplit("/", 1)[-1]: f for f in findings}
+    assert set(named) == {"latin.py", "dangling.py"}, findings
+    assert "UnicodeDecodeError" in named["latin.py"]
+    assert "FileNotFoundError" in named["dangling.py"]

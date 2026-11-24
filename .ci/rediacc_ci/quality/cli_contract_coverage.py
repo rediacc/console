@@ -29,6 +29,7 @@ import contextlib
 import io
 import json
 import pathlib
+import re
 import shutil
 import sys
 import tempfile
@@ -38,6 +39,8 @@ from rediacc_ci.controls import Controls, controls_first
 
 # Where the committed contract lives, relative to the repository root. The same constant cli_contract.py carries; duplicated rather than imported so neither gate's module is the other's dependency.
 DATA_SUBDIR = "packages/shared/src/cli-contract/data"
+LANGUAGES_REL = "packages/shared/src/i18n/types.ts"
+_SUPPORTED_RE = re.compile(r"SUPPORTED_LANGUAGES\s*=\s*\[(.*?)\]", re.DOTALL)
 
 SEVERITIES = ("none", "caution", "destructive")
 POLARITIES = ("opt-in", "default")
@@ -193,10 +196,32 @@ def error_code_findings(rows: object) -> list[str]:
     return out
 
 
-def evaluate(data_dir: pathlib.Path) -> tuple[list[str], dict]:
-    """`(findings, shape)` for the contract under `data_dir`. Raises CannotRunError when there is nothing to judge."""
+def supported_languages(root: pathlib.Path) -> list[str]:
+    """The locale set the product ships, read from `SUPPORTED_LANGUAGES` in the shared i18n types. CannotRunError when it cannot be read, because the contract's own `languages` list cannot vouch for itself."""
+    path = root / LANGUAGES_REL
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CannotRunError("%s cannot be read: %s" % (path, exc)) from None
+    match = _SUPPORTED_RE.search(text)
+    found = re.findall(r"'([a-z]{2,3})'", match.group(1)) if match else []
+    if not found:
+        raise CannotRunError("%s names no SUPPORTED_LANGUAGES" % path)
+    return found
+
+
+def evaluate(data_dir: pathlib.Path, supported: list[str] | None = None) -> tuple[list[str], dict]:
+    """`(findings, shape)` for the contract under `data_dir`. `supported` is the shipped locale set the contract's `languages` must equal. Raises CannotRunError when there is nothing to judge."""
     contract = load_contract(data_dir)
     bundles, findings = load_bundles(data_dir, contract["languages"])
+    if supported is not None and sorted(contract["languages"]) != sorted(supported):
+        missing = sorted(set(supported) - set(contract["languages"]))
+        extra = sorted(set(contract["languages"]) - set(supported))
+        findings.append(
+            "languages: the contract declares %d, the product ships %d (missing %s, extra %s). "
+            "Fix: npm run generate:cli-contract -w @rediacc/cli"
+            % (len(contract["languages"]), len(supported), missing or "none", extra or "none")
+        )
     severities = dict.fromkeys(SEVERITIES, 0)
     previews = 0
     long_translations = 0
@@ -249,7 +274,7 @@ def verdict(root: pathlib.Path) -> int:
     """Judge the contract under `root`. The exit code; prints the shape either way."""
     data_dir = root / DATA_SUBDIR
     try:
-        findings, shape = evaluate(data_dir)
+        findings, shape = evaluate(data_dir, supported_languages(root))
     except CannotRunError as exc:
         log.error("CANNOT RUN (exit 77, which is not a verdict): %s" % exc)
         log.error("the gate is not seeing the contract; its green would mean nothing")
@@ -333,6 +358,13 @@ def _write(root: pathlib.Path, contract: object, bundles: dict[str, object]) -> 
         shutil.rmtree(root)
     data = root / DATA_SUBDIR
     (data / "i18n").mkdir(parents=True)
+    types = root / LANGUAGES_REL
+    types.parent.mkdir(parents=True)
+    types.write_text(
+        "export const SUPPORTED_LANGUAGES = [%s] as const;\n"
+        % ", ".join("'%s'" % lang for lang in _LANGS),
+        encoding="utf-8",
+    )
     if contract is not None:
         text = contract if isinstance(contract, str) else json.dumps(contract)
         (data / "contract.json").write_text(text, encoding="utf-8")
@@ -349,7 +381,7 @@ def _quiet_verdict(root: pathlib.Path) -> int:
 
 def selftest() -> int:
     """Each rule planted red against a green control, plus the cannot-run and argv paths. Returns 0 green, 1 red."""
-    ctl = Controls("cli-contract-coverage", floor=22, verbose=True)
+    ctl = Controls("cli-contract-coverage", floor=23, verbose=True)
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
 
@@ -441,6 +473,11 @@ def selftest() -> int:
             "CANNOT RUN: zero commands is 77",
             run(lambda c, _b: c.__setitem__("commands", [])),
             CANNOT_RUN,
+        )
+        ctl.check(
+            "PLANT: a contract that drops a shipped language reds (b2ffbf55.1)",
+            run(lambda c, _b: c.__setitem__("languages", ["en"])),
+            FINDING,
         )
         ctl.check(
             "CANNOT RUN: zero languages is 77",
