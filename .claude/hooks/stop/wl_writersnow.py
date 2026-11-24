@@ -31,6 +31,7 @@ REPORT_LINES_MAX = 8
 KIND_MAX = 40
 # Where the held-back seeds of each source are read in full.
 MORE_WHERE = {
+    "armed": "worklist.py --armed-list <me>",
     "report": "worklist.py --reports --list --all",
     "item": "worklist.py --list --open <me>",
     "unblocked": "worklist.py --list --open <me>",
@@ -222,6 +223,33 @@ def item_seeds(items, session, since) -> list[dict]:
     return out
 
 
+def armed_seeds(items, session, since) -> list[dict]:
+    """Seeds from this session's armed actions that are due (latched, not started) and whose `fired_at` is later than `since`: the hold's event happened, so the prepared action is the first work of the round (kind `armed`). An arm fired at or before `since` was already offered to the previous round."""
+    import wl_armed as A
+
+    out = []
+    for r in items:
+        if not C.owned_by_me(r.get("owner"), session):
+            continue
+        arm = r.get("arm")
+        if not isinstance(arm, dict) or not A.due(arm):
+            continue
+        fired = _at(arm.get("fired_at"))
+        if fired is None or fired <= since:
+            continue
+        out.append(
+            {
+                "kind": "armed",
+                "ref": "#%s" % r["id"],
+                "text": _clip(
+                    "%s on %s: %s"
+                    % (arm.get("verdict"), " ".join(arm.get("when") or ()), r.get("text"))
+                ),
+            }
+        )
+    return out
+
+
 def review_seeds(records, since) -> list[dict]:
     """Seeds from per-commit review records (`wl_review.dir_records` pairs): every finding still `open` on a review written at or after `since`."""
     out = []
@@ -280,9 +308,10 @@ def report_seeds(reports, session, since) -> list[dict]:
 
 
 def collect_seeds(items, review_records, reports, session, since) -> list[dict]:
-    """Every seed, reports first (the source the survey cannot otherwise see), then items, then review findings. Each source gives at most KIND_MAX seeds, then one `more` seed counting the rest and naming where they are read (MORE_WHERE)."""
+    """Every seed, armed actions first (their event already happened), then reports (the source the survey cannot otherwise see), then items, then review findings. Each source gives at most KIND_MAX seeds, then one `more` seed counting the rest and naming where they are read (MORE_WHERE)."""
     out: list[dict] = []
     for group in (
+        armed_seeds(items, session, since),
         report_seeds(reports, session, since),
         item_seeds(items, session, since),
         review_seeds(review_records, since),
