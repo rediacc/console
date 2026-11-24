@@ -612,14 +612,17 @@ function shouldSkipValue(value: TranslationValue, key = '', lang = ''): boolean 
 const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
 
 /**
- * PLURAL GROUPS (the account emails' `tCount`, PLAN-account-notices E1): an English parent whose
- * direct leaves are all CLDR categories, `other` among them, and which holds nothing else. Each
- * language holds the categories ITS plural rules select (en one/other, ru one/few/many/other,
- * ja other), so a group's leaves are not mirrored key for key. Which categories a language
- * must hold is check-account-email-templates.ts's job; this gate only stops calling a
- * language-specific category an orphan, or a category the language never selects missing.
+ * PLURAL GROUPS, in the two shapes the catalogs use. NESTED (the account emails' `tCount`, PLAN-account-notices E1): an English parent whose direct leaves are all CLDR categories, `other` among them, and which holds nothing else. SUFFIX (i18next v4, the account web console): an English `<k>_other` beside `<k>` and/or another `<k>_<cat>`, whose categories are `<k>_<cat>` siblings.
+ * Each language holds the categories ITS plural rules select (en one/other, ru one/few/many/other, ja other), so a group's leaves are not mirrored key for key. Which categories a language must hold is check-account-email-templates.ts's job; this gate only stops calling a language-specific category an orphan, or a category the language never selects missing.
  */
-function pluralGroupsOf(keys: string[]): Set<string> {
+interface PluralGroups {
+  /** Nested group parents (`emails.notice.items`). */
+  nested: Set<string>;
+  /** Suffix group bases (`auditTeaserDayCount`, from `auditTeaserDayCount_other`). */
+  suffix: Set<string>;
+}
+
+function pluralGroupsOf(keys: string[]): PluralGroups {
   const leaves = new Map<string, string[]>();
   const descendants = new Map<string, number>();
   for (const key of keys) {
@@ -632,26 +635,43 @@ function pluralGroupsOf(keys: string[]): Set<string> {
       descendants.set(ancestor, (descendants.get(ancestor) ?? 0) + 1);
     }
   }
-  const groups = new Set<string>();
+  const nested = new Set<string>();
   for (const [parent, names] of leaves) {
     if (
       names.includes('other') &&
       names.every((n) => PLURAL_CATEGORIES.has(n)) &&
       descendants.get(parent) === names.length
     ) {
-      groups.add(parent);
+      nested.add(parent);
     }
   }
-  return groups;
+  const keySet = new Set(keys);
+  const suffix = new Set<string>();
+  for (const key of keys) {
+    if (!key.endsWith('_other')) continue;
+    const base = key.slice(0, -'_other'.length);
+    if (!base) continue;
+    const hasSibling =
+      keySet.has(base) ||
+      [...PLURAL_CATEGORIES].some((c) => c !== 'other' && keySet.has(`${base}_${c}`));
+    if (hasSibling) suffix.add(base);
+  }
+  return { nested, suffix };
 }
 
-function leafOf(key: string): string {
-  return key.slice(key.lastIndexOf('.') + 1);
-}
-
-function isPluralLeaf(key: string, groups: Set<string>): boolean {
+/** The CLDR category `key` holds as a leaf of an English plural group, or null when it is no leaf. */
+function pluralCategoryOf(key: string, groups: PluralGroups): string | null {
   const cut = key.lastIndexOf('.');
-  return cut > 0 && groups.has(key.slice(0, cut)) && PLURAL_CATEGORIES.has(key.slice(cut + 1));
+  if (cut > 0 && groups.nested.has(key.slice(0, cut))) {
+    const leaf = key.slice(cut + 1);
+    if (PLURAL_CATEGORIES.has(leaf)) return leaf;
+  }
+  const us = key.lastIndexOf('_');
+  if (us > 0 && groups.suffix.has(key.slice(0, us))) {
+    const category = key.slice(us + 1);
+    if (PLURAL_CATEGORIES.has(category)) return category;
+  }
+  return null;
 }
 
 /** The categories `lang` selects, or null when `lang` is not a valid BCP 47 tag (`pt_BR`). */
@@ -763,7 +783,8 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     for (const [key, enValue] of Object.entries(enKeys)) {
       if (!(key in langKeys)) {
         // A plural category this language's rules never select is not owed (ja has no `one`).
-        if (isPluralLeaf(key, enPluralGroups) && !langCategories.has(leafOf(key))) continue;
+        const category = pluralCategoryOf(key, enPluralGroups);
+        if (category !== null && !langCategories.has(category)) continue;
         missing++;
       } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key, lang)) {
         untranslated++;
@@ -786,11 +807,12 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     // always safe; keeping it is always dead weight.
     //
     // One exception, plural groups: a category English lacks but this language's rules select
-    // (ru `few`, ar `two`) is reachable through tCount, so it is not an orphan.
-    const orphanKeys = Object.keys(langKeys).filter(
-      (key) =>
-        !(key in enKeys) && !(isPluralLeaf(key, enPluralGroups) && langCategories.has(leafOf(key)))
-    );
+    // (ru `few`, ar `two`), nested or suffixed, is reachable through tCount or i18next, so it is not an orphan.
+    const orphanKeys = Object.keys(langKeys).filter((key) => {
+      if (key in enKeys) return false;
+      const category = pluralCategoryOf(key, enPluralGroups);
+      return category === null || !langCategories.has(category);
+    });
 
     const total = totalEnKeys;
     const untranslatedRatio = total > 0 ? (untranslated / total) * 100 : 0;
@@ -997,6 +1019,91 @@ function controlMissingAndOrphanKeys(): void {
   }
   if (!pluralRun.errors.some((e) => e.includes('pt_BR') && e.includes('BCP 47'))) {
     failures.push('a locale directory name that is not a BCP 47 tag was not reported');
+  }
+
+  // SUFFIX plural groups (i18next v4, the account web console): English `<k>` + `<k>_other`, and a language's own categories as `<k>_<cat>` siblings. Must NOT fire: ru `_few`/`_many`, ar `_zero`/`_two`/`_few`/`_many`, ja without an English `_one`. Must fire: ru `_two` (a category ru never selects), and a `_few` key whose base has no English `_other` (not a plural group).
+  for (const f of fs.readdirSync(tmp)) fs.rmSync(path.join(tmp, f));
+  const suffix = {
+    dayCount: '{{count}} record',
+    dayCount_other: '{{count}} records',
+    nested: { streak: '{{count}} day', streak_other: '{{count}} days' },
+    sizes_one: 'one size',
+    sizes_other: 'sizes',
+    label: 'Label',
+  };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(suffix));
+  fs.writeFileSync(
+    path.join(tmp, 'ru.json'),
+    JSON.stringify({
+      dayCount: 'ru one',
+      dayCount_few: 'ru few',
+      dayCount_many: 'ru many',
+      dayCount_other: 'ru other',
+      nested: { streak: 'ru d', streak_few: 'ru df', streak_many: 'ru dm', streak_other: 'ru do' },
+      sizes_one: 'ru s1',
+      sizes_few: 'ru sf',
+      sizes_many: 'ru sm',
+      sizes_other: 'ru so',
+      label: 'Metka',
+    })
+  );
+  fs.writeFileSync(
+    path.join(tmp, 'ar.json'),
+    JSON.stringify({
+      dayCount: 'ar one',
+      dayCount_zero: 'ar zero',
+      dayCount_two: 'ar two',
+      dayCount_few: 'ar few',
+      dayCount_many: 'ar many',
+      dayCount_other: 'ar other',
+      nested: { streak: 'ar d', streak_other: 'ar do' },
+      sizes_one: 'ar s1',
+      sizes_other: 'ar so',
+      label: 'Wasm',
+    })
+  );
+  fs.writeFileSync(
+    path.join(tmp, 'ja.json'),
+    JSON.stringify({
+      dayCount: 'ja base',
+      dayCount_other: 'ja other',
+      nested: { streak: 'ja d', streak_other: 'ja do' },
+      sizes_other: 'ja so',
+      label: 'Raberu',
+    })
+  );
+  const suffixClean = checkLocaleDir('control', tmp, true);
+  for (const lang of ['ru', 'ar', 'ja']) {
+    const hits = suffixClean.errors.filter((e) => e.includes(`[control/${lang}]`));
+    if (hits.length > 0) {
+      failures.push(`suffix plural categories selected by ${lang} were reported: ${hits[0]}`);
+    }
+  }
+  fs.writeFileSync(
+    path.join(tmp, 'ru.json'),
+    JSON.stringify({
+      dayCount: 'ru one',
+      dayCount_two: 'ru two',
+      dayCount_other: 'ru other',
+      nested: { streak: 'ru d', streak_other: 'ru do' },
+      sizes_one: 'ru s1',
+      sizes_other: 'ru so',
+      label: 'Metka',
+      label_few: 'ru stray',
+    })
+  );
+  const suffixDirty = checkLocaleDir('control', tmp, true);
+  const ruOrphans = suffixDirty.errors.find(
+    (e) => e.includes('[control/ru]') && e.includes('orphan')
+  );
+  if (!ruOrphans?.includes('dayCount_two')) {
+    failures.push('ru `dayCount_two` (a category ru never selects) was not reported as an orphan');
+  }
+  if (!ruOrphans?.includes('label_few')) {
+    failures.push('`label_few` (no English `label_other`, so no plural group) was not an orphan');
+  }
+  if (!ruOrphans?.includes('2 orphan keys')) {
+    failures.push(`ru with exactly 2 planted orphans reported: ${ruOrphans ?? 'nothing'}`);
   }
 
   fs.rmSync(tmp, { recursive: true, force: true });
