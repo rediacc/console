@@ -22,7 +22,7 @@ Body-Sig: 7635678d0114b47f
 Anchor: in-diff
 Claim: The dedupe key is (cgroup, inode, pid) with no device or superblock id, so two different regular files on different filesystems that share an inode number, opened by the same pid in the same cgroup within 60 s, produce one event and the second file's open is silently lost.
 Class: other
-Resolution: open
+Resolution: fixed 49c1d368f8de1d93120232d71611e34821a94d78 | d778be9d 2026-11-24T11:56:56Z
 
 ### 622f8cb9.2 [low] pkg/ebpf/fileopen_root_test.go:160
 Anchor: in-diff

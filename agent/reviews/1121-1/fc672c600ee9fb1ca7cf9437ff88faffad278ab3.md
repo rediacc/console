@@ -22,4 +22,4 @@ Body-Sig: ea74ac613ae3c3b7
 Anchor: in-diff
 Claim: The comment says a detached HEAD is left to the commit-msg hook, which skips it too; but pr_freeze.check now ignores its branch argument (`del branch`) and freezes by the landing record, so a detached commit in the landing tree is judged, not skipped. Only this guard skips it.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | already fixed in the current tree: .claude/rediacc_hooks/guards/block_pr_freeze_commit.py:97 | d778be9d 2026-11-24T11:09:37Z

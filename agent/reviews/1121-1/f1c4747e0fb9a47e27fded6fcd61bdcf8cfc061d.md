@@ -28,4 +28,4 @@ Resolution: open
 Anchor: in-diff
 Claim: The old defect_runner called _syspath.on_sys_path before importing the guard; the call was removed from the shared runner, so this module now loads _syspath and never uses it (the same applies to the review and protected-files suites), which is dead code rather than a working path hop.
 Class: other
-Resolution: open
+Resolution: fixed c57415520424dee7ef7ba33b2a9b7bccd153172a | d778be9d 2026-11-24T15:49:50Z

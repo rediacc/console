@@ -22,10 +22,10 @@ Body-Sig: a5d8b7efc424efa0
 Anchor: in-diff
 Claim: The GUID-less fallback compares the event's repo name with row.name, but row.name is composeRef(record.name, record.tag), which the interface doc says is `name:tag` when a tag exists; so a GUID-less event for an orphan whose archived record has a tag never matches, and the orphan keeps its old reason. The tests only use an untagged name ('alpha'), so this path is not covered.
 Class: other
-Resolution: open
+Resolution: fixed 4475304c2f286f8b2a5b6c3d4630ffc8e37513c1 | d778be9d 2026-11-24T14:01:16Z
 
 ### 0ba0b83a.2 [medium] packages/cli/src/services/repo/orphan-repos.ts:92
 Anchor: in-diff
 Claim: classifyMachineRepos now fills `name` from the new archivedNames() lookup (listArchivedRepositories, lowercase GUID keying, composeRef), but no test in this diff exercises that population; every test builds the rows by hand with a literal name, so a broken archivedNames() or name assignment would not fail any test in this commit.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 4475304c2f286f8b2a5b6c3d4630ffc8e37513c1 | d778be9d 2026-11-24T14:01:17Z

@@ -22,4 +22,4 @@ Body-Sig: 7c1e9fb399d133d2
 Anchor: in-diff
 Claim: The clause cut runs before the time-word and condition scans, so a comma directly after the push action empties the clause: "Push, now?" and "Should we push, once the review is in?" were refused before this commit and now pass, and no PASS or REFUSE case covers a comma right after the action.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already fixed in the current tree: .claude/rediacc_hooks/guards/block_settled_questions.py:150 | d778be9d 2026-11-24T11:10:14Z
