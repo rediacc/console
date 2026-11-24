@@ -174,17 +174,20 @@ def test_the_gate_is_wired_into_all_three_places():
     `check:ci-parity` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of a 345-entry report.
     """
     scripts = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["scripts"]
-    assert scripts["check:ci-python-types"] == ".ci/scripts/quality/check_python_types.py"
+    assert (
+        scripts["check:ci-python-types"]
+        == "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types"
+    )
 
     lock = json.loads((ROOT / "scripts/ci-runner/gates.lock.json").read_text(encoding="utf-8"))
     entry = next(e for e in lock if e["id"] == "check:ci-python-types")
     assert entry["gate"] is True, entry
-    assert entry["leaves"] == [".ci/scripts/quality/check_python_types.py"], entry
+    assert entry["leaves"] == [".ci/rediacc_ci/quality/python_types.py"], entry
     step = entry["ci"]["step"]
 
     workflow = (ROOT / entry["ci"]["workflow"]).read_text(encoding="utf-8")
     assert ("- name: %s" % step) in workflow, step
-    assert ".ci/scripts/quality/check_python_types.py" in workflow
+    assert "python3 -m rediacc_ci.quality.python_types" in workflow
 
 
 def test_the_gate_script_is_executable_and_has_a_shebang():

@@ -2749,8 +2749,10 @@ def test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract():
             "sdkDerived": made["body"]["serverSecret"],
             "cek": made["cek"],
             "storeId": "st-1",
+            "cekGeneration": 1,
         }
     )
+    assert pushed["envelope"]["cekGeneration"] == 1
     assert pushed["encryptedBlob"]
     assert isinstance(pushed["envelope"], dict)
 

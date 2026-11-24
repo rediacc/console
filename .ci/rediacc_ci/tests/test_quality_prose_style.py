@@ -1540,9 +1540,13 @@ def test_the_gate_selftest_passes():
     assert ps.selftest() == 0
 
 
-def test_the_entry_point_is_executable_and_declares_its_gate_header():
+def test_the_entry_point_is_executable_and_its_module_declares_the_gate_header():
+    """The `---- gate ----` header lives in the module, which `gen:gates` runs directly; the by-path entry is a shim that must stay executable with a shebang."""
     entry = pathlib.Path(ROOT) / ".ci" / "scripts" / "quality" / "check_prose_style.py"
-    text = entry.read_text(encoding="utf-8")
+    assert entry.read_bytes()[:2] == b"#!", "the entry point has no shebang"
+    assert os.access(entry, os.X_OK), "the entry point is not executable"
+    module = pathlib.Path(ROOT) / ".ci" / "rediacc_ci" / "quality" / "prose_style.py"
+    text = module.read_text(encoding="utf-8")
     assert "---- gate ----" in text
     assert "---- end gate ----" in text
     assert "lane: quality-content" in text

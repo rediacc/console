@@ -77,7 +77,7 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
         src / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    for name in ("__init__.py", "%s.py" % MODULE):
+    for name in ("__init__.py", "gate_args.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,
             root / ".ci" / "rediacc_ci" / "quality" / name,

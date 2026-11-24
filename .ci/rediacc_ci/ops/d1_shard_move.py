@@ -7,7 +7,7 @@ WHY IT EXISTS. Each region has a directory database (shard 0, where every global
 
 THE TENANT SET is read from `SHARD_CLASS` in private/account/src/db/shard-router.ts at run time, each export name mapped to its SQL table through schema.ts and config-schema.ts, so the tool follows the router and never carries a second list. Each tenant table is selected by the first rule its columns fit:
   - a `subscription_id` column: the moved subscriptions (`event_log` also takes its org-level rows: no subscription, a moved org);
-  - `config_stores`: `org_id` in the moved orgs (`subscriptions.org_id` is the subscription-to-org relation);
+  - `config_stores` and `audit_compaction_state` (one row per org, keyed by `org_id`): `org_id` in the moved orgs (`subscriptions.org_id` is the subscription-to-org relation);
   - a `config_store_id` column: the moved stores; `config_entry_id`: the moved entries.
 A tenant table no rule fits refuses the run: the registry grew a table this tool cannot scope.
 
@@ -295,6 +295,10 @@ class Scope:
     entries: set[str] = field(default_factory=set)
 
 
+# Tenant tables with one row per org and no subscription column: they move with the org, selected by `org_id`.
+ORG_KEYED = ("config_stores", "audit_compaction_state")
+
+
 def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:
     """The WHERE clause selecting the moved rows of a tenant table; None when the set is empty."""
     if "subscription_id" in columns:
@@ -305,7 +309,7 @@ def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:
                 in_list(scope.orgs),
             )
         return clause
-    if table == "config_stores":
+    if table in ORG_KEYED:
         return "org_id IN %s" % in_list(scope.orgs) if scope.orgs else None
     if "config_store_id" in columns:
         return "config_store_id IN %s" % in_list(scope.stores) if scope.stores else None

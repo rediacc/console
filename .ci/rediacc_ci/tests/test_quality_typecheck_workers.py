@@ -344,27 +344,35 @@ def test_a_failing_npm_under_install_only_still_stops_the_run(tmp_path) -> None:
 
 
 def test_defect_a_an_unknown_argument_is_silently_a_full_run(tmp_path) -> None:
-    """`--isntall` is one letter from `--install` and does the OPPOSITE of what the caller asked: a full typecheck instead of an install-only pass. The twin has no `*)` arm, so there is nothing to report it."""
-    assert port.AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN
+    """`--isntall` is one letter from `--install` and the twin did the OPPOSITE of what the caller asked: a full typecheck instead of an install-only pass. The port's entry refuses it by name, runs nothing, and the twin still shows the defect, which is what the refusal repairs."""
+    assert not port.AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN
     _root, old, new = run_both(tmp_path, args=("--isntall",))
-    _agree(old, new, "unknown-arg")
 
-    proc, calls = old
-    assert proc.returncode == 0
-    assert "npx --no-install tsc --noEmit -p workers/alpha/tsconfig.json" in _calls(calls)
-    assert (
-        proc.stdout.splitlines()[-1] == "typecheck-workers: 2 worker project(s) typechecked clean"
-    )
+    old_proc, old_calls = old
+    assert old_proc.returncode == 0
+    assert "npx --no-install tsc --noEmit -p workers/alpha/tsconfig.json" in _calls(old_calls)
+
+    new_proc, new_calls = new
+    assert new_proc.returncode == 2
+    assert "unknown argument '--isntall'" in new_proc.stderr
+    assert "--list" in new_proc.stderr
+    assert new_proc.stdout == ""
+    assert _calls(new_calls) == _calls("")
 
 
 def test_defect_a_holds_for_help_too(tmp_path) -> None:
-    """`--help` is the one an operator is most likely to type, and it installs and typechecks the whole estate instead of printing usage."""
+    """`--help` is the one an operator is most likely to type; the twin installed and typechecked the whole estate instead of printing usage, and the port refuses it by name."""
     _root, old, new = run_both(tmp_path, args=("--help",))
-    _agree(old, new, "help")
 
-    proc, _log = old
-    assert proc.returncode == 0
-    assert "typechecked clean" in proc.stdout
+    old_proc, _log = old
+    assert old_proc.returncode == 0
+    assert "typechecked clean" in old_proc.stdout
+
+    new_proc, new_calls = new
+    assert new_proc.returncode == 2
+    assert "unknown argument '--help'" in new_proc.stderr
+    assert "typechecked clean" not in new_proc.stdout
+    assert _calls(new_calls) == _calls("")
 
 
 def test_defect_b_a_partial_find_failure_is_a_smaller_green_run(tmp_path) -> None:

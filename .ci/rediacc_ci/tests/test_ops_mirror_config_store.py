@@ -1393,7 +1393,9 @@ def test_read_source_resolves_the_listed_prefix(dbs) -> None:
 
 def test_an_ambiguous_prefix_refuses(dbs) -> None:
     src = dbs[0]
-    ins(src, "config_stores", id=mod.prefix(STORE) + "-second-store", org_id=ORG, sdk_master="m",
+    # One store per org is a unique index, so the second store with this prefix belongs to another org.
+    bench_org(src, "org-other", "cus_other")
+    ins(src, "config_stores", id=mod.prefix(STORE) + "-second-store", org_id="org-other", sdk_master="m",
         server_secret="s", encrypted_org_passphrase="e", created_at=NOW, updated_at=NOW)  # fmt: skip
     with pytest.raises(mod.RefusedError, match="matches 2 stores on the source"):
         mod.read_source(Sqlite(src), mod.prefix(STORE), NOW)

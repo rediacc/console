@@ -98,6 +98,8 @@ def _run(argv, home):
     env = dict(os.environ)
     env["PYTHONPATH"] = ci_dir + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["HOME"] = str(home)
+    # The session resource profiler (.claude/hooks/profile) records every python3 it arms under $HOME/.claude/resprofile; that is the harness, not this program, so it is switched off for the run that asserts the program writes nothing.
+    env["WORKLIST_PROFILE"] = "off"
     return subprocess.run(
         [sys.executable, "-m", "rediacc_ci.native", *argv],
         env=env,

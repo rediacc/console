@@ -1274,6 +1274,7 @@ if (req.op === 'setup') {
     sdkDerived: await cc.importAesKey(cc.fromBase64(req.sdkDerived)),
     cek: await cc.importAesKey(cc.fromBase64(req.cek)),
     storeId: req.storeId,
+    cekGeneration: req.cekGeneration,
   });
   out = { encryptedBlob: payload.encryptedBlob, envelope: payload.envelope };
 } else if (req.op === 'seal-cek') {
@@ -2277,6 +2278,7 @@ def _push_proof_config(world: Owner, keys: StoreKeys) -> None:
             "sdkDerived": session.get("sdk_derived"),
             "cek": keys.cek,
             "storeId": keys.store_id,
+            "cekGeneration": session.get("cekGeneration"),
         }
     )
     body = {
