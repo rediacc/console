@@ -116,7 +116,7 @@ def test_reported_item_reference_resolves_to_the_lease_worker():
 
 def test_exit_fires_only_after_it_was_seen_running_and_is_gone_from_event_and_proc():
     arm = arm_of(["EXIT:b1234567"], at_min=0)
-    seen = {}
+    seen: dict[str, list[str]] = {}
     A.note_running(seen, [({}, arm)], {"b1234567"}, T0 + datetime.timedelta(minutes=1))
     assert seen == {"0123abcd": ["b1234567"]}
     # Still running: held.
@@ -392,7 +392,7 @@ def test_live_arm_is_inert_on_a_done_item():
     arm = arm_of(["PUSHED:head"])
     assert A.live_arm({"state": " ", "arm": arm}) is arm
     assert A.live_arm({"state": "x", "arm": arm}) is None
-    assert A.live_arm({"state": " ", "arm": dict(arm, started_at=at(1))}) is None
+    assert A.live_arm({"state": " ", "arm": dict(arm or {}, started_at=at(1))}) is None
 
 
 # ---------------------------------------------------------------------------- the store: fold, latch, compaction

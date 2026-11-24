@@ -5,6 +5,8 @@ A development tree whose landing PR had merged asked gh three times per stop for
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from rediacc_hooks.tests import wlfix
@@ -92,7 +94,7 @@ def test_control_a_gh_seam_always_asks(counted):
 def test_a_merged_answer_is_kept_and_a_no_is_not(monkeypatch, tmp_path):
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     seen = []
-    answer = [[]]
+    answer: list[Any] = [[]]
 
     def call(argv, _cwd=None, **_k):
         seen.append(argv)

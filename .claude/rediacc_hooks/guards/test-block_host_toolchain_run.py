@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 import _hookpath
 
@@ -139,7 +140,7 @@ box_name = subprocess.run(
 ).stdout.strip()
 have_box = box_name != ""
 
-cases = []
+cases: list[tuple[Any, Any, str]] = []
 
 # --- ALLOW: the half that decides whether this guard survives ---------------
 cases.append(

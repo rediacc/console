@@ -145,6 +145,8 @@ def _load_ledger_shell_guard():
     spec = importlib.util.spec_from_file_location(
         "ledger_shell_write_under_test", guards.HERE / "block_live_proof_ledger_shell_write.py"
     )
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

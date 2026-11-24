@@ -164,7 +164,7 @@ def test_the_vm_and_backup_tree_readers_read_a_receipt_and_are_not_the_verdict_f
     """edfc3e69.1/.2: `readers(...)["tree"]` is a `(root, tree)` reader: it returns the per-tree archive its module reads, and it is neither row's `admit`. Control: a tree with no archive reads None."""
     tree = "e" * 40
     doc = {"tree": tree, "verdict": "VERIFIED"}
-    held = {"archive": None}
+    held: dict[str, dict[str, str] | None] = {"archive": None}
     fake = types.SimpleNamespace(
         read_archive=lambda _root, _tree: held["archive"], read_latest=lambda _root: None
     )

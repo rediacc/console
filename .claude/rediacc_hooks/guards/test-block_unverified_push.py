@@ -18,6 +18,7 @@ import tempfile
 import time
 import types
 from typing import Any
+from unittest import mock
 
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
@@ -2836,12 +2837,11 @@ def test_ci_receipt_origin():
             code, err = answers[min(len(runs), len(answers)) - 1]
             return subprocess.CompletedProcess(argv, code, "", err)
 
-        saved_run, saved_sleep = subprocess.run, time.sleep
-        subprocess.run, time.sleep = fake_run, lambda _s: None
-        try:
+        with (
+            mock.patch.object(subprocess, "run", fake_run),
+            mock.patch.object(time, "sleep", return_value=None),
+        ):
             return GM.gh_attestation_verifier(data, sha_head, GM.CI_ATTESTATION_SPEC), len(runs)
-        finally:
-            subprocess.run, time.sleep = saved_run, saved_sleep
 
     cases.append(
         (

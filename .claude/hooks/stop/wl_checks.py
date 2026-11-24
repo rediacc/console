@@ -2948,7 +2948,7 @@ def release_local_running(root, proc="/proc"):
 
 def armed_blocks_now():
     """True when `armed-action-due` blocks at this stop's effort level. A fired arm covers its item and lease only while it does (Design 6), so exactly one check blocks on the held work at every level. With no level active (a direct call outside a stop) the effort reader answers BLOCK."""
-    return wl_effort.verdict("armed-action-due", wl_effort.active()) == wl_effort.BLOCK
+    return wl_effort.verdict("armed-action-due", wl_effort.active() or "") == wl_effort.BLOCK
 
 
 def armed_sweep(worklist, session_id, fold, event, root, state_doc, now=None):

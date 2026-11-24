@@ -1253,8 +1253,9 @@ def _fold_events(events, statuses=None):
                 rec.setdefault("upd", rec["first"])
                 md_keys.add(k)
             for c in ev.get("chg") or []:
-                rec = records.get(c.get("k"))
-                if rec is not None:
+                chg_rec = records.get(c.get("k"))
+                if chg_rec is not None:
+                    rec = chg_rec
                     rec["state"] = c.get("s", rec["state"])
                     rec["md_s"] = c.get("s", rec.get("md_s", " "))
                     rec["upd"] = at
@@ -1320,10 +1321,11 @@ def _fold_events(events, statuses=None):
             cli_ids.add(rid)
         elif kind in ("arm", "armfire", "armstart", "disarm"):
             # ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 1). `aid` names one arm generation: an `armfire`, `armstart` or `disarm` naming another `aid` than the item's current arm is stale and ignored, an `arm` naming a new `aid` starts a fresh generation (verdict and latch reset, which is how a deliberate re-arm works), a second `armfire` for one `aid` is a no-op (first wins), and an `arm` replayed with the `aid` the item already carries (a compaction's `am` plus a peer's surviving copy) keeps the latch.
-            rec = records.get(ev.get("id"))
+            arm_rec = records.get(ev.get("id"))
             aid = str(ev.get("aid") or "")
-            if rec is None or not aid:
+            if arm_rec is None or not aid:
                 continue
+            rec = arm_rec
             cur = rec.get("arm") if isinstance(rec.get("arm"), dict) else None
             if kind == "arm":
                 if cur is not None and cur.get("aid") == aid:
@@ -1366,14 +1368,16 @@ def _fold_events(events, statuses=None):
             continue
         elif kind == "reassign":
             # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who actually wrote the item. Only the `o` field moves; `by` on the original events still names the phantom, because it really did write them.
-            rec = records.get(ev.get("id"))
-            if rec is not None:
+            owner_rec = records.get(ev.get("id"))
+            if owner_rec is not None:
+                rec = owner_rec
                 rec["owner"] = ev.get("o")
                 rec["upd"] = at
         elif kind in ("state", "update", "lease", "unlease", "tomb", "triage"):
-            rec = records.get(ev.get("id"))
-            if rec is None:
+            ev_rec = records.get(ev.get("id"))
+            if ev_rec is None:
                 continue
+            rec = ev_rec
             if kind == "state":
                 rec["state"] = ev.get("s", rec["state"])
                 note = str(ev.get("note", "")).strip()

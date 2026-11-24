@@ -122,7 +122,7 @@ def ledger_paths(root=CHECKOUT):
 
 def read_ledger(root=CHECKOUT):
     """Rows of the archives and the live ledger, in file order."""
-    rows = []
+    rows: list[dict] = []
     for _attempt in range(3):
         paths = ledger_paths(root)
         rows = []

@@ -115,8 +115,8 @@ def brief_sha(path) -> str:
 
 def default_expiry(at: datetime.datetime, when: list[str]) -> datetime.datetime:
     """Design 3: the latest NOT-BEFORE + 24 h for a time arm, else the arm stamp + 24 h."""
-    instants = [parse_instant(t.split(":", 1)[1]) for t in when if t.startswith("NOT-BEFORE:")]
-    instants = [i for i in instants if i is not None]
+    parsed = [parse_instant(t.split(":", 1)[1]) for t in when if t.startswith("NOT-BEFORE:")]
+    instants = [i for i in parsed if i is not None]
     base = max(instants) if instants else at
     return base + datetime.timedelta(hours=DEFAULT_EXPIRY_H)
 
@@ -456,7 +456,7 @@ def vm_latest(root) -> tuple[dict | None, str]:
 
 def proc_task_ids(proc="/proc") -> set:
     """Background task ids some live pid writes `tasks/<id>.output` to (fd 1 or 2). An unreadable /proc answers the empty set, which never alone fires an EXIT token: the Stop event's own running list must also have dropped the task."""
-    out = set()
+    out: set[str] = set()
     try:
         pids = [d.name for d in pathlib.Path(proc).iterdir() if d.name.isdigit()]
     except OSError:

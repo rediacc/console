@@ -143,7 +143,7 @@ def _merged_cache_path():
 
 def _merged_cached(wl_gh, key) -> bool:
     load = getattr(wl_gh, "cache_load", None)
-    return bool(load) and (load(_merged_cache_path()) or {}).get(key) is True
+    return load is not None and (load(_merged_cache_path()) or {}).get(key) is True
 
 
 def _merged_keep(wl_gh, key) -> None:

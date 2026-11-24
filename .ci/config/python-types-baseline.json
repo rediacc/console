@@ -2207,13 +2207,6 @@
       "message": "Incompatible types in assignment (expression has type \"TextIOWrapper[_WrappedBuffer]\", variable has type \"BufferedRandom\")"
     },
     {
-      "id": "1fb41a0effb57cd1",
-      "file": ".claude/hooks/stop/wl_store.py",
-      "code": "assignment",
-      "count": 3,
-      "message": "Incompatible types in assignment (expression has type \"dict[str, Any] | None\", variable has type \"dict[str, Any]\")"
-    },
-    {
       "id": "d0aee8846d677c62",
       "file": ".claude/hooks/stop/wl_store.py",
       "code": "var-annotated",

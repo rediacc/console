@@ -508,6 +508,8 @@ def test_post_bash_names_the_deferral_instead_of_calling_it_covered(reviewworld)
 
 def _load_review_hook():
     spec = importlib.util.spec_from_file_location("review_commit_hook_under_test", HOOK)
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

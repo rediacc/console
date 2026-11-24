@@ -195,13 +195,17 @@ def _lease_world(monkeypatch):
 
 
 def _drive_worktree(monkeypatch, items):
-    notes, blocks = [], []
+    notes: list[str] = []
+    blocks: list[str] = []
     monkeypatch.setattr(CK, "vm_check_running", lambda *_a: False)
     monkeypatch.setattr(CK, "release_local_running", lambda *_a: False)
     monkeypatch.setattr(CK, "green_receipt_on_unpushed_head", lambda *_a: False)
-    monkeypatch.setattr(
-        CK, "outq_add", lambda _w, _s, _st, _k, text, _p, **_kw: notes.append(text) or True
-    )
+
+    def outq_add(_w, _s, _st, _k, text, _p, **_kw):
+        notes.append(text)
+        return True
+
+    monkeypatch.setattr(CK, "outq_add", outq_add)
     monkeypatch.setattr(WT, "live_work", lambda *_a: {"ids": set(), "trees": set(), "cwd": ""})
     CK.worktree_check(
         None,

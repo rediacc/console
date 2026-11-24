@@ -28,7 +28,9 @@ def ago(minutes):
 def add(wl, text="held landing (deadbeef)"):
     got = wl.cli("--add", ME, text)
     assert got.rc == 0, got.err
-    return re.search(r"added #([0-9a-f]+)", got.out).group(1)
+    found = re.search(r"added #([0-9a-f]+)", got.out)
+    assert found, got.out
+    return found.group(1)
 
 
 def events(wl, kind):
@@ -229,7 +231,9 @@ def test_lease_on_a_held_lease_is_refused_and_an_unheld_one_accepted(wl):
 
 def test_another_sessions_item_is_refused(wl):
     got = wl.cli_as("cafe1234", "--add", "cafe1234", "a peer's item (cafe1234)")
-    rid = re.search(r"added #([0-9a-f]+)", got.out).group(1)
+    found = re.search(r"added #([0-9a-f]+)", got.out)
+    assert found, got.out
+    rid = found.group(1)
     refused(
         wl,
         "never arm another session's tracking",

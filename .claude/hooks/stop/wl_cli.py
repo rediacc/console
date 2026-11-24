@@ -16,7 +16,8 @@ import select
 import sys
 import tempfile
 import time
-from typing import Any
+from collections.abc import Callable
+from typing import Any, NoReturn
 
 # What worklist.py hands over in bind(): its probed sibling aliases, the broken-module map and the stdlib-only twins of the wl_core path helpers. Declared here so a reader (and the linter) sees every name this module takes from its host.
 BOUND = (
@@ -2896,7 +2897,7 @@ def _armed_world(root, worklist, fold, me):
     return world
 
 
-def _armed_item(fold, item_id, me, die):
+def _armed_item(fold, item_id, me, die: Callable[[str], NoReturn]):
     """The record `item_id` names, refused when absent or another session's."""
     rec = fold.by_id.get(item_id)
     if rec is None:
@@ -2916,7 +2917,9 @@ def _tracked(root, rel):
     return rc == 0
 
 
-def _arm_one(worklist, root, fold, me, rec, tokens, run, cmd, lease, expires, die):
+def _arm_one(
+    worklist, root, fold, me, rec, tokens, run, cmd, lease, expires, die: Callable[[str], NoReturn]
+):
     """Validate one arm against Design 2 and 7, append its `arm` event and print what was armed. Every refusal goes through `die` before anything is written."""
     import wl_armed as A
 
@@ -2982,7 +2985,13 @@ def _arm_one(worklist, root, fold, me, rec, tokens, run, cmd, lease, expires, di
             die("--expires %r is not +<hours> between +1 and +%d" % (expires, A.MAX_EXPIRY_H))
         exp = now + datetime.timedelta(hours=int(m.group(1)))
         latest = max(
-            (A.parse_instant(t.split(":", 1)[1]) for t in when if t.startswith("NOT-BEFORE:")),
+            (
+                inst
+                for inst in (
+                    A.parse_instant(t.split(":", 1)[1]) for t in when if t.startswith("NOT-BEFORE:")
+                )
+                if inst is not None
+            ),
             default=None,
         )
         if latest is not None and exp <= latest:
@@ -3018,7 +3027,7 @@ def _armed_cli(argv):
     """`--arm`, `--disarm`, `--armed-start`, `--armed-list`, `--arm-from-survey` (agent/plans/PLAN-armed-actions.md Design 7, 9). Every write goes through the store's append-only events; every refusal exits non-zero before anything is written."""
     import wl_armed as A
 
-    def die(msg):
+    def die(msg) -> NoReturn:
         print(msg, file=sys.stderr)
         sys.exit(1)
 
@@ -3044,17 +3053,19 @@ def _armed_cli(argv):
         if not rows:
             print("no live arms for %s" % me)
             return
-        for rec, arm in rows:
+        for held_rec, held_arm in rows:
             print(
                 "#%s aid=%s %s when=%s %s exp=%s%s"
                 % (
-                    rec["id"],
-                    arm["aid"],
-                    arm.get("verdict") or A.ARMED,
-                    " AND ".join(arm.get("when") or []),
-                    ("run=%s" % arm["run"]) if arm.get("run") else ("cmd=%r" % arm.get("cmd")),
-                    arm.get("exp"),
-                    (" lease=%s" % arm["lease"]) if arm.get("lease") else "",
+                    held_rec["id"],
+                    held_arm["aid"],
+                    held_arm.get("verdict") or A.ARMED,
+                    " AND ".join(held_arm.get("when") or []),
+                    ("run=%s" % held_arm["run"])
+                    if held_arm.get("run")
+                    else ("cmd=%r" % held_arm.get("cmd")),
+                    held_arm.get("exp"),
+                    (" lease=%s" % held_arm["lease"]) if held_arm.get("lease") else "",
                 )
             )
         return
@@ -3067,34 +3078,34 @@ def _armed_cli(argv):
             text = pathlib.Path(argv[2]).read_text(encoding="utf-8")
         except OSError as exc:
             die("the survey %s cannot be read (%s)" % (argv[2], exc))
-        rows, problems = A.survey_rows(text)
+        entries, problems = A.survey_rows(text)
         if problems:
             die("REFUSED: %s" % "; ".join(problems))
         # EVERY ROW IS PARSED AND ITS DRAFT READ BEFORE ANY IS WRITTEN, so a bad row there leaves nothing behind. A write failure partway through the loop below (disk, a refusal in _arm_one) leaves the earlier rows armed, and a re-run adds them again.
         world = _armed_world(root, worklist, fold, me)
-        planned = []
-        for row in rows:
+        planned: list[tuple[dict, list[str], str]] = []
+        for entry in entries:
             try:
-                when = A.parse_when(A.trigger_tokens(row["trigger"]), world)
+                when = A.parse_when(A.trigger_tokens(entry["trigger"]), world)
             except A.TokenError as exc:
-                die("REFUSED: row %r: %s" % (row["blocker"], exc))
-            draft = pathlib.Path(row["draft"])
+                die("REFUSED: row %r: %s" % (entry["blocker"], exc))
+            draft = pathlib.Path(entry["draft"])
             try:
                 body = draft.read_text(encoding="utf-8")
             except OSError as exc:
                 die(
                     "REFUSED: row %r: the brief draft %s cannot be read (%s)"
-                    % (row["blocker"], draft, exc)
+                    % (entry["blocker"], draft, exc)
                 )
-            planned.append((row, when, body))
+            planned.append((entry, when, body))
         me8 = S.agent_session_slug(me)
         written = []
-        for row, when, body in planned:
+        for entry, when, body in planned:
             rid = S.add_item(
                 worklist,
                 me,
                 "Armed start behind %s: dependent boxes %s (%s)"
-                % (row["blocker"], row["sigs"], me8),
+                % (entry["blocker"], entry["sigs"], me8),
             )
             rel = A.brief_rel(me8, rid)
             path = pathlib.Path(root) / rel
