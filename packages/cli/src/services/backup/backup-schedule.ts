@@ -33,7 +33,7 @@ import { pendingExitCode, runCommandJob } from '../jobs/command-job.js';
 import type { PlannedStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
-import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
+import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 import {
   mayOfferReplacement,
   renetHoldReason,
@@ -146,7 +146,7 @@ interface LocalMachine {
  * Provision renet + refresh licenses. Skipped in dry-run so the command
  * is purely read-only against the remote.
  */
-async function preDeployProvisioning(
+export async function preDeployProvisioning(
   machineName: string,
   localConfig: Awaited<ReturnType<typeof configService.getLocalConfig>>,
   machine: LocalMachine,
@@ -154,10 +154,9 @@ async function preDeployProvisioning(
   options: PushScheduleOptions
 ): Promise<string> {
   if (options.dryRun) {
-    // Use the version-specific install path so dry-run's expected
-    // ExecStart= matches exactly what a real deploy would write (and
-    // therefore hashes match against previously-deployed unit files).
-    return REMOTE_INSTALL_PATH;
+    // The stable `current` path, the same one a real deploy writes, so the
+    // dry-run's expected ExecStart= hashes match the deployed unit files.
+    return REMOTE_RENET_PATH;
   }
   if (renetMayUpload('provision')) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
@@ -187,7 +186,10 @@ async function preDeployProvisioning(
       `Repo licenses refreshed: scanned ${repoRefresh.scanned}, issued ${repoRefresh.issued}, refreshed ${repoRefresh.refreshed}, unchanged ${repoRefresh.unchanged}, failed ${repoRefresh.failed}`
     );
   }
-  return remotePath;
+  // Units name the stable `current` path, never the versioned slot remotePath points at: a
+  // versioned ExecStart= keeps running the replaced binary after an upgrade (2026-11-23,
+  // hostinger stale_binary). remotePath stays the binary the license refresh above ran.
+  return REMOTE_RENET_PATH;
 }
 
 /**
