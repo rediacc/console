@@ -7056,6 +7056,7 @@ def _stop_store_freshness(ns):
             # A stood-down tree skips the QUEUE.md read; `due` names the stand-down either way.
             0 if wl_writersnow.stand_down(ns["_loop"]) else wl_writersnow.promoted_open(ns["root"]),
             ns["_loop"],
+            root=ns["root"],
         )
     except Exception as exc:
         note_read_failure("writers-now-due", exc)
