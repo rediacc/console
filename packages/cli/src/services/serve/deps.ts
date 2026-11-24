@@ -24,6 +24,8 @@ export interface ExecutorAuditEvent {
   functionName?: string;
   machineName?: string;
   params: Record<string, unknown>;
+  /** The params of the renet call `functionName` names, observed like it; never shipped whole (audit.ts reads the repository identity out of them). */
+  functionParams?: Record<string, unknown>;
   success: boolean;
   exitCode: number;
   durationMs: number;

@@ -182,6 +182,11 @@ const baseData = z.object({
   functionName: z.string().min(1).max(100),
   machineName: z.string().min(1).max(200),
   repoName: z.string().min(1).max(200).optional(),
+  // Set by the executor (rdc serve) on a `repository_create` or `repository_fork` event: the GUID of the repository image the call made, so `executor_orphans` joins the event to the image GUID `repo admin orphan list` reports.
+  guid: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .optional(),
   success: z.boolean(),
   exitCode: z.number().int(),
   durationMs: z.number().int().min(0),

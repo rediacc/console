@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AuditEventsRequestSchema, functionNameToEventType } from '../event-schema.js';
+import {
+  AuditEventSchema,
+  AuditEventsRequestSchema,
+  functionNameToEventType,
+} from '../event-schema.js';
 
 const KEY = '0d6f3a52-8b1e-4c7a-9f2d-5e4b3a2c1d0e';
 
@@ -79,5 +83,34 @@ describe('functionNameToEventType', () => {
     ['proxy_acme_fix', 'cli.proxy_acme_fix'],
   ])('maps %s to %s', (functionName, type) => {
     expect(functionNameToEventType(functionName)).toBe(type);
+  });
+});
+
+describe('audit event guid', () => {
+  const GUID = 'e9304ffc-0c96-47f2-a2fb-6076c1df6f52';
+  const createEvent = (data: Record<string, unknown>) => ({
+    type: 'cli.repo.create',
+    idempotencyKey: KEY,
+    data: {
+      ...outcome,
+      functionName: 'repository_create',
+      machineName: 'm1',
+      repoName: 'alpha',
+      commandPath: 'repo create',
+      ...data,
+    },
+  });
+
+  it('keeps the GUID of the image a create made, so the stored data carries it', () => {
+    const parsed = AuditEventSchema.parse(createEvent({ guid: GUID }));
+    expect(parsed.data).toMatchObject({ repoName: 'alpha', guid: GUID });
+  });
+
+  it('refuses a guid that is not a GUID (control)', () => {
+    expect(AuditEventSchema.safeParse(createEvent({ guid: 'alpha' })).success).toBe(false);
+  });
+
+  it('accepts an event without a guid, as the CLI emitter sends it', () => {
+    expect(AuditEventSchema.parse(createEvent({})).data).not.toHaveProperty('guid');
   });
 });

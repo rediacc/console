@@ -24,6 +24,8 @@ SCHEMA = (
     "org_id TEXT, data TEXT, timestamp TEXT NOT NULL)"
 )
 
+# The GUID the executor ships on a fork event (audit.ts repositoryIdentity), passed through unchanged.
+FORK_GUID = "e9304ffc-0c96-47f2-a2fb-6076c1df6f52"
 EXECUTOR = {"commandPath": "repo create", "functionName": "x", "success": True}
 # (id, type, source, org, data, timestamp)
 SEED = [
@@ -40,7 +42,7 @@ SEED = [
         "cli.repo.fork",
         "cli",
         ORG,
-        {"machineName": "m1", "repoName": "alpha:t1", "guid": "g-2", **EXECUTOR},
+        {"machineName": "m1", "repoName": "alpha", "guid": FORK_GUID, **EXECUTOR},
         "2026-11-20T11:00:00Z",
     ),
     (
@@ -129,7 +131,7 @@ def test_json_contract_is_one_line_per_event(
         "at": "2026-11-20T10:00:00Z",
         "function": "repository_create",
     }
-    assert json.loads(lines[1])["guid"] == "g-2"
+    assert json.loads(lines[1])["guid"] == FORK_GUID
     assert json.loads(lines[2])["repo"] is None
     assert ORG not in out.out
     assert ORG not in out.err

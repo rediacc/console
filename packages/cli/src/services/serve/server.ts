@@ -361,7 +361,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         return;
       }
       clearInterval(heartbeat);
-      const { functionName, machineName, stdout, stderr } = dispatched;
+      const { functionName, functionParams, machineName, stdout, stderr } = dispatched;
       let { result } = dispatched;
 
       // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
@@ -375,6 +375,7 @@ export function createServeApp(deps: ServeDeps): Hono {
               commandPath: request.pathKey,
               ...(request.requestId ? { requestId: request.requestId } : {}),
               ...(functionName ? { functionName } : {}),
+              ...(functionParams ? { functionParams } : {}),
               // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside the action body); fall back to the request for verbs that still name the machine explicitly (backup, job).
               machineName: machineName ?? requestedMachine,
               params: request.params,

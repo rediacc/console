@@ -24,6 +24,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { type AuditEvent, functionNameToEventType } from '@rediacc/shared';
+import { isValidGuid } from '@rediacc/shared/validation';
 import { VERSION } from '../../version.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { ExecutorAuditEvent } from './deps.js';
@@ -85,9 +86,12 @@ export function auditIdempotencyKey(event: ExecutorAuditEvent): string {
  * type, or that resolved no machine) records as `cli.command`, keyed by its
  * path: the one-event-per-command guarantee does not depend on the mapping.
  *
- * Params are NOT shipped: they routinely carry repository names, and can carry
- * a secret value on a `repo secret set`. The audit trail records WHAT ran and
- * WHO ran it, not the payload.
+ * Params are NOT shipped: they can carry a secret value on a `repo secret set`.
+ * The audit trail records WHAT ran and WHO ran it, not the payload. The one
+ * exception is the repository identity of a function-mapped event, read out of
+ * the observed call's params (repositoryIdentity): the repository it acted on,
+ * as the CLI's own emitter records it, and the GUID of the image a create or
+ * fork made, which is how an orphaned image is traced back to its event.
  */
 function buildExecutorAuditEvent(
   event: ExecutorAuditEvent,
@@ -112,7 +116,16 @@ function buildExecutorAuditEvent(
   const { functionName, machineName } = event;
   const mapped = functionName ? functionNameToEventType(functionName) : null;
   if (mapped && functionName && machineName) {
-    return mappedEvent(mapped, { functionName, machineName, ...outcome }, envelope);
+    return mappedEvent(
+      mapped,
+      {
+        functionName,
+        machineName,
+        ...repositoryIdentity(functionName, event.functionParams),
+        ...outcome,
+      },
+      envelope
+    );
   }
 
   return {
@@ -123,6 +136,37 @@ function buildExecutorAuditEvent(
       ...outcome,
     },
     ...envelope,
+  };
+}
+
+/** The param that carries the GUID of the image each image-making function creates (repo-create-delete.ts, repo-fork.ts buildForkParams). */
+const MADE_GUID_PARAM: Readonly<Record<string, string>> = {
+  repository_create: 'guid',
+  repository_fork: 'tag',
+};
+
+/** The longest repoName the audit schema accepts (event-schema.ts baseData). */
+const REPO_NAME_MAX = 200;
+
+/**
+ * The repository identity of one observed renet call: `repoName` from its
+ * `repository` param, and for `repository_create` / `repository_fork` the `guid`
+ * of the image it made. A value the audit schema would refuse is left out, so a
+ * malformed param never costs the event.
+ */
+export function repositoryIdentity(
+  functionName: string,
+  params: Record<string, unknown> | undefined
+): { repoName?: string; guid?: string } {
+  if (!params) return {};
+  const repo = params.repository;
+  const guidParam = MADE_GUID_PARAM[functionName];
+  const guid = guidParam ? params[guidParam] : undefined;
+  return {
+    ...(typeof repo === 'string' && repo !== '' && repo.length <= REPO_NAME_MAX
+      ? { repoName: repo }
+      : {}),
+    ...(typeof guid === 'string' && isValidGuid(guid) ? { guid: guid.toLowerCase() } : {}),
   };
 }
 

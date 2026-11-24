@@ -141,6 +141,8 @@ export interface DispatchOutcome {
    * the audit would otherwise record `undefined` for it.
    */
   machineName?: string;
+  /** The params of the call `functionName` names, observed with it: the audit reads the repository identity out of them. */
+  functionParams?: Record<string, unknown>;
 }
 
 /** The error code of a refusal that carries none of its own: another job holds the scope. */
@@ -382,6 +384,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let lastResult: ExecuteResult | undefined;
   let functionName: string | undefined;
   let machineName: string | undefined;
+  let functionParams: Record<string, unknown> | undefined;
 
   // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
   const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
@@ -391,6 +394,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     async execute(options) {
       functionName = options.functionName;
       machineName = options.machineName;
+      functionParams = options.params;
       let result: ExecuteResult;
       try {
         result = await args.executor.execute({
@@ -454,6 +458,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     stderr,
     functionName,
     machineName,
+    ...(functionParams ? { functionParams } : {}),
   };
 
   if (!outcome.failed) {
