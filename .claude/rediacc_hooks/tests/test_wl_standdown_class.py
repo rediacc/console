@@ -108,16 +108,26 @@ def test_the_block_message_names_writers_now_as_the_action_to_run_now() -> None:
 # ---- only a recorded round counts ------------------------------------------------------------
 
 
-def test_hand_spawned_writers_are_not_a_round() -> None:
+def test_hand_spawned_writers_are_not_a_round(tmp_path) -> None:
     """`due` reads only the round rows `--writers-now-start` appends (wl_writersnow.read_rounds over LEDGER_REL); a session whose writers were spawned by hand, with no round row, still fires."""
     now = datetime.datetime(2026, 11, 24, 3, 15, tzinfo=datetime.UTC)
     dev = PS.LoopState(kind=PS.LIVE, role=PS.DEVELOPMENT)
-    fires, facts = WN.due([], "ace763dd", now, 588, dev)
+    fires, facts = WN.due([], "ace763dd", now, 588, dev, root=tmp_path)
     assert fires
     assert facts["last"] is None
-    # Control: one round row of this session inside the hour silences it.
-    row = {"round": "r1", "session": "ace763dd", "at": "2026-11-24T02:30:00Z", "survey": "/tmp/s"}
-    assert WN.due([row], "ace763dd", now, 588, dev)[0] is False
+    # Control: one round row of this session inside the hour silences it. The round needs a survey written after its start (wl_writersnow.judge_round, 913af37d87): a row naming a survey that was never written stops counting SURVEY_GRACE_MIN minutes after the start.
+    start = datetime.datetime(2026, 11, 24, 2, 30, tzinfo=datetime.UTC)
+    survey = write_survey(tmp_path / "survey.md", start + datetime.timedelta(minutes=5))
+    row = {
+        "round": "r1",
+        "session": "ace763dd",
+        "at": "2026-11-24T02:30:00Z",
+        "survey": str(survey),
+    }
+    assert WN.due([row], "ace763dd", now, 588, dev, root=tmp_path)[0] is False
+    # And the same row with its survey gone is not a round, so the control above is the survey and not the row alone.
+    survey.unlink()
+    assert WN.due([row], "ace763dd", now, 588, dev, root=tmp_path)[0] is True
 
 
 def plant_live_lease(fix, item_id: str, worker: str) -> None:
@@ -161,13 +171,18 @@ def other_check_outstanding(fix, own: str) -> None:
     epic_for(fix, own.rsplit("/", 1)[-1], "aaaa0001")
 
 
+def write_survey(path, at):
+    """A survey file whose mtime is `at`: written after its round started, so wl_writersnow.judge_round counts the round (913af37d87)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# survey\n\n| box | group |\n|---|---|\n| B1 | CODE |\n", encoding="utf-8")
+    WN.os.utime(path, (at.timestamp(), at.timestamp()))
+    return path
+
+
 def round_minutes_ago(fix, minutes: float) -> None:
-    WN.append_round(
-        fix.proj,
-        wlfix.ME,
-        "/tmp/s.md",
-        datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=minutes),
-    )
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=minutes)
+    survey = write_survey(fix.proj / "surveys" / "round.md", start + datetime.timedelta(minutes=1))
+    WN.append_round(fix.proj, wlfix.ME, str(survey), start)
 
 
 def stood_down_line(got) -> str:

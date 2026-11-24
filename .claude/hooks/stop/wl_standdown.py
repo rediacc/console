@@ -61,6 +61,8 @@ CORE = frozenset(
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # A sub-agent an API error killed (wl_roster_resume): only the lead's SendMessage restarts it, and a saturated wait is exactly when its silence would read as a writer still running.
+        "resume-dead-agent",
         # A wait on background work with no wake-up timer (wl_wake): every profile stands the session down to WAIT, which is exactly when a hung task would never wake it.
         "wake-timer",
         # The operator's ownership question for a checklist whose owner is not live: parking it would turn it back into the advisory nobody settles.
@@ -140,6 +142,8 @@ _BUILD_ONLY = frozenset(
         "armed-action-due",
         # A commit landed on the live branch names a still-open box with no investigation row (wl_boxaudit): the tick duty of the plan the branch builds.
         "plan-box-owed",
+        # Box ticks finished writers reported, their commits landed (wl_planbox's pending-tick queue): the same tick duty as plan-box-owed, applied with `worklist.py --apply-ticks`.
+        "ready-ticks",
         _QUEUE_SLOT,
     }
 )
