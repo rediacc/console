@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "c5e022bd5edfdcfa"
+sourceHash: "d5c2da68c3057075"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3901,7 +3901,9 @@ rdc serve [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-p, --port <port>` | {{t:cli.commands.serve.optionPort}} | {{t:cli.docs.optionLabels.no}} | `8080` |
-| `--host <host>` | {{t:cli.commands.serve.optionHost}} | {{t:cli.docs.optionLabels.no}} | `0.0.0.0` |
+| `--host <host>` | {{t:cli.commands.serve.optionHost}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls-cert <path>` | {{t:cli.commands.serve.optionTlsCert}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls-key <path>` | {{t:cli.commands.serve.optionTlsKey}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.serve.optionMode}} | {{t:cli.docs.optionLabels.no}} | `daemon` |
 
 
