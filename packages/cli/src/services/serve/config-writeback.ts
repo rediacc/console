@@ -32,6 +32,7 @@
  * team access table to every push as it does for any member.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
 import { ENVELOPE_VERSION, fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
@@ -189,7 +190,7 @@ export class ConfigChain {
   ): Promise<StoreAnswer> {
     const json = init.body === undefined ? undefined : JSON.stringify(init.body);
     const response = await this.fetch(`${this.accountUrl}${path}`, {
-      method: init.method ?? 'GET',
+      method: init.method ?? DEFAULTS.PROTOCOL.HTTP_METHOD,
       headers: {
         'X-Config-Token': this.token ?? '',
         'x-config-envelope': String(ENVELOPE_VERSION),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildProfile, getPreset, PRESETS } from '../presets.js';
 import { AiConfigSchema, type Profile, ProfileSchema, validateProfile } from '../profile.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 const base: Profile = {
   format: 'openai-chat',
@@ -17,7 +18,7 @@ describe('ProfileSchema', () => {
   });
 
   it('refuses a missing key without byokOnly, accepts it with byokOnly', () => {
-    const { key: _key, ...noKey } = base;
+    const noKey = omitKey(base, 'key');
     expect(ProfileSchema.safeParse(noKey).success).toBe(false);
     expect(ProfileSchema.safeParse({ ...noKey, byokOnly: false }).success).toBe(false);
     expect(
@@ -83,7 +84,7 @@ describe('validateProfile', () => {
   });
 
   it('reports the key rule at /key', () => {
-    const { key: _key, ...noKey } = base;
+    const noKey = omitKey(base, 'key');
     const r = validateProfile(noKey);
     expect(!r.ok && r.issues.map((i) => i.path)).toEqual(['/key']);
   });

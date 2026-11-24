@@ -21,6 +21,7 @@ import {
   type CommandSeverity,
   NOT_PREVIEW,
 } from '../command-safety.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 interface Cmd {
   pathKey: string;
@@ -71,7 +72,7 @@ describe('command safety table', () => {
 
   it('has a severity for every command, and the check names a missing one', () => {
     expect(missingSeverity(COMMANDS, COMMAND_SEVERITY)).toEqual([]);
-    const { 'repo list': _drop, ...without } = COMMAND_SEVERITY;
+    const without = omitKey(COMMAND_SEVERITY, 'repo list');
     expect(missingSeverity(COMMANDS, without)).toEqual(['repo list']);
   });
 
@@ -109,7 +110,7 @@ describe('command safety table', () => {
 
   it('classifies every --dry-run/--apply command, and the check names an unclassified one', () => {
     expect(unclassifiedPreview(COMMANDS, COMMAND_PREVIEW, NOT_PREVIEW)).toEqual([]);
-    const { 'repo gc': _gc, ...withoutGc } = COMMAND_PREVIEW;
+    const withoutGc = omitKey(COMMAND_PREVIEW, 'repo gc');
     expect(unclassifiedPreview(COMMANDS, withoutGc, NOT_PREVIEW)).toEqual(['repo gc']);
     expect(Object.keys(NOT_PREVIEW)).toEqual(['config edit']);
     expect(NOT_PREVIEW['config edit'].length).toBeGreaterThan(0);

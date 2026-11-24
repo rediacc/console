@@ -46,6 +46,7 @@ import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
+import { omitKey } from '../../../utils/omit-key.js';
 
 export const OWNER_TOKEN = 'rdt_owner';
 export const EXECUTOR_TOKEN = 'rdt_executor';
@@ -244,7 +245,7 @@ export async function createFakeConfigStore(
 
   /** The stored document replaced by an accepted push; the server keeps neither tombstones nor the v2 key map. */
   const store = (body: { version: number; encryptedBlob: string; envelope: StoredEnvelope }) => {
-    const { removed: _removed, migrated: _migrated, ...kept } = body.envelope.commitments;
+    const kept = omitKey(omitKey(body.envelope.commitments, 'removed'), 'migrated');
     stored = {
       version: body.version,
       encryptedBlob: body.encryptedBlob,
@@ -447,7 +448,7 @@ export async function createFakeConfigStore(
         },
       });
       const envelope = payload.envelope as unknown as StoredEnvelope;
-      const { removed: _removed, migrated: _migrated, ...kept } = envelope.commitments;
+      const kept = omitKey(omitKey(envelope.commitments, 'removed'), 'migrated');
       stored = {
         version: stored.version + 1,
         encryptedBlob: payload.encryptedBlob,

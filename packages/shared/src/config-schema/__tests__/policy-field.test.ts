@@ -18,6 +18,7 @@ import { LOCAL_ONLY_EXCLUSIONS } from '../coverage.js';
 import { parseConfig, type RdcConfig, RdcConfigSchema } from '../schemas.js';
 import { listSensitivityTemplates } from '../sensitivity.js';
 import { pathsToCommit } from '../walker.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 const POLICY = {
   version: 1 as const,
@@ -57,7 +58,7 @@ describe('policy document in the config', () => {
   });
 
   it('control: the same remote config without policy parses', () => {
-    const { policy: _dropped, ...rest } = localConfig();
+    const rest = omitKey(localConfig(), 'policy');
     const result = RdcConfigSchema.safeParse({ ...rest, remote: structuredClone(REMOTE) });
     expect(result.success).toBe(true);
   });

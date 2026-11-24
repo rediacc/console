@@ -17,6 +17,7 @@ import {
   runInRequestContext,
 } from '../../services/core/request-context.js';
 import { ConfigFileStorage } from '../config-file-storage.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 function base(): RdcConfig {
   return {
@@ -101,7 +102,7 @@ describe('save() under a request scope replays its edit, not its document', () =
 
   it('a key the caller dropped is deleted on the newest copy, the concurrent one kept', async () => {
     const stored = await saveInScope((read) => {
-      const { old: _dropped, ...machines } = read.resources?.machines ?? {};
+      const machines = omitKey(read.resources?.machines ?? {}, 'old');
       return { ...read, resources: { ...read.resources, machines } };
     });
     expect(

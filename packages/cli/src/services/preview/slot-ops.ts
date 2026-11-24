@@ -3,6 +3,7 @@
  * recording the slot a first replacement is about to leave, and pointing `current` back at a pinned slot.
  * The provisioner owns the install paths and the host lock; they arrive here as arguments.
  */
+import { TELEMETRY_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import {
@@ -42,7 +43,7 @@ export async function pinAndRecordTouch(
   const slotDir = parsePinOutput(await sftp.exec(buildPinCommand(replacement.binaryPath, 'sudo')));
   await recordPreviewTouch(machine, {
     slot: slotDir,
-    version: running.version ?? 'unknown',
+    version: running.version ?? TELEMETRY_DEFAULTS.UNKNOWN,
     sha256: running.hash,
     touchedAt: new Date().toISOString(),
   });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AiConfig, Profile } from '../profile.js';
 import { resolveProfile } from '../resolve.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 function profile(model: string, overrides: Partial<Profile> = {}): Profile {
   return {
@@ -116,7 +117,7 @@ describe('resolveProfile', () => {
   });
 
   it('never returns a profile that fails the shape check (a key-less profile without byokOnly)', () => {
-    const { key: _key, ...noKey } = profile('m');
+    const noKey = omitKey(profile('m'), 'key');
     const cfg = { providers: { main: noKey as Profile }, default: 'main' };
     expect(resolveProfile({ shared: cfg })).toMatchObject({ ok: false, reason: 'invalid-profile' });
   });

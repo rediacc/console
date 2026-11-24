@@ -28,6 +28,7 @@ import {
 } from '../index.js';
 import type { EncryptedConfigPayload, FullConfig } from '../types.js';
 import { sealEnvelopeV3 } from './fixtures/envelope-v3.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 const bytesToHex = (data: Uint8Array): string =>
   Array.from(data, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -264,7 +265,7 @@ describe('envelope v4', () => {
 
   it('refuses a v4 envelope missing its wrap fields', async () => {
     const { sdkKey, cek, payload } = await sealV4();
-    const { wrappedConfigKey: _dropped, ...rest } = payload.envelope;
+    const rest = omitKey(payload.envelope, 'wrappedConfigKey');
     await expect(
       selectiveDecrypt({ ...payload, envelope: rest }, cek, sdkKey, bindingOf(payload))
     ).rejects.toThrow(/must carry wrappedConfigKey/);

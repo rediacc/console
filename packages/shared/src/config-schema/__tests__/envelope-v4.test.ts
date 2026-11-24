@@ -40,6 +40,7 @@ import {
   toFullConfig,
 } from '../payload.js';
 import type { RdcConfig } from '../schemas.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 const STORE = 'store-a';
 const CONFIG = '00000000-0000-0000-0000-00000000c0f1';
@@ -257,7 +258,7 @@ describe('envelope v4: blinded pointers (F14, D6)', () => {
   it('a v4 prior without its wrap is refused, never sealed under a fresh key', async () => {
     const k = await keys();
     const first = await push(doc(BOTH), k);
-    const { configKey: _dropped, ...noWrap } = priorOf(first);
+    const noWrap = omitKey(priorOf(first), 'configKey');
     await expect(push(doc(BOTH), k, { version: 3, prior: noWrap })).rejects.toThrow(
       /carries no content-key wrap/
     );

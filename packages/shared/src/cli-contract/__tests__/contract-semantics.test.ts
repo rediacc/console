@@ -15,6 +15,7 @@ import {
   checkContractInvariants,
   SUMMARY_MAX_LENGTH,
 } from '../validation.js';
+import { omitKey } from '../../utils/omit-key.js';
 
 function option(long: string, valueTaking: boolean): ContractOption {
   return {
@@ -101,7 +102,7 @@ describe('contract semantics: schema', () => {
   });
 
   it('requires errorCodes, each with an origin from the set', () => {
-    const { errorCodes: _dropped, ...withoutCodes } = contract([command()]);
+    const withoutCodes = omitKey(contract([command()]), 'errorCodes');
     expect(CliContractSchema.safeParse(withoutCodes).success).toBe(false);
     const badOrigin = { ...contract([command()]), errorCodes: [{ code: 'X', origin: 'cosmic' }] };
     expect(CliContractSchema.safeParse(badOrigin).success).toBe(false);

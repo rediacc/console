@@ -9,7 +9,7 @@ import {
   strongestHeld,
 } from '../step-up.js';
 
-const ORDER: StepUpMethod[] = ['passkey', 'totp', 'email', 'password'];
+const ORDER = ['passkey', 'totp', 'email', 'password'] as const satisfies readonly StepUpMethod[];
 const PAIRS = ORDER.flatMap((a, i) => ORDER.map((b, j) => [a, b, i, j] as const));
 
 describe('step-up rank', () => {

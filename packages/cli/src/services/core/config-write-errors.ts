@@ -9,6 +9,7 @@
  * only record would die with the request.
  */
 
+import { TELEMETRY_DEFAULTS } from '@rediacc/shared/config';
 import { t } from '../../i18n/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { currentRequestContext } from './request-context.js';
@@ -61,5 +62,5 @@ export function configWriteFailureCode(error: unknown): string {
 
 /** The command the current request runs ("repo create"), for a refusal's message. */
 export function currentCommandName(): string {
-  return currentRequestContext()?.output.commandName ?? 'unknown';
+  return currentRequestContext()?.output.commandName ?? TELEMETRY_DEFAULTS.UNKNOWN;
 }

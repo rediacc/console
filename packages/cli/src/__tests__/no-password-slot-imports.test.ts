@@ -34,7 +34,7 @@ const SCANNED_TREES = [
   'private/account/src',
   'private/account/tests',
   'private/account/web/src',
-];
+] as const;
 
 const SOURCE_FILE = /\.(ts|tsx|mts|cts|js|mjs)$/;
 

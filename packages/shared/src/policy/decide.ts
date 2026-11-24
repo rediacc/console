@@ -26,6 +26,7 @@
  * first check and never reaches this function.
  */
 
+import { POLICY_DEFAULTS } from '../config/defaults.js';
 import type { DecisionCode, DecisionVerdict } from './decision-codes.js';
 import type { PolicyContext } from './evaluate.js';
 import type { EffectivePolicy } from './merge.js';
@@ -144,7 +145,7 @@ const deny = (code: DecisionCode, reason: string, next?: DecisionNext): Decision
 });
 
 function forkHint(repoName: string | undefined): DecisionNext {
-  return { run: `rdc repo fork ${repoName ?? '<name>'} --tag <tag>` };
+  return { run: `rdc repo fork ${repoName ?? POLICY_DEFAULTS.REPO_NAME_PLACEHOLDER} --tag <tag>` };
 }
 
 /** Whether rule 5 (the grand-repo rule) applies to this command and target. */
@@ -166,7 +167,7 @@ function clusterRule(ctx: DecisionContext, policyCtx: PolicyContext): Decision |
   ) {
     return deny(
       'AGENT_OPT_IN_MISSING',
-      `"rdc ${ctx.command.pathKey}" is a cluster operation, and no cluster opt-in set by a human covers "${ctx.target.subject ?? '*'}".`
+      `"rdc ${ctx.command.pathKey}" is a cluster operation, and no cluster opt-in set by a human covers "${ctx.target.subject ?? POLICY_DEFAULTS.ANY_SUBJECT}".`
     );
   }
   return null;
@@ -174,7 +175,7 @@ function clusterRule(ctx: DecisionContext, policyCtx: PolicyContext): Decision |
 
 function grandRule(ctx: DecisionContext, policyCtx: PolicyContext): Decision | null {
   const repoName = ctx.target.repo?.name;
-  const label = repoName ?? 'an unnamed repo';
+  const label = repoName ?? POLICY_DEFAULTS.UNNAMED_REPO;
   const ceiling = evaluateEffectivePolicy(ctx.policy ?? noPolicy, {
     ...policyCtx,
     isGrandRepo: true,

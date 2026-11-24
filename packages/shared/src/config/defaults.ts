@@ -200,6 +200,9 @@ export const PROTOCOL_DEFAULTS = {
 
   /** Default public site URL */
   SITE_URL: WK_SITE_ORIGIN,
+
+  /** HTTP method a request uses when its init names none */
+  HTTP_METHOD: 'GET',
 } as const;
 
 /**
@@ -488,6 +491,20 @@ export const BATCH_DEFAULTS = {
   CONCURRENCY: 3,
 } as const;
 
+/**
+ * Wording a policy decision falls back to when its target names no repo or subject
+ */
+export const POLICY_DEFAULTS = {
+  /** Placeholder for the repo name in a suggested command */
+  REPO_NAME_PLACEHOLDER: '<name>',
+
+  /** The subject of a cluster operation that names none */
+  ANY_SUBJECT: '*',
+
+  /** The label of a repo whose target carries no name */
+  UNNAMED_REPO: 'an unnamed repo',
+} as const;
+
 export const DEFAULTS = {
   SSH: SSH_DEFAULTS,
   BACKUP: BACKUP_DEFAULTS,
@@ -516,6 +533,7 @@ export const DEFAULTS = {
   CEPH: CEPH_DEFAULTS,
   CLUSTER: CLUSTER_DEFAULTS,
   CLOUD: CLOUD_DEFAULTS,
+  POLICY: POLICY_DEFAULTS,
 } as const;
 
 /**

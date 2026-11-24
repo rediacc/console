@@ -56,6 +56,7 @@ import {
 } from '../../../adapters/remote-config-adapter.js';
 import type { RemoteTokenStorage, SyncRecord } from '../../../adapters/remote-token-storage.js';
 import type { RdcConfig, RemoteConfig } from '../../../types/index.js';
+import { omitKey } from '../../../utils/omit-key.js';
 
 const STORE_ID = '11111111-1111-4111-8111-111111111111';
 const CONFIG_ID = '22222222-2222-4222-8222-222222222222';
@@ -128,7 +129,7 @@ async function world(options: { sessionGeneration?: number | null } = {}) {
           cekGeneration?: number;
         };
         state.puts.push({ envelope: body.envelope, cekGeneration: body.cekGeneration });
-        const { removed: _removed, migrated: _migrated, ...kept } = body.envelope.commitments;
+        const kept = omitKey(omitKey(body.envelope.commitments, 'removed'), 'migrated');
         state.stored = {
           version: body.version,
           payload: {
@@ -212,14 +213,9 @@ async function world(options: { sessionGeneration?: number | null } = {}) {
       sdkEpoch: SDK_EPOCH,
       commitments,
     };
-    const {
-      envelopeVersion: _v,
-      id: _i,
-      version: _n,
-      sdkEpoch: _e,
-      commitments: _c,
-      ...blob
-    } = full;
+    const blob = ['envelopeVersion', 'id', 'version', 'sdkEpoch', 'commitments'].reduce<
+      Record<string, unknown>
+    >((rest, key) => omitKey(rest, key), full);
     const encryptedBlob = await configEncrypt(
       JSON.stringify(blob),
       sdkDerived,
