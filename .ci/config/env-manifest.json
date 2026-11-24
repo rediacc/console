@@ -2031,6 +2031,9 @@
       ".ci/rediacc_ci/dev/worktree.py": [
         "WORKTREE_TODAY"
       ],
+      ".ci/rediacc_ci/dev/worktree_lease.py": [
+        "GOCACHE"
+      ],
       ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
         "RUNNER_TEMP",
         "TMPDIR"
@@ -3843,10 +3846,14 @@
         "_WL_SITEPROFILE"
       ],
       ".claude/hooks/stop/test-ci-carried.py": [
-        "*k"
+        "*k",
+        "TMPDIR",
+        "XDG_CACHE_HOME"
       ],
       ".claude/hooks/stop/test-ci-rerun.py": [
-        "*k"
+        "*k",
+        "TMPDIR",
+        "XDG_CACHE_HOME"
       ],
       ".claude/hooks/stop/test-judge-schema.py": [
         "REDIACC_CI_ROOT",

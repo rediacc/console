@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T09:39:16.353Z",
+  "generatedAt": "2026-11-24T10:51:52.015Z",
   "legs": [
     {
       "index": 1,
@@ -313,6 +313,7 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_onprem_stack.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_backup_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_version_detect_bump_type.py",
+        "pytest:.claude/rediacc_hooks/tests/test_bound_trees_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_commit_policy_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_plan_box.py",
@@ -658,6 +659,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_subscription_schema.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_tracked_sidecars.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_typecheck_workers.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_cache_prune.py",
         "pytest:.ci/rediacc_ci/tests/test_release_cd_edge_record.py",
         "pytest:.ci/rediacc_ci/tests/test_release_deployment_summary.py",
         "pytest:.ci/rediacc_ci/tests/test_release_local.py",
