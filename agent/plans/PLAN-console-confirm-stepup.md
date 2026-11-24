@@ -107,10 +107,11 @@ D10. **Strings.** Code boxes add English keys only; CF9 translates the delta int
   Owns: private/account/web/src/i18n/locales/*/console.json, private/account/web/src/i18n/locales/*/auth.json
   Depends on: CF4, CF6, CF7, CF8.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
-- [ ] CF10 [writer] Update the e2e destructive test in private/account/e2e/tests/27-console/27-01-console.test.ts to the new flow: an unelevated destructive run shows ReauthStep, `/test/elevate` with a method then lets the red dialog run, a caution command shows the amber dialog, a preview opens no dialog.
+- [x] CF10 [writer] Update the e2e destructive test in private/account/e2e/tests/27-console/27-01-console.test.ts to the new flow: an unelevated destructive run shows ReauthStep, `/test/elevate` with a method then lets the red dialog run, a caution command shows the amber dialog, a preview opens no dialog.
   Owns: private/account/e2e/tests/27-console/27-01-console.test.ts
   Depends on: CF5, CF6.
   Accept: with `./run.sh account dev` up, `(cd private/account/e2e && npx playwright test tests/27-console/27-01-console.test.ts)` rc 0.
+    (ticked) 2026-11-24T05:03:29Z by ace763dd: commit:d014aadd4f present: 27-01-console.test.ts carries the CF10 clauses; dev gateway e2e run 40 passed, 0 failed (rc=0)
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) and drive the bench console: an unelevated destructive run refused, a passkey step-up then the typed-name run, a grand target popup, an owner reveal with its `console.stepup` and `console.reveal` events present; the account web vitest suite runs as additional verification.
   Accept: live-proof bench account-smoke
 

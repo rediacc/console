@@ -1183,13 +1183,12 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 7,
+      "open": 3,
+      "done": 8,
       "open_sigs": [
         "70fb8afa",
         "c0384c17",
-        "d4e548d5",
-        "f73618ef"
+        "d4e548d5"
       ],
       "done_sigs": [
         "131deecd",
@@ -1198,6 +1197,7 @@
         "92222a65",
         "acade276",
         "d279e26a",
+        "f73618ef",
         "f99c01b1"
       ]
     },
@@ -2099,14 +2099,13 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 6,
+      "open": 9,
+      "done": 7,
       "open_sigs": [
         "01dc1449",
         "31075514",
         "3ef51f1f",
         "48debf88",
-        "63d70a6e",
         "6b737485",
         "764a387b",
         "8c5557a5",
@@ -2119,6 +2118,7 @@
         "1f9a8391",
         "3387434e",
         "45257dd1",
+        "63d70a6e",
         "95f3be45"
       ]
     },
@@ -3529,8 +3529,8 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 0,
+      "open": 8,
+      "done": 1,
       "open_sigs": [
         "26e29ac5",
         "3e83af32",
@@ -3538,11 +3538,12 @@
         "795eb35a",
         "99480236",
         "9ad645c3",
-        "b3c86ecb",
         "c103f83d",
         "c1822dd6"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "b3c86ecb"
+      ]
     },
     "agent/plans/PLAN-rmcp-docs.md": {
       "status": "approved",

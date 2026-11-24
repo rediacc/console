@@ -512,7 +512,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 128 | 13 | 3 | 24388 |
-| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 122 | 4 | 7 | 22218 |
+| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 123 | 3 | 8 | 22387 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 132 | 5 | 10 | 25878 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68133 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 132 | 16 | 1 | 30327 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
-| `agent/plans/PLAN-forensics-shipping.md` | approved | 133 | 10 | 6 | 34048 |
+| `agent/plans/PLAN-forensics-shipping.md` | approved | 134 | 9 | 7 | 34335 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-ghcr-registry-cleanup.md` | proposed | 54 | 7 | 0 | 13059 |
@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 118 | 15 | 0 | 26395 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 65 | 9 | 0 | 12110 |
-| `agent/plans/PLAN-rmcp-decide.md` | approved | 88 | 9 | 0 | 14787 |
+| `agent/plans/PLAN-rmcp-decide.md` | approved | 89 | 8 | 1 | 14973 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 106 | 9 | 12 | 26551 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
