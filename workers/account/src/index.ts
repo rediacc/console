@@ -30,16 +30,18 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser calls fail under future Cloudflare-edge tightening. Stripe redirects via window.location.assign which is a top-level navigation not gated by Permissions-Policy.
+  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser calls fail under future Cloudflare-edge tightening. Stripe redirects via window.location.assign which is a top-level navigation not gated by Permissions-Policy. The microphone is open to this origin for the AI assistant's speech input (agent/plans/PLAN-console-ai-assistant.md D12).
   'Permissions-Policy':
-    'camera=(), microphone=(), geolocation=(), payment=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)',
+    'camera=(), microphone=(self), geolocation=(), payment=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' https://challenges.cloudflare.com",
+    // 'wasm-unsafe-eval' admits WebAssembly compilation only (the local Whisper speech model), not eval().
+    "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self' https://challenges.cloudflare.com",
+    // media.rediacc.com serves the local speech model files, which exceed the Workers static-asset limit.
+    "connect-src 'self' https://challenges.cloudflare.com https://media.rediacc.com",
     "frame-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'self'",
