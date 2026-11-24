@@ -10,7 +10,7 @@ import {
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
-import { buildToolsFromContract, type ToolDef } from './tool-factory.js';
+import { buildToolsFromContract, type ToolDef, toolAnnotations } from './tool-factory.js';
 
 export type { ToolDef } from './tool-factory.js';
 
@@ -172,12 +172,7 @@ export function registerAllTools(server: McpServer, options: McpServerOptions): 
       {
         description: tool.description,
         inputSchema: tool.schema,
-        annotations: {
-          destructiveHint: tool.isDestructive,
-          readOnlyHint: !tool.isDestructive,
-          idempotentHint: tool.isIdempotent,
-          openWorldHint: true,
-        },
+        annotations: toolAnnotations(tool),
       },
       async (args: Record<string, unknown>) => executeTool(tool, args, options)
     );

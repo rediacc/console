@@ -29,6 +29,7 @@ import { z } from 'zod';
 import {
   COMMAND_METADATA,
   type CommandMeta,
+  type McpSurface,
   READ_TIMEOUT,
   WRITE_TIMEOUT,
 } from '../../config/command-metadata.js';
@@ -39,12 +40,18 @@ import { JOB_ATTACH_WINDOW_MS } from '../../services/jobs/attach.js';
 
 export interface ToolDef {
   name: string;
+  /** The contract `pathKey` of the command the tool runs, e.g. "repo up" (the custom machine_* views run "machine status"). */
+  commandPath: string;
   description: string;
   schema: ZodRawShapeCompat;
   command: (args: Record<string, unknown>) => string[];
   isDestructive: boolean;
   isIdempotent: boolean;
   timeoutMs?: number;
+  /** The timeout class the tool's timeoutMs was resolved from. */
+  timeoutClass: 'read' | 'write';
+  /** Where the tool is served (COMMAND_METADATA mcpSurface); the registry generator checks it against the contract. */
+  surface: McpSurface;
   /** Field name in args that contains the repository name. Used for grand repo guard in MCP. */
   repoArgField?: string;
   /**
@@ -52,6 +59,21 @@ export interface ToolDef {
    * its result, a longer one returns the ticket with `next: "job_status"`. Absent for a tool that starts no job.
    */
   attachWindowMs?: number;
+}
+
+/** The MCP annotations a tool is registered with; the stdio server and the generated registry read this one function. */
+export function toolAnnotations(tool: ToolDef): {
+  destructiveHint: boolean;
+  readOnlyHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+} {
+  return {
+    destructiveHint: tool.isDestructive,
+    readOnlyHint: !tool.isDestructive,
+    idempotentHint: tool.isIdempotent,
+    openWorldHint: true,
+  };
 }
 
 /** What a windowed tool's description tells the model about the job it may start. */
@@ -249,8 +271,12 @@ export function buildToolsFromContract(): ToolDef[] {
 
     const windowed = hasAttachWindow(cmd);
     const baseDescription = mcp.descriptionOverride ?? cmd.label;
+    if (!meta.mcpSurface) {
+      throw new Error(`COMMAND_METADATA["${cmd.pathKey}"] carries mcp but no mcpSurface`);
+    }
     tools.push({
       name: cmd.pathKey.replaceAll(' ', '_'),
+      commandPath: cmd.pathKey,
       description: windowed
         ? `${baseDescription.replace(/\.$/, '')}. ${ATTACH_WINDOW_NOTE}`
         : baseDescription,
@@ -260,6 +286,8 @@ export function buildToolsFromContract(): ToolDef[] {
       isDestructive: mcp.destructive,
       isIdempotent: mcp.idempotent,
       timeoutMs: mcp.timeout === 'read' ? READ_TIMEOUT : WRITE_TIMEOUT,
+      timeoutClass: mcp.timeout,
+      surface: meta.mcpSurface,
       repoArgField: mcp.repoArg,
     });
   }

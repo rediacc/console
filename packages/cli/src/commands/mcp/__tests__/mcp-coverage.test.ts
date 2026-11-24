@@ -6,13 +6,17 @@
  * in COMMAND_METADATA. Fails CI when a command is added to the registry
  * but not covered.
  */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
 import { describe, expect, it } from 'vitest';
 import { cli } from '../../../cli.js';
 import {
   COMMAND_METADATA,
+  type CommandMeta,
   getCommandMeta,
   getMcpExclusions,
+  type McpSurface,
 } from '../../../config/command-metadata.js';
 import { buildToolsFromContract } from '../tool-factory.js';
 import { buildAllTools } from '../tools.js';
@@ -217,5 +221,166 @@ describe('contract-sourced tool derivation', () => {
         `tool "${tool.name}" backs a command with no mcp metadata`
       ).toBeTruthy();
     }
+  });
+});
+
+/**
+ * The surface table (PLAN-rmcp-local-mcp LM2, decision D57). Every MCP entry names where it is served; a tool whose command is not proxyCapable carries an `executor` or `in-memory` verdict, or `local` on one of the two bases D57 admits, and .ci/config/mcp-surface.json records the same verdict for exactly those tools.
+ */
+const SURFACE_TABLE_PATH = fileURLToPath(
+  new URL('../../../../../../.ci/config/mcp-surface.json', import.meta.url)
+);
+const LOCAL_BASES = new Set(['caller-disk', 'terminal']);
+
+interface SurfaceRow {
+  plane?: string;
+  verdict?: string;
+  basis?: string;
+  reason?: string;
+  commandChange?: string;
+}
+
+/** Problems of one entry's marker: a missing or stray marker, a verdict without a reason, a local basis D57 does not admit. */
+function entryMarkerProblems(path: string, meta: CommandMeta): string[] {
+  const surface = meta.mcpSurface;
+  if (!meta.mcp) return surface ? [`${path}: mcpSurface without mcp`] : [];
+  if (!surface) return [`${path}: mcp without mcpSurface`];
+  if (surface.kind === 'proxy') return [];
+  const problems: string[] = [];
+  if (!surface.reason.trim()) problems.push(`${path}: ${surface.kind} without a reason`);
+  if (surface.kind === 'local' && !LOCAL_BASES.has(surface.basis)) {
+    problems.push(
+      `${path}: local on basis "${String(surface.basis)}", not caller-disk or terminal`
+    );
+  }
+  return problems;
+}
+
+function markerProblems(metadata: Record<string, CommandMeta>): string[] {
+  return Object.entries(metadata).flatMap(([path, meta]) => entryMarkerProblems(path, meta));
+}
+
+/** Problems of one non-proxy tool's table row against its marker. */
+function rowProblems(path: string, surface: McpSurface, row: SurfaceRow | undefined): string[] {
+  if (!row) return [`${path}: not proxyCapable and missing from mcp-surface.json`];
+  if (surface.kind === 'proxy') return [];
+  const problems: string[] = [];
+  if (row.verdict !== surface.kind) {
+    problems.push(`${path}: table verdict ${String(row.verdict)} != mcpSurface ${surface.kind}`);
+  }
+  if (row.reason !== surface.reason) {
+    problems.push(`${path}: table reason differs from mcpSurface reason`);
+  }
+  const basis = surface.kind === 'local' ? surface.basis : undefined;
+  if (row.basis !== basis) {
+    problems.push(`${path}: table basis ${String(row.basis)} != ${String(basis)}`);
+  }
+  if (surface.kind !== 'local' && !row.commandChange?.trim()) {
+    problems.push(`${path}: ${surface.kind} without the LM10 commandChange`);
+  }
+  return problems;
+}
+
+/** Problems of one MCP tool: its marker against the contract, then its table row when it is not proxyCapable. */
+function toolTableProblems(
+  path: string,
+  surface: McpSurface,
+  capable: boolean,
+  row: SurfaceRow | undefined
+): string[] {
+  const problems: string[] = [];
+  if (capable !== (surface.kind === 'proxy')) {
+    problems.push(`${path}: mcpSurface ${surface.kind} but proxyCapable ${String(capable)}`);
+  }
+  if (!capable) problems.push(...rowProblems(path, surface, row));
+  return problems;
+}
+
+/** Problems between the markers, the contract and the recorded table. */
+function tableProblems(
+  metadata: Record<string, CommandMeta>,
+  table: Record<string, SurfaceRow>,
+  proxyCapable: Map<string, boolean>
+): string[] {
+  const problems: string[] = [];
+  const expected = new Set<string>();
+  for (const [path, meta] of Object.entries(metadata)) {
+    const surface = meta.mcp ? meta.mcpSurface : undefined;
+    const capable = proxyCapable.get(path);
+    if (!surface || capable === undefined) continue;
+    if (!capable) expected.add(path);
+    problems.push(...toolTableProblems(path, surface, capable, table[path]));
+  }
+  const strays = Object.keys(table).filter((path) => !expected.has(path));
+  problems.push(
+    ...strays.map((path) => `${path}: in mcp-surface.json but not a non-proxy MCP tool`)
+  );
+  return problems;
+}
+
+describe('MCP surface table (D57)', () => {
+  const table = (
+    JSON.parse(readFileSync(SURFACE_TABLE_PATH, 'utf-8')) as { tools: Record<string, SurfaceRow> }
+  ).tools;
+  const proxyCapable = new Map(CLI_CONTRACT.commands.map((c) => [c.pathKey, c.proxyCapable]));
+
+  it('every MCP entry carries mcpSurface, and every verdict its reason', () => {
+    expect(markerProblems(COMMAND_METADATA)).toEqual([]);
+  });
+
+  it('mcp-surface.json holds exactly the non-proxy MCP tools, each with the marker verdict', () => {
+    expect(tableProblems(COMMAND_METADATA, table, proxyCapable)).toEqual([]);
+  });
+
+  it('refuses an MCP entry without mcpSurface and a local entry off the two bases', () => {
+    const bad: Record<string, CommandMeta> = {
+      'a b': { mcp: { destructive: false, idempotent: true, timeout: 'read' } },
+      'c d': {
+        mcp: { destructive: false, idempotent: true, timeout: 'read' },
+        mcpSurface: {
+          kind: 'local',
+          basis: 'meaningless-remotely' as 'terminal',
+          reason: 'not useful',
+        },
+      },
+      'e f': { mcpSurface: { kind: 'proxy' } },
+      'g h': {
+        mcp: { destructive: false, idempotent: true, timeout: 'read' },
+        mcpSurface: { kind: 'in-memory', reason: ' ' },
+      },
+    };
+    expect(markerProblems(bad)).toEqual([
+      'a b: mcp without mcpSurface',
+      'c d: local on basis "meaningless-remotely", not caller-disk or terminal',
+      'e f: mcpSurface without mcp',
+      'g h: in-memory without a reason',
+    ]);
+  });
+
+  it('refuses a table that drifts from the markers or the contract', () => {
+    const mcp = { destructive: false, idempotent: true, timeout: 'read' } as const;
+    const meta: Record<string, CommandMeta> = {
+      'x one': { mcp, mcpSurface: { kind: 'executor', reason: 'r1' } },
+      'x two': { mcp, mcpSurface: { kind: 'proxy' } },
+      'x three': { mcp, mcpSurface: { kind: 'local', basis: 'terminal', reason: 'r3' } },
+    };
+    const capable = new Map([
+      ['x one', false],
+      ['x two', false],
+      ['x three', false],
+    ]);
+    const drifted: Record<string, SurfaceRow> = {
+      'x one': { verdict: 'in-memory', reason: 'other' },
+      'x three': { verdict: 'local', basis: 'terminal', reason: 'r3' },
+      'x stray': { verdict: 'executor', reason: 'r', commandChange: 'c' },
+    };
+    expect(tableProblems(meta, drifted, capable)).toEqual([
+      'x one: table verdict in-memory != mcpSurface executor',
+      'x one: table reason differs from mcpSurface reason',
+      'x one: executor without the LM10 commandChange',
+      'x two: mcpSurface proxy but proxyCapable false',
+      'x two: not proxyCapable and missing from mcp-surface.json',
+      'x stray: in mcp-surface.json but not a non-proxy MCP tool',
+    ]);
   });
 });

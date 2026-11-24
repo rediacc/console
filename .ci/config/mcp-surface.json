@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "about": "PLAN-rmcp-local-mcp LM2 (decision D57): one verdict per MCP tool whose contract command is not proxyCapable. executor = made to run on the hosted executor against the session config; in-memory = re-implemented against the granted config the executor holds; local = never served remotely, admitted only on basis caller-disk (it reads or writes the caller's own disk) or terminal (it needs one). commandChange names the LM10 change for executor and in-memory. COMMAND_METADATA mcpSurface carries the same kind, basis and reason; packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts holds the two equal and refuses a missing tool.",
+  "tools": {
+    "backup check": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Restores one file with the repository credential, which the granted config carries.",
+      "commandChange": "Read the credential from the session config."
+    },
+    "backup immutability show": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Reads the delayed-deletion window from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup manifests": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Lists manifests from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup reconcile": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Calls the account server with the session token to reset a stored-bytes ledger.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup repair": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Needs the backup:manage token and the repository credential, which the executor holds through the session grant.",
+      "commandChange": "Read the token and credential from the session config instead of the caller's disk."
+    },
+    "backup retention": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Reads the retention policy from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup retention preview": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Reads the next sweep preview from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup strategy list": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists the backup strategies stored in the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "backup strategy show": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Shows one backup strategy stored in the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "backup toc-key sync": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Derives the listing key from the repository credential, which the granted config carries.",
+      "commandChange": "Read the credential from the session config."
+    },
+    "backup undelete": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Cancels a delayed delete on the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "backup usage": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Calls the account server with the session token; nothing local is read.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "cluster kubeconfig": {
+      "plane": "machine",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Writes the kubeconfig to a 0600 file on the caller's own disk and prints that path."
+    },
+    "cluster status": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists clusters, or shows one, from the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "config access list": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists the access keys stored in the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "config audit log": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reads the audit log file on the caller's own disk."
+    },
+    "config audit verify": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Verifies the hash chain of the audit log file on the caller's own disk."
+    },
+    "config current": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Names the config file the caller's own install selects, with its file path and token file state."
+    },
+    "config list": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Lists the config files on the caller's own disk; a session holds exactly one granted config."
+    },
+    "config prune": {
+      "plane": "config",
+      "verdict": "executor",
+      "reason": "Sweeps stale entries from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "commandChange": "Prune the request-scoped remote state and write it back."
+    },
+    "config reconcile": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Queries every machine and writes the rebuilt runtime state into the session config through the write-back path (WB1, WB4).",
+      "commandChange": "Write the state bucket through the request-scoped remote state."
+    },
+    "config show": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Shows the granted config, redacted, from the copy the executor already holds.",
+      "commandChange": "Serve a redacted view of the session config."
+    },
+    "credits": {
+      "plane": "other",
+      "verdict": "in-memory",
+      "reason": "Prints the bundled third-party credits, which the executor ships too.",
+      "commandChange": "Serve the bundled credits."
+    },
+    "feedback list": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Lists feedback reports from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "feedback report": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Sends a report to the account server with the session token; the recorded-command forms read the history of the executor that ran the commands.",
+      "commandChange": "Use the session token and the executor's own command history."
+    },
+    "feedback show": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Shows one feedback report from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "legal": {
+      "plane": "other",
+      "verdict": "executor",
+      "reason": "Prints the bundled legal documents and reads the accepted terms from the account server with the session token.",
+      "commandChange": "Use the session token on the executor."
+    },
+    "machine access show": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Shows the access keys bound to a machine, resolved from the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "machine add": {
+      "plane": "config",
+      "verdict": "executor",
+      "reason": "Adds a machine to the session config; a config-plane write that rides the write-back path (PLAN-rmcp-writeback WB1, WB4) and keeps its knowledge gates.",
+      "commandChange": "Write through the request-scoped remote state."
+    },
+    "machine converge": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Restarts repo daemons with the env secrets the granted config carries.",
+      "commandChange": "Read the env secrets from the session config."
+    },
+    "machine infra cert status": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reports the certificate cache files under the caller's own config directory; the executor holds no such cache."
+    },
+    "machine infra show": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Shows a machine's infrastructure block from the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "machine list": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists the machines of the granted config the executor already holds.",
+      "commandChange": "Serve from the session config."
+    },
+    "machine provider add": {
+      "plane": "config",
+      "verdict": "executor",
+      "reason": "Adds a cloud provider to the session config; a config-plane write through the write-back path (WB1, WB4) that keeps its knowledge gates.",
+      "commandChange": "Write through the request-scoped remote state."
+    },
+    "machine provider list": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists the cloud providers of the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "machine provider remove": {
+      "plane": "config",
+      "verdict": "executor",
+      "reason": "Removes a cloud provider from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "commandChange": "Write through the request-scoped remote state."
+    },
+    "machine prune": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Judges images against the session config only, so it can run on the executor without reading other configs.",
+      "commandChange": "Scope --orphaned-repos and --prune-unknown to the session config."
+    },
+    "machine remove": {
+      "plane": "config",
+      "verdict": "executor",
+      "reason": "Removes a machine from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "commandChange": "Write through the request-scoped remote state."
+    },
+    "machine scan-keys": {
+      "plane": "machine",
+      "verdict": "executor",
+      "reason": "Scans host keys from the executor, which is where later SSH connections come from, and writes knownHosts back through the write-back path (WB1, WB4).",
+      "commandChange": "Write knownHosts through the request-scoped remote state."
+    },
+    "repo replicate status": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Shows replica sets recorded in the granted config.",
+      "commandChange": "Serve from the session config."
+    },
+    "repo secret get": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Returns the digest of a secret held in the granted config, never the plaintext.",
+      "commandChange": "Serve from the session config."
+    },
+    "repo secret list": {
+      "plane": "config",
+      "verdict": "in-memory",
+      "reason": "Lists secret keys and modes from the granted config, never values.",
+      "commandChange": "Serve from the session config."
+    },
+    "server status": {
+      "plane": "machine",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Finds the server through the caller's own local install record."
+    },
+    "version": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reports the CLI build installed on the caller's own machine and its update channel."
+    }
+  }
+}

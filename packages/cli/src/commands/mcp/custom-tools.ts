@@ -6,8 +6,11 @@
  * - Have completely custom schema/builder logic
  */
 import { z } from 'zod';
-import { READ_TIMEOUT } from '../../config/command-metadata.js';
+import { type McpSurface, READ_TIMEOUT } from '../../config/command-metadata.js';
 import type { ToolDef } from './tool-factory.js';
+
+/** The views run `machine status`, which is proxy-capable; the registry generator checks this against the contract like any other tool. */
+const STATUS_SURFACE: McpSurface = { kind: 'proxy' };
 
 /**
  * Virtual tools for `machine status`, each exposes a specific section flag as a
@@ -19,30 +22,39 @@ const MACHINE_STATUS_VIEWS: ToolDef[] = [
     description:
       'List Docker containers on a machine. JSON includes full container details (labels, port_mappings, image), repository resolved to name (original in repository_guid), domain, and autoRoute ({service}.{repo}.{machine}.{baseDomain})',
     schema: { name: z.string().describe('Machine name') },
+    commandPath: 'machine status',
     command: (args) => ['machine', 'status', args.name as string, '--containers'],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
+    timeoutClass: 'read',
+    surface: STATUS_SURFACE,
   },
   {
     name: 'machine_services',
     description:
       'List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid)',
     schema: { name: z.string().describe('Machine name') },
+    commandPath: 'machine status',
     command: (args) => ['machine', 'status', args.name as string, '--services'],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
+    timeoutClass: 'read',
+    surface: STATUS_SURFACE,
   },
   {
     name: 'machine_repos',
     description:
       "List deployed repositories on a machine. JSON includes name (resolved from GUID, original in guid field), nests each repo's containers (with domain, autoRoute, repository resolved) and services for hierarchical view",
     schema: { name: z.string().describe('Machine name') },
+    commandPath: 'machine status',
     command: (args) => ['machine', 'status', args.name as string, '--repositories'],
     isDestructive: false,
     isIdempotent: true,
     timeoutMs: READ_TIMEOUT,
+    timeoutClass: 'read',
+    surface: STATUS_SURFACE,
   },
 ];
 

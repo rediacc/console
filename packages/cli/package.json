@@ -11,6 +11,7 @@
     "dev": "tsx src/index.ts",
     "export:command-tree": "tsx scripts/export-command-tree.ts",
     "generate:cli-contract": "tsx scripts/generate-cli-contract.ts",
+    "generate:mcp-registry": "tsx scripts/generate-mcp-registry.ts",
     "generate:skill-reference": "tsx scripts/generate-skill-reference.ts --write",
     "lint": "biome lint src",
     "prepublishOnly": "npm run build && npm run build:bundle",
