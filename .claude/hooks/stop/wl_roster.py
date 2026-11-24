@@ -886,7 +886,7 @@ def roster(
     # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while a live plan holds it, so its own lease expiry bounds it.
     # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
     for w in sorted(
-        {w for _i, w, c in covered if not c.startswith(ARMED_COVERER)}
+        {w for _i, w, c in covered if not (c or "").startswith(ARMED_COVERER)}
         - {QUEUE_WORKER, LH.LEAD_WORKER}
         - set(workflows)
     ):

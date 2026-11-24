@@ -120,6 +120,21 @@ def test_the_same_writer_with_a_latched_void_arm_is_leased_dead(wl):
     assert [d[0] for d in v["leased_dead"]] == ["arm1"], v["leased_dead"]
 
 
+def test_the_same_writer_with_a_started_arm_is_leased_dead_and_a_fired_unstarted_one_is_covered(wl):
+    finished_writer_item(wl)
+    plant_arm(wl, "arm1", verdict_="fired", ago=3)
+    plant_report(wl, W1, 20, TICK_BODY)
+    v = verdict(wl)  # control: fired and not started still covers while the armed block blocks
+    assert ["arm1", W1, "armed:" + AID] in [list(c) for c in v["covered"]], v["covered"]
+    with wl.events.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps({"ev": "armstart", "id": "arm1", "at": stamp(1), "by": wlfix.ME, "aid": AID})
+            + "\n"
+        )
+    v = verdict(wl)
+    assert [d[0] for d in v["leased_dead"]] == ["arm1"], v["leased_dead"]
+
+
 def test_the_same_writer_with_no_arm_and_a_report_is_leased_dead(wl):
     finished_writer_item(wl)
     plant_report(wl, W1, 20, TICK_BODY)

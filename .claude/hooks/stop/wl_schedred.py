@@ -1006,6 +1006,15 @@ def session_start_line(worklist):
 def _red_session_start_line(worklist):
     try:
         doc = read_cache(worklist)
+    except Exception as exc:
+        return (
+            "[the scheduled-red cache could not be read (%s: %s), so a red run may be missing here]"
+            % (
+                type(exc).__name__,
+                exc,
+            )
+        )
+    try:
         if not doc:
             return ""
         rows = [w for w in doc.get("workflows") or [] if w.get("red") and w.get("run_id")]
@@ -1055,7 +1064,7 @@ def _red_session_start_line(worklist):
         return "\n".join(lines)
     except Exception as exc:
         return (
-            "[the scheduled-red cache could not be read (%s: %s), so a red run may be missing here]"
+            "[the scheduled-red line could not be built from the cache (%s: %s), so a red run may be missing here]"
             % (
                 type(exc).__name__,
                 exc,

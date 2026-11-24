@@ -2523,7 +2523,7 @@ def _writing_test(root):
     try:
         policy = _load_commit_policy(root)
         cfg = policy.load_config(str(root)) if policy is not None else None
-    # swallowed-failure-ok: None caps no finding, so every finding keeps its full severity, the conservative answer when commit_policy itself cannot be loaded (its load_config falls back to defaults and never raises).
+    # swallowed-failure-ok: None caps no finding, so every finding keeps its full severity, the conservative answer when commit_policy itself cannot be loaded (the handler is for `_load_commit_policy`, which can raise on a missing or broken file; `load_config` falls back to defaults and never raises).
     except Exception:
         return None
     if policy is None:

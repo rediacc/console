@@ -434,12 +434,30 @@ def test_prreview_answer_control_stays_in_the_main_checkout_when_typed_there(tmp
     assert _answer_root(tmp_path, monkeypatch, main, landing) == main
 
 
+def test_load_config_never_raises_on_a_damaged_config_so_no_review_skip_needs_no_handler(tmp_path):
+    """b9c7fd2d.4: `_no_review_skip` calls load_config without a handler on the premise it falls back to the defaults. Controls: an unreadable and a non-object config both answer the defaults, and the skip itself still answers a bool."""
+    policy = R._load_commit_policy(R.CONSOLE_ROOT)
+    cfg_path = policy.config_path(tmp_path)
+    cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    for body in ("{ not json", "[1, 2]", ""):
+        cfg_path.write_text(body, encoding="utf-8")
+        assert policy.load_config(str(tmp_path)) == policy.DEFAULTS, body
+    cfg_path.unlink()
+    cfg_path.mkdir()  # a directory where the file belongs: OSError, not a crash
+    assert policy.load_config(str(tmp_path)) == policy.DEFAULTS
+    assert R._no_review_skip(R.CONSOLE_ROOT, "docs: x", ["README.md"]) is False
+
+
 def test_a_refused_landing_mark_says_nothing_was_written(tmp_path):
     """de5378f8.1: a refusal on a finding routed to the landing record must not claim the record was marked."""
     main, landing, a, _b = _trees(tmp_path)
-    _land_path, fid = _finding_record(landing, PR, a, "a.txt")
+    land_path, fid = _finding_record(landing, PR, a, "a.txt")
+    before = pathlib.Path(land_path).read_bytes()
     rc, text = _mark(main, main, fid, "waived")
     assert rc == 1, text
+    assert pathlib.Path(land_path).read_bytes() == before, (
+        "the refused mark wrote the landing record"
+    )
     assert "nothing was written there" in text, text
     assert "its record is marked in" not in text, text
 

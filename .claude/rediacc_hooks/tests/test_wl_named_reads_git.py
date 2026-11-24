@@ -148,6 +148,15 @@ def test_an_unreadable_red_cache_is_named_at_session_start(monkeypatch, tmp_path
     assert "the scheduled-red cache could not be read (RuntimeError: sf5-injected)" in line
 
 
+def test_a_failure_after_the_cache_read_is_not_blamed_on_the_cache(monkeypatch, tmp_path):
+    doc = {"workflows": [{"red": True, "run_id": 1}], "at": 0}
+    monkeypatch.setattr(wl_schedred, "read_cache", lambda _w: doc)
+    monkeypatch.setattr(wl_schedred, "fields", raising)
+    line = wl_schedred._red_session_start_line(tmp_path / "wl.md")
+    assert "the scheduled-red line could not be built from the cache (RuntimeError" in line
+    assert "cache could not be read" not in line
+
+
 def test_an_unreadable_worklist_makes_tracked_unknown_not_untracked(monkeypatch, tmp_path):
 
     red = {"red": True, "run_id": 42, "stem": "ci-drift", "name": "CI - Drift", "url": "u"}
