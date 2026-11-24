@@ -20,5 +20,5 @@
 - #e5dd564f; #748b837e; #7a8152c4; #ab9f5552; #135b55bf; #5f4130cf; RI11, EHOP3, D1, B1, FS11, FS12, SP7, SP8 partial.
 
 ## Next action
-1. Run the real /writers-now skill now (its survey agent writes a NEW survey).
+1. Real /writers-now round 8ea1105a is running: survey agent aab40f730dd809e85 writes /tmp/writers-now/1121-1-20261124T1737Z-real.md (50 seeds). When it returns: PRESENT batch (section 2), then one writer per startable CODE cluster plus bench/hostinger runners in one message (sections 3-5).
 2. Land group C and the cadence fix; fix the remaining check:ci-pytest failures; ci:quick; push.
