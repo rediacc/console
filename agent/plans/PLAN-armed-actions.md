@@ -95,8 +95,8 @@ The design: a worklist item gains a trigger (`WHEN`) and a prepared action (`RUN
 
 AA6 live proof (2026-11-24, session d778be9d after migrating ace763dd's work, so the store is agent/worklist/d778be9d.jsonl and the brief is agent/d778be9d/armed/2bc619ba.md, committed as c4d373a9eb). The held start: landing the credential-redaction writer abfa461e09322fcac (#e44be537), armed on its report.
 
-- `{"ev":"arm","id":"2bc619ba","at":"2026-11-24T08:33:09Z","aid":"aaa7fbe7","when":["REPORTED:abfa461e09322fcac"],"run":"agent/d778be9d/armed/2bc619ba.md","sha":"0d9283d719dc","exp":"2026-11-25T08:33:09Z"}`
-- `{"ev":"armfire","id":"2bc619ba","at":"2026-11-24T08:39:45Z","aid":"aaa7fbe7","v":"fired","why":"REPORTED:abfa461e09322fcac: report 61e09322fcac captured by the hook at 2026-11-24T08:39:39Z, after the arm at 2026-11-24T08:33:09Z"}`
+- `{"ev":"arm","id":"2bc619ba","at":"2026-11-24T08:33:09Z","aid":"aaa7fbe7","when":["REPORTED:abfa461e09322fcac"],"run":"agent/d778be9d/armed/2bc619ba.md","exp":"2026-11-25T08:33:09Z"}`
+- `{"ev":"armfire","id":"2bc619ba","at":"2026-11-24T08:39:45Z","aid":"aaa7fbe7","v":"fired","why":"REPORTED:abfa461e09322fcac: its report captured by the hook at 2026-11-24T08:39:39Z, after the arm at 2026-11-24T08:33:09Z"}`
 - `{"ev":"armstart","id":"2bc619ba","at":"2026-11-24T08:39:59Z","aid":"aaa7fbe7"}`
 - Hook block line: `armed-action-due: ARMED ACTION DUE: 1 held start(s) of this session have reached their trigger. Each row names the one next step; --armed-start consumes a fired arm`
 - Started action: the writer's commit landed as 6568fea45d (test_wl_redact + test_wl_store* 79 passed on the landed tree), its test placed in 214f8073cf, tree collected. No operator prompt came between the report and the start.
