@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.cli_contract` against the diff logic it replaces.
 
-WHAT THE SHADOW LEDGER CANNOT REACH. the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so the wiring, the exit codes and the finding text are already compared end to end. What it cannot isolate is the COMPARISON ITSELF: which lines the version filter drops, what an unterminated file does to it, and the
+WHAT THE SHADOW LEDGER CANNOT REACH. the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so the wiring, the exit codes and the finding text are already compared end to end. What it cannot isolate is the COMPARISON ITSELF: that every artefact, its version line included, is compared byte for byte, and the
 no-nullglob behaviour that makes an empty i18n directory report a locale whose name is a glob.
 
 The last of those is a DEFECT in the twin, carried deliberately. It is pinned here so that a future reader who "fixes" it discovers, from a red test, that they have changed the verdict rather than tidied the code.
@@ -14,64 +14,42 @@ from rediacc_ci import paths
 from rediacc_ci.quality import cli_contract as cc
 from rediacc_ci.tests import differential as diff
 
-# The twin's comparison, verbatim from check-cli-contract.sh:49-52.
-COMPARE = (
-    "diff -q <(grep -v -e '_VERSION = ' -e '\"version\":' a) "
-    "<(grep -v -e '_VERSION = ' -e '\"version\":' b) >/dev/null 2>&1"
-)
-
+# Every artefact, the version line included, is compared byte for byte since the version became a deterministic content hash (PLAN-console-contract-semantics.md D5).
 PAIRS = [
     # (a, b, the property this pair is here for)
     ("x\n", "x\n", "identical"),
     ("x\n", "y\n", "plain difference"),
     (
-        'export const CLI_VERSION = "1";\nx\n',
-        'export const CLI_VERSION = "2";\nx\n',
-        "the TS version constant is filtered out",
+        "export const CLI_CONTRACT_VERSION = '1';\nx\n",
+        "export const CLI_CONTRACT_VERSION = '2';\nx\n",
+        "a version-only difference is drift",
     ),
-    ('{"version": "1"}\nx\n', '{"version": "2"}\nx\n', "the JSON version field is filtered out"),
-    (
-        'export const CLI_VERSION = "1";\nx\n',
-        'export const CLI_VERSION = "2";\ny\n',
-        "a version change PLUS real drift is still drift",
-    ),
+    ('{"version": "1"}\nx\n', '{"version": "2"}\nx\n', "a JSON version-only difference is drift"),
     ("x", "x\n", "a missing final newline on one side only"),
     ("", "", "two empty files"),
-    ("", "x\n", "empty against non-empty"),
     ("a\nb\n", "b\na\n", "reordered lines are a difference"),
-    ('  "version": "1"\n', '  "version": "2"\n', "an indented version field is still filtered"),
 ]
 
 
 @pytest.mark.parametrize(("left", "right", "why"), PAIRS)
-def test_compare_ignoring_version_matches_bash(
+def test_files_equal_matches_diff_q(
     tmp_path: pathlib.Path, left: str, right: str, why: str
 ) -> None:
     (tmp_path / "a").write_text(left, encoding="utf-8")
     (tmp_path / "b").write_text(right, encoding="utf-8")
-    code, _out, _err = diff.bash_streams(COMPARE, cwd=str(tmp_path))
-    bash_says_equal = code == 0
-    assert cc.compare_ignoring_version(tmp_path / "a", tmp_path / "b") is bash_says_equal, why
+    code, _out, _err = diff.bash_streams("diff -q a b >/dev/null 2>&1", cwd=str(tmp_path))
+    assert cc._files_equal(tmp_path / "a", tmp_path / "b") is (code == 0), why
 
 
 def test_the_pair_table_exercises_both_directions() -> None:
     """ANTI-VACUITY on the table above: a comparison that always answered "equal", or always "different", would satisfy a one-sided table."""
-    verdicts = set()
-    for left, right, _why in PAIRS:
-        filtered_left = [
-            ln for ln in left.split("\n") if not any(m in ln for m in cc.VERSION_MARKERS)
-        ]
-        filtered_right = [
-            ln for ln in right.split("\n") if not any(m in ln for m in cc.VERSION_MARKERS)
-        ]
-        verdicts.add(filtered_left == filtered_right)
-    assert verdicts == {True, False}
+    assert {left == right for left, right, _why in PAIRS} == {True, False}
 
 
 def test_a_missing_generated_file_is_not_equal(tmp_path: pathlib.Path) -> None:
     """The absent side must never compare EQUAL. A port that read a missing file as an empty one would call a vanished artefact up-to-date."""
     (tmp_path / "a").write_text("x\n", encoding="utf-8")
-    assert cc.compare_ignoring_version(tmp_path / "a", tmp_path / "gone") is False
+    assert cc._files_equal(tmp_path / "a", tmp_path / "gone") is False
 
 
 def test_glob_or_literal_both_directions(tmp_path: pathlib.Path) -> None:
@@ -108,6 +86,7 @@ def test_empty_i18n_yields_a_glob_named_finding(tmp_path: pathlib.Path) -> None:
         (base / "i18n").mkdir(parents=True)
         (base / "contract.generated.ts").write_text("x\n", encoding="utf-8")
         (base / "contract.json").write_text("{}\n", encoding="utf-8")
+        (base / "contract-version.generated.ts").write_text("x\n", encoding="utf-8")
     entries = cc.stale_entries(committed, generated)
     assert "i18n/*.json (missing)" in entries
     assert any(e.startswith("i18n/*.json (orphaned") for e in entries)
@@ -122,20 +101,21 @@ def test_the_orphan_message_carries_the_twins_em_dash() -> None:
     assert "\u2014" in cc.ORPHAN_SUFFIX
 
 
-def test_locale_bundles_are_not_version_filtered(tmp_path: pathlib.Path) -> None:
-    """The asymmetry between the two comparisons, asserted directly.
-
-    A locale bundle whose only difference is a line containing `"version":` IS drift. Unifying the two comparisons would silence it.
-    """
+def test_a_version_only_difference_is_stale(tmp_path: pathlib.Path) -> None:
+    """The version is not exempt in any artefact: each one whose only difference is its version line is reported by name."""
     committed = tmp_path / "committed"
     generated = tmp_path / "generated"
-    for base in (committed, generated):
+    for base, version in ((committed, "1"), (generated, "2")):
         (base / "i18n").mkdir(parents=True)
-        (base / "contract.generated.ts").write_text("x\n", encoding="utf-8")
-        (base / "contract.json").write_text("{}\n", encoding="utf-8")
-    (committed / "i18n" / "en.json").write_text('{"version": "1"}\n', encoding="utf-8")
-    (generated / "i18n" / "en.json").write_text('{"version": "2"}\n', encoding="utf-8")
-    assert cc.stale_entries(committed, generated) == ["i18n/en.json"]
+        (base / "i18n" / "en.json").write_text("{}\n", encoding="utf-8")
+        (base / "contract.generated.ts").write_text(
+            "export const CLI_CONTRACT_VERSION = '%s';\n" % version, encoding="utf-8"
+        )
+        (base / "contract.json").write_text('{"version": "%s"}\n' % version, encoding="utf-8")
+        (base / "contract-version.generated.ts").write_text(
+            "export const CLI_CONTRACT_VERSION = '%s';\n" % version, encoding="utf-8"
+        )
+    assert cc.stale_entries(committed, generated) == list(cc.TOP_LEVEL_FILES)
 
 
 def test_selftest_is_green() -> None:
