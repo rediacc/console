@@ -378,7 +378,7 @@ export class ConfigFileStorage {
     const scoped = currentRequestConfig();
     if (scoped) {
       // The caller saves a whole document built from the copy it read; replay only its edit, so a replay after a lost compare-and-swap keeps what another device wrote.
-      const read = scoped.readCopy ?? structuredClone(scoped.config);
+      const read = scoped.readCopy;
       await writeScoped(scoped, (newest) => replaySavedEdit(newest, read, config), 'spec');
       return;
     }

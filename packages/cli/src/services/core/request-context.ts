@@ -161,7 +161,7 @@ export interface RequestConfigScope {
    * between this copy and the document saved, so a caller that mutated `config`
    * in place still has its edit seen.
    */
-  readCopy?: RdcConfig;
+  readCopy: RdcConfig;
 }
 
 /**
