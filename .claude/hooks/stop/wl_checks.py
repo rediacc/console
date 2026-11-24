@@ -4512,7 +4512,7 @@ def _stop_ladder_bookkeeping(ns):
     try:
         worker_rows, worker_verdicts = wl_liveness.worker_facts(event, session_id)
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = (
-            wl_liveness.ladder(fold, session_id, event, state_doc)
+            wl_liveness.ladder(fold, session_id, event, state_doc, armed_blocks=armed_blocks_now())
         )
     except Exception as exc:
         note_read_failure("liveness-ladder", exc)

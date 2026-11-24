@@ -14,6 +14,7 @@ import types
 import pytest
 import wl_armed as A
 import wl_core as C
+import wl_liveness as L
 import wl_store as S
 
 ME = "cafe0003"
@@ -564,3 +565,12 @@ def test_agent_state_state_reads_the_arms_from_the_fold(store):
         encoding="utf-8",
     )
     assert S.agent_state_state(store.root, ME, fold=fold)[0] == "ok"
+
+
+def test_the_ladder_reads_a_fired_arm_as_covering_only_while_armed_action_due_blocks():
+    """ab1d076e.1: the ladder's cover test takes the effort level's armed_blocks flag like the roster; an unfired arm covers at either setting (control)."""
+    fired = {"arm": {"aid": "0123abcd", "when": ["x"], "verdict": A.FIRED}}
+    assert L._arm_covers(fired, True) is True
+    assert L._arm_covers(fired, False) is False
+    unfired = {"arm": {"aid": "0123abcd", "when": ["x"], "exp": at(60 * 24 * 365 * 100)}}
+    assert L._arm_covers(unfired, False) is True

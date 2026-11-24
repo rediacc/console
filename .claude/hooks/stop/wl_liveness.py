@@ -696,8 +696,8 @@ def _age_min(stamp):
     return a if a is not None else 0.0
 
 
-def _arm_covers(rec):
-    """True when the item carries an arm (with an `aid`) that covers it right now. A module that cannot be imported covers nothing."""
+def _arm_covers(rec, armed_blocks=True):
+    """True when the item carries an arm (with an `aid`) that covers it right now. `armed_blocks` is whether `armed-action-due` blocks at this stop's effort level: a fired arm covers only then, the same reading the roster takes. A module that cannot be imported covers nothing."""
     arm = rec.get("arm")
     if not isinstance(arm, dict) or not arm.get("aid"):
         return False
@@ -708,10 +708,10 @@ def _arm_covers(rec):
     except ImportError:
         return False
     # An error inside covers() is a defect to surface, not a reason to read the arm as not covering (swallowed-failures gate).
-    return A.covers(arm, datetime.datetime.now(datetime.UTC), True)
+    return A.covers(arm, datetime.datetime.now(datetime.UTC), armed_blocks)
 
 
-def ladder(fold, session_id, event, state_doc):
+def ladder(fold, session_id, event, state_doc, armed_blocks=True):
     """(pings, investigates, resolves, gones, idles, doc_changed).
 
     `gones` is kept apart from `investigates` because a verifiably dead worker needs a different remedy than a merely quiet one; see the gone branch.
@@ -750,7 +750,7 @@ def ladder(fold, session_id, event, state_doc):
         if C.lease_state(rec["line"]) != "fresh":
             continue  # expired leases are open items already
         # AN ARMED HOLD IS NOT A QUIET WORKER (agent/plans/PLAN-armed-actions.md Design 6): while the item's arm covers it, the arm's own check owns the nag, so no rung fires.
-        if _arm_covers(rec):
+        if _arm_covers(rec, armed_blocks):
             continue
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
