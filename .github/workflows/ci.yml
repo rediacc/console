@@ -1590,8 +1590,9 @@ jobs:
           if [ "${base}" = "${head}" ]; then : > "${RUNNER_TEMP}/renet.diff"; exit 0; fi
           git submodule update --init --filter=blob:none --no-checkout private/renet
           git -C private/renet fetch --no-tags --filter=blob:none origin "${base}" "${head}"
-          read -r -a files <<<"$(PYTHONPATH=.ci python3 -c 'from rediacc_ci.deploy import deploy_www as d; print(" ".join(d.FORMAT_CONSTANTS))')"
-          git -C private/renet diff "${base}" "${head}" -- "${files[@]}" > "${RUNNER_TEMP}/renet.diff"
+          # Assigned on its own line so a failed import fails the step under bash -e instead of diffing the whole renet repo.
+          list="$(PYTHONPATH=.ci python3 -c 'from rediacc_ci.deploy import deploy_www as d; print(" ".join(d.FORMAT_CONSTANTS))')"
+          read -r -a files <<<"${list}" && git -C private/renet diff "${base}" "${head}" -- "${files[@]}" > "${RUNNER_TEMP}/renet.diff"
 
       - name: Download preview pages artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2

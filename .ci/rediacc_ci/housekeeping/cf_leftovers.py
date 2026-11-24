@@ -43,7 +43,6 @@ from rediacc_ci.deploy import preview_name
 from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
-PR_SCRIPT_RE = re.compile(r"^pr-[0-9]+$")
 # `*-bench-j` and `*-bench-*-j` are the bench databases created under a jurisdiction (`account-bench-j`, `control-bench-eu-j`).
 D1_PATTERNS = ("edge-*", "*-bench", "*-bench-j", "*-bench-*-j")
 CONFIG_GLOBS = ("workers/*/wrangler*.toml", "private/account/wrangler*.toml")
@@ -504,9 +503,7 @@ def find_leftovers(
             ),
         )
         for name in sorted(live_set)
-        if name not in known_scripts
-        and not PR_SCRIPT_RE.match(name)
-        and not preview_name.is_preview_worker(name)
+        if name not in known_scripts and not preview_name.is_preview_worker(name)
     )
 
     for db in inv.d1:

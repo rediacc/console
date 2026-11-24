@@ -75,9 +75,15 @@ def kinds(found):
     return {(k, n) for k, n, _ in found}
 
 
-def test_unknown_script_listed_configured_and_pr_not():
-    found = run([CONFIGURED, "pr-12", "stray-worker"], [], [])
+def test_unknown_script_listed_configured_not():
+    found = run([CONFIGURED, "stray-worker"], [], [])
     assert kinds(found) == {("script", "stray-worker")}
+
+
+def test_a_legacy_pr_number_preview_worker_is_a_leftover():
+    """Previews deploy under their pv- word name only (PLAN-preview-signer D5), and the PR-close cleanup deletes that name alone, so a pr-<n> Worker is a leftover the report must name."""
+    found = run([CONFIGURED, "pr-12"], [], [])
+    assert kinds(found) == {("script", "pr-12")}
 
 
 def test_word_named_previews_and_their_signers_are_owned_not_leftovers():

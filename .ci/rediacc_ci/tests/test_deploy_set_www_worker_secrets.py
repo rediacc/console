@@ -371,7 +371,9 @@ def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
     assert len(sibling.REQUIRED_NONEMPTY) == 10
     assert port.GUARD_EXPLANATION != sibling.GUARD_EXPLANATION
     assert not hasattr(port, "WORKER_PREFIX"), "www takes its Worker name whole"
-    assert not hasattr(sibling, "WORKER_PREFIX"), "the preview builds no name from a PR number"
+    assert not hasattr(sibling, "WORKER_PREFIX"), (
+        "the preview has no WORKER_PREFIX; its Worker name comes whole from NAME_ENV"
+    )
     assert sibling.NAME_ENV == "PREVIEW_NAME", "the preview takes its word name from the deploy job"
     # The nine SELLER_* keys are this script's alone.
     seller = [key for key, _var in port.KEYS if key.startswith("SELLER_")]
