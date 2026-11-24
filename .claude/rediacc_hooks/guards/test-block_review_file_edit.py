@@ -19,7 +19,6 @@ from rediacc_hooks.guards import _edit_suite
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
-# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
 R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
 L = "agent/reviews/1231-9/clean.jsonl"

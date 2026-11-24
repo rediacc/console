@@ -19,7 +19,6 @@ from rediacc_hooks.guards import _edit_suite
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
-# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_review_file_edit.py uses).
 STEM = "block_protected_files_edit"
 NEEDLE = "protected hook file"
 

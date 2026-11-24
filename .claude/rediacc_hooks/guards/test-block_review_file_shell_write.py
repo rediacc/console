@@ -1408,7 +1408,6 @@ def _shared():
 
 def _planted(shared, old, new):
     """The guard with `old` replaced by `new`, run in-process; None when `old` is not in the guard outside its DEFECT declaration."""
-    shared._syspath.on_sys_path(str(shared.HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards.%s" % STEM)
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
