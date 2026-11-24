@@ -38,8 +38,8 @@ export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocu
       },
       {
         version: '2026-11-24',
-        effective: '2026-12-24',
-        material: true,
+        effective: '2026-11-24',
+        material: false,
         sha256: '068e820e3db21b955d9c6551df30dc231ca2c1302d171989edcdcb5ae18daf8c',
         archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/privacy-policy-2026-11-24.txt`,
       },
@@ -71,8 +71,8 @@ export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocu
       },
       {
         version: '2026-11-24',
-        effective: '2026-12-24',
-        material: true,
+        effective: '2026-11-24',
+        material: false,
         sha256: 'fef0fbce8ac7d153913786b1c1c7f815720fe6db930fe25beb2c195b36972310',
         archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/data-processing-agreement-2026-11-24.txt`,
       },
