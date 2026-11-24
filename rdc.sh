@@ -104,8 +104,7 @@ export PATH="$ROOT_DIR/private/renet/bin:$PATH"
 # RDC_DEV=1) is the one opt-in on top; bench is not a flag, it is the named config
 # `./rdc.sh --config bench <cmd>`. Every universe is a named CLI config carrying its
 # own server, keys and token, so selecting one is the ONLY thing that changes here.
-# The 27 lines of prose that stood here said what docs/agent-reference/local-env.md
-# already says under 'The ./rdc.sh wrappers'.
+# The 27 lines of prose that stood here said what docs/agent-reference/local-env.md already says under 'The ./rdc.sh wrappers'.
 if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
@@ -168,6 +167,7 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
 else
     log_info "Renet available at: $ROOT_DIR/private/renet/bin/renet"
     log_step "Starting CLI (config $(selected_config_name "$@"))"
+    case "$(selected_config_name "$@")" in eu-bench | us-bench | asia-bench | bench) export REDIACC_IP_REBIND_CODE_COMMAND="${REDIACC_IP_REBIND_CODE_COMMAND:-$ROOT_DIR/scripts/ops/rebind-code.sh}" ;; esac # a bench token refused for a changed IP moves itself with the vault-derived code (.ci/rediacc_ci/ops/rebind_code.py)
 fi
 
 # Run the compiled CLI bundle, passing through all arguments
