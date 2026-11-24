@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T03:54:29.814Z",
+  "generatedAt": "2026-11-24T07:36:50.044Z",
   "legs": [
     {
       "index": 1,
@@ -229,6 +229,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_channel_snapshot.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_console_executor.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_preview_name.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_preview_signer.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py",
@@ -955,6 +956,7 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_registry.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
+        "pytest:.ci/rediacc_ci/tests/test_heavy_lock_wrapped_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_stale_d1.py",
