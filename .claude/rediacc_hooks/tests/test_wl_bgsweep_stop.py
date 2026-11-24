@@ -111,6 +111,9 @@ def test_a_declared_wait_loop_blocks_on_the_pr_loop_and_names_its_kill(wl):
 
 def test_the_message_names_pid_age_command_and_kill(wl):
     loop_world(wl)
+    # A round inside the hour keeps `writers-now-due` (kept by PR_LOOP, and ahead of bg-orphan on the ladder) silent, so the block quotes bg-orphan in full.
+    wn = wlfix.import_wl("wl_writersnow")
+    wn.append_round(wl.proj, wlfix.ME, "/tmp/s.md", wn.C.utcnow())
     tgt = _target(wl)
     tree = Tree(wl, POLL % (tgt, tgt), "bpoll002")
     try:

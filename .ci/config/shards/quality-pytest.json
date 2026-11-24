@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T00:48:12.093Z",
+  "generatedAt": "2026-11-24T03:54:29.814Z",
   "legs": [
     {
       "index": 1,
@@ -167,6 +167,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_mark_follow.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_roster.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_standdown_class.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",

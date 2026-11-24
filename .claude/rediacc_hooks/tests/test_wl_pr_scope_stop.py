@@ -431,7 +431,7 @@ def test_sc5_dropped_checks_stand_down_and_are_named(wl):
     """Every key the full battery raises off the loop and the PR_LOOP profile does not keep is absent on the loop and named in the Stood down phrase."""
     std = wlfix.import_wl("wl_standdown")
     loop_world(wl, branch="feature-x")
-    # A deferral with no DEFAULT raises `undefaulted`, which only the concurrency wait keeps.
+    # A deferral with no DEFAULT raises `undefaulted`, which both PR_LOOP and the concurrency wait keep: it is in the run so the comparison covers a kept key beside the dropped ones.
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
             json.dumps(

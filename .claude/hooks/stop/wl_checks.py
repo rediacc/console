@@ -3579,6 +3579,15 @@ WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
 LANDING_KEEPS = frozenset({"landing-stack"})
 
 
+def stand_down_keeps(profile, key, always, compaction_due):
+    """True when violation `key` still blocks under the stand-down `profile`: the keeps above, then `wl_standdown.keeps`. The one predicate the stop applies, and the one test_wl_standdown_class.py checks every effort.json key against."""
+    if profile is wl_standdown.PR_LOOP and key in IDLE_KEEPS:
+        return True
+    if key in WORKTREE_KEEPS or key in LANDING_KEEPS:
+        return True
+    return wl_standdown.keeps(profile, key, always, compaction_due)
+
+
 def park_tree_keys(violations, parks, role, advise):
     """`violations` without the tree's parked findings (agent/plans/PLAN-two-track-merge-dev.md LT5). Each finding whose base key is in `parks` and is not `always` goes to `advise(key, text)` with wl_prscope.TREE_PARK_NOTE ahead of its text; the rest come back in order. Empty `parks` returns `violations` itself."""
     if not parks:
@@ -7343,11 +7352,7 @@ def _stop_verdict(ns):
     if _profile is not None:
 
         def _keeps(v):
-            if _profile is wl_standdown.PR_LOOP and v[0] in IDLE_KEEPS:
-                return True
-            if v[0] in WORKTREE_KEEPS or v[0] in LANDING_KEEPS:
-                return True
-            return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
+            return stand_down_keeps(_profile, v[0], v[1], _compaction_due)
 
         _dropped = sorted({v[0] for v in violations if not _keeps(v)})
         violations = [v for v in violations if _keeps(v)]

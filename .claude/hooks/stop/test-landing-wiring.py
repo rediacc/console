@@ -148,6 +148,9 @@ class World:
         (main / NEXT).write_text(plan_text("next", 1), encoding="utf-8")
         queue = (plans / "QUEUE.md").read_text(encoding="utf-8")
         (plans / "QUEUE.md").write_text(queue.rstrip("\n") + "\n\n1. %s\n" % NEXT, encoding="utf-8")
+        # A /writers-now round of this session now: the Promoted NEXT plan has an open box, and the development tree keeps `writers-now-due` (wl_standdown._BUILD_ONLY), which would otherwise block ahead of the wiring under test for the first hour.
+        wn = wlfix.import_wl("wl_writersnow")
+        wn.append_round(main, fix.sid, "/tmp/s.md", wn.C.utcnow())
         (main / ".gitignore").write_text("agent/deadbeef/\n.agent/\n", encoding="utf-8")
         (main / "a.txt").write_text("a\n", encoding="utf-8")
         self.git(main, "add", "-A")
