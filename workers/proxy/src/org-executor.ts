@@ -24,7 +24,6 @@ import {
 } from './org-executor-relocate';
 import {
   acquireLease,
-  BUSY_PATH,
   bounded,
   busyRefusal,
   containerRequest,
@@ -39,6 +38,7 @@ import {
   errorSummary,
   executorEnv,
   flagOom,
+  isBusyPath,
   isOomExit,
   isRefusal,
   logStall,
@@ -312,7 +312,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Forward a request to the container and stream its response back untouched, counting it in flight until the body closes. */
   override async fetch(request: Request): Promise<Response> {
     // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running.
-    if (new URL(request.url).pathname === BUSY_PATH) return busyRefusal();
+    if (isBusyPath(new URL(request.url).pathname)) return busyRefusal();
     await this.startupSettled();
     const container = this.ctx.container;
     if (this.isRetired()) return refusalResponse('EXECUTOR_RELOCATED');

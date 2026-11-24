@@ -113,3 +113,27 @@ describe('keep-awake until the dispatch ends', () => {
     expect(h.container.portUrls).toHaveLength(before);
   });
 });
+
+describe('isBusyPath (review 1cf0bd86.1)', () => {
+  it('refuses every spelling the container router reads as the busy route', async () => {
+    const { isBusyPath } = await import('../org-executor-support');
+    for (const spelling of [
+      BUSY_PATH,
+      '/v1/%62usy',
+      '/v1/b%75sy',
+      '//v1/busy',
+      '/v1//busy',
+      '/v1/busy/',
+      '/v1/%E0%A4%A',
+    ]) {
+      expect(isBusyPath(spelling), spelling).toBe(true);
+    }
+  });
+
+  it('leaves every other path to the forward', async () => {
+    const { isBusyPath } = await import('../org-executor-support');
+    for (const path of ['/v1/ready', '/v1/busyness', '/v1', '/', '/v2/busy']) {
+      expect(isBusyPath(path), path).toBe(false);
+    }
+  });
+});

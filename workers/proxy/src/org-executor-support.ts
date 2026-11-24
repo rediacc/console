@@ -275,6 +275,22 @@ async function healthy(
 /** The executor's dispatch count route (PROXY_ROUTES.busy in packages/shared/src/cli-contract/wire.ts); only the alarm reaches it, never a caller. */
 export const BUSY_PATH = '/v1/busy';
 
+/**
+ * True when `pathname` reaches the container's busy route. The container's router decodes percent-escapes and is
+ * lenient about repeated and trailing slashes, so a raw comparison would let `/v1/%62usy` or `//v1/busy/` through the
+ * outside refusal (review 1cf0bd86.1). A pathname that does not decode is treated as the busy route: it fails closed.
+ */
+export function isBusyPath(pathname: string): boolean {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+  const normal = decoded.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+  return normal === BUSY_PATH;
+}
+
 /** The longest the alarm holds a container awake on a dispatch count alone, so a dispatch that never ends cannot pin an instance forever. A literal, like `sleepAfter`. */
 export const MAX_DISPATCH_HOLD_MS = 60 * 60_000;
 
