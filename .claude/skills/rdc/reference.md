@@ -2380,7 +2380,7 @@ Check the preview's build of the CLI against both of its origins, keep the curre
 
 ### rdc preview leave
 
-List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.
+List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.
 
 **Options:**
 

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 
 const { active } = vi.hoisted(() => ({ active: { overlay: undefined as unknown } }));
 
 vi.mock('../state.js', () => ({
   readPreviewOverlay: () => active.overlay,
-  readRealAccountServer: () => 'https://eu.rediacc.cloud',
+  readRealAccountServer: () => WK_ACCOUNT_DEFAULT_ORIGIN,
 }));
 
 const { resolveLicenseRecoveryGuidance } = await import(
@@ -13,7 +14,7 @@ const { resolveLicenseRecoveryGuidance } = await import(
 
 const OVERLAY = {
   name: 'pv-amber-river-stone',
-  host: 'https://pv-amber-river-stone.rediacc.workers.dev',
+  host: WK_PREVIEW_SAMPLE_ORIGIN,
   enteredAt: '2026-11-23T10:00:00.000Z',
   channel: 'pv-amber-river-stone',
   licenceEndsAt: '2026-11-30T10:00:00.000Z',
@@ -34,7 +35,7 @@ describe('licence expiry guidance on a preview (D11)', () => {
     expect(g.recoveryFailedMessage).toContain('2026-11-30');
     expect(g.recoveryFailedMessage).toContain('running apps keep running');
     expect(g.recoveryFailedMessage).toContain('rdc preview leave');
-    expect(g.recoveryFailedMessage).toContain('https://eu.rediacc.cloud');
+    expect(g.recoveryFailedMessage).toContain(WK_ACCOUNT_DEFAULT_ORIGIN);
     expect(g.recoveryFailedMessage).not.toContain('on-prem');
   });
 

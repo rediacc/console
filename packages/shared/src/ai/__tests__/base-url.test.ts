@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import { validateBaseUrl } from '../base-url.js';
 
 const refused = (url: string): string | null => {
@@ -22,11 +23,11 @@ describe('validateBaseUrl', () => {
   });
 
   it('returns the parsed URL on success', () => {
-    const r = validateBaseUrl('https://api.openai.com/v1');
+    const r = validateBaseUrl(WK_OPENAI_API_BASE);
     expect(r.ok && r.url.hostname).toBe('api.openai.com');
   });
 
-  it.each(['http://api.openai.com/v1', 'ftp://example.com', 'wss://example.com/x'])(
+  it.each([WK_OPENAI_API_BASE.replace('https://', 'http://'), 'ftp://example.com', 'wss://example.com/x'])(
     'refuses a scheme other than https: %s',
     (url) => {
       expect(refused(url)).toBe('not-https');
@@ -41,8 +42,8 @@ describe('validateBaseUrl', () => {
   );
 
   it('refuses embedded credentials', () => {
-    expect(refused('https://user:pw@api.openai.com/v1')).toBe('credentials');
-    expect(refused('https://user@api.openai.com/v1')).toBe('credentials');
+    expect(refused(WK_OPENAI_API_BASE.replace('https://', 'https://user:pw@'))).toBe('credentials');
+    expect(refused(WK_OPENAI_API_BASE.replace('https://', 'https://user@'))).toBe('credentials');
   });
 
   it.each([

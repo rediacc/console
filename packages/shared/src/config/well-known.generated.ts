@@ -53,4 +53,6 @@ export const WK_UBUNTU_AZURE_MIRROR = 'http://azure.archive.ubuntu.com/ubuntu';
 export const WK_DOCKER_INSTALL_DOCS = 'https://docs.docker.com/get-docker';
 export const WK_CLAUDE_CODE_URL = 'https://claude.com/claude-code';
 export const WK_CEPH_IMAGE_REPO = 'quay.io/ceph/ceph';
+export const WK_OPENAI_API_BASE = 'https://api.openai.com/v1';
+export const WK_PREVIEW_SAMPLE_ORIGIN = 'https://pv-amber-river-stone.rediacc.workers.dev';
 export const WK_CLAUDE_HAIKU_MODEL = 'claude-haiku-5-5';

@@ -1446,7 +1446,7 @@
   "commands.ops.up.starting": "Starting VM cluster provisioning...",
   "commands.preview.description": "Switch this config to a preview of a pull request: rdc and the renet on each server rdc touches move to the preview's builds, and `rdc preview leave` returns to the published ones. Run `rdc preview use <name>` with the name you were given.",
   "commands.preview.descriptionShort": "Test a PR build on your own machines, and switch back",
-  "commands.preview.leave.description": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+  "commands.preview.leave.description": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.",
   "commands.preview.leave.descriptionShort": "Return to the published rdc and renet",
   "commands.preview.leave.machine": "Switch back only this server",
   "commands.preview.msg.banner": "Preview {{name}} is active (its licences end {{date}}). Run `rdc preview leave` to return to the published rdc and renet.",

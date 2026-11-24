@@ -13,6 +13,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { WK_SITE_ORIGIN } from '../../config/well-known.generated.js';
 import { PolicyDocumentSchema } from '../../policy/index.js';
 import { LOCAL_ONLY_EXCLUSIONS } from '../coverage.js';
 import { parseConfig, type RdcConfig, RdcConfigSchema } from '../schemas.js';
@@ -27,7 +28,7 @@ const POLICY = {
 };
 
 const REMOTE = {
-  apiUrl: 'https://www.rediacc.com',
+  apiUrl: WK_SITE_ORIGIN,
   storeId: '3f2a1b0c-9d8e-4f7a-8b6c-5d4e3f2a1b0c',
   configId: '4a3b2c1d-0e9f-4a8b-9c7d-6e5f4a3b2c1d',
   storageKeyId: 'key-1',

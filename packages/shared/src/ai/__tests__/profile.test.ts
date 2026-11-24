@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import { buildProfile, getPreset, PRESETS } from '../presets.js';
 import { AiConfigSchema, type Profile, ProfileSchema, validateProfile } from '../profile.js';
 import { omitKey } from '../../utils/omit-key.js';
 
 const base: Profile = {
   format: 'openai-chat',
-  baseURL: 'https://api.openai.com/v1',
+  baseURL: WK_OPENAI_API_BASE,
   key: 'sk-test',
   authScheme: 'bearer',
   model: 'gpt-4.1',

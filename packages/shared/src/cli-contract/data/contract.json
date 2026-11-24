@@ -1,5 +1,5 @@
 {
-  "version": "0033255de727860c",
+  "version": "f166ac6a35483877",
   "languages": [
     "ar",
     "de",
@@ -10080,7 +10080,7 @@
       "group": "TOOLS",
       "plane": "machine",
       "descriptionKey": "commands.preview.leave.description",
-      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.",
       "summaryKey": "commands.preview.leave.descriptionShort",
       "summary": "Return to the published rdc and renet",
       "severity": "none",

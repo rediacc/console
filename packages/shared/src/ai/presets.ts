@@ -8,6 +8,7 @@
  * substituted value can never add path, query or credential text.
  */
 import type { AuthScheme, Capabilities, Profile, ProfileFormat } from './profile.js';
+import { WK_OPENAI_API_BASE } from '../config/well-known.generated.js';
 import { type ProfileIssue, validateProfile } from './profile.js';
 
 export interface PresetPlaceholder {
@@ -53,7 +54,7 @@ export const PRESETS: readonly Preset[] = [
     label: 'OpenAI',
     format: 'openai-chat',
     authScheme: 'bearer',
-    baseURLTemplate: 'https://api.openai.com/v1',
+    baseURLTemplate: WK_OPENAI_API_BASE,
     placeholders: [],
     suggestedModel: 'gpt-4.1',
     capabilities: ALL,

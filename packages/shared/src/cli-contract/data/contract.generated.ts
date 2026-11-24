@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '0033255de727860c';
+export const CLI_CONTRACT_VERSION = 'f166ac6a35483877';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "0033255de727860c",
+  "version": "f166ac6a35483877",
   "languages": [
     "ar",
     "de",
@@ -10088,7 +10088,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "machine",
       "descriptionKey": "commands.preview.leave.description",
-      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.",
       "summaryKey": "commands.preview.leave.descriptionShort",
       "summary": "Return to the published rdc and renet",
       "severity": "none",

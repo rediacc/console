@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 
 vi.mock('../../backup/backup-store-universe.js', () => ({
-  expectedAccountServerOrigin: () => 'https://pv-amber-river-stone.rediacc.workers.dev',
+  expectedAccountServerOrigin: () => WK_PREVIEW_SAMPLE_ORIGIN,
 }));
 
 import { reposWithForeignLicenseOrigin } from '../../account/license-batch.js';
@@ -143,7 +144,7 @@ describe('releaseLicencesOnLeave', () => {
     // g3 keeps its (preview) licence so it still runs; no repo or file of g3 was deleted.
     expect(m.files.has(path('g3', PREVIEW_KEY))).toBe(true);
     expect(m.files.has(path('g4', PREVIEW_KEY))).toBe(false);
-    const lines = licenceReportLines(report, 'https://eu.rediacc.cloud').join('\n');
+    const lines = licenceReportLines(report, WK_ACCOUNT_DEFAULT_ORIGIN).join('\n');
     expect(lines).toContain('repo-g3');
     expect(lines).toContain('Plan limit reached: 5 of 5 repositories');
     expect(lines).toContain('repo-g4');
@@ -175,13 +176,12 @@ describe('a licence is requested in preview only for a repo with no master-key l
         {
           repositoryGuid: 'master-held',
           requestedSizeGb: 1,
-          currentRenewalUrl: 'https://eu.rediacc.cloud/account/api/v1/renew',
+          currentRenewalUrl: `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/api/v1/renew`,
         },
         {
           repositoryGuid: 'preview-held',
           requestedSizeGb: 1,
-          currentRenewalUrl:
-            'https://pv-amber-river-stone.rediacc.workers.dev/account/api/v1/renew',
+          currentRenewalUrl: `${WK_PREVIEW_SAMPLE_ORIGIN}/account/api/v1/renew`,
         },
         { repositoryGuid: 'unlicensed', requestedSizeGb: 1 },
       ],

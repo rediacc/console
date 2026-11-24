@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 
 const { flows, overlayState, out } = vi.hoisted(() => ({
   flows: {
@@ -91,7 +92,7 @@ describe('rdc preview', () => {
 
     overlayState.current = {
       name: 'pv-amber-river-stone',
-      host: 'https://pv-amber-river-stone.rediacc.workers.dev',
+      host: WK_PREVIEW_SAMPLE_ORIGIN,
       enteredAt: '2026-11-23T10:00:00.000Z',
       channel: 'pv-amber-river-stone',
       previous: { cliVersion: '1.3.9', cliSha256: 'a'.repeat(64) },
@@ -108,7 +109,7 @@ describe('the banner before every command', () => {
 
     overlayState.current = {
       name: 'pv-amber-river-stone',
-      host: 'https://pv-amber-river-stone.rediacc.workers.dev',
+      host: WK_PREVIEW_SAMPLE_ORIGIN,
       enteredAt: '2026-11-23T10:00:00.000Z',
       channel: 'pv-amber-river-stone',
       licenceEndsAt: '2099-01-01T00:00:00.000Z',

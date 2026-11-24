@@ -1428,15 +1428,17 @@ export function insertHeader(
  * collected nothing would produce.
  */
 /**
- * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then `npm run <script>` and plain arguments, with no shell operator anywhere. An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
+ * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then an optional `python3 .ci/rediacc_ci/core_lease.py heavy-lock --` wrapper, then `npm run <script>` and plain arguments, with no shell operator anywhere. An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
  */
 export function isNpmHop(run: string): boolean {
   // A value expands at most a plain `$NAME` or `${NAME}`: `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
   const v = '\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?';
   const value = `(?:"(?:[^"\`$\\\\\\n]|${v})*"|'[^'\\n]*'|(?:[^\\s;&|()<>\`'"$\\\\]|${v})*)`;
   const word = '[^\\s;&|()<>`$\\\\]+';
+  // The heavy-lock wrapper (`.ci/rediacc_ci/core_lease.py heavy-lock --`) only serialises the hop behind a lease; the script that runs is still the npm one. Exactly that argv is admitted, so a wrapper around any other program or subcommand stays a direct run.
+  const wrapper = 'python3 \\.ci/rediacc_ci/core_lease\\.py heavy-lock --[ \\t]+';
   return new RegExp(
-    `^(?:[A-Za-z_][A-Za-z0-9_]*=${value}[ \\t]+)*npm run[ \\t]+${word}(?:[ \\t]+${word})*[ \\t]*$`
+    `^(?:[A-Za-z_][A-Za-z0-9_]*=${value}[ \\t]+)*(?:${wrapper})?npm run[ \\t]+${word}(?:[ \\t]+${word})*[ \\t]*$`
   ).test(run);
 }
 
@@ -1574,6 +1576,17 @@ function selftest(endToEnd = false): number {
       !isNpmHop('npm run check:ci-a; rm -rf x') &&
       !isNpmHop('(cd y && npm run check:ci-a)') &&
       !isNpmHop('npm run check:ci-a | tee log')
+  );
+  ck(
+    'CONTROL: a heavy-lock wrapped hop is a hop (with or without an env prefix); a wrapper around another program, another subcommand or a compound run is not',
+    isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-a') &&
+      isNpmHop(
+        'X="$CI_RUNNER_CORES" python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-a'
+      ) &&
+      !isNpmHop('python3 .ci/rediacc_ci/other.py heavy-lock -- npm run check:ci-a') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py other-lock -- npm run check:ci-a') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- tsx evil.ts') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run a && npm run b')
   );
   ck(
     'CONTROL: an env value that runs code (command substitution, backticks) or a newline separator is not a hop (review 1e7d515b.1); ${VAR} expansion still is',

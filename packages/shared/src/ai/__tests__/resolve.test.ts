@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import type { AiConfig, Profile } from '../profile.js';
 import { resolveProfile } from '../resolve.js';
 import { omitKey } from '../../utils/omit-key.js';
@@ -6,7 +7,7 @@ import { omitKey } from '../../utils/omit-key.js';
 function profile(model: string, overrides: Partial<Profile> = {}): Profile {
   return {
     format: 'openai-chat',
-    baseURL: 'https://api.openai.com/v1',
+    baseURL: WK_OPENAI_API_BASE,
     key: 'k',
     authScheme: 'bearer',
     model,

@@ -2808,7 +2808,7 @@
       },
       "leave": {
         "descriptionShort": "Return to the published rdc and renet",
-        "description": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from your real account. A server that cannot be reached stays listed; finish it later with --machine.",
+        "description": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.",
         "machine": "Switch back only this server"
       },
       "status": {

@@ -27,7 +27,7 @@ Every method feeds the same pipeline: the slot yields a secret that combines wit
 
 Slots are managed in the portal on the Config Storage page. Organizations that want hardware-only unlock can enable the **require passkey** policy, which refuses and revokes non-passkey slots for the whole store.
 
-Unlocking is per-device: you unlock once on a new device, and after that daily CLI operations (push/pull) work without touching a passkey or typing a recovery code.
+Unlocking is per-device: a new device unlocks once, and after that daily CLI operations (push/pull) work without touching a passkey or typing a recovery code.
 
 ## Prerequisites
 

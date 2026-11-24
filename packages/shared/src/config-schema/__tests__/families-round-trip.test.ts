@@ -24,7 +24,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
-import { WK_ACCOUNT_DEFAULT_ORIGIN } from '../../config/well-known.generated.js';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_PREVIEW_SAMPLE_ORIGIN } from '../../config/well-known.generated.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
 import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import {
@@ -96,7 +96,7 @@ function allFamiliesConfig(): RdcConfig {
     renetPath: '/opt/bin/renet',
     preview: {
       name: 'pv-amber-river-stone',
-      host: 'https://pv-amber-river-stone.rediacc.workers.dev',
+      host: WK_PREVIEW_SAMPLE_ORIGIN,
       enteredAt: '2026-11-22T15:30:00.000Z',
       channel: 'pv-amber-river-stone',
       formatChange: { formats: ['vault'], reason: 'vault schema 4' },
