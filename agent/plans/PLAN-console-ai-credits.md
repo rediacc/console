@@ -64,10 +64,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/ai-credits src/subscription)` rc 0.
     (ticked) 2026-11-23T18:18:09Z by ace763dd: commit:68e1565f6b landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] AC2 [writer] Schema and migration: `ai_credit_lots`, `ai_credit_ledger`, `ai_funding`, `ai_credit_control` and `organizations.ai_credits_blocked_at` in private/account/src/db/schema.ts, the next free drizzle migration, journal and snapshot.
+- [x] AC2 [writer] Schema and migration: `ai_credit_lots`, `ai_credit_ledger`, `ai_funding`, `ai_credit_control` and `organizations.ai_credits_blocked_at` in private/account/src/db/schema.ts, the next free drizzle migration, journal and snapshot.
   Owns: private/account/src/db/schema.ts, private/account/drizzle/*_ai_credits.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/tests/integration/ai-credits-schema.test.ts
   Depends on: none.
   Accept: `(cd private/account && npx drizzle-kit check && npx vitest run tests/integration/ai-credits-schema.test.ts)` rc 0, the test applying every migration to a fresh database and reading each new table.
+    (ticked) 2026-11-24T18:25:39Z by d778be9d: AC2 landed: account migration 0104_ai_credits + schema + scope entries; vitest 175 passed rc 0; commit:572e82512f
 - [ ] AC3 [writer] `CreditLedger` Durable Object and `CreditLedgerGate` entrypoint per D4 to D6, D9 and D10 in workers/account/src, with its binding and SQLite migration in every account wrangler config and enterprise.template.toml; tests cover reserve refusals for each check, commit freeing the remainder, earliest-expiry consumption, the 10-minute alarm and concurrent reservations never overdrawing.
   Owns: workers/account/src/credit-ledger.ts, workers/account/src/index.ts, workers/account/wrangler.*.toml, workers/account/enterprise.template.toml, private/account/tests/integration/credit-ledger.test.ts
   Depends on: AC1, AC2.

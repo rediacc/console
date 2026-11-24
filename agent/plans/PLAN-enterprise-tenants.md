@@ -211,10 +211,11 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
     (ticked) 2026-11-23T09:16:32Z by ace763dd: V4 bench routing proof rc 0, 32 claims 0 broken, Turnstile holds so LT1 not needed, /tmp/bench-live4/proof-routing.log (bench-only proof) DEPS-WAIVED: live bench proof run 2026-11-23; the plan prerequisite gates other boxes, not this run
 - [ ] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
-- [ ] T1 [live] The acme cloud tenant:
+- [x] T1 [live] The acme cloud tenant:
   - Run: `bws_env exec --profile deploy-bench -- ./run.sh enterprise add acme --region eu --owner muhammed@rediacc.com --storage-gb 10 --unlisted --bench --bws-project <Q0 id>`.
   - The owner invitation is captured on bench. Read the link with `login_bench mail_token`, then the operator signs in.
   - Accept: `./run.sh enterprise list --bench` rc 0 naming acme `active`, and `curl -s -o /dev/null -w '%{http_code}' https://acme.rediacc.cloud/` and `https://acme-proxy.rediacc.cloud/` each below 500 with a valid certificate (curl without `-k`).
+    (ticked) 2026-11-24T18:44:31Z by d778be9d: enterprise list --bench rc=0 acme active; acme.rediacc.cloud 302, acme-proxy.rediacc.cloud 401, ssl_verify_result 0 (bench-only); log /tmp/writers-now/1121-1-bench-ent-list.log
 - [x] V2 [live] Region loss. acme in eu is briefly unavailable during this, which ruling 1 accepts.
   - Accept: `./run.sh enterprise proof region-loss --bench` rc 0.
     (ticked) 2026-11-16T17:24:47Z by d778be9d: run: ./run.sh enterprise proof region-loss --bench rc=0, 33 claims 0 broken log=/tmp/live-bench/ent-region-loss.log

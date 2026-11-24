@@ -506,9 +506,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-console-ai-assistant.md` | approved | 135 | 15 | 0 | 26828 |
-| `agent/plans/PLAN-console-ai-credits.md` | approved | 125 | 14 | 1 | 22970 |
+| `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 93 | 8 | 1 | 15365 |
-| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 92 | 10 | 0 | 15420 |
+| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 134 | 13 | 2 | 22322 |
 | `agent/plans/PLAN-console-animations.md` | approved | 89 | 9 | 0 | 12550 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
@@ -531,7 +531,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
-| `agent/plans/PLAN-enterprise-tenants.md` | approved | 483 | 18 | 29 | 67161 |
+| `agent/plans/PLAN-enterprise-tenants.md` | approved | 484 | 17 | 30 | 67385 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 76 | 9 | 1 | 14042 |
@@ -541,7 +541,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 126 | 14 | 1 | 27769 |
+| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 127 | 13 | 2 | 27888 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 128 | 5 | 8 | 20436 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 129 | 9 | 6 | 23918 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
@@ -568,7 +568,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 339 | 8 | 15 | 57347 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 340 | 7 | 16 | 57510 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
@@ -615,7 +615,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17422 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
-| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 162 | 11 | 15 | 39008 |
+| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 97 | 5 | 12 | 20633 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
@@ -657,7 +657,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tooling-speed.md` | approved | 96 | 2 | 6 | 17321 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
-| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74638 |
+| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 360 | 5 | 39 | 74793 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-unlimited-writers.md` | approved | 47 | 1 | 4 | 6616 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 24 | 1 | 2 | 3682 |

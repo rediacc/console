@@ -59,10 +59,11 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
 
 ## Tasks
 
-- [ ] FN1 [writer] Incident schema per D4 and D8: the four `security_incident*` tables, the two organizations columns, and the `security_incident` literal in the `account_notices` kind enum, registered in scope-registry.ts and shard-router.ts.
+- [x] FN1 [writer] Incident schema per D4 and D8: the four `security_incident*` tables, the two organizations columns, and the `security_incident` literal in the `account_notices` kind enum, registered in scope-registry.ts and shard-router.ts.
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts, private/account/drizzle/*_security_incidents.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/tests/integration/security-incident-schema.test.ts
   Depends on: none.
   Accept: `(cd private/account && npx drizzle-kit check && npx vitest run tests/integration/security-incident-schema.test.ts)` rc 0; `npm run check:ci-account-scope-audit` and `npm run check:ci-account-no-admin-role` rc 0.
+    (ticked) 2026-11-24T19:08:53Z by d778be9d: FN1 landed commit:63e1c7cb27; vitest 187 passed, drizzle-kit check rc 0
 - [ ] FN2 [writer] Security contact per D8: `PUT /portal/org/security-contact` in organization.ts with org.service.ts and the DTO, the field on Team.tsx, and team.json in the 13 locales (sonnet writers).
   Owns: private/account/src/routes/organization.ts, private/account/src/services/org.service.ts, private/account/src/dto/organization.dto.ts, private/account/web/src/pages/Team.tsx, private/account/web/src/pages/__tests__/security-contact.test.tsx, private/account/web/src/i18n/locales/*/team.json, private/account/web/src/i18n/locales/.translation-hashes.json, private/account/tests/integration/security-contact.test.ts
   Depends on: FN1.

@@ -45,18 +45,20 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
 
 ## Tasks
 
-- [ ] AX1 [writer] `RESOURCE_TEMPLATES` for machine, repo, datastore, cluster, provider and strategy per D2, with a test that every read command exists in the contract, has severity `none`, is proxy-capable and binds the template's kind, and a control template naming a `caution` command that turns it red.
+- [x] AX1 [writer] `RESOURCE_TEMPLATES` for machine, repo, datastore, cluster, provider and strategy per D2, with a test that every read command exists in the contract, has severity `none`, is proxy-capable and binds the template's kind, and a control template naming a `caution` command that turns it red.
   Owns: private/account/web/src/lib/ai/resource-templates.ts, private/account/web/src/lib/ai/__tests__/resource-templates.test.ts
   Depends on: PLAN-console-contract-semantics.md#CS5.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/__tests__/resource-templates.test.ts)` rc 0.
+    (ticked) 2026-11-24T18:57:31Z by d778be9d: landed commit:632a6492a3; vitest src/lib/ai 24 passed rc 0
 - [ ] AX2 [writer] Mount the bar and the suggestion strip on MachineDetail, RepoDetail and ResourceFamilyDetail, add the `backup status` read to the machine page's lazy status tab, and correct the two "five families" comments.
   Owns: private/account/web/src/pages/console/MachineDetail.tsx, private/account/web/src/pages/console/RepoDetail.tsx, private/account/web/src/pages/console/ResourceFamilyDetail.tsx, private/account/web/src/pages/console/__tests__/ai-pages.test.tsx, private/account/web/src/router.tsx
   Depends on: AX1, AX5, PLAN-console-contract-semantics.md#CS11.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-pages.test.tsx src/pages/console/__tests__/resource-family-pages.test.tsx)` rc 0, including a test that no command runs on mount beyond the page's existing reads.
-- [ ] AX3 [writer] The D3 rules as pure functions with the signal hash, with fixtures for a failed and a missed backup unit, a failed last run, an unreachable machine, and a healthy resource that yields nothing.
+- [x] AX3 [writer] The D3 rules as pure functions with the signal hash, with fixtures for a failed and a missed backup unit, a failed last run, an unreachable machine, and a healthy resource that yields nothing.
   Owns: private/account/web/src/lib/ai/suggestions.ts, private/account/web/src/lib/ai/__tests__/suggestions.test.ts
   Depends on: none.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/__tests__/suggestions.test.ts)` rc 0, including a case where a new `lastRun` after a dismissal yields a new signal.
+    (ticked) 2026-11-24T18:57:32Z by d778be9d: landed commit:632a6492a3; vitest src/lib/ai 24 passed rc 0
 - [ ] AX4 [writer] Account side: the `ai_suggestion_dismissals` table and migration, dismissal routes and background-task start and status routes in console-ai.ts, and the `machine` and `repo` target filter on plan 4's runs route.
   Owns: private/account/src/routes/console-ai.ts, private/account/src/routes/console-runs.ts, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_ai_dismissals.sql, private/account/tests/integration/console-ai-pages.test.ts
   Depends on: PLAN-console-ai-assistant.md#AI6, PLAN-console-run-index.md#RI2.
