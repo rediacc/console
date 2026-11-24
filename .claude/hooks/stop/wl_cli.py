@@ -3068,7 +3068,7 @@ def _armed_cli(argv):
         rows, problems = A.survey_rows(text)
         if problems:
             die("REFUSED: %s" % "; ".join(problems))
-        # EVERY ROW IS VALIDATED BEFORE ANY IS WRITTEN, so a bad row leaves no half-armed survey behind.
+        # EVERY ROW IS PARSED AND ITS DRAFT READ BEFORE ANY IS WRITTEN, so a bad row there leaves nothing behind. A write failure partway through the loop below (disk, a refusal in _arm_one) leaves the earlier rows armed, and a re-run adds them again.
         world = _armed_world(root, worklist, fold, me)
         planned = []
         for row in rows:

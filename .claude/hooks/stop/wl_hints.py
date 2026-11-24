@@ -388,10 +388,20 @@ def lessons_plans(root):
     return sorted(out, reverse=True)
 
 
-def newest_lessons_plan(root):
-    """(date, repo-relative path) of the newest weekly lessons plan, or None."""
+def newest_lessons_plan(root, today=None):
+    """(date, repo-relative path) of the newest weekly lessons plan, or None.
+
+    With `today`, a plan whose name carries an impossible date or a date after `today` is skipped: a future-dated file would otherwise keep the weekly check silent until that date, and an impossible one would raise."""
     plans = lessons_plans(root)
-    return plans[0] if plans else None
+    if today is None:
+        return plans[0] if plans else None
+    for date8, rel in plans:
+        try:
+            if _days_between(date8, today) >= 0:
+                return date8, rel
+        except ValueError:
+            continue
+    return None
 
 
 def _days_between(date8, today):
@@ -415,7 +425,7 @@ def weekly_state(root, today, pending=None):
     kinds: `none` nothing is owed; `dispatch` pending proposals exist and no plan covers the last 7 days (the newest is older or absent), so the curator is due; `work` the newest plan is more than 7 days old and still has open boxes, so its oldest open box is due. `detail` is the newest plan's repo-relative path ("" for none). An unreadable plan file raises: a read that failed is not an empty plan.
     """
     pend = pending_proposals(root) if pending is None else pending
-    newest = newest_lessons_plan(root)
+    newest = newest_lessons_plan(root, today)
     if newest is None:
         return ("dispatch", "") if pend else ("none", "")
     date8, rel = newest
@@ -535,7 +545,7 @@ def weekly_block(root, worklist, session_id, today, parked=False):
         boxes = wl_planrec.open_boxes(text)
         return M.N_LESSONS_WEEKLY_WORK % {
             "plan": rel,
-            "days": _days_between(lessons_plans(root)[0][0], today),
+            "days": _days_between(newest_lessons_plan(root, today)[0], today),
             "cadence": LESSONS_CADENCE_DAYS,
             "open": len(boxes),
             "box": box_label(boxes[0][2]) or boxes[0][3],
@@ -546,7 +556,7 @@ def weekly_block(root, worklist, session_id, today, parked=False):
     if rel:
         why = M.N_LESSONS_WEEKLY_WHY_OLD % {
             "plan": rel,
-            "days": _days_between(lessons_plans(root)[0][0], today),
+            "days": _days_between(newest_lessons_plan(root, today)[0], today),
             "cadence": LESSONS_CADENCE_DAYS,
         }
     else:

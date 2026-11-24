@@ -2571,7 +2571,7 @@ def _investigation_identity(rec):
 
 
 # ONE LEDGER READ PER PROCESS (agent/plans/PLAN-tooling-code-reduction.md D7). The ledger is about 3 MB and a Stop run decoded it once per reader (wl_claimcheck, wl_plandeps, wl_planpreflight, this module). The parsed rows are memoized on the file's (path, inode, mtime_ns, size), the same key discipline as wl_store's SP1 fold memo: an append moves the
-# size, so a write between two reads is re-read (the control in test_wl_data_hotpath.py), and a stat that races a write stores newer bytes under the older key, which costs one extra read later and never serves a stale ledger. WORKLIST_READ_MEMO=off, the one switch for every read memo, turns it off. A failed read is never remembered.
+# size, so a write between two reads is re-read (the control in test_wl_data_hotpath.py), and a stat that races a write stores newer bytes under the older key, which costs one extra read later. The key cannot see an in-place rewrite of the same size inside one mtime tick (a coarse-mtime filesystem), which the append-only ledger never does. WORKLIST_READ_MEMO=off, the one switch for every read memo, turns it off. A failed read is never remembered.
 INVESTIGATION_MEMO_STATS = {"hit": 0, "miss": 0}
 _INVESTIGATION_MEMO: dict[tuple, list] = {}
 
@@ -2581,7 +2581,7 @@ def read_investigations(root):
 
     NEVER RAISES on a malformed line: the ledger is append-only and two writers under one flock cannot tear a line, but a hand-edit could, and one bad line must not make every row after it invisible. A skipped line is a row that cannot testify, which fails CLOSED here -- the tick it would have licensed is refused for want of a row rather than allowed for want of a reader.
 
-    SERVED FROM THE MEMO above when the file has not moved; each call gets its own list of its own row dicts, so a caller mutating a row cannot change what the next caller reads.
+    SERVED FROM THE MEMO above when the file has not moved; each call gets its own list of its own top-level row dicts, so a caller setting a key on a row cannot change what the next caller reads. Nested lists and dicts inside a row are shared with the memo and stay read-only for callers.
     """
     path = investigation_path(root)
     key = None

@@ -416,3 +416,14 @@ def test_the_dispatch_text_orders_the_promote_in_the_same_commit(tmp_path):
     _plant(tmp_path, _rows())
     text = _h().weekly_block(str(tmp_path), str(tmp_path / "wl"), "deadbeef-1", TODAY)
     assert "commit both together" in text, text
+
+
+def test_state_a_future_dated_or_impossible_plan_name_does_not_silence_the_check(tmp_path):
+    h = _h()
+    _plant(tmp_path, _rows())
+    _plan(tmp_path, "20271231", _rows())  # dated after TODAY
+    _plan(tmp_path, "20261340", _rows())  # no such date
+    assert h.weekly_state(str(tmp_path), TODAY) == ("dispatch", "")
+    # control: a real plan three days old still stands the check down beside them
+    _plan(tmp_path, "20261120", _rows())
+    assert h.weekly_state(str(tmp_path), TODAY)[0] == "none"
