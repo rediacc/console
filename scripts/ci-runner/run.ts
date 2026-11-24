@@ -1414,8 +1414,10 @@ function startCpuSampler(): {
   };
 }
 
-/** The /proc fields one busy-sampler tick reads per process: its process group and its CPU ticks, own and reaped children. */
-function readProcGroups(): { ticks: Map<number, number>; group: Map<number, number> } | undefined {
+/** The /proc fields one busy-sampler tick reads per process: its process group, its parent and its CPU ticks, own and reaped children. */
+function readProcGroups():
+  | { ticks: Map<number, number>; group: Map<number, number>; parent: Map<number, number> }
+  | undefined {
   let pids: string[];
   try {
     pids = fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d));
@@ -1424,6 +1426,7 @@ function readProcGroups(): { ticks: Map<number, number>; group: Map<number, numb
   }
   const ticksOf = new Map<number, number>();
   const group = new Map<number, number>();
+  const parent = new Map<number, number>();
   for (const pid of pids) {
     let stat: string;
     try {
@@ -1433,18 +1436,19 @@ function readProcGroups(): { ticks: Map<number, number>; group: Map<number, numb
     }
     // The comm field may hold spaces and parentheses, so the fields after it are split from the LAST ')'.
     const rest = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
-    // rest[0] is field 3 (state): pgrp is field 5, utime..cstime are fields 14-17.
+    // rest[0] is field 3 (state): ppid is field 4, pgrp is field 5, utime..cstime are fields 14-17.
     const pgrp = Number(rest[2]);
     const ticks = Number(rest[11]) + Number(rest[12]) + Number(rest[13]) + Number(rest[14]);
     if (!Number.isFinite(pgrp) || !Number.isFinite(ticks)) continue;
     ticksOf.set(Number(pid), ticks);
     group.set(Number(pid), pgrp);
+    parent.set(Number(pid), Number(rest[1]));
   }
-  return { ticks: ticksOf, group };
+  return { ticks: ticksOf, group, parent };
 }
 
 /**
- * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group. The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
+ * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group, plus every descendant of the leader that left the group (a tool that calls setsid or setpgid keeps its parent chain, review c428c052.1). The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
  */
 function startBusySampler(elasticIds: ReadonlySet<string>): {
   stop: () => void;
@@ -1468,10 +1472,22 @@ function startBusySampler(elasticIds: ReadonlySet<string>): {
     if (snap === undefined) return;
     const t = Date.now();
     const rise = new Map<number, number>();
-    for (const [pid, ticks] of snap.ticks) {
+    const leaders = new Set(live.map((g) => g.pgid));
+    // The gate a process belongs to: its own group when a gate leads it, else the first gate leader on its parent chain (bounded, so a cycle in a racy read ends).
+    const ownerOf = (pid: number): number | undefined => {
       const grp = snap.group.get(pid);
-      if (grp === undefined) continue;
-      rise.set(grp, (rise.get(grp) ?? 0) + Math.max(0, ticks - (prev.get(pid) ?? 0)));
+      if (grp !== undefined && leaders.has(grp)) return grp;
+      let at = snap.parent.get(pid);
+      for (let hop = 0; at !== undefined && at > 1 && hop < 64; hop++) {
+        if (leaders.has(at)) return at;
+        at = snap.parent.get(at);
+      }
+      return undefined;
+    };
+    for (const [pid, ticks] of snap.ticks) {
+      const owner = ownerOf(pid);
+      if (owner === undefined) continue;
+      rise.set(owner, (rise.get(owner) ?? 0) + Math.max(0, ticks - (prev.get(pid) ?? 0)));
     }
     prev.clear();
     for (const [pid, ticks] of snap.ticks) prev.set(pid, ticks);
@@ -2062,7 +2078,8 @@ async function busySamplerSelftest(): Promise<string[]> {
   }
   const BUSY = 'selftest:busy-two';
   const IDLE = 'selftest:busy-idle';
-  const sampler = startBusySampler(new Set([BUSY, IDLE]));
+  const SETSID = 'selftest:busy-setsid';
+  const sampler = startBusySampler(new Set([BUSY, IDLE, SETSID]));
   const opts = { cwd: REPO_ROOT, mergeOutput: false };
   const t0 = Date.now();
   const gates = Promise.all([
@@ -2074,12 +2091,21 @@ async function busySamplerSelftest(): Promise<string[]> {
       opts
     ),
     execGate(syntheticSpec(IDLE, 'sleep 2.8'), opts),
+    // The same two workers, each moved into its own session: their CPU leaves the gate's process group but not its parent chain.
+    execGate(
+      syntheticSpec(
+        SETSID,
+        'setsid yes >/dev/null & a=$!; setsid yes >/dev/null & b=$!; sleep 2.8; kill $a $b; wait 2>/dev/null; true'
+      ),
+      opts
+    ),
   ]);
   await new Promise((r) => setTimeout(r, Math.max(0, 2_400 - (Date.now() - t0))));
   const now = Date.now();
   const busy = sampler.busyCores(BUSY, now - 1_000, now);
   const idle = sampler.busyCores(IDLE, now - 1_000, now);
-  const [busyRun] = await gates;
+  const detached = sampler.busyCores(SETSID, now - 1_000, now);
+  const [busyRun, , detachedRun] = await gates;
   sampler.stop();
   const failures: string[] = [];
   // The gate's average width over its life, from `times`; the window is most of that life and `yes` does not phase, so the two agree within half.
@@ -2097,6 +2123,13 @@ async function busySamplerSelftest(): Promise<string[]> {
   if (idle === undefined || idle / 1_000 > Math.min(0.3, avg / 3))
     failures.push(
       `CONTROL busy sampler: a gate running sleep must read about 0 busy cores, read ${idle === undefined ? 'no window' : (idle / 1_000).toFixed(2)}`
+    );
+  // Review c428c052.1: workers that called setsid still count for their gate, or their cores would read idle and be released while they run.
+  const detachedAvg = (detachedRun.cpuMs ?? 0) / Math.max(1, detachedRun.ms);
+  const detachedRead = detached === undefined ? undefined : detached / 1_000;
+  if (detachedAvg >= 0.05 && (detachedRead === undefined || detachedRead < detachedAvg * 0.5))
+    failures.push(
+      `busy sampler: a gate whose two yes workers called setsid must read near its own times average of ${detachedAvg.toFixed(2)} cores, read ${detachedRead === undefined ? 'no window' : detachedRead.toFixed(2)}`
     );
   if (sampler.busyCores('selftest:never-ran', now - 1_000, now) !== undefined)
     failures.push('CONTROL busy sampler: a gate it never saw must cover no window');
