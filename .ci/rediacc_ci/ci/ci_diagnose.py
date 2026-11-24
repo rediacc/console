@@ -836,6 +836,8 @@ TEST_LOG_LINE_RE = re.compile(r"^\s*[\w.-]+_test\.go:\d+: ")
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 # An external gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
+# The Hub reader's own warning that a token without a username is read anonymously; it quotes "HTTP 401" as the reason and is no refused credential.
+TOKEN_EXCHANGE_NOTE_RE = re.compile(r"cannot be exchanged for a Hub API token")
 
 
 # A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line (the -rA form) or `path::case PASSED|FAILED` (the -v form) or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
@@ -861,7 +863,7 @@ def _has_test_verdict(lines):
 def _sig_hit(line, test_verdict=False):
     """`test_verdict`: the log holds a test runner verdict (`_has_test_verdict`), so its `_test.go:<n>:` lines are test output and no infra row reads them."""
     body = _body(line)
-    if RETRY_NOTE_RE.search(body):
+    if RETRY_NOTE_RE.search(body) or TOKEN_EXCHANGE_NOTE_RE.search(body):
         return None
     # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
     # A line that carries a failure mark after its pass mark is read from that mark on: the pass part (and any count in it) is no signature, the failure part is.

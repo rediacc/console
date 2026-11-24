@@ -130,6 +130,7 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
 
       # Exit 0 all green, 1 any red (named in drift-verdict.json), 2 the drift
       # set could not be derived. No `continue-on-error`: the ingest step below
@@ -138,6 +139,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
+          DOCKERHUB_USERNAME: ${{ env.BWS_DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --out drift-verdict.json
 

@@ -1492,3 +1492,12 @@ def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():
         *SECURITY_AUDIT_RUN[5:],
     ]
     assert D.classify(lines) == ("infra-likely", "bitwarden-5xx")
+
+
+def test_hub_token_exchange_warning_is_no_auth_401():
+    warn = (
+        "DOCKERHUB_TOKEN is set without DOCKERHUB_USERNAME, so it cannot be exchanged for a Hub API token "
+        "(a raw token is always HTTP 401); reading anonymously"
+    )
+    assert D.classify([warn, "dependency check failed: nginx pin is stale"])[1] != "auth-401"
+    assert D.classify([warn, "request failed: HTTP 401"])[1] == "auth-401"
