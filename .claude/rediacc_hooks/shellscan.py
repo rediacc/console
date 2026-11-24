@@ -9180,15 +9180,19 @@ _TRUNCATE_VALUED = frozenset(("-s", "--size", "-r", "--reference"))
 
 def _truncate_operands(words):
     """The files `truncate` resizes: its operands, the value of `-s`/`-r` (attached or next) left out."""
-    out, skip = [], False
+    out, skip, literal = [], False, False
     for word in words:
         if skip:
             skip = False
             continue
-        if word in _TRUNCATE_VALUED:
+        # After `--` every word is an operand, `-x` included (review f022c58e.2).
+        if not literal and word == "--":
+            literal = True
+            continue
+        if not literal and word in _TRUNCATE_VALUED:
             skip = True
             continue
-        if word.startswith("-") and len(word) > 1:
+        if not literal and word.startswith("-") and len(word) > 1:
             continue
         out.append(word)
     return out
@@ -9255,7 +9259,10 @@ def write_records(cmd, cwd):
     `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, `dd of=` among them, or any word of a command the tables do not list), "truncate" (an operand of `truncate`, its `-s`/`-r` values left out), "remove" (an operand of `rm`), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (path "": a program this walk cannot read, `word` ""; or a word it cannot expand, `word` holding it with each unexpanded part an `_UNRESOLVED` marker and `index` its position in the run, None for a redirect target). A `{}` in a word of a command `find -exec` launched stands for find's starting points, and what an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`, which over-reads the feed and never under-reads it). A descriptor duplication, `/dev/null` and its kin and a URL are left out; a redirect target and every reading of the run's words (`run_word_writes`) are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`), each its own record with its own `word`.
     """
     analysis = _analyse(cmd)
-    appends = {target for op, target in analysis_redirects(analysis) if op in (">>", "&>>")}
+    redirects = analysis_redirects(analysis)
+    # A target also written by a truncating redirect elsewhere in the command is never read as kept: `echo a >> f; echo b > f` replaces `f`, and a reading that matches by target name alone cannot tell the two redirects apart, so it takes the safe side for a guard that flags a replacement (review f022c58e.1).
+    truncated = {target for op, target in redirects if op not in (">>", "&>>")}
+    appends = {target for op, target in redirects if op in (">>", "&>>")} - truncated
     out: list[Write] = []
     seen: set[tuple[str, str, str, bool, int]] = set()
 

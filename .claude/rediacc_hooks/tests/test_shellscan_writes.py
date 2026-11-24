@@ -88,6 +88,12 @@ def test_truncate_reads_its_size_and_reference_as_values_not_files(tmp_path):
     assert got == [("<CWD>/t.txt", "truncate")], got
 
 
+def test_truncate_after_the_terminator_resizes_a_dash_named_file(tmp_path):
+    """f022c58e.2: after `--` a word named like an option is an operand. Control: before it the same word is an option and no file."""
+    assert ("<CWD>/-x", "truncate") in _hows("truncate -s 0 -- -x", tmp_path)
+    assert _hows("truncate -s 0 -x t.txt", tmp_path) == [("<CWD>/t.txt", "truncate")]
+
+
 def _records(cmd, cwd):
     return [
         (w.path.replace(str(cwd), "<CWD>"), w.how, w.word, w.word_index, w.append)
@@ -105,6 +111,16 @@ RECORDS = [
         "an append keeps the file",
         "echo hi >> o.txt",
         ("<CWD>/o.txt", "append", "o.txt", None, True),
+    ),
+    (
+        "a file both appended and truncated in one command is not read as kept (f022c58e.1)",
+        "echo a >> m.txt; echo b > m.txt",
+        ("<CWD>/m.txt", "redirect", "m.txt", None, False),
+    ),
+    (
+        "CONTROL: an append to another file stays kept beside a truncate",
+        "echo a >> m.txt; echo b > n.txt",
+        ("<CWD>/m.txt", "append", "m.txt", None, True),
     ),
     ("tee -a keeps the file", "printf x | tee -a t.txt", ("<CWD>/t.txt", "tee", "t.txt", 1, True)),
     (
