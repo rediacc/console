@@ -364,3 +364,41 @@ def test_stop_hook_control_no_promoted_box_is_silent(wl) -> None:
     wl.hand_now()
     plant_promoted(wl, "- [x] B1 done\n")
     wl.check_quiet("WRITERS-NOW DUE", "every Promoted box ticked")
+
+
+def test_overflow_is_counted_per_kind_when_a_group_mixes_unblocked_and_item_seeds(monkeypatch):
+    mixed = [{"kind": "unblocked", "ref": "#u%d" % i, "text": "t"} for i in range(WN.KIND_MAX + 2)]
+    mixed += [{"kind": "item", "ref": "#i%d" % i, "text": "t"} for i in range(3)]
+    monkeypatch.setattr(WN, "item_seeds", lambda *_args: mixed)
+    seeds = WN.collect_seeds([], [], [], ME8, SINCE)
+    more = {s["ref"]: s["text"] for s in seeds if s["kind"] == "more"}
+    assert more["unblocked"].startswith("2 more unblocked seed(s)")
+    assert more["item"].startswith("3 more item seed(s)")
+    # control: a group that fits under the cap says nothing
+    monkeypatch.setattr(WN, "item_seeds", lambda *_args: mixed[:3])
+    assert not [s for s in WN.collect_seeds([], [], [], ME8, SINCE) if s["kind"] == "more"]
+
+
+def test_a_bare_owed_word_in_report_prose_is_not_a_seed() -> None:
+    assert WN.report_seeds([report("Owed: none")], ME8, SINCE) == []
+    assert len(WN.report_seeds([report("TICK x partial owed=C2:live")], ME8, SINCE)) == 1
+
+
+def test_last_round_keeps_a_pre_compaction_row_of_the_same_session(monkeypatch, tmp_path) -> None:
+    WN.append_round(tmp_path, "dddd4444", "/tmp/old.md", NOW)
+    rows = WN.read_rounds(tmp_path)
+    assert WN.last_round(rows, "eeee5555") is None
+    monkeypatch.setattr(WN.C, "owned_by_me", lambda owner, _me: owner == "dddd4444")
+    assert WN.last_round(rows, "eeee5555")["survey"] == "/tmp/old.md"
+
+
+def test_an_unreadable_report_body_comes_back_as_none_with_the_error(monkeypatch, tmp_path) -> None:
+    wl_report = wlfix.import_wl("wl_report")
+    entry = {"session": ME8, "at": IN_WINDOW, "body": "gone.md", "id": "r1"}
+    monkeypatch.setattr(wl_report, "store_root", lambda _start: tmp_path)
+    monkeypatch.setattr(wl_report, "read_index", lambda _store: [entry])
+    got = WN.gather_reports(tmp_path, ME8, SINCE)
+    assert got[0][1] is None
+    assert got[0][0]["read_error"].startswith("FileNotFoundError")
+    (tmp_path / "gone.md").write_text("owed=C1:live\n", encoding="utf-8")  # control: readable
+    assert WN.gather_reports(tmp_path, ME8, SINCE)[0][1] == "owed=C1:live\n"

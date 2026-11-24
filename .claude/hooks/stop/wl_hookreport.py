@@ -39,6 +39,7 @@ from __future__ import annotations
 import datetime
 import json
 import math
+import os
 import pathlib
 import re
 import statistics
@@ -122,8 +123,14 @@ def ledger_paths(root=CHECKOUT):
 def read_ledger(root=CHECKOUT):
     """Rows of the archives and the live ledger, in file order."""
     rows = []
-    for path in ledger_paths(root):
-        rows.extend(read_jsonl(path))
+    for _attempt in range(3):
+        paths = ledger_paths(root)
+        rows = []
+        for path in paths:
+            rows.extend(read_jsonl(path))
+        # A rotation between the glob and the live read moves rows into an archive the glob never listed: list again and read again until the archives agree.
+        if ledger_paths(root) == paths:
+            break
     return rows
 
 
@@ -141,9 +148,14 @@ def rotate(root=CHECKOUT, max_bytes=ROTATE_BYTES, keep_days=ROTATE_KEEP_DAYS, no
         size = 0
     if size > max_bytes:
         archive = live.with_name("chains-%s.jsonl" % stamp.strftime("%Y%m%dT%H%M%SZ"))
-        if archive.exists():
-            raise ReportError("%s already exists; refusing to overwrite an archive" % archive)
-        live.rename(archive)
+        # link then unlink: os.link refuses an existing name atomically, where exists() then rename lets two rotations in one second overwrite each other. An append landing between the two calls goes to the one inode both names share.
+        try:
+            os.link(live, archive)
+        except FileExistsError:
+            raise ReportError(
+                "%s already exists; refusing to overwrite an archive" % archive
+            ) from None
+        live.unlink()
     cutoff = stamp.timestamp() - keep_days * 86400
     deleted = []
     for path in sorted(live.parent.glob(ARCHIVE_GLOB)):

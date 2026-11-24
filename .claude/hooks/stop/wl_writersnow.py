@@ -41,7 +41,7 @@ SEED_TEXT_MAX = 240
 
 # The report lines a seed is made from: an owed half (a TICK line's `owed=` that is not `-` counts, `owed=-` does not), an edit outside the writer's Owns, and anything addressed to the lead.
 REPORT_SEED_RE = re.compile(
-    r"\bowed\b(?!=-)|\boutside\s+(?:\w+\s+)?owns\b|\bfor\s+the\s+lead\b", re.IGNORECASE
+    r"\bowed=(?!-)|\boutside\s+(?:\w+\s+)?owns\b|\bfor\s+the\s+lead\b", re.IGNORECASE
 )
 OPEN_FINDING = "open"
 # An item a worker holds (`[>]`) is in flight, not missed work; `[ ]` and `[?]` are the open states a seed comes from.
@@ -317,14 +317,17 @@ def collect_seeds(items, review_records, reports, session, since) -> list[dict]:
         review_seeds(review_records, since),
     ):
         out.extend(group[:KIND_MAX])
-        if len(group) > KIND_MAX:
-            kind = group[KIND_MAX]["kind"]
+        # item_seeds mixes `unblocked` and `item` kinds in one group, so the overflow is counted per kind.
+        held: dict[str, int] = {}
+        for seed in group[KIND_MAX:]:
+            held[seed["kind"]] = held.get(seed["kind"], 0) + 1
+        for kind, count in held.items():
             out.append(
                 {
                     "kind": "more",
                     "ref": kind,
                     "text": "%d more %s seed(s) past the cap of %d; read them with %s"
-                    % (len(group) - KIND_MAX, kind, KIND_MAX, MORE_WHERE[kind]),
+                    % (count, kind, KIND_MAX, MORE_WHERE[kind]),
                 }
             )
     return out

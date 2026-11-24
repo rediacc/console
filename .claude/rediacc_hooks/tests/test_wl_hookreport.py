@@ -297,3 +297,48 @@ def test_rotation_refuses_to_overwrite_an_archive(tree):
     with pytest.raises(H.ReportError):
         H.rotate(root, max_bytes=10, now=NOW)
     assert live.exists()
+
+
+def test_rotation_never_overwrites_an_archive_that_appears_after_the_exists_check(tree):
+    """The archive is claimed atomically: an archive of the same second keeps its own bytes."""
+    root, _rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+    taken = live.with_name("chains-%s.jsonl" % NOW.strftime("%Y%m%dT%H%M%SZ"))
+    taken.write_text("first archive\n", encoding="utf-8")
+    with pytest.raises(H.ReportError):
+        H.rotate(root, max_bytes=10, now=NOW)
+    assert taken.read_text(encoding="utf-8") == "first archive\n"
+    taken.unlink()  # control: with the name free the roll goes through
+    archive, _deleted = H.rotate(root, max_bytes=10, now=NOW)
+    assert archive == taken
+    assert not live.exists()
+
+
+def test_rotation_of_a_missing_ledger_is_a_quiet_no_op(tmp_path):
+    archive, deleted = H.rotate(tmp_path, max_bytes=10, now=NOW)
+    assert (archive, deleted) == (None, [])
+
+
+def test_the_rotate_verb_prints_what_it_did(tree, capsys):
+    root, _rows, _trap = tree
+    assert H.main(["--rotate"], root) == 0
+    assert "under %d bytes, kept" % H.ROTATE_BYTES in capsys.readouterr().out
+    live = root.joinpath(*H.LEDGER_REL)
+    live.write_bytes(b"x" * (H.ROTATE_BYTES + 1))  # control: over the cap it rolls
+    assert H.main(["--rotate"], root) == 0
+    assert "rolled into chains-" in capsys.readouterr().out
+
+
+def test_read_ledger_rereads_when_a_rotation_lands_between_glob_and_live_read(tree, monkeypatch):
+    root, rows, _trap = tree
+    real_read = H.read_jsonl
+    state = {"rotated": False}
+
+    def racing(path):
+        if not state["rotated"] and path == root.joinpath(*H.LEDGER_REL):
+            state["rotated"] = True
+            H.rotate(root, max_bytes=10, now=NOW)
+        return real_read(path)
+
+    monkeypatch.setattr(H, "read_jsonl", racing)
+    assert len(H.read_ledger(root)) == len(rows), "rows rolled mid-read were lost"
