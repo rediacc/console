@@ -3415,17 +3415,24 @@ def test_lease_refuses_below_the_disk_floor_and_leaves_nothing(repo, monkeypatch
         lease.make_lease(repo.root, name="low")
     message = str(raised.value)
     assert "GB free" in message
-    assert "a lease costs about %.1f GB" % (lease.LEASE_ESTIMATE_BYTES / lease.GIB) in message
+    assert "a lease costs about %.1f GB" % (lease.LEASE_ESTIMATE_BYTES / lease.GB) in message
     assert "./run.sh worktree gc --write" in message
     assert not (repo.root / spike.HOLDER / "low").exists()
     assert not (repo.root / ".git" / lease.RECORD_DIR / "low.json").exists()
 
 
 def test_lease_is_made_at_the_disk_floor(repo, monkeypatch):
-    """Control: exactly the floor plus two leases is enough, so the refusal above reads the free space."""
+    """Control: the floor plus two leases, rounded up to a whole 4096-byte block as fake_free does, is enough, so the refusal reads the free space."""
     fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES)
     path = lease.make_lease(repo.root, name="ok")
     assert pathlib.Path(path).is_dir()
+
+
+def test_lease_refuses_one_block_below_the_floor(repo, monkeypatch):
+    """The edge of the control above: one 4096-byte block less than the needed free space is refused, the stated floor in decimal GB."""
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES - 4096)
+    with pytest.raises(lease.LeaseRefusedError, match=r"the 10\.0 GB floor"):
+        lease.make_lease(repo.root, name="edge")
 
 
 def test_failed_seed_removes_the_partial_tree(repo, monkeypatch):

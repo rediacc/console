@@ -38,11 +38,12 @@ GITLINK_MODE = "160000"
 CONSOLE = "."
 DEFAULT_OWNER = "cli"
 SHOWN_ESCAPES = 5
-GIB = 1024**3
+# Decimal, the unit the refusal message prints as GB and the one LEASE_ESTIMATE_BYTES is stated in.
+GB = 10**9
 # Measured 2026-11-23 on the live seeded trees: `du -sk` of a second lease after a first one (hard links counted once) is 4271856 KiB, the disk one more lease adds. Rounded up.
 LEASE_ESTIMATE_BYTES = 4_400_000_000
 # What stays free after the new lease, besides room for one more: the 12 spawns of 2026-11-23 filled the disk and every seed failed with ENOSPC (#24f87180).
-FREE_FLOOR_BYTES = 10 * GIB
+FREE_FLOOR_BYTES = 10 * GB
 # The two trees a lease is cut from (PLAN-two-track-merge-dev LT16), spelled as commit_policy's ROLE_DEVELOPMENT and ROLE_LANDING: the main checkout's live branch, or the branch the landing record binds.
 TREE_DEVELOPMENT = "development"
 TREE_LANDING = "landing"
@@ -204,10 +205,10 @@ def _check_disk(root):
         message = (
             "only %.1f GB free on the worktree filesystem; a lease costs about %.1f GB and %.1f GB must stay free after it (the %.1f GB floor plus room for one more lease). Free space with `./run.sh worktree gc --write`"
             % (
-                free / GIB,
-                LEASE_ESTIMATE_BYTES / GIB,
-                (needed - LEASE_ESTIMATE_BYTES) / GIB,
-                FREE_FLOOR_BYTES / GIB,
+                free / GB,
+                LEASE_ESTIMATE_BYTES / GB,
+                (needed - LEASE_ESTIMATE_BYTES) / GB,
+                FREE_FLOOR_BYTES / GB,
             )
         )
         raise LeaseRefusedError(message)
