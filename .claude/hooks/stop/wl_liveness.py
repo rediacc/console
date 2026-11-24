@@ -701,14 +701,14 @@ def _arm_covers(rec):
     arm = rec.get("arm")
     if not isinstance(arm, dict) or not arm.get("aid"):
         return False
+    import datetime
+
     try:
-        import datetime
-
         import wl_armed as A
-
-        return A.covers(arm, datetime.datetime.now(datetime.UTC), True)
-    except Exception:
+    except ImportError:
         return False
+    # An error inside covers() is a defect to surface, not a reason to read the arm as not covering (swallowed-failures gate).
+    return A.covers(arm, datetime.datetime.now(datetime.UTC), True)
 
 
 def ladder(fold, session_id, event, state_doc):

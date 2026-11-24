@@ -536,14 +536,31 @@ def _is_broad(handler: ast.ExceptHandler) -> bool:
     return any(isinstance(n, ast.Name) and n.id in ("Exception", "BaseException") for n in names)
 
 
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+
+def _reraises_here(node: ast.AST) -> bool:
+    """Whether a `raise` runs in the handler's own scope: one inside a nested def, lambda or class body only runs if that body is called, so it re-raises nothing."""
+    if isinstance(node, ast.Raise):
+        return True
+    if isinstance(node, _SCOPES):
+        # A handler statement that is itself a def, lambda or class only defines code; its body runs later, if ever.
+        return False
+    return any(
+        _reraises_here(child)
+        for child in ast.iter_child_nodes(node)
+        if not isinstance(child, _SCOPES)
+    )
+
+
 def is_swallowing_handler(handler: ast.ExceptHandler) -> bool:
     """The Context 6 rule; see the block comment above."""
     if not _is_broad(handler):
         return False
     for stmt in handler.body:
+        if _reraises_here(stmt):
+            return False
         for node in ast.walk(stmt):
-            if isinstance(node, ast.Raise):
-                return False
             if handler.name and isinstance(node, ast.Name) and node.id == handler.name:
                 return False
     last = handler.body[-1]
@@ -551,8 +568,11 @@ def is_swallowing_handler(handler: ast.ExceptHandler) -> bool:
         return True
     if isinstance(last, ast.Return):
         return _is_empty_value(last.value)
-    if isinstance(last, (ast.Assign, ast.AnnAssign)):
+    if isinstance(last, ast.Assign):
         return _is_empty_value(last.value)
+    if isinstance(last, ast.AnnAssign):
+        # A bare annotation (`x: T`) assigns nothing, so it is no empty-value swallow.
+        return last.value is not None and _is_empty_value(last.value)
     return False
 
 
