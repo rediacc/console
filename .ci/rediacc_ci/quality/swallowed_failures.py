@@ -571,8 +571,8 @@ def is_swallowing_handler(handler: ast.ExceptHandler) -> bool:
     if isinstance(last, ast.Assign):
         return _is_empty_value(last.value)
     if isinstance(last, ast.AnnAssign):
-        # A bare annotation (`x: T`) assigns nothing, so it is no empty-value swallow.
-        return last.value is not None and _is_empty_value(last.value)
+        # A bare annotation (`x: T`) does nothing with the exception, so it swallows like `pass` (review 775034ca.1).
+        return last.value is None or _is_empty_value(last.value)
     return False
 
 

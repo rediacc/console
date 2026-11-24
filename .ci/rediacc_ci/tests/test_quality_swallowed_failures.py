@@ -329,6 +329,7 @@ def _handler(body: str, caught: str = "Exception") -> str:
         # 3982781b.4: a raise inside a nested def only runs if that def is called, so it re-raises nothing.
         _handler("        def later():\n            raise ValueError\n        return []\n"),
         _handler("        h = lambda: 0\n        return []\n"),
+        _handler("        x: int\n"),
     ],
     ids=[
         "return-empty-list",
@@ -338,6 +339,7 @@ def _handler(body: str, caught: str = "Exception") -> str:
         "assign-empty",
         "raise-in-nested-def",
         "lambda-then-empty",
+        "bare-annotation",
     ],
 )
 def test_python_swallowing_handlers_are_findings(text: str) -> None:
@@ -353,8 +355,7 @@ def test_python_swallowing_handlers_are_findings(text: str) -> None:
         _handler('        return "unknown (the store could not be read)"\n'),
         _handler("        return []\n", "OSError"),
         _handler("        log(1)\n"),
-        # 3982781b.3: a bare annotation assigns nothing; 3982781b.4 control: a raise in an `if` of the handler itself is a re-raise.
-        _handler("        x: int\n"),
+        # 3982781b.4 control: a raise in an `if` of the handler itself is a re-raise.
         _handler("        if g():\n            raise\n        return []\n"),
     ],
     ids=[
@@ -363,7 +364,6 @@ def test_python_swallowing_handlers_are_findings(text: str) -> None:
         "non-empty-sentinel",
         "narrow-type",
         "ends-in-a-call",
-        "bare-annotation",
         "raise-in-own-if",
     ],
 )
