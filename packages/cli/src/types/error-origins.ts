@@ -58,6 +58,7 @@ export const NAMED_ERROR_ORIGINS: Record<string, ErrorOrigin> = {
   RENET_DOWNGRADE_REFUSED: 'user',
   RENET_UPLOAD_REFUSED_IN_EXECUTOR: 'environment',
   ACCESS_LOCKOUT: 'user',
+  GRAND_REPO_DENIED: 'user',
   ACCESS_KEY_CONFLICT: 'user',
   ACCESS_KEY_DUPLICATE_BLOB: 'user',
   ACCESS_FILE_CHANGED: 'environment',

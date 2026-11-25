@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '3ee31a5bff0e6c2f';
+export const CLI_CONTRACT_VERSION = 'e335f868110fa1f4';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "3ee31a5bff0e6c2f",
+  "version": "e335f868110fa1f4",
   "languages": [
     "ar",
     "de",
@@ -18423,6 +18423,10 @@ export const CLI_CONTRACT: CliContract = {
     {
       "code": "GENERAL_ERROR",
       "origin": "environment"
+    },
+    {
+      "code": "GRAND_REPO_DENIED",
+      "origin": "user"
     },
     {
       "code": "HEALTH_GATE_FAILED",

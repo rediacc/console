@@ -44,10 +44,12 @@ vi.mock('../../../services/config/config-resources.js', async (importOriginal) =
   const service = real.configService;
   child.spies.push(
     vi.spyOn(service, 'setRuntimeConfig').mockImplementation(vi.fn() as never),
-    vi.spyOn(service, 'getRepository').mockImplementation((() =>
-      Promise.resolve(child.current)) as never),
-    vi.spyOn(service, 'resolveDestructiveTarget').mockImplementation((() =>
-      Promise.resolve({ key: 'shop', config: child.current })) as never)
+    vi
+      .spyOn(service, 'getRepository')
+      .mockImplementation((() => Promise.resolve(child.current)) as never),
+    vi
+      .spyOn(service, 'resolveDestructiveTarget')
+      .mockImplementation((() => Promise.resolve({ key: 'shop', config: child.current })) as never)
   );
   return real;
 });
@@ -225,13 +227,32 @@ describe('the child CLI the MCP server spawns', () => {
   it.each([
     ['repo_up', { ref: 'shop' }],
     ['repo_delete', { ref: 'shop' }],
-  ])('control: %s with the operator opt-in passes the child check', async (tool, args) => {
+  ])(
+    'control: %s with the operator opt-in and a confirmation passes the child check',
+    async (tool, args) => {
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'shop';
+      const call = await spawnedFor(tool, args);
+      expect(call[2].env.REDIACC_ALLOW_GRAND_REPO).toBe('shop');
+      // A destructive grand change needs the operator's confirmation on top of the opt-in (decide
+      // rule 6); the MCP tool does not forward one yet (rmcp-local-mcp), so the test supplies it.
+      const confirmed: typeof call = [call[0], [...call[1], '--confirm-grand', 'shop'], call[2]];
+      const { out } = await runChild(confirmed);
+      expect(child.reached, `the child stopped short: ${out}`).toHaveBeenCalled();
+      expect(firstError(out).message).toBe('REACHED the machine dispatch');
+    }
+  );
+
+  it.each([
+    ['repo_up', { ref: 'shop' }],
+    ['repo_delete', { ref: 'shop' }],
+  ])('%s with the opt-in but no confirmation stops at the child check', async (tool, args) => {
     process.env.REDIACC_ALLOW_GRAND_REPO = 'shop';
-    const call = await spawnedFor(tool, args);
-    expect(call[2].env.REDIACC_ALLOW_GRAND_REPO).toBe('shop');
-    const { out } = await runChild(call);
-    expect(child.reached, `the child stopped short: ${out}`).toHaveBeenCalled();
-    expect(firstError(out).message).toBe('REACHED the machine dispatch');
+    const { code, out } = await runChild(await spawnedFor(tool, args));
+    expect(
+      child.reached,
+      `the child reached the machine unconfirmed: ${out}`
+    ).not.toHaveBeenCalled();
+    expect(code).not.toBe(0);
   });
 
   it('control: an opt-in the agent injected itself is still refused', async () => {
@@ -250,7 +271,17 @@ describe('the fork-blocked check the MCP server leaves to the child (review aa3f
   /** The argv the executor would hand execFile for this command (executor.ts appends the same tail). */
   async function autostartDisable(env: NodeJS.ProcessEnv) {
     const { resolveRdcBinary } = await import('../executor.js');
-    const tail = ['repo', 'admin', 'autostart', 'disable', 'shop', '--output', 'json', '--yes', '--quiet'];
+    const tail = [
+      'repo',
+      'admin',
+      'autostart',
+      'disable',
+      'shop',
+      '--output',
+      'json',
+      '--yes',
+      '--quiet',
+    ];
     return runChild(['node', [...resolveRdcBinary().prefixArgs, ...tail], { env }]);
   }
 
