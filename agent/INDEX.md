@@ -510,7 +510,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 98 | 3 | 6 | 16463 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 98 | 4 | 6 | 16508 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 145 | 2 | 13 | 24784 |
-| `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
+| `agent/plans/PLAN-console-animations.md` | approved | 96 | 2 | 7 | 13692 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 128 | 3 | 10 | 22260 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 139 | 2 | 14 | 26456 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 125 | 1 | 10 | 22793 |
@@ -544,7 +544,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 131 | 9 | 6 | 28952 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
-| `agent/plans/PLAN-forensics-detection.md` | approved | 131 | 7 | 8 | 24353 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 132 | 6 | 9 | 24596 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 139 | 9 | 8 | 31758 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 121 | 5 | 9 | 23778 |

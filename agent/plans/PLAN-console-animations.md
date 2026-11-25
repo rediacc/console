@@ -74,10 +74,11 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Depends on: AN3.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run ci -- --narrow` rc 0.
     (ticked) 2026-11-24T21:03:10Z by d778be9d: AN5 landed 24d722c5ea; check:i18n rc 0; vitest animations and i18n 22 passed
-- [ ] AN6 [writer] Step coverage gate (D7): .ci/rediacc_ci/quality/step_phase_coverage.py with its `---- gate ----` header (lane quality-code, selftest true) and its gate test, the control planting an unmapped renet step id and a stale json id.
+- [x] AN6 [writer] Step coverage gate (D7): .ci/rediacc_ci/quality/step_phase_coverage.py with its `---- gate ----` header (lane quality-code, selftest true) and its gate test, the control planting an unmapped renet step id and a stale json id.
   Owns: .ci/rediacc_ci/quality/step_phase_coverage.py, .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py
   Depends on: AN2, PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.step_phase_coverage` rc 0 on the tree; `PYTHONPATH=.ci python3 -m rediacc_ci.quality.step_phase_coverage --selftest` rc 0 with both controls failing as planted; `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py` rc 0.
+    (ticked) 2026-11-25T20:59:30Z by d778be9d: AN6 check:ci-step-phase-coverage (renet step ids vs run-phases.json, both directions); gate tests pass, run.ts --only rc 0, gen:gates --check rc 0; landed 66c37f32c5. DEPS-WAIVED: prerequisites landed
 - [x] AN7 [writer] E2e: a routed NDJSON stream carrying fork step events shows the clone scene in the run block, then the start scene; under `reducedMotion: 'reduce'` emulation the static frame and caption show; a stream with no steps shows the indeterminate scene.
   Owns: private/account/e2e/tests/27-console/27-04-run-animations.test.ts
   Depends on: AN4.
