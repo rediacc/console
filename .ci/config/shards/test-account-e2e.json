@@ -68,7 +68,6 @@
         "account-e2e:07-navigation/07-01-sidebar.test.ts",
         "account-e2e:11-lifecycle/11-05-admin-plan-change.test.ts",
         "account-e2e:13-invoices/13-03-invoice-lifecycle.test.ts",
-        "account-e2e:15-magic-link/15-02-checkout-intent.test.ts",
         "account-e2e:16-team/16-02-org-onboarding.test.ts",
         "account-e2e:17-newsletter/17-01-subscribe-flow.test.ts",
         "account-e2e:18-contact/18-02-admin-contact.test.ts",
