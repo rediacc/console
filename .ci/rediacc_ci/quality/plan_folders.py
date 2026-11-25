@@ -655,6 +655,32 @@ def _released_boxes(text: str) -> list[str]:
     return out
 
 
+def _hold_cited(root: pathlib.Path, found: list[PL.Finding], citers_of=None):
+    """(found, held): every F3 on a plan a tracked file outside agent/ still cites, taken out of `found` into `held` as an `F3-held` advisory naming the citing paths.
+
+    F3 names `--sweep --write` as the fix, and the sweep KEEPS such a plan because the tombstone would turn each citation dead (check:ci-plan-citations). A fatal F3 there demanded a deletion the sweep refuses, so the tree could never go green. An uncited plan keeps F3 fatal, and the held plan is printed on every run until its citers are re-pointed or deleted. `citers_of` replaces `_outside_citers` (the selftest's door); a probe failure propagates as CiterProbeError, so an unknown never reads as uncited."""
+    probe = citers_of or (lambda rel: _outside_citers(root, rel))
+    kept: list[PL.Finding] = []
+    held: list[PL.Finding] = []
+    for finding in found:
+        citers = probe(finding.rel) if finding.code == "F3" else []
+        if not citers:
+            kept.append(finding)
+            continue
+        more = " and %d more" % (len(citers) - 5) if len(citers) > 5 else ""
+        held.append(
+            PL.Finding(
+                "F3-held",
+                finding.rel,
+                "%s is past the terminal retention, but `--sweep --write` keeps it while live "
+                "code still cites it (a tombstone would turn each citation dead), so F3 is "
+                "held rather than fatal. Re-point or delete each citation and F3 fires again; "
+                "cited by %s%s" % (finding.rel, ", ".join(citers[:5]), more),
+            )
+        )
+    return kept, held
+
+
 def run(root: pathlib.Path, config: dict) -> int:
     plans, existing, stones = _gather(root)
     found = PL.findings(
@@ -668,6 +694,12 @@ def run(root: pathlib.Path, config: dict) -> int:
     )
     found = _hold_bound(root, found, int(config["terminal_days"]))
     found, held = _hold_unmovable(root, found)
+    try:
+        found, held_cited = _hold_cited(root, found)
+    except CiterProbeError as exc:
+        print("✗ F3 whether a past-retention plan is cited is unknown: %s" % exc, file=sys.stderr)
+        return 1
+    held += held_cited
     for advisory in held:
         print("ℹ %s %s" % (advisory.code, advisory.message))
     for finding in found:
@@ -676,14 +708,15 @@ def run(root: pathlib.Path, config: dict) -> int:
         return 1
     print(
         "✓ plan folders: %d plan(s) and %d stub(s) across %s, %d tombstone(s), "
-        "%d finished plan(s) held in %s/ by a binding"
+        "%d finished plan(s) held in %s/ by a binding, %d past-retention plan(s) held by a live citation"
         % (
             len([p for p in plans if not PL.is_stub(p)]),
             len([p for p in plans if PL.is_stub(p)]),
             ", ".join(PL.PLAN_DIRS),
             len(stones),
-            len(held),
+            len([h for h in held if h.code == "F2-held"]),
             PL.PLANS_DIR,
+            len(held_cited),
         )
     )
     print(

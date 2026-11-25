@@ -321,6 +321,34 @@ def test_a_terminal_plan_past_its_retention_is_fatal(gate, tmp_path):
     gate.log_pass("F3 reads moved_at out of the ledger and fires past the retention")
 
 
+def test_a_cited_terminal_plan_past_its_retention_is_held_not_f3(gate, tmp_path):
+    """The 2026-11-25 contradiction, control first. F3 named `--sweep --write` as the fix and the sweep KEEPS a plan live code cites, so the real tree could never go green. The uncited twin stays fatal F3 and is the one the sweep deletes; the cited plan is an `F3-held` advisory naming the citing path, and the success line counts it."""
+    cited, free = "agent/plans/_done/PLAN-cited.md", "agent/plans/_done/PLAN-free.md"
+    body = "# PLAN: %s\nStatus: done\nFirst-Seen: 2024-01-01\n"
+    root = _seed(tmp_path)
+    when = "2024-02-01T12:00:00+00:00"  # F6 reads the author date of the move against moved_at
+    _write(root, cited, body % "cited")
+    _write(root, "tools/helper.py", "x = 1\n# see PLAN-cited for why\n")
+    _ledger(root, {cited: {"moved_at": "2024-02-01"}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "move the cited plan", when=when)
+    held = _gate(root)
+    gate.assert_exit(0, held, "a gate never demands a deletion the sweep refuses")
+    gate.assert_not_contains(held.err, "F3 %s" % cited, "the cited plan is not a finding")
+    gate.assert_contains(held.out, "F3-held %s" % cited, "the held plan stays visible")
+    gate.assert_contains(held.out, "tools/helper.py:2", "the advisory names the citing path")
+    gate.assert_contains(held.out, "1 past-retention plan(s) held by a live citation", "counted")
+    _write(root, free, body % "free")
+    _ledger(root, {cited: {"moved_at": "2024-02-01"}, free: {"moved_at": "2024-02-01"}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "add an uncited aged plan", when=when)
+    control = _gate(root)
+    gate.assert_exit(1, control, "control: an uncited aged plan is still fatal F3")
+    gate.assert_contains(control.err, "F3 %s" % free, "control: F3 names the uncited plan")
+    gate.assert_not_contains(control.err, "F3 %s" % cited, "the cited one stays held beside it")
+    gate.log_pass("F3 is held for a cited plan and fatal for an uncited one")
+
+
 def test_a_stub_pointing_at_nothing_is_fatal(gate, tmp_path):
     root = _seed(
         tmp_path,
