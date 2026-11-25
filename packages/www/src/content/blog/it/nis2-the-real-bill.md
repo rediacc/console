@@ -16,8 +16,8 @@ tags:
   - mid-market
 featured: false
 language: it
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -121,7 +121,7 @@ Questa è la sezione che determina se il resto dell'articolo è onesto. La tabel
 | Licenza dello strumento di test data o masking | Budget per la formazione del personale e la sensibilizzazione alla sicurezza (Articolo 21(2)(g) NIS2) |
 | Licenza di instant-recovery presso il vendor di backup | Soluzione MFA aziendale più ampia; Rediacc ha TOTP sul portale, non una piattaforma MFA aziendale |
 | | Contratto di pen testing o piattaforma di testing autonomo; Rediacc fornisce l'ambiente di destinazione, non la capacità di testing |
-| | SIEM e SOC per il rilevamento e la reportistica dell'Articolo 23; Rediacc fornisce artefatti di grado forense, non il livello di reportistica operativa |
+| | SIEM e SOC per il rilevamento e la reportistica dell'Articolo 23; Rediacc fornisce record di flusso per repository, una timeline verificabile e bozze di report a fasi sui piani a pagamento, non il livello di reportistica operativa |
 | | Provider IaaS (Hetzner, OVH, il vostro colo, il vostro bare metal); Rediacc gira sopra l'infrastruttura, non al suo posto |
 | | Personale che gestisce il programma. Rediacc è uno strato di tooling, non un team di sicurezza |
 
@@ -153,7 +153,7 @@ Cinque contratti. Due di essi (Veeam, Veeam Cloud Connect) sono con lo stesso ve
 - Drata rimane (EUR 18.000)
 - Lo schema di test data fatto in casa viene ritirato; la mezza giornata bisettimanale dell'SRE viene destinata all'esecuzione della routine settimanale di efficacia
 
-Consolidamento del data plane: da 5 voci a 1 (Rediacc) più la linea IaaS esistente. La sezione data plane del registro dei fornitori scende da 5 voci a 2. La storia dell'efficacia continua è ora costituita da esercitazioni settimanali con evidenze dell'audit log con hash chain; la storia del test di ripristino è ora supportata dall'output di `rdc backup status` e da un'esercitazione di ripristino settimanale.
+Consolidamento del data plane: da 5 voci a 1 (Rediacc) più la linea IaaS esistente. La sezione data plane del registro dei fornitori scende da 5 voci a 2. La storia dell'efficacia continua è ora costituita da esercitazioni settimanali con evidenze dell'audit log della workstation verificate da `rdc config audit verify`; la storia del test di ripristino è ora supportata dall'output di `rdc backup status` e da un'esercitazione di ripristino settimanale.
 
 I numeri sono illustrativi, non promesse. Il vostro stack è diverso. La forma, da quattro a cinque voci che collassano in una più l'IaaS esistente, è quella di una conversazione reale con un acquirente.
 

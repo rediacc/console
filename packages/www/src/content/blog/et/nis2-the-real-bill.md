@@ -15,8 +15,8 @@ tags:
   - keskturg
 featured: false
 language: et
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -120,7 +120,7 @@ See on jaotis, mis määrab, kas ülejäänud postitus on aus. Kahe veeru tabel:
 | Testandmete või maskeerimise tööriista litsents | Personali koolitus ja turvateadlikkuse eelarve (NIS2 artikkel 21(2)(g)) |
 | Kiirtaaste litsents backup-tarnijal | Laiem ettevõtte MFA-lahendus; Rediacc'il on portaalil TOTP, mitte ettevõtte MFA-platvorm |
 | | Penetratsioonitesti leping või autonoomne testimisplatvorm; Rediacc annab sihtkeskkonna, mitte testimisvõimekuse |
-| | SIEM ja SOC artikli 23 tuvastamiseks ja aruandluseks; Rediacc annab kohtuekspertiisi tasemel artefaktid, mitte operatiivse aruandluskihi |
+| | SIEM ja SOC artikli 23 tuvastamiseks ja aruandluseks; Rediacc annab hoidlapõhised voo kirjed, kontrollitava ajajoone ja etapiaruannete mustandid tasulistel plaanidel, mitte operatiivse aruandluskihi |
 | | IaaS-tarnija (Hetzner, OVH, teie colo, teie bare metal); Rediacc töötab taristu peal, mitte selle asemel |
 | | Programmi juhiv personal. Rediacc on tööriistade kiht, mitte turvameeskond |
 
@@ -152,7 +152,7 @@ Viis lepingut. Kaks neist (Veeam, Veeam Cloud Connect) on sama tarnijaga, kuid e
 - Drata jääb (18 000 eurot)
 - Omatehtud testandmete skeem lükatakse kasutusest välja; SRE pool päeva iga kahe nädala tagant läheb igal nädalal tõhususe rutiini käitamisele
 
-Andmetasandi koondamine: 5 kulurea kirjet väheneb 1-le (Rediacc) pluss olemasolev IaaS-rida. Tarnijate registri andmetasandi jaotis langeb 5 kirjelt 2-le. Pideva tõhususe lugu on nüüd iganädalased harjutused räsi-aheldatud auditilogi tõenditega; taastamistesti lugu on nüüd toetatud `rdc backup status` väljundiga ja iganädalase taastamise harjutusega.
+Andmetasandi koondamine: 5 kulurea kirjet väheneb 1-le (Rediacc) pluss olemasolev IaaS-rida. Tarnijate registri andmetasandi jaotis langeb 5 kirjelt 2-le. Pideva tõhususe lugu on nüüd iganädalased harjutused tööjaama auditilogi tõenditega, mida kontrollib `rdc config audit verify`; taastamistesti lugu on nüüd toetatud `rdc backup status` väljundiga ja iganädalase taastamise harjutusega.
 
 Numbrid on illustratiivsed, mitte lubadused. Teie pakett on erinev. Kuju, neli kuni viis kulurea kirjet koondumas ühte pluss olemasolev IaaS, on see, milline näeb välja reaalne ostjavestlus.
 

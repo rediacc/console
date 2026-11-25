@@ -16,8 +16,8 @@ tags:
   - marche-intermediaire
 featured: false
 language: fr
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -121,7 +121,7 @@ C'est la section qui détermine si le reste du billet est honnête. Le tableau �
 | Licence outil de données de test ou de masquage | Budget de formation du personnel et de sensibilisation à la sécurité (article 21(2)(g) NIS2) |
 | Licence de restauration instantanée chez l'éditeur de sauvegarde | Solution MFA d'entreprise au sens large ; Rediacc dispose du TOTP sur le portail, pas d'une plateforme MFA d'entreprise |
 | | Contrat de test d'intrusion ou plateforme de test autonome ; Rediacc fournit l'environnement cible, pas la capacité de test |
-| | SIEM et SOC pour la détection et le reporting au titre de l'article 23 ; Rediacc fournit des artefacts de qualité forensique, pas la couche de reporting opérationnel |
+| | SIEM et SOC pour la détection et le reporting au titre de l'article 23 ; Rediacc fournit des enregistrements de flux par dépôt, une chronologie vérifiable et des brouillons de rapports par étapes sur les offres payantes, pas la couche de reporting opérationnel |
 | | Fournisseur IaaS (Hetzner, OVH, votre colocation, votre bare metal) ; Rediacc s'exécute sur l'infrastructure, pas à sa place |
 | | Personnel en charge du programme. Rediacc est une couche d'outils, pas une équipe sécurité |
 
@@ -153,7 +153,7 @@ Cinq contrats. Deux d'entre eux (Veeam, Veeam Cloud Connect) sont chez le même 
 - Drata est maintenu (18 000 EUR)
 - Le schéma de données de test fait maison est retiré ; la demi-journée bihebdomadaire du SRE est réaffectée à l'exécution de la routine d'efficacité hebdomadaire
 
-Consolidation du plan de données : 5 postes réduits à 1 (Rediacc) plus la ligne IaaS existante. La section plan de données du registre fournisseurs passe de 5 entrées à 2. Le dispositif d'efficacité continue repose désormais sur des exercices hebdomadaires avec des preuves issues du journal d'audit chaîné par hachage ; le dispositif de test de reprise est désormais étayé par la sortie de `rdc backup status` et un exercice de restauration par semaine.
+Consolidation du plan de données : 5 postes réduits à 1 (Rediacc) plus la ligne IaaS existante. La section plan de données du registre fournisseurs passe de 5 entrées à 2. Le dispositif d'efficacité continue repose désormais sur des exercices hebdomadaires avec des preuves issues du journal d'audit du poste de travail, que `rdc config audit verify` contrôle ; le dispositif de test de reprise est désormais étayé par la sortie de `rdc backup status` et un exercice de restauration par semaine.
 
 Les chiffres sont illustratifs, pas des promesses. Votre pile est différente. La forme -- quatre à cinq postes qui se consolident en un seul plus l'IaaS existant -- est ce à quoi ressemble une vraie conversation avec un acheteur.
 

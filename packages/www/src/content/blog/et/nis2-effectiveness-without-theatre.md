@@ -4,8 +4,8 @@ title: >-
   sellest probleemi.
 description: >-
   Pidev tõhususe hindamine, konstantajaga fork mis muudab selle odavaks, ja
-  Article 23 aruandluse tähtaeg mida ei saa täita ilma kohtuekspertiisi taseme
-  artefaktideta.
+  Article 23 aruandluse tähtaeg mida ei saa täita ilma kontrollitavate
+  tõenditeta.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -17,8 +17,8 @@ tags:
   - intsidentide-teatamine
 featured: false
 language: et
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "35f317f16e24030b"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -27,7 +27,7 @@ translatedFrom: en
 > - Direktiivi lugemine: 21(2)(e) ja (f) koos nõuavad taastumis- ja turvalisuse testimist, mis tegelikult toimib, nõudmisel, praeguse tootmise vastu.
 > - Delphix-klassi tööriistade, Veeam Instant Recovery või Rubrik Live Mount'iga õigesti tegemise kulu on see, mis paneb enamiku tiime vaikselt valima stagimise.
 > - Kui tootmise fork võtab seitse sekundit, pöördub majanduslik loogika. Iganädalased harjutused muutuvad realistlikuks. Pidev tõhusus muutub dokumenteeritavaks.
-> - Article 23 aruandlus (24-tunnine varajane hoiatus, 72-tunnine teavitus, ühe kuu raport) on täitmatu ilma kohtuekspertiisi taseme artefaktideta. Artefaktid on meil; SOC ja SIEM ja ENISA esitamise töövoog on endiselt teie kanda.
+> - Article 23 aruandlus (24-tunnine varajane hoiatus, 72-tunnine teavitus, ühe kuu raport) on täitmatu ilma tõenditeta. Rediacc pakub tasulistel plaanidel hoidlapõhiseid voo kirjeid ja allkirjastatud etapiaruandeid; SOC, SIEM ja esitamine ametiasutusele on endiselt teie kanda.
 
 Astuge mis tahes keskmise suurusega SRE tiimi ja esitage üks küsimus: millal tegite viimati täieliku otsast lõpuni taastumise -- mitte varundusfaili kontrollimist, vaid taastatud süsteemi tegelikku ülesseadmist koos rakenduste, andmebaaside ja konfiguratsioonidega ning selle kontrollimist, et see toimib? Aus vastus enamikus tiimides on: "eelmise aasta tabeliharjutuses." Seejärel läheb kõik tagasi tavarutiini.
 
@@ -158,7 +158,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). See on räsiaheldatud. `rdc config audit verify` operaatori tööjaamal kinnitab, et ahelat pole pärast sündmuste kirjutamist muudetud. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
+Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). Kohaliku tööjaama logi on räsiaheldatud ja `rdc config audit verify` operaatori tööjaamal kinnitab, et seda ahelat pole pärast sündmuste kirjutamist muudetud. See käsk katab ainult tööjaama logi. Serveripoolne konsooli audit on aheldatud organisatsiooni ja päeva kaupa. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
 
 Rutiini kogu seinakellajaeg 128 GB hoidla puhul on alla 15 minuti. Suurem osa on suitsutets ja varundustõmbamise võrgu edasi-tagasi aeg. Fork operatsioonid ise on sekundid igaüks.
 
@@ -192,7 +192,7 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Lõika liiklus uuele teenindavale forkile DNS-i või marsruudi serveri kaudu.
 ```
 
-Kohtuekspertiisi fork vastab regulaatori küsimusele 60. tunnil: "näidake meile teie süsteemide täpset olekut kompromissi hetkel." Teenindav fork vastab kliendi küsimusele. Üle 70 sündmusega auditilogi vastab küsimusele "kes tegi mida ja millal" räsiaheldatud, kontrollitaval viisil.
+Kohtuekspertiisi fork vastab regulaatori küsimusele 60. tunnil: "näidake meile süsteemide täpset olekut kompromissi hetkel." Teenindav fork vastab kliendi küsimusele. Üle 70 sündmusega auditilogi vastab küsimusele "kes tegi mida ja millal"; forensics'i voo kirjed ja intsidendi ajajoon (tasulised plaanid, hoidla kohta valitud jäädvustamistasemel) lisavad, mida hoidla võrguliiklus tegi, allkirjastatud ja aheldatud partiidega, mida kontrollitakse brauseris. Voo kirjed näitavad mahtu ja sihtkohta, mitte sisu.
 
 See on see, mida Rediacc operaatorile annab. Mida me ei anna:
 
@@ -220,7 +220,7 @@ Kolm artefakti. Tooda need ja Article 21(2)(e) ja (f) vestlus läheb lühikeseks
 
 **Artefakt 1: forgi-harjutuse sagedus**. Ajatempliga logi tõhususe harjutustest, mis on läbi viidud iganädalaselt või iga kahe nädala tagant jooksva kaheteistkümne kuu jooksul. Iga kirje näitab vanemhoidlat, forgi tagi, testitavat plaastrit või muudatust, suitsutesti tulemust ja lammutuse ajatempli. `rdc config audit log --since` toodetud auditilogi jäädvustab kõike seda.
 
-**Artefakt 2: nende harjutuste auditilogi, räsiaheldatud**. Räsiahel auditilogi on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc config audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
+**Artefakt 2: nende harjutuste tööjaama auditilogi, räsiaheldatud**. Räsiahel tööjaama auditilogil on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc config audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
 
 **Artefakt 3: varunduse kontrollimise rada**. Iga ajakavastatud varundusstrateegiale toodab systemd üksus oleku lisafaili `/var/run/rediacc/cold-backup-<guid>.status.json` hoidla ja käituse kohta ning lõpliku kokkuvõtte logirea. `rdc backup status` esitab mõlemaid. Koos 4. sammust iganädalase taastamisharjutusega annab see audiitorile "varundus-ja-taastamine-testitud" raja, mitte ainult "varundus-võetud" raja. Diagnostilise pinna kohta vaata [Jälgimine](/et/docs/monitoring).
 

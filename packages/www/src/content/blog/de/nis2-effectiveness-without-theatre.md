@@ -4,8 +4,8 @@ title: >-
   das jetzt zum Problem.
 description: >-
   Kontinuierliche Wirksamkeitsbewertung, der zeitkonstante Fork, der sie
-  erschwinglich macht, und die Meldefrist nach Artikel 23, die ohne forensische
-  Artefakte nicht einzuhalten ist.
+  erschwinglich macht, und die Meldefrist nach Artikel 23, die ohne
+  überprüfbare Nachweise nicht einzuhalten ist.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -17,8 +17,8 @@ tags:
   - vorfallsmeldung
 featured: false
 language: de
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "35f317f16e24030b"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -27,7 +27,7 @@ translatedFrom: en
 > - Die Richtlinie besagt: 21(2)(e) und (f) verlangen zusammen Wiederherstellungs- und Sicherheitstests, die tatsächlich funktionieren, auf Abruf, gegen die aktuelle Produktion.
 > - Die Kosten, es mit Delphix-ähnlichem Tooling, Veeam Instant Recovery oder Rubrik Live Mount richtig zu machen, sind das, was die meisten Teams dazu bringt, stillschweigend auf Staging auszuweichen.
 > - Wenn ein Production-Fork sieben Sekunden dauert, kehrt sich die Wirtschaftlichkeit um. Wöchentliche Drills werden realistisch. Kontinuierliche Wirksamkeit wird dokumentierbar.
-> - Die Meldepflicht nach Artikel 23 (24-Stunden-Frühwarnung, 72-Stunden-Meldung, Einmonats-Abschlussbericht) ist ohne forensische Artefakte nicht einzuhalten. Wir liefern die Artefakte; SOC, SIEM und der ENISA-Einreichungsworkflow liegen weiterhin bei Ihnen.
+> - Die Meldepflicht nach Artikel 23 (24-Stunden-Frühwarnung, 72-Stunden-Meldung, Einmonats-Abschlussbericht) ist ohne Nachweise nicht einzuhalten. Rediacc liefert Flow-Records pro Repository und signierte, gestufte Berichte in kostenpflichtigen Plänen; SOC, SIEM und die Einreichung bei der Behörde liegen weiterhin bei Ihnen.
 
 Gehen Sie in ein mittelgroßes SRE-Team und stellen Sie eine einzige Frage: Wann haben Sie zuletzt eine vollständige End-to-End-Wiederherstellung durchgeführt, nicht eine Backup-Dateiüberprüfung, sondern das wiederhergestellte System mit Apps, Datenbanken und Konfigurationen tatsächlich hochgefahren und validiert, dass es funktioniert? Die ehrliche Antwort lautet in den meisten Teams: "Beim Tabletop-Exercise im letzten Jahr." Dann geht jeder wieder an die Arbeit.
 
@@ -158,7 +158,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Das Audit-Log erfasst jeden Schritt (Fork-Erstellung, repo up, Term-Sessions, Backup-Pull, repo destroy). Es ist hash-verkettet. `rdc config audit verify` auf der Workstation des Operators bestätigt, dass die Kette seit dem Schreiben der Ereignisse nicht verändert wurde. Siehe [Account Security § CLI Security Posture for AI Agents](/de/docs/account-security) für das Audit-Modell.
+Das Audit-Log erfasst jeden Schritt (Fork-Erstellung, repo up, Term-Sessions, Backup-Pull, repo destroy). Das lokale Workstation-Log ist hash-verkettet, und `rdc config audit verify` auf der Workstation des Operators bestätigt, dass diese Kette seit dem Schreiben der Ereignisse nicht verändert wurde. Der Befehl deckt nur das Workstation-Log ab. Das serverseitige Konsolen-Audit wird pro Organisation und Tag verkettet. Siehe [Account Security § CLI Security Posture for AI Agents](/de/docs/account-security) für das Audit-Modell.
 
 Die gesamte Wanduhrzeit für die Routine, bei einem 128-GB-Repository, liegt unter 15 Minuten. Der größte Teil davon entfällt auf den Smoke-Test und den Netzwerk-Round-Trip für den Backup-Pull. Die Fork-Operationen selbst dauern jeweils Sekunden.
 
@@ -192,7 +192,7 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Traffic auf den neuen bedienenden Fork via DNS oder Route-Server umleiten.
 ```
 
-Der forensische Fork beantwortet die Frage des Regulierers in Stunde 60: "Zeigen Sie uns den genauen Zustand Ihrer Systeme zum Zeitpunkt der Kompromittierung." Der bedienende Fork beantwortet die Frage des Kunden. Das 70+-Ereignis-Audit-Log beantwortet "wer hat was, wann getan" auf hash-verkettete, verifizierbare Weise.
+Der forensische Fork beantwortet die Frage des Regulierers in Stunde 60: "Zeigen Sie uns den genauen Zustand der Systeme zum Zeitpunkt der Kompromittierung." Der bedienende Fork beantwortet die Frage des Kunden. Das 70+-Ereignis-Audit-Log beantwortet "wer hat was, wann getan"; die Forensics-Flow-Records und die Vorfall-Timeline (kostenpflichtige Pläne, in der pro Repository gewählten Erfassungsstufe) ergänzen, was der Netzwerkverkehr des Repositorys getan hat, mit signierten, verketteten Batches, die im Browser verifiziert werden. Flow-Records zeigen Volumen und Ziel, nicht Inhalt.
 
 Das ist, was Rediacc dem Operator gibt. Was wir nicht geben:
 
@@ -200,7 +200,7 @@ Das ist, was Rediacc dem Operator gibt. Was wir nicht geben:
 - **Das SOC**. Wir betreiben keine 24x7-Erkennungsfähigkeit. Wir produzieren keine Alerts. Wir triagieren nicht.
 - **Das verwaltete Reporting**. Wir reichen den ENISA-Bericht nicht ein. Wir verfassen die Frühwarnung nicht. Wir koordinieren nicht mit dem nationalen CSIRT in Ihrem Namen.
 
-Das ist der Hebel, den ein etablierter Anbieter gegen uns nutzen wird. Veeam Data Platform mit Coveware-Integrationen, Rubrik mit ihrem Managed-Services-Arm und einige spezialisierte IR-Retainer-Firmen (Mandiant, Kroll, S-RM in Europa) verkaufen genau die operative Schicht, die Rediacc nicht bietet. Das zu leugnen, ist der Marketingzug, der uns in Schwierigkeiten bringt. Die vertretbare Position lautet: Rediacc liefert Ihnen forensische Artefakte, die jene Dienste alleine nicht produzieren können; jene Dienste liefern Ihnen die operative Meldeschicht, die Rediacc nicht bereitstellen kann. Sie ergänzen sich. Ein NIS2-Programm braucht beides.
+Das ist der Hebel, den ein etablierter Anbieter gegen uns nutzen wird. Veeam Data Platform mit Coveware-Integrationen, Rubrik mit ihrem Managed-Services-Arm und einige spezialisierte IR-Retainer-Firmen (Mandiant, Kroll, S-RM in Europa) verkaufen genau die operative Schicht, die Rediacc nicht bietet. Das zu leugnen, ist der Marketingzug, der uns in Schwierigkeiten bringt. Die vertretbare Position lautet: Rediacc liefert Ihnen überprüfbare Nachweise, die jene Dienste alleine nicht produzieren können; jene Dienste liefern Ihnen die operative Meldeschicht, die Rediacc nicht bereitstellen kann. Sie ergänzen sich. Ein NIS2-Programm braucht beides.
 
 ## Was Rediacc nicht für Sie betreibt
 
@@ -220,7 +220,7 @@ Drei Artefakte. Produzieren Sie diese und die Unterhaltung zu Artikel 21(2)(e) u
 
 **Artefakt 1: die Fork-Drill-Kadenz**. Ein zeitgestempeltes Log von Wirksamkeits-Drills, die wöchentlich oder zweiwöchentlich über rollende zwölf Monate durchgeführt wurden. Jeder Eintrag zeigt das Eltern-Repository, das Fork-Tag, den zu testenden Patch oder die Änderung, das Smoke-Test-Ergebnis und den Abbau-Zeitstempel. Das von `rdc config audit log --since` produzierte Audit-Log erfasst all das.
 
-**Artefakt 2: das Audit-Log dieser Drills, hash-verkettet**. Die Hash-Kette im Audit-Log ist das, was "wir haben letztes Jahr 47 Drills durchgeführt" von einer Behauptung zu einem Nachweis macht. `rdc config audit verify` validiert die Kette End-to-End. Das Validierungsergebnis ist eine einzelne Befehlsausgabe, die ein Auditor erneut ausführen kann.
+**Artefakt 2: das Workstation-Audit-Log dieser Drills, hash-verkettet**. Die Hash-Kette im Workstation-Audit-Log ist das, was "wir haben letztes Jahr 47 Drills durchgeführt" von einer Behauptung zu einem Nachweis macht. `rdc config audit verify` validiert die Kette End-to-End. Das Validierungsergebnis ist eine einzelne Befehlsausgabe, die ein Auditor erneut ausführen kann.
 
 **Artefakt 3: der Backup-Verify-Trail**. Für jede geplante Backup-Strategie produziert die systemd-Unit eine Status-Sidecar-Datei unter `/var/run/rediacc/cold-backup-<guid>.status.json` pro Repo pro Durchlauf und eine abschließende Zusammenfassungslog-Zeile. `rdc backup status` zeigt beides an. Kombiniert mit dem wöchentlichen Wiederherstellungs-Drill aus Schritt 4 der obigen Routine ergibt das einen "Backup-und-Wiederherstellung-getestet"-Trail, nicht nur einen "Backup-genommen"-Trail. Siehe [Monitoring](/de/docs/monitoring) für die Diagnosefläche.
 

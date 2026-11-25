@@ -5,7 +5,7 @@ title: >-
 description: >-
   Avaliação contínua da eficácia, o fork de tempo constante que a torna
   acessível, e o prazo de reporte do Artigo 23 que não conseguirá cumprir sem
-  artefactos de grau forense.
+  evidências verificáveis.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -17,8 +17,8 @@ tags:
   - incident-reporting
 featured: false
 language: pt
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "35f317f16e24030b"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -27,7 +27,7 @@ translatedFrom: en
 > - A diretiva estabelece que 21(2)(e) e (f) em conjunto exigem testes de recuperação e de segurança que funcionem de facto, a pedido, contra a produção atual.
 > - O custo de fazer isto corretamente com ferramentas de classe Delphix, Veeam Instant Recovery ou Rubrik Live Mount é o que leva a maioria das equipas a optar silenciosamente pelo staging.
 > - Quando um fork de produção demora sete segundos, a economia inverte-se. Simulações semanais tornam-se realistas. A eficácia contínua torna-se documentável.
-> - O reporte do Artigo 23 (aviso prévio de 24 horas, notificação de 72 horas, relatório de um mês) é impossível de cumprir sem artefactos de grau forense. Temos os artefactos; o SOC, o SIEM e o fluxo de reporte à ENISA continuam a ser da sua responsabilidade.
+> - O reporte do Artigo 23 (aviso prévio de 24 horas, notificação de 72 horas, relatório de um mês) é impossível de cumprir sem evidências. A Rediacc fornece registos de fluxo por repositório e relatórios por fases assinados nos planos pagos; o SOC, o SIEM e a comunicação à autoridade continuam a ser da sua responsabilidade.
 
 Entre numa equipa de SRE de média dimensão e faça uma pergunta: quando foi a última vez que realizou uma recuperação completa de ponta a ponta -- não uma verificação de integridade de ficheiro de backup, mas realmente arrancar o sistema recuperado com aplicações, bases de dados e configurações, e validar que funciona? A resposta honesta, na maioria das equipas, é "no exercício tabletop do ano passado." Depois toda a gente regressa ao trabalho.
 
@@ -158,7 +158,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-O log de auditoria captura cada passo (criação do fork, repo up, sessões term, backup pull, repo destroy). Tem encadeamento de hashes. `rdc config audit verify` no posto de trabalho do operador confirma que a cadeia não foi modificada desde que os eventos foram escritos. Consulte [Segurança de Conta § Postura de Segurança da CLI para Agentes de IA](/pt/docs/account-security) para o modelo de auditoria.
+O log de auditoria captura cada passo (criação do fork, repo up, sessões term, backup pull, repo destroy). O log local do posto de trabalho tem encadeamento de hashes, e `rdc config audit verify` no posto de trabalho do operador confirma que essa cadeia não foi modificada desde que os eventos foram escritos. Esse comando cobre apenas o log do posto de trabalho. A auditoria da consola no servidor é encadeada por organização e por dia. Consulte [Segurança de Conta § Postura de Segurança da CLI para Agentes de IA](/pt/docs/account-security) para o modelo de auditoria.
 
 O tempo total de relógio de parede para a rotina, num repositório de 128 GB, é inferior a 15 minutos. A maior parte é o smoke test e o round-trip de rede para o backup pull. As operações de fork em si são de segundos cada uma.
 
@@ -192,7 +192,7 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Cortar o tráfego para o novo fork de serviço via DNS ou o route server.
 ```
 
-O fork forense responde à pergunta do regulador na hora 60: "mostre-nos o estado exato dos seus sistemas no momento do comprometimento." O fork de serviço responde à pergunta do cliente. O log de auditoria com 70 ou mais eventos responde a "quem fez o quê, quando" de forma encadeada por hash e verificável.
+O fork forense responde à pergunta do regulador na hora 60: "mostre-nos o estado exato dos seus sistemas no momento do comprometimento." O fork de serviço responde à pergunta do cliente. O log de auditoria com 70 ou mais eventos responde a "quem fez o quê, quando"; os registos de fluxo forenses e a cronologia do incidente (planos pagos, ao nível de captura escolhido por repositório) acrescentam o que o tráfego de rede do repositório fez, com lotes assinados e encadeados verificados no navegador. Os registos de fluxo mostram volume e destino, não conteúdo.
 
 É isso que a Rediacc dá ao operador. O que não fornecemos:
 
@@ -220,7 +220,7 @@ Três artefactos. Produza estes e a conversa sobre o Artigo 21(2)(e) e (f) fica 
 
 **Artefacto 1: a cadência das simulações de fork**. Um log com timestamp das simulações de eficácia executadas numa cadência semanal ou quinzenal ao longo de doze meses correntes. Cada entrada mostra o repositório pai, a tag do fork, o patch ou alteração sob teste, o resultado do smoke test e o timestamp de desmontagem. O log de auditoria produzido por `rdc config audit log --since` captura tudo isto.
 
-**Artefacto 2: o log de auditoria dessas simulações, encadeado por hash**. O encadeamento de hashes no log de auditoria é o que transforma "executámos 47 simulações no ano passado" de uma afirmação em evidência. `rdc config audit verify` valida a cadeia de ponta a ponta. O resultado da validação é o output de um único comando que um auditor pode re-executar.
+**Artefacto 2: o log de auditoria do posto de trabalho dessas simulações, encadeado por hash**. O encadeamento de hashes no log de auditoria do posto de trabalho é o que transforma "executámos 47 simulações no ano passado" de uma afirmação em evidência. `rdc config audit verify` valida a cadeia de ponta a ponta. O resultado da validação é o output de um único comando que um auditor pode re-executar.
 
 **Artefacto 3: o rasto de verificação de backup**. Para cada estratégia de backup agendada, a unidade systemd produz um sidecar de estado em `/var/run/rediacc/cold-backup-<guid>.status.json` por repositório por execução, e uma linha de log de resumo final. `rdc backup status` expõe ambos. Combinado com a simulação de restauro semanal do Passo 4 da rotina acima, isto dá ao auditor um rasto de "backup-e-restauro-testado", não apenas de "backup-efetuado". Consulte [Monitorização](/pt/docs/monitoring) para a superfície de diagnóstico.
 

@@ -15,8 +15,8 @@ tags:
   - mittelstand
 featured: false
 language: de
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -120,7 +120,7 @@ Dies ist der Abschnitt, der bestimmt, ob der Rest des Beitrags ehrlich ist. Die 
 | Testdaten- oder Maskierungs-Tool-Lizenz | Personal-Schulungs- und Security-Awareness-Budget (NIS2 Artikel 21(2)(g)) |
 | Sofortwiederherstellungs-Lizenz beim Backup-Anbieter | Unternehmensweite MFA-Lösung; Rediacc hat TOTP im Portal, keine unternehmensweite MFA-Plattform |
 | | Penetrationstest-Vertrag oder autonome Testplattform; Rediacc liefert die Zielumgebung, nicht die Testfähigkeit |
-| | SIEM und SOC für Erkennung und Meldung nach Artikel 23; Rediacc liefert forensisch-qualitative Artefakte, nicht die operative Meldeschicht |
+| | SIEM und SOC für Erkennung und Meldung nach Artikel 23; Rediacc liefert Flow-Records pro Repository, eine verifizierbare Timeline und Entwürfe gestufter Berichte in kostenpflichtigen Plänen, nicht die operative Meldeschicht |
 | | IaaS-Anbieter (Hetzner, OVH, Ihr Colocation, Ihr Bare Metal); Rediacc läuft auf, nicht anstelle von, Infrastruktur |
 | | Personal, das das Programm betreibt. Rediacc ist eine Tooling-Schicht, kein Sicherheitsteam |
 
@@ -152,7 +152,7 @@ Fünf Verträge. Zwei davon (Veeam, Veeam Cloud Connect) sind beim gleichen Anbi
 - Drata bleibt (EUR 18.000)
 - Das selbst gebaute Testdaten-Schema wird abgelöst; der halbe SRE-Tag alle zwei Wochen fließt stattdessen in die wöchentliche Wirksamkeitsroutine
 
-Datenebenen-Konsolidierung: 5 Posten auf 1 (Rediacc) plus die bestehende IaaS-Zeile. Der Datenebenen-Abschnitt des Lieferantenregisters sinkt von 5 auf 2 Einträge. Die kontinuierliche Wirksamkeitsgeschichte besteht jetzt aus wöchentlichen Übungen mit hash-verketteten Audit-Log-Nachweisen; die Wiederherstellungstest-Geschichte wird jetzt durch `rdc backup status`-Ausgabe und eine wöchentliche Restore-Übung untermauert.
+Datenebenen-Konsolidierung: 5 Posten auf 1 (Rediacc) plus die bestehende IaaS-Zeile. Der Datenebenen-Abschnitt des Lieferantenregisters sinkt von 5 auf 2 Einträge. Die kontinuierliche Wirksamkeitsgeschichte besteht jetzt aus wöchentlichen Übungen mit Workstation-Audit-Log-Nachweisen, die `rdc config audit verify` prüft; die Wiederherstellungstest-Geschichte wird jetzt durch `rdc backup status`-Ausgabe und eine wöchentliche Restore-Übung untermauert.
 
 Die Zahlen sind illustrativ, keine Versprechen. Ihr Stack ist anders. Die Form, vier bis fünf Posten, die sich zu einem plus bestehender IaaS-Zeile zusammenführen, ist das, wie ein echtes Einkäufergespräch aussieht.
 

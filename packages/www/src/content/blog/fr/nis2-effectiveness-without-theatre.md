@@ -5,7 +5,7 @@ title: >-
 description: >-
   Évaluation continue de l'efficacité, le fork à temps constant qui la rend
   abordable, et le calendrier de notification de l'Article 23 que vous ne pouvez
-  pas tenir sans artefacts de niveau forensique.
+  pas tenir sans preuves vérifiables.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -17,8 +17,8 @@ tags:
   - notification-incident
 featured: false
 language: fr
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "35f317f16e24030b"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -27,7 +27,7 @@ translatedFrom: en
 > - La directive dit : 21(2)(e) et (f) ensemble exigent une reprise et des tests de sécurité qui fonctionnent réellement, à la demande, sur la production courante.
 > - Le coût de bien faire les choses avec les outils de type Delphix, Veeam Instant Recovery ou Rubrik Live Mount est ce qui pousse la plupart des équipes à opter discrètement pour le staging.
 > - Quand un fork de production prend sept secondes, l'économie s'inverse. Des exercices hebdomadaires deviennent réalistes. L'efficacité continue devient documentable.
-> - La notification selon l'Article 23 (alerte précoce à 24 heures, notification à 72 heures, rapport à un mois) est impossible à tenir sans artefacts de niveau forensique. Nous fournissons les artefacts ; le SOC, le SIEM et le flux de dépôt auprès de l'ENISA restent de votre ressort.
+> - La notification selon l'Article 23 (alerte précoce à 24 heures, notification à 72 heures, rapport à un mois) est impossible à tenir sans preuves. Rediacc fournit, sur les offres payantes, des enregistrements de flux par dépôt et des rapports par étapes signés ; le SOC, le SIEM et le dépôt auprès de l'autorité restent de votre ressort.
 
 Entrez dans n'importe quelle équipe SRE de taille moyenne et posez une question : quand avez-vous fait pour la dernière fois une reprise complète de bout en bout, pas une vérification de fichier de sauvegarde, mais vraiment démarré le système récupéré avec les applications, les bases de données et les configurations, et validé qu'il fonctionne ? La réponse honnête, dans la plupart des équipes, est "lors de l'exercice sur table de l'an dernier." Puis tout le monde reprend le travail.
 
@@ -158,7 +158,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Le journal d'audit capture chaque étape (création du fork, repo up, sessions term, backup pull, repo destroy). Il est chaîné par hachage. `rdc config audit verify` sur le poste de travail de l'opérateur confirme que la chaîne n'a pas été modifiée depuis que les événements ont été écrits. Voir [Sécurité du compte - Posture de sécurité CLI pour les agents IA](/fr/docs/account-security) pour le modèle d'audit.
+Le journal d'audit capture chaque étape (création du fork, repo up, sessions term, backup pull, repo destroy). Le journal du poste de travail local est chaîné par hachage, et `rdc config audit verify` sur le poste de travail de l'opérateur confirme que cette chaîne n'a pas été modifiée depuis que les événements ont été écrits. Cette commande ne couvre que le journal du poste de travail. L'audit de la console côté serveur est chaîné par organisation et par jour. Voir [Sécurité du compte - Posture de sécurité CLI pour les agents IA](/fr/docs/account-security) pour le modèle d'audit.
 
 Le temps total d'exécution de la routine, sur un dépôt de 128 Go, est inférieur à 15 minutes. La majeure partie correspond au test de fumée et au temps de transit réseau pour le backup pull. Les opérations de fork elles-mêmes prennent quelques secondes chacune.
 
@@ -192,7 +192,7 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Basculer le trafic vers le nouveau fork de service via DNS ou le serveur de route.
 ```
 
-Le fork forensique répond à la question du régulateur à l'heure 60 : "montrez-nous l'état exact de vos systèmes au moment de la compromission." Le fork de service répond à la question du client. Le journal d'audit de plus de 70 événements répond à "qui a fait quoi, quand" de manière chaînée par hachage et vérifiable.
+Le fork forensique répond à la question du régulateur à l'heure 60 : "montrez-nous l'état exact des systèmes au moment de la compromission." Le fork de service répond à la question du client. Le journal d'audit de plus de 70 événements répond à "qui a fait quoi, quand" ; les enregistrements de flux forensics et la chronologie d'incident (offres payantes, au niveau de capture choisi par dépôt) ajoutent ce que le trafic réseau du dépôt a fait, avec des lots signés et chaînés, vérifiés dans le navigateur. Les enregistrements de flux montrent le volume et la destination, pas le contenu.
 
 C'est ce que Rediacc donne à l'opérateur. Ce que nous ne donnons pas :
 
@@ -220,7 +220,7 @@ Trois artefacts. Produisez-les et la conversation sur l'Article 21(2)(e) et (f) 
 
 **Artefact 1 : la cadence des exercices de fork**. Un journal horodaté des exercices d'efficacité exécutés sur une cadence hebdomadaire ou bihebdomadaire sur douze mois glissants. Chaque entrée montre le dépôt parent, l'étiquette du fork, le correctif ou changement testé, le résultat du test de fumée et l'horodatage du démontage. Le journal d'audit produit par `rdc config audit log --since` capture tout cela.
 
-**Artefact 2 : le journal d'audit de ces exercices, chaîné par hachage**. La chaîne de hachage sur le journal d'audit est ce qui transforme "nous avons exécuté 47 exercices l'an dernier" d'une affirmation en preuve. `rdc config audit verify` valide la chaîne de bout en bout. Le résultat de la validation est une sortie de commande unique qu'un auditeur peut réexécuter.
+**Artefact 2 : le journal d'audit du poste de travail pour ces exercices, chaîné par hachage**. La chaîne de hachage sur le journal d'audit du poste de travail est ce qui transforme "nous avons exécuté 47 exercices l'an dernier" d'une affirmation en preuve. `rdc config audit verify` valide la chaîne de bout en bout. Le résultat de la validation est une sortie de commande unique qu'un auditeur peut réexécuter.
 
 **Artefact 3 : la piste de vérification des sauvegardes**. Pour chaque stratégie de sauvegarde planifiée, l'unité systemd produit un fichier sidecar de statut à `/var/run/rediacc/cold-backup-<guid>.status.json` par dépôt et par exécution, ainsi qu'une ligne de journal de résumé finale. `rdc backup status` expose les deux. Combiné avec l'exercice de restauration hebdomadaire de l'Étape 4 de la routine ci-dessus, cela donne à l'auditeur une piste "sauvegarde-et-restauration-testée", et non seulement "sauvegarde-prise". Voir [Surveillance](/fr/docs/monitoring) pour la surface de diagnostic.
 
