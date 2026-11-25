@@ -15,6 +15,13 @@
  * does not open. Neither half alone opens it: the account server holds `serverSecret` and the tag hash, the
  * agent holds `S`, and the executor derives the slot key only while it holds both.
  *
+ * The same slot key also wraps the grant's policy keys (policy-record.ts `derivePolicyKey`, AG-P1): the policy
+ * key of the grant's own config and the one of the org-level config, so the executor opens exactly the two
+ * policy records its human would read and never the CEK. That wrap's AAD carries its own label
+ * (`rediacc-agent-grant-policy-key-v1`) and names the policy record's pointer beside the grant's config, so a
+ * content-key wrap presented as a policy-key wrap, or the reverse, or one pointer's wrap presented for another,
+ * does not open.
+ *
  * The account server imports only `parseAgentBearer` and `hashAuthTag`; it never calls the wrap or the unwrap.
  */
 
@@ -27,6 +34,7 @@ import {
 } from './aes.js';
 import { canonicalize } from './canonical.js';
 import { ConfigIntegrityError } from './errors.js';
+import type { PolicyKey } from './policy-record.js';
 
 /** Length in bytes of the agent secret `S`, of `authTag`, of `K` and of the slot key. */
 export const AGENT_GRANT_SECRET_BYTES = 32;
@@ -40,6 +48,7 @@ export const AGENT_GRANT_INFO = {
   WRAP: 'rediacc-agent-grant-wrap-v1',
   SLOT: 'rediacc-agent-grant-slot-v1',
   WRAP_AAD: 'rediacc-agent-grant-key-v1',
+  POLICY_WRAP_AAD: 'rediacc-agent-grant-policy-key-v1',
 } as const;
 
 /** A grant id: the region prefix and the id, letters, digits, `_` and `-` only (no `.`, which ends it in the bearer). */
@@ -128,6 +137,24 @@ export interface AgentGrantBinding {
   cekGeneration: number;
 }
 
+/**
+ * What a grant's wrapped policy key is bound to. `grantId`, `storeId`, `configId` and `cekGeneration` name the
+ * grant (they derive the slot key); `policyConfigId` and `policyTeamId` name the policy record whose key is
+ * wrapped: the grant's own config, or the store's org-level config (team null).
+ */
+export interface AgentGrantPolicyKeyBinding {
+  grantId: string;
+  storeId: string;
+  /** The grant's config (the slot key's). */
+  configId: string;
+  /** The store's CEK generation the grant was made under, which the policy key is derived for too. */
+  cekGeneration: number;
+  /** The config whose policy record the wrapped key opens. */
+  policyConfigId: string;
+  /** That config's team, or null/absent for the org-level config. */
+  policyTeamId?: string | null;
+}
+
 /** A parsed bearer. */
 export interface AgentBearer {
   grantId: string;
@@ -203,7 +230,9 @@ export function deriveAgentGrantKey(secret: Uint8Array, grantId: string): Promis
 }
 
 /** The HKDF info of the slot key (see the header). */
-export function agentGrantSlotInfo(binding: AgentGrantBinding): string {
+export function agentGrantSlotInfo(
+  binding: Pick<AgentGrantBinding, 'grantId' | 'storeId' | 'configId' | 'cekGeneration'>
+): string {
   assertGrantId(binding.grantId);
   assertInteger('cekGeneration', binding.cekGeneration, 0);
   return [
@@ -219,7 +248,7 @@ export function agentGrantSlotInfo(binding: AgentGrantBinding): string {
 export function deriveAgentGrantSlotKeyRaw(
   grantKey: Uint8Array,
   serverSecret: Uint8Array,
-  binding: AgentGrantBinding
+  binding: Pick<AgentGrantBinding, 'grantId' | 'storeId' | 'configId' | 'cekGeneration'>
 ): Promise<Uint8Array> {
   assertSecret('K', grantKey);
   assertSecret('serverSecret', serverSecret);
@@ -247,10 +276,25 @@ export function agentGrantWrapAad(binding: AgentGrantBinding): Uint8Array {
   return concat(utf8(`${AGENT_GRANT_INFO.WRAP_AAD}\0`), body);
 }
 
+/** The additional authenticated data of a grant's policy-key wrap (a label distinct from the content-key wrap). */
+export function agentGrantPolicyWrapAad(binding: AgentGrantPolicyKeyBinding): Uint8Array {
+  assertGrantId(binding.grantId);
+  assertInteger('cekGeneration', binding.cekGeneration, 0);
+  const body = canonicalize({
+    grantId: binding.grantId,
+    storeId: binding.storeId,
+    configId: binding.configId,
+    policyConfigId: binding.policyConfigId,
+    policyTeamId: binding.policyTeamId ?? null,
+    cekGeneration: binding.cekGeneration,
+  });
+  return concat(utf8(`${AGENT_GRANT_INFO.POLICY_WRAP_AAD}\0`), body);
+}
+
 async function slotKey(
   secret: Uint8Array,
   serverSecret: Uint8Array,
-  binding: AgentGrantBinding,
+  binding: Pick<AgentGrantBinding, 'grantId' | 'storeId' | 'configId' | 'cekGeneration'>,
   usage: 'encrypt' | 'decrypt'
 ): Promise<CryptoKey> {
   const raw = await deriveAgentGrantSlotKeyRaw(
@@ -302,6 +346,61 @@ export async function unwrapConfigKeyForAgentGrant(
       'encrypt',
       'decrypt',
     ]);
+  } finally {
+    raw.fill(0);
+  }
+}
+
+/**
+ * Wrap a policy key (policy-record.ts `derivePolicyKey`) for a grant. Runs in the browser, which holds `S`,
+ * `serverSecret` and the CEK the policy key was derived from. Returns base64(iv + ciphertext).
+ */
+export async function wrapPolicyKeyForAgentGrant(
+  policyKey: PolicyKey,
+  secret: Uint8Array,
+  serverSecret: Uint8Array,
+  binding: AgentGrantPolicyKeyBinding
+): Promise<string> {
+  const aad = agentGrantPolicyWrapAad(binding);
+  const key = await slotKey(secret, serverSecret, binding, 'encrypt');
+  const raw = await exportAesKey(policyKey.key);
+  try {
+    return await aesEncryptToString(key, raw, aad);
+  } finally {
+    raw.fill(0);
+  }
+}
+
+/**
+ * Unwrap a grant's policy key into a NON-extractable, decrypt-only key that `decryptPolicyRecord` accepts in
+ * place of the CEK. Runs in the executor.
+ *
+ * @throws Error when `S` or `serverSecret` is not 32 bytes.
+ * @throws ConfigIntegrityError when the wrap does not open under this grant's slot key and binding.
+ */
+export async function unwrapPolicyKeyForAgentGrant(
+  wrappedPolicyKey: string,
+  secret: Uint8Array,
+  serverSecret: Uint8Array,
+  binding: AgentGrantPolicyKeyBinding
+): Promise<PolicyKey> {
+  const aad = agentGrantPolicyWrapAad(binding);
+  const key = await slotKey(secret, serverSecret, binding, 'decrypt');
+  let raw: Uint8Array;
+  try {
+    raw = await aesDecryptFromString(key, wrappedPolicyKey, aad);
+  } catch {
+    throw new ConfigIntegrityError(
+      'Agent grant policy key integrity check failed: the wrapped policy key was not sealed for this grant, policy record and CEK generation.'
+    );
+  }
+  try {
+    return {
+      kind: 'policy-key',
+      key: await crypto.subtle.importKey('raw', buf(raw), { name: 'AES-GCM', length: 256 }, false, [
+        'decrypt',
+      ]),
+    };
   } finally {
     raw.fill(0);
   }

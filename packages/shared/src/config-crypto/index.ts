@@ -22,13 +22,14 @@ export {
   randomBytes,
   toBase64,
 } from './aes.js';
-// Agent grants: split-secret wrap of one config's content key (PLAN-rmcp-agent-grants.md Design 1)
-export type { AgentBearer, AgentGrantBinding } from './agent-grant.js';
+// Agent grants: split-secret wrap of one config's content key and its policy keys (PLAN-rmcp-agent-grants.md Design 1, AG-P1)
+export type { AgentBearer, AgentGrantBinding, AgentGrantPolicyKeyBinding } from './agent-grant.js';
 export {
   AGENT_BEARER_PREFIX,
   AGENT_GRANT_INFO,
   AGENT_GRANT_SECRET_BYTES,
   agentGrantHkdf,
+  agentGrantPolicyWrapAad,
   agentGrantSlotInfo,
   agentGrantWrapAad,
   deriveAgentGrantKey,
@@ -39,7 +40,9 @@ export {
   newAgentGrantSecret,
   parseAgentBearer,
   unwrapConfigKeyForAgentGrant,
+  unwrapPolicyKeyForAgentGrant,
   wrapConfigKeyForAgentGrant,
+  wrapPolicyKeyForAgentGrant,
 } from './agent-grant.js';
 export type { CommitmentValueKind } from './canonical.js';
 // Canonical serialization for field-commitment HMACs
@@ -96,11 +99,18 @@ export { hmacCompute, hmacVerify } from './hmac.js';
 // Triple-layer encryption
 export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
 // Policy record (its own record under the CEK, PLAN-rmcp-policy-record.md Design 1)
-export type { PolicyRecord, PolicyRecordBinding } from './policy-record.js';
+export type {
+  PolicyKey,
+  PolicyKeyBinding,
+  PolicyRecord,
+  PolicyRecordBinding,
+} from './policy-record.js';
 export {
   decryptPolicyRecord,
+  derivePolicyKey,
   encryptPolicyRecord,
   PolicyRecordIntegrityError,
+  policyKeyInfo,
   policyRecordAad,
 } from './policy-record.js';
 // Recovery kit content and save check (D43)

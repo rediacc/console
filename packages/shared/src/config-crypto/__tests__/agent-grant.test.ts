@@ -9,22 +9,29 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   AGENT_BEARER_PREFIX,
   type AgentGrantBinding,
+  type AgentGrantPolicyKeyBinding,
   aesDecryptFromString,
   aesEncryptToString,
   agentGrantHkdf,
   ConfigIntegrityError,
+  decryptPolicyRecord,
   deriveAgentGrantKey,
   deriveAgentGrantSlotKeyRaw,
   deriveAuthTag,
+  derivePolicyKey,
+  encryptPolicyRecord,
   formatAgentBearer,
   fromBase64,
+  generateCek,
   generateConfigKey,
   hashAuthTag,
   newAgentGrantSecret,
   parseAgentBearer,
   toBase64,
   unwrapConfigKeyForAgentGrant,
+  unwrapPolicyKeyForAgentGrant,
   wrapConfigKeyForAgentGrant,
+  wrapPolicyKeyForAgentGrant,
 } from '../index.js';
 
 const hex = (data: Uint8Array): string =>
@@ -192,6 +199,129 @@ describe('wrap and unwrap', () => {
     // Either half standing in for the missing one does not open either.
     expect(await opens(wrapped, SERVER_SECRET, SERVER_SECRET, BINDING)).toBe(false);
     expect(await opens(wrapped, S, S, BINDING)).toBe(false);
+  });
+});
+
+describe('policy-key wrap and unwrap (AG-P1)', () => {
+  const policy = { version: 1, defaults: { commands: { allow: ['repo *'] } } };
+  const teamPointer = { storeId: 'store-1', configId: 'cfg-a', teamId: 'team-1' };
+  const orgPointer = { storeId: 'store-1', configId: 'cfg-org', teamId: null };
+  const TEAM: AgentGrantPolicyKeyBinding = {
+    grantId: BINDING.grantId,
+    storeId: 'store-1',
+    configId: 'cfg-a',
+    cekGeneration: 3,
+    policyConfigId: 'cfg-a',
+    policyTeamId: 'team-1',
+  };
+  const ORG: AgentGrantPolicyKeyBinding = {
+    ...TEAM,
+    policyConfigId: 'cfg-org',
+    policyTeamId: null,
+  };
+  let teamRecord: Awaited<ReturnType<typeof encryptPolicyRecord>>;
+  let orgRecord: Awaited<ReturnType<typeof encryptPolicyRecord>>;
+  let teamWrap: string;
+  let orgWrap: string;
+  let configWrap: string;
+  let configKey: CryptoKey;
+
+  /** True when `candidate` unwraps as a policy key under `binding` and opens `record` at `pointer`. */
+  async function opensPolicy(
+    candidate: string,
+    binding: AgentGrantPolicyKeyBinding,
+    record: typeof teamRecord,
+    pointer: typeof teamPointer | typeof orgPointer
+  ): Promise<boolean> {
+    try {
+      const key = await unwrapPolicyKeyForAgentGrant(candidate, S, SERVER_SECRET, binding);
+      return (
+        JSON.stringify(await decryptPolicyRecord(record, key, pointer)) === JSON.stringify(policy)
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  beforeAll(async () => {
+    const cek = await generateCek();
+    teamRecord = await encryptPolicyRecord(policy, cek, {
+      ...teamPointer,
+      version: 1,
+      cekGeneration: 3,
+    });
+    orgRecord = await encryptPolicyRecord(policy, cek, {
+      ...orgPointer,
+      version: 1,
+      cekGeneration: 3,
+    });
+    const teamKey = await derivePolicyKey(cek, { ...teamPointer, cekGeneration: 3 });
+    const orgKey = await derivePolicyKey(cek, { ...orgPointer, cekGeneration: 3 });
+    teamWrap = await wrapPolicyKeyForAgentGrant(teamKey, S, SERVER_SECRET, TEAM);
+    orgWrap = await wrapPolicyKeyForAgentGrant(orgKey, S, SERVER_SECRET, ORG);
+    configKey = await generateConfigKey();
+    configWrap = await wrapConfigKeyForAgentGrant(configKey, S, SERVER_SECRET, BINDING);
+  });
+
+  it('round trips the team and org keys into non-extractable keys that open their records', async () => {
+    const key = await unwrapPolicyKeyForAgentGrant(teamWrap, S, SERVER_SECRET, TEAM);
+    expect(key.kind).toBe('policy-key');
+    expect(key.key.extractable).toBe(false);
+    expect(await opensPolicy(teamWrap, TEAM, teamRecord, teamPointer)).toBe(true);
+    expect(await opensPolicy(orgWrap, ORG, orgRecord, orgPointer)).toBe(true);
+  });
+
+  it('refuses a content-key wrap presented as a policy-key wrap, and the reverse (control: each opens as itself)', async () => {
+    expect(await opensPolicy(teamWrap, TEAM, teamRecord, teamPointer)).toBe(true);
+    const ck = await unwrapConfigKeyForAgentGrant(configWrap, S, SERVER_SECRET, BINDING);
+    expect(ck.algorithm.name).toBe('AES-GCM');
+    // The two wraps share the slot key (same grant, store, config and generation); only the AAD label differs.
+    await expect(
+      unwrapPolicyKeyForAgentGrant(configWrap, S, SERVER_SECRET, TEAM)
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
+    await expect(
+      unwrapConfigKeyForAgentGrant(teamWrap, S, SERVER_SECRET, BINDING)
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
+  });
+
+  it('refuses the org wrap presented for the team pointer, and the reverse (control: each opens its own)', async () => {
+    expect(await opensPolicy(teamWrap, TEAM, teamRecord, teamPointer)).toBe(true);
+    expect(await opensPolicy(orgWrap, ORG, orgRecord, orgPointer)).toBe(true);
+    expect(await opensPolicy(orgWrap, TEAM, teamRecord, teamPointer)).toBe(false);
+    expect(await opensPolicy(teamWrap, ORG, orgRecord, orgPointer)).toBe(false);
+  });
+
+  it("a policy key does not open another pointer's record (control: it opens its own)", async () => {
+    const teamKey = await unwrapPolicyKeyForAgentGrant(teamWrap, S, SERVER_SECRET, TEAM);
+    await expect(decryptPolicyRecord(teamRecord, teamKey, teamPointer)).resolves.toEqual(policy);
+    await expect(decryptPolicyRecord(orgRecord, teamKey, orgPointer)).rejects.toThrow(
+      /Policy record integrity check failed/
+    );
+  });
+
+  it('refuses another grant, store, config or generation (control: the bound one opens)', async () => {
+    expect(await opensPolicy(teamWrap, TEAM, teamRecord, teamPointer)).toBe(true);
+    for (const change of [
+      { grantId: 'eu_grant-0009' },
+      { storeId: 'store-2' },
+      { configId: 'cfg-b' },
+      { cekGeneration: 4 },
+      { policyTeamId: 'team-2' },
+    ]) {
+      expect(await opensPolicy(teamWrap, { ...TEAM, ...change }, teamRecord, teamPointer)).toBe(
+        false
+      );
+    }
+  });
+
+  it('refuses a wrong S or serverSecret (control: the right pair opens)', async () => {
+    expect(await opensPolicy(teamWrap, TEAM, teamRecord, teamPointer)).toBe(true);
+    await expect(
+      unwrapPolicyKeyForAgentGrant(teamWrap, newAgentGrantSecret(), SERVER_SECRET, TEAM)
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
+    await expect(
+      unwrapPolicyKeyForAgentGrant(teamWrap, S, newAgentGrantSecret(), TEAM)
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 });
 
