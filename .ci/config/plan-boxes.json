@@ -1081,16 +1081,16 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 6,
+      "open": 3,
+      "done": 7,
       "open_sigs": [
-        "1e013e21",
         "4a23af14",
         "4cd2161d",
         "a1ac756b"
       ],
       "done_sigs": [
         "03415e93",
+        "1e013e21",
         "83ca5876",
         "84d33d0b",
         "8a3d3128",
