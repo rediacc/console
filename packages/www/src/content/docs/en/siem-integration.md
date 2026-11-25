@@ -124,8 +124,8 @@ referenced in Rediacc's compliance documentation:
 - **SOC 2 CC6.1 / CC7.2** -- access logging + monitoring
 - **HIPAA 45 CFR 164.312(b)** -- audit controls
 - **PCI DSS Req 10** -- track and monitor all access
-- **NIS2 Art. 21** -- incident reporting capability
-- **DORA Art. 10** -- ICT-related incident detection
+- **NIS2 Art. 21** -- the audit events are an input to incident handling; the incident timeline, clocks and staged reports are separate features
+- **DORA Art. 10** -- the audit events are an input to detection; the anomaly detectors run on forensics flow records, not on this pipeline
 
 ## Reliability
 

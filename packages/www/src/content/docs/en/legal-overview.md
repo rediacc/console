@@ -23,7 +23,7 @@ We map Rediacc's technical capabilities to major compliance requirements. Each p
 | [CCPA](/en/docs/legal-ccpa) | California consumer privacy rights | Self-hosted (no data sale/sharing), zero-knowledge encryption, encrypted deletion, data inventory per repository |
 | [ISO 27001](/en/docs/legal-iso27001) | Information security management controls | Asset management, cryptographic controls, zero-knowledge config store, access control, operations security |
 | [PCI DSS](/en/docs/legal-pci-dss) | Payment card data protection | Network segmentation by architecture, mandatory encryption, audit logging, scope reduction via self-hosted |
-| [NIS2 and DORA](/en/docs/legal-nis2-dora) | EU cybersecurity and financial resilience | Supply chain risk elimination, resilience testing via CoW cloning, encryption, incident detection |
+| [NIS2 and DORA](/en/docs/legal-nis2-dora) | EU cybersecurity and financial resilience | Supply chain risk elimination, resilience testing via CoW cloning, encryption, anomaly notices and incident reporting clocks (paid plans) |
 | [Data Sovereignty](/en/docs/legal-data-sovereignty) | Global data residency laws (PIPL, LGPD, KVKK, PIPA, and more) | Self-hosted = data never leaves your jurisdiction. No cross-border transfers, no adequacy assessments |
 
 ## Architectural Foundations

@@ -1,6 +1,6 @@
 ---
 title: "Your Annual Pen Test is Compliance Theatre. NIS2 Article 21(2)(f) Just Made That a Problem."
-description: "Continuous effectiveness assessment, the constant-time fork that makes it cheap, and the Article 23 reporting timeline you cannot meet without forensic-grade artefacts."
+description: "Continuous effectiveness assessment, the constant-time fork that makes it cheap, and the Article 23 reporting timeline you cannot meet without evidence you can verify."
 author: Rediacc
 publishedDate: 2026-05-09
 category: guide
@@ -19,7 +19,7 @@ language: en
 > - The directive read: 21(2)(e) and (f) together require recovery and security testing that actually work, on demand, against current production.
 > - The cost-of-doing-it-right with Delphix-class tooling, Veeam Instant Recovery, or Rubrik Live Mount is what makes most teams quietly opt for staging instead.
 > - When a production fork takes seven seconds, the economics flip. Weekly drills become realistic. Continuous effectiveness becomes documentable.
-> - Article 23 reporting (24-hour early warning, 72-hour notification, one-month report) is unmeetable without forensic-grade artefacts. We have the artefacts; the SOC and the SIEM and the ENISA filing workflow are still on you.
+> - Article 23 reporting (24-hour early warning, 72-hour notification, one-month report) is unmeetable without evidence. Rediacc provides per-repository flow records and signed staged reports on paid plans; the SOC, the SIEM and the filing to the authority are still on you.
 
 Walk into any mid-sized SRE team and ask one question: when did you last do a full end-to-end recovery, not a backup-file verification, but actually spin up the recovered system with apps, databases and configs, and validate it works? The honest answer, in most teams, is "in last year's tabletop exercise." Then everyone goes back to work.
 
@@ -150,7 +150,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-The audit log captures every step (fork creation, repo up, term sessions, backup pull, repo destroy). It is hash-chained. `rdc config audit verify` on the operator's workstation confirms the chain has not been modified since the events were written. See [Account Security § CLI Security Posture for AI Agents](/en/docs/account-security) for the audit model.
+The audit log captures every step (fork creation, repo up, term sessions, backup pull, repo destroy). The local workstation log is hash-chained, and `rdc config audit verify` on the operator's workstation confirms that chain has not been modified since the events were written. That command covers the workstation log only. The server-side console audit is chained per organization and day. See [Account Security § CLI Security Posture for AI Agents](/en/docs/account-security) for the audit model.
 
 The total wall-clock time for the routine, on a 128 GB repository, is under 15 minutes. Most of that is the smoke test and the network round-trip for the backup pull. The fork operations themselves are seconds each.
 
@@ -184,7 +184,7 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Cut traffic to the new serving fork via DNS or the route server.
 ```
 
-The forensic fork answers the regulator's question at hour 60: "show us the exact state of your systems at the moment of compromise." The serving fork answers the customer's question. The 70+-event audit log answers "who did what, when" in a hash-chained, verifiable way.
+The forensic fork answers the regulator's question at hour 60: "show us the exact state of the systems at the moment of compromise." The serving fork answers the customer's question. The 70+-event audit log answers "who did what, when"; the forensics flow records and incident timeline (paid plans, at the capture level chosen per repository) add what the repository's network traffic did, with signed, chained batches verified in the browser. Flow records show volume and destination, not content.
 
 That is what Rediacc gives the operator. What we do not give:
 
@@ -212,7 +212,7 @@ Three artefacts. Produce these and the Article 21(2)(e) and (f) conversation get
 
 **Artefact 1: the fork-drill cadence**. A timestamped log of effectiveness drills run on a weekly or bi-weekly cadence over a rolling twelve months. Each entry shows the parent repository, the fork tag, the patch or change under test, the smoke test result, and the teardown timestamp. The audit log produced by `rdc config audit log --since` captures all of this.
 
-**Artefact 2: the audit log of those drills, hash-chained**. The hash chain on the audit log is what turns "we ran 47 drills last year" from a claim into evidence. `rdc config audit verify` validates the chain end-to-end. The validation result is a single command output that an auditor can re-run.
+**Artefact 2: the workstation audit log of those drills, hash-chained**. The hash chain on the workstation audit log is what turns "we ran 47 drills last year" from a claim into evidence. `rdc config audit verify` validates the chain end-to-end. The validation result is a single command output that an auditor can re-run.
 
 **Artefact 3: the backup-verify trail**. For each scheduled backup strategy, the systemd unit produces a status sidecar at `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per run, and a final summary log line. `rdc backup status` surfaces both. Combined with the weekly restore drill from Step 4 of the routine above, this gives the auditor a "backup-and-restore-tested" trail, not just a "backup-taken" trail. See [Monitoring](/en/docs/monitoring) for the diagnostic surface.
 

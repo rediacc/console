@@ -22,13 +22,13 @@ Full text: [Directive (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 | NIS2 Requirement | Rediacc Capability |
 |-----------------|-------------------|
 | Risk management measures (Art. 21) | LUKS2 encryption at rest, network isolation per repository, SSH-only access, audit logging (70+ event types including machine operations) |
-| Incident handling (Art. 21(2)(b)) | 70+ event types (auth, tokens, config, licensing, machine operations) provide forensic trail. Per-repository isolation limits blast radius. |
+| Incident handling (Art. 21(2)(b)) | Per-repository network flow records at a level the customer chooses (destination, port and protocol; at higher levels process, DNS name and sensitive file opens) are shipped as signed, hash-chained batches to a bucket the customer's admins cannot write to, on paid plans only. One investigation timeline per repository verifies the chain in the browser, and Declare incident starts the deadline clocks. Flow records show volume and destination, not content. Free and Community plans record nothing. Per-repository isolation limits blast radius. The 70+ audit event types (auth, tokens, config, licensing, machine operations) record who did what. |
 | Business continuity (Art. 21(2)(c)) | `rdc repo push/pull` with multi-destination encrypted backup. CoW snapshots for instant rollback. |
 | Supply chain security (Art. 21(2)(d)) | Self-hosted eliminates SaaS supply chain risk. No third-party cloud provider processes your data. |
 | Network security (Art. 21(2)(e)) | Per-repository Docker daemons, iptables rules, loopback IP isolation (/26 subnets). |
 | Encryption (Art. 21(2)(h)) | LUKS2 AES-256 mandatory encryption. Zero-knowledge config store with AES-256-GCM. |
 | Access control (Art. 21(2)(i)) | SSH key authentication, scoped API tokens with IP binding, two-factor authentication (TOTP). |
-| Incident reporting, 24h early warning (Art. 23) | Audit logging enables rapid incident detection and scoping. |
+| Incident reporting, 24h early warning (Art. 23) | Declare incident records the moment of awareness and runs three clocks from it: 24 hours for the early warning, 72 hours for the incident notification and one calendar month after the notification for the final report (Art. 23(4)). Each stage is prepared as a signed report in PDF, JSON and STIX 2.1, with a field map from each report field to the Directive. Whether an incident is significant, and what is sent to the CSIRT or competent authority, remains the customer's judgement and filing. |
 
 ### Supply Chain Risk
 
@@ -50,7 +50,7 @@ Full text: [Regulation (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/25
 |-----------------|-------------------|
 | ICT risk management framework (Art. 6) | Encryption, isolation, audit logging, and backup form the technical controls layer. |
 | Protection and prevention (Art. 9) | LUKS2 AES-256 encryption at rest. Network isolation prevents lateral movement. SSH-only access. |
-| Detection (Art. 10) | 70+ event types including machine operations (repo lifecycle, backup, sync, terminal). Admin dashboard and portal with per-user, per-team filtering. Machine operations also in system logs for defense in depth. |
+| Detection (Art. 10) | Anomaly detectors run on the machine (also offline) and on the server over the shipped flow records, and raise a security notice for unusual traffic. Detectors flag deviations from a learned per-repository baseline; they do not prove a breach and they cover only repositories with capture on a paid plan. The 70+ audit event types (repo lifecycle, backup, sync, terminal) remain available with per-user, per-team filtering in the admin dashboard and portal, and in system logs for defense in depth. |
 | Response and recovery (Art. 11) | CoW snapshots for instant rollback. `rdc repo push/pull` for multi-destination recovery. Fork-based disaster recovery testing. |
 | ICT third-party risk (Art. 28-30) | Self-hosted eliminates the "critical ICT third-party provider" classification entirely. |
 | Digital operational resilience testing (Art. 24-27) | CoW cloning enables threat-led penetration testing on production-like environments without data exposure. Clone, test, destroy. |
