@@ -75,18 +75,21 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Owns: packages/www/src/content/blog/*/nis2-effectiveness-without-theatre.md, packages/www/src/content/blog/*/nis2-the-real-bill.md
   Depends on: FL5.
   Accept: `npm run check:i18n` rc 0; `git grep -n --ignore-case "forensic" -- packages/www/src/content/blog/*/nis2-effectiveness-without-theatre.md packages/www/src/content/blog/*/nis2-the-real-bill.md` shows only sentences naming a shipped mechanism, quoted per locale in the tick.
-- [ ] FL8 [writer] Rewrite the three hash-chained claims in ms6-compliance.ts (:31, :92, :117) to the per-org, per-day chain of audit-r2 and the forensics evidence of plans 2 and 4, keeping the exam's article mapping.
+- [x] FL8 [writer] Rewrite the three hash-chained claims in ms6-compliance.ts (:31, :92, :117) to the per-org, per-day chain of audit-r2 and the forensics evidence of plans 2 and 4, keeping the exam's article mapping.
   Owns: private/account/web/src/data/study-content/ms6-compliance.ts
   Depends on: PLAN-console-audit-r2.md#AU8, PLAN-forensics-investigation.md.
   Accept: `(cd private/account && npm run typecheck:web)` rc 0; `git grep -n --ignore-case "hash-chained" -- private/account/web/src/data` prints only sentences naming the day file.
-- [ ] FL9 [writer] DPA and telemetry-policy English per D4: `pages.dataProcessingAgreement.sections.details` purpose, subjects, categories and retention, the IP rule read from the landed capture and shipping code, and one telemetry-policy line pointing forensics to the DPA.
+    (ticked) 2026-11-25T19:03:12Z by d778be9d: FL8 compliance study content describes the per-org day file chain and its limits; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
+- [x] FL9 [writer] DPA and telemetry-policy English per D4: `pages.dataProcessingAgreement.sections.details` purpose, subjects, categories and retention, the IP rule read from the landed capture and shipping code, and one telemetry-policy line pointing forensics to the DPA.
   Owns: packages/www/src/i18n/translations/en.json
   Depends on: PLAN-forensics-shipping.md, PLAN-forensics-capture.md.
   Accept: `npm run check:ci-prose-style` rc 0; the tick quotes the capture and shipping lines the IP rule was read from.
-- [ ] FL10 [writer] Translate the FL5 blurb and FL9 DPA and telemetry keys into the 12 other locales by hand per docs/i18n/CONVENTIONS.md, stamp them with `npx tsx scripts/gen/i18n-stamp-keys.ts --prefix pages.dataProcessingAgreement --write` and the telemetry and blurb prefixes, then `npm run i18n:generate-hashes`; writers on sonnet.
+    (ticked) 2026-11-25T19:03:13Z by d778be9d: FL9 DPA forensics evidence items and the telemetry-policy sentence, IP and retention read from code; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
+- [x] FL10 [writer] Translate the FL5 blurb and FL9 DPA and telemetry keys into the 12 other locales by hand per docs/i18n/CONVENTIONS.md, stamp them with `npx tsx scripts/gen/i18n-stamp-keys.ts --prefix pages.dataProcessingAgreement --write` and the telemetry and blurb prefixes, then `npm run i18n:generate-hashes`; writers on sonnet.
   Owns: packages/www/src/i18n/translations/*.json, packages/www/src/i18n/translations/.translation-hashes.json, packages/www/src/i18n/translations/.naturalized-hashes.json
   Depends on: FL5, FL9.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-ledger-growth` rc 0.
+    (ticked) 2026-11-25T19:03:14Z by d778be9d: FL10 the FL9 keys in the 12 other locales, stamped, check:i18n rc 0; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
 - [ ] FL11 [writer] Document `rediacc-public-data` in .ci/docs/r2-media-setup.md: bucket, `data.rediacc.com` domain, cache rule, CORS, the `public-data` bws profile, and the `stackexchange/`, `models/` (plan 3) and `fonts/` (plan 6) prefixes with their scripted upload jobs.
   Owns: .ci/docs/r2-media-setup.md
   Depends on: PLAN-tooling-code-reduction.md#CR2, PLAN-forensics-detection.md, PLAN-forensics-reports.md#FR12.
