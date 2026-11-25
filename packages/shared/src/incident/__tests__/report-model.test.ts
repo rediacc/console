@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { omitKey } from '../../utils/omit-key.js';
 import { IncidentReportSchema, REPORT_DISCLAIMERS } from '../report.js';
 
 const obs = <T>(value: T) => ({ basis: 'observed' as const, value });
@@ -65,7 +66,7 @@ describe('IncidentReportSchema', () => {
   });
 
   it('rejects a stage that lacks a required section', () => {
-    const { assessment: _a, ...missing } = notification;
+    const missing = omitKey(notification, 'assessment');
     expect(IncidentReportSchema.safeParse(missing).success).toBe(false);
   });
 

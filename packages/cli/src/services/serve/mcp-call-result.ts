@@ -8,6 +8,9 @@ import type { CallToolResult } from '@modelcontextprotocol/server';
 import type { McpToolEntry } from '@rediacc/shared/mcp/registry';
 import type { DispatchOutcome } from './command-dispatch.js';
 
+/** The code of a failed run that names none of its own. */
+const EXECUTION_ERROR = 'EXECUTION_ERROR';
+
 /** An `isError` result whose `structuredContent` carries the code, the message and any extra fields. */
 export function toolError(
   code: string,
@@ -89,7 +92,7 @@ export function envelopeOf(outcome: DispatchOutcome, command: string): Envelope 
       ? null
       : [
           {
-            code: result.errorCode ?? 'EXECUTION_ERROR',
+            code: result.errorCode ?? EXECUTION_ERROR,
             message: message || 'The command failed.',
           },
         ],

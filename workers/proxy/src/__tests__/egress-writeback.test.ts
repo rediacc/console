@@ -22,6 +22,9 @@ import {
 import { resetIssuedTokenCache } from '../issued-token';
 import { API, setup } from './helpers/egress-harness';
 
+/** The method of a chain request that passes none. */
+const DEFAULT_METHOD = 'GET';
+
 beforeEach(() => {
   resetIssuedTokenCache();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -175,7 +178,7 @@ describe('executor write-back requests against the real allowlist', () => {
       const path = (m[2] as string)
         .replace(/\$\{query\}/g, '')
         .replace(/\$\{[^}]*(?:\{[^}]*\}[^}]*)*\}/g, 'cfg-1');
-      return { path, method: /method: '(\w+)'/.exec(m[3] as string)?.[1] ?? 'GET' };
+      return { path, method: /method: '(\w+)'/.exec(m[3] as string)?.[1] ?? DEFAULT_METHOD };
     });
   }
 

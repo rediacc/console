@@ -28,7 +28,7 @@ import type { GrantContext } from './scope.js';
 import { listGrantTools } from './tools.js';
 
 /** The hosted clients whose browser origin may call the Worker; the Worker's own host joins them per region. */
-export const HOSTED_CLIENT_ORIGINS: readonly string[] = ['claude.ai', 'chatgpt.com'];
+export const HOSTED_CLIENT_ORIGINS: readonly string[] = ['claude.ai', 'chatgpt.com'] as const;
 
 /** How long a client may cache `tools/list` and `server/discover`: the listing changes only with a deploy or a scope edit. */
 const LIST_TTL_MS = 60_000;

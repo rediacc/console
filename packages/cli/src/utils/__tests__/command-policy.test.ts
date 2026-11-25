@@ -238,7 +238,7 @@ describe('a remote config, judged as the session names its member (D2)', () => {
     'config remote restore',
     'config remote disable',
     'subscription retire',
-  ];
+  ] as const;
 
   it.each(REFUSED_WITHOUT_SESSION)(
     "refuses a member's %s when the session cannot be opened",

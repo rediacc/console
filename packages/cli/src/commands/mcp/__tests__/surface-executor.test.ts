@@ -183,7 +183,7 @@ const EXECUTOR_TOOLS = [
   'repo replicate status',
   'repo secret get',
   'repo secret list',
-];
+] as const;
 
 const LOCAL_TABLE = JSON.parse(
   readFileSync(

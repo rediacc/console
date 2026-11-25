@@ -36,6 +36,9 @@ import type { JobRouteHelpers } from './job-routes.js';
 import { clusterSubjectOf, resolveExecutorTarget } from './policy.js';
 import type { SessionPrincipal } from './sessions.js';
 
+/** The issue text when the schema names none. */
+const UNNAMED_ISSUE = 'invalid';
+
 /** Route paths; the account Worker's `AI_EXECUTOR_ROUTES` names the same two. */
 export const AI_ROUTES = {
   mode: '/v1/ai/mode',
@@ -193,7 +196,7 @@ export function registerAiRoutes(
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const where = issue?.path.length ? `${issue.path.join('.')}: ` : '';
-      throw new BadAiRequest(`Malformed AI request: ${where}${issue?.message ?? 'invalid'}`);
+      throw new BadAiRequest(`Malformed AI request: ${where}${issue?.message ?? UNNAMED_ISSUE}`);
     }
     const session = helpers.configSession(c.req.header('x-config-session'));
     if (session) deps.sessions.sessionForExec(principal, session);

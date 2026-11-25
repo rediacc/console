@@ -22,6 +22,13 @@ import {
   verifyBatch,
 } from './batch.js';
 
+/** The ref of a gap before the first day file. */
+const GENESIS_REF = 'genesis';
+/** A section change whose verdict names no reason. */
+const HASH_DIFFERS = 'hash differs';
+/** A gap whose first missing sequence is unknown. */
+const UNKNOWN_SEQ = '?';
+
 /** Largest evidence set the page verifies in the browser; above it the CLI runs the same module. */
 export const BROWSER_VERIFY_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 
@@ -146,7 +153,7 @@ function linkDay(
   } else if (header.prevDay !== previous.day) {
     found.gaps.push({
       source: 'audit',
-      ref: header.prevDay ?? 'genesis',
+      ref: header.prevDay ?? GENESIS_REF,
       reason: `day file missing between ${previous.day} and ${day}`,
     });
   } else if (header.prevSha256 !== previous.sha256) {
@@ -202,7 +209,7 @@ function recordSections(verdict: BatchVerdict, ref: string, found: Findings): vo
       found.edits.push({
         source: 'forensics',
         ref,
-        reason: `section ${section.key} changed: ${section.reason ?? 'hash differs'}`,
+        reason: `section ${section.key} changed: ${section.reason ?? HASH_DIFFERS}`,
       });
     } else if (section.status === 'missing') {
       found.gaps.push({ source: 'forensics', ref, reason: `section ${section.key} is absent` });
@@ -221,7 +228,7 @@ function recordVerdict(verdict: BatchVerdict, ref: string, seq: number, found: F
     found.gaps.push({
       source: 'forensics',
       ref,
-      reason: `batches ${verdict.chain.expectedSeq ?? '?'} to ${seq - 1} are missing`,
+      reason: `batches ${verdict.chain.expectedSeq ?? UNKNOWN_SEQ} to ${seq - 1} are missing`,
     });
   } else {
     found.edits.push({

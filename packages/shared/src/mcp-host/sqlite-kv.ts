@@ -16,13 +16,13 @@ export interface SqliteKvDatabase {
   prepare(sql: string): SqliteKvStatement;
 }
 
-export interface SqliteKvStatement {
+interface SqliteKvStatement {
   run(...params: SqliteKvParam[]): unknown;
   get(...params: SqliteKvParam[]): unknown;
   all(...params: SqliteKvParam[]): unknown[];
 }
 
-export type SqliteKvParam = string | number | null;
+type SqliteKvParam = string | number | null;
 
 export interface SqliteKvPutOptions {
   /** Seconds from now; Workers KV refuses less than 60, and so does this adapter. */
@@ -37,7 +37,7 @@ export interface SqliteKvListOptions {
   limit?: number;
 }
 
-export interface SqliteKvListKey {
+interface SqliteKvListKey {
   name: string;
   expiration?: number;
 }
@@ -59,10 +59,10 @@ export interface SqliteKvOptions {
 }
 
 /** The floor Workers KV puts on a TTL, mirrored so both hosts refuse the same writes. */
-export const KV_MIN_EXPIRATION_TTL_SECONDS = 60;
+const KV_MIN_EXPIRATION_TTL_SECONDS = 60;
 const KV_MAX_LIST_LIMIT = 1000;
 /** The table a namespace uses when the caller names none. */
-export const SQLITE_KV_DEFAULT_TABLE = 'mcp_oauth_kv';
+const SQLITE_KV_DEFAULT_TABLE = 'mcp_oauth_kv';
 const KV_DEFAULT_VALUE_TYPE = 'text';
 
 interface Row {

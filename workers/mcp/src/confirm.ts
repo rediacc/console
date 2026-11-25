@@ -3,6 +3,7 @@
  *
  * When the executor answers `NEEDS_CONFIRMATION` and the client declared elicitation, the Worker returns an `input_required` result whose `requestState` is sealed here: AES-256-GCM under a key derived from the Worker secret `CONFIRM_KEY`, carrying `{grantId, userId, tool, argsHash, nonce, exp}` with a two-minute life. The client echoes the state on the retry, where it is opened and refused when it is tampered with, expired, bound to another grant, user or tool, minted for other arguments, or already used. The nonce is burned through the grant's rate limiter (src/rate.ts), so one state is accepted once however many isolates see it.
  */
+import { omitKey } from '../../../packages/shared/src/utils/omit-key.js';
 import type { RateLimiter } from './rate.js';
 
 /** How long a sealed state is accepted. */
@@ -57,7 +58,7 @@ function canonical(value: unknown): string {
 
 /** SHA-256 of the arguments in a canonical form, without `confirm`: the retry adds that argument and must still match. */
 export async function hashArgs(args: Record<string, unknown>): Promise<string> {
-  const { confirm: _confirm, ...rest } = args;
+  const rest = omitKey(args, 'confirm');
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical(rest)));
   return toBase64Url(new Uint8Array(digest));
 }

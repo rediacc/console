@@ -19,6 +19,9 @@ import { type AiMessageBody, sealAiMessage, sealAiTitle } from '@rediacc/shared/
 import { deadlineFetch, describeFetchError } from '../serve/account-fetch.js';
 import type { SessionPrincipal } from '../serve/sessions.js';
 
+/** Why a message cannot be sealed when the session's config holds no key. */
+const NO_CONFIG_KEY = 'the session holds no config key, so the message cannot be sealed';
+
 /** Where the executor posts sealed messages, relative to the account server. */
 const AI_MESSAGES_PATH = '/account/api/v1/console/ai/messages';
 
@@ -144,9 +147,7 @@ export function createAiRecorder(options: AiRecorderOptions): AiRecorder {
           options.keyTimeoutMs ?? AI_KEY_TIMEOUT_MS
         );
       });
-      const read = message
-        .cek()
-        .then((key) => key ?? 'the session holds no config key, so the message cannot be sealed');
+      const read = message.cek().then((key) => key ?? NO_CONFIG_KEY);
       return await Promise.race([read, limit]);
     } catch (error) {
       return `the session's config key could not be read: ${describeFetchError(error)}`;

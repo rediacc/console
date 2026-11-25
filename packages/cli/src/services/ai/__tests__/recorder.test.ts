@@ -6,6 +6,7 @@
 
 import { openAiMessage, openAiTitle } from '@rediacc/shared/ai/seal';
 import { randomBytes } from '@rediacc/shared/config-crypto';
+import { omitKey } from '@rediacc/shared/utils/omit-key';
 import { describe, expect, it } from 'vitest';
 import type { SessionPrincipal } from '../../serve/sessions.js';
 import { AI_MESSAGE_ATTEMPTS, type AiMessageRecord, createAiRecorder } from '../recorder.js';
@@ -224,7 +225,7 @@ describe('AI conversation recorder', () => {
     const keyThrows = await recorder.record(
       message({ conversationId: 'conv-2', cek: () => Promise.reject(new Error('session gone')) })
     );
-    const { tokenId: _dropped, ...withoutToken } = PRINCIPAL;
+    const withoutToken = omitKey(PRINCIPAL, 'tokenId');
     const noToken = await recorder.record(
       message({ conversationId: 'conv-3', principal: withoutToken })
     );

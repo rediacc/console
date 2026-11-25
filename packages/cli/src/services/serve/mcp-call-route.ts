@@ -28,6 +28,7 @@ import type { CallToolResult } from '@modelcontextprotocol/server';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import { getMcpTool, type McpToolEntry } from '@rediacc/shared/mcp/registry';
+import { omitKey } from '@rediacc/shared/utils/omit-key';
 import type { Hono } from 'hono';
 import { z } from 'zod';
 import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from '../../commands/mcp/custom-tools.js';
@@ -52,6 +53,9 @@ import {
 } from './mcp-call-result.js';
 import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
 import { pageOf } from './result-page.js';
+
+/** The reason a local-only tool gives when its registry entry states none. */
+const NOT_SERVED_REMOTELY = 'it is not served remotely';
 
 const GRANT_ID = /^[A-Za-z0-9_-]{1,128}$/;
 
@@ -183,7 +187,7 @@ async function runTool(call: CallContext, args: Record<string, unknown>): Promis
   if (!command) {
     return { result: toolError('INVALID_REQUEST', `There is no tool named ${entry.name}.`) };
   }
-  const { page: _page, ...toolArgs } = args;
+  const toolArgs = omitKey(args, 'page');
   const request = requestOf(entry, command, toolArgs);
   const refusal = await globRefusal(handle.scope, command, request, handle.config);
   if (refusal) return { result: toolError('POLICY_DENIED', refusal) };
@@ -268,7 +272,7 @@ async function openGrant(
 /** The refusal of a tool this server does not serve: a local tool names its registry reason (D57: it reads the caller's own disk or needs a terminal), any other name is unknown. */
 function unservedTool(tool: string, entry: McpToolEntry | undefined): CallToolResult {
   const refusal = entry
-    ? `The tool ${tool} runs only on the caller's own machine: ${entry.localReason ?? 'it is not served remotely'}`
+    ? `The tool ${tool} runs only on the caller's own machine: ${entry.localReason ?? NOT_SERVED_REMOTELY}`
     : `There is no tool named ${tool} on this server.`;
   return toolError('INVALID_REQUEST', refusal);
 }

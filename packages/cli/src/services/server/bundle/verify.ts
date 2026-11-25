@@ -26,6 +26,9 @@ import {
   signatureHolds,
 } from './signing.js';
 
+/** The fingerprint reported for a signer key that does not parse. */
+const INVALID_FINGERPRINT = 'invalid';
+
 async function readOrFail(deps: ServerDeps, dir: string, file: string): Promise<string> {
   try {
     return await deps.readFile(join(dir, file));
@@ -84,7 +87,7 @@ async function readSigner(deps: ServerDeps, dir: string, signer: string): Promis
     throw new BundleError(
       t('commands.server.bundle.errors.signerMismatch', {
         expected: normaliseFingerprint(signer),
-        actual: actual ?? 'invalid',
+        actual: actual ?? INVALID_FINGERPRINT,
       })
     );
   }

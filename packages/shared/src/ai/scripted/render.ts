@@ -9,6 +9,9 @@
 import type { AiEvent, StreamLine } from '../../cli-contract/wire.js';
 import type { AiScript, ScriptPart, ScriptStep } from './scripts.js';
 
+/** The finish reason of a script whose last step names none. */
+const DEFAULT_FINISH = 'stop';
+
 /** The code an `error` line carries when the provider refused the call. */
 export const SCRIPTED_PROVIDER_ERROR_CODE = 'PROVIDER_ERROR';
 
@@ -55,7 +58,7 @@ function stepLines(steps: ScriptStep[]) {
       if (rendered.ends) return { lines, inputTokens, outputTokens, reason: 'approval_required' };
     }
   }
-  return { lines, inputTokens, outputTokens, reason: steps.at(-1)?.finish ?? 'stop' };
+  return { lines, inputTokens, outputTokens, reason: steps.at(-1)?.finish ?? DEFAULT_FINISH };
 }
 
 /**
