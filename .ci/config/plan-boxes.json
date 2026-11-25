@@ -1005,12 +1005,13 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
+      "open": 9,
       "done": 7,
       "open_sigs": [
         "3e3d0041",
         "4a23af14",
         "62309d70",
+        "6ea5827d",
         "ab8e1842",
         "c28073e0",
         "c308f2d8",
@@ -1032,8 +1033,8 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 4,
+      "open": 10,
+      "done": 5,
       "open_sigs": [
         "0d91fe9e",
         "1f21012f",
@@ -1044,14 +1045,14 @@
         "83f4cf23",
         "a0292320",
         "a31af5bc",
-        "d757abf2",
         "ece324eb"
       ],
       "done_sigs": [
         "0689d32e",
         "ac216241",
         "bb7c6e29",
-        "d4cee8eb"
+        "d4cee8eb",
+        "d757abf2"
       ]
     },
     "agent/plans/PLAN-console-ai-feedback.md": {
@@ -1059,12 +1060,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 5,
+      "open": 3,
+      "done": 6,
       "open_sigs": [
         "4a23af14",
         "6c3b5aec",
-        "987389e1",
         "d028b535"
       ],
       "done_sigs": [
@@ -1072,6 +1072,7 @@
         "20cb75e5",
         "8890cd6d",
         "97fdfb9e",
+        "987389e1",
         "ac3aa330"
       ]
     },
@@ -1102,12 +1103,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 12,
+      "open": 2,
+      "done": 13,
       "open_sigs": [
         "1feeff95",
-        "2a92e9a8",
-        "33d4b9af"
+        "2a92e9a8"
       ],
       "done_sigs": [
         "08c8e072",
@@ -1116,6 +1116,7 @@
         "17ba7070",
         "21f07a49",
         "2bac5624",
+        "33d4b9af",
         "3bede979",
         "4a9b3ad7",
         "61973cd4",
@@ -3740,8 +3741,8 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 9,
+      "open": 16,
+      "done": 11,
       "open_sigs": [
         "08d96cc0",
         "24b8bfd7",
@@ -3753,8 +3754,6 @@
         "8e7f6165",
         "8fe64278",
         "911ad25b",
-        "9712d43d",
-        "a2a96daa",
         "a56beb4c",
         "becb4a6e",
         "d07a6d4d",
@@ -3768,6 +3767,8 @@
         "2448d7a3",
         "29be2688",
         "8fe4b010",
+        "9712d43d",
+        "a2a96daa",
         "b548738a",
         "bc51238f",
         "cf0e7c25",

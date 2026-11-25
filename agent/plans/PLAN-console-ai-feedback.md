@@ -78,10 +78,11 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF3.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/FeedbackSettings.test.tsx)` rc 0.
     (ticked) 2026-11-25T20:24:10Z by d778be9d: AF6 landed account c3aa442c (gitlink ec91779c2f); FeedbackSettings 12 passed, web tsc rc 0; the 7 new English keys go to AF7. DEPS-WAIVED: AF3 landed
-- [ ] AF7 [writer] Translate the new `aiFeedback`, `settings` and `team` keys into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
+- [x] AF7 [writer] Translate the new `aiFeedback`, `settings` and `team` keys into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiFeedback.json, private/account/web/src/i18n/locales/*/settings.json, private/account/web/src/i18n/locales/*/team.json
   Depends on: AF5, AF6.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-25T20:29:23Z by d778be9d: AF7 7 keys into 12 locales (84 values), hashes locked; check:i18n rc 0 on the merged tree; landed b92a65e3a8. DEPS-WAIVED: prerequisites landed
 - [ ] AF8 [writer] Playwright spec: a Rediacc-origin failure shows the card and Send files a report, a user-origin failure shows none, Don't send records a decline, the owner override hides the card, and the card is operable by keyboard alone.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-3*-ai-feedback.test.ts

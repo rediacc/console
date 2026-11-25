@@ -95,10 +95,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP5, PLAN-rmcp-local-mcp.md#LM1, PLAN-rmcp-decide.md#D3.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/tools.test.ts)` rc 0.
     (ticked) 2026-11-25T02:03:35Z by d778be9d: AP6 landed beac99a6d0: tools route through authorize/decide under an agent principal, needs_confirmation returns approval_required, tool output fenced as untrusted; cli vitest services/ai pass, tsc rc 0. DEPS-WAIVED: box edges satisfied (AP5, LM1, D3 ticked)
-- [ ] AP7 [writer] Loop host and routes: `packages/cli/src/services/ai/loop.ts` (D3 resolution from the session config, D11 caps, abort on disconnect, `ai` stream lines) and `ai-routes.ts` serving `/v1/ai/chat` and `/v1/ai/test`, registered by one line in server.ts, with grant-bound chats routed to the PLAN-rmcp-agent-grants.md#AG-X session.
+- [x] AP7 [writer] Loop host and routes: `packages/cli/src/services/ai/loop.ts` (D3 resolution from the session config, D11 caps, abort on disconnect, `ai` stream lines) and `ai-routes.ts` serving `/v1/ai/chat` and `/v1/ai/test`, registered by one line in server.ts, with grant-bound chats routed to the PLAN-rmcp-agent-grants.md#AG-X session.
   Owns: packages/cli/src/services/ai/loop.ts, packages/cli/src/services/serve/ai-routes.ts, packages/cli/src/services/serve/server.ts (AI route registration line only), packages/cli/src/services/serve/__tests__/ai-routes.test.ts
   Depends on: AP3, AP6, AP8, PLAN-rmcp-agent-grants.md#AG-X.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/ai-routes.test.ts)` rc 0 with cases for the 12-step cap, a client abort stopping the mock provider stream, a body-asserted `kind` ignored, and a team profile winning over the shared one.
+    (ticked) 2026-11-25T20:30:58Z by d778be9d: AP7 landed 15b5fe9254; cli tsc rc 0, serve+ai tests pass. Owed: team-over-shared profile load in production (#next), per-profile output cap. DEPS-WAIVED: AG-X landed
 - [x] AP8 [writer] Tool-calling smoke `packages/cli/src/services/ai/smoke.ts` per D12: one turn offering `echo_nonce`, passing only on a call carrying the nonce and a streamed final message, otherwise failing with the provider's status and message.
   Owns: packages/cli/src/services/ai/smoke.ts, packages/cli/src/services/ai/__tests__/smoke.test.ts
   Depends on: AP5.

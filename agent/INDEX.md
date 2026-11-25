@@ -505,11 +505,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 142 | 8 | 7 | 28393 |
-| `agent/plans/PLAN-console-ai-credits.md` | approved | 128 | 11 | 4 | 23588 |
-| `agent/plans/PLAN-console-ai-feedback.md` | approved | 97 | 4 | 5 | 16272 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 146 | 9 | 7 | 29736 |
+| `agent/plans/PLAN-console-ai-credits.md` | approved | 129 | 10 | 5 | 23782 |
+| `agent/plans/PLAN-console-ai-feedback.md` | approved | 98 | 3 | 6 | 16463 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 96 | 6 | 4 | 16065 |
-| `agent/plans/PLAN-console-ai-providers.md` | approved | 144 | 3 | 12 | 24571 |
+| `agent/plans/PLAN-console-ai-providers.md` | approved | 145 | 2 | 13 | 24784 |
 | `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 128 | 3 | 10 | 22260 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 139 | 2 | 14 | 26456 |
@@ -618,7 +618,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 79 | 5 | 8 | 19013 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
-| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 144 | 18 | 9 | 35015 |
+| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 146 | 16 | 11 | 35429 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 98 | 4 | 13 | 20795 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 327 | 8 | 11 | 35091 |
