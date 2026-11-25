@@ -15,15 +15,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2590,
- "files": 633,
+ "count": 2588,
+ "files": 631,
  "by_rule": {
   "R1": 1402,
   "R11": 136,
   "R14": 1,
   "R18": 11,
   "R19": 55,
-  "R2": 580,
+  "R2": 578,
   "R7": 405
  },
  "findings": {
@@ -3919,11 +3919,6 @@
   "packages/cli/src/services/renet/renet-license-contract.ts": {
    "R1": [
     "33579ed036306f9b"
-   ]
-  },
-  "packages/cli/src/services/serve/policy.ts": {
-   "R2": [
-    "c74fcc61789fe6cd"
    ]
   },
   "packages/cli/src/services/serve/sessions.ts": {
