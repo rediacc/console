@@ -1,4 +1,10 @@
 export {
+  type CanonicalValue,
+  canonicalBytes,
+  canonicalize,
+  canonicalSha256,
+} from './canonical.js';
+export {
   addCalendarMonth,
   type ClockState,
   clockState,
@@ -19,6 +25,19 @@ export {
   IncidentStepSchema,
   releaseAt,
 } from './incident.js';
+export {
+  fact,
+  type IncidentReport,
+  IncidentReportSchema,
+  IOC_TYPES,
+  type Ioc,
+  IocSchema,
+  type IocType,
+  REPORT_CONFIDENCES,
+  REPORT_DISCLAIMERS,
+  REPORT_STAGES,
+  type ReportStage,
+} from './report.js';
 export {
   compareRows,
   mergeRows,
