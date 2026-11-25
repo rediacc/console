@@ -7094,6 +7094,28 @@ def _stop_store_freshness(ns):
     try:
         import wl_writersnow
 
+        # A missing survey counts while something live is producing it (agent/plans/PLAN-stop-hook-retro-20261125.md R20261125.3): a live task whose raw first prompt or description names the survey file, every agent type included (the survey agent is read-only by brief, so claiming_prompts would drop it), or a live-leased item naming the round. The prompts are read once, and only when a round asks.
+        _wn_prompts: dict = {}
+
+        def _wn_live(row):
+            if "_read" not in _wn_prompts:
+                _wn_prompts["_read"] = {}
+                with contextlib.suppress(Exception):
+                    _wn_metas = wl_roster.load_metas(
+                        wl_roster.session_subagents_dir(ns["event"].get("cwd"), ns["session_id"])
+                    )
+                    for _wn_task in ns["live_bg"]:
+                        _wn_tid = str(_wn_task.get("id") or "")
+                        if _wn_task.get("type") == "subagent" and _wn_tid in _wn_metas:
+                            _wn_prompts["_read"][_wn_tid] = wl_leasehelp.first_prompt(
+                                _wn_metas[_wn_tid]["jsonl"]
+                            )
+                        elif _wn_tid:
+                            _wn_prompts["_read"][_wn_tid] = str(_wn_task.get("description") or "")
+            return wl_writersnow.survey_live(
+                row, _wn_prompts["_read"], ns["fold"].items, ns["_live_worker_ids"]
+            )
+
         _wn_fires, _wn_facts = wl_writersnow.due(
             wl_writersnow.read_rounds(ns["root"]),
             ns["session_id"],
@@ -7102,6 +7124,7 @@ def _stop_store_freshness(ns):
             0 if wl_writersnow.stand_down(ns["_loop"]) else wl_writersnow.promoted_open(ns["root"]),
             ns["_loop"],
             root=ns["root"],
+            live=_wn_live,
         )
     except Exception as exc:
         note_read_failure("writers-now-due", exc)

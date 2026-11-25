@@ -501,3 +501,101 @@ def test_start_refuses_an_existing_survey_identical_to_the_previous_rounds(wl) -
     rows = ledger_rows(wl)
     assert len(rows) == 2
     assert rows[1]["prev_survey_digest"] == WN.survey_digest(first)
+
+
+# ---- R20261125.3 (agent/plans/PLAN-stop-hook-retro-20261125.md friction 3): a live survey counts past the timer.
+SURVEY_NAME = "1121-1-20261124T2349Z.md"
+
+
+def missing_round(tmp_path, minutes_ago, round_id="315bd55a"):
+    """One round of this session whose survey file was never written, started `minutes_ago` before NOW."""
+    survey = tmp_path / "wn" / SURVEY_NAME
+    WN.append_round(
+        tmp_path, ME8, str(survey), NOW - datetime.timedelta(minutes=minutes_ago), round_id
+    )
+    return WN.read_rounds(tmp_path)[-1]
+
+
+def bound_live(prompts, items=(), live_ids=()):
+    """`due`'s live callable, bound to one fixture world the way the Stop hook binds it to the event."""
+    return lambda row: WN.survey_live(row, prompts, list(items), set(live_ids))
+
+
+def test_a_55_minute_round_with_a_live_survey_agent_counts(tmp_path) -> None:
+    row = missing_round(tmp_path, 55)
+    prompts = {"a7795c6b": "Survey the Promoted plans and write /tmp/writers-now/%s" % SURVEY_NAME}
+    live = WN.survey_live(row, prompts, [], set())
+    assert live is True
+    assert WN.judge_round(tmp_path, row, None, NOW, live) == ""
+    assert WN.due([row], ME8, NOW, 4, DEV, root=tmp_path, live=bound_live(prompts))[0] is False
+
+
+def test_the_same_round_with_no_live_agent_is_never_written(tmp_path) -> None:
+    row = missing_round(tmp_path, 55)
+    prompts = {"x1": "an unrelated writer brief"}
+    live = WN.survey_live(row, prompts, [], set())
+    assert live is False
+    assert WN.judge_round(tmp_path, row, None, NOW, live) == WN.WHY_NEVER_WRITTEN
+    fires, facts = WN.due([row], ME8, NOW, 4, DEV, root=tmp_path, live=bound_live(prompts))
+    assert fires
+    assert facts["not_counted"] == WN.WHY_NEVER_WRITTEN
+
+
+def test_a_35_minute_round_with_no_agent_still_counts_on_the_timer(tmp_path) -> None:
+    row = missing_round(tmp_path, 35)
+    assert WN.judge_round(tmp_path, row, None, NOW, False) == ""
+    assert WN.due([row], ME8, NOW, 4, DEV, root=tmp_path, live=bound_live({}))[0] is False
+
+
+def test_a_live_leased_item_naming_the_round_is_a_witness_and_a_dead_lease_is_not(tmp_path) -> None:
+    row = missing_round(tmp_path, 55)
+    held = {"id": "c0ffee01", "state": ">", "worker": "w-live", "text": "survey", "lease_note": ""}
+    held["lease_note"] = "writers-now round 315bd55a survey"
+    assert WN.survey_live(row, {}, [held], {"w-live"}) is True
+    assert WN.survey_live(row, {}, [held], {"w-other"}) is False
+    assert WN.survey_live(row, {}, [dict(held, state=" ")], {"w-live"}) is False
+
+
+def test_a_written_copied_survey_is_still_a_copy_while_live(tmp_path) -> None:
+    """Liveness answers only a MISSING survey: a file written before the start stays a copy."""
+    row = missing_round(tmp_path, 20)
+    path = tmp_path / "wn" / SURVEY_NAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("old\n", encoding="utf-8")
+    stamp = (NOW - datetime.timedelta(minutes=30)).timestamp()
+    WN.os.utime(path, (stamp, stamp))
+    assert WN.judge_round(tmp_path, row, None, NOW, True) == WN.WHY_COPIED_OLD
+
+
+def _stale_round(wl):
+    wl.say("All finished.")
+    wl.brief_now()
+    wl.hand_now()
+    plant_promoted(wl)
+    survey = wl.base / "wn" / SURVEY_NAME
+    WN.append_round(wl.proj, wlfix.ME, str(survey), WN.C.utcnow() - datetime.timedelta(minutes=55))
+
+
+def test_stop_hook_a_live_task_naming_the_survey_keeps_a_55_minute_round_counting(wl) -> None:
+    _stale_round(wl)
+    wl.bg = json.dumps(
+        [
+            {
+                "id": "sv1",
+                "type": "shell",
+                "status": "running",
+                "description": "writers-now survey into %s" % SURVEY_NAME,
+            }
+        ]
+    )
+    wl.check_quiet("WRITERS-NOW DUE", "a live task is still writing the survey")
+
+
+def test_stop_hook_control_an_unrelated_live_task_still_fires(wl) -> None:
+    _stale_round(wl)
+    wl.bg = json.dumps(
+        [{"id": "sv1", "type": "shell", "status": "running", "description": "long CI watch"}]
+    )
+    got = wl.run()
+    assert "WRITERS-NOW DUE" in got.out, got.out[:1200]
+    assert WN.WHY_NEVER_WRITTEN in got.out, got.out[:1200]

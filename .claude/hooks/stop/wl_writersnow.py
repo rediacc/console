@@ -157,12 +157,37 @@ def _prev_digest(root, row, prev) -> str | None:
     return survey_digest(survey_file(root, prev["survey"]))
 
 
-def judge_round(root, row, prev, now) -> str:
-    """Why `row` does not count toward the cadence, or "" when it counts. `prev` is this session's round before it (or None). A missing survey counts for SURVEY_GRACE_MIN minutes after the start, then stops; a survey last written at or before the start is a copy; a survey with the previous round's bytes is a copy."""
+def survey_live(row, prompts, items, live_worker_ids) -> bool:
+    """True when something verifiably live is still producing `row`'s survey.
+
+    Two witnesses, either enough: a live task whose first prompt (an agent) or description (a shell) names the survey file, matched on its basename so a relative and an absolute spelling both hit; or a `[>]` item leased to a live worker whose text, last note or lease note names the round id. `prompts` is {task_id: text} for the live tasks of this session, every agent type included (the survey agent is read-only by brief), `items` the worklist fold's records.
+    """
+    name = pathlib.Path(str(row.get("survey") or "")).name
+    if name and any(name in str(text or "") for text in (prompts or {}).values()):
+        return True
+    rid = str(row.get("round") or "")
+    if not rid:
+        return False
+    live = set(live_worker_ids or ())
+    for rec in items or ():
+        if rec.get("state") != ">" or rec.get("worker") not in live:
+            continue
+        if any(rid in str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note")):
+            return True
+    return False
+
+
+def judge_round(root, row, prev, now, survey_live=False) -> str:
+    """Why `row` does not count toward the cadence, or "" when it counts. `prev` is this session's round before it (or None). A missing survey counts while `survey_live` holds (a live agent or a live-leased item is still producing it), and otherwise for SURVEY_GRACE_MIN minutes after the start, then stops; a survey last written at or before the start is a copy; a survey with the previous round's bytes is a copy.
+
+    Liveness first, the timer as fallback: surveys were measured at 21 to 48 minutes, so a 50-minute grace left a 2-minute margin over a load-dependent duration, and a slower survey fired the check while its agent was visibly working (agent/plans/PLAN-stop-hook-retro-20261125.md friction 3).
+    """
     path = survey_file(root, row["survey"])
     try:
         mtime = path.stat().st_mtime
     except FileNotFoundError:
+        if survey_live:
+            return ""
         age = (now - C.parse_stamp(row["at"])).total_seconds() / 60.0
         return "" if age < SURVEY_GRACE_MIN else WHY_NEVER_WRITTEN
     if mtime <= _started(row):
@@ -213,8 +238,8 @@ def stand_down(loop) -> str:
     return ""
 
 
-def due(rows, session, now, open_boxes, loop=None, root=None) -> tuple[bool, dict]:
-    """(fires, facts) for `writers-now-due`: fires when `open_boxes` (the Promoted queue's open boxes) is above zero, no stand-down applies, and this session has no round younger than WINDOW_MIN minutes that counts (judge_round; survey paths read against `root`, default the project root). `facts` carries the newest round, its age in minutes (None without one), why it does not count (`not_counted`), the open count and the stand-down reason."""
+def due(rows, session, now, open_boxes, loop=None, root=None, live=None) -> tuple[bool, dict]:
+    """(fires, facts) for `writers-now-due`: fires when `open_boxes` (the Promoted queue's open boxes) is above zero, no stand-down applies, and this session has no round younger than WINDOW_MIN minutes that counts (judge_round; survey paths read against `root`, default the project root). `live`, when given, is a callable row -> bool (survey_live bound to the stop's live tasks and fold); without it every round falls back to the timer. `facts` carries the newest round, its age in minutes (None without one), why it does not count (`not_counted`), the open count and the stand-down reason."""
     if root is None:
         root = C.project_root(C.project_start()) or os.getcwd()
     root = pathlib.Path(root)
@@ -237,7 +262,9 @@ def due(rows, session, now, open_boxes, loop=None, root=None) -> tuple[bool, dic
         row = mine[i]
         if (now - C.parse_stamp(row["at"])).total_seconds() / 60.0 >= WINDOW_MIN:
             break
-        why = judge_round(root, row, mine[i - 1] if i else None, now)
+        why = judge_round(
+            root, row, mine[i - 1] if i else None, now, bool(live(row)) if live else False
+        )
         if not why:
             return False, facts
         if row is last:
