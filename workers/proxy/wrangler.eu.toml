@@ -17,6 +17,12 @@ REGION = "eu"
 ENVIRONMENT = "edge"
 EXECUTOR_CAP = "25"
 EXECUTOR_HEAVY_CAP = "5"
+AI_GATEWAY_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"
+AI_GATEWAY_ID = "rediacc-eu"
+
+# Secrets (set with `wrangler secret put`, never in this file): AI_GATEWAY_TOKEN, a gateway-scoped
+# Cloudflare token sent as `cf-aig-authorization` by the AiEgress entrypoint (src/ai-egress.ts).
+# It is not a provider key; the container holds neither.
 
 # Introspection goes through this binding, not a public fetch: this Worker and the account
 # Worker share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker
@@ -36,6 +42,14 @@ entrypoint = "CloudflareInternal"
 binding = "ISSUER"
 service = "account-eu"
 entrypoint = "ExecutorIssuer"
+
+# The per-org AI credit ledger: the account Worker's CreditLedgerGate entrypoint answers reserve,
+# commit and release for AiEgress (PLAN-console-ai-credits.md D1, D4). Grants and refunds are
+# reachable only from the account Worker's own routes, never through this binding.
+[[services]]
+binding = "CREDITS"
+service = "account-eu"
+entrypoint = "CreditLedgerGate"
 
 # The deployed version id, which /v1/ready reports so a deploy smoke can tell the new version
 # answers rather than the old one ("deploy success means the rollout started").

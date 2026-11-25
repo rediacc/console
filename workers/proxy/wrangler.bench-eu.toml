@@ -28,6 +28,9 @@ REGION = "eu"
 ENVIRONMENT = "bench"
 EXECUTOR_CAP = "25"
 EXECUTOR_HEAVY_CAP = "5"
+AI_GATEWAY_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"
+AI_GATEWAY_ID = "rediacc-eu"
+# Secret (wrangler secret put): AI_GATEWAY_TOKEN, the gateway-scoped token AiEgress sends as cf-aig-authorization.
 # The E9 reachability drill (PLAN-org-executor-connect-timeout-relocate box E15, src/drill.ts): the
 # Worker's probe of the blackholed drill address 192.0.2.10:22 reads hostinger's SSH banner instead,
 # so the drill's reports count. Bench only: proxy_configs refuses this var in every other config.
@@ -47,6 +50,12 @@ entrypoint = "CloudflareInternal"
 binding = "ISSUER"
 service = "account-bench"
 entrypoint = "ExecutorIssuer"
+
+# The per-org AI credit ledger (CreditLedgerGate), reached only by AiEgress (PLAN-console-ai-credits.md D1, D4).
+[[services]]
+binding = "CREDITS"
+service = "account-bench"
+entrypoint = "CreditLedgerGate"
 
 # The deployed version id, which /v1/ready reports to the deploy smoke.
 [version_metadata]

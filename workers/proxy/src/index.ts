@@ -23,6 +23,7 @@
  */
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import type { CreditsRpc } from './ai-egress';
 import type { ExecutorCapacity } from './capacity';
 import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
@@ -41,6 +42,8 @@ import {
 } from './sizing';
 import { activeSpan, type RuntimeSpan } from './span';
 
+// The AI egress, reached through `ctx.exports.AiEgress` by OrgExecutor (agent/plans/PLAN-console-ai-credits.md D1).
+export { AiEgress } from './ai-egress';
 // Every export of the main module is an entrypoint or a Durable Object class: workerd refuses to start on a plain value, and wrangler refuses a deploy whose bound Durable Object classes are not exported here.
 // The cap coordinator, bound as EXECUTOR_CAPACITY.
 export { ExecutorCapacity } from './capacity';
@@ -63,6 +66,14 @@ export interface Env {
    * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org and its executor placement, `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`), and `relocate(orgId, fromPlacement)` is called only by OrgExecutor when its container keeps failing to reach a machine. src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
    */
   ISSUER?: Service<ExecutorIssuerRpc>;
+  /** Service binding to the account Worker's `CreditLedgerGate` entrypoint: `reserve`, `commit` and `release` on an org's credit ledger, called only by `AiEgress` (src/ai-egress.ts). A deploy without it refuses every AI call with `ai-unconfigured`. */
+  CREDITS?: Service<CreditsRpc>;
+  /** Secret: a gateway-scoped Cloudflare token for `cf-aig-authorization`, never a provider key. */
+  AI_GATEWAY_TOKEN?: string;
+  /** The region's AI Gateway id, `rediacc-<region>` (.ci/config/ai-gateway.json). */
+  AI_GATEWAY_ID?: string;
+  /** The Cloudflare account that owns the gateway. */
+  AI_GATEWAY_ACCOUNT_ID?: string;
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   /**

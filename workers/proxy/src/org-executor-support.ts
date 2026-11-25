@@ -13,6 +13,10 @@ import type { ProbeResult, ProbeTarget, ProbeVerdict } from './reachability';
 export const ACCOUNT_EGRESS_HOST = WK_ACCOUNT_EGRESS_HOST;
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
 const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
+/** The host the loop host addresses Rediacc-provided AI by (agent/plans/PLAN-console-ai-credits.md D1); `interceptOutboundHttp` routes it to the `AiEgress` entrypoint. Like the account host it resolves nowhere, so a call that escaped interception fails at DNS. */
+export const AI_EGRESS_HOST = 'ai.internal';
+/** The main-module export the AI intercept binds, through `ctx.exports`. */
+const AI_EGRESS_ENTRYPOINT = 'AiEgress';
 /** `rdc serve` listens here. */
 export const EXECUTOR_PORT = 8080;
 /** The image key under `[containers.images]` in the wrangler config. */
@@ -393,20 +397,24 @@ export async function releaseLease(
   }
 }
 
-/** Route `account.internal` to the egress entrypoint with the instance's props, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. Registering again replaces the props without dropping open connections. */
+/** Route `account.internal` to the egress entrypoint, and `ai.internal` to the AI egress entrypoint, with the instance's props, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. Both registrations share that one allowance, so a start keeps its bound. Registering again replaces the props without dropping open connections. A Worker whose main module does not export `AiEgress` registers the account host alone: `ai.internal` then fails at DNS, which refuses the call. */
 export async function registerEgress(
   ctx: DurableObjectState,
   container: Container,
   orgId: string,
   placement: number
 ): Promise<void> {
-  const factory = (ctx.exports as unknown as Record<string, EgressFactory | undefined>)[
-    ACCOUNT_EGRESS_ENTRYPOINT
-  ];
+  const exported = ctx.exports as unknown as Record<string, EgressFactory | undefined>;
+  const factory = exported[ACCOUNT_EGRESS_ENTRYPOINT];
   if (typeof factory !== 'function') throw new Error('egress-entrypoint-missing');
   const props: ExecutorEgressProps = { orgId, placement, containerId: ctx.id.toString() };
+  const registrations = [container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props }))];
+  const aiFactory = exported[AI_EGRESS_ENTRYPOINT];
+  if (typeof aiFactory === 'function') {
+    registrations.push(container.interceptOutboundHttp(AI_EGRESS_HOST, aiFactory({ props })));
+  }
   await within(
-    container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props })),
+    Promise.all(registrations),
     CONTAINER_CALL_TIMEOUT_MS,
     () => new StallError('egress')
   );

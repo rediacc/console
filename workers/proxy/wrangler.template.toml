@@ -16,7 +16,13 @@ ACCOUNT_URL = "@@ACCOUNT_URL@@"
 REGION = "@@REGION@@"
 ENVIRONMENT = "@@ENVIRONMENT@@"
 EXECUTOR_CAP = "@@EXECUTOR_CAP@@"
-EXECUTOR_HEAVY_CAP = "@@EXECUTOR_HEAVY_CAP@@"@@EXTRA_VARS@@
+EXECUTOR_HEAVY_CAP = "@@EXECUTOR_HEAVY_CAP@@"
+AI_GATEWAY_ACCOUNT_ID = "@@AI_GATEWAY_ACCOUNT_ID@@"
+AI_GATEWAY_ID = "@@AI_GATEWAY_ID@@"@@EXTRA_VARS@@
+
+# Secrets (set with `wrangler secret put`, never in this file): AI_GATEWAY_TOKEN, a gateway-scoped
+# Cloudflare token sent as `cf-aig-authorization` by the AiEgress entrypoint (src/ai-egress.ts).
+# It is not a provider key; the container holds neither.
 
 # Introspection goes through this binding, not a public fetch: this Worker and the account
 # Worker share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker
@@ -36,6 +42,14 @@ entrypoint = "CloudflareInternal"
 binding = "ISSUER"
 service = "@@ACCOUNT_SERVICE@@"
 entrypoint = "ExecutorIssuer"
+
+# The per-org AI credit ledger: the account Worker's CreditLedgerGate entrypoint answers reserve,
+# commit and release for AiEgress (PLAN-console-ai-credits.md D1, D4). Grants and refunds are
+# reachable only from the account Worker's own routes, never through this binding.
+[[services]]
+binding = "CREDITS"
+service = "@@ACCOUNT_SERVICE@@"
+entrypoint = "CreditLedgerGate"
 
 # The deployed version id, which /v1/ready reports so a deploy smoke can tell the new version
 # answers rather than the old one ("deploy success means the rollout started").

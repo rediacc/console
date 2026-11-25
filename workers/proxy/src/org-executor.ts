@@ -81,7 +81,7 @@ import { INSTANCE_BY_SIZE } from './sizing';
  */
 export const REVOKE_GRANT_PATH = '/v1/mcp/revoke';
 
-/** The answer of `revokeGrant`: `dropped` is false when no container ran, so no session existed to drop. */
+/** The answer of `revokeGrant`: `dropped` is false when no container ran, or when the container reported it held no session for the grant. */
 export type RevokeGrantAnswer =
   | { ok: true; dropped: boolean }
   | { ok: false; code: string; status: number };
@@ -322,7 +322,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Forward a request to the container and stream its response back untouched, counting it in flight until the body closes. */
   override async fetch(request: Request): Promise<Response> {
     const { pathname } = new URL(request.url);
-    // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running. The MCP call route is reached through `mcpCall` alone.
+    // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running. The MCP call route is reached through `mcpCall` alone, and the revoke route through `revokeGrant` alone.
     if (isBusyPath(pathname) || isMcpCallPath(pathname) || isRevokeGrantPath(pathname)) {
       return busyRefusal();
     }
@@ -355,8 +355,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
         typeof body?.code === 'string' && body.code !== '' ? body.code : 'EXECUTOR_FAILED';
       return { ok: false, code, status: response.status };
     }
-    await response.body?.cancel();
-    return { ok: true, dropped: true };
+    // The container's own `dropped` is the answer; an answer that names none (an older container) counts as dropped, since the route was reached.
+    const answer = (await response.json().catch(() => undefined)) as
+      | { dropped?: unknown }
+      | undefined;
+    return { ok: true, dropped: answer?.dropped !== false };
   }
 
   /** The forward behind `fetch` and `mcpCall`: wait out a start, check the instance can serve, then proxy with in-flight counting. */

@@ -52,6 +52,14 @@ describe('OrgExecutor.revokeGrant', () => {
     });
   });
 
+  it('answers the container own dropped field: false when it held no session for the grant', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.app = () => Response.json({ dropped: false });
+    await h.executor.pin(ORG, 0, 'light');
+    expect(await h.executor.revokeGrant('eu_grant1')).toEqual({ ok: true, dropped: false });
+  });
+
   it('starts nothing when no container runs: there is no session to drop', async () => {
     const h = harness();
     await h.ready;

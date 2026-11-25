@@ -514,6 +514,8 @@ def test_a_regional_bench_target_is_read_from_the_regions_bench_object(rid: str)
         "ACCOUNT_URL": "https://" + bench["host"],
         "REGION": rid,
         "ENVIRONMENT": "bench",
+        "AI_GATEWAY_ACCOUNT_ID": pc.AI_GATEWAY_ACCOUNT_ID,
+        "AI_GATEWAY_ID": "rediacc-" + rid,
     }
     assert {s for _, s, _ in target.services} == {bench["workerName"]}
     # Control: the home bench stays the hand-written one, with the drill var allowed.
