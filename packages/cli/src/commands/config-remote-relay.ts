@@ -30,6 +30,7 @@ import { rdcCommand } from '../services/config/config-name.js';
 import { outputService } from '../services/core/output.js';
 import { authorizationExpired, CliExitError } from '../utils/cli-exit-error.js';
 import { ValidationError } from '../utils/errors.js';
+import { openBrowser } from '../utils/open-browser.js';
 import { stopSpinner, withSpinner } from '../utils/spinner.js';
 import {
   decryptHandoff,
@@ -297,14 +298,8 @@ function formatExpiry(epochMs: number): string {
 }
 
 export async function tryOpenBrowser(url: string): Promise<void> {
-  try {
-    const { execFile } = await import('node:child_process');
-    const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
-    // execFile passes the URL as one argv entry, so `&` and `#` reach the browser intact.
-    execFile(cmd, [url], () => {});
-  } catch {
-    // Browser open is best-effort
-  }
+  // Detached with ignored stdio: a launcher that leaves the browser running would otherwise hold the pipes of a piped child, and with them the event loop, until the browser quits.
+  openBrowser(url);
 }
 
 /**
