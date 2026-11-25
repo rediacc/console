@@ -56,6 +56,20 @@ export interface ToolDef {
    * its result, a longer one returns the ticket with `next: "job_status"`. Absent for a tool that starts no job.
    */
   attachWindowMs?: number;
+  /** Repeat the command until `done` holds or the ceiling nears (job_wait); each run is a full child `rdc` call. */
+  poll?: ToolPoll;
+  /** The tool takes a `page` argument that fetches the next page of a result above the page size. */
+  pageable?: true;
+}
+
+/** How a polling tool repeats its command. */
+export interface ToolPoll {
+  /** The wall-clock ceiling of one tool call. */
+  ceilingMs: number;
+  /** The pause between two runs; also the `nextPollSeconds` hint of a call that hits the ceiling. */
+  intervalMs: number;
+  /** Whether a successful run's data is final. */
+  done: (data: unknown) => boolean;
 }
 
 /**

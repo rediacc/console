@@ -862,6 +862,12 @@
             "type": "string",
             "enum": ["human", "agent"],
             "description": "Filter by actor kind (human|agent)"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "additionalProperties": false
@@ -1395,6 +1401,12 @@
           "since_line": {
             "type": "string",
             "description": "Resume after this many lines (the count you already received)"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": ["job-id"],
@@ -1426,6 +1438,37 @@
           "machine": {
             "type": "string",
             "description": "Target machine name (optional when this config holds a ticket for the job)"
+          }
+        },
+        "required": ["job-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "job_wait",
+      "command": "job status",
+      "description": "Wait up to 50 s for a job to finish. Returns the terminal job status, or the latest status with nextPollSeconds while the job still runs; call job_wait again with the same id to keep waiting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ID"
+          },
+          "machine": {
+            "description": "Target machine name (optional when this config holds a ticket for the job)",
+            "type": "string"
           }
         },
         "required": ["job-id"],
@@ -2878,6 +2921,12 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": ["ref"],
