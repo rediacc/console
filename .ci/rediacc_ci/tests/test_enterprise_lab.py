@@ -26,6 +26,7 @@ from rediacc_ci.deploy import deploy_signer
 from rediacc_ci.enterprise import cli, lab, onboarding, proof, registry
 from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import enterprise_lookup
+from rediacc_ci.release import rings_run
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
 REAL_URLOPEN = https.urlopen
@@ -3057,14 +3058,17 @@ ROWS_RESET = [
 
 
 class ResetDb:
-    def __init__(self, held: dict[str, list[str]]):
+    def __init__(self, held: dict[str, list[str]], resmoke: dict[str, list[str]] | None = None):
         self.held = held
+        self.resmoke = resmoke or {}
         self.asked: list[tuple[str, str, list]] = []
 
     def __call__(self, database, sql, params):
         self.asked.append((database, sql, list(params)))
         if sql == lab.RESET_ROLLOUT_SQL:
             return [{"company_id": c} for c in self.held.get(database, [])]
+        if sql == lab.RESET_RESMOKE_SQL:
+            return [{"company_id": c} for c in self.resmoke.get(database, [])]
         return []
 
     def deletes(self) -> list[tuple[str, str, list]]:
@@ -3091,6 +3095,67 @@ def test_reset_release_refuses_a_row_of_a_company_the_lab_did_not_create(cid):
     with pytest.raises(proof.LabError, match=cid):
         lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
     assert db.deletes() == []
+
+
+@pytest.mark.parametrize("cid", ["c00000003", "c0000000f"], ids=["not-proof", "unknown"])
+def test_reset_release_refuses_a_resmoke_audit_row_of_a_company_the_lab_did_not_create(cid):
+    # No rollout row names the company; only its ring-resmoke audit row of the version does (review c2a8357f.1).
+    db = ResetDb({}, resmoke={"control-bench-us": [cid]})
+    with pytest.raises(proof.LabError, match=cid):
+        lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert db.deletes() == []
+
+
+def test_reset_release_takes_a_proof_companys_resmoke_audit_row_out_with_the_rest():
+    # CONTROL for the refusal above: a proof company's re-smoke row alone is reset, and reported.
+    db = ResetDb({}, resmoke={"control-bench-eu": ["c00000002"]})
+    got = lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert got == ["c00000002"]
+    assert len(db.deletes()) == 4
+
+
+class StatefulControlDb:
+    """The control databases as rows: reset_release's deletes change what the ring runner's `versions` reads."""
+
+    def __init__(self, rollout: list[dict]):
+        self.rollout = rollout
+
+    def __call__(self, _database, sql, params):
+        if sql == lab.RESET_ROLLOUT_SQL:
+            return [
+                {"company_id": r["company_id"]} for r in self.rollout if r["version"] == params[0]
+            ]
+        if sql == lab.RESET_DELETE_ROLLOUT_SQL:
+            self.rollout[:] = [r for r in self.rollout if r["version"] != params[0]]
+            return []
+        if sql == rings_run.ROLLOUT_SQL:
+            return list(self.rollout)
+        if sql in (lab.RESET_RESMOKE_SQL, lab.RESET_DELETE_RESMOKE_SQL):
+            return []
+        raise AssertionError(sql)
+
+
+def test_a_finished_rehearsal_is_reset_so_no_ring_company_runs_the_target_afterwards():
+    # Review c2a8357f.2: the live reset deletes rollout rows only, and the verb's "no ring company runs the target" check reads versions derived from those same rows (rings_run.versions), so a finished earlier rehearsal does not end the next one.
+    history = [("c00000001", "4.0.0"), ("c00000001", "4.0.1"), ("c00000002", "4.0.1")]
+    rows = [
+        {
+            "company_id": cid,
+            "status": "deployed",
+            "version": version,
+            "ring": "",
+            "release_id": f"r{n}",
+            "finished_at": n,
+        }
+        for n, (cid, version) in enumerate(history)
+    ]
+    db = StatefulControlDb(rows)
+    world = types.SimpleNamespace(query=db)
+    targets = ["c00000001", "c00000002"]
+    # CONTROL: before the reset both ring companies run the target, so the check below can fail.
+    assert rings_run.versions(targets, world=world) == {"c00000001": "4.0.1", "c00000002": "4.0.1"}
+    lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert rings_run.versions(targets, world=world) == {"c00000001": "4.0.0"}
 
 
 def test_reset_release_is_bound_on_the_live_lab(monkeypatch):

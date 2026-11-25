@@ -2548,6 +2548,7 @@ RESMOKE_ACTION = "ring-resmoke"
 RESET_DELETE_RESMOKE_SQL = (
     "DELETE FROM audit WHERE action = ? AND json_extract(detail, '$.version') = ?"
 )
+RESET_RESMOKE_SQL = "SELECT DISTINCT company_id FROM audit WHERE action = ? AND json_extract(detail, '$.version') = ?"
 
 
 def reset_release(
@@ -2558,9 +2559,14 @@ def reset_release(
 ) -> list[str]:
     names = {str(r.get("id")): str(r.get("name") or "") for r in companies(BENCH)}
     databases = sorted(registry.databases(BENCH).values())
+    # Both deletes below are by version across companies, so the rows each one would take out are read first and every company they name is checked (review c2a8357f.1).
     held = {
         database: {
             str(r.get("company_id") or "") for r in query(database, RESET_ROLLOUT_SQL, [version])
+        }
+        | {
+            str(r.get("company_id") or "")
+            for r in query(database, RESET_RESMOKE_SQL, [RESMOKE_ACTION, version])
         }
         for database in databases
     }
@@ -2568,7 +2574,7 @@ def reset_release(
     foreign = [c for c in ids if not names.get(c, "").startswith(PROOF_COMPANY_PREFIX)]
     if foreign:
         raise proof.LabError(
-            "the rollout rows of %s name %s, not a proof company of the bench control databases; "
+            "the rollout or ring-resmoke rows of %s name %s, not a proof company of the bench control databases; "
             "the lab rewrites no other company's history" % (version, ", ".join(foreign))
         )
     for database in databases:
