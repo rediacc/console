@@ -248,6 +248,7 @@ describe('the 50-second window', () => {
 
 describe('an ended grant with an unusable account origin', () => {
   it('answers its code without a link instead of throwing', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const ended = { grant: activeGrant(GRANT_ID, { state: 'expired' }), secret: SECRET };
     const result = await callTool(
       {
@@ -263,6 +264,9 @@ describe('an ended grant with an unusable account origin', () => {
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toMatchObject({ code: 'REDIACC_GRANT_EXPIRED' });
     expect(result.structuredContent).not.toHaveProperty('reauthUrl');
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(String(logged.mock.calls[0]?.[0])).toContain('account origin is misconfigured');
+    logged.mockRestore();
   });
 });
 

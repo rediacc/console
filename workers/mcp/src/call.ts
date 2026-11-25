@@ -48,15 +48,18 @@ const ENDED: Record<Exclude<GrantState, 'active'>, { code: string; why: string }
   },
 };
 
-/** The `tools/call` answer under a grant that stopped serving: the code, the re-authorization link, and a line telling the model to hand that link to the user. */
+/** The `tools/call` answer under a grant that stopped serving: the code and, when the link can be built, the re-authorization link with a line telling the model to hand it to the user. */
 function grantEnded(grant: GrantContext, state: Exclude<GrantState, 'active'>, deps: CallDeps) {
   const { code, why } = ENDED[state];
   const expiredAt = grant.endedAt ?? grant.expiresAt;
   let reauthUrl: string;
   try {
     reauthUrl = deps.reauthUrl(grant.grantId);
-  } catch {
+  } catch (error) {
     // A misconfigured account origin must not turn the answer into a throw: the code still tells the client the grant ended.
+    console.error(
+      `mcp: the account origin is misconfigured, so the re-authorization link cannot be built: ${error instanceof Error ? error.message : String(error)}`
+    );
     return toolError(code, `${why} Ask the user to authorize the agent again.`, { expiredAt });
   }
   return toolError(
