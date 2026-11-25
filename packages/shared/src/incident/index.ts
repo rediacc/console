@@ -39,6 +39,16 @@ export {
   type ReportStage,
 } from './report.js';
 export {
+  buildStixBundle,
+  iocPattern,
+  patternLiteral,
+  STIX_NAMESPACE,
+  type StixBundle,
+  type StixInput,
+  type StixObject,
+  uuidV5,
+} from './stix.js';
+export {
   compareRows,
   mergeRows,
   TIMELINE_KINDS,
