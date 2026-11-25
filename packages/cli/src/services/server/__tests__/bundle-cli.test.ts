@@ -24,7 +24,7 @@ vi.mock('../../../version.js', () => ({
 vi.mock('../../config/config-resources.js', () => ({ configService: {} }));
 
 import { serverBundle } from '../bundle/build.js';
-import { parseManifest, parseSums } from '../bundle/manifest.js';
+import { BundleError, parseManifest, parseSums } from '../bundle/manifest.js';
 import { verifyBundle } from '../bundle/verify.js';
 import { FAKE_RELEASE_BASE, makeFake, signerOf } from './fakes.js';
 
@@ -130,5 +130,20 @@ describe('server bundle --with-cli', () => {
     expect(manifest.cli).toBeUndefined();
     expect(fake.calls.some((c) => c.startsWith('release') && !c.includes('/models/'))).toBe(false);
     expect(JSON.parse(fake.files[`${OUT}/manifest.json`])).not.toHaveProperty('cli');
+  });
+
+  it('refuses a cli or models entry that is not a list, naming the field', async () => {
+    m.version = '1.0.0';
+    const { fake, run } = bundleWith(undefined, {});
+    await run();
+    const good = JSON.parse(fake.files[`${OUT}/manifest.json`]);
+    // CONTROL: the unchanged manifest parses, so the refusals below are about the field.
+    expect(() => parseManifest(JSON.stringify(good))).not.toThrow();
+    for (const field of ['cli', 'models']) {
+      const refused = () => parseManifest(JSON.stringify({ ...good, [field]: 'not-a-list' }));
+      // A BundleError naming the field, not the TypeError an unchecked `.map` would throw.
+      expect(refused).toThrow(BundleError);
+      expect(refused).toThrow(field);
+    }
   });
 });

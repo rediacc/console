@@ -6,7 +6,7 @@ import { delegationCertId } from '@rediacc/shared/subscription';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../core/output.js';
 import { locateRepo, rdcMust, readBundle, readPublicFacts, ServerError, setBoxEnv } from './box.js';
-import { serverImageOf } from './bundle/manifest.js';
+import { type BundleManifest, serverImageOf } from './bundle/manifest.js';
 import { uploadBundleImages } from './bundle/offline.js';
 import { verifyBundle } from './bundle/verify.js';
 import { decodeCert } from './cert.js';
@@ -204,6 +204,19 @@ async function reapplyTemplate(
   await writeTemplateSums(deps, where);
 }
 
+/** The verified `--bundle` manifest, or undefined without one; a bundle beside an image option, or without a signer, is refused. */
+function upgradeBundle(
+  deps: ServerDeps,
+  opts: UpgradeOptions
+): Promise<BundleManifest | undefined> {
+  if (!opts.bundle) return Promise.resolve(undefined);
+  if (opts.image || opts.imageFile || opts.localImage) {
+    throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
+  }
+  if (!opts.signer) throw new ServerError(t('commands.server.offline.needsSigner'));
+  return verifyBundle(deps, opts.bundle, opts.signer);
+}
+
 /**
  * Fork first (the rollback point), then the new image (pulled, or from `--bundle`), the template
  * again only when the built-in one is newer than the deployed `VERSION` (and the deployed files
@@ -218,12 +231,7 @@ export async function serverUpgrade(
   const where = await locateRepo(record.repo, record.machine);
   const repoRef = `${record.repo}@${record.machine}`;
   const facts = await readPublicFacts(deps, where);
-  if (opts.bundle && (opts.image || opts.imageFile || opts.localImage)) {
-    throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
-  }
-  if (opts.bundle && !opts.signer) throw new ServerError(t('commands.server.offline.needsSigner'));
-  const manifest =
-    opts.bundle && opts.signer ? await verifyBundle(deps, opts.bundle, opts.signer) : undefined;
+  const manifest = await upgradeBundle(deps, opts);
   const builtin = builtinTemplateVersion();
   const reapply = builtin > facts.templateVersion;
   if (reapply) await assertTemplateUnedited(deps, where, opts.force);

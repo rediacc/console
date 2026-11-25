@@ -966,6 +966,7 @@
       "AWS_CONFIG_FILE",
       "WK_ACCOUNT_DEFAULT_ORIGIN",
       "WK_ACCOUNT_DEV_PORT",
+      "WK_ACCOUNT_EGRESS_HOST",
       "WK_ACCOUNT_REPO",
       "WK_ADMIN_EMAIL_DEFAULT",
       "WK_APEX_DOMAIN",
@@ -992,6 +993,7 @@
       "WK_HOMEBREW_TAP_REPO",
       "WK_IMAGE_REGISTRY",
       "WK_INFRA_DOMAIN",
+      "WK_MCP_EU_HOST",
       "WK_MEDIA_BUCKET",
       "WK_MEDIA_ORIGIN",
       "WK_NOTIFY_NOREPLY_EMAIL",
@@ -3760,6 +3762,9 @@
       ],
       ".ci/rediacc_ci/tests/test_release_verify_release_assets.py": [
         "PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_scratch_tmp.py": [
+        "TMPDIR"
       ],
       ".ci/rediacc_ci/tests/test_security_check_commands.py": [
         "PATH"

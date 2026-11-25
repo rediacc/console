@@ -83,8 +83,10 @@ const FieldMapSchema = z
     checkFields(map.fields, regimeIds, issue);
   });
 
-export type ReportFieldMap = z.infer<typeof FieldMapSchema>;
-export type RegimeMapping = z.infer<typeof MappingSchema>;
+type ReportFieldMap = z.infer<typeof FieldMapSchema>;
+type RegimeMapping = z.infer<typeof MappingSchema>;
+
+export type { RegimeMapping, ReportFieldMap };
 
 /** Parse a field map; throws with every missing or unknown entry named. */
 export function parseReportFieldMap(raw: unknown): ReportFieldMap {
