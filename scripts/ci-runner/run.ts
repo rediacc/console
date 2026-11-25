@@ -2928,11 +2928,14 @@ async function selftest(): Promise<number> {
         'CONTROL: a main checkout with no typecheck cache seeds no lease directory'
       );
       const src = cacheDirFor(live, dir);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
       fs.mkdirSync(src, { recursive: true });
       const prefixLive = path.relative(src, live).split(path.sep).join('/');
       const prefixLease = path.relative(cacheDirFor(lease, dir), lease).split(path.sep).join('/');
       const body = `{"packageJsons":["${prefixLive}/node_modules/a/package.json"]}`;
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
       fs.writeFileSync(path.join(src, 'p.tsbuildinfo'), body);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
       fs.writeFileSync(path.join(src, 'p.stamp.json'), '{}');
       seedTypecheckCache(lease, live, dir);
       const got = fs.readFileSync(path.join(cacheDirFor(lease, dir), 'p.tsbuildinfo'), 'utf8');
@@ -6377,9 +6380,7 @@ async function selftestCached(): Promise<number> {
   }
   const code = await selftest();
   if (code === 0) {
-    // tree-write: safe a marker file under the home directory, outside every tree
     fs.mkdirSync(SELFTEST_PASS_DIR, { recursive: true });
-    // tree-write: safe a marker file under the home directory, outside every tree
     fs.writeFileSync(marker, '');
   }
   return code;
