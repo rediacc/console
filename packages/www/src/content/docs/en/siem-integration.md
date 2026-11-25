@@ -65,8 +65,8 @@ pipeline before routing anywhere expensive.
 
 ### 2. Point the account server at it
 
-In the account server's environment (`private/account/.env` or your
-Docker/Wrangler equivalent):
+In the account server's environment (the Worker's secrets, or the process
+environment of an on-premise server):
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318

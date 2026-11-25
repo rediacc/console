@@ -8,7 +8,7 @@ tags:
 subcategory: operations
 order: 15
 language: ko
-sourceHash: "f0f5dae9694c8e27"
+sourceHash: "224ef90a952edb1c"
 sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
@@ -51,7 +51,7 @@ docker compose up -d
 
 ### 2. 계정 서버를 Collector에 연결
 
-계정 서버의 환경(`private/account/.env` 또는 Docker/Wrangler의 동등한 설정)에 다음을 지정합니다.
+계정 서버 환경(Worker 시크릿 또는 온프레미스 서버의 프로세스 환경)에서:
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318

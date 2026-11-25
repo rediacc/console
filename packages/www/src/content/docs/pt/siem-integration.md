@@ -8,7 +8,7 @@ tags:
 subcategory: operations
 order: 15
 language: pt
-sourceHash: "f0f5dae9694c8e27"
+sourceHash: "224ef90a952edb1c"
 sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
@@ -51,7 +51,7 @@ Por predefinição, o Collector escuta em `:4318` (OTLP/HTTP) e escreve no seu p
 
 ### 2. Apontar o servidor de contas para o Collector
 
-No ambiente do servidor de contas (`private/account/.env` ou o equivalente em Docker/Wrangler):
+No ambiente do servidor de contas (os segredos do Worker ou o ambiente de processo de um servidor local):
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318

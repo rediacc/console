@@ -8,7 +8,7 @@ tags:
 subcategory: operations
 order: 15
 language: zh
-sourceHash: "f0f5dae9694c8e27"
+sourceHash: "224ef90a952edb1c"
 sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
@@ -51,7 +51,7 @@ docker compose up -d
 
 ### 2. 将账户服务器指向 Collector
 
-在账户服务器的环境中（`private/account/.env`，或对应的 Docker/Wrangler 配置）：
+在账户服务器的环境中（Worker 的密钥，或本地部署服务器的进程环境）：
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318

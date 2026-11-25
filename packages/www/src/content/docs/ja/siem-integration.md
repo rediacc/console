@@ -8,7 +8,7 @@ tags:
 subcategory: operations
 order: 15
 language: ja
-sourceHash: "f0f5dae9694c8e27"
+sourceHash: "224ef90a952edb1c"
 sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
@@ -51,7 +51,7 @@ docker compose up -d
 
 ### 2. アカウントサーバーをCollectorに向ける
 
-アカウントサーバーの環境（`private/account/.env`、またはDocker/Wranglerの同等の設定）に次を指定します。
+アカウントサーバーの環境（Worker のシークレット、またはオンプレミスサーバーのプロセス環境）で:
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
