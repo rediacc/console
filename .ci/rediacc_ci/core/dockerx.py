@@ -5,12 +5,12 @@ THE ONE RULE THIS MODULE EXISTS FOR. "Docker does not work here" is three differ
     ABSENT        no `docker` on PATH at all          -> install it, or skip
     UNREACHABLE   the CLI runs, no engine answers     -> start the engine
     DENIED        the engine is there, this user is not in the group
-                                                      -> sg docker / re-login
+                                                      -> group re-exec / re-login
     FAILED        the engine answered and the COMMAND failed
                                                       -> a real finding
 
 `.ci/lib/setup.sh:565-571` records why the first two must not be merged, and it is the sharpest case in the repo: "Docker Desktop puts a `docker` shim on PATH that EXISTS but cannot reach an engine, so `command -v docker` succeeds and the real problem is a WSL-integration toggle in a Windows GUI, which no error further down would ever name." `.ci/lib/local-common.sh:673-679`
-records why the third is separate: "Distinguish 'no docker' from 'docker installed, user not in the group'", and it then re-execs under `sg docker` rather than reporting a failure at all.
+records why the third is separate: "Distinguish 'no docker' from 'docker installed, user not in the group'", and it then re-execs under the docker group (`group_command`) rather than reporting a failure at all.
 
 ------------------------------------------------------------------------------
 MEASUREMENT 1: THE EXIT CODE ALONE CANNOT TELL YOU WHICH OF THE FOUR IT IS.
@@ -68,6 +68,7 @@ for a genuine failure has converted a red into a shrug.
 
 import json
 import os
+import shutil
 import socket
 import sys
 import time
@@ -148,7 +149,7 @@ class DockerUnreachableError(DockerError):
 class DockerPermissionDeniedError(DockerError):
     """The engine is up and this user cannot talk to it.
 
-    Its own class because the fix is neither "install docker" nor "start docker": `.ci/lib/local-common.sh:630-653` re-execs the whole run under `sg docker` for exactly this case, and reporting it as unreachable would send the operator to restart a healthy daemon.
+    Its own class because the fix is neither "install docker" nor "start docker": `.ci/lib/local-common.sh:630-653` re-execs the whole run under the docker group (`group_command`) for exactly this case, and reporting it as unreachable would send the operator to restart a healthy daemon.
     """
 
 
@@ -412,7 +413,7 @@ _ADVICE = {
     ),
     STATE_DENIED: (
         "the docker engine is running and this user cannot talk to its socket.\n"
-        "  this run only:  sg docker -c '<command>'\n"
+        '  this run only:  sg docker -c \'<command>\'  (no `sg`: sudo -n -u $USER env PATH="$PATH" HOME="$HOME" <command>)\n'
         "  permanently:    sudo usermod -aG docker $USER, then log out and back in\n"
         "  the group is applied automatically by ./run.sh (rediacc_ci/setup/machine.py reexec_with_docker_group)."
     ),
@@ -765,3 +766,38 @@ __all__ = [
     "state",
     "which_docker",
 ]
+
+
+def group_command(
+    command: str,
+    *,
+    user: str,
+    env: dict[str, str] | None = None,
+    extra_env: dict[str, str] | None = None,
+) -> list[str] | None:
+    """The argv that runs shell `command` with the `docker` group active, or None where neither route exists.
+
+    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... [extra] bash -c <command>`, which starts a fresh login-group set and carries PATH, HOME and `extra_env` (the one-hop guard) across explicitly. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
+    """
+    environ = os.environ if env is None else env
+    path = environ.get("PATH")
+    if shutil.which("sg", path=path):
+        return ["sg", "docker", "-c", command]
+    if not shutil.which("sudo", path=path):
+        return None
+    carried = {
+        "PATH": environ.get("PATH", ""),
+        "HOME": environ.get("HOME", ""),
+        **(extra_env or {}),
+    }
+    return [
+        "sudo",
+        "-n",
+        "-u",
+        user,
+        "env",
+        *["%s=%s" % pair for pair in carried.items()],
+        "bash",
+        "-c",
+        command,
+    ]

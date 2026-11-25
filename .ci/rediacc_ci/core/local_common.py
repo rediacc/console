@@ -63,7 +63,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox, prepare_lock, toolchain
+from rediacc_ci.core import bws_env, devbox, dockerx, prepare_lock, toolchain
 from rediacc_ci.release import renet_key_gate
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -1283,14 +1283,17 @@ def reexec_with_docker_group(args: list[str]) -> bool:
         return True
     if _run(["docker", "version"], quiet_out=True, quiet_err=True) == 0:
         return True
-    if shutil.which("docker") is None or shutil.which("sg") is None:
+    if shutil.which("docker") is None:
         return True
     if _run(["getent", "group", "docker"], quiet_out=True, quiet_err=True) != 0:
         return True
     members = _docker_group_members() or ""
     if ",%s," % _required("USER", os.environ.get("USER")) not in ",%s," % members:
         return True
-    if _run(["sg", "docker", "-c", "docker version"], quiet_out=True, quiet_err=True) != 0:
+    user = _required("USER", os.environ.get("USER"))
+    guard = {"REDIACC_DOCKER_GROUP_REEXEC": "1"}
+    check = dockerx.group_command("docker version", user=user, extra_env=guard)
+    if check is None or _run(check, quiet_out=True, quiet_err=True) != 0:
         return True
     log.info("Applying your docker group membership to this run (no logout needed)")
     os.environ["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
@@ -1299,7 +1302,9 @@ def reexec_with_docker_group(args: list[str]) -> bool:
         for word in [_required("SCRIPT_ENTRYPOINT", os.environ.get("SCRIPT_ENTRYPOINT")), *args]
     )
     _flush()
-    proc.exec_replace(["sg", "docker", "-c", command])
+    wrapped = dockerx.group_command(command, user=user, extra_env=guard)
+    if wrapped is not None:
+        proc.exec_replace(wrapped)
     return True  # pragma: no cover -- exec_replace does not return
 
 
