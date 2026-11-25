@@ -3497,31 +3497,6 @@
     "id": "check:ci-npmrc",
     "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.npmrc",
     "gate": true,
-    "paths": [
-      ".ci/config/release-age.json",
-      ".ci/rediacc_ci/__init__.py",
-      ".ci/rediacc_ci/controls.py",
-      ".ci/rediacc_ci/gitx.py",
-      ".ci/rediacc_ci/log.py",
-      ".ci/rediacc_ci/paths.py",
-      ".ci/rediacc_ci/proc.py",
-      ".ci/rediacc_ci/quality/__init__.py",
-      ".ci/rediacc_ci/quality/gate_args.py",
-      ".ci/rediacc_ci/quality/npmrc.py",
-      ".gitmodules",
-      ".npmrc",
-      "private/account",
-      "private/elite",
-      "private/homebrew-tap",
-      "private/renet"
-    ],
-    "lists": [
-      "",
-      ".ci",
-      ".ci/rediacc_ci",
-      ".ci/rediacc_ci/quality"
-    ],
-    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/quality/npmrc.py"
     ],

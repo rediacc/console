@@ -1793,13 +1793,15 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     seconds: 6.3,
   },
   'check:ci-npmrc': {
-    tracedAt: '2026-11-24T08:53Z',
-    tree: 'dbafcae177477c6154df23d1be9cc8f7f49d6db6',
-    verdict: 'paths',
-    reads: 13,
-    listed: 4,
-    coveragePct: 0.1,
-    seconds: 0.7,
+    tracedAt: '2026-11-25T15:57Z',
+    tree: 'a2680c01a5243285108405f9e361e60e1d567401',
+    verdict: 'whole-tree',
+    reason:
+      'its traced set names record paths (agent/*/STATE.md, agent/ledgers/effort-*.jsonl, agent/plans/**/*.md, agent/reggate/*.jsonl, agent/reviews/**, agent/worklist/*.jsonl), and manifest.ts citing them makes every gate that reads the manifest a reader of those records, so a record-only commit could no longer advance a receipt (record-paths.json); whole-tree until it reads no record',
+    reads: 52,
+    listed: 849,
+    coveragePct: 0.9,
+    seconds: 0.2,
   },
   'check:ci-operator-rulings': {
     tracedAt: '2026-11-24T18:33Z',

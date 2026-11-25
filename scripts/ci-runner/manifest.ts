@@ -3311,26 +3311,6 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     // W7 P4 PILOT, 2026-09-07: the FIRST port cut over from bash to Python. The leaf is the Python entry point now, not check-npmrc.sh. The twin is NOT deleted (invariant 5 forbids that in the porting change; deletion is W7 P5) -- what changed is only which of the two the registry invokes. Condition for cutting over is the one the sibling entry points name in their own docstrings:
     // the differential ledger says the port kept its verdict. The shadow gate (commit:bf054adcd4) reported equivalence over 5 distinct trees, and driven again on this tree both sides exit 0 with byte-identical stdout AND stderr.
-    paths: [
-      '.ci/config/release-age.json',
-      '.ci/rediacc_ci/__init__.py',
-      '.ci/rediacc_ci/controls.py',
-      '.ci/rediacc_ci/gitx.py',
-      '.ci/rediacc_ci/log.py',
-      '.ci/rediacc_ci/paths.py',
-      '.ci/rediacc_ci/proc.py',
-      '.ci/rediacc_ci/quality/__init__.py',
-      '.ci/rediacc_ci/quality/gate_args.py',
-      '.ci/rediacc_ci/quality/npmrc.py',
-      '.gitmodules',
-      '.npmrc',
-      'private/account',
-      'private/elite',
-      'private/homebrew-tap',
-      'private/renet',
-    ],
-    lists: ['', '.ci', '.ci/rediacc_ci', '.ci/rediacc_ci/quality'],
-    pathsOrigin: 'traced',
     leaves: ['.ci/rediacc_ci/quality/npmrc.py'],
     ci: {
       kind: 'step',

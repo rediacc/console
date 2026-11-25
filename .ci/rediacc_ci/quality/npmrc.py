@@ -61,7 +61,7 @@ npm's own config keys are case sensitive, so the required half is right and the 
 
 `[[:space:]]` IS NOT `\\s`. POSIX space is exactly [ \\t\\n\\v\\f\\r]; Python's `\\s` on a str pattern additionally matches U+00A0, U+2028 and friends, so a `.npmrc` line indented with a non-breaking space would be seen by the port and not by grep. The character class is written out rather than abbreviated.
 
-WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it reads the repo-root `.npmrc` only. A per-workspace `.npmrc`, a `~/.npmrc`, or an `NPM_CONFIG_*` environment variable overrides these settings at install time and this gate never looks. That is a real blind spot in the twin and it is preserved rather than quietly widened, because widening it would change the verdict.
+EVERY TRACKED `.npmrc` AND EVERY STANDALONE PROJECT, SINCE 2026-11-25. The port read the repo-root `.npmrc` only, so three Workers setting `ignore-scripts=false` and four more holding a lockfile and no `.npmrc` at all (npm's own default is `ignore-scripts=false`, so they ran lifecycle scripts with no stated reason) were all invisible, and a new directory could weaken the control unseen. `tree_findings` now reads every tracked or untracked-not-ignored `.npmrc` and every directory holding both `package.json` and `package-lock.json` outside the submodules: a standalone project must carry its own `.npmrc` (npm never reads the root one for it), each such file must leave `ignore-scripts=true` unless its directory is named in SCRIPT_EXCEPTIONS with a reason AND carries that reason as a comment, and `allow-git`, when set, must be `none` everywhere. An absent `allow-git` in a nested file is accepted because npm 12 defaults it to `none` (measured with npm 12.2.3, the pinned `NPM_VERSION`, in `workers/account`: `npm config get allow-git` answered `none` with no file setting it), while the root file still has to state it. A `~/.npmrc` or an `NPM_CONFIG_*` variable stays out of reach: neither is in the tree.
 
 ---- gate ----
 step: Block legacy-peer-deps workarounds
@@ -244,6 +244,109 @@ def project_findings(root: pathlib.Path, project: str) -> list[str]:
     return findings
 
 
+# The directories whose `.npmrc` may set `ignore-scripts=false`, each as (directory, reason, comment phrase). The reason is printed on every run so the exception stays visible; the phrase must appear in a `#` or `;` comment line of that directory's `.npmrc`, so the file itself tells an installer why the control is off there. Every Worker below depends on wrangler, which cannot run without the workerd and esbuild binaries its postinstall script fetches.
+_WRANGLER_REASON = "wrangler needs the workerd and esbuild binaries a postinstall script fetches"
+_WRANGLER_PHRASE = "fetched by a postinstall script"
+SCRIPT_EXCEPTIONS: tuple[tuple[str, str, str], ...] = (
+    ("workers/account", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/mcp", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/mta-sts", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/ops-health", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/proxy", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/signer", _WRANGLER_REASON, _WRANGLER_PHRASE),
+    ("workers/www", _WRANGLER_REASON, _WRANGLER_PHRASE),
+)
+
+# A comment line in `.npmrc`: npm treats both `#` and `;` as comment leaders.
+_COMMENT_RE = re.compile(r"^%s*[#;]" % SPACE)
+
+
+def has_comment(text: str, phrase: str) -> bool:
+    """True when some comment line of `text` contains `phrase`. A phrase inside a setting's value does not count."""
+    return any(_COMMENT_RE.match(line) and phrase in line for line in text.split("\n"))
+
+
+def tree_paths(root: pathlib.Path) -> list[str] | None:
+    """Every tracked or untracked-not-ignored `.npmrc`, `package-lock.json` and `package.json` in the console tree, outside the submodules. None when git cannot list the tree.
+
+    Untracked files are included so a new directory is refused before its first commit, not only after it. Submodule contents are excluded because `private_project_dirs` covers them with its own rule.
+    """
+    if not gitx.is_work_tree(root):
+        return None
+    # Narrowed by pathspec to the three names the scan reads, so the path trace sees those globs rather than every tracked file. A bare `*` crosses `/` in git's pathspec, so `*.npmrc` reaches the root file and every nested one.
+    listed = gitx.ls_files(
+        "*" + NPMRC,
+        "*" + LOCK_NAME,
+        "*" + PROJECT_MANIFEST,
+        root=root,
+        untracked=True,
+        existing=True,
+    )
+    subs = [sub.path.rstrip("/") + "/" for sub in gitx.submodules(root)]
+    return [p for p in listed if not any(p.startswith(s) for s in subs)]
+
+
+def tree_findings(root: pathlib.Path, listed: list[str]) -> tuple[list[str], int, int]:
+    """The findings for every nested `.npmrc` and standalone project in `listed`, plus the counts scanned.
+
+    Returns (findings, nested `.npmrc` files read, standalone projects seen). The root `.npmrc` is excluded here because `main` audits it with the stricter required-keys rule.
+    """
+    present = set(listed)
+    npmrcs = sorted(p for p in listed if pathlib.PurePosixPath(p).name == NPMRC and p != NPMRC)
+    projects = sorted(
+        str(pathlib.PurePosixPath(p).parent)
+        for p in listed
+        if pathlib.PurePosixPath(p).name == LOCK_NAME
+        and p != LOCK_NAME
+        and "%s/%s" % (pathlib.PurePosixPath(p).parent, PROJECT_MANIFEST) in present
+    )
+    exceptions = {d: (reason, phrase) for d, reason, phrase in SCRIPT_EXCEPTIONS}
+    findings: list[str] = [
+        "%s/%s is missing: this project has a %s, npm never reads the repo-root %s for it, "
+        "and npm's own default ignore-scripts=false runs every dependency lifecycle script. "
+        "Add a %s with ignore-scripts=true and loglevel=warn"
+        % (project, NPMRC, LOCK_NAME, NPMRC, NPMRC)
+        for project in projects
+        if "%s/%s" % (project, NPMRC) not in present
+    ]
+    for rel in npmrcs:
+        directory = str(pathlib.PurePosixPath(rel).parent)
+        text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        findings += ["%s sets %s" % (rel, line.strip()) for _n, line in forbidden_matches(text)]
+        findings += [f.replace(NPMRC, rel, 1) for f in relocated_matches(text)]
+        allow_git = setting_value(text, "allow-git")
+        if allow_git not in ("", "none"):
+            findings.append("%s has allow-git=%s; it must be none or unset" % (rel, allow_git))
+        scripts = setting_value(text, "ignore-scripts")
+        if directory in exceptions:
+            reason, phrase = exceptions[directory]
+            if scripts == "true":
+                findings.append(
+                    "%s sets ignore-scripts=true, so the SCRIPT_EXCEPTIONS entry for %s in "
+                    "rediacc_ci/quality/npmrc.py is stale; delete the entry" % (rel, directory)
+                )
+            elif not has_comment(text, phrase):
+                findings.append(
+                    "%s turns lifecycle scripts on without its reason comment; the comment must "
+                    "contain %r (exception reason: %s)" % (rel, phrase, reason)
+                )
+        elif scripts != "true":
+            findings.append(
+                "%s has ignore-scripts=%s, which runs dependency lifecycle scripts. Set "
+                "ignore-scripts=true, or, when a tool cannot run without its postinstall, add %s "
+                "to SCRIPT_EXCEPTIONS in rediacc_ci/quality/npmrc.py with a reason and state that "
+                "reason in a comment in the file; an entry is for a tool that cannot install without its scripts, never a way past this check"
+                % (rel, scripts or "<unset, npm default false>", directory)
+            )
+    for directory in sorted(exceptions):
+        if "%s/%s" % (directory, NPMRC) not in present:
+            findings.append(
+                "SCRIPT_EXCEPTIONS names %s, which has no %s; delete the stale entry"
+                % (directory, NPMRC)
+            )
+    return findings, len(npmrcs), len(projects)
+
+
 def audit(text: str) -> list[str]:
     """The required-settings findings for `.npmrc` content. Empty means clean.
 
@@ -295,6 +398,20 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     findings = audit(text) + relocated_matches(text) + release_age_findings(root)
+
+    # THE TREE SCAN, WITH ITS OWN VACUITY GUARD. A listing that fails, or one that does not even contain the root `.npmrc` read above, has not seen the tree, so its silence about nested files would mean nothing.
+    listed = tree_paths(root)
+    if listed is None or NPMRC not in listed:
+        log.error(
+            "git could not list the tree under %s (or the listing misses the root %s), so the "
+            "nested .npmrc files and standalone npm projects went UNCHECKED" % (root, NPMRC)
+        )
+        return 1
+    nested, nested_count, standalone_count = tree_findings(root, listed)
+    findings += nested
+    for directory, reason, _phrase in SCRIPT_EXCEPTIONS:
+        log.info("exception: %s/%s may set ignore-scripts=false: %s" % (directory, NPMRC, reason))
+
     projects = private_project_dirs(root)
     for project in projects:
         findings += project_findings(root, project)
@@ -311,8 +428,17 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     log.info(
-        ".npmrc is clean and hardened; %s sets %s=%d; %d private/ project(s) carry their own"
-        % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES, len(projects))
+        ".npmrc is clean and hardened; %s sets %s=%d; %d nested .npmrc file(s) across %d "
+        "standalone project(s), %d script exception(s); %d private/ project(s) carry their own"
+        % (
+            RELEASE_AGE_CONFIG,
+            RELEASE_AGE_KEY,
+            RELEASE_AGE_MINUTES,
+            nested_count,
+            standalone_count,
+            len(SCRIPT_EXCEPTIONS),
+            len(projects),
+        )
     )
     return 0
 
@@ -324,26 +450,54 @@ _CLEAN = "ignore-scripts=true\nallow-git=none\n"
 _CLEAN_RELEASE_AGE = '{"%s": %d}\n' % (RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
 
 
+# A reasoned override, as every SCRIPT_EXCEPTIONS directory carries it. Seeded into each fixture for every listed directory, so a fixture mirrors the real tree and the stale-entry rule stays quiet unless a control removes one.
+_REASONED_OVERRIDE = (
+    "# workerd and esbuild are prebuilt binaries\n# %s, so wrangler needs it.\n"
+    "ignore-scripts=false\nloglevel=warn\n" % _WRANGLER_PHRASE
+)
+
+
+def _tree_base() -> dict[str, str | None]:
+    """The fixture tree's nested files: one standalone project per SCRIPT_EXCEPTIONS directory, each with its reasoned override."""
+    base: dict[str, str | None] = {}
+    for directory, _reason, _phrase in SCRIPT_EXCEPTIONS:
+        base["%s/%s" % (directory, PROJECT_MANIFEST)] = "{}\n"
+        base["%s/%s" % (directory, LOCK_NAME)] = "{}\n"
+        base["%s/%s" % (directory, NPMRC)] = _REASONED_OVERRIDE
+    return base
+
+
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct file, and the mirrors below (a trailing comment, a later line overriding an earlier one, exactly the three required keys) are the half that proves it does not.
     """
-    ctl = Controls("npmrc", floor=38, verbose=True)
+    ctl = Controls("npmrc", floor=56, verbose=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
+        # The tree scan reads `git ls-files`, so the fixture is a work tree. Nothing is committed: untracked files are listed too, which is also how a new directory is caught before its first commit.
+        gitx.git(["init", "-q"], root=root)
 
         def run(
             content: str | None,
             release_age: str | None = _CLEAN_RELEASE_AGE,
             projects: dict[str, str | None] | None = None,
+            tree: dict[str, str | None] | None = None,
         ) -> int:
             """Point the gate at a fixture root holding `content` and `release_age`, or nothing for either.
 
             `projects` maps a project directory under the fixture submodule `private/sub` to the content of its `.npmrc`, or None for a project with no `.npmrc`; each gets a lockfile and a manifest. None here means the fixture has no submodule at all.
+
+            `tree` overrides the nested files `_tree_base` seeds, by repo-relative path; None for a path deletes it from the fixture.
             """
             shutil.rmtree(root / "private", ignore_errors=True)
+            for top in {pathlib.PurePosixPath(rel).parts[0] for rel in _tree_base()} | {"zz"}:
+                shutil.rmtree(root / top, ignore_errors=True)
+            for rel, body in {**_tree_base(), **(tree or {})}.items():
+                if body is not None:
+                    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (root / rel).write_text(body, encoding="utf-8")
             gitmodules = root / ".gitmodules"
             gitmodules.unlink(missing_ok=True)
             if projects is not None:
@@ -549,6 +703,93 @@ def selftest() -> int:
             private_project_dirs(root),
             ["private/sub", "private/sub/e2e", "private/sub/web"],
         )
+
+        # EVERY TRACKED .npmrc AND EVERY STANDALONE PROJECT. The base fixture already carries each SCRIPT_EXCEPTIONS directory with its reasoned override, so every control above doubles as "the listed directories pass".
+        listed = "%s/%s" % (SCRIPT_EXCEPTIONS[0][0], NPMRC)
+        ctl.check("CONTROL: every listed directory with its reason comment passes", run(_CLEAN), 0)
+        ctl.check(
+            "PLANT: an override in an unlisted directory is refused",
+            run(_CLEAN, tree={"zz/.npmrc": "ignore-scripts=false\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: an unlisted .npmrc leaving ignore-scripts unset is refused (npm defaults it to false)",
+            run(_CLEAN, tree={"zz/.npmrc": "loglevel=warn\n"}),
+            1,
+        )
+        ctl.check(
+            "MIRROR: an unlisted .npmrc keeping ignore-scripts=true passes",
+            run(_CLEAN, tree={"zz/.npmrc": "ignore-scripts=true\nloglevel=warn\n"}),
+            0,
+        )
+        ctl.check(
+            "PLANT: a standalone project with no .npmrc is refused",
+            run(_CLEAN, tree={"zz/%s" % PROJECT_MANIFEST: "{}\n", "zz/%s" % LOCK_NAME: "{}\n"}),
+            1,
+        )
+        ctl.check(
+            "MIRROR: a manifest with no lockfile is a workspace member, not a standalone project",
+            run(_CLEAN, tree={"zz/%s" % PROJECT_MANIFEST: "{}\n"}),
+            0,
+        )
+        ctl.check(
+            "PLANT: a listed directory whose reason comment is removed is refused",
+            run(_CLEAN, tree={listed: "ignore-scripts=false\nloglevel=warn\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: the reason phrase inside a value, not a comment, does not count",
+            run(_CLEAN, tree={listed: "ignore-scripts=false\nx=%s\n" % _WRANGLER_PHRASE}),
+            1,
+        )
+        ctl.check(
+            "MIRROR: a ;-comment carries the reason as well as a #-comment",
+            run(_CLEAN, tree={listed: "; %s\nignore-scripts=false\n" % _WRANGLER_PHRASE}),
+            0,
+        )
+        ctl.check(
+            "PLANT: a loosened allow-git in a listed directory is refused",
+            run(_CLEAN, tree={listed: _REASONED_OVERRIDE + "allow-git=all\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a loosened allow-git in an unlisted directory is refused",
+            run(_CLEAN, tree={"zz/.npmrc": "ignore-scripts=true\nallow-git=root\n"}),
+            1,
+        )
+        ctl.check(
+            "MIRROR: allow-git=none in a nested .npmrc passes",
+            run(_CLEAN, tree={listed: _REASONED_OVERRIDE + "allow-git=none\n"}),
+            0,
+        )
+        ctl.check(
+            "PLANT: force=true in a nested .npmrc is refused",
+            run(_CLEAN, tree={"zz/.npmrc": "ignore-scripts=true\nforce=true\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: the relocated key in a nested .npmrc is refused",
+            run(_CLEAN, tree={"zz/.npmrc": "ignore-scripts=true\nminimum-release-age=1\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a listed directory back at ignore-scripts=true makes its entry stale",
+            run(_CLEAN, tree={listed: "# %s\nignore-scripts=true\n" % _WRANGLER_PHRASE}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a listed directory with no .npmrc makes its entry stale",
+            run(_CLEAN, tree={listed: None}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a weak submodule project is still refused while the tree scan skips submodules",
+            run(_CLEAN, projects={"web": "ignore-scripts=false\nallow-git=none\n"}),
+            1,
+        )
+        # VACUITY: a root git cannot list is UNCHECKED, never clean.
+        shutil.rmtree(root / ".git")
+        ctl.check("VACUITY: a tree git cannot list is refused", run(_CLEAN), 1)
 
     return 0 if ctl.report() else 1
 
