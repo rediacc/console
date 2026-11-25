@@ -1,0 +1,1857 @@
+[
+  {
+    "name": "backup_browse",
+    "description": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "path": {
+          "type": "string",
+          "description": "Limit the listing to this subtree"
+        },
+        "depth": {
+          "type": "string",
+          "description": "Limit descent to N levels (0 for unlimited)"
+        },
+        "limit": {
+          "type": "string",
+          "description": "Maximum entries to return (0 for unlimited)"
+        },
+        "at": {
+          "type": "string",
+          "description": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)"
+        },
+        "from": {
+          "type": "string",
+          "description": "With --at, read the snapshot from this backup store instead of the best-ranked one"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_cancel",
+    "description": "Cancel a running backup on a remote machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Backup strategy name"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_list",
+    "description": "List backup artifacts on a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "artifact-ref": {
+          "type": "string",
+          "description": "Backup artifact reference (repo[:tag][@place])"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        },
+        "path": {
+          "type": "string",
+          "description": "Limit the listing to one subdirectory; omit to enumerate the whole datastore"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_restore",
+    "description": "Turn a backup artifact into a live repository. Placement is stated here. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "artifact-ref": {
+          "type": "string",
+          "description": "Backup artifact reference (repo[:tag][@place])"
+        },
+        "as": {
+          "type": "string",
+          "description": "Name for the restored repository (defaults to the artifact name)"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        },
+        "datastore": {
+          "type": "string",
+          "description": "Restore into this named datastore (its attached machine hosts it)"
+        },
+        "at": {
+          "type": "string",
+          "description": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
+        },
+        "from": {
+          "type": "string",
+          "description": "Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)"
+        },
+        "any_stream": {
+          "type": "boolean",
+          "description": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
+        },
+        "no_seed": {
+          "type": "boolean",
+          "description": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)"
+        },
+        "allow_unopenable": {
+          "type": "boolean",
+          "description": "Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)"
+        },
+        "salvage": {
+          "type": "boolean",
+          "description": "Continue past lost or corrupt chunks and leave their cells as holes (needs --as)"
+        },
+        "path": {
+          "type": "string",
+          "description": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)"
+        },
+        "to": {
+          "type": "string",
+          "description": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)"
+        },
+        "up": {
+          "type": "boolean",
+          "description": "Deploy the restored repository after the transfer"
+        },
+        "health_window": {
+          "type": "string",
+          "description": "Total health-gate window in seconds (default 300)"
+        },
+        "health_timeout": {
+          "type": "string",
+          "description": "Per-attempt health-check timeout in seconds (default 30)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["artifact-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_run",
+    "description": "Run a backup now. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Backup strategy name"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_snapshot",
+    "description": "Upload a chunk-store snapshot: full inventory first, changed cells after. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "reseed": {
+          "type": "boolean",
+          "description": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Plan only: no upload. Reports what would move"
+        },
+        "cold": {
+          "type": "boolean",
+          "description": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
+        },
+        "accept_identity_change": {
+          "type": "boolean",
+          "description": "Take this image as the new baseline when its LUKS identity changed or it shrank; uploads a full snapshot"
+        },
+        "bwlimit": {
+          "type": "string",
+          "description": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        "parallelism": {
+          "type": "string",
+          "description": "Number of chunks uploaded at once (default 4)"
+        },
+        "read_bwlimit": {
+          "type": "string",
+          "description": "Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited"
+        },
+        "hash_parallelism": {
+          "type": "string",
+          "description": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)"
+        },
+        "cpu_limit": {
+          "type": "string",
+          "description": "CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_status",
+    "description": "Show backup status and timer state on a remote machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Backup strategy name"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_verify",
+    "description": "Verify a repository's backup anchor against the chunk store. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "deep": {
+          "type": "boolean",
+          "description": "Re-hash every recorded cell (full verification) instead of a sampled check"
+        },
+        "store": {
+          "type": "boolean",
+          "description": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one"
+        },
+        "restore_test": {
+          "type": "boolean",
+          "description": "Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy"
+        },
+        "restore_to": {
+          "type": "string",
+          "description": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted afterwards"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "cluster_snapshot_list",
+    "description": "List the cluster's group snapshots. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "cluster": {
+          "type": "string",
+          "description": "Cluster name"
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Enable debug output"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["cluster"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "datastore_list",
+    "description": "List named datastores, where they are attached, and what they hold.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "place": {
+          "type": "string",
+          "description": "Narrow to one cluster or one machine"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "datastore_snapshot_list",
+    "description": "List a datastore's snapshots. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "datastore": {
+          "type": "string",
+          "description": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["datastore"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "datastore_status",
+    "description": "Show one datastore: its backend, attachment, usage, repositories and snapshots. A detached datastore still reports its record. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "datastore": {
+          "type": "string",
+          "description": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["datastore"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_cancel",
+    "description": "Cancel a running detached job",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "job-id": {
+          "type": "string",
+          "description": "Job ID"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Target machine name (optional when this config holds a ticket for the job)"
+        }
+      },
+      "required": ["job-id"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_dismiss",
+    "description": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "job-id": {
+          "type": "string",
+          "description": "Job ids or request ids of the tickets to dismiss"
+        },
+        "stale": {
+          "type": "boolean",
+          "description": "Dismiss every pending ticket older than --older-than (default 24h)"
+        },
+        "older_than": {
+          "type": "string",
+          "description": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_gc",
+    "description": "Remove finished jobs and their logs",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Target machine name"
+        },
+        "older_than": {
+          "type": "string",
+          "description": "Collect jobs that finished longer ago than this, in hours (default: 168)"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_list",
+    "description": "List detached jobs on a machine, newest first",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Target machine name (omit to list this config's pending job tickets)"
+        },
+        "all": {
+          "type": "boolean",
+          "description": "Include expired and dismissed tickets"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_logs",
+    "description": "Replay or follow a detached job's event log",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "job-id": {
+          "type": "string",
+          "description": "Job ID"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Target machine name (optional when this config holds a ticket for the job)"
+        },
+        "since_line": {
+          "type": "string",
+          "description": "Resume after this many lines (the count you already received)"
+        },
+        "page": {
+          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["job-id"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_status",
+    "description": "Show a detached job's status",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "job-id": {
+          "type": "string",
+          "description": "Job ID"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Target machine name (optional when this config holds a ticket for the job)"
+        }
+      },
+      "required": ["job-id"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "job_wait",
+    "description": "Wait up to 50 s for a job to finish. Returns the terminal job status, or the latest status with nextPollSeconds while the job still runs; call job_wait again with the same id to keep waiting.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "job-id": {
+          "type": "string",
+          "description": "Job ID"
+        },
+        "machine": {
+          "description": "Target machine name (optional when this config holds a ticket for the job)",
+          "type": "string"
+        }
+      },
+      "required": ["job-id"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_containers",
+    "description": "List Docker containers on a machine. JSON includes full container details (labels, port_mappings, image), repository resolved to name (original in repository_guid), domain, and autoRoute ({service}.{repo}.{machine}.{baseDomain})",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Machine name"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_deprovision",
+    "description": "Destroy a cloud-provisioned machine and remove from config",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Skip confirmation prompt"
+        },
+        "archive_repos": {
+          "type": "boolean",
+          "description": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_gpu_list",
+    "description": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_health",
+    "description": "Check machine health for CI/CD pipelines. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_provision",
+    "description": "Provision a new machine on a cloud provider using OpenTofu. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Cloud provider name (from machine provider add)"
+        },
+        "region": {
+          "type": "string",
+          "description": "Override default region"
+        },
+        "type": {
+          "type": "string",
+          "description": "Override default instance type"
+        },
+        "image": {
+          "type": "string",
+          "description": "Override default OS image"
+        },
+        "base_domain": {
+          "type": "string",
+          "description": "Base domain for infrastructure (e.g., example.com). Implies --infra"
+        },
+        "no_infra": {
+          "type": "boolean",
+          "description": "Skip infrastructure configuration (proxy + DNS)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name", "provider"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_repos",
+    "description": "List deployed repositories on a machine. JSON includes name (resolved from GUID, original in guid field), nests each repo's containers (with domain, autoRoute, repository resolved) and services for hierarchical view",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Machine name"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_restart-services",
+    "description": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "include_docker": {
+          "type": "boolean",
+          "description": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
+        },
+        "repo": {
+          "type": "string",
+          "description": "Limit the restart to one repo's supervisor (needs --include-docker)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_services",
+    "description": "List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid)",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Machine name"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_setup",
+    "description": "Finish onboarding a machine: install renet and prepare it to host repositories. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "datastore_path": {
+          "type": "string",
+          "description": "Datastore path on remote machine"
+        },
+        "datastore_size": {
+          "type": "string",
+          "description": "Datastore size (e.g., 95%, 100G)"
+        },
+        "no_converge": {
+          "type": "boolean",
+          "description": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)"
+        },
+        "offline": {
+          "type": "boolean",
+          "description": "Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_status",
+    "description": "Get connection details (ip, user, port, datastore), system info, containers (repository resolved to name, original in repository_guid, domain, autoRoute), services (repository resolved to name), repositories (name resolved from GUID, original in guid), and resource usage for a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "licenses": {
+          "type": "boolean",
+          "description": "Include repository license statuses"
+        },
+        "storage_health": {
+          "type": "boolean",
+          "description": "Show BTRFS reflink savings and (informational) image fragmentation per repository"
+        },
+        "sync_certs": {
+          "type": "boolean",
+          "description": "Also pull the ACME cert cache from the machine after querying"
+        },
+        "strict": {
+          "type": "boolean",
+          "description": "Exit non-zero (code 2) if any container has crossed the health-drift threshold"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_admin_fsck",
+    "description": "Validate config refs (branches/HEAD) against the objects present on a machine; report dangling refs and orphan commits. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Target machine name"
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Enable debug output"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_cat",
+    "description": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "remote_file": {
+          "type": "string",
+          "description": "File path to read, relative to the repository mount root"
+        },
+        "max_bytes": {
+          "type": "string",
+          "description": "Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)"
+        },
+        "offset": {
+          "type": "string",
+          "description": "Byte offset to start reading from"
+        },
+        "head": {
+          "type": "string",
+          "description": "Print only the first N lines (cannot combine with byte range)"
+        },
+        "tail": {
+          "type": "string",
+          "description": "Print only the last N lines (cannot combine with byte range)"
+        },
+        "stat": {
+          "type": "boolean",
+          "description": "Print only size, type, and modification time; read no content"
+        },
+        "force_binary": {
+          "type": "boolean",
+          "description": "Allow reading binary (NUL-containing) content"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "remote_file"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_checkout",
+    "description": "Reflink-clone an immutable commit (or branch tip) into a fresh writable working fork and point HEAD at it. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "commit-or-branch-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Name for the new writable working fork"
+        },
+        "from": {
+          "type": "string",
+          "description": "Resolve the positional <commit-or-branch-ref> as a branch name on this working fork"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["commit-or-branch-ref", "tag"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_commit",
+    "description": "Freeze a mounted working fork into a new immutable commit (git-like). Records message/author/parent in the commit and advances the working fork tip. The commit refuses to mount; check it out to get a writable copy. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Commit message"
+        },
+        "author": {
+          "type": "string",
+          "description": "Commit author"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "message"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_create",
+    "description": "Create a new repository. State its home once: a machine or a datastore. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "machine": {
+          "type": "string",
+          "description": "Target machine name"
+        },
+        "datastore": {
+          "type": "string",
+          "description": "Named datastore that holds the repo (docker tiering, or the cluster form)"
+        },
+        "size": {
+          "type": "string",
+          "description": "Repository size (e.g., 10G, 100G, 1T)"
+        },
+        "no_docker": {
+          "type": "boolean",
+          "description": "Skip starting Docker daemon after creation"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_delete",
+    "description": "Delete a repository and its data. A fork's config entry moves to deletedRepositories, which frees the name and keeps the GUID restorable via 'repo admin archive restore'; a grand repo's entry, or one pushed to other machines, is kept unless --archive-config is passed. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "archive_config": {
+          "type": "boolean",
+          "description": "Move config entry to deletedRepositories for later recovery"
+        },
+        "purge_backups": {
+          "type": "boolean",
+          "description": "Also delete the repository's cloud backups now, instead of letting them expire"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_diff",
+    "description": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "base": {
+          "type": "string",
+          "description": "Repository to diff against (the base / old side); defaults to the parent of <ref>"
+        },
+        "name_only": {
+          "type": "boolean",
+          "description": "Print only changed file paths, one per line (no status letters)"
+        },
+        "stat": {
+          "type": "boolean",
+          "description": "Show per-file change magnitude (byte and block deltas) and totals"
+        },
+        "content": {
+          "type": "string",
+          "description": "Show a unified text diff for a single file (requires a file path)"
+        },
+        "fast": {
+          "type": "boolean",
+          "description": "Trust the block filter; skip content-hash confirmation (may over-report Modified)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_down",
+    "description": "Stop repository Docker containers (runs Rediaccfile down). Does NOT unmount the encrypted volume by default -- repo stays mounted and can be restarted with repo_up. Use unmount=true to also close the LUKS container. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "unmount": {
+          "type": "boolean",
+          "description": "Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume"
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "description": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_exec",
+    "description": "Run a command inside a repository container. The command's own exit code is passed straight through, so this works in scripts and conditionals. Docker repositories run it through the repository's Docker daemon; kubernetes repositories run it in the repository's namespace. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "cmd": {
+          "type": "string",
+          "description": "Command to run: everything after -- is sent to the container verbatim, so CLI flags (-c, -i, -u, --debug) must come before --"
+        },
+        "container": {
+          "type": "string",
+          "description": "Container to run in (only needed when the repository runs more than one)"
+        },
+        "user": {
+          "type": "string",
+          "description": "User to run the command as"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "cmd"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_fork",
+    "description": "Create a near-instant CoW fork of a repository with a NEW GUID and networkId (fully independent copy). FORK IS CONSTANT-TIME regardless of repo size: BTRFS reflink clones the image so 100 GB and 1 GB repos fork in the same ~seconds, never proportional to repo size. Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up. Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag for the fork (creates name:tag)"
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "description": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
+        },
+        "immutable": {
+          "type": "boolean",
+          "description": "Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)"
+        },
+        "up": {
+          "type": "boolean",
+          "description": "Mount and start services after forking (fork + mount + up in one command)"
+        },
+        "no_wait": {
+          "type": "boolean",
+          "description": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "tag"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_gc",
+    "description": "Reachability garbage-collection: delete immutable commit objects on a machine that no branch/HEAD reaches. Dry-run by default; pass --apply to delete. Never touches a mounted object or a working fork. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Target machine name"
+        },
+        "apply": {
+          "type": "boolean",
+          "description": "Actually delete the unreachable commits (default is a dry-run preview)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_health",
+    "description": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_list",
+    "description": "List repositories on a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Target machine name"
+        },
+        "datastore": {
+          "type": "string",
+          "description": "List the repositories in this datastore (resolved to whichever machine currently holds it)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_log",
+    "description": "Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_logs",
+    "description": "Show application logs from a repository's containers. Docker repositories read from the repository's own Docker daemon; kubernetes repositories read the pod logs in the repository's namespace. If the repository runs more than one container, name the one you want with --container. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "container": {
+          "type": "string",
+          "description": "Container to read (only needed when the repository runs more than one)"
+        },
+        "lines": {
+          "type": "string",
+          "description": "How many lines of history to show (default: 100)"
+        },
+        "timestamps": {
+          "type": "boolean",
+          "description": "Prefix each line with its timestamp"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        },
+        "page": {
+          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_merge",
+    "description": "Lifecycle-safe merge of a source commit/fork into a target working fork. Refuses a mounted/running target unless --force (which quiesces it first); never mutates a live mount; builds the result in a reflink clone and atomically swaps it in. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source commit or fork to merge from"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Quiesce a mounted/running target first, then merge (never mutates a live mount)"
+        },
+        "resolve": {
+          "type": "string",
+          "enum": ["ours", "theirs"],
+          "description": "Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs)."
+        },
+        "base": {
+          "type": "string",
+          "description": "Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit."
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "from"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_migrate",
+    "description": "Move a repository to another machine with minimal downtime: a two-phase copy (bulk sync while running, then a short stop + delta sync + start on the destination) with DNS cutover. The repo keeps its identity and secrets. Use repo_push for a backup copy that stays on both machines. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "to": {
+          "type": "string",
+          "description": "Destination machine or cluster"
+        },
+        "provision": {
+          "type": "string",
+          "description": "Auto-provision target via cloud provider (e.g., hetzner, linode)"
+        },
+        "bwlimit": {
+          "type": "string",
+          "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "description": "CRIU live migration: capture and restore process memory state"
+        },
+        "delta_base": {
+          "type": "string",
+          "description": "Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["auto", "physical", "shared"],
+          "description": "Block-delta strategy for the cutover: auto, physical, or shared"
+        },
+        "skip_dns": {
+          "type": "boolean",
+          "description": "Skip DNS record switching after migration"
+        },
+        "keep_source": {
+          "type": "boolean",
+          "description": "Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref", "to"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_pull",
+    "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source machine name (auto-detected from config)"
+        },
+        "from_machine": {
+          "type": "string",
+          "description": ""
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Force overwrite existing repository"
+        },
+        "up": {
+          "type": "boolean",
+          "description": "After pull, mount and deploy repository on this machine"
+        },
+        "bwlimit": {
+          "type": "string",
+          "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        "delta_base": {
+          "type": "string",
+          "description": "Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["auto", "physical", "shared"],
+          "description": "Block-delta strategy when using a delta base: auto, physical, or shared"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_push",
+    "description": "Push a repository backup to storage or directly to another machine. WARNING: machine-to-machine push copies with the SAME GUID (backup/migration). To create an independent fork on another machine, use repo_fork first, then push the fork. A pushed copy is a backup artifact: boot it with backup_restore, not with push. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "to": {
+          "type": "string",
+          "description": "Destination machine name (auto-detected from config)"
+        },
+        "to_machine": {
+          "type": "string",
+          "description": ""
+        },
+        "provision": {
+          "type": "string",
+          "description": "Auto-provision target machine via cloud provider if it doesn't exist"
+        },
+        "checkpoint": {
+          "type": "boolean",
+          "description": "Create CRIU checkpoint before backup (captures process memory state for live migration)"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Force overwrite existing backup"
+        },
+        "bwlimit": {
+          "type": "string",
+          "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+        },
+        "delta_base": {
+          "type": "string",
+          "description": "Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": ["auto", "physical", "shared"],
+          "description": "Block-delta strategy when using a delta base: auto, physical, or shared"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_replicate",
+    "description": "Provision read replicas of a repository. Declarative: the replica count is the desired state, so re-running with the same count is a no-op. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "replicas": {
+          "type": "string",
+          "description": "Number of read replicas to create"
+        },
+        "image": {
+          "type": "string",
+          "description": "Engine image the replicas run (same engine as the primary)"
+        },
+        "port": {
+          "type": "string",
+          "description": "Port the engine serves on"
+        },
+        "pvc": {
+          "type": "string",
+          "description": "Volume name the engine mounts as its data dir (default: data)"
+        },
+        "primary_app": {
+          "type": "string",
+          "description": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)"
+        },
+        "headless": {
+          "type": "boolean",
+          "description": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)"
+        },
+        "refresh": {
+          "type": "string",
+          "description": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_replicate_remove",
+    "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_status",
+    "description": "Get repository status (mount state, Docker daemon running, container count, disk usage). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_trim",
+    "description": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without a ref, trims every mounted repository on -m plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "docker": {
+          "type": "boolean",
+          "description": "Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active"
+        },
+        "report_only": {
+          "type": "boolean",
+          "description": "Show discard state and reclaimable estimate without trimming"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_up",
+    "description": "Deploy/update a repository (runs Rediaccfile up via renet compose, starts containers). The machine is derived from the ref placement. Use no-start=true to mount/prepare only (first deploy, after backup pull, or after down --unmount) without running up(). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "no_start": {
+          "type": "boolean",
+          "description": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation)."
+        },
+        "skip_checkpoint": {
+          "type": "boolean",
+          "description": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
+        },
+        "tls": {
+          "type": "boolean",
+          "description": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  }
+]
