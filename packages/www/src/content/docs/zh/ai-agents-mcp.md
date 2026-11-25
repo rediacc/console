@@ -8,19 +8,28 @@ tags:
 subcategory: ai-agents
 order: 33
 language: zh
-sourceHash: "5aa932e999695e20"
-sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
+sourceHash: "b30e0030351679c5"
+sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## 概述
 
-`rdc mcp serve` 命令启动一个本地 MCP（模型上下文协议）服务器，AI 代理可以使用该服务器管理您的基础设施。服务器使用 stdio 传输方式，代理将其作为子进程启动，并通过 JSON-RPC 进行通信。
+两个 MCP（模型上下文协议）服务器提供同一个工具注册表：
 
-**前提条件：** 已安装并配置 `rdc`，且至少配置了一台机器。
+| 服务器 | 传输方式 | 运行方式 | 工具 |
+|---|---|---|---|
+| 本地 | stdio | `rdc mcp serve`，由代理启动 | 全部工具 |
+| 远程 | Streamable HTTP | `https://mcp.<region>.rediacc.cloud/g/<grantId>` | 远程工具，即除仅限本地工具表之外的全部工具 |
 
-## Claude Code
+**前提条件：** 使用本地服务器需要已安装 `rdc`，并至少配置一台机器。使用远程服务器需要在某个配置上建立授权（grant）。
 
-添加到项目的 `.mcp.json` 文件中：
+## 本地服务器
+
+`rdc mcp serve` 通过 stdio 启动 MCP 服务器。代理将其作为子进程启动，并通过 JSON-RPC 与其通信。
+
+### Claude Code
+
+在项目的 `.mcp.json` 中添加以下条目：
 
 ```json
 {
@@ -33,7 +42,7 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 }
 ```
 
-或使用命名配置：
+或者使用命名配置：
 
 ```json
 {
@@ -46,13 +55,85 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 }
 ```
 
-## Cursor
+### Cursor
 
-打开设置 → MCP 服务器 → 添加服务器：
+打开 Settings → MCP Servers → Add Server：
 
-- **名称**: `rdc`
-- **命令**: `rdc mcp serve`
-- **传输方式**: stdio
+- **Name**：`rdc`
+- **Command**：`rdc mcp serve`
+- **Transport**：stdio
+
+### 选项
+
+| 选项 | 默认值 | 说明 |
+|------|--------|------|
+| `--config <name>` | （默认配置） | 所有命令使用的命名配置 |
+| `--timeout <ms>` | `120000` | 命令的默认超时时间（毫秒） |
+
+## 远程服务器
+
+每个区域在 `mcp.<region>.rediacc.cloud` 上运行一个 MCP Worker。每个代理连接到某个授权的 URL：`https://mcp.<region>.rediacc.cloud/g/<grantId>`。授权会指定一个配置、一个过期时间和一个作用范围：只读标志、工具白名单，以及机器名和仓库名的 glob 模式。工具调用在该授权所属组织的执行器上运行。
+
+### 凭据
+
+两种形式都用来标识授权；URL 中的授权 ID 只是给授权命名。
+
+| 形式 | 用途 | 发送方式 |
+|---|---|---|
+| OAuth 访问令牌 | claude.ai 等交互式客户端 | `Authorization: Bearer <token>` |
+| 代理 bearer `rmcp_<grantId>.<secret>` | 无界面代理 | `Authorization: Bearer` 或 `x-api-key` |
+
+放在查询字符串中的凭据会被以 400 拒绝。缺失、已过期或属于其他授权的 OAuth 令牌会收到 401，并附带 `WWW-Authenticate: Bearer resource_metadata=...` 头，指向该授权的受保护资源文档，OAuth 客户端据此刷新令牌或重新登录。未知授权、错误的密钥，以及属于其他授权的代理 bearer，都只会收到同样简单的 401。
+
+### OAuth
+
+Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通过 Client ID Metadata Document 或 `/register` 上的动态客户端注册来注册。
+
+| 端点 | 用途 |
+|---|---|
+| `/.well-known/oauth-authorization-server` | 服务器元数据 |
+| `/.well-known/oauth-protected-resource/g/<grantId>` | 单个授权的受保护资源文档 |
+| `/authorize` | 发起授权，并重定向到账户页面 `/account/mcp/authorize` |
+| `/oauth/token` | 授权码交换、刷新和撤销 |
+| `/register` | 动态客户端注册 |
+
+客户端发送 `resource=https://mcp.<region>.rediacc.cloud/g/<grantId>`。授权只会对资源所指向的授权完成，令牌也只能在其所属授权的 URL 上使用。`/authorize` 的重定向携带的是已签名的一次性句柄，不含任何密钥。
+
+### 令牌有效期
+
+令牌的有效期不会超过其授权。
+
+| 令牌 | 有效期 |
+|---|---|
+| 访问令牌 | 1 小时与授权剩余时间中较短者 |
+| 刷新令牌 | 30 天与授权剩余时间中较短者 |
+
+每次授权码交换和刷新都会重新查询授权。已过期、已撤销或密钥已轮换的授权会返回 `invalid_grant`，并撤销该 OAuth 授权。刷新令牌会轮换，同一个刷新令牌出示两次会导致授权被撤销。
+
+### 每个授权对应一个配置
+
+一个授权只服务于它所指定的那个配置。`tools/call` 中如果有参数指向其他配置（`config` 或其变体写法），会在任何内容运行之前被 `REDIACC_GRANT_SCOPE` 拒绝。拥有多个配置的用户需要为每个配置各建立一个授权。不在授权白名单中的工具，或只读授权下的写入工具，不会出现在 `tools/list` 中，调用时也会被拒绝。
+
+### 区域
+
+授权 ID 以其所在区域开头，例如 `eu_`。向其他区域的 Worker 请求 `/g/<grantId>` 会收到 421，并附带正确的 URL：
+
+```json
+{
+  "code": "REDIACC_WRONG_REGION",
+  "message": "This grant lives in the us region. Use https://mcp.us.rediacc.cloud/g/us_...",
+  "region": "us",
+  "mcpUrl": "https://mcp.us.rediacc.cloud/g/us_..."
+}
+```
+
+授权在其所在区域之外，不会被接受为 OAuth 资源、令牌受众或授权目标。
+
+### 授权状态与限制
+
+已过期、已撤销，或因配置存储密钥轮换而失去密钥的授权，仍会响应 `initialize` 和 `tools/list`。此后每次 `tools/call` 都会返回 `REDIACC_GRANT_EXPIRED`、`REDIACC_GRANT_REVOKED` 或 `REDIACC_KEY_ROTATED`，并附带 `reauthUrl`，用户打开该链接即可重新授权。
+
+每个授权每分钟允许 60 次调用，同时最多 5 个进行中的调用。超出任一限制的调用会返回 `REDIACC_RATE_LIMITED` 以及 `retryAfterSeconds`。
 
 ## 可用工具
 
@@ -167,71 +248,35 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 
 <!-- <<< translated-table -->
 
-### 读取工具（安全，无副作用）
-
-| 工具 | 描述 |
-|------|------|
-| `machine_query` | 获取机器的系统信息、容器、服务和资源使用情况 |
-| `machine_containers` | 列出 Docker 容器的状态、健康状况、资源使用、标签和自动路由域名 |
-| `machine_services` | 列出 rediacc 管理的 systemd 服务（名称、状态、子状态、重启次数、内存、所属仓库） |
-| `machine_repos` | 列出已部署的仓库（名称、GUID、大小、挂载状态、Docker 状态、容器数量、磁盘用量、修改日期、Rediaccfile 是否存在） |
-| `machine_health` | 对机器执行健康检查（系统、容器、服务、存储） |
-| `machine_list` | 列出所有已配置的机器 |
-| `config_repositories` | 列出已配置的仓库及其名称与 GUID 的映射关系 |
-| `config_show_infra` | 显示机器的基础设施配置（基础域名、公网 IP、TLS、Cloudflare 区域） |
-| `config_providers` | 列出用于机器供应的已配置云服务商 |
-| `agent_capabilities` | 列出所有可用的 rdc CLI 命令及其参数和选项 |
-| `repo_secret_list` | 列出仓库的密钥名称和投递模式（不含值，不含摘要）。只读操作，安全无副作用。 |
-| `repo_secret_get` | 获取密钥的 SHA-256 摘要和投递模式。出于设计原因，永远不返回明文值。可用于验证密钥是否存在或已完成轮换。 |
-
-### 写入工具（具有破坏性）
-
-| 工具 | 描述 |
-|------|------|
-| `repo_create` | 在机器上创建新的加密仓库 |
-| `repo_up` | 部署/更新仓库（运行 Rediaccfile up，启动容器）。首次部署或拉取后使用 `mount` |
-| `repo_down` | 停止仓库容器。默认不卸载。使用 `unmount` 同时关闭 LUKS 容器 |
-| `repo_delete` | 删除仓库（销毁容器、卷和加密镜像）。凭据归档以供恢复 |
-| `repo_fork` | 创建具有新 GUID 和 networkId 的 CoW 分叉（完全独立的副本，支持在线分叉） |
-| `backup_push` | 将仓库备份推送到存储或其他机器（相同 GUID，备份/迁移，非分叉） |
-| `backup_pull` | 从存储或机器拉取仓库备份。拉取后使用 `repo_up`（mount=true）进行部署 |
-| `machine_provision` | 使用 OpenTofu 在云服务商上供应新机器 |
-| `machine_deprovision` | 销毁云供应的机器并从配置中移除 |
-| `config_add_provider` | 添加用于机器供应的云服务商配置 |
-| `config_remove_provider` | 移除云服务商配置 |
-| `term_exec` | 通过 SSH 在远程机器上执行命令 |
-
 ## 示例工作流
 
 **检查机器状态：**
 > "我的生产机器状态如何？"
 
-代理调用 `machine_query` → 返回系统信息、运行中的容器、服务和资源使用情况。
+代理调用 `machine_status`，获取连接详情、系统信息、容器、服务、仓库和资源使用情况。
 
-**部署应用程序：**
+**部署应用：**
 > "在我的预发布机器上部署 gitlab"
 
-代理调用 `repo_up`，参数为 `name: "gitlab"` 和 `machine: "staging"` → 部署仓库，返回成功/失败结果。
+代理使用 `name: "gitlab"` 和 `machine: "staging"` 调用 `repo_up`，部署该仓库并返回成功或失败。
 
-**调试故障服务：**
-> "我的 nextcloud 很慢，找出问题所在"
+**跟进长时间运行的作业：**
+> "恢复 nextcloud 昨晚的备份"
 
-代理调用 `machine_health` → `machine_containers` → `term_exec` 读取日志 → 识别问题并建议修复方案。
+代理调用 `backup_restore`。超出等待时间的命令会返回作业句柄，代理随后反复调用 `job_wait`（每次最多 50 秒）和 `job_logs`，直到作业结束。
 
-## 配置选项
+**调试出故障的服务：**
+> "我的 nextcloud 很慢，帮我找出原因"
 
-| 选项 | 默认值 | 描述 |
-|------|--------|------|
-| `--config <name>` | （默认配置） | 用于所有命令的命名配置 |
-| `--timeout <ms>` | `120000` | 默认命令超时时间（毫秒） |
+代理依次调用 `machine_health`、`machine_containers` 和 `repo_logs`，并给出修复建议。
 
 ## 安全
 
-MCP 服务器通过两层保护机制来保障安全：
+本地 MCP 服务器采用两层保护。远程服务器的限制见[远程服务器](#远程服务器)。
 
 ### 仅分叉模式（默认）
 
-默认情况下，服务器以**仅分叉模式**运行：写入工具（`repo_up`、`repo_down`、`repo_delete`、`backup_push`、`backup_pull`、`term_exec`）只能操作分叉仓库。代理无法修改 grand（原始）仓库，此为设计行为。
+服务器默认运行在**仅分叉模式**下：写入工具（`repo_up`、`repo_down`、`repo_delete`、`repo_exec`）只能操作分叉仓库。代理无法触碰 grand（原始）仓库。这是有意的设计。
 
 > **每个仓库的密钥管理仅限 CLI 操作，此为设计决策。** `repo_secret_set` 和 `repo_secret_unset` 有意**不**作为 MCP 工具暴露。写入操作需要 `--current <previous-value>` 前置条件（或使用 `--rotate-secret` 确认未经验证的轮换），该操作需要人工审核。如果代理需要建议密钥轮换，应先调用 `repo_secret_get` 确认摘要，然后通过 JSON 错误信封中 `next.options[].run` 字段的结构化输出，将面向操作人员的 CLI 命令传递给用户。完整模式请参阅 [AI 代理安全](/en/docs/ai-agents-safety#structured-next-action-hints)，用户操作指南请参阅[仓库 § 密钥](/en/docs/repositories#secrets)。
 
@@ -270,7 +315,7 @@ claude   # 或 cursor、gemini 等
 
 ## 架构
 
-MCP 服务器是无状态的。每次工具调用都会将 `rdc` 作为独立的子进程启动，并使用 `--output json --yes --quiet` 标志。这意味着：
+本地 MCP 服务器是无状态的。每次工具调用都会以 `--output json --yes --quiet` 标志，将 `rdc` 作为隔离的子进程启动。这意味着：
 
 - 工具调用之间不会发生状态泄漏
 - 使用您现有的 `rdc` 配置和 SSH 密钥

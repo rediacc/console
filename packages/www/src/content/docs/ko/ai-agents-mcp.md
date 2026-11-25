@@ -8,19 +8,28 @@ tags:
 subcategory: ai-agents
 order: 33
 language: ko
-sourceHash: "5aa932e999695e20"
-sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
+sourceHash: "b30e0030351679c5"
+sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## 개요
 
-참고로, `rdc mcp serve` 명령은 AI 에이전트가 인프라를 관리하는 데 사용할 수 있는 로컬 MCP (Model Context Protocol) 서버를 시작합니다. 서버는 stdio 전송을 사용하며, AI 에이전트가 이를 서브프로세스로 생성하고 JSON-RPC를 통해 통신합니다.
+두 개의 MCP(Model Context Protocol) 서버가 같은 도구 레지스트리를 제공합니다.
 
-**사전 요구사항:** `rdc`가 설치되고 최소 하나의 머신으로 구성되어 있어야 합니다.
+| 서버 | 전송 | 실행 방식 | 도구 |
+|---|---|---|---|
+| 로컬 | stdio | `rdc mcp serve`, 에이전트가 실행 | 모든 도구 |
+| 원격 | Streamable HTTP | `https://mcp.<region>.rediacc.cloud/g/<grantId>` | 원격 도구, 즉 로컬 전용 표에 있는 도구를 제외한 전부 |
 
-## Claude Code
+**사전 요구사항:** 로컬 서버에는 `rdc`가 설치되어 있고 머신이 하나 이상 구성되어 있어야 합니다. 원격 서버에는 구성에 대한 그랜트(grant)가 필요합니다.
 
-프로젝트의 `.mcp.json`에 추가하세요:
+## 로컬 서버
+
+`rdc mcp serve`는 stdio로 MCP 서버를 시작합니다. 에이전트가 이를 서브프로세스로 실행하고 JSON-RPC로 통신합니다.
+
+### Claude Code
+
+프로젝트의 `.mcp.json`에 다음 항목이 들어갑니다.
 
 ```json
 {
@@ -33,7 +42,7 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 }
 ```
 
-또는 명명된 설정과 함께:
+이름이 있는 구성을 쓰는 경우:
 
 ```json
 {
@@ -46,13 +55,85 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 }
 ```
 
-## Cursor
+### Cursor
 
-설정 열기 → MCP Servers → Add Server:
+Settings → MCP Servers → Add Server를 엽니다.
 
 - **Name**: `rdc`
 - **Command**: `rdc mcp serve`
 - **Transport**: stdio
+
+### 옵션
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `--config <name>` | (기본 구성) | 모든 명령에 사용할 이름 있는 구성 |
+| `--timeout <ms>` | `120000` | 명령 기본 제한 시간(밀리초) |
+
+## 원격 서버
+
+리전마다 MCP Worker가 하나씩 `mcp.<region>.rediacc.cloud`에서 실행됩니다. 각 에이전트는 그랜트 하나의 URL `https://mcp.<region>.rediacc.cloud/g/<grantId>`에 연결합니다. 그랜트는 구성 하나, 만료 시각, 범위를 지정합니다. 범위는 읽기 전용 플래그, 허용 도구 목록, 머신 및 리포지토리 이름 글롭(glob)으로 이루어집니다. 도구 호출은 그랜트가 속한 조직의 실행기에서 처리됩니다.
+
+### 자격 증명
+
+두 형식 모두 그랜트를 식별하며, URL의 그랜트 ID는 이름을 가리킬 뿐입니다.
+
+| 형식 | 용도 | 전송 방법 |
+|---|---|---|
+| OAuth 액세스 토큰 | claude.ai 같은 대화형 클라이언트 | `Authorization: Bearer <token>` |
+| 에이전트 베어러 `rmcp_<grantId>.<secret>` | 헤드리스 에이전트 | `Authorization: Bearer` 또는 `x-api-key` |
+
+쿼리 문자열에 담긴 자격 증명은 400으로 거부됩니다. 없거나 만료되었거나 다른 그랜트의 OAuth 토큰은 401과 함께 `WWW-Authenticate: Bearer resource_metadata=...` 헤더를 받으며, 이 헤더는 그랜트의 보호된 리소스 문서를 가리키므로 OAuth 클라이언트가 토큰을 갱신하거나 로그인할 수 있습니다. 알 수 없는 그랜트, 잘못된 시크릿, 다른 그랜트의 에이전트 베어러는 모두 같은 단순 401을 받습니다.
+
+### OAuth
+
+Worker는 PKCE(S256만 지원)를 쓰는 OAuth 2.1 인증 서버입니다. 클라이언트는 Client ID Metadata Document 또는 `/register`의 동적 클라이언트 등록으로 등록합니다.
+
+| 엔드포인트 | 용도 |
+|---|---|
+| `/.well-known/oauth-authorization-server` | 서버 메타데이터 |
+| `/.well-known/oauth-protected-resource/g/<grantId>` | 그랜트 하나의 보호된 리소스 문서 |
+| `/authorize` | 인증을 시작하고 계정 페이지 `/account/mcp/authorize`로 리디렉션 |
+| `/oauth/token` | 코드 교환, 갱신, 폐기 |
+| `/register` | 동적 클라이언트 등록 |
+
+클라이언트는 `resource=https://mcp.<region>.rediacc.cloud/g/<grantId>`를 보냅니다. 인증은 리소스가 가리키는 그랜트에 대해서만 완료되며, 토큰은 자기 그랜트의 URL에서만 동작합니다. `/authorize` 리디렉션에는 서명된 일회용 핸들만 담기고 시크릿은 담기지 않습니다.
+
+### 토큰 수명
+
+토큰은 자신의 그랜트보다 오래 살아남지 않습니다.
+
+| 토큰 | 수명 |
+|---|---|
+| 액세스 토큰 | 1시간과 그랜트 잔여 시간 중 짧은 쪽 |
+| 리프레시 토큰 | 30일과 그랜트 잔여 시간 중 짧은 쪽 |
+
+코드 교환과 갱신이 있을 때마다 그랜트를 다시 조회합니다. 만료되었거나 폐기되었거나 키가 교체된 그랜트는 `invalid_grant`로 응답하고 OAuth 그랜트를 폐기합니다. 리프레시 토큰은 교체되며, 같은 토큰을 두 번 제시하면 그랜트가 폐기됩니다.
+
+### 그랜트당 구성 하나
+
+그랜트는 자신이 지정한 구성 하나만 처리합니다. 다른 구성을 가리키는 인자(`config` 또는 그 변형 표기)가 담긴 `tools/call`은 아무것도 실행되기 전에 `REDIACC_GRANT_SCOPE`로 거부됩니다. 구성이 여러 개인 사용자는 구성마다 그랜트를 하나씩 승인합니다. 그랜트의 허용 목록에 없는 도구나 읽기 전용 그랜트의 쓰기 도구는 `tools/list`에 나타나지 않으며, 호출하면 거부됩니다.
+
+### 리전
+
+그랜트 ID는 `eu_`처럼 리전으로 시작합니다. 다른 리전의 Worker에서 `/g/<grantId>`로 요청하면 올바른 URL과 함께 421이 돌아옵니다.
+
+```json
+{
+  "code": "REDIACC_WRONG_REGION",
+  "message": "This grant lives in the us region. Use https://mcp.us.rediacc.cloud/g/us_...",
+  "region": "us",
+  "mcpUrl": "https://mcp.us.rediacc.cloud/g/us_..."
+}
+```
+
+그랜트는 자신의 리전 밖에서는 OAuth 리소스, 토큰 대상(audience), 인증 대상으로 받아들여지지 않습니다.
+
+### 그랜트 상태와 제한
+
+만료되었거나, 폐기되었거나, 구성 저장소의 키 교체로 키를 잃은 그랜트도 `initialize`와 `tools/list`에는 계속 응답합니다. 이후 각 `tools/call`은 `REDIACC_GRANT_EXPIRED`, `REDIACC_GRANT_REVOKED`, `REDIACC_KEY_ROTATED` 중 하나를 `reauthUrl`과 함께 반환하며, 사용자는 이 URL을 열어 다시 승인합니다.
+
+그랜트마다 분당 60회 호출과 동시 진행 호출 5개까지 허용됩니다. 둘 중 하나를 넘는 호출은 `retryAfterSeconds`와 함께 `REDIACC_RATE_LIMITED`를 반환합니다.
 
 ## 사용 가능한 도구
 
@@ -167,71 +248,35 @@ sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
 
 <!-- <<< translated-table -->
 
-### 읽기 도구 (안전, 부작용 없음)
-
-| 도구 | 설명 |
-|------|------|
-| `machine_query` | 머신의 시스템 정보, 컨테이너, 서비스 및 리소스 사용량 조회 |
-| `machine_containers` | 상태, 상태 확인, 리소스 사용량, 레이블 및 자동 라우트 도메인과 함께 Docker 컨테이너 목록 조회 |
-| `machine_services` | rediacc가 관리하는 systemd 서비스 목록 조회 (이름, 상태, 서브 상태, 재시작 횟수, 메모리, 소유 리포지토리) |
-| `machine_repos` | 배포된 리포지토리 목록 조회 (이름, GUID, 크기, 마운트 상태, Docker 상태, 컨테이너 수, 디스크 사용량, 수정 날짜, Rediaccfile 존재 여부) |
-| `machine_health` | 머신 상태 확인 실행 (시스템, 컨테이너, 서비스, 스토리지) |
-| `machine_list` | 구성된 모든 머신 목록 조회 |
-| `config_repositories` | 이름과 GUID 매핑과 함께 구성된 리포지토리 목록 조회 |
-| `config_show_infra` | 머신의 인프라 구성 표시 (기본 도메인, 공개 IP, TLS, Cloudflare 존) |
-| `config_providers` | 머신 프로비저닝을 위해 구성된 클라우드 공급자 목록 조회 |
-| `agent_capabilities` | 인수와 옵션이 포함된 모든 rdc CLI 명령 목록 조회 |
-| `repo_secret_list` | 리포지토리의 시크릿 이름 및 전달 모드 목록 조회 (값 및 다이제스트는 절대 반환하지 않음). 읽기 안전. |
-| `repo_secret_get` | 시크릿의 SHA-256 다이제스트 및 전달 모드 조회. 평문 값은 설계상 절대 반환되지 않습니다. 시크릿이 존재하는지 또는 교체되었는지 확인할 때 사용하세요. |
-
-### 쓰기 도구 (파괴적)
-
-| 도구 | 설명 |
-|------|------|
-| `repo_create` | 머신에 새 암호화된 리포지토리 생성 |
-| `repo_up` | 리포지토리 배포/업데이트 (Rediaccfile up 실행, 컨테이너 시작). 처음 배포하거나 pull 후에는 `mount` 사용 |
-| `repo_down` | 리포지토리 컨테이너 중지. 기본적으로 마운트 해제하지 않습니다. LUKS 컨테이너도 닫으려면 `unmount` 사용 |
-| `repo_delete` | 리포지토리 삭제 (컨테이너, 볼륨, 암호화된 이미지 제거). 자격 증명은 복구를 위해 보관됩니다 |
-| `repo_fork` | 새 GUID와 networkId로 CoW 포크 생성 (완전히 독립적인 복사본, 온라인 포킹 지원) |
-| `backup_push` | 리포지토리 백업을 스토리지 또는 다른 머신으로 푸시 (동일 GUID -- 백업/마이그레이션, 포크 아님) |
-| `backup_pull` | 스토리지 또는 머신에서 리포지토리 백업 풀. 풀 후 `repo_up` (mount=true)으로 배포 |
-| `machine_provision` | OpenTofu를 사용하여 클라우드 공급자에 새 머신 프로비저닝 |
-| `machine_deprovision` | 클라우드로 프로비저닝된 머신을 제거하고 설정에서 삭제 |
-| `config_add_provider` | 머신 프로비저닝을 위한 클라우드 공급자 설정 추가 |
-| `config_remove_provider` | 클라우드 공급자 설정 제거 |
-| `term_exec` | SSH를 통해 원격 머신에서 명령 실행 |
-
 ## 예시 워크플로
 
 **머신 상태 확인:**
-> "내 프로덕션 머신의 상태가 어떤가요?"
+> "프로덕션 머신 상태가 어때?"
 
-에이전트가 `machine_query`를 호출 → 시스템 정보, 실행 중인 컨테이너, 서비스 및 리소스 사용량을 반환합니다.
+에이전트가 `machine_status`를 호출해 연결 정보, 시스템 정보, 컨테이너, 서비스, 리포지토리, 리소스 사용량을 받아옵니다.
 
 **애플리케이션 배포:**
-> "스테이징 머신에 gitlab을 배포해 주세요"
+> "스테이징 머신에 gitlab을 배포해 줘"
 
-에이전트가 `name: "gitlab"` 및 `machine: "staging"`으로 `repo_up`을 호출 → 리포지토리를 배포하고 성공/실패를 반환합니다.
+에이전트가 `name: "gitlab"`, `machine: "staging"`으로 `repo_up`을 호출하면 리포지토리가 배포되고 성공 또는 실패가 반환됩니다.
 
-**서비스 오류 디버깅:**
-> "nextcloud가 느립니다, 문제를 파악해 주세요"
+**오래 걸리는 작업 따라가기:**
+> "nextcloud의 어젯밤 백업을 복원해 줘"
 
-에이전트가 `machine_health` → `machine_containers` → `term_exec`를 호출하여 로그를 읽고 → 문제를 식별하고 수정 방법을 제안합니다.
+에이전트가 `backup_restore`를 호출합니다. 제한 시간을 넘기는 명령은 작업 핸들을 반환하고, 에이전트는 작업이 끝날 때까지 `job_wait`(호출당 최대 50초)와 `job_logs`를 호출합니다.
 
-## 설정 옵션
+**문제가 있는 서비스 디버깅:**
+> "nextcloud가 느린데 원인을 찾아 줘"
 
-| 옵션 | 기본값 | 설명 |
-|------|--------|------|
-| `--config <name>` | (기본 설정) | 모든 명령에 사용할 명명된 설정 |
-| `--timeout <ms>` | `120000` | 기본 명령 타임아웃 (밀리초) |
+에이전트가 `machine_health`를 호출한 뒤 `machine_containers`와 `repo_logs`를 호출하고 해결 방법을 제안합니다.
 
 ## 보안
 
-MCP 서버는 두 가지 보호 레이어를 적용합니다:
+로컬 MCP 서버는 두 겹의 보호를 적용합니다. 원격 서버의 제한은 [원격 서버](#원격-서버)에 있습니다.
 
 ### 포크 전용 모드 (기본값)
 
-기본적으로 서버는 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`)는 포크 리포지토리에서만 작동할 수 있습니다. Grand (원본) 리포지토리는 에이전트 수정으로부터 보호됩니다. 이는 설계에 의한 동작입니다.
+서버는 기본적으로 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `repo_exec`)는 포크 리포지토리에서만 동작합니다. 에이전트는 그랜드(원본) 리포지토리를 건드릴 수 없습니다. 의도된 설계입니다.
 
 > **리포별 시크릿은 설계상 CLI 전용입니다.** `repo_secret_set`과 `repo_secret_unset`은 의도적으로 MCP 도구로 노출되지 않습니다. 쓰기에는 `--current <previous-value>` 전제조건(또는 검증되지 않은 교체를 승인하는 `--rotate-secret`)이 필요하며, 이 절차는 사람이 직접 확인해야 합니다. 시크릿 교체를 제안해야 하는 에이전트는 `repo_secret_get`을 호출하여 다이제스트를 확인한 다음, JSON 오류 엔벨로프의 `next.options[].run` 필드를 통해 운영자 대상 CLI 명령을 사용자에게 전달해야 합니다. 전체 패턴은 [AI 에이전트 안전](/en/docs/ai-agents-safety#structured-next-action-hints)을 참조하고, 사용자 대상 방법은 [리포지토리 § 시크릿](/en/docs/repositories#secrets)을 참조하세요.
 
@@ -270,7 +315,7 @@ claude   # 또는 cursor, gemini 등
 
 ## 아키텍처
 
-MCP 서버는 상태가 없습니다. 각 도구 호출은 `--output json --yes --quiet` 플래그와 함께 격리된 자식 프로세스로 `rdc`를 생성합니다. 이는 다음을 의미합니다:
+로컬 MCP 서버는 상태를 저장하지 않습니다. 도구를 호출할 때마다 `rdc`가 `--output json --yes --quiet` 플래그와 함께 격리된 자식 프로세스로 실행됩니다. 따라서 다음과 같습니다.
 
 - 도구 호출 간 상태 누출 없음
 - 기존 `rdc` 설정 및 SSH 키 사용

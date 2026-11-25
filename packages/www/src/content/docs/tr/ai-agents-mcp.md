@@ -8,19 +8,28 @@ tags:
 subcategory: ai-agents
 order: 33
 language: tr
-sourceHash: "5aa932e999695e20"
-sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
+sourceHash: "b30e0030351679c5"
+sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Genel Bakış
 
-`rdc mcp serve` komutu, yapay zeka ajanlarının altyapınızı yönetmek için kullanabileceği yerel bir MCP (Model Context Protocol) sunucusu başlatır. Sunucu stdio taşıma yöntemini kullanır; yapay zeka ajanı sunucuyu bir alt süreç olarak başlatır ve JSON-RPC üzerinden iletişim kurar.
+İki MCP (Model Context Protocol) sunucusu aynı araç kaydını sunar:
 
-**Ön koşullar:** `rdc` kurulu ve en az bir makine ile yapılandırılmış olmalıdır.
+| Sunucu | Taşıma | Çalışma biçimi | Araçlar |
+|---|---|---|---|
+| Yerel | stdio | `rdc mcp serve`, ajan tarafından başlatılır | Tüm araçlar |
+| Uzak | Streamable HTTP | `https://mcp.<region>.rediacc.cloud/g/<grantId>` | Uzak araçlar, yani yalnızca yerel olanların tablosu dışındaki tümü |
 
-## Claude Code
+**Ön koşullar:** Yerel sunucu için `rdc` kurulu ve en az bir makine ile yapılandırılmış olmalıdır. Uzak sunucu için bir yapılandırma üzerinde grant gerekir.
 
-Projenizin `.mcp.json` dosyasına ekleyin:
+## Yerel sunucu
+
+`rdc mcp serve`, stdio üzerinden bir MCP sunucusu başlatır. Ajan sunucuyu alt süreç olarak başlatır ve JSON-RPC ile konuşur.
+
+### Claude Code
+
+Projenin `.mcp.json` dosyası şu girdiyi içerir:
 
 ```json
 {
@@ -33,7 +42,7 @@ Projenizin `.mcp.json` dosyasına ekleyin:
 }
 ```
 
-Veya adlandırılmış bir yapılandırma ile:
+Ya da adlandırılmış bir yapılandırma ile:
 
 ```json
 {
@@ -46,13 +55,85 @@ Veya adlandırılmış bir yapılandırma ile:
 }
 ```
 
-## Cursor
+### Cursor
 
-Ayarlar → MCP Sunucuları → Sunucu Ekle yolunu izleyin:
+Settings → MCP Servers → Add Server yolunu açın:
 
-- **Ad**: `rdc`
-- **Komut**: `rdc mcp serve`
-- **Taşıma**: stdio
+- **Name**: `rdc`
+- **Command**: `rdc mcp serve`
+- **Transport**: stdio
+
+### Seçenekler
+
+| Seçenek | Varsayılan | Açıklama |
+|---------|------------|----------|
+| `--config <name>` | (varsayılan yapılandırma) | Tüm komutlar için kullanılacak adlandırılmış yapılandırma |
+| `--timeout <ms>` | `120000` | Milisaniye cinsinden varsayılan komut zaman aşımı |
+
+## Uzak sunucu
+
+Her bölgede `mcp.<region>.rediacc.cloud` adresinde bir MCP Worker çalışır. Her ajan tek bir grant'in URL'sine bağlanır: `https://mcp.<region>.rediacc.cloud/g/<grantId>`. Grant bir yapılandırmayı, bir son kullanma zamanını ve bir kapsamı belirtir: salt okunur bayrağı, izin verilen araçların listesi ile makine ve depo adı desenleri (glob). Araç çağrıları grant'in kuruluş yürütücüsünde çalışır.
+
+### Kimlik bilgileri
+
+İki biçim de grant'i tanımlar; URL'deki grant kimliği onu yalnızca adlandırır.
+
+| Biçim | Kullanım | Gönderim şekli |
+|---|---|---|
+| OAuth erişim belirteci | claude.ai gibi etkileşimli istemciler | `Authorization: Bearer <token>` |
+| Ajan bearer'ı `rmcp_<grantId>.<secret>` | Arayüzsüz ajanlar | `Authorization: Bearer` veya `x-api-key` |
+
+Sorgu dizesindeki bir kimlik bilgisi 400 ile reddedilir. Eksik, süresi dolmuş ya da başka bir grant'e ait OAuth belirteci, grant'in korumalı kaynak belgesini gösteren bir `WWW-Authenticate: Bearer resource_metadata=...` başlığıyla 401 alır; böylece OAuth istemcisi belirteci yeniler veya oturum açar. Bilinmeyen bir grant, yanlış bir gizli anahtar ve başka bir grant'e ait ajan bearer'ı aynı sade 401'i alır.
+
+### OAuth
+
+Worker, PKCE destekli (yalnızca S256) bir OAuth 2.1 yetkilendirme sunucusudur. İstemciler bir Client ID Metadata Document ile ya da `/register` adresindeki dinamik istemci kaydıyla kaydolur.
+
+| Uç nokta | Amaç |
+|---|---|
+| `/.well-known/oauth-authorization-server` | Sunucu meta verisi |
+| `/.well-known/oauth-protected-resource/g/<grantId>` | Bir grant'in korumalı kaynak belgesi |
+| `/authorize` | Yetkilendirmeyi başlatır ve `/account/mcp/authorize` hesap sayfasına yönlendirir |
+| `/oauth/token` | Kod değişimi, yenileme ve iptal |
+| `/register` | Dinamik istemci kaydı |
+
+İstemci `resource=https://mcp.<region>.rediacc.cloud/g/<grantId>` gönderir. Yetkilendirme yalnızca kaynağın adını verdiği grant için tamamlanır ve bir belirteç yalnızca kendi grant'inin URL'sinde çalışır. `/authorize` yönlendirmesi imzalı, tek kullanımlık bir tanıtıcı taşır; gizli anahtar taşımaz.
+
+### Belirteç ömürleri
+
+Bir belirteç hiçbir zaman grant'inden uzun yaşamaz.
+
+| Belirteç | Ömür |
+|---|---|
+| Erişim belirteci | 1 saat ile grant'te kalan sürenin kısa olanı |
+| Yenileme belirteci | 30 gün ile grant'te kalan sürenin kısa olanı |
+
+Her kod değişimi ve yenileme grant'i yeniden sorgular. Süresi dolmuş, iptal edilmiş veya anahtarı döndürülmüş bir grant `invalid_grant` yanıtı verir ve OAuth grant'ini iptal eder. Yenileme belirteçleri döner; aynı belirteci iki kez sunmak grant'i iptal eder.
+
+### Grant başına tek yapılandırma
+
+Bir grant yalnızca adını verdiği tek yapılandırmaya hizmet eder. Başka bir yapılandırmayı belirten bir argüman içeren (`config` ya da onun bir yazılışı) `tools/call`, hiçbir şey çalışmadan önce `REDIACC_GRANT_SCOPE` ile reddedilir. Birden fazla yapılandırması olan kullanıcı her yapılandırma için bir grant yetkilendirir. Grant'in izin listesinde olmayan bir araç ya da salt okunur bir grant altındaki yazma aracı `tools/list` içinde görünmez ve çağrıldığında reddedilir.
+
+### Bölgeler
+
+Bir grant kimliği bölgesiyle başlar, örneğin `eu_`. Başka bir bölgenin Worker'ında `/g/<grantId>` adresine yapılan istek, doğru URL ile birlikte 421 yanıtı alır:
+
+```json
+{
+  "code": "REDIACC_WRONG_REGION",
+  "message": "This grant lives in the us region. Use https://mcp.us.rediacc.cloud/g/us_...",
+  "region": "us",
+  "mcpUrl": "https://mcp.us.rediacc.cloud/g/us_..."
+}
+```
+
+Bir grant, kendi bölgesi dışında hiçbir zaman OAuth kaynağı, belirteç hedef kitlesi ya da yetkilendirme hedefi olarak kabul edilmez.
+
+### Grant durumları ve sınırlar
+
+Süresi dolmuş, iptal edilmiş veya yapılandırma deposunun anahtar rotasyonu nedeniyle anahtarını yitirmiş bir grant `initialize` ve `tools/list` isteklerine yanıt vermeye devam eder. Her `tools/call` bu durumda `REDIACC_GRANT_EXPIRED`, `REDIACC_GRANT_REVOKED` ya da `REDIACC_KEY_ROTATED` döndürür ve kullanıcının yeniden yetkilendirmek için açacağı bir `reauthUrl` içerir.
+
+Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin verir. Bu sınırlardan birini aşan çağrı, `retryAfterSeconds` ile birlikte `REDIACC_RATE_LIMITED` döndürür.
 
 ## Kullanılabilir Araçlar
 
@@ -167,71 +248,35 @@ Ayarlar → MCP Sunucuları → Sunucu Ekle yolunu izleyin:
 
 <!-- <<< translated-table -->
 
-### Okuma Araçları (güvenli, yan etkisi yok)
-
-| Araç | Açıklama |
-|------|----------|
-| `machine_query` | Bir makinenin sistem bilgisini, konteynerlerini, servislerini ve kaynak kullanımını gösterir |
-| `machine_containers` | Docker konteynerlerini durum, sağlık, kaynak kullanımı, etiketler ve otomatik yönlendirme alan adıyla listeler |
-| `machine_services` | Rediacc tarafından yönetilen systemd servislerini listeler (ad, durum, alt durum, yeniden başlatma sayısı, bellek, ait olduğu depo) |
-| `machine_repos` | Dağıtılmış depoları listeler (ad, GUID, boyut, bağlama durumu, Docker durumu, konteyner sayısı, disk kullanımı, değiştirilme tarihi, Rediaccfile varlığı) |
-| `machine_health` | Makine üzerinde sağlık kontrolü çalıştırır (sistem, konteynerler, servisler, depolama) |
-| `machine_list` | Yapılandırılmış tüm makineleri listeler |
-| `config_repositories` | Yapılandırılmış depoları ad-GUID eşlemeleriyle listeler |
-| `config_show_infra` | Bir makine için altyapı yapılandırmasını gösterir (temel alan adı, genel IP'ler, TLS, Cloudflare bölgesi) |
-| `config_providers` | Makine sağlama için yapılandırılmış bulut sağlayıcılarını listeler |
-| `agent_capabilities` | Kullanılabilir tüm rdc CLI komutlarını argümanları ve seçenekleriyle listeler |
-| `repo_secret_list` | Bir deponun gizli dizi adlarını ve teslim modlarını listeler (değerleri veya özetleri hiçbir zaman döndürmez). Okuma güvenlidir. |
-| `repo_secret_get` | Bir gizli dizinin SHA-256 özetini ve teslim modunu döndürür. Düz metin değeri tasarım gereği hiçbir zaman döndürülmez. Bir gizli dizinin var olduğunu veya yenilendiğini doğrulamak için kullanın. |
-
-### Yazma Araçları (yıkıcı)
-
-| Araç | Açıklama |
-|------|----------|
-| `repo_create` | Bir makinede yeni şifreli depo oluşturur |
-| `repo_up` | Depoyu dağıtır/günceller (Rediaccfile up çalıştırır, konteynerleri başlatır). İlk dağıtımda veya pull sonrasında `mount` kullanın |
-| `repo_down` | Depo konteynerlerini durdurur. Varsayılan olarak bağlantıyı KESMEZ. LUKS konteynerini de kapatmak için `unmount` kullanın |
-| `repo_delete` | Depoyu siler (konteynerleri, hacimleri, şifreli imajı yok eder). Kimlik bilgileri kurtarma için arşivlenir |
-| `repo_fork` | Yeni GUID ve networkId ile CoW fork oluşturur (tam bağımsız kopya, çevrimiçi fork desteği var) |
-| `backup_push` | Depo yedeğini depolama alanına veya başka bir makineye gönderir (aynı GUID -- yedek/göç, fork değil) |
-| `backup_pull` | Depolama alanından veya makineden depo yedeği çeker. Çektikten sonra `repo_up` ile dağıtın (mount=true) |
-| `machine_provision` | OpenTofu kullanarak bulut sağlayıcısında yeni makine sağlar |
-| `machine_deprovision` | Buluttan sağlanan makineyi yok eder ve yapılandırmadan kaldırır |
-| `config_add_provider` | Makine sağlama için bulut sağlayıcı yapılandırması ekler |
-| `config_remove_provider` | Bulut sağlayıcı yapılandırmasını kaldırır |
-| `term_exec` | SSH üzerinden uzak makinede komut çalıştırır |
-
 ## Örnek İş Akışları
 
 **Makine durumunu kontrol etme:**
 > "Üretim makinemin durumu nedir?"
 
-Ajan `machine_query` aracını çağırır → sistem bilgisi, çalışan konteynerler, servisler ve kaynak kullanımını döndürür.
+Ajan `machine_status` aracını çağırır ve bağlantı ayrıntılarını, sistem bilgisini, konteynerleri, servisleri, depoları ve kaynak kullanımını alır.
 
-**Uygulama dağıtma:**
-> "Gitlab'ı hazırlık makineme dağıt"
+**Bir uygulamayı dağıtma:**
+> "Staging makinemde gitlab'ı dağıt"
 
-Ajan `repo_up` aracını `name: "gitlab"` ve `machine: "staging"` parametreleriyle çağırır → depoyu dağıtır, başarı/başarısızlık sonucunu döndürür.
+Ajan `repo_up` aracını `name: "gitlab"` ve `machine: "staging"` ile çağırır; bu, depoyu dağıtır ve başarı ya da hata döndürür.
 
-**Başarısız bir servisi hata ayıklama:**
-> "Nextcloud'um yavaş, sorunun ne olduğunu bul"
+**Uzun bir işi izleme:**
+> "Nextcloud'un dünkü gece yedeğini geri yükle"
 
-Ajan `machine_health` → `machine_containers` → günlükleri okumak için `term_exec` araçlarını çağırır → sorunu tespit eder ve çözüm önerir.
+Ajan `backup_restore` aracını çağırır. Süresini aşan bir komut bir iş tanıtıcısı döndürür; ajan iş bitene kadar `job_wait` (çağrı başına en fazla 50 sn) ve `job_logs` araçlarını çağırır.
 
-## Yapılandırma Seçenekleri
+**Hatalı bir servisi ayıklama:**
+> "Nextcloud'um yavaş, neyin yanlış olduğunu bul"
 
-| Seçenek | Varsayılan | Açıklama |
-|---------|------------|----------|
-| `--config <name>` | (varsayılan yapılandırma) | Tüm komutlar için kullanılacak adlandırılmış yapılandırma |
-| `--timeout <ms>` | `120000` | Varsayılan komut zaman aşımı (milisaniye) |
+Ajan `machine_health`, ardından `machine_containers` ve `repo_logs` araçlarını çağırır ve bir çözüm önerir.
 
 ## Güvenlik
 
-MCP sunucusu iki katmanlı koruma uygular:
+Yerel MCP sunucusu iki koruma katmanı uygular. Uzak sunucunun sınırları [Uzak sunucu](#uzak-sunucu) bölümündedir.
 
 ### Yalnızca fork modu (varsayılan)
 
-Varsayılan olarak, sunucu **yalnızca fork modunda** çalışır: yazma araçları (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) yalnızca fork depolar üzerinde işlem yapabilir. Ajanlar grand (orijinal) depolara dokunamaz. Tasarım gereği.
+Sunucu varsayılan olarak **yalnızca fork modunda** çalışır: yazma araçları (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) yalnızca fork depolar üzerinde işlem yapabilir. Ajanlar grand (özgün) depolara dokunamaz. Bu bilinçli bir tasarımdır.
 
 > **Depo başına gizli diziler tasarım gereği yalnızca CLI ile yönetilir.** `repo_secret_set` ve `repo_secret_unset` kasıtlı olarak MCP aracı olarak **sunulmamaktadır**. Yazma işlemleri bir `--current <önceki-değer>` ön koşulu (veya doğrulanmamış bir yenilemeyi kabul etmek için `--rotate-secret`) gerektirir; bu adım insan gözetimi gerektirir. Gizli dizi yenilenmesini önermesi gereken ajanlar, özeti doğrulamak için `repo_secret_get` çağırmalı, ardından operatöre yönelik CLI komutunu JSON hata zarfının `next.options[].run` alanı üzerinden kullanıcıya iletmelidir. Tam örüntü için [Yapay Zeka Ajanı Güvenliği](/en/docs/ai-agents-safety#structured-next-action-hints) sayfasına, kullanıcıya yönelik nasıl yapılır kılavuzu için [Depolar § Gizli Diziler](/en/docs/repositories#secrets) sayfasına bakın.
 
@@ -270,7 +315,7 @@ Bu durum yanal hareketi engeller. Bir ajan fork'a shell erişimi kazansa bile, a
 
 ## Mimari
 
-MCP sunucusu durumsuz (stateless) çalışır. Her araç çağrısı, `rdc`'yi `--output json --yes --quiet` bayraklarıyla izole bir alt süreç olarak başlatır. Bu şu anlama gelir:
+Yerel MCP sunucusu durumsuzdur. Her araç çağrısı `rdc` komutunu `--output json --yes --quiet` bayraklarıyla yalıtılmış bir alt süreç olarak başlatır. Bu şu anlama gelir:
 
 - Araç çağrıları arasında durum sızıntısı olmaz
 - Mevcut `rdc` yapılandırmanızı ve SSH anahtarlarınızı kullanır

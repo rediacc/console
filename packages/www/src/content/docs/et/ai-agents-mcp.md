@@ -8,19 +8,28 @@ tags:
 subcategory: ai-agents
 order: 33
 language: et
-sourceHash: "5aa932e999695e20"
-sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
+sourceHash: "b30e0030351679c5"
+sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Ülevaade
 
-Niisiis, `rdc mcp serve` käivitab lokaalse MCP (Model Context Protocol) serveri, mida AI-agendid saavad kasutada teie infrastruktuuri haldamiseks. Server kasutab stdio-transporti, AI-agent käivitab selle alamprotsessina ja suhtleb JSON-RPC kaudu.
+Kaks MCP (Model Context Protocol) serverit pakuvad sama tööriistade registrit:
 
-**Eeltingimused:** `rdc` on installitud ja seadistatud vähemalt ühe masinaga.
+| Server | Transport | Töötab | Tööriistad |
+|---|---|---|---|
+| Lokaalne | stdio | `rdc mcp serve`, mille käivitab agent | Kõik tööriistad |
+| Kaug | Streamable HTTP | `https://mcp.<region>.rediacc.cloud/g/<grantId>` | Kaugtööriistad ehk kõik peale ainult lokaalsete tabelis olevate |
 
-## Claude Code
+**Eeltingimused:** lokaalse serveri jaoks on `rdc` installitud ja seadistatud vähemalt ühe masinaga. Kaugserveri jaoks on vaja seadistusele antud grant'i.
 
-Lisage oma projekti `.mcp.json`-i:
+## Lokaalne server
+
+`rdc mcp serve` käivitab MCP serveri stdio kaudu. Agent käivitab selle alamprotsessina ja suhtleb sellega JSON-RPC abil.
+
+### Claude Code
+
+Projekti `.mcp.json` sisaldab kirjet:
 
 ```json
 {
@@ -33,7 +42,7 @@ Lisage oma projekti `.mcp.json`-i:
 }
 ```
 
-Või nimega konfiguratsiooniga:
+Või nimega seadistusega:
 
 ```json
 {
@@ -46,13 +55,85 @@ Või nimega konfiguratsiooniga:
 }
 ```
 
-## Cursor
+### Cursor
 
-Avage Seaded → MCP Servers → Add Server:
+Avage Settings → MCP Servers → Add Server:
 
-- **Nimi**: `rdc`
-- **Käsk**: `rdc mcp serve`
+- **Name**: `rdc`
+- **Command**: `rdc mcp serve`
 - **Transport**: stdio
+
+### Valikud
+
+| Valik | Vaikeväärtus | Kirjeldus |
+|-------|--------------|-----------|
+| `--config <name>` | (vaikeseadistus) | Kõigi käskude jaoks kasutatav nimega seadistus |
+| `--timeout <ms>` | `120000` | Käskude vaikimisi ajalimiit millisekundites |
+
+## Kaugserver
+
+Igas regioonis töötab üks MCP Worker aadressil `mcp.<region>.rediacc.cloud`. Iga agent ühendub ühe grant'i URL-iga: `https://mcp.<region>.rediacc.cloud/g/<grantId>`. Grant nimetab ühe seadistuse, aegumisaja ja ulatuse: kirjutuskaitse lipu, lubatud tööriistade nimekirja ning masinate ja repode nimemustrid (glob). Tööriistakutsed jooksevad grant'i organisatsiooni täitjal.
+
+### Mandaadid
+
+Mõlemad vormid tuvastavad grant'i; URL-is olev grant'i id ainult nimetab seda.
+
+| Vorm | Kasutus | Saadetakse kujul |
+|---|---|---|
+| OAuth-ligipääsuluba | Interaktiivsed kliendid, näiteks claude.ai | `Authorization: Bearer <token>` |
+| Agendi bearer `rmcp_<grantId>.<secret>` | Peata agendid | `Authorization: Bearer` või `x-api-key` |
+
+Päringustringis olev mandaat lükatakse tagasi vastusega 400. Puuduv, aegunud või teise grant'i OAuth-luba saab vastuse 401 koos päisega `WWW-Authenticate: Bearer resource_metadata=...`, mis osutab grant'i kaitstud ressursi dokumendile, et OAuth-klient saaks luba uuendada või sisse logida. Tundmatu grant, vale saladus ja teise grant'i agendi bearer saavad kõik sama paljas 401.
+
+### OAuth
+
+Worker on OAuth 2.1 autoriseerimisserver PKCE-ga (ainult S256). Kliendid registreeruvad Client ID Metadata Document'i kaudu või dünaamilise kliendiregistreerimisega aadressil `/register`.
+
+| Lõpp-punkt | Otstarve |
+|---|---|
+| `/.well-known/oauth-authorization-server` | Serveri metaandmed |
+| `/.well-known/oauth-protected-resource/g/<grantId>` | Ühe grant'i kaitstud ressursi dokument |
+| `/authorize` | Alustab autoriseerimist ja suunab konto lehele `/account/mcp/authorize` |
+| `/oauth/token` | Koodi vahetus, uuendamine ja tühistamine |
+| `/register` | Dünaamiline kliendiregistreerimine |
+
+Klient saadab `resource=https://mcp.<region>.rediacc.cloud/g/<grantId>`. Autoriseerimine õnnestub ainult grant'ile, mille ressurss nimetab, ja luba töötab ainult oma grant'i URL-il. Suunamine aadressilt `/authorize` kannab allkirjastatud ühekordset tunnust ega sisalda saladust.
+
+### Lubade kehtivusaeg
+
+Luba ei kesta kunagi kauem kui selle grant.
+
+| Luba | Kehtivusaeg |
+|---|---|
+| Ligipääsuluba | Lühem kahest: 1 tund või grant'i järelejäänud aeg |
+| Uuenduseluba | Lühem kahest: 30 päeva või grant'i järelejäänud aeg |
+
+Iga koodivahetus ja uuendus otsib grant'i uuesti üles. Aegunud, tühistatud või võtmevahetuse läbinud grant vastab `invalid_grant` ja tühistab OAuth-grant'i. Uuendusload roteeruvad ning sama luba kaks korda esitades tühistatakse grant.
+
+### Üks seadistus grant'i kohta
+
+Grant teenindab ainult seda ühte seadistust, mille ta nimetab. Kutse `tools/call`, mille argument nimetab teist seadistust (`config` või selle mõni kirjapilt), lükatakse tagasi koodiga `REDIACC_GRANT_SCOPE`, enne kui midagi jookseb. Mitme seadistusega kasutaja autoriseerib iga seadistuse jaoks ühe grant'i. Tööriist, mis pole grant'i lubatud nimekirjas, või kirjutustööriist kirjutuskaitstud grant'i all puudub `tools/list` vastusest ja lükatakse kutsumisel tagasi.
+
+### Regioonid
+
+Grant'i id algab tema regiooniga, näiteks `eu_`. Päring aadressile `/g/<grantId>` teise regiooni Worker'is saab vastuse 421 õige URL-iga:
+
+```json
+{
+  "code": "REDIACC_WRONG_REGION",
+  "message": "This grant lives in the us region. Use https://mcp.us.rediacc.cloud/g/us_...",
+  "region": "us",
+  "mcpUrl": "https://mcp.us.rediacc.cloud/g/us_..."
+}
+```
+
+Grant'i ei aktsepteerita kunagi OAuth-ressursi, loa sihtrühma ega autoriseerimise sihina väljaspool tema regiooni.
+
+### Grant'i olekud ja piirangud
+
+Grant, mis on aegunud, tühistatud või kaotanud oma võtme seadistushoidla võtmevahetuse tõttu, vastab endiselt käskudele `initialize` ja `tools/list`. Iga `tools/call` tagastab siis `REDIACC_GRANT_EXPIRED`, `REDIACC_GRANT_REVOKED` või `REDIACC_KEY_ROTATED` koos `reauthUrl`-iga, mille kasutaja avab uuesti autoriseerimiseks.
+
+Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kumbagi piiri, tagastab `REDIACC_RATE_LIMITED` koos `retryAfterSeconds`-iga.
 
 ## Saadaolevad tööriistad
 
@@ -167,71 +248,35 @@ Avage Seaded → MCP Servers → Add Server:
 
 <!-- <<< translated-table -->
 
-### Lugemistööriistad (ohutud, ilma kõrvalmõjudeta)
-
-| Tööriist | Kirjeldus |
-|----------|-----------|
-| `machine_query` | Masina süsteemiinfo, konteinerite, teenuste ja ressursikasutuse hankimine |
-| `machine_containers` | Dockeri konteinerite loetlemine koos oleku, tervise, ressursikasutuse, siltide ja automaattee domeeniga |
-| `machine_services` | Rediacc-hallatavate systemd-teenuste loetlemine (nimi, olek, ala-olek, taaskäivituste arv, mälu, omav repositoorium) |
-| `machine_repos` | Juurutatud repositooriumide loetlemine (nimi, GUID, suurus, ühendamise olek, Dockeri olek, konteinerite arv, kettakasutus, muutmise kuupäev, Rediaccfile'i olemasolu) |
-| `machine_health` | Masina terviskontrolli käivitamine (süsteem, konteinerid, teenused, salvestus) |
-| `machine_list` | Kõigi seadistatud masinate loetlemine |
-| `config_repositories` | Seadistatud repositooriumide loetlemine koos nime-GUID vastavustega |
-| `config_show_infra` | Masina infrastruktuuri konfiguratsiooni kuvamine (baasdomeen, avalikud IP-d, TLS, Cloudflare'i tsoon) |
-| `config_providers` | Masina ettevalmistamiseks seadistatud pilveteenuse pakkujate loetlemine |
-| `agent_capabilities` | Kõigi saadaolevate rdc CLI käskude loetlemine koos nende argumentide ja valikutega |
-| `repo_secret_list` | Repositooriumi saladuste nimede ja edastusrežiimide loetlemine (mitte kunagi väärtused, mitte kunagi räsid). Lugemisohutu. |
-| `repo_secret_get` | Saladuse SHA-256 räsi ja edastusrežiimi hankimine. Lihtteksti väärtust ei tagastata kunagi disaini põhjal. Kasutage seda saladuse olemasolu või roteerimise kontrollimiseks. |
-
-### Kirjutamistööriistad (hävitavad)
-
-| Tööriist | Kirjeldus |
-|----------|-----------|
-| `repo_create` | Uue krüpteeritud repositooriumi loomine masinal |
-| `repo_up` | Repositooriumi juurutamine/uuendamine (käivitab Rediaccfile'i up, käivitab konteinerid). Kasutage `mount` esimese juurutuse jaoks või pärast tõmbamist |
-| `repo_down` | Repositooriumi konteinerite peatamine. Vaikimisi EI tühista ühendamist. Kasutage `unmount`, et sulgeda ka LUKS-konteiner |
-| `repo_delete` | Repositooriumi kustutamine (hävitab konteinerid, köited, krüpteeritud pildi). Mandaat arhiveeritakse taastamise jaoks |
-| `repo_fork` | CoW-fork loomine uue GUID ja networkId-ga (täiesti iseseisev koopia, võrgus forki toetav) |
-| `backup_push` | Repositooriumi varukoopia saatmine salvestusruumi või teisele masinale (sama GUID -- varukoopia/migratsioon, mitte fork) |
-| `backup_pull` | Repositooriumi varukoopia tõmbamine salvestusruumist või masinalt. Pärast tõmbamist juurutage `repo_up`-ga (mount=true) |
-| `machine_provision` | Uue masina ettevalmistamine pilveteenuse pakkujal OpenTofu abil |
-| `machine_deprovision` | Pilveteenusega ettevalmistatud masina hävitamine ja konfiguratsioonist eemaldamine |
-| `config_add_provider` | Pilveteenuse pakkuja konfiguratsiooni lisamine masina ettevalmistamiseks |
-| `config_remove_provider` | Pilveteenuse pakkuja konfiguratsiooni eemaldamine |
-| `term_exec` | Käsu käivitamine kaugmasinal SSH kaudu |
-
 ## Näidistöövood
 
 **Masina oleku kontrollimine:**
-> "Mis on minu tootmismasina olek?"
+> „Mis seisus on minu tootmismasin?"
 
-Agent kutsub `machine_query` → tagastab süsteemiinfo, töötavad konteinerid, teenused ja ressursikasutuse.
+Agent kutsub `machine_status` ja saab ühenduse üksikasjad, süsteemiteabe, konteinerid, teenused, repod ja ressursikasutuse.
 
 **Rakenduse juurutamine:**
-> "Juuruta gitlab minu lavastusmasinale"
+> „Juuruta gitlab minu staging-masinas"
 
-Agent kutsub `repo_up` koos `name: "gitlab"` ja `machine: "staging"` → juurutab repositooriumi, tagastab edu/ebaõnnestumise.
+Agent kutsub `repo_up` argumentidega `name: "gitlab"` ja `machine: "staging"`, mis juurutab repo ja tagastab õnnestumise või vea.
 
-**Tõrke silumine:**
-> "Minu nextcloud on aeglane, uuri, mis lahti on"
+**Pika töö jälgimine:**
+> „Taasta nextcloudi eilne öine varukoopia"
 
-Agent kutsub `machine_health` → `machine_containers` → `term_exec` logide lugemiseks → tuvastab probleemi ja pakub lahenduse.
+Agent kutsub `backup_restore`. Käsk, mis ületab oma ajaakna, tagastab töö käepideme, ja agent kutsub `job_wait` (kuni 50 s ühe kutse kohta) ning `job_logs`, kuni töö lõpeb.
 
-## Konfiguratsioonivalikud
+**Vigase teenuse silumine:**
+> „Mu nextcloud on aeglane, uuri välja, mis viga on"
 
-| Valik | Vaikimisi | Kirjeldus |
-|-------|-----------|-----------|
-| `--config <name>` | (vaikekonfiguratsioon) | Nimega konfiguratsioon, mida kasutada kõigi käskude jaoks |
-| `--timeout <ms>` | `120000` | Käsu vaikeaegumine millisekundites |
+Agent kutsub `machine_health`, seejärel `machine_containers` ja `repo_logs`, ning pakub lahenduse.
 
 ## Turvalisus
 
-MCP server rakendab kaks kaitsekihti:
+Lokaalne MCP server rakendab kahte kaitsekihti. Kaugserveri piirangud on jaotises [Kaugserver](#kaugserver).
 
 ### Ainult-fork-režiim (vaikimisi)
 
-Vaikimisi töötab server **ainult-fork-režiimis**: kirjutamistööriistad (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) saavad töötada ainult fork-repositooriumidel. Agendid ei saa puutuda grand-repositooriumidesse (originaalidesse). Nii on see kavandatud.
+Vaikimisi töötab server **ainult-fork-režiimis**: kirjutustööriistad (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) saavad töötada ainult fork-repodega. Agendid ei saa grand-repodele (originaalidele) kätt külge panna. Disaini järgi.
 
 > **Repo-saladused on disaini järgi ainult CLI kaudu.** `repo_secret_set` ja `repo_secret_unset` ei ole tahtlikult MCP tööriistadena paljastatud. Kirjutamised nõuavad eeltingimust `--current <eelmine-väärtus>` (või `--rotate-secret`, et kinnitada kontrollimata pööramine), ja see toiming vajab inimese järelevalvet. Agendid, kes peavad saladuse pööramist soovitama, peaksid kutsuma `repo_secret_get` räsi kinnitamiseks, seejärel edastama operaatori CLI-käsu kasutajale JSON-vea ümbriku välja `next.options[].run` kaudu. Täieliku mustri jaoks vaadake [AI-agendi turvalisus](/et/docs/ai-agents-safety#structured-next-action-hints) ja kasutajapoolse juhendi jaoks [Repositooriumid § Saladused](/et/docs/repositories#secrets).
 
@@ -270,7 +315,7 @@ See takistab külgsuunalist liikumist. Isegi kui agent saab kesta juurdepääsu 
 
 ## Arhitektuur
 
-MCP server on olekuta. Iga tööriistakutse käivitab `rdc` isoleeritud alamprotsessina koos lippudega `--output json --yes --quiet`. See tähendab:
+Lokaalne MCP server on olekuta. Iga tööriistakutse käivitab `rdc` isoleeritud alamprotsessina lippudega `--output json --yes --quiet`. See tähendab:
 
 - Olekut ei leki tööriistakutsete vahel
 - Kasutab teie olemasolevat `rdc` konfiguratsiooni ja SSH-võtmeid

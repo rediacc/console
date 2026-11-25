@@ -77,27 +77,14 @@ const ALL_13 = subset('mcp-docs-stale-baseline', [
   'zh',
 ]);
 
-/** The locales still to translate after the English rewrite (DO4). */
-const WITHOUT_EN = ALL_13.filter((lang) => lang !== 'en');
-
 /**
  * Stale tool mentions frozen on 2026-11-25: name -> the locales whose page still carries it.
  *
- * BLOCKER: PLAN-rmcp-docs.md DO4 rewrites the English page and DO7 the 12 locales. A fixed mention reds this gate until its locale is removed from the entry (and the entry deleted once empty). Do not add a name or a locale here: a new stale mention is fixed in the page.
+ * BLOCKER: the 12 locale pages were retranslated from the DO4 English page, so only the per-repo secret tools remain (the page names them to say they are CLI-only). A fixed mention reds this gate until its locale is removed from the entry (and the entry deleted once empty). Do not add a name or a locale here: a new stale mention is fixed in the page.
  */
 export const STALE_MENTION_BASELINE: Readonly<Record<string, readonly string[]>> = {
-  agent_capabilities: WITHOUT_EN,
-  backup_pull: WITHOUT_EN,
-  backup_push: WITHOUT_EN,
-  config_add_provider: WITHOUT_EN,
-  config_providers: WITHOUT_EN,
-  config_remove_provider: WITHOUT_EN,
-  config_repositories: WITHOUT_EN,
-  config_show_infra: WITHOUT_EN,
-  machine_query: WITHOUT_EN,
   repo_secret_set: ALL_13,
   repo_secret_unset: ALL_13,
-  term_exec: WITHOUT_EN,
 };
 
 /* ------------------------------------------------------------- pure helpers */

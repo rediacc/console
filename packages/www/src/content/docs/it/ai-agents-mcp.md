@@ -8,19 +8,28 @@ tags:
 subcategory: ai-agents
 order: 33
 language: it
-sourceHash: "5aa932e999695e20"
-sourceCommit: "a2b1f5471f48c44fb704157f615369df9c354832"
+sourceHash: "b30e0030351679c5"
+sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Panoramica
 
-Dunque, `rdc mcp serve` avvia un server MCP (Model Context Protocol) locale che gli agenti AI possono usare per gestire la tua infrastruttura. Il server utilizza il trasporto stdio: l'agente lo avvia come sottoprocesso e comunica tramite JSON-RPC.
+Due server MCP (Model Context Protocol) espongono lo stesso registro di strumenti:
 
-**Prerequisiti:** `rdc` installato e configurato con almeno una macchina.
+| Server | Trasporto | Esecuzione | Strumenti |
+|---|---|---|---|
+| Locale | stdio | `rdc mcp serve`, avviato dall'agente | Tutti gli strumenti |
+| Remoto | Streamable HTTP | `https://mcp.<region>.rediacc.cloud/g/<grantId>` | Gli strumenti remoti, cioè tutti tranne quelli della tabella dei soli locali |
 
-## Claude Code
+**Prerequisiti:** `rdc` installato e configurato con almeno una macchina per il server locale. Per il server remoto serve un grant su una configurazione.
 
-Aggiungi al file `.mcp.json` del tuo progetto:
+## Server locale
+
+`rdc mcp serve` avvia un server MCP su stdio. L'agente lo avvia come sottoprocesso e comunica con esso tramite JSON-RPC.
+
+### Claude Code
+
+Il file `.mcp.json` del progetto contiene la voce:
 
 ```json
 {
@@ -46,13 +55,85 @@ Oppure con una configurazione con nome:
 }
 ```
 
-## Cursor
+### Cursor
 
-Apri Impostazioni → MCP Servers → Add Server:
+Apri Settings → MCP Servers → Add Server:
 
 - **Name**: `rdc`
 - **Command**: `rdc mcp serve`
 - **Transport**: stdio
+
+### Opzioni
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `--config <name>` | (configurazione predefinita) | Configurazione con nome da usare per tutti i comandi |
+| `--timeout <ms>` | `120000` | Timeout predefinito dei comandi in millisecondi |
+
+## Server remoto
+
+In ogni regione gira un Worker MCP su `mcp.<region>.rediacc.cloud`. Ogni agente si collega all'URL di un grant: `https://mcp.<region>.rediacc.cloud/g/<grantId>`. Il grant indica una configurazione, una scadenza e un ambito: un flag di sola lettura, una allowlist di strumenti e pattern (glob) per i nomi di macchine e repository. Le chiamate agli strumenti vengono eseguite sull'executor dell'organizzazione del grant.
+
+### Credenziali
+
+Entrambe le forme identificano il grant; l'id del grant nell'URL serve solo a nominarlo.
+
+| Forma | Uso | Inviata come |
+|---|---|---|
+| Token di accesso OAuth | Client interattivi come claude.ai | `Authorization: Bearer <token>` |
+| Bearer dell'agente `rmcp_<grantId>.<secret>` | Agenti headless | `Authorization: Bearer` oppure `x-api-key` |
+
+Una credenziale nella query string viene rifiutata con 400. Un token OAuth mancante, scaduto o di un altro grant riceve 401 con un'intestazione `WWW-Authenticate: Bearer resource_metadata=...` che punta al documento di risorsa protetta del grant, così il client OAuth rinnova il token o effettua l'accesso. Un grant sconosciuto, un segreto errato e un bearer dell'agente di un altro grant ricevono tutti lo stesso 401 senza altri dettagli.
+
+### OAuth
+
+Il Worker è un server di autorizzazione OAuth 2.1 con PKCE (solo S256). I client si registrano tramite un Client ID Metadata Document oppure con la registrazione dinamica dei client su `/register`.
+
+| Endpoint | Scopo |
+|---|---|
+| `/.well-known/oauth-authorization-server` | Metadati del server |
+| `/.well-known/oauth-protected-resource/g/<grantId>` | Documento di risorsa protetta di un grant |
+| `/authorize` | Avvia l'autorizzazione e reindirizza alla pagina account `/account/mcp/authorize` |
+| `/oauth/token` | Scambio del codice, rinnovo e revoca |
+| `/register` | Registrazione dinamica dei client |
+
+Il client invia `resource=https://mcp.<region>.rediacc.cloud/g/<grantId>`. L'autorizzazione si completa solo per il grant indicato dalla risorsa, e un token funziona solo all'URL del suo grant. Il reindirizzamento da `/authorize` porta un handle firmato monouso e nessun segreto.
+
+### Durata dei token
+
+Un token non sopravvive mai al proprio grant.
+
+| Token | Durata |
+|---|---|
+| Token di accesso | Il minore tra 1 ora e il tempo residuo del grant |
+| Token di rinnovo | Il minore tra 30 giorni e il tempo residuo del grant |
+
+Ogni scambio di codice e ogni rinnovo riconsulta il grant. Un grant scaduto, revocato o con la chiave ruotata risponde `invalid_grant` e revoca la concessione OAuth. I token di rinnovo ruotano, e presentarne uno due volte revoca il grant.
+
+### Una configurazione per grant
+
+Un grant serve solo la configurazione che indica. Un `tools/call` con un argomento che indica un'altra configurazione (`config` o una sua variante di scrittura) viene rifiutato con `REDIACC_GRANT_SCOPE` prima che venga eseguito qualsiasi cosa. Chi ha più configurazioni autorizza un grant per ciascuna. Uno strumento fuori dalla allowlist del grant, o uno strumento di scrittura sotto un grant di sola lettura, non compare in `tools/list` e viene rifiutato se chiamato.
+
+### Regioni
+
+L'id di un grant inizia con la sua regione, per esempio `eu_`. Una richiesta a `/g/<grantId>` sul Worker di un'altra regione riceve 421 con l'URL corretto:
+
+```json
+{
+  "code": "REDIACC_WRONG_REGION",
+  "message": "This grant lives in the us region. Use https://mcp.us.rediacc.cloud/g/us_...",
+  "region": "us",
+  "mcpUrl": "https://mcp.us.rediacc.cloud/g/us_..."
+}
+```
+
+Un grant non viene mai accettato come risorsa OAuth, audience del token o destinazione di autorizzazione fuori dalla propria regione.
+
+### Stati del grant e limiti
+
+Un grant scaduto, revocato o che ha perso la chiave per una rotazione delle chiavi dell'archivio di configurazione continua a rispondere a `initialize` e `tools/list`. Ogni `tools/call` restituisce allora `REDIACC_GRANT_EXPIRED`, `REDIACC_GRANT_REVOKED` oppure `REDIACC_KEY_ROTATED` con una `reauthUrl` che l'utente apre per autorizzare di nuovo.
+
+Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamente. Una chiamata oltre uno dei due limiti restituisce `REDIACC_RATE_LIMITED` con `retryAfterSeconds`.
 
 ## Strumenti disponibili
 
@@ -167,71 +248,35 @@ Apri Impostazioni → MCP Servers → Add Server:
 
 <!-- <<< translated-table -->
 
-### Strumenti di lettura (sicuri, senza effetti collaterali)
-
-| Strumento | Descrizione |
-|-----------|-------------|
-| `machine_query` | Ottieni informazioni di sistema, container, servizi e utilizzo delle risorse per una macchina |
-| `machine_containers` | Elenca i container Docker con stato, salute, utilizzo delle risorse, etichette e dominio auto-route |
-| `machine_services` | Elenca i servizi systemd gestiti da Rediacc (nome, stato, sub-stato, conteggio riavvii, memoria, repository proprietario) |
-| `machine_repos` | Elenca i repository distribuiti (nome, GUID, dimensione, stato mount, stato Docker, conteggio container, utilizzo disco, data di modifica, presenza Rediaccfile) |
-| `machine_health` | Esegui un controllo di salute su una macchina (sistema, container, servizi, storage) |
-| `machine_list` | Elenca tutte le macchine configurate |
-| `config_repositories` | Elenca i repository configurati con le mappature nome-GUID |
-| `config_show_infra` | Mostra la configurazione infrastrutturale per una macchina (dominio base, IP pubblici, TLS, zona Cloudflare) |
-| `config_providers` | Elenca i provider cloud configurati per il provisioning delle macchine |
-| `agent_capabilities` | Elenca tutti i comandi CLI rdc disponibili con i loro argomenti e opzioni |
-| `repo_secret_list` | Elenca i nomi dei segreti e le modalità di consegna per un repository (mai i valori, mai i digest). Sicuro in lettura. |
-| `repo_secret_get` | Ottieni il digest SHA-256 e la modalità di consegna di un segreto. Il valore in chiaro non viene mai restituito per design. Usalo per verificare l'esistenza o la rotazione di un segreto. |
-
-### Strumenti di scrittura (distruttivi)
-
-| Strumento | Descrizione |
-|-----------|-------------|
-| `repo_create` | Crea un nuovo repository cifrato su una macchina |
-| `repo_up` | Distribuisci/aggiorna un repository (esegue Rediaccfile up, avvia i container). Usa `mount` per la prima distribuzione o dopo un pull |
-| `repo_down` | Arresta i container del repository. NON smonta per impostazione predefinita. Usa `unmount` per chiudere anche il container LUKS |
-| `repo_delete` | Elimina un repository (distrugge container, volumi e immagine cifrata). Le credenziali vengono archiviate per il recupero |
-| `repo_fork` | Crea un fork CoW con nuovo GUID e networkId (copia completamente indipendente, forking online supportato) |
-| `backup_push` | Invia il backup del repository allo storage o a un'altra macchina (stesso GUID -- backup/migrazione, non fork) |
-| `backup_pull` | Recupera il backup del repository dallo storage o da una macchina. Dopo il pull, distribuisci con `repo_up` (mount=true) |
-| `machine_provision` | Esegui il provisioning di una nuova macchina su un provider cloud usando OpenTofu |
-| `machine_deprovision` | Distruggi una macchina di cui è stato eseguito il provisioning nel cloud e rimuovila dalla configurazione |
-| `config_add_provider` | Aggiungi una configurazione di provider cloud per il provisioning delle macchine |
-| `config_remove_provider` | Rimuovi una configurazione di provider cloud |
-| `term_exec` | Esegui un comando su una macchina remota tramite SSH |
-
 ## Esempi di flussi di lavoro
 
-**Controlla lo stato della macchina:**
+**Controllare lo stato di una macchina:**
 > "Qual è lo stato della mia macchina di produzione?"
 
-L'agente chiama `machine_query` → restituisce informazioni di sistema, container in esecuzione, servizi e utilizzo delle risorse.
+L'agente chiama `machine_status` e ottiene i dettagli di connessione, le informazioni di sistema, i container, i servizi, i repository e l'uso delle risorse.
 
-**Distribuisci un'applicazione:**
+**Distribuire un'applicazione:**
 > "Distribuisci gitlab sulla mia macchina di staging"
 
-L'agente chiama `repo_up` con `name: "gitlab"` e `machine: "staging"` → distribuisce il repository, restituisce successo/fallimento.
+L'agente chiama `repo_up` con `name: "gitlab"` e `machine: "staging"`, che distribuisce il repository e restituisce successo o errore.
 
-**Diagnostica un servizio in errore:**
-> "Il mio nextcloud è lento, scopri cosa c'è che non va"
+**Seguire un job lungo:**
+> "Ripristina il backup di ieri sera di nextcloud"
 
-L'agente chiama `machine_health` → `machine_containers` → `term_exec` per leggere i log → identifica il problema e suggerisce una soluzione.
+L'agente chiama `backup_restore`. Un comando che supera la propria finestra restituisce un handle del job, e l'agente chiama `job_wait` (fino a 50 s per chiamata) e `job_logs` finché il job non termina.
 
-## Opzioni di configurazione
+**Fare il debug di un servizio che non funziona:**
+> "Il mio nextcloud è lento, scopri cosa non va"
 
-| Opzione | Predefinito | Descrizione |
-|---------|-------------|-------------|
-| `--config <name>` | (config predefinita) | Configurazione con nome da usare per tutti i comandi |
-| `--timeout <ms>` | `120000` | Timeout predefinito dei comandi in millisecondi |
+L'agente chiama `machine_health`, poi `machine_containers` e `repo_logs`, e suggerisce una soluzione.
 
 ## Sicurezza
 
-Il server MCP applica due livelli di protezione:
+Il server MCP locale applica due livelli di protezione. Per i limiti del server remoto vedi [Server remoto](#server-remoto).
 
 ### Modalità fork-only (predefinita)
 
-Per impostazione predefinita, il server opera in **modalità fork-only**: gli strumenti di scrittura (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) possono operare solo sui repository fork. Gli agenti non possono intervenire sui repository grand (originali). Per design.
+Per impostazione predefinita, il server opera in **modalità fork-only**: gli strumenti di scrittura (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) possono agire solo su repository fork. Gli agenti non possono toccare i repository grand (originali). Per design.
 
 > **I segreti per repository sono accessibili solo tramite CLI per design.** `repo_secret_set` e `repo_secret_unset` sono intenzionalmente **non** esposti come strumenti MCP. Le scritture richiedono una precondizione `--current <previous-value>` (oppure `--rotate-secret` per riconoscere una rotazione non verificata), e quella procedura richiede la supervisione umana. Gli agenti che devono suggerire la rotazione di un segreto dovranno chiamare `repo_secret_get` per confermare il digest, quindi trasmettere il comando CLI destinato all'operatore all'utente tramite il campo `next.options[].run` strutturato nell'envelope di errore JSON. Consulta [Sicurezza agenti AI](/en/docs/ai-agents-safety#structured-next-action-hints) per il pattern completo e [Repository - Segreti](/en/docs/repositories#secrets) per le istruzioni rivolte all'utente.
 
@@ -270,7 +315,7 @@ Questo impedisce il movimento laterale: anche se un agente ottiene l'accesso she
 
 ## Architettura
 
-Il server MCP è stateless. Ogni chiamata a uno strumento avvia `rdc` come processo figlio isolato con i flag `--output json --yes --quiet`. Questo significa:
+Il server MCP locale è stateless. Ogni chiamata a uno strumento avvia `rdc` come processo figlio isolato con i flag `--output json --yes --quiet`. Questo significa:
 
 - Nessuna perdita di stato tra le chiamate agli strumenti
 - Utilizza la configurazione `rdc` e le chiavi SSH esistenti
