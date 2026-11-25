@@ -3450,9 +3450,9 @@ N_WORKTREE_RELEASE = (
 )
 
 N_WORKTREE_STAGED = (
-    "UNLANDED LEASE, held for the staged index: `worktree land` refuses while the main checkout's "
-    "index holds %d staged path(s) (first: %s), and those may belong to another agent. Land these "
-    "once the index clears:\n%s"
+    "UNLANDED LEASE, held for the main checkout: `worktree land` refuses while its index holds "
+    "staged paths or a pick would overwrite unstaged edits, %d path(s) here (first: %s), and those "
+    "may belong to another agent. Land these once they are committed or cleared:\n%s"
 )
 
 N_WORKTREE_RECEIPT = (

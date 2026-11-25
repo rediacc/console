@@ -62,6 +62,7 @@ def worktree_check_cases():
             mock.patch.object(wl_checks, "release_local_running", stub(rel)),
             mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(rcpt)),
             mock.patch.object(wl_checks, "staged_index_paths", stub([])),
+            mock.patch.object(wl_checks, "dirty_overlap", stub([])),
             mock.patch.object(wl_checks, "outq_add", queue),
         ):
             wl_checks.worktree_check(
@@ -152,6 +153,7 @@ def pinned_vm_check_cases(tmp):
                     mock.patch.object(wl_worktrees, "unlanded_lines", stub("l")),
                     mock.patch.object(wl_checks, "release_local_running", stub(False)),
                     mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(False)),
+                    mock.patch.object(wl_checks, "dirty_overlap", stub([])),
                     mock.patch.object(wl_checks, "staged_index_paths", stub([])),
                     mock.patch.object(
                         wl_checks,
@@ -240,6 +242,38 @@ def staged_index_cases(tmp):
     check("not a repo", wl_checks.staged_index_paths(os.path.join(tmp, "absent")), [])
 
 
+def dirty_overlap_cases(tmp):
+    """dirty_overlap: a lease commit touching a file with an unstaged edit in the main checkout names it; an untouched file, a clean checkout and a lease with no console commit name nothing."""
+    import subprocess
+
+    repo = os.path.join(tmp, "main")
+    os.makedirs(repo)
+
+    def git(*a):
+        return subprocess.run(["git", "-C", repo, *a], check=True, capture_output=True, text=True)
+
+    git("init", "-q")
+    for name in ("a.txt", "b.txt"):
+        with open(os.path.join(repo, name), "w") as f:
+            f.write("base\n")
+    git("add", "a.txt", "b.txt")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "base")
+    with open(os.path.join(repo, "a.txt"), "w") as f:
+        f.write("lease\n")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-am", "lease edit")
+    sha = git("rev-parse", "HEAD").stdout.strip()
+    git("reset", "-q", "--hard", "HEAD~1")
+    row = {"path": repo, "commits": {".": [sha]}}
+    check("clean checkout", wl_checks.dirty_overlap(repo, [row]), [])
+    with open(os.path.join(repo, "b.txt"), "w") as f:
+        f.write("other agent\n")
+    check("an untouched dirty file", wl_checks.dirty_overlap(repo, [row]), [])
+    with open(os.path.join(repo, "a.txt"), "w") as f:
+        f.write("other agent\n")
+    check("the colliding file", wl_checks.dirty_overlap(repo, [row]), ["a.txt"])
+    check("no console commit", wl_checks.dirty_overlap(repo, [{"path": repo, "commits": {}}]), [])
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         root = os.path.join(tmp, "console")
@@ -284,6 +318,8 @@ def main():
         pinned_vm_check_cases(tmp)
     with tempfile.TemporaryDirectory() as tmp:
         staged_index_cases(tmp)
+    with tempfile.TemporaryDirectory() as tmp:
+        dirty_overlap_cases(tmp)
 
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))

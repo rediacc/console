@@ -2951,6 +2951,41 @@ def staged_index_paths(root):
     return [line for line in out.stdout.splitlines() if line.strip()]
 
 
+def dirty_overlap(root, rows):
+    """The main-checkout paths with unstaged edits that a console commit of an unlanded lease also changes, or [] when there are none or git cannot answer. `git cherry-pick` refuses a pick whose files carry local edits (it reports they "would be overwritten by merge"), and on 2026-11-25 a running gate repair's uncommitted workers/proxy/src/egress.ts held lease agent-a70f119860f170542 that way, so the overlap holds the block the way a staged index does."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if out.returncode != 0:
+        return []
+    dirty = {line for line in out.stdout.splitlines() if line.strip()}
+    if not dirty:
+        return []
+    hit = set()
+    for row in rows or []:
+        tree = row.get("path") or str(root)
+        for sha in (row.get("commits") or {}).get(".", []):
+            try:
+                names = subprocess.run(
+                    ["git", "-C", tree, "show", "--name-only", "--format=", sha],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=20,
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+            hit.update(n for n in names.stdout.splitlines() if n in dirty)
+    return sorted(hit)
+
+
 def release_local_running(root, proc="/proc"):
     """True when a live process of THIS checkout runs `release:local` (the `rediacc_ci.release.local` module). A branch release ships HEAD only while HEAD is the pushed tip and its receipts name HEAD^{tree}, so landing a lease mid-run would make it refuse or ship a tree nobody verified. A process of another checkout, or an unreadable /proc, reads False."""
     try:
@@ -3142,7 +3177,9 @@ def worktree_check(
             M.N_WORKTREE_RELEASE % wl_worktrees.unlanded_lines(got),
             3,
         )
-    elif got["unlanded"] and (staged := staged_index_paths(root)):
+    elif got["unlanded"] and (
+        staged := staged_index_paths(root) or dirty_overlap(root, got["unlanded"])
+    ):
         # `worktree land` refuses on a staged index, and the staged paths may be another agent's (unstaging them is not the lead's call), so the lease waits for the index to clear: reported, not blocked.
         outq_add(
             worklist,
