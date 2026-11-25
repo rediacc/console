@@ -99,7 +99,7 @@ SUMMARY_ROWS_MAX = 8
 # The directory under the git COMMON dir holding one `RosterCache` file per session, shared by the main checkout and every lease of it.
 ROSTER_CACHE_DIR = "rediacc-roster-cache"
 # Bumped when the file's shape changes; a file of another schema is read as empty, never migrated.
-ROSTER_CACHE_SCHEMA = 1
+ROSTER_CACHE_SCHEMA = 2
 
 
 def queue_order(rec):
@@ -386,7 +386,8 @@ class RosterCache:
     MEASURED on the lead session of 2026-11-24 (8,767 roster files, 4.8 GB of subagent transcripts, a 1.9 GB lead transcript): block_commit_of_live_writer_file spent 1.33 s of every `git commit` re-proving 4,472 finished agents finished by reading each tail, and 0.79 s re-parsing live writers' whole transcripts; block_plan_concurrency spent 7.0 s of every spawn re-reading the lead transcript for completion notifications.
 
     THREE MAPS, each keyed by the transcript's path:
-      `finished`   [inode, size, mtime_ns] at which `proven_finished` said a DURABLE True (`_finished_verdict`). Only that is kept: a True resting on the transcript and the clock stays True while the bytes do not move, since the clock only advances; a False can turn True with time alone, and a True resting on a teammate's idle edge rests on a file outside the transcript. A transcript that grew, shrank or was replaced has a new signature and is judged again, so a resumed agent is never served a stale "finished".
+      `finished`   [inode, size, mtime_ns, offset] at which `proven_finished` said a DURABLE True (`_finished_verdict`), the offset being where the transcript's final line starts. Only that is kept: a True resting on the transcript and the clock stays True while the bytes do not move, since the clock only advances; a False can turn True with time alone, and a True resting on a teammate's idle edge rests on a file outside the transcript. A transcript that grew, shrank or was replaced has a new signature and is judged again, so a resumed agent is never served a stale "finished".
+                   THE ENTRY IS A HINT, NEVER A VERDICT (review 05db4e68.1). The file sits under the git common dir, where any Bash-capable agent can write it, so an entry that alone said "finished" would let a live writer mark itself finished and get its files committed past block_commit_of_live_writer_file. Every use re-reads the final line from the offset the entry names (`_verified_finished`: the transcript's own bytes, `[offset - 1, size)`, pinned to a line start and to the end of the file) and re-applies the same durable predicate the full proof used (`_durable_finished`). A forged or stale entry fails that and is dropped, and the transcript is judged in full. What the entry saves is locating that line and the bounded tail read, not the judgement.
       `edits`      the incremental `edit_paths` state: byte offset, inode, the reading (`root`, `strict`, the generator registry's signature) and the raw paths of the complete lines already read.
       `delivered`  the `wl_report.delivered_ids` cursor of the lead transcript, per `require_result` reading; that function already restarts at 0 on a shrink or a new inode.
 
@@ -414,12 +415,21 @@ class RosterCache:
     def signature(st):
         return [st.st_ino, st.st_size, st.st_mtime_ns]
 
-    def is_finished(self, jsonl, st):
-        return self.doc["finished"].get(str(jsonl)) == self.signature(st)
+    def finished_hint(self, jsonl, st):
+        """The final-line offset an entry claims for this exact transcript state, else None. A claim only: `_verified_finished` decides."""
+        ent = self.doc["finished"].get(str(jsonl))
+        if not isinstance(ent, list) or len(ent) != 4 or ent[:3] != self.signature(st):
+            return None
+        off = ent[3]
+        return off if type(off) is int else None
 
-    def mark_finished(self, jsonl, st):
-        self.doc["finished"][str(jsonl)] = self.signature(st)
+    def mark_finished(self, jsonl, st, off):
+        self.doc["finished"][str(jsonl)] = [*self.signature(st), off]
         self.dirty = True
+
+    def forget_finished(self, jsonl):
+        if self.doc["finished"].pop(str(jsonl), None) is not None:
+            self.dirty = True
 
     def get(self, kind, key):
         return self.doc[kind].get(key)
@@ -461,18 +471,76 @@ def roster_cache(root, sub_dir):
 
 
 def finished_cached(cache, jsonl, now, name="", cwd="", session_id=""):
-    """`proven_finished`, answered from `cache` when the transcript has not moved since it was last proven finished, and recorded there when it is proven now."""
+    """`proven_finished`, answered from `cache` when the transcript has not moved since it was last proven finished AND its final line still proves it, and recorded there when it is proven now.
+
+    A cache entry is never trusted on its own (review 05db4e68.1): `_verified_finished` re-reads the final line the entry points at and re-applies the durable predicate. An entry that fails is dropped and the transcript is judged in full, so a forged entry costs one read and changes no verdict.
+    """
     try:
         st = jsonl.stat()
     except (OSError, AttributeError):
         return False
-    if cache.is_finished(jsonl, st):
+    off = cache.finished_hint(jsonl, st)
+    if off is not None and _verified_finished(jsonl, st, off, now):
         return True
+    # Stale, malformed or forged: whatever the entry said is dropped before the full judgement.
+    cache.forget_finished(jsonl)
     done, durable = _finished_verdict(jsonl, now, name, cwd, session_id)
     if done and durable:
-        # The signature taken BEFORE the tail was read: a transcript that grew in between carries a newer one, which misses next time and is judged again.
-        cache.mark_finished(jsonl, st)
+        # Recorded only when the bounded check that will serve it agrees NOW, on the signature taken before the tail was read: a transcript that grew in between carries a newer one and misses next time.
+        off = _final_line_offset(jsonl, st.st_size)
+        if off is not None and _verified_finished(jsonl, st, off, now):
+            cache.mark_finished(jsonl, st, off)
     return done
+
+
+def _final_line_offset(jsonl, size):
+    """Where the transcript's final non-blank line starts, looked for within the last TAIL_BYTES; None when it starts earlier or cannot be read."""
+    start = max(0, size - TAIL_BYTES)
+    try:
+        with jsonl.open("rb") as fh:
+            fh.seek(start)
+            blob = fh.read(size - start)
+    except OSError:
+        return None
+    body = blob.rstrip()
+    if not body:
+        return None
+    cut = body.rfind(b"\n")
+    if cut < 0:
+        return 0 if start == 0 else None
+    return start + cut + 1
+
+
+def _verified_finished(jsonl, st, off, now):
+    """Whether the transcript, read from its own bytes, is still durably finished: the line starting at `off` is the file's final line and `_durable_finished` holds for it.
+
+    Reads `[off - 1, size)` of a file whose (inode, size, mtime_ns) still equal `st`'s, checked on the open descriptor. The byte before `off` must be a newline (or `off` is 0) and the slice must hold exactly one line, so an offset into the middle of a record or before the end of the file proves nothing.
+    """
+    if type(off) is not int or off < 0:
+        return False
+    try:
+        with jsonl.open("rb") as fh:
+            now_st = os.fstat(fh.fileno())
+            if RosterCache.signature(now_st) != RosterCache.signature(st):
+                return False
+            size = now_st.st_size
+            if off >= size or size - off > TAIL_BYTES:
+                return False
+            lead = 1 if off else 0
+            fh.seek(off - lead)
+            blob = fh.read(size - off + lead)
+    except OSError:
+        return False
+    if lead and blob[:1] != b"\n":
+        return False
+    line = blob[lead:].strip()
+    if not line or b"\n" in line:
+        return False
+    try:
+        rec = json.loads(line)
+    except ValueError:
+        return False
+    return isinstance(rec, dict) and _durable_finished(rec, now_st.st_mtime, now)
 
 
 def proven_finished(jsonl, now, name="", cwd="", session_id=""):
@@ -493,14 +561,23 @@ def _finished_verdict(jsonl, now, name="", cwd="", session_id=""):
     rec = last_record(jsonl)
     if L._record_is_idle(rec) or interrupted(rec):
         return now - mtime >= FINISHED_QUIET_S, True
-    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still counted as nine live writers at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
-    if not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60:
+    if _durable_finished(rec, mtime, now):
         return True, True
     if name:
         edge = L.idle_edge(cwd, session_id, name)
         if edge is not None and mtime <= edge + FINISHED_QUIET_S:
             return True, False
     return False, False
+
+
+def _durable_finished(rec, mtime, now):
+    """The part of `_finished_verdict` that rests on the last record and the clock alone, shared with the cache's re-check so the two cannot drift."""
+    import wl_liveness as L
+
+    if L._record_is_idle(rec) or interrupted(rec):
+        return now - mtime >= FINISHED_QUIET_S
+    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still counted as nine live writers at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
+    return not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60
 
 
 def scan_transcript(jsonl, ent):

@@ -82,7 +82,7 @@ def test_a_finished_transcript_that_grows_is_judged_again_not_served_stale(tmp_p
     _age(jsonl, 60)
     cache = wl_roster.RosterCache()
     assert wl_roster.finished_cached(cache, jsonl, time.time()) is True
-    assert cache.is_finished(jsonl, jsonl.stat())
+    assert cache.finished_hint(jsonl, jsonl.stat()) is not None
     # A resume appends a tool call in flight: the uncached test says working, and so must the cache.
     _write(jsonl, [edit(ROOT + "/b.py")])
     now = time.time()
@@ -102,10 +102,114 @@ def test_a_finished_verdict_survives_a_reload_and_is_served_without_reading(tmp_
     again = wl_roster.RosterCache(store)
 
     def no_read(*_a, **_k):
-        raise AssertionError("a cached finished verdict must not read the transcript")
+        raise AssertionError("a cached finished verdict must not re-run the full proof")
+
+    checked = []
+    real = wl_roster._verified_finished
+
+    def spy(*a):
+        checked.append(a)
+        return real(*a)
 
     monkeypatch.setattr(wl_roster, "last_record", no_read)
+    monkeypatch.setattr(wl_roster, "_final_line_offset", no_read)
+    monkeypatch.setattr(wl_roster, "_verified_finished", spy)
     assert wl_roster.finished_cached(again, jsonl, time.time()) is True
+    assert len(checked) == 1, "the cached verdict is served only after its bounded re-check"
+
+
+# ---- a forged entry changes no verdict (review 05db4e68.1) ------------------------------------
+
+
+def _forge(cache, jsonl, off):
+    st = jsonl.stat()
+    sig = [st.st_ino, st.st_size, st.st_mtime_ns]
+    cache.doc["finished"][str(jsonl)] = sig if off is None else [*sig, off]
+
+
+def _line_starts(jsonl):
+    blob = jsonl.read_bytes()
+    return [0] + [i + 1 for i, b in enumerate(blob) if b == 0x0A and i + 1 < len(blob)]
+
+
+@pytest.mark.parametrize("which", ["bare", "every-line", "mid-line", "past-end", "junk"])
+def test_a_forged_finished_entry_for_a_live_agent_is_refused_and_dropped(tmp_path, which):
+    jsonl = tmp_path / "agent-live.jsonl"
+    # A live writer: an idle turn earlier, then a tool call in flight as its last record.
+    _write(jsonl, [idle(), edit(ROOT + "/a.py"), edit(ROOT + "/b.py")])
+    _age(jsonl, 600)
+    now = time.time()
+    assert wl_roster.proven_finished(jsonl, now) is False
+    offs = {
+        "bare": [None],
+        "every-line": _line_starts(jsonl),
+        "mid-line": [1, 7, jsonl.stat().st_size - 2],
+        "past-end": [jsonl.stat().st_size, jsonl.stat().st_size + 10, -1],
+        "junk": ["0", 0.0, True],
+    }[which]
+    for off in offs:
+        cache = wl_roster.RosterCache()
+        _forge(cache, jsonl, off)
+        assert wl_roster.finished_cached(cache, jsonl, now) is False, off
+        assert str(jsonl) not in cache.doc["finished"], off
+
+
+def test_a_forged_entry_survives_no_reload_either(tmp_path):
+    jsonl = tmp_path / "agent-live.jsonl"
+    _write(jsonl, [idle(), edit(ROOT + "/a.py")])
+    store = tmp_path / "cache" / "s.json"
+    store.parent.mkdir()
+    st = jsonl.stat()
+    store.write_text(
+        json.dumps(
+            {
+                "v": wl_roster.ROSTER_CACHE_SCHEMA,
+                "finished": {str(jsonl): [st.st_ino, st.st_size, st.st_mtime_ns, 0]},
+                "edits": {},
+                "delivered": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    cache = wl_roster.RosterCache(store)
+    assert wl_roster.finished_cached(cache, jsonl, time.time()) is False
+    cache.save()
+    assert str(jsonl) not in json.loads(store.read_text(encoding="utf-8"))["finished"]
+
+
+def test_control_a_genuinely_finished_agent_is_recorded_at_its_final_line(tmp_path):
+    jsonl = tmp_path / "agent-done.jsonl"
+    _write(jsonl, [edit(ROOT + "/a.py"), edit(ROOT + "/b.py"), idle()])
+    _age(jsonl, 60)
+    cache = wl_roster.RosterCache()
+    assert wl_roster.finished_cached(cache, jsonl, time.time()) is True
+    st = jsonl.stat()
+    ent = cache.doc["finished"][str(jsonl)]
+    assert ent == [st.st_ino, st.st_size, st.st_mtime_ns, _line_starts(jsonl)[-1]]
+    # Served again from the entry, and a killed-mid-turn agent (durable on the clock) is recorded too.
+    assert wl_roster.finished_cached(cache, jsonl, time.time()) is True
+    dead = tmp_path / "agent-dead.jsonl"
+    _write(dead, [edit(ROOT + "/a.py"), {"type": "user", "message": {"content": "result"}}])
+    _age(dead, wl_roster.WAIT_HORIZON_MIN * 60 + 60)
+    assert wl_roster.finished_cached(cache, dead, time.time()) is True
+    assert str(dead) in cache.doc["finished"]
+
+
+def test_a_finished_entry_whose_final_line_was_rewritten_in_place_is_judged_again(tmp_path):
+    jsonl = tmp_path / "agent-f.jsonl"
+    _write(jsonl, [edit(ROOT + "/a.py"), idle()])
+    _age(jsonl, 60)
+    cache = wl_roster.RosterCache()
+    assert wl_roster.finished_cached(cache, jsonl, time.time()) is True
+    st = jsonl.stat()
+    # Same length, same inode, same mtime: only the bytes say the turn did not end.
+    blob = jsonl.read_bytes().replace(b'"end_turn"', b'"tool_use"')
+    assert len(blob) == st.st_size
+    with jsonl.open("r+b") as fh:
+        fh.write(blob)
+    os.utime(jsonl, ns=(st.st_atime_ns, st.st_mtime_ns))
+    assert wl_roster.finished_cached(cache, jsonl, time.time()) is False
+    assert str(jsonl) not in cache.doc["finished"]
 
 
 def test_a_verdict_resting_on_an_idle_edge_is_answered_but_not_cached(tmp_path, monkeypatch):
