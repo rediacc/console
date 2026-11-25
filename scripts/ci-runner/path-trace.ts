@@ -475,7 +475,12 @@ export function droppedDeclared(
   return out;
 }
 
-/** The `--replace-declared --write` printout: one line per declared glob the replacement gives up, none unless both flags are set and the verdict has `paths`. */
+/** Does a printed note mention reads anywhere beyond its one "not reads" hedge? Any substring "read" counts (reads, unread, thread). */
+export function mentionsReadsBeyondHedge(note: string): boolean {
+  return /read/i.test(note.replace('not reads', ''));
+}
+
+/** The `--replace-declared --write` printout: one line per declared glob the replacement gives up, none unless both flags are set and the verdict is `paths`, which then must carry its paths array (a `paths` verdict without one throws). */
 export function droppedNotes(
   replacing: boolean,
   verdict: { kind: string; paths?: readonly string[] },
@@ -3246,10 +3251,18 @@ async function selftest(): Promise<number> {
         droppedNotes(true, { kind: 'whole-tree' }, prior, files).length === 0,
       'droppedNotes: CONTROL: without the flags, or for a whole-tree verdict, nothing is printed'
     );
-    // Wording-independent: whatever the sentence says, the only mention of reads is the hedge naming the comparison as "not reads" (review 9a131ae5.1).
+    // Only the hedge phrase "not reads" is pinned; after removing it, any substring "read" (reads, unread, thread) is a failure, so no other mention of reads can appear (review 9a131ae5.1, 5a21bfcd.2).
     check(
-      notes[0].includes('not reads') && !/\bread/i.test(notes[0].replace('not reads', '')),
+      notes[0].includes('not reads') && !mentionsReadsBeyondHedge(notes[0]),
       'droppedNotes: the line makes no claim about reads, which the function never sees; its one mention of reads is the "not reads" hedge (review eabd5fe0.2, 9a131ae5.1)'
+    );
+    check(
+      mentionsReadsBeyondHedge('compares tracked files, not reads: those files stay unread') &&
+        mentionsReadsBeyondHedge('not reads, and the gate reads them') &&
+        !mentionsReadsBeyondHedge(
+          'compares tracked files, not reads: confirm the gate never opens them'
+        ),
+      'mentionsReadsBeyondHedge: a second mention such as "unread" or "reads" is caught (it was missed under \\bread); CONTROL: the hedge alone passes (review 5a21bfcd.2)'
     );
     let threw = false;
     try {
