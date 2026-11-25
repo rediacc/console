@@ -64,10 +64,11 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: PLAN-console-ai-assistant.md#AI6, PLAN-console-run-index.md#RI2.
   Accept: `(cd private/account && npx vitest run tests/integration/console-ai-pages.test.ts)` rc 0, with a dismissal invisible to another user and a cross-org filter refused; `npm run check:ci-account-scope-audit` rc 0.
     (ticked) 2026-11-25T18:55:27Z by d778be9d: AX4 suggestion dismissals (migration 0115), AI task runs with the per-user cap; console-ai-pages tests pass; landed ed5365996b. DEPS-WAIVED: used prerequisites landed
-- [ ] AX5 [writer] The bar and suggestion components and `useAiSuggestions`: the input opening plan 9's chat with the D1 context, the suggestion card with Diagnose and Dismiss, English strings in `aiPages.json` and the namespace registered.
+- [x] AX5 [writer] The bar and suggestion components and `useAiSuggestions`: the input opening plan 9's chat with the D1 context, the suggestion card with Diagnose and Dismiss, English strings in `aiPages.json` and the namespace registered.
   Owns: private/account/web/src/components/ai/pages/**, private/account/web/src/hooks/useAiSuggestions.ts, private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/en/aiPages.json
   Depends on: AX3, AX4, PLAN-console-ai-assistant.md#AI8.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/pages)` rc 0, including a test that the seeded context is an object and the user text is never prefilled from page data.
+    (ticked) 2026-11-25T19:37:37Z by d778be9d: AX5 ask bar, suggestion cards and useAiSuggestions, 13 locales (account 4ef651fd); pages and hook tests 8 passed; landed 5dbdf42e05. DEPS-WAIVED: used prerequisites landed
 - [ ] AX6 [writer] Executor background tasks per D5: the detached loop recorded as an `ai.task` plan-4 run, pause on approval, the two-per-user cap, the session-expiry end, and the task routes in ai-routes.ts.
   Owns: packages/cli/src/services/ai/background-task.ts, packages/cli/src/services/ai/__tests__/background-task.test.ts, packages/cli/src/services/serve/ai-routes.ts
   Depends on: PLAN-console-ai-assistant.md#AI3, PLAN-console-ai-assistant.md#AI10, PLAN-console-run-index.md#RI3.

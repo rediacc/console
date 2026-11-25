@@ -79,10 +79,11 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Depends on: FR1, FR10.
   Accept: `(cd private/account && npx vitest run tests/unit/incident-report-pdf.test.ts)` rc 0 (an Arabic and a Japanese report render their labels, a font hash mismatch fails, the QR decodes to the verify URL); `npm run check:deps` and `npm run check:ci-lockfile` rc 0.
     (ticked) 2026-11-25T18:57:47Z by d778be9d: FR6 landed (gitlink 942826fc72); incident-report-pdf 8 passed, account tsc and check:deps rc 0; ja/ko/zh font pins owed as #1172ddf6. DEPS-WAIVED: used prerequisites landed
-- [ ] FR7 [writer] Report and verify routes (D3, D6): `POST /incidents/:id/reports` for owners and admins under plan 4's investigation, list and download routes, and the public `GET /reports/verify/:id` with rate limit and uniform 404, mounted in routes/index.ts.
+- [x] FR7 [writer] Report and verify routes (D3, D6): `POST /incidents/:id/reports` for owners and admins under plan 4's investigation, list and download routes, and the public `GET /reports/verify/:id` with rate limit and uniform 404, mounted in routes/index.ts.
   Owns: private/account/src/routes/incident-reports.ts, private/account/src/routes/report-verify.ts, private/account/src/routes/index.ts, private/account/src/dto/incident-report.dto.ts, private/account/tests/integration/incident-report-routes.test.ts
   Depends on: FR4, FR5, FR6.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-report-routes.test.ts)` rc 0 (member 403, a final report before a notification exists refused with the clock named, verify of an unknown id and of a malformed id both 404, the verify body holds no report content).
+    (ticked) 2026-11-25T19:36:39Z by d778be9d: FR7 incident report and verify routes, ReportFontError mapped to HTTP, report keys in EnvConfig; 27 tests passed; landed db28c67437. DEPS-WAIVED: used prerequisites landed
 - [ ] FR8 [writer] Web: the Reports panel under `components/forensics/reports/` (inputs form, stage buttons enabled by the clocks, downloads) and `ReportVerify.tsx` at `/account/verify/report/:id` checking a dropped file in the browser, English keys in en/forensics.json.
   Owns: private/account/web/src/components/forensics/reports/**, private/account/web/src/pages/ReportVerify.tsx, private/account/web/src/pages/__tests__/report-verify.test.tsx, private/account/web/src/router.tsx, private/account/web/src/i18n/locales/en/forensics.json
   Depends on: FR7, PLAN-forensics-investigation.md#FI10.

@@ -105,10 +105,11 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Depends on: AI6.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/chat)` rc 0, including a scroll test where a user scroll-up during streaming is never overridden.
     (ticked) 2026-11-25T18:17:12Z by d778be9d: AI8 chat shell and external-store runtime, translated into 12 locales landed (gitlink dac88541a5); account tsc, web typecheck, check:i18n rc 0. DEPS-WAIVED: AI3 interfaces coded against, not required
-- [ ] AI9 [writer] Simple view: the per-user switch read from preferences, the docked chat layout with its empty state and suggestion chips, plain-language action cards from contract summaries with plan 7's animation while running, short summaries and "Show details", with English strings in `aiSimple.json`.
+- [x] AI9 [writer] Simple view: the per-user switch read from preferences, the docked chat layout with its empty state and suggestion chips, plain-language action cards from contract summaries with plan 7's animation while running, short summaries and "Show details", with English strings in `aiSimple.json`.
   Owns: private/account/web/src/components/ai/simple/**, private/account/web/src/hooks/useAiPreferences.ts, private/account/web/src/i18n/locales/en/aiSimple.json
   Depends on: AI6, PLAN-console-animations.md#AN3.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/simple)` rc 0, including a test that "Show details" reveals the exact command line of the underlying run.
+    (ticked) 2026-11-25T19:36:36Z by d778be9d: AI9 simple mode view, action card and per-user switch, 13 locales; simple tests 7 passed, check:i18n rc 0; landed e978e323f9. DEPS-WAIVED: used prerequisites landed
 - [ ] AI10 [writer] Microphone engines: the selectable engine list in the C38 fallback order, Web Speech, the lazy hash-checked Whisper-base worker shown with its size before download, and executor transcription for OpenAI-compatible profiles; the transcript lands editable in the composer, with English strings in `aiSpeech.json`.
   Owns: private/account/web/src/lib/ai/speech/**, private/account/web/src/components/ai/speech/**, packages/cli/src/services/ai/transcribe.ts, packages/cli/src/services/ai/__tests__/transcribe.test.ts, packages/cli/src/services/serve/ai-routes.ts (the transcription route only), private/account/web/src/i18n/locales/en/aiSpeech.json
   Depends on: AI1, AI5, AI6.
