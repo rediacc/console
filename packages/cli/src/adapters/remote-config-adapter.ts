@@ -27,7 +27,7 @@ import {
   type PushPrior,
   pathsToCommit,
 } from '@rediacc/shared/config-schema';
-import type { EffectivePolicy } from '@rediacc/shared/policy';
+import { ORG_ROLES, type PolicyOrgRole } from '@rediacc/shared/policy';
 import { t } from '../i18n/index.js';
 import { rdcCommand } from '../services/config/config-name.js';
 import {
@@ -71,8 +71,10 @@ import type {
   PushOptions,
   PushResult,
   RemoteConfigEntry,
+  RemotePolicyContext,
   RemoteVersionInfo,
   SessionMaterial,
+  SessionPrincipal,
 } from './remote-config-types.js';
 import type { RemoteTokenStorage, SyncRecord, TokenLease } from './remote-token-storage.js';
 
@@ -97,8 +99,25 @@ export type {
   PushOptions,
   PushResult,
   RemoteConfigEntry,
+  RemotePolicyContext,
   RemoteVersionInfo,
+  SessionPrincipal,
 } from './remote-config-types.js';
+
+/**
+ * The session's `orgRole` and `userEmail` as a principal, or undefined when the role is not one of
+ * the policy's org roles (an older server, or a malformed answer). Never defaults to a role.
+ */
+export function sessionPrincipalOf(
+  orgRole: unknown,
+  userEmail: unknown
+): SessionPrincipal | undefined {
+  if (!(ORG_ROLES as readonly unknown[]).includes(orgRole)) return undefined;
+  return {
+    orgRole: orgRole as PolicyOrgRole,
+    userEmail: typeof userEmail === 'string' ? userEmail : '',
+  };
+}
 
 // ─── Adapter ────────────────────────────────────────────────────────────
 
@@ -242,30 +261,41 @@ export class RemoteConfigAdapter {
   }
 
   /**
-   * The effective policy of this config (PLAN-rmcp-policy-record.md Design 5): a pull, whose answer
-   * carries the config's own policy record, then the org-level config's record when this config
-   * belongs to a team, both opened under this device's CEK and held against the policy high-water
+   * What a local run of this config is judged with (agent/plans/PLAN-rmcp-decide.md D2), under one
+   * token lease: `/session` names the token's member (org role and email) and yields the CEK, then
+   * the effective policy (PLAN-rmcp-policy-record.md Design 5) is read through
+   * `GET /configs/:id/policy`, the config's own record and the org-level config's record when this
+   * config belongs to a team, both opened under that CEK and held against the policy high-water
    * marks in the token file. Never reads a `policy` field of the config document.
+   *
+   * @throws Error when the session names no valid org role: the caller is never guessed to be an owner
    */
-  effectivePolicy(): Promise<EffectivePolicy> {
+  policyContext(): Promise<RemotePolicyContext> {
     return this.tokenStorage.withLease(this.configName, async (lease) => {
-      const pulled = await this.pullLeased(lease);
+      this.requireToken(lease);
+      // The high-water marks live in the sync record a pull writes, so a device that never pulled pulls first.
+      if (!this.syncRecord(lease)) await this.pullLeased(lease);
       const session = await this.fetchSession(lease);
+      if (!session.principal) {
+        throw new Error(
+          `The config server named no org role for config "${this.configName}", so its policy cannot be judged.`
+        );
+      }
       const cek = await this.deriveCek(session.serverSecret, lease);
       const orgConfigId = this.remote.teamId
         ? ((
             await this.fetch<{ configs?: RemoteConfigEntry[] }>(lease, '/account/api/v1/configs')
           ).data.configs?.find((entry) => !entry.teamId)?.configId ?? null)
         : this.remote.configId;
-      return loadEffectivePolicy({
+      const policy = await loadEffectivePolicy({
         storeId: this.remote.storeId,
         config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
-        ...(pulled.policy === undefined ? {} : { pulled: pulled.policy }),
         orgConfigId,
         fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
         cek,
         highWater: this.policyHighWater(lease),
       });
+      return { principal: session.principal, policy };
     });
   }
 
@@ -542,13 +572,15 @@ export class RemoteConfigAdapter {
     }
   }
 
-  /** Fetch session crypto material (server_secret, sdk_derived, sdkEpoch) */
+  /** Fetch session crypto material (server_secret, sdk_derived, sdkEpoch) and the token's member. */
   private async fetchSession(lease: TokenLease): Promise<SessionMaterial> {
     const resp = await this.fetch<{
       server_secret: string;
       sdk_derived: string;
       sdkEpoch: number;
       cekGeneration?: number;
+      orgRole?: unknown;
+      userEmail?: unknown;
     }>(lease, '/account/api/v1/configs/session', { method: 'POST' });
 
     return {
@@ -556,6 +588,7 @@ export class RemoteConfigAdapter {
       sdkDerived: await importAesKey(fromBase64(resp.data.sdk_derived)),
       sdkEpoch: resp.data.sdkEpoch,
       cekGeneration: resp.data.cekGeneration,
+      principal: sessionPrincipalOf(resp.data.orgRole, resp.data.userEmail),
     };
   }
 

@@ -5,6 +5,7 @@
  */
 
 import type { FieldCommitments, importAesKey, PolicyRecord } from '@rediacc/shared/config-crypto';
+import type { EffectivePolicy, PolicyOrgRole } from '@rediacc/shared/policy';
 import type { RdcConfig } from '../types/index.js';
 
 export interface PullResult {
@@ -89,4 +90,22 @@ export interface SessionMaterial {
   sdkEpoch: number;
   /** The store's current CEK generation (T10). */
   cekGeneration: number | undefined;
+  /**
+   * The config token's member as a policy principal, from the session's `orgRole` and `userEmail`
+   * (agent/plans/PLAN-rmcp-decide.md D2). Absent when the server answered without a valid role,
+   * which a policy decision refuses rather than guess.
+   */
+  principal: SessionPrincipal | undefined;
+}
+
+/** The caller a remote config's session names: its org role and email. */
+export interface SessionPrincipal {
+  orgRole: PolicyOrgRole;
+  userEmail: string;
+}
+
+/** What a local run of a remote config is judged with: the session's principal and the effective policy. */
+export interface RemotePolicyContext {
+  principal: SessionPrincipal;
+  policy: EffectivePolicy;
 }

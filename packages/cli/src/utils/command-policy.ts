@@ -21,6 +21,10 @@ import {
 } from '@rediacc/shared/policy';
 import type { Command } from 'commander';
 import { configFileStorage } from '../adapters/config-file-storage.js';
+import type {
+  RemoteConfigAdapter,
+  RemotePolicyContext,
+} from '../adapters/remote-config-adapter.js';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
@@ -208,37 +212,72 @@ export function setConfirmGrand(value: string | undefined): void {
 }
 
 /**
- * The principal of a local run. The person at the keyboard owns their own config file, so the
- * role is `owner`; an agent environment (agent-guard.ts) makes the principal an agent.
+ * Command families that manage the config and its enrollment themselves. A remote config's store
+ * answers for them server-side, and `config remote reenroll` or `subscription login` must still run
+ * when the session cannot be opened (an expired token, an unreachable server), so a failed session
+ * leaves them unjudged rather than refused. When the session opens they are judged like any other.
  */
-function localPrincipal(): DecisionPrincipal {
-  return { kind: isAgentEnvironment() ? 'agent' : 'human', userEmail: '', orgRole: 'owner' };
+const ENROLLMENT_FAMILIES: ReadonlySet<string> = new Set(['config', 'subscription']);
+
+/** The principal and policy a local run is judged with. */
+interface LocalJudgement {
+  principal: DecisionPrincipal;
+  policy: EffectivePolicy | null;
 }
 
+/** One session per adapter per process: a command judged twice (variadic refs) asks once. */
+const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyContext>>();
+
 /**
- * The policy a local run is judged against.
+ * The principal and policy of a local run, or null when the run is left unjudged.
  *
- * A LOCAL-file config keeps its own `policy` field as the ceiling (D24), refused when malformed or
- * when a deny rule names a command that does not exist, as the executor refuses it. No field, or
- * no config file yet, is no policy.
+ * An agent environment (agent-guard.ts) makes the principal an agent, else a human.
  *
- * A REMOTE config takes its policy from the policy record and the caller's org role from the
- * account server. The CLI holds no source for that role (the config session answers with key
- * material only), so a local run of a remote config is judged with no policy here, the agent
- * rules alone; the executor judges the policy on every `--proxy` run.
+ * A LOCAL-file config is owned by the person at the keyboard, so the role is `owner`, and its own
+ * `policy` field is the ceiling (D24), refused when malformed or when a deny rule names a command
+ * that does not exist, as the executor refuses it. No field, or no config file yet, is no policy.
+ *
+ * A REMOTE config is judged as the account server names its token's member: the org role and
+ * email from `/configs/session` and the effective policy from the policy record
+ * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
+ * cannot be opened the run is refused with that error, save for the enrollment families.
  */
-async function localPolicy(): Promise<EffectivePolicy | null> {
+async function localJudgement(commandPath: string): Promise<LocalJudgement | null> {
+  const kind = isAgentEnvironment() ? 'agent' : 'human';
+  const owner: DecisionPrincipal = { kind, userEmail: '', orgRole: 'owner' };
   const name = configService.getCurrentName();
-  if (!(await configFileStorage.exists(name))) return null;
+  if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);
-  if (config.remote !== undefined || config.policy === undefined) return null;
+  if (config.remote !== undefined) return remoteJudgement(kind, commandPath);
+  if (config.policy === undefined) return { principal: owner, policy: null };
   const effective = localPolicyCeiling(config);
   for (const document of [effective.org, effective.team]) {
     if (!document) continue;
     const stale = findStaleCommandGlobs(document, LIVE_COMMANDS);
     if (stale.deny.length > 0) throw new ValidationError(staleDenyRefusal(stale.deny));
   }
-  return effective;
+  return { principal: owner, policy: effective };
+}
+
+/** The session's principal and policy for a remote config (see `localJudgement`). */
+async function remoteJudgement(
+  kind: DecisionPrincipal['kind'],
+  commandPath: string
+): Promise<LocalJudgement | null> {
+  try {
+    const adapter = await configService.getActiveRemoteAdapter();
+    if (!adapter) throw new Error('The active config names a remote store but has no adapter.');
+    let pending = remoteJudgements.get(adapter);
+    if (!pending) {
+      pending = adapter.policyContext();
+      remoteJudgements.set(adapter, pending);
+    }
+    const { principal, policy } = await pending;
+    return { principal: { kind, ...principal }, policy };
+  } catch (error) {
+    if (ENROLLMENT_FAMILIES.has(commandPath.split(' ')[0] ?? '')) return null;
+    throw error;
+  }
 }
 
 const LIVE_COMMANDS: readonly string[] = CLI_CONTRACT.commands.map((c) => c.pathKey);
@@ -378,8 +417,8 @@ async function judge({ principal, command, target, policy }: JudgeArgs): Promise
  * Judge a local run of `commandPath` on `target` against the local policy and the agent rules.
  *
  * Inside an executor request the executor has already judged the command with the caller's real
- * principal and policy (services/serve/policy.ts), so nothing is judged twice. A human with no
- * policy is not asked: with no policy document an owner may run every command
+ * principal and policy (services/serve/policy.ts), so nothing is judged twice. A human owner of a
+ * local-file config with no policy is not asked: with no policy document an owner may run every command
  * (`MISSING_POLICY_DEFAULT`), so the answer is `allow` without resolving the target.
  */
 async function enforceLocal(
@@ -388,8 +427,9 @@ async function enforceLocal(
   target: TargetRef
 ): Promise<void> {
   if (currentRequestContext() !== undefined) return;
-  const principal = localPrincipal();
-  const policy = await localPolicy();
+  const judgement = await localJudgement(commandPath);
+  if (judgement === null) return;
+  const { principal, policy } = judgement;
   if (principal.kind === 'human' && policy === null) return;
   await judge({ principal, command: decisionCommandOf(commandPath, entry), target, policy });
 }

@@ -62,6 +62,7 @@ import {
   RemoteConfigAdapter,
   RemoteConfigUndecryptableError,
   RemoteStaleSlotError,
+  sessionPrincipalOf,
 } from '../remote-config-adapter.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
@@ -362,5 +363,66 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     expect(message).toContain(CONFIG_ID);
     expect(message).toMatch(/retry/i);
     expect(message).not.toContain(STORE_ID);
+  });
+});
+
+// ─── D2: the session names the caller a local run is judged as ─────────
+
+describe('RemoteConfigAdapter.policyContext: the session principal (PLAN-rmcp-decide.md D2)', () => {
+  const SOLO: RemoteConfig = { ...REMOTE, teamId: undefined };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockConfigServerFetch.mockReset();
+  });
+
+  /** Serve the session, the pull, and a 404 `policy_not_found` for `GET /configs/:id/policy`. */
+  async function wire(session: Record<string, unknown>) {
+    const f = await provision(RECOVERY_CODE, null);
+    const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+    mockConfigServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/configs/session')) {
+        return Promise.resolve({ data: { ...f.session, ...session } });
+      }
+      if (path.endsWith('/policy')) {
+        const missing = new ConfigServerError('no policy', 404);
+        Object.assign(missing, { code: 'policy_not_found' });
+        return Promise.reject(missing);
+      }
+      return Promise.resolve({ data: f.config });
+    });
+    return new RemoteConfigAdapter(
+      SOLO,
+      CONFIG_NAME,
+      createTokenStorage({
+        token: 'rct_1',
+        wrappedCek: f.wrappedCek,
+      }) as unknown as RemoteTokenStorage,
+      createSecureStorage(toBase64(f.slotSecret))
+    );
+  }
+
+  it("answers the session's member and the policy read through GET /configs/:id/policy", async () => {
+    const adapter = await wire({ orgRole: 'member', userEmail: 'm@example.com' });
+    const context = await adapter.policyContext();
+    expect(context.principal).toEqual({ orgRole: 'member', userEmail: 'm@example.com' });
+    expect(context.policy).toEqual({ locked: [], ignoredLocked: [] });
+    const asked = mockConfigServerFetch.mock.calls.map((call) => String(call[0]));
+    expect(asked).toContain(`/account/api/v1/configs/${CONFIG_ID}/policy`);
+  });
+
+  it('refuses a session that names no valid org role, never assuming owner', async () => {
+    const adapter = await wire({ orgRole: 'superuser', userEmail: 'x@example.com' });
+    await expect(adapter.policyContext()).rejects.toThrow(/no org role/);
+  });
+});
+
+describe('sessionPrincipalOf', () => {
+  it.each(['owner', 'admin', 'member'])('keeps the org role %s', (role) => {
+    expect(sessionPrincipalOf(role, 'a@b.c')).toEqual({ orgRole: role, userEmail: 'a@b.c' });
+  });
+
+  it.each([undefined, null, '', 'Owner', 'root', 1])('names no principal for %j', (role) => {
+    expect(sessionPrincipalOf(role, 'a@b.c')).toBeUndefined();
   });
 });

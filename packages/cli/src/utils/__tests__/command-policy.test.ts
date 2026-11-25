@@ -5,11 +5,13 @@
  * with the root hook (`enforceRootCommand`, command-policy-root.test.ts) but the target reading.
  */
 
+import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   config: undefined as unknown,
   fileExists: true,
+  adapter: null as null | { policyContext: () => Promise<unknown> },
 }));
 
 vi.mock('../../services/config/config-resources.js', () => ({
@@ -18,6 +20,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getCurrentName: vi.fn(() => 'rediacc'),
     // The ops-VM test reads machines and datastores from the current config.
     getCurrent: vi.fn(() => Promise.resolve(state.config ?? null)),
+    // A remote config's principal and policy come from its adapter's session (D2).
+    getActiveRemoteAdapter: vi.fn(() => Promise.resolve(state.adapter)),
   },
 }));
 
@@ -65,6 +69,7 @@ import {
   CMD,
   COMMAND_POLICIES,
   enforceResolvedTarget,
+  enforceRootCommand,
   setConfirmGrand,
   validateRemotePath,
 } from '../command-policy.js';
@@ -95,6 +100,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   state.config = undefined;
   state.fileExists = true;
+  state.adapter = null;
   mockIsOverrideLegitimate.mockReturnValue(true);
   mockIsAncestryAvailable.mockReturnValue(true);
   setConfirmGrand(undefined);
@@ -151,11 +157,81 @@ describe('a human', () => {
     };
     await expect(connect('mail')).rejects.toThrow('repo vanished');
   });
+});
 
-  it('is judged with no policy on a remote config (no org-role source on the CLI)', async () => {
-    state.config = { remote: { storeId: 's', configId: 'c' } };
-    await expect(connect('mail')).resolves.toBeUndefined();
-    expect(mockGetRepo).not.toHaveBeenCalled();
+describe('a remote config, judged as the session names its member (D2)', () => {
+  const REMOTE = { remote: { storeId: 's', configId: 'c' } };
+  /** An org with no policy document: the missing-policy default decides by role. */
+  const NO_ORG_POLICY = { locked: [], ignoredLocked: [] };
+
+  /** A fresh adapter whose session answers `principal` and `policy` (one per test: the session is memoized per adapter). */
+  function session(principal: { orgRole: string; userEmail: string }, policy: unknown) {
+    const policyContext = vi.fn(() => Promise.resolve({ principal, policy }));
+    state.adapter = { policyContext };
+    return policyContext;
+  }
+
+  beforeEach(() => {
+    state.config = REMOTE;
+    mockGetRepo.mockResolvedValue(FORK);
+  });
+
+  it('refuses a human member what the missing-policy default withholds from members', async () => {
+    mockIsAgent.mockReturnValue(false);
+    session({ orgRole: 'member', userEmail: 'm@example.com' }, NO_ORG_POLICY);
+    expect(await refusalCode(connect('mail:t'))).toBe('POLICY_DENIED');
+  });
+
+  it('control: the same command from an owner session is allowed', async () => {
+    mockIsAgent.mockReturnValue(false);
+    session({ orgRole: 'owner', userEmail: 'o@example.com' }, NO_ORG_POLICY);
+    await expect(connect('mail:t')).resolves.toBeUndefined();
+  });
+
+  it('refuses an agent acting for a member, even with a grand-repo opt-in', async () => {
+    mockIsAgent.mockReturnValue(true);
+    process.env.REDIACC_ALLOW_GRAND_REPO = '*';
+    session({ orgRole: 'member', userEmail: 'm@example.com' }, NO_ORG_POLICY);
+    expect(await refusalCode(connect('mail:t'))).toBe('POLICY_DENIED');
+  });
+
+  it("reads the policy's user tier by the session's email", async () => {
+    mockIsAgent.mockReturnValue(false);
+    const policy = {
+      org: {
+        version: 1,
+        defaults: { commands: { allow: ['*'] } },
+        users: { 'm@example.com': { commands: { allow: ['*'], deny: ['term connect'] } } },
+      },
+      locked: [],
+      ignoredLocked: [],
+    };
+    session({ orgRole: 'member', userEmail: 'm@example.com' }, policy);
+    expect(await refusalCode(connect('mail:t'))).toBe('POLICY_DENIED');
+    session({ orgRole: 'member', userEmail: 'other@example.com' }, policy);
+    await expect(connect('mail:t')).resolves.toBeUndefined();
+  });
+
+  it('opens the session once per adapter for a command judged twice', async () => {
+    mockIsAgent.mockReturnValue(false);
+    const asked = session({ orgRole: 'owner', userEmail: 'o@example.com' }, NO_ORG_POLICY);
+    await connect('mail:t');
+    await connect('mail:t');
+    expect(asked).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses the run when the session cannot be opened (fail closed)', async () => {
+    mockIsAgent.mockReturnValue(false);
+    state.adapter = { policyContext: () => Promise.reject(new Error('server unreachable')) };
+    await expect(connect('mail:t')).rejects.toThrow('server unreachable');
+  });
+
+  it('leaves an enrollment command unjudged when the session cannot be opened', async () => {
+    mockIsAgent.mockReturnValue(true);
+    state.adapter = { policyContext: () => Promise.reject(new Error('token expired')) };
+    await expect(
+      enforceRootCommand('config remote reenroll', undefined, {} as Command)
+    ).resolves.toBeUndefined();
   });
 });
 
