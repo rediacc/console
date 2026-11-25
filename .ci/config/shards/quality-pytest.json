@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T01:11:32.234Z",
+  "generatedAt": "2026-11-25T11:57:01.779Z",
   "legs": [
     {
       "index": 1,
@@ -149,6 +149,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_githook_backup_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_output_landings.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",
+        "pytest:.claude/rediacc_hooks/tests/test_post_bash_commit_landed.py",
         "pytest:.claude/rediacc_hooks/tests/test_runningscript_target.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_feed_stages.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_advisories_rotation.py",
@@ -700,6 +701,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_hooks_fixtures.py",
         "pytest:.claude/rediacc_hooks/tests/test_pr_body_guards_repo_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_review_commit_hook.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_agent_state_keyed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_armed_seeds.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_core_blocking.py",
@@ -815,6 +817,7 @@
         "pytest:.ci/rediacc_ci/tests/test_input_hash_exempt_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_input_hash_names_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_install_sh_no_jq.py",
+        "pytest:.ci/rediacc_ci/tests/test_no_ai_provider_secrets_in_ci.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_bench_production.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_d1_relocate.py",

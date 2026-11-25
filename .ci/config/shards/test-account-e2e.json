@@ -1,7 +1,7 @@
 {
   "lane": "test-account-e2e",
   "of": 4,
-  "generatedAt": "2026-11-25T00:15:37.608Z",
+  "generatedAt": "2026-11-25T11:57:02.007Z",
   "legs": [
     {
       "index": 1,
@@ -21,7 +21,8 @@
         "account-e2e:27-console/27-03-run-panel.test.ts",
         "account-e2e:27-console/27-04-run-animations.test.ts",
         "account-e2e:27-console/27-05-command-line-keyboard.test.ts",
-        "account-e2e:27-console/27-06-command-line-ime.test.ts"
+        "account-e2e:27-console/27-06-command-line-ime.test.ts",
+        "account-e2e:27-console/27-20-ai-providers.test.ts"
       ]
     },
     {
