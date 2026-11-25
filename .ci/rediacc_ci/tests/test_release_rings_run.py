@@ -829,6 +829,43 @@ def test_the_resume_finishes_after_a_planted_stop(tmp_path):
     }
 
 
+def test_a_latched_stop_names_its_stdout_decision_in_the_error(tmp_path):
+    """A run that meets a latched stop prints its decision on stdout and nothing on stderr; the 2026-11-25 `proof release --bench` rerun came back with an empty error because only stderr was read."""
+    r = four(tmp_path)
+    release(r, plant_failure=MEDIUM)
+    got, _naps = release(r)
+    assert got.rc == 1
+    assert got.stopped == MEDIUM
+    assert got.error.startswith("stop "), got.error
+    assert MEDIUM in got.error
+
+
+def test_a_lab_failure_keeps_stderr_and_the_decision_each_once(monkeypatch):
+    """Both channels are kept, stderr first; a line on both is named once; a refusal still reads `refused` (control)."""
+    said: dict = {"out": [], "err": [], "rc": 1}
+
+    def fake_main(_argv, world=None):
+        del world
+        print("\n".join(said["out"]))
+        print("\n".join(said["err"]), file=rings_run.sys.stderr)
+        return said["rc"]
+
+    monkeypatch.setattr(rings_run, "main", fake_main)
+    monkeypatch.setattr(rings_run, "_stopped", lambda _w, _v: "")
+
+    def run() -> proof.ReleaseResult:
+        return rings_run.lab_release(world=cast("rings_run.World", object()), version=V)
+
+    said["out"], said["err"] = ["would deploy x", "stop -- latched"], ["rings_run: unreachable"]
+    assert run().error == "rings_run: unreachable; stop -- latched"
+    said["out"], said["err"] = ["stop -- latched"], ["stop -- latched"]
+    assert run().error == "stop -- latched"
+    said["out"], said["err"] = [], ["rings_run: re-smoke failed"]
+    assert run().error == "rings_run: re-smoke failed"
+    said["rc"], said["out"], said["err"] = 2, ["stop -- latched"], []
+    assert run() == proof.ReleaseResult(2, "", "refused")
+
+
 def test_skip_pauses_without_an_order_is_refused_and_runs_nothing(tmp_path):
     r = four(tmp_path)
     got, naps = release(r, skip_pauses=True)
@@ -877,6 +914,7 @@ def test_the_release_proof_holds_over_the_runner(tmp_path):
     r = four(tmp_path)
     ids = {"canary": CANARY, "small": SMALL, "medium": MEDIUM, "large": LARGE}
     sleep, _naps = napper(r)
+    lab_reset_ids = "SELECT DISTINCT company_id FROM rollout WHERE version = ?"
 
     class Lab:
         def ensure_company(self, label, region, *, ring=None):
@@ -885,6 +923,14 @@ def test_the_release_proof_holds_over_the_runner(tmp_path):
 
         def target_version(self):
             return V
+
+        def reset_release(self, version):
+            # The fake plane's one control database holds every company of `four`: nothing of `version` is there yet, so the reset takes out nothing.
+            con = r.plane.control("eu")
+            held = [row[0] for row in con.execute(lab_reset_ids, (version,))]
+            con.execute("DELETE FROM rollout WHERE version = ?", (version,))
+            con.commit()
+            return held
 
         def versions(self, targets):
             return rings_run.versions(targets, world=r.world, edge=lambda: "0.9.0")

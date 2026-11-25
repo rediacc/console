@@ -886,11 +886,14 @@ def lab_release(
             rc = main(argv, world=w)
         lines = [ln for ln in err.getvalue().splitlines() if ln.strip()]
         error = lines[-1] if lines else ""
+        decided = [ln for ln in out.getvalue().splitlines() if ln and not ln.startswith("would ")]
         if rc == 2:
             return proof.ReleaseResult(rc, "", error or "refused")
         if rc != 0:
-            return proof.ReleaseResult(rc, _stopped(w, v), error)
-        decided = [ln for ln in out.getvalue().splitlines() if ln and not ln.startswith("would ")]
+            # A latched stop prints its decision on stdout and nothing on stderr, so the decision line is part of the error.
+            decision = decided[-1] if decided else ""
+            parts = [p for p in (error, decision) if p]
+            return proof.ReleaseResult(rc, _stopped(w, v), "; ".join(dict.fromkeys(parts)))
         if not decided or not decided[-1].startswith("wait"):
             return proof.ReleaseResult(0)
         waited = decided[-1]
