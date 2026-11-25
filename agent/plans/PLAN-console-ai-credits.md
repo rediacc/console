@@ -90,10 +90,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Owns: private/account/src/services/ai-reconcile.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/ai-reconcile.test.ts
   Depends on: AC4.
   Accept: `(cd private/account && npx vitest run tests/integration/ai-reconcile.test.ts)` rc 0, including a fixture with 3 percent drift that queues an alert and a fixture at 1 percent that does not.
-- [ ] AC8 [writer] Gateway config per D3: .ci/config/ai-gateway.json and `rediacc_ci.ops.cf_ai_gateway` (upsert and `--check`), with a test against a recorded API fixture and a control where a hand-changed setting makes `--check` exit 1.
+- [x] AC8 [writer] Gateway config per D3: .ci/config/ai-gateway.json and `rediacc_ci.ops.cf_ai_gateway` (upsert and `--check`), with a test against a recorded API fixture and a control where a hand-changed setting makes `--check` exit 1.
   Owns: .ci/config/ai-gateway.json, .ci/rediacc_ci/ops/cf_ai_gateway.py, .ci/rediacc_ci/tests/test_ops_cf_ai_gateway.py
   Depends on: PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_ai_gateway.py` rc 0.
+    (ticked) 2026-11-25T20:05:26Z by d778be9d: AC8 AI gateway config and cf_ai_gateway tool (apply, --check, --dry-run); 11 tests; landed 502a1020fc. DEPS-WAIVED: CR2 code landed, its open clause is operator-owned
 - [ ] AC9 [writer] Admin UI: a per-org AI credits panel on CustomerDetail.tsx (balance, lots, grant with credits, expiry and payment reference, refund of unused credit, org switch) and an admin AI credits page (global switch, funding entries, the latest reconcile drift), with router entries and endpoints.
   Owns: private/account/web/src/pages/admin/CustomerDetail.tsx, private/account/web/src/pages/admin/AiCredits.tsx, private/account/web/src/components/ai-credits/**, private/account/web/src/router.tsx, private/account/web/src/api/endpoints.ts, private/account/web/src/pages/__tests__/ai-credits-admin.test.tsx
   Depends on: AC4.

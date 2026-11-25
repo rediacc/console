@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-console-ai-assistant.md` | approved | 142 | 8 | 7 | 28393 |
-| `agent/plans/PLAN-console-ai-credits.md` | approved | 127 | 12 | 3 | 23374 |
+| `agent/plans/PLAN-console-ai-credits.md` | approved | 128 | 11 | 4 | 23588 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 96 | 5 | 4 | 16075 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 96 | 6 | 4 | 16065 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 144 | 3 | 12 | 24571 |
@@ -647,7 +647,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261125.md` | ready | 213 | 2 | 4 | 19755 |
 | `agent/plans/PLAN-stop-hook-store-status.md` | approved | 207 | 3 | 6 | 26150 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
-| `agent/plans/PLAN-stripe-disable.md` | approved | 87 | 3 | 5 | 14857 |
+| `agent/plans/PLAN-stripe-disable.md` | approved | 88 | 2 | 6 | 15224 |
 | `agent/plans/PLAN-stripe-removal.md` | active | 35 | 3 | 0 | 2992 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
