@@ -117,16 +117,31 @@ const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf
  * not a verdict -- the reader cannot tell "your gates are mis-registered" from "a file
  * moved under me". Absent files are collected and REFUSED by name instead.
  */
-export const trackedSubjects = (): { present: string[]; missing: string[] } => {
-  const listed = execFileSync(
+export const listSubjects = (root: string): string[] => {
+  // `--cached --others --exclude-standard`: a new gate file that is not yet staged carries a header too. Reading the index alone dropped it from the region while `--write` exited 0 (finding 8797250f); ignored files stay out.
+  const out = execFileSync(
     'git',
-    ['-C', ROOT, 'ls-files', '.ci/scripts', '.ci/rediacc_ci', 'scripts'],
-    {
-      encoding: 'utf-8',
-    }
-  )
-    .split('\n')
-    .filter((f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f));
+    [
+      '-C',
+      root,
+      'ls-files',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '--',
+      '.ci/scripts',
+      '.ci/rediacc_ci',
+      'scripts',
+    ],
+    { encoding: 'utf-8' }
+  );
+  return [...new Set(out.split('\n'))].filter(
+    (f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f)
+  );
+};
+
+export const trackedSubjects = (): { present: string[]; missing: string[] } => {
+  const listed = listSubjects(ROOT);
   const present: string[] = [];
   const missing: string[] = [];
   for (const f of listed) {

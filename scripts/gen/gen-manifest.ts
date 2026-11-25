@@ -64,6 +64,7 @@ import {
   type Bound,
   directRun,
   jobsWithStep,
+  listSubjects,
   scanDeclarations,
   trackedSubjects,
 } from '../gate-bind.js';
@@ -602,6 +603,32 @@ async function asyncSelftest(): Promise<number> {
       RULE_LEG_LABELS.size === 5,
     'CONTROL: the rule legs are the five checks --write cannot repair, by label, and no copy leg is among them'
   );
+  {
+    // A temp repo with one tracked gate file, one untracked one and one ignored one: discovery must see the first two and never the third (finding 8797250f).
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-manifest-untracked-'));
+    try {
+      const run = (...a: string[]): void => {
+        spawnSync('git', ['-C', tmp, ...a], { stdio: 'ignore' });
+      };
+      fs.mkdirSync(path.join(tmp, 'scripts/gates'), { recursive: true });
+      fs.writeFileSync(path.join(tmp, '.gitignore'), 'scripts/gates/ignored-gate.ts\n');
+      fs.writeFileSync(path.join(tmp, 'scripts/gates/tracked-gate.ts'), '// gate\n');
+      run('init', '-q');
+      run('add', '--', '.gitignore', 'scripts/gates/tracked-gate.ts');
+      fs.writeFileSync(path.join(tmp, 'scripts/gates/untracked-gate.ts'), '// gate\n');
+      fs.writeFileSync(path.join(tmp, 'scripts/gates/ignored-gate.ts'), '// gate\n');
+      const found = listSubjects(tmp);
+      check(
+        found.includes('scripts/gates/tracked-gate.ts') &&
+          found.includes('scripts/gates/untracked-gate.ts') &&
+          !found.includes('scripts/gates/ignored-gate.ts') &&
+          found.length === 2,
+        'CONTROL: discovery lists a tracked gate file AND an untracked one, never an ignored one (an unstaged new gate was silently unregistered)'
+      );
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
   return bad === 0 ? 0 : 1;
 }
 
