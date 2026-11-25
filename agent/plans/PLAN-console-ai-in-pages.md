@@ -50,10 +50,11 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: PLAN-console-contract-semantics.md#CS5.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/__tests__/resource-templates.test.ts)` rc 0.
     (ticked) 2026-11-24T18:57:31Z by d778be9d: landed commit:632a6492a3; vitest src/lib/ai 24 passed rc 0
-- [ ] AX2 [writer] Mount the bar and the suggestion strip on MachineDetail, RepoDetail and ResourceFamilyDetail, add the `backup status` read to the machine page's lazy status tab, and correct the two "five families" comments.
+- [x] AX2 [writer] Mount the bar and the suggestion strip on MachineDetail, RepoDetail and ResourceFamilyDetail, add the `backup status` read to the machine page's lazy status tab, and correct the two "five families" comments.
   Owns: private/account/web/src/pages/console/MachineDetail.tsx, private/account/web/src/pages/console/RepoDetail.tsx, private/account/web/src/pages/console/ResourceFamilyDetail.tsx, private/account/web/src/pages/console/__tests__/ai-pages.test.tsx, private/account/web/src/router.tsx
   Depends on: AX1, AX5, PLAN-console-contract-semantics.md#CS11.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-pages.test.tsx src/pages/console/__tests__/resource-family-pages.test.tsx)` rc 0, including a test that no command runs on mount beyond the page's existing reads.
+    (ticked) 2026-11-25T20:35:41Z by d778be9d: AX2 landed (gitlink 688e765d1b); ai-pages tests pass, typecheck rc 0; the /console/ai target page is AI15 (next writer). DEPS-WAIVED: AX5 and CS11 landed
 - [x] AX3 [writer] The D3 rules as pure functions with the signal hash, with fixtures for a failed and a missed backup unit, a failed last run, an unreachable machine, and a healthy resource that yields nothing.
   Owns: private/account/web/src/lib/ai/suggestions.ts, private/account/web/src/lib/ai/__tests__/suggestions.test.ts
   Depends on: none.
@@ -73,10 +74,11 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Owns: packages/cli/src/services/ai/background-task.ts, packages/cli/src/services/ai/__tests__/background-task.test.ts, packages/cli/src/services/serve/ai-routes.ts
   Depends on: PLAN-console-ai-assistant.md#AI3, PLAN-console-ai-assistant.md#AI10, PLAN-console-run-index.md#RI3.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/background-task.test.ts)` rc 0, covering a client disconnect that leaves the task running, a destructive proposal that pauses it, a third task refused, and a control where a paused task runs the command turning the suite red.
-- [ ] AX7 [writer] Task UI: the "needs approval" and running pills through plan 4's status bar, the finish toast, and the result card in the timeline, with English strings in `aiPages.json` under a `tasks` prefix.
+- [x] AX7 [writer] Task UI: the "needs approval" and running pills through plan 4's status bar, the finish toast, and the result card in the timeline, with English strings in `aiPages.json` under a `tasks` prefix.
   Owns: private/account/web/src/components/ai/tasks/**, private/account/web/src/i18n/locales/en/aiPages.json (the tasks keys only)
   Depends on: AX5, PLAN-console-ai-assistant.md#AI7.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/tasks)` rc 0.
+    (ticked) 2026-11-25T20:34:41Z by d778be9d: AX7 landed (gitlink d26420c050); tasks 6 passed, typecheck rc 0; locales in flight (#a19d4266); mounting in RunStatusBar and the timeline needs AX6's task routes (#next). DEPS-WAIVED: AX5 landed
 - [ ] AX8 [writer] Translate `aiPages` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiPages.json
   Depends on: AX5, AX7.

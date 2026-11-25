@@ -1033,8 +1033,8 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 5,
+      "open": 9,
+      "done": 6,
       "open_sigs": [
         "0d91fe9e",
         "1f21012f",
@@ -1043,12 +1043,12 @@
         "474574b2",
         "4a23af14",
         "83f4cf23",
-        "a0292320",
         "a31af5bc",
         "ece324eb"
       ],
       "done_sigs": [
         "0689d32e",
+        "a0292320",
         "ac216241",
         "bb7c6e29",
         "d4cee8eb",
@@ -1081,21 +1081,21 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 4,
+      "open": 4,
+      "done": 6,
       "open_sigs": [
-        "03415e93",
         "1e013e21",
         "4a23af14",
         "4cd2161d",
-        "a1ac756b",
-        "d0b31106"
+        "a1ac756b"
       ],
       "done_sigs": [
+        "03415e93",
         "83ca5876",
         "84d33d0b",
         "8a3d3128",
-        "a20c76b3"
+        "a20c76b3",
+        "d0b31106"
       ]
     },
     "agent/plans/PLAN-console-ai-providers.md": {
@@ -2012,10 +2012,9 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 6,
+      "open": 6,
+      "done": 7,
       "open_sigs": [
-        "06d04335",
         "081f7c45",
         "2fffdcc9",
         "a2e0ffd0",
@@ -2024,6 +2023,7 @@
         "f1d2facd"
       ],
       "done_sigs": [
+        "06d04335",
         "2202d690",
         "69e8b793",
         "8d487a0e",

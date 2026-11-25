@@ -506,9 +506,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-console-ai-assistant.md` | approved | 146 | 9 | 7 | 29736 |
-| `agent/plans/PLAN-console-ai-credits.md` | approved | 129 | 10 | 5 | 23782 |
+| `agent/plans/PLAN-console-ai-credits.md` | approved | 130 | 9 | 6 | 24088 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 98 | 3 | 6 | 16463 |
-| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 96 | 6 | 4 | 16065 |
+| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 98 | 4 | 6 | 16508 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 145 | 2 | 13 | 24784 |
 | `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 128 | 3 | 10 | 22260 |
@@ -545,7 +545,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 131 | 9 | 6 | 28952 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 131 | 7 | 8 | 24353 |
-| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 111 | 7 | 6 | 20574 |
+| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 139 | 9 | 8 | 31758 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 121 | 5 | 9 | 23778 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |

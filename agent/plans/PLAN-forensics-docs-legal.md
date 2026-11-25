@@ -97,10 +97,11 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Owns: .ci/docs/r2-media-setup.md
   Depends on: PLAN-tooling-code-reduction.md#CR2, PLAN-forensics-detection.md, PLAN-forensics-reports.md#FR12.
   Accept: `grep -n "rediacc-public-data" .ci/docs/r2-media-setup.md` prints the new section; `npm run check:ci-prose-style` rc 0.
-- [ ] FL12 [writer] The `claim-overstatement` rule per D5 in validate-content-accuracy.js with its reasoned allowlist, and a fixture test where each phrase arm fails and an allowlisted line passes.
+- [x] FL12 [writer] The `claim-overstatement` rule per D5 in validate-content-accuracy.js with its reasoned allowlist, and a fixture test where each phrase arm fails and an allowlisted line passes.
   Owns: packages/www/scripts/validate-content-accuracy.js, packages/www/scripts/__tests__/validate-content-accuracy-claims.test.ts
   Depends on: FL5, FL6, FL7.
   Accept: `(cd packages/www && npx vitest run scripts/__tests__/validate-content-accuracy-claims.test.ts)` rc 0, its control fixtures (one per phrase arm) each failing the rule; `npm run check:ci-i18n-www-content-accuracy` rc 0 on the tree.
+    (ticked) 2026-11-25T20:37:27Z by d778be9d: FL12 landed ae11c7c7aa; merged tree claims test 8 passed, validate-content-accuracy --strict rc 0. DEPS-WAIVED: FL5-FL7 landed
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) and open the ms6 study module to read the rewritten claims; build www (`cd packages/www && npm run build`) and read the three new docs and the corrected legal pages in English and one right-to-left locale as additional verification.
   Accept: live-proof bench account-smoke
 
