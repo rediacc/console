@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T12:20:23.179Z",
+  "generatedAt": "2026-11-25T13:17:42.966Z",
   "legs": [
     {
       "index": 1,
@@ -781,6 +781,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_workflow_invariants_upstream_module.py",
         "pytest:.ci/rediacc_ci/tests/test_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_core_allowlist.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_dockerx_group.py",
         "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_build_tolerated.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ports.py",
         "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",
