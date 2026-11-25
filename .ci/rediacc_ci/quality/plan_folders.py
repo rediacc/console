@@ -1369,6 +1369,10 @@ def update(root: pathlib.Path) -> int:
     return 0
 
 
+# Every verb that changes the tree; with a refused root override each one refuses (see PL.resolve_root).
+WRITE_VERBS = ("--write", "--move", "--keep", "--archive", "--retire-promoted", "--update")
+
+
 def main(argv: list[str]) -> int:
     try:
         if "--selftest" in argv:
@@ -1382,7 +1386,17 @@ def main(argv: list[str]) -> int:
             )
             return 2
 
-        root = PL.repo_root()
+        root, override_refused = PL.resolve_root()
+        writing = [verb for verb in WRITE_VERBS if verb in argv]
+        if override_refused and writing:
+            print(
+                "✗ %s names a tree this run may not use, and %s would write; refusing rather "
+                "than writing the repository at %s instead. Point it at a private scratch path "
+                "under the system temp directory, or unset it."
+                % (PL.ROOT_ENV, " ".join(writing), root),
+                file=sys.stderr,
+            )
+            return 2
         if not gitx.is_work_tree(root):
             raise CannotRunError("%s is not a git work tree, so no plan can be enumerated" % root)
         try:

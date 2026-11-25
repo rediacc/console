@@ -797,7 +797,17 @@ def load_config(root: pathlib.Path) -> dict:
 
 
 def repo_root() -> pathlib.Path:
-    return seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV)) or paths.repo_root()
+    return resolve_root()[0]
+
+
+def resolve_root() -> tuple[pathlib.Path, bool]:
+    """The scan root, and whether a set PLAN_FOLDERS_ROOT was refused, so the repository stands in for the tree the caller named.
+
+    A read-only caller may scan the repository instead; a writing one must refuse, or a test fixture whose scratch path the seam refuses (a TMPDIR outside /tmp) deletes and moves the real plans.
+    """
+    raw = os.environ.get(ROOT_ENV)
+    override = seams.scratch_root(ROOT_ENV, raw)
+    return (override or paths.repo_root(), bool(raw) and override is None)
 
 
 def enumerate_plans(root: pathlib.Path) -> tuple[list[str], str]:
