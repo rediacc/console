@@ -246,6 +246,26 @@ describe('the 50-second window', () => {
   });
 });
 
+describe('an ended grant with an unusable account origin', () => {
+  it('answers its code without a link instead of throwing', async () => {
+    const ended = { grant: activeGrant(GRANT_ID, { state: 'expired' }), secret: SECRET };
+    const result = await callTool(
+      {
+        executor: undefined,
+        reauthUrl: () => {
+          throw new TypeError('Invalid URL');
+        },
+      },
+      ended,
+      'repo_list',
+      {}
+    );
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({ code: 'REDIACC_GRANT_EXPIRED' });
+    expect(result.structuredContent).not.toHaveProperty('reauthUrl');
+  });
+});
+
 describe('executor refusals', () => {
   const deps = (answer: () => Promise<McpCallAnswer>): CallDeps => ({
     executor: { call: answer },

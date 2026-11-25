@@ -51,14 +51,18 @@ const ENDED: Record<Exclude<GrantState, 'active'>, { code: string; why: string }
 /** The `tools/call` answer under a grant that stopped serving: the code, the re-authorization link, and a line telling the model to hand that link to the user. */
 function grantEnded(grant: GrantContext, state: Exclude<GrantState, 'active'>, deps: CallDeps) {
   const { code, why } = ENDED[state];
-  const reauthUrl = deps.reauthUrl(grant.grantId);
+  const expiredAt = grant.endedAt ?? grant.expiresAt;
+  let reauthUrl: string;
+  try {
+    reauthUrl = deps.reauthUrl(grant.grantId);
+  } catch {
+    // A misconfigured account origin must not turn the answer into a throw: the code still tells the client the grant ended.
+    return toolError(code, `${why} Ask the user to authorize the agent again.`, { expiredAt });
+  }
   return toolError(
     code,
     `${why} Give the user this link to authorize the agent again: ${reauthUrl}`,
-    {
-      reauthUrl,
-      expiredAt: grant.endedAt ?? grant.expiresAt,
-    }
+    { reauthUrl, expiredAt }
   );
 }
 
