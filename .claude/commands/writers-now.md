@@ -78,7 +78,7 @@ The same batch writes each bench correction: the box line stays byte-identical s
 
 Each box's signature and label are read together from the box parser, `wl_planrec.open_boxes` (`(line, raw, body, sig)` per box) or the `worklist.py` listing. `open_sigs` in `.ci/config/plan-boxes.json` is a sorted set, never a parallel list: zipped with a plan's `- [ ]` lines it pairs the wrong signature with each label, and that reached real briefs.
 
-One writer per startable cluster of the survey, never thirds of a plan: boxes sharing a file go to one writer, and a plan with only live boxes gets no writer. A brief's `Owns` names those files even past the plan's own `Owns:` line, because a box outside that line otherwise goes undone. Boxes of different plans that share a file go to one writer under the plan holding the most of them. A blocked cluster is queued (section 6) behind the box that blocks it.
+One writer per startable cluster of the survey, never thirds of a plan: boxes sharing a file go to one writer, and a plan with only live boxes gets no writer. A writer takes 1 or 2 boxes (the brief section below), so a cluster of more boxes becomes a chain of writers over the same files: the next one starts when the previous one's report has landed, because two leases over one file only meet at a conflicted pick. A brief's `Owns` names those files even past the plan's own `Owns:` line, because a box outside that line otherwise goes undone. Boxes of different plans that share a file go to one writer under the plan holding the most of them. A blocked cluster is queued (section 6) behind the box that blocks it.
 
 **The roster**, read before the wave: there is no writer limit and no tree limit (agent/plans/PLAN-unlimited-writers.md), so the harness's own concurrent-subagent ceiling (20 when last measured) is the only bound. Live runners hold no tree but count against that ceiling. The wave takes, in this order: up to four live runners (section 5), one review-findings writer per file cluster of open findings (section 4, at most two), then one CODE writer per remaining cluster. Each finished tree is collected by `--id` as its report lands (`./run.sh worktree leases`).
 
@@ -86,13 +86,20 @@ The route is `isolation: "worktree"` on the Agent call, which reaches a lease th
 
 Model: `sonnet` when the boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold a writer back: it is started anyway, and `block_plan_concurrency` decides.
 
+**The writer brief is small by design** (agent/plans/PLAN-drain-throughput.md, Design B). Writers stalled on model responses for 50.8 of 73.2 active hours overnight on 2026-11-24, at a median context near 113k tokens, so the brief is cut to keep the context short and the turns few:
+- **1 or 2 boxes per writer**, never more. Two boxes only when they share files and each is small; a box with a long accept or a wide file set goes alone.
+- **A context budget.** The brief quotes the box text, the files, the accept command and the few lines of the plan a box depends on, and nothing else: no plan pasted whole, no survey pasted. A writer reads a file by the range it needs, runs one verify command per step, and finishes before its context grows large; work left over goes in the report as an `owed=` clause for a fresh writer, never into a longer turn.
+- **One verify command per step.** The intended command is `npm run verify -- --changed` (PLAN-drain-throughput.md DT6): it maps the lease's changed files to their vitest and pytest targets and a typecheck of the touched packages, and replaces a hand-picked chain of test runs. Until DT6 lands, the brief names the one narrow command of the box (`npm run ci -- --narrow` or the named test), and a writer never strings several runs of the same kind together.
+- **The prose rules that refused 37 of 84 commits** (the prose-style guard at commit time, `docs/agent-reference/prose-style.md`): no first or second person in prose, commit messages included, so the work is the subject. R18: a line runs to a period, so a long sentence stays on one line and is never hard-wrapped narrow. R19: no uniform narrow wrap, so a paragraph is never reflowed to one width. The check before the commit is `.ci/scripts/quality/check_prose_style.py check <file>` on each prose file touched.
+- **The report shape `worktree land <id> --run` reads** (DT12): the commits in cherry-pick order per repo (submodule commits first, then the console's), every command with its rc, the files touched, and one `TICK` line per box. The grammar is under the template below.
+
 Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards. `Owns:` is comma-separated globs; a prose line is not read, and the refusal says so. A planless brief opens `Plan: none -- <reason>`, which serves no plan whatever items the brief names:
 
 ```
 Plan: agent/plans/<PLAN-file>.md
 Owns: <the plan's Owns: globs, verbatim, plus each file these boxes touch past them>
 
-PR-TASK <the plan's epic id>, repo <repo root>. Boxes (this writer's share, with signatures):
+PR-TASK <the plan's epic id>, repo <repo root>. Boxes (this writer's share, 1 or 2, with signatures):
   <sig> <label>
   ...
 Prerequisite in this round: <PLAN-x.md, or "none">.
@@ -112,14 +119,16 @@ Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync scri
       Plan-Box: none -- <reason, at least 12 characters>
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
   - each git command is its own simple Bash call, with no `;`, `&&`, pipe or redirect in the same command, `git -C <lease>` in place of `cd ... &&`, and the exit code read from the tool result rather than `; echo rc=$?`, because the harness refuses a compound command naming git inside an isolated worktree;
-  - `npm run ci -- --narrow` or named tests only; ci:quick, vm:check and live_proof record refuse a lease;
+  - one verify command per step: `npm run verify -- --changed` once it exists (DT6), else `npm run ci -- --narrow` or the named tests; ci:quick, vm:check and live_proof record refuse a lease;
+  - prose: no first or second person; a line runs to a period (R18) and is never hard-wrapped narrow or reflowed to one width (R19);
   - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
     the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir); a lease is seeded with that binary, and one without it runs the main checkout's copy by absolute path with the lease as the working directory;
   - the commit shas go in the report; the lead lands them. A result worth keeping goes in a commit or
     the report, because GC deletes the tree's ignored output with the tree.
 
-Report: per box the commands run with their exit codes, then one TICK line per box signature,
-the line the lead's tools read (`wl_planbox.parse_tick`):
+Report, in this order, because `worktree land <id> --run` reads it: the commits in cherry-pick order per repo
+(`<repo>: <sha> <subject>`, submodules first), every command run with its exit code (`<command> rc=<n>`), the files
+touched, then one TICK line per box signature, the line the lead's tools read (`wl_planbox.parse_tick`):
   TICK <PLAN-file>.md#<sig8> <done|present|partial|untouched|blocked> commits=<lease shas|-> landed=<C1,C2|all|-> owed=<C3:live,C4:operator|->
     close: <the exact command or question that closes what is owed, or "nothing">
 For example:
