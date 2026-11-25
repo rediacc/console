@@ -112,10 +112,65 @@ type WireEvent = z.infer<typeof WireEventSchema>;
 export type { WireEvent };
 
 /**
+ * The command an AI approval covers, exactly as `/console/exec` would receive it. The executor binds
+ * the approval token to the hash of this triple, so an answer naming any other argv is refused.
+ */
+export const AiApprovalCommandSchema = z.strictObject({
+  pathKey: z.string().min(1).max(256),
+  params: z.record(z.string(), z.unknown()),
+  positionals: z.record(z.string(), z.unknown()),
+});
+
+type AiApprovalCommand = z.infer<typeof AiApprovalCommandSchema>;
+
+export type { AiApprovalCommand };
+
+/**
+ * How an approval is shown (PLAN-console-ai-assistant D2): `safe` and `caution` requests group into
+ * one batch card, `destructive` and `grand` each take a popup of their own.
+ */
+export const AI_APPROVAL_RISKS = ['safe', 'caution', 'destructive', 'grand'] as const;
+
+export type AiApprovalRisk = (typeof AI_APPROVAL_RISKS)[number];
+
+/** One step of the model's `plan` tool. */
+const AiPlanStepSchema = z.strictObject({ title: z.string().min(1).max(500) });
+
+/** One structured answer of the model's `present` tool: a table, a status line, or choice chips. */
+export const AiPresentCardSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('table'),
+    columns: z.array(z.string().max(200)).min(1).max(20),
+    rows: z.array(z.array(z.string().max(2000)).max(20)).max(200),
+  }),
+  z.strictObject({
+    type: z.literal('status'),
+    tone: z.enum(['ok', 'warn', 'error', 'info']),
+    title: z.string().max(200).optional(),
+    text: z.string().min(1).max(4000),
+  }),
+  z.strictObject({
+    type: z.literal('choices'),
+    choices: z
+      .array(z.strictObject({ label: z.string().min(1).max(200), value: z.string().max(2000) }))
+      .min(1)
+      .max(12),
+  }),
+]);
+
+type AiPresentCard = z.infer<typeof AiPresentCardSchema>;
+
+export type { AiPresentCard };
+
+/**
  * One event of an AI chat turn (agent/plans/PLAN-console-ai-providers.md D8), carried by the
  * `kind: 'ai'` stream line. Kept apart from WireEventSchema, which stays renet-shaped so every
  * renet reader is untouched. A tool's own renet events travel as `event` lines tagged with the
  * tool call id.
+ *
+ * `approval_required` carries the executor's single-use `approvalToken`, bound to the verified
+ * principal, the conversation, the tool call and the hash of `command`; the page posts the token
+ * and the command back unchanged, and the executor refuses any other pairing.
  */
 export const AiEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text_delta'), text: z.string() }),
@@ -136,6 +191,21 @@ export const AiEventSchema = z.discriminatedUnion('type', [
     toolCallId: z.string().min(1),
     name: z.string().min(1),
     input: z.unknown().optional(),
+    approvalToken: z.string().min(1).max(4096),
+    command: AiApprovalCommandSchema,
+    risk: z.enum(AI_APPROVAL_RISKS),
+    /** Why the command waits: the policy's confirmation, or the conversation's mode. */
+    reason: z.string().max(2000).optional(),
+  }),
+  z.object({
+    type: z.literal('plan'),
+    toolCallId: z.string().min(1),
+    steps: z.array(AiPlanStepSchema).min(1).max(30),
+  }),
+  z.object({
+    type: z.literal('present'),
+    toolCallId: z.string().min(1),
+    card: AiPresentCardSchema,
   }),
   z.object({
     type: z.literal('usage'),

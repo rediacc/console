@@ -18,20 +18,24 @@
  * `prepareCommand` still refuses anything the contract does not declare. Without a grant the opt-ins are empty (`source: 'none'`), so
  * `decide()` refuses grand-repo and cluster mutations for the agent.
  *
- * A `needs_confirmation` answer runs nothing: the tool returns an
- * `approval_required` result, {@link stopOnApproval} ends the turn on it, and
- * {@link aiEventOfToolResult} turns it into the `approval_required` stream
- * event. Confirming is the approval surface of plan 9 (C33); no call here ever
- * claims a confirmation.
+ * A `needs_confirmation` answer, or a hold the chat's autonomy gate places on
+ * an allowed call (autonomy.ts), runs nothing: the tool returns an
+ * `approval_required` result carrying the exact command and its risk,
+ * {@link stopOnApproval} ends the turn on it, and the loop issues the
+ * single-use approval token (approvals.ts) in the `approval_required` event.
+ * The only confirmation a call here claims is the grant an approved token left
+ * for exactly its argv, consumed by that one call.
  *
  * Command output is untrusted (untrusted.ts): stripped, truncated and fenced
  * before the model reads it.
  */
+
+import { isPreviewRun } from '@rediacc/shared/auth';
 import { type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
-import type { AiEvent } from '@rediacc/shared/cli-contract/wire';
+import type { AiApprovalCommand, AiApprovalRisk, AiEvent } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { listProxyTools, type McpToolEntry } from '@rediacc/shared/mcp/registry';
-import type { DecisionNext } from '@rediacc/shared/policy';
+import type { DecisionNext, DecisionTarget } from '@rediacc/shared/policy';
 import { jsonSchema, type StopCondition, type ToolSet, tool } from 'ai';
 import type { RenetEvent } from '../executor/types.js';
 import {
@@ -48,6 +52,7 @@ import {
   resolveExecutorTarget,
 } from '../serve/policy.js';
 import type { SessionPrincipal } from '../serve/sessions.js';
+import { riskOf } from './autonomy.js';
 import { fenceUntrusted } from './untrusted.js';
 
 /** The tool input field that asks for `--background`; not a contract option. */
@@ -91,6 +96,24 @@ export interface AiToolContext {
   authorize?: typeof authorize;
   /** Receives every renet event a call streams, with the call's id. */
   onEvent?: (toolCallId: string, event: RenetEvent) => void;
+  /** The chat's autonomy gate and approval grants (autonomy.ts, approvals.ts); absent: `decide()` alone. */
+  gate?: AiToolGate;
+}
+
+/** One call `decide()` allowed, as the autonomy gate reads it. */
+export interface AiGateCall {
+  command: AiApprovalCommand;
+  entry: ContractCommand;
+  target: DecisionTarget;
+  risk: AiApprovalRisk;
+}
+
+/** The seam a chat host lends the tools: the mode's hold, and the grants approved tokens left. */
+export interface AiToolGate {
+  /** Whether the conversation's mode holds a call `decide()` allowed; null runs it. */
+  hold(call: AiGateCall): Promise<{ code: string; reason: string } | null>;
+  /** Consume the grant an approval left for exactly this command; false when there is none. */
+  takeGrant(command: AiApprovalCommand): boolean;
 }
 
 /** The result a tool hands back to the model. */
@@ -110,11 +133,14 @@ export type AiToolResult =
       next?: DecisionNext;
     }
   | {
-      /** `decide()` answered `needs_confirmation`; nothing ran and the turn ends. */
+      /** `decide()` answered `needs_confirmation`, or the mode held the call; nothing ran and the turn ends. */
       status: 'approval_required';
       code: string;
       reason: string;
       next?: DecisionNext;
+      /** The exact command an approval covers; the approval token is bound to its hash. */
+      command: AiApprovalCommand;
+      risk: AiApprovalRisk;
     };
 
 /** The code of a call refused before policy: an undeclared field, or one `prepareCommand` refused. */
@@ -245,7 +271,38 @@ function prepareCall(
   }
 }
 
-/** The answer of authorize() for a prepared call: null on `allow`, the refusal or approval request otherwise. */
+/** authorize() for one call; null on `allow`, the `PolicyDenied` decision otherwise. */
+function policyAnswer(
+  ctx: AiToolContext,
+  entry: ContractCommand,
+  target: DecisionTarget,
+  machineName: string | undefined,
+  granted: boolean
+): PolicyDenied['decision'] | null {
+  try {
+    (ctx.authorize ?? authorize)({
+      principal: ctx.principal,
+      commandPath: entry.pathKey,
+      config: ctx.config,
+      target,
+      machineName,
+      // The agent principal: authorize() makes the principal an agent exactly when a grant is passed.
+      agentGrant: ctx.agentGrant ?? NO_GRANT,
+      ...(granted ? { confirmation: { granted: true } } : {}),
+    });
+    return null;
+  } catch (error) {
+    if (!(error instanceof PolicyDenied)) throw error;
+    return error.decision;
+  }
+}
+
+/**
+ * The answer for a prepared call: null when it may run, the refusal or approval request otherwise.
+ * `decide()` answers first; a confirmation it asks for, or a hold the mode places on a call it
+ * allowed, is satisfied only by a grant an approved token left for exactly this command, consumed
+ * here so it runs once.
+ */
 async function decideCall(
   ctx: AiToolContext,
   prepared: PreparedCommand,
@@ -263,27 +320,35 @@ async function decideCall(
     },
     ctx.config
   );
-  try {
-    (ctx.authorize ?? authorize)({
-      principal: ctx.principal,
-      commandPath: entry.pathKey,
-      config: ctx.config,
-      target,
-      machineName,
-      // The agent principal: authorize() makes the principal an agent exactly when a grant is passed.
-      agentGrant: ctx.agentGrant ?? NO_GRANT,
-    });
-    return null;
-  } catch (error) {
-    if (!(error instanceof PolicyDenied)) throw error;
-    const { verdict, code, reason, next } = error.decision;
-    return {
-      status: verdict === 'needs_confirmation' ? 'approval_required' : 'refused',
-      code,
-      reason,
-      ...(next ? { next } : {}),
-    };
+  const command: AiApprovalCommand = { pathKey: entry.pathKey, params, positionals };
+  const risk = riskOf({
+    severity: entry.severity,
+    preview: isPreviewRun(entry, params),
+    target,
+  });
+  const held = (code: string, reason: string, next?: DecisionNext): AiToolResult => ({
+    status: 'approval_required',
+    code,
+    reason,
+    ...(next ? { next } : {}),
+    command,
+    risk,
+  });
+
+  const decision = policyAnswer(ctx, entry, target, machineName, false);
+  if (decision?.verdict === 'needs_confirmation') {
+    if (!ctx.gate?.takeGrant(command)) return held(decision.code, decision.reason, decision.next);
+    const confirmed = policyAnswer(ctx, entry, target, machineName, true);
+    if (!confirmed) return null;
+    return { status: 'refused', code: confirmed.code, reason: confirmed.reason };
   }
+  if (decision) {
+    const { code, reason, next } = decision;
+    return { status: 'refused', code, reason, ...(next ? { next } : {}) };
+  }
+  const hold = await ctx.gate?.hold({ command, entry, target, risk });
+  if (!hold || ctx.gate?.takeGrant(command)) return null;
+  return held(hold.code, hold.reason);
 }
 
 /** Run one tool call through the executor's path. */
@@ -340,28 +405,24 @@ function isApprovalResult(output: unknown): boolean {
   return (output as { status?: unknown } | null)?.status === 'approval_required';
 }
 
+/** The approval request a tool result carries, or null for any other result. */
+export function approvalResultOf(
+  output: unknown
+): Extract<AiToolResult, { status: 'approval_required' }> | null {
+  return isApprovalResult(output)
+    ? (output as Extract<AiToolResult, { status: 'approval_required' }>)
+    : null;
+}
+
 /** A stop condition that ends the turn after a step whose tool results include an approval request. */
 export const stopOnApproval: StopCondition<ToolSet> = ({ steps }) =>
   steps.at(-1)?.toolResults.some((part) => isApprovalResult(part.output)) ?? false;
 
 /**
- * The stream event of one tool result: `approval_required` for a call
- * `decide()` held for confirmation, `tool_result` for every other.
+ * The `tool_result` event of one tool result that is not an approval request (the loop turns an
+ * approval request into `approval_required` with the token it issues).
  */
-export function aiEventOfToolResult(part: {
-  toolCallId: string;
-  toolName: string;
-  input: unknown;
-  output: unknown;
-}): AiEvent {
-  if (isApprovalResult(part.output)) {
-    return {
-      type: 'approval_required',
-      toolCallId: part.toolCallId,
-      name: part.toolName,
-      input: part.input,
-    };
-  }
+export function toolResultEventOf(part: { toolCallId: string; output: unknown }): AiEvent {
   const status = (part.output as { status?: unknown } | null)?.status;
   return {
     type: 'tool_result',

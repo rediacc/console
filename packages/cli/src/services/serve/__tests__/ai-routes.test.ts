@@ -26,7 +26,14 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
-import { AiApprovalLedger, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
+import {
+  AI_APPROVAL_COMMAND_MISMATCH,
+  AI_APPROVAL_UNKNOWN,
+  AiApprovalLedger,
+  type AiApprovals,
+} from '../../ai/approvals.js';
+import { AiConversationStore } from '../../ai/autonomy.js';
+import { MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
 import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
 import {
   AI_APPROVAL_STEPUP_REQUIRED,
@@ -87,9 +94,13 @@ function fleetConfig(policy?: PolicyDocument): RdcConfig {
   };
 }
 
+/** The executor's own token may write audit records, so a dispatched mutation records its start. */
+const EXECUTOR_SELF = { active: true, scopes: ['audit:write'] };
+
 const fakeAccount = ((_url: string | URL, init?: RequestInit) => {
   const { token } = JSON.parse(String(init?.body ?? '{}')) as { token: string };
-  return Promise.resolve(Response.json(token === OWNER_TOKEN ? OWNER : { active: false }));
+  const known: Record<string, object> = { [OWNER_TOKEN]: OWNER, rdt_executor: EXECUTOR_SELF };
+  return Promise.resolve(Response.json(known[token] ?? { active: false }));
 }) as typeof fetch;
 
 /** The status mapping server.ts lends, reduced to the errors these routes can meet. */
@@ -107,6 +118,11 @@ interface AppOptions {
   chat?: AiChatDeps;
   authorize?: ServeDeps['authorize'];
   agentGrants?: ServeDeps['agentGrants'];
+  /** A real ledger and store, for the token flow end to end; the recording fakes when absent. */
+  approvals?: AiApprovals;
+  modes?: AiConversationStore;
+  executor?: ServeDeps['executor'];
+  audit?: ServeDeps['audit'];
 }
 
 function app(config: RdcConfig, options: AppOptions = {}): Hono {
@@ -119,10 +135,13 @@ function app(config: RdcConfig, options: AppOptions = {}): Hono {
     }),
     sessions: new SessionStore(),
     crypto: serveCrypto,
-    executor: { execute: () => Promise.reject(new Error('the approval route runs nothing')) },
+    executor: options.executor ?? {
+      execute: () => Promise.reject(new Error('the approval route runs nothing')),
+    },
     loadConfig: () => Promise.resolve(config),
     authorize: options.authorize ?? authorize,
     ...(options.agentGrants ? { agentGrants: options.agentGrants } : {}),
+    ...(options.audit ? { audit: options.audit } : {}),
   };
   const hono = new Hono();
   registerAiRoutes(
@@ -140,13 +159,20 @@ function app(config: RdcConfig, options: AppOptions = {}): Hono {
       configSession: (header) => header?.trim() || undefined,
     },
     {
-      modes: { set: (_p, conversationId, mode) => modes.push({ conversationId, mode }) },
-      approvals: {
+      modes: options.modes ?? {
+        set: (_p, conversationId, mode) => modes.push({ conversationId, mode }),
+        get: () => 'ask',
+        allowExact: () => undefined,
+        allowsExact: () => false,
+      },
+      approvals: options.approvals ?? {
         submit: (answer) => {
           submitted.push(answer);
           return Promise.resolve(verdict);
         },
-        expect: () => undefined,
+        issue: (_p, _c, toolCallId) => `tok-${toolCallId}`,
+        takeGrant: () => false,
+        revokeGrant: () => undefined,
       },
       ...(options.chat ? { chat: options.chat } : {}),
     }
@@ -598,49 +624,241 @@ describe('POST /v1/ai/test', () => {
   });
 });
 
-describe('AiApprovalLedger', () => {
-  const principal = {
+describe('the approval token, end to end', () => {
+  const OWNER_PRINCIPAL = {
     orgId: 'org-1',
     teamId: null,
     userId: 'user-owner',
     userEmail: 'owner@example.com',
     orgRole: 'owner' as const,
   };
-  const event = {
-    type: 'approval_required' as const,
-    toolCallId: 'call-1',
-    name: 'repo_delete',
-    input: { ref: 'shop' },
-  };
-  const answer = (over: Partial<AiApprovalSubmit> = {}): AiApprovalSubmit => ({
-    principal,
-    conversationId: 'conv-1',
-    toolCallId: 'call-1',
-    approvalToken: 'tok',
+  /** Every command is allowed, so only the autonomy gate holds a call. */
+  const OPEN: PolicyDocument = { version: 1, defaults: { commands: { allow: ['*'] } } };
+  const UP_TRIAL = { pathKey: 'repo up', params: {}, positionals: { ref: 'shop:trial' } };
+
+  interface Flow {
+    hono: Hono;
+    store: AiConversationStore;
+    audited: { commandPath: string; outcome?: string; success: boolean }[];
+    /** Dispatches the tool calls reached: one `started` audit record per mutating run. */
+    started: () => number;
+  }
+
+  function flow(
+    policy: PolicyDocument = OPEN,
+    extra: { judge?: AiChatDeps['judge']; failApprovalAudit?: boolean } = {}
+  ): Flow {
+    const store = new AiConversationStore();
+    const audited: Flow['audited'] = [];
+    const hono = app(
+      { ...fleetConfig(policy), ai: aiOf('m') },
+      {
+        approvals: new AiApprovalLedger(),
+        modes: store,
+        audit: (event) => {
+          if (extra.failApprovalAudit && event.commandPath === 'ai approval') {
+            return Promise.reject(new Error('audit sink down'));
+          }
+          audited.push({
+            commandPath: event.commandPath,
+            success: event.success,
+            ...(event.outcome ? { outcome: event.outcome } : {}),
+          });
+          return Promise.resolve();
+        },
+        chat: {
+          createModel: () =>
+            new MockLanguageModelV4({
+              doStream: [toolCallStep(toolOf.name, toolOf.input), textStep('Done.')],
+            }),
+          ...(extra.judge ? { judge: extra.judge } : {}),
+        },
+      }
+    );
+    const started = () => audited.filter((a) => a.outcome === 'started').length;
+    return { hono, store, audited, started };
+  }
+
+  /** The tool call the next chat's model makes. */
+  let toolOf: { name: string; input: Record<string, unknown> };
+
+  beforeEach(() => {
+    toolOf = { name: 'repo_up', input: { ref: 'shop:trial' } };
+  });
+
+  async function turnEvents(hono: Hono) {
+    return aiEvents(await lines(await chat(hono)));
+  }
+
+  async function pendingApproval(hono: Hono) {
+    const held = (await turnEvents(hono)).find((e) => e.type === 'approval_required');
+    expect(held).toBeDefined();
+    return held as {
+      approvalToken: string;
+      toolCallId: string;
+      command: typeof UP_TRIAL;
+      risk: string;
+      reason?: string;
+    };
+  }
+
+  const answer = (
+    held: { approvalToken: string; toolCallId: string; command: object },
+    over: Record<string, unknown> = {}
+  ) => ({
+    conversationId: CHAT.conversationId,
+    toolCallId: held.toolCallId,
+    approvalToken: held.approvalToken,
     decision: 'approve',
-    command: { pathKey: 'repo delete', params: {}, positionals: {} },
+    command: held.command,
     stepUpMethod: null,
-    destructive: true,
-    grand: false,
     ...over,
   });
 
-  it('redeems an expected approval once, for its own command and caller only', async () => {
-    const ledger = new AiApprovalLedger();
-    ledger.expect(principal, 'conv-1', event);
-    const other = { command: { pathKey: 'repo up', params: {}, positionals: {} } };
-    expect(await ledger.submit(answer(other))).toMatchObject({ ok: false, status: 409 });
-    const stranger = { principal: { ...principal, userId: 'other' } };
-    expect(await ledger.submit(answer(stranger))).toMatchObject({ ok: false, status: 404 });
-    expect(await ledger.submit(answer())).toEqual({ ok: true });
-    expect(await ledger.submit(answer())).toMatchObject({ ok: false, status: 404 });
+  it('issues a single-use token bound to the exact command, and the event parses on the wire', async () => {
+    const { hono, started } = flow();
+    const held = await pendingApproval(hono);
+    expect(held.approvalToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(held.command).toEqual(UP_TRIAL);
+    expect(held.risk).toBe('caution');
+    expect(held.reason).toContain('Ask mode');
+    expect(started()).toBe(0);
+    const again = await pendingApproval(hono);
+    expect(again.approvalToken).not.toBe(held.approvalToken);
   });
 
-  it('forgets an approval after its window', async () => {
-    let now = 0;
-    const ledger = new AiApprovalLedger(() => now);
-    ledger.expect(principal, 'conv-1', event);
-    now = 16 * 60 * 1000;
-    expect(await ledger.submit(answer())).toMatchObject({ ok: false, status: 404 });
+  it('runs an approved command exactly once, and records the approval', async () => {
+    const { hono, audited, started } = flow();
+    const held = await pendingApproval(hono);
+    const approved = await post(hono, AI_ROUTES.approval, answer(held));
+    expect(approved.status).toBe(200);
+    expect(audited).toContainEqual({ commandPath: 'ai approval', success: true });
+
+    const ran = await turnEvents(hono);
+    expect(ran.map((e) => e.type)).not.toContain('approval_required');
+    expect(started()).toBe(1);
+
+    const next = await turnEvents(hono);
+    expect(next.map((e) => e.type)).toContain('approval_required');
+    expect(started()).toBe(1);
+  });
+
+  it('refuses a forged token, and runs nothing', async () => {
+    const { hono, started } = flow();
+    const held = await pendingApproval(hono);
+    const forged = { ...held, approvalToken: 'A'.repeat(43) };
+    const refused = await post(hono, AI_ROUTES.approval, answer(forged));
+    expect(refused).toMatchObject({ status: 404, body: { code: AI_APPROVAL_UNKNOWN } });
+    await turnEvents(hono);
+    expect(started()).toBe(0);
+  });
+
+  it('refuses a reused token', async () => {
+    const { hono } = flow();
+    const held = await pendingApproval(hono);
+    expect((await post(hono, AI_ROUTES.approval, answer(held))).status).toBe(200);
+    const replay = await post(hono, AI_ROUTES.approval, answer(held));
+    expect(replay).toMatchObject({ status: 404, body: { code: AI_APPROVAL_UNKNOWN } });
+  });
+
+  it('refuses a token presented for another command, and keeps it for its own', async () => {
+    const { hono, started } = flow();
+    const held = await pendingApproval(hono);
+    const other = answer(held, {
+      command: { pathKey: 'repo up', params: {}, positionals: { ref: 'shop' } },
+      stepUpMethod: 'passkey',
+    });
+    const refused = await post(hono, AI_ROUTES.approval, other);
+    expect(refused).toMatchObject({ status: 409, body: { code: AI_APPROVAL_COMMAND_MISMATCH } });
+    await turnEvents(hono);
+    expect(started()).toBe(0);
+    expect((await post(hono, AI_ROUTES.approval, answer(held))).status).toBe(200);
+  });
+
+  it('refuses a token presented for another conversation or tool call', async () => {
+    const { hono } = flow();
+    const held = await pendingApproval(hono);
+    const elsewhere = await post(
+      hono,
+      AI_ROUTES.approval,
+      answer(held, { conversationId: 'conv-2' })
+    );
+    expect(elsewhere).toMatchObject({ status: 404, body: { code: AI_APPROVAL_UNKNOWN } });
+    const otherCall = await post(hono, AI_ROUTES.approval, answer(held, { toolCallId: 'call-9' }));
+    expect(otherCall).toMatchObject({ status: 404, body: { code: AI_APPROVAL_UNKNOWN } });
+  });
+
+  it('leaves no grant behind a rejection', async () => {
+    const { hono, audited, started } = flow();
+    const held = await pendingApproval(hono);
+    const rejected = await post(hono, AI_ROUTES.approval, answer(held, { decision: 'reject' }));
+    expect(rejected.status).toBe(200);
+    expect(audited).toContainEqual({ commandPath: 'ai approval', success: false });
+    expect((await turnEvents(hono)).map((e) => e.type)).toContain('approval_required');
+    expect(started()).toBe(0);
+  });
+
+  it('withdraws an approval whose audit record cannot be delivered', async () => {
+    const { hono, started } = flow(OPEN, { failApprovalAudit: true });
+    const held = await pendingApproval(hono);
+    expect((await post(hono, AI_ROUTES.approval, answer(held))).status).toBe(500);
+    expect((await turnEvents(hono)).map((e) => e.type)).toContain('approval_required');
+    expect(started()).toBe(0);
+  });
+
+  it('remembers an exact allow rule only when asked, for a caution command', async () => {
+    const { hono, started } = flow();
+    const held = await pendingApproval(hono);
+    expect((await post(hono, AI_ROUTES.approval, answer(held, { remember: true }))).status).toBe(
+      200
+    );
+    await turnEvents(hono);
+    await turnEvents(hono);
+    expect(started()).toBe(2);
+    toolOf = { name: 'repo_up', input: { ref: 'shop:trial', no_start: true } };
+    expect((await turnEvents(hono)).map((e) => e.type)).toContain('approval_required');
+  });
+
+  it('runs a caution command in Skip mode, and still holds a destructive one', async () => {
+    const { hono, store, started } = flow();
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
+    await turnEvents(hono);
+    expect(started()).toBe(1);
+    toolOf = { name: 'repo_down', input: { ref: 'shop:trial' } };
+    const held = await pendingApproval(hono);
+    expect(held.risk).toBe('destructive');
+    expect(started()).toBe(1);
+  });
+
+  it('reads a mode the policy disabled as Ask', async () => {
+    const { hono, store, started } = flow({
+      ...OPEN,
+      defaults: { ...OPEN.defaults, aiModesDisabled: ['skip'] },
+    });
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
+    const held = await pendingApproval(hono);
+    expect(held.reason).toContain('Ask mode');
+    expect(started()).toBe(0);
+  });
+
+  it('asks the judge in Auto mode, and holds what it blocks', async () => {
+    let verdict: 'allow' | 'block' = 'allow';
+    const seen: unknown[] = [];
+    const { hono, store, started } = flow(OPEN, {
+      judge: (_profile, input) => {
+        seen.push(input);
+        return Promise.resolve({ verdict, reason: 'because' });
+      },
+    });
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'auto');
+    await turnEvents(hono);
+    expect(started()).toBe(1);
+    expect(seen[0]).toMatchObject({
+      command: { pathKey: 'repo up', argv: ['repo', 'up', 'shop:trial'] },
+    });
+    verdict = 'block';
+    const held = await pendingApproval(hono);
+    expect(held.reason).toContain('judge');
+    expect(started()).toBe(1);
   });
 });

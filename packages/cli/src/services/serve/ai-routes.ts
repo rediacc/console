@@ -13,13 +13,17 @@
  * the method in `stepUpMethod`. The executor does not take that judgment on trust: it resolves the
  * command's target from its own config, and an approval of a destructive command or of a grand-repo
  * target without a step-up method is refused here, whatever the browser claimed about `grand`. The
- * single-use token itself is redeemed by the approval ledger the loop owns (`AiApprovals`), bound
- * to the conversation and the command.
+ * single-use token itself is redeemed by the approval ledger (`AiApprovals`, services/ai/approvals.ts),
+ * bound to the principal, the conversation, the tool call and the argv hash; every answer is
+ * audited (approval-audit.ts), and an approval whose record cannot be delivered is withdrawn. An
+ * approval of a `caution` command may ask to be remembered: an exact allow rule for that argv in that
+ * conversation, never a pattern, and never for a destructive or grand-repo command.
  *
  * `POST /v1/ai/chat` runs one chat turn (AP7 of agent/plans/PLAN-console-ai-providers.md) and
  * answers NDJSON: `ai` lines from the loop (services/ai/loop.ts) and the renet `event` lines of each
  * tool call, tagged with its call id. The profile is resolved from the session's configs (D3), and
- * every tool call runs under an agent principal the route sets, never one the body names (D9). A
+ * every tool call runs under an agent principal the route sets, never one the body names (D9), then
+ * through the conversation's autonomy gate (services/ai/autonomy.ts), the Auto-mode judge included. A
  * chat bound to an agent grant (`grant` in the body) takes the grant's session: its config, its
  * opt-ins and its scope, through the same grant sessions `POST /v1/mcp/call` uses. The client
  * leaving aborts the provider stream and every running tool.
@@ -31,12 +35,15 @@
 import { type AiConfigs, type Profile, resolveProfile } from '@rediacc/shared/ai';
 import { isPreviewRun, isStepUpMethod, STEP_UP_METHODS } from '@rediacc/shared/auth';
 import { getCommand } from '@rediacc/shared/cli-contract';
-import { type AiEvent, PROXY_ROUTES, type StreamLine } from '@rediacc/shared/cli-contract/wire';
+import {
+  type AiApprovalCommand,
+  PROXY_ROUTES,
+  type StreamLine,
+} from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { listProxyTools } from '@rediacc/shared/mcp/registry';
 import {
   type AiDisableableMode,
-  type DecisionTarget,
   disabledAiModes,
   type EffectivePolicy,
   mergePolicies,
@@ -46,10 +53,29 @@ import { jsonSchema, type LanguageModel, type ModelMessage, type ToolSet, tool }
 import type { Context, Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { z } from 'zod';
+import { auditApproval } from '../ai/approval-audit.js';
+import type { AiApprovals } from '../ai/approvals.js';
+import { autonomyHold, effectiveMode, isGrandTarget } from '../ai/autonomy.js';
+import {
+  buildJudgeInput,
+  createJudgeTally,
+  type JudgeInput,
+  type JudgeVerdict,
+  judgeInAutoMode,
+  judgeModelOf,
+  runJudge,
+} from '../ai/judge.js';
 import { runAiTurn } from '../ai/loop.js';
 import { createProviderModel, ProviderProfileError } from '../ai/provider.js';
 import { runSmoke, type SmokeResult } from '../ai/smoke.js';
-import { type AiToolContext, type AiToolResult, requestOf, runAiTool } from '../ai/tools.js';
+import {
+  type AiGateCall,
+  type AiToolContext,
+  type AiToolGate,
+  type AiToolResult,
+  requestOf,
+  runAiTool,
+} from '../ai/tools.js';
 import { fenceUntrusted } from '../ai/untrusted.js';
 import { boundEffectivePolicy } from '../config/policy-record.js';
 import {
@@ -109,17 +135,26 @@ const ApprovalRequestSchema = z.strictObject({
   decision: z.enum(['approve', 'reject']),
   command: ApprovedCommandSchema,
   stepUpMethod: z.enum(STEP_UP_METHODS).nullable(),
+  /** Remember an exact allow rule for this argv in this conversation (a `caution` command only). */
+  remember: z.boolean().optional(),
 });
 
 type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 
-/** Where the loop keeps each conversation's mode (D4); the autonomy gate reads it. */
+/** Where the loop keeps each conversation's mode (D4) and exact allow rules; the autonomy gate reads both. */
 export interface AiConversationModes {
   set(principal: SessionPrincipal, conversationId: string, mode: AiMode): void;
+  get(principal: SessionPrincipal, conversationId: string): AiMode;
+  allowExact(principal: SessionPrincipal, conversationId: string, command: AiApprovalCommand): void;
+  allowsExact(
+    principal: SessionPrincipal,
+    conversationId: string,
+    command: AiApprovalCommand
+  ): boolean;
 }
 
 /** One approval answer as the executor verified it. */
-export interface AiApprovalSubmit extends Omit<ApprovalRequest, 'stepUpMethod'> {
+export interface AiApprovalSubmit extends Omit<ApprovalRequest, 'stepUpMethod' | 'remember'> {
   principal: SessionPrincipal;
   stepUpMethod: ApprovalRequest['stepUpMethod'];
   /** The command is destructive and the run is not a preview. */
@@ -131,17 +166,6 @@ export interface AiApprovalSubmit extends Omit<ApprovalRequest, 'stepUpMethod'> 
 export type AiApprovalVerdict =
   | { ok: true }
   | { ok: false; status: 403 | 404 | 409; code: string; message: string };
-
-/** The single-use approval tokens the loop issued, bound to (conversation, command). */
-export interface AiApprovals {
-  submit(answer: AiApprovalSubmit): Promise<AiApprovalVerdict>;
-  /** A chat turn ended on this approval request: the ledger expects its answer. */
-  expect(
-    principal: SessionPrincipal,
-    conversationId: string,
-    event: Extract<AiEvent, { type: 'approval_required' }>
-  ): void;
-}
 
 /** The chat host's own seams; every one has a production default. */
 export interface AiChatDeps {
@@ -156,6 +180,8 @@ export interface AiChatDeps {
   busy?: BusyCounter;
   /** The per-turn output token cap; the loop's default when absent. */
   maxOutputTokens?: number;
+  /** The Auto-mode judge of a profile; `runJudge` on the profile's judge model when absent. */
+  judge?: (profile: Profile, input: JudgeInput) => Promise<JudgeVerdict>;
 }
 
 export interface AiRouteDeps {
@@ -188,11 +214,6 @@ function disabledModesFor(config: RdcConfig, principal: SessionPrincipal): AiDis
     userEmail: principal.userEmail,
     ...(principal.teamSlug ? { teamSlug: principal.teamSlug } : {}),
   });
-}
-
-/** A grand-repo target as the grand-repo rule reads it: unresolved counts as grand; ops VMs never do. */
-function isGrandTarget(target: DecisionTarget): boolean {
-  return !!target.repo && target.repo.state !== 'fork' && !target.isOpsVm;
 }
 
 function stringOf(name: string | null, bag: Record<string, unknown>): string | undefined {
@@ -282,6 +303,12 @@ interface ChatSession {
   sources: AiConfigs;
 }
 
+/** The model a chat runs on, and the profile it came from (the judge reads the profile). */
+interface BuiltModel {
+  model: LanguageModel;
+  profile: Profile;
+}
+
 /** A session, or the refusal that answers the request instead. */
 type OpenedChat =
   | { session: ChatSession }
@@ -309,6 +336,18 @@ interface ChatToolHost {
   session: ChatSession;
   conversationId: string;
   forward: (line: StreamLine) => void;
+  gate: AiToolGate;
+}
+
+/** The argv the judge reads: the path, the positionals in order, then each option as `--name value`. */
+function judgeArgvOf(command: AiApprovalCommand): string[] {
+  const argv = [...command.pathKey.split(' ')];
+  for (const value of Object.values(command.positionals)) argv.push(String(value));
+  for (const [name, value] of Object.entries(command.params)) {
+    if (value === true) argv.push(`--${name}`);
+    else if (value !== false && value !== undefined) argv.push(`--${name}`, String(value));
+  }
+  return argv;
 }
 
 type RegistryTool = ReturnType<typeof listProxyTools>[number];
@@ -370,6 +409,7 @@ function unrunnable(host: ChatToolHost): AiToolContext {
     authorize: host.deps.authorize,
     run: () => Promise.reject(new Error('This tool call has no dispatcher.')),
     onEvent: (toolCallId, event) => host.forward({ kind: 'event', event, toolCallId }),
+    gate: host.gate,
   };
 }
 
@@ -439,6 +479,7 @@ export function registerAiRoutes(
   ai: AiRouteDeps
 ): void {
   const chatBusy = createBusyCounter();
+  const judgeTally = createJudgeTally();
 
   /** Authenticate, parse, and open the config of the request's session. */
   async function admit<T>(c: Context, schema: z.ZodType<T>) {
@@ -482,6 +523,25 @@ export function registerAiRoutes(
     }
   });
 
+  /** Audit one redeemed answer; an approval whose record cannot be delivered loses its grant. */
+  async function recordApproval(
+    principal: SessionPrincipal,
+    body: ApprovalRequest,
+    judged: { destructive: boolean }
+  ): Promise<void> {
+    try {
+      await auditApproval(deps.audit, {
+        principal,
+        decision: body.decision,
+        destructive: judged.destructive,
+        requestId: toolRequestId(body.conversationId, body.toolCallId),
+      });
+    } catch (error) {
+      ai.approvals.revokeGrant(principal, body.conversationId, body.command);
+      throw error;
+    }
+  }
+
   app.post(AI_ROUTES.approval, async (c) => {
     try {
       const { principal, body, config } = await admit(c, ApprovalRequestSchema);
@@ -489,9 +549,14 @@ export function registerAiRoutes(
       if ('refusal' in judged) return c.json(judged.refusal, 403);
       const { grand, destructive } = judged;
 
-      const verdict = await ai.approvals.submit({ ...body, principal, destructive, grand });
+      const { remember, ...answer } = body;
+      const verdict = await ai.approvals.submit({ ...answer, principal, destructive, grand });
       if (!verdict.ok) {
         return c.json({ error: verdict.message, code: verdict.code }, verdict.status);
+      }
+      await recordApproval(principal, body, judged);
+      if (remember && body.decision === 'approve' && !destructive && !grand) {
+        ai.modes.allowExact(principal, body.conversationId, body.command);
       }
       return c.json(
         {
@@ -535,20 +600,82 @@ export function registerAiRoutes(
   const modelOf = (profile: Profile): LanguageModel =>
     (ai.chat?.createModel ?? createProviderModel)(profile);
 
+  /** The Auto-mode judge: the seam when given, else the profile's judge model. */
+  const judgeOf = (profile: Profile) => (input: JudgeInput) => {
+    if (ai.chat?.judge) return ai.chat.judge(profile, input);
+    const createModel = ai.chat?.createModel;
+    return runJudge(
+      profile,
+      input,
+      createModel ? { model: createModel({ ...profile, model: judgeModelOf(profile) }) } : {}
+    );
+  };
+
+  /** The Auto-mode judge's verdict on one call the policy allowed; true for an allow. */
+  async function judged(
+    principal: SessionPrincipal,
+    profile: Profile,
+    body: ChatRequest,
+    call: AiGateCall
+  ): Promise<boolean> {
+    const input = buildJudgeInput(messagesOf(body), {
+      pathKey: call.command.pathKey,
+      argv: judgeArgvOf(call.command),
+      target: {
+        ...(call.target.machine ? { machine: call.target.machine } : {}),
+        ...(call.target.repo ? { repo: call.target.repo } : {}),
+      },
+      severity: call.entry.severity,
+      decision: { allowed: true },
+    });
+    const judgment = await judgeInAutoMode({
+      conversationId: `${principal.orgId}\u0000${principal.userId}\u0000${body.conversationId}`,
+      input,
+      judge: judgeOf(profile),
+      tally: judgeTally,
+      setAskMode: () => ai.modes.set(principal, body.conversationId, 'ask'),
+    });
+    return judgment.verdict.verdict === 'allow';
+  }
+
+  /**
+   * The autonomy gate of one turn: the conversation's mode as the policy admits it, the exact
+   * allow rules, the judge in Auto mode, and the grants approved tokens left.
+   */
+  function chatGate(session: ChatSession, profile: Profile, body: ChatRequest): AiToolGate {
+    const { principal, config } = session.handle;
+    const { conversationId } = body;
+    const disabled = disabledModesFor(config, principal);
+    return {
+      takeGrant: (command) => ai.approvals.takeGrant(principal, conversationId, command),
+      hold: (call) =>
+        autonomyHold({
+          mode: effectiveMode(ai.modes.get(principal, conversationId), disabled),
+          risk: call.risk,
+          pathKey: call.command.pathKey,
+          exactlyAllowed: ai.modes.allowsExact(principal, conversationId, call.command),
+          judge: () => judged(principal, profile, body, call),
+        }),
+    };
+  }
+
   const chatHost = (
     session: ChatSession,
     conversationId: string,
-    forward: ChatToolHost['forward']
-  ) => ({
+    forward: ChatToolHost['forward'],
+    gate: AiToolGate
+  ): ChatToolHost => ({
     deps,
     busy: ai.chat?.busy ?? chatBusy,
     session,
     conversationId,
     forward,
+    gate,
   });
 
   /** Stream one turn as NDJSON; the client leaving aborts the provider stream and the running tools. */
-  function streamChat(c: Context, model: LanguageModel, session: ChatSession, body: ChatRequest) {
+  function streamChat(c: Context, built: BuiltModel, session: ChatSession, body: ChatRequest) {
+    const { model, profile } = built;
     const abort = new AbortController();
     c.req.raw.signal.addEventListener('abort', () => abort.abort(), { once: true });
     return streamText(c, async (stream) => {
@@ -556,15 +683,16 @@ export function registerAiRoutes(
       const forward = (line: StreamLine) => {
         stream.write(`${JSON.stringify(line)}\n`).catch(() => undefined);
       };
+      const gate = chatGate(session, profile, body);
       await runAiTurn({
         model,
-        tools: chatTools(chatHost(session, body.conversationId, forward)),
+        tools: chatTools(chatHost(session, body.conversationId, forward, gate)),
         messages: messagesOf(body),
         ...(ai.chat?.maxOutputTokens ? { maxOutputTokens: ai.chat.maxOutputTokens } : {}),
         abortSignal: abort.signal,
         emit: (event) => forward({ kind: 'ai', ai: event }),
-        onApprovalRequired: (event) =>
-          ai.approvals.expect(session.handle.principal, body.conversationId, event),
+        issueApproval: ({ toolCallId, command }) =>
+          ai.approvals.issue(session.handle.principal, body.conversationId, toolCallId, command),
       });
     });
   }
@@ -573,13 +701,13 @@ export function registerAiRoutes(
   function buildModel(
     sources: AiConfigs,
     name: string | undefined
-  ): { model: LanguageModel } | { refusal: { error: string; code: string }; status: 404 | 422 } {
+  ): BuiltModel | { refusal: { error: string; code: string }; status: 404 | 422 } {
     const resolved = resolveProfile(sources, name);
     if (!resolved.ok) {
       return { status: 404, refusal: { error: resolved.message, code: AI_PROFILE_UNRESOLVED } };
     }
     try {
-      return { model: modelOf(resolved.profile) };
+      return { model: modelOf(resolved.profile), profile: resolved.profile };
     } catch (error) {
       if (!(error instanceof ProviderProfileError)) throw error;
       return { status: 422, refusal: { error: error.message, code: AI_PROFILE_UNRESOLVED } };
@@ -594,8 +722,7 @@ export function registerAiRoutes(
       const { session } = opened;
       const built = buildModel(session.sources, body.profile);
       if ('refusal' in built) return c.json(built.refusal, built.status);
-      const { model } = built;
-      return streamChat(c, model, session, body);
+      return streamChat(c, built, session, body);
     } catch (error) {
       return refusal(c, error);
     }

@@ -28,12 +28,13 @@ import {
   type AiToolResult,
   type AiToolRun,
   type AiToolSpec,
-  aiEventOfToolResult,
+  approvalResultOf,
   buildAiTools,
   COMMAND_REJECTED,
   requestOf,
   runAiTool,
   stopOnApproval,
+  toolResultEventOf,
   VIEW_SWITCHES,
 } from '../tools.js';
 import {
@@ -336,8 +337,24 @@ async function turn(ctx: AiToolContext, steps: ReturnType<typeof step>[]) {
   });
   const events = [];
   for await (const part of result.fullStream) {
-    if (part.type === 'tool-result') events.push(aiEventOfToolResult(part));
     if (part.type === 'error') throw part.error;
+    if (part.type !== 'tool-result') continue;
+    // The loop's own mapping (loop.ts), with a fixed token in place of the ledger's.
+    const approval = approvalResultOf(part.output);
+    events.push(
+      approval
+        ? {
+            type: 'approval_required' as const,
+            toolCallId: part.toolCallId,
+            name: part.toolName,
+            input: part.input,
+            approvalToken: 'tok',
+            command: approval.command,
+            risk: approval.risk,
+            reason: approval.reason,
+          }
+        : toolResultEventOf(part)
+    );
   }
   return { mock, events };
 }
@@ -365,10 +382,76 @@ describe('a needs_confirmation answer', () => {
         toolCallId: 'call-1',
         name: 'repo_delete',
         input: { ref: 'shop' },
+        approvalToken: 'tok',
+        command: { pathKey: 'repo delete', params: {}, positionals: { ref: 'shop' } },
+        risk: 'grand',
+        reason: expect.any(String),
       },
     ]);
     expect(AiEventSchema.parse(events[0])).toEqual(events[0]);
     expect(runs).toHaveLength(0);
+  });
+
+  it('runs once on the grant an approved token left for exactly its argv', async () => {
+    const { runs, run } = recorder();
+    const grants: string[] = [];
+    const taken: unknown[] = [];
+    const gate = {
+      hold: () => Promise.resolve(null),
+      takeGrant: (command: unknown) => {
+        taken.push(command);
+        const key = JSON.stringify(command);
+        const index = grants.indexOf(key);
+        if (index < 0) return false;
+        grants.splice(index, 1);
+        return true;
+      },
+    };
+    const ctx = contextOf({ run, agentGrant: grant(['shop']), gate });
+    grants.push(
+      JSON.stringify({ pathKey: 'repo delete', params: {}, positionals: { ref: 'shop' } })
+    );
+    // Another argv finds no grant and still asks.
+    const other = await runAiTool(
+      ctx,
+      spec('repo_delete'),
+      { ref: 'shop', archive_config: true },
+      CALL
+    );
+    expect(other).toMatchObject({ status: 'approval_required', risk: 'grand' });
+    expect(await runAiTool(ctx, spec('repo_delete'), { ref: 'shop' }, CALL)).toMatchObject({
+      status: 'ok',
+    });
+    expect(await runAiTool(ctx, spec('repo_delete'), { ref: 'shop' }, CALL)).toMatchObject({
+      status: 'approval_required',
+    });
+    expect(runs).toHaveLength(1);
+    expect(taken).toHaveLength(3);
+  });
+
+  it('a hold the gate places on an allowed call asks, and a read never consults it', async () => {
+    const { runs, run } = recorder();
+    const holds: string[] = [];
+    const gate = {
+      hold: (call: { risk: string }) => {
+        holds.push(call.risk);
+        return Promise.resolve(
+          call.risk === 'safe' ? null : { code: 'AI_HOLD_ASK', reason: 'Ask mode.' }
+        );
+      },
+      takeGrant: () => false,
+    };
+    const ctx = contextOf({ run, agentGrant: grant(['shop']), gate });
+    expect(await runAiTool(ctx, spec('repo_replicate'), { ref: 'shop' }, CALL)).toMatchObject({
+      status: 'approval_required',
+      code: 'AI_HOLD_ASK',
+      command: { pathKey: 'repo replicate', positionals: { ref: 'shop' } },
+    });
+    expect(await runAiTool(ctx, spec('repo_status'), { ref: 'shop' }, CALL)).toMatchObject({
+      status: 'ok',
+    });
+    expect(holds).toEqual(['grand', 'safe']);
+    expect(runs).toHaveLength(1);
   });
 
   it('a refusal and an allowed call stay tool_result events and the turn goes on (controls)', async () => {

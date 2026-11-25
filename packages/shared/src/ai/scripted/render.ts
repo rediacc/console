@@ -32,7 +32,17 @@ function partLines(part: ScriptPart): { lines: StreamLine[]; ends: boolean } {
   }
   const { toolCallId, toolName: name, input, outcome } = part;
   if (outcome.kind === 'approval') {
-    return { lines: [aiLine({ type: 'approval_required', toolCallId, name, input })], ends: true };
+    // The TEST_MODE stream has no executor ledger behind it: the token is a fixed, unredeemable value.
+    const approval: AiEvent = {
+      type: 'approval_required',
+      toolCallId,
+      name,
+      input,
+      approvalToken: `scripted:${toolCallId}`,
+      command: { pathKey: name.replaceAll('_', ' '), params: {}, positionals: { ...input } },
+      risk: 'caution',
+    };
+    return { lines: [aiLine(approval)], ends: true };
   }
   return {
     lines: [

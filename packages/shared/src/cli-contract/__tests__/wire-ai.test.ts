@@ -6,7 +6,22 @@ const aiEvents = [
   { type: 'text_delta', text: 'hello' },
   { type: 'tool_call', toolCallId: 'tc1', name: 'repo_status', input: { machine: 'm1' } },
   { type: 'tool_result', toolCallId: 'tc1', ok: true, output: 'up' },
-  { type: 'approval_required', toolCallId: 'tc2', name: 'repo_down', input: {} },
+  {
+    type: 'approval_required',
+    toolCallId: 'tc2',
+    name: 'repo_down',
+    input: { ref: 'shop:trial' },
+    approvalToken: 'tok',
+    command: { pathKey: 'repo down', params: {}, positionals: { ref: 'shop:trial' } },
+    risk: 'destructive',
+    reason: 'destructive',
+  },
+  { type: 'plan', toolCallId: 'tc3', steps: [{ title: 'Fork shop' }] },
+  {
+    type: 'present',
+    toolCallId: 'tc4',
+    card: { type: 'status', tone: 'ok', text: 'All repos are up.' },
+  },
   { type: 'usage', inputTokens: 10, outputTokens: 4 },
   { type: 'finish', reason: 'stop' },
   { type: 'error', message: 'provider refused', code: 'AI_PROVIDER' },
@@ -20,6 +35,15 @@ describe('AiEventSchema', () => {
   it('refuses an unknown type and a tool call without its id', () => {
     expect(AiEventSchema.safeParse({ type: 'thought', text: 'x' }).success).toBe(false);
     expect(AiEventSchema.safeParse({ type: 'tool_call', name: 'repo_status' }).success).toBe(false);
+  });
+
+  it('refuses an approval request without its token, its command or its risk', () => {
+    const full = aiEvents[3];
+    for (const field of ['approvalToken', 'command', 'risk'] as const) {
+      const { [field]: _dropped, ...rest } = full;
+      expect(AiEventSchema.safeParse(rest).success).toBe(false);
+    }
+    expect(AiEventSchema.safeParse({ ...full, risk: 'harmless' }).success).toBe(false);
   });
 });
 

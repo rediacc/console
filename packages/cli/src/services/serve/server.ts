@@ -36,7 +36,8 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { VERSION } from '../../version.js';
-import { AiApprovalLedger, AiConversationStore } from '../ai/loop.js';
+import { AiApprovalLedger } from '../ai/approvals.js';
+import { AiConversationStore } from '../ai/autonomy.js';
 import { outputService } from '../core/output.js';
 import {
   createOutputState,
