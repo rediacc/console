@@ -80,6 +80,24 @@ describe('STIX bundle', () => {
     expect(b).toBe(a);
   });
 
+  it('gives identical bytes when a type:value IoC repeats with different windows, in any order', async () => {
+    const early = ioc('domain', 'dup.example', { firstSeen: '2026-11-19T00:00:00.000Z' });
+    const late = ioc('domain', 'dup.example', { lastSeen: '2026-11-20T09:00:00.000Z' });
+    const a = await buildStixBundle(input([early, late, ...iocs]));
+    const b = await buildStixBundle(input([...iocs, late, early]));
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a));
+    const observed = a.objects.find(
+      (o) => o.type === 'observed-data' && String(o.first_observed).startsWith('2026-11-19')
+    );
+    expect(observed?.last_observed).toBe('2026-11-20T09:00:00.000Z');
+  });
+
+  it('gives two relationship kinds on one pair two ids', async () => {
+    const bundle = await buildStixBundle(input(iocs));
+    const rels = bundle.objects.filter((o) => o.type === 'relationship');
+    expect(new Set(rels.map((o) => o.id)).size).toBe(rels.length);
+  });
+
   it('meets the required properties of every object and every pattern', async () => {
     const bundle = await buildStixBundle(input(iocs));
     expect(bundle.type).toBe('bundle');

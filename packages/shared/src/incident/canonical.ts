@@ -47,6 +47,12 @@ export function canonicalize(value: CanonicalValue): string {
     return `[${(value as readonly CanonicalValue[]).map((v) => canonicalize(v)).join(',')}]`;
   }
   if (typeof value === 'object') {
+    const proto: unknown = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) {
+      throw new TypeError(
+        'canonical JSON carries plain objects only; convert a Date or class instance first'
+      );
+    }
     return canonicalObject(value as { readonly [key: string]: CanonicalValue | undefined });
   }
   throw new TypeError(`canonical JSON cannot carry a ${typeof value}`);

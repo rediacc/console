@@ -1,8 +1,10 @@
 /**
  * STIX 2.1 bundle for an incident report (D4 of PLAN-forensics-reports), built
  * without a library. Every id is a UUIDv5 over the object's content, so building
- * the same report twice gives the same bytes. A file indicator exists only for a
- * sha256 IoC, so a report with no process hash emits none.
+ * the same report twice gives the same bytes, whatever the input order. A repeated
+ * type:value IoC is merged (earliest firstSeen, latest lastSeen, lowest asn). A file
+ * indicator exists for every sha256 IoC and carries no observable, so a report with
+ * no sha256 IoC emits none.
  */
 import { canonicalize } from './canonical.js';
 import type { Ioc, IocType } from './report.js';
@@ -111,6 +113,26 @@ function byKey(a: Ioc, b: Ioc): number {
   return x < y ? -1 : 1;
 }
 
+/** One IoC per type:value, sorted by key; a repeat widens the window and keeps the lowest asn. */
+function mergeDuplicates(iocs: readonly Ioc[]): Ioc[] {
+  const merged = new Map<string, Ioc>();
+  for (const ioc of iocs) {
+    const prev = merged.get(iocKey(ioc));
+    if (!prev) {
+      merged.set(iocKey(ioc), ioc);
+      continue;
+    }
+    const asns = [prev.asn, ioc.asn].filter((n): n is number => n !== undefined);
+    merged.set(iocKey(ioc), {
+      ...prev,
+      firstSeen: ioc.firstSeen < prev.firstSeen ? ioc.firstSeen : prev.firstSeen,
+      lastSeen: ioc.lastSeen > prev.lastSeen ? ioc.lastSeen : prev.lastSeen,
+      ...(asns.length > 0 ? { asn: Math.min(...asns) } : {}),
+    });
+  }
+  return [...merged.values()].sort(byKey);
+}
+
 async function relationship(
   common: Common,
   creator: string,
@@ -121,7 +143,7 @@ async function relationship(
   return {
     type: 'relationship',
     ...common,
-    id: await stixId('relationship', { s: source, t: target }),
+    id: await stixId('relationship', { k: kind, s: source, t: target }),
     created_by_ref: creator,
     relationship_type: kind,
     source_ref: source,
@@ -198,10 +220,7 @@ export async function buildStixBundle(input: StixInput): Promise<StixBundle> {
   };
 
   const byId = new Map<string, StixObject>([[identity.id, identity]]);
-  const seen = new Set<string>();
-  for (const ioc of [...input.iocs].sort(byKey)) {
-    if (seen.has(iocKey(ioc))) continue;
-    seen.add(iocKey(ioc));
+  for (const ioc of mergeDuplicates(input.iocs)) {
     for (const o of await objectsForIoc(ioc, common, identity.id)) byId.set(o.id, o);
   }
   const objects = [...byId.values()];
