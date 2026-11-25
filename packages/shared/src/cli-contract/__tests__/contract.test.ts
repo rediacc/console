@@ -18,7 +18,12 @@ import {
   getCommand,
   proxyCapableCommands,
 } from '../index.js';
-import { ContractStringsSchema, checkContractInvariants, parseCliContract } from '../validation.js';
+import {
+  EXECUTOR_SERVED_COMMANDS,
+  ContractStringsSchema,
+  checkContractInvariants,
+  parseCliContract,
+} from '../validation.js';
 
 /**
  * Read as an asset rather than imported: a static import of a 348KB JSON makes
@@ -128,6 +133,7 @@ describe('CLI contract', () => {
     // PLAN-rmcp-local-mcp LM10 (D57): the 29 config and `other` plane commands of the surface table run on the executor against the session config. A command joins this set only through the EXECUTOR_SERVED table of the generator, so the count is a drift alarm, and none of them is a machine job.
     const offMachine = CLI_CONTRACT.commands.filter((c) => c.proxyCapable && c.plane !== 'machine');
     expect(offMachine).toHaveLength(29);
+    expect(offMachine.map((c) => c.pathKey).sort()).toEqual([...EXECUTOR_SERVED_COMMANDS].sort());
     for (const cmd of offMachine) {
       expect(cmd.detachable, cmd.pathKey).toBe(false);
       expect(cmd.detachBlockedReason, cmd.pathKey).toMatch(/without --background/);
@@ -565,5 +571,29 @@ describe('CLI contract', () => {
     const set = getCommand('repo secret set');
     expect(set?.options.find((o) => o.long === 'value')?.sensitive).toBe(true);
     expect(set?.options.find((o) => o.long === 'key')?.sensitive).toBeUndefined();
+  });
+});
+
+describe('proxyCapable on a non-executor command', () => {
+  it('fails validation for a planted proxyCapable local-only command and passes the real contract', () => {
+    const local = CLI_CONTRACT.commands.find(
+      (c) => c.plane !== 'machine' && !c.proxyCapable && !EXECUTOR_SERVED_COMMANDS.has(c.pathKey)
+    );
+    if (!local) throw new Error('fixture: no non-executor off-machine command');
+    const planted = {
+      ...CLI_CONTRACT,
+      commands: [
+        {
+          ...local,
+          interactive: false,
+          proxyCapable: true,
+          proxyBlockedReason: undefined,
+        },
+      ],
+    };
+    expect(checkContractInvariants(planted)).toContain(
+      `${local.pathKey}: proxyCapable but plane is "${local.plane}" and the command is not executor-served`
+    );
+    expect(checkContractInvariants(CLI_CONTRACT)).toEqual([]);
   });
 });

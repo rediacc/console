@@ -193,6 +193,44 @@ export function safeParseCliContract(
   return CliContractSchema.safeParse(value);
 }
 
+/**
+ * The non-machine commands the executor serves against the session config
+ * (PLAN-rmcp-local-mcp LM10, D57). It mirrors the generator's EXECUTOR_SERVED
+ * table on purpose: the contract under validation cannot vouch for itself, and
+ * a test pins this set to the real contract's off-machine proxyable commands.
+ */
+export const EXECUTOR_SERVED_COMMANDS: ReadonlySet<string> = new Set([
+  'backup immutability show',
+  'backup manifests',
+  'backup reconcile',
+  'backup retention',
+  'backup retention preview',
+  'backup strategy list',
+  'backup strategy show',
+  'backup undelete',
+  'backup usage',
+  'cluster status',
+  'config access list',
+  'config prune',
+  'config show',
+  'credits',
+  'feedback list',
+  'feedback report',
+  'feedback show',
+  'legal',
+  'machine access show',
+  'machine add',
+  'machine infra show',
+  'machine list',
+  'machine provider add',
+  'machine provider list',
+  'machine provider remove',
+  'machine remove',
+  'repo replicate status',
+  'repo secret get',
+  'repo secret list',
+]);
+
 /** Identity invariants: a command's path, key and domain must agree. */
 function checkIdentity(cmd: ContractCommand): string[] {
   const problems: string[] = [];
@@ -207,13 +245,20 @@ function checkIdentity(cmd: ContractCommand): string[] {
 
 /**
  * proxyCapable is derived, and a consumer must never be handed a proxyable
- * command that is interactive. A non-machine command is proxyable only through the generator's EXECUTOR_SERVED table, and then it can never be detachable (checkDetachable). Every refusal must also
- * carry a reason, so the CLI can always tell the operator why.
+ * command that is interactive or off the machine plane, unless it is named in
+ * EXECUTOR_SERVED_COMMANDS, and then it can never be detachable
+ * (checkDetachableCommand). Every refusal must also carry a reason, so the CLI
+ * can always tell the operator why.
  */
 function checkProxyCapability(cmd: ContractCommand): string[] {
   const problems: string[] = [];
 
   if (cmd.proxyCapable) {
+    if (cmd.plane !== 'machine' && !EXECUTOR_SERVED_COMMANDS.has(cmd.pathKey)) {
+      problems.push(
+        `${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}" and the command is not executor-served`
+      );
+    }
     if (cmd.interactive) {
       problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
     }
