@@ -2301,7 +2301,7 @@ List the incidents of the organization, or show one with its scope, window, mach
 
 ### rdc incident export <id>
 
-Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. rdc forensics verify repeats the check over the same directory.
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.
 
 **Options:**
 

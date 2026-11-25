@@ -1025,7 +1025,7 @@
     "commands.forensics.verify.machineKeyOption": "d4796fcc",
     "commands.incident.description": "385e3e91",
     "commands.incident.descriptionShort": "0ef77e7a",
-    "commands.incident.export.description": "611d3685",
+    "commands.incident.export.description": "79cb27de",
     "commands.incident.export.descriptionShort": "116d633e",
     "commands.incident.export.outOption": "6eccd132",
     "commands.incident.idArgument": "716d59d1",

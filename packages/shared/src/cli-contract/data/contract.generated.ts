@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '7b1e270ecf5134d3';
+export const CLI_CONTRACT_VERSION = '1d3291d671f7ac44';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "7b1e270ecf5134d3",
+  "version": "1d3291d671f7ac44",
   "languages": [
     "ar",
     "de",
@@ -6835,7 +6835,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.incident.export.description",
-      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. rdc forensics verify repeats the check over the same directory.",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
       "summaryKey": "commands.incident.export.descriptionShort",
       "summary": "Export and verify an incident's timeline and evidence",
       "severity": "none",
