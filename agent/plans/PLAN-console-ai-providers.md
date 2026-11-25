@@ -90,10 +90,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP1, AP4.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/provider.test.ts)` rc 0.
     (ticked) 2026-11-25T00:47:53Z by d778be9d: AP5 provider adapter landed cli vitest services ai passed tsc rc 0. DEPS-WAIVED: box edges satisfied, AP4 landed c9e5a9a8e9
-- [ ] AP6 [writer] Tools `packages/cli/src/services/ai/tools.ts` per D9 and D10: LM1 registry entries become AI SDK tools run in process through `prepareCommand` and decide() with an agent principal set by the code path, output fenced and truncated by `untrusted.ts`, with tests that a grand-repo mutation without a grant is refused, `needs_confirmation` becomes `approval_required`, and an instruction injected into tool output stays inside its boundary.
+- [x] AP6 [writer] Tools `packages/cli/src/services/ai/tools.ts` per D9 and D10: LM1 registry entries become AI SDK tools run in process through `prepareCommand` and decide() with an agent principal set by the code path, output fenced and truncated by `untrusted.ts`, with tests that a grand-repo mutation without a grant is refused, `needs_confirmation` becomes `approval_required`, and an instruction injected into tool output stays inside its boundary.
   Owns: packages/cli/src/services/ai/tools.ts, packages/cli/src/services/ai/untrusted.ts, packages/cli/src/services/ai/__tests__/tools.test.ts
   Depends on: AP5, PLAN-rmcp-local-mcp.md#LM1, PLAN-rmcp-decide.md#D3.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/tools.test.ts)` rc 0.
+    (ticked) 2026-11-25T02:03:35Z by d778be9d: AP6 landed beac99a6d0: tools route through authorize/decide under an agent principal, needs_confirmation returns approval_required, tool output fenced as untrusted; cli vitest services/ai pass, tsc rc 0. DEPS-WAIVED: box edges satisfied (AP5, LM1, D3 ticked)
 - [ ] AP7 [writer] Loop host and routes: `packages/cli/src/services/ai/loop.ts` (D3 resolution from the session config, D11 caps, abort on disconnect, `ai` stream lines) and `ai-routes.ts` serving `/v1/ai/chat` and `/v1/ai/test`, registered by one line in server.ts, with grant-bound chats routed to the PLAN-rmcp-agent-grants.md#AG-X session.
   Owns: packages/cli/src/services/ai/loop.ts, packages/cli/src/services/serve/ai-routes.ts, packages/cli/src/services/serve/server.ts (AI route registration line only), packages/cli/src/services/serve/__tests__/ai-routes.test.ts
   Depends on: AP3, AP6, AP8, PLAN-rmcp-agent-grants.md#AG-X.

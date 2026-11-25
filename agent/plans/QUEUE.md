@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 97 plans done, 1349 of 1842 boxes done (73%).
+Promoted: 11 of 97 plans done, 1352 of 1842 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -126,7 +126,7 @@ Promoted: 11 of 97 plans done, 1349 of 1842 boxes done (73%).
 | 64 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
 | 65 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
 | 66 | PLAN-console-confirm-stepup.md | 10/11 | 1 open |
-| 67 | PLAN-console-audit-r2.md | 7/13 | 6 open |
+| 67 | PLAN-console-audit-r2.md | 9/13 | 4 open |
 | 68 | PLAN-console-run-index.md | 13/15 | 2 open |
 | 69 | PLAN-console-command-line.md | 14/16 | 2 open |
 | 70 | PLAN-console-ia.md | 8/10 | 2 open |
@@ -136,7 +136,7 @@ Promoted: 11 of 97 plans done, 1349 of 1842 boxes done (73%).
 | 74 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
 | 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
 | 76 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
-| 77 | PLAN-console-ai-providers.md | 6/15 | 9 open |
+| 77 | PLAN-console-ai-providers.md | 7/15 | 8 open |
 | 78 | PLAN-console-ai-assistant.md | 2/15 | 13 open |
 | 79 | PLAN-console-ai-credits.md | 2/15 | 13 open |
 | 80 | PLAN-console-ai-feedback.md | 1/9 | 8 open |

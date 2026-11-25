@@ -64,10 +64,11 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/audit)` rc 0 with cases: a `sensitive` option never in `target`, a kinds-bearing option kept, each type parses, an unknown type fails.
     (ticked) 2026-11-23T18:18:03Z by ace763dd: commit:d5a94540d1 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] AU2 [writer] Store and writer per D3 and the D1 correction: `audit-store.ts` (R2, S3 under `audit/`, memory), `console-audit.service.ts`, `CONSOLE_AUDIT_TYPES` routing in `EventLogService.log`, container and entry wiring, and the correction line on PLAN-d1-scaling.md.
+- [x] AU2 [writer] Store and writer per D3 and the D1 correction: `audit-store.ts` (R2, S3 under `audit/`, memory), `console-audit.service.ts`, `CONSOLE_AUDIT_TYPES` routing in `EventLogService.log`, container and entry wiring, and the correction line on PLAN-d1-scaling.md.
   Owns: private/account/src/services/audit-store.ts, private/account/src/services/console-audit.service.ts, private/account/src/services/event-log.service.ts, private/account/src/app.ts, private/account/src/container.ts, private/account/src/entry/cloudflare.ts, private/account/src/entry/node.ts, private/account/src/entry/on-premise.ts, private/account/tests/integration/console-audit-writer.test.ts, agent/plans/PLAN-d1-scaling.md
   Depends on: AU1.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-writer.test.ts)` rc 0 with cases: one object per event at the D3 key, a `console.stepup` log writes no D1 row, a key outside `audit/<org>/` refused; `(cd private/account && npm run typecheck)` rc 0.
+    (ticked) 2026-11-25T01:59:15Z by d778be9d: AU2 present: audit store, console-audit service and event-log mirror wired in app.ts (account 486528f0, 3408c787, 1ec36af2); writer test 8 passed
 - [ ] AU3 [writer] `AUDIT_BUCKET` in every account wrangler file (eu with `jurisdiction = "eu"`), private/account/wrangler.toml, `auditR2` in regions.json, the region-consistency arm with a control fixture lacking the binding, and bench_preflight and reset_bench reading it.
   Owns: workers/account/wrangler.*.toml, private/account/wrangler.toml, regions.json, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/quality/region_consistency_controls.py, .ci/rediacc_ci/ops/bench_preflight.py, .ci/rediacc_ci/ops/reset_bench.py, .ci/rediacc_ci/tests/gates/test_gate_region_consistency*.py
   Depends on: PLAN-tooling-code-reduction.md#CR2.
@@ -85,10 +86,11 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
   Depends on: AU1.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/audit)` rc 0.
     (ticked) 2026-11-23T22:01:30Z by ace763dd: commit:0f119d6430 AU6: executor audit event carries requestId
-- [ ] AU7 [writer] Mirror `config.policy.updated` as `console.policy.saved` (store, config, team, actor, version, never content) in config-policy.service.ts.
+- [x] AU7 [writer] Mirror `config.policy.updated` as `console.policy.saved` (store, config, team, actor, version, never content) in config-policy.service.ts.
   Owns: private/account/src/services/config-policy.service.ts, private/account/tests/integration/console-audit-policy.test.ts
   Depends on: AU2, PLAN-rmcp-policy-record.md#A1.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-policy.test.ts)` rc 0.
+    (ticked) 2026-11-25T01:59:14Z by d778be9d: AU7 landed 252940b490: console.policy.saved on every policy write; audit-policy test passes
 - [x] AU8 [writer] Compaction per D5 and D6: `audit-compaction.service.ts`, the `audit_compaction_state` migration, the 03:00 and hourly cron hooks, and `private/account/scripts/audit-verify.ts`.
   Owns: private/account/src/services/audit-compaction.service.ts, private/account/src/db/schema.ts, private/account/drizzle/**, private/account/src/entry/cloudflare.ts, private/account/scripts/audit-verify.ts, private/account/tests/integration/console-audit-compaction.test.ts
   Depends on: AU2.
