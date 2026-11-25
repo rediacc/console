@@ -544,7 +544,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 131 | 9 | 6 | 28952 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
-| `agent/plans/PLAN-forensics-detection.md` | approved | 130 | 8 | 7 | 24150 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 131 | 7 | 8 | 24353 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 111 | 7 | 6 | 20574 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 139 | 9 | 8 | 31758 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 121 | 5 | 9 | 23778 |
