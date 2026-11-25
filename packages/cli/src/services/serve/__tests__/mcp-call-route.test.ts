@@ -531,3 +531,39 @@ describe('POST /v1/mcp/call', () => {
     });
   });
 });
+
+describe('POST /v1/mcp/revoke', () => {
+  const revoke = (world: Booted, body: unknown) =>
+    world.app.request('/v1/mcp/revoke', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('drops a held grant session, answers dropped, and refuses the grant from then on without the account', async () => {
+    const world = await boot([
+      { grantId: 'g_a', teamId: 'team-a', configId: 'cfg-a', machine: 'machine-a' },
+    ]);
+    const grant = world.grants.g_a as Grant;
+    expect(
+      codeOf(await answerOf(await call(world, grant, { tool: 'repo_status', args: GRAND })))
+    ).toBeUndefined();
+    expect(world.sessions.size).toBe(1);
+
+    const response = await revoke(world, { grantId: 'g_a' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ dropped: true });
+    expect(world.sessions.size).toBe(0);
+
+    const after = await answerOf(await call(world, grant, { tool: 'repo_status', args: GRAND }));
+    expect(after.result?.isError).toBe(true);
+    // A grant with no session answers dropped: false.
+    expect(await (await revoke(world, { grantId: 'g_a' })).json()).toEqual({ dropped: false });
+  });
+
+  it('refuses a malformed body and one that smuggles a field', async () => {
+    const world = await boot([]);
+    expect((await revoke(world, {})).status).toBe(400);
+    expect((await revoke(world, { grantId: 'g_a', secret: 'x' })).status).toBe(400);
+  });
+});

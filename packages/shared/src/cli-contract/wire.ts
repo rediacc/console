@@ -417,4 +417,6 @@ export const PROXY_ROUTES = {
   busy: '/v1/busy',
   /** One hosted MCP `tools/call` under an agent grant, `{grantId, secret, tool, args, requestId, attachMs}`. Posted only by the proxy's OrgExecutor `mcpCall` from inside; the forward refuses it from outside. */
   mcpCall: '/v1/mcp/call',
+  /** One pushed grant revocation, `{grantId}`, answered `{dropped}`. Posted only by the proxy's OrgExecutor `revokeGrant` from inside; the forward refuses it from outside. */
+  mcpRevoke: '/v1/mcp/revoke',
 } as const;

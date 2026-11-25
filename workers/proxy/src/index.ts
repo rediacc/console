@@ -26,7 +26,7 @@ import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { ExecutorCapacity } from './capacity';
 import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
-import type { OrgExecutor } from './org-executor';
+import type { OrgExecutor, RevokeGrantAnswer } from './org-executor';
 import type { McpCallAnswer, McpCallForward } from './org-executor-mcp';
 import type { ExecutorRefusalCode, PinAnswer } from './org-executor-support';
 import { executorName, placementOf } from './placement';
@@ -165,7 +165,10 @@ function startRefused(code: ExecutorRefusalCode, span: RuntimeSpan | undefined):
 }
 
 /** The slice of an OrgExecutor stub the Worker calls, typed from the class itself so a signature change there fails the typecheck here. */
-type OrgExecutorStub = Pick<OrgExecutor, 'mcpCall' | 'oomAt' | 'oomHeavyAt' | 'pin'> & {
+type OrgExecutorStub = Pick<
+  OrgExecutor,
+  'mcpCall' | 'oomAt' | 'oomHeavyAt' | 'pin' | 'revokeGrant'
+> & {
   fetch(request: Request): Promise<Response>;
 };
 
@@ -344,6 +347,40 @@ async function mcpCallVia(
     return await stub.mcpCall(forward);
   } catch {
     // The forward may have been delivered and the command may have run, so this is not a start failure and a client must not retry it blindly.
+    return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
+  }
+}
+
+/**
+ * The entrypoint the account Worker's grant-revocation service binding names (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-S5). An RPC entrypoint beside `McpExecutor`: the account resolved the org's placement from its own database, so the routing is trusted the way `McpExecutor.call`'s is. It addresses the org's Durable Object by name, without pinning, and calls `OrgExecutor.revokeGrant`; an org with no running container answers `dropped: false` and nothing is started.
+ */
+export class GrantRevoker extends WorkerEntrypoint<Env> {
+  async revoke(routing: McpCallRouting, grantId: string): Promise<RevokeGrantAnswer> {
+    return await revokeGrantVia(this.env, routing, grantId);
+  }
+}
+
+/** The body of `GrantRevoker.revoke`. Not exported: every export of this module must be an entrypoint or a Durable Object class. A failure to reach the Durable Object is a code, so the account retries it. */
+async function revokeGrantVia(
+  env: Env,
+  routing: McpCallRouting,
+  grantId: string
+): Promise<RevokeGrantAnswer> {
+  const placement = placementOf(routing.placement);
+  const namespace = env.ORG_EXECUTOR;
+  if (!namespace || typeof routing.orgId !== 'string' || routing.orgId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  if (placement === undefined || typeof grantId !== 'string' || grantId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  // The Durable Object is addressed by name and NOT pinned: a pin starts a container, and a revocation must never start one. An instance that never ran has no session to drop and answers `dropped: false`.
+  try {
+    const stub = namespace.get(
+      namespace.idFromName(executorName(routing.orgId, placement))
+    ) as unknown as OrgExecutorStub;
+    return await stub.revokeGrant(grantId);
+  } catch {
     return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
   }
 }

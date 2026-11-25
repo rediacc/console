@@ -69,6 +69,9 @@ const McpCallRequestSchema = z.strictObject({
   attachMs: z.number().int().min(1).max(120_000),
 });
 
+/** What the proxy posts to the revoke route: the grant id alone, never the secret. */
+const McpRevokeRequestSchema = z.strictObject({ grantId: z.string().regex(GRANT_ID) });
+
 export interface McpCallRouteOptions {
   busy: BusyCounter;
 }
@@ -303,5 +306,14 @@ export function registerMcpCallRoute(
       return c.json({ result: outside });
     }
     return c.json(await answerCall({ deps, options, handle, entry, requestId, attachMs }, args));
+  });
+
+  // A pushed revocation (box AG-S5): drop the grant's session and cached config. Only the proxy's `revokeGrant` reaches it.
+  app.post(PROXY_ROUTES.mcpRevoke, async (c) => {
+    const parsed = McpRevokeRequestSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) {
+      return c.json({ error: 'The revocation is malformed.', code: 'INVALID_REQUEST' }, 400);
+    }
+    return c.json({ dropped: sessions.revoke(parsed.data.grantId) });
   });
 }

@@ -16,7 +16,7 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { type Env, McpExecutor } from '../index';
+import { type Env, GrantRevoker, McpExecutor } from '../index';
 import { MCP_CALL_PATH, type McpCallAnswer, type McpCallForward } from '../org-executor-mcp';
 import { executorName } from '../placement';
 import { harness, ORG, T0 } from './helpers/org-executor-harness';
@@ -224,5 +224,65 @@ describe('the McpExecutor entrypoint', () => {
       code: 'EXECUTOR_FAILED',
       status: 502,
     });
+  });
+});
+
+describe('the GrantRevoker entrypoint', () => {
+  function envFor(revoked: string[], names: string[], pins: unknown[], throws = false): Env {
+    return {
+      ACCOUNT_URL: 'https://account.test',
+      ORG_EXECUTOR: {
+        idFromName: (name: string) => ({ name }),
+        get: (id: { name: string }) => {
+          names.push(id.name);
+          return {
+            pin: (...args: unknown[]) => {
+              pins.push(args);
+              return Promise.reject(
+                new Error('a revocation never pins, which would start a container')
+              );
+            },
+            revokeGrant: (grantId: string) => {
+              if (throws) return Promise.reject(new Error('do unreachable'));
+              revoked.push(grantId);
+              return Promise.resolve({ ok: true, dropped: true });
+            },
+          };
+        },
+      } as unknown as Env['ORG_EXECUTOR'],
+    };
+  }
+
+  const entry = (env: Env) => new GrantRevoker({} as ExecutionContext, env);
+
+  it("addresses the org's Durable Object by name without pinning it, and revokes the grant there", async () => {
+    const revoked: string[] = [];
+    const names: string[] = [];
+    const pins: unknown[] = [];
+    const answer = await entry(envFor(revoked, names, pins)).revoke(
+      { orgId: 'org-7', placement: 2 },
+      'eu_grant1'
+    );
+    expect(answer).toEqual({ ok: true, dropped: true });
+    expect(names).toEqual([executorName('org-7', 2)]);
+    expect(revoked).toEqual(['eu_grant1']);
+    expect(pins).toEqual([]);
+  });
+
+  it('answers a code for bad routing or an unreachable Durable Object', async () => {
+    const revoked: string[] = [];
+    expect(
+      await entry(envFor(revoked, [], [])).revoke({ orgId: 'org-7', placement: -1 }, 'eu_grant1')
+    ).toEqual({ ok: false, code: 'EXECUTOR_START_FAILED', status: 503 });
+    expect(
+      await entry({ ACCOUNT_URL: 'https://account.test' }).revoke(
+        { orgId: 'org-7', placement: 0 },
+        'eu_grant1'
+      )
+    ).toEqual({ ok: false, code: 'EXECUTOR_START_FAILED', status: 503 });
+    expect(
+      await entry(envFor(revoked, [], [], true)).revoke({ orgId: 'org-7', placement: 0 }, 'g')
+    ).toEqual({ ok: false, code: 'EXECUTOR_FAILED', status: 502 });
+    expect(revoked).toEqual([]);
   });
 });
