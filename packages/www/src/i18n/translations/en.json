@@ -1925,7 +1925,7 @@
           "title": "1. Introduction",
           "content": [
             "Rediacc software products collect anonymized usage telemetry to help us improve product quality, diagnose issues, and understand how our tools are used. This Telemetry Policy describes exactly what data is collected, why, how it is processed, and how you can opt out.",
-            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Renet Agent</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
+            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Renet Agent</strong>. Forensics capture of a repository's network activity is not telemetry; it is processed as Customer Personal Data under the <a href=\"data-processing-agreement\">Data Processing Agreement</a>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
           ]
         },
         "principles": {
@@ -2376,12 +2376,15 @@
           "id": "details",
           "title": "4. Details of Processing",
           "items": [
-            "<strong>Subject matter and purpose:</strong> providing the Platform, including Account and team management, license issuance, encrypted configuration storage, hosted backup storage and support",
+            "<strong>Subject matter and purpose:</strong> providing the Platform, including Account and team management, license issuance, encrypted configuration storage, hosted backup storage and support, and, on paid plans where the Customer turns it on for a repository, network forensics evidence that serves the security of that repository and the investigation of incidents",
             "<strong>Duration:</strong> the term of the Terms of Service, plus the deletion period in Section 11",
             "<strong>Nature of processing:</strong> collection, storage, transmission, retrieval and deletion",
-            "<strong>Categories of data subjects:</strong> the Customer's Authorized Users, invited team members and partner contacts",
-            "<strong>Categories of personal data:</strong> names, email addresses, organization and role, authentication data (password hashes, passkey public keys), network addresses and user agents of sessions, and any personal data inside encrypted data the Customer stores on the Platform",
-            "<strong>Special categories:</strong> none intended; the Customer must not store special categories of data on the Platform unencrypted"
+            "<strong>Categories of data subjects:</strong> the Customer's Authorized Users, invited team members and partner contacts, and people whose network addresses appear in the network flow records of a repository, such as clients that connect to a service the Customer runs",
+            "<strong>Categories of personal data:</strong> names, email addresses, organization and role, authentication data (password hashes, passkey public keys), network addresses and user agents of sessions, and any personal data inside encrypted data the Customer stores on the Platform; for forensics evidence, network flow metadata (addresses, ports, byte and packet counts, times), DNS names and answers, process names and process identifiers, and the paths of sensitive files that a process opened",
+            "<strong>Special categories:</strong> none intended; the Customer must not store special categories of data on the Platform unencrypted",
+            "<strong>Forensics evidence, addresses:</strong> destination addresses of outbound flows are kept whole because they are the evidence. The client address of an inbound flow is written to the record truncated to its network part (/24 for IPv4, /48 for IPv6), and the whole address travels in a separate section of the same batch",
+            "<strong>Forensics evidence, retention:</strong> evidence is kept up to the storage quota of the Customer's plan, and the oldest day files are removed first once the quota is full. A batch is locked against removal for 7 days, and evidence of an incident the Customer declares is held until 30 days after the incident is closed",
+            "<strong>Forensics evidence, basis:</strong> Rediacc processes it only on the Customer's documented instruction, by the Customer enabling forensics for a repository"
           ]
         },
         "confidentiality": {
