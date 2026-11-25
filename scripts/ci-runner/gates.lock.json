@@ -3146,7 +3146,6 @@
       "packages/locales/package.json",
       "packages/provisioning/package.json",
       "packages/shared/package.json",
-      "packages/shared/src/config/well-known.generated.ts",
       "packages/www/package.json",
       "private/account",
       "regions.json",

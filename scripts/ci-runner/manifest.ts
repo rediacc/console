@@ -2991,7 +2991,6 @@ export const GATES: readonly GateSpec[] = [
       'packages/locales/package.json',
       'packages/provisioning/package.json',
       'packages/shared/package.json',
-      'packages/shared/src/config/well-known.generated.ts',
       'packages/www/package.json',
       'private/account',
       'regions.json',
@@ -3001,6 +3000,7 @@ export const GATES: readonly GateSpec[] = [
       'tsconfig.json',
       'workers/**',
     ],
+    // '' is the repo ROOT (GateSpec.lists): the root's immediate tracked children, by name and kind, enter the input hash, as the traced run listed the root directory. A new, removed or renamed root entry moves the hash; an edit to one does not.
     lists: [''],
     pathsOrigin: 'traced',
     leaves: ['vitest'],
