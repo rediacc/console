@@ -1,30 +1,29 @@
-## SESSION d778be9d 2026-11-25T15:48:29Z
+## SESSION d778be9d 2026-11-25T16:04:01Z
 
-# STATE d778be9d (2026-11-25 ~16:10Z, effort high, native Ubuntu host after a restart; writers-now round 902dee33)
+# STATE d778be9d (2026-11-25 ~16:45Z, effort high, native Ubuntu; writers-now round 84138264)
 
 ## Big pieces
-- Today landed/ticked: drain-throughput DT1, DT5-DT7, DT12, DT13; native-host NH1-NH7; DO11, WB6, AP11-AP13, AG-C, AG-S1, AG-S2, FI1, RW-T1, LM3-LM7, DO1, DO3. Partial: NH8 (live A1.1), DT8 (live seed), FI14 (suite 33 live, FI8 verb), AI6 (executor half), FD6 (models origin), CS11 (e2e), DO7 (page translations), D2/D4 (CLI half in flight).
-- Production: retire --expired --apply retired 106 orphaned licences (0 failed); doctor shows Secret store secret-service ok (NH3 live); one bench-issued licence f295c2d9 remains (operator ruling: doctor ignores other servers' licences, writer in flight).
-- Account migrations used through 0110; 0111 reserved for AG-S3.
-- Host: /tmp is a quota'd tmpfs; TMPDIR and CLAUDE_CODE_TMPDIR on ~/.cache/tmp; VS Code installed; credsStore removed; VM fleet rebuilt with 48 GB disks.
+- Today ticked: DT1, DT5-DT7, DT12, DT13; NH1-NH7; DO11, WB6, AP11-AP13, AG-C, AG-S1, AG-S2, AG-LIFE, AG-S3, FI1, RW-T1, D2, LM3-LM7, DO1, DO3. Partial: D4 (56 call-site deletions), NH8, DT8, FI14, AI6, FD6, CS11, DO7. FN8 PRESENT tick was refused (read /tmp/m reason lost; rerun --plan-investigate with full file paths).
+- Production licences cleaned (106 retired); doctor counts only this server's licences.
+- Migrations used through 0111; next 0112.
 
 ## Delegated
-- a80a18733d22dda92 #6735de22: vm:check rerun on the 48 GB fleet (log ~/.cache/tmp/vmcheck-r64.log); accept VERIFIED, then verified-vmcheck boxes with evidence in ~/.cache/tmp/evidence-vm.md.
-- a078be1d1ccdbb514 #ada0a87c: hostinger runner, read-only boxes only (backup-integrity H3/H5/H8, gpu H1, restore-path L1 reads); evidence ~/.cache/tmp/evidence-hostinger.md.
-- aca953360e31b3b58 #8804f1ab: doctor-subscription.ts counts only this server's licences; accept doctor tests + CLI tsc.
-- af9a320ef8f5fa633 #7c525f70: rmcp-decide D2 516df172 + D4 26e29ac5 CLI consumer (command-policy.ts, remote-config-adapter.ts); accept tests + CLI tsc.
-- ad76725b7fcf05d5d #06d2ab8f: AG-LIFE + AG-S3 in private/account (migration 0111); accept account tsc + agent-grant tests.
-- ab67a5ce03ccd2b8a #7b3029c9: check_npmrc.py covers workers/*/.npmrc with an allowlist; accept gate rc 0 + red plants.
-- Queued #d8830f23: PLAN-rmcp-config-edit-removal (exclusive) after rmcp-decide lands.
+- a80a18733d22dda92 #6735de22: vm:check r65 on the 48 GB fleet; accept VERIFIED then verified-vmcheck boxes (evidence ~/.cache/tmp/evidence-vm.md).
+- a078be1d1ccdbb514 #ada0a87c: hostinger read-only runner; evidence ~/.cache/tmp/evidence-hostinger.md.
+- a044d046f54f5b3f5 #53d8c24b: RW-T2 0864fb41 + RW-T4 8fe4b010 (workers/mcp, workers/proxy).
+- a82d2a97f7ab282f8 #7275239e: FR1 11f03fae + FR2 2d7c07ae (packages/shared/src/incident).
+- aad1ae82960fe41b1 #709db1bc: FN2 fb0bdd84 + FN3 2e0d5e53 (account org/notice).
+- ac6a7df8849e77bff #b09fb9ae: AI4 2e003f58 + AI5 ce5d6b97 (shared ai seal, cli ai judge/recorder, serve ai-routes).
+- Queued #d8830f23: config-edit-removal (exclusive), now unblocked by D2 landing; start it next round.
 
 ## Owed ticks
-- #0ef01cd8 proxy config-write path decision; #24696257 L0 fresh-fork verify; #1abc60e4 bucketed-lane placement; #267dd135 review backfill on restart; #412ab931 ghcr devbox login; #c29aaa1a V5 bench rows; #a934564b closes with the doctor writer.
+- #94002ac1 [?] offline reads on remote configs fail closed (DEFAULT keep); #8c892658 AG-S4 scope gap; #62b2998f gate-argv scan root; #0ef01cd8 and #24696257 bench findings; #1abc60e4; #267dd135; #412ab931; #c29aaa1a.
 
 ## Armed
 - #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
-1. Land each writer as it reports with `./run.sh worktree land <id> --run --me d778be9d`, then run the touched packages' checks on the merged tree (CLI tsc and vitest, account tsc and config-sync, check:i18n, gen-docs, shard coverage); tick with landed shas (DEPS-WAIVED when the plan header waits); commit records by path.
-2. On vm:check VERIFIED, tick the VM boxes from the evidence file; record hostinger evidence the same way.
-3. Next hourly /writers-now round (survey r12 in /tmp/writers-now may be gone after a restart: run a fresh survey).
-4. ci:quick, then push 1121-1 (about 1290 commits unpushed).
+1. Land each writer with `./run.sh worktree land <id> --run --me d778be9d`; after any packages/shared change also run (cd private/account && npx tsc --noEmit && npm run typecheck:web); then tick with landed shas (DEPS-WAIVED where the header waits).
+2. Read vm:check r65; on VERIFIED tick VM boxes from the evidence file; same for hostinger evidence.
+3. Start config-edit-removal (#d8830f23) and the survey r13 clusters N3 (RW-D1), N4 (RW-U), N8 (AC3+AC8), N9 (DO8, DO12 still held), N10 (FD10), review clusters N11-N14.
+4. Hourly /writers-now; ci:quick; push 1121-1.
