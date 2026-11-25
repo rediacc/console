@@ -13,7 +13,7 @@
  * opt-in, and reach it with the opt-in an operator set before the session.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerAllTools } from '../tools.js';
 
 const mockExecFile = vi.fn();
@@ -23,19 +23,32 @@ vi.mock('node:child_process', async (importOriginal) => ({
 }));
 
 // Every repo the config names is a grand (no grandGuid), off the ops VM fleet.
-const child = vi.hoisted(() => ({
-  reached: vi.fn(),
-  legit: vi.fn(() => true),
-  grand: { repositoryGuid: 'g-1', placement: { machine: 'prod-1' } },
-}));
+const child = vi.hoisted(() => {
+  const grand: { repositoryGuid: string; grandGuid?: string; placement: { machine: string } } = {
+    repositoryGuid: 'g-1',
+    placement: { machine: 'prod-1' },
+  };
+  return {
+    reached: vi.fn(),
+    legit: vi.fn(() => true),
+    grand,
+    /** The repo the config answers for `shop`; a test swaps in a fork and the afterEach restores the grand. */
+    current: grand,
+    /** The spies on the real configService singleton, restored in afterAll (review 1dd9f055.4). */
+    spies: [] as { mockRestore: () => void }[],
+  };
+});
 vi.mock('../../../services/config/config-resources.js', async (importOriginal) => {
   const real =
     await importOriginal<typeof import('../../../services/config/config-resources.js')>();
-  real.configService.setRuntimeConfig = vi.fn() as never;
-  real.configService.getRepository = vi.fn(() => Promise.resolve(child.grand)) as never;
-  real.configService.resolveDestructiveTarget = vi.fn(() =>
-    Promise.resolve({ key: 'shop', config: child.grand })
-  ) as never;
+  const service = real.configService;
+  child.spies.push(
+    vi.spyOn(service, 'setRuntimeConfig').mockImplementation(vi.fn() as never),
+    vi.spyOn(service, 'getRepository').mockImplementation((() =>
+      Promise.resolve(child.current)) as never),
+    vi.spyOn(service, 'resolveDestructiveTarget').mockImplementation((() =>
+      Promise.resolve({ key: 'shop', config: child.current })) as never)
+  );
   return real;
 });
 vi.mock('../../../utils/ops-vm.js', () => ({
@@ -109,7 +122,11 @@ beforeEach(() => {
   delete process.env.REDIACC_ALLOW_GRAND_REPO;
   childSucceeds();
 });
+afterAll(() => {
+  for (const spy of child.spies) spy.mockRestore();
+});
 afterEach(() => {
+  child.current = child.grand;
   if (savedGrand === undefined) delete process.env.REDIACC_ALLOW_GRAND_REPO;
   else process.env.REDIACC_ALLOW_GRAND_REPO = savedGrand;
   vi.clearAllMocks();
@@ -224,5 +241,62 @@ describe('the child CLI the MCP server spawns', () => {
     expect(child.reached).not.toHaveBeenCalled();
     expect(code).not.toBe(0);
     expect(firstError(out).code).toBe('VALIDATION_ERROR');
+  });
+});
+
+describe('the fork-blocked check the MCP server leaves to the child (review aa3f2a5f.2)', () => {
+  const fork = { repositoryGuid: 'f-1', grandGuid: 'g-1', placement: { machine: 'prod-1' } };
+  const forkRefusal = (out: string) => firstError(out).message ?? '';
+  /** The argv the executor would hand execFile for this command (executor.ts appends the same tail). */
+  async function autostartDisable(env: NodeJS.ProcessEnv) {
+    const { resolveRdcBinary } = await import('../executor.js');
+    const tail = ['repo', 'admin', 'autostart', 'disable', 'shop', '--output', 'json', '--yes', '--quiet'];
+    return runChild(['node', [...resolveRdcBinary().prefixArgs, ...tail], { env }]);
+  }
+
+  it('the child refuses a fork-blocked command on a fork repo, under the env the executor sets', async () => {
+    child.current = fork;
+    const env = { ...process.env, REDIACC_AGENT: '1' };
+    const { code, out } = await autostartDisable(env);
+    expect(child.reached, `the child reached the machine: ${out}`).not.toHaveBeenCalled();
+    expect(code).not.toBe(0);
+    expect(forkRefusal(out)).toContain('is not available on fork repositories');
+  });
+
+  it('control: the same command on the grand repo is not stopped by the fork check', async () => {
+    const env = { ...process.env, REDIACC_AGENT: '1', REDIACC_ALLOW_GRAND_REPO: 'shop' };
+    const { out } = await autostartDisable(env);
+    expect(forkRefusal(out)).not.toContain('fork repositories');
+  });
+
+  it('every MCP tool whose command is fork-blocked refuses a fork repo through the child', async () => {
+    const { buildAllTools } = await import('../tools.js');
+    const { COMMAND_METADATA } = await import('../../../config/command-metadata.js');
+    const reachable = buildAllTools().filter(
+      (tool) => COMMAND_METADATA[tool.commandPath]?.forkBlocked === true
+    );
+    child.current = fork;
+    for (const tool of reachable) {
+      const { out } = await runChild(await spawnedFor(tool.name, { ref: 'shop' }));
+      expect(forkRefusal(out), tool.name).toContain('is not available on fork repositories');
+    }
+    // The loop above is empty while no MCP tool maps to a fork-blocked command; this pins that fact so a new one is noticed.
+    expect(reachable.map((tool) => tool.name)).toEqual([]);
+  });
+
+  it('control: the real agent detection reads REDIACC_AGENT (the stub above mirrors it, review 1dd9f055.1)', async () => {
+    const real = await vi.importActual<typeof import('../../../utils/agent-guard.js')>(
+      '../../../utils/agent-guard.js'
+    );
+    const saved = process.env.REDIACC_AGENT;
+    try {
+      process.env.REDIACC_AGENT = '1';
+      real._resetCache();
+      expect(real.isAgentEnvironment()).toBe(true);
+    } finally {
+      if (saved === undefined) delete process.env.REDIACC_AGENT;
+      else process.env.REDIACC_AGENT = saved;
+      real._resetCache();
+    }
   });
 });
