@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -111,6 +112,20 @@ def test_the_real_tree_passes_and_says_what_it_counted(gate):
     gate.assert_exit(0, result, "the real tree must be green with F1 fatal")
     gate.assert_contains(result.out, "✓ plan folders:", "the success line names the corpus")
     gate.assert_contains(result.out, "Blind spot:", "a green says what it did not check")
+    # Review b8e0d3ab.1: the counts in the success line are read, so a green that scanned nothing (or stopped naming the held plans) is a red here.
+    counted = re.search(r"✓ plan folders: (\d+) plan\(s\) and (\d+) stub\(s\)", result.out)
+    if counted is None:
+        gate.log_fail("the success line does not carry the plan and stub counts: %r" % result.out)
+    elif int(counted.group(1)) < 1:
+        gate.log_fail(
+            "the success line counted %s plans, so the scan saw no tree" % counted.group(1)
+        )
+    held = re.search(r"(\d+) past-retention plan\(s\) held by a live citation", result.out)
+    if held is not None and result.out.count("F3-held ") != int(held.group(1)):
+        gate.log_fail(
+            "the success line says %s plans are held but %d F3-held lines were printed"
+            % (held.group(1), result.out.count("F3-held "))
+        )
     gate.log_pass("the real tree passes and reports its corpus")
 
 
