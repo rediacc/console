@@ -41,6 +41,23 @@ def _set(doc: dict, kind: str, binding: str, key: str, value: object) -> None:
     raise AssertionError("plant needle gone: no %s binding %s" % (kind, binding))
 
 
+def _drop(doc: dict, kind: str, binding: str) -> None:
+    for block in doc[kind]:
+        if block.get("binding") == binding:
+            doc[kind].remove(block)
+            return
+    raise AssertionError("plant needle gone: no %s binding %s" % (kind, binding))
+
+
+def _drop_queue(doc: dict, side: str, queue: str) -> None:
+    rows = doc["queues"][side]
+    for row in rows:
+        if row.get("queue") == queue:
+            rows.remove(row)
+            return
+    raise AssertionError("plant needle gone: no queue %s in %s" % (queue, side))
+
+
 def _profile(inputs: g.Inputs, name: str) -> dict:
     return inputs.consumers[name]
 
@@ -162,6 +179,71 @@ def offline_plants() -> list[
                 "asia",
                 lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "bucket_name", "configs-eu"),
             ),
+        ),
+        (
+            "regions: an off-pattern audit bucket",
+            ("us", "regions"),
+            regions("auditR2", "us", "audit-eu"),
+        ),
+        (
+            "regions: an off-pattern forensics queue",
+            ("asia", "regions"),
+            regions("forensicsQueue", "asia", "forensics-compact-us"),
+        ),
+        (
+            "account: a config lacking the AUDIT_BUCKET binding",
+            ("us", "account"),
+            acc("us", lambda d: _drop(d, "r2_buckets", "AUDIT_BUCKET")),
+        ),
+        (
+            "account: an audit bucket outside the region's jurisdiction",
+            ("eu", "account"),
+            acc("eu", lambda d: _set(d, "r2_buckets", "AUDIT_BUCKET", "jurisdiction", None)),
+        ),
+        (
+            "account: another region's audit bucket",
+            ("asia", "account"),
+            acc("asia", lambda d: _set(d, "r2_buckets", "AUDIT_BUCKET", "bucket_name", "audit-eu")),
+        ),
+        (
+            "account: a config lacking the AGENT_GRANT_REVOKER binding",
+            ("eu", "account"),
+            acc("eu", lambda d: _drop(d, "services", "AGENT_GRANT_REVOKER")),
+        ),
+        (
+            "account: AGENT_GRANT_REVOKER bound to another region's proxy",
+            ("us", "account"),
+            acc("us", lambda d: _set(d, "services", "AGENT_GRANT_REVOKER", "service", "proxy-eu")),
+        ),
+        (
+            "account: another region's forensics bucket var",
+            ("asia", "account"),
+            acc(
+                "asia",
+                lambda d: d["vars"].__setitem__("ACCOUNT_FORENSICS_S3_BUCKET", "forensics-eu"),
+            ),
+        ),
+        (
+            "account: a forensics compaction queue with no consumer",
+            ("us", "account"),
+            acc("us", lambda d: _drop_queue(d, "consumers", "forensics-compact-us")),
+        ),
+        (
+            "account: a forensics producer on another region's queue",
+            ("eu", "account"),
+            acc(
+                "eu",
+                lambda d: [
+                    p.__setitem__("queue", "forensics-compact-us")
+                    for p in d["queues"]["producers"]
+                    if p.get("binding") == "FORENSICS_COMPACT_QUEUE"
+                ],
+            ),
+        ),
+        (
+            "account: the five-minute forensics cron dropped from one config",
+            ("us", "account"),
+            acc("us", lambda d: d["triggers"]["crons"].remove("*/5 * * * *")),
         ),
         (
             "account: a dropped EU jurisdiction",

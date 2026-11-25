@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     import pathlib
 
 SELF = "region-consistency"
+# The schedules private/account/src/entry/cloudflare.ts `scheduled` dispatches on: the hourly backup and forensics pass, the 03:00 sweep and the five-minute forensics detector. A config without one never runs that duty.
+CRONS = ("17 * * * *", "0 3 * * *", "*/5 * * * *")
 EXPECTED_TARGETS = 4
 REGIONS_REL = "regions.json"
 SUPPLY_REL = ".ci/config/secret-supply.json"
@@ -56,6 +58,9 @@ BENCH_KEYS = (
     "controlD1",
     "r2",
     "backupR2",
+    "auditR2",
+    "forensicsR2",
+    "forensicsQueue",
     "r2Jurisdiction",
     "r2Location",
     "queue",
@@ -135,6 +140,10 @@ class Target:
     otlp: str
     # The D1 database's own jurisdiction (creation-only on Cloudflare); None while the database sits under a location hint.
     d1_jurisdiction: str | None = None
+    # The console audit bucket (AUDIT_BUCKET, same jurisdiction as the config bucket), the forensics evidence bucket (a var, since it lives in another Cloudflare account) and the forensics compaction queue.
+    audit_bucket: str = ""
+    forensics_bucket: str = ""
+    forensics_queue: str = ""
     # The region a bench serves (its `[vars] REGION`); empty for a shared target, which serves its own id.
     serves: str = ""
 
@@ -202,6 +211,9 @@ def pattern(
         jurisdiction=jurisdiction,
         otlp=rid,
         d1_jurisdiction=d1_jurisdiction,
+        audit_bucket="audit-%s" % rid,
+        forensics_bucket="forensics-%s" % rid,
+        forensics_queue="forensics-compact-%s" % rid,
     )
 
 
@@ -224,6 +236,9 @@ def bench_expected(rid: str, d1_jurisdiction: str | None) -> dict[str, str]:
         "controlD1": "control-bench-" + rid,
         "r2": "configs-bench" + sfx,
         "backupR2": "backups-bench" + sfx,
+        "auditR2": "audit-bench" + sfx,
+        "forensicsR2": "forensics-bench" + sfx,
+        "forensicsQueue": "forensics-compact-bench" + sfx,
         "queue": "backup-replicate-bench" + sfx,
         "dataset": "telemetry_bench" + ("" if home else "_" + rid),
         "otlp": BENCH,
@@ -250,6 +265,9 @@ def bench_target(row: dict) -> Target:
         d1=str(d1.get("name")),
         config_bucket=str(_named(bench.get("r2"))),
         backup_bucket=str(_named(bench.get("backupR2"))),
+        audit_bucket=str(_named(bench.get("auditR2"))),
+        forensics_bucket=str(_named(bench.get("forensicsR2"))),
+        forensics_queue=str(bench.get("forensicsQueue")),
         domain=str(bench.get("host")),
         jurisdiction=bench.get("r2Jurisdiction"),
         otlp=str(bench.get("otlp")),
@@ -358,7 +376,17 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
         jur = row.get("r2Jurisdiction")
         d1_row = row.get("d1")
         d1_jur = d1_row.get("jurisdiction") if isinstance(d1_row, dict) else None
-        fields = ("workerName", "proxyWorkerName", "d1", "r2", "backupR2", "domain")
+        fields = (
+            "workerName",
+            "proxyWorkerName",
+            "d1",
+            "r2",
+            "backupR2",
+            "auditR2",
+            "forensicsR2",
+            "forensicsQueue",
+            "domain",
+        )
         t = pattern(SHARED, rid, jur, d1_jur)
         want = (
             t.account_worker,
@@ -366,6 +394,9 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
             t.d1,
             t.config_bucket,
             t.backup_bucket,
+            t.audit_bucket,
+            t.forensics_bucket,
+            t.forensics_queue,
             t.domain,
         )
         for field, expect in zip(fields, want, strict=True):
@@ -476,6 +507,29 @@ def _destinations(doc: dict) -> tuple[object, object]:
     return obs.get("logs", {}).get("destinations"), obs.get("traces", {}).get("destinations")
 
 
+def forensics_queue_findings(t: Target, doc: dict) -> list[str]:
+    """The forensics compaction queue of one account toml: the FORENSICS_COMPACT_QUEUE producer on `forensics-compact-<r>` and a consumer on the same queue, and the three crons `scheduled` dispatches on (the five-minute detector among them)."""
+    out: list[str] = []
+    queues = doc.get("queues", {})
+    producers = {
+        p.get("binding"): p.get("queue") for p in queues.get("producers", []) if isinstance(p, dict)
+    }
+    if producers.get("FORENSICS_COMPACT_QUEUE") != t.forensics_queue:
+        out.append(
+            "FORENSICS_COMPACT_QUEUE producer queue %r, expected %r"
+            % (producers.get("FORENSICS_COMPACT_QUEUE"), t.forensics_queue)
+        )
+    consumers = [c.get("queue") for c in queues.get("consumers", []) if isinstance(c, dict)]
+    if t.forensics_queue not in consumers:
+        out.append("no queue consumer on %r (consumers %r)" % (t.forensics_queue, consumers))
+    crons = doc.get("triggers", {}).get("crons")
+    if crons != list(CRONS):
+        out.append(
+            "triggers.crons %r, the `scheduled` dispatch handles exactly %r" % (crons, list(CRONS))
+        )
+    return out
+
+
 def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]:
     f: list[Finding] = []
 
@@ -491,7 +545,11 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
     if db.get("database_name") != t.d1:
         bad("DB database_name %r, expected %r" % (db.get("database_name"), t.d1))
     r2 = blocks(doc, "r2_buckets")
-    for binding, want in (("CONFIG_BUCKET", t.config_bucket), ("BACKUP_BUCKET", t.backup_bucket)):
+    for binding, want in (
+        ("CONFIG_BUCKET", t.config_bucket),
+        ("BACKUP_BUCKET", t.backup_bucket),
+        ("AUDIT_BUCKET", t.audit_bucket),
+    ):
         got = r2.get(binding, {})
         if got.get("bucket_name") != want:
             bad("%s bucket_name %r, expected %r" % (binding, got.get("bucket_name"), want))
@@ -503,10 +561,20 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
     ex = blocks(doc, "services").get("EXECUTOR", {})
     if ex.get("service") != t.proxy_worker:
         bad("EXECUTOR service %r, expected %r" % (ex.get("service"), t.proxy_worker))
+    revoker = blocks(doc, "services").get("AGENT_GRANT_REVOKER", {})
+    if (revoker.get("service"), revoker.get("entrypoint")) != (t.proxy_worker, "GrantRevoker"):
+        bad(
+            "AGENT_GRANT_REVOKER service %r entrypoint %r, expected %r and 'GrantRevoker'"
+            % (revoker.get("service"), revoker.get("entrypoint"), t.proxy_worker)
+        )
+    for msg in forensics_queue_findings(t, doc):
+        bad(msg)
     want_vars: dict[str, str | None] = {
         "REGION": t.serves or t.region,
         "WEBAUTHN_RP_ID": t.domain,
         "WEBAUTHN_ORIGIN": "https://" + t.domain,
+        "ACCOUNT_FORENSICS_S3_BUCKET": t.forensics_bucket,
+        "ACCOUNT_FORENSICS_S3_REGION": "auto",
         **CHANNEL_VARS[t.channel],
     }
     got_vars = doc.get("vars", {})
@@ -581,6 +649,8 @@ def check_bench_object(t: Target, bench: dict, doc: dict) -> list[Finding]:
     queues = doc.get("queues", {})
     producers = [p.get("queue") for p in queues.get("producers", []) if isinstance(p, dict)]
     consumers = [c for c in queues.get("consumers", []) if isinstance(c, dict)]
+    producers = [p for p in producers if p != bench.get("forensicsQueue")]
+    consumers = [c for c in consumers if c.get("queue") != bench.get("forensicsQueue")]
     if producers != [queue]:
         bad("queue producers %r, regions.json bench says [%r]" % (producers, queue))
     if [(c.get("queue"), c.get("dead_letter_queue")) for c in consumers] != [

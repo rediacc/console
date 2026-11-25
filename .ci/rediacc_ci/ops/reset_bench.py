@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench [--region <eu|us|asia>] [--yes] [--d1-only] [--r2-only]
 
-DESTRUCTIVE. It drops every table of one region's bench D1 database (`account-bench` for the default `--region eu`; the DB binding of `wrangler.bench-<region>.toml` for the others) and re-applies migrations, then deletes every object in that bench's R2 config bucket (`configs-bench`). There is no `--region all`: a wipe names its region, and the confirmation names it too (`wipe bench`, `wipe bench-us`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
+DESTRUCTIVE. It drops every table of one region's bench D1 database (`account-bench` for the default `--region eu`; the DB binding of `wrangler.bench-<region>.toml` for the others) and re-applies migrations, then deletes every object in that bench's R2 config bucket (`configs-bench`) and audit bucket (`audit-bench`). There is no `--region all`: a wipe names its region, and the confirmation names it too (`wipe bench`, `wipe bench-us`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
@@ -23,6 +23,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 from __future__ import annotations
 
 import contextlib
+import copy
 import html
 import json
 import os
@@ -242,8 +243,19 @@ class R2Credentials:
         try:
             names = bench_preflight.bench_names(region=region)
             self.bucket, self.jurisdiction = names.config_bucket, names.config_jurisdiction
+            self.audit_bucket, self.audit_jurisdiction = (
+                names.audit_bucket,
+                names.audit_jurisdiction,
+            )
         except (OSError, ValueError):
             self.bucket, self.jurisdiction = "", ""
+            self.audit_bucket, self.audit_jurisdiction = "", ""
+
+    def audit(self) -> R2Credentials:
+        """The same credentials aimed at the AUDIT_BUCKET binding's bucket (console audit objects, PLAN-console-audit-r2 AU3)."""
+        other = copy.copy(self)
+        other.bucket, other.jurisdiction = self.audit_bucket, self.audit_jurisdiction
+        return other
 
     def host(self) -> str:
         """The S3 endpoint for the bound bucket, through `apply_jurisdiction` like every other R2 endpoint."""
@@ -420,7 +432,10 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
             if do_d1:
                 print("  D1: drop all rows from %s, then re-apply migrations" % bench.database_name)
             if do_r2:
-                print("  R2: delete all objects from %s" % r2.bucket)
+                print(
+                    "  R2: delete all objects from %s"
+                    % " and ".join(filter(None, (r2.bucket, r2.audit_bucket)))
+                )
             print()
             # `read -rp` semantics: the prompt goes to stderr, and only when stdin is a terminal.
             if sys.stdin.isatty():
@@ -438,6 +453,8 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
                 _wipe_d1(auth, env, region)
             if do_r2:
                 _wipe_r2(r2)
+                if r2.audit_bucket:
+                    _wipe_r2(r2.audit())
         except ResetError as exc:
             log.error(str(exc))
             return 1

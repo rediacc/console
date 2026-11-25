@@ -8,6 +8,7 @@ import json
 import pathlib
 import shutil
 import sys
+import tomllib
 
 import pytest
 
@@ -104,9 +105,51 @@ PLANTS = [
     (
         "account-executor",
         "workers/account/wrangler.us.toml",
-        'service = "proxy-us"',
-        'service = "proxy-eu"',
+        'binding = "EXECUTOR"\nservice = "proxy-us"',
+        'binding = "EXECUTOR"\nservice = "proxy-eu"',
         "us          account",
+    ),
+    (
+        "account-grant-revoker",
+        "workers/account/wrangler.us.toml",
+        'binding = "AGENT_GRANT_REVOKER"\nservice = "proxy-us"',
+        'binding = "AGENT_GRANT_REVOKER"\nservice = "proxy-eu"',
+        "us          account",
+    ),
+    (
+        "account-audit-bucket",
+        "workers/account/wrangler.us.toml",
+        'binding = "AUDIT_BUCKET"\nbucket_name = "audit-us"',
+        'binding = "AUDIT_BUCKET"\nbucket_name = "audit-eu"',
+        "us          account",
+    ),
+    (
+        "account-audit-jurisdiction",
+        "workers/account/wrangler.eu.toml",
+        'bucket_name = "audit-eu"\njurisdiction = "eu"',
+        'bucket_name = "audit-eu"',
+        "eu          account",
+    ),
+    (
+        "account-forensics-queue",
+        "workers/account/wrangler.asia.toml",
+        'binding = "FORENSICS_COMPACT_QUEUE"\nqueue = "forensics-compact-asia"',
+        'binding = "FORENSICS_COMPACT_QUEUE"\nqueue = "forensics-compact-us"',
+        "asia        account",
+    ),
+    (
+        "account-forensics-bucket-var",
+        "workers/account/wrangler.bench-eu.toml",
+        'ACCOUNT_FORENSICS_S3_BUCKET = "forensics-bench"',
+        'ACCOUNT_FORENSICS_S3_BUCKET = "forensics-eu"',
+        "bench-eu    account",
+    ),
+    (
+        "regions-audit-bucket",
+        "regions.json",
+        '"auditR2": { "name": "audit-asia" },',
+        '"auditR2": { "name": "audit-eu" },',
+        "asia        regions",
     ),
     (
         "account-shape",
@@ -168,6 +211,35 @@ def test_one_plant_per_class_turns_the_run_red(tmp_path, rule, rel, old, new, li
     result = _gate("--root", str(root))
     assert result.rc == 1, "plant %s: %s" % (rule, result.combined)
     assert line in result.err, "plant %s: %s" % (rule, result.err)
+
+
+def _detect_cron() -> str:
+    text = (ROOT / "private/account/src/services/forensics-detect/index.ts").read_text(
+        encoding="utf-8"
+    )
+    return text.split("FORENSICS_DETECT_CRON = '", 1)[1].split("'", 1)[0]
+
+
+@pytest.mark.parametrize("stem", STEMS)
+def test_every_account_config_schedules_the_crons_the_entry_dispatches_on(stem):
+    """4d3b455a.2: the cron-wiring assertion. `scheduled` in cloudflare.ts branches on the hourly, 03:00 and detector strings, so a config that lacks one never runs that duty; the gate's `CRONS` and the entry's own constants must agree, and every toml must carry all three."""
+    entry = (ROOT / "private/account/src/entry/cloudflare.ts").read_text(encoding="utf-8")
+    assert "controller.cron === FORENSICS_DETECT_CRON" in entry, (
+        "scheduled() no longer dispatches the detector cron"
+    )
+    for const, cron in (
+        ("BACKUP_SWEEP_CRON", rco.CRONS[0]),
+        ("BACKUP_AUDIT_CRON", rco.CRONS[1]),
+    ):
+        assert "%s = '%s'" % (const, cron) in entry, const
+    assert _detect_cron() == rco.CRONS[2]
+    doc = tomllib.loads((ROOT / ("workers/account/wrangler.%s.toml" % stem)).read_text("utf-8"))
+    assert doc["triggers"]["crons"] == list(rco.CRONS)
+
+
+def test_the_enterprise_template_schedules_the_same_crons():
+    text = (ROOT / "workers/account/enterprise.template.toml").read_text(encoding="utf-8")
+    assert "crons = %s" % json.dumps(list(rco.CRONS)) in text
 
 
 def test_a_missing_toml_is_no_verdict(tmp_path):

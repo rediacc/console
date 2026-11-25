@@ -175,6 +175,8 @@ def account_refusals(
                 "WEBAUTHN_ORIGIN",
                 "ALLOW_IPS",
                 "EMAIL_CAPTURE_D1",
+                "ACCOUNT_FORENSICS_S3_BUCKET",
+                "ACCOUNT_FORENSICS_S3_REGION",
             }
         )
     )
@@ -195,7 +197,16 @@ def account_refusals(
     d1 = [d.get("database_name") for d in config.get("d1_databases") or []]
     want("d1 database names", d1, ["account-%s" % company])
     buckets = [b.get("bucket_name") for b in config.get("r2_buckets") or []]
-    want("r2 bucket names", buckets, ["configs-%s" % company, "backups-%s" % company])
+    want(
+        "vars.ACCOUNT_FORENSICS_S3_BUCKET",
+        variables.get("ACCOUNT_FORENSICS_S3_BUCKET"),
+        "forensics-%s" % company,
+    )
+    want(
+        "r2 bucket names",
+        buckets,
+        ["configs-%s" % company, "backups-%s" % company, "audit-%s" % company],
+    )
     jurisdiction = entry.get("r2Jurisdiction")
     out.extend(
         "bucket %r jurisdiction is %r, not %r"
@@ -204,9 +215,13 @@ def account_refusals(
         if bucket.get("jurisdiction") != jurisdiction
     )
     queues = [q.get("queue") for q in (config.get("queues") or {}).get("producers") or []]
-    want("queue producers", queues, ["backup-replicate-%s" % company])
+    want(
+        "queue producers",
+        queues,
+        ["backup-replicate-%s" % company, "forensics-compact-%s" % company],
+    )
     bindings = sorted(str(s.get("binding")) for s in config.get("services") or [])
-    want("service bindings", bindings, ["EXECUTOR", "LICENSE_SIGNER"])
+    want("service bindings", bindings, ["AGENT_GRANT_REVOKER", "EXECUTOR", "LICENSE_SIGNER"])
     out.extend(
         "the text names %s; a company account Worker never holds it" % marker
         for marker in SIGNING_NAMES

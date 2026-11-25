@@ -34,9 +34,13 @@ def _world(monkeypatch, declared, asked):
 
     class Creds:
         bucket = "configs-bench-us"
+        audit_bucket = "audit-bench-us"
 
         def __init__(self, region="eu"):
             asked.append(("creds", region))
+
+        def audit(self):
+            return self
 
         def missing(self):
             return []

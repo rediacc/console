@@ -24,6 +24,10 @@ ENVIRONMENT = "bench"
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
 WEBAUTHN_RP_ID = "bench-asia.rediacc.cloud"
 WEBAUTHN_ORIGIN = "https://bench-asia.rediacc.cloud"
+# The forensics evidence bucket lives in a separate Cloudflare account, so it is reached over the S3 API and not through a binding
+# (agent/plans/PLAN-forensics-shipping.md D4). The endpoint and the key pair are secrets.
+ACCOUNT_FORENSICS_S3_BUCKET = "forensics-bench-asia"
+ACCOUNT_FORENSICS_S3_REGION = "auto"
 # Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
 # empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
 TURNSTILE_ENABLED = "false"
@@ -38,8 +42,8 @@ EMAIL_CAPTURE_D1 = "true"
 # private/account/src/entry/cloudflare.ts. Without this block the handler ships
 # but is never invoked and event_log grows without bound.
 [triggers]
-# Hourly backup maintenance, then the daily audit sweep and reminders.
-# private/account/src/entry/cloudflare.ts dispatches on these exact strings.
+# Hourly backup maintenance and forensics compaction, the daily audit sweep and reminders at 03:00, and the five-minute forensics detector.
+# private/account/src/entry/cloudflare.ts dispatches on these three exact strings.
 crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]
 
 [observability]
@@ -84,6 +88,12 @@ bucket_name = "configs-bench-asia"
 binding = "BACKUP_BUCKET"
 bucket_name = "backups-bench-asia"
 
+# Console audit objects, one per event (private/account/src/services/audit-store.ts; agent/plans/PLAN-console-audit-r2.md D3). The bucket is an
+# operator/provision step with a 730-day expiry rule: create it before deploying with this binding.
+[[r2_buckets]]
+binding = "AUDIT_BUCKET"
+bucket_name = "audit-bench-asia"
+
 # The web console reaches the executor proxy through this binding, not a public fetch: both Workers
 # share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
 # EXECUTOR_MODE as a secret only after proxy-bench-asia passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
@@ -104,6 +114,13 @@ service = "signer-bench-asia"
 entrypoint = "LicenseSigner"
 props = { tier = "shared", region = "asia" }
 
+# Pushed agent-grant revocation (agent/plans/PLAN-rmcp-agent-grants.md AG-S5): the account reaches the proxy Worker's GrantRevoker
+# entrypoint through this binding, so the proxy Worker must exist first, as for EXECUTOR.
+[[services]]
+binding = "AGENT_GRANT_REVOKER"
+service = "proxy-bench-asia"
+entrypoint = "GrantRevoker"
+
 # Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
 # rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
 # per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
@@ -119,6 +136,18 @@ queue = "backup-replicate-bench-asia"
 max_batch_size = 10
 max_retries = 5
 dead_letter_queue = "backup-replicate-bench-asia-dlq"
+
+# Forensics compaction (private/account/src/entry/cloudflare.ts; PLAN-forensics-shipping.md D5): the hourly and 03:00 crons enqueue one message per
+# machine-hour and machine-day, and the `queue` handler in src/index.ts routes the `forensics-compact-` prefix to the account app. The queue is a provision
+# step and must exist before the first deploy of this block (`wrangler queues create forensics-compact-bench-asia`).
+[[queues.producers]]
+binding = "FORENSICS_COMPACT_QUEUE"
+queue = "forensics-compact-bench-asia"
+
+[[queues.consumers]]
+queue = "forensics-compact-bench-asia"
+max_batch_size = 10
+max_retries = 5
 
 [[durable_objects.bindings]]
 name = "BACKUP_REPLICATOR"

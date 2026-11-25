@@ -55,10 +55,18 @@ def test_company_account_has_no_refusal_and_names_its_own_things():
     assert cfg["routes"] == [{"pattern": "acme.%s/*" % PRODUCT_DOMAIN, "zone_name": PRODUCT_DOMAIN}]
     assert cfg["d1_databases"][0]["database_name"] == "account-acme"
     assert cfg["d1_databases"][0]["database_id"] == D1_ID
-    assert [b["bucket_name"] for b in cfg["r2_buckets"]] == ["configs-acme", "backups-acme"]
+    assert [b["bucket_name"] for b in cfg["r2_buckets"]] == [
+        "configs-acme",
+        "backups-acme",
+        "audit-acme",
+    ]
     assert cfg["r2_buckets"][0]["jurisdiction"] == "eu"
     assert cfg["services"][0] == {"binding": "EXECUTOR", "service": "proxy-acme"}
-    assert [s["binding"] for s in cfg["services"]] == ["EXECUTOR", "LICENSE_SIGNER"]
+    assert [s["binding"] for s in cfg["services"]] == [
+        "EXECUTOR",
+        "AGENT_GRANT_REVOKER",
+        "LICENSE_SIGNER",
+    ]
     assert cfg["vars"]["WEBAUTHN_RP_ID"] == "acme.%s" % PRODUCT_DOMAIN
     assert "@@" not in out.account
 

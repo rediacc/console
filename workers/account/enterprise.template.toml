@@ -15,9 +15,14 @@ routes = [
 REGION = "@@REGION@@"
 ENVIRONMENT = "@@ENVIRONMENT@@"
 WEBAUTHN_RP_ID = "@@HOST@@"
-WEBAUTHN_ORIGIN = "https://@@HOST@@"@@EXTRA_VARS@@
+WEBAUTHN_ORIGIN = "https://@@HOST@@"
+# The forensics evidence bucket lives in a separate Cloudflare account, so it is reached over the S3 API and not through a binding
+# (agent/plans/PLAN-forensics-shipping.md D4). The endpoint and the key pair are secrets.
+ACCOUNT_FORENSICS_S3_BUCKET = "forensics-@@COMPANY@@"
+ACCOUNT_FORENSICS_S3_REGION = "auto"@@EXTRA_VARS@@
 
-# Nightly maintenance at 03:00 UTC plus the hourly backup sweep, as the shared account Workers.
+# The same three schedules as the shared account Workers: the hourly backup and forensics pass, the 03:00 nightly sweep and the five-minute forensics detector
+# (private/account/src/entry/cloudflare.ts dispatches on these three exact strings).
 [triggers]
 crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]
 
@@ -57,10 +62,21 @@ bucket_name = "configs-@@COMPANY@@"@@R2_JURISDICTION@@
 binding = "BACKUP_BUCKET"
 bucket_name = "backups-@@COMPANY@@"@@R2_JURISDICTION@@
 
+# Console audit objects, one per event (agent/plans/PLAN-console-audit-r2.md D3), in the company's own jurisdiction.
+[[r2_buckets]]
+binding = "AUDIT_BUCKET"
+bucket_name = "audit-@@COMPANY@@"@@R2_JURISDICTION@@
+
 # The company's own proxy Worker; the deploy bootstraps the pair through the binding cycle.
 [[services]]
 binding = "EXECUTOR"
 service = "proxy-@@COMPANY@@"
+
+# Pushed agent-grant revocation (PLAN-rmcp-agent-grants.md AG-S5): the account reaches the company proxy's GrantRevoker entrypoint through this binding.
+[[services]]
+binding = "AGENT_GRANT_REVOKER"
+service = "proxy-@@COMPANY@@"
+entrypoint = "GrantRevoker"
 
 # The signer of the company's contract region, reached only by this binding: a Worker without it refuses to start
 # (private/account/src/entry/cloudflare.ts). The props are fixed at deploy time and name the signing scope.
@@ -79,6 +95,16 @@ queue = "backup-replicate-@@COMPANY@@"
 max_batch_size = 10
 max_retries = 5
 dead_letter_queue = "backup-replicate-@@COMPANY@@-dlq"
+
+# Forensics compaction (PLAN-forensics-shipping.md D5): the hourly and 03:00 crons enqueue one message per machine-hour and machine-day.
+[[queues.producers]]
+binding = "FORENSICS_COMPACT_QUEUE"
+queue = "forensics-compact-@@COMPANY@@"
+
+[[queues.consumers]]
+queue = "forensics-compact-@@COMPANY@@"
+max_batch_size = 10
+max_retries = 5
 
 [[durable_objects.bindings]]
 name = "BACKUP_REPLICATOR"

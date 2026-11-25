@@ -909,8 +909,10 @@ def live_actions(
         work: tuple[tuple[str, list[str], str, list[str]], ...] = (
             ("configs bucket", ["r2", "bucket"], "configs-%s" % plan.name, flag),
             ("backups bucket", ["r2", "bucket"], "backups-%s" % plan.name, flag),
+            ("audit bucket", ["r2", "bucket"], "audit-%s" % plan.name, flag),
             ("backup queue", ["queues"], "backup-replicate-%s" % plan.name, []),
             ("dead-letter queue", ["queues"], "backup-replicate-%s-dlq" % plan.name, []),
+            ("forensics queue", ["queues"], "forensics-compact-%s" % plan.name, []),
         )
         # From the account worker directory, never `cwd=None`: `run_captured` turns None into an empty temporary directory, where `npx --no-install` finds no pinned wrangler ("npx canceled due to missing packages", finding e69747ea). That directory holds no default wrangler.toml, and these calls name no config.
         cwd = base().joinpath(*pc.ACCOUNT_REL)

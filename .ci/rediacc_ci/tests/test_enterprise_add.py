@@ -558,15 +558,18 @@ def test_live_buckets_step_reuses_what_the_list_shows_and_never_creates_it():
         args = argv[len(wrangler.ARGV) :]
         calls.append(args)
         if "list" in args and args[0] == "r2":
-            return Proc(0, "name: configs-acme\nname: backups-acme\n")
+            return Proc(0, "name: configs-acme\nname: backups-acme\nname: audit-acme\n")
         if "list" in args:
             return Proc(0, "backup-replicate-acme-dlq\n")
         return Proc(0)
 
     onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
     created = [c for c in calls if "create" in c]
-    # only the queue is created: its -dlq sibling is listed, and must not match it
-    assert created == [["queues", "create", "backup-replicate-acme"]]
+    # only the queues are created: the -dlq sibling is listed, and must not match the backup queue
+    assert created == [
+        ["queues", "create", "backup-replicate-acme"],
+        ["queues", "create", "forensics-compact-acme"],
+    ]
 
 
 def test_live_buckets_step_control_creates_when_the_list_is_empty():
@@ -579,7 +582,7 @@ def test_live_buckets_step_control_creates_when_the_list_is_empty():
         return Proc(0)
 
     onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
-    assert len([c for c in calls if "create" in c]) == 4
+    assert len([c for c in calls if "create" in c]) == 6
 
 
 def test_live_buckets_step_does_not_read_exists_from_a_create_error():

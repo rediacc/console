@@ -108,6 +108,9 @@ class BenchNames:
     config_jurisdiction: str
     backup_bucket: str
     backup_jurisdiction: str
+    # The AUDIT_BUCKET binding (PLAN-console-audit-r2 AU3): console audit objects, wiped with the config bucket by reset_bench.
+    audit_bucket: str = ""
+    audit_jurisdiction: str = ""
 
 
 def bench_names(config=None, region: str = DEFAULT_REGION) -> BenchNames:
@@ -119,6 +122,7 @@ def bench_names(config=None, region: str = DEFAULT_REGION) -> BenchNames:
     buckets = {b.get("binding"): b for b in doc.get("r2_buckets") or []}
     db = dbs.get("DB") or {}
     config_b, backup_b = buckets.get("CONFIG_BUCKET") or {}, buckets.get("BACKUP_BUCKET") or {}
+    audit_b = buckets.get("AUDIT_BUCKET") or {}
     names = BenchNames(
         db.get("database_name") or "",
         db.get("database_id") or "",
@@ -126,6 +130,8 @@ def bench_names(config=None, region: str = DEFAULT_REGION) -> BenchNames:
         config_b.get("jurisdiction") or "",
         backup_b.get("bucket_name") or "",
         backup_b.get("jurisdiction") or "",
+        audit_b.get("bucket_name") or "",
+        audit_b.get("jurisdiction") or "",
     )
     if not names.database_name:
         raise ValueError("%s binds no DB database with a database_name" % path)
