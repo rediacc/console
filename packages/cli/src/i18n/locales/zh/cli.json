@@ -3159,7 +3159,7 @@
         "othersHeader": "  已删除和未知的许可证:",
         "overLimitCell": "超出上限",
         "refreshHint": "刷新请用:rdc subscription refresh",
-        "retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired(--apply 执行退还)",
+        "retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired (--apply 执行退还)",
         "whereAbsent": "不在此配置中",
         "whereDeleted": "已删除",
         "whereGone": "已不在 {{machine}} 上"

@@ -2527,7 +2527,7 @@
   "commands.subscription.status.remoteRepoLicenseIssuances": "  浮动许可证请求: {{used}}/{{limit}}",
   "commands.subscription.status.remoteRepoLicenses": "  仓库许可证: 已跟踪 {{totalTrackedRepos}}，有效 {{validCount}}，建议刷新 {{refreshRecommendedCount}}，彻底过期 {{hardExpiredCount}}",
   "commands.subscription.status.remoteStatus": "  状态: {{status}}",
-  "commands.subscription.status.retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired(--apply 执行退还)",
+  "commands.subscription.status.retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired (--apply 执行退还)",
   "commands.subscription.status.serverWouldUse": "将使用的账户服务器：{{server}}",
   "commands.subscription.status.whereAbsent": "不在此配置中",
   "commands.subscription.status.whereDeleted": "已删除",
