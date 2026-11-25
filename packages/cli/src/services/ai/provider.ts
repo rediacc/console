@@ -53,6 +53,9 @@ export interface ProviderModelOptions {
  * from the environment. The guarded fetch strips the header it lands in before
  * any request leaves.
  */
+/** The provider name the OpenAI-compatible SDK reports when a profile names no preset. */
+const OPENAI_COMPATIBLE_PROVIDER_NAME = 'openai-compatible';
+
 const SDK_KEY_PLACEHOLDER = 'rediacc-profile-auth';
 
 const AUTH_HEADER_NAMES = ['x-api-key', 'authorization'] as const;
@@ -167,7 +170,7 @@ export function createProviderModel(
     );
   }
   return createOpenAICompatible({
-    name: valid.preset ?? 'openai-compatible',
+    name: valid.preset ?? OPENAI_COMPATIBLE_PROVIDER_NAME,
     baseURL: valid.baseURL,
     includeUsage: true,
     fetch,

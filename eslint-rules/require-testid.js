@@ -86,10 +86,31 @@ function isPassedAsProp(node) {
   return false;
 }
 
+/**
+ * True for a composite root that renders no DOM element of its own (Radix `Select`), when its
+ * trigger child carries the testid: the trigger is the element E2E tests can reach, and an id on
+ * the root never reaches the page.
+ */
+function triggerChildHasTestId(node) {
+  const parent = node.parent;
+  if (parent?.type !== 'JSXElement') return false;
+  const rootName = getElementName(node.name);
+  return parent.children.some(
+    (child) =>
+      child.type === 'JSXElement' &&
+      getElementName(child.openingElement.name) === `${rootName}Trigger` &&
+      (hasTestId(child.openingElement.attributes) ||
+        hasDynamicTestId(child.openingElement.attributes))
+  );
+}
+
 /** True when the element is exempt from the testid requirement regardless of its tag. */
 function isSkippedElement(node, attributes, allowTemplateLiterals) {
   // Skip if already has data-testid
   if (hasTestId(attributes)) return true;
+
+  // Skip a composite root whose trigger child carries the testid
+  if (triggerChildHasTestId(node)) return true;
 
   // Skip template literals if allowed
   if (allowTemplateLiterals && hasDynamicTestId(attributes)) return true;
