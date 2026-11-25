@@ -2,7 +2,7 @@
 name = "mcp-bench-us"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
-compatibility_flags = ["nodejs_compat"]
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
 upload_source_maps = true
 
 # One MCP Worker per region (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 12): the region is

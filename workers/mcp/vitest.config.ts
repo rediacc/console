@@ -8,6 +8,8 @@ export default defineConfig({
       new URL('../../node_modules/.vitest-cache-workers-mcp', import.meta.url)
     ),
     environment: 'node',
+    // The OAuth library imports `cloudflare:workers`, which Node cannot resolve: the shim maps it before any suite loads the Worker.
+    setupFiles: ['./src/__tests__/helpers/workers-shim.ts'],
     include: ['src/**/__tests__/**/*.test.ts'],
   },
 });

@@ -1,10 +1,11 @@
 /**
  * The remote MCP Worker, one per region at `mcp.<region>.rediacc.cloud` (agent/plans/PLAN-rmcp-remote-worker.md).
  *
- * The transport, the `tools/call` forward, the bearer path, grant resolution (src/resolve.ts over the `GRANTS` binding), the rate limits (the `RATE` Durable Object) and confirmation are in place; the OAuth provider (RW-A1) supplies `verifyAccessToken`. A Worker deployed without `GRANTS` resolves every grant to nothing, so each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5). `/internal/revoke` purges the grant cache (src/revoke.ts).
+ * The transport, the `tools/call` forward, the bearer path, grant resolution (src/resolve.ts over the `GRANTS` binding), the rate limits (the `RATE` Durable Object) and confirmation are in place; the OAuth authorization server (src/oauth, RW-A1) supplies `verifyAccessToken` and owns the authorize, token, register and metadata routes. A Worker deployed without `OAUTH_KV` or `AUTH_REQUEST_KEY` serves no OAuth route and answers every OAuth access token as invalid. A Worker deployed without `GRANTS` resolves every grant to nothing, so each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5). `/internal/revoke` purges the grant cache (src/revoke.ts).
  */
 import { createConfirmation } from './confirm.js';
 import type { ExecutorBinding } from './executor.js';
+import { createOAuth, type OAuth } from './oauth/index.js';
 import { doRateLimiter, MemoryRateLimiter, type RateNamespace } from './rate.js';
 import { createGrantResolver, type GrantResolver, type GrantsBinding } from './resolve.js';
 import { handleRevoke, REVOKE_PATH } from './revoke.js';
@@ -26,6 +27,10 @@ export interface Env {
   RATE?: RateNamespace;
   /** Worker secret sealing confirmation state (Design 6); absent, every client confirms through the `confirm` argument. */
   CONFIRM_KEY?: string;
+  /** The OAuth provider's store, one namespace per region (Design 12); absent, no OAuth route is served. */
+  OAUTH_KV?: KVNamespace;
+  /** Worker secret signing the `authRequest` handles of `/authorize` (Design 2); absent, no OAuth route is served. */
+  AUTH_REQUEST_KEY?: string;
   /** Worker secret the account presents to `/internal/revoke`; absent, the route answers 404. */
   INTERNAL_REVOKE_TOKEN?: string;
 }
@@ -35,6 +40,7 @@ const SERVER_VERSION = '0.0.0-dev';
 
 let transport: McpTransport | undefined;
 let resolver: GrantResolver | undefined;
+let oauth: OAuth | undefined;
 
 function resolverFor(env: Env): GrantResolver {
   const grants = env.GRANTS;
@@ -42,14 +48,29 @@ function resolverFor(env: Env): GrantResolver {
   return resolver;
 }
 
+/** The authorization server of this isolate, or undefined while `OAUTH_KV` or `AUTH_REQUEST_KEY` is not bound. */
+function oauthFor(env: Env): OAuth | undefined {
+  if (!env.OAUTH_KV || !env.AUTH_REQUEST_KEY) return undefined;
+  oauth ??= createOAuth({
+    host: env.MCP_HOST,
+    accountUrl: env.ACCOUNT_URL,
+    authRequestKey: env.AUTH_REQUEST_KEY,
+    resolveGrant: resolverFor(env).fresh,
+  });
+  return oauth;
+}
+
 function transportFor(env: Env): McpTransport {
   const grants = resolverFor(env);
+  const auth = oauthFor(env);
   transport ??= createMcpTransport({
     host: env.MCP_HOST,
     serverVersion: SERVER_VERSION,
     accountUrl: env.ACCOUNT_URL,
     resolveGrant: grants,
     refreshGrant: grants.fresh,
+    verifyAccessToken:
+      auth && env.OAUTH_KV ? auth.verifyAccessToken({ OAUTH_KV: env.OAUTH_KV }) : undefined,
     executor: env.EXECUTOR,
     rate: env.RATE ? doRateLimiter(env.RATE) : new MemoryRateLimiter(),
     confirm: env.CONFIRM_KEY ? createConfirmation({ key: env.CONFIRM_KEY }) : undefined,
@@ -58,12 +79,17 @@ function transportFor(env: Env): McpTransport {
 }
 
 export default {
-  fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (new URL(request.url).pathname === REVOKE_PATH) {
       return handleRevoke(request, {
         token: env.INTERNAL_REVOKE_TOKEN,
         resolver: resolverFor(env),
       });
+    }
+    const auth = oauthFor(env);
+    if (auth && env.OAUTH_KV) {
+      const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);
+      if (answered) return answered;
     }
     return transportFor(env).fetch(request);
   },
