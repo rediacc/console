@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc は {{date}} にセキュリティインシデントの早期警告を公開しました。",
             "notification": "Rediacc は {{date}} にセキュリティインシデントの通知を公開しました。",
             "final": "Rediacc は {{date}} にセキュリティインシデントの最終報告を公開しました。"
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} が {{date}} に {{repo}} で異常を検出しました。タイムライン: {{path}}",
+            "delayed": "{{detector}} が {{date}} に {{repo}} で異常を検出しました。通知は遅れて届きました。タイムライン: {{path}}"
           }
         }
       }

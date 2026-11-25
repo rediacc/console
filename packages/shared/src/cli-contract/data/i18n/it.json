@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} elemento/i sullo stato dei backup",
   "commands.subscription.notices.summary.certExpiry": "Il certificato {{track}} {{number}} scade il {{date}}",
   "commands.subscription.notices.summary.evalExpiry": "La prova di {{planCode}} termina il {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} ha rilevato un'anomalia su {{repo}} il {{date}}; l'avviso è arrivato in ritardo. Cronologia: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} ha rilevato un'anomalia su {{repo}} il {{date}}. Cronologia: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "L'acquisizione forense è passata a Basic perché la finestra bloccata non entra più. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "I batch forensi vengono rifiutati perché nemmeno l'acquisizione Basic entra. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "L'archiviazione forense occupa {{used}} GB su {{quota}} GB, di cui {{locked}} GB bloccati.",

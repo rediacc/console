@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "バックアップの状態に関する項目 {{count}} 件",
   "commands.subscription.notices.summary.certExpiry": "{{track}} 証明書 {{number}} は {{date}} に失効します",
   "commands.subscription.notices.summary.evalExpiry": "{{planCode}} の試用は {{date}} に終了します",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} が {{date}} に {{repo}} で異常を検出しました。通知は遅れて届きました。タイムライン: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} が {{date}} に {{repo}} で異常を検出しました。タイムライン: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "ロック済みの期間が収まらなくなったため、フォレンジックの取得を Basic に下げました。{{quota}} GB 中 {{used}} GB 使用、{{locked}} GB ロック。",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Basic の取得も収まらないため、フォレンジックのバッチを拒否しています。{{quota}} GB 中 {{used}} GB 使用、{{locked}} GB ロック。",
   "commands.subscription.notices.summary.forensicsQuota.warning": "フォレンジック用ストレージは {{quota}} GB のうち {{used}} GB を使用中で、{{locked}} GB はロックされています。",

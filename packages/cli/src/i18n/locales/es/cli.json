@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc publicó el {{date}} una alerta temprana sobre un incidente de seguridad.",
             "notification": "Rediacc publicó el {{date}} una notificación de un incidente de seguridad.",
             "final": "Rediacc publicó el {{date}} el informe final de un incidente de seguridad."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} detectó una anomalía en {{repo}} el {{date}}. Cronología: {{path}}",
+            "delayed": "{{detector}} detectó una anomalía en {{repo}} el {{date}}; el aviso llegó con retraso. Cronología: {{path}}"
           }
         }
       }

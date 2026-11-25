@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} yedekleme durumu öğesi",
   "commands.subscription.notices.summary.certExpiry": "{{track}} sertifikası {{number}} {{date}} tarihinde sona erer",
   "commands.subscription.notices.summary.evalExpiry": "{{planCode}} deneme süresi {{date}} tarihinde biter",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}}, {{repo}} üzerinde {{date}} tarihinde bir anomali tespit etti; uyarı gecikmeli ulaştı. Zaman çizelgesi: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}}, {{repo}} üzerinde {{date}} tarihinde bir anomali tespit etti. Zaman çizelgesi: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "Kilitli pencere artık sığmadığı için adli veri toplama Basic düzeyine indi. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Basic düzeyindeki toplama bile sığmadığı için adli veri toplu gönderimleri reddediliyor. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "Adli veri deposu {{quota}} GB içinde {{used}} GB dolu, {{locked}} GB kilitli.",

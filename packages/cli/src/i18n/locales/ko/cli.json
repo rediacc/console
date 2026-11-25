@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc가 {{date}}에 보안 사고에 대한 조기 경보를 게시했습니다.",
             "notification": "Rediacc가 {{date}}에 보안 사고 통지를 게시했습니다.",
             "final": "Rediacc가 {{date}}에 보안 사고 최종 보고서를 게시했습니다."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}}이(가) {{date}}에 {{repo}}에서 이상 징후를 감지했습니다. 타임라인: {{path}}",
+            "delayed": "{{detector}}이(가) {{date}}에 {{repo}}에서 이상 징후를 감지했습니다. 알림이 늦게 도착했습니다. 타임라인: {{path}}"
           }
         }
       }

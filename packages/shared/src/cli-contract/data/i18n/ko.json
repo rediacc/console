@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "백업 상태 항목 {{count}}개",
   "commands.subscription.notices.summary.certExpiry": "{{track}} 인증서 {{number}}은(는) {{date}}에 만료됩니다",
   "commands.subscription.notices.summary.evalExpiry": "{{planCode}} 평가판이 {{date}}에 종료됩니다",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}}이(가) {{date}}에 {{repo}}에서 이상 징후를 감지했습니다. 알림이 늦게 도착했습니다. 타임라인: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}}이(가) {{date}}에 {{repo}}에서 이상 징후를 감지했습니다. 타임라인: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "잠긴 기간이 더 이상 들어가지 않아 포렌식 수집이 Basic으로 낮아졌습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Basic 수집조차 들어가지 않아 포렌식 배치를 거부하고 있습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "포렌식 저장소가 {{quota}} GB 중 {{used}} GB를 사용 중이며, {{locked}} GB는 잠겨 있습니다.",

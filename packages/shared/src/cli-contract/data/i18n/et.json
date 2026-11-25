@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} varukoopia seisukorra kirjet",
   "commands.subscription.notices.summary.certExpiry": "{{track}} sertifikaat {{number}} aegub {{date}}",
   "commands.subscription.notices.summary.evalExpiry": "{{planCode}} prooviperiood lõpeb {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} tuvastas hoidlas {{repo}} anomaalia kuupäeval {{date}}; hoiatus jõudis hilinemisega kohale. Ajajoon: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} tuvastas hoidlas {{repo}} anomaalia kuupäeval {{date}}. Ajajoon: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "Kohtuekspertiisi jäädvustus langes tasemele Basic, sest lukustatud ajaaken ei mahu enam ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Kohtuekspertiisi partiisid lükatakse tagasi, sest isegi Basic-jäädvustus ei mahu ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "Kohtuekspertiisi salvestus kasutab {{used}} GB kvoodist {{quota}} GB, millest {{locked}} GB on lukus.",

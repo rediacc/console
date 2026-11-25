@@ -2806,6 +2806,10 @@
             "earlyWarning": "Rediacc published an early warning about a security incident on {{date}}.",
             "notification": "Rediacc published a security incident notification on {{date}}.",
             "final": "Rediacc published the final security incident report on {{date}}."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} detected an anomaly on {{repo}} on {{date}}. Timeline: {{path}}",
+            "delayed": "{{detector}} detected an anomaly on {{repo}} on {{date}} and was delivered late. Timeline: {{path}}"
           }
         }
       }

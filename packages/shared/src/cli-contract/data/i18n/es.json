@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} elemento(s) de estado de copias de seguridad",
   "commands.subscription.notices.summary.certExpiry": "El certificado {{track}} {{number}} caduca el {{date}}",
   "commands.subscription.notices.summary.evalExpiry": "La evaluación de {{planCode}} termina el {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} detectó una anomalía en {{repo}} el {{date}}; el aviso llegó con retraso. Cronología: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} detectó una anomalía en {{repo}} el {{date}}. Cronología: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "La captura forense bajó a Basic porque la ventana bloqueada ya no cabe. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Los lotes forenses se rechazan porque ni siquiera cabe la captura Basic. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "El almacenamiento forense usa {{used}} GB de {{quota}} GB, con {{locked}} GB bloqueados.",

@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} Backup-Zustandsmeldung(en)",
   "commands.subscription.notices.summary.certExpiry": "Das {{track}}-Zertifikat {{number}} läuft am {{date}} ab",
   "commands.subscription.notices.summary.evalExpiry": "Die Testphase von {{planCode}} endet am {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} hat auf {{repo}} am {{date}} eine Anomalie erkannt; die Meldung kam verspätet an. Zeitachse: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} hat auf {{repo}} am {{date}} eine Anomalie erkannt. Zeitachse: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "Die Forensik-Erfassung wurde auf Basic zurückgestuft, weil das gesperrte Zeitfenster nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Forensik-Batches werden abgelehnt, weil auch die Basic-Erfassung nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "Der Forensik-Speicher belegt {{used}} GB von {{quota}} GB, davon sind {{locked}} GB gesperrt.",

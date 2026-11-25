@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} élément(s) d'état des sauvegardes",
   "commands.subscription.notices.summary.certExpiry": "Le certificat {{track}} {{number}} expire le {{date}}",
   "commands.subscription.notices.summary.evalExpiry": "L'évaluation de {{planCode}} se termine le {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} a détecté une anomalie sur {{repo}} le {{date}} ; l'alerte est arrivée en retard. Chronologie : {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} a détecté une anomalie sur {{repo}} le {{date}}. Chronologie : {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "La capture forensique est passée en Basic, car la fenêtre verrouillée ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "Les lots forensiques sont refusés, car même la capture Basic ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "Le stockage forensique utilise {{used}} Go sur {{quota}} Go, dont {{locked}} Go verrouillés.",

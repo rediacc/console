@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3208,
-    "sourceCommit": "57bb27445ec76813e7abdea5ca56e5a1010d3c17"
+    "keyCount": 3210,
+    "sourceCommit": "8380493cb26d9c33b63e72fd92c36ff3e9575e68"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2441,6 +2441,8 @@
     "commands.subscription.notices.summary.backupHealth": "1d526fab",
     "commands.subscription.notices.summary.certExpiry": "48a22f6d",
     "commands.subscription.notices.summary.evalExpiry": "64a3c2fb",
+    "commands.subscription.notices.summary.forensicsAnomaly.delayed": "41e09457",
+    "commands.subscription.notices.summary.forensicsAnomaly.live": "5ad4400f",
     "commands.subscription.notices.summary.forensicsQuota.levelCapped": "320dbd4f",
     "commands.subscription.notices.summary.forensicsQuota.refused": "95ad9458",
     "commands.subscription.notices.summary.forensicsQuota.warning": "114feffa",

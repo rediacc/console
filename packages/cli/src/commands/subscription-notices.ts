@@ -6,6 +6,7 @@
  * the config does not know stays its 8-character form.
  */
 
+import { forensicsTimelinePath } from '@rediacc/shared/forensics/links';
 import type { RepoNameEntry } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
@@ -143,6 +144,25 @@ const SECURITY_INCIDENT_STAGE_KEYS = {
   final: 'commands.subscription.notices.summary.securityIncident.final',
 } as const;
 
+/**
+ * One anomaly finding: the detector, the short repository GUID, the detection date and the
+ * timeline path. A finding imported late says so, since its date is the original detection time.
+ */
+function forensicsAnomalySummary(p: Record<string, unknown>): string {
+  const guid = text(p.repoGuid);
+  const detectedAt = text(p.detectedAt);
+  const key =
+    p.delayed === true
+      ? 'commands.subscription.notices.summary.forensicsAnomaly.delayed'
+      : 'commands.subscription.notices.summary.forensicsAnomaly.live';
+  return t(key, {
+    detector: text(p.detector),
+    repo: guid.slice(0, 8),
+    date: day(p.detectedAt),
+    path: guid === '-' || detectedAt === '-' ? '-' : forensicsTimelinePath(guid, detectedAt),
+  });
+}
+
 /** Bytes as decimal gigabytes with one fractional digit, the unit the quota is sold in. */
 function gb(value: unknown): string {
   return typeof value === 'number' ? (value / 1e9).toFixed(1) : '-';
@@ -205,6 +225,8 @@ function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): strin
       return forensicsQuotaSummary(p);
     case 'security_incident':
       return securityIncidentSummary(p);
+    case 'forensics_anomaly':
+      return forensicsAnomalySummary(p);
     default:
       return notice.kind;
   }

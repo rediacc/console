@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc, {{date}} tarihinde bir güvenlik olayına ilişkin erken uyarı yayımladı.",
             "notification": "Rediacc, {{date}} tarihinde bir güvenlik olayı bildirimi yayımladı.",
             "final": "Rediacc, {{date}} tarihinde bir güvenlik olayının nihai raporunu yayımladı."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}}, {{repo}} üzerinde {{date}} tarihinde bir anomali tespit etti. Zaman çizelgesi: {{path}}",
+            "delayed": "{{detector}}, {{repo}} üzerinde {{date}} tarihinde bir anomali tespit etti; uyarı gecikmeli ulaştı. Zaman çizelgesi: {{path}}"
           }
         }
       }

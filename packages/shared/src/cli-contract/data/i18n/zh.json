@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} 项备份状况",
   "commands.subscription.notices.summary.certExpiry": "{{track}} 证书 {{number}} 将于 {{date}} 到期",
   "commands.subscription.notices.summary.evalExpiry": "{{planCode}} 试用将于 {{date}} 结束",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常，告警延迟送达。时间线：{{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常。时间线：{{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "锁定的时间窗口已放不下，取证采集已降为 Basic。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。",
   "commands.subscription.notices.summary.forensicsQuota.refused": "连 Basic 采集也放不下，取证批次已被拒绝。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。",
   "commands.subscription.notices.summary.forensicsQuota.warning": "取证存储已用 {{used}} GB，配额 {{quota}} GB，其中 {{locked}} GB 已锁定。",

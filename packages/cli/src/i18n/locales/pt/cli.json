@@ -3229,6 +3229,10 @@
             "earlyWarning": "A Rediacc publicou, em {{date}}, um alerta precoce sobre um incidente de segurança.",
             "notification": "A Rediacc publicou, em {{date}}, uma notificação de incidente de segurança.",
             "final": "A Rediacc publicou, em {{date}}, o relatório final de um incidente de segurança."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} detetou uma anomalia em {{repo}} em {{date}}. Cronologia: {{path}}",
+            "delayed": "{{detector}} detetou uma anomalia em {{repo}} em {{date}}; o alerta chegou atrasado. Cronologia: {{path}}"
           }
         }
       }

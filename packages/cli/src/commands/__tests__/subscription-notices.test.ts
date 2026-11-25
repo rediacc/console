@@ -293,6 +293,38 @@ describe('subscription notices', () => {
     );
   });
 
+  it.each([
+    [false, 'live'],
+    [true, 'delayed'],
+  ])('summarizes a forensics_anomaly notice (delayed=%s) with the timeline path', async (delayed, key) => {
+    respondWith([
+      {
+        notices: [
+          notice('a1', 1, {
+            kind: 'forensics_anomaly',
+            severity: 'warning',
+            payload: {
+              repoGuid: 'aaaaaaaa-1111-4111-8111-111111111111',
+              detector: 'spike',
+              findingId: 'f-1',
+              detectedAt: '2026-11-25T10:00:00.000Z',
+              delayed,
+              source: 'machine',
+              reasonFeatures: ['file_writes'],
+            },
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    const path =
+      '/account/console/forensics?repo=aaaaaaaa-1111-4111-8111-111111111111&from=2026-11-25T09%3A00%3A00.000Z&to=2026-11-25T11%3A00%3A00.000Z';
+    expect(printedRows()[0].summary).toBe(
+      `commands.subscription.notices.summary.forensicsAnomaly.${key}:${JSON.stringify({ detector: 'spike', repo: 'aaaaaaaa', date: '2026-11-25', path })}`
+    );
+  });
+
   it('prints the bare kind for a security_incident notice with a stage it does not know (control)', async () => {
     respondWith([
       {

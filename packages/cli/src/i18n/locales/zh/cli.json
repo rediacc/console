@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc 于 {{date}} 发布了一起安全事件的早期预警。",
             "notification": "Rediacc 于 {{date}} 发布了一起安全事件的通报。",
             "final": "Rediacc 于 {{date}} 发布了一起安全事件的最终报告。"
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常。时间线：{{path}}",
+            "delayed": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常，告警延迟送达。时间线：{{path}}"
           }
         }
       }

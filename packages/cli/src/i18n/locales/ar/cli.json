@@ -3229,6 +3229,10 @@
             "earlyWarning": "نشرت Rediacc تحذيرًا مبكرًا بشأن حادث أمني في {{date}}.",
             "notification": "نشرت Rediacc إشعارًا بحادث أمني في {{date}}.",
             "final": "نشرت Rediacc التقرير النهائي عن الحادث الأمني في {{date}}."
+          },
+          "forensicsAnomaly": {
+            "live": "اكتشف {{detector}} شذوذًا في {{repo}} بتاريخ {{date}}. الجدول الزمني: {{path}}",
+            "delayed": "اكتشف {{detector}} شذوذًا في {{repo}} بتاريخ {{date}}، ووصل التنبيه متأخرًا. الجدول الزمني: {{path}}"
           }
         }
       }

@@ -3229,6 +3229,10 @@
             "earlyWarning": "Rediacc avaldas {{date}} turvaintsidendi varajase hoiatuse.",
             "notification": "Rediacc avaldas {{date}} turvaintsidendi teate.",
             "final": "Rediacc avaldas {{date}} turvaintsidendi lõpparuande."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} tuvastas hoidlas {{repo}} anomaalia kuupäeval {{date}}. Ajajoon: {{path}}",
+            "delayed": "{{detector}} tuvastas hoidlas {{repo}} anomaalia kuupäeval {{date}}; hoiatus jõudis hilinemisega kohale. Ajajoon: {{path}}"
           }
         }
       }

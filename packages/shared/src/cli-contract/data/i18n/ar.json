@@ -2433,6 +2433,8 @@
   "commands.subscription.notices.summary.backupHealth": "{{count}} من بنود سلامة النسخ الاحتياطي",
   "commands.subscription.notices.summary.certExpiry": "تنتهي شهادة {{track}} رقم {{number}} في {{date}}",
   "commands.subscription.notices.summary.evalExpiry": "تنتهي فترة تجربة {{planCode}} في {{date}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.delayed": "اكتشف {{detector}} شذوذًا في {{repo}} بتاريخ {{date}}، ووصل التنبيه متأخرًا. الجدول الزمني: {{path}}",
+  "commands.subscription.notices.summary.forensicsAnomaly.live": "اكتشف {{detector}} شذوذًا في {{repo}} بتاريخ {{date}}. الجدول الزمني: {{path}}",
   "commands.subscription.notices.summary.forensicsQuota.levelCapped": "انخفض مستوى الالتقاط الجنائي إلى Basic لأن النافذة المقفلة لم تعد تتسع. المستخدم {{used}} غيغابايت من {{quota}} غيغابايت، والمقفل {{locked}} غيغابايت.",
   "commands.subscription.notices.summary.forensicsQuota.refused": "تُرفض الدفعات الجنائية لأن الالتقاط بمستوى Basic لم يعد يتسع أيضًا. المستخدم {{used}} غيغابايت من {{quota}} غيغابايت، والمقفل {{locked}} غيغابايت.",
   "commands.subscription.notices.summary.forensicsQuota.warning": "يستخدم تخزين البيانات الجنائية {{used}} غيغابايت من أصل {{quota}} غيغابايت، منها {{locked}} غيغابايت مقفلة.",
