@@ -68,14 +68,16 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Depends on: FI1.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-store.test.ts)` rc 0 (cross-org read refused, `aware_at` later than `declared_at` refused, a grant past 7 days refused); `npm run check:ci-account-scope-audit` rc 0.
     (ticked) 2026-11-24T20:30:28Z by d778be9d: FI2 incident store landed e2e08abb68 as migration 0106; incident-store and scope-audit vitest pass rc 0
-- [ ] FI3 [writer] Forensics read API (D1, D2, D3): `forensics-read.service.ts` and `routes/forensics.ts` with investigation open, timeline, aggregates and raw chain material, the paid and role checks, and one `console.forensics.view` event per read.
+- [x] FI3 [writer] Forensics read API (D1, D2, D3): `forensics-read.service.ts` and `routes/forensics.ts` with investigation open, timeline, aggregates and raw chain material, the paid and role checks, and one `console.forensics.view` event per read.
   Owns: private/account/src/services/forensics-read.service.ts, private/account/src/routes/forensics.ts, private/account/src/routes/index.ts, private/account/src/dto/forensics.dto.ts, private/account/tests/integration/forensics-read.test.ts
   Depends on: FI2, PLAN-console-audit-r2.md#AU10, PLAN-console-run-index.md#RI2, PLAN-console-confirm-stepup.md#CF7, PLAN-forensics-detection.md.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-read.test.ts)` rc 0 (member 403, free org 403, unelevated owner 403 `reauthRequired`, merged rows sorted across all six sources, every read writes one view event holding no row content, a run tail returned sealed).
-- [ ] FI4 [writer] Declare and close (D4): `routes/incidents.ts`, `forensics-lock.service.ts` with the serialized lock-rule write, the eviction hold and its check in plan 2's FIFO, step recording and the 30-day release on close.
+    (ticked) 2026-11-25T17:44:06Z by d778be9d: FI3 forensics read API with a merged incident timeline; forensics-read vitest pass, account tsc and typecheck:web rc 0; landed 31a8d27daf. DEPS-WAIVED: used prerequisites landed
+- [x] FI4 [writer] Declare and close (D4): `routes/incidents.ts`, `forensics-lock.service.ts` with the serialized lock-rule write, the eviction hold and its check in plan 2's FIFO, step recording and the 30-day release on close.
   Owns: private/account/src/routes/incidents.ts, private/account/src/services/forensics-lock.service.ts, private/account/src/services/forensics-eviction*.ts, private/account/tests/integration/incident-declare.test.ts
   Depends on: FI2, PLAN-forensics-shipping.md.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-declare.test.ts)` rc 0 (FIFO skips a held batch past quota, two concurrent declares keep both lock rules, a failed fork step keeps the hold, close releases nothing before 30 days).
+    (ticked) 2026-11-25T17:44:07Z by d778be9d: FI4 declare and close an incident with eviction hold and R2 lock rules; incident-declare vitest pass; landed 31a8d27daf. DEPS-WAIVED: used prerequisites landed
 - [ ] FI5 [writer] Support grants (D3): issue and revoke routes for owners and admins after step-up, the admin-panel read under root elevation in root.ts, and support views recorded in the customer's audit with `actor.kind: 'support'`.
   Owns: private/account/src/routes/root.ts, private/account/tests/integration/forensics-support-grant.test.ts
   Depends on: FI3.

@@ -102,10 +102,11 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
 - [ ] FNL1 [lead] Route security@rediacc.com to the security inbox through Cloudflare Email Routing on the rediacc.com zone and send a test mail; door:operator-only only when the zone token lacks Email Routing edit.
   Depends on: none.
   Accept: a test mail to security@rediacc.com arrives, recorded with its message id in the tick.
-- [ ] FN10 [writer] Anomaly schema per D2: `forensics_finding_deliveries` (finding id unique, subscription, org, severity, delayed flag, notified and mailed times), the cursor row, and the `forensics_anomaly` literal in the kind enum.
+- [x] FN10 [writer] Anomaly schema per D2: `forensics_finding_deliveries` (finding id unique, subscription, org, severity, delayed flag, notified and mailed times), the cursor row, and the `forensics_anomaly` literal in the kind enum.
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts, private/account/drizzle/*_forensics_finding_deliveries.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/tests/integration/forensics-alert-schema.test.ts
   Depends on: FN1, PLAN-forensics-detection.md.
   Accept: `(cd private/account && npx drizzle-kit check && npx vitest run tests/integration/forensics-alert-schema.test.ts)` rc 0; `npm run check:ci-account-no-admin-role` rc 0.
+    (ticked) 2026-11-25T17:44:03Z by d778be9d: FN10 forensics finding deliveries, intake cursor and forensics_anomaly kind (migration 0113); forensics-alert-schema tests pass, scope gates rc 0; landed b404d40496. DEPS-WAIVED: used prerequisites landed
 - [ ] FN11 [writer] The `forensics_anomaly` kind per D1 in notice.ts, notice.dto.ts, the web summary with the timeline link, the CLI summary, notices.json and cli.json in the 13 locales (sonnet writers), and `forensicsTimelinePath()` in packages/shared/src/forensics/links.ts.
   Owns: private/account/src/types/notice.ts, private/account/src/dto/notice.dto.ts, private/account/web/src/lib/notice-names.ts, private/account/web/src/api/types.ts, private/account/web/src/i18n/locales/*/notices.json, packages/cli/src/commands/subscription-notices.ts, packages/cli/src/i18n/locales/*/cli.json, packages/shared/src/forensics/links.ts, private/account/web/src/i18n/locales/.translation-hashes.json, packages/cli/src/i18n/locales/.translation-hashes.json, private/account/tests/integration/forensics-alert-notice.test.ts
   Depends on: FN3, FN10.

@@ -59,10 +59,11 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Depends on: FR1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/stix.test.ts)` rc 0 (two runs give identical bytes, an IPv6 destination gets an `ipv6-addr` pattern, a missing process hash emits no file indicator, a control object without `spec_version` fails).
     (ticked) 2026-11-25T16:07:47Z by d778be9d: FR2 deterministic STIX bundle; landed d2a4633aae; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
-- [ ] FR3 [writer] Regulatory field map (D7): read the NIS Cooperation Group templates of 26 May 2026, Implementing Regulation (EU) 2025/302 and GDPR Art. 33(3), then write `report-field-map.json` and its typed loader with source URLs and retrieval dates.
+- [x] FR3 [writer] Regulatory field map (D7): read the NIS Cooperation Group templates of 26 May 2026, Implementing Regulation (EU) 2025/302 and GDPR Art. 33(3), then write `report-field-map.json` and its typed loader with source URLs and retrieval dates.
   Owns: packages/shared/src/incident/report-field-map.json, packages/shared/src/incident/report-field-map.ts, packages/shared/src/incident/__tests__/report-field-map.test.ts
   Depends on: FR1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/report-field-map.test.ts)` rc 0 (every report field mapped or `not-applicable` with a reason, every regime row has a URL and date, a control field missing from the map fails).
+    (ticked) 2026-11-25T17:44:04Z by d778be9d: FR3 regulatory field map; shared incident 37 tests pass; regulation refs to be checked against source texts at FR12; landed 4ab1dce546. DEPS-WAIVED: used prerequisites landed
 - [ ] FR4 [writer] Report builder and inputs (D2): `forensics_report_inputs` and `forensics_reports` tables with one migration and scope entries, and `incident-report.service.ts` assembling a stage from the incident row, the timeline service, the console audit in the window, customer inputs and the technique table.
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_forensics_reports.sql, private/account/drizzle/meta/**, private/account/src/services/incident-report.service.ts, private/account/src/container.ts, private/account/tests/integration/incident-report-build.test.ts
   Depends on: FR1, PLAN-forensics-investigation.md#FI2, PLAN-forensics-investigation.md#FI3.
@@ -87,14 +88,16 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Owns: packages/cli/src/commands/incident.ts, packages/cli/src/commands/forensics.ts, packages/cli/src/services/forensics/**, packages/cli/src/commands/__tests__/incident-report*.test.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/scripts/command-tree.json, packages/shared/src/cli-contract/data/**
   Depends on: FR7, PLAN-forensics-investigation.md#FI8.
   Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/incident-report)` rc 0 (a downloaded report verifies, an edited one exits 1); `npm run check:ci-cli-contract` rc 0.
-- [ ] FR10 [writer] English report labels: the `forensicsReport` namespace in private/account/src/i18n/locales/en and its loading in private/account/src/i18n/index.ts.
+- [x] FR10 [writer] English report labels: the `forensicsReport` namespace in private/account/src/i18n/locales/en and its loading in private/account/src/i18n/index.ts.
   Owns: private/account/src/i18n/index.ts, private/account/src/i18n/locales/en/forensicsReport.json
   Depends on: FR1.
   Accept: `(cd private/account && npm run typecheck)` rc 0 and a unit case in tests/unit/incident-report-pdf.test.ts that every section label resolves in English.
-- [ ] FR11 [writer] Translate `forensicsReport`, the new `forensics` keys and the new cli.json keys into the 12 other locales through the naturalization pipeline, writers on sonnet, then lock the hashes.
+    (ticked) 2026-11-25T17:44:04Z by d778be9d: FR10 English forensicsReport labels and tReport; label test passes, account tsc rc 0; landed 4474dcde99. DEPS-WAIVED: used prerequisites landed
+- [x] FR11 [writer] Translate `forensicsReport`, the new `forensics` keys and the new cli.json keys into the 12 other locales through the naturalization pipeline, writers on sonnet, then lock the hashes.
   Owns: private/account/src/i18n/locales/*/forensicsReport.json, private/account/web/src/i18n/locales/*/forensics.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: FR8, FR9, FR10.
   Accept: `npm run check:i18n` rc 0, `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run check:ci-i18n-cli-key-usage` rc 0.
+    (ticked) 2026-11-25T17:44:05Z by d778be9d: FR11 forensicsReport keys in the 12 other locales, hashes locked; check:i18n rc 0 (forensics.json and cli.json halves wait on FR8 and FR9); landed 4474dcde99. DEPS-WAIVED: used prerequisites landed
 - [ ] FR12 [lead] Mint one report key pair per target (bench, eu, the two other production regions), store each in bws, set `REPORT_ED25519_PRIVATE_KEY` and `REPORT_ED25519_PUBLIC_KEY` as account Worker secrets bench first, and upload the pinned Noto subsets to `data.rediacc.com/fonts/`.
   Owns: none -- Cloudflare secrets, bws entries and public-bucket objects only, no tracked file
   Depends on: FR5, FR6.

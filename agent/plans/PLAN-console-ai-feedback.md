@@ -54,10 +54,11 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/feedback/__tests__/schema.test.ts)` rc 0.
     (ticked) 2026-11-23T18:18:06Z by ace763dd: commit:fa5009b50b landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] AF2 [writer] Account data: a migration adding `feedback_settings.offer_bug_reports` (default 1), `feedback_reports.source` (default `cli`) and `organizations.ai_feedback_offers_off_at`, the drizzle columns, and `feedbackService` reading and writing both settings and storing the source.
+- [x] AF2 [writer] Account data: a migration adding `feedback_settings.offer_bug_reports` (default 1), `feedback_reports.source` (default `cli`) and `organizations.ai_feedback_offers_off_at`, the drizzle columns, and `feedbackService` reading and writing both settings and storing the source.
   Owns: private/account/drizzle/*_ai_feedback.sql, private/account/src/db/schema.ts, private/account/src/services/feedback.service.ts
   Depends on: AF1.
   Accept: `(cd private/account && npx vitest run tests/integration/feedback-intake.test.ts tests/integration/feedback-visibility.test.ts)` rc 0.
+    (ticked) 2026-11-25T17:44:02Z by d778be9d: AF2 feedback offer setting, report source and org override column (migration 0112); feedback vitest 38 passed, account tsc, typecheck:web, drizzle-kit check rc 0; landed b404d40496. DEPS-WAIVED: used prerequisites landed
 - [ ] AF3 [writer] Account routes: `POST /feedback/console/preview`, `/send` and `/decline` under session auth with the D3 rebuild and digest rule and both settings re-checked, the settings PUT accepting `offerBugReports`, the owner-only `PUT /organization/ai-feedback`, and the D6 audit events with the new `console.feedback.declined` type.
   Owns: private/account/src/routes/feedback.ts, private/account/src/routes/organization.ts, packages/shared/src/audit/console-events.ts, private/account/tests/integration/feedback-console.test.ts
   Depends on: AF2, PLAN-console-run-index.md#RI1, PLAN-console-audit-r2.md#AU2.
