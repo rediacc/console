@@ -984,7 +984,24 @@ def _applyticks_cli(argv):
             cites,
         )
         cmds = []
-        if R.investigation_for(root, rel, row["sig"]) is None:
+        latest = R.investigation_for(root, rel, row["sig"])
+        if latest is not None and latest.get("verdict") != "present":
+            # A writer's report never overrides a recorded partial or absent verdict: the lead found a clause unmet
+            # (DT7, 2026-11-25: ticked "done" over `partial, owed code` with its timing accept unmet). Re-investigate
+            # once the owed work lands, then the row applies.
+            tally["refused"] += 1
+            refused += 1
+            print(
+                "  REFUSED  %s: the newest investigation (%s) records %s%s; re-investigate before a writer's tick applies (row kept)"
+                % (
+                    label,
+                    latest.get("at", "?"),
+                    latest.get("verdict", "?"),
+                    (", owed " + str(latest["owed"])) if latest.get("owed") else "",
+                )
+            )
+            continue
+        if latest is None:
             note = "post-landing: a writer reported TICK %s%s, read against the tree at HEAD" % (
                 row["state"],
                 (", landed " + landed) if landed else "",

@@ -300,6 +300,35 @@ def test_apply_ticks_refused_row_is_kept_and_the_verb_exits_1(wl):
     assert len(PB.pending_rows(wl.proj, ME)) == 1
 
 
+def test_apply_ticks_refuses_a_done_row_over_a_partial_investigation(wl):
+    """#8ff75ae1: a writer's done tick does not override the lead's recorded partial verdict."""
+    sig = seed_wl(wl)
+    head = wl.git("rev-parse", "HEAD").stdout.strip()
+    inv = wl.cli(
+        "--plan-investigate",
+        ME,
+        "agent/plans/PLAN-fx.md",
+        sig,
+        "partial",
+        "commit:" + head[:10],
+        "fileline:base.txt:1",
+        "--owed",
+        "code",
+        "--write",
+        "--",
+        "the timing clause of the accept is unmet on the landed tree, owed as code",
+    )
+    assert inv.rc == 0, (inv.out, inv.err)
+    PB.queue_ticks(
+        wl.proj, ME, "a00000000000000b4", tick_rows(sig, "done", close="see base.txt:1"), "x"
+    )
+    got = wl.cli("--apply-ticks", ME, "--write")
+    assert got.rc == 1, (got.rc, got.out, got.err)
+    assert "records partial, owed code" in got.out, got.out
+    assert "- [ ] O1" in (wl.proj / "agent" / "plans" / "PLAN-fx.md").read_text(encoding="utf-8")
+    assert len(PB.pending_rows(wl.proj, ME)) == 1
+
+
 def test_apply_ticks_unknown_flag_is_refused(wl):
     got = wl.cli("--apply-ticks", ME, "--wrte")
     assert got.rc == 2, (got.rc, got.err)
