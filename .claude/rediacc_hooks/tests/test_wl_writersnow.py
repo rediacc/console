@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime
 import json
 import pathlib
+import re
 
 from rediacc_hooks.tests import wlfix
 
@@ -599,3 +600,36 @@ def test_stop_hook_control_an_unrelated_live_task_still_fires(wl) -> None:
     got = wl.run()
     assert "WRITERS-NOW DUE" in got.out, got.out[:1200]
     assert WN.WHY_NEVER_WRITTEN in got.out, got.out[:1200]
+
+
+def test_a_live_witness_stops_counting_after_the_liveness_cap(tmp_path) -> None:
+    """Finding ec1021d6.2: a task naming the survey for the whole session must not silence the check without bound."""
+    inside = missing_round(tmp_path, WN.SURVEY_LIVE_MAX_MIN - 5)
+    assert WN.judge_round(tmp_path, inside, None, NOW, True) == ""
+    past = missing_round(tmp_path, WN.SURVEY_LIVE_MAX_MIN + 5)
+    assert WN.judge_round(tmp_path, past, None, NOW, True) == WN.WHY_NEVER_WRITTEN
+
+
+def test_stop_hook_a_live_subagent_naming_the_survey_keeps_a_55_minute_round_counting(wl) -> None:
+    """Finding ec1021d6.3: the agent-type branch (meta plus first prompt) through the Stop segment."""
+    _stale_round(wl)
+    wl.env["CLAUDE_CONFIG_DIR"] = str(wl.base / "claude")
+    root = wl.base / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(wl.proj))
+    folder = root / wlfix.SID / "subagents"
+    folder.mkdir(parents=True, exist_ok=True)
+    tid = "a9999888877776666"
+    (folder / ("agent-%s.meta.json" % tid)).write_text(
+        json.dumps({"agentType": "Explore", "description": "survey", "spawnDepth": 1}),
+        encoding="utf-8",
+    )
+    (folder / ("agent-%s.jsonl" % tid)).write_text(
+        json.dumps(
+            {"type": "user", "message": {"content": "Write the survey to /tmp/wn/%s" % SURVEY_NAME}}
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    wl.bg = json.dumps(
+        [{"id": tid, "type": "subagent", "status": "running", "description": "unrelated words"}]
+    )
+    wl.check_quiet("WRITERS-NOW DUE", "a live subagent is still writing the survey")

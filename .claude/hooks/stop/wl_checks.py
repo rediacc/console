@@ -7100,7 +7100,7 @@ def _stop_store_freshness(ns):
         def _wn_live(row):
             if "_read" not in _wn_prompts:
                 _wn_prompts["_read"] = {}
-                with contextlib.suppress(Exception):
+                try:
                     _wn_metas = wl_roster.load_metas(
                         wl_roster.session_subagents_dir(ns["event"].get("cwd"), ns["session_id"])
                     )
@@ -7112,6 +7112,8 @@ def _stop_store_freshness(ns):
                             )
                         elif _wn_tid:
                             _wn_prompts["_read"][_wn_tid] = str(_wn_task.get("description") or "")
+                except Exception as exc:
+                    note_read_failure("writers-now-due", exc)
             return wl_writersnow.survey_live(
                 row, _wn_prompts["_read"], ns["fold"].items, ns["_live_worker_ids"]
             )

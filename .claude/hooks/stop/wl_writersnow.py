@@ -24,6 +24,8 @@ LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
 WINDOW_MIN = 60
 # How long a round whose survey file does not exist yet still counts: the survey agent is running.
 SURVEY_GRACE_MIN = 50
+# The most a liveness witness extends a missing survey: a surveyor measured at 21 to 48 minutes, so a task still naming the file after this long is a watcher or a reader, not the producer.
+SURVEY_LIVE_MAX_MIN = 180
 # Why a round does not count toward the cadence (judge_round), shown in the writers-now-due message.
 WHY_COPIED_OLD = "its survey was written before the round started (a copied survey is not a round)"
 WHY_COPIED_SAME = (
@@ -178,7 +180,7 @@ def survey_live(row, prompts, items, live_worker_ids) -> bool:
 
 
 def judge_round(root, row, prev, now, survey_live=False) -> str:
-    """Why `row` does not count toward the cadence, or "" when it counts. `prev` is this session's round before it (or None). A missing survey counts while `survey_live` holds (a live agent or a live-leased item is still producing it), and otherwise for SURVEY_GRACE_MIN minutes after the start, then stops; a survey last written at or before the start is a copy; a survey with the previous round's bytes is a copy.
+    """Why `row` does not count toward the cadence, or "" when it counts. `prev` is this session's round before it (or None). A missing survey counts while `survey_live` holds for up to SURVEY_LIVE_MAX_MIN minutes (a live agent or a live-leased item is still producing it), and otherwise for SURVEY_GRACE_MIN minutes after the start, then stops; a survey last written at or before the start is a copy; a survey with the previous round's bytes is a copy.
 
     Liveness first, the timer as fallback: surveys were measured at 21 to 48 minutes, so a 50-minute grace left a 2-minute margin over a load-dependent duration, and a slower survey fired the check while its agent was visibly working (agent/plans/PLAN-stop-hook-retro-20261125.md friction 3).
     """
@@ -186,9 +188,9 @@ def judge_round(root, row, prev, now, survey_live=False) -> str:
     try:
         mtime = path.stat().st_mtime
     except FileNotFoundError:
-        if survey_live:
-            return ""
         age = (now - C.parse_stamp(row["at"])).total_seconds() / 60.0
+        if survey_live and age < SURVEY_LIVE_MAX_MIN:
+            return ""
         return "" if age < SURVEY_GRACE_MIN else WHY_NEVER_WRITTEN
     if mtime <= _started(row):
         return WHY_COPIED_OLD
