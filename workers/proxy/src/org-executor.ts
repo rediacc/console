@@ -76,6 +76,29 @@ import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } f
 import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
 
+/**
+ * The container route a pushed grant revocation reaches (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-S5): the container drops the grant's session and its cached config. Only `revokeGrant` reaches it; the public forward refuses it like the MCP call route.
+ */
+export const REVOKE_GRANT_PATH = '/v1/mcp/revoke';
+
+/** The answer of `revokeGrant`: `dropped` is false when no container ran, so no session existed to drop. */
+export type RevokeGrantAnswer =
+  | { ok: true; dropped: boolean }
+  | { ok: false; code: string; status: number };
+
+/** Whether `pathname` reaches the revoke route, decoded and slash-folded like the container's router; a pathname that does not decode fails closed. */
+function isRevokeGrantPath(pathname: string): boolean {
+  try {
+    return (
+      decodeURIComponent(pathname)
+        .replace(/\/{2,}/g, '/')
+        .replace(/\/+$/, '') === REVOKE_GRANT_PATH
+    );
+  } catch {
+    return true;
+  }
+}
+
 /** The size named in the out-of-memory log line when the container never reported one. */
 const UNKNOWN_SIZE = 'unknown';
 
@@ -300,7 +323,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   override async fetch(request: Request): Promise<Response> {
     const { pathname } = new URL(request.url);
     // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running. The MCP call route is reached through `mcpCall` alone.
-    if (isBusyPath(pathname) || isMcpCallPath(pathname)) return busyRefusal();
+    if (isBusyPath(pathname) || isMcpCallPath(pathname) || isRevokeGrantPath(pathname)) {
+      return busyRefusal();
+    }
     return await this.forward(request);
   }
 
@@ -309,6 +334,29 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    */
   mcpCall(forward: McpCallForward): Promise<McpCallAnswer> {
     return callMcp(forward, (request) => this.forward(request));
+  }
+
+  /**
+   * Pushed revocation of one agent grant (box AG-S5): tell the running container to drop the grant's session and cached config. A request already in flight under the grant completes, because it holds its own session record; the next call is refused. With no container running there is no session to drop, so nothing is started and the answer is `dropped: false`. The grant id is the only body: the secret never travels here.
+   */
+  async revokeGrant(grantId: string): Promise<RevokeGrantAnswer> {
+    await this.startupSettled();
+    if (!this.ctx.container?.running || !this.record) return { ok: true, dropped: false };
+    const response = await this.forward(
+      new Request(`http://container${REVOKE_GRANT_PATH}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ grantId }),
+      })
+    );
+    if (!response.ok) {
+      const body = (await response.json().catch(() => undefined)) as { code?: unknown } | undefined;
+      const code =
+        typeof body?.code === 'string' && body.code !== '' ? body.code : 'EXECUTOR_FAILED';
+      return { ok: false, code, status: response.status };
+    }
+    await response.body?.cancel();
+    return { ok: true, dropped: true };
   }
 
   /** The forward behind `fetch` and `mcpCall`: wait out a start, check the instance can serve, then proxy with in-flight counting. */

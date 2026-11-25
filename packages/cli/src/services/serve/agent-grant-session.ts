@@ -57,6 +57,9 @@ import { SessionError, type SessionPrincipal } from './sessions.js';
 
 const API = '/account/api/v1';
 
+/** How long a pushed revocation is remembered: the longest grant lifetime (D54, 30 days). */
+const REVOKED_MEMORY_MS = 30 * 24 * 60 * 60 * 1000;
+
 /** The 401 reasons a fresh open cures: the chain's token was spent, expired, or is unknown to the store. */
 const REMINT_REASONS = new Set(['token_exhausted', 'token_expired', 'invalid_token']);
 
@@ -202,6 +205,12 @@ export class AgentGrantSessions {
     string,
     { authTagHash: string; record: Promise<SessionRecord> }
   >();
+  /**
+   * Grants revoked by a push (box AG-S5), grant id -> when the entry may go. A revoked grant is refused
+   * here without asking the account, and an open still in flight when the push arrives cannot bring the
+   * session back. An entry outlives the longest grant (30 days), so it is never needed after that.
+   */
+  private readonly revoked = new Map<string, number>();
   private readonly accountUrl: string;
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
@@ -227,9 +236,31 @@ export class AgentGrantSessions {
     return this.sessions.has(grantId);
   }
 
-  /** Drop a grant's session and every config decrypted under it (a refusal, an expiry, a pushed revocation). */
+  /** Drop a grant's session and every config decrypted under it (a refusal, an expiry). */
   drop(grantId: string): void {
     this.sessions.delete(grantId);
+  }
+
+  /**
+   * A pushed revocation (box AG-S5, Design 5): drop the session and its cached config, and refuse the grant
+   * from now on without an account call. A call already holding the session record finishes with it; the
+   * next `acquire` is refused. Returns whether a session was held.
+   */
+  revoke(grantId: string): boolean {
+    const now = this.now();
+    for (const [id, until] of this.revoked) if (until <= now) this.revoked.delete(id);
+    this.revoked.set(grantId, now + REVOKED_MEMORY_MS);
+    const held = this.sessions.has(grantId);
+    this.drop(grantId);
+    return held;
+  }
+
+  private isRevoked(grantId: string): boolean {
+    const until = this.revoked.get(grantId);
+    if (until === undefined) return false;
+    if (until > this.now()) return true;
+    this.revoked.delete(grantId);
+    return false;
   }
 
   /**
@@ -241,7 +272,7 @@ export class AgentGrantSessions {
    */
   async acquire(grantId: string, secret: string): Promise<AgentGrantHandle> {
     const bytes = parseSecret(secret);
-    if (!bytes) throw new AgentSessionRefused();
+    if (!bytes || this.isRevoked(grantId)) throw new AgentSessionRefused();
     try {
       const authTagHash = await hashAuthTag(await deriveAuthTag(bytes));
       const record = await this.recordFor(grantId, bytes, authTagHash);
@@ -362,6 +393,8 @@ export class AgentGrantSessions {
       current: undefined,
       tail: Promise.resolve(),
     };
+    // A revocation pushed while this open was in flight wins: the session is never held.
+    if (this.isRevoked(grantId)) throw new AgentSessionRefused();
     this.sessions.set(grantId, record);
     return record;
   }

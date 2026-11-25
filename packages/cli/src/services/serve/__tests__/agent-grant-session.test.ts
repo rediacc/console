@@ -284,6 +284,61 @@ describe('agent grant sessions', () => {
   });
 });
 
+describe('pushed revocation (box AG-S5)', () => {
+  it('drops the session and refuses the next call without asking the account, leaving the other grant alone', async () => {
+    const { a, b, account, sessions } = await world();
+    const handle = await sessions.acquire(a.grantId, a.secret);
+    await sessions.acquire(b.grantId, b.secret);
+    const opens = account.count('POST /configs/agent-session');
+
+    expect(sessions.revoke(a.grantId)).toBe(true);
+
+    expect(sessions.has(a.grantId)).toBe(false);
+    expect(() => sessions.currentConfig(handle.principal)).toThrow(SessionError);
+    await expect(sessions.acquire(a.grantId, a.secret)).rejects.toBeInstanceOf(AgentSessionRefused);
+    expect(account.count('POST /configs/agent-session')).toBe(opens);
+    expect(sessions.has(b.grantId)).toBe(true);
+    expect(machinesOf((await sessions.acquire(b.grantId, b.secret)).config)).toEqual(['machine-b']);
+  });
+
+  it('keeps a call that already holds the handle usable, and answers false when no session was held', async () => {
+    const { a, sessions } = await world();
+    const handle = await sessions.acquire(a.grantId, a.secret);
+    sessions.revoke(a.grantId);
+    expect(machinesOf(handle.config)).toEqual(['machine-a']);
+    expect(sessions.revoke('g_never_opened')).toBe(false);
+  });
+
+  it('does not let an open in flight bring the session back', async () => {
+    const { a, account, sessions } = await world();
+    const { release } = holdOpens(account, sessions);
+    const open = sessions.acquire(a.grantId, a.secret).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(account.count('POST /configs/agent-session')).toBe(1));
+    sessions.revoke(a.grantId);
+    release();
+    expect(await open).toBeInstanceOf(AgentSessionRefused);
+    expect(sessions.has(a.grantId)).toBe(false);
+  });
+
+  it('forgets the revocation after the longest grant lifetime', async () => {
+    const { a } = await world();
+    const account = fakeAccount([a]);
+    let now = Date.now();
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl: account.fetch,
+      now: () => now,
+    });
+    sessions.revoke(a.grantId);
+    await expect(sessions.acquire(a.grantId, a.secret)).rejects.toBeInstanceOf(AgentSessionRefused);
+    now += 31 * 24 * 60 * 60 * 1000;
+    sessions.revoke('g_other');
+    expect(machinesOf((await sessions.acquire(a.grantId, a.secret)).config)).toEqual(['machine-a']);
+  });
+});
+
 describe('routeAgentPrincipals', () => {
   it('sends a grant principal to its session and every other principal to the user loader', async () => {
     const { a, sessions } = await world();
