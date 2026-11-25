@@ -953,7 +953,9 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
     for row in roots:
         key = str(row.get("job") or "")
         if carried is None:
+            # No log is read without a carry file (a cost guard), so the category stays unread; the row's signature says so, and the ledger shows a red that was never classified instead of one the classifier could not place.
             row["carry"] = {"verdict": "unreadable", "why": cwhy, "keys": []}
+            row["signature"] = "category-unread: %s" % cwhy
             continue
         if key and isinstance(cats.get(key), list) and len(cats[key]) == 2:
             row["category"], row["signature"] = cats[key]
@@ -965,6 +967,7 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
             continue
         if looked >= CI_CARRY_LOOKUPS or clock() > deadline:
             row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
         looked += 1
         job, err = fetch.json("actions/jobs/%s" % key)
@@ -973,16 +976,23 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
             continue
         if clock() > deadline:
             row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
         log, err = diag.job_log(fetch, key, completed=job.get("status") == "completed")
         if log is None:
             row["carry"] = {"verdict": "unreadable", "why": "log read failed: %s" % err, "keys": []}
             continue
         # THE RED'S CATEGORY for the long-red ledger (wl_longred): the tracer's own classifier over the failing step's slice, read from the log this loop already holds, so it costs no extra call.
-        with contextlib.suppress(Exception):
+        try:
             row["category"], row["signature"] = diag.classify(diag.failing_step_slice(log, job)[1])
             if job.get("status") == "completed":
                 cats[key] = [row["category"], row["signature"]]
+        except Exception as exc:
+            # Named in the ledger row's signature, so an `unknown` red says the classifier failed instead of reading as an unclassified log.
+            row["category"], row["signature"] = (
+                "unknown",
+                "classify-failed: %s: %s" % (type(exc).__name__, exc),
+            )
         row["carry"] = judge_job_carry(diag, job, log, carried)
         if row["carry"]["verdict"] != "unreadable" and job.get("status") == "completed":
             memo[key] = row["carry"]
@@ -1576,6 +1586,9 @@ def ci_longred(root, info, tip, red_rows, extra_reds=(), now=None):
             ids,
             retryable=lambda n: any(p.lower() in n.lower() for p in CI_RETRY_PATTERNS),
         )
+        if any(r.get("category_pending") for r in red_rows):
+            # A red whose category could not be read yet (the carry read budget spent) is not recorded: a round is keyed on the head and job ids, so a row written now would stay `unknown` for good and hide an operator-only or outage red. The next stop reads the category (ci_carry_split caches what it read) and records then.
+            kind = None
         if kind:
             fix: list[str] = []
             if kind == "push" and prev and prev.get("heads"):

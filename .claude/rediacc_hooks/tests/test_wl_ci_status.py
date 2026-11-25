@@ -649,6 +649,51 @@ def test_long_red_a_green_round_is_recorded_too(wl):
     assert rows[0]["greens"] == ["CI Complete", "Quality / Static"]
 
 
+def _in_process_trouble(fix, monkeypatch) -> str:
+    """ci_trouble in the pytest process, on the fixture's gh shim and private TMPDIR."""
+    for key in ("TMPDIR", "WORKLIST_STORE_DIR", "WORKLIST_SESSION_ID"):
+        monkeypatch.setenv(key, fix.env[key])
+    monkeypatch.setenv("PATH", "%s:%s" % (fix.base / "binonly", os.environ.get("PATH", "")))
+    state, _detail = wl_ci.ci_trouble(fix.proj, fix.wl, fix.sid, [], "", ref="pub", owned=True)
+    return state
+
+
+def test_long_red_a_runner_not_acquired_cancel_writes_an_outage_row(wl, monkeypatch):
+    """A cancel with no runner is an outside outage: the stop records one red row with signature runner-not-acquired, so the long-red retry gaps apply."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
+    cause = {"kind": "runner-not-acquired", "job": "E2E / ubuntu", "detail": "no runner"}
+    monkeypatch.setattr(wl_ci, "ci_cancel_cause", lambda *_a: cause)
+    assert _in_process_trouble(wl, monkeypatch) == "cancelled"
+    rows = ledger_rows(wl)
+    assert len(rows) == 1, rows
+    assert rows[0]["reds"] == [
+        {"check": "E2E / ubuntu", "category": "infra-likely", "signature": "runner-not-acquired"}
+    ]
+
+
+def test_long_red_control_an_unattributed_cancel_writes_no_row(wl, monkeypatch):
+    """CONTROL: the same cancel with an unknown cause is not an outage and records nothing."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
+    cause = {"kind": "unknown", "job": None, "detail": "cause unknown"}
+    monkeypatch.setattr(wl_ci, "ci_cancel_cause", lambda *_a: cause)
+    assert _in_process_trouble(wl, monkeypatch) == "cancelled"
+    assert ledger_rows(wl) == []
+
+
+def test_long_red_a_cached_stop_still_prints_the_verdict(wl):
+    """The verdict is read on every stop over a finished red, cache or not (b74a99a2.3): the second stop keeps its `.cistate` sidecar and still prints the wall ask."""
+    ci_setup(wl)
+    seed_old_round(wl, 80)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    assert "long red: wall-ask" in ci_run(wl).out
+    assert wl.stem(".cistate-deadbeef").exists()
+    again = ci_run(wl)
+    assert "long red: wall-ask" in again.out, again.out[:1200]
+    assert len(ledger_rows(wl)) == 2
+
+
 # ---- One green ci:quick per batch (agent/plans/PLAN-ciquick-green-then-batch.md, G4 and G5) ----
 
 STOP_DIR = wlfix.STOP_DIR

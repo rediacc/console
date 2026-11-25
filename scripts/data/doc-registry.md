@@ -955,6 +955,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_checks_backup_lag.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_checks_review_controls.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_checks_silent_failure.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_ci_category.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_status.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py | (none) | via pytest (testpaths) | py |
