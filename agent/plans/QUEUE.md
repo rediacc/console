@@ -26,7 +26,7 @@ The levels, each a superset of the one before:
 No writer limit (operator ruling #3ca908ee, PLAN-unlimited-writers.md): no guard, Stop-hook check or lease-tool count caps live writers at any effort level; the harness concurrent-subagent ceiling is the only bound, and file ownership (`block_plan_concurrency`) still decides who edits what.
 
 ```stop-hook
-effort: high
+effort: quiet
 ```
 
 ## In flight
@@ -34,7 +34,7 @@ effort: high
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort high; judge full; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort quiet; judge off; cadence on; agent_hint off; agent_pushback off.
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
@@ -42,14 +42,14 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1189 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1201 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 7 live (session d778be9d): worker:afbf7c20de313fdb3, worker:a557d9f2a3ddcfa35, worker:a52352caae946bfdc, worker:aa25dc05b778a374c, worker:a93861e6003f4f8cf, worker:ae02268284ebc759e, worker:a51633d31ffe596d1.
-- Leased items: 7: #08757aa8 (worker:a93861e6003f4f8cf, d778be9d), #0ccdcb46 (worker:a51633d31ffe596d1, d778be9d), #2cd52a0a (worker:a557d9f2a3ddcfa35, d778be9d), #51ab04ed (worker:aa25dc05b778a374c, d778be9d), #87404ff2 (worker:ae02268284ebc759e, d778be9d), #97505e74 (worker:a52352caae946bfdc, d778be9d), #eebf687f (worker:afbf7c20de313fdb3, d778be9d).
+- Writers: 4 live (session d778be9d): worker:a50322d34f68b7c4a, worker:a9c18d2591cb845d6, worker:aa25dc05b778a374c, worker:afbf7c20de313fdb3.
+- Leased items: 5: #2d84b90e (worker:a50322d34f68b7c4a, d778be9d), #32096ded (worker:a9c18d2591cb845d6, d778be9d), #51ab04ed (worker:aa25dc05b778a374c, d778be9d), #d2e96fca (worker:aa25dc05b778a374c, d778be9d), #eebf687f (worker:afbf7c20de313fdb3, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
