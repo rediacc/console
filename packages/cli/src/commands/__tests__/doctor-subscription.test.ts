@@ -13,7 +13,17 @@ vi.mock('../../services/account/license.js', () => ({
 }));
 const config = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../../services/config/config-resources.js', () => ({
-  configService: { getCurrent: async () => config.current },
+  configService: { getCurrent: async () => config.current, getLocalMachine: async () => ({}) },
+}));
+
+const expectedOrigin = vi.hoisted(() => ({ current: undefined as string | undefined }));
+const scan = vi.hoisted(() => ({ current: [] as unknown[] }));
+vi.mock('../../services/backup/backup-store-universe.js', () => ({
+  expectedAccountServerOrigin: () => expectedOrigin.current,
+}));
+vi.mock('../../services/account/license-machine.js', () => ({
+  DEFAULT_DATASTORE: '/mnt/rediacc',
+  scanRemoteRepoLicenses: async () => scan.current,
 }));
 
 import { checkSubscription } from '../doctor-subscription.js';
@@ -154,5 +164,60 @@ describe('the doctor repo-licence check', () => {
     expect(row?.status).toBe('fail');
     expect(row?.hint).toContain('rdc subscription refresh -m <machine>');
     expect(row?.hint).toContain('rdc subscription retire --expired');
+  });
+});
+
+describe('the doctor repo-licence check across account servers', () => {
+  const LIVE = '11111111-aaaa-4aaa-8aaa-000000000001';
+
+  beforeEach(() => {
+    expectedOrigin.current = 'https://eu.rediacc.cloud';
+    config.current = {
+      resources: {
+        repositories: {
+          web: {
+            grand: 'main',
+            placement: { machine: 'box' },
+            tags: { main: { repositoryGuid: LIVE } },
+          },
+        },
+      },
+    };
+    report.current = {
+      ...base('ACTIVE'),
+      repoLicenses: {
+        totalTrackedRepos: 1,
+        validCount: 0,
+        refreshRecommendedCount: 0,
+        hardExpiredCount: 1,
+        recent: [{ repositoryGuid: LIVE, freshness: 'hard_expired' }],
+      },
+    };
+  });
+
+  it('leaves the check ok with an info row when another account server issued the expired licence', async () => {
+    scan.current = [
+      {
+        repositoryGuid: LIVE,
+        currentRenewalUrl: 'https://bench-eu.rediacc.cloud/api/license/renew',
+      },
+    ];
+    const section = await checkSubscription();
+    const rows = section.checks.filter((c) => c.name === 'Repo licenses');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((c) => c.status === 'ok')).toBe(true);
+    const info = rows.find((c) => String(c.value).startsWith('info:'));
+    expect(info?.value).toContain('https://bench-eu.rediacc.cloud');
+    expect(info?.hint).toContain('--adopt-origin');
+  });
+
+  it('CONTROL: an expired licence this config server issued still fails', async () => {
+    scan.current = [
+      { repositoryGuid: LIVE, currentRenewalUrl: 'https://eu.rediacc.cloud/api/license/renew' },
+    ];
+    const section = await checkSubscription();
+    const row = section.checks.find((c) => String(c.value).includes('expired'));
+    expect(row?.status).toBe('fail');
+    expect(section.checks.some((c) => String(c.value).startsWith('info:'))).toBe(false);
   });
 });

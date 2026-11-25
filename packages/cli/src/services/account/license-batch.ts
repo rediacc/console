@@ -235,7 +235,7 @@ function configAccountOrigin(machineName: string): string {
 }
 
 /** The origin of a licence's `renewalUrl`; one that does not parse stays as itself, so it is never the config's origin. */
-function renewalOrigin(renewalUrl: string): string {
+export function renewalOrigin(renewalUrl: string): string {
   try {
     return new URL(renewalUrl).origin;
   } catch {
