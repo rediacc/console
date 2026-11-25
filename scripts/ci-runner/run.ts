@@ -3287,7 +3287,7 @@ async function selftest(): Promise<number> {
   }
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
-    // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
+    // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it. The leaves sit outside scripts/ci-runner/, since a change there is a GLOBAL_INPUTS change that selects every scoped gate (rule 1) and would hide the leaf rule the same way.
     const slowSpec = (id: string, leaf: string): GateSpec => ({
       ...syntheticSpec(id, 'true'),
       slow: true,
@@ -3297,8 +3297,8 @@ async function selftest(): Promise<number> {
     });
     const qSpecs = [
       syntheticSpec('selftest:q-fast', 'true'),
-      slowSpec('selftest:q-touched', 'scripts/ci-runner/quick-select.ts'),
-      slowSpec('selftest:q-untouched', 'scripts/ci-runner/gate-spec.ts'),
+      slowSpec('selftest:q-touched', 'scripts/lib/crc32.ts'),
+      slowSpec('selftest:q-untouched', 'scripts/lib/doc-regions.ts'),
     ];
     const deps = (files: string[] | undefined, disposable = false): QuickDiffDeps => ({
       diff: () => ({ files, label: 'selftest-base' }),
@@ -3310,7 +3310,7 @@ async function selftest(): Promise<number> {
       said += t;
     };
     const quick = { ...EMPTY_OPTS, quick: true };
-    const sel = select(qSpecs, quick, capture, deps(['scripts/ci-runner/quick-select.ts']));
+    const sel = select(qSpecs, quick, capture, deps(['scripts/lib/crc32.ts']));
     require_(
       sel.ids.has('selftest:q-touched'),
       '--quick must SELECT a slow gate whose leaf is in the diff'
@@ -3325,7 +3325,7 @@ async function selftest(): Promise<number> {
       `the untouched slow gate must be LISTED as deferred, said: ${said}`
     );
     require_(
-      select(qSpecs, quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts'])).ids.has(
+      select(qSpecs, quick, () => {}, deps(['scripts/lib/doc-regions.ts'])).ids.has(
         'selftest:q-untouched'
       ),
       'CONTROL: the deferred gate must be selectable when ITS leaf changes, or its deferral above says nothing about the diff'
@@ -3358,12 +3358,7 @@ async function selftest(): Promise<number> {
       mutex: ['tree:repo'],
       writesTree: 'appends a fixture row',
     };
-    const wSel = select(
-      [qSpecs[0], writer],
-      quick,
-      capture,
-      deps(['scripts/ci-runner/quick-select.ts'])
-    );
+    const wSel = select([qSpecs[0], writer], quick, capture, deps(['scripts/lib/crc32.ts']));
     require_(
       !wSel.ids.has('selftest:q-touched') &&
         /DROPPED selftest:q-touched.*writes the shared tree/.test(said),
@@ -3376,12 +3371,12 @@ async function selftest(): Promise<number> {
         wDrop[0].id === 'selftest:q-touched' &&
         wDrop[0].kind === 'tree' &&
         wDrop[0].run.includes('--only selftest:q-touched') &&
-        wDrop[0].why.includes('quick-select.ts'),
+        wDrop[0].why.includes('crc32.ts'),
       `a dropped touched gate must reach sel.droppedTouched with kind tree and its --only command, got ${JSON.stringify(wDrop)}`
     );
     require_(
       (
-        select([qSpecs[0], writer], quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts']))
+        select([qSpecs[0], writer], quick, () => {}, deps(['scripts/lib/doc-regions.ts']))
           .droppedTouched ?? ['unset']
       ).length === 0,
       'CONTROL: the same writer with its leaf outside the diff must leave droppedTouched empty'
@@ -3391,18 +3386,13 @@ async function selftest(): Promise<number> {
         [qSpecs[0], writer],
         { ...quick, receiptOut: '/snap/r.json' },
         () => {},
-        deps(['scripts/ci-runner/quick-select.ts'])
+        deps(['scripts/lib/crc32.ts'])
       ).droppedTouched ?? [])[0]?.run.endsWith('--receipt-out /snap/r.json') === true,
       "a dropped gate's command must carry this run's --receipt-out, so its re-run lands in the same receipt"
     );
     // A CLEAN, DISPOSABLE CLONE admits the writer; the shared checkout does not.
     said = '';
-    const dSel = select(
-      [qSpecs[0], writer],
-      quick,
-      capture,
-      deps(['scripts/ci-runner/quick-select.ts'], true)
-    );
+    const dSel = select([qSpecs[0], writer], quick, capture, deps(['scripts/lib/crc32.ts'], true));
     require_(
       dSel.ids.has('selftest:q-touched') &&
         /SELECTED selftest:q-touched \(tree writer; disposable clone/.test(said) &&

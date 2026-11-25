@@ -236,7 +236,7 @@ function readBaseline(): string[] {
   return (JSON.parse(readFileSync(BASELINE, 'utf8'))[KEY] ?? []) as string[];
 }
 
-/** The longest line the prose gate leaves alone (R18's floor in .ci/config/prose-style-rules.json). */
+/** The length a note line must stay strictly under: R18's floor in .ci/config/prose-style-rules.json, where a line of this length or more is the shape the prose gate may flag. */
 export const NOTE_LINE_FLOOR = 768;
 
 /**

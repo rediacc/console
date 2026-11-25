@@ -6,7 +6,7 @@
  * ONE PASS, NO BUDGET (agent/plans/PLAN-prepush-full-cpu.md part 2, operator ruling 2026-10-05). A 90 s p90 wall budget used to admit touched slow gates cheapest first and drop the rest as `budget` or `unpriced`, which made every pre-push two scheduler passes: the lane, then a `--only` run of each drop. The drops are gone; every touched slow gate is admitted, and the cores scheduler starts the long ones at t=0 so the fast gates fill around them.
  *
  * WHAT "TOUCHED" MEANS, in the inclusive direction on purpose (a false touch costs a gate's run; a missed one is a deferral nobody sees):
- *   1. any declared `paths` glob matches a changed file;
+ *   1. any declared `paths` glob matches a changed file, or a changed file lies inside GLOBAL_INPUTS (input-hash.ts hashes those into every scoped gate, so a scoped gate, `lists`/`names` ones included, is touched by them; a whole-tree gate is left to rule 4);
  *   2. a `leaves` entry that is a repo file changed, or any file it imports, followed transitively (TS/JS relative specifiers, Python `rediacc_ci.*` and relative imports). Command leaves (`tsc`, `biome`, `knip`) name no file and add nothing;
  *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves;
  *   1b. NAME-SHAPED INPUTS (PLAN-ciquick-cpu W2.4, input-hash.ts): a changed file lies anywhere under a `lists` directory ('' is the root), or matches a `names` glob, or the gate declares `refs` and the change set is not empty. The change set is a list of paths with no add/edit split, and a file deeper than a listed directory may sit in a NEW child directory, so any path under it counts: an edit is a false touch, a missed added child would be a deferral nobody sees;
@@ -20,6 +20,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { GLOBAL_INPUTS } from './input-hash';
 
 export interface SlowCandidate {
   readonly id: string;
@@ -208,6 +209,16 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
       const hit = input.changed.find((f) => input.matches(f, c.paths ?? []));
       if (hit !== undefined) {
         touches.push({ id: c.id, why: `${hit} matches its paths` });
+        continue;
+      }
+    }
+    if (!readsWholeTree(c)) {
+      const globalHit = input.changed.find((f) => input.matches(f, GLOBAL_INPUTS));
+      if (globalHit !== undefined) {
+        touches.push({
+          id: c.id,
+          why: `${globalHit} is a GLOBAL_INPUTS file every scoped gate hashes`,
+        });
         continue;
       }
     }
@@ -420,6 +431,40 @@ export function quickSelectSelftest(
       'a change to a Python module a leaf imports must select it'
     );
     check(pick(['docs/a.md']).join() === 'slow:paths', 'a declared paths glob must still select');
+    // RULE 1, GLOBAL_INPUTS: input-hash.ts hashes them into every scoped gate, so a change inside them touches every scoped gate (the twin of select.ts globalTouched, review 9a666914.1).
+    const globalPick = pick(['scripts/ci-runner/manifest.ts']);
+    check(
+      ['slow:touched', 'slow:untouched', 'slow:paths', 'slow:py'].every((id) =>
+        globalPick.includes(id)
+      ),
+      `a change inside GLOBAL_INPUTS must select every path-scoped slow gate, got ${globalPick.join(',')}`
+    );
+    const globalNamed = touchedSlow(
+      [{ id: 'slow:listed', run: 'npm run slow:listed', lists: ['cfg'], leaves: [] }],
+      {
+        root,
+        changed: ['uv.lock'],
+        matches,
+        scriptsNow: scripts,
+        scriptsBase: scripts,
+        failOpen: false,
+      }
+    );
+    check(
+      globalNamed.length === 1,
+      'a change inside GLOBAL_INPUTS must select a lists-scoped gate with no paths, under --narrow too'
+    );
+    check(
+      touchedSlow([corpus], {
+        root,
+        changed: ['uv.lock'],
+        matches,
+        scriptsNow: scripts,
+        scriptsBase: scripts,
+        failOpen: false,
+      }).length === 0,
+      'CONTROL: under failOpen false a whole-tree gate is not selected by a GLOBAL_INPUTS change (it is no scoped gate)'
+    );
     // The npm script half, both directions.
     check(
       pick(['package.json'], matches, { ...scripts, inner: 'c-old' }).join() === 'slow:untouched',

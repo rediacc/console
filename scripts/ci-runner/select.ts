@@ -43,7 +43,7 @@
  * is the signal, and the message names the fix (drop `--changed`, or set
  * `CI_RUNNER_BASE` to a ref that resolves).
  *
- * NAME-SHAPED SCOPE (PLAN-ciquick-cpu W2.4). A gate that declares `lists` or `names` reads tracked NAMES, not content (scripts/ci-runner/input-hash.ts), so it is scoped even with no `paths`, and a changed file matching nothing it declares can still move its input: an add under a listed directory. It is selected exactly when its `list`/`name` lines differ between the base and the judged state, built by the same `listLines`/`nameLines` input-hash.ts hashes with, from the two listings the change set supplies (`ChangeSet.listings`). A change set that cannot list either side selects every such gate and says so in the note: the fail-open direction, never a silent drop. `refs` does not scope a gate (a ref is not a tree read): a gate declaring only `refs` stays unscoped, and a path-scoped gate that declares `refs` is selected by any non-empty change set, since the commit a ref names may have moved with it.
+ * NAME-SHAPED SCOPE (PLAN-ciquick-cpu W2.4). A gate that declares `lists` or `names` reads tracked NAMES, not content (scripts/ci-runner/input-hash.ts), so it is scoped even with no `paths`, and a changed file matching nothing it declares can still move its input: an add under a listed directory. It is selected when its `list`/`name` lines differ between the base and the judged state, or when a GLOBAL_INPUTS file changed (which selects every scoped gate), built by the same `listLines`/`nameLines` input-hash.ts hashes with, from the two listings the change set supplies (`ChangeSet.listings`). A change set that cannot list either side selects every such gate and says so in the note: the fail-open direction, never a silent drop. `refs` does not scope a gate (a ref is not a tree read): a gate declaring only `refs` stays unscoped, and a path-scoped gate that declares `refs` is selected by any non-empty change set, since the commit a ref names may have moved with it.
  */
 import { isEntryPoint } from '../lib/entry-point.js';
 import { GLOBAL_INPUTS, type LsEntry, listLines, matchGlob, nameLines } from './input-hash';
@@ -173,7 +173,7 @@ function nameShape(entries: readonly NameEntry[], s: PathScopedSpec): string {
  * a second thing to drift.
  *
  * THE FAIL-OPEN CLAUSE IS `spec.paths === undefined`, NOT `!spec.paths?.length`. An
- * entry that declares `paths: []` has said something -- "nothing but the GLOBAL_INPUTS selects me" -- and
+ * entry that declares `paths: []` has said something -- "nothing but the GLOBAL_INPUTS selects this entry" -- and
  * conflating that with saying nothing is how a typo becomes an exemption. Neither form
  * is in the lock today; the distinction is written down before one appears.
  */

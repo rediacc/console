@@ -5395,11 +5395,6 @@
     "4c57d7ad8724b1b1"
    ]
   },
-  "scripts/ci-runner/select.ts": {
-   "R2": [
-    "b2b56628e6287f10"
-   ]
-  },
   "scripts/gate-bind.ts": {
    "R1": [
     "c7cbab1b79abb331"

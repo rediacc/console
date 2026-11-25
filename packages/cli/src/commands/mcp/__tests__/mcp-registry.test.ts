@@ -84,6 +84,22 @@ describe('surfaceDisagreement', () => {
     ).toMatch(/mcpSurface is proxy but .* is not proxyCapable/);
   });
 
+  it('names the proxy block reason in parentheses when the contract holds one, and omits the parentheses when it is absent or empty', () => {
+    const tool = { name: 'b', commandPath: localCmd.pathKey, surface: { kind: 'proxy' } } as const;
+    const withCmd = (reason: string | undefined) => ({
+      commands: [{ ...localCmd, proxyBlockedReason: reason }],
+    });
+    expect(surfaceDisagreement(tool, withCmd('needs a terminal'))).toMatch(
+      /is not proxyCapable \(needs a terminal\)$/
+    );
+    // CONTROL: absent and empty reasons leave the sentence bare, never "()" or "(undefined)".
+    for (const reason of [undefined, '']) {
+      const msg = surfaceDisagreement(tool, withCmd(reason));
+      expect(msg).toMatch(/is not proxyCapable$/);
+      expect(msg).not.toMatch(/\(|undefined/);
+    }
+  });
+
   it('refuses a non-proxy marker on a proxyCapable command', () => {
     expect(
       surfaceDisagreement(
