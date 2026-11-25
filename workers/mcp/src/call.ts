@@ -8,7 +8,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/server';
 import { getMcpTool, type McpToolEntry } from '../../../packages/shared/src/mcp/registry.js';
 import type { ExecutorBinding, McpCallAnswer } from './executor.js';
-import { type GrantContext, scopeAdmitsTool } from './scope.js';
+import { type GrantContext, type GrantState, scopeAdmitsTool } from './scope.js';
 
 /** The longest one `tools/call` waits on the executor. */
 export const ATTACH_WINDOW_MS = 50_000;
@@ -34,6 +34,32 @@ export interface CallDeps {
   executor: ExecutorBinding | undefined;
   /** A fresh id per call; `crypto.randomUUID` unless a test pins it. */
   newRequestId?: () => string;
+  /** The page where the user authorizes `grantId` again; the URL carries the grant id and nothing else. */
+  reauthUrl: (grantId: string) => string;
+}
+
+/** The code and the wording for a grant that stopped serving (Design 5). */
+const ENDED: Record<Exclude<GrantState, 'active'>, { code: string; why: string }> = {
+  expired: { code: 'REDIACC_GRANT_EXPIRED', why: 'This grant has expired.' },
+  revoked: { code: 'REDIACC_GRANT_REVOKED', why: 'This grant was revoked.' },
+  key_rotated: {
+    code: 'REDIACC_KEY_ROTATED',
+    why: "This grant stopped working when the config store's key was rotated.",
+  },
+};
+
+/** The `tools/call` answer under a grant that stopped serving: the code, the re-authorization link, and a line telling the model to hand that link to the user. */
+function grantEnded(grant: GrantContext, state: Exclude<GrantState, 'active'>, deps: CallDeps) {
+  const { code, why } = ENDED[state];
+  const reauthUrl = deps.reauthUrl(grant.grantId);
+  return toolError(
+    code,
+    `${why} Give the user this link to authorize the agent again: ${reauthUrl}`,
+    {
+      reauthUrl,
+      expiredAt: grant.endedAt ?? grant.expiresAt,
+    }
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -139,11 +165,12 @@ export async function callTool(
   name: string,
   args: Record<string, unknown>
 ): Promise<CallToolResult> {
+  const { grant } = caller;
+  if (grant.state !== 'active') return grantEnded(grant, grant.state, deps);
   const entry = getMcpTool(name);
   if (entry?.surface !== 'proxy') {
     return toolError('INVALID_REQUEST', `There is no tool named ${name} on this server.`);
   }
-  const { grant } = caller;
   if (!scopeAdmitsTool(grant.scope, entry)) {
     return toolError('POLICY_DENIED', `The tool ${name} is outside this grant's scope.`);
   }

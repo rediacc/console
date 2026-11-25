@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import snapshot from '../../../../packages/shared/src/mcp/__tests__/tools-list.snapshot.json' with {
   type: 'json',
 };
-import type { GrantCaller } from '../call.js';
 import type { GrantScope } from '../scope.js';
 import { createMcpTransport, type McpTransport } from '../transport.js';
+import { activeGrant, bearerFor, resolverFor } from './helpers/grant.js';
 
 const HOST = 'mcp.eu.rediacc.cloud';
 const GRANT_ID = 'grant_t1';
@@ -22,10 +22,8 @@ function transportWith(scope: GrantScope = FULL): McpTransport {
   return createMcpTransport({
     host: HOST,
     serverVersion: '0.0.0-test',
-    resolveGrant: async (grantId): Promise<GrantCaller | null> =>
-      grantId === GRANT_ID
-        ? { grant: { grantId, scope, orgId: 'org-t1', placement: 0 }, secret: 'unused' }
-        : null,
+    accountUrl: 'https://eu.rediacc.cloud',
+    resolveGrant: resolverFor([activeGrant(GRANT_ID, { scope })]),
     executor: undefined,
   });
 }
@@ -44,6 +42,7 @@ async function connect(
 ): Promise<Client> {
   const fetchViaWorker = async (input: string | URL | Request, init?: RequestInit) => {
     const request = new Request(input, init);
+    request.headers.set('authorization', `Bearer ${bearerFor(GRANT_ID)}`);
     sent.push({
       method: request.method,
       headers: new Headers(request.headers),
@@ -149,7 +148,10 @@ describe('the hosted MCP transport', () => {
     const unknown = await worker.fetch(
       new Request(`https://${HOST}/g/nope`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${bearerFor('nope')}`,
+        },
         body: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}',
       })
     );

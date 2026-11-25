@@ -15,9 +15,19 @@ export interface GrantScope {
   repos: readonly string[] | null;
 }
 
+/**
+ * Whether a grant still serves. A known grant opened with the right tag that stopped serving keeps answering `initialize`, `server/discover` and `tools/list`; each `tools/call` then names why and where to re-authorize (Design 5).
+ */
+export type GrantState = 'active' | 'expired' | 'revoked' | 'key_rotated';
+
 /** The grant a request runs under, once its credential has been resolved (the account Worker's `resolveGrant` answer, Design 4). */
 export interface GrantContext {
   grantId: string;
+  state: GrantState;
+  /** ISO 8601: when the grant expires, or expired. */
+  expiresAt: string;
+  /** ISO 8601: when a revoked or key-rotated grant stopped serving; absent while active. */
+  endedAt?: string;
   scope: GrantScope;
   /** The grant's org and its executor placement: where a `tools/call` runs. */
   orgId: string;

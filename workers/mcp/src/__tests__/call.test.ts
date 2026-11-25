@@ -21,19 +21,23 @@ import type {
 } from '../executor.js';
 import type { GrantScope } from '../scope.js';
 import { createMcpTransport } from '../transport.js';
+import { activeGrant, bearerFor, resolverFor, secretTextOf } from './helpers/grant.js';
 
 const HOST = 'mcp.eu.rediacc.cloud';
 const GRANT_ID = 'eu_grant_t2';
-/** A recognisable stand-in for base64url(S): anywhere but the forward body is a leak. */
-const SECRET = 'U2VjcmV0LW9mLXRoZS1hZ2VudC1ncmFudC0zMi1ieXRlcw';
+/** base64url(S) of the test grant: anywhere but the forward body is a leak. */
+const SECRET = secretTextOf(GRANT_ID);
 const FULL: GrantScope = { readOnly: false, tools: null, machines: null, repos: null };
 
+const grantWith = (scope: GrantScope) =>
+  activeGrant(GRANT_ID, { scope, orgId: 'org-t2', placement: 3, tier: 'high' });
+
 function caller(scope: GrantScope = FULL): GrantCaller {
-  return {
-    grant: { grantId: GRANT_ID, scope, orgId: 'org-t2', placement: 3, tier: 'high' },
-    secret: SECRET,
-  };
+  return { grant: grantWith(scope), secret: SECRET };
 }
+
+const reauthUrl = (grantId: string) =>
+  `https://eu.rediacc.cloud/account/mcp/authorize?grant=${grantId}`;
 
 interface Recorded {
   routing: McpCallRouting;
@@ -60,12 +64,15 @@ async function connect(executor: ExecutorBinding, scope: GrantScope = FULL, bodi
   const worker = createMcpTransport({
     host: HOST,
     serverVersion: '0.0.0-test',
-    resolveGrant: async (grantId) => (grantId === GRANT_ID ? caller(scope) : null),
+    accountUrl: 'https://eu.rediacc.cloud',
+    resolveGrant: resolverFor([grantWith(scope)]),
     executor,
     newRequestId: () => 'req-fixed',
   });
   const fetchViaWorker = async (input: string | URL | Request, init?: RequestInit) => {
-    const response = await worker.fetch(new Request(input, init));
+    const request = new Request(input, init);
+    request.headers.set('authorization', `Bearer ${bearerFor(GRANT_ID)}`);
+    const response = await worker.fetch(request);
     bodies.push(await response.clone().text());
     return response;
   };
@@ -153,7 +160,7 @@ describe('tools/call forwarding', () => {
       resultAnswer({ content: [{ type: 'text', text: 'ran' }], isError: false })
     );
     const result = await callTool(
-      { executor },
+      { executor, reauthUrl },
       caller({ ...FULL, readOnly: true }),
       'repo_delete',
       { ref: 'shop' }
@@ -192,7 +199,7 @@ describe('the 50-second window', () => {
     const { executor, calls } = fakeExecutor(() =>
       delayed(EXECUTOR_ATTACH_MS, { ok: true, answer: { job: { jobId: 'job-42', machine: 'm1' } } })
     );
-    const pending = callTool({ executor }, caller(), 'repo_up', { ref: 'shop' });
+    const pending = callTool({ executor, reauthUrl }, caller(), 'repo_up', { ref: 'shop' });
     const { settled, value } = await settledAfter(pending, EXECUTOR_ATTACH_MS);
     expect(settled).toBe(true);
     expect(calls[0].forward.attachMs).toBe(EXECUTOR_ATTACH_MS);
@@ -207,7 +214,7 @@ describe('the 50-second window', () => {
   it('an executor that says nothing gets TIMEOUT at the window, naming job_list', async () => {
     vi.useFakeTimers();
     const { executor } = fakeExecutor(() => new Promise<McpCallAnswer>(() => undefined));
-    const pending = callTool({ executor }, caller(), 'repo_up', { ref: 'shop' });
+    const pending = callTool({ executor, reauthUrl }, caller(), 'repo_up', { ref: 'shop' });
     expect((await settledAfter(pending, ATTACH_WINDOW_MS - 1)).settled).toBe(false);
     const { settled, value } = await settledAfter(pending, 1);
     expect(settled).toBe(true);
@@ -221,7 +228,9 @@ describe('the 50-second window', () => {
       delayed(EXECUTOR_ATTACH_MS, { ok: true, answer: { result: status } })
     );
     const answered = await settledAfter(
-      callTool({ executor: answering.executor }, caller(), 'job_wait', { 'job-id': 'j1' }),
+      callTool({ executor: answering.executor, reauthUrl }, caller(), 'job_wait', {
+        'job-id': 'j1',
+      }),
       EXECUTOR_ATTACH_MS
     );
     expect(answered.settled).toBe(true);
@@ -229,7 +238,7 @@ describe('the 50-second window', () => {
 
     const silent = fakeExecutor(() => new Promise<McpCallAnswer>(() => undefined));
     const waited = await settledAfter(
-      callTool({ executor: silent.executor }, caller(), 'job_wait', { 'job-id': 'j1' }),
+      callTool({ executor: silent.executor, reauthUrl }, caller(), 'job_wait', { 'job-id': 'j1' }),
       50_000
     );
     expect(waited.settled).toBe(true);
@@ -240,6 +249,7 @@ describe('the 50-second window', () => {
 describe('executor refusals', () => {
   const deps = (answer: () => Promise<McpCallAnswer>): CallDeps => ({
     executor: { call: answer },
+    reauthUrl,
   });
 
   it('maps a capacity refusal, a throw, a missing binding and a bad shape to SERVER_ERROR', async () => {
@@ -261,7 +271,7 @@ describe('executor refusals', () => {
       {}
     );
     expect(thrown.structuredContent).toMatchObject({ code: 'SERVER_ERROR' });
-    const unbound = await callTool({ executor: undefined }, caller(), 'repo_list', {});
+    const unbound = await callTool({ executor: undefined, reauthUrl }, caller(), 'repo_list', {});
     expect(unbound.structuredContent).toMatchObject({ code: 'SERVER_ERROR' });
     const shapeless = await callTool(
       deps(() => Promise.resolve({ ok: true, answer: { nothing: 1 } })),

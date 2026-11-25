@@ -1,7 +1,7 @@
 /**
  * The remote MCP Worker, one per region at `mcp.<region>.rediacc.cloud` (agent/plans/PLAN-rmcp-remote-worker.md).
  *
- * The transport and the `tools/call` forward are complete; the credential side is not wired yet: grant resolution (RW-T3) and the bearer and OAuth paths (RW-T4, RW-A1) supply `resolveGrant`. Until they land, every grant resolves to nothing and each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5).
+ * The transport, the `tools/call` forward and the bearer path are complete; grant resolution (RW-T3) supplies `resolveGrant` and the OAuth provider (RW-A1) `verifyAccessToken`. Until they land, every grant resolves to nothing and each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5).
  */
 import type { ExecutorBinding } from './executor.js';
 import { createMcpTransport, type McpTransport } from './transport.js';
@@ -10,6 +10,8 @@ export interface Env {
   REGION: string;
   ENVIRONMENT: string;
   MCP_HOST: string;
+  /** The region's account origin: the host of a re-authorization link. */
+  ACCOUNT_URL: string;
   /** The proxy Worker's `McpExecutor` entrypoint (Design 1); bound per region by the deploy (RW-D2). */
   EXECUTOR?: ExecutorBinding;
 }
@@ -23,6 +25,7 @@ function transportFor(env: Env): McpTransport {
   transport ??= createMcpTransport({
     host: env.MCP_HOST,
     serverVersion: SERVER_VERSION,
+    accountUrl: env.ACCOUNT_URL,
     resolveGrant: async () => null,
     executor: env.EXECUTOR,
   });

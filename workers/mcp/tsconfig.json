@@ -7,7 +7,10 @@
     // shared registry imports its JSON with an import attribute.
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    // DOM beside the Workers types: the shared config-crypto module (the agent bearer parse and the auth tag,
+    // Design 3) is typed against the DOM Web Crypto names (`AesGcmParams`, the `generateKey` overloads), which
+    // @cloudflare/workers-types alone does not declare.
+    "lib": ["ES2022", "DOM"],
     "types": ["@cloudflare/workers-types"],
     "strict": true,
     "noEmit": true,

@@ -16,6 +16,8 @@ REGION = "us"
 ENVIRONMENT = "edge"
 # The Worker's own public host; its origin joins the Origin allowlist next to the hosted clients.
 MCP_HOST = "mcp.us.rediacc.cloud"
+# The region's account origin: a grant that stopped serving names its re-authorization page there (Design 5).
+ACCOUNT_URL = "https://us.rediacc.cloud"
 
 # Telemetry export to the region's destination pair, which the account and proxy Workers of the
 # region share; Cloudflare keeps no copy (persist = false). Invocation logs stay off, so no request
