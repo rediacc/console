@@ -15,10 +15,25 @@
  * target without a step-up method is refused here, whatever the browser claimed about `grand`. The
  * single-use token itself is redeemed by the approval ledger the loop owns (`AiApprovals`), bound
  * to the conversation and the command.
+ *
+ * `POST /v1/ai/chat` runs one chat turn (AP7 of agent/plans/PLAN-console-ai-providers.md) and
+ * answers NDJSON: `ai` lines from the loop (services/ai/loop.ts) and the renet `event` lines of each
+ * tool call, tagged with its call id. The profile is resolved from the session's configs (D3), and
+ * every tool call runs under an agent principal the route sets, never one the body names (D9). A
+ * chat bound to an agent grant (`grant` in the body) takes the grant's session: its config, its
+ * opt-ins and its scope, through the same grant sessions `POST /v1/mcp/call` uses. The client
+ * leaving aborts the provider stream and every running tool.
+ *
+ * `POST /v1/ai/test` runs the tool-calling smoke of the resolved profile (D12) and answers its
+ * verdict as JSON; nothing is stored.
  */
 
+import { type AiConfigs, type Profile, resolveProfile } from '@rediacc/shared/ai';
 import { isPreviewRun, isStepUpMethod, STEP_UP_METHODS } from '@rediacc/shared/auth';
+import { getCommand } from '@rediacc/shared/cli-contract';
+import { type AiEvent, PROXY_ROUTES, type StreamLine } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { listProxyTools } from '@rediacc/shared/mcp/registry';
 import {
   type AiDisableableMode,
   type DecisionTarget,
@@ -27,12 +42,27 @@ import {
   mergePolicies,
   PolicyDocumentSchema,
 } from '@rediacc/shared/policy';
+import { jsonSchema, type LanguageModel, type ModelMessage, type ToolSet, tool } from 'ai';
 import type { Context, Hono } from 'hono';
+import { streamText } from 'hono/streaming';
 import { z } from 'zod';
+import { runAiTurn } from '../ai/loop.js';
+import { createProviderModel, ProviderProfileError } from '../ai/provider.js';
+import { runSmoke, type SmokeResult } from '../ai/smoke.js';
+import { type AiToolContext, type AiToolResult, requestOf, runAiTool } from '../ai/tools.js';
+import { fenceUntrusted } from '../ai/untrusted.js';
 import { boundEffectivePolicy } from '../config/policy-record.js';
+import {
+  type AgentGrantHandle,
+  AgentSessionRefused,
+  AgentSessionUnavailable,
+} from './agent-grant-session.js';
+import { type BusyCounter, createBusyCounter } from './busy.js';
 import { prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
 import type { JobRouteHelpers } from './job-routes.js';
+import { dispatcher, HandedBack } from './mcp-call-dispatch.js';
+import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
 import { clusterSubjectOf, resolveExecutorTarget } from './policy.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -43,6 +73,8 @@ const UNNAMED_ISSUE = 'invalid';
 export const AI_ROUTES = {
   mode: '/v1/ai/mode',
   approval: '/v1/ai/approval',
+  chat: PROXY_ROUTES.aiChat,
+  test: PROXY_ROUTES.aiTest,
 } as const;
 
 const AI_MODES = ['ask', 'auto', 'skip'] as const;
@@ -82,7 +114,7 @@ const ApprovalRequestSchema = z.strictObject({
 type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 
 /** Where the loop keeps each conversation's mode (D4); the autonomy gate reads it. */
-interface AiConversationModes {
+export interface AiConversationModes {
   set(principal: SessionPrincipal, conversationId: string, mode: AiMode): void;
 }
 
@@ -101,13 +133,35 @@ export type AiApprovalVerdict =
   | { ok: false; status: 403 | 404 | 409; code: string; message: string };
 
 /** The single-use approval tokens the loop issued, bound to (conversation, command). */
-interface AiApprovals {
+export interface AiApprovals {
   submit(answer: AiApprovalSubmit): Promise<AiApprovalVerdict>;
+  /** A chat turn ended on this approval request: the ledger expects its answer. */
+  expect(
+    principal: SessionPrincipal,
+    conversationId: string,
+    event: Extract<AiEvent, { type: 'approval_required' }>
+  ): void;
+}
+
+/** The chat host's own seams; every one has a production default. */
+export interface AiChatDeps {
+  /** The AI SDK model of a profile; `createProviderModel` when absent. Tests pass a mock model. */
+  createModel?: (profile: Profile) => LanguageModel;
+  /**
+   * The profile sources of a request, team over shared (D3). Absent: the session's own config is the
+   * only source. The container tier lends the second config when it loads both.
+   */
+  aiConfigs?: (principal: SessionPrincipal, config: RdcConfig) => Promise<AiConfigs>;
+  /** Counts a running tool as a running dispatch, as `/v1/command` does. */
+  busy?: BusyCounter;
+  /** The per-turn output token cap; the loop's default when absent. */
+  maxOutputTokens?: number;
 }
 
 export interface AiRouteDeps {
   modes: AiConversationModes;
   approvals: AiApprovals;
+  chat?: AiChatDeps;
 }
 
 /** A request these routes refuse before any policy work. */
@@ -182,6 +236,201 @@ async function judgeApproval(
   };
 }
 
+const MAX_MESSAGES = 200;
+const MAX_MESSAGE_CHARS = 100_000;
+const GRANT_ID = /^[A-Za-z0-9_-]{1,128}$/;
+const ProfileNameSchema = z.string().min(1).max(128);
+
+/**
+ * What the browser sends. Not strict on purpose: a field this schema does not name (a `kind`, a
+ * `principal`, an `agentGrant`) is dropped before anything reads the body, so none of them can
+ * reach the principal the tools run as.
+ */
+const ChatRequestSchema = z.object({
+  conversationId: IdSchema,
+  messages: z
+    .array(
+      z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(MAX_MESSAGE_CHARS) })
+    )
+    .min(1)
+    .max(MAX_MESSAGES)
+    .refine((messages) => messages.at(-1)?.role === 'user', {
+      message: "the last message must be the user's",
+    }),
+  profile: ProfileNameSchema.optional(),
+  grant: z
+    .strictObject({ grantId: z.string().regex(GRANT_ID), secret: z.string().min(1).max(256) })
+    .optional(),
+});
+
+type ChatRequest = z.infer<typeof ChatRequestSchema>;
+
+const TestRequestSchema = z.object({ profile: ProfileNameSchema.optional() });
+
+/** Refusal codes of the chat and test routes. */
+export const AI_PROFILE_UNRESOLVED = 'AI_PROFILE_UNRESOLVED';
+export const AI_GRANT_UNAVAILABLE = 'AI_GRANT_UNAVAILABLE';
+
+/** How long one tool call may run before its turn gives up on it (a started job is handed back sooner). */
+const TOOL_WINDOW_MS = 5 * 60 * 1000;
+
+const NO_GRANT_OVERRIDES = { allowGrandRepos: false, allowClusterOps: false } as const;
+
+/** One chat's verified session: who the tools run as, and the config and scope they run in. */
+interface ChatSession {
+  handle: AgentGrantHandle;
+  sources: AiConfigs;
+}
+
+/** A session, or the refusal that answers the request instead. */
+type OpenedChat =
+  | { session: ChatSession }
+  | { refusal: { error: string; code: string }; status: 400 | 403 | 503 };
+
+/** A request id the job machinery accepts, from a conversation and a model-chosen tool call id. */
+function toolRequestId(conversationId: string, toolCallId: string): string {
+  return `${conversationId}:${toolCallId}`.replaceAll(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 200);
+}
+
+/** `work`, or a rejection when `signal` aborts first; the work itself keeps running to its own end. */
+function untilAborted<T>(work: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (!signal) return work;
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(new Error('The chat was cancelled.'));
+    if (signal.aborted) abort();
+    signal.addEventListener('abort', abort, { once: true });
+    work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
+}
+
+interface ChatToolHost {
+  deps: ServeDeps;
+  busy: BusyCounter;
+  session: ChatSession;
+  conversationId: string;
+  forward: (line: StreamLine) => void;
+}
+
+type RegistryTool = ReturnType<typeof listProxyTools>[number];
+
+/** One model-requested call: the grant's globs, then `runAiTool` (prepare, decide, dispatch with audit). */
+async function runChatTool(
+  host: ChatToolHost,
+  entry: RegistryTool,
+  input: Record<string, unknown>,
+  call: { toolCallId: string; abortSignal?: AbortSignal }
+): Promise<AiToolResult> {
+  const { handle } = host.session;
+  const command = getCommand(entry.command);
+  if (!command) return await runAiTool(unrunnable(host), entry, input, call);
+  const request = requestOf(entry, command, input);
+  const outside = await globRefusal(handle.scope, command, request, handle.config);
+  if (outside) return { status: 'refused', code: 'POLICY_DENIED', reason: outside };
+  const dispatch = dispatcher(
+    {
+      deps: host.deps,
+      busy: host.busy,
+      handle,
+      requestId: toolRequestId(host.conversationId, call.toolCallId),
+      windowMs: TOOL_WINDOW_MS,
+    },
+    request
+  );
+  try {
+    return await runAiTool(
+      {
+        ...unrunnable(host),
+        run: (run) => untilAborted(dispatch(run), call.abortSignal),
+      },
+      entry,
+      input,
+      call
+    );
+  } catch (error) {
+    if (!(error instanceof HandedBack)) throw error;
+    const where = error.machine ? ` on ${error.machine}` : '';
+    return {
+      status: 'ok',
+      exitCode: 0,
+      output: fenceUntrusted(
+        `The command started job ${error.jobId}${where} and keeps running; follow it with the job tools.`
+      ).text,
+    };
+  }
+}
+
+/** The tool context minus a dispatcher: its `run` refuses, so a call that has none can never dispatch. */
+function unrunnable(host: ChatToolHost): AiToolContext {
+  const { handle } = host.session;
+  return {
+    principal: handle.principal,
+    config: handle.config,
+    // The agent principal: set here from the verified session, never from the request body.
+    agentGrant: handle.overrides,
+    authorize: host.deps.authorize,
+    run: () => Promise.reject(new Error('This tool call has no dispatcher.')),
+    onEvent: (toolCallId, event) => host.forward({ kind: 'event', event, toolCallId }),
+  };
+}
+
+/** The AI SDK tool set of one chat: the proxy-surface registry tools the session's scope admits. */
+function chatTools(host: ChatToolHost): ToolSet {
+  const tools: ToolSet = {};
+  for (const entry of listProxyTools()) {
+    if (!scopeAdmitsTool(host.session.handle.scope, entry)) continue;
+    tools[entry.name] = tool({
+      description: entry.description,
+      inputSchema: jsonSchema<Record<string, unknown>>(entry.inputSchema),
+      execute: (input, options) =>
+        runChatTool(host, entry, input, {
+          toolCallId: options.toolCallId,
+          ...(options.abortSignal ? { abortSignal: options.abortSignal } : {}),
+        }),
+    });
+  }
+  return tools;
+}
+
+function messagesOf(body: ChatRequest): ModelMessage[] {
+  return body.messages.map((m) => ({ role: m.role, content: m.content }));
+}
+
+/** The smoke result of a profile the adapter refused to build, in the smoke's own shape. */
+function refusedSmoke(error: ProviderProfileError): SmokeResult {
+  return {
+    ok: false,
+    reason: 'profile-refused',
+    message: error.message,
+    latencyMs: 0,
+    observed: { tools: false, streaming: false },
+  };
+}
+
+/** The grant session of a grant-bound chat, or the refusal that answers it. */
+async function openGrant(
+  deps: ServeDeps,
+  grant: NonNullable<ChatRequest['grant']>
+): Promise<OpenedChat> {
+  if (!deps.agentGrants) {
+    return {
+      status: 400,
+      refusal: { error: 'This executor serves no agent grants.', code: AI_GRANT_UNAVAILABLE },
+    };
+  }
+  try {
+    const handle = await deps.agentGrants.acquire(grant.grantId, grant.secret);
+    return { session: { handle, sources: { team: handle.config.ai } } };
+  } catch (error) {
+    if (error instanceof AgentSessionRefused) {
+      return { status: 403, refusal: { error: error.message, code: AI_GRANT_UNAVAILABLE } };
+    }
+    if (error instanceof AgentSessionUnavailable) {
+      return { status: 503, refusal: { error: error.message, code: AI_GRANT_UNAVAILABLE } };
+    }
+    throw error;
+  }
+}
+
 export function registerAiRoutes(
   app: Hono,
   deps: ServeDeps,
@@ -189,6 +438,8 @@ export function registerAiRoutes(
   helpers: JobRouteHelpers,
   ai: AiRouteDeps
 ): void {
+  const chatBusy = createBusyCounter();
+
   /** Authenticate, parse, and open the config of the request's session. */
   async function admit<T>(c: Context, schema: z.ZodType<T>) {
     const principal = await helpers.authenticate(c.req.header('authorization'));
@@ -252,6 +503,117 @@ export function registerAiRoutes(
         200,
         { 'Cache-Control': 'no-store' }
       );
+    } catch (error) {
+      return refusal(c, error);
+    }
+  });
+
+  /** The chat's session: the grant's when the body names one, else the caller's own config. */
+  async function openChat(
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    grant: ChatRequest['grant']
+  ): Promise<OpenedChat> {
+    if (grant) return await openGrant(deps, grant);
+    const handle: AgentGrantHandle = {
+      grantId: '',
+      principal,
+      scope: { readOnly: false },
+      overrides: NO_GRANT_OVERRIDES,
+      config: helpers.requestScopedConfig(config) ?? config,
+    };
+    return { session: { handle, sources: await profileSources(principal, config) } };
+  }
+
+  async function profileSources(
+    principal: SessionPrincipal,
+    config: RdcConfig
+  ): Promise<AiConfigs> {
+    return (await ai.chat?.aiConfigs?.(principal, config)) ?? { team: config.ai };
+  }
+
+  const modelOf = (profile: Profile): LanguageModel =>
+    (ai.chat?.createModel ?? createProviderModel)(profile);
+
+  const chatHost = (
+    session: ChatSession,
+    conversationId: string,
+    forward: ChatToolHost['forward']
+  ) => ({
+    deps,
+    busy: ai.chat?.busy ?? chatBusy,
+    session,
+    conversationId,
+    forward,
+  });
+
+  /** Stream one turn as NDJSON; the client leaving aborts the provider stream and the running tools. */
+  function streamChat(c: Context, model: LanguageModel, session: ChatSession, body: ChatRequest) {
+    const abort = new AbortController();
+    c.req.raw.signal.addEventListener('abort', () => abort.abort(), { once: true });
+    return streamText(c, async (stream) => {
+      stream.onAbort(() => abort.abort());
+      const forward = (line: StreamLine) => {
+        stream.write(`${JSON.stringify(line)}\n`).catch(() => undefined);
+      };
+      await runAiTurn({
+        model,
+        tools: chatTools(chatHost(session, body.conversationId, forward)),
+        messages: messagesOf(body),
+        ...(ai.chat?.maxOutputTokens ? { maxOutputTokens: ai.chat.maxOutputTokens } : {}),
+        abortSignal: abort.signal,
+        emit: (event) => forward({ kind: 'ai', ai: event }),
+        onApprovalRequired: (event) =>
+          ai.approvals.expect(session.handle.principal, body.conversationId, event),
+      });
+    });
+  }
+
+  /** The model of the profile a request resolves to, or the refusal that answers it. */
+  function buildModel(
+    sources: AiConfigs,
+    name: string | undefined
+  ): { model: LanguageModel } | { refusal: { error: string; code: string }; status: 404 | 422 } {
+    const resolved = resolveProfile(sources, name);
+    if (!resolved.ok) {
+      return { status: 404, refusal: { error: resolved.message, code: AI_PROFILE_UNRESOLVED } };
+    }
+    try {
+      return { model: modelOf(resolved.profile) };
+    } catch (error) {
+      if (!(error instanceof ProviderProfileError)) throw error;
+      return { status: 422, refusal: { error: error.message, code: AI_PROFILE_UNRESOLVED } };
+    }
+  }
+
+  app.post(AI_ROUTES.chat, async (c) => {
+    try {
+      const { principal, body, config } = await admit(c, ChatRequestSchema);
+      const opened = await openChat(principal, config, body.grant);
+      if ('refusal' in opened) return c.json(opened.refusal, opened.status);
+      const { session } = opened;
+      const built = buildModel(session.sources, body.profile);
+      if ('refusal' in built) return c.json(built.refusal, built.status);
+      const { model } = built;
+      return streamChat(c, model, session, body);
+    } catch (error) {
+      return refusal(c, error);
+    }
+  });
+
+  app.post(AI_ROUTES.test, async (c) => {
+    try {
+      const { principal, body, config } = await admit(c, TestRequestSchema);
+      const resolved = resolveProfile(await profileSources(principal, config), body.profile);
+      if (!resolved.ok) {
+        return c.json({ error: resolved.message, code: AI_PROFILE_UNRESOLVED }, 404);
+      }
+      try {
+        return c.json(await runSmoke(modelOf(resolved.profile), { abortSignal: c.req.raw.signal }));
+      } catch (error) {
+        if (!(error instanceof ProviderProfileError)) throw error;
+        return c.json(refusedSmoke(error));
+      }
     } catch (error) {
       return refusal(c, error);
     }

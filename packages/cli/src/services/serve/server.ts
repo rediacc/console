@@ -36,6 +36,7 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { VERSION } from '../../version.js';
+import { AiApprovalLedger, AiConversationStore } from '../ai/loop.js';
 import { outputService } from '../core/output.js';
 import {
   createOutputState,
@@ -44,6 +45,7 @@ import {
 } from '../core/request-context.js';
 import { InvalidJobIdError } from '../executor/job-client.js';
 import { traceProxyRequest } from '../executor/proxy-trace.js';
+import { registerAiRoutes } from './ai-routes.js';
 import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import { AuthError, type AuthVerifier } from './auth.js';
 import { createBusyCounter } from './busy.js';
@@ -51,7 +53,7 @@ import { CommandRejected, dispatchCommand, prepareCommand } from './command-disp
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
-import { registerJobRoutes } from './job-routes.js';
+import { type JobRouteHelpers, registerJobRoutes } from './job-routes.js';
 import { registerMcpCallRoute } from './mcp-call-route.js';
 import {
   clusterSubjectOf,
@@ -483,7 +485,7 @@ export function createServeApp(deps: ServeDeps): Hono {
     }
   });
 
-  registerJobRoutes(app, deps, {
+  const routeHelpers: JobRouteHelpers = {
     authenticate: (header) => authenticate(header, deps),
     statusFor,
     requestScopedConfig: (config) => requestScopedConfig(deps, config),
@@ -492,6 +494,14 @@ export function createServeApp(deps: ServeDeps): Hono {
       const trimmed = header?.trim();
       return trimmed === '' ? undefined : trimmed;
     },
+  };
+  registerJobRoutes(app, deps, routeHelpers);
+
+  // The AI mode, approval, chat and test routes (AP7 of PLAN-console-ai-providers).
+  registerAiRoutes(app, deps, routeHelpers, {
+    modes: new AiConversationStore(),
+    approvals: new AiApprovalLedger(),
+    chat: { busy },
   });
 
   // The hosted MCP call route, container tier only (it carries no bearer: only the proxy's `mcpCall` reaches it).

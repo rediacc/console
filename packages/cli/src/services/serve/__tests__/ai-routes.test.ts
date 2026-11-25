@@ -8,8 +8,11 @@
  * through. The real contract, policy code and repo resolver run; the account server is faked.
  */
 
+import type { AiConfig, Profile } from '@rediacc/shared/ai';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
+import { simulateReadableStream } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
 import { Hono } from 'hono';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,12 +26,17 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
+import { AiApprovalLedger, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
+import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
 import {
   AI_APPROVAL_STEPUP_REQUIRED,
+  AI_GRANT_UNAVAILABLE,
   AI_MODE_DISABLED,
+  AI_PROFILE_UNRESOLVED,
   AI_ROUTES,
   type AiApprovalSubmit,
   type AiApprovalVerdict,
+  type AiChatDeps,
   type AiMode,
   registerAiRoutes,
 } from '../ai-routes.js';
@@ -95,7 +103,13 @@ let modes: { conversationId: string; mode: AiMode }[];
 let submitted: AiApprovalSubmit[];
 let verdict: AiApprovalVerdict;
 
-function app(config: RdcConfig): Hono {
+interface AppOptions {
+  chat?: AiChatDeps;
+  authorize?: ServeDeps['authorize'];
+  agentGrants?: ServeDeps['agentGrants'];
+}
+
+function app(config: RdcConfig, options: AppOptions = {}): Hono {
   const deps: ServeDeps = {
     mode: 'container',
     auth: new AuthVerifier({
@@ -107,7 +121,8 @@ function app(config: RdcConfig): Hono {
     crypto: serveCrypto,
     executor: { execute: () => Promise.reject(new Error('the approval route runs nothing')) },
     loadConfig: () => Promise.resolve(config),
-    authorize,
+    authorize: options.authorize ?? authorize,
+    ...(options.agentGrants ? { agentGrants: options.agentGrants } : {}),
   };
   const hono = new Hono();
   registerAiRoutes(
@@ -131,7 +146,9 @@ function app(config: RdcConfig): Hono {
           submitted.push(answer);
           return Promise.resolve(verdict);
         },
+        expect: () => undefined,
       },
+      ...(options.chat ? { chat: options.chat } : {}),
     }
   );
   return hono;
@@ -305,5 +322,325 @@ describe('POST /v1/ai/approval', () => {
     expect(config.status).toBe(400);
     expect((await post(hono, AI_ROUTES.approval, approval('no such', 'x'))).status).toBe(400);
     expect(submitted).toEqual([]);
+  });
+});
+
+type StreamPart =
+  Awaited<ReturnType<MockLanguageModelV4['doStream']>>['stream'] extends ReadableStream<infer P>
+    ? P
+    : never;
+
+const USAGE = {
+  inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+  outputTokens: { total: 5, text: 5, reasoning: undefined },
+};
+
+function finish(unified: 'stop' | 'tool-calls'): StreamPart {
+  return { type: 'finish', usage: USAGE, finishReason: { unified, raw: unified } };
+}
+
+function step(parts: StreamPart[]) {
+  return {
+    stream: simulateReadableStream({
+      chunks: [{ type: 'stream-start', warnings: [] } as StreamPart, ...parts],
+    }),
+  };
+}
+
+function toolCallStep(toolName: string, input: Record<string, unknown>, id = 'call-1') {
+  const json = JSON.stringify(input);
+  return step([
+    { type: 'tool-input-start', id, toolName },
+    { type: 'tool-input-delta', id, delta: json },
+    { type: 'tool-input-end', id },
+    { type: 'tool-call', toolCallId: id, toolName, input: json },
+    finish('tool-calls'),
+  ]);
+}
+
+function textStep(text: string) {
+  return step([
+    { type: 'text-start', id: 't-1' },
+    { type: 'text-delta', id: 't-1', delta: text },
+    { type: 'text-end', id: 't-1' },
+    finish('stop'),
+  ]);
+}
+
+function profileOf(model: string): Profile {
+  return {
+    format: 'anthropic-messages',
+    baseURL: 'https://api.anthropic.com',
+    key: 'sk-test',
+    authScheme: 'x-api-key',
+    model,
+    capabilities: { tools: true, streaming: true, parallelToolCalls: false, vision: false },
+  };
+}
+
+function aiOf(model: string): AiConfig {
+  return { providers: { main: profileOf(model) }, default: 'main' };
+}
+
+const CHAT = {
+  conversationId: 'conv-1',
+  messages: [{ role: 'user', content: 'bring shop up' }],
+};
+
+/** The lines of an NDJSON answer. */
+async function lines(response: Response): Promise<Record<string, unknown>[]> {
+  const text = await response.text();
+  return text
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as Record<string, unknown>);
+}
+
+function chat(hono: Hono, body: unknown = CHAT, init: RequestInit = {}) {
+  return hono.request(AI_ROUTES.chat, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${OWNER_TOKEN}` },
+    body: JSON.stringify(body),
+    ...init,
+  });
+}
+
+function aiEvents(all: Record<string, unknown>[]) {
+  return all.filter((l) => l.kind === 'ai').map((l) => l.ai as Record<string, unknown>);
+}
+
+function withAi(model: string): RdcConfig {
+  return { ...fleetConfig(), ai: aiOf(model) };
+}
+
+describe('POST /v1/ai/chat', () => {
+  it('caps a turn at 12 tool steps and ends it with the step-limit finish', async () => {
+    let n = 0;
+    const mock = new MockLanguageModelV4({
+      doStream: () => {
+        n += 1;
+        return Promise.resolve(toolCallStep('repo_up', { ref: 'shop' }, `call-${n}`));
+      },
+    });
+    const response = await chat(app(withAi('m'), { chat: { createModel: () => mock } }));
+    expect(response.status).toBe(200);
+    const events = aiEvents(await lines(response));
+    expect(MAX_TOOL_STEPS).toBe(12);
+    expect(mock.doStreamCalls).toHaveLength(12);
+    expect(events.filter((e) => e.type === 'tool_result')).toHaveLength(12);
+    expect(events.at(-1)).toEqual({ type: 'finish', reason: STEP_LIMIT_REASON });
+  });
+
+  it('stops the provider stream when the client aborts', async () => {
+    let cancelled = false;
+    const mock = new MockLanguageModelV4({
+      doStream: () =>
+        Promise.resolve({
+          stream: new ReadableStream<StreamPart>({
+            start(controller) {
+              controller.enqueue({ type: 'stream-start', warnings: [] } as StreamPart);
+              controller.enqueue({ type: 'text-start', id: 't-1' });
+              controller.enqueue({ type: 'text-delta', id: 't-1', delta: 'thinking' });
+            },
+            cancel() {
+              cancelled = true;
+            },
+          }),
+        }),
+    });
+    const abort = new AbortController();
+    const response = await chat(app(withAi('m'), { chat: { createModel: () => mock } }), CHAT, {
+      signal: abort.signal,
+    });
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader();
+    const first = await reader.read();
+    expect(new TextDecoder().decode(first.value)).toContain('text_delta');
+    abort.abort();
+    await vi.waitFor(() => expect(cancelled).toBe(true));
+    expect(mock.doStreamCalls[0]?.abortSignal?.aborted).toBe(true);
+  });
+
+  it('runs every tool call as an agent, whatever kind or grant the body asserts', async () => {
+    const seen: Parameters<typeof authorize>[0][] = [];
+    const mock = new MockLanguageModelV4({
+      doStream: [toolCallStep('repo_up', { ref: 'shop' }), textStep('Refused.')],
+    });
+    const response = await chat(
+      app(withAi('m'), {
+        chat: { createModel: () => mock },
+        authorize: (args) => {
+          seen.push(args);
+          return authorize(args);
+        },
+      }),
+      {
+        ...CHAT,
+        kind: 'human',
+        principal: { userId: 'someone-else', orgRole: 'owner' },
+        agentGrant: { allowGrandRepos: true, allowClusterOps: true },
+      }
+    );
+    const events = aiEvents(await lines(response));
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.agentGrant).toEqual({ allowGrandRepos: false, allowClusterOps: false });
+    expect(seen[0]?.principal.userId).toBe('user-owner');
+    expect(events.find((e) => e.type === 'tool_result')).toMatchObject({
+      ok: false,
+      output: { status: 'refused' },
+    });
+  });
+
+  it('uses the team profile over the shared one, and the shared one when the team has none', async () => {
+    const used: string[] = [];
+    const chatDeps = (configs: { team?: AiConfig; shared?: AiConfig }): AiChatDeps => ({
+      aiConfigs: () => Promise.resolve(configs),
+      createModel: (profile) => {
+        used.push(profile.model);
+        return new MockLanguageModelV4({ doStream: [textStep('hi')] });
+      },
+    });
+    const both = { team: aiOf('team-model'), shared: aiOf('shared-model') };
+    await (await chat(app(fleetConfig(), { chat: chatDeps(both) }))).text();
+    await (
+      await chat(app(fleetConfig(), { chat: chatDeps({ shared: aiOf('shared-model') }) }))
+    ).text();
+    expect(used).toEqual(['team-model', 'shared-model']);
+  });
+
+  it('answers 404 with a code when no profile is configured, and 401 without a token', async () => {
+    const hono = app(fleetConfig());
+    const none = await chat(hono);
+    expect(none.status).toBe(404);
+    expect(await none.json()).toMatchObject({ code: AI_PROFILE_UNRESOLVED });
+    const noToken = await hono.request(AI_ROUTES.chat, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(CHAT),
+    });
+    expect(noToken.status).toBe(401);
+  });
+
+  it('refuses a malformed turn: the last message must be the user, and a grant is strict', async () => {
+    const hono = app(withAi('m'));
+    const assistantLast = await chat(hono, {
+      ...CHAT,
+      messages: [{ role: 'assistant', content: 'hi' }],
+    });
+    expect(assistantLast.status).toBe(400);
+    const loose = await chat(hono, { ...CHAT, grant: { grantId: 'g1', secret: 's', extra: 1 } });
+    expect(loose.status).toBe(400);
+  });
+
+  it('resolves a grant-bound chat inside the grant session, and passes its refusal through', async () => {
+    const used: string[] = [];
+    const handle: AgentGrantHandle = {
+      grantId: 'g1',
+      principal: {
+        orgId: 'org-1',
+        teamId: null,
+        userId: 'agent-grant:g1',
+        userEmail: 'agent-grant:g1',
+        orgRole: 'member',
+        agentGrantId: 'g1',
+      },
+      scope: { readOnly: false },
+      overrides: { allowGrandRepos: ['shop'], allowClusterOps: false },
+      config: {
+        ...fleetConfig({
+          version: 1,
+          defaults: { commands: { allow: ['*'] }, allowGrandRepos: true },
+        }),
+        ai: aiOf('grant-model'),
+      },
+    };
+    const seen: Parameters<typeof authorize>[0][] = [];
+    const mock = new MockLanguageModelV4({
+      doStream: [toolCallStep('repo_delete', { ref: 'shop' }), textStep('Asked.')],
+    });
+    const hono = app(withAi('caller-model'), {
+      agentGrants: {
+        acquire: (id: string) =>
+          id === 'g1' ? Promise.resolve(handle) : Promise.reject(new AgentSessionRefused()),
+      } as ServeDeps['agentGrants'],
+      authorize: (args) => {
+        seen.push(args);
+        return authorize(args);
+      },
+      chat: {
+        createModel: (profile) => {
+          used.push(profile.model);
+          return mock;
+        },
+      },
+    });
+    const ok = await chat(hono, { ...CHAT, grant: { grantId: 'g1', secret: 'secret' } });
+    const events = aiEvents(await lines(ok));
+    expect(used).toEqual(['grant-model']);
+    expect(seen[0]?.agentGrant).toEqual(handle.overrides);
+    expect(seen[0]?.principal.agentGrantId).toBe('g1');
+    expect(events.map((e) => e.type)).toContain('approval_required');
+
+    const refused = await chat(hono, { ...CHAT, grant: { grantId: 'g2', secret: 'secret' } });
+    expect(refused.status).toBe(403);
+    expect(await refused.json()).toMatchObject({ code: AI_GRANT_UNAVAILABLE });
+  });
+});
+
+describe('POST /v1/ai/test', () => {
+  it('runs the tool-calling smoke of the resolved profile and answers its verdict', async () => {
+    const mock = new MockLanguageModelV4({ doStream: [textStep('no tool here')] });
+    const hono = app(withAi('m'), { chat: { createModel: () => mock } });
+    const answer = await post(hono, AI_ROUTES.test, {});
+    expect(answer.status).toBe(200);
+    expect(answer.body).toMatchObject({ ok: false, reason: 'no-tool-call' });
+    const none = await post(app(fleetConfig()), AI_ROUTES.test, {});
+    expect(none.status).toBe(404);
+  });
+});
+
+describe('AiApprovalLedger', () => {
+  const principal = {
+    orgId: 'org-1',
+    teamId: null,
+    userId: 'user-owner',
+    userEmail: 'owner@example.com',
+    orgRole: 'owner' as const,
+  };
+  const event = {
+    type: 'approval_required' as const,
+    toolCallId: 'call-1',
+    name: 'repo_delete',
+    input: { ref: 'shop' },
+  };
+  const answer = (over: Partial<AiApprovalSubmit> = {}): AiApprovalSubmit => ({
+    principal,
+    conversationId: 'conv-1',
+    toolCallId: 'call-1',
+    approvalToken: 'tok',
+    decision: 'approve',
+    command: { pathKey: 'repo delete', params: {}, positionals: {} },
+    stepUpMethod: null,
+    destructive: true,
+    grand: false,
+    ...over,
+  });
+
+  it('redeems an expected approval once, for its own command and caller only', async () => {
+    const ledger = new AiApprovalLedger();
+    ledger.expect(principal, 'conv-1', event);
+    const other = { command: { pathKey: 'repo up', params: {}, positionals: {} } };
+    expect(await ledger.submit(answer(other))).toMatchObject({ ok: false, status: 409 });
+    const stranger = { principal: { ...principal, userId: 'other' } };
+    expect(await ledger.submit(answer(stranger))).toMatchObject({ ok: false, status: 404 });
+    expect(await ledger.submit(answer())).toEqual({ ok: true });
+    expect(await ledger.submit(answer())).toMatchObject({ ok: false, status: 404 });
+  });
+
+  it('forgets an approval after its window', async () => {
+    let now = 0;
+    const ledger = new AiApprovalLedger(() => now);
+    ledger.expect(principal, 'conv-1', event);
+    now = 16 * 60 * 1000;
+    expect(await ledger.submit(answer())).toMatchObject({ ok: false, status: 404 });
   });
 });
