@@ -13,7 +13,7 @@ import { ServerError } from '../box.js';
 import type { ServerDeps } from '../types.js';
 import type { ManifestFile } from './manifest.js';
 
-export const MODELS_DIR = 'models';
+const MODELS_DIR = 'models';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -56,7 +56,7 @@ function objectHashes(text: string, file: string): string[] {
 }
 
 /** The models root on the release host: the channel's origin without its `/cli` path, plus `/models`. */
-export function modelsBase(deps: ServerDeps): string {
+function modelsBase(deps: ServerDeps): string {
   return `${deps.release.baseUrl().replace(/\/cli$/, '')}/models`;
 }
 

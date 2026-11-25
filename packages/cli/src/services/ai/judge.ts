@@ -28,7 +28,7 @@ export const JUDGE_CONSECUTIVE_BLOCK_LIMIT = 3;
 export const JUDGE_TOTAL_BLOCK_LIMIT = 20;
 
 /** Characters of conversation text the judge reads, newest kept. */
-export const JUDGE_MAX_TRANSCRIPT_CHARS = 32_000;
+const JUDGE_MAX_TRANSCRIPT_CHARS = 32_000;
 
 /** One line of the conversation as the judge reads it: who spoke, and the text alone. */
 export interface JudgeMessage {
@@ -57,7 +57,7 @@ export interface JudgeInput {
   readonly command: JudgeCommand;
 }
 
-export const JudgeVerdictSchema = z.strictObject({
+const JudgeVerdictSchema = z.strictObject({
   verdict: z.enum(['allow', 'block']),
   reason: z.string().min(1).max(2000),
 });
@@ -178,7 +178,7 @@ export async function runJudge(
   }
 }
 
-export interface JudgeTallyEntry {
+interface JudgeTallyEntry {
   /** Blocks since the last allow or the last fallback. */
   consecutive: number;
   /** Blocks in the conversation. */

@@ -24,7 +24,7 @@ import { expect } from 'vitest';
 
 export const EXECUTOR_TOKEN = 'rdt_executor';
 export const ORG_ID = 'org-1';
-export const STORE_ID = 'store-1';
+const STORE_ID = 'store-1';
 
 export interface FakeGrant {
   grantId: string;

@@ -4,7 +4,7 @@ import { promises as fs } from 'node:fs';
  * The UTC stamp of the pre-enable copy's name: `YYYYMMDDTHHMMSSZ`, sortable and free of the `:` that Windows
  * refuses in a file name.
  */
-export function utcStamp(now: Date): string {
+function utcStamp(now: Date): string {
   return now
     .toISOString()
     .replace(/\.\d{3}Z$/, 'Z')

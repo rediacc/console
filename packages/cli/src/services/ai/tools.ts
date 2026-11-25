@@ -315,7 +315,7 @@ export async function runAiTool(
 }
 
 /** The registry entries the AI may call: the ones the executor serves. */
-export function aiToolEntries(): readonly McpToolEntry[] {
+function aiToolEntries(): readonly McpToolEntry[] {
   return listProxyTools();
 }
 

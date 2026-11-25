@@ -42,7 +42,7 @@ export const AI_ROUTES = {
   approval: '/v1/ai/approval',
 } as const;
 
-export const AI_MODES = ['ask', 'auto', 'skip'] as const;
+const AI_MODES = ['ask', 'auto', 'skip'] as const;
 export type AiMode = (typeof AI_MODES)[number];
 
 /** Refusal codes these routes answer with. */
@@ -79,7 +79,7 @@ const ApprovalRequestSchema = z.strictObject({
 type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 
 /** Where the loop keeps each conversation's mode (D4); the autonomy gate reads it. */
-export interface AiConversationModes {
+interface AiConversationModes {
   set(principal: SessionPrincipal, conversationId: string, mode: AiMode): void;
 }
 
@@ -98,7 +98,7 @@ export type AiApprovalVerdict =
   | { ok: false; status: 403 | 404 | 409; code: string; message: string };
 
 /** The single-use approval tokens the loop issued, bound to (conversation, command). */
-export interface AiApprovals {
+interface AiApprovals {
   submit(answer: AiApprovalSubmit): Promise<AiApprovalVerdict>;
 }
 
@@ -124,10 +124,7 @@ function effectivePolicyOf(config: RdcConfig): EffectivePolicy | null {
 }
 
 /** The modes the policy disables for this caller (D6), in `AI_DISABLEABLE_MODES` order. */
-export function disabledModesFor(
-  config: RdcConfig,
-  principal: SessionPrincipal
-): AiDisableableMode[] {
+function disabledModesFor(config: RdcConfig, principal: SessionPrincipal): AiDisableableMode[] {
   const effective = effectivePolicyOf(config);
   if (!effective) return [];
   return disabledAiModes(effective, {
@@ -137,7 +134,7 @@ export function disabledModesFor(
 }
 
 /** A grand-repo target as the grand-repo rule reads it: unresolved counts as grand; ops VMs never do. */
-export function isGrandTarget(target: DecisionTarget): boolean {
+function isGrandTarget(target: DecisionTarget): boolean {
   return !!target.repo && target.repo.state !== 'fork' && !target.isOpsVm;
 }
 

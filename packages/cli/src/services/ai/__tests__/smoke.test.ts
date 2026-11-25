@@ -6,7 +6,9 @@
  * script must fail with a reason naming what was missing, and a provider error
  * must surface its HTTP status and message.
  */
+
 import type { Profile } from '@rediacc/shared/ai';
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import { APICallError, simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
@@ -107,8 +109,18 @@ describe('runSmoke', () => {
 
   it('fails a turn that calls the tool with a wrong nonce beside the right one (review 645fb53d.2)', async () => {
     const calls = [
-      { type: 'tool-call', toolCallId: 'c-1', toolName: SMOKE_TOOL_NAME, input: JSON.stringify({ nonce: 'n-guess' }) },
-      { type: 'tool-call', toolCallId: 'c-2', toolName: SMOKE_TOOL_NAME, input: JSON.stringify({ nonce: NONCE }) },
+      {
+        type: 'tool-call',
+        toolCallId: 'c-1',
+        toolName: SMOKE_TOOL_NAME,
+        input: JSON.stringify({ nonce: 'n-guess' }),
+      },
+      {
+        type: 'tool-call',
+        toolCallId: 'c-2',
+        toolName: SMOKE_TOOL_NAME,
+        input: JSON.stringify({ nonce: NONCE }),
+      },
     ] as StreamPart[];
     const mock = model([step([...calls, finish('tool-calls')]), textStep('Done.')]);
     expect(await runSmoke(mock, { nonce: NONCE, now })).toMatchObject({
@@ -195,7 +207,7 @@ describe('smokeProfile', () => {
     let sent = 0;
     const profile = {
       format: 'openai-chat',
-      baseURL: 'https://account.internal/v1',
+      baseURL: `https://${WK_ACCOUNT_EGRESS_HOST}/v1`,
       key: 'sk-test',
       authScheme: 'bearer',
       model: 'gpt-test',

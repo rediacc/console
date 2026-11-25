@@ -65,7 +65,7 @@ export interface TokenData {
  * Non-secret: the device id is a digest of the host's machine id, so a marker carried over in a
  * copied config directory names the other machine and reads as not enrolled here.
  */
-export interface EnrollmentMarker {
+interface EnrollmentMarker {
   /** `deviceIdentity()` of the device that enrolled. */
   deviceId: string;
   /** ISO time of the enrollment. */
@@ -73,7 +73,7 @@ export interface EnrollmentMarker {
 }
 
 /** The digest of this host's machine id that a marker records (the raw id never leaves the host). */
-export async function deviceIdentity(): Promise<string> {
+async function deviceIdentity(): Promise<string> {
   const machineId = await readLocalMachineId();
   return createHash('sha256').update(`rdc-device-enrollment:${machineId}`).digest('hex');
 }

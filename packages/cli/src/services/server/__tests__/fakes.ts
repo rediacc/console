@@ -44,7 +44,7 @@ export function certFor(
 }
 
 export const FAKE_RELEASE_BASE = 'https://releases.test/cli';
-export const FAKE_MODELS_BASE = 'https://releases.test/models';
+const FAKE_MODELS_BASE = 'https://releases.test/models';
 
 /** The stable models channel the release host serves by default: a pointer, its manifest, two objects, each signed. */
 export const FAKE_MODELS: Record<string, string> = (() => {

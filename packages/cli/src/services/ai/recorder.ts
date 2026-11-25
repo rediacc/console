@@ -20,7 +20,7 @@ import { deadlineFetch, describeFetchError } from '../serve/account-fetch.js';
 import type { SessionPrincipal } from '../serve/sessions.js';
 
 /** Where the executor posts sealed messages, relative to the account server. */
-export const AI_MESSAGES_PATH = '/account/api/v1/console/ai/messages';
+const AI_MESSAGES_PATH = '/account/api/v1/console/ai/messages';
 
 /** Deliveries per message: the first attempt and two retries. */
 export const AI_MESSAGE_ATTEMPTS = 3;
@@ -42,7 +42,7 @@ export interface AiMessageRecord {
   cek: () => Promise<Uint8Array | undefined>;
 }
 
-export interface AiRecordOutcome {
+interface AiRecordOutcome {
   messageId: string;
   /** Whether the account server accepted the message. */
   delivered: boolean;
@@ -56,7 +56,7 @@ export interface AiRecorder {
 }
 
 /** How long a delivery waits for the session's config key before it gives up on the message. */
-export const AI_KEY_TIMEOUT_MS = 30_000;
+const AI_KEY_TIMEOUT_MS = 30_000;
 
 export interface AiRecorderOptions {
   /** Bound on reading the config key, so a stuck key read settles its chain entry. */

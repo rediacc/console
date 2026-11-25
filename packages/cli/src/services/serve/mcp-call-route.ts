@@ -30,6 +30,7 @@ import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import { getMcpTool, type McpToolEntry } from '@rediacc/shared/mcp/registry';
 import type { Hono } from 'hono';
 import { z } from 'zod';
+import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from '../../commands/mcp/custom-tools.js';
 import { type AiToolResult, requestOf, runAiTool } from '../ai/tools.js';
 import {
   type AgentGrantHandle,
@@ -51,11 +52,6 @@ import {
 } from './mcp-call-result.js';
 import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
 import { pageOf } from './result-page.js';
-
-/** How long one `job_wait` call blocks at most (Design 5), well inside a client's 60 s tool budget. */
-export const JOB_WAIT_CEILING_MS = 50_000;
-/** The pause between two `job status` reads, and the `nextPollSeconds` a call that hits the ceiling returns. */
-export const JOB_WAIT_INTERVAL_MS = 5_000;
 
 const GRANT_ID = /^[A-Za-z0-9_-]{1,128}$/;
 

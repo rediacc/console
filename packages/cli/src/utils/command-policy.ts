@@ -380,7 +380,7 @@ function grandOptInMessage(name: string): string {
 }
 
 /** The translated message of a refusal, chosen by its stable code. */
-export function decisionMessage(
+function decisionMessage(
   decision: Decision,
   command: DecisionCommand,
   target: DecisionTarget

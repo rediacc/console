@@ -24,7 +24,7 @@ export const SMOKE_TOOL_NAME = 'echo_nonce';
 /** Output cap of the smoke turn: a tool call and one short sentence. */
 const SMOKE_MAX_OUTPUT_TOKENS = 512;
 
-export type SmokeFailureReason =
+type SmokeFailureReason =
   | 'profile-refused'
   | 'provider-error'
   | 'no-tool-call'
@@ -32,7 +32,7 @@ export type SmokeFailureReason =
   | 'no-final-message';
 
 /** What the turn showed the endpoint can do, whatever the verdict. */
-export interface SmokeObserved {
+interface SmokeObserved {
   /** The model called a tool. */
   tools: boolean;
   /** Text or tool input arrived as incremental deltas. */
@@ -204,7 +204,7 @@ export async function runSmoke(
 }
 
 /** Build the model of `profile` and run the smoke; a refused profile fails without a request. */
-export async function smokeProfile(
+export function smokeProfile(
   profile: Profile,
   options: SmokeOptions & ProviderModelOptions = {}
 ): Promise<SmokeResult> {
@@ -212,14 +212,14 @@ export async function smokeProfile(
   try {
     model = createProviderModel(profile, { fetch: options.fetch });
   } catch (error) {
-    if (!(error instanceof ProviderProfileError)) throw error;
-    return {
+    if (!(error instanceof ProviderProfileError)) return Promise.reject(error);
+    return Promise.resolve<SmokeResult>({
       ok: false,
       reason: 'profile-refused',
       message: error.message,
       latencyMs: 0,
       observed: { tools: false, streaming: false },
-    };
+    });
   }
   return runSmoke(model, options);
 }
