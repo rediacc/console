@@ -2,7 +2,7 @@
 title: Almacenamiento de configuración
 description: >-
   Sincronización cifrada del lado del cliente de la configuración, con
-  desbloqueo mediante passkey o código de recuperación
+  desbloqueo mediante passkey o kit de recuperación
 category: Guides
 tags:
   - account
@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "d3fbda10a9432f55"
-sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+sourceHash: "1c0e9dc904bfd47b"
+sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
 ---
 
 # Almacenamiento de configuración
@@ -24,8 +24,10 @@ Hay una única CEK por almacén, envuelta de forma independiente para cada méto
 
 | Método | Qué es | Notas |
 |--------|-----------|-------|
-| **Passkey** | Passkey WebAuthn con la extensión PRF | La opción más robusta; respaldada por hardware |
-| **Código de recuperación** | Un código generado `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Se muestra una única vez al crearse; guárdelo en un lugar seguro |
+| **Passkey** | Passkey WebAuthn con la extensión PRF, en este dispositivo o en un teléfono mediante un código QR | La opción más robusta; respaldada por hardware |
+| **Kit de recuperación** | Un código generado `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX`, guardado como kit impreso o descargado | Obligatorio para todos los miembros; el código solo se muestra mientras se guarda el kit, así que guárdelo en un lugar seguro |
+
+Un **secreto de máquina** no es una ranura: inscribe una máquina headless (consulte [Inscripción headless del CLI](#headless-cli-enrollment)) y no cuenta como una forma de desbloquear el almacén para una persona.
 
 Todos los métodos alimentan el mismo proceso: la ranura produce un secreto que se combina con un secreto guardado en el servidor para desenvolver la CEK. Ninguna de las dos mitades basta por sí sola, y el secreto de la ranura nunca llega al servidor. Ambos secretos tienen entropía suficiente, así que el servidor, que guarda la clave envuelta y su mitad de la clave de envoltura, no tiene nada que adivinar sin conexión.
 
@@ -36,10 +38,10 @@ El desbloqueo es por dispositivo: se desbloquea una vez en un dispositivo nuevo 
 ## Requisitos previos
 
 - **Autenticación de dos factores** habilitada en su cuenta
-- Para el método de **passkey**: un proveedor de passkey con soporte PRF, como una clave de seguridad FIDO2 (p. ej. YubiKey), iCloud Keychain, Google Password Manager, 1Password o Dashlane
+- Para el método de **passkey**: un proveedor de passkey con soporte PRF, como una clave de seguridad FIDO2 (p. ej. YubiKey), iCloud Keychain, Google Password Manager, 1Password o Dashlane, en el dispositivo o en un teléfono mediante QR
 - **Navegador**: Chrome 133+, Edge 133+, Firefox 130+ o Safari 17+
 
-El requisito de PRF se aplica solo a la ranura de passkey. El código de recuperación funciona con cualquier navegador compatible.
+El requisito de PRF se aplica solo a la ranura de passkey. El kit de recuperación funciona con cualquier navegador compatible.
 
 ## Configuración
 
@@ -49,7 +51,23 @@ El requisito de PRF se aplica solo a la ranura de passkey. El código de recuper
    - Un **código de recuperación** se genera junto con el almacén y se muestra una sola vez, en un kit de recuperación. Guarda el kit antes de crear el almacén; sin él la configuración no se completa.
 4. Configuración completada. La CLI guarda el secreto de desbloqueo en el llavero de tu sistema operativo.
 
-Puedes añadir una passkey más adelante desde la página de Config Storage. Mantén al menos dos métodos de desbloqueo para que un autenticador perdido o no compatible no te deje fuera.
+Puedes añadir una passkey más adelante desde la página de Config Storage.
+
+### Teléfono mediante QR
+
+Un equipo de escritorio sin autenticador PRF local puede usar un teléfono: el navegador muestra un código QR, el teléfono aprueba la solicitud de passkey mediante WebAuthn híbrido y el resultado PRF desbloquea el almacén igual que lo haría una passkey local. La ranura de passkey recuerda la credencial y el transporte con el que se registró. Si un resultado PRF no desenvuelve la clave, por ejemplo porque un teléfono devolvió una salida PRF distinta a la del dispositivo que registró la passkey, la página pide registrar la passkey de nuevo en lugar de mostrar un error de descifrado. El PRF híbrido requiere iOS 18.4+ o un Android reciente.
+
+### Kit de recuperación
+
+Cada miembro recibe un kit de recuperación al inscribirse, y la configuración no se completa hasta que se guarda. El kit contiene el nombre del almacén, el correo de la cuenta, la fecha de creación, el código en grupos, un QR del código y los pasos de recuperación. Una comprobación de guardado pide los últimos 4 caracteres del código, o el escaneo de su QR, antes de continuar con la inscripción. No hay forma de omitir el kit, y conservar la copia impresa a buen recaudo es responsabilidad del miembro.
+
+- Una **passkey perdida** se recupera con el kit y después se registra una passkey nueva.
+- Un **kit perdido** se regenera desde una passkey que funcione; la copia impresa anterior deja de servir.
+- **Ambos perdidos**: un propietario o administrador vuelve a añadir al miembro mediante el traspaso de miembros.
+
+### Red de seguridad
+
+El servidor se niega a eliminar una ranura, quitar a un miembro o aceptar que un miembro se marche si con ello el almacén se quedara con menos de dos titulares de clave y sin ranura de recuperación. Un titular de clave es un usuario distinto con una ranura de passkey o de recuperación en la generación de clave actual; los secretos de máquina y las concesiones de agente no cuentan. El servidor no ve una copia impresa perdida, así que la página de Almacenamiento de configuración recomienda un segundo titular de clave mientras el almacén tenga solo uno. Si el último titular de clave pierde tanto la passkey como el kit, el almacén no se puede recuperar.
 
 ## Compatibilidad de proveedores PRF
 
@@ -87,7 +105,7 @@ El secreto se toma de `REDIACC_MACHINE_SECRET`, o bien de la entrada estándar s
 2. El CLI crea una solicitud de corta duración e imprime un enlace y un **código de emparejamiento** como `7KQ2-M9XD-P4RT`. El enlace guarda todo lo que lleva después del `#`, una parte que los navegadores nunca envían a un servidor.
 3. Abre el enlace en cualquier navegador con la sesión iniciada en la misma cuenta. Una solicitud de otra cuenta se rechaza.
 4. Escribe el código de emparejamiento desde tu terminal cuando la página lo pida. El botón de desbloqueo permanece desactivado hasta que coincida.
-5. Desbloquea con tu passkey o tu código de recuperación. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
+5. Desbloquea con una passkey (en este dispositivo o en un teléfono mediante QR) o con el kit de recuperación. El navegador sella la clave para el CLI, y el servidor reenvía un bloque de datos que no puede leer.
 6. El CLI descifra el bloque, guarda el secreto en el llavero del sistema operativo e informa del éxito.
 
 La solicitud caduca a los 10 minutos. Pulsa **Ctrl+C** en el CLI para cancelarla: el CLI pide al servidor que descarte el enlace, que deja de funcionar al instante, y la página indica que hay que volver a ejecutar el comando. Si esa petición no llega, el enlace sigue siendo válido hasta que caduque la solicitud. Si el enlace se abre después de que caduque, o después de que una redirección de inicio de sesión haya perdido la parte posterior al `#`, vuelve a ejecutar el comando.
@@ -126,7 +144,7 @@ Una restauración publica el contenido antiguo como una nueva versión sobre la 
 
 Rotar la CEK del almacén la vuelve a envolver bajo una nueva generación:
 
-- **Los códigos de recuperación siempre se invalidan** con la rotación, genere y guarde uno nuevo después
+- **Los kits de recuperación siempre se invalidan** con la rotación, genere y guarde uno nuevo después
 - Una ranura que queda rezagada en una generación anterior se reporta como obsoleta en lugar de fallar con un error de descifrado críptico
 - Los tokens de configuración de los demás miembros se revocan, y a un dispositivo que aún conserve la clave antigua se le indica que vuelva a activarse con `rdc config remote enable`
 
@@ -165,14 +183,14 @@ Otras salvaguardas:
 
 | Error | Causa | Solución |
 |-------|-------|-----|
-| PRF not supported | El autenticador carece de extensión PRF | Use YubiKey, iCloud Keychain, 1Password o Dashlane |
+| PRF not supported | El autenticador carece de extensión PRF | Use YubiKey, iCloud Keychain, 1Password, Dashlane o un teléfono mediante QR |
 | X25519 not supported | Versión del navegador demasiado antigua | Actualice a Chrome 133+, Edge 133+, Firefox 130+ o Safari 17+ |
 | Already configured | Ya existe un almacén para su organización | Visite /account/config-storage para gestionar |
 | Config storage not configured | El servidor carece de almacenamiento blob | Contacte a su administrador para configurar R2/RustFS |
 | Token expired | Sin actividad durante 7 días, o la máquina cambió de red | Se renueva automáticamente al iniciar sesión; si no hay sesión guardada, ejecute `rdc subscription login` o `rdc config remote enable` |
 | Config came back at an older version | El servidor devolvió una copia más antigua que la que este dispositivo ya había visto | No cambió nada localmente; reinténtelo y repórtelo si persiste |
 | Cannot remove last member | Bloquearía el almacén permanentemente | Añada otro miembro primero |
-| Stale slot | La ranura es anterior a la última rotación de clave | Vuelva a añadir la ranura (los códigos de recuperación deben regenerarse después de cada rotación) |
+| Stale slot | La ranura es anterior a la última rotación de clave | Vuelva a añadir la ranura (el kit de recuperación debe regenerarse después de cada rotación) |
 
 ## Relacionado
 

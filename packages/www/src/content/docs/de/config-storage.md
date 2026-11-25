@@ -1,6 +1,6 @@
 ---
 title: Konfigurationsspeicher
-description: Clientseitig verschlüsselte Konfigurationssynchronisierung mit Passkey- und Wiederherstellungscode-Entsperrung
+description: Clientseitig verschlüsselte Konfigurationssynchronisierung mit Passkey- und Entsperrung per Wiederherstellungs-Kit
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "d3fbda10a9432f55"
-sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+sourceHash: "1c0e9dc904bfd47b"
+sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
 ---
 
 # Konfigurationsspeicher
@@ -22,8 +22,10 @@ Es gibt eine CEK pro Speicher, die für jede Entsperrmethode unabhängig verpack
 
 | Methode | Was es ist | Hinweise |
 |--------|-----------|-------|
-| **Passkey** | WebAuthn-Passkey mit PRF-Erweiterung | Die stärkste Option; hardwaregestützt |
-| **Wiederherstellungscode** | Ein generierter Code der Form `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Wird bei der Erstellung nur einmal angezeigt; sicher aufbewahren |
+| **Passkey** | WebAuthn-Passkey mit PRF-Erweiterung, auf diesem Gerät oder auf einem Smartphone per QR-Code | Die stärkste Option; hardwaregestützt |
+| **Wiederherstellungs-Kit** | Ein generierter Code der Form `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX`, gespeichert als gedrucktes oder heruntergeladenes Kit | Für jedes Mitglied verpflichtend; der Code wird nur angezeigt, solange das Kit gespeichert wird, daher das Kit sicher aufbewahren |
+
+Ein **Maschinengeheimnis** ist kein Slot: Es bindet eine Headless-Maschine ein (siehe [Headless CLI-Einbindung](#headless-cli-enrollment)) und gilt nicht als Möglichkeit, den Speicher für eine Person zu entsperren.
 
 Jede Methode speist dieselbe Verarbeitungskette: Der Slot liefert ein Geheimnis, das sich mit einem serverseitigen Geheimnis kombiniert, um die CEK zu entschlüsseln. Keine der beiden Hälften reicht allein aus, und das Slot-Geheimnis erreicht den Server nie. Beide Geheimnisse haben genug Entropie, sodass der Server, der den verpackten Schlüssel und seine Hälfte des Verpackungsschlüssels kennt, offline nichts zu erraten hat.
 
@@ -34,10 +36,10 @@ Die Entsperrung erfolgt pro Gerät: Sie entsperren einmal auf einem neuen Gerät
 ## Voraussetzungen
 
 - **Zwei-Faktor-Authentifizierung** auf Ihrem Konto aktiviert
-- Für die **Passkey**-Methode: ein Passkey-Anbieter mit PRF-Unterstützung, etwa ein FIDO2-Sicherheitsschlüssel (z. B. YubiKey), iCloud Keychain, Google Password Manager, 1Password oder Dashlane
+- Für die **Passkey**-Methode: ein Passkey-Anbieter mit PRF-Unterstützung, etwa ein FIDO2-Sicherheitsschlüssel (z. B. YubiKey), iCloud Keychain, Google Password Manager, 1Password oder Dashlane, auf dem Gerät oder auf einem Smartphone per QR
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+ oder Safari 17+
 
-Die PRF-Anforderung gilt nur für den Passkey-Slot. Der Wiederherstellungscode funktioniert mit jedem unterstützten Browser.
+Die PRF-Anforderung gilt nur für den Passkey-Slot. Das Wiederherstellungs-Kit funktioniert mit jedem unterstützten Browser.
 
 ## Einrichtung
 
@@ -47,7 +49,23 @@ Die PRF-Anforderung gilt nur für den Passkey-Slot. Der Wiederherstellungscode f
    - Ein **Wiederherstellungscode** wird mit dem Speicher erzeugt und einmal in einem Wiederherstellungs-Kit angezeigt. Sichern Sie das Kit, bevor der Speicher angelegt wird; ohne diesen Schritt wird die Einrichtung nicht abgeschlossen.
 4. Die Einrichtung ist abgeschlossen. Die CLI bewahrt das Entsperrgeheimnis im Schlüsselbund Ihres Betriebssystems auf.
 
-Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen. Behalten Sie mindestens zwei Entsperrmethoden, damit ein verlorener oder nicht unterstützter Authenticator Sie nicht aussperrt.
+Ein Passkey lässt sich später auf der Seite „Config Storage“ hinzufügen.
+
+### Smartphone per QR-Code
+
+Ein Desktop ohne lokalen PRF-Authenticator kann ein Smartphone nutzen: Der Browser zeigt einen QR-Code, das Smartphone bestätigt die Passkey-Anfrage über WebAuthn Hybrid, und das PRF-Ergebnis entsperrt den Speicher wie ein lokaler Passkey. Der Passkey-Slot merkt sich die Anmeldedaten und den Transportweg, mit dem er eingerichtet wurde. Entschlüsselt ein PRF-Ergebnis den Schlüssel nicht, etwa weil ein Smartphone eine andere PRF-Ausgabe geliefert hat als das Gerät, das den Passkey eingerichtet hat, fordert die Seite auf, den Passkey erneut einzurichten, statt einen Entschlüsselungsfehler zu melden. Hybrid-PRF erfordert iOS 18.4+ oder ein aktuelles Android.
+
+### Wiederherstellungs-Kit
+
+Jedes Mitglied erhält bei der Anmeldung ein Wiederherstellungs-Kit, und die Einrichtung ist erst abgeschlossen, wenn es gespeichert ist. Das Kit enthält den Namen des Speichers, die Konto-E-Mail, das Erstellungsdatum, den Code in Gruppen, einen QR-Code des Codes und die Wiederherstellungsschritte. Eine Speicherprüfung fragt nach den letzten 4 Zeichen des Codes oder nach einem Scan des QR-Codes, bevor die Anmeldung fortgesetzt wird. Das Kit lässt sich nicht überspringen, und den Ausdruck sicher aufzubewahren liegt in der Verantwortung des Mitglieds.
+
+- Ein **verlorener Passkey** wird mit dem Kit wiederhergestellt, danach wird ein neuer Passkey eingerichtet.
+- Ein **verlorenes Kit** wird mit einem funktionierenden Passkey neu erzeugt; der alte Ausdruck funktioniert nicht mehr.
+- **Beides verloren**: Ein Eigentümer oder Admin fügt das Mitglied über die Mitglieder-Übergabe erneut hinzu.
+
+### Sicherheitsnetz
+
+Der Server verweigert das Löschen eines Slots, das Entfernen eines Mitglieds und den Austritt eines Mitglieds, wenn der Speicher danach weniger als zwei Schlüsselinhaber und keinen Wiederherstellungs-Slot hätte. Ein Schlüsselinhaber ist ein eigener Benutzer mit einem Passkey- oder Wiederherstellungs-Slot in der aktuellen Schlüsselgeneration; Maschinengeheimnisse und Agent-Freigaben zählen nicht. Ein verlorener Ausdruck ist für den Server unsichtbar, deshalb empfiehlt die Seite Konfigurationsspeicher einen zweiten Schlüsselinhaber, solange es nur einen gibt. Verliert der letzte Schlüsselinhaber sowohl den Passkey als auch das Kit, lässt sich der Speicher nicht wiederherstellen.
 
 ## PRF-Anbieter-Kompatibilität
 
@@ -85,7 +103,7 @@ Das Geheimnis stammt aus `REDIACC_MACHINE_SECRET`, sonst aus der Standardeingabe
 2. Die CLI erstellt eine kurzlebige Anfrage und gibt einen Link sowie einen **Kopplungscode** wie `7KQ2-M9XD-P4RT` aus. Alles, was der Link trägt, steht hinter dem `#`, und Browser senden diesen Teil nie an einen Server.
 3. Öffnen Sie den Link in einem beliebigen Browser, der mit demselben Konto angemeldet ist. Eine Anfrage von einem anderen Konto wird abgelehnt.
 4. Geben Sie den Kopplungscode aus Ihrem Terminal ein, sobald die Seite danach fragt. Die Schaltfläche zum Entsperren bleibt deaktiviert, bis er übereinstimmt.
-5. Entsperren Sie mit Ihrem Passkey oder Wiederherstellungscode. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
+5. Entsperren Sie mit Ihrem Passkey (auf diesem Gerät oder einem Smartphone per QR) oder dem Wiederherstellungs-Kit. Der Browser versiegelt den Schlüssel für die CLI, und der Server leitet einen Datenblock weiter, den er nicht lesen kann.
 6. Die CLI entschlüsselt den Datenblock, legt das Geheimnis im Schlüsselbund des Betriebssystems ab und meldet den Erfolg.
 
 Die Anfrage läuft nach 10 Minuten ab. Mit **Ctrl+C** in der CLI brechen Sie sie ab: Die CLI fordert den Server auf, den Link zu verwerfen, der dann sofort nicht mehr funktioniert, und die Seite weist darauf hin, den Befehl erneut auszuführen. Kommt diese Anfrage nicht an, bleibt der Link bis zum Ablauf der Anfrage nutzbar. Wird der Link nach Ablauf geöffnet oder hat eine Weiterleitung nach der Anmeldung den Teil nach dem `#` verloren, führen Sie den Befehl einfach noch einmal aus.
@@ -124,7 +142,7 @@ Eine Wiederherstellung veröffentlicht den alten Inhalt als neue Version auf der
 
 Beim Rotieren der CEK des Speichers wird diese unter einer neuen Generation neu verpackt:
 
-- **Wiederherstellungscodes werden bei jeder Rotation ungültig** - erzeugen und sichern Sie danach einen neuen
+- **Wiederherstellungs-Kits werden bei jeder Rotation ungültig** - erzeugen und sichern Sie danach ein neues
 - Ein Slot, der bei einer älteren Generation zurückbleibt, wird als veraltet gemeldet, statt mit einem kryptischen Entschlüsselungsfehler zu scheitern
 - Die Konfigurations-Token der anderen Mitglieder werden widerrufen, und ein Gerät, das noch den alten Schlüssel besitzt, wird aufgefordert, sich mit `rdc config remote enable` erneut zu aktivieren
 
@@ -163,14 +181,14 @@ Weitere Schutzmaßnahmen:
 
 | Fehler | Ursache | Lösung |
 |-------|-------|-----|
-| PRF not supported | Authentifikator unterstützt keine PRF-Erweiterung | Verwenden Sie YubiKey, iCloud Keychain, 1Password oder Dashlane |
+| PRF not supported | Authentifikator unterstützt keine PRF-Erweiterung | Verwenden Sie YubiKey, iCloud Keychain, 1Password, Dashlane oder ein Smartphone per QR |
 | X25519 not supported | Browser-Version zu alt | Aktualisieren Sie auf Chrome 133+, Edge 133+, Firefox 130+ oder Safari 17+ |
 | Already configured | Speicher existiert bereits für Ihre Organisation | Besuchen Sie /account/config-storage zur Verwaltung |
 | Config storage not configured | Server fehlt Blob-Speicher | Kontaktieren Sie Ihren Administrator zur Konfiguration von R2/RustFS |
 | Token expired | Keine Aktivität seit 7 Tagen, oder die Maschine hat das Netzwerk gewechselt | Wird automatisch bei der Anmeldung erneuert; ist keine Anmeldung gespeichert, `rdc subscription login` oder `rdc config remote enable` ausführen |
 | Config came back at an older version | Der Server hat eine ältere Kopie zurückgegeben, als dieses Gerät bereits gesehen hat | Lokal wurde nichts geändert; erneut versuchen und melden, falls es anhält |
 | Cannot remove last member | Würde den Speicher dauerhaft sperren | Fügen Sie zuerst ein weiteres Mitglied hinzu |
-| Stale slot | Slot stammt aus der Zeit vor der letzten Schlüsselrotation | Fügen Sie den Slot erneut hinzu (Wiederherstellungscodes müssen nach jeder Rotation neu erzeugt werden) |
+| Stale slot | Slot stammt aus der Zeit vor der letzten Schlüsselrotation | Fügen Sie den Slot erneut hinzu (das Wiederherstellungs-Kit muss nach jeder Rotation neu erzeugt werden) |
 
 ## Verwandte Seiten
 

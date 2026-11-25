@@ -1,6 +1,6 @@
 ---
 title: Konfiguratsioonisalv
-description: Kliendipoolselt krüpteeritud konfiguratsioonisünkroonimine passkey ja taastekoodiga avamisega
+description: Kliendipoolselt krüpteeritud konfiguratsioonisünkroonimine passkey ja taastekomplektiga avamisega
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "d3fbda10a9432f55"
-sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+sourceHash: "1c0e9dc904bfd47b"
+sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
 ---
 
 # Konfiguratsioonisalv
@@ -22,8 +22,10 @@ Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud (sarnase
 
 | Meetod | Mis see on | Märkused |
 |--------|-----------|-------|
-| **Passkey** | WebAuthn passkey PRF-laiendusega | Kõige tugevam valik; riistvarapõhine |
-| **Taastekood** | Genereeritud `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kood | Näidatakse täpselt üks kord loomisel; hoia see turvalises kohas |
+| **Passkey** | WebAuthn passkey PRF-laiendusega, selles seadmes või QR-koodi kaudu telefonis | Kõige tugevam valik; riistvarapõhine |
+| **Taastekomplekt** | Genereeritud `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kood, salvestatud prinditud või alla laaditud komplektina | Kohustuslik igale liikmele; kood kuvatakse ainult komplekti salvestamise ajal, seega hoia komplekt turvalises kohas |
+
+**Masinasaladus** ei ole pesa: see registreerib pealdiseta masina (vt [Pealdiseta CLI registreerimine](#headless-cli-enrollment)) ega loe inimese jaoks salve avavaks viisiks.
 
 Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa ja pesa saladus ei jõua kunagi serverisse. Mõlemal saladusel on piisavalt entroopiat, nii et serveril, mis hoiab mähitud võtit ja oma poolt mähkimisvõtmest, pole offline midagi arvata.
 
@@ -34,10 +36,10 @@ Avamine on seadmepõhine: sa avad salve uuel seadmel üks kord ja pärast seda t
 ## Eeltingimused
 
 - **Kahefaktoriline autentimine** on kontol lubatud
-- **Passkey** meetodi jaoks: PRF-toega passkey-pakkuja, näiteks FIDO2 turvavõti (nt YubiKey), iCloud Keychain, Google Password Manager, 1Password või Dashlane
+- **Passkey** meetodi jaoks: PRF-toega passkey-pakkuja, näiteks FIDO2 turvavõti (nt YubiKey), iCloud Keychain, Google Password Manager, 1Password või Dashlane, selles seadmes või telefonis QR-koodi kaudu
 - **Brauser**: Chrome 133+, Edge 133+, Firefox 130+ või Safari 17+
 
-PRF-nõue kehtib ainult passkey-pesa kohta. Taastekood toimib igas toetatud brauseris.
+PRF-nõue kehtib ainult passkey-pesa kohta. Taastekomplekt toimib igas toetatud brauseris.
 
 ## Seadistamine
 
@@ -47,7 +49,23 @@ PRF-nõue kehtib ainult passkey-pesa kohta. Taastekood toimib igas toetatud brau
    - **Taastekood** luuakse koos hoidlaga ja näidatakse ainult üks kord taastekomplektis. Salvesta komplekt enne hoidla loomist; ilma selleta seadistus ei lõpe.
 4. Seadistus on valmis. CLI hoiab lukust avamise saladust sinu operatsioonisüsteemi võtmehoidlas.
 
-Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kaks lukust avamise viisi, et kaotatud või toeta autentija sind välja ei lukustaks.
+Pääsuvõtme saab hiljem lisada Config Storage lehelt.
+
+### Telefon QR-koodi kaudu
+
+Lauaarvuti, millel pole kohalikku PRF-autentikaatorit, saab kasutada telefoni: brauser kuvab QR-koodi, telefon kinnitab passkey taotluse WebAuthn hübriidi kaudu ning PRF-tulemus avab salve nii nagu kohalik passkey. Passkey-pesa jätab meelde mandaadi ja transpordi, millega see registreeriti. Kui PRF-tulemus ei vabasta võtit, näiteks kuna telefon tagastas teistsuguse PRF-väljundi kui seade, mis passkey registreeris, palub leht passkey uuesti registreerida, selle asemel et näidata dekrüpteerimisviga. Hübriid-PRF vajab iOS 18.4+ või värsket Androidi.
+
+### Taastekomplekt
+
+Iga liige saab registreerimisel taastekomplekti ja seadistus ei lõpe enne, kui see on salvestatud. Komplektis on salve nimi, konto e-posti aadress, loomise kuupäev, kood rühmadena, koodi QR ja taastamise sammud. Salvestuskontroll küsib koodi viimast 4 märki või selle QR-koodi skannimist, enne kui registreerimine jätkub. Komplekti vahele jätta ei saa ning väljaprindi turvaline hoidmine on liikme enda vastutus.
+
+- **Kaotatud passkey** taastatakse komplektiga ning seejärel registreeritakse uus passkey.
+- **Kaotatud komplekt** genereeritakse uuesti töötava passkey abil; vana väljaprint lakkab töötamast.
+- **Mõlemad kaotatud**: omanik või admin lisab liikme uuesti liikme üleandmise kaudu.
+
+### Turvavõrk
+
+Server keeldub pesa kustutamisest, liikme eemaldamisest ja liikme lahkumise vastuvõtmisest, kui salvele jääks pärast seda alla kahe võtmehoidja ja taastepesa puuduks. Võtmehoidja on eraldi kasutaja, kellel on kehtiva võtmegeneratsiooni passkey- või taastepesa; masinasaladused ja agendiload ei loe. Kaotatud väljaprint on serverile nähtamatu, seetõttu soovitab Konfiguratsioonisalve leht teist võtmehoidjat, kuni neid on ainult üks. Kui viimane võtmehoidja kaotab nii passkey kui ka komplekti, ei saa salve taastada.
 
 ## PRF-pakkuja ühilduvus
 
@@ -85,7 +103,7 @@ Saladus võetakse muutujast `REDIACC_MACHINE_SECRET`, vastasel juhul standardsis
 2. CLI loob lühiealise päringu ning kuvab lingi ja **sidumiskoodi**, näiteks `7KQ2-M9XD-P4RT`. Link hoiab kõike, mida see kannab, märgi `#` taga, mida brauserid serverile kunagi ei saada.
 3. Ava link mis tahes brauseris, kus oled sisse logitud samal kontol. Teise konto päring lükatakse tagasi.
 4. Sisesta sidumiskood oma terminalist, kui leht seda küsib. Avamisnupp jääb keelatuks, kuni kood klapib.
-5. Ava pääsuvõtme või taastekoodiga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
+5. Ava pääsuvõtmega (selles seadmes või telefonis QR-koodi kaudu) või taastekomplektiga. Brauser pitseerib võtme CLI-le ning server edastab andmeploki, mida ta lugeda ei saa.
 6. CLI dekrüpteerib andmeploki, salvestab saladuse operatsioonisüsteemi võtmehoidlasse (keyring) ja teatab õnnestumisest.
 
 Päring aegub 10 minuti pärast. Selle tühistamiseks vajuta CLI-s **Ctrl+C**: CLI palub serveril lingi tühistada, mispeale see lakkab kohe töötamast, ja leht palub käsu uuesti käivitada. Kui see päring kohale ei jõua, jääb link kasutatavaks päringu aegumiseni. Kui link avatakse pärast aegumist või kui sisselogimise ümbersuunamine kaotas `#` järgse osa, käivita käsk uuesti.
@@ -124,7 +142,7 @@ Taastamine avaldab vana sisu uue versioonina praeguse peal; versiooninumber ei l
 
 Salve CEK-i pööramine mähib selle uude põlvkonda:
 
-- **Taastekoodid muutuvad pööramisel alati kehtetuks**, genereeri ja salvesta pärast seda uus
+- **Taastekomplektid muutuvad pööramisel alati kehtetuks**, genereeri ja salvesta pärast seda uus
 - Vana põlvkonda jäänud pesa märgitakse aegunuks, mitte ei ebaõnnestu arusaamatu dekrüpteerimisveaga
 - Teiste liikmete konfiguratsioonitokenid tühistatakse ning seadmele, mis hoiab veel vana võtit, kuvatakse juhis uuesti aktiveerida käsuga `rdc config remote enable`
 
@@ -163,14 +181,14 @@ Muud kaitsemeetmed:
 
 | Viga | Põhjus | Lahendus |
 |-------|-------|-----|
-| PRF pole toetatud | Autentikaatoril puudub PRF-laiendus | Kasuta YubiKey, iCloud Keychain, 1Password või Dashlane |
+| PRF pole toetatud | Autentikaatoril puudub PRF-laiendus | Kasuta YubiKey, iCloud Keychain, 1Password, Dashlane või telefoni QR-koodi kaudu |
 | X25519 pole toetatud | Brauseri versioon on liiga vana | Uuenda Chrome 133+, Edge 133+, Firefox 130+ või Safari 17+ |
 | Juba konfigureeritud | Salv on sinu organisatsiooni jaoks olemas | Külasta /account/config-storage haldamiseks |
 | Konfiguratsioonisalv pole seadistatud | Serveril puudub blob-salvestus | Võta ühendust administraatoriga R2/RustFS seadistamiseks |
 | Token aegunud | Tegevust pole olnud 7 päeva või seade vahetas võrku | Uueneb automaatselt sisselogimise kaudu; kui sisselogimist pole salvestatud, käivita `rdc subscription login` või `rdc config remote enable` |
 | Konfiguratsioon tuli tagasi vanema versiooniga | Server tagastas vanema koopia kui see, mida seade juba nägi | Kohalikult ei muutunud midagi; proovi uuesti ja anna sellest teada, kui see kordub |
 | Viimast liiget ei saa eemaldada | Salv lukustaks end jäädavalt | Lisa esmalt teine liige |
-| Aegunud pesa | Pesa pärineb enne viimast võtme pööramist | Lisa pesa uuesti (taastekoodid tuleb pärast iga pööramist uuesti genereerida) |
+| Aegunud pesa | Pesa pärineb enne viimast võtme pööramist | Lisa pesa uuesti (taastekomplekt tuleb pärast iga pööramist uuesti genereerida) |
 
 ## Seotud
 

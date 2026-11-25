@@ -1,6 +1,6 @@
 ---
 title: Armazenamento de Configuração
-description: Sincronização de configuração encriptada no dispositivo, com desbloqueio por passkey ou código de recuperação
+description: Sincronização de configuração encriptada no dispositivo, com desbloqueio por passkey ou kit de recuperação
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "d3fbda10a9432f55"
-sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+sourceHash: "1c0e9dc904bfd47b"
+sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
 ---
 
 # Armazenamento de Configuração
@@ -22,8 +22,10 @@ Existe uma CEK por armazenamento, protegida de forma independente para cada mét
 
 | Método | O que é | Notas |
 |--------|-----------|-------|
-| **Passkey** | Passkey WebAuthn com a extensão PRF | A opção mais forte; protegida por hardware |
-| **Código de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Mostrado apenas uma vez na criação; guarde-o num local seguro |
+| **Passkey** | Passkey WebAuthn com a extensão PRF, neste dispositivo ou num telemóvel através de um código QR | A opção mais forte; protegida por hardware |
+| **Kit de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX`, guardado como kit impresso ou transferido | Obrigatório para todos os membros; o código só é mostrado enquanto o kit é guardado, por isso guarde o kit num local seguro |
+
+Um **segredo de máquina** não é um slot: inscreve uma máquina headless (consulte [Inscrição headless do CLI](#headless-cli-enrollment)) e não conta como forma de desbloquear o armazenamento para uma pessoa.
 
 Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, e o segredo do slot nunca chega ao servidor. Ambos os segredos têm entropia suficiente para que o servidor, que guarda a chave protegida e a sua metade da chave de proteção, não tenha nada para adivinhar offline.
 
@@ -34,10 +36,10 @@ O desbloqueio é feito por dispositivo: desbloqueia uma vez num dispositivo novo
 ## Pré-requisitos
 
 - **Autenticação de dois fatores** ativada na sua conta
-- Para o método de **passkey**: um fornecedor de passkey com suporte PRF, como uma chave de segurança FIDO2 (por exemplo, YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
+- Para o método de **passkey**: um fornecedor de passkey com suporte PRF, como uma chave de segurança FIDO2 (por exemplo, YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane, no dispositivo ou num telemóvel através de QR
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+
 
-O requisito de PRF aplica-se apenas ao slot de passkey. O código de recuperação funciona em qualquer browser suportado.
+O requisito de PRF aplica-se apenas ao slot de passkey. O kit de recuperação funciona em qualquer browser suportado.
 
 ## Configuração
 
@@ -47,7 +49,23 @@ O requisito de PRF aplica-se apenas ao slot de passkey. O código de recuperaç�
    - Um **código de recuperação** é gerado com o armazenamento e mostrado uma única vez, num kit de recuperação. Guarde o kit antes de o armazenamento ser criado; a configuração não termina sem ele.
 4. Configuração concluída. A CLI guarda o segredo de desbloqueio no chaveiro do seu sistema operacional.
 
-Uma passkey pode ser adicionada depois na página Config Storage. Mantenha pelo menos dois métodos de desbloqueio, para que um autenticador perdido ou incompatível não bloqueie seu acesso.
+Uma passkey pode ser adicionada depois na página Config Storage.
+
+### Telemóvel através de QR
+
+Um computador de secretária sem autenticador PRF local pode usar um telemóvel: o browser mostra um código QR, o telemóvel aprova o pedido de passkey através de WebAuthn híbrido e o resultado PRF desbloqueia o armazenamento como o faria uma passkey local. O slot de passkey memoriza a credencial e o transporte com que foi registado. Se um resultado PRF não conseguir desbloquear a chave, por exemplo porque um telemóvel devolveu uma saída PRF diferente da do dispositivo que registou a passkey, a página pede para registar a passkey de novo em vez de apresentar um erro de desencriptação. O PRF híbrido requer iOS 18.4+ ou um Android recente.
+
+### Kit de recuperação
+
+Cada membro recebe um kit de recuperação na inscrição, e a configuração não termina enquanto o kit não for guardado. O kit contém o nome do armazenamento, o email da conta, a data de criação, o código em grupos, um QR do código e os passos de recuperação. Uma verificação de gravação pede os últimos 4 carateres do código, ou a leitura do respetivo QR, antes de a inscrição prosseguir. Não há forma de dispensar o kit, e guardar a impressão em segurança é da responsabilidade do membro.
+
+- Uma **passkey perdida** recupera-se com o kit, e depois regista-se uma nova passkey.
+- Um **kit perdido** é gerado de novo a partir de uma passkey que funcione; a impressão antiga deixa de funcionar.
+- **Ambos perdidos**: um proprietário ou administrador volta a adicionar o membro através da transferência de membro.
+
+### Rede de segurança
+
+O servidor recusa eliminar um slot, remover um membro ou aceitar a saída de um membro quando isso deixaria o armazenamento com menos de dois titulares de chave e sem slot de recuperação. Um titular de chave é um utilizador distinto com um slot de passkey ou de recuperação na geração de chave atual; os segredos de máquina e as concessões de agente não contam. Uma impressão perdida é invisível para o servidor, por isso a página Armazenamento de Configuração aconselha um segundo titular de chave enquanto o armazenamento tiver apenas um. Se o último titular de chave perder a passkey e o kit, o armazenamento não pode ser recuperado.
 
 ## Compatibilidade de Fornecedores PRF
 
@@ -85,7 +103,7 @@ O segredo vem de `REDIACC_MACHINE_SECRET`; se esta não existir, da entrada padr
 2. O CLI cria um pedido de curta duração e apresenta uma ligação e um **código de emparelhamento** como `7KQ2-M9XD-P4RT`. A ligação guarda tudo o que transporta depois do `#`, parte que os browsers nunca enviam a um servidor.
 3. Abra a ligação em qualquer browser com sessão iniciada na mesma conta. Um pedido de outra conta é recusado.
 4. Quando a página pedir, introduza o código de emparelhamento que aparece no seu terminal. O botão de desbloqueio fica desativado até o código coincidir.
-5. Desbloqueie com a sua passkey ou o código de recuperação. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
+5. Desbloqueie com uma passkey (neste dispositivo ou num telemóvel através de QR) ou com o kit de recuperação. O browser sela a chave para o CLI e o servidor limita-se a retransmitir um blob que não consegue ler.
 6. O CLI desencripta o blob, guarda o segredo no chaveiro do sistema operativo e indica que a operação foi concluída.
 
 O pedido expira ao fim de 10 minutos. Prima **Ctrl+C** no CLI para o cancelar: o CLI pede ao servidor que descarte a ligação, que deixa de funcionar de imediato, e a página indica que deve executar o comando outra vez. Se esse pedido não chegar, a ligação continua utilizável até o pedido expirar. Se a ligação for aberta depois de expirar, ou depois de um redirecionamento de início de sessão ter perdido a parte a seguir ao `#`, execute o comando novamente.
@@ -124,7 +142,7 @@ Um restauro publica o conteúdo antigo como uma nova versão sobre a atual; nunc
 
 Rodar a CEK do armazenamento volta a protegê-la sob uma nova geração:
 
-- Os **códigos de recuperação são sempre invalidados** pela rotação; gere e guarde um novo depois
+- Os **kits de recuperação são sempre invalidados** pela rotação; gere e guarde um novo depois
 - Um slot deixado numa geração mais antiga é reportado como obsoleto em vez de falhar com um erro de desencriptação críptico
 - Os tokens de configuração dos outros membros são revogados, e um dispositivo que ainda tenha a chave antiga é instruído a reativar com `rdc config remote enable`
 
@@ -163,14 +181,14 @@ Outras proteções:
 
 | Erro | Causa | Solução |
 |-------|-------|-----|
-| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password ou Dashlane |
+| PRF não suportado | O autenticador não tem a extensão PRF | Use YubiKey, iCloud Keychain, 1Password, Dashlane ou um telemóvel através de QR |
 | X25519 não suportado | Versão do browser demasiado antiga | Atualize para Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Já configurado | Existe um armazenamento para a sua organização | Visite /account/config-storage para gerir |
 | Armazenamento de configuração não configurado | Servidor sem armazenamento de blobs | Contacte o seu administrador para configurar R2/RustFS |
 | Token expirado | Sem atividade durante 7 dias, ou a máquina mudou de rede | Renovado automaticamente através do login; se não houver login guardado, execute `rdc subscription login` ou `rdc config remote enable` |
 | A configuração voltou numa versão mais antiga | O servidor devolveu uma cópia mais antiga do que a que este dispositivo já tinha visto | Nada mudou localmente; tente novamente e reporte se persistir |
 | Não é possível remover o último membro | Bloquearia o armazenamento permanentemente | Adicione primeiro outro membro |
-| Slot obsoleto | O slot é anterior à última rotação de chaves | Adicione o slot novamente (os códigos de recuperação têm de ser regenerados após cada rotação) |
+| Slot obsoleto | O slot é anterior à última rotação de chaves | Adicione o slot novamente (o kit de recuperação tem de ser regenerado após cada rotação) |
 
 ## Relacionados
 

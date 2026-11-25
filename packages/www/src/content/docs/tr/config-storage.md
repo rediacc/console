@@ -1,6 +1,6 @@
 ---
 title: Yapılandırma Depolama
-description: Cihaz tarafında şifrelenen, passkey veya kurtarma koduyla açılabilen yapılandırma senkronizasyonu
+description: Cihaz tarafında şifrelenen, passkey veya kurtarma kitiyle açılabilen yapılandırma senkronizasyonu
 category: Guides
 tags:
   - account
@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "d3fbda10a9432f55"
-sourceCommit: "4db12448b1a702a53a57ca01d7311ad9b3cbefda"
+sourceHash: "1c0e9dc904bfd47b"
+sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
 ---
 
 # Yapılandırma Depolama
@@ -22,8 +22,10 @@ Her depo için tek bir CEK vardır ve bu anahtar, LUKS'un anahtar yuvalarına be
 
 | Yöntem | Nedir | Notlar |
 |--------|-----------|-------|
-| **Passkey** | PRF uzantılı WebAuthn passkey | En güçlü seçenek; donanım destekli |
-| **Kurtarma kodu** | Oluşturulan bir `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kodu | Oluşturulduğunda yalnızca bir kez gösterilir; güvenli bir yerde saklayın |
+| **Passkey** | PRF uzantılı WebAuthn passkey; bu cihazda veya QR kodu üzerinden telefonda | En güçlü seçenek; donanım destekli |
+| **Kurtarma kiti** | Oluşturulan bir `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kodu; basılı veya indirilmiş kit olarak saklanır | Her üye için zorunludur; kod yalnızca kit kaydedilirken gösterilir, bu yüzden kiti güvenli bir yerde saklayın |
+
+**Makine sırrı** bir yuva değildir: başsız bir makineyi kaydeder ([Başsız (Headless) CLI Kaydı](#headless-cli-enrollment) bölümüne bakın) ve bir kişi için depoyu açma yöntemi sayılmaz.
 
 Her yöntem aynı süreçten geçer: yuva, CEK'in kilidini açmak için sunucudaki bir sırla birleşen bir sır üretir. Bu yarımlardan hiçbiri tek başına yeterli değildir, ve yuva sırrı sunucuya asla ulaşmaz. Her iki sır da yeterli entropiye sahiptir; sarmalanmış anahtarı ve sarmalama anahtarının kendi yarısını tutan sunucunun çevrimdışı tahmin edebileceği bir şey yoktur.
 
@@ -34,10 +36,10 @@ Kilit açma cihaz bazlıdır: yeni bir cihazda bir kez kilidi açarsınız, sonr
 ## Ön Koşullar
 
 - **İki faktörlü kimlik doğrulama** hesabınızda etkinleştirilmiş olmalıdır
-- **Passkey** yöntemi için: FIDO2 güvenlik anahtarı (örn. YubiKey), iCloud Keychain, Google Password Manager, 1Password veya Dashlane gibi PRF destekli bir passkey sağlayıcısı
+- **Passkey** yöntemi için: FIDO2 güvenlik anahtarı (örn. YubiKey), iCloud Keychain, Google Password Manager, 1Password veya Dashlane gibi PRF destekli bir passkey sağlayıcısı (cihazda veya QR üzerinden telefonda)
 - **Tarayıcı**: Chrome 133+, Edge 133+, Firefox 130+ veya Safari 17+
 
-PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Kurtarma kodu desteklenen her tarayıcıda çalışır.
+PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Kurtarma kiti desteklenen her tarayıcıda çalışır.
 
 ## Kurulum
 
@@ -47,7 +49,23 @@ PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Kurtarma kodu deste
    - Depoyla birlikte bir **kurtarma kodu** üretilir ve bir kurtarma kitinde yalnızca bir kez gösterilir. Kiti depo oluşturulmadan önce saklayın; onsuz kurulum tamamlanmaz.
 4. Kurulum tamamlandı. CLI kilit açma sırrını işletim sisteminizin anahtar zincirinde tutar.
 
-Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da desteklenmeyen bir doğrulayıcı sizi dışarıda bırakmasın diye en az iki kilit açma yöntemi tutun.
+Passkey daha sonra Config Storage sayfasından eklenebilir.
+
+### QR ile telefon
+
+Yerel PRF doğrulayıcısı olmayan bir masaüstü telefon kullanabilir: tarayıcı bir QR kodu gösterir, telefon passkey isteğini WebAuthn hibrit üzerinden onaylar ve PRF sonucu depoyu yerel bir passkey gibi açar. Passkey yuvası, kaydedildiği kimlik bilgisini ve aktarım yolunu hatırlar. Bir PRF sonucu anahtarı açamazsa, örneğin telefon passkey'i kaydeden cihazdan farklı bir PRF çıktısı döndürdüğü için, sayfa şifre çözme hatası göstermek yerine passkey'in yeniden kaydedilmesini ister. Hibrit PRF için iOS 18.4+ veya güncel bir Android gerekir.
+
+### Kurtarma kiti
+
+Her üye kayıt sırasında bir kurtarma kiti alır ve kit kaydedilmeden kurulum tamamlanmaz. Kit; depo adını, hesap e-postasını, oluşturma tarihini, gruplara ayrılmış kodu, kodun QR'ını ve kurtarma adımlarını içerir. Kayıt devam etmeden önce bir kaydetme kontrolü, kodun son 4 karakterini veya QR'ının taranmasını ister. Kiti atlamanın yolu yoktur; çıktının güvenle saklanması üyenin sorumluluğundadır.
+
+- **Kaybolan passkey** kitle kurtarılır, ardından yeni bir passkey kaydedilir.
+- **Kaybolan kit**, çalışan bir passkey ile yeniden oluşturulur; eski çıktı geçersiz olur.
+- **İkisi de kayıpsa**: bir sahip veya yönetici üyeyi üye devri üzerinden yeniden ekler.
+
+### Güvenlik ağı
+
+Sunucu; bir yuvayı silmeyi, bir üyeyi kaldırmayı veya bir üyenin ayrılmasını kabul etmeyi, depoyu iki anahtar sahibinden az ve kurtarma yuvası olmadan bırakacaksa reddeder. Anahtar sahibi, geçerli anahtar neslinde bir passkey veya kurtarma yuvasına sahip ayrı bir kullanıcıdır; makine sırları ve ajan yetkileri sayılmaz. Kaybolan bir çıktı sunucu tarafından görülemez; bu yüzden depoda yalnızca bir anahtar sahibi olduğu sürece Yapılandırma Depolama sayfası ikinci bir anahtar sahibi önerir. Son anahtar sahibi hem passkey'ini hem de kitini kaybederse depo kurtarılamaz.
 
 ## PRF Sağlayıcı Uyumluluğu
 
@@ -85,7 +103,7 @@ Sır `REDIACC_MACHINE_SECRET` değişkeninden alınır; yoksa, veri pipe ile gel
 2. CLI kısa ömürlü bir istek oluşturur ve bir bağlantı ile `7KQ2-M9XD-P4RT` gibi bir **eşleştirme kodu** yazdırır. Bağlantı taşıdığı her şeyi `#` işaretinden sonra tutar; tarayıcılar bu kısmı sunucuya hiç göndermez.
 3. Bağlantıyı aynı hesapla oturum açmış herhangi bir tarayıcıda açın. Başka bir hesaptan gelen istek reddedilir.
 4. Sayfa istediğinde eşleştirme kodunu terminalinizden yazın. Kod eşleşene kadar kilit açma düğmesi devre dışı kalır.
-5. Passkey'iniz veya kurtarma kodunuzla kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
+5. Passkey ile (bu cihazda veya QR üzerinden telefonda) ya da kurtarma kitiyle kilidi açın. Tarayıcı anahtarı CLI için mühürler; sunucu ise okuyamadığı bir veri bloğunu iletir.
 6. CLI bloğun şifresini çözer, sırrı işletim sisteminin anahtar zincirinde saklar ve başarıyı bildirir.
 
 İstek 10 dakika sonra sona erer. İptal etmek için CLI'da **Ctrl+C** tuşlarına basın: CLI sunucudan bağlantıyı düşürmesini ister, bağlantı hemen çalışmaz hale gelir ve sayfa komutu yeniden çalıştırmanızı söyler. Bu istek ulaşmazsa bağlantı, istek sona erene kadar kullanılabilir kalır. Bağlantı süresi dolduktan sonra ya da bir oturum açma yönlendirmesi `#` sonrasındaki kısmı düşürdükten sonra açılırsa komutu yeniden çalıştırın.
@@ -124,7 +142,7 @@ Bir geri yükleme, eski içeriği mevcut sürümün üzerine yeni bir sürüm ol
 
 Deponun CEK'ini rotasyona sokmak, anahtarı yeni bir nesil altında yeniden sarmalar:
 
-- **Kurtarma kodları rotasyonla her zaman geçersiz kılınır**, ardından yeni bir kod oluşturup saklayın
+- **Kurtarma kitleri rotasyonla her zaman geçersiz kılınır**, ardından yeni bir kit oluşturup saklayın
 - Eski bir nesilde kalan bir yuva, anlaşılmaz bir şifre çözme hatası vermek yerine bayat (stale) olarak raporlanır
 - Diğer üyelerin yapılandırma token'ları iptal edilir ve eski anahtarı hâlâ tutan bir cihaza `rdc config remote enable` ile yeniden etkinleştirmesi söylenir
 
@@ -163,14 +181,14 @@ Diğer korumalar:
 
 | Hata | Neden | Çözüm |
 |-------|-------|-----|
-| PRF not supported | Kimlik doğrulayıcı PRF uzantısından yoksun | YubiKey, iCloud Keychain, 1Password veya Dashlane kullanın |
+| PRF not supported | Kimlik doğrulayıcı PRF uzantısından yoksun | YubiKey, iCloud Keychain, 1Password, Dashlane veya QR üzerinden bir telefon kullanın |
 | X25519 not supported | Tarayıcı sürümü çok eski | Chrome 133+, Edge 133+, Firefox 130+ veya Safari 17+'ye güncelleyin |
 | Already configured | Organizasyonunuz için depo zaten mevcut | Yönetmek için /account/config-storage adresini ziyaret edin |
 | Config storage not configured | Sunucuda blob depolama eksik | R2/RustFS yapılandırması için yöneticinize başvurun |
 | Token expired | 7 gündür etkinlik yok, ya da makine ağ değiştirdi | Girişten (login) otomatik olarak yenilenir; kayıtlı bir giriş yoksa `rdc subscription login` veya `rdc config remote enable` çalıştırın |
 | Yapılandırma daha eski bir sürümle döndü | Sunucu, bu cihazın zaten gördüğünden daha eski bir kopya döndürdü | Yerelde bir şey değişmedi; tekrar deneyin, sürerse bildirin |
 | Cannot remove last member | Depoyu kalıcı olarak kilitler | Önce başka bir üye ekleyin |
-| Stale slot | Yuva, son anahtar rotasyonundan öncesine ait | Yuvayı yeniden ekleyin (kurtarma kodları her rotasyondan sonra yeniden oluşturulmalıdır) |
+| Stale slot | Yuva, son anahtar rotasyonundan öncesine ait | Yuvayı yeniden ekleyin (kurtarma kiti her rotasyondan sonra yeniden oluşturulmalıdır) |
 
 ## İlgili
 
