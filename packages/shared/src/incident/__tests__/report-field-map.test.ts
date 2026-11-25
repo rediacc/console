@@ -6,6 +6,7 @@ import {
   REPORT_FIELD_PATHS,
   regimeMapping,
 } from '../report-field-map.js';
+import rawData from '../report-field-map.json' with { type: 'json' };
 
 type Raw = { regimes: Record<string, unknown>[]; fields: Record<string, Record<string, unknown>> };
 
@@ -13,37 +14,54 @@ function clone(): Raw {
   return JSON.parse(JSON.stringify(REPORT_FIELD_MAP));
 }
 
+const NESTED = ['header', 'dataImpact'];
+
+function innerKeys(schema: unknown): string[] {
+  return Object.keys((schema as { shape: Record<string, unknown> }).shape);
+}
+
 /** Leaf paths of the final stage, which holds every field; header and dataImpact are expanded. */
 function modelPaths(): string[] {
   const final = IncidentReportSchema.options.find((o) => o.shape.stage.value === 'final');
   if (!final) throw new Error('no final stage');
-  const out: string[] = [];
-  for (const [key, schema] of Object.entries(final.shape)) {
-    if (key !== 'stage') out.push(...leafPaths(key, schema));
-  }
-  return out;
+  return Object.entries(final.shape)
+    .filter(([key]) => key !== 'stage')
+    .flatMap(([key, schema]) =>
+      NESTED.includes(key) ? innerKeys(schema).map((k) => `${key}.${k}`) : [key]
+    );
 }
 
-/** `key` itself, or `key.<field>` for each field of the two expanded objects. */
-function leafPaths(key: string, schema: unknown): string[] {
-  if (key !== 'header' && key !== 'dataImpact') return [key];
-  const inner = (schema as { shape: Record<string, unknown> }).shape;
-  return Object.keys(inner).map((k) => `${key}.${k}`);
-}
-
-const byCodePoint = (a: string, b: string): number => Number(a > b) - Number(a < b);
+const byText = (a: string, b: string) => a.localeCompare(b);
 
 describe('report field map', () => {
   it('lists exactly the fields of the report model', () => {
-    expect([...REPORT_FIELD_PATHS].sort(byCodePoint)).toEqual(modelPaths().sort(byCodePoint));
+    expect([...REPORT_FIELD_PATHS].sort(byText)).toEqual(modelPaths().sort(byText));
   });
 
-  it('maps every report field for every regime or says why not', () => {
+  it('maps every report field for every regime in the raw file, not only in the parsed map', () => {
+    const raw = rawData as Raw;
     for (const path of REPORT_FIELD_PATHS) {
-      for (const regime of REPORT_FIELD_MAP.regimes) {
-        expect(regimeMapping(path, regime.id), `${path} / ${regime.id}`).toBeDefined();
+      for (const regime of raw.regimes) {
+        expect(raw.fields[path]?.[regime.id as string], `${path} / ${regime.id}`).toBeDefined();
       }
     }
+  });
+
+  it('looks a mapping up by field and regime, and answers undefined for a regime it lacks', () => {
+    expect(regimeMapping('timeline', 'nis2')).toEqual(REPORT_FIELD_MAP.fields.timeline.nis2);
+    expect(regimeMapping('timeline', 'no-such-regime')).toBeUndefined();
+  });
+
+  it('refuses a map that leaves one regime out of one field', () => {
+    const map = clone();
+    delete map.fields.timeline['gdpr-33'];
+    expect(() => parseReportFieldMap(map)).toThrow(/timeline has no entry for regime gdpr-33/);
+  });
+
+  it('refuses a map that names a regime it does not declare', () => {
+    const map = clone();
+    map.fields.timeline.unknown = { notApplicable: 'x' };
+    expect(() => parseReportFieldMap(map)).toThrow(/timeline names unknown regime unknown/);
   });
 
   it('gives every regime a URL and a retrieval date', () => {

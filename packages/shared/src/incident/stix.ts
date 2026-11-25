@@ -2,7 +2,7 @@
  * STIX 2.1 bundle for an incident report (D4 of PLAN-forensics-reports), built
  * without a library. Every id is a UUIDv5 over the object's content, so building
  * the same report twice gives the same bytes, whatever the input order. A repeated
- * type:value IoC is merged (earliest firstSeen, latest lastSeen, lowest asn). A file
+ * type:value IoC is merged (earliest firstSeen, latest lastSeen, lowest asn, the evidence whose canonical text sorts first). A file
  * indicator exists for every sha256 IoC and carries no observable, so a report with
  * no sha256 IoC emits none.
  */
@@ -113,8 +113,13 @@ function byKey(a: Ioc, b: Ioc): number {
   return x < y ? -1 : 1;
 }
 
-/** One IoC per type:value, sorted by key; a repeat widens the window and keeps the lowest asn. */
-function mergeDuplicates(iocs: readonly Ioc[]): Ioc[] {
+/** Whichever of two evidence facts has the smaller canonical text. */
+function firstEvidence(a: Ioc['evidence'], b: Ioc['evidence']): Ioc['evidence'] {
+  return canonicalize(b as never) < canonicalize(a as never) ? b : a;
+}
+
+/** One IoC per type:value, sorted by key; a repeat widens the window, keeps the lowest asn and the evidence whose canonical text sorts first, so no field depends on input order. */
+export function mergeDuplicates(iocs: readonly Ioc[]): Ioc[] {
   const merged = new Map<string, Ioc>();
   for (const ioc of iocs) {
     const prev = merged.get(iocKey(ioc));
@@ -125,6 +130,7 @@ function mergeDuplicates(iocs: readonly Ioc[]): Ioc[] {
     const asns = [prev.asn, ioc.asn].filter((n): n is number => n !== undefined);
     merged.set(iocKey(ioc), {
       ...prev,
+      evidence: firstEvidence(prev.evidence, ioc.evidence),
       firstSeen: ioc.firstSeen < prev.firstSeen ? ioc.firstSeen : prev.firstSeen,
       lastSeen: ioc.lastSeen > prev.lastSeen ? ioc.lastSeen : prev.lastSeen,
       ...(asns.length > 0 ? { asn: Math.min(...asns) } : {}),

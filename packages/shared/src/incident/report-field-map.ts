@@ -42,53 +42,49 @@ const MappingSchema = z.union([
   z.strictObject({ notApplicable: z.string().min(1) }),
 ]);
 
+type Issue = (message: string) => void;
+
+/** One report field's row: every regime present, and no regime the map does not declare. */
+function checkRow(path: string, row: Record<string, unknown>, regimeIds: string[], issue: Issue) {
+  for (const id of regimeIds) {
+    if (!row[id]) issue(`${path} has no entry for regime ${id}`);
+  }
+  for (const id of Object.keys(row)) {
+    if (!regimeIds.includes(id)) issue(`${path} names unknown regime ${id}`);
+  }
+}
+
+/** Every report field mapped, and no row for a path outside the report model. */
+function checkFields(
+  fields: Record<string, Record<string, unknown>>,
+  regimeIds: string[],
+  issue: Issue
+) {
+  for (const path of REPORT_FIELD_PATHS) {
+    const row = fields[path];
+    if (row) checkRow(path, row, regimeIds, issue);
+    else issue(`report field ${path} is not mapped`);
+  }
+  const known: readonly string[] = REPORT_FIELD_PATHS;
+  for (const path of Object.keys(fields)) {
+    if (!known.includes(path)) issue(`${path} is not a report field`);
+  }
+}
+
 const FieldMapSchema = z
   .strictObject({
     regimes: z.array(RegimeSchema).min(1),
     fields: z.record(z.string(), z.record(z.string(), MappingSchema)),
   })
   .superRefine((map, ctx) => {
-    for (const message of fieldMapIssues(map.regimes, map.fields)) {
-      ctx.addIssue({ code: 'custom', message });
-    }
+    const issue: Issue = (message) => ctx.addIssue({ code: 'custom', message });
+    const regimeIds = map.regimes.map((r) => r.id);
+    if (new Set(regimeIds).size !== regimeIds.length) issue('duplicate regime id');
+    checkFields(map.fields, regimeIds, issue);
   });
 
-/** Every way a field map misses a report field or a regime, or names one that does not exist. */
-function fieldMapIssues(
-  regimes: readonly { id: string }[],
-  fields: Record<string, Record<string, unknown>>
-): string[] {
-  const regimeIds = regimes.map((r) => r.id);
-  const issues: string[] = [];
-  if (new Set(regimeIds).size !== regimeIds.length) issues.push('duplicate regime id');
-  for (const path of REPORT_FIELD_PATHS) issues.push(...rowIssues(path, fields[path], regimeIds));
-  for (const path of Object.keys(fields)) {
-    if (!(REPORT_FIELD_PATHS as readonly string[]).includes(path)) {
-      issues.push(`${path} is not a report field`);
-    }
-  }
-  return issues;
-}
-
-/** The issues of one report field's row: unmapped, a regime missing, or an unknown regime named. */
-function rowIssues(
-  path: string,
-  row: Record<string, unknown> | undefined,
-  regimeIds: readonly string[]
-): string[] {
-  if (!row) return [`report field ${path} is not mapped`];
-  return [
-    ...regimeIds.filter((id) => !row[id]).map((id) => `${path} has no entry for regime ${id}`),
-    ...Object.keys(row)
-      .filter((id) => !regimeIds.includes(id))
-      .map((id) => `${path} names unknown regime ${id}`),
-  ];
-}
-
-type ReportFieldMap = z.infer<typeof FieldMapSchema>;
-type RegimeMapping = z.infer<typeof MappingSchema>;
-
-export type { RegimeMapping, ReportFieldMap };
+export type ReportFieldMap = z.infer<typeof FieldMapSchema>;
+export type RegimeMapping = z.infer<typeof MappingSchema>;
 
 /** Parse a field map; throws with every missing or unknown entry named. */
 export function parseReportFieldMap(raw: unknown): ReportFieldMap {

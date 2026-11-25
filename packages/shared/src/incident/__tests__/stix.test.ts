@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Ioc } from '../report.js';
-import { buildStixBundle, iocPattern, type StixObject, uuidV5 } from '../stix.js';
+import { buildStixBundle, iocPattern, mergeDuplicates, type StixObject, uuidV5 } from '../stix.js';
 
 const obs = { basis: 'observed' as const, value: 'flow record' };
 const ioc = (type: Ioc['type'], value: string, extra: Partial<Ioc> = {}): Ioc => ({
@@ -90,6 +90,20 @@ describe('STIX bundle', () => {
       (o) => o.type === 'observed-data' && String(o.first_observed).startsWith('2026-11-19')
     );
     expect(observed?.last_observed).toBe('2026-11-20T09:00:00.000Z');
+  });
+
+  it('merges a repeat to the same IoC whichever copy comes first, evidence included', () => {
+    const a = ioc('domain', 'dup.example', {
+      evidence: { basis: 'observed', value: 'zeta record' },
+    });
+    const b = ioc('domain', 'dup.example', {
+      evidence: { basis: 'observed', value: 'alpha record' },
+    });
+    expect(mergeDuplicates([a, b])).toEqual(mergeDuplicates([b, a]));
+    expect(mergeDuplicates([a, b])[0].evidence).toEqual({
+      basis: 'observed',
+      value: 'alpha record',
+    });
   });
 
   it('gives two relationship kinds on one pair two ids', async () => {

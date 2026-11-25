@@ -2,7 +2,7 @@
   "regimes": [
     {
       "id": "nis2",
-      "name": "NIS2 Directive (EU) 2022/2555 Art. 23(4) with the NIS Cooperation Group reporting templates of 26 May 2026",
+      "name": "NIS2 Directive (EU) 2022/2555 Art. 23(4)",
       "url": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
       "retrievedAt": "2026-11-25"
     },
