@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-24T22:09:08.356Z",
+  "generatedAt": "2026-11-25T00:15:31.166Z",
   "legs": [
     {
       "index": 1,
@@ -319,6 +319,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_commit_policy_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_plan_box.py",
+        "pytest:.claude/rediacc_hooks/tests/test_gitmemo.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_procs.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_static.py",
@@ -605,6 +606,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_bws_env.py",
         "pytest:.ci/rediacc_ci/tests/test_core_curl_stdin.py",
         "pytest:.ci/rediacc_ci/tests/test_core_gate_controls.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_host_slots.py",
         "pytest:.ci/rediacc_ci/tests/test_core_https.py",
         "pytest:.ci/rediacc_ci/tests/test_core_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_core_prepare_lock.py",
