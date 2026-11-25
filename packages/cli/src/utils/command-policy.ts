@@ -221,17 +221,28 @@ export function setConfirmGrand(value: string | undefined): void {
  * - `config remote enable` re-enrolls a linked config whose device credentials are gone
  *   (config-remote-reenroll.ts) and links a config for the first time.
  * - `config remote status` reports whether this device can open the store.
- * - `config remote disable` is the refusal's own way out when the server path is closed for good
- *   (`--local`, config-remote-unlink.ts).
  * - `subscription login` and `subscription refresh` renew the token the session is opened with.
  */
 export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
   'config remote enable',
   'config remote status',
-  'config remote disable',
   'subscription login',
   'subscription refresh',
 ]);
+
+/**
+ * Recovery commands exempt only in one form. `config remote disable --local` is the refusal's own
+ * way out when the server path is closed for good (config-remote-unlink.ts); the server-backed
+ * form needs the session anyway, so it stays judged.
+ */
+const LOCAL_FORM_RECOVERY_COMMANDS: ReadonlySet<string> = new Set(['config remote disable']);
+
+/** Whether this run is a session-recovery command in the form that skips the session. */
+function isSessionRecovery(commandPath: string, actionCommand: Command): boolean {
+  if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return true;
+  if (!LOCAL_FORM_RECOVERY_COMMANDS.has(commandPath)) return false;
+  return (actionCommand.opts() as { local?: unknown }).local === true;
+}
 
 /** The principal and policy a local run is judged with. */
 interface LocalJudgement {
@@ -254,15 +265,15 @@ const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyCo
  * A REMOTE config is judged as the account server names its token's member: the org role and
  * email from `/configs/session` and the effective policy from the policy record
  * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
- * cannot be opened the run is refused with that error, save for SESSION_RECOVERY_COMMANDS.
+ * cannot be opened the run is refused with that error, save for a recovery run (`isSessionRecovery`).
  */
-async function localJudgement(commandPath: string): Promise<LocalJudgement | null> {
+async function localJudgement(recovery: boolean): Promise<LocalJudgement | null> {
   const kind = isAgentEnvironment() ? 'agent' : 'human';
   const owner: DecisionPrincipal = { kind, userEmail: '', orgRole: 'owner' };
   const name = configService.getCurrentName();
   if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);
-  if (config.remote !== undefined) return remoteJudgement(kind, commandPath);
+  if (config.remote !== undefined) return remoteJudgement(kind, recovery);
   if (config.policy === undefined) return { principal: owner, policy: null };
   const effective = localPolicyCeiling(config);
   for (const document of [effective.org, effective.team]) {
@@ -276,7 +287,7 @@ async function localJudgement(commandPath: string): Promise<LocalJudgement | nul
 /** The session's principal and policy for a remote config (see `localJudgement`). */
 async function remoteJudgement(
   kind: DecisionPrincipal['kind'],
-  commandPath: string
+  recovery: boolean
 ): Promise<LocalJudgement | null> {
   try {
     const adapter = await configService.getActiveRemoteAdapter();
@@ -289,7 +300,7 @@ async function remoteJudgement(
     const { principal, policy } = await pending;
     return { principal: { kind, ...principal }, policy };
   } catch (error) {
-    if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return null;
+    if (recovery) return null;
     throw error;
   }
 }
@@ -438,10 +449,11 @@ async function judge({ principal, command, target, policy }: JudgeArgs): Promise
 async function enforceLocal(
   commandPath: string,
   entry: ContractCommand | undefined,
-  target: TargetRef
+  target: TargetRef,
+  recovery = false
 ): Promise<void> {
   if (currentRequestContext() !== undefined) return;
-  const judgement = await localJudgement(commandPath);
+  const judgement = await localJudgement(recovery);
   if (judgement === null) return;
   const { principal, policy } = judgement;
   if (principal.kind === 'human' && policy === null) return;
@@ -496,7 +508,7 @@ export async function enforceRootCommand(
 ): Promise<void> {
   if (ACTION_RESOLVED_TARGETS.has(commandPath)) return;
   const target = entry ? targetOf(entry, actionCommand) : {};
-  await enforceLocal(commandPath, entry, target);
+  await enforceLocal(commandPath, entry, target, isSessionRecovery(commandPath, actionCommand));
 }
 
 /**

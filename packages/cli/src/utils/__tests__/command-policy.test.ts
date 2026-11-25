@@ -228,19 +228,39 @@ describe('a remote config, judged as the session names its member (D2)', () => {
     await expect(connect('mail:t')).rejects.toThrow('server unreachable');
   });
 
-  it.each([
+  const REFUSED_WITHOUT_SESSION = [
     'config set',
     'config access add',
     'config delete',
     'config import-machine',
     'config remote restore',
+    'config remote disable',
     'subscription retire',
-  ])("refuses a member's %s when the session cannot be opened", async (commandPath) => {
+  ];
+
+  it.each(REFUSED_WITHOUT_SESSION)(
+    "refuses a member's %s when the session cannot be opened",
+    async (commandPath) => {
+      mockIsAgent.mockReturnValue(false);
+      state.adapter = { policyContext: () => Promise.reject(new Error('server unreachable')) };
+      await expect(
+        enforceRootCommand(commandPath, undefined, { opts: () => ({}) } as unknown as Command)
+      ).rejects.toThrow('server unreachable');
+    }
+  );
+
+  it('names only live contract commands in the refusal cases', () => {
+    const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
+    for (const path of REFUSED_WITHOUT_SESSION) expect(live).toContain(path);
+  });
+
+  it('leaves config remote disable unjudged only in its --local form', async () => {
     mockIsAgent.mockReturnValue(false);
-    state.adapter = { policyContext: () => Promise.reject(new Error('server unreachable')) };
-    await expect(enforceRootCommand(commandPath, undefined, {} as Command)).rejects.toThrow(
-      'server unreachable'
-    );
+    state.adapter = { policyContext: () => Promise.reject(new Error('token expired')) };
+    const local = { opts: () => ({ local: true }) } as unknown as Command;
+    await expect(
+      enforceRootCommand('config remote disable', undefined, local)
+    ).resolves.toBeUndefined();
   });
 
   it.each([...SESSION_RECOVERY_COMMANDS])(
