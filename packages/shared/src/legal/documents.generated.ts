@@ -76,6 +76,13 @@ export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocu
         sha256: 'fef0fbce8ac7d153913786b1c1c7f815720fe6db930fe25beb2c195b36972310',
         archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/data-processing-agreement-2026-11-24.txt`,
       },
+      {
+        version: '2026-11-25',
+        effective: '2026-11-25',
+        material: false,
+        sha256: '93e0837eaf9baa2567682cdf65c4c6a9650f43fdfcad48579d201e84aa75d312',
+        archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/data-processing-agreement-2026-11-25.txt`,
+      },
     ],
   },
   'service-level-agreement': {
