@@ -69,10 +69,11 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
   Depends on: AU1.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-writer.test.ts)` rc 0 with cases: one object per event at the D3 key, a `console.stepup` log writes no D1 row, a key outside `audit/<org>/` refused; `(cd private/account && npm run typecheck)` rc 0.
     (ticked) 2026-11-25T01:59:15Z by d778be9d: AU2 present: audit store, console-audit service and event-log mirror wired in app.ts (account 486528f0, 3408c787, 1ec36af2); writer test 8 passed
-- [ ] AU3 [writer] `AUDIT_BUCKET` in every account wrangler file (eu with `jurisdiction = "eu"`), private/account/wrangler.toml, `auditR2` in regions.json, the region-consistency arm with a control fixture lacking the binding, and bench_preflight and reset_bench reading it.
+- [x] AU3 [writer] `AUDIT_BUCKET` in every account wrangler file (eu with `jurisdiction = "eu"`), private/account/wrangler.toml, `auditR2` in regions.json, the region-consistency arm with a control fixture lacking the binding, and bench_preflight and reset_bench reading it.
   Owns: workers/account/wrangler.*.toml, private/account/wrangler.toml, regions.json, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/quality/region_consistency_controls.py, .ci/rediacc_ci/ops/bench_preflight.py, .ci/rediacc_ci/ops/reset_bench.py, .ci/rediacc_ci/tests/gates/test_gate_region_consistency*.py
   Depends on: PLAN-tooling-code-reduction.md#CR2.
   Accept: `npm run check:ci-region-consistency` rc 0 on the tree, and its selftest fails the control fixture with no AUDIT_BUCKET; the region-consistency gate tests under .ci/rediacc_ci/tests/gates pass under `npm run check:ci-pytest` rc 0.
+    (ticked) 2026-11-25T21:40:26Z by d778be9d: AU3 landed 3e6cdfcded; check:ci-region-consistency rc 0 (80 controls), account tsc rc 0, cron and dispatch tests pass. DEPS-WAIVED: prerequisites landed
 - [ ] AU4 [lead] Create the audit buckets of the four targets with a 730-day expiry rule (`npx wrangler r2 bucket create <name>` with `--jurisdiction eu` for eu, then `npx wrangler r2 bucket lifecycle add`), bench first, production before the first production deploy carrying AU3.
   Owns: none -- Cloudflare resources only, no tracked file
   Depends on: none.

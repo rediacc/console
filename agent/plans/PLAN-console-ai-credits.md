@@ -101,10 +101,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Owns: private/account/web/src/pages/admin/CustomerDetail.tsx, private/account/web/src/pages/admin/AiCredits.tsx, private/account/web/src/components/ai-credits/**, private/account/web/src/router.tsx, private/account/web/src/api/endpoints.ts, private/account/web/src/pages/__tests__/ai-credits-admin.test.tsx
   Depends on: AC4.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/ai-credits-admin.test.tsx)` rc 0 and `(cd private/account && npm run typecheck:web)` rc 0.
-- [ ] AC10 [writer] Customer UI per D12: AiCredits.tsx, the nav entry, and `useAiCredits` returning balance, low-balance state and entitlement for the chip of PLAN-console-ai-assistant.md.
+- [x] AC10 [writer] Customer UI per D12: AiCredits.tsx, the nav entry, and `useAiCredits` returning balance, low-balance state and entitlement for the chip of PLAN-console-ai-assistant.md.
   Owns: private/account/web/src/pages/AiCredits.tsx, private/account/web/src/hooks/useAiCredits.ts, private/account/web/src/lib/nav-config.ts, private/account/web/src/pages/__tests__/ai-credits.test.tsx
   Depends on: AC4, AC9.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/ai-credits.test.tsx)` rc 0.
+    (ticked) 2026-11-25T21:42:58Z by d778be9d: AC10 landed (gitlink aa2a204ae9); 9 tests, typecheck rc 0; locales are AC11 (in flight). DEPS-WAIVED: AC4 landed
 - [ ] AC11 [writer] Locales: `aiCredits.json` and the new `admin.json` keys, English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiCredits.json, private/account/web/src/i18n/locales/*/admin.json
   Depends on: AC9, AC10.
