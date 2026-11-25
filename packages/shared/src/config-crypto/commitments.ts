@@ -91,7 +91,7 @@ export async function derivePointerBlindingKey(
   cek: CryptoKey,
   configId: string
 ): Promise<CryptoKey> {
-  const cekRaw = new Uint8Array(await crypto.subtle.exportKey('raw', cek));
+  const cekRaw = new Uint8Array((await crypto.subtle.exportKey('raw', cek)) as ArrayBuffer);
   const salt = new TextEncoder().encode(configId);
   const raw = await hkdfDeriveRaw(cekRaw, salt, HKDF_INFO.POINTER_BLIND);
   return crypto.subtle.importKey('raw', buf(raw), { name: 'HMAC', hash: 'SHA-256' }, false, [
@@ -135,7 +135,7 @@ export async function deriveFieldCommitmentKey(
   cek: CryptoKey,
   fckSaltB64: string
 ): Promise<CryptoKey> {
-  const cekRaw = new Uint8Array(await crypto.subtle.exportKey('raw', cek));
+  const cekRaw = new Uint8Array((await crypto.subtle.exportKey('raw', cek)) as ArrayBuffer);
   const salt = fromBase64(fckSaltB64);
   const fckRaw = await hkdfDeriveRaw(cekRaw, salt, HKDF_INFO.FIELD_COMMITMENT);
   return crypto.subtle.importKey('raw', buf(fckRaw), { name: 'HMAC', hash: 'SHA-256' }, false, [
