@@ -20,7 +20,6 @@
   "packages/cli/src/commands/__tests__/repo-secret.test.ts:f6c0c7031234",
   "packages/cli/src/commands/__tests__/term-cluster-env.test.ts:6ca53501ba88",
   "packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts:e834d93666df",
-  "packages/cli/src/commands/mcp/tools.ts:7b15c3718d61",
   "packages/cli/src/services/__tests__/background-updater.test.ts:949fbd9e86e8",
   "packages/cli/src/services/__tests__/background-updater.test.ts:a4f4ac245bd5",
   "packages/cli/src/services/__tests__/cert-cache.test.ts:697c2c0f834b",
