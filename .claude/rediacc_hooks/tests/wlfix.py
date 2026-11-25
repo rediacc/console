@@ -254,6 +254,10 @@ shutil.rmtree(SCRATCH, ignore_errors=True)
 """ % {"preload": _PRELOAD}
 
 
+# THE PARENT'S OWN ENVIRONMENT IS THE PYTEST PROCESS'S AS IMPORTED, never the case's that happens to start it. A case that monkeypatches the fixture's env into os.environ (test_wl_stop_speed_reads.py's `memo`, TMPDIR among it) and is the first to call a hook started the parent with that TMPDIR, so SCRATCH lived inside that case's fixture directory; once the directory went, the next case's request died writing `in` and read as "the wlfix fork parent died". Each child still gets its case's environment from the request.
+_PARENT_ENV = dict(os.environ)
+
+
 class _ForkParent:
     """The pre-imported parent of this pytest process, started on first use and stopped at exit."""
 
@@ -265,6 +269,7 @@ class _ForkParent:
         if cls.proc is None or cls.proc.poll() is not None:
             cls.proc = subprocess.Popen(
                 [sys.executable, "-c", _FORK_SERVER],
+                env=_PARENT_ENV,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 text=True,
