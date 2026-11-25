@@ -634,14 +634,21 @@ def _run(
     """A bare command line of the twin's: streams inherited unless it redirects them."""
     _flush()
     out = subprocess.DEVNULL if quiet_out else stdout
-    return subprocess.run(
-        argv,
-        cwd=cwd,
-        stdout=out,
-        stderr=subprocess.DEVNULL if quiet_err else None,
-        env=env,
-        check=False,
-    ).returncode
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            stdout=out,
+            stderr=subprocess.DEVNULL if quiet_err else None,
+            env=env,
+            check=False,
+        ).returncode
+    except FileNotFoundError:
+        # The shell twin answers a missing program with status 127 ("command not found"), so a probe
+        # such as `docker version` on a host without docker reaches its install branch instead of crashing.
+        if not quiet_err:
+            print(f"{argv[0]}: command not found", file=sys.stderr)
+        return 127
 
 
 def _must(argv: list[str], **kwargs) -> None:
@@ -656,14 +663,20 @@ def _capture(
 ) -> subprocess.CompletedProcess:
     """`$(argv)`: stdout captured, stderr inherited unless the twin discards it."""
     _flush()
-    return subprocess.run(
-        argv,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL if quiet_err else None,
-        text=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL if quiet_err else None,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        # `$(missing)` in the shell twin yields empty output and status 127.
+        if not quiet_err:
+            print(f"{argv[0]}: command not found", file=sys.stderr)
+        return subprocess.CompletedProcess(argv, 127, stdout="", stderr=None)
 
 
 def _subst(text: str) -> str:
