@@ -1,8 +1,8 @@
 /**
  * `EXECUTOR_RELOCATED` on the hosted Worker (item 413abaf3 of PLAN-rmcp-remote-worker.md): an executor that retired after its org moved answers `EXECUTOR_RELOCATED`; the Worker resolves the grant again past the cache and forwards once to the new placement.
  */
-import { describe, expect, it } from 'vitest';
-import { type CallDeps, callTool, type GrantCaller } from '../call.js';
+import { describe, expect, it, vi } from 'vitest';
+import { ATTACH_WINDOW_MS, type CallDeps, callTool, type GrantCaller } from '../call.js';
 import type { McpCallAnswer, McpCallRouting } from '../executor.js';
 import { activeGrant } from './helpers/grant.js';
 
@@ -116,5 +116,22 @@ describe('EXECUTOR_RELOCATED', () => {
     );
     expect(bare.routings).toHaveLength(1);
     expect(result.structuredContent).toMatchObject({ executorCode: 'EXECUTOR_RELOCATED' });
+  });
+
+  it('stops waiting on a lookup that outlasts the window and answers the relocation code', async () => {
+    vi.useFakeTimers();
+    try {
+      const slow = setup(
+        () => RELOCATED,
+        () => new Promise<never>(() => undefined)
+      );
+      const pending = callTool(slow.deps, slow.caller, 'repo_list', {});
+      await vi.advanceTimersByTimeAsync(ATTACH_WINDOW_MS);
+      const result = await pending;
+      expect(slow.routings).toHaveLength(1);
+      expect(result.structuredContent).toMatchObject({ executorCode: 'EXECUTOR_RELOCATED' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

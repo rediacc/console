@@ -3,9 +3,9 @@
  *
  * A call is checked against the grant's scope, takes a slot of the grant's rate limiter, and is forwarded over the `EXECUTOR` binding to the grant's org executor with `{grantId, secret, tool, args, requestId, attachMs}` as the RPC body: the agent secret never reaches a URL. The container's grant session runs decide() and the command and answers either a tool result, already paged the way the local stdio server pages (D18), or the handle of a job that outlived the window.
  *
- * Limits and confirmation: a call over the grant's budget is refused with `REDIACC_RATE_LIMITED` before anything is forwarded (Design 8). When the executor answers `NEEDS_CONFIRMATION`, a client that declared elicitation gets an `input_required` result whose `requestState` is sealed to the grant, user, tool and arguments (src/confirm.ts), and the retry is forwarded with `confirm` added once the state opens; any other client gets the refusal naming the `confirm` argument (Design 6). When the executor answers `EXECUTOR_RELOCATED`, the org's placement moved: the grant is resolved again past the cache and the call is forwarded once more, to the new placement.
+ * Limits and confirmation: a call over the grant's budget is refused with `REDIACC_RATE_LIMITED` before anything is forwarded (Design 8). When the executor answers `NEEDS_CONFIRMATION`, a client that declared elicitation gets an `input_required` result whose `requestState` is sealed to the grant, user, tool and arguments (src/confirm.ts), and the retry is forwarded with `confirm` added once the state opens; any other client gets the refusal naming the `confirm` argument (Design 6). When the executor answers `EXECUTOR_RELOCATED`, the org's placement moved: the grant is resolved again past the cache (within the same window; a lookup that outlasts it leaves the relocation answer standing) and the call is forwarded once more, to the new placement.
  *
- * Time (D15): the Worker waits at most ATTACH_WINDOW_MS in all, a relocation retry included, well inside the 60 s budget of the strictest clients, and asks the container to answer by EXECUTOR_ATTACH_MS so a job handle or a `job_wait` status lands inside that window. Paging: `args.page` reaches the container unchanged and the result, its cursor included, comes back unchanged; a tool whose schema takes `page` carries `_meta["anthropic/maxResultSizeChars"]` so a client that caps results lower accepts a whole page.
+ * Time (D15): the Worker waits at most ATTACH_WINDOW_MS in all, the first forward, the grant lookup after a relocation and the retry included, well inside the 60 s budget of the strictest clients, and asks the container to answer by EXECUTOR_ATTACH_MS so a job handle or a `job_wait` status lands inside that window. Paging: `args.page` reaches the container unchanged and the result, its cursor included, comes back unchanged; a tool whose schema takes `page` carries `_meta["anthropic/maxResultSizeChars"]` so a client that caps results lower accepts a whole page.
  */
 import {
   type CallToolResult,
@@ -186,13 +186,17 @@ function windowPassed(tool: string): CallToolResult {
 
 type Outcome = { answer: McpCallAnswer } | 'window-passed';
 
-async function withinWindow(call: Promise<McpCallAnswer>, windowMs: number): Promise<Outcome> {
+/** `call`'s answer, or 'window-passed' when `windowMs` ends first. */
+async function withinWindow<T extends object>(
+  call: Promise<T>,
+  windowMs: number
+): Promise<T | 'window-passed'> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const passed = new Promise<'window-passed'>((resolve) => {
     timer = setTimeout(() => resolve('window-passed'), windowMs);
   });
   try {
-    return await Promise.race([call.then((answer) => ({ answer })), passed]);
+    return await Promise.race([call, passed]);
   } finally {
     clearTimeout(timer);
   }
@@ -346,7 +350,7 @@ async function sendOnce(
 ): Promise<Outcome | undefined> {
   try {
     return await withinWindow(
-      executor.call(routingOf(grant), forward),
+      executor.call(routingOf(grant), forward).then((answer) => ({ answer })),
       Math.max(0, ATTACH_WINDOW_MS - (Date.now() - startedAt))
     );
   } catch {
@@ -361,13 +365,20 @@ async function relocatedGrant(
   deps: CallDeps,
   caller: GrantCaller,
   grant: GrantContext,
-  outcome: Outcome
+  outcome: Outcome,
+  startedAt: number
 ): Promise<GrantContext | null> {
   if (outcome === 'window-passed' || outcome.answer.ok) return null;
   if (outcome.answer.code !== 'EXECUTOR_RELOCATED' || !deps.refreshGrant) return null;
   let fresh: GrantContext | null;
   try {
-    fresh = await deps.refreshGrant(caller);
+    // The lookup spends what is left of the window too: a slow account answers as if the placement had not moved.
+    const looked = await withinWindow(
+      deps.refreshGrant(caller).then((found) => ({ found })),
+      Math.max(0, ATTACH_WINDOW_MS - (Date.now() - startedAt))
+    );
+    if (looked === 'window-passed') return null;
+    fresh = looked.found;
   } catch {
     return null;
   }
@@ -385,7 +396,7 @@ async function forwardWithRelocation(
   let grant = caller.grant;
   let outcome = await sendOnce(executor, grant, forward, startedAt);
   if (!outcome) return { refused: UNANSWERED() };
-  const moved = await relocatedGrant(deps, caller, grant, outcome);
+  const moved = await relocatedGrant(deps, caller, grant, outcome, startedAt);
   if (moved) {
     grant = moved;
     outcome = await sendOnce(executor, grant, forward, startedAt);
