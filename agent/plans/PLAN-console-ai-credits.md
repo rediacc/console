@@ -106,10 +106,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: AC4, AC9.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/ai-credits.test.tsx)` rc 0.
     (ticked) 2026-11-25T21:42:58Z by d778be9d: AC10 landed (gitlink aa2a204ae9); 9 tests, typecheck rc 0; locales are AC11 (in flight). DEPS-WAIVED: AC4 landed
-- [ ] AC11 [writer] Locales: `aiCredits.json` and the new `admin.json` keys, English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
+- [x] AC11 [writer] Locales: `aiCredits.json` and the new `admin.json` keys, English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiCredits.json, private/account/web/src/i18n/locales/*/admin.json
   Depends on: AC9, AC10.
   Accept: `npm run -s check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-25T21:50:47Z by d778be9d: AC11 landed (gitlink ab75ad457a); nav-label-collisions passes, typecheck rc 0; check:i18n account-web clean of AC keys. DEPS-WAIVED: AC9, AC10 landed
 - [ ] AC12 [lead] Operator-only Cloudflare account settings (billing powers no agent holds): purchase the first Unified Billing credit, turn auto top-up off, set the gateway spend limit below the purchased balance and the dashboard low-balance email, then record the purchase as an `ai_funding` entry on the admin page. The session parks this as a worklist `[?]` naming each setting, with a DEFAULT of keeping the Rediacc tier paused through the global switch until the entry exists.
   Depends on: AC4, AC9.
   Accept: the operator's answer quoted with its minute, a dashboard screenshot path or API read showing auto top-up off and the spend limit, and the `ai_funding` row id.
