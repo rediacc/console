@@ -3593,14 +3593,13 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 5,
+      "open": 13,
+      "done": 7,
       "open_sigs": [
         "0aeef460",
         "36a39fb4",
         "3c7c20c3",
         "41ac618b",
-        "4385960f",
         "5771292d",
         "830c6e6c",
         "8e38b6b8",
@@ -3609,15 +3608,16 @@
         "b2cd3438",
         "ba005729",
         "c9790d6c",
-        "dd3831ca",
         "e76b6c25"
       ],
       "done_sigs": [
         "227fd39f",
+        "4385960f",
         "43d8a86f",
         "7265a585",
         "88ff238d",
-        "96bc8be0"
+        "96bc8be0",
+        "dd3831ca"
       ]
     },
     "agent/plans/PLAN-rmcp-executor-hardening.md": {
