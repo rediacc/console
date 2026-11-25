@@ -207,4 +207,22 @@ describe('the McpExecutor entrypoint', () => {
     ).toEqual({ ok: false, code: 'EXECUTOR_START_FAILED', status: 503 });
     expect(seen.calls).toEqual([]);
   });
+
+  it('answers EXECUTOR_FAILED, not a start failure, when the forward throws after the pin', async () => {
+    const seen: Seen = { names: [], pins: [], calls: [] };
+    const env = envWith({ ok: true }, seen, { ok: true, answer: {} });
+    const namespace = env.ORG_EXECUTOR as unknown as {
+      get: (id: unknown) => Record<string, unknown>;
+    };
+    const get = namespace.get.bind(namespace);
+    namespace.get = (id) => ({
+      ...get(id),
+      mcpCall: () => Promise.reject(new Error('connection dropped mid-forward')),
+    });
+    expect(await entry(env).call({ orgId: 'org-7', placement: 0 }, forward())).toEqual({
+      ok: false,
+      code: 'EXECUTOR_FAILED',
+      status: 502,
+    });
+  });
 });

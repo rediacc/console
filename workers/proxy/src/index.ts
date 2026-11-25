@@ -334,13 +334,21 @@ async function mcpCallVia(
   }
   if (placement === undefined) return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
   const tenant: Tenant = { orgId: routing.orgId, tier: tierOf(routing.tier), placement };
+  let stub: Awaited<ReturnType<typeof pinAtPlacement>>['stub'];
   try {
-    const { stub, answer } = await pinAtPlacement(namespace, tenant, undefined);
+    const pinned = await pinAtPlacement(namespace, tenant, undefined);
     // A relocated org is not re-routed here: the MCP Worker's grant answer names the placement, and its next resolution names the new one.
-    if (!answer.ok) return { ok: false, code: answer.code, status: 503 };
+    if (!pinned.answer.ok) return { ok: false, code: pinned.answer.code, status: 503 };
+    stub = pinned.stub;
+  } catch {
+    // Nothing reached the container yet, so a start failure is the whole truth and a retry is safe.
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  try {
     return await stub.mcpCall(forward);
   } catch {
-    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+    // The forward may have been delivered and the command may have run, so this is not a start failure and a client must not retry it blindly.
+    return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
   }
 }
 
