@@ -38,6 +38,12 @@ export default async ({ sourceRuleTester, runCases }) => {
           ...tsx('<Select value={v}>\n  <SelectContent data-testid="list" />\n</Select>'),
           errors: [{ messageId: 'missingTestId' }],
         },
+        // CONTROL: only a rootless composite is exempt; a `Modal` (required element) renders its own
+        // DOM, so a testid on a `ModalTrigger` child does not cover it.
+        {
+          ...tsx('<Modal open={o}>\n  <ModalTrigger data-testid="x" />\n</Modal>'),
+          errors: [{ messageId: 'missingTestId' }],
+        },
       ],
     }),
   ];

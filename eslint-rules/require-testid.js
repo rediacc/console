@@ -86,15 +86,19 @@ function isPassedAsProp(node) {
   return false;
 }
 
+/** Composite roots that render no DOM element of their own, so a testid on them never reaches the page. */
+const ROOTLESS_COMPOSITES = ['Select'];
+
 /**
- * True for a composite root that renders no DOM element of its own (Radix `Select`), when its
- * trigger child carries the testid: the trigger is the element E2E tests can reach, and an id on
- * the root never reaches the page.
+ * True for a rootless composite (Radix `Select`) whose trigger child carries the testid: the
+ * trigger is the element E2E tests can reach. Any other `<Name>Trigger` pairing is not exempt,
+ * because that root renders its own DOM element.
  */
 function triggerChildHasTestId(node) {
   const parent = node.parent;
   if (parent?.type !== 'JSXElement') return false;
   const rootName = getElementName(node.name);
+  if (!ROOTLESS_COMPOSITES.includes(rootName)) return false;
   return parent.children.some(
     (child) =>
       child.type === 'JSXElement' &&
