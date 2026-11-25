@@ -69,10 +69,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: none.
   Accept: `(cd private/account && npx drizzle-kit check && npx vitest run tests/integration/ai-credits-schema.test.ts)` rc 0, the test applying every migration to a fresh database and reading each new table.
     (ticked) 2026-11-24T18:25:39Z by d778be9d: AC2 landed: account migration 0104_ai_credits + schema + scope entries; vitest 175 passed rc 0; commit:572e82512f
-- [ ] AC3 [writer] `CreditLedger` Durable Object and `CreditLedgerGate` entrypoint per D4 to D6, D9 and D10 in workers/account/src, with its binding and SQLite migration in every account wrangler config and enterprise.template.toml; tests cover reserve refusals for each check, commit freeing the remainder, earliest-expiry consumption, the 10-minute alarm and concurrent reservations never overdrawing.
+- [x] AC3 [writer] `CreditLedger` Durable Object and `CreditLedgerGate` entrypoint per D4 to D6, D9 and D10 in workers/account/src, with its binding and SQLite migration in every account wrangler config and enterprise.template.toml; tests cover reserve refusals for each check, commit freeing the remainder, earliest-expiry consumption, the 10-minute alarm and concurrent reservations never overdrawing.
   Owns: workers/account/src/credit-ledger.ts, workers/account/src/index.ts, workers/account/wrangler.*.toml, workers/account/enterprise.template.toml, private/account/tests/integration/credit-ledger.test.ts
   Depends on: AC1, AC2.
   Accept: `(cd private/account && npx vitest run tests/integration/credit-ledger.test.ts)` rc 0.
+    (ticked) 2026-11-25T19:53:16Z by d778be9d: AC3 CreditLedger Durable Object and CreditLedgerGate with bindings and the v2 migration in every wrangler file; workers/account 18 tests; landed e1d222715b. DEPS-WAIVED: used prerequisites landed
 - [ ] AC4 [writer] Account service and routes: `ai-credits.service.ts` (grant with payment reference and the D9 funding check, refund of unused credit, funding entries, both switches, summary and usage queries), `ai-credits.ts` for org members and `root-ai-credits.ts` behind `requireElevated()` for admins, registered in routes/index.ts.
   Owns: private/account/src/services/ai-credits.service.ts, private/account/src/routes/ai-credits.ts, private/account/src/routes/root-ai-credits.ts, private/account/src/routes/index.ts, private/account/tests/integration/ai-credits-routes*.test.ts
   Depends on: AC3.
