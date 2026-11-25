@@ -2607,6 +2607,26 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-native-host-rdc-feedback.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "0ee4a6dc",
+        "24a60f6f",
+        "2fbb5e4b",
+        "5c371f4d",
+        "6d85b2e3",
+        "7c93b255",
+        "bf5a7979",
+        "c9ea2164",
+        "ff094cd7"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-nightly-green.md": {
       "status": "proposed",
       "owner": "e0f36861",
