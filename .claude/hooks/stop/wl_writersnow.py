@@ -4,6 +4,8 @@ THE ROUND RECORD (WN1). `worklist.py --writers-now-start <me> <survey>` appends 
 
 THE CADENCE (WN2). `writers-now-due` (effort.json: blocks at `high`, advises at `smart`) fires when this session has no COUNTING round younger than WINDOW_MIN minutes while the Promoted queue holds an open box. A row alone is not a round (operator report 2026-11-24: five hourly rows each copied the first round's survey with `cp` and ran none): a round counts once its survey file exists, was last written after the round's start, and differs from the previous round's survey, and a round whose survey is still missing counts as in progress for SURVEY_GRACE_MIN minutes, then stops counting (`judge_round`). `--writers-now-start` refuses a survey path that already holds the previous round's survey bytes, so the copy fails at the source. It stands down in the landing tree, whose babysit and merge phases work the one open PR and read no queue, in the merge phase of the development tree (the loop state `merged`, where the hook names the next branch first), and inside the window.
 
+THE CAPACITY REFILL (operator ask 2026-11-25). The clock alone left writer capacity idle for most of each hour. `capacity` reads the newest round's survey (its section 4 `### Startable now` clusters), drops the clusters a box tick or an open, deferred or leased item of this session already covers, and `assess` turns that into one of two messages under the same `writers-now-due` key: REFILL (start writers from the existing survey, no new survey) while the roster counts fewer than REFILL_TARGET live writers and a free cluster remains; and a new round due, by the clock above, or once a survey at least REFRESH_GAP_MIN minutes old has no free cluster left or REFRESH_TICKS of its boxes were ticked.
+
 THE SEEDS (WN3). A repeat round re-surveys the same plan text, so work that surfaced only in this session's own records stays invisible to it. `collect_seeds` lists, since the previous round of this session (or LOOKBACK_H hours without one): the open items this session added or updated (not the ones a worker holds), the `BLOCKED_BY:` items whose every blocker is now closed (at any age), the per-commit review findings still open that were reviewed in the window, and the "owed", "outside Owns" and "for the lead" lines of the sub-agent reports `wl_report` captured for this session in the window. `--writers-now-start` writes them to `<survey stem>-seeds.md`, and the skill hands that file to the survey agent, which classifies every seed.
 """
 
@@ -301,6 +303,190 @@ def due_fields(facts, me8) -> dict:
             facts.get("not_counted") or WHY_TOO_OLD,
         )
     return {"last": shown, "open": facts["open"], "window": WINDOW_MIN, "who": me8}
+
+
+def refresh_fields(facts, cap, why, me8) -> dict:
+    """The fields of worklist_messages.V_WRITERS_NOW_REFRESH for a round due by `assess`'s survey rules (exhaustion or ticks), where the newest round still counts: `last` names it and its survey's age, without a `not counted` reason."""
+    last = facts.get("last") or {}
+    return {
+        "last": "round %s at %s, survey %d min old"
+        % (cap.get("round"), last.get("at", "?"), int(cap.get("age") or 0)),
+        "open": facts["open"],
+        "who": me8,
+        "reason": why,
+    }
+
+
+# ---- the capacity refill -------------------------------------------------------
+#
+# WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once an hour leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey.
+
+# The live writers the refill aims for: below this, an unstaffed startable cluster of the current survey is named to start.
+REFILL_TARGET = 6
+# Boxes ticked in the Promoted plans since the newest survey was written that make it stale enough to re-survey before the hour.
+REFRESH_TICKS = 15
+# How long a survey stands before its exhaustion or its tick count asks for the next one: without the floor, a survey whose every startable cluster is already staffed or blocked would ask for a new survey at every stop.
+REFRESH_GAP_MIN = 15
+# The survey's cluster section and the bullets of its startable run (`- **CL-<id> (...)**: <plan> <BOX> <sig8> + ... Files: ...`).
+CLUSTERS_HEAD_RE = re.compile(r"^## 4\. CODE boxes clustered by shared files", re.MULTILINE)
+STARTABLE_HEAD = "### Startable now"
+CLUSTER_RE = re.compile(r"^- \*\*(CL-[A-Za-z0-9_-]+)[^*]*\*\*:\s*(.*)$")
+# A box row of the survey's plan tables, whose first cell is the box sig.
+TABLE_SIG_RE = re.compile(r"^\|\s*([0-9a-f]{8})\s*\|", re.MULTILINE)
+# An 8-hex token; a `#` in front makes it an item id, not a box sig.
+SIG_TOKEN_RE = re.compile(r"(?<![#0-9A-Za-z])([0-9a-f]{8})(?![0-9A-Za-z])")
+# The item states that staff a cluster: open, deferred and leased.
+STAFFING_STATES = (" ", "?", ">")
+CLUSTER_HEAD_MAX = 140
+WHY_EXHAUSTED = "the survey of round %s has no unstaffed startable cluster left"
+WHY_TICKED = "%d box(es) ticked in the Promoted plans since round %s's survey (refresh at %d)"
+WHY_CLOCK = "no counting round in the last %d minutes" % WINDOW_MIN
+
+
+def parse_survey(text) -> tuple[list[dict] | None, set[str]]:
+    """(startable clusters, box sigs of the plan tables) of one survey.
+
+    The clusters are the `CL-` bullets of `### Startable now` under section 4, up to the first bold paragraph (the review-finding, in-flight and lead blocks) or the next heading. Each carries its id, the sigs named before `Files:` that a plan table lists (so a commit sha or a date is never read as a box), and that head clipped. None when the section or its startable heading is missing: an unreadable layout is unknown, never an empty survey.
+    """
+    text = text or ""
+    sigs = set(TABLE_SIG_RE.findall(text))
+    m = CLUSTERS_HEAD_RE.search(text)
+    if not m:
+        return None, sigs
+    lines = text[m.end() :].splitlines()
+    start = next((i for i, ln in enumerate(lines) if ln.strip() == STARTABLE_HEAD), None)
+    if start is None:
+        return None, sigs
+    clusters = []
+    for ln in lines[start + 1 :]:
+        if ln.startswith(("#", "**")):
+            break
+        got = CLUSTER_RE.match(ln)
+        if not got:
+            continue
+        head = got.group(2).split("Files:", 1)[0].strip()
+        named = list(dict.fromkeys(t for t in SIG_TOKEN_RE.findall(head) if t in sigs))
+        if named:
+            clusters.append({"id": got.group(1), "sigs": named, "head": _clip_to(head)})
+    return clusters, sigs
+
+
+def _clip_to(text, limit=CLUSTER_HEAD_MAX) -> str:
+    one = " ".join(str(text or "").split())
+    return one if len(one) <= limit else one[: limit - 3] + "..."
+
+
+def named_sigs(items, session) -> set[str]:
+    """The 8-hex tokens of this session's open, deferred and leased items (text, last note, lease note): a cluster whose sig one of them names is staffed."""
+    out: set[str] = set()
+    for rec in items or ():
+        if rec.get("state") not in STAFFING_STATES or not C.owned_by_me(rec.get("owner"), session):
+            continue
+        for k in ("text", "lastnote", "lease_note"):
+            out.update(SIG_TOKEN_RE.findall(str(rec.get(k) or "")))
+    return out
+
+
+def promoted_done_sigs(root) -> set[str]:
+    """The sigs of every ticked box of the Promoted plans (a plan moved to `_done/` is read there). A QUEUE.md that cannot be read raises; a plan file that is gone adds nothing."""
+    import wl_planqueue as PQ
+    import wl_planrec as PR
+
+    root = pathlib.Path(root)
+    text = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
+    out: set[str] = set()
+    for rel in dict.fromkeys(rel for _num, rel in PQ.promoted_numbered(text)):
+        path = root / rel
+        if not path.is_file():
+            path = root / PQ.PROGRESS_DONE_DIR / path.name
+        if path.is_file():
+            out.update(sig for _i, _l, _b, sig in PR.done_boxes(path.read_text(encoding="utf-8")))
+    return out
+
+
+def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> dict:
+    """The refill facts of this session's newest round.
+
+    `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, and `age` is the survey file's age in minutes; `read` is False when there is no round, no survey file or no parseable cluster section.
+    """
+    now = now or C.utcnow()
+    mine = _mine(rows, session)
+    last = mine[-1] if mine else None
+    facts = {
+        "round": None if last is None else last.get("round"),
+        "survey": None if last is None else str(last["survey"]),
+        "read": False,
+        "free": [],
+        "live": live_writers,
+        "target": REFILL_TARGET,
+        "ticked": 0,
+        "age": None,
+    }
+    if last is None:
+        return facts
+    path = survey_file(root, last["survey"])
+    try:
+        text = path.read_text(encoding="utf-8")
+        mtime = path.stat().st_mtime
+    except FileNotFoundError:
+        return facts
+    clusters, table = parse_survey(text)
+    if clusters is None:
+        return facts
+    done = set(done_sigs())
+    named = named_sigs(items, session)
+    facts["read"] = True
+    facts["age"] = (now.timestamp() - mtime) / 60.0
+    facts["ticked"] = len(table & done)
+    for cl in clusters:
+        left = [s for s in cl["sigs"] if s not in done]
+        if left and not any(s in named for s in cl["sigs"]):
+            facts["free"].append({**cl, "sigs": left})
+    return facts
+
+
+def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
+    """(kind, why) of the writers-now check: ("due", why) when a new round is due, ("refill", "") when writers start from the current survey, ("", "") otherwise.
+
+    The clock (`due`) decides first. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left or REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than REFILL_TARGET live writers and the survey still holds a free cluster. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
+    """
+    if not clock_facts or clock_facts.get("why") or int(clock_facts.get("open") or 0) <= 0:
+        return "", ""
+    if clock_fires:
+        return "due", WHY_CLOCK
+    if not cap or not cap.get("read"):
+        return "", ""
+    if (cap.get("age") or 0) >= REFRESH_GAP_MIN:
+        if not cap["free"]:
+            return "due", WHY_EXHAUSTED % cap["round"]
+        if cap["ticked"] >= REFRESH_TICKS:
+            return "due", WHY_TICKED % (cap["ticked"], cap["round"], REFRESH_TICKS)
+    live = cap.get("live")
+    if live is not None and live < REFILL_TARGET and cap["free"]:
+        return "refill", ""
+    return "", ""
+
+
+def refill_shown(cap) -> list[dict]:
+    """The free clusters a refill names: up to (target - live), in survey order."""
+    return cap["free"][: max(0, cap["target"] - int(cap["live"] or 0))]
+
+
+def refill_fields(cap, me8) -> dict:
+    """The fields of worklist_messages.V_WRITERS_NOW_REFILL, each named cluster as `CL-<id> <sigs>: <head>`."""
+    shown = refill_shown(cap)
+    return {
+        "n": len(shown),
+        "live": int(cap["live"] or 0),
+        "target": cap["target"],
+        "round": cap["round"],
+        "survey": cap["survey"],
+        "free": len(cap["free"]),
+        "rows": "\n".join(
+            "  - %s %s: %s" % (cl["id"], " ".join(cl["sigs"]), cl["head"]) for cl in shown
+        ),
+        "who": me8,
+    }
 
 
 # ---- the seeds (WN3) --------------------------------------------------------------

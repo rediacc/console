@@ -3194,6 +3194,23 @@ V_WRITERS_NOW_DUE = (
     "which clears this check for %(window)d minutes; the round's seeds file carries what this "
     "session's own records surfaced since its previous round."
 )
+# The same key when the clock is quiet but the newest survey is spent (wl_writersnow.assess kind "due" with a survey-rule reason): its startable clusters are all staffed or ticked, or REFRESH_TICKS of its boxes were ticked, and it is at least REFRESH_GAP_MIN minutes old. Fields from wl_writersnow.refresh_fields: reason, last, open, who.
+V_WRITERS_NOW_REFRESH = (
+    "WRITERS-NOW DUE: run /writers-now now. A new round is due before the hour: %(reason)s "
+    "(last: %(last)s), and the Promoted queue holds %(open)d open box(es). Step 0 of the round "
+    "records it (`worklist.py --writers-now-start %(who)s <survey path>`); the new survey "
+    "replaces the spent one as the source of refill clusters."
+)
+# The capacity refill under the same `writers-now-due` key (wl_writersnow.assess kind "refill"): fewer live writers than the target while the newest survey still holds startable clusters no open item names and no tick closed. Fields from wl_writersnow.refill_fields: n, live, target, round, survey, free, rows (one `  - CL-<id> <sigs>: <head>` line per cluster), who.
+V_WRITERS_NOW_REFILL = (
+    "WRITERS-NOW REFILL: start %(n)d writer(s) now from the current survey, no new survey. "
+    "The roster counts %(live)d live writer(s) against a target of %(target)d, and round "
+    "%(round)s's survey %(survey)s still holds %(free)d startable cluster(s) no open item names "
+    "and no tick closed:\n%(rows)s\n"
+    "Each writer takes one cluster in a lease, with the files and the model its section 4 line "
+    "names; `worklist.py --add %(who)s` and `--lease` to the real agent id, with the cluster's "
+    "sigs in the item text, so the next stop counts the cluster as staffed."
+)
 
 # Appended to a STATE.md demand the concurrency-saturated wait KEPT because compaction is imminent.
 N_CONC_WAIT_COMPACTION = (
