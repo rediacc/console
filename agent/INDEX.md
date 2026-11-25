@@ -571,7 +571,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-multi-region-bench.md` | approved | 340 | 7 | 16 | 57510 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
-| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 40 | 9 | 0 | 8519 |
+| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 41 | 8 | 1 | 8708 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
