@@ -287,6 +287,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_health',
   'proxy_acme_fix',
   'repository_info',
+  'forensics_level',
   'repository_limits_set',
   'repository_limits_show',
   'repository_list',

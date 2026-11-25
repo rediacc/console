@@ -94,6 +94,7 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   repository_permission_grant: 'provision',
   repository_permission_revoke: 'provision',
   repository_permission_show: 'read-only',
+  forensics_level: 'provision',
   repository_limits_set: 'provision',
   repository_limits_show: 'read-only',
   repository_health: 'read-only',
