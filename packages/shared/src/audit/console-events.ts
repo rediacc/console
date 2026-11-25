@@ -25,6 +25,7 @@ export const CONSOLE_AUDIT_TYPES = [
   // Emitted by the AI assistant plans, not by the console exec path.
   'console.ai.approval',
   'console.feedback.sent',
+  'console.feedback.declined',
   // Forensics investigation (PLAN-forensics-investigation D3, D4).
   'console.forensics.open',
   'console.forensics.view',
@@ -50,6 +51,7 @@ export type { ConsoleTarget };
 
 const stepUpMethod = z.enum(STEP_UP_METHODS);
 const requestId = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/);
+const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const severity = z.enum(['none', 'caution', 'destructive']);
 
 const actorSchema = z.strictObject({
@@ -156,6 +158,22 @@ const feedbackSent = z.strictObject({
   type: z.literal('console.feedback.sent'),
   data: z.strictObject({
     feedbackId: z.string().min(1).max(100),
+    /** The console send path (PLAN-console-ai-feedback D6); the CLI-token path carries only the id. */
+    runId: z.string().min(1).max(128).optional(),
+    pathKey: z.string().min(1).max(200).optional(),
+    fingerprint: z.string().min(1).max(128).optional(),
+    messageLength: z.number().int().min(0).optional(),
+    digest: digest.optional(),
+  }),
+});
+
+// A declined offer: who and which run; the decline request carries no draft, so there is no text to leave out.
+const feedbackDeclined = z.strictObject({
+  ...envelope,
+  type: z.literal('console.feedback.declined'),
+  data: z.strictObject({
+    runId: z.string().min(1).max(128),
+    pathKey: z.string().min(1).max(200),
   }),
 });
 
@@ -241,6 +259,7 @@ export const ConsoleAuditEventSchema = z.discriminatedUnion('type', [
   reveal,
   aiApproval,
   feedbackSent,
+  feedbackDeclined,
   forensicsOpen,
   forensicsView,
   forensicsGrant,

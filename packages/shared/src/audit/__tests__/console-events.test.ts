@@ -40,6 +40,7 @@ const DATA: Record<(typeof CONSOLE_AUDIT_TYPES)[number], Record<string, unknown>
   'console.reveal': { pathKey: 'repo secret list', method: 'password' },
   'console.ai.approval': { pathKey: 'repo up', decision: 'approved' },
   'console.feedback.sent': { feedbackId: 'f-1' },
+  'console.feedback.declined': { runId: 'run-1', pathKey: 'repo up' },
   'console.forensics.open': {
     investigationId: 'inv-1',
     scopeKind: 'repo',
@@ -139,6 +140,26 @@ describe('ConsoleAuditEventSchema', () => {
       );
     expect(reveal(long(200))).toBe(true);
     expect(reveal(long(201))).toBe(false);
+  });
+
+  it('console.feedback.declined names the run and refuses draft text; sent admits the D6 fields', () => {
+    const parse = (type: string, data: Record<string, unknown>) =>
+      ConsoleAuditEventSchema.safeParse(event(type, data)).success;
+    const declined = DATA['console.feedback.declined'];
+    expect(parse('console.feedback.declined', declined)).toBe(true);
+    expect(parse('console.feedback.declined', { runId: 'run-1' })).toBe(false);
+    expect(parse('console.feedback.declined', { ...declined, message: 'text' })).toBe(false);
+    const sent = {
+      feedbackId: 'f-1',
+      runId: 'run-1',
+      pathKey: 'repo up',
+      fingerprint: 'abc',
+      messageLength: 12,
+      digest: 'a'.repeat(64),
+    };
+    expect(parse('console.feedback.sent', sent)).toBe(true);
+    expect(parse('console.feedback.sent', { ...sent, digest: 'xyz' })).toBe(false);
+    expect(parse('console.feedback.sent', { ...sent, message: 'text' })).toBe(false);
   });
 
   it('refuses an unknown type', () => {
