@@ -78,10 +78,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Depends on: FI2, PLAN-forensics-shipping.md.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-declare.test.ts)` rc 0 (FIFO skips a held batch past quota, two concurrent declares keep both lock rules, a failed fork step keeps the hold, close releases nothing before 30 days).
     (ticked) 2026-11-25T17:44:07Z by d778be9d: FI4 declare and close an incident with eviction hold and R2 lock rules; incident-declare vitest pass; landed 31a8d27daf. DEPS-WAIVED: used prerequisites landed
-- [ ] FI5 [writer] Support grants (D3): issue and revoke routes for owners and admins after step-up, the admin-panel read under root elevation in root.ts, and support views recorded in the customer's audit with `actor.kind: 'support'`.
+- [x] FI5 [writer] Support grants (D3): issue and revoke routes for owners and admins after step-up, the admin-panel read under root elevation in root.ts, and support views recorded in the customer's audit with `actor.kind: 'support'`.
   Owns: private/account/src/routes/root.ts, private/account/tests/integration/forensics-support-grant.test.ts
   Depends on: FI3.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-support-grant.test.ts)` rc 0 (support read without a grant 403, an expired or revoked grant 403, a grant for repo A refuses repo B, each support view appears in the org's audit list).
+    (ticked) 2026-11-25T18:23:08Z by d778be9d: FI5 landed (gitlink 3b90743df5); forensics-support-grant 6 passed, account tsc rc 0. DEPS-WAIVED: used prerequisites landed
 - [x] FI6 [writer] The `forensics:read` and `incident:manage` scopes: the ApiTokenScope members, the account zod enum, owner-and-admin-only minting, and a CLI login that grants them only after an elevated browser approval.
   Owns: packages/shared/src/subscription/types.ts, private/account/src/types/api-token.ts, private/account/tests/integration/forensics-scopes.test.ts
   Depends on: none.

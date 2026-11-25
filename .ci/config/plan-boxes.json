@@ -1059,12 +1059,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 2,
+      "open": 6,
+      "done": 3,
       "open_sigs": [
         "4a23af14",
         "6c3b5aec",
-        "8890cd6d",
         "97fdfb9e",
         "987389e1",
         "ac3aa330",
@@ -1072,7 +1071,8 @@
       ],
       "done_sigs": [
         "138477d9",
-        "20cb75e5"
+        "20cb75e5",
+        "8890cd6d"
       ]
     },
     "agent/plans/PLAN-console-ai-in-pages.md": {
@@ -1932,8 +1932,8 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 5,
+      "open": 9,
+      "done": 6,
       "open_sigs": [
         "1fbea5b8",
         "53d008ba",
@@ -1943,15 +1943,15 @@
         "c0384c17",
         "ce78dbac",
         "dd9d2f42",
-        "f84846f5",
-        "fbe7ab0c"
+        "f84846f5"
       ],
       "done_sigs": [
         "0f941c3b",
         "2e0d5e53",
         "2f8c4eb7",
         "84fee079",
-        "fb0bdd84"
+        "fb0bdd84",
+        "fbe7ab0c"
       ]
     },
     "agent/plans/PLAN-forensics-capture.md": {
@@ -2035,8 +2035,8 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 6,
+      "open": 10,
+      "done": 7,
       "open_sigs": [
         "47e95ef3",
         "542a4370",
@@ -2046,7 +2046,6 @@
         "7ddaf217",
         "b3c360be",
         "c0384c17",
-        "d1115075",
         "ed4df7d5",
         "fcaafcc9"
       ],
@@ -2056,7 +2055,8 @@
         "3785e8de",
         "7b95f43e",
         "ab43afc6",
-        "b5163282"
+        "b5163282",
+        "d1115075"
       ]
     },
     "agent/plans/PLAN-forensics-reports.md": {
