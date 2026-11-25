@@ -251,27 +251,32 @@ function checkIdentity(cmd: ContractCommand): string[] {
  * can always tell the operator why.
  */
 function checkProxyCapability(cmd: ContractCommand): string[] {
-  const problems: string[] = [];
+  const problems: string[] = cmd.proxyCapable ? proxyCapableProblems(cmd) : [];
 
-  if (cmd.proxyCapable) {
-    if (cmd.plane !== 'machine' && !EXECUTOR_SERVED_COMMANDS.has(cmd.pathKey)) {
-      problems.push(
-        `${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}" and the command is not executor-served`
-      );
-    }
-    if (cmd.interactive) {
-      problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
-    }
-    if (cmd.proxyBlockedReason !== undefined) {
-      problems.push(`${cmd.pathKey}: proxyCapable but carries a proxyBlockedReason`);
-    }
-  } else if (cmd.proxyBlockedReason === undefined) {
+  if (!cmd.proxyCapable && cmd.proxyBlockedReason === undefined) {
     problems.push(`${cmd.pathKey}: not proxyCapable but gives no proxyBlockedReason`);
   }
   if (cmd.proxyBlockedReasonKey !== undefined && cmd.proxyBlockedReason === undefined) {
     problems.push(`${cmd.pathKey}: proxyBlockedReasonKey set without a proxyBlockedReason`);
   }
 
+  return problems;
+}
+
+/** What a proxyCapable command may not be: off the machine plane unless executor-served, interactive, or carrying a block reason. */
+function proxyCapableProblems(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+  if (cmd.plane !== 'machine' && !EXECUTOR_SERVED_COMMANDS.has(cmd.pathKey)) {
+    problems.push(
+      `${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}" and the command is not executor-served`
+    );
+  }
+  if (cmd.interactive) {
+    problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
+  }
+  if (cmd.proxyBlockedReason !== undefined) {
+    problems.push(`${cmd.pathKey}: proxyCapable but carries a proxyBlockedReason`);
+  }
   return problems;
 }
 

@@ -19,11 +19,14 @@ import {
   proxyCapableCommands,
 } from '../index.js';
 import {
-  EXECUTOR_SERVED_COMMANDS,
   ContractStringsSchema,
   checkContractInvariants,
+  EXECUTOR_SERVED_COMMANDS,
   parseCliContract,
 } from '../validation.js';
+
+/** Code-point order, so the comparison never depends on a locale. */
+const byCodePoint = (a: string, b: string): number => Number(a > b) - Number(a < b);
 
 /**
  * Read as an asset rather than imported: a static import of a 348KB JSON makes
@@ -133,7 +136,9 @@ describe('CLI contract', () => {
     // PLAN-rmcp-local-mcp LM10 (D57): the 29 config and `other` plane commands of the surface table run on the executor against the session config. A command joins this set only through the EXECUTOR_SERVED table of the generator, so the count is a drift alarm, and none of them is a machine job.
     const offMachine = CLI_CONTRACT.commands.filter((c) => c.proxyCapable && c.plane !== 'machine');
     expect(offMachine).toHaveLength(29);
-    expect(offMachine.map((c) => c.pathKey).sort()).toEqual([...EXECUTOR_SERVED_COMMANDS].sort());
+    expect(offMachine.map((c) => c.pathKey).sort(byCodePoint)).toEqual(
+      [...EXECUTOR_SERVED_COMMANDS].sort(byCodePoint)
+    );
     for (const cmd of offMachine) {
       expect(cmd.detachable, cmd.pathKey).toBe(false);
       expect(cmd.detachBlockedReason, cmd.pathKey).toMatch(/without --background/);
@@ -384,9 +389,7 @@ describe('CLI contract', () => {
       'vscode serve stop',
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
-    // 81 -> 82: `repo health` (one repository_health read job, its print a step).
-    // 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4).
-    // 84 -> 83: `machine prune` was not proxy-capable, so not detachable.
+    // 81 -> 82: `repo health` (one repository_health read job, its print a step). 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4). 84 -> 83: `machine prune` was not proxy-capable, so not detachable.
     // 83 -> 86: LM10 (D57) made seven machine-plane commands of the surface table proxy-capable; `machine prune`, `machine converge` and `config reconcile` run as machine jobs, and the other four are section 24 exceptions above.
     expect(detachable).toHaveLength(86);
     expect(getCommand('machine prune')?.proxyCapable).toBe(true);
