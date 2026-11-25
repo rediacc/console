@@ -71,9 +71,11 @@ Every page, skill and design document that describes MCP, the executor, config s
 
 ## Boxes
 
-- [ ] DO1 [writer] `check-mcp-docs-parity.ts` with selftest, wired in package.json, gates.lock.json and the workflow step per the gate-author three-point wiring. Accept: `npx tsx scripts/gates/check-mcp-docs-parity.ts --selftest` rc 0 and `npm run -s check:ci-gate-reachability-coverage` rc 0.
+- [x] DO1 [writer] `check-mcp-docs-parity.ts` with selftest, wired in package.json, gates.lock.json and the workflow step per the gate-author three-point wiring. Accept: `npx tsx scripts/gates/check-mcp-docs-parity.ts --selftest` rc 0 and `npm run -s check:ci-gate-reachability-coverage` rc 0.
+    (ticked) 2026-11-25T11:59:58Z by d778be9d: DO1 landed 3c88f8e5a4; parity rc 0, selftest rc 0, gen:gates --check rc 0. DEPS-WAIVED: DO1-DO3 start at once per the plan header
 - [ ] DO2 [writer] `check-removed-env-vars.ts` and `.ci/config/removed-env-vars.json`, same wiring; it fails on today's tree until PLAN-rmcp-config-edit-removal.md lands, so it is wired as the last commit of that plan's landing. Accept: `npx tsx scripts/gates/check-removed-env-vars.ts --selftest` rc 0.
-- [ ] DO3 [writer] `gen-docs: mcp-tools` region generator and the empty region markers in the English page. Accept: `npx tsx scripts/gen/gen-docs.ts --write` rc 0 then `npm run -s check:ci-doc-region-parity` rc 0.
+- [x] DO3 [writer] `gen-docs: mcp-tools` region generator and the empty region markers in the English page. Accept: `npx tsx scripts/gen/gen-docs.ts --write` rc 0 then `npm run -s check:ci-doc-region-parity` rc 0.
+    (ticked) 2026-11-25T11:59:57Z by d778be9d: DO3 landed dc9a49b0c3 + a2b1f5471f; gen-docs check rc 0. Two locale gates red until DO7 by design. DEPS-WAIVED: DO1-DO3 start at once per the plan header
 - [ ] DO4 [writer] ai-agents-mcp English rewrite (Design 3). Waits for PLAN-rmcp-remote-worker.md and PLAN-rmcp-local-mcp.md. Accept: `npx tsx scripts/gates/check-mcp-docs-parity.ts` rc 0 and `.ci/scripts/quality/check_prose_style.py check packages/www/src/content/docs/en/ai-agents-mcp.md` rc 0.
 - [ ] DO5 [writer] ai-agents-safety, ai-agents-overview, ai-agents-claude-code, account-security English edits. Waits for PLAN-rmcp-decide.md and PLAN-rmcp-config-edit-removal.md. Accept: `npx tsx scripts/gates/check-removed-env-vars.ts` rc 0 and the prose check on the four files rc 0.
 - [ ] DO6 [writer] proxy-and-executor, on-premise, cli-application, ai-agents-json-output, repositories, backup-restore English edits. Waits for PLAN-rmcp-writeback.md, PLAN-rmcp-executor-hardening.md, PLAN-rmcp-local-mcp.md. Accept: the prose check on the six files rc 0 and `npm run -s check:ci-docs-frontmatter` rc 0.

@@ -26,7 +26,7 @@ The levels, each a superset of the one before:
 No writer limit (operator ruling #3ca908ee, PLAN-unlimited-writers.md): no guard, Stop-hook check or lease-tool count caps live writers at any effort level; the harness concurrent-subagent ceiling is the only bound, and file ownership (`block_plan_concurrency`) still decides who edits what.
 
 ```stop-hook
-effort: quiet
+effort: high
 ```
 
 ## In flight
@@ -34,7 +34,7 @@ effort: quiet
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort high; judge full; cadence on; agent_hint on; agent_pushback on.
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1139 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1141 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 1 live (session d778be9d): worker:ac30c003925e0d58e.
-- Leased items: 1: #c993ea93 (worker:ac30c003925e0d58e, d778be9d).
+- Writers: 0 live (session d778be9d).
+- Leased items: 0.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 98 plans done, 1363 of 1857 boxes done (73%).
+Promoted: 11 of 98 plans done, 1367 of 1857 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -136,7 +136,7 @@ Promoted: 11 of 98 plans done, 1363 of 1857 boxes done (73%).
 | 74 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
 | 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
 | 76 | PLAN-rmcp-agent-grants.md | 1/15 | 14 open |
-| 77 | PLAN-console-ai-providers.md | 10/15 | 5 open |
+| 77 | PLAN-console-ai-providers.md | 12/15 | 3 open |
 | 78 | PLAN-console-ai-assistant.md | 2/15 | 13 open |
 | 79 | PLAN-console-ai-credits.md | 2/15 | 13 open |
 | 80 | PLAN-console-ai-feedback.md | 1/9 | 8 open |
@@ -145,7 +145,7 @@ Promoted: 11 of 98 plans done, 1363 of 1857 boxes done (73%).
 | 83 | PLAN-rmcp-local-mcp.md | 6/13 | 7 open |
 | 84 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
 | 85 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
-| 86 | PLAN-rmcp-docs.md | 2/20 | 18 open |
+| 86 | PLAN-rmcp-docs.md | 4/20 | 16 open |
 | 87 | PLAN-stripe-disable.md | 5/8 | 3 open |
 | 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
 | 89 | PLAN-forensics-shipping.md | 10/16 | 6 open |
