@@ -7,7 +7,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "698401260fc429cf"
+sourceHash: "c32af9f79387c0ad"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3478,6 +3478,7 @@ rdc server install [machine] [options]
 | `--no-dns-wait` | {{t:cli.commands.server.install.optionNoDnsWait}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--offline` | {{t:cli.commands.server.install.optionOffline}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bundle <dir>` | {{t:cli.commands.server.install.optionBundle}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--signer <fingerprint>` | {{t:cli.commands.server.install.optionSigner}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bws-project <id>` | {{t:cli.commands.server.install.optionBwsProject}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--rotate` | {{t:cli.commands.server.install.optionRotate}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -3529,6 +3530,7 @@ rdc server upgrade <domain> [options]
 | `--image-file <tar>` | {{t:cli.commands.server.install.optionImageFile}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local-image` | {{t:cli.commands.server.install.optionLocalImage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bundle <dir>` | {{t:cli.commands.server.upgrade.optionBundle}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--signer <fingerprint>` | {{t:cli.commands.server.install.optionSigner}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.server.upgrade.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -3582,6 +3584,7 @@ rdc server bundle [options]
 | `--tag <tag>` | {{t:cli.commands.server.bundle.optionTag}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--image <ref>` | {{t:cli.commands.server.bundle.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--with-cli <platforms>` | {{t:cli.commands.server.bundle.optionWithCli}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-models` | {{t:cli.commands.server.bundle.optionNoModels}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

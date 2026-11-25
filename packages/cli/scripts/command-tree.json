@@ -7573,6 +7573,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--signer <fingerprint>",
+              "descriptionKey": "commands.server.install.optionSigner",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--bws-project <id>",
               "descriptionKey": "commands.server.install.optionBwsProject",
               "mandatory": false,
@@ -7653,6 +7659,12 @@
             {
               "flags": "--bundle <dir>",
               "descriptionKey": "commands.server.upgrade.optionBundle",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--signer <fingerprint>",
+              "descriptionKey": "commands.server.install.optionSigner",
               "mandatory": false,
               "defaultValue": null
             },
@@ -7809,6 +7821,12 @@
             {
               "flags": "--with-cli <platforms>",
               "descriptionKey": "commands.server.bundle.optionWithCli",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-models",
+              "descriptionKey": "commands.server.bundle.optionNoModels",
               "mandatory": false,
               "defaultValue": null
             }
