@@ -23,6 +23,7 @@
 - #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
+0. FIRST: #05291e14 D2 regression: every eu-bench and production ./rdc.sh command fails "config server named no org role" (servers predate account 264c5d70). Redeploy the bench account Worker (PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu), then ask the operator: release the account change to production, or make the CLI accept a missing orgRole from an older server until then. Also: hostinger runner left /tmp/rdc-restore-path-20261125T155400Z(-dir) scratch dirs on hostinger (remove); FR1, FR2 ticked; fea27583.1-.2 fixed.
 1. Land each writer with `./run.sh worktree land <id> --run --me d778be9d`; after any packages/shared change also run (cd private/account && npx tsc --noEmit && npm run typecheck:web); then tick with landed shas (DEPS-WAIVED where the header waits).
 2. Read vm:check r65; on VERIFIED tick VM boxes from the evidence file; same for hostinger evidence.
 3. Start config-edit-removal (#d8830f23) and the survey r13 clusters N3 (RW-D1), N4 (RW-U), N8 (AC3+AC8), N9 (DO8, DO12 still held), N10 (FD10), review clusters N11-N14.
