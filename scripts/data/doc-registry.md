@@ -1185,7 +1185,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/infra | 22 | .py 22 |
 | .ci/rediacc_ci/lab | 3 | .py 3 |
 | .ci/rediacc_ci/legal | 2 | .py 2 |
-| .ci/rediacc_ci/ops | 60 | .py 60 |
+| .ci/rediacc_ci/ops | 61 | .py 61 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
