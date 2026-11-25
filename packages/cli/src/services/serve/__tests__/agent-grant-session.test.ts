@@ -60,6 +60,28 @@ const principalOf = (agentGrantId: string) => ({
   agentGrantId,
 });
 
+/**
+ * Holds every agent-session answer until `release`, and counts the calls that reached the session lookup, so a race
+ * test releases the open only once the second call is truly waiting on (or joining) it.
+ */
+function holdOpens(account: FakeAccount, sessions: AgentGrantSessions) {
+  let release = () => {};
+  account.holdOpens = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let reached = 0;
+  const target = sessions as unknown as {
+    recordFor: (...args: unknown[]) => Promise<unknown>;
+  };
+  const original = target.recordFor.bind(sessions);
+  vi.spyOn(target, 'recordFor').mockImplementation((...args: unknown[]) => {
+    reached += 1;
+    return original(...args);
+  });
+  const reachedRecord = (count: number) => vi.waitFor(() => expect(reached).toBe(count));
+  return { release, reachedRecord };
+}
+
 describe('agent grant sessions', () => {
   it('holds two sessions with two configs for two grants of one user (the cross-team regression)', async () => {
     const { a, b, sessions } = await world();
@@ -161,6 +183,40 @@ describe('agent grant sessions', () => {
       AgentSessionRefused
     );
     expect(sessions.has(a.grantId)).toBe(true);
+  });
+
+  it('refuses a wrong secret that arrives while the right one is opening the grant', async () => {
+    const { a, b, account, sessions } = await world();
+    const { release, reachedRecord } = holdOpens(account, sessions);
+
+    const right = sessions.acquire(a.grantId, a.secret);
+    await vi.waitFor(() => expect(account.count('POST /configs/agent-session')).toBe(1));
+    // The open is in flight; a call carrying another grant's secret for this grant must not join it.
+    const wrong = sessions.acquire(a.grantId, b.secret).catch((error: unknown) => error);
+    await reachedRecord(2);
+    release();
+
+    expect(machinesOf((await right).config)).toEqual(['machine-a']);
+    expect(await wrong).toBeInstanceOf(AgentSessionRefused);
+    expect(sessions.has(a.grantId)).toBe(true);
+    expect(account.count('POST /configs/agent-session')).toBe(1);
+  });
+
+  it('opens the grant for the right secret after a wrong one in flight is refused', async () => {
+    const { a, b, account, sessions } = await world();
+    const { release, reachedRecord } = holdOpens(account, sessions);
+
+    const wrong = sessions.acquire(a.grantId, b.secret).catch((error: unknown) => error);
+    await vi.waitFor(() => expect(account.count('POST /configs/agent-session')).toBe(1));
+    // The right secret does not inherit the wrong open's refusal: it waits, then opens on its own.
+    const right = sessions.acquire(a.grantId, a.secret);
+    await reachedRecord(2);
+    release();
+
+    expect(await wrong).toBeInstanceOf(AgentSessionRefused);
+    expect(machinesOf((await right).config)).toEqual(['machine-a']);
+    expect(sessions.has(a.grantId)).toBe(true);
+    expect(account.count('POST /configs/agent-session')).toBe(2);
   });
 
   it('keys the cached config by its version: same version no pull, a new version one pull', async () => {

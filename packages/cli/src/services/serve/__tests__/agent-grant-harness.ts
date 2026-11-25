@@ -63,6 +63,8 @@ export interface FakeAccount {
   expireNextToken: boolean;
   /** Answer this status to the next agent-session call. */
   failNextOpenWith?: number;
+  /** While set, every agent-session call waits for it before it is answered (a slow account, for races). */
+  holdOpens?: Promise<void>;
   /** Re-seal a grant's config at a new version. */
   bump(grantId: string, config: RdcConfig): Promise<void>;
   count(prefix: string): number;
@@ -175,8 +177,8 @@ export function fakeAccount(
     tokens.set(token, grantId);
     return token;
   };
-  /** `POST /configs/agent-session` under the executor's bearer. */
-  const openSession = (init?: RequestInit): Response => {
+  /** `POST /configs/agent-session` under the executor's bearer. A tag that is not the grant's is refused, as the account refuses it. */
+  const openSession = async (init?: RequestInit): Promise<Response> => {
     expect(init?.headers).toMatchObject({ authorization: `Bearer ${EXECUTOR_TOKEN}` });
     const body = JSON.parse(init?.body as string) as { grantId: string; authTag: string };
     account.openBodies.push(body);
@@ -186,7 +188,9 @@ export function fakeAccount(
       return json({ error: 'down' }, status);
     }
     const grant = byId.get(body.grantId);
-    if (!grant || account.refused.has(body.grantId)) {
+    const tagMatches =
+      grant !== undefined && (await hashAuthTag(body.authTag)) === grant.authTagHash;
+    if (!grant || !tagMatches || account.refused.has(body.grantId)) {
       return json({ error: 'refused', code: 'agent_session_refused' }, 403);
     }
     return json({
@@ -261,7 +265,7 @@ export function fakeAccount(
       const method = init?.method ?? 'GET';
       account.calls.push(`${method} ${path}`);
       if (path === '/configs/agent-session' && method === 'POST') {
-        return Promise.resolve(openSession(init));
+        return (account.holdOpens ?? Promise.resolve()).then(() => openSession(init));
       }
       return Promise.resolve(storeRequest(path, init));
     }) as unknown as typeof fetch,

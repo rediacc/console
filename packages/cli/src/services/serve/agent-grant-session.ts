@@ -194,8 +194,14 @@ function principalOf(orgId: string, grantId: string, teamId: string | null): Ses
  */
 export class AgentGrantSessions {
   private readonly sessions = new Map<string, SessionRecord>();
-  /** Opens in flight, so concurrent first calls of one grant share one `agent-session` call. */
-  private readonly opening = new Map<string, Promise<SessionRecord>>();
+  /**
+   * Opens in flight, so concurrent first calls of one grant share one `agent-session` call. Each carries the
+   * hash of the auth tag it was started with: only a call whose secret derives the same tag joins it.
+   */
+  private readonly opening = new Map<
+    string,
+    { authTagHash: string; record: Promise<SessionRecord> }
+  >();
   private readonly accountUrl: string;
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
@@ -267,22 +273,47 @@ export class AgentGrantSessions {
     return held;
   }
 
-  /** The record of `grantId`, checked against `secret`'s tag, or a fresh open when none is held. */
+  /**
+   * The unexpired record held for `grantId` when `authTagHash` is its tag; undefined when none is held (an
+   * expired one is dropped first).
+   *
+   * @throws AgentSessionRefused when a record is held under another tag.
+   */
+  private heldFor(grantId: string, authTagHash: string): SessionRecord | undefined {
+    const held = this.sessions.get(grantId);
+    if (!held) return undefined;
+    if (this.now() >= held.expiresAtMs) {
+      this.drop(grantId);
+      return undefined;
+    }
+    if (held.authTagHash !== authTagHash) throw new AgentSessionRefused();
+    return held;
+  }
+
+  /**
+   * The record of `grantId`, checked against `secret`'s tag, or a fresh open when none is held.
+   *
+   * A call joins an open in flight only when its tag matches the one that open was started with. Any other
+   * call waits for that open to settle and is then judged against what it left: refused by the held
+   * record's tag when the open succeeded, or opening on its own when it failed. It never starts a second
+   * `agent-session` call beside the first, so a wrong secret can neither share the session nor, through the
+   * account's refusal, drop the session the right secret is opening.
+   */
   private async recordFor(
     grantId: string,
     secret: Uint8Array,
     authTagHash: string
   ): Promise<SessionRecord> {
-    const held = this.sessions.get(grantId);
-    if (held) {
-      if (this.now() >= held.expiresAtMs) this.drop(grantId);
-      else if (held.authTagHash === authTagHash) return held;
-      else throw new AgentSessionRefused();
+    for (;;) {
+      const held = this.heldFor(grantId, authTagHash);
+      if (held) return held;
+      const pending = this.opening.get(grantId);
+      if (!pending) break;
+      if (pending.authTagHash === authTagHash) return await pending.record;
+      await pending.record.catch(() => undefined);
     }
-    const pending = this.opening.get(grantId);
-    if (pending) return await pending;
     const opened = this.open(grantId, secret, authTagHash);
-    this.opening.set(grantId, opened);
+    this.opening.set(grantId, { authTagHash, record: opened });
     try {
       return await opened;
     } finally {
