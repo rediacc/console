@@ -48,14 +48,14 @@ export interface ProviderModelOptions {
   fetch?: FetchFunction;
 }
 
+/** The provider name the OpenAI-compatible SDK reports when a profile names no preset. */
+const OPENAI_COMPATIBLE_PROVIDER_NAME = 'openai-compatible';
+
 /**
  * Placeholder handed to the Anthropic SDK so it never reads `ANTHROPIC_API_KEY`
  * from the environment. The guarded fetch strips the header it lands in before
  * any request leaves.
  */
-/** The provider name the OpenAI-compatible SDK reports when a profile names no preset. */
-const OPENAI_COMPATIBLE_PROVIDER_NAME = 'openai-compatible';
-
 const SDK_KEY_PLACEHOLDER = 'rediacc-profile-auth';
 
 const AUTH_HEADER_NAMES = ['x-api-key', 'authorization'] as const;
