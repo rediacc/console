@@ -253,7 +253,7 @@ describe('fallback to Ask', () => {
     expect(tally.record('a', block)).toBeUndefined();
     expect(tally.get('a')).toEqual({ consecutive: 2, total: 4 });
     expect(tally.record('a', block)).toBe('consecutive');
-    expect(tally.get('a')).toEqual({ consecutive: 0, total: 5 });
+    expect(tally.get('a')).toEqual({ consecutive: 0, total: 0 });
   });
 
   it('flips on the twentieth block in total even when none ran three in a row', () => {
@@ -265,6 +265,17 @@ describe('fallback to Ask', () => {
     }
     expect(reasons.slice(0, -1).every((r) => r === undefined)).toBe(true);
     expect(reasons.at(-1)).toBe('total');
-    expect(tally.get('c').total).toBe(JUDGE_TOTAL_BLOCK_LIMIT);
+    expect(tally.get('c')).toEqual({ consecutive: 0, total: 0 });
+  });
+
+  it('lets a conversation re-enter Auto after the total fallback without the next block flipping it', () => {
+    const tally = createJudgeTally();
+    for (let n = 0; n < JUDGE_TOTAL_BLOCK_LIMIT - 1; n++) {
+      tally.record('d', block);
+      tally.record('d', allow);
+    }
+    expect(tally.record('d', block)).toBe('total');
+    expect(tally.record('d', block)).toBeUndefined();
+    expect(tally.get('d')).toEqual({ consecutive: 1, total: 1 });
   });
 });

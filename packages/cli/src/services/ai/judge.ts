@@ -2,12 +2,13 @@
  * The Auto-mode judge (D4 and D5 of agent/plans/PLAN-console-ai-assistant.md).
  *
  * In Auto mode a command decide() would let through but that is not read-only goes to a second
- * model call that answers allow or block. The judge never sees command output: its input is the
- * user and assistant text of the conversation and the proposed command (argv, target, severity,
- * decide() verdict), and the input type has no field that could carry output. `buildJudgeInput`
- * copies those fields one by one, so a tool result, a tool call or an extra property the caller
- * smuggled in never reaches the prompt. That is the defence against prompt injection through
- * output: what a command printed cannot argue for the next command.
+ * model call that answers allow or block. The judge is never handed command output: its input is
+ * the user and assistant text of the conversation and the proposed command (argv, target,
+ * severity, decide() verdict), and the input type has no field that could carry output.
+ * `buildJudgeInput` copies those fields one by one, so a tool result, a tool call or an extra
+ * property the caller smuggled in never reaches the prompt. That narrows prompt injection through
+ * output but does not close it: assistant text that quotes or summarises what a command printed
+ * is kept like any other assistant text, so the defence is partial.
  *
  * The answer is strict JSON, `{"verdict":"allow"|"block","reason":"..."}`; anything else, a
  * provider failure included, is a block. The model is the profile's `judgeModel`, else its `model`.
@@ -189,7 +190,7 @@ export type JudgeFallbackReason = 'consecutive' | 'total';
 export interface JudgeTally {
   /**
    * Count one verdict. Answers the reason when this verdict switches the conversation back to Ask;
-   * the consecutive count starts over then, so re-entering Auto is not undone by the next block.
+   * both counts start over then, so re-entering Auto is not undone by the next block.
    */
   record(conversationId: string, verdict: JudgeVerdict): JudgeFallbackReason | undefined;
   get(conversationId: string): JudgeTallyEntry;
@@ -213,7 +214,7 @@ function counted(
   if (verdict.verdict === 'allow') return { entry: { consecutive: 0, total: before.total } };
   const entry = { consecutive: before.consecutive + 1, total: before.total + 1 };
   const reason = fallbackReason(entry);
-  return reason ? { entry: { consecutive: 0, total: entry.total }, reason } : { entry };
+  return reason ? { entry: { consecutive: 0, total: 0 }, reason } : { entry };
 }
 
 export function createJudgeTally(): JudgeTally {
