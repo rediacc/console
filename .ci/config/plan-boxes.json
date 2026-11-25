@@ -2612,8 +2612,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 1,
+      "open": 7,
+      "done": 2,
       "open_sigs": [
         "0ee4a6dc",
         "24a60f6f",
@@ -2621,11 +2621,11 @@
         "5c371f4d",
         "6d85b2e3",
         "bf5a7979",
-        "c9ea2164",
-        "ff094cd7"
+        "c9ea2164"
       ],
       "done_sigs": [
-        "7c93b255"
+        "7c93b255",
+        "ff094cd7"
       ]
     },
     "agent/plans/PLAN-nightly-green.md": {
