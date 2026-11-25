@@ -992,7 +992,7 @@
         "handoffUndecryptable": "服务器中继返回了此设备无法打开的交接数据（{{error}}）：它所用的密钥并非本次运行生成的密钥。请重新运行命令，并只打开它输出的链接。",
         "storeCopyGone": "存储 {{storeId}} 中已不存在配置 \"{{name}}\" 所链接的远程配置 {{configId}}。未做任何更改；本地文件是此设备最后看到的副本。要解除链接并将该副本保留为本地配置，请运行：{{cmd}}",
         "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
-        "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"rdc config remote refresh\" 以生成缓存。",
+        "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"{{cmd}}\" 以生成缓存。",
         "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：{{cmd}}",
         "refresh": {
           "descriptionShort": "强制从远程存储重新获取配置",
@@ -1030,12 +1030,12 @@
         "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"{{cmd}}\" 以选择本组织的团队。",
         "tokenRefresh": {
           "noLogin": "此设备没有保存 {{apiUrl}} 的登录信息，因此无法自动续期配置令牌。请运行 \"{{loginCmd}}\" 后重试，或重新运行 \"{{cmd}}\"。",
-          "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"rdc subscription login\" 后重试。",
-          "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"rdc subscription login\"，然后重试。",
-          "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"rdc config remote enable\"，为此设备获取新的配置令牌。",
-          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"rdc subscription login\"），然后重试。",
-          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"rdc subscription login\"），然后重试。",
-          "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：rdc config remote enable",
+          "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"{{cmd}}\" 后重试。",
+          "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"{{cmd}}\"，然后重试。",
+          "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"{{cmd}}\"，为此设备获取新的配置令牌。",
+          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"{{cmd}}\"），然后重试。",
+          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"{{cmd}}\"），然后重试。",
+          "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：{{cmd}}",
           "rateLimited": "账户服务器正在限制配置令牌续期（{{error}}）。请等待一分钟后重新运行命令。",
           "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。此设备上未做任何更改；请重新运行该命令。"
         },
@@ -1058,8 +1058,8 @@
           "success": "已将配置 \"{{config}}\" 的版本 {{restored}} 恢复为版本 {{version}}。"
         },
         "localEditsPushed": "配置“{{config}}”：本地文件包含服务器版本 {{from}} 之后的修改，已作为版本 {{to}} 推送：{{changes}}",
-        "localEditsConflict": "配置“{{config}}”：本地文件包含服务器版本 {{cached}} 之后的修改（{{changes}}），而服务器已更新到版本 {{server}}。未覆盖任何内容。请先另存这些修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。",
-        "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
+        "localEditsConflict": "配置“{{config}}”：本地文件包含服务器版本 {{cached}} 之后的修改（{{changes}}），而服务器已更新到版本 {{server}}。未覆盖任何内容。请先另存这些修改，运行“{{cmd}}”获取版本 {{server}}（会替换本地文件），再重新应用修改。",
+        "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“{{cmd}}”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
       },
       "rotateCek": {
         "descriptionShort": "轮换组织的配置加密密钥",

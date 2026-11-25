@@ -992,7 +992,7 @@
         "handoffUndecryptable": "Sunucu aktarıcısı bu cihazın açamadığı bir aktarım döndürdü ({{error}}): bu çalıştırmanın ürettiğinden farklı bir anahtarla mühürlenmiş. Komutu yeniden çalıştırın ve yalnızca komutun yazdırdığı bağlantıyı açın.",
         "storeCopyGone": "{{storeId}} deposu, \"{{name}}\" yapılandırmasının bağlı olduğu {{configId}} uzak yapılandırmasını artık barındırmıyor. Hiçbir şey değiştirilmedi; yerel dosya bu cihazın gördüğü son kopyadır. Bağlantıyı kaldırıp bu kopyayı yerel yapılandırma olarak tutmak için şunu çalıştırın: {{cmd}}",
         "offlineCacheWarning": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor; \"{{config}}\" yapılandırması çevrimdışı önbellekten sunuluyor (sunucu sürümü {{version}}, {{age}} önce önbelleklendi). Sunucuya ulaşılabilir olana kadar değişiklikler kaydedilemez.",
-        "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"rdc config remote refresh\" komutunu çalıştırın.",
+        "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"{{cmd}}\" komutunu çalıştırın.",
         "passkeySecretMissing": "Bu cihaz, yapılandırma depolaması için anahtarını artık tutmuyor (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşalır). Bu cihazı şununla yeniden kaydedin: {{cmd}}",
         "refresh": {
           "descriptionShort": "Yapılandırmayı uzak depolamadan zorla yeniden getirir",
@@ -1030,12 +1030,12 @@
         "teamNotFound": "\"{{config}}\" yapılandırmasının gösterdiği {{team}} takımı bu kuruluşa ait değil. Kuruluşun bir takımını seçmek için \"{{cmd}}\" komutunu yeniden çalıştırın.",
         "tokenRefresh": {
           "noLogin": "Bu cihazda {{apiUrl}} için kayıtlı bir oturum yok, bu yüzden yapılandırma belirteci otomatik olarak yenilenemedi. \"{{loginCmd}}\" komutunu çalıştırıp tekrar deneyin ya da \"{{cmd}}\" komutunu yeniden çalıştırın.",
-          "loginInvalid": "Hesap sunucusu, yapılandırma belirteci yenilenirken bu cihazın oturumunu reddetti. \"rdc subscription login\" komutunu çalıştırıp tekrar deneyin.",
-          "loginScope": "Bu cihazın oturumu yapılandırma belirteçlerini yenileyemiyor: bu özellikten önce açılmış ya da ekibi artık yok. \"rdc subscription login\" komutunu yeniden çalıştırın, ardından tekrar deneyin.",
-          "loginIpMismatch": "Bu cihazın oturumu başka bir ağ adresine bağlı olduğu için yapılandırma belirteci yenilenemedi. {{error}} Ya da bu cihaz için yeni bir yapılandırma belirteci almak üzere \"rdc config remote enable\" komutunu yeniden çalıştırın.",
-          "notStoreMember": "Bu cihazdaki oturumun hesabı {{storeId}} yapılandırma deposunun üyesi değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmayı etkinleştiren hesapla oturum açın (\"rdc subscription login\") ve yeniden deneyin.",
-          "storeMismatch": "{{storeId}} yapılandırma deposu bu cihazdaki oturumun kuruluşuna ait değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmanın sahibi olan kuruluşta oturum açın (\"rdc subscription login\") ve yeniden deneyin.",
-          "staleGeneration": "Yapılandırma şifreleme anahtarı döndürüldü ve bu hesabın hiçbir anahtar yuvası yenisini açamıyor, bu yüzden yapılandırma belirteci yenilenmedi. Cihazı yeniden kaydedin: rdc config remote enable",
+          "loginInvalid": "Hesap sunucusu, yapılandırma belirteci yenilenirken bu cihazın oturumunu reddetti. \"{{cmd}}\" komutunu çalıştırıp tekrar deneyin.",
+          "loginScope": "Bu cihazın oturumu yapılandırma belirteçlerini yenileyemiyor: bu özellikten önce açılmış ya da ekibi artık yok. \"{{cmd}}\" komutunu yeniden çalıştırın, ardından tekrar deneyin.",
+          "loginIpMismatch": "Bu cihazın oturumu başka bir ağ adresine bağlı olduğu için yapılandırma belirteci yenilenemedi. {{error}} Ya da bu cihaz için yeni bir yapılandırma belirteci almak üzere \"{{cmd}}\" komutunu yeniden çalıştırın.",
+          "notStoreMember": "Bu cihazdaki oturumun hesabı {{storeId}} yapılandırma deposunun üyesi değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmayı etkinleştiren hesapla oturum açın (\"{{cmd}}\") ve yeniden deneyin.",
+          "storeMismatch": "{{storeId}} yapılandırma deposu bu cihazdaki oturumun kuruluşuna ait değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmanın sahibi olan kuruluşta oturum açın (\"{{cmd}}\") ve yeniden deneyin.",
+          "staleGeneration": "Yapılandırma şifreleme anahtarı döndürüldü ve bu hesabın hiçbir anahtar yuvası yenisini açamıyor, bu yüzden yapılandırma belirteci yenilenmedi. Cihazı yeniden kaydedin: {{cmd}}",
           "rateLimited": "Hesap sunucusu yapılandırma belirteci yenilemelerini sınırlıyor ({{error}}). Bir dakika bekleyip komutu yeniden çalıştırın.",
           "refused": "Hesap sunucusu bu cihazın yapılandırma belirtecini yenilemedi ({{error}}). Bu cihazda hiçbir şey değiştirilmedi; komutu yeniden çalıştırın."
         },
@@ -1058,8 +1058,8 @@
           "success": "\"{{config}}\" yapılandırmasının {{restored}} sürümü, {{version}} sürümü olarak geri yüklendi."
         },
         "localEditsPushed": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{from}} sonrasında yapılmış düzenlemeler vardı; bunlar {{to}} sürümü olarak gönderildi: {{changes}}",
-        "localEditsConflict": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{cached}} sonrasında yapılmış düzenlemeler var ({{changes}}) ve sunucu {{server}} sürümüne geçti. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından düzenlemeleri yeniden uygulayın.",
-        "localEditsUnverifiable": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{server}} ile farklı ({{changes}}) ve önbelleğin alındığı {{cached}} sürümü okunamadı ({{reason}}); bu yüzden yerel bir düzenleme sunucu değişikliğinden ayırt edilemiyor. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından yeniden uygulayın."
+        "localEditsConflict": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{cached}} sonrasında yapılmış düzenlemeler var ({{changes}}) ve sunucu {{server}} sürümüne geçti. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"{{cmd}}\" çalıştırın (yerel dosyayı değiştirir) ve ardından düzenlemeleri yeniden uygulayın.",
+        "localEditsUnverifiable": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{server}} ile farklı ({{changes}}) ve önbelleğin alındığı {{cached}} sürümü okunamadı ({{reason}}); bu yüzden yerel bir düzenleme sunucu değişikliğinden ayırt edilemiyor. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"{{cmd}}\" çalıştırın (yerel dosyayı değiştirir) ve ardından yeniden uygulayın."
       },
       "rotateCek": {
         "descriptionShort": "Kuruluşun yapılandırma şifreleme anahtarını döndürür",

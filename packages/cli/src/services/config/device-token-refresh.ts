@@ -20,6 +20,7 @@ import { t } from '../../i18n/index.js';
 import type { RemoteConfig } from '../../types/index.js';
 import { type AccountFetchError, accountServerFetch } from '../account/account-client.js';
 import { getSubscriptionTokenState, normalizeServerUrl } from '../account/subscription-auth.js';
+import { getEffectiveConfigName, rdcCommand } from './config-name.js';
 
 export const DEVICE_TOKEN_REFRESH_PATH = '/account/api/v1/configs/device-token/refresh';
 
@@ -71,7 +72,8 @@ export interface RefreshTransport {
 export async function refreshDeviceToken(
   remote: RemoteConfig,
   loginToken: string,
-  transport: RefreshTransport = {}
+  transport: RefreshTransport = {},
+  configName: string = getEffectiveConfigName()
 ): Promise<string> {
   let response: { deviceToken?: unknown };
   try {
@@ -83,7 +85,7 @@ export async function refreshDeviceToken(
       ...transport,
     });
   } catch (error) {
-    throw refusalFor(error, remote);
+    throw refusalFor(error, remote, configName);
   }
   if (typeof response.deviceToken !== 'string' || response.deviceToken.length === 0) {
     throw new RemoteTokenRefreshError(
@@ -97,15 +99,18 @@ export async function refreshDeviceToken(
 }
 
 /** The error to raise for a failed refresh call; see refreshDeviceToken. */
-function refusalFor(error: unknown, remote: RemoteConfig): unknown {
+function refusalFor(error: unknown, remote: RemoteConfig, configName: string): unknown {
   const e = error as Partial<AccountFetchError> | null;
   if (typeof e?.status !== 'number') return error;
   const serverMessage = e.message ?? `HTTP ${e.status}`;
   const refused = (code: string, message: string) =>
     new RemoteTokenRefreshError(code, message, { cause: error });
+  // The commands the hints name are aimed at this config, never at the default one.
+  const loginCmd = rdcCommand('subscription login', configName);
+  const enrollCmd = rdcCommand('config remote enable', configName);
 
   if (e.status === 401) {
-    return refused('login_invalid', t('commands.config.remote.tokenRefresh.loginInvalid'));
+    return refused('login_invalid', t('commands.config.remote.tokenRefresh.loginInvalid', { cmd: loginCmd }));
   }
   if (e.status === 429) {
     return refused(
@@ -125,28 +130,37 @@ function refusalFor(error: unknown, remote: RemoteConfig): unknown {
       // The rebind already ran (or could not, off a terminal) and its message names how to move the login; the other remedy is a new enrollment.
       return refused(
         'login_ip_mismatch',
-        t('commands.config.remote.tokenRefresh.loginIpMismatch', { error: serverMessage })
+        t('commands.config.remote.tokenRefresh.loginIpMismatch', {
+          error: serverMessage,
+          cmd: enrollCmd,
+        })
       );
     case 'team_forbidden':
       return error;
     case 'not_store_member':
       return refused(
         'not_store_member',
-        t('commands.config.remote.tokenRefresh.notStoreMember', { storeId: remote.storeId })
+        t('commands.config.remote.tokenRefresh.notStoreMember', {
+          storeId: remote.storeId,
+          cmd: loginCmd,
+        })
       );
     case 'store_mismatch':
       return refused(
         'store_mismatch',
-        t('commands.config.remote.tokenRefresh.storeMismatch', { storeId: remote.storeId })
+        t('commands.config.remote.tokenRefresh.storeMismatch', {
+          storeId: remote.storeId,
+          cmd: loginCmd,
+        })
       );
     case 'stale_cek_generation':
       return refused(
         'stale_cek_generation',
-        t('commands.config.remote.tokenRefresh.staleGeneration')
+        t('commands.config.remote.tokenRefresh.staleGeneration', { cmd: enrollCmd })
       );
     case undefined:
       // A bare 403 from the api-token middleware: the login lacks `config:enroll` (a login made before the refresh route existed), or its team is gone.
-      return refused('login_scope', t('commands.config.remote.tokenRefresh.loginScope'));
+      return refused('login_scope', t('commands.config.remote.tokenRefresh.loginScope', { cmd: loginCmd }));
     default:
       return refused(
         e.code,

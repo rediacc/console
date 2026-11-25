@@ -88,6 +88,22 @@ describe('device token refresh (T11)', () => {
     expect((error as Error).message).toContain(remedy);
   });
 
+  it.each([
+    [401, undefined, 'rdc --config eu-remote subscription login'],
+    [403, undefined, 'rdc --config eu-remote subscription login'],
+    [403, 'TOKEN_IP_MISMATCH', 'rdc --config eu-remote config remote enable'],
+    [403, 'not_store_member', 'rdc --config eu-remote subscription login'],
+    [403, 'store_mismatch', 'rdc --config eu-remote subscription login'],
+    [403, 'stale_cek_generation', 'rdc --config eu-remote config remote enable'],
+  ])('aims the remedy of %i %s at the config it is about', async (status, code, command) => {
+    mockAccountServerFetch.mockRejectedValueOnce(refusal(status, code));
+    const error = await refreshDeviceToken(REMOTE, 'rdt_login', {}, 'eu-remote').catch(
+      (e: unknown) => e
+    );
+    expect((error as Error).message).toContain(command);
+    expect((error as Error).message).not.toMatch(/rdc (subscription|config remote)/);
+  });
+
   it('keeps the rebind message of a login token bound elsewhere and adds the enable remedy', async () => {
     const rebindMessage =
       'Your IP address changed ... run `rdc subscription login` to sign in again.';

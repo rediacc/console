@@ -116,10 +116,13 @@ describe('RemoteConfigAdapter token renewal (T11)', () => {
       await expect(adapter.listVersions()).resolves.toEqual([]);
       expect(mockLoginTokenFor).toHaveBeenCalledWith('https://account.example.com');
       expect(mockRefresh).toHaveBeenCalledTimes(1);
-      expect(mockRefresh).toHaveBeenCalledWith(REMOTE, 'rdt_login', {
-        fetchImpl: undefined,
-        serverKey: undefined,
-      });
+      // The renewal learns which config it serves, so its hints name that config.
+      expect(mockRefresh).toHaveBeenCalledWith(
+        REMOTE,
+        'rdt_login',
+        { fetchImpl: undefined, serverKey: undefined },
+        'cfg'
+      );
       expect(sentTokens()).toEqual(['rct_dead', 'rct_fresh']);
       expect(storage.saved).toEqual(['rct_fresh', 'rct_rotated']);
     }

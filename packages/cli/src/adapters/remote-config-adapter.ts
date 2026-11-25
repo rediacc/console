@@ -668,10 +668,12 @@ export class RemoteConfigAdapter {
     }
     let token: string;
     try {
-      token = await refreshDeviceToken(this.remote, loginToken, {
-        fetchImpl: this.transport?.fetchImpl,
-        serverKey: this.transport?.serverKey,
-      });
+      token = await refreshDeviceToken(
+        this.remote,
+        loginToken,
+        { fetchImpl: this.transport?.fetchImpl, serverKey: this.transport?.serverKey },
+        this.configName
+      );
     } catch (error) {
       throw renewalFailure(this.configName, this.remote.teamId, error, refusal);
     }

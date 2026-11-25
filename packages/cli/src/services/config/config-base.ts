@@ -9,7 +9,7 @@ import {
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
 } from '../core/context-language.js';
-import { getEffectiveConfigName, setConfigNameOverride } from './config-name.js';
+import { getEffectiveConfigName, rdcCommand, setConfigNameOverride } from './config-name.js';
 import type { ResourceState } from './resource-state.js';
 
 /**
@@ -211,6 +211,7 @@ export class ConfigServiceBase {
           t('commands.config.remote.offlineNoCache', {
             server: error.apiUrl,
             config: configName,
+            cmd: rdcCommand('config remote refresh', configName),
           }),
           { cause: error }
         );

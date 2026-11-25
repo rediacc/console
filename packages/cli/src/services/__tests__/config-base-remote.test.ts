@@ -278,6 +278,19 @@ describe('ConfigServiceBase remote integration', () => {
       await expect(service.getCurrent()).rejects.toThrow(/config remote refresh/);
     });
 
+    it('aims the refresh hint at the active config, not the default one', async () => {
+      const bare = { ...localConfigWithRemote };
+      mockConfigFileStorage.exists.mockResolvedValue(true);
+      mockConfigFileStorage.load.mockResolvedValue(bare);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(bare);
+      mockAdapterInstance.pull.mockRejectedValue(await unreachable());
+      service.setRuntimeConfig('eu-remote');
+
+      await expect(service.getCurrent()).rejects.toThrow(
+        'Run "rdc --config eu-remote config remote refresh"'
+      );
+    });
+
     it('rethrows auth errors without falling back to the cache', async () => {
       mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(cachedOnDisk);
       mockConfigFileStorage.loadDecrypted.mockResolvedValue(cachedOnDisk);
