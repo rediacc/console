@@ -103,7 +103,7 @@ _rdc_posspec() {
 }
 
 _rdc_compute() {
-  local cur="$1" _rdc_p=rdc npos=0 cfg='' pending='' w _rdc_r=''
+  local cur="$1" npos=0 cfg='' pending='' w _rdc_r='' _rdc_p=rdc
   shift
   _rdc_out=''
   for w in "$@"; do

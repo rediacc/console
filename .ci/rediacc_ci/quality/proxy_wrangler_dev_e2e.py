@@ -30,7 +30,7 @@ and then four requests through the Worker, in this order:
      container is started;
   3. THE CALLER's bearer, which `route()` answers with the caller's org: 200 with
      `mode: "container"` and a `cliVersion` equal to `node cli-bundle.cjs --version` of the bundle
-     staged into the image; then GET /v1/jobs/<id>/events with the same bearer answers 400 (the
+     staged into the image; then GET /v1/jobs/<id>/poll with the same bearer answers 400 (the
      executor authenticated it, then refused the missing `machine` query), which makes the executor
      introspect the caller through the Worker's egress; the stub issuer was asked to `issue()` for that org (the token is keyed by
      org) and the executor's own introspection reached the fake account carrying it, and a
@@ -85,8 +85,17 @@ WORKER_DIR = ("workers", "proxy")
 DEV_CONFIG = "wrangler.dev.toml"
 DEPLOY_CONFIG = "wrangler.eu.toml"
 WRANGLER_BIN = ("node_modules", ".bin", "wrangler")
-# workerd names a dev container `workerd-<worker name>-<class name>-<id>`, and its egress sidecar the same plus `-proxy`. The worker name is wrangler.dev.toml's, which is what scopes this prefix to this gate.
-CONTAINER_PREFIX = "workerd-rediacc-proxy-dev-"
+# workerd names a dev container `workerd-<worker name>-<class name>-<id>`, and its egress sidecar the same plus `-proxy`; wrangler 4.167 inserts a hex instance id after `workerd-` (measured 2026-11-25: `workerd-bcd06b0321f117e4-rediacc-proxy-dev-OrgExecutor-<id>`). The worker name is wrangler.dev.toml's, which is what scopes the match to this gate; both spellings match, so a wrangler bump either way neither hides the container nor leaves one behind at teardown.
+DEV_WORKER_NAME = "rediacc-proxy-dev"
+CONTAINER_PREFIX = "workerd-[<instance>-]%s-" % DEV_WORKER_NAME
+_DEV_CONTAINER = re.compile(r"^workerd-(?:[0-9a-f]+-)?%s-" % re.escape(DEV_WORKER_NAME))
+
+
+def is_dev_container(name: str) -> bool:
+    """Whether docker container `name` is one workerd started for this gate's dev Worker, with or without the instance id."""
+    return _DEV_CONTAINER.match(name) is not None
+
+
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 PROBE_PATH = "/v1/server-info"
 SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
@@ -94,7 +103,8 @@ SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
 CALLER_ORG = "org-wrangler-dev-e2e"
 READY_PATH = "/v1/ready"
 # An authenticated executor route that needs no job and no machine: the executor verifies the bearer first, then answers 400 for the missing `machine` query, so a 400 (never a 401) proves the caller was authenticated through the Worker's egress.
-AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/events"
+# The poll route of a proxied machine job; the held `/events` route it replaced was removed with the detached-jobs work (PLAN-detached-jobs J2), and an unknown route answers a bare 404.
+AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/poll"
 AUTH_OK_STATUS = 400
 # The stub issuer Worker this gate writes per run, and the one binding wrangler.dev.toml may declare: ISSUER on its ExecutorIssuer entrypoint, as the deployed configs bind the account Worker's.
 STUB_ISSUER_NAME = "rediacc-executor-issuer-dev"
@@ -172,7 +182,7 @@ def dev_config_findings(dev: dict, deploy: dict) -> list[str]:
             "%s reuses the deployed name %r; give it its own, so its containers and images are "
             "never confused with the deployed Worker's" % (DEV_CONFIG, deploy.get("name"))
         )
-    elif not CONTAINER_PREFIX.startswith("workerd-%s-" % dev.get("name")):
+    elif dev.get("name") != DEV_WORKER_NAME:
         out.append(
             "%s is named %r but the gate cleans up containers named %s*; change one to match the other"
             % (DEV_CONFIG, dev.get("name"), CONTAINER_PREFIX)
@@ -355,7 +365,7 @@ HEALTHY: dict = {
     "caller_auth_status": 400,
     "caller_introspected": True,
     "caller_issued_for_org": True,
-    "caller_containers": [CONTAINER_PREFIX + "OrgExecutor-abc"],
+    "caller_containers": ["workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME],
     "left_behind": [],
 }
 
@@ -770,6 +780,17 @@ def selftest() -> bool:
         dev_image_tags(log) == {"cloudflare-dev/orgexecutor:1008f582"},
     )
     check(
+        "a dev container is recognised with or without the instance id",
+        is_dev_container("workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME)
+        and is_dev_container("workerd-bcd06b0321f117e4-%s-OrgExecutor-abc-proxy" % DEV_WORKER_NAME),
+    )
+    check(
+        "CONTROL: a deployed or unrelated workerd container is not a dev container",
+        not is_dev_container("workerd-rediacc-proxy-OrgExecutor-abc")
+        and not is_dev_container("workerd-bcd06b0321f117e4-other-worker-OrgExecutor-abc")
+        and not is_dev_container("x-workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME),
+    )
+    check(
         "a log naming no dev image yields no tag",
         dev_image_tags("naming to docker.io/library/node:24") == set(),
     )
@@ -948,8 +969,8 @@ def _docker(*args: str, timeout: int = 120) -> subprocess.CompletedProcess:
 
 
 def prefixed_containers() -> set[str]:
-    r = _docker("ps", "-a", "--filter", "name=" + CONTAINER_PREFIX, "--format", "{{.Names}}")
-    return {n for n in r.stdout.split() if n.startswith(CONTAINER_PREFIX)}
+    r = _docker("ps", "-a", "--filter", "name=%s-" % DEV_WORKER_NAME, "--format", "{{.Names}}")
+    return {n for n in r.stdout.split() if is_dev_container(n)}
 
 
 def _free_port() -> int:

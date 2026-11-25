@@ -65,10 +65,10 @@ describe('src/index.ts wiring', () => {
         },
       },
     };
-    const viaWorker = async (input: string | URL | Request, init?: RequestInit) => {
+    const viaWorker = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
       const request = new Request(input, init);
       request.headers.set('authorization', `Bearer ${bearerFor(GRANT_ID)}`);
-      return worker.fetch(request, env as never, {} as ExecutionContext);
+      return Promise.resolve(worker.fetch(request, env as never, {} as ExecutionContext));
     };
     const client = new Client(
       { name: 'rw-wiring', version: '0.0.0' },

@@ -696,7 +696,7 @@ TOOLS: tuple[Tool, ...] = (
     Tool(
         name="keyctl",
         purpose=(
-            "rdc keeps its device secrets in the kernel user keyring on Linux; without keyctl the "
+            "On Linux the rdc CLI keeps its device secrets in the kernel user keyring; without keyctl the "
             "first rdc command after setup fails with 'keyctl is not installed'"
         ),
         pin_key=None,
