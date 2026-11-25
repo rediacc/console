@@ -3574,6 +3574,8 @@
       "datastore": "数据存储管理",
       "doctor": "系统诊断",
       "job": "分离任务",
+      "incident": "事件",
+      "forensics": "取证证据",
       "machine": "机器管理",
       "mcp": "MCP 服务器",
       "ops": "本地 VM 操作",

@@ -3574,6 +3574,8 @@
       "datastore": "Gestion du stockage de données",
       "doctor": "Diagnostics système",
       "job": "Jobs détachés",
+      "incident": "Gestion des incidents",
+      "forensics": "Preuves forensiques",
       "machine": "Gestion des Machines",
       "mcp": "Serveur MCP",
       "ops": "Opérations VM Locales",
@@ -4042,7 +4044,7 @@
   },
   "incident": {
     "none": "Aucun incident.",
-    "detailHead": "Incident {{id}} ({{status}})",
+    "detailHead": "Incident n° {{id}} ({{status}})",
     "detailScope": "Périmètre : {{kind}} {{ref}}",
     "detailWindow": "Fenêtre : du {{from}} au {{to}}",
     "detailDeclared": "Déclaré par {{by}} le {{at}}, connu depuis le {{aware}}",

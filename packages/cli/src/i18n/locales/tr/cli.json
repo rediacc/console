@@ -3574,6 +3574,8 @@
       "datastore": "Veri deposu yönetimi",
       "doctor": "Sistem Tanılama",
       "job": "Ayrık işler",
+      "incident": "Olaylar",
+      "forensics": "Adli kanıtlar",
       "machine": "Makine Yönetimi",
       "mcp": "MCP Sunucusu",
       "ops": "Yerel VM İşlemleri",

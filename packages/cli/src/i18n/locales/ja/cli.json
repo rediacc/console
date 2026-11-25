@@ -3574,6 +3574,8 @@
       "datastore": "データストア管理",
       "doctor": "システム診断",
       "job": "デタッチジョブ",
+      "incident": "インシデント",
+      "forensics": "フォレンジック証拠",
       "machine": "マシン管理",
       "mcp": "MCPサーバー",
       "ops": "ローカル VM 操作",

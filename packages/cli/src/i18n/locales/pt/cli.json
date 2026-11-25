@@ -3574,6 +3574,8 @@
       "datastore": "Gestão do Datastore",
       "doctor": "Diagnóstico do Sistema",
       "job": "Jobs desanexados",
+      "incident": "Incidentes",
+      "forensics": "Evidências forenses",
       "machine": "Gestão de Máquinas",
       "mcp": "Servidor MCP",
       "ops": "Operações de VM Locais",

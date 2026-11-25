@@ -3574,6 +3574,8 @@
       "datastore": "데이터스토어 관리",
       "doctor": "시스템 진단",
       "job": "분리된 작업",
+      "incident": "사고",
+      "forensics": "포렌식 증거",
       "machine": "머신 관리",
       "mcp": "MCP 서버",
       "ops": "로컬 VM 작업",

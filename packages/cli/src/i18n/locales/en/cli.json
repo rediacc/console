@@ -4143,6 +4143,8 @@
       "backup": "Backup & Restore",
       "server": "Server Installation",
       "job": "Detached Jobs",
+      "incident": "Incidents",
+      "forensics": "Forensic Evidence",
       "serve": "Executor Service",
       "completion": "Shell Completion",
       "tools": "Local Tools",

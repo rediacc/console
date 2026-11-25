@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3262,
+    "keyCount": 3264,
     "sourceCommit": "8dffd543ed3a94aac34ec2832afe8f1208053fbb"
   },
   "hashes": {
@@ -2765,6 +2765,8 @@
     "docs.sectionTitles.datastore": "15b635b7",
     "docs.sectionTitles.doctor": "5d24fa7d",
     "docs.sectionTitles.feedback": "2b5f260e",
+    "docs.sectionTitles.forensics": "86deb92d",
+    "docs.sectionTitles.incident": "64a0b773",
     "docs.sectionTitles.job": "7640f21a",
     "docs.sectionTitles.legal": "dbbf11fd",
     "docs.sectionTitles.machine": "002a903b",

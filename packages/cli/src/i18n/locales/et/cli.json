@@ -3574,6 +3574,8 @@
       "datastore": "Andmehoidla haldus",
       "doctor": "Süsteemi diagnostika",
       "job": "Eraldatud tööd",
+      "incident": "Intsidendid",
+      "forensics": "Kohtuekspertiisi tõendid",
       "machine": "Masina haldus",
       "mcp": "MCP-server",
       "ops": "Kohalikud VM-toimingud",
