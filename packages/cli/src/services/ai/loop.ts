@@ -44,7 +44,7 @@ export const STEP_LIMIT_REASON = 'step-limit';
 export const AI_PROVIDER_ERROR = 'AI_PROVIDER_ERROR';
 
 const SYSTEM_PROMPT = [
-  'You operate infrastructure for the user through the tools offered, which run rdc commands.',
+  'You operate infrastructure for the user through the tools offered, which run CLI commands.',
   'Call a tool only when the request needs it, and keep answers short.',
   TOOL_OUTPUT_RULE,
 ].join(' ');
