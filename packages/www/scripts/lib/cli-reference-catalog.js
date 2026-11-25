@@ -12,6 +12,8 @@ const LOCAL_GROUPS = [
   'mcp',
   'repo',
   'job',
+  'incident',
+  'forensics',
   'backup',
   'vscode',
   'term',
