@@ -87,6 +87,8 @@ export interface AiToolContext {
   agentGrant?: AgentGrantOverrides;
   /** Dispatches an authorized command; the loop host passes `dispatchCommand` with its executor. */
   run: (run: AiToolRun) => Promise<DispatchOutcome>;
+  /** The enforcement point of `decide`; the executor's own (`ServeDeps.authorize`) when a route passes it, else `authorize`. */
+  authorize?: typeof authorize;
   /** Receives every renet event a call streams, with the call's id. */
   onEvent?: (toolCallId: string, event: RenetEvent) => void;
 }
@@ -262,7 +264,7 @@ async function decideCall(
     ctx.config
   );
   try {
-    authorize({
+    (ctx.authorize ?? authorize)({
       principal: ctx.principal,
       commandPath: entry.pathKey,
       config: ctx.config,

@@ -1,5 +1,6 @@
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { pageOf, RESULT_PAGE_CHARS } from '../../services/serve/result-page.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { type ExecutionResult, executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
@@ -12,11 +13,7 @@ import {
 
 export type { ToolDef } from './tool-factory.js';
 
-/**
- * The largest text one tool result carries (Design 6). It stays under the 150,000-character cap claude.ai puts
- * on a tool result; a longer result is cut into pages of this size.
- */
-export const RESULT_PAGE_CHARS = 100_000;
+export { RESULT_PAGE_CHARS };
 
 /** The tools whose long output an agent reads in full, page by page; each takes a `page` argument. */
 const PAGEABLE_TOOLS = new Set(['job_logs', 'repo_logs', 'config_audit_log']);
@@ -75,38 +72,6 @@ async function runPolled(
     }
     await sleep(poll.intervalMs);
   }
-}
-
-/**
- * Cut a result's text to one page. A text within one page passes through untouched; a longer one returns the
- * requested page plus a second block naming the page count and the next page's cursor. A tool without a `page`
- * argument returns its first page marked `truncated`, with no cursor to follow.
- */
-function pageOf(text: string, page: number, pageable: boolean, isError: boolean): CallToolResult {
-  if (text.length <= RESULT_PAGE_CHARS && page === 1) {
-    return { content: [{ type: 'text', text }], isError };
-  }
-  const pages = Math.max(1, Math.ceil(text.length / RESULT_PAGE_CHARS));
-  if (page > pages) {
-    const refusal = {
-      success: false,
-      errors: [
-        { code: 'INVALID_REQUEST', message: `page ${page} is past the last page (${pages})` },
-      ],
-    };
-    return { content: [{ type: 'text', text: JSON.stringify(refusal, null, 2) }], isError: true };
-  }
-  const slice = text.slice((page - 1) * RESULT_PAGE_CHARS, page * RESULT_PAGE_CHARS);
-  const paging = pageable
-    ? { page, pages, totalChars: text.length, cursor: page < pages ? page + 1 : null }
-    : { page: 1, pages, totalChars: text.length, truncated: true, cursor: null };
-  return {
-    content: [
-      { type: 'text', text: slice },
-      { type: 'text', text: JSON.stringify({ paging }) },
-    ],
-    isError,
-  };
 }
 
 /**

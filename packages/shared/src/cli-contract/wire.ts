@@ -415,4 +415,6 @@ export const PROXY_ROUTES = {
   aiTest: '/v1/ai/test',
   /** How many dispatches the executor is running, `{ busy: n }`. Asked only by the proxy's OrgExecutor alarm from inside; the forward refuses it from outside. */
   busy: '/v1/busy',
+  /** One hosted MCP `tools/call` under an agent grant, `{grantId, secret, tool, args, requestId, attachMs}`. Posted only by the proxy's OrgExecutor `mcpCall` from inside; the forward refuses it from outside. */
+  mcpCall: '/v1/mcp/call',
 } as const;

@@ -3,7 +3,7 @@
  *
  * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `OrgExecutor` routes here (`interceptOutboundHttp`, to the `AccountEgress` entrypoint). This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
  *
- *   - the executor-bearer calls (introspect, audit events, the two executor-token calls and the run index events) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
+ *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open and the run index events) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the three unauthenticated calls leave with no Authorization at all;
  *   - the config write-back pair, `POST configs/session` and `PUT configs/<id>`, travel like the config pull (an `X-Config-Token`, no Authorization); a push body past `MAX_CONFIG_PUSH_BODY_BYTES` is answered 413 `body-too-large` and nothing is forwarded;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
@@ -34,6 +34,7 @@ const BEARER_ROUTES: ReadonlySet<string> = new Set([
   `POST ${API}/licenses/audit-events`,
   `POST ${API}/configs/executor-token`,
   `POST ${API}/configs/executor-grant`,
+  `POST ${API}/configs/agent-session`,
   `POST ${API}/console/runs/events`,
 ]);
 

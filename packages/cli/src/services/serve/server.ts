@@ -52,6 +52,7 @@ import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { registerJobRoutes } from './job-routes.js';
+import { registerMcpCallRoute } from './mcp-call-route.js';
 import {
   clusterSubjectOf,
   isReadOnlyCommand,
@@ -492,6 +493,9 @@ export function createServeApp(deps: ServeDeps): Hono {
       return trimmed === '' ? undefined : trimmed;
     },
   });
+
+  // The hosted MCP call route, container tier only (it carries no bearer: only the proxy's `mcpCall` reaches it).
+  registerMcpCallRoute(app, deps, { busy });
 
   return app;
 }

@@ -45,6 +45,11 @@ export interface SessionPrincipal {
   orgRole: 'owner' | 'admin' | 'member';
   /** The token id the command was submitted under, for audit attribution. */
   tokenId?: string;
+  /**
+   * Set only on the principal an agent grant runs as (agent-grant-session.ts): the config loader
+   * routes it to that grant's own session, never to a user-keyed one.
+   */
+  agentGrantId?: string;
 }
 
 interface SessionEntry {

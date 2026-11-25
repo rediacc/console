@@ -31,6 +31,7 @@
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { memoryPolicyHighWater } from '../config/policy-record.js';
 import { deadlineFetch } from './account-fetch.js';
+import type { AgentGrantSessions } from './agent-grant-session.js';
 import { AuthError } from './auth.js';
 import { ConfigChain, type ExecutorGrant, SessionConfigStore } from './config-writeback.js';
 import { SessionError, type SessionPrincipal, SessionStore } from './sessions.js';
@@ -162,6 +163,24 @@ export function createContainerConfigLoader(
     });
     // The store's current document, bound to its writeback: a request scope built around it pushes its writes back to config storage.
     return (await store).config;
+  };
+}
+
+/**
+ * Route an agent-grant principal to its own grant session instead of the user-keyed `loadConfig`
+ * (PLAN-rmcp-agent-grants.md Design 4). The principal of a grant (`agentGrantId` set) names a session of
+ * `agentSessions`, which holds the one config the grant opens; every other principal goes to `userLoader`.
+ * A grant principal never reaches the user-keyed loader, even when the grant sessions are absent: it is
+ * refused, because that loader would look up the grant's synthetic user and say nothing useful.
+ */
+export function routeAgentPrincipals(
+  userLoader: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>,
+  agentSessions: AgentGrantSessions | undefined
+): (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig> {
+  return async (principal, configSessionId) => {
+    if (!principal.agentGrantId) return await userLoader(principal, configSessionId);
+    if (!agentSessions) throw new SessionError('This executor does not serve agent grants.');
+    return agentSessions.currentConfig(principal);
   };
 }
 

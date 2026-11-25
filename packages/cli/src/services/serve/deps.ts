@@ -11,6 +11,7 @@ import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
 import type { Executor } from '../executor/types.js';
+import type { AgentGrantSessions } from './agent-grant-session.js';
 import type { AuthVerifier } from './auth.js';
 import type { EgressReportTarget, EgressUnreachableAnswer } from './egress-report.js';
 import type { AuthorizeArgs } from './policy.js';
@@ -109,4 +110,9 @@ export interface ServeDeps {
    * want the account round trips.
    */
   runIndex?: RunIndex;
+  /**
+   * The agent-grant sessions behind `POST /v1/mcp/call` (agent-grant-session.ts). Set by the container
+   * tier; without it the route is not registered.
+   */
+  agentGrants?: AgentGrantSessions;
 }
