@@ -58,10 +58,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
 
 ## Tasks
 
-- [ ] FI1 [writer] Shared verification and incident types (D2, D5): `packages/shared/src/forensics/verify.ts` recomputing audit-r2 day-file chains and plan 2 batch chains with Ed25519 batch signatures in Node and the browser, `packages/shared/src/incident/` with the timeline row union, the incident schema and the deadline-clock function, and the `console.forensics.*` and `console.incident.*` event types in console-events.ts.
+- [x] FI1 [writer] Shared verification and incident types (D2, D5): `packages/shared/src/forensics/verify.ts` recomputing audit-r2 day-file chains and plan 2 batch chains with Ed25519 batch signatures in Node and the browser, `packages/shared/src/incident/` with the timeline row union, the incident schema and the deadline-clock function, and the `console.forensics.*` and `console.incident.*` event types in console-events.ts.
   Owns: packages/shared/src/forensics/verify.ts, packages/shared/src/forensics/__tests__/verify.test.ts, packages/shared/src/incident/**, packages/shared/src/audit/console-events.ts
   Depends on: PLAN-forensics-shipping.md, PLAN-console-audit-r2.md#AU1, PLAN-console-audit-r2.md#AU8.
   Accept: `(cd packages/shared && npx vitest run src/forensics/__tests__/verify.test.ts src/incident)` rc 0 with cases: a flipped byte reports an edit at that day, a missing batch reports a gap, a bad signature fails, the final-report clock counts one month from `notified_at`.
+    (ticked) 2026-11-25T15:43:56Z by d778be9d: FI1 audit and batch chain verification with typed incident clocks; shared forensics, incident and audit tests 127 passed; landed a02ae83735. DEPS-WAIVED: what this box uses from its prerequisites has landed
 - [x] FI2 [writer] Account store (D3, D4): `forensics_incidents`, `forensics_eviction_holds`, `forensics_support_grants` and `forensics_investigations` in schema.ts with one migration and scope-registry entries, and `incident.service.ts` and `forensics-access.service.ts` registered in container.ts.
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_forensics_incidents.sql, private/account/drizzle/meta/**, private/account/src/services/incident.service.ts, private/account/src/services/forensics-access.service.ts, private/account/src/container.ts, private/account/tests/integration/incident-store.test.ts
   Depends on: FI1.

@@ -546,7 +546,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 129 | 9 | 6 | 23918 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
-| `agent/plans/PLAN-forensics-investigation.md` | approved | 134 | 14 | 3 | 30659 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 135 | 13 | 4 | 30913 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 119 | 14 | 1 | 26526 |
+| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 121 | 12 | 3 | 27005 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 91 | 6 | 3 | 15531 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 103 | 15 | 5 | 24550 |
@@ -618,7 +618,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 77 | 7 | 6 | 18579 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
-| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32646 |
+| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 136 | 26 | 1 | 32911 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 98 | 4 | 13 | 20795 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 327 | 8 | 11 | 35091 |
