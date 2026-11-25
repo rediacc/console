@@ -5820,7 +5820,13 @@ def _stop_ci_queue(ns):
             % (type(exc).__name__, str(exc)[:160]),
         )
     if _rv is not None:
-        _rv_block, _rv_bad, _rv_note = wl_review.stop_texts(_rv)
+        # This session's live `[>]` items (review_items already demoted a dead worker's lease to `!`): the block names one, so the in-flight route runs as printed.
+        _rv_holders = sorted(
+            r["id"]
+            for r in fold.items
+            if _rv_items.get(r["id"], ("",))[0] == ">" and C.owned_by_me(r.get("owner"), session_id)
+        )
+        _rv_block, _rv_bad, _rv_note = wl_review.stop_texts(_rv, holders=_rv_holders)
         if _rv_bad:
             vadd("commit-review-malformed", True, _rv_bad)
         if _rv_block:
