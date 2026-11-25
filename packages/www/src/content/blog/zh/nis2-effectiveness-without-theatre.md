@@ -12,8 +12,8 @@ tags:
   - incident-reporting
 featured: false
 language: zh
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -195,11 +195,11 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 
 这就是 Rediacc 给操作员的。我们不提供的是：
 
-- **SIEM**。我们不向 Splunk、Datadog、Sentinel 或你的自建日志栈推送数据。审计日志是操作员工作站上的本地 JSONL 文件；将其接入 SIEM 是操作员的集成工作。
-- **SOC**。我们不运营 24x7 检测能力，不产生告警，不做事件分类。
-- **托管报告**。我们不向 ENISA 提交报告，不起草早期预警，不代表你与国家级 CSIRT 协调。
+- **SIEM**。我们不提供 Splunk、Datadog、Sentinel 的连接器。账户服务器的审计事件以 OpenTelemetry 日志记录的形式输出，可由操作员运行的收集器转发；工作站上的审计日志是本地 JSONL 文件。将其中任何一个接入 SIEM 是操作员的集成工作。
+- **SOC**。我们不运营 24x7 检测能力，也不做事件分类。在付费方案中，针对已启用捕获的仓库的取证流记录，异常检测器会对照每个仓库学到的基线发出安全通知。通知是开始调查的提示，不是入侵的证明，仍需有人去读它。
+- **托管报告**。Declare incident 计时器和分阶段报告草稿让期限始终可见，但我们不向 ENISA 提交报告，不发送早期预警，也不与国家级 CSIRT 协调。事件是否需要上报，仍由客户判断。
 
-这正是竞争对手会对我们发起攻击的楔子。Veeam Data Platform 配合 Coveware 集成，Rubrik 与其托管服务部门，以及少数专业 IR 留用公司（欧洲的 Mandiant、Kroll、S-RM）恰好销售 Rediacc 所不具备的运营层。假装不是这样是让我们陷入麻烦的营销动作。可辩护的立场是：Rediacc 给你那些服务本身无法独立产生的法证级证据；那些服务给你 Rediacc 无法提供的运营报告层。两者互补，一套 NIS2 合规项目需要两者兼备。
+这正是竞争对手会对我们发起攻击的楔子。Veeam Data Platform 配合 Coveware 集成，Rubrik 与其托管服务部门，以及少数专业 IR 留用公司（欧洲的 Mandiant、Kroll、S-RM）恰好销售 Rediacc 所不具备的运营层。假装不是这样是让我们陷入麻烦的营销动作。可辩护的立场是：Rediacc 给你那些服务本身无法独立产生的可验证的 fork 快照、签名的流记录和事件时间线；那些服务给你 Rediacc 无法提供的运营报告层。两者互补，一套 NIS2 合规项目需要两者兼备。
 
 ## Rediacc 不为你代劳的事项
 

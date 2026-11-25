@@ -17,8 +17,8 @@ tags:
   - incident-reporting
 featured: false
 language: pt
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,11 +196,11 @@ O fork forense responde à pergunta do regulador na hora 60: "mostre-nos o estad
 
 É isso que a Rediacc dá ao operador. O que não fornecemos:
 
-- **O SIEM**. Não fazemos streaming para Splunk, Datadog, Sentinel ou a sua solução própria. O log de auditoria é JSONL local no posto de trabalho do operador; ligá-lo a um SIEM é o trabalho de integração do operador.
-- **O SOC**. Não gerimos uma capacidade de deteção 24x7. Não produzimos alertas. Não fazemos triagem.
-- **O reporte gerido**. Não submetemos o relatório à ENISA. Não redigimos o aviso prévio. Não coordenamos com o CSIRT nacional em seu nome.
+- **O SIEM**. Não fornecemos conector para Splunk, Datadog ou Sentinel. Os eventos de auditoria do servidor de contas são emitidos como registos OpenTelemetry que um collector gerido pelo operador pode reencaminhar, e o log de auditoria do posto de trabalho é JSONL local; ligar qualquer um deles a um SIEM é trabalho de integração do operador.
+- **O SOC**. Não gerimos uma capacidade de deteção 24x7 nem fazemos triagem. Nos planos pagos, detetores de anomalias sobre os registos de fluxo forenses dos repositórios com captura ativa emitem avisos de segurança face a uma linha de base aprendida por repositório. Um aviso é um convite a investigar, não a prova de uma intrusão, e uma pessoa continua a ter de o ler.
+- **O reporte gerido**. Os relógios de Declare incident e os rascunhos de relatório por fases mantêm os prazos visíveis, mas não submetemos o relatório à ENISA, não enviamos o aviso prévio e não coordenamos com o CSIRT nacional. Decidir se um incidente é notificável continua a ser um juízo do cliente.
 
-Esta é a cunha que um incumbente vai usar contra nós. Veeam Data Platform com integrações Coveware, Rubrik com o seu braço de serviços geridos, e algumas firmas especializadas de retainer de RI (Mandiant, Kroll, S-RM na Europa) vendem exatamente a camada operacional que a Rediacc não tem. Fingir o contrário é o movimento de marketing que nos mete em apuros. A posição defensável é: a Rediacc fornece artefactos de grau forense que esses serviços não conseguem produzir por si próprios; esses serviços fornecem a camada de reporte operacional que a Rediacc não consegue providenciar. São complementares. Um programa NIS2 precisa de ambos.
+Esta é a cunha que um incumbente vai usar contra nós. Veeam Data Platform com integrações Coveware, Rubrik com o seu braço de serviços geridos, e algumas firmas especializadas de retainer de RI (Mandiant, Kroll, S-RM na Europa) vendem exatamente a camada operacional que a Rediacc não tem. Fingir o contrário é o movimento de marketing que nos mete em apuros. A posição defensável é: a Rediacc fornece instantâneos de fork verificáveis, registos de fluxo assinados e uma cronologia do incidente que esses serviços não conseguem produzir por si próprios; esses serviços fornecem a camada de reporte operacional que a Rediacc não consegue providenciar. São complementares. Um programa NIS2 precisa de ambos.
 
 ## O que a Rediacc não faz por si
 

@@ -17,8 +17,8 @@ tags:
   - notificacion-incidentes
 featured: false
 language: es
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,9 +196,9 @@ El fork forense responde a la pregunta del regulador en la hora 60: "muéstrenos
 
 Eso es lo que Rediacc proporciona al operador. Lo que no proporcionamos:
 
-- **El SIEM**. No transmitimos a Splunk, Datadog, Sentinel ni a tu stack propio. El log de auditoría es JSONL local en la estación de trabajo del operador; redirigirlo a un SIEM es el trabajo de integración del operador.
-- **El SOC**. No gestionamos una capacidad de detección 24x7. No producimos alertas. No hacemos triaje.
-- **La notificación gestionada**. No presentamos el informe ante ENISA. No redactamos la alerta temprana. No coordinamos con el CSIRT nacional en tu nombre.
+- **El SIEM**. No ofrecemos conector a Splunk, Datadog ni Sentinel. Los eventos de auditoría del servidor de cuentas se emiten como registros de OpenTelemetry que un collector operado por el cliente puede reenviar, y el log de auditoría de la estación de trabajo es JSONL local; conectar cualquiera de los dos a un SIEM es trabajo de integración del operador.
+- **El SOC**. No gestionamos una capacidad de detección 24x7 ni hacemos triaje. En los planes de pago, los detectores de anomalías sobre los registros de flujo forenses de los repositorios con captura activada emiten avisos de seguridad frente a una línea base aprendida por repositorio. Un aviso es una invitación a investigar, no la prueba de una brecha, y una persona sigue teniendo que leerlo.
+- **La notificación gestionada**. Los relojes de Declare incident y los borradores de informe por etapas mantienen visibles los plazos, pero no presentamos el informe ante ENISA, no enviamos la alerta temprana y no coordinamos con el CSIRT nacional. Decidir si un incidente es notificable sigue siendo criterio del cliente.
 
 Esta es la palanca que un proveedor establecido usará contra nosotros. Veeam Data Platform con integraciones de Coveware, Rubrik con su brazo de servicios gestionados, y algunas firmas especializadas en retención de IR (Mandiant, Kroll, S-RM en Europa) venden exactamente la capa operativa que Rediacc no tiene. Pretender lo contrario es el movimiento de marketing que nos mete en problemas. La posición defendible es: Rediacc te da evidencia verificable que esos servicios no pueden producir por sí solos; esos servicios te dan la capa de notificación operativa que Rediacc no puede proporcionar. Son complementarios. Un programa NIS2 necesita ambos.
 

@@ -17,8 +17,8 @@ tags:
   - incident-reporting
 featured: false
 language: it
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,11 +196,11 @@ Il fork forense risponde alla domanda del regolatore all'ora 60: "mostraci lo st
 
 Questo è ciò che Rediacc fornisce all'operatore. Quello che non forniamo:
 
-- **Il SIEM**. Non effettuiamo streaming verso Splunk, Datadog, Sentinel o il tuo stack interno. Il log di audit è JSONL locale sulla workstation dell'operatore; collegarlo a un SIEM è un lavoro di integrazione dell'operatore.
-- **Il SOC**. Non gestiamo una capacità di rilevamento 24x7. Non produciamo alert. Non eseguiamo triage.
-- **Il reporting gestito**. Non presentiamo il report a ENISA. Non redigiamo l'early warning. Non coordiniamo con il CSIRT nazionale per tuo conto.
+- **Il SIEM**. Non forniamo alcun connettore verso Splunk, Datadog o Sentinel. Gli eventi di audit del server account sono emessi come record OpenTelemetry che un collector gestito dall'operatore può inoltrare, e il log di audit della workstation è JSONL locale; collegare l'uno o l'altro a un SIEM è un lavoro di integrazione dell'operatore.
+- **Il SOC**. Non gestiamo una capacità di rilevamento 24x7 e non eseguiamo triage. Nei piani a pagamento, i rilevatori di anomalie sui record di flusso forensi dei repository con cattura attiva emettono avvisi di sicurezza rispetto a una baseline appresa per repository. Un avviso è un invito a indagare, non la prova di una violazione, e una persona deve comunque leggerlo.
+- **Il reporting gestito**. Gli orologi di Declare incident e le bozze di report a tappe tengono visibili le scadenze, ma non presentiamo il report a ENISA, non inviamo l'early warning e non coordiniamo con il CSIRT nazionale. Stabilire se un incidente sia notificabile resta una valutazione del cliente.
 
-Questo è l'argomento che un operatore consolidato userà contro di noi. Veeam Data Platform con integrazioni Coveware, Rubrik con il suo ramo di servizi gestiti, e alcune società specializzate in IR a retainer (Mandiant, Kroll, S-RM in Europa) vendono esattamente lo strato operativo che Rediacc non fornisce. Fingere il contrario è la mossa di marketing che ci mette nei guai. La posizione difendibile è: Rediacc ti fornisce artefatti di qualità forense che quei servizi non possono produrre autonomamente; quei servizi ti forniscono lo strato operativo di reporting che Rediacc non può fornire. Sono complementari. Un programma NIS2 ha bisogno di entrambi.
+Questo è l'argomento che un operatore consolidato userà contro di noi. Veeam Data Platform con integrazioni Coveware, Rubrik con il suo ramo di servizi gestiti, e alcune società specializzate in IR a retainer (Mandiant, Kroll, S-RM in Europa) vendono esattamente lo strato operativo che Rediacc non fornisce. Fingere il contrario è la mossa di marketing che ci mette nei guai. La posizione difendibile è: Rediacc ti fornisce snapshot di fork verificabili, record di flusso firmati e una timeline dell'incidente che quei servizi non possono produrre autonomamente; quei servizi ti forniscono lo strato operativo di reporting che Rediacc non può fornire. Sono complementari. Un programma NIS2 ha bisogno di entrambi.
 
 ## Cosa Rediacc non gestisce per te
 

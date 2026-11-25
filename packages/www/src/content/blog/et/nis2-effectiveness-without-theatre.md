@@ -17,8 +17,8 @@ tags:
   - intsidentide-teatamine
 featured: false
 language: et
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,11 +196,11 @@ Kohtuekspertiisi fork vastab regulaatori küsimusele 60. tunnil: "näidake meile
 
 See on see, mida Rediacc operaatorile annab. Mida me ei anna:
 
-- **SIEM-i**. Me ei edasta Splunki, Datadog'i, Sentineli ega teie koduehitatud virna. Auditilogi on lokaalne JSONL operaatori tööjaamal; selle torustamine SIEM-i on operaatori integratsioonitöö.
-- **SOC-i**. Me ei käita 24x7 tuvastamisvõimekust. Me ei tooda hoiatusi. Me ei tee triaaži.
-- **Hallatud aruandlust**. Me ei esita ENISA aruannet. Me ei koosta varast hoiatust. Me ei koordineeri riikliku CSIRT-ga teie nimel.
+- **SIEM-i**. Me ei paku liidest Splunki, Datadog'i ega Sentineli jaoks. Kontoserveri auditisündmused väljastatakse OpenTelemetry logikirjetena, mida operaatori käitatav kollektor võib edasi saata, ja tööjaama auditilogi on lokaalne JSONL; kummagi ühendamine SIEM-iga on operaatori integratsioonitöö.
+- **SOC-i**. Me ei käita 24x7 tuvastamisvõimekust ega tee triaaži. Tasulistes pakettides tõstavad anomaaliadetektorid, mis töötavad jäädvustusega hoidlate forensika vookirjete peal, turvateateid õpitud hoidlapõhise baasjoone suhtes. Teade on kutse uurida, mitte tõend sissemurdmisest, ja keegi peab selle ikkagi läbi lugema.
+- **Hallatud aruandlust**. Declare incident'i kellad ja etapiviisilised aruandemustandid hoiavad tähtajad nähtaval, kuid me ei esita ENISA aruannet, ei saada varast hoiatust ega koordineeri riikliku CSIRT-ga. Otsus, kas intsident on teatamisele kuuluv, jääb kliendi otsustada.
 
-See on kiil, mida konkurent meie vastu kasutab. Veeam Data Platform koos Coveware integratsioonidega, Rubrik nende hallatud teenuste tiivaga ja mõned spetsialiseeritud IR-hoidiku ettevõtted (Mandiant, Kroll, S-RM Euroopas) müüvad täpselt operatiivset kihti, mida Rediacc ei müü. Vastupidine väitmine on turundusliigutus, mis viib meid hätta. Kaitstav positsioon on: Rediacc annab teile kohtuekspertiisi taseme artefaktid, mida need teenused ise ei suuda toota; need teenused annavad teile operatiivse aruandluskihi, mida Rediacc ei suuda pakkuda. Need täiendavad üksteist. NIS2 programm vajab mõlemat.
+See on kiil, mida konkurent meie vastu kasutab. Veeam Data Platform koos Coveware integratsioonidega, Rubrik nende hallatud teenuste tiivaga ja mõned spetsialiseeritud IR-hoidiku ettevõtted (Mandiant, Kroll, S-RM Euroopas) müüvad täpselt operatiivset kihti, mida Rediacc ei müü. Vastupidine väitmine on turundusliigutus, mis viib meid hätta. Kaitstav positsioon on: Rediacc annab teile kontrollitavad forkide hetktõmmised, allkirjastatud vookirjed ja intsidendi ajajoon, mida need teenused ise ei suuda toota; need teenused annavad teile operatiivse aruandluskihi, mida Rediacc ei suuda pakkuda. Need täiendavad üksteist. NIS2 programm vajab mõlemat.
 
 ## Mida Rediacc teie eest ei käita
 

@@ -188,11 +188,11 @@ The forensic fork answers the regulator's question at hour 60: "show us the exac
 
 That is what Rediacc gives the operator. What we do not give:
 
-- **The SIEM**. We do not stream to Splunk, Datadog, Sentinel, or your homegrown stack. The audit log is local JSONL on the operator's workstation; piping it to a SIEM is the operator's integration job.
-- **The SOC**. We do not run a 24x7 detection capability. We do not produce alerts. We do not triage.
-- **The managed reporting**. We do not file the ENISA report. We do not draft the early warning. We do not coordinate with the national CSIRT on your behalf.
+- **The SIEM**. We ship no connector for Splunk, Datadog, or Sentinel. Account-server audit events are emitted as OpenTelemetry log records that an operator-run collector can forward, and the workstation audit log is local JSONL; wiring either into a SIEM is the operator's integration job.
+- **The SOC**. We do not run a 24x7 detection capability and we do not triage. On paid plans, anomaly detectors over the forensics flow records of repositories with capture enabled raise security notices against a learned per-repository baseline. A notice is a prompt to investigate, not proof of a breach, and a person still has to read it.
+- **The managed reporting**. The Declare incident clocks and staged report drafts keep the deadlines visible, but we do not file the ENISA report, we do not send the early warning, and we do not coordinate with the national CSIRT. Whether an incident is reportable stays the customer's judgement.
 
-This is the wedge an incumbent will use against us. Veeam Data Platform with Coveware integrations, Rubrik with their managed services arm, and a few specialised IR-retainer firms (Mandiant, Kroll, S-RM in Europe) sell exactly the operational layer Rediacc does not. Pretending otherwise is the marketing move that gets us into trouble. The defensible position is: Rediacc gives you forensic-grade artefacts that those services cannot produce by themselves; those services give you the operational reporting layer that Rediacc cannot provide. They are complementary. A NIS2 program needs both.
+This is the wedge an incumbent will use against us. Veeam Data Platform with Coveware integrations, Rubrik with their managed services arm, and a few specialised IR-retainer firms (Mandiant, Kroll, S-RM in Europe) sell exactly the operational layer Rediacc does not. Pretending otherwise is the marketing move that gets us into trouble. The defensible position is: Rediacc gives the operator verifiable fork snapshots, signed flow records and an incident timeline that those services cannot produce by themselves; those services give the operator the operational reporting layer that Rediacc cannot provide. They are complementary. A NIS2 program needs both.
 
 ## What Rediacc does not run for you
 

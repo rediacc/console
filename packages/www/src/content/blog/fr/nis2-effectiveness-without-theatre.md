@@ -17,8 +17,8 @@ tags:
   - notification-incident
 featured: false
 language: fr
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,11 +196,11 @@ Le fork forensique répond à la question du régulateur à l'heure 60 : "montre
 
 C'est ce que Rediacc donne à l'opérateur. Ce que nous ne donnons pas :
 
-- **Le SIEM**. Nous ne diffusons pas vers Splunk, Datadog, Sentinel ou votre pile maison. Le journal d'audit est du JSONL local sur le poste de travail de l'opérateur ; le canaliser vers un SIEM est le travail d'intégration de l'opérateur.
-- **Le SOC**. Nous ne gérons pas une capacité de détection 24h/24 7j/7. Nous ne produisons pas d'alertes. Nous ne faisons pas de triage.
-- **Le reporting géré**. Nous ne déposons pas le rapport auprès de l'ENISA. Nous ne rédigeons pas l'alerte précoce. Nous ne coordonnons pas avec le CSIRT national en votre nom.
+- **Le SIEM**. Nous ne fournissons aucun connecteur vers Splunk, Datadog ou Sentinel. Les événements d'audit du serveur de comptes sont émis sous forme d'enregistrements OpenTelemetry qu'un collecteur exploité par l'opérateur peut relayer, et le journal d'audit du poste de travail est du JSONL local ; brancher l'un ou l'autre sur un SIEM est le travail d'intégration de l'opérateur.
+- **Le SOC**. Nous ne gérons pas de capacité de détection 24h/24 7j/7 et nous ne faisons pas de triage. Sur les offres payantes, des détecteurs d'anomalies sur les enregistrements de flux forensiques des dépôts dont la capture est activée émettent des notices de sécurité par rapport à une référence apprise par dépôt. Une notice invite à enquêter sans prouver une compromission, et une personne doit encore la lire.
+- **Le reporting géré**. Les horloges de Declare incident et les brouillons de rapport par étapes gardent les échéances visibles, mais nous ne déposons pas le rapport auprès de l'ENISA, n'envoyons pas l'alerte précoce et ne coordonnons pas avec le CSIRT national. Décider si un incident est à notifier reste le jugement du client.
 
-C'est le levier qu'un acteur établi utilisera contre nous. Veeam Data Platform avec les intégrations Coveware, Rubrik avec son bras de services gérés, et quelques firmes spécialisées en retainer de réponse aux incidents (Mandiant, Kroll, S-RM en Europe) vendent exactement la couche opérationnelle que Rediacc ne fournit pas. Prétendre le contraire est le geste marketing qui nous met en difficulté. La position défendable est : Rediacc vous donne des artefacts de niveau forensique que ces services ne peuvent pas produire seuls ; ces services vous donnent la couche de reporting opérationnel que Rediacc ne peut pas fournir. Ils sont complémentaires. Un programme NIS2 a besoin des deux.
+C'est le levier qu'un acteur établi utilisera contre nous. Veeam Data Platform avec les intégrations Coveware, Rubrik avec son bras de services gérés, et quelques firmes spécialisées en retainer de réponse aux incidents (Mandiant, Kroll, S-RM en Europe) vendent exactement la couche opérationnelle que Rediacc ne fournit pas. Prétendre le contraire est le geste marketing qui nous met en difficulté. La position défendable est : Rediacc vous donne des instantanés de fork vérifiables, des enregistrements de flux signés et une chronologie d'incident que ces services ne peuvent pas produire seuls ; ces services vous donnent la couche de reporting opérationnel que Rediacc ne peut pas fournir. Ils sont complémentaires. Un programme NIS2 a besoin des deux.
 
 ## Ce que Rediacc ne gère pas pour vous
 

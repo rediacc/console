@@ -17,8 +17,8 @@ tags:
   - vorfallsmeldung
 featured: false
 language: de
-sourceHash: "35f317f16e24030b"
-sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -196,9 +196,9 @@ Der forensische Fork beantwortet die Frage des Regulierers in Stunde 60: "Zeigen
 
 Das ist, was Rediacc dem Operator gibt. Was wir nicht geben:
 
-- **Das SIEM**. Wir streamen nicht zu Splunk, Datadog, Sentinel oder Ihrem selbst entwickelten Stack. Das Audit-Log ist lokales JSONL auf der Workstation des Operators; es in ein SIEM zu leiten, ist die Integrationsaufgabe des Operators.
-- **Das SOC**. Wir betreiben keine 24x7-Erkennungsfähigkeit. Wir produzieren keine Alerts. Wir triagieren nicht.
-- **Das verwaltete Reporting**. Wir reichen den ENISA-Bericht nicht ein. Wir verfassen die Frühwarnung nicht. Wir koordinieren nicht mit dem nationalen CSIRT in Ihrem Namen.
+- **Das SIEM**. Wir liefern keinen Konnektor zu Splunk, Datadog oder Sentinel. Audit-Ereignisse des Account-Servers werden als OpenTelemetry-Logeinträge ausgegeben, die ein vom Operator betriebener Collector weiterleiten kann, und das Audit-Log der Workstation ist lokales JSONL; beides an ein SIEM anzubinden, ist die Integrationsaufgabe des Operators.
+- **Das SOC**. Wir betreiben keine 24x7-Erkennungsfähigkeit und triagieren nicht. In bezahlten Tarifen lösen Anomalie-Detektoren über die Forensik-Flow-Records von Repositories mit aktivierter Erfassung Sicherheitsmeldungen gegen eine gelernte Baseline je Repository aus. Eine Meldung ist ein Anlass zur Untersuchung, kein Beweis für einen Einbruch, und eine Person muss sie weiterhin lesen.
+- **Das verwaltete Reporting**. Die Uhren der Vorfallserklärung und gestufte Berichtsentwürfe halten die Fristen sichtbar, aber wir reichen den ENISA-Bericht nicht ein, senden die Frühwarnung nicht und koordinieren nicht mit dem nationalen CSIRT. Ob ein Vorfall meldepflichtig ist, bleibt die Einschätzung des Kunden.
 
 Das ist der Hebel, den ein etablierter Anbieter gegen uns nutzen wird. Veeam Data Platform mit Coveware-Integrationen, Rubrik mit ihrem Managed-Services-Arm und einige spezialisierte IR-Retainer-Firmen (Mandiant, Kroll, S-RM in Europa) verkaufen genau die operative Schicht, die Rediacc nicht bietet. Das zu leugnen, ist der Marketingzug, der uns in Schwierigkeiten bringt. Die vertretbare Position lautet: Rediacc liefert Ihnen überprüfbare Nachweise, die jene Dienste alleine nicht produzieren können; jene Dienste liefern Ihnen die operative Meldeschicht, die Rediacc nicht bereitstellen kann. Sie ergänzen sich. Ein NIS2-Programm braucht beides.
 

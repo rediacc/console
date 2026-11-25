@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2586,
- "files": 631,
+ "count": 2582,
+ "files": 630,
  "by_rule": {
-  "R1": 1400,
+  "R1": 1397,
   "R11": 136,
   "R14": 1,
   "R18": 11,
   "R19": 55,
   "R2": 578,
-  "R7": 405
+  "R7": 404
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -4090,11 +4090,6 @@
     "dc2be1de1b8cb030"
    ]
   },
-  "packages/shared/src/cli-contract/validation.ts": {
-   "R7": [
-    "10f65d1bd85ed450"
-   ]
-  },
   "packages/shared/src/config-crypto/__tests__/golden.test.ts": {
    "R2": [
     "f418bbd3d6cac951"
@@ -4305,7 +4300,6 @@
     "092dee82794525db",
     "095db13909a9e0a0",
     "0b3fd5e060d2b7a6",
-    "15a0a305ae5c5c09",
     "21bc01bfbb457fb7",
     "351b104b334d845c",
     "3eb6b6992d4534a6",
@@ -4315,15 +4309,13 @@
     "5e3b2a445053a551",
     "60d6ca82e0855051",
     "75fa9ab492b2dfc7",
-    "8561ac1b48bfdd4c",
     "97f568a76253b891",
     "9b627d3cd753a07e",
     "a16240ccecc3f6aa",
     "c010849cd2df5060",
     "e1dba35c669b07f2",
     "e207ddff3c80466a",
-    "e71bf39a8b6a63f7",
-    "ed741d2e64c08d48"
+    "e71bf39a8b6a63f7"
    ]
   },
   "packages/www/src/content/blog/en/nis2-supply-chain-self-hosted.md": {
