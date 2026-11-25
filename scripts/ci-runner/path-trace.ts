@@ -483,7 +483,9 @@ export function droppedNotes(
   files: readonly string[]
 ): string[] {
   if (!replacing || verdict.kind !== 'paths') return [];
-  return droppedDeclared(prior, verdict.paths ?? [], files).map(
+  // A 'paths' verdict without its paths is a caller bug; treating it as an empty set would report every prior glob as dropped.
+  if (verdict.paths === undefined) throw new Error("droppedNotes: a 'paths' verdict carries no paths array");
+  return droppedDeclared(prior, verdict.paths, files).map(
     (d) =>
       `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); this compares tracked files, not reads: confirm the gate never opens them`
   );
@@ -3244,9 +3246,20 @@ async function selftest(): Promise<number> {
         droppedNotes(true, { kind: 'whole-tree' }, prior, files).length === 0,
       'droppedNotes: CONTROL: without the flags, or for a whole-tree verdict, nothing is printed'
     );
+    // Wording-independent: whatever the sentence says, the only mention of reads is the hedge naming the comparison as "not reads" (review 9a131ae5.1).
     check(
-      !notes[0].includes('did not read'),
-      'droppedNotes: the line makes no claim about reads, which the function never sees (review eabd5fe0.2)'
+      notes[0].includes('not reads') && !/\bread/i.test(notes[0].replace('not reads', '')),
+      'droppedNotes: the line makes no claim about reads, which the function never sees; its one mention of reads is the "not reads" hedge (review eabd5fe0.2, 9a131ae5.1)'
+    );
+    let threw = false;
+    try {
+      droppedNotes(true, { kind: 'paths' }, prior, files);
+    } catch {
+      threw = true;
+    }
+    check(
+      threw && droppedNotes(false, { kind: 'paths' }, prior, files).length === 0,
+      "droppedNotes: a 'paths' verdict with no paths array throws instead of reporting every prior glob as dropped; CONTROL: without the flags nothing is evaluated (review 9a131ae5.2)"
     );
   }
 
