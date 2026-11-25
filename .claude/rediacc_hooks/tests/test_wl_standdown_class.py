@@ -116,12 +116,15 @@ def test_hand_spawned_writers_are_not_a_round(tmp_path) -> None:
     assert fires
     assert facts["last"] is None
     # Control: one round row of this session inside the hour silences it. The round needs a survey written after its start (wl_writersnow.judge_round, 913af37d87): a row naming a survey that was never written stops counting SURVEY_GRACE_MIN minutes after the start.
-    start = datetime.datetime(2026, 11, 24, 2, 30, tzinfo=datetime.UTC)
+    # Past the missing-survey grace and still inside the window, so the two assertions below differ only by the survey; derived from the module's own numbers so a change to either keeps that true.
+    back = WN.SURVEY_GRACE_MIN + 5
+    assert back < WN.WINDOW_MIN
+    start = now - datetime.timedelta(minutes=back)
     survey = write_survey(tmp_path / "survey.md", start + datetime.timedelta(minutes=5))
     row = {
         "round": "r1",
         "session": "ace763dd",
-        "at": "2026-11-24T02:30:00Z",
+        "at": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "survey": str(survey),
     }
     assert WN.due([row], "ace763dd", now, 588, dev, root=tmp_path)[0] is False

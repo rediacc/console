@@ -19,6 +19,8 @@ import wl_store as S
 
 ME = "cafe0003"
 T0 = datetime.datetime(2026, 11, 24, 6, 0, 0, tzinfo=datetime.UTC)
+# The judging clock of the arms below: inside their windows (they expire at T0 + 24 h by default), so a test does not turn red once the wall clock passes T0 + 24 h, as every one did on 2026-11-25 after 06:00Z.
+NOW = T0 + datetime.timedelta(hours=1)
 
 
 def at(minutes):
@@ -308,12 +310,12 @@ def plan_repo(tmp_path):
 
 
 def box_ctx(repo):
-    return A.Ctx(root=repo, now=C.utcnow(), by_id={}, show_head=lambda p: A.show_head(repo, p))
+    return A.Ctx(root=repo, now=NOW, by_id={}, show_head=lambda p: A.show_head(repo, p))
 
 
 def test_box_fires_only_on_a_committed_tick(plan_repo):
     token = "BOX:agent/plans/PLAN-w.md#%s" % B1_SIG
-    w = A.ArmWorld(root=plan_repo, now=C.utcnow(), by_id={})
+    w = A.ArmWorld(root=plan_repo, now=NOW, by_id={})
     assert A.parse_when([token], w) == [token]
     arm = arm_of([token])
     assert A.evaluate(arm, box_ctx(plan_repo))[0] == A.ARMED
@@ -336,12 +338,12 @@ def test_box_voids_when_the_sig_leaves_heads_plan_and_refuses_a_done_box(plan_re
     with pytest.raises(A.TokenError, match="absent"):
         A.parse_when(
             ["BOX:agent/plans/PLAN-w.md#%s" % B1_SIG],
-            A.ArmWorld(root=plan_repo, now=C.utcnow(), by_id={}),
+            A.ArmWorld(root=plan_repo, now=NOW, by_id={}),
         )
     with pytest.raises(A.TokenError, match="not in the commit"):
         A.parse_when(
             ["BOX:agent/plans/PLAN-x.md#%s" % B1_SIG],
-            A.ArmWorld(root=plan_repo, now=C.utcnow(), by_id={}),
+            A.ArmWorld(root=plan_repo, now=NOW, by_id={}),
         )
 
 
@@ -508,7 +510,7 @@ def test_a_started_arm_is_not_carried_by_compaction(store):
 def test_sweep_latches_once_and_returns_the_due_arm(store):
     rid, _aid = armed_store(store)
     fold = S.load(store.wl, sync=False)
-    c = A.Ctx(root=store.root, now=C.utcnow(), by_id=fold.by_id, pushed=lambda: True)
+    c = A.Ctx(root=store.root, now=NOW, by_id=fold.by_id, pushed=lambda: True)
     rows = A.sweep(store.wl, ME, fold.items, ME, c)
     assert [(r["id"], v) for r, _a, v, _w in rows] == [(rid, A.FIRED)]
     fold = S.load(store.wl, sync=False)
@@ -523,7 +525,7 @@ def test_sweep_latches_once_and_returns_the_due_arm(store):
 def test_sweep_control_an_unfired_arm_writes_nothing(store):
     rid, _aid = armed_store(store)
     fold = S.load(store.wl, sync=False)
-    c = A.Ctx(root=store.root, now=C.utcnow(), by_id=fold.by_id, pushed=lambda: False)
+    c = A.Ctx(root=store.root, now=NOW, by_id=fold.by_id, pushed=lambda: False)
     assert A.sweep(store.wl, ME, fold.items, ME, c) == []
     assert fold_arm(store, rid)["verdict"] == ""
 

@@ -107,7 +107,6 @@ import {
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
 import { seedReceipt, seedTypecheckCache } from './lease-seed';
-import { cacheDirFor } from './typecheck-incremental';
 import {
   cappedChanged,
   type GateLedger,
@@ -184,6 +183,7 @@ import {
 } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
+import { cacheDirFor } from './typecheck-cache-dir';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');

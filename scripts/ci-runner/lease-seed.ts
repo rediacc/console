@@ -12,7 +12,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js';
-import { cacheDirFor } from './typecheck-incremental.js';
+import { cacheDirFor } from './typecheck-cache-dir.js';
 
 /** Far too big to copy: pinned tool installs addressed by version, as in quick-clone, plus `.ci/cache/registry`, the one entry that is NOT addressed by version (Docker Hub tag listings whose answers change upstream), linked so every tree reads the single listing the freshness gate refreshes and re-reads on a mismatch. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];

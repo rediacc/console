@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { evaluate, parse as momoaParse } from '@humanwhocodes/momoa';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { grantedCores } from './lease-client';
+import { cacheDirFor } from './typecheck-cache-dir';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 /**
@@ -40,15 +41,6 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
  */
 export const CACHE_DIR = cacheDirFor(REPO_ROOT);
 
-/** The cache directory of the checkout at `root`: one directory per checkout path, so a lease starts cold unless lease-seed.ts seeds it (PLAN-drain-throughput DT8). */
-export function cacheDirFor(root: string, home: string = os.homedir()): string {
-  return path.join(
-    home,
-    '.cache',
-    'rediacc-typecheck',
-    root.replace(/^\/+/, '').replace(/\//g, '-')
-  );
-}
 const WORKERS_CLAUSE = 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers';
 const WWW_CLAUSE = 'npm run typecheck --workspace packages/www';
 const WWW_EXPECTED = 'astro sync && tsc --noEmit';
