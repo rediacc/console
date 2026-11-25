@@ -672,6 +672,69 @@ def test_a_queue_preflight_failure_refuses_before_any_build_or_write(monkeypatch
     assert events == []
 
 
+def _declare(directory, *deps, dev=()):
+    directory.mkdir(parents=True, exist_ok=True)
+    doc = {"dependencies": dict.fromkeys(deps, "1.0.0"), "devDependencies": dict.fromkeys(dev, "1")}
+    (directory / "package.json").write_text(json.dumps(doc))
+
+
+def _install(node_modules, name):
+    (node_modules / name).mkdir(parents=True)
+    (node_modules / name / "package.json").write_text("{}")
+
+
+def test_a_declared_dependency_missing_from_node_modules_is_refused_before_any_build(
+    monkeypatch, tmp_path
+):
+    """2026-11-25: the lockfile preflight passed while tw-animate-css, declared in private/account/web/package.json, was absent from node_modules, and vite then failed `Can't resolve 'tw-animate-css'`. The preflight now names it and the exact fix before anything builds."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    web = tmp_path / "private" / "account" / "web"
+    _declare(web, "react", "tw-animate-css")
+    _install(web / "node_modules", "react")
+    with pytest.raises(deploy_bench.DeployError) as raised:
+        deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert "declares tw-animate-css," in str(raised.value)
+    assert str(raised.value).endswith("fix: npm ci --prefix %s" % web)
+    assert events == []
+
+
+def test_every_declared_dependency_installed_passes_the_preflight(monkeypatch, tmp_path):
+    """Control: the same world with tw-animate-css installed builds."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    web = tmp_path / "private" / "account" / "web"
+    _declare(web, "react", "tw-animate-css")
+    _install(web / "node_modules", "react")
+    _install(web / "node_modules", "tw-animate-css")
+    deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert any("vite" in e for e in events)
+
+
+def test_missing_installs_resolves_upward_scoped_and_dev_names(tmp_path):
+    """A dependency hoisted into a parent node_modules resolves (as Node and vite resolve it); a scoped name and a devDependency are checked too; nothing above the root counts."""
+    root = tmp_path / "repo"
+    web = root / "private" / "account" / "web"
+    _declare(web, "hoisted", "@scope/pkg", dev=("vite",))
+    (web / "node_modules").mkdir()
+    _install(root / "private" / "account" / "node_modules", "hoisted")
+    _install(tmp_path / "node_modules", "vite")
+    assert deploy_bench.missing_installs(web, root) == ["@scope/pkg", "vite"]
+    _install(web / "node_modules", "@scope/pkg")
+    _install(root / "node_modules", "vite")
+    assert deploy_bench.missing_installs(web, root) == []
+
+
+def test_a_package_without_node_modules_is_left_to_the_install_step(tmp_path):
+    web = tmp_path / "web"
+    _declare(web, "react")
+    assert deploy_bench.installs_refusal([web], tmp_path) is None
+    (web / "node_modules").mkdir()
+    refusal = deploy_bench.installs_refusal([web], tmp_path)
+    assert refusal is not None
+    assert "declares react, but node_modules does not hold it" in refusal
+
+
 def test_the_payload_carries_the_cloudflare_account_id(monkeypatch):
     """The AE SQL reads need the account id the regional pusher also sends; the region-consistency gate compares the two key sets (review c5be449f.2)."""
     _bench_env(monkeypatch)

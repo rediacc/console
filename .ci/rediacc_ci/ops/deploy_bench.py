@@ -817,6 +817,48 @@ def portal_out_dir(worker_dir) -> pathlib.Path:
     return worker_dir.joinpath(*BENCH_ASSETS_REL, "account")
 
 
+DECLARED_FIELDS = ("dependencies", "devDependencies")
+
+
+def missing_installs(directory: pathlib.Path, root: pathlib.Path) -> list[str]:
+    """The top-level dependencies `directory/package.json` declares that no `node_modules/<name>/package.json` resolves, looking in `directory` and each parent up to `root`, the way Node and vite resolve a bare import. `npm ls` against the lockfile passed while `tw-animate-css`, declared in private/account/web/package.json and its lockfile, was absent from node_modules, and vite then failed `Can't resolve 'tw-animate-css'` (2026-11-25)."""
+    try:
+        doc = json.loads((directory / "package.json").read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return []
+    except (OSError, ValueError) as exc:
+        raise DeployError("%s cannot be read: %s" % (directory / "package.json", exc)) from None
+    names = sorted({name for field in DECLARED_FIELDS for name in (doc.get(field) or {}) if name})
+    top = root.resolve()
+    here = directory.resolve()
+    bases = [here, *(p for p in here.parents if p == top or top in p.parents)]
+    return [
+        name
+        for name in names
+        if not any((base / "node_modules" / name / "package.json").is_file() for base in bases)
+    ]
+
+
+def installs_refusal(dirs: list[pathlib.Path], root: pathlib.Path) -> str | None:
+    """None when every built package with a node_modules resolves each dependency it declares, else the refusal with the exact fix. A package with no node_modules yet is installed by the build step that follows."""
+    for directory in dirs:
+        if not (directory / "node_modules").is_dir():
+            continue
+        missing = missing_installs(directory, root)
+        if missing:
+            return (
+                "%s declares %s, but node_modules does not hold %s (a build cannot resolve %s); fix: npm ci --prefix %s"
+                % (
+                    directory / "package.json",
+                    ", ".join(missing),
+                    "it" if len(missing) == 1 else "them",
+                    "it" if len(missing) == 1 else "them",
+                    directory,
+                )
+            )
+    return None
+
+
 def bench_assets_refusal(worker_dir, region: str = DEFAULT_REGION) -> str | None:
     """None when the region's bench config's [assets] directory is the bench build root and lies outside the production assets directory, else the refusal. Checked before the build, so a config edit can never steer the keyless build back into the directory a production deploy uploads."""
     config = target(region).config
@@ -1013,6 +1055,10 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
     log.step("Preflight: installed dependencies match the lockfiles")
     if bench_preflight.lockfile([str(root), str(root / "private" / "account")]) != 0:
         raise DeployError("preflight failed")
+    web_dir = root / "private" / "account" / "web"
+    refusal = installs_refusal([web_dir, worker_dir], root)
+    if refusal:
+        raise DeployError(refusal)
     log.step("Preflight: every R2 bucket bound in %s exists" % config)
     cwd = os.getcwd()
     os.chdir(worker_dir)
@@ -1034,7 +1080,6 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
     if refusal:
         raise DeployError(refusal)
     out_dir = portal_out_dir(worker_dir)
-    web_dir = root / "private" / "account" / "web"
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")
     # The portal imports @rediacc/shared as a file: dependency, so vite bundles whatever packages/shared/dist holds. Without this build a deploy shipped a stale dist: on 2026-11-11 the bench consent page rendered with an empty notice and no Terms link, because dist predated the regenerated consent notices.
