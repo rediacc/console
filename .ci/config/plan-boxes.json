@@ -1059,20 +1059,20 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 4,
+      "open": 4,
+      "done": 5,
       "open_sigs": [
         "4a23af14",
         "6c3b5aec",
         "987389e1",
-        "ac3aa330",
         "d028b535"
       ],
       "done_sigs": [
         "138477d9",
         "20cb75e5",
         "8890cd6d",
-        "97fdfb9e"
+        "97fdfb9e",
+        "ac3aa330"
       ]
     },
     "agent/plans/PLAN-console-ai-in-pages.md": {

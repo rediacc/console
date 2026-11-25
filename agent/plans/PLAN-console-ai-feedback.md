@@ -73,10 +73,11 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF1, PLAN-console-ai-assistant.md#AI7.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/feedback)` rc 0, including a test that the rendered body equals the preview response field for field.
     (ticked) 2026-11-25T19:37:39Z by d778be9d: AF5 feedback preview card with send, edit and decline, 13 locales (account 201bac86); 5 tests passed; landed 5dbdf42e05. DEPS-WAIVED: used prerequisites landed
-- [ ] AF6 [writer] Settings UI: an "Offer bug reports" toggle in the Settings feedback card and the owner's org-wide override on the Team page, hidden from non-owners, with English strings in `settings.json` and `team.json`.
+- [x] AF6 [writer] Settings UI: an "Offer bug reports" toggle in the Settings feedback card and the owner's org-wide override on the Team page, hidden from non-owners, with English strings in `settings.json` and `team.json`.
   Owns: private/account/web/src/pages/Settings.tsx, private/account/web/src/pages/Team.tsx, private/account/web/src/pages/__tests__/FeedbackSettings.test.tsx, private/account/web/src/i18n/locales/en/settings.json, private/account/web/src/i18n/locales/en/team.json
   Depends on: AF3.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/FeedbackSettings.test.tsx)` rc 0.
+    (ticked) 2026-11-25T20:24:10Z by d778be9d: AF6 landed account c3aa442c (gitlink ec91779c2f); FeedbackSettings 12 passed, web tsc rc 0; the 7 new English keys go to AF7. DEPS-WAIVED: AF3 landed
 - [ ] AF7 [writer] Translate the new `aiFeedback`, `settings` and `team` keys into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiFeedback.json, private/account/web/src/i18n/locales/*/settings.json, private/account/web/src/i18n/locales/*/team.json
   Depends on: AF5, AF6.
