@@ -48,20 +48,7 @@ type Table = (typeof TABLES)[number];
  *
  * BLOCKER: PLAN-rmcp-docs.md DO7 translates the tables into the 12 locales after the English rewrite (DO4) lands; until then these pages carry no tool tables of the registry's shape. Each entry is removed when its locale gains the tables, and the gate reds until it is.
  */
-export const PENDING_TABLE_TRANSLATION: readonly string[] = [
-  'ar',
-  'de',
-  'es',
-  'et',
-  'fr',
-  'it',
-  'ja',
-  'ko',
-  'pt',
-  'ru',
-  'tr',
-  'zh',
-];
+export const PENDING_TABLE_TRANSLATION: readonly string[] = [];
 
 /**
  * Tool families the registry no longer serves at all, so a mention of one is still recognised as a tool name.
