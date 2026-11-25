@@ -94,6 +94,9 @@ export interface AiEgressEnv {
 }
 
 /** The HTTP status each ledger refusal is answered with. */
+/** The status of a refusal code the map does not name: forbidden, never a pass. */
+const DEFAULT_REFUSAL_STATUS = 403;
+
 const REFUSAL_STATUS: Record<CreditRefusalCode, number> = {
   PLAN_NOT_ENTITLED: 403,
   ORG_BLOCKED: 403,
@@ -401,7 +404,12 @@ export class AiEgress extends WorkerEntrypoint<AiEgressEnv, Partial<ExecutorEgre
       return refuseAi('ledger-unavailable', 503, method, url);
     }
     if (!reserved.ok) {
-      return refuseAi(reserved.code, REFUSAL_STATUS[reserved.code] ?? 403, method, url);
+      return refuseAi(
+        reserved.code,
+        REFUSAL_STATUS[reserved.code] ?? DEFAULT_REFUSAL_STATUS,
+        method,
+        url
+      );
     }
 
     const release = () => this.ctx.waitUntil(releaseQuietly(CREDITS, orgId, reservationId));

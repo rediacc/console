@@ -14,7 +14,7 @@ function clone(): Raw {
   return JSON.parse(JSON.stringify(REPORT_FIELD_MAP));
 }
 
-const NESTED = ['header', 'dataImpact'] as const;
+const NESTED: readonly string[] = ['header', 'dataImpact'] as const;
 
 function innerKeys(schema: unknown): string[] {
   return Object.keys((schema as { shape: Record<string, unknown> }).shape);

@@ -5,7 +5,7 @@
  */
 
 /** The regions a grant id may be prefixed with; the bench regions reuse them. */
-export const GRANT_REGIONS: readonly string[] = ['eu', 'us', 'asia'];
+export const GRANT_REGIONS: readonly string[] = ['eu', 'us', 'asia'] as const;
 
 /** The grant id a `/g/<id>` path names. */
 const GRANT_PATH = /^\/g\/([A-Za-z0-9_-]{1,64})$/;

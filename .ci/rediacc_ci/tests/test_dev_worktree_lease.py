@@ -5,6 +5,7 @@ Nothing here touches a real checkout: `$REDIACC_CI_ROOT` points the verb at a fi
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
@@ -13,6 +14,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import types
 from typing import Any, NamedTuple
 
@@ -1361,14 +1363,18 @@ DAY_S = 86400
 
 def gc_env(root):
     base = root.parent
-    (base / "gc-tmp").mkdir(exist_ok=True)
+    # TMPDIR right under the temp root, one per fixture: tsx opens its IPC socket under TMPDIR, and `<basetemp>/popen-gwN/<test name>/gc-tmp/tsx-<uid>/<pid>.pipe` passed the 108-byte socket path limit under xdist (listen EINVAL).
+    gc_tmp = pathlib.Path(tempfile.gettempdir()) / (
+        "gc-" + hashlib.sha256(str(base).encode()).hexdigest()[:10]
+    )
+    gc_tmp.mkdir(exist_ok=True)
     return {
         **os.environ,
         "PYTHONPATH": str(paths.CI_DIR),
         paths.ROOT_ENV: str(root),
         "CLAUDE_PROJECT_DIR": str(root),
         "CLAUDE_CONFIG_DIR": str(base / "claude-config"),
-        "TMPDIR": str(base / "gc-tmp"),
+        "TMPDIR": str(gc_tmp),
     }
 
 

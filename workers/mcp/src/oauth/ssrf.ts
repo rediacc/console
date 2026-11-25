@@ -114,7 +114,13 @@ export function isPrivateAddress(address: string): boolean {
   return v6 ? privateIpv6(v6) : true;
 }
 
-const INTERNAL_SUFFIXES = ['.localhost', '.local', '.internal', '.localdomain', '.home.arpa'];
+const INTERNAL_SUFFIXES: readonly string[] = [
+  '.localhost',
+  '.local',
+  '.internal',
+  '.localdomain',
+  '.home.arpa',
+] as const;
 
 function internalName(host: string): boolean {
   return (

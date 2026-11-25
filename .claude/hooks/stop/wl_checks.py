@@ -86,7 +86,9 @@ READ_FAILURES: dict[str, str] = {}
 
 def note_read_failure(site: str, exc: BaseException) -> None:
     """Record that `site` fell back to its empty default because of `exc`. Keyed by site, so a loop that fails the same way a hundred times is one row; the newest reason wins."""
-    READ_FAILURES[site] = ("%s: %s" % (type(exc).__name__, exc))[:160]
+    text = "%s: %s" % (type(exc).__name__, exc)
+    # Room for the exception, a path and the parser's reason whole (a long temp root pushed `rediacc-landing.json` past a 160-character cut); past that, head and tail rather than the head alone.
+    READ_FAILURES[site] = text if len(text) <= 400 else text[:240] + "..." + text[-157:]
 
 
 # GUARDED for the same reason: an unimportable ruling module must restore the behaviour checks had before rulings existed (every subject fires), never take the hook down (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2).
