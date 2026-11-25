@@ -457,7 +457,7 @@ export function recordCitations(
 }
 
 /**
- * The declared `paths` a re-trace would DROP, each with the tracked files it matched that the new set no longer reaches (review 9a666914.1: a replacement that narrows a human's set must say what it gave up, or the narrowing is silent). A prior glob kept verbatim, or whose every tracked match is reached by a new content glob, is not dropped. `lists` and `names` hash names, not bytes, so they never count as reaching a file. A dropped glob is evidence the trace did not read it, which is the whole case for dropping it, and the printout is where a reviewer checks that claim.
+ * The declared `paths` a re-trace would DROP, each with the tracked files it matched that the new set no longer reaches (review 9a666914.1: a replacement that narrows a human's set must say what it gave up, or the narrowing is silent). A prior glob kept verbatim, or whose every tracked match is reached by a new content glob, is not dropped. `lists` and `names` hash names, not bytes, so they never count as reaching a file. The function compares globs with tracked files only and never consults what the trace read, so a dropped glob is a CANDIDATE for dropping and the printout is where a reviewer checks that the gate never opens those files.
  */
 export function droppedDeclared(
   prior: readonly string[],
@@ -473,6 +473,20 @@ export function droppedDeclared(
     if (unreached.length > 0) out.push({ glob: g, unreached });
   }
   return out;
+}
+
+/** The `--replace-declared --write` printout: one line per declared glob the replacement gives up, none unless both flags are set and the verdict has `paths`. */
+export function droppedNotes(
+  replacing: boolean,
+  verdict: { kind: string; paths?: readonly string[] },
+  prior: readonly string[],
+  files: readonly string[]
+): string[] {
+  if (!replacing || verdict.kind !== 'paths') return [];
+  return droppedDeclared(prior, verdict.paths ?? [], files).map(
+    (d) =>
+      `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); this compares tracked files, not reads: confirm the gate never opens them`
+  );
 }
 
 export function repoView(root: string): RepoView {
@@ -2660,13 +2674,9 @@ async function main(argv: string[]): Promise<number> {
       console.error(
         `      strace named seccomp; retry this gate without the filter: npx tsx scripts/ci-runner/path-trace.ts --gate ${r.id} --no-seccomp`
       );
-    if (args.write && args.replaceDeclared && v.kind === 'paths') {
-      const prior = todo.find((e) => e.id === r.id)?.paths ?? [];
-      for (const d of droppedDeclared(prior, v.paths, view.files))
-        console.error(
-          `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); the trace did not read them, confirm that is true of the gate`
-        );
-    }
+    const prior = todo.find((e) => e.id === r.id)?.paths ?? [];
+    for (const line of droppedNotes(args.write && args.replaceDeclared, v, prior, view.files))
+      console.error(line);
     if (args.write)
       writeResult(args.root, r, tree, undefined, { replaceDeclared: args.replaceDeclared });
     if (args.out !== undefined)
@@ -3220,6 +3230,23 @@ async function selftest(): Promise<number> {
     check(
       droppedDeclared(['gone/**'], ['a/x.yml'], files).length === 0,
       'droppedDeclared: a declared glob matching no tracked file gives up nothing, so it is not reported'
+    );
+    // Review eabd5fe0.3: the printout the runner emits under --replace-declared --write.
+    const paths = { kind: 'paths', paths: ['a/*.yml', 'b/z.py', 'c/q.md'] };
+    const prior = ['a/*.yml', 'b/**', 'c/q.md'];
+    const notes = droppedNotes(true, paths, prior, files);
+    check(
+      notes.length === 1 && notes[0].includes('dropped declared b/**') && notes[0].includes('b/w.py'),
+      'droppedNotes: with both flags and a paths verdict, one line names the dropped glob and the file it stops reaching'
+    );
+    check(
+      droppedNotes(false, paths, prior, files).length === 0 &&
+        droppedNotes(true, { kind: 'whole-tree' }, prior, files).length === 0,
+      'droppedNotes: CONTROL: without the flags, or for a whole-tree verdict, nothing is printed'
+    );
+    check(
+      !notes[0].includes('did not read'),
+      'droppedNotes: the line makes no claim about reads, which the function never sees (review eabd5fe0.2)'
     );
   }
 
