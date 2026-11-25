@@ -157,7 +157,9 @@ export function requestOf(
     if (positionalNames.has(key)) positionals[key] = value;
     else if (optionByKey.has(key)) params[optionByKey.get(key) as string] = value;
     else if (key === BACKGROUND_FIELD && spec.attachWindow) background = value === true;
-    // Undeclared: passed on under its own name so prepareCommand refuses it as a smuggled flag.
+    // Declared in the schema but neither a positional, an option nor a usable background ask
+    // (an undeclared field never reaches here: prepareCall refuses it first); passed on under
+    // its own name so prepareCommand refuses it as a smuggled flag.
     else params[key] = value;
   }
   return { params, positionals, background };
@@ -174,6 +176,24 @@ function targetFrom(
   if (typeof fromFlag === 'string') return fromFlag;
   const fromPositional = positional ? positionals[positional] : undefined;
   return typeof fromPositional === 'string' ? fromPositional : undefined;
+}
+
+/** The first target field (ref or machine, by flag or positional) a call carries as a non-string, or undefined. */
+function nonStringTarget(
+  entry: ContractCommand,
+  params: Record<string, unknown>,
+  positionals: Record<string, unknown>
+): string | undefined {
+  const fields: [string | null, Record<string, unknown>][] = [
+    [entry.repoOption, params],
+    [entry.repoPositional, positionals],
+    [entry.machineOption, params],
+    [entry.machinePositional, positionals],
+  ];
+  for (const [name, bag] of fields) {
+    if (name && bag[name] !== undefined && typeof bag[name] !== 'string') return name;
+  }
+  return undefined;
 }
 
 /** The text a run hands the model: what the command printed, else renet's output, then any error. */
@@ -208,6 +228,15 @@ function prepareCall(
     };
   }
   const request = requestOf(spec, known, input);
+  // authorize() reads the target as a string, so a ref of another type would be run unauthorized.
+  const badTarget = nonStringTarget(known, request.params, request.positionals);
+  if (badTarget !== undefined) {
+    return {
+      status: 'refused',
+      code: COMMAND_REJECTED,
+      reason: `The ${badTarget} field of the ${spec.name} tool must be a string.`,
+    };
+  }
   try {
     return { prepared: prepareCommand(spec.command, request.params, request.positionals), request };
   } catch (error) {
