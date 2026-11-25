@@ -155,9 +155,12 @@ afterAll(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
+const savedAnthropicKey = process.env.ANTHROPIC_API_KEY;
+
 afterEach(() => {
   recorded.length = 0;
-  delete process.env.ANTHROPIC_API_KEY;
+  if (savedAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+  else process.env.ANTHROPIC_API_KEY = savedAnthropicKey;
 });
 
 /** Sends a guarded request to the mock server, keeping its path and query. */
