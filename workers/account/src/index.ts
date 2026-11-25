@@ -4,10 +4,14 @@ import accountApp from '../../../private/account/src/entry/cloudflare.js';
 import { WRITES_FROZEN_QUEUE_DELAY_SECONDS } from '../../../private/account/src/errors.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
 import { BackupReplicator, replicatorStub } from './backup-replicator.js';
+import { CreditLedger, CreditLedgerGate } from './credit-ledger.js';
 import { fence, fencedEnv } from './d1-fence.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
 export { BackupReplicator };
+
+// The per-org AI credit ledger (Durable Object, wrangler.*.toml binds it as CREDIT_LEDGER) and the entrypoint the proxy's CREDITS service binding names.
+export { CreditLedger, CreditLedgerGate };
 
 interface Env {
   ASSETS: Fetcher;
@@ -17,6 +21,7 @@ interface Env {
   /** Replicate mode: the queue producer and the per-rule Durable Object (wrangler.*.toml). */
   BACKUP_REPLICATE_QUEUE?: Queue;
   BACKUP_REPLICATOR?: DurableObjectNamespace<BackupReplicator>;
+  CREDIT_LEDGER?: DurableObjectNamespace<CreditLedger>;
   REGION?: string;
   /** A company's opt-in IP allowlist (comma-separated addresses or IPv4 ranges); unset means off. */
   ALLOW_IPS?: string;
