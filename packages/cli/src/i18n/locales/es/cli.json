@@ -994,6 +994,7 @@
         "offlineCacheWarning": "El servidor de configuración {{server}} no está disponible; sirviendo la configuración \"{{config}}\" desde la caché sin conexión (versión del servidor {{version}}, guardada en caché hace {{age}}). Los cambios no se pueden guardar hasta que el servidor esté disponible.",
         "offlineNoCache": "El servidor de configuración {{server}} no está disponible y la configuración \"{{config}}\" todavía no tiene caché sin conexión. Ejecuta \"{{cmd}}\" cuando el servidor esté disponible para generar la caché.",
         "passkeySecretMissing": "Este dispositivo ya no conserva su clave del almacenamiento de configuración (en Linux, el llavero del kernel se vacía en cada reinicio). Vuelve a inscribir este dispositivo con: {{cmd}}",
+        "passkeySecretNotEnrolled": "Este dispositivo no se ha inscrito para esta configuración. Inscríbelo con: {{cmd}}",
         "refresh": {
           "descriptionShort": "Forzar recarga de configuración desde almacenamiento remoto",
           "description": "Forzar recarga de configuración desde almacenamiento remoto",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Mostrar estado de conexión remota",
           "description": "Mostrar estado de conexión remota",
           "deviceKeyMissing": "Este dispositivo ya no puede abrir el almacenamiento remoto de esta configuración: falta su clave (un reinicio puede vaciar el almacén de claves). Vuelve a registrar este dispositivo con: {{cmd}}",
+          "deviceNotEnrolled": "Este dispositivo no se ha registrado para esta configuración, así que no puede abrir su almacenamiento remoto. Registra este dispositivo con: {{cmd}}",
           "deviceCannotOpen": "Este dispositivo no puede abrir el almacenamiento remoto de esta configuración: se rechazó su registro, por ejemplo tras rotar la clave. Vuelve a registrar este dispositivo con: {{cmd}}"
         },
         "tokenExpired": "Token de configuración remota expirado. Vuelve a autenticarte con: {{cmd}}",

@@ -16,6 +16,52 @@ afterEach(async () => {
   await fs.rm(testDir, { recursive: true, force: true });
 });
 
+describe('enrollment marker', () => {
+  const here = () => Promise.resolve('device-here');
+  const elsewhere = () => Promise.resolve('device-elsewhere');
+
+  it('reads as enrolled here after recordEnrollment, with a non-secret marker beside the token file', async () => {
+    const mine = new RemoteTokenStorage(testDir, here);
+    await mine.set('eu', { token: 'tok', wrappedCek: 'cek' });
+    await mine.recordEnrollment('eu');
+
+    expect(await mine.enrolledHere('eu')).toBe(true);
+    const marker = JSON.parse(await fs.readFile(join(testDir, 'eu.enrolled'), 'utf-8'));
+    expect(Object.keys(marker).sort()).toEqual(['deviceId', 'enrolledAt']);
+    expect(marker.deviceId).toBe('device-here');
+    expect(Number.isNaN(Date.parse(marker.enrolledAt))).toBe(false);
+    expect((await fs.stat(join(testDir, 'eu.enrolled'))).mode & 0o777).toBe(0o600);
+  });
+
+  it('reads a config copied with its token directory as not enrolled here', async () => {
+    await new RemoteTokenStorage(testDir, elsewhere).recordEnrollment('eu');
+    expect(await new RemoteTokenStorage(testDir, here).enrolledHere('eu')).toBe(false);
+  });
+
+  it('reads a config with no marker as not enrolled here', async () => {
+    const mine = new RemoteTokenStorage(testDir, here);
+    await mine.set('eu', { token: 'tok', wrappedCek: 'cek' });
+    expect(await mine.enrolledHere('eu')).toBe(false);
+  });
+
+  it('reads an unreadable marker as not enrolled here', async () => {
+    await fs.writeFile(join(testDir, 'eu.enrolled'), 'not json');
+    expect(await new RemoteTokenStorage(testDir, here).enrolledHere('eu')).toBe(false);
+  });
+
+  it('is removed with the token file, and a marker of one config never names another', async () => {
+    const mine = new RemoteTokenStorage(testDir, here);
+    await mine.set('eu', { token: 'tok', wrappedCek: 'cek' });
+    await mine.recordEnrollment('eu');
+    await mine.set('eu.enrolled', { token: 'tok2', wrappedCek: 'cek2' });
+    expect(await mine.enrolledHere('eu.enrolled')).toBe(false);
+
+    await mine.delete('eu');
+    expect(await mine.enrolledHere('eu')).toBe(false);
+    expect(await mine.get('eu.enrolled')).toEqual({ token: 'tok2', wrappedCek: 'cek2' });
+  });
+});
+
 describe('RemoteTokenStorage', () => {
   describe('get', () => {
     it('should return null when file does not exist', async () => {

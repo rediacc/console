@@ -994,6 +994,7 @@
         "offlineCacheWarning": "Le serveur de configuration {{server}} est injoignable ; la configuration \"{{config}}\" est servie depuis le cache hors ligne (version serveur {{version}}, mise en cache il y a {{age}}). Les modifications ne peuvent pas être enregistrées tant que le serveur n'est pas joignable.",
         "offlineNoCache": "Le serveur de configuration {{server}} est injoignable et la configuration \"{{config}}\" n'a pas encore de cache hors ligne. Exécutez \"{{cmd}}\" une fois le serveur joignable pour alimenter le cache.",
         "passkeySecretMissing": "Cet appareil ne détient plus sa clé du stockage de configuration (sous Linux, le trousseau du noyau est vidé à chaque redémarrage). Réinscrivez cet appareil avec : {{cmd}}",
+        "passkeySecretNotEnrolled": "Cet appareil n'est pas inscrit pour cette configuration. Inscrivez-le avec : {{cmd}}",
         "refresh": {
           "descriptionShort": "Forcer la récupération de la configuration depuis le stockage distant",
           "description": "Forcer la récupération de la configuration depuis le stockage distant",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Afficher l'état de la connexion distante",
           "description": "Afficher l'état de la connexion distante",
           "deviceKeyMissing": "Cet appareil ne peut plus ouvrir le stockage distant de cette configuration : sa clé a disparu (un redémarrage peut vider le magasin de clés). Réinscrivez cet appareil avec : {{cmd}}",
+          "deviceNotEnrolled": "Cet appareil n'est pas inscrit pour cette configuration et ne peut donc pas ouvrir son stockage distant. Inscrivez cet appareil avec : {{cmd}}",
           "deviceCannotOpen": "Cet appareil ne peut pas ouvrir le stockage distant de cette configuration : son inscription a été refusée, par exemple après la rotation de la clé. Réinscrivez cet appareil avec : {{cmd}}"
         },
         "tokenExpired": "Jeton de configuration distante expiré. Réauthentifiez-vous avec : {{cmd}}",

@@ -124,6 +124,7 @@ function createMockTokenStorage() {
     updateToken: vi.fn(),
     recordSync: vi.fn(),
     delete: vi.fn(),
+    enrolledHere: vi.fn().mockResolvedValue(false),
     withLease: vi.fn(
       async (
         name: string,
@@ -407,6 +408,29 @@ describe('RemoteConfigAdapter', () => {
       const err = await adapter.pull().catch((e: unknown) => e);
       expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
       expect((err as RemotePasskeySecretMissingError).configName).toBe(CONFIG_NAME);
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
+    });
+
+    it('says the key is gone, likely after a restart, when this device enrolled the config', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+      tokenStorage.enrolledHere.mockResolvedValue(true);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as Error).message).toContain('no longer holds its key');
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
+    });
+
+    it('says this device has not enrolled the config when it never did (a config copied here)', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+      tokenStorage.enrolledHere.mockResolvedValue(false);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as Error).message).toContain('has not enrolled this config');
+      expect((err as Error).message).not.toContain('no longer holds');
       expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
     });
 

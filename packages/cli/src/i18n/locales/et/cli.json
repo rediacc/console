@@ -994,6 +994,7 @@
         "offlineCacheWarning": "Konfiguratsiooniserver {{server}} pole kättesaadav; konfiguratsiooni \"{{config}}\" pakutakse võrguühenduseta vahemälust (serveri versioon {{version}}, vahemällu salvestatud {{age}} tagasi). Muudatusi ei saa salvestada enne, kui server on jälle kättesaadav.",
         "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"{{cmd}}\", kui server on kättesaadav, et vahemälu täita.",
         "passkeySecretMissing": "Sellel seadmel ei ole enam konfiguratsioonihoidla võtit (Linuxis tühjendatakse kerneli võtmerõngas igal taaskäivitusel). Registreeri seade uuesti käsuga: {{cmd}}",
+        "passkeySecretNotEnrolled": "See seade ei ole selle konfiguratsiooni jaoks registreeritud. Registreeri seade käsuga: {{cmd}}",
         "refresh": {
           "descriptionShort": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Kuva kaugühenduse olek",
           "description": "Kuva kaugühenduse olek",
           "deviceKeyMissing": "See seade ei saa enam selle konfiguratsiooni kaugsalvestust avada: seadme võti on kadunud (taaskäivitus võib võtmehoidla tühjendada). Registreeri seade uuesti käsuga: {{cmd}}",
+          "deviceNotEnrolled": "See seade ei ole selle konfiguratsiooni jaoks registreeritud, mistõttu ei saa ta selle kaugsalvestust avada. Registreeri seade käsuga: {{cmd}}",
           "deviceCannotOpen": "See seade ei saa selle konfiguratsiooni kaugsalvestust avada: seadme registreering lükati tagasi, näiteks pärast võtme roteerimist. Registreeri seade uuesti käsuga: {{cmd}}"
         },
         "tokenExpired": "Kaugsalvestuse konfiguratsioonitõend on aegunud. Autentimine uuesti: {{cmd}}",

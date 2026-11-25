@@ -72,6 +72,7 @@ vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
 vi.mock('../../adapters/remote-token-storage.js', () => ({
   remoteTokenStorage: {
     get: (name: string) => Promise.resolve(tokenMem.get(name) ?? null),
+    recordEnrollment: () => Promise.resolve(),
     set: (name: string, data: { token: string; wrappedCek: string }) => {
       tokenMem.set(name, data);
       return Promise.resolve();

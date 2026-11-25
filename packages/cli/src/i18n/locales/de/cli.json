@@ -994,6 +994,7 @@
         "offlineCacheWarning": "Config-Server {{server}} ist nicht erreichbar; Konfiguration \"{{config}}\" wird aus dem Offline-Cache bereitgestellt (Serverversion {{version}}, zwischengespeichert vor {{age}}). Änderungen können erst gespeichert werden, wenn der Server wieder erreichbar ist.",
         "offlineNoCache": "Config-Server {{server}} ist nicht erreichbar, und für Konfiguration \"{{config}}\" existiert noch kein Offline-Cache. Führen Sie \"{{cmd}}\" aus, sobald der Server erreichbar ist, um den Cache zu befüllen.",
         "passkeySecretMissing": "Dieses Gerät hält seinen Schlüssel für den Konfigurationsspeicher nicht mehr (unter Linux wird der Kernel-Schlüsselbund bei jedem Neustart geleert). Gerät erneut registrieren mit: {{cmd}}",
+        "passkeySecretNotEnrolled": "Dieses Gerät ist für diese Konfiguration nicht im Konfigurationsspeicher registriert. Gerät registrieren mit: {{cmd}}",
         "refresh": {
           "descriptionShort": "Konfiguration erneut vom Remote-Speicher abrufen",
           "description": "Konfiguration erneut vom Remote-Speicher abrufen",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Remote-Verbindungsstatus anzeigen",
           "description": "Remote-Verbindungsstatus anzeigen",
           "deviceKeyMissing": "Dieses Gerät kann den Remote-Speicher dieser Konfiguration nicht mehr öffnen: Sein Schlüssel fehlt (ein Neustart kann den Schlüsselspeicher leeren). Registriere das Gerät erneut mit: {{cmd}}",
+          "deviceNotEnrolled": "Dieses Gerät ist für diese Konfiguration nicht registriert und kann ihren Remote-Speicher daher nicht öffnen. Registriere das Gerät mit: {{cmd}}",
           "deviceCannotOpen": "Dieses Gerät kann den Remote-Speicher dieser Konfiguration nicht öffnen: Seine Registrierung wurde abgelehnt, etwa nach einer Schlüsselrotation. Registriere das Gerät erneut mit: {{cmd}}"
         },
         "tokenExpired": "Remote-Konfigurations-Token abgelaufen. Erneut authentifizieren mit: {{cmd}}",

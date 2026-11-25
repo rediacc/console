@@ -172,10 +172,11 @@ export async function unwrapDeviceCek(
   passkeySecretStr: string | null | undefined,
   serverSecret: Uint8Array,
   wrappedCek: string | undefined,
-  configName: string
+  configName: string,
+  enrolledHere: () => Promise<boolean> = () => Promise.resolve(true)
 ) {
   if (!passkeySecretStr) {
-    throw new RemotePasskeySecretMissingError(configName);
+    throw new RemotePasskeySecretMissingError(configName, await enrolledHere());
   }
 
   const wrappingKey = await deriveWrappingKey(fromBase64(passkeySecretStr), serverSecret);

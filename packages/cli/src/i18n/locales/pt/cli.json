@@ -994,6 +994,7 @@
         "offlineCacheWarning": "O servidor de configuração {{server}} está inacessível; a servir a configuração \"{{config}}\" a partir da cache offline (versão do servidor {{version}}, em cache há {{age}}). As alterações não podem ser guardadas até o servidor ficar acessível.",
         "offlineNoCache": "O servidor de configuração {{server}} está inacessível e a configuração \"{{config}}\" ainda não tem cache offline. Execute \"{{cmd}}\" assim que o servidor estiver acessível para preencher a cache.",
         "passkeySecretMissing": "Este dispositivo já não tem a sua chave do armazenamento de configuração (em Linux, o porta-chaves do kernel é esvaziado a cada reinício). Volte a inscrever este dispositivo com: {{cmd}}",
+        "passkeySecretNotEnrolled": "Este dispositivo não está inscrito nesta configuração. Inscreva este dispositivo com: {{cmd}}",
         "refresh": {
           "descriptionShort": "Força uma nova busca da configuração no armazenamento remoto",
           "description": "Forçar a re-obtenção da configuração a partir do armazenamento remoto",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Mostra o estado da conexão remota",
           "description": "Mostrar o estado da ligação remota",
           "deviceKeyMissing": "Este dispositivo já não consegue abrir o armazenamento remoto desta configuração: a sua chave desapareceu (um reinício pode esvaziar o armazém de chaves). Volte a registar este dispositivo com: {{cmd}}",
+          "deviceNotEnrolled": "Este dispositivo não está registado nesta configuração, por isso não consegue abrir o armazenamento remoto. Registe este dispositivo com: {{cmd}}",
           "deviceCannotOpen": "Este dispositivo não consegue abrir o armazenamento remoto desta configuração: o seu registo foi rejeitado, por exemplo depois de a chave ser rodada. Volte a registar este dispositivo com: {{cmd}}"
         },
         "tokenExpired": "O token de configuração remota expirou. Autentique-se novamente com: {{cmd}}",

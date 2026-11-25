@@ -585,10 +585,25 @@ export class RemoteConfigAdapter {
       : failure;
   }
 
+  /** Whether this device enrolled the config (the marker beside its token file); false when that cannot be read. */
+  private async enrolledHere(): Promise<boolean> {
+    try {
+      return await this.tokenStorage.enrolledHere(this.configName);
+    } catch {
+      return false;
+    }
+  }
+
   /** Derive CEK from passkey_secret + server_secret */
   private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
     const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
-    return unwrapDeviceCek(passkeySecretStr, serverSecret, lease.data?.wrappedCek, this.configName);
+    return unwrapDeviceCek(
+      passkeySecretStr,
+      serverSecret,
+      lease.data?.wrappedCek,
+      this.configName,
+      () => this.enrolledHere()
+    );
   }
 
   /**

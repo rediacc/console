@@ -994,6 +994,7 @@
         "offlineCacheWarning": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor; \"{{config}}\" yapılandırması çevrimdışı önbellekten sunuluyor (sunucu sürümü {{version}}, {{age}} önce önbelleklendi). Sunucuya ulaşılabilir olana kadar değişiklikler kaydedilemez.",
         "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"{{cmd}}\" komutunu çalıştırın.",
         "passkeySecretMissing": "Bu cihaz, yapılandırma depolaması için anahtarını artık tutmuyor (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşalır). Bu cihazı şununla yeniden kaydedin: {{cmd}}",
+        "passkeySecretNotEnrolled": "Bu cihaz bu yapılandırma için kaydedilmemiş. Bu cihazı şununla kaydedin: {{cmd}}",
         "refresh": {
           "descriptionShort": "Yapılandırmayı uzak depolamadan zorla yeniden getirir",
           "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Uzak bağlantı durumunu gösterir",
           "description": "Uzak bağlantı durumunu göster",
           "deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (yeniden başlatma anahtar deposunu boşaltabilir). Cihazı şu komutla yeniden kaydedin: {{cmd}}",
+          "deviceNotEnrolled": "Bu cihaz bu yapılandırma için kaydedilmediğinden uzak depolamasını açamıyor. Cihazı şu komutla kaydedin: {{cmd}}",
           "deviceCannotOpen": "Bu cihaz bu yapılandırmanın uzak depolamasını açamıyor: kaydı reddedildi, örneğin anahtar döndürüldükten sonra. Cihazı şu komutla yeniden kaydedin: {{cmd}}"
         },
         "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: {{cmd}}",

@@ -155,6 +155,8 @@ export async function storeHandoffCredentials(
     token: payload.token,
     wrappedCek: payload.wrappedCek,
   });
+  // Proof that this device enrolled the config: a later missing-key message tells a lost key from a config copied here. Best effort, since the enrollment itself succeeded.
+  await remoteTokenStorage.recordEnrollment(configName).catch(() => {});
 
   return {
     apiUrl: payload.apiUrl,

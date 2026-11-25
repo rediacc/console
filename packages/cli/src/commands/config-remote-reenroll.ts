@@ -225,6 +225,9 @@ async function reenrollDevice(
     throw error;
   }
 
+  // This device enrolled the config now (best effort: the enrollment itself succeeded).
+  await remoteTokenStorage.recordEnrollment(configName).catch(() => {});
+
   // The secret under the old key id is no longer named by this config; it goes unless another local config still uses it.
   if (
     linked.storageKeyId !== credentials.storageKeyId &&

@@ -994,6 +994,7 @@
         "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
         "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"{{cmd}}\" 以生成缓存。",
         "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：{{cmd}}",
+        "passkeySecretNotEnrolled": "此设备尚未注册该配置。请使用以下命令注册此设备：{{cmd}}",
         "refresh": {
           "descriptionShort": "强制从远程存储重新获取配置",
           "description": "强制从远程存储重新获取配置",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "显示远程连接状态",
           "description": "显示远程连接状态",
           "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（重启可能会清空密钥存储）。请用以下命令重新注册此设备：{{cmd}}",
+          "deviceNotEnrolled": "此设备尚未注册该配置，因此无法打开其远程存储。请用以下命令注册此设备：{{cmd}}",
           "deviceCannotOpen": "此设备无法打开该配置的远程存储：它的注册已被拒绝，例如在密钥轮换之后。请用以下命令重新注册此设备：{{cmd}}"
         },
         "tokenExpired": "远程配置令牌已过期。请重新认证: {{cmd}}",

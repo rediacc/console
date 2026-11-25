@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3192,
-    "sourceCommit": "41e31abdc540d27033a8619b0b77f3c4f02e864a"
+    "keyCount": 3194,
+    "sourceCommit": "3b38aa0dc8612928979ef6f411588217a17e8adb"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -795,6 +795,7 @@
     "commands.config.remote.offlineCacheWarning": "fccdc64f",
     "commands.config.remote.offlineNoCache": "266d5318",
     "commands.config.remote.passkeySecretMissing": "444ed69d",
+    "commands.config.remote.passkeySecretNotEnrolled": "af3f4cb8",
     "commands.config.remote.preconditionFailed": "9abb98f0",
     "commands.config.remote.pushVisibility": "f1556e44",
     "commands.config.remote.refresh.description": "1461f3c2",
@@ -825,6 +826,7 @@
     "commands.config.remote.status.descriptionShort": "68f70d9c",
     "commands.config.remote.status.deviceCannotOpen": "c5f2dc2f",
     "commands.config.remote.status.deviceKeyMissing": "0fdbda90",
+    "commands.config.remote.status.deviceNotEnrolled": "28f8abe1",
     "commands.config.remote.storeCopyGone": "e579c657",
     "commands.config.remote.teamForbidden": "eb15ad95",
     "commands.config.remote.teamForbiddenCachePurged": "858ccf08",

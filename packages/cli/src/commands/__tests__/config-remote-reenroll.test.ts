@@ -15,6 +15,8 @@
  */
 
 import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertThrowawayDir } from '../../__tests__/throwaway-dir.js';
@@ -288,6 +290,7 @@ async function enrolledDevice(): Promise<void> {
     },
   });
   secureMem.set(PASSKEY_KEY_ID, SLOT_SECRET);
+  await remoteTokenStorage.recordEnrollment(active.name);
 }
 
 /** The reboot: the kernel keyring is empty again, everything on disk is as it was. */
@@ -698,6 +701,23 @@ describe('config remote status: can this device open the store', () => {
       storeId: STORE_ID,
     });
     expect(messages.join('\n')).toContain(`rdc --config ${active.name} config remote enable`);
+    expect(messages.join('\n')).toContain('its key is gone');
+  });
+
+  // A config copied from another machine carries no marker of this device's: the key was never here, so no restart emptied it.
+  it('reads a config this device never enrolled as not enrolled here, not as a lost key', async () => {
+    await enrolledDevice();
+    await fs.writeFile(
+      join(getConfigDir(), '.tokens', `${active.name}.enrolled`),
+      JSON.stringify({ deviceId: 'another-machine', enrolledAt: '2026-01-01T00:00:00.000Z' })
+    );
+    reboot();
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'device-key-missing', deviceCanOpen: false });
+    const text = messages.join('\n');
+    expect(text).toContain('has not enrolled this config');
+    expect(text).not.toContain('its key is gone');
+    expect(text).toContain(`rdc --config ${active.name} config remote enable`);
   });
 
   // A healthy local key says nothing about the server, so "connected" still needs the session probe.

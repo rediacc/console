@@ -105,10 +105,12 @@ function statusLabel(accessLoss: 'key-missing' | 'rejected' | null, connected: b
   return connected ? 'connected' : 'error';
 }
 
-function accessLossKey(accessLoss: 'key-missing' | 'rejected') {
-  return accessLoss === 'key-missing'
+/** The message for an access loss; a missing key reads as lost only when this device enrolled the config. */
+function accessLossKey(accessLoss: 'key-missing' | 'rejected', enrolledHere: boolean) {
+  if (accessLoss === 'rejected') return 'commands.config.remote.status.deviceCannotOpen';
+  return enrolledHere
     ? 'commands.config.remote.status.deviceKeyMissing'
-    : 'commands.config.remote.status.deviceCannotOpen';
+    : 'commands.config.remote.status.deviceNotEnrolled';
 }
 
 async function showStatus(configName: string, format: OutputFormat): Promise<void> {
@@ -175,8 +177,12 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     format
   );
   if (accessLoss !== null && format !== 'json') {
+    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+    const enrolledHere = await remoteTokenStorage.enrolledHere(configName);
     outputService.warn(
-      t(accessLossKey(accessLoss), { cmd: rdcCommand('config remote enable', configName) })
+      t(accessLossKey(accessLoss, enrolledHere), {
+        cmd: rdcCommand('config remote enable', configName),
+      })
     );
   }
 }

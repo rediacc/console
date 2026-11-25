@@ -8,11 +8,13 @@
  * File permissions: 0o600
  */
 
+import { createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import type { StoredConfigKeyWrap } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { readLocalMachineId } from '../services/account/client-machine-id.js';
 import { rdcCommand } from '../services/config/config-name.js';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
@@ -58,6 +60,24 @@ export interface TokenData {
   sync?: SyncRecord;
 }
 
+/**
+ * Proof that THIS device enrolled a config, kept beside its token file as `<configName>.enrolled`.
+ * Non-secret: the device id is a digest of the host's machine id, so a marker carried over in a
+ * copied config directory names the other machine and reads as not enrolled here.
+ */
+export interface EnrollmentMarker {
+  /** `deviceIdentity()` of the device that enrolled. */
+  deviceId: string;
+  /** ISO time of the enrollment. */
+  enrolledAt: string;
+}
+
+/** The digest of this host's machine id that a marker records (the raw id never leaves the host). */
+export async function deviceIdentity(): Promise<string> {
+  const machineId = await readLocalMachineId();
+  return createHash('sha256').update(`rdc-device-enrollment:${machineId}`).digest('hex');
+}
+
 /** Lock retry options matching config-file-storage.ts */
 const LOCK_OPTIONS = {
   stale: 45_000,
@@ -87,8 +107,47 @@ export interface TokenLease {
 export class RemoteTokenStorage {
   private readonly tokensDir: string;
 
-  constructor(tokensDir: string = TOKENS_DIR) {
+  private readonly identify: () => Promise<string>;
+
+  constructor(tokensDir: string = TOKENS_DIR, identify: () => Promise<string> = deviceIdentity) {
     this.tokensDir = tokensDir;
+    this.identify = identify;
+  }
+
+  private getMarkerPath(configName: string): string {
+    return join(this.tokensDir, `${configName}.enrolled`);
+  }
+
+  /**
+   * Record that this device enrolled `configName`, now. Called once an enrollment succeeded (the
+   * handoff or a re-enrollment); a failure here costs only the wording of a later missing-key
+   * message, so callers do not let it fail the enrollment.
+   */
+  async recordEnrollment(configName: string): Promise<void> {
+    await this.ensureDirectory();
+    const path = this.getMarkerPath(configName);
+    const marker: EnrollmentMarker = {
+      deviceId: await this.identify(),
+      enrolledAt: new Date().toISOString(),
+    };
+    const tmpPath = `${path}.tmp`;
+    await fs.writeFile(tmpPath, JSON.stringify(marker), { mode: 0o600 });
+    await fs.rename(tmpPath, path);
+  }
+
+  /**
+   * True only when the marker beside the token file names this device. No marker (a config copied
+   * from another machine, or enrolled before markers existed), another device's marker, or an
+   * unreadable one all read as not enrolled here.
+   */
+  async enrolledHere(configName: string): Promise<boolean> {
+    try {
+      const raw = await fs.readFile(this.getMarkerPath(configName), 'utf-8');
+      const marker = JSON.parse(raw) as Partial<EnrollmentMarker> | null;
+      return typeof marker?.deviceId === 'string' && marker.deviceId === (await this.identify());
+    } catch {
+      return false;
+    }
   }
 
   private getPath(configName: string): string {
@@ -224,15 +283,16 @@ export class RemoteTokenStorage {
   }
 
   /**
-   * Delete the token file for a config.
+   * Delete the token file for a config, and the enrollment marker beside it.
    */
   async delete(configName: string): Promise<void> {
-    const path = this.getPath(configName);
-    try {
-      await fs.unlink(path);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        throw error;
+    for (const path of [this.getPath(configName), this.getMarkerPath(configName)]) {
+      try {
+        await fs.unlink(path);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          throw error;
+        }
       }
     }
   }

@@ -994,6 +994,7 @@
         "offlineCacheWarning": "Il server di configurazione {{server}} non è raggiungibile; la configurazione \"{{config}}\" viene servita dalla cache offline (versione server {{version}}, salvata in cache {{age}} fa). Le modifiche non possono essere salvate finché il server non è raggiungibile.",
         "offlineNoCache": "Il server di configurazione {{server}} non è raggiungibile e la configurazione \"{{config}}\" non ha ancora una cache offline. Esegui \"{{cmd}}\" quando il server sarà raggiungibile per popolare la cache.",
         "passkeySecretMissing": "Questo dispositivo non possiede più la sua chiave per l'archivio di configurazione (su Linux il keyring del kernel viene svuotato a ogni riavvio). Iscrivi di nuovo questo dispositivo con: {{cmd}}",
+        "passkeySecretNotEnrolled": "Questo dispositivo non è iscritto a questa configurazione. Iscrivilo con: {{cmd}}",
         "refresh": {
           "descriptionShort": "Forza il recupero della configurazione dallo storage remoto",
           "description": "Forza il recupero della configurazione dallo storage remoto",
@@ -1008,6 +1009,7 @@
           "descriptionShort": "Mostra lo stato della connessione remota",
           "description": "Mostra lo stato della connessione remota",
           "deviceKeyMissing": "Questo dispositivo non riesce più ad aprire l'archivio remoto di questa configurazione: la sua chiave è sparita (un riavvio può svuotare l'archivio delle chiavi). Registra di nuovo il dispositivo con: {{cmd}}",
+          "deviceNotEnrolled": "Questo dispositivo non è registrato per questa configurazione, quindi non può aprirne l'archivio remoto. Registra il dispositivo con: {{cmd}}",
           "deviceCannotOpen": "Questo dispositivo non riesce ad aprire l'archivio remoto di questa configurazione: la sua registrazione è stata rifiutata, ad esempio dopo la rotazione della chiave. Registra di nuovo il dispositivo con: {{cmd}}"
         },
         "tokenExpired": "Token della configurazione remota scaduto. Autenticati di nuovo con: {{cmd}}",

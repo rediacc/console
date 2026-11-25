@@ -276,12 +276,24 @@ function isNetworkErrorNode(node: object): boolean {
   return node instanceof TypeError && /fetch failed/i.test(node.message);
 }
 
+/**
+ * This device holds no slot secret for the config. `enrolledHere` says whether this device enrolled
+ * it (the marker beside the token file): then the key is gone, likely after a restart; otherwise the
+ * device never held it, as with a config copied from another machine. A caller that cannot tell
+ * keeps the first wording.
+ */
 export class RemotePasskeySecretMissingError extends Error {
-  constructor(public readonly configName: string = getEffectiveConfigName()) {
+  constructor(
+    public readonly configName: string = getEffectiveConfigName(),
+    public readonly enrolledHere: boolean = true
+  ) {
     super(
-      t('commands.config.remote.passkeySecretMissing', {
-        cmd: rdcCommand('config remote enable', configName),
-      })
+      t(
+        enrolledHere
+          ? 'commands.config.remote.passkeySecretMissing'
+          : 'commands.config.remote.passkeySecretNotEnrolled',
+        { cmd: rdcCommand('config remote enable', configName) }
+      )
     );
     this.name = 'RemotePasskeySecretMissingError';
   }
