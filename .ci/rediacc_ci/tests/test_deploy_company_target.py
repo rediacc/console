@@ -546,6 +546,64 @@ def test_a_bench_company_record_goes_to_the_bench_control_database(root, fakes, 
     assert fakes["control"][0][0] == "control-bench-eu"
 
 
+def bench_before_args(root: pathlib.Path, out: pathlib.Path, bench: bool) -> argparse.Namespace:
+    return dr._parser().parse_args(
+        [
+            "before",
+            *account_args(root),
+            *(["--company-bench"] if bench else []),
+            "--proxy-config",
+            str(proxy_cfg(root)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+
+
+@pytest.fixture
+def no_r2(fakes, monkeypatch):
+    """The real R2 reader with no R2 credentials, as the bench profile deploy-proxy-bench-eu binds them."""
+    for name in ("CLOUDFLARE_R2_ENDPOINT", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(dr, "read_json_object", READ_JSON_OBJECT)
+    return fakes
+
+
+READ_JSON_OBJECT = dr.read_json_object
+
+
+def test_a_bench_company_before_hashes_the_staged_tree_and_never_reads_r2(root, no_r2, tmp_path):
+    """The 2026-11-25 bench rerun failed `before` on `CLOUDFLARE_R2_ENDPOINT must be set`: a bench company's image is built from the tree, so its before record reads the staged tree manifest and never the release's."""
+    stage = root / "workers" / "proxy" / "stage"
+    stage.mkdir()
+    files = {name: {"sha256": "e" * 64, "size": 1} for name in MANIFEST_FILES}
+    (stage / executor_artifacts.MANIFEST).write_text(
+        json.dumps({"version": executor_artifacts.LOCAL_VERSION, "git_sha": "abc", "files": files})
+    )
+    out = tmp_path / "before.json"
+    assert dr.cmd_before(bench_before_args(root, out, bench=True), root) == 0
+    manifest = json.loads(out.read_text())["executor_manifest"]
+    assert manifest["sha256"] == dict.fromkeys(MANIFEST_FILES, "e" * 64)
+    assert manifest["source"] == "tree"
+    assert no_r2["aws"] == []
+
+
+@pytest.mark.usefixtures("no_r2")
+def test_a_bench_company_before_with_nothing_staged_records_an_empty_table(root, tmp_path):
+    out = tmp_path / "before.json"
+    assert dr.cmd_before(bench_before_args(root, out, bench=True), root) == 0
+    assert json.loads(out.read_text())["executor_manifest"]["sha256"] == {}
+
+
+@pytest.mark.usefixtures("no_r2")
+def test_a_stable_company_before_without_r2_still_fails_loudly(root, tmp_path):
+    """Control: a stable company's image is the release's, so its before record reads the release manifest and refuses without R2."""
+    with pytest.raises(dr.RecordError, match="CLOUDFLARE_R2_ENDPOINT must be set"):
+        dr.cmd_before(bench_before_args(root, tmp_path / "before.json", bench=False), root)
+
+
 @pytest.mark.parametrize(("bench", "rc", "status"), [(True, 0, "deployed"), (False, 1, "failed")])
 def test_only_a_bench_company_skips_the_staged_manifest_comparison(
     root, fakes, tmp_path, bench, rc, status
