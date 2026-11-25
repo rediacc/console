@@ -2788,6 +2788,7 @@
           "lan": "ثبّت على جهاز LAN بشهادة موجودة وعلى الفئة المجانية."
         },
         "optionBundle": "مجلد الحزمة دون اتصال الذي كتبه 'rdc server bundle'",
+        "optionSigner": "البصمة التي طبعها 'rdc server bundle'؛ يجب أن تكون الحزمة موقّعة بهذا المفتاح",
         "optionOffline": "ثبّت دون اتصال من --bundle: دون أي استدعاء للمصدر أو السجل أو مدير الحزم",
         "helpOffline": "بيئة معزولة عن الشبكة: أنشئ الحزمة وأنت متصل بالإنترنت عبر rdc server bundle --out <dir>. يتحقق rdc server install --offline --bundle <dir> منها، ويحمّل صورة الوكيل، ويُعدّ الجهاز دون اتصال، ولا يتصل بأي جهة خارجية. يتوقف التثبيت عند خطوة الترخيص ويكتب ملف طلب: أصدر شهادة عبر الإنترنت باستخدام rdc server licence mint ثم أعد التشغيل مع --cert."
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "جارٍ تنزيل CLI {{version}} لمنصة {{platform}}",
         "pulling": "جارٍ سحب {{image}} ({{platform}})",
         "saving": "جارٍ حفظ {{image}} في {{file}}",
+        "optionNoModels": "استبعاد نماذج الكشف من الحزمة",
+        "fetchingModels": "جارٍ تنزيل نماذج الكشف المستقرة",
+        "signer": "بصمة موقّع الحزمة: {{fingerprint}}. مرّرها عبر --signer في الجهة المعزولة، وانقلها بطريق مختلف عن الحزمة نفسها.",
         "written": "كُتبت الحزمة في {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "لا يحتوي {{url}} على مجموع تحقق sha256",
@@ -2887,7 +2891,12 @@
           "sumsLine": "يحتوي SHA256SUMS على سطر ليس بصيغة '<sha256>  <file>': {{line}}",
           "tagAndImage": "لا يمكن الجمع بين --tag و --image",
           "tampered": "{{file}} لا يطابق SHA256SUMS أو البيان: الحزمة عُدّلت أو تالفة",
-          "unreadable": "تعذّرت قراءة {{file}} من الحزمة {{dir}}"
+          "unreadable": "تعذّرت قراءة {{file}} من الحزمة {{dir}}",
+          "unsigned": "لا يحتوي المجلد {{dir}} على ملف {{file}} قابل للقراءة؛ لا يمكن التثبيت من حزمة بُنيت قبل ظهور التوقيع",
+          "signerMismatch": "الحزمة موقّعة بالمفتاح {{actual}} وليس بقيمة --signer المعطاة {{expected}}",
+          "badSignature": "الملف manifest.sig ليس توقيع الموقّع على manifest.json",
+          "modelsShape": "ملف النماذج {{file}} ليس بالصيغة المتوقعة",
+          "modelsSha256Mismatch": "ناتج التجزئة لـ {{url}} هو {{actual}} بينما المتوقع {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "الإصدار يتطلب إعدادًا مسجَّلًا دخوله (rdc subscription login)",
         "missingEssentials": "مفقود على الجهاز (لا يستطيع الإعداد دون اتصال تثبيته): {{missing}}",
         "needsBundle": "--offline يتطلب --bundle <dir>",
+        "needsSigner": "تحتاج الحزمة إلى --signer <fingerprint>، وهي البصمة التي طبعها 'rdc server bundle'",
         "noBws": "--bws-project يحتاج إلى الشبكة ولا يمكن استخدامه مع --offline",
         "noCfToken": "--cf-token يحتاج إلى الشبكة ولا يمكن استخدامه مع --offline",
         "noProxyImage": "لا تحتوي الحزمة على صورة الوكيل {{ref}}",

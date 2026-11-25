@@ -2788,6 +2788,7 @@
           "lan": "Paigalda LAN-masinale olemasoleva sertifikaadiga tasuta tasemel."
         },
         "optionBundle": "Võrguta komplekti kaust, mille kirjutas 'rdc server bundle'",
+        "optionSigner": "Sõrmejälg, mille 'rdc server bundle' välja trükkis; pakett peab olema selle võtmega allkirjastatud",
         "optionOffline": "Paigalda võrguta valikust --bundle: ühtegi päringut ülesvoolu, registrisse ega paketihaldurisse ei tehta",
         "helpOffline": "Võrguühenduseta keskkond: koosta pakett võrgus käsuga rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> kontrollib paketti, laadib proxy kujutise, seadistab masina ilma võrguta ega pöördu millegi välise poole. Paigaldus peatub litsentsi sammu juures ja kirjutab päringu: väljasta sertifikaat võrgus (käsk rdc server licence mint) ja käivita siis uuesti võtmega --cert."
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "CLI {{version}} allalaadimine platvormile {{platform}}",
         "pulling": "Tõmban kujutist {{image}} ({{platform}})",
         "saving": "Salvestan kujutise {{image}} faili {{file}}",
+        "optionNoModels": "Jäta tuvastusmudelid paketist välja",
+        "fetchingModels": "Laadin alla stabiilsed tuvastusmudelid",
+        "signer": "Paketi allkirjastaja sõrmejälg: {{fingerprint}}. Anna see eraldatud poolel üle võtmega --signer ja vii see kohale muud teed kui pakett.",
         "written": "Komplekt kirjutati kausta {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} ei sisalda sha256 kontrollsummat",
@@ -2887,7 +2891,12 @@
           "sumsLine": "SHA256SUMS sisaldab rea, mis ei ole kujul '<sha256>  <file>': {{line}}",
           "tagAndImage": "--tag ja --image ei saa koos kasutada",
           "tampered": "{{file}} ei vasta failile SHA256SUMS ega manifestile: komplekti on muudetud või see on kahjustatud",
-          "unreadable": "Faili {{file}} ei saa komplektist {{dir}} lugeda"
+          "unreadable": "Faili {{file}} ei saa komplektist {{dir}} lugeda",
+          "unsigned": "Paketis {{dir}} pole loetavat faili {{file}}; enne allkirjastamist loodud paketist ei saa paigaldada",
+          "signerMismatch": "Pakett on allkirjastatud võtmega {{actual}}, mitte antud --signer {{expected}} võtmega",
+          "badSignature": "manifest.sig ei ole allkirjastaja allkiri failile manifest.json",
+          "modelsShape": "Mudelifail {{file}} ei ole oodatud kujul",
+          "modelsSha256Mismatch": "{{url}} räsi on {{actual}}, oodati {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "Väljaandmiseks on vaja sisse logitud konfiguratsiooni (rdc subscription login)",
         "missingEssentials": "Masinas puudub (võrguta seadistus ei saa seda paigaldada): {{missing}}",
         "needsBundle": "--offline nõuab valikut --bundle <dir>",
+        "needsSigner": "Pakett vajab võtit --signer <fingerprint>, milleks on 'rdc server bundle' väljastatud sõrmejälg",
         "noBws": "--bws-project vajab võrku ja seda ei saa koos valikuga --offline kasutada",
         "noCfToken": "--cf-token vajab võrku ja seda ei saa koos valikuga --offline kasutada",
         "noProxyImage": "Komplektis puudub puhverserveri kujutis {{ref}}",

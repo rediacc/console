@@ -2788,6 +2788,7 @@
           "lan": "Installare su una macchina della LAN con un certificato esistente, con il livello gratuito."
         },
         "optionBundle": "Directory del bundle offline scritta da 'rdc server bundle'",
+        "optionSigner": "Impronta stampata da 'rdc server bundle'; il bundle deve essere firmato con quella chiave",
         "optionOffline": "Installare in modalità air-gapped da --bundle: nessuna chiamata a upstream, registry o gestore di pacchetti",
         "helpOffline": "Ambiente isolato: crea il bundle online con rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> lo verifica, carica l'immagine del proxy, configura la macchina offline e non contatta nulla all'esterno. L'installazione si ferma al passaggio della licenza e scrive una richiesta: emetti un certificato online con rdc server licence mint, poi riesegui con --cert."
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "Download della CLI {{version}} per {{platform}}",
         "pulling": "Download di {{image}} ({{platform}})",
         "saving": "Salvataggio di {{image}} in {{file}}",
+        "optionNoModels": "Lascia fuori dal bundle i modelli di rilevamento",
+        "fetchingModels": "Scarico i modelli di rilevamento stabili",
+        "signer": "Impronta del firmatario del bundle: {{fingerprint}}. Passala come --signer sul lato air-gapped, trasmessa per una via diversa dal bundle.",
         "written": "Bundle scritto in {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} non contiene alcuna somma sha256",
@@ -2887,7 +2891,12 @@
           "sumsLine": "SHA256SUMS contiene una riga che non ha la forma '<sha256>  <file>': {{line}}",
           "tagAndImage": "--tag e --image non possono essere combinati",
           "tampered": "{{file}} non corrisponde a SHA256SUMS né al manifest: il bundle è stato modificato o danneggiato",
-          "unreadable": "Impossibile leggere {{file}} dal bundle {{dir}}"
+          "unreadable": "Impossibile leggere {{file}} dal bundle {{dir}}",
+          "unsigned": "Il bundle {{dir}} non ha un {{file}} leggibile; un bundle creato prima della firma non si può installare",
+          "signerMismatch": "Il bundle è firmato con la chiave {{actual}}, non con il --signer {{expected}}",
+          "badSignature": "manifest.sig non è la firma del firmatario su manifest.json",
+          "modelsShape": "Il file di modelli {{file}} non ha il formato previsto",
+          "modelsSha256Mismatch": "{{url}} ha dato l'hash {{actual}}, atteso {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "L'emissione richiede una configurazione con accesso effettuato (rdc subscription login)",
         "missingEssentials": "Mancano sulla macchina (la configurazione offline non può installarli): {{missing}}",
         "needsBundle": "--offline richiede --bundle <dir>",
+        "needsSigner": "Un bundle richiede --signer <fingerprint>, l'impronta stampata da 'rdc server bundle'",
         "noBws": "--bws-project richiede la rete e non può essere usato con --offline",
         "noCfToken": "--cf-token richiede la rete e non può essere usato con --offline",
         "noProxyImage": "Il bundle non contiene l'immagine del proxy {{ref}}",

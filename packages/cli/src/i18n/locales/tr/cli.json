@@ -2788,6 +2788,7 @@
           "lan": "Bir LAN makinesine mevcut sertifikayla, ücretsiz katmanda kurulum yap."
         },
         "optionBundle": "'rdc server bundle' ile oluşturulan çevrimdışı paket dizini",
+        "optionSigner": "'rdc server bundle' komutunun yazdırdığı parmak izi; paket bu anahtarla imzalanmış olmalı",
         "optionOffline": "--bundle ile ağsız kur: üst kaynak, kayıt defteri veya paket yöneticisi çağrısı yapılmaz",
         "helpOffline": "İzole ağ: paketi internet erişimi olan bir makinede rdc server bundle --out <dir> ile oluşturun. rdc server install --offline --bundle <dir> paketi doğrular, proxy imajını yükler, makineyi çevrimdışı kurar ve dışarıya hiçbir çağrı yapmaz. Kurulum lisans adımında durup bir istek dosyası yazar: çevrimiçi bir sertifika üretin (rdc server licence mint), ardından --cert ile yeniden çalıştırın."
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "{{platform}} için CLI {{version}} indiriliyor",
         "pulling": "{{image}} çekiliyor ({{platform}})",
         "saving": "{{image}}, {{file}} dosyasına kaydediliyor",
+        "optionNoModels": "Algılama modellerini paketin dışında bırak",
+        "fetchingModels": "Kararlı algılama modelleri indiriliyor",
+        "signer": "Paket imzalayıcısının parmak izi: {{fingerprint}}. Bunu hava boşluklu tarafta --signer olarak verin, paketten farklı bir yoldan taşıyın.",
         "written": "Paket {{dir}} dizinine yazıldı ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} içinde sha256 sağlama toplamı yok",
@@ -2887,7 +2891,12 @@
           "sumsLine": "SHA256SUMS içinde '<sha256>  <file>' biçiminde olmayan bir satır var: {{line}}",
           "tagAndImage": "--tag ile --image birlikte kullanılamaz",
           "tampered": "{{file}}, SHA256SUMS veya manifest ile eşleşmiyor: paket değiştirilmiş ya da bozulmuş",
-          "unreadable": "{{file}}, {{dir}} paketinden okunamıyor"
+          "unreadable": "{{file}}, {{dir}} paketinden okunamıyor",
+          "unsigned": "{{dir}} paketinde okunabilir bir {{file}} yok; imzalamadan önce oluşturulmuş bir paketten kurulum yapılamaz",
+          "signerMismatch": "Paket {{actual}} anahtarıyla imzalanmış, verilen --signer {{expected}} ile değil",
+          "badSignature": "manifest.sig, imzalayıcının manifest.json üzerindeki imzası değil",
+          "modelsShape": "{{file}} model dosyası beklenen biçimde değil",
+          "modelsSha256Mismatch": "{{url}} için özet {{actual}} çıktı, beklenen {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "Sertifika üretmek için oturum açılmış bir yapılandırma gerekir (rdc subscription login)",
         "missingEssentials": "Makinede eksik olanlar (çevrimdışı kurulum bunları yükleyemez): {{missing}}",
         "needsBundle": "--offline için --bundle <dir> gerekir",
+        "needsSigner": "Paket için --signer <fingerprint> gerekir; 'rdc server bundle' çıktısındaki parmak izi",
         "noBws": "--bws-project ağ gerektirir ve --offline ile kullanılamaz",
         "noCfToken": "--cf-token ağ gerektirir ve --offline ile kullanılamaz",
         "noProxyImage": "Paket {{ref}} proxy imajını içermiyor",

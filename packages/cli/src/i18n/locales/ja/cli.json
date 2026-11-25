@@ -2788,6 +2788,7 @@
           "lan": "既存の証明書を使い、無料プランで LAN マシンにインストールします。"
         },
         "optionBundle": "'rdc server bundle' が書き出したオフラインバンドルのディレクトリ",
+        "optionSigner": "'rdc server bundle' が表示したフィンガープリント。バンドルはその鍵で署名されている必要があります",
         "optionOffline": "--bundle からエアギャップ環境にインストールする: アップストリーム、レジストリ、パッケージの呼び出しは行わない",
         "helpOffline": "エアギャップ環境: オンラインの環境で rdc server bundle --out <dir> を実行してバンドルを作成します。rdc server install --offline --bundle <dir> はバンドルを検証し、プロキシイメージを読み込み、オフラインでセットアップして、外部には一切接続しません。インストールはライセンスの手順で止まり、リクエストを書き出します。オンラインの環境で rdc server licence mint により証明書を発行し、--cert を付けて再実行してください。"
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "{{platform}} 向け CLI {{version}} をダウンロードしています",
         "pulling": "{{image}} ({{platform}}) を pull しています",
         "saving": "{{image}} を {{file}} に保存しています",
+        "optionNoModels": "検知モデルをバンドルに含めない",
+        "fetchingModels": "安定版の検知モデルをダウンロードしています",
+        "signer": "バンドル署名者のフィンガープリント: {{fingerprint}}。エアギャップ側で --signer として渡してください。バンドルとは別の経路で届けます。",
         "written": "バンドルを {{dir}} に書き出しました ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} に sha256 チェックサムがありません",
@@ -2887,7 +2891,12 @@
           "sumsLine": "SHA256SUMS に '<sha256>  <file>' の形式ではない行があります: {{line}}",
           "tagAndImage": "--tag と --image は同時に指定できません",
           "tampered": "{{file}} が SHA256SUMS またはマニフェストと一致しません。バンドルが変更されたか破損しています",
-          "unreadable": "バンドル {{dir}} から {{file}} を読み取れません"
+          "unreadable": "バンドル {{dir}} から {{file}} を読み取れません",
+          "unsigned": "バンドル {{dir}} に読み取れる {{file}} がありません。署名機能の追加前に作られたバンドルからはインストールできません",
+          "signerMismatch": "バンドルは鍵 {{actual}} で署名されており、指定の --signer {{expected}} とは異なります",
+          "badSignature": "manifest.sig は manifest.json に対する署名者の署名ではありません",
+          "modelsShape": "モデルファイル {{file}} が想定の形式ではありません",
+          "modelsSha256Mismatch": "{{url}} のハッシュは {{actual}} で、期待値は {{expected}} でした"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "発行にはログイン済みの設定が必要です (rdc subscription login)",
         "missingEssentials": "マシンに不足しています (オフラインセットアップではインストールできません): {{missing}}",
         "needsBundle": "--offline には --bundle <dir> が必要です",
+        "needsSigner": "バンドルには --signer <fingerprint> が必要です。'rdc server bundle' が表示したフィンガープリントを指定してください",
         "noBws": "--bws-project はネットワークが必要なため、--offline とは併用できません",
         "noCfToken": "--cf-token はネットワークが必要なため、--offline とは併用できません",
         "noProxyImage": "バンドルにプロキシイメージ {{ref}} が含まれていません",

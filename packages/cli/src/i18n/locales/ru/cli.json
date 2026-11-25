@@ -2788,6 +2788,7 @@
           "lan": "Установить на машину в LAN с готовым сертификатом на бесплатном тарифе."
         },
         "optionBundle": "Каталог офлайн-пакета, созданного командой 'rdc server bundle'",
+        "optionSigner": "Отпечаток, который вывела команда 'rdc server bundle'; бандл должен быть подписан этим ключом",
         "optionOffline": "Установить без доступа к сети из --bundle: без обращений к upstream, реестру и менеджеру пакетов",
         "helpOffline": "Изолированная сеть: соберите бандл онлайн командой rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> проверяет его, загружает образ прокси, настраивает машину без доступа в сеть и ничего не вызывает снаружи. Установка останавливается на шаге лицензии и записывает запрос: выпустите сертификат онлайн командой rdc server licence mint и запустите установку снова с --cert."
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "Загрузка CLI {{version}} для {{platform}}",
         "pulling": "Загрузка {{image}} ({{platform}})",
         "saving": "Сохранение {{image}} в {{file}}",
+        "optionNoModels": "Не включать в бандл модели обнаружения",
+        "fetchingModels": "Загрузка стабильных моделей обнаружения",
+        "signer": "Отпечаток подписанта бандла: {{fingerprint}}. Передайте его как --signer на изолированной стороне, доставив другим путём, а не вместе с бандлом.",
         "written": "Пакет записан в {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "В {{url}} нет контрольной суммы sha256",
@@ -2887,7 +2891,12 @@
           "sumsLine": "В SHA256SUMS есть строка не в формате '<sha256>  <file>': {{line}}",
           "tagAndImage": "--tag и --image нельзя использовать одновременно",
           "tampered": "{{file}} не совпадает с SHA256SUMS или манифестом: пакет был изменён или повреждён",
-          "unreadable": "Не удаётся прочитать {{file}} из пакета {{dir}}"
+          "unreadable": "Не удаётся прочитать {{file}} из пакета {{dir}}",
+          "unsigned": "В бандле {{dir}} нет читаемого файла {{file}}; бандл, собранный до появления подписи, установить нельзя",
+          "signerMismatch": "Бандл подписан ключом {{actual}}, а не указанным --signer {{expected}}",
+          "badSignature": "manifest.sig не является подписью подписанта под manifest.json",
+          "modelsShape": "Файл моделей {{file}} имеет неожиданный формат",
+          "modelsSha256Mismatch": "Хеш {{url}} равен {{actual}}, ожидался {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "Для выпуска сертификата нужна конфигурация с выполненным входом (rdc subscription login)",
         "missingEssentials": "На машине отсутствует (офлайн-настройка не может это установить): {{missing}}",
         "needsBundle": "--offline требует --bundle <dir>",
+        "needsSigner": "Для бандла нужен --signer <fingerprint>, отпечаток из вывода 'rdc server bundle'",
         "noBws": "--bws-project требует сети и несовместим с --offline",
         "noCfToken": "--cf-token требует сети и несовместим с --offline",
         "noProxyImage": "В пакете нет образа прокси {{ref}}",

@@ -2788,6 +2788,7 @@
           "lan": "使用现有证书，在 LAN 机器上以免费版安装。"
         },
         "optionBundle": "由 'rdc server bundle' 生成的离线安装包目录",
+        "optionSigner": "'rdc server bundle' 输出的指纹；离线包必须由该密钥签名",
         "optionOffline": "通过 --bundle 离线安装：不访问上游、镜像仓库或包管理器",
         "helpOffline": "离线（气隙）环境：先在联网环境用 rdc server bundle --out <dir> 生成离线包。rdc server install --offline --bundle <dir> 会校验离线包、加载代理镜像、以离线方式配置机器，并且不访问任何外部服务。安装会在许可证步骤停下并写出一个请求文件：请在联网环境用 rdc server licence mint 签发证书，然后加上 --cert 重新运行。"
       },
@@ -2867,6 +2868,9 @@
         "downloadingCli": "正在下载适用于 {{platform}} 的 CLI {{version}}",
         "pulling": "正在拉取 {{image}}（{{platform}}）",
         "saving": "正在将 {{image}} 保存到 {{file}}",
+        "optionNoModels": "不在离线包中包含检测模型",
+        "fetchingModels": "正在下载稳定版检测模型",
+        "signer": "离线包签名者指纹：{{fingerprint}}。请在隔离网络一侧作为 --signer 传入，并通过与离线包不同的途径传递。",
         "written": "安装包已写入 {{dir}}（{{arch}}）",
         "errors": {
           "cliChecksumFile": "{{url}} 中没有 sha256 校验和",
@@ -2887,7 +2891,12 @@
           "sumsLine": "SHA256SUMS 中有一行不符合 '<sha256>  <file>' 格式：{{line}}",
           "tagAndImage": "--tag 与 --image 不能同时使用",
           "tampered": "{{file}} 与 SHA256SUMS 或清单不一致：安装包已被修改或损坏",
-          "unreadable": "无法从安装包 {{dir}} 中读取 {{file}}"
+          "unreadable": "无法从安装包 {{dir}} 中读取 {{file}}",
+          "unsigned": "离线包 {{dir}} 中没有可读取的 {{file}}；签名功能出现之前构建的离线包无法用于安装",
+          "signerMismatch": "离线包由密钥 {{actual}} 签名，而不是指定的 --signer {{expected}}",
+          "badSignature": "manifest.sig 不是签名者对 manifest.json 的签名",
+          "modelsShape": "模型文件 {{file}} 的格式不符合预期",
+          "modelsSha256Mismatch": "{{url}} 的哈希为 {{actual}}，预期为 {{expected}}"
         }
       },
       "bws": {
@@ -2986,6 +2995,7 @@
         "mintNoLogin": "签发证书需要已登录的配置（rdc subscription login）",
         "missingEssentials": "机器上缺少以下内容（离线设置无法安装）：{{missing}}",
         "needsBundle": "--offline 需要同时指定 --bundle <dir>",
+        "needsSigner": "离线包需要 --signer <fingerprint>，即 'rdc server bundle' 输出的指纹",
         "noBws": "--bws-project 需要联网，不能与 --offline 一起使用",
         "noCfToken": "--cf-token 需要联网，不能与 --offline 一起使用",
         "noProxyImage": "安装包中不包含代理镜像 {{ref}}",
