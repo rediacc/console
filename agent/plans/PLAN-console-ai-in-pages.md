@@ -59,10 +59,11 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: none.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/__tests__/suggestions.test.ts)` rc 0, including a case where a new `lastRun` after a dismissal yields a new signal.
     (ticked) 2026-11-24T18:57:32Z by d778be9d: landed commit:632a6492a3; vitest src/lib/ai 24 passed rc 0
-- [ ] AX4 [writer] Account side: the `ai_suggestion_dismissals` table and migration, dismissal routes and background-task start and status routes in console-ai.ts, and the `machine` and `repo` target filter on plan 4's runs route.
+- [x] AX4 [writer] Account side: the `ai_suggestion_dismissals` table and migration, dismissal routes and background-task start and status routes in console-ai.ts, and the `machine` and `repo` target filter on plan 4's runs route.
   Owns: private/account/src/routes/console-ai.ts, private/account/src/routes/console-runs.ts, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_ai_dismissals.sql, private/account/tests/integration/console-ai-pages.test.ts
   Depends on: PLAN-console-ai-assistant.md#AI6, PLAN-console-run-index.md#RI2.
   Accept: `(cd private/account && npx vitest run tests/integration/console-ai-pages.test.ts)` rc 0, with a dismissal invisible to another user and a cross-org filter refused; `npm run check:ci-account-scope-audit` rc 0.
+    (ticked) 2026-11-25T18:55:27Z by d778be9d: AX4 suggestion dismissals (migration 0115), AI task runs with the per-user cap; console-ai-pages tests pass; landed ed5365996b. DEPS-WAIVED: used prerequisites landed
 - [ ] AX5 [writer] The bar and suggestion components and `useAiSuggestions`: the input opening plan 9's chat with the D1 context, the suggestion card with Diagnose and Dismiss, English strings in `aiPages.json` and the namespace registered.
   Owns: private/account/web/src/components/ai/pages/**, private/account/web/src/hooks/useAiSuggestions.ts, private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/en/aiPages.json
   Depends on: AX3, AX4, PLAN-console-ai-assistant.md#AI8.

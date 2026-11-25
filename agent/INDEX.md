@@ -508,7 +508,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-ai-assistant.md` | approved | 141 | 9 | 6 | 28181 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 95 | 6 | 3 | 15868 |
-| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
+| `agent/plans/PLAN-console-ai-in-pages.md` | approved | 95 | 7 | 3 | 15846 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 144 | 3 | 12 | 24571 |
 | `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 128 | 3 | 10 | 22260 |
@@ -547,7 +547,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-detection.md` | approved | 130 | 8 | 7 | 24150 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 138 | 10 | 7 | 31516 |
-| `agent/plans/PLAN-forensics-reports.md` | approved | 118 | 8 | 6 | 23131 |
+| `agent/plans/PLAN-forensics-reports.md` | approved | 120 | 6 | 8 | 23559 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
@@ -615,7 +615,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 93 | 4 | 5 | 15852 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 103 | 15 | 5 | 24550 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
-| `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 77 | 7 | 6 | 18579 |
+| `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 79 | 5 | 8 | 19013 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
 | `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 139 | 23 | 4 | 33698 |
