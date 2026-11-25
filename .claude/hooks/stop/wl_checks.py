@@ -3744,6 +3744,24 @@ def outq_drop(state_doc, key):
     q["items"] = [e for e in q["items"] if _outq_display_key(e) != key]
 
 
+def name_read_failures(worklist, session_id, state_doc):
+    """Queue the ONE `check-read-failed` advisory naming every reader recorded in READ_FAILURES so far (review cc68eafa.1). It runs once where the plain checks end and again in the judge segment, whose readers (`report-index`, `judge-receipt-run`) fail after the first call: the second call refreshes the same entry with the longer list. An advisory, never a block."""
+    outq_add(
+        worklist,
+        session_id,
+        state_doc,
+        "check-read-failed",
+        M.N_CHECK_READ_FAILED
+        % (
+            len(READ_FAILURES),
+            "\n".join("  %s: %s" % kv for kv in sorted(READ_FAILURES.items())),
+        ),
+        1,
+        refresh_min=30,
+        on_change=False,
+    )
+
+
 def _stop_setup(ns):
     """Segment "setup" of run_stop (wl_stopregistry.REGISTRY): the lines are the ones that sat inline, reading the earlier segments' locals from `ns` and leaving the ones later segments read."""
     event = ns["event"]
@@ -4878,7 +4896,7 @@ def _stop_roster(ns):
     except Exception as exc:
         note_read_failure("resume-dead-agent", exc)
 
-    # TICKS A WRITER REPORTED, READY TO APPLY (wl_planbox's pending-tick queue, filled at SubagentStop): every lease commit landed, or none named, and the box still open.
+    # TICKS A WRITER REPORTED, READY TO APPLY (wl_planbox's pending-tick queue, filled at SubagentStop): every lease commit landed, or none named (`ready`), or the box was ticked by hand since (`closed`). A closed row stays queued and counted until `--apply-ticks --write` retires it (wl_cli.py marks it applied as `closed`), so the block holds until then by design and only a retired row stops it.
     try:
         import wl_planbox
 
@@ -7288,22 +7306,9 @@ def _stop_ci_waiting(ns):
             False,
             M.V_BG_ORPHAN % (len(_bg_find), wl_bgsweep.BGSWEEP_AGE_MIN, "".join(_bg_rows)),
         )
-    # Every reader above that fell back to its empty default is named here, once: an advisory, never a block, so naming a failure cannot widen what any check blocks on.
+    # Every reader above that fell back to its empty default is named here, once: an advisory, never a block, so naming a failure cannot widen what any check blocks on. The judge segment names the ones that fail after this point.
     if READ_FAILURES:
-        outq_add(
-            worklist,
-            session_id,
-            state_doc,
-            "check-read-failed",
-            M.N_CHECK_READ_FAILED
-            % (
-                len(READ_FAILURES),
-                "\n".join("  %s: %s" % kv for kv in sorted(READ_FAILURES.items())),
-            ),
-            1,
-            refresh_min=30,
-            on_change=False,
-        )
+        name_read_failures(worklist, session_id, state_doc)
     else:
         outq_drop(state_doc, "check-read-failed")
     if unstated:
@@ -8169,6 +8174,9 @@ def _stop_judge(ns):
                     store_first=_ss_first,
                 ),
             )
+        # The judge's own readers have run: a failure they recorded is named in this stop, not the next.
+        if READ_FAILURES:
+            name_read_failures(worklist, session_id, state_doc)
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
             counter.write_text(str(streak + 1))
