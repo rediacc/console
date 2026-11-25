@@ -70,7 +70,7 @@ def plan_for(root, shas, messages=None):
 
 def test_clean_pick_lands_with_x_line(repo):
     sha = lease_commit(repo, {"code.txt": "b\n"}, "feat: b\n\nPR-TASK: 1")
-    lines = []
+    lines: list[str] = []
     assert run.execute(plan_for(repo, [sha]), emit=lines.append) == 0
     assert lines == ["step pick %s rc=0" % sha[:12]]
     assert (repo / "code.txt").read_text() == "b\n"
@@ -80,7 +80,7 @@ def test_clean_pick_lands_with_x_line(repo):
 def test_generated_region_conflict_is_regenerated(repo):
     sha = lease_commit(repo, {"doc.md": "intro\n" + REGION % "from-lease"}, "feat: doc")
     live_commit(repo, {"doc.md": "intro\n" + REGION % "from-head"}, "chore: doc head")
-    lines = []
+    lines: list[str] = []
     assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 0
     assert (repo / "doc.md").read_text() == "intro\n" + REGION % REGEN
     names = [line.split(" rc=")[0] for line in lines]
@@ -97,7 +97,7 @@ def test_generated_conflict_keeps_clean_merged_edits_outside_the_region(repo):
         repo, {"doc.md": body.replace("intro", "INTRO") + REGION % "from-lease"}, "feat: doc"
     )
     live_commit(repo, {"doc.md": body + REGION % "from-head"}, "chore: doc head")
-    lines = []
+    lines: list[str] = []
     assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 0
     assert (repo / "doc.md").read_text() == body.replace("intro", "INTRO") + REGION % REGEN
     assert not (repo / ".git" / "CHERRY_PICK_HEAD").exists()
@@ -113,7 +113,7 @@ def test_keep_head_hunks_resolves_each_hunk_and_keeps_clean_lines():
 def test_real_conflict_stops_and_leaves_pick_in_progress(repo):
     sha = lease_commit(repo, {"doc.md": "lease-intro\n" + REGION % "old"}, "feat: intro")
     live_commit(repo, {"doc.md": "head-intro\n" + REGION % "old"}, "chore: intro head")
-    lines = []
+    lines: list[str] = []
     assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 1
     assert (repo / ".git" / "CHERRY_PICK_HEAD").exists()
     assert any(line.startswith("stop: conflict in doc.md") for line in lines)
@@ -124,7 +124,7 @@ def test_staged_change_is_refused(repo):
     sha = lease_commit(repo, {"code.txt": "b\n"}, "feat: b")
     (repo / "code.txt").write_text("dirty\n")
     sh(repo, "add", "--", "code.txt")
-    lines = []
+    lines: list[str] = []
     assert run.execute(plan_for(repo, [sha]), emit=lines.append) == 1
     assert lines[0].startswith("refused: staged changes")
 

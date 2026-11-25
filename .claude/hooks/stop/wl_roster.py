@@ -399,7 +399,12 @@ class RosterCache:
     def __init__(self, path=None):
         self.path = path
         self.dirty = False
-        self.doc = {"v": ROSTER_CACHE_SCHEMA, "finished": {}, "edits": {}, "delivered": {}}
+        self.doc: dict[str, Any] = {
+            "v": ROSTER_CACHE_SCHEMA,
+            "finished": {},
+            "edits": {},
+            "delivered": {},
+        }
         if path is None:
             return
         try:
@@ -1859,7 +1864,7 @@ def _edit_paths_in(data, root, strict):
 def _registry_signature(root):
     """What `bash_write_paths`' regenerate route reads besides the transcript (the generator registry and the root package.json), as mtimes; a cached edit set read under another registry is read again."""
     base = pathlib.Path(root)
-    sig = []
+    sig: list[int | None] = []
     for rel in (GENERATED_ARTIFACTS, "package.json"):
         try:
             sig.append((base / rel).stat().st_mtime_ns)

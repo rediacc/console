@@ -95,7 +95,8 @@ def read_transcript(path: Path, role: str, since: float, until: float) -> Transc
                 key = message.get("id") or f"row-{at}"
                 if key not in seen:
                     seen.add(key)
-                    usage = message.get("usage") if isinstance(message.get("usage"), dict) else {}
+                    raw_usage = message.get("usage")
+                    usage: dict = raw_usage if isinstance(raw_usage, dict) else {}
                     wait = at - prev_at if prev_type == "user" else None
                     if since <= at <= until:
                         transcript.requests.append(
@@ -158,7 +159,9 @@ def analyze(files: list[tuple[str, Path]], since: datetime, until: datetime) -> 
     lo, hi = since.timestamp(), until.timestamp()
     transcripts = [read_transcript(path, role, lo, hi) for role, path in files]
     spans = sorted(
-        (t.first, t.last) for t in transcripts if t.role == "writer" and t.first is not None
+        (t.first, t.last)
+        for t in transcripts
+        if t.role == "writer" and t.first is not None and t.last is not None
     )
     starts = [s for s, _ in spans]
     for transcript in transcripts:
@@ -174,12 +177,14 @@ def analyze(files: list[tuple[str, Path]], since: datetime, until: datetime) -> 
         requests = [r for t in group for r in t.requests]
         active: dict[str, float] = {}
         for t in group:
+            if t.first is None or t.last is None:
+                continue
             span = max(0.0, min(t.last, hi) - max(t.first, lo))
             counts: dict[str, int] = {}
             for r in t.requests:
                 if r.model != "<synthetic>":
                     counts[r.model] = counts.get(r.model, 0) + 1
-            owner = max(counts, key=counts.get) if counts else t.model
+            owner = max(counts, key=lambda m: counts[m]) if counts else t.model
             active[owner] = active.get(owner, 0.0) + span
         models = {}
         for model in sorted({r.model for r in requests} | set(active)):
@@ -189,7 +194,9 @@ def analyze(files: list[tuple[str, Path]], since: datetime, until: datetime) -> 
         total = _summarize(requests)
         total["active_hours"] = round(sum(active.values()) / 3600, 2)
         total["transcripts"] = sum(1 for t in group if t.requests)
-        total["deaths"] = sum(1 for t in group if t.died and lo <= t.last <= hi)
+        total["deaths"] = sum(
+            1 for t in group if t.died and t.last is not None and lo <= t.last <= hi
+        )
         report["roles"][role] = {
             "total": total,
             "models": models,

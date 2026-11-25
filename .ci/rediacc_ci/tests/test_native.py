@@ -179,7 +179,7 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
 def _install_fixture(monkeypatch, tmp_path):
     """Run build_and_install past the build steps into a tmp install tree; returns (plan, logged steps)."""
     calls = []
-    steps = []
+    steps: list[str] = []
 
     def fake_stream(argv, cwd=None, env=None):
         calls.append((argv, cwd, env))

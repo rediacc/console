@@ -52,6 +52,8 @@ def _holder(pool_env, weight=1, label="holder"):
         stderr=subprocess.PIPE,
         text=True,
     )
+    assert proc.stdout is not None
+    assert proc.stderr is not None
     line = proc.stdout.readline()
     assert line.strip() == "held", (line, proc.stderr.read() if proc.poll() is not None else "")
     return proc
@@ -214,6 +216,8 @@ def test_planted_defect_leaks_the_tokens(tmp_path):
     planted = tmp_path / "host_slots_planted.py"
     planted.write_text(source.replace(old, new), encoding="utf-8")
     spec = importlib.util.spec_from_file_location("host_slots_planted", planted)
+    assert spec is not None, planted
+    assert spec.loader is not None, planted
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     try:
@@ -238,7 +242,7 @@ def _fake_seed(pool_env, seen):
 
 
 def test_the_lease_seed_runs_inside_a_host_slot(pool_env, monkeypatch, tmp_path):
-    seen = []
+    seen: list[dict] = []
     monkeypatch.setattr(worktree_lease, "_seed_process", _fake_seed(pool_env, seen))
     worktree_lease._run_seed(tmp_path / "lease-x", tmp_path, "0" * 40)
     assert len(seen) == 1
@@ -251,7 +255,7 @@ def test_the_lease_seed_runs_inside_a_host_slot(pool_env, monkeypatch, tmp_path)
 def test_a_full_pool_delays_the_seed_only_up_to_the_bound(pool_env, monkeypatch, tmp_path, capsys):
     holder = _holder(pool_env, weight=2, label="ci-quick")
     try:
-        seen = []
+        seen: list[dict] = []
         monkeypatch.setattr(worktree_lease, "_seed_process", _fake_seed(pool_env, seen))
         monkeypatch.setattr(worktree_lease, "SEED_SLOT_WAIT_S", 0.4)
         worktree_lease._run_seed(tmp_path / "lease-y", tmp_path, "0" * 40)

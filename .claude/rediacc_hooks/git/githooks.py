@@ -1411,7 +1411,7 @@ def artifacts_pre_commit() -> int:
     scratch = scratch_for(git_dir or repo)
     env = _gen_env(repo, scratch)
     try:
-        slot = (
+        slot: contextlib.AbstractContextManager[dict] = (
             _core_slot("artifact check")
             if _artifacts_selected(repo, env)
             else contextlib.nullcontext({})

@@ -3150,7 +3150,7 @@ def test_a_finished_rehearsal_is_reset_so_no_ring_company_runs_the_target_afterw
         for n, (cid, version) in enumerate(history)
     ]
     db = StatefulControlDb(rows)
-    world = types.SimpleNamespace(query=db)
+    world = cast("rings_run.World", types.SimpleNamespace(query=db))
     targets = ["c00000001", "c00000002"]
     # CONTROL: before the reset both ring companies run the target, so the check below can fail.
     assert rings_run.versions(targets, world=world) == {"c00000001": "4.0.1", "c00000002": "4.0.1"}

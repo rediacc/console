@@ -195,6 +195,8 @@ def test_a_failing_trigger_still_records_the_head(world, monkeypatch):
     for key, val in world.env.items():
         monkeypatch.setenv(key, val)
     spec = importlib.util.spec_from_file_location("review_commit_under_test", HOOK)
+    assert spec is not None, HOOK
+    assert spec.loader is not None, HOOK
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
 

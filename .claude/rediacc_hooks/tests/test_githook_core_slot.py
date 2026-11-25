@@ -37,7 +37,7 @@ def _recording_slots(taken):
 
 
 def test_core_slot_takes_one_token_and_hands_its_env_to_the_child(monkeypatch):
-    taken = []
+    taken: list[tuple[int, str]] = []
     monkeypatch.setattr(GH.sp, "import_from_ci", lambda _name: _recording_slots(taken))
     with GH._core_slot("gen-docs verify") as env:
         assert env == {"CI_CORE_LEASE_HELD": "1"}
@@ -87,7 +87,7 @@ def test_control_an_unrelated_error_from_the_import_is_not_folded_into_unthrottl
 def test_control_an_error_from_the_commit_check_itself_is_not_taken_for_a_pool_failure(
     monkeypatch,
 ):
-    taken = []
+    taken: list[tuple[int, str]] = []
     monkeypatch.setattr(GH.sp, "import_from_ci", lambda _name: _recording_slots(taken))
     with pytest.raises(OSError, match="check failed"), GH._core_slot("gen-docs verify"):
         raise OSError("check failed")
@@ -95,7 +95,7 @@ def test_control_an_error_from_the_commit_check_itself_is_not_taken_for_a_pool_f
 
 
 def _artifacts_world(monkeypatch, selected):
-    taken = []
+    taken: list[tuple[int, str]] = []
     monkeypatch.setattr(GH, "_repo", lambda: "/repo")
     monkeypatch.setattr(GH, "_git", lambda _args: "/repo/.git")
     monkeypatch.setattr(GH, "_gen_env", lambda _repo, _scratch: {})

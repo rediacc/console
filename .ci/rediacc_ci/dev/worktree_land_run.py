@@ -319,10 +319,10 @@ def after_picks(live, me, *, emit=print, shard_check=SHARD_CHECK) -> int:
         run.step("shard-coverage", code, "names no lane to place")
     if me:
         script = pathlib.Path(live) / ".claude" / "hooks" / "stop" / "worklist.py"
-        done = subprocess.run(
+        applied = subprocess.run(
             [sys.executable, str(script), "--apply-ticks", me, "--write"],
             cwd=str(live),
             check=False,
         )
-        run.step("apply-ticks", done.returncode)
+        run.step("apply-ticks", applied.returncode)
     return run.rc

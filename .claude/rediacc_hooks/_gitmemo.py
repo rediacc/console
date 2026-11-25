@@ -123,8 +123,9 @@ class Memo:
 def chain_memo():
     """Memoize read-only git questions until the `with` ends. Nested use shares the outer memo."""
     current = subprocess.run
-    if isinstance(getattr(current, "__self__", None), Memo):
-        yield current.__self__
+    outer = getattr(current, "__self__", None)
+    if isinstance(outer, Memo):
+        yield outer
         return
     memo = Memo(current)
     subprocess.run = memo.run

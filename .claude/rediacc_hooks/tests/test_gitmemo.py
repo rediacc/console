@@ -73,6 +73,8 @@ def test_planted_defect_shares_one_answer_across_repositories(tmp_path):
     planted = tmp_path / "gitmemo_planted.py"
     planted.write_text(source.replace(old, new), encoding="utf-8")
     spec = importlib.util.spec_from_file_location("gitmemo_planted", planted)
+    assert spec is not None, planted
+    assert spec.loader is not None, planted
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     a = _git_init(tmp_path / "a")

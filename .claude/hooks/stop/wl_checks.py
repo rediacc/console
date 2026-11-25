@@ -2968,7 +2968,7 @@ def dirty_overlap(root, rows):
     dirty = {line for line in out.stdout.splitlines() if line.strip()}
     if not dirty:
         return []
-    hit = set()
+    hit: set[str] = set()
     for row in rows or []:
         tree = row.get("path") or str(root)
         for sha in (row.get("commits") or {}).get(".", []):
