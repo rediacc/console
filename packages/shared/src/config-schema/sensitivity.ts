@@ -91,6 +91,21 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
 
   // ── Console recipes (PLAN-console-command-line.md D7) ── One committed value for every recipe: a recipe is a list of commands the console runs, so a push that rewrites one without knowing the current value is rejected, as for /access.
   '/console/recipes': { kind: 'identifier' },
+
+  // ── AI provider profiles (PLAN-console-ai-providers.md D2) ── The key and every header value are secrets (a header can carry the auth, as `cf-aig-authorization` does on a Cloudflare AI Gateway BYOK profile): encrypted at rest, and each one committed, so a push that rewrites one without knowing its current value is rejected. The rest of a profile and the default's name are public.
+  '/ai/providers/*/key': { kind: 'secret' },
+  '/ai/providers/*/headers/*': { kind: 'secret' },
+  '/ai/providers/*/format': { kind: 'public' },
+  '/ai/providers/*/baseURL': { kind: 'public' },
+  '/ai/providers/*/authScheme': { kind: 'public' },
+  '/ai/providers/*/model': { kind: 'public' },
+  '/ai/providers/*/capabilities/tools': { kind: 'public' },
+  '/ai/providers/*/capabilities/streaming': { kind: 'public' },
+  '/ai/providers/*/capabilities/parallelToolCalls': { kind: 'public' },
+  '/ai/providers/*/capabilities/vision': { kind: 'public' },
+  '/ai/providers/*/preset': { kind: 'public' },
+  '/ai/providers/*/byokOnly': { kind: 'public' },
+  '/ai/default': { kind: 'public' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
   // commit:false because it is HOST-LOCAL to the master-password at-rest mode and must never enter the remote config envelope. A remote config is stored under the CEK, not a master password, so the verifier is meaningless there — and committing it (without also syncing it, which we must not) would drop a committed pointer on every push/rotation round trip and brick the re-push.

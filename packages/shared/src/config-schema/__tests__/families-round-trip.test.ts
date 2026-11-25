@@ -69,6 +69,7 @@ const CARRIED_SECTIONS = [
   'resources',
   'access',
   'console',
+  'ai',
   'infra',
   'state',
 ] as const;
@@ -133,6 +134,19 @@ function allFamiliesConfig(): RdcConfig {
           updatedAt: '2026-11-24T18:00:00.000Z',
         },
       },
+    },
+    ai: {
+      providers: {
+        main: {
+          format: 'anthropic-messages',
+          baseURL: 'https://api.anthropic.com',
+          key: 'sk-ant-fixture',
+          authScheme: 'x-api-key',
+          model: 'claude-sonnet-4-5',
+          capabilities: { tools: true, streaming: true, parallelToolCalls: true, vision: false },
+        },
+      },
+      default: 'main',
     },
     credentials: { ssh: { privateKey: 'PRIV' } },
     resources: {
@@ -309,6 +323,7 @@ describe('resource families round trip', () => {
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.access).toEqual(original.access);
     expect(rebuilt.console).toEqual(original.console);
+    expect(rebuilt.ai).toEqual(original.ai);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);
 

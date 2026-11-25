@@ -16,6 +16,7 @@
  */
 
 import { z } from 'zod';
+import { AiConfigSchema } from '../ai/profile.js';
 import { parseDurationSeconds, rpoProblem } from '../backup/duration.js';
 import { ValidationError } from '../errors/index.js';
 import { PolicyDocumentSchema } from '../policy/schema.js';
@@ -562,6 +563,14 @@ export const RdcConfigSchema = z
     access: AccessSchema.optional(),
     /** Console settings: the team's recipes (PLAN-console-command-line.md D7). */
     console: ConsoleSchema.optional(),
+    /**
+     * AI provider profiles (PLAN-console-ai-providers.md D2): named profiles and
+     * the default one. Org level in the shared config, team level in a team
+     * config. Each profile's `key` and every `headers` value is a `secret` leaf
+     * in sensitivity.ts, so it is encrypted at rest and its commitment gates a
+     * rewrite on knowing the current value.
+     */
+    ai: AiConfigSchema.optional(),
     infra: InfraTopSchema.optional(),
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
