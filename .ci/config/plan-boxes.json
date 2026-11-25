@@ -1565,8 +1565,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 10,
+      "done": 5,
       "open_sigs": [
         "0805d1f2",
         "2bf44646",
@@ -1574,17 +1574,18 @@
         "4e57d026",
         "6d3167e4",
         "8b2cf989",
-        "923b43f0",
         "b0732c24",
         "b4de7e4f",
-        "b79d5112",
         "b8c60921",
-        "baecbd27",
+        "baecbd27"
+      ],
+      "done_sigs": [
+        "923b43f0",
+        "b79d5112",
         "bf06e728",
         "e3189181",
         "fafea12f"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",
