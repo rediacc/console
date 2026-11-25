@@ -105,6 +105,39 @@ def _dirty_index(dirs):
     return [str(d) for d in dirs if git(d, "diff", "--cached", "--quiet").returncode != 0]
 
 
+def keep_head_hunks(text: str) -> str:
+    """Resolve each conflict hunk to its HEAD side and keep every cleanly merged line as it is.
+
+    Only called once `confined_to_generated` holds, so every hunk sits inside a `gen-docs` region that the
+    regenerate step rewrites next. Taking HEAD's whole file instead (`checkout --ours`) would drop the lease
+    commit's clean-merged edits outside the regions. A diff3 base section (`|||||||`) is dropped with the
+    lease side. An unterminated hunk raises ValueError.
+    """
+    out: list[str] = []
+    state = "clean"
+    for line in text.splitlines(keepends=True):
+        if state == "clean":
+            if line.startswith("<<<<<<< "):
+                state = "head"
+            else:
+                out.append(line)
+        elif state == "head":
+            if line.startswith("||||||| "):
+                state = "base"
+            elif line.rstrip("\r\n") == "=======":
+                state = "lease"
+            else:
+                out.append(line)
+        elif state == "base":
+            if line.rstrip("\r\n") == "=======":
+                state = "lease"
+        elif line.startswith(">>>>>>> "):
+            state = "clean"
+    if state != "clean":
+        raise ValueError("unterminated conflict hunk")
+    return "".join(out)
+
+
 def _resolve_generated(plan, run, gen_cmd, sha):
     """Resolve the pick in progress when every conflicted path is a `gen-docs` region. False leaves it untouched."""
     paths = _unmerged(plan.live)
@@ -113,7 +146,13 @@ def _resolve_generated(plan, run, gen_cmd, sha):
     if not all(confined_to_generated((plan.live / p).read_text(encoding="utf-8")) for p in paths):
         return False
     for p in paths:
-        if run.step("take-head %s" % p, git(plan.live, "checkout", "--ours", "--", p).returncode):
+        target = plan.live / p
+        try:
+            target.write_text(keep_head_hunks(target.read_text(encoding="utf-8")), encoding="utf-8")
+            rc = 0
+        except (OSError, ValueError):
+            rc = 1
+        if run.step("take-head %s" % p, rc):
             return False
     done = subprocess.run(
         list(gen_cmd), cwd=str(plan.live), check=False, capture_output=True, text=True

@@ -88,6 +88,27 @@ def test_generated_region_conflict_is_regenerated(repo):
     assert not (repo / ".git" / "CHERRY_PICK_HEAD").exists()
 
 
+def test_generated_conflict_keeps_clean_merged_edits_outside_the_region(repo):
+    """Review 6f2bf605.1: the lease commit's clean-merged edit outside the region survives the resolve."""
+    body = "intro\nmiddle\nmore\n"
+    live_commit(repo, {"doc.md": body + REGION % "old"}, "chore: widen")
+    sha = lease_commit(
+        repo, {"doc.md": body.replace("intro", "INTRO") + REGION % "from-lease"}, "feat: doc"
+    )
+    live_commit(repo, {"doc.md": body + REGION % "from-head"}, "chore: doc head")
+    lines = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 0
+    assert (repo / "doc.md").read_text() == body.replace("intro", "INTRO") + REGION % REGEN
+    assert not (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+
+
+def test_keep_head_hunks_resolves_each_hunk_and_keeps_clean_lines():
+    text = "a\n<<<<<<< HEAD\nours\n||||||| base\nold\n=======\ntheirs\n>>>>>>> x\nb\n"
+    assert run.keep_head_hunks(text) == "a\nours\nb\n"
+    with pytest.raises(ValueError, match="unterminated conflict hunk"):
+        run.keep_head_hunks("a\n<<<<<<< HEAD\nours\n")
+
+
 def test_real_conflict_stops_and_leaves_pick_in_progress(repo):
     sha = lease_commit(repo, {"doc.md": "lease-intro\n" + REGION % "old"}, "feat: intro")
     live_commit(repo, {"doc.md": "head-intro\n" + REGION % "old"}, "chore: intro head")
