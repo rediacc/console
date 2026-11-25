@@ -10,6 +10,7 @@
  * - docs-inline-cli-invalid: rdc commands in markdown prose (outside code fences)
  * - json-cli-command-invalid: rdc commands in translation JSON string values (--strict only)
  * - invalid-rediacc-url: URLs with rediacc domains not in the allowlist
+ * - claim-overstatement: audit-trail wording the product does not back (docs, blog, translation JSON)
  *
  * Usage:
  *   node scripts/validate-content-accuracy.js           # docs + URLs (CI default)
@@ -18,7 +19,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { SITE_LOCALES } from '@rediacc/locales';
 import {
   WK_RELEASES_ORIGIN,
@@ -30,6 +31,7 @@ import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT_DIR, 'src', 'content', 'docs');
+const BLOG_DIR = path.join(ROOT_DIR, 'src', 'content', 'blog');
 const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 
 const LANGUAGES = SITE_LOCALES;
@@ -226,6 +228,101 @@ function validateUrls(urls, errors) {
 }
 
 // ---------------------------------------------------------------------------
+// Rule 4: claim-overstatement (docs, blog, translation JSON)
+// ---------------------------------------------------------------------------
+
+// Phrase arms. `forensic trail` and `forensic-grade` are refused outright; `hash-chained` is refused only within one sentence of `audit log` that names neither `per org` nor `day file`, because the server log is chained per org and day (PLAN-console-audit-r2 D5) and the workstation log is chained per file.
+const FORENSIC_TRAIL_RE = /forensic[ -]trail/i;
+const FORENSIC_GRADE_RE = /forensic[ -]grade/i;
+const HASH_CHAINED_RE = /hash-chained/i;
+const AUDIT_LOG_RE = /audit[ -]log/i;
+const CHAIN_SCOPE_RE = /per org|day file/i;
+
+// Each entry exempts one line (file suffix plus a substring of the line) and states why the claim holds there. An entry without a reason exempts nothing.
+export const CLAIM_OVERSTATEMENT_ALLOWLIST = [
+  {
+    file: 'docs/en/ai-agents-safety.md',
+    includes: '~/.config/rediacc/audit.log.jsonl',
+    reason:
+      'describes the local CLI audit file, where each line carries the sha256 of the previous line, which is the chain the sentence defines.',
+  },
+  {
+    file: 'docs/en/ai-agents-safety.md',
+    includes: 'a hash-chained audit log.',
+    reason: 'front-matter summary of the same local CLI audit file.',
+  },
+  {
+    file: 'docs/en/ai-agents-overview.md',
+    includes: 'and the hash-chained audit log.',
+    reason: 'points at the AI Agent Safety page, which documents the local CLI audit file chain.',
+  },
+  {
+    file: 'blog/en/nis2-supply-chain-self-hosted.md',
+    includes: 'rdc config audit verify',
+    reason: 'names the CLI verifier that validates the local chain end to end.',
+  },
+  {
+    file: 'blog/en/nis2-effectiveness-without-theatre.md',
+    includes: 'workstation audit log',
+    reason: 'scoped by the sentence to the operator workstation log, not the server log.',
+  },
+  {
+    file: 'blog/en/nis2-effectiveness-without-theatre.md',
+    includes: 'local workstation log is hash-chained',
+    reason: 'scoped by the sentence to the local workstation log, verified by the CLI.',
+  },
+];
+
+function isClaimAllowlisted(file, line, allowlist) {
+  return allowlist.some(
+    (entry) => entry.reason && file.endsWith(entry.file) && line.includes(entry.includes)
+  );
+}
+
+function overstatementArms(sentence) {
+  const arms = [];
+  if (FORENSIC_TRAIL_RE.test(sentence)) arms.push('forensic trail');
+  if (FORENSIC_GRADE_RE.test(sentence)) arms.push('forensic-grade');
+  if (
+    HASH_CHAINED_RE.test(sentence) &&
+    AUDIT_LOG_RE.test(sentence) &&
+    !CHAIN_SCOPE_RE.test(sentence)
+  ) {
+    arms.push('hash-chained audit log');
+  }
+  return arms;
+}
+
+export function findClaimOverstatements(content, file, allowlist = CLAIM_OVERSTATEMENT_ALLOWLIST) {
+  const found = [];
+  const lines = content.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (isClaimAllowlisted(file, line, allowlist)) continue;
+    for (const sentence of line.split(/(?<=[.!?])\s+/)) {
+      for (const arm of overstatementArms(sentence)) {
+        found.push({ file, line: i + 1, arm, text: sentence.trim().slice(0, 160) });
+      }
+    }
+  }
+  return found;
+}
+
+function validateClaims(content, file, errors) {
+  for (const hit of findClaimOverstatements(content, file)) {
+    addError(
+      errors,
+      'claim-overstatement',
+      file,
+      hit.line,
+      `Overstated claim (${hit.arm})`,
+      hit.text,
+      'State the scope (per org and day for the server log, local file for the CLI log) or drop the claim'
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -355,6 +452,7 @@ Options:
 Rules (always enforced):
   docs-inline-cli-invalid   rdc commands in markdown prose must be valid
   invalid-rediacc-url       rediacc URLs must use valid domains
+  claim-overstatement       no forensic trail, forensic-grade or unscoped hash-chained audit log
 
 Rules (--strict only — otherwise warnings):
   json-cli-command-invalid  rdc commands in translation JSON strings must be valid
@@ -383,6 +481,14 @@ Rules (--strict only — otherwise warnings):
 
       const urls = extractRediaccUrls(content, file);
       validateUrls(urls, errors);
+
+      validateClaims(content, file, errors);
+    }
+
+    const blogLangDir = path.join(BLOG_DIR, lang);
+    for (const slug of listMarkdownFiles(blogLangDir)) {
+      const content = fs.readFileSync(path.join(blogLangDir, slug), 'utf-8');
+      validateClaims(content, `blog/${lang}/${slug}`, errors);
     }
   }
 
@@ -402,9 +508,13 @@ Rules (--strict only — otherwise warnings):
     // URLs: always enforced
     const urls = extractRediaccUrls(content, file);
     validateUrls(urls, errors);
+
+    validateClaims(content, file, errors);
   }
 
   process.exit(printSummary(errors, warnings));
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main();
+}
