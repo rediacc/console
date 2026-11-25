@@ -99,6 +99,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/ai/providers/*/baseURL': { kind: 'public' },
   '/ai/providers/*/authScheme': { kind: 'public' },
   '/ai/providers/*/model': { kind: 'public' },
+  '/ai/providers/*/judgeModel': { kind: 'public' },
   '/ai/providers/*/capabilities/tools': { kind: 'public' },
   '/ai/providers/*/capabilities/streaming': { kind: 'public' },
   '/ai/providers/*/capabilities/parallelToolCalls': { kind: 'public' },

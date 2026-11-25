@@ -37,6 +37,8 @@ export const ProfileSchema = z
     key: z.string().min(1).optional(),
     authScheme: z.enum(AUTH_SCHEMES),
     model: z.string().min(1),
+    /** The model the Auto-mode judge runs on (D5 of PLAN-console-ai-assistant); `model` when absent. */
+    judgeModel: z.string().min(1).optional(),
     headers: z.record(z.string().min(1), z.string()).optional(),
     capabilities: CapabilitiesSchema,
     preset: z.string().min(1).optional(),
