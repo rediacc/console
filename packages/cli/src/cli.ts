@@ -14,6 +14,8 @@ import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
 import { registerFeedbackCommand } from './commands/feedback.js';
+import { registerForensicsCommand } from './commands/forensics.js';
+import { registerIncidentCommand } from './commands/incident.js';
 import { registerJobCommands } from './commands/job.js';
 import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
@@ -459,6 +461,8 @@ export function createCli(): Command {
   registerCreditsCommand(cli);
   registerLegalCommand(cli);
   registerFeedbackCommand(cli);
+  registerIncidentCommand(cli);
+  registerForensicsCommand(cli);
   registerVersionCommand(cli);
   registerCompletionCommand(cli);
   registerClusterCommands(cli);

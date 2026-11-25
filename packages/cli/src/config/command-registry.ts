@@ -67,6 +67,9 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'completion', domain: 'TOOLS' },
   { name: 'legal', domain: 'TOOLS' },
   { name: 'feedback', domain: 'TOOLS' },
+  // Read verbs of the forensics investigation (PLAN-forensics-investigation D7).
+  { name: 'incident', domain: 'TOOLS' },
+  { name: 'forensics', domain: 'TOOLS' },
   // The enterprise proxy executor daemon.
   { name: 'serve', domain: 'TOOLS' },
   // The self-hosted account server (Elite) as a repo on one machine.

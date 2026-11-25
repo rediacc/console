@@ -1297,6 +1297,28 @@ Git-style file-level diff between two copy-on-write forked repositories. Reports
 
 > MCP tool
 
+### rdc repo flows <ref>
+
+List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+
+> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+
+### rdc repo opens <ref>
+
+List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+
+> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+
 ### rdc repo commit <ref>
 
 Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only, so it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.
@@ -2270,6 +2292,35 @@ List the feedback reports visible to this machine: id, short fingerprint, status
 Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.
 
 > MCP tool
+
+### rdc incident status [id]
+
+List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.
+
+> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+
+### rdc incident export <id>
+
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.
+
+**Options:**
+
+- `--out <dir>`: Directory to write (default: incident-<id>)
+
+> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+
+### rdc forensics verify
+
+Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.
+
+**Options:**
+
+- `--dir <path>`: Evidence directory to verify
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters> (repeatable)
+
+> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
 
 ### rdc version
 

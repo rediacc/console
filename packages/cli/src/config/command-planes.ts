@@ -60,6 +60,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   credits: { plane: 'other' },
   legal: { plane: 'other' },
   feedback: { plane: 'other' },
+  // The forensics reads are account-server HTTPS (the investigation API); `forensics verify` reads a local evidence directory.
+  incident: { plane: 'other' },
+  forensics: { plane: 'other' },
   version: { plane: 'other' },
   // Prints a shell completion script built from the generated contract; reads no config and reaches no machine.
   completion: { plane: 'other' },
@@ -108,6 +111,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // Docker-storage classification and reclaim run through renet on the machine (`repository_docker_prune`).
   'repo prune': { plane: 'machine' },
   'repo branch': { plane: 'config' },
+  // The repo ref resolves from this config; the rows come from the account server's forensics store, not from the machine.
+  'repo flows': { plane: 'other' },
+  'repo opens': { plane: 'other' },
   // The store IS the encrypted config (repo-secrets-store imports no executor or SSH). Values reach the machine later, via `repo up`.
   'repo secret': { plane: 'config' },
   // Resource-state reads; the rest of both families dispatch to the machine.

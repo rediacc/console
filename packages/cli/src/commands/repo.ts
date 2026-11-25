@@ -23,6 +23,7 @@ import { registerRepoContainerCommands } from './repo-container.js';
 import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { registerRepoFlowsCommands } from './repo-flows.js';
 import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoGpuCommands } from './repo-gpu.js';
 import { registerRepoHealthCommand } from './repo-health.js';
@@ -398,6 +399,7 @@ export function registerRepoCommands(program: Command): void {
   registerRepoCatCommand(repo);
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);
+  registerRepoFlowsCommands(repo);
   registerRepoBranchingCommands(repo);
   // The `repo admin` parent is created ONCE and handed to every registrar that hangs a leaf off it (§5.4's plumbing subtree spans two files).
   const admin = createRepoAdminCommand(repo, program);

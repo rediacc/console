@@ -2026,7 +2026,17 @@
           "failed": "Could not read the grant",
           "unreadable": "The machine's grant output could not be read"
         }
-      }
+      },
+      "flows": {
+        "description": "List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+        "descriptionShort": "List a repository's recorded network flows"
+      },
+      "opens": {
+        "description": "List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+        "descriptionShort": "List a repository's recorded file opens"
+      },
+      "rowsSinceOption": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)",
+      "rowsUntilOption": "End of the window, in the same forms (default: now)"
     },
     "backup": {
       "browse": {
@@ -3472,6 +3482,30 @@
         "descriptionShort": "Show one feedback report"
       }
     },
+    "incident": {
+      "description": "Read an incident of the organization. Incidents are declared in the web console; these verbs read the record, its deadline clocks and its evidence window. Needs the forensics:read scope, which a CLI login carries for owners and admins after an elevated browser approval, on a paid plan.",
+      "descriptionShort": "Read an incident and export its evidence window",
+      "idArgument": "Incident id, or a prefix of it that no other incident shares",
+      "status": {
+        "description": "List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.",
+        "descriptionShort": "List incidents or show one with its deadline clocks"
+      },
+      "export": {
+        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.",
+        "descriptionShort": "Export an incident's timeline and evidence manifest",
+        "outOption": "Directory to write (default: incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "Check forensic evidence on this workstation with the same verification the web console runs.",
+      "descriptionShort": "Verify forensic evidence",
+      "verify": {
+        "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.",
+        "descriptionShort": "Verify audit and forensics hash chains of an evidence directory",
+        "dirOption": "Evidence directory to verify",
+        "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters> (repeatable)"
+      }
+    },
     "legal": {
       "accepted": "Accepted: version {{version}} at {{at}} ({{method}})",
       "acceptedUnreachable": "Accepted: unknown (server unreachable)",
@@ -3905,6 +3939,49 @@
     "sendDescription": "Send the previewed report",
     "sent": "Report {{id}} filed (fingerprint {{fingerprint}}).",
     "sentDuplicate": "Report {{id}} matched a known failure and was counted (fingerprint {{fingerprint}})."
+  },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" is not an ISO 8601 instant or a span such as 90m, 24h or 7d.",
+    "sinceAfterUntil": "--since is after --until.",
+    "windowTooLong": "A window covers at most 31 days.",
+    "reauthRequired": "Forensics reads need a recent elevated approval. Open the account portal, re-authenticate, and run the command again.",
+    "notEntitled": "Forensics investigation is available on paid plans.",
+    "ambiguousIncident": "More than one incident starts with \"{{id}}\"; give more of the id.",
+    "noSuchIncident": "No incident \"{{id}}\" in this organization.",
+    "timelineNeverEnds": "The timeline did not end after the page limit; the account server kept returning pages.",
+    "flowBytes": "out {{out}} in {{in}} bytes",
+    "sensitive": "sensitive",
+    "gapLine": "-- no evidence {{from}} to {{to}} ({{machine}}, {{reason}})",
+    "noFlows": "No network flows recorded in this window.",
+    "noOpens": "No file opens recorded in this window.",
+    "unreadable": "{{count}} stored record(s) in this window could not be read.",
+    "noRepoGuid": "Repository \"{{name}}\" has no GUID in this config.",
+    "noEvidenceDir": "Cannot read the evidence directory \"{{dir}}\".",
+    "severalOrgs": "The evidence directory holds audit files of several organizations: {{orgs}}.",
+    "noEvidence": "No audit day files or forensics headers found under \"{{dir}}\".",
+    "badMachineKey": "\"{{entry}}\" is not <machine>=<64 hex characters>.",
+    "verifyWindow": "Window {{from}} to {{to}}",
+    "verifyFiles": "{{count}} evidence file(s) checked",
+    "verifyGap": "gap  {{ref}}: {{reason}}",
+    "verifyEdit": "edit {{ref}}: {{reason}}",
+    "verifyClean": "No gap and no edit found.",
+    "verifyFailed": "Evidence does not verify: see the gaps and edits above."
+  },
+  "incident": {
+    "none": "No incidents.",
+    "detailHead": "Incident {{id}} ({{status}})",
+    "detailScope": "Scope: {{kind}} {{ref}}",
+    "detailWindow": "Window: {{from}} to {{to}}",
+    "detailDeclared": "Declared by {{by}} at {{at}}, aware since {{aware}}",
+    "detailFork": "Forensic fork: {{ref}}",
+    "detailRelease": "Hold and lock rules end: {{at}}",
+    "detailStep": "Step {{name}}: {{status}} at {{at}} {{detail}}",
+    "clockEarlyWarning": "Early warning due {{at}} ({{state}})",
+    "clockNotification": "Notification due {{at}} ({{state}})",
+    "clockFinalReport": "Final report due {{at}} ({{state}})",
+    "exported": "Incident {{id}} exported to {{dir}} ({{rows}} timeline rows).",
+    "rawTooLarge": "The raw chain material is over the manifest limit and is not listed.",
+    "rawListed": "raw-manifest.json lists {{count}} raw file(s) for rdc forensics verify."
   },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",

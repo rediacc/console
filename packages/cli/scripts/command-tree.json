@@ -3090,6 +3090,60 @@
           "subcommands": []
         },
         {
+          "name": "flows",
+          "descriptionKey": "commands.repo.flows.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "opens",
+          "descriptionKey": "commands.repo.opens.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "commit",
           "descriptionKey": "commands.repo.commit.description",
           "options": [
@@ -5883,6 +5937,89 @@
               "defaultValue": null
             }
           ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "incident",
+      "descriptionKey": "commands.incident.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "status",
+          "descriptionKey": "commands.incident.status.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "id",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "export",
+          "descriptionKey": "commands.incident.export.description",
+          "options": [
+            {
+              "flags": "--out <dir>",
+              "descriptionKey": "commands.incident.export.outOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "forensics",
+      "descriptionKey": "commands.forensics.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "verify",
+          "descriptionKey": "commands.forensics.verify.description",
+          "options": [
+            {
+              "flags": "--dir <path>",
+              "descriptionKey": "commands.forensics.verify.dirOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--machine-key <machine=hex>",
+              "descriptionKey": "commands.forensics.verify.machineKeyOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
           "subcommands": []
         }
       ]

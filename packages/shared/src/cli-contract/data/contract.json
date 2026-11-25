@@ -1,5 +1,5 @@
 {
-  "version": "e53f9dfbefe08132",
+  "version": "b41ad6713624ed9d",
   "languages": [
     "ar",
     "de",
@@ -6746,6 +6746,165 @@
     },
     {
       "path": [
+        "forensics",
+        "verify"
+      ],
+      "pathKey": "forensics verify",
+      "domain": "forensics",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.forensics.verify.description",
+      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.",
+      "summaryKey": "commands.forensics.verify.descriptionShort",
+      "summary": "Verify audit and forensics hash chains of an evidence directory",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--dir <path>",
+          "long": "dir",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.forensics.verify.dirOption",
+          "label": "Evidence directory to verify"
+        },
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        },
+        {
+          "flags": "--machine-key <machine=hex>",
+          "long": "machine-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.machineKeyOption",
+          "label": "Machine spool public key as <machine>=<64 hex characters> (repeatable)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "export"
+      ],
+      "pathKey": "incident export",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.export.description",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.",
+      "summaryKey": "commands.incident.export.descriptionShort",
+      "summary": "Export an incident's timeline and evidence manifest",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--out <dir>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.outOption",
+          "label": "Directory to write (default: incident-<id>)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "status"
+      ],
+      "pathKey": "incident status",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.status.description",
+      "label": "List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.",
+      "summaryKey": "commands.incident.status.descriptionShort",
+      "summary": "List incidents or show one with its deadline clocks",
+      "severity": "none",
+      "options": [],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "job",
         "cancel"
       ],
@@ -12471,6 +12630,66 @@
     {
       "path": [
         "repo",
+        "flows"
+      ],
+      "pathKey": "repo flows",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "other",
+      "descriptionKey": "commands.repo.flows.description",
+      "label": "List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "summaryKey": "commands.repo.flows.descriptionShort",
+      "summary": "List a repository's recorded network flows",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "fork"
       ],
       "pathKey": "repo fork",
@@ -13449,6 +13668,66 @@
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "opens"
+      ],
+      "pathKey": "repo opens",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "other",
+      "descriptionKey": "commands.repo.opens.description",
+      "label": "List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "summaryKey": "commands.repo.opens.descriptionShort",
+      "summary": "List a repository's recorded file opens",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,

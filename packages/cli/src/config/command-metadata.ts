@@ -770,6 +770,27 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // Forensics reads (FI7): excluded until FI8 opts them in beside the three writes.
+  'incident status': {
+    mcpExcludeReason:
+      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+  },
+  'incident export': {
+    mcpExcludeReason:
+      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+  },
+  'forensics verify': {
+    mcpExcludeReason:
+      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+  },
+  'repo flows': {
+    mcpExcludeReason:
+      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+  },
+  'repo opens': {
+    mcpExcludeReason:
+      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+  },
 
   'cluster rehearse': {
     mcpExcludeReason:
