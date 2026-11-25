@@ -4778,7 +4778,8 @@ def run_copies(run, argv=None, cwd=None):
     sources, dest, into = found
     dests = [dest]
     if run.launch is not None and run.launch.launcher == "find" and "{}" in dest:
-        dests = list(run.launch.starts)
+        # A landing `<dir>/{}` names the walked file INSIDE `<dir>`, the reading `find_starts` gives it: replacing the whole word by the starting points dropped `<dir>`, so `find /tmp -exec cp x agent/reviews/{} \;` landed in /tmp and `find agent/reviews -exec cp x /tmp/out/{} \;` landed under agent/reviews.
+        dests = find_starts(run, [dest])
     if not fed:
         return sources, dests, into
     if into:
