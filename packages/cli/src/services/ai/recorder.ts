@@ -25,9 +25,6 @@ export const AI_MESSAGES_PATH = '/account/api/v1/console/ai/messages';
 /** Deliveries per message: the first attempt and two retries. */
 export const AI_MESSAGE_ATTEMPTS = 3;
 
-/** Conversations whose delivery chain is remembered for ordering. */
-const MAX_CHAINS = 1000;
-
 export interface AiMessageRecord {
   principal: SessionPrincipal;
   conversationId: string;
@@ -175,12 +172,13 @@ export function createAiRecorder(options: AiRecorderOptions): AiRecorder {
       const messageId = message.messageId ?? randomUUID();
       const previous = chains.get(message.conversationId) ?? Promise.resolve();
       const next = previous.then(() => deliver(message, messageId));
-      chains.delete(message.conversationId);
-      if (chains.size >= MAX_CHAINS) {
-        const oldest = chains.keys().next().value;
-        if (oldest !== undefined) chains.delete(oldest);
-      }
       chains.set(message.conversationId, next);
+      // A chain is kept while its delivery is pending, so ordering never depends on a size cap, and
+      // dropped once it settles and is still the newest, so the map holds only in-flight work.
+      const settle = (): void => {
+        if (chains.get(message.conversationId) === next) chains.delete(message.conversationId);
+      };
+      next.then(settle, settle);
       return next.catch((error: unknown) => {
         report(describeFetchError(error), message.conversationId, messageId);
         return { messageId, delivered: false };

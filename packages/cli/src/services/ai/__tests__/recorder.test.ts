@@ -253,4 +253,32 @@ describe('AI conversation recorder', () => {
     expect(calls()).toBe(0);
     expect(failures[0]).toContain('could not be sealed');
   });
+
+  it('keeps a pending conversation ordered while more than a thousand others are tracked', async () => {
+    const { posted, fetchImpl } = capture();
+    const recorder = createAiRecorder({
+      accountUrl: 'https://account.test',
+      executorToken: 't',
+      fetchImpl,
+    });
+    let release: (key: Uint8Array) => void = () => undefined;
+    const held = new Promise<Uint8Array>((resolve) => {
+      release = resolve;
+    });
+    const parent = recorder.record(
+      message({ conversationId: 'busy', messageId: 'parent', cek: () => held })
+    );
+    const others = Array.from({ length: 1100 }, (_, n) =>
+      recorder.record(message({ conversationId: `other-${n}`, messageId: `o-${n}` }))
+    );
+    const child = recorder.record(
+      message({ conversationId: 'busy', messageId: 'child', parentId: 'parent', seq: 1 })
+    );
+    await Promise.all(others);
+    expect(posted.some((p) => p.messageId === 'child')).toBe(false);
+    release(CEK);
+    await Promise.all([parent, child]);
+    const order = posted.filter((p) => p.conversationId === 'busy').map((p) => p.messageId);
+    expect(order).toEqual(['parent', 'child']);
+  });
 });
