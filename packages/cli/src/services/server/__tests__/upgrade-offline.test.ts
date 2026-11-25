@@ -26,7 +26,7 @@ import { outputService } from '../../core/output.js';
 import { serverBundle } from '../bundle/build.js';
 import { builtinTemplateVersion } from '../common.js';
 import { serverStatus, serverUpgrade } from '../verbs.js';
-import { BOX_KEY, certFor, type Fake, type FakeOptions, makeFake } from './fakes.js';
+import { BOX_KEY, certFor, type Fake, type FakeOptions, makeFake, signerOf } from './fakes.js';
 
 const LOC = { domain: 'acme.example.com', machine: 'm1' };
 const BUNDLE = '/bundles/acme';
@@ -96,7 +96,10 @@ describe('upgrade and local template edits', () => {
 describe('upgrade --bundle', () => {
   it('ships the bundle images through repo sync instead of pulling, and moves the image ref', async () => {
     const fake = await withBundle({ templateVersion: builtinTemplateVersion() });
-    const result = await serverUpgrade(fake.deps, LOC, { bundle: BUNDLE });
+    const result = await serverUpgrade(fake.deps, LOC, {
+      bundle: BUNDLE,
+      signer: signerOf(fake.files, BUNDLE),
+    });
     expect(result.image).toMatch(/server:2\.0$/);
     const uploads = fake.calls.filter((c) => c.startsWith('rdc repo sync upload'));
     expect(uploads.map((c) => c.split('--remote-file ')[1].split(' ')[0])).toEqual([
@@ -114,17 +117,36 @@ describe('upgrade --bundle', () => {
   it('refuses a tampered bundle before the fork', async () => {
     const fake = await withBundle();
     fake.files[`${BUNDLE}/images/server.tar`] = 'tampered';
-    await expect(serverUpgrade(fake.deps, LOC, { bundle: BUNDLE })).rejects.toThrow(/tampered/);
+    await expect(
+      serverUpgrade(fake.deps, LOC, { bundle: BUNDLE, signer: signerOf(fake.files, BUNDLE) })
+    ).rejects.toThrow(/tampered/);
+    expect(hasFork(fake)).toBe(false);
+  });
+
+  it('refuses a bundle without --signer, or with the wrong one, before the fork', async () => {
+    const fake = await withBundle();
+    await expect(serverUpgrade(fake.deps, LOC, { bundle: BUNDLE })).rejects.toThrow(/needsSigner/);
+    await expect(
+      serverUpgrade(fake.deps, LOC, { bundle: BUNDLE, signer: 'c'.repeat(64) })
+    ).rejects.toThrow(/signerMismatch/);
     expect(hasFork(fake)).toBe(false);
   });
 
   it('refuses a bundle next to --image or --image-file', async () => {
     const fake = await withBundle();
-    await expect(serverUpgrade(fake.deps, LOC, { bundle: BUNDLE, image: 'x:y' })).rejects.toThrow(
-      /bundleAndImage/
-    );
     await expect(
-      serverUpgrade(fake.deps, LOC, { bundle: BUNDLE, imageFile: 'a.tar' })
+      serverUpgrade(fake.deps, LOC, {
+        bundle: BUNDLE,
+        signer: signerOf(fake.files, BUNDLE),
+        image: 'x:y',
+      })
+    ).rejects.toThrow(/bundleAndImage/);
+    await expect(
+      serverUpgrade(fake.deps, LOC, {
+        bundle: BUNDLE,
+        signer: signerOf(fake.files, BUNDLE),
+        imageFile: 'a.tar',
+      })
     ).rejects.toThrow(/bundleAndImage/);
     expect(hasFork(fake)).toBe(false);
   });

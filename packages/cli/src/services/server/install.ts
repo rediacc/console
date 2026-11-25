@@ -246,8 +246,8 @@ export class ServerInstall {
   private async resolvePlan(): Promise<Plan> {
     this.assertRegisteredAccount();
     assertOfflineOptions(this.opts);
-    if (this.opts.offline && this.opts.bundle) {
-      this.manifest = await verifyBundle(this.deps, this.opts.bundle);
+    if (this.opts.offline && this.opts.bundle && this.opts.signer) {
+      this.manifest = await verifyBundle(this.deps, this.opts.bundle, this.opts.signer);
     }
     const { name: machine, config: machineConfig } = await this.resolveMachine();
     const domain = await this.value('--domain', this.opts.domain, () =>

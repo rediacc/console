@@ -36,6 +36,7 @@ export class AwaitingCert extends ServerError {}
 function offlineOptionProblems(opts: InstallOptions): string[] {
   const problems: string[] = [];
   if (!opts.bundle) problems.push(t('commands.server.offline.needsBundle'));
+  if (!opts.signer) problems.push(t('commands.server.offline.needsSigner'));
   if (opts.tls !== undefined && opts.tls !== 'byo') {
     problems.push(t('commands.server.offline.tlsByoOnly', { tls: opts.tls }));
   }

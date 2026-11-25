@@ -32,6 +32,12 @@ export interface ManifestCli {
   sha256: string;
 }
 
+/** One file the bundle carries beside the images: its path under the bundle and its sha256. */
+export interface ManifestFile {
+  file: string;
+  sha256: string;
+}
+
 export interface BundleManifest {
   schema: number;
   cliVersion: string;
@@ -40,6 +46,10 @@ export interface BundleManifest {
   images: ManifestImage[];
   /** Present only when the bundle was built with `--with-cli`. */
   cli?: ManifestCli[];
+  /** Every file under `models/`; absent when the bundle was built with `--no-models`. */
+  models?: ManifestFile[];
+  /** sha256 of `images/manifest.txt`, which the signed manifest binds like the images. */
+  imageList: string;
   createdAt: string;
 }
 
@@ -110,6 +120,11 @@ function image(raw: unknown): ManifestImage {
   };
 }
 
+function fileEntry(raw: unknown): ManifestFile {
+  if (!isRecord(raw)) throw bad('models[]');
+  return { file: str(raw.file, 'models[].file'), sha256: str(raw.sha256, 'models[].sha256') };
+}
+
 function cliEntry(raw: unknown): ManifestCli {
   if (!isRecord(raw)) throw bad('cli[]');
   return {
@@ -136,6 +151,7 @@ export function parseManifest(text: string): BundleManifest {
   if (!BUNDLE_ARCHES.includes(arch as BundleArch)) throw bad('renet.arch');
   if (!Array.isArray(raw.images)) throw bad('images');
   if (raw.cli !== undefined && !Array.isArray(raw.cli)) throw bad('cli');
+  if (raw.models !== undefined && !Array.isArray(raw.models)) throw bad('models');
   return {
     schema: BUNDLE_SCHEMA,
     cliVersion: str(raw.cliVersion, 'cliVersion'),
@@ -152,6 +168,8 @@ export function parseManifest(text: string): BundleManifest {
     },
     images: raw.images.map(image),
     ...(raw.cli !== undefined && { cli: raw.cli.map(cliEntry) }),
+    ...(raw.models !== undefined && { models: raw.models.map(fileEntry) }),
+    imageList: str(raw.imageList, 'imageList'),
     createdAt: str(raw.createdAt, 'createdAt'),
   };
 }

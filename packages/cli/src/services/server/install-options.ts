@@ -48,6 +48,8 @@ export interface InstallOptions {
   offline?: boolean;
   /** The directory `rdc server bundle` wrote. */
   bundle?: string;
+  /** The fingerprint `rdc server bundle` printed; the bundle must be signed by that key. */
+  signer?: string;
   /** Copy the generated secrets to this Bitwarden Secrets Manager project (Rediacc's own installs). */
   bwsProject?: string;
   /** Replace a differing value in that project instead of refusing. */

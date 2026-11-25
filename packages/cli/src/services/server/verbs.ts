@@ -127,6 +127,8 @@ export interface UpgradeOptions {
   localImage?: boolean;
   /** The directory `rdc server bundle` wrote: its server image replaces a pull. */
   bundle?: string;
+  /** The fingerprint `rdc server bundle` printed; required with `--bundle`. */
+  signer?: string;
   /** Apply a newer template over local edits to the deployed one. */
   force?: boolean;
 }
@@ -219,7 +221,9 @@ export async function serverUpgrade(
   if (opts.bundle && (opts.image || opts.imageFile || opts.localImage)) {
     throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
   }
-  const manifest = opts.bundle ? await verifyBundle(deps, opts.bundle) : undefined;
+  if (opts.bundle && !opts.signer) throw new ServerError(t('commands.server.offline.needsSigner'));
+  const manifest =
+    opts.bundle && opts.signer ? await verifyBundle(deps, opts.bundle, opts.signer) : undefined;
   const builtin = builtinTemplateVersion();
   const reapply = builtin > facts.templateVersion;
   if (reapply) await assertTemplateUnedited(deps, where, opts.force);

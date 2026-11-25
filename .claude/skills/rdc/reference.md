@@ -2519,6 +2519,7 @@ Install the self-hosted account server on an existing machine: check the machine
 - `--no-dns-wait`: Print the DNS records without waiting for them to resolve
 - `--offline`: Install air-gapped from --bundle: no upstream, registry or package call
 - `--bundle <dir>`: Offline bundle directory written by 'rdc server bundle'
+- `--signer <fingerprint>`: Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key
 - `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
 - `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
@@ -2546,6 +2547,7 @@ Upgrade an installed server: fork its repository as a rollback point, place the 
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
 - `--local-image`: Save the --image from the local Docker and ship it instead of pulling
 - `--bundle <dir>`: Upgrade from an offline bundle written by 'rdc server bundle'
+- `--signer <fingerprint>`: Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key
 - `--force`: Apply a newer template even over local edits to the deployed files
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
 - `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
@@ -2599,5 +2601,6 @@ Build an offline bundle (images, renet, manifest, checksums) for an air-gapped i
 - `--tag <tag>`: Server image tag to bundle
 - `--image <ref>`: Bundle this local image instead of pulling a tag
 - `--with-cli <platforms>`: Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64
+- `--no-models`: Leave the detection models out of the bundle
 
 > MCP excluded: Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.

@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'a9d9bd61f6935ed6';
+export const CLI_CONTRACT_VERSION = 'ccd84ad608c1f1f9';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "a9d9bd61f6935ed6",
+  "version": "ccd84ad608c1f1f9",
   "languages": [
     "ar",
     "de",
@@ -16482,6 +16482,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.bundle.optionWithCli",
           "label": "Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64"
+        },
+        {
+          "flags": "--no-models",
+          "long": "no-models",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.bundle.optionNoModels",
+          "label": "Leave the detection models out of the bundle"
         }
       ],
       "positionals": [],
@@ -16778,6 +16789,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.install.optionBundle",
           "label": "Offline bundle directory written by 'rdc server bundle'"
+        },
+        {
+          "flags": "--signer <fingerprint>",
+          "long": "signer",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSigner",
+          "label": "Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key"
         },
         {
           "flags": "--bws-project <id>",
@@ -17139,6 +17161,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.upgrade.optionBundle",
           "label": "Upgrade from an offline bundle written by 'rdc server bundle'"
+        },
+        {
+          "flags": "--signer <fingerprint>",
+          "long": "signer",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSigner",
+          "label": "Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key"
         },
         {
           "flags": "--force",

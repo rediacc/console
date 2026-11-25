@@ -78,6 +78,7 @@ function registerInstall(server: Command): void {
     .option('--no-dns-wait', t('commands.server.install.optionNoDnsWait'))
     .option('--offline', t('commands.server.install.optionOffline'))
     .option('--bundle <dir>', t('commands.server.install.optionBundle'))
+    .option('--signer <fingerprint>', t('commands.server.install.optionSigner'))
     .option('--bws-project <id>', t('commands.server.install.optionBwsProject'))
     .option('--rotate', t('commands.server.install.optionRotate'))
     .option('-y, --yes', t('commands.server.install.optionYes'))
@@ -189,6 +190,7 @@ function registerUpgrade(server: Command): void {
       .option('--image-file <tar>', t('commands.server.install.optionImageFile'))
       .option('--local-image', t('commands.server.install.optionLocalImage'))
       .option('--bundle <dir>', t('commands.server.upgrade.optionBundle'))
+      .option('--signer <fingerprint>', t('commands.server.install.optionSigner'))
       .option('--force', t('commands.server.upgrade.optionForce'))
       .option('-y, --yes', t('commands.server.install.optionYes'))
   ).action(
@@ -199,6 +201,7 @@ function registerUpgrade(server: Command): void {
         imageFile?: string;
         localImage?: boolean;
         bundle?: string;
+        signer?: string;
         force?: boolean;
         yes?: boolean;
       }
@@ -286,6 +289,7 @@ function registerBundle(server: Command): void {
     .option('--tag <tag>', t('commands.server.bundle.optionTag'))
     .option('--image <ref>', t('commands.server.bundle.optionImage'))
     .option('--with-cli <platforms>', t('commands.server.bundle.optionWithCli'))
+    .option('--no-models', t('commands.server.bundle.optionNoModels'))
     .action(
       async (flags: {
         out: string;
@@ -293,6 +297,7 @@ function registerBundle(server: Command): void {
         tag?: string;
         image?: string;
         withCli?: string;
+        models: boolean;
       }) => {
         try {
           const manifest = await serverBundle(liveServerDeps(), flags);

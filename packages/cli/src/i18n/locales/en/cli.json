@@ -3085,6 +3085,7 @@
           "lan": "Install on a LAN machine with an existing certificate, on the free tier."
         },
         "optionBundle": "Offline bundle directory written by 'rdc server bundle'",
+        "optionSigner": "Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key",
         "optionOffline": "Install air-gapped from --bundle: no upstream, registry or package call",
         "helpOffline": "Air-gapped: build the bundle online with rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifies it, loads the proxy image, sets up offline and calls nothing upstream. It stops at the licence step and writes a request: mint a certificate online with rdc server licence mint, then rerun with --cert."
       },
@@ -3164,6 +3165,9 @@
         "downloadingCli": "Downloading CLI {{version}} for {{platform}}",
         "pulling": "Pulling {{image}} ({{platform}})",
         "saving": "Saving {{image}} to {{file}}",
+        "optionNoModels": "Leave the detection models out of the bundle",
+        "fetchingModels": "Downloading the stable detection models",
+        "signer": "Bundle signer fingerprint: {{fingerprint}}. Pass it as --signer on the air-gapped side, carried by a path other than the bundle.",
         "written": "Bundle written to {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} holds no sha256 checksum",
@@ -3184,7 +3188,12 @@
           "sumsLine": "SHA256SUMS holds a line that is not '<sha256>  <file>': {{line}}",
           "tagAndImage": "--tag and --image cannot be combined",
           "tampered": "{{file}} does not match SHA256SUMS or the manifest: the bundle was changed or damaged",
-          "unreadable": "{{file}} cannot be read from the bundle {{dir}}"
+          "unreadable": "{{file}} cannot be read from the bundle {{dir}}",
+          "unsigned": "The bundle {{dir}} has no readable {{file}}; a bundle built before signing cannot be installed from",
+          "signerMismatch": "The bundle is signed by key {{actual}}, not the --signer {{expected}}",
+          "badSignature": "manifest.sig is not the signature of the signer over manifest.json",
+          "modelsShape": "The models file {{file}} is not in the expected shape",
+          "modelsSha256Mismatch": "{{url}} hashed to {{actual}}, expected {{expected}}"
         }
       },
       "bws": {
@@ -3283,6 +3292,7 @@
         "mintNoLogin": "Minting needs a logged-in config (rdc subscription login)",
         "missingEssentials": "Missing on the machine (offline setup cannot install them): {{missing}}",
         "needsBundle": "--offline needs --bundle <dir>",
+        "needsSigner": "A bundle needs --signer <fingerprint>, the one 'rdc server bundle' printed",
         "noBws": "--bws-project needs the network and cannot be used with --offline",
         "noCfToken": "--cf-token needs the network and cannot be used with --offline",
         "noProxyImage": "The bundle does not hold the proxy image {{ref}}",
