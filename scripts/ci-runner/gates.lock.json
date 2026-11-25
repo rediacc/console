@@ -11620,6 +11620,20 @@
     }
   },
   {
+    "id": "check:ci-mcp-docs-parity",
+    "run": "npm run check:ci-mcp-docs-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-mcp-docs-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check MCP docs parity"
+    }
+  },
+  {
     "id": "check:ci-gate-mutations",
     "run": "npm run check:ci-gate-mutations",
     "gate": true,

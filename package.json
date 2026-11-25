@@ -83,6 +83,7 @@
     "check:ci-backup-protocol-conformance": "tsx scripts/gates/check-backup-protocol-conformance.ts",
     "check:ci-no-client-key-composition": "tsx scripts/gates/check-no-client-key-composition.ts",
     "check:ci-retention-knob-parity": "tsx scripts/gates/check-retention-knob-parity.ts",
+    "check:ci-mcp-docs-parity": "tsx scripts/gates/check-mcp-docs-parity.ts --selftest && tsx scripts/gates/check-mcp-docs-parity.ts",
     "check:ci-gate-mutations": "tsx scripts/gates/check-gate-mutations.ts --selftest && tsx scripts/gates/check-gate-mutations.ts",
     "check:ci-test-scripts-reachable": "tsx scripts/gates/check-test-scripts-reachable.ts",
     "check:ci-e2e-coverage": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_coverage",

@@ -10807,6 +10807,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'Retention knob parity',
     },
   },
+  // A hand entry hopping through package.json, not a header-only one: a header-only .ts gate runs `npx tsx scripts/gates/...` straight from its workflow step, and check:ci-scope-scripts-reachability then requires the file to force full CI (scope-map.cjs classifies it 'reduced'). No `paths`: the gate reads the registry and all 13 locale pages, so it is always selected.
+  // >>> gen-manifest: region 15
+  {
+    id: 'check:ci-mcp-docs-parity',
+    run: 'npm run check:ci-mcp-docs-parity',
+    gate: true,
+    leaves: ['scripts/gates/check-mcp-docs-parity.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Check MCP docs parity',
+    },
+  },
+  // <<< gen-manifest: region 15
   // Each gate's own control proves its detector on a synthetic fixture; this proves the GATE goes red on the real file when the real code regresses (testing-surface-audit F6, PLAN-backup-program A4b). The four backup gates above are copied into a sandbox with their headline defect planted, and an UNSEEN mutant fails the run.
   {
     id: 'check:ci-gate-mutations',
@@ -12603,7 +12618,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Raw translation keys',
     },
   },
-  // >>> gen-manifest: region 15
+  // >>> gen-manifest: region 16
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -12619,7 +12634,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 15
+  // <<< gen-manifest: region 16
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -13876,7 +13891,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 16
+  // >>> gen-manifest: region 17
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -13889,7 +13904,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 16
+  // <<< gen-manifest: region 17
   {
     id: 'check:ci-locale-config-divergence',
     run: 'npm run check:ci-locale-config-divergence',
@@ -15932,7 +15947,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 17
+  // >>> gen-manifest: region 18
   {
     id: 'check:ci-pathspec-scope',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pathspec_scope',
@@ -15945,7 +15960,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 17
+  // <<< gen-manifest: region 18
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',

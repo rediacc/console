@@ -1553,6 +1553,9 @@ jobs:
       - name: Check E2E test coverage for all renet functions
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_coverage
+      - name: Check MCP docs parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-mcp-docs-parity
       - name: Check prose style (the work, not the person)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_style
