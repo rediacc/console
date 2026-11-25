@@ -350,7 +350,10 @@ describe('the models in the bundle (D12)', () => {
         'models/manifests/7.json.sig',
       ])
     );
-    expect(files).toHaveLength(6);
+    const objects = files.filter((f) => /^models\/objects\/[0-9a-f]{64}$/.test(f));
+    expect(objects).toHaveLength(2);
+    for (const object of objects) expect(files).toContain(`${object}.sig`);
+    expect(files).toHaveLength(8);
     const summed = parseSums(fake.files[`${OUT}/SHA256SUMS`]).map((s) => s.file);
     for (const file of files) expect(summed).toContain(file);
   });
@@ -359,6 +362,16 @@ describe('the models in the bundle (D12)', () => {
     const { fake, manifest } = await built();
     const object = (manifest.models ?? []).find((f) => f.file.startsWith('models/objects/'));
     fake.files[`${OUT}/${object?.file}`] = 'tampered';
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*models\/objects/s
+    );
+  });
+
+  it('refuses a model object signature changed after bundling', async () => {
+    const { fake, manifest } = await built();
+    const sig = (manifest.models ?? []).find((f) => /objects\/[0-9a-f]{64}\.sig$/.test(f.file));
+    expect(sig).toBeDefined();
+    fake.files[`${OUT}/${sig?.file}`] = 'tampered';
     await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
       /tampered.*models\/objects/s
     );

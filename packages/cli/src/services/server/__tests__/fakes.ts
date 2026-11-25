@@ -69,8 +69,10 @@ export const FAKE_MODELS: Record<string, string> = (() => {
     [`${FAKE_MODELS_BASE}/manifests/7.json`]: manifest,
     [`${FAKE_MODELS_BASE}/manifests/7.json.sig`]: 'sig-manifest',
   };
-  for (const body of Object.values(objects))
+  for (const body of Object.values(objects)) {
     served[`${FAKE_MODELS_BASE}/objects/${sha(body)}`] = body;
+    served[`${FAKE_MODELS_BASE}/objects/${sha(body)}.sig`] = `sig-${sha(body).slice(0, 8)}`;
+  }
   return served;
 })();
 

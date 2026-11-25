@@ -2,7 +2,8 @@
  * The detection models of an air-gapped bundle (D12): the stable channel's pointer, the manifest it
  * names and the objects that manifest lists, each with its detached `.sig`, written under `models/`
  * in the layout the public data bucket serves them in. The box's renet verifies them with the model
- * key; the bundle only carries them, and records every file in the manifest and the sums.
+ * key; the bundle only carries them, and records every file, signatures included, in the manifest and the
+ * sums, which `verifyBundle` checks at install, so a signature changed after bundling is refused.
  */
 
 import { dirname, join } from 'node:path';
@@ -91,7 +92,10 @@ export async function fetchModels(deps: ServerDeps, out: string): Promise<Manife
   );
   const manifestText = await deps.readFile(join(out, MODELS_DIR, manifestRel));
   for (const sha of new Set(objectHashes(manifestText, manifestRel))) {
-    entries.push(await fetchFile(deps, out, `objects/${sha}`, sha));
+    entries.push(
+      await fetchFile(deps, out, `objects/${sha}`, sha),
+      await fetchFile(deps, out, `objects/${sha}.sig`)
+    );
   }
   return entries;
 }
