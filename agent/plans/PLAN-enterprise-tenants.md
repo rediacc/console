@@ -209,8 +209,9 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - [x] V4 [live] Run the routing proof. If the Turnstile claim fails, LT1 fixes it.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
     (ticked) 2026-11-23T09:16:32Z by ace763dd: V4 bench routing proof rc 0, 32 claims 0 broken, Turnstile holds so LT1 not needed, /tmp/bench-live4/proof-routing.log (bench-only proof) DEPS-WAIVED: live bench proof run 2026-11-23; the plan prerequisite gates other boxes, not this run
-- [ ] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
+- [x] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
+    (ticked) 2026-11-25T00:50:21Z by d778be9d: LT1 present: V4 passed with Turnstile holding (b0cf03673b), so the conditional box does not apply
 - [x] T1 [live] The acme cloud tenant:
   - Run: `bws_env exec --profile deploy-bench -- ./run.sh enterprise add acme --region eu --owner muhammed@rediacc.com --storage-gb 10 --unlisted --bench --bws-project <Q0 id>`.
   - The owner invitation is captured on bench. Read the link with `login_bench mail_token`, then the operator signs in.

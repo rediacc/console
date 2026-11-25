@@ -509,11 +509,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 93 | 8 | 1 | 15365 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
-| `agent/plans/PLAN-console-ai-providers.md` | approved | 135 | 12 | 3 | 22501 |
+| `agent/plans/PLAN-console-ai-providers.md` | approved | 138 | 9 | 6 | 23014 |
 | `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 125 | 6 | 7 | 21703 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 139 | 2 | 14 | 26456 |
-| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 124 | 2 | 9 | 22644 |
+| `agent/plans/PLAN-console-confirm-stepup.md` | approved | 125 | 1 | 10 | 22793 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |
 | `agent/plans/PLAN-console-ia.md` | approved | 100 | 2 | 8 | 18211 |
 | `agent/plans/PLAN-console-private.md` | proposed | 335 | 32 | 0 | 57212 |
@@ -531,7 +531,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
-| `agent/plans/PLAN-enterprise-tenants.md` | approved | 484 | 17 | 30 | 67385 |
+| `agent/plans/PLAN-enterprise-tenants.md` | approved | 485 | 16 | 31 | 67530 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 76 | 9 | 1 | 14042 |

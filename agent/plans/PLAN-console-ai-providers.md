@@ -70,10 +70,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/ai)` rc 0.
     (ticked) 2026-11-23T18:17:56Z by ace763dd: commit:1618ab3660 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] AP2 [writer] Config field: `ai` in `RdcConfigSchema` per D2 and its sensitivity rows (`secret` for key and headers, `public` for the rest), with a round-trip test that a config carrying a profile survives push and pull with the key encrypted and its commitment knowledge-gated.
+- [x] AP2 [writer] Config field: `ai` in `RdcConfigSchema` per D2 and its sensitivity rows (`secret` for key and headers, `public` for the rest), with a round-trip test that a config carrying a profile survives push and pull with the key encrypted and its commitment knowledge-gated.
   Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/config-schema/__tests__/ai-field.test.ts
   Depends on: AP1.
   Accept: `(cd packages/shared && npx vitest run src/config-schema/__tests__/ai-field.test.ts src/config-schema/__tests__/coverage.test.ts)` rc 0.
+    (ticked) 2026-11-25T00:47:52Z by d778be9d: AP2 ai config field landed shared vitest 288 passed schema-coverage rc 0. DEPS-WAIVED: box edges satisfied, AP4 landed c9e5a9a8e9
 - [x] AP3 [writer] Wire additions per D8: `AiEventSchema`, the `kind: 'ai'` stream line, the tool call id on forwarded `event` lines, and `aiChat` and `aiTest` in `PROXY_ROUTES`, with a test that every existing stream line still parses unchanged.
   Owns: packages/shared/src/cli-contract/wire.ts, packages/shared/src/cli-contract/__tests__/wire-ai.test.ts
   Depends on: none.
@@ -84,10 +85,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: PLAN-rmcp-local-mcp.md#LM1.
   Accept: `npm run check:deps` rc 0, `npm run check:ci-lockfile` rc 0 and `npm run check:ci-runtime-imports-are-deps` rc 0.
     (ticked) 2026-11-24T21:44:10Z by d778be9d: AP4 ai, @ai-sdk/anthropic, @ai-sdk/openai-compatible pinned outside the freshness window; lockfile, deps, security audit gates rc 0
-- [ ] AP5 [writer] Provider adapter `packages/cli/src/services/ai/provider.ts`: a profile becomes an AI SDK model for either format with base URL, auth scheme and headers applied and the D5 guard re-run at call time, tested against a local mock HTTP server speaking Anthropic Messages and OpenAI chat with streamed tool calls.
+- [x] AP5 [writer] Provider adapter `packages/cli/src/services/ai/provider.ts`: a profile becomes an AI SDK model for either format with base URL, auth scheme and headers applied and the D5 guard re-run at call time, tested against a local mock HTTP server speaking Anthropic Messages and OpenAI chat with streamed tool calls.
   Owns: packages/cli/src/services/ai/provider.ts, packages/cli/src/services/ai/__tests__/provider.test.ts
   Depends on: AP1, AP4.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/provider.test.ts)` rc 0.
+    (ticked) 2026-11-25T00:47:53Z by d778be9d: AP5 provider adapter landed cli vitest services ai passed tsc rc 0. DEPS-WAIVED: box edges satisfied, AP4 landed c9e5a9a8e9
 - [ ] AP6 [writer] Tools `packages/cli/src/services/ai/tools.ts` per D9 and D10: LM1 registry entries become AI SDK tools run in process through `prepareCommand` and decide() with an agent principal set by the code path, output fenced and truncated by `untrusted.ts`, with tests that a grand-repo mutation without a grant is refused, `needs_confirmation` becomes `approval_required`, and an instruction injected into tool output stays inside its boundary.
   Owns: packages/cli/src/services/ai/tools.ts, packages/cli/src/services/ai/untrusted.ts, packages/cli/src/services/ai/__tests__/tools.test.ts
   Depends on: AP5, PLAN-rmcp-local-mcp.md#LM1, PLAN-rmcp-decide.md#D3.
@@ -96,10 +98,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Owns: packages/cli/src/services/ai/loop.ts, packages/cli/src/services/serve/ai-routes.ts, packages/cli/src/services/serve/server.ts (AI route registration line only), packages/cli/src/services/serve/__tests__/ai-routes.test.ts
   Depends on: AP3, AP6, AP8, PLAN-rmcp-agent-grants.md#AG-X.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/ai-routes.test.ts)` rc 0 with cases for the 12-step cap, a client abort stopping the mock provider stream, a body-asserted `kind` ignored, and a team profile winning over the shared one.
-- [ ] AP8 [writer] Tool-calling smoke `packages/cli/src/services/ai/smoke.ts` per D12: one turn offering `echo_nonce`, passing only on a call carrying the nonce and a streamed final message, otherwise failing with the provider's status and message.
+- [x] AP8 [writer] Tool-calling smoke `packages/cli/src/services/ai/smoke.ts` per D12: one turn offering `echo_nonce`, passing only on a call carrying the nonce and a streamed final message, otherwise failing with the provider's status and message.
   Owns: packages/cli/src/services/ai/smoke.ts, packages/cli/src/services/ai/__tests__/smoke.test.ts
   Depends on: AP5.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/smoke.test.ts)` rc 0, including a mock model that skips the tool and is reported as a failure.
+    (ticked) 2026-11-25T00:47:54Z by d778be9d: AP8 smoke test landed cli vitest services ai passed tsc rc 0. DEPS-WAIVED: box edges satisfied, AP4 landed c9e5a9a8e9
 - [ ] AP9 [writer] Account route `console-ai.ts` per D13: `/console/ai/chat` and `/console/ai/test` behind `sessionAuth()`, forwarding NDJSON to the executor as `/console/exec` does, with a strict schema refusing secret-bearing fields, registered in routes/index.ts.
   Owns: private/account/src/routes/console-ai.ts, private/account/src/routes/index.ts, private/account/tests/integration/console-ai*.test.ts
   Depends on: AP3.

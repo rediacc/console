@@ -104,10 +104,11 @@ D10. **Strings.** Code boxes add English keys only; CF9 translates the delta int
   Depends on: CF3, CF4, CF6.
   Accept: `(cd private/account && npx vitest run tests/integration/console-reveal.test.ts)` rc 0 with cases: member 403, unelevated admin 403 `reauthRequired`, elevated owner 200 with `revealUntil` and one `console.reveal` row holding no value; `(cd private/account/web && npx vitest run src/components/console/__tests__/config-reveal.test.tsx)` rc 0 with cases: member sees no control, admin sees the risk dialog first, leaves re-mask at expiry.
     (ticked) 2026-11-23T20:42:59Z by ace763dd: commit:eb8425b293 landed; account tsc rc=0, web tsc rc=0, web vitest src/pages/console 11 passed
-- [ ] CF9 [writer] Translate the new en/console.json and en/auth.json keys of CF4, CF6, CF7 and CF8 into the 12 other locales through the naturalization pipeline (writers on sonnet), then lock the hashes.
+- [x] CF9 [writer] Translate the new en/console.json and en/auth.json keys of CF4, CF6, CF7 and CF8 into the 12 other locales through the naturalization pipeline (writers on sonnet), then lock the hashes.
   Owns: private/account/web/src/i18n/locales/*/console.json, private/account/web/src/i18n/locales/*/auth.json
   Depends on: CF4, CF6, CF7, CF8.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-25T00:50:20Z by d778be9d: CF9 present: step-up strings in all 13 console locales (1bf0874ad0); check:i18n rc 0 after 0cb79d5fca
 - [x] CF10 [writer] Update the e2e destructive test in private/account/e2e/tests/27-console/27-01-console.test.ts to the new flow: an unelevated destructive run shows ReauthStep, `/test/elevate` with a method then lets the red dialog run, a caution command shows the amber dialog, a preview opens no dialog.
   Owns: private/account/e2e/tests/27-console/27-01-console.test.ts
   Depends on: CF5, CF6.
