@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 300 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 301 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -642,6 +642,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
 | `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13903 |
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 216 | 0 | 8 | 29276 |
+| `agent/plans/PLAN-stop-hook-retro-20261125.md` | ready | 209 | 6 | 0 | 19271 |
 | `agent/plans/PLAN-stop-hook-store-status.md` | approved | 207 | 3 | 6 | 26150 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-stripe-disable.md` | approved | 87 | 3 | 5 | 14857 |
@@ -765,7 +766,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-300 plan(s), 238 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+301 plan(s), 239 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

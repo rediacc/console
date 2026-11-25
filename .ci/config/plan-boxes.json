@@ -4140,6 +4140,23 @@
         "f774d370"
       ]
     },
+    "agent/plans/PLAN-stop-hook-retro-20261125.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "43b1dd50",
+        "56e3fe94",
+        "75ecf0fc",
+        "a9334e2a",
+        "f455bccb",
+        "fc7bc128"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-store-status.md": {
       "status": "approved",
       "owner": "d778be9d",
