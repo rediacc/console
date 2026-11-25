@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T11:57:01.779Z",
+  "generatedAt": "2026-11-25T12:10:30.214Z",
   "legs": [
     {
       "index": 1,
@@ -240,6 +240,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree_land_run.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_walkers.py",

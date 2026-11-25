@@ -131,7 +131,7 @@ Commands:
   prune             Cleanup of worktrees with merged PRs
   lease [options]   Make one detached tree for a writer under .claude/worktrees
   pin               Move this lease tree's pin to its HEAD (the post-commit hook runs it)
-  land <id>         Print the commands that land a lease's commits, submodules first (read-only)
+  land <id>         Print the commands that land a lease's commits, submodules first; --run executes them
   landing [--promote]  Make or reuse the landing tree; --promote moves the development branch in
   leases [--json]   List every lease with owner, base, dirty count and unlanded commits (read-only)
   gc [options]      List lease trees and pins as DELETE or KEEP; --write deletes what passes

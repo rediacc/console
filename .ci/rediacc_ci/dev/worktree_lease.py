@@ -26,6 +26,7 @@ from typing import NamedTuple
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import host_slots
+from rediacc_ci.dev import worktree_land_run
 from rediacc_ci.dev import worktree_spike as spike
 
 BASE_BRANCH = "main"
@@ -644,9 +645,9 @@ def cmd_pin(args):
 
 
 LAND_HELP = """\
-Usage: ./run.sh worktree land <id> [--ticks [--run]]
+Usage: ./run.sh worktree land <id> [--run [--me <prefix>]] [--ticks [--run]]
 
-Read-only. Check that every unlanded commit of the lease carries a PR-TASK
+Read-only without --run. Check that every unlanded commit of the lease carries a PR-TASK
 trailer and a valid Plan-Box trailer and touches no gitlink and no agent/**
 path, then print the commands that land them, submodules first: the
 cherry-picks (-x, so the source sha is read as landed after a conflict), the
@@ -667,6 +668,17 @@ no investigation row, and a ready --plan-tick line when every clause is landed
 or proved and a row recorded before the work exists. --run writes the
 progress rows and runs only the printed --plan-tick lines; it never writes an
 investigation row. No tick line ever names a lease sha.
+
+--run, without --ticks: execute the printed steps in the main checkout, one
+line per step with its rc. Refused inside a lease and with a staged change.
+Submodule picks, then the gitlink commit (the message names the landed
+submodule shas and the lease, with the PR-TASK and Plan-Box trailers of the
+picked commits), then the console picks one at a time. A conflict confined to
+gen-docs regions takes HEAD's copy, runs `npx tsx scripts/gen/gen-docs.ts
+--write`, adds those paths and continues; any other conflict prints the paths
+and leaves the pick in progress. After the picks, a lane the shard coverage
+gate names is placed with `npm run shard:place`, and with --me <prefix>
+`worklist.py --apply-ticks <prefix> --write` runs.
 """
 AGENT_PREFIX = "agent/"
 TRAILER_KEY = "PR-TASK"
@@ -1047,14 +1059,61 @@ def _cmd_ticks(lease_id, flags):
     return rc
 
 
+def _land_run_plan(root, lease_id):
+    """The `LandPlan` for `--run`, after `land_plan` has refused whatever it refuses."""
+    land_plan(root, lease_id)
+    root = _main_checkout(root)
+    path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    live = _live_dir(root, record)
+    subs, console, messages = [], [], {}
+    for key in [*sorted(k for k in record.get("base", {}) if k != "."), "."]:
+        plan = _repo_plan(root, record, key)
+        if plan is None or not plan[2]:
+            continue
+        for sha in plan[2]:
+            messages[sha] = spike.must(plan[0], "show", "-s", "--format=%B", sha)
+        if key == ".":
+            console = plan[2]
+        else:
+            subs.append((key, live / key, plan[2]))
+    return worktree_land_run.LandPlan(live, lease_id, subs, console, messages)
+
+
+def _say(line):
+    print(line, flush=True)
+
+
+def _cmd_run(lease_id, me):
+    try:
+        plan = _land_run_plan(paths.repo_root(), lease_id)
+        rc = worktree_land_run.execute(plan, emit=_say)
+        if rc == 0:
+            rc = worktree_land_run.after_picks(plan.live, me, emit=_say)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    return rc
+
+
 def cmd_land(args):
+    me = ""
+    if "--me" in args:
+        at = args.index("--me")
+        me = args[at + 1] if at + 1 < len(args) else ""
+        args = args[:at] + args[at + 2 :]
+        if not me:
+            log.error("--me takes a session id prefix")
+            return 1
     ids = [a for a in args if not a.startswith("-")]
     flags = [a for a in args if a.startswith("-")]
     if len(ids) != 1 or any(f not in ("--ticks", "--run") for f in flags):
-        log.error("land takes one lease id, and --ticks [--run] after the picks")
+        log.error("land takes one lease id, then --run [--me <prefix>] or --ticks [--run]")
         return 1
     if "--run" in flags and "--ticks" not in flags:
-        log.error("--run belongs to --ticks")
+        return _cmd_run(ids[0], me)
+    if me:
+        log.error("--me belongs to --run")
         return 1
     if "--ticks" in flags:
         return _cmd_ticks(ids[0], flags)
