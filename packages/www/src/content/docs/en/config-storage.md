@@ -1,6 +1,6 @@
 ---
 title: Config Storage
-description: Client-side encrypted config sync with passkey and recovery code unlock
+description: Client-side encrypted config sync with passkey and recovery kit unlock
 category: Guides
 tags:
   - account
@@ -20,8 +20,10 @@ There is one CEK per store, wrapped independently for each unlock method, simila
 
 | Method | What it is | Notes |
 |--------|-----------|-------|
-| **Passkey** | WebAuthn passkey with the PRF extension | The strongest option; hardware-backed |
-| **Recovery code** | A generated `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` code | Shown exactly once at creation; store it somewhere safe |
+| **Passkey** | WebAuthn passkey with the PRF extension, on this device or on a phone reached over a QR code | The strongest option; hardware-backed |
+| **Recovery kit** | A generated `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` code, saved as a printed or downloaded kit | Mandatory for every member; the code is shown only while the kit is saved, so keep the kit somewhere safe |
+
+A **machine secret** is not a slot: it enrolls a headless machine (see [Headless CLI enrollment](#headless-cli-enrollment)) and does not count as a way to unlock the store for a person.
 
 Every method feeds the same pipeline: the slot yields a secret that combines with a server-held secret to unwrap the CEK. Neither half alone is enough, and the slot secret never reaches the server. Both secrets carry enough entropy that the server, which holds the wrapped key and its half of the wrapping key, has nothing to guess offline.
 
@@ -32,10 +34,10 @@ Unlocking is per-device: a new device unlocks once, and after that daily CLI ope
 ## Prerequisites
 
 - **Two-factor authentication** enabled on your account
-- For the **passkey** method: a passkey provider with PRF support, such as a FIDO2 security key (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, or Dashlane
+- For the **passkey** method: a passkey provider with PRF support, such as a FIDO2 security key (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, or Dashlane, on the device or on a phone over QR
 - **Browser**: Chrome 133+, Edge 133+, Firefox 130+, or Safari 17+
 
-The PRF requirement applies only to the passkey slot. The recovery code works with any supported browser.
+The PRF requirement applies only to the passkey slot. The recovery kit works with any supported browser.
 
 ## Setup
 
@@ -45,7 +47,23 @@ The PRF requirement applies only to the passkey slot. The recovery code works wi
    - A **recovery code** is generated with the store and shown once, in a recovery kit. Save the kit before the store is created; setup does not complete without it.
 4. Setup complete. The CLI keeps the unlock secret in the OS keyring.
 
-A passkey can be added later from the Config Storage page. Keep at least two unlock methods, so a lost or unsupported authenticator cannot lock the store.
+A passkey can be added later from the Config Storage page.
+
+### Phone over QR
+
+A desktop without a local PRF authenticator can use a phone: the browser shows a QR code, the phone approves the passkey request over WebAuthn hybrid, and the PRF result unlocks the store as a local passkey would. The passkey slot remembers the credential and the transport it was enrolled with. If a PRF result does not unwrap the key, for example because a phone returned a different PRF output than the device that enrolled the passkey, the page asks to enroll the passkey again instead of reporting a decryption error. Hybrid PRF needs iOS 18.4+ or a current Android.
+
+### Recovery kit
+
+Every member receives a recovery kit at enrollment, and setup does not complete until it is saved. The kit holds the store name, the account email, the creation date, the code in groups, a QR of the code and recovery steps. A save check asks for the last 4 characters of the code, or a scan of its QR, before enrollment continues. There is no way to skip the kit, and keeping the printout safe is the member's responsibility.
+
+- A **lost passkey** is recovered with the kit, then a new passkey is enrolled.
+- A **lost kit** is regenerated from a working passkey; the old printout stops working.
+- **Both lost**: an owner or admin re-adds the member through the member handoff.
+
+### Safety net
+
+The server refuses to delete a slot, remove a member or accept a member leaving when that would leave the store with fewer than two key holders and no recovery slot. A key holder is a distinct user with a passkey or recovery slot at the current key generation; machine secrets and agent grants do not count. A lost printout is invisible to the server, so the Config Storage page advises a second key holder while the store has only one. If the last key holder loses both the passkey and the kit, the store cannot be recovered.
 
 ## PRF Provider Compatibility
 
@@ -83,7 +101,7 @@ The secret comes from `REDIACC_MACHINE_SECRET`, else from standard input when it
 2. The CLI creates a short-lived request and prints a link and a **pairing code** such as `7KQ2-M9XD-P4RT`. The link keeps everything it carries after the `#`, which browsers never send to a server.
 3. Open the link in any browser signed in as the same account. A request from another account is refused.
 4. Type the pairing code from the terminal when the page asks. The unlock button stays disabled until it matches.
-5. Unlock with a passkey or the recovery code. The browser seals the key to the CLI, and the server relays a blob it cannot read.
+5. Unlock with a passkey (on this device or a phone over QR) or the recovery kit. The browser seals the key to the CLI, and the server relays a blob it cannot read.
 6. The CLI decrypts the blob, stores the secret in the OS keyring and reports success.
 
 The request expires after 10 minutes. Press **Ctrl+C** in the CLI to cancel it: the CLI asks the server to drop the link, which then stops working at once, and the page says to run the command again. If that request does not get through, the link stays usable until the request expires. If the link is opened after it expired, or after a login redirect dropped the part after `#`, run the command again.
@@ -122,7 +140,7 @@ A restore publishes the old content as a new version on top of the current one; 
 
 Rotating the store's CEK re-wraps it under a new generation:
 
-- **Recovery codes are always invalidated** by rotation, generate and save a new one afterwards
+- **Recovery kits are always invalidated** by rotation, generate and save a new one afterwards
 - A slot left behind at an older generation is reported as stale rather than failing with a cryptic decryption error
 - The other members' config tokens are revoked, and a device still holding the old key is told to re-enable with `rdc config remote enable`
 
@@ -161,14 +179,14 @@ Other safeguards:
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| PRF not supported | Authenticator lacks PRF extension | Use YubiKey, iCloud Keychain, 1Password, or Dashlane |
+| PRF not supported | Authenticator lacks PRF extension | Use YubiKey, iCloud Keychain, 1Password, or Dashlane, or a phone over QR |
 | X25519 not supported | Browser version too old | Update to Chrome 133+, Edge 133+, Firefox 130+, or Safari 17+ |
 | Already configured | Store exists for your organization | Visit /account/config-storage to manage |
 | Config storage not configured | Server missing blob storage | Contact your admin to configure R2/RustFS |
 | Token expired | No activity for 7 days, or the machine changed networks | Renewed automatically through the login; if no login is stored, run `rdc subscription login` or `rdc config remote enable` |
 | Config came back at an older version | The server returned an older copy than this device already saw | Nothing changed locally; retry, and report it if it persists |
 | Cannot remove last member | Would lock out the store permanently | Add another member first |
-| Stale slot | Slot predates the last key rotation | Re-add the slot (recovery codes must be regenerated after every rotation) |
+| Stale slot | Slot predates the last key rotation | Re-add the slot (the recovery kit must be regenerated after every rotation) |
 
 ## Related
 

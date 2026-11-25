@@ -640,7 +640,7 @@ Config storage requires 2FA to be enabled. No 2FA = no config sync.
 **Operations requiring valid rotating token only:**
 - Push/pull configs (frequent, must be frictionless)
 
-### Passkey with PRF (Required)
+### Passkey with PRF
 
 Passkeys provide:
 - Biometric authentication (no password to type)
@@ -649,7 +649,11 @@ Passkeys provide:
 - Phishing resistance (domain-bound credentials)
 - Cross-device sync via passkey providers (iCloud Keychain, 1Password, etc.)
 
-Config storage requires a passkey provider that supports the PRF extension. No fallback — this is a hard requirement. Supported providers include FIDO2 security keys (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, and Dashlane. Note that Bitwarden and Windows Hello do NOT support PRF.
+A passkey slot needs an authenticator that supports the PRF extension: a FIDO2 security key (e.g. YubiKey), iCloud Keychain, Google Password Manager, 1Password, or Dashlane. A desktop without a local PRF authenticator reaches a phone over a QR code (WebAuthn hybrid); the slot records the credential and transport it was enrolled with, and a PRF result that fails to unwrap prompts re-enrollment. Bitwarden (outside Chromium extensions) does not support PRF. There is no password slot: the other unlock method is the recovery kit, which every member holds.
+
+### Recovery kit and safety net
+
+Every enrollment generates a recovery code (`RC1-`, 160 random bits) in the client and blocks until the kit is saved, with a save check on the last 4 characters or a QR scan. There is no decline path and no organization switch. The server refuses a slot deletion, member removal or member self-leave that would leave the store with fewer than two key holders and no recovery slot (`CONFIG_SAFETY_NET`). A key holder is a distinct user with a passkey or recovery slot at the current `cekGeneration`; machine secrets and agent grants do not count. Headless machines enroll with a generated machine secret (`RM1-`, 160 random bits), held outside the slot table.
 
 ## Recovery
 
@@ -657,7 +661,9 @@ Config storage requires a passkey provider that supports the PRF extension. No f
 |----------|---------------|
 | Lost device, passkey synced (iCloud Keychain/1Password) | New device → passkey provider syncs passkey → PRF derives same `passkey_secret` and `x25519` key pair → unwrap CEK → done |
 | Team member loses passkey | Another admin re-does the "add member" flow: unwraps CEK in their browser, encrypts with new member's new X25519 public key, new member accepts and wraps CEK |
-| Solo user loses passkey completely | Generate new passkey → new CEK → re-create configs from scratch (old configs unrecoverable by design) |
+| Member loses passkey, holds the kit | Unlock with the recovery code from the kit, then enroll a new passkey |
+| Member loses passkey and kit | An owner or admin re-adds the member through the member handoff |
+| Last key holder loses passkey and kit | Unrecoverable by design; the key-slot page advises a second key holder |
 | Server DB lost | Restore from backup. Without backup, `server_secret` is gone → CEK unrecoverable |
 
 **Recommendation**: Require at least 2 team admins for config storage. This provides built-in key recovery — if one admin loses their passkey, the other can re-distribute the CEK.
