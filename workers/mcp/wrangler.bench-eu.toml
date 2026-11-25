@@ -1,0 +1,37 @@
+# Rendered from wrangler.template.toml for one target and region; edit the template and render again, never this file alone.
+name = "mcp-bench"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+# One MCP Worker per region (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 12): the region is
+# part of the public host, so a grant URL names the region its data lives in.
+routes = [
+  { pattern = "mcp.bench-eu.rediacc.cloud", custom_domain = true }
+]
+
+[vars]
+REGION = "eu"
+ENVIRONMENT = "bench"
+# The Worker's own public host; its origin joins the Origin allowlist next to the hosted clients.
+MCP_HOST = "mcp.bench-eu.rediacc.cloud"
+
+# Telemetry export to the region's destination pair, which the account and proxy Workers of the
+# region share; Cloudflare keeps no copy (persist = false). Invocation logs stay off, so no request
+# URL is written by the platform (Design 9, D14).
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+head_sampling_rate = 1
+destinations = ["otlp-bench-logs"]
+persist = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+destinations = ["otlp-bench-traces"]
+persist = false
