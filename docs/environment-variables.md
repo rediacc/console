@@ -50,7 +50,7 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | Disables the repo-context file-write guard. Tutorial/test infra only. |
 | `REDIACC_YES` | Assume-yes prompt bypass (mirror of `--yes`). |
 | `REDIACC_NO_DAEMON` | Forces the direct execution path (no executor daemon). |
-| `REDIACC_SECRET_STORE` | `file` keeps the config-storage device key in `secure-keys.json` (mode 0600) in the state directory instead of the native secret store of the OS (kernel keyring, Keychain, DPAPI). Unset, the native store is required and the CLI refuses when it cannot be used. No other value is accepted. |
+| `REDIACC_SECRET_STORE` | `file` keeps the config-storage device key in `secure-keys.json` (mode 0600) in the state directory instead of the native secret store of the OS (selection order below). Unset, the native store is required and the CLI refuses when it cannot be used. No other value is accepted. |
 | `REDIACC_DISABLE_AUTOUPDATE` | Disables the background auto-updater. |
 | `REDIACC_UPDATE_INTERVAL_HOURS` | Auto-update check cooldown. |
 | `REDIACC_SSH_LINGER_MS` | SSH connection-pool idle linger. |
@@ -64,6 +64,17 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_FEEDBACK_HINT` | `0` turns off the `Unexpected? rdc feedback report --last` line a failing command prints (stderr in text mode, a `next` option in the JSON envelope). |
 | `REDIACC_TELEMETRY_DISABLED` / `REDIACC_TELEMETRY_ENDPOINT` | Telemetry opt-out / dev endpoint. |
 | `NO_COLOR` | Disables ANSI color (informal standard; any non-empty value). |
+
+### Secret store selection
+
+The config-storage device key goes to the first store that stores, reads back and removes a throwaway key in the running process:
+
+1. `REDIACC_SECRET_STORE=file` selects the file store, and nothing else is tried.
+2. Linux with a session bus (`DBUS_SESSION_BUS_ADDRESS`, or `$XDG_RUNTIME_DIR/bus`): the Secret Service through `secret-tool` (package `libsecret-tools`; GNOME Keyring or KWallet), which keeps the key across restarts.
+3. Linux otherwise, or when the Secret Service fails its round trip (no `secret-tool`, no service on the bus, a locked keyring nobody unlocks within 10 seconds): the kernel user keyring through `keyctl` (package `keyutils`), which every restart empties.
+4. macOS: the Keychain. Windows: DPAPI.
+
+When the last native store fails, the CLI refuses and names the missing tool; it never falls back to the file store on its own.
 
 ## Debugging
 
