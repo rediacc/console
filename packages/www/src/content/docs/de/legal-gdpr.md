@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: de
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Die Datenschutz-Grundverordnung (DSGVO) ist das Datenschutzgesetz der Europäischen Union, in Kraft seit Mai 2018. Sie regelt, wie Organisationen personenbezogene Daten von Personen in der EU erheben, verarbeiten und speichern.
@@ -27,7 +27,7 @@ Die folgende Tabelle ordnet spezifische DSGVO-Artikel den technischen Fähigkeit
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Auftragsverarbeiter | Pflichten bei Drittanbieter-Datenverarbeitung | Self-Hosted: Rediacc läuft auf Ihrer Infrastruktur. Keine Daten verlassen Ihre Maschine während Fork-, Klon- oder Backup-Operationen. Keine SaaS-Komponente verarbeitet personenbezogene Daten. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Verarbeitungsverzeichnis | Verzeichnis von Verarbeitungstätigkeiten führen | Audit-Logging verfolgt über 40 Ereignistypen auf Kontoebene: Authentifizierung, API-Tokens, Config-Store-Operationen und Lizenzierung. Export über das Admin-Dashboard oder die Portal-Aktivitätsseite (JSON-Export verfügbar). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sicherheit der Verarbeitung | Angemessene technische Maßnahmen | LUKS2 AES-256-Verschlüsselung im Ruhezustand, Netzwerkisolation via iptables und separate Docker Daemons, Loopback-IP-Subnetze (/26) pro Repository. Der Config Store verwendet dreischichtige Verschlüsselung: zeitlich begrenzte SDK-Schlüssel, Split-Key-CEK-Ableitung (Passkey + Server-Geheimnis) und Organisations-Passphrase-Verschlüsselung. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Meldung von Datenschutzverletzungen | 72-Stunden-Meldung mit forensischem Trail | Audit-Logs bieten einen forensischen Trail aller Operationen. Die Self-Hosted-Architektur begrenzt den Wirkungsradius auf einzelne Repositories. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Meldung von Datenschutzverletzungen | 72-Stunden-Meldung an die Aufsichtsbehörde | Der gestufte Vorfallbericht enthält eine Feldzuordnung von jedem Berichtsfeld zur Inhaltsliste von Art. 33(3), und die Vorfalluhren zeigen die ab Kenntnisnahme gezählten 72 Stunden. Netzwerk-Flow-Records (bei aktivierter Aufzeichnung, kostenpflichtige Pläne) und das Audit-Log liefern Nachweise dazu, was geschehen ist; Flow-Records zeigen Volumen und Ziel, nicht Inhalt. Ob eine Verletzung meldepflichtig ist und was eingereicht wird, bleibt Beurteilung des Verantwortlichen. Die Self-Hosted-Architektur begrenzt den Wirkungsradius auf einzelne Repositories. |
 
 ## Datenresidenz
 

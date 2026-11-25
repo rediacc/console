@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: pt
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 O Regulamento Geral sobre a Proteção de Dados (RGPD) é a lei de proteção de dados da União Europeia, em vigor desde maio de 2018. Rege a forma como as organizações recolhem, processam e armazenam dados pessoais de pessoas singulares na UE.
@@ -27,7 +27,7 @@ A tabela seguinte mapeia artigos específicos do RGPD com as capacidades técnic
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Subcontratante | Obrigações de processamento de dados por terceiros | Self-hosted: a Rediacc funciona na sua infraestrutura. Nenhum dado sai da sua máquina durante operações de fork, clone ou backup. Nenhum componente SaaS processa dados pessoais. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registos das atividades de tratamento | Manter registos das atividades de processamento | O registo de auditoria acompanha mais de 70 tipos de eventos: autenticação, tokens de API, operações no arquivo de configuração, licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Exportação via painel de administração ou página de atividade do portal (exportação JSON disponível). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Segurança do tratamento | Medidas técnicas adequadas | Encriptação LUKS2 AES-256 em repouso, isolamento de rede via iptables e daemons Docker separados, sub-redes IP de loopback (/26) por repositório. O arquivo de configuração utiliza encriptação de três camadas: chaves SDK com janela temporal, derivação de CEK com chave dividida (passkey e segredo do servidor) e encriptação com frase-passe da organização. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificação de violação | Notificação em 72 horas com trilha forense | Os registos de auditoria fornecem uma trilha forense de todas as operações. A arquitetura self-hosted limita o raio de explosão a repositórios individuais. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificação de violação | Notificação à autoridade de controlo em 72 horas | O relatório de incidente por fases traz um mapa de campos que liga cada campo do relatório à lista de conteúdos do Art. 33(3), e os relógios do incidente mostram as 72 horas contadas a partir do conhecimento. Os registos de fluxo de rede (onde a captura está ativa, planos pagos) e o registo de auditoria fornecem evidências do que aconteceu; os registos de fluxo mostram volume e destino, não conteúdo. Saber se uma violação é notificável e o que é comunicado continua a ser decisão do responsável pelo tratamento. A arquitetura self-hosted limita o raio de explosão a repositórios individuais. |
 
 ## Residência de Dados
 

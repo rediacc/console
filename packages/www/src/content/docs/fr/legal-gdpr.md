@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: fr
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Le Règlement Général sur la Protection des Données (RGPD) est la loi de l'Union européenne sur la protection des données, en vigueur depuis mai 2018. Il régit la manière dont les organisations collectent, traitent et stockent les données personnelles des individus dans l'UE.
@@ -27,7 +27,7 @@ Le tableau ci-dessous met en correspondance les articles spécifiques du RGPD av
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Sous-traitant | Obligations de traitement des données par un tiers | Auto-hébergé : Rediacc s'exécute sur votre infrastructure. Aucune donnée ne quitte votre machine pendant les opérations de fork, clone ou sauvegarde. Aucun composant SaaS ne traite de données personnelles. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registre des traitements | Tenir un registre des activités de traitement | La journalisation d'audit trace plus de 40 types d'événements au niveau du compte : authentification, jetons API, opérations du magasin de configuration et licences. Export via le tableau de bord d'administration ou la page d'activité du portail (export JSON disponible). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sécurité du traitement | Mesures techniques appropriées | Chiffrement LUKS2 AES-256 au repos, isolation réseau via iptables et Docker daemons séparés, sous-réseaux IP loopback (/26) par dépôt. Le magasin de configuration utilise un chiffrement à triple couche : clés SDK à fenêtre temporelle, dérivation CEK à clé fractionnée (passkey + secret serveur) et chiffrement par phrase secrète de l'organisation. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notification de violation | Notification sous 72 heures avec piste forensique | Les journaux d'audit fournissent une piste forensique de toutes les opérations. L'architecture auto-hébergée limite le rayon d'impact aux dépôts individuels. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notification de violation | Notification sous 72 heures à l'autorité de contrôle | Le rapport d'incident par étapes comporte une table de correspondance entre chaque champ du rapport et la liste de contenu de l'Art. 33(3), et les horloges d'incident comptent les 72 heures à partir de la prise de connaissance. Les enregistrements de flux réseau (capture activée, offres payantes) et le journal d'audit fournissent des éléments sur ce qui s'est passé ; les enregistrements de flux montrent le volume et la destination, pas le contenu. Le caractère notifiable d'une violation et le contenu du dépôt restent à l'appréciation du responsable du traitement. L'architecture auto-hébergée limite le rayon d'impact aux dépôts individuels. |
 
 ## Résidence des données
 

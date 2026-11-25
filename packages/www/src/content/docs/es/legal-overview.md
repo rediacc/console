@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: es
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc se ejecuta completamente en tu infraestructura. Durante las operaciones de clonación, respaldo y despliegue, tus datos permanecen en tus máquinas. Eres tanto el controlador como el procesador de datos. Sin SaaS de terceros, sin acceso externo.
@@ -25,7 +25,7 @@ Mapeamos las capacidades técnicas de Rediacc a los requisitos de los principale
 | [CCPA](/es/docs/legal-ccpa) | Derechos de privacidad del consumidor de California | Autoalojado (sin venta/compartición de datos), cifrado de conocimiento cero, eliminación cifrada, inventario de datos por repositorio |
 | [ISO 27001](/es/docs/legal-iso27001) | Controles de gestión de seguridad de la información | Gestión de activos, controles criptográficos, almacén de configuración de conocimiento cero, control de acceso, seguridad operativa |
 | [PCI DSS](/es/docs/legal-pci-dss) | Protección de datos de tarjetas de pago | Segmentación de red por arquitectura, cifrado obligatorio, registro de auditoría, reducción de alcance mediante autoalojamiento |
-| [NIS2 y DORA](/es/docs/legal-nis2-dora) | Ciberseguridad y resiliencia financiera de la UE | Eliminación de riesgos en la cadena de suministro, pruebas de resiliencia vía clonación CoW, cifrado, detección de incidentes |
+| [NIS2 y DORA](/es/docs/legal-nis2-dora) | Ciberseguridad y resiliencia financiera de la UE | Eliminación de riesgos en la cadena de suministro, pruebas de resiliencia vía clonación CoW, cifrado, avisos de anomalías y relojes de notificación de incidentes (planes de pago) |
 | [Soberanía de datos](/es/docs/legal-data-sovereignty) | Leyes globales de residencia de datos (PIPL, LGPD, KVKK, PIPA y más) | Autoalojado = los datos nunca salen de tu jurisdicción. Sin transferencias transfronterizas, sin evaluaciones de adecuación |
 
 ## Fundamentos arquitectónicos

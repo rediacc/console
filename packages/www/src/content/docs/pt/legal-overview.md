@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: pt
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 A Rediacc funciona inteiramente na sua infraestrutura. Durante clonagem, backup e implementação, os seus dados ficam nas suas máquinas. Você é simultaneamente o responsável pelo tratamento e o processador dos dados. Nenhum SaaS de terceiros, nenhum acesso externo.
@@ -25,7 +25,7 @@ Mapeamos as capacidades técnicas da Rediacc para os principais requisitos de co
 | [CCPA](/pt/docs/legal-ccpa) | Direitos de privacidade dos consumidores da Califórnia | Self-hosted (sem venda/partilha de dados), encriptação de conhecimento zero, eliminação encriptada, inventário de dados por repositório |
 | [ISO 27001](/pt/docs/legal-iso27001) | Controlos de gestão de segurança da informação | Gestão de ativos, controlos criptográficos, arquivo de configuração de conhecimento zero, controlo de acessos, segurança operacional |
 | [PCI DSS](/pt/docs/legal-pci-dss) | Proteção de dados de cartões de pagamento | Segmentação de rede por arquitetura, encriptação obrigatória, registo de auditoria, redução de âmbito via self-hosted |
-| [NIS2 e DORA](/pt/docs/legal-nis2-dora) | Cibersegurança e resiliência financeira na UE | Eliminação do risco da cadeia de fornecimento, testes de resiliência via clonagem CoW, encriptação, deteção de incidentes |
+| [NIS2 e DORA](/pt/docs/legal-nis2-dora) | Cibersegurança e resiliência financeira na UE | Eliminação do risco da cadeia de fornecimento, testes de resiliência via clonagem CoW, encriptação, avisos de anomalias e relógios de notificação de incidentes (planos pagos) |
 | [Soberania de Dados](/pt/docs/legal-data-sovereignty) | Leis globais de residência de dados (PIPL, LGPD, KVKK, PIPA e outras) | Self-hosted = os dados nunca saem da sua jurisdição. Sem transferências transfronteiriças, sem avaliações de adequação |
 
 ## Fundamentos Arquitetónicos

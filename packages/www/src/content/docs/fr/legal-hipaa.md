@@ -8,8 +8,8 @@ tags:
 subcategory: regulations
 order: 3
 language: fr
-sourceHash: "1a0a2df716f6628b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "3fa7dcd465e26d0b"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Le Health Insurance Portability and Accountability Act (HIPAA) est une loi fédérale américaine qui établit des normes pour la protection des informations sensibles de santé des patients (PHI). Il s'applique aux entités couvertes (prestataires de soins, régimes d'assurance maladie, chambres de compensation) et à leurs partenaires commerciaux.
@@ -35,7 +35,7 @@ HIPAA exige des garanties administratives, techniques et physiques. Le tableau c
 | Exigence | Capacité Rediacc |
 |----------|-----------------|
 | Gestion des accès du personnel | Jetons API avec permissions à portée définie. Contrôle d'accès basé sur les équipes. Révocation automatique des jetons lors du retrait d'une équipe. |
-| Procédures d'incidents de sécurité | Les journaux d'audit fournissent une piste forensique de toutes les opérations. L'isolation par dépôt limite le rayon d'impact. |
+| Procédures d'incidents de sécurité | Les journaux d'audit consignent qui a fait quoi pour les opérations qu'ils couvrent. Les enregistrements de flux réseau par dépôt (offres payantes, au niveau choisi par dépôt) et la chronologie d'enquête fournissent des éléments pour un incident ; les enregistrements de flux montrent le volume et la destination, pas le contenu. Aucun rapport spécifique à HIPAA n'est généré. L'isolation par dépôt limite le rayon d'impact. |
 | Plan de contingence | `rdc repo push/pull` supporte la sauvegarde chiffrée multi-destination. Les snapshots CoW permettent une récupération instantanée. |
 
 ### Garanties physiques

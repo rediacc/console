@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: de
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc läuft vollständig auf Ihrer Infrastruktur. Während Kloning-, Backup- und Deployment-Operationen verlassen Ihre Daten Ihre Maschinen nie. Sie sind sowohl der Verantwortliche als auch der Auftragsverarbeiter. Kein Drittanbieter-SaaS, kein externer Zugriff.
@@ -25,7 +25,7 @@ Wir ordnen die technischen Fähigkeiten von Rediacc den Anforderungen wichtiger 
 | [CCPA](/de/docs/legal-ccpa) | Datenschutzrechte kalifornischer Verbraucher | Self-Hosted (kein Datenverkauf/-weitergabe), Zero-Knowledge-Verschlüsselung, verschlüsselte Löschung, Dateninventar pro Repository |
 | [ISO 27001](/de/docs/legal-iso27001) | Informationssicherheits-Management-Kontrollen | Asset-Management, kryptographische Kontrollen, Zero-Knowledge-Config-Store, Zugriffskontrolle, Betriebssicherheit |
 | [PCI DSS](/de/docs/legal-pci-dss) | Schutz von Zahlungskartendaten | Netzwerksegmentierung durch Architektur, obligatorische Verschlüsselung, Audit-Logging, Scope-Reduktion durch Self-Hosting |
-| [NIS2 und DORA](/de/docs/legal-nis2-dora) | EU-Cybersicherheit und finanzielle Resilienz | Eliminierung von Lieferkettenrisiken, Resilienztests via CoW-Kloning, Verschlüsselung, Vorfallserkennung |
+| [NIS2 und DORA](/de/docs/legal-nis2-dora) | EU-Cybersicherheit und finanzielle Resilienz | Eliminierung von Lieferkettenrisiken, Resilienztests via CoW-Kloning, Verschlüsselung, Anomalie-Hinweise und Fristuhren für die Vorfallsmeldung (kostenpflichtige Pläne) |
 | [Datenhoheit](/de/docs/legal-data-sovereignty) | Globale Datenresidenzgesetze (PIPL, LGPD, KVKK, PIPA und weitere) | Self-Hosted: Daten verlassen nie Ihre Jurisdiktion. Keine grenzüberschreitenden Transfers, keine Angemessenheitsbewertungen |
 
 ## Architektonische Grundlagen

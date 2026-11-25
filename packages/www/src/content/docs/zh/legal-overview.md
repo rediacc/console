@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: zh
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc 完全在您的基础设施上运行。在克隆、备份和部署期间，您的数据保留在您的机器上。您既是数据控制者，也是数据处理者。无第三方 SaaS，无外部访问。
@@ -25,7 +25,7 @@ Rediacc 完全在您的基础设施上运行。在克隆、备份和部署期间
 | [CCPA](/zh/docs/legal-ccpa) | 加州消费者隐私权 | 自托管（无数据出售/共享）、零知识加密、加密删除、按仓库的数据清单 |
 | [ISO 27001](/zh/docs/legal-iso27001) | 信息安全管理控制 | 资产管理、加密控制、零知识配置存储、访问控制、运营安全 |
 | [PCI DSS](/zh/docs/legal-pci-dss) | 支付卡数据保护 | 架构级网络分段、强制加密、审计日志、通过自托管缩小范围 |
-| [NIS2 和 DORA](/zh/docs/legal-nis2-dora) | 欧盟网络安全和金融韧性 | 消除供应链风险、通过 CoW 克隆进行韧性测试、加密、事件检测 |
+| [NIS2 和 DORA](/zh/docs/legal-nis2-dora) | 欧盟网络安全和金融韧性 | 消除供应链风险、通过 CoW 克隆进行韧性测试、加密、异常通知和事件报告计时（付费方案） |
 | [数据主权](/zh/docs/legal-data-sovereignty) | 全球数据驻留法（PIPL、LGPD、KVKK、PIPA 等） | 自托管 = 数据永远不会离开您的管辖区。无跨境传输，无充分性评估 |
 
 ## 架构基础

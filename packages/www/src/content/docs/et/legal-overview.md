@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: et
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc töötab täielikult teie infrastruktuuril. Keskkonna kloonimise, varundamise ja juurutamise toimingute ajal ei lahku andmed teie masinast. Teie ollete nii andmete kontrollija kui ka töötleja. Kolmandate osapoolte SaaS-teenuseid pole, välist juurdepääsu pole.
@@ -25,7 +25,7 @@ See jaotis seob Rediacc tehnilised võimalused peamiste vastavusraamistike nõue
 | [CCPA](/en/docs/legal-ccpa) | California tarbijate privaatsusõigused | Isehallatav (andmemüüki/jagamist ei toimu), zero-knowledge krüptimine, krüptograafiline kustutamine, andmete inventuur hoidla kaupa |
 | [ISO 27001](/en/docs/legal-iso27001) | Infoturbe halduse kontrollid | Varahaldus, krüptograafilised kontrollid, zero-knowledge konfiguratsioonihoidla, juurdepääsukontroll, operatsiooniturvalisus |
 | [PCI DSS](/en/docs/legal-pci-dss) | Maksekaardi andmete kaitse | Võrgusegmenteerimine arhitektuuri tasandil, kohustuslik krüptimine, auditilogi, ulatuse vähendamine isehallatava lahenduse kaudu |
-| [NIS2 ja DORA](/en/docs/legal-nis2-dora) | EL-i küberturvalisus ja finantsresilients | Tarneahela riski kõrvaldamine, resilientsi testimine CoW kloonimisega, krüptimine, intsidentide tuvastamine |
+| [NIS2 ja DORA](/en/docs/legal-nis2-dora) | EL-i küberturvalisus ja finantsresilients | Tarneahela riski kõrvaldamine, resilientsi testimine CoW kloonimisega, krüptimine, anomaaliateated ja intsidendiaruandluse kellad (tasulised plaanid) |
 | [Andmesuveren](/en/docs/legal-data-sovereignty) | Globaalsed andmete asukohaseadused (PIPL, LGPD, KVKK, PIPA jm) | Isehallatav = andmed ei lahku kunagi teie jurisdiktsioonist. Piiriüleseid edastusi ega piisavushinnanguid ei toimu |
 
 ## Arhitektuurilised alused

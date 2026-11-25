@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: it
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc gira interamente sulla vostra infrastruttura. Durante la clonazione, i backup e gli deployment, i vostri dati rimangono sulle vostre macchine. Siete sia il titolare sia il responsabile del trattamento. Nessun SaaS di terze parti, nessun accesso esterno.
@@ -25,7 +25,7 @@ Questa sezione mappa le capacità tecniche di Rediacc ai requisiti dei principal
 | [CCPA](/it/docs/legal-ccpa) | Diritti alla privacy dei consumatori californiani | Self-hosted (nessuna vendita/condivisione di dati), cifratura zero-knowledge, cancellazione cifrata, inventario dei dati per repository |
 | [ISO 27001](/it/docs/legal-iso27001) | Controlli di gestione della sicurezza delle informazioni | Gestione degli asset, controlli crittografici, config store zero-knowledge, controllo degli accessi, sicurezza operativa |
 | [PCI DSS](/it/docs/legal-pci-dss) | Protezione dei dati delle carte di pagamento | Segmentazione di rete per architettura, cifratura obbligatoria, log di audit, riduzione dell'ambito tramite self-hosted |
-| [NIS2 e DORA](/it/docs/legal-nis2-dora) | Cybersicurezza e resilienza finanziaria nell'UE | Eliminazione del rischio della supply chain, test di resilienza tramite clonazione CoW, cifratura, rilevamento degli incidenti |
+| [NIS2 e DORA](/it/docs/legal-nis2-dora) | Cybersicurezza e resilienza finanziaria nell'UE | Eliminazione del rischio della supply chain, test di resilienza tramite clonazione CoW, cifratura, avvisi di anomalia e timer di segnalazione degli incidenti (piani a pagamento) |
 | [Sovranità dei dati](/it/docs/legal-data-sovereignty) | Leggi globali sulla residenza dei dati (PIPL, LGPD, KVKK, PIPA e altre) | Self-hosted = i dati non lasciano mai la propria giurisdizione. Nessun trasferimento transfrontaliero, nessuna valutazione di adeguatezza |
 
 ## Fondamenta architetturali

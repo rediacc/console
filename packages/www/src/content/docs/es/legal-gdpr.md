@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: es
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 El Reglamento General de Protección de Datos (GDPR) es la ley de protección de datos de la Unión Europea, vigente desde mayo de 2018. Regula cómo las organizaciones recopilan, procesan y almacenan datos personales de personas en la UE.
@@ -27,7 +27,7 @@ La tabla a continuación mapea artículos específicos del GDPR a las capacidade
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Procesador | Obligaciones de procesamiento de datos de terceros | Autoalojado: Rediacc se ejecuta en tu infraestructura. Ningún dato sale de tu máquina durante operaciones de fork, clonación o respaldo. Ningún componente SaaS procesa datos personales. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registros de procesamiento | Mantener registros de actividades de procesamiento | El registro de auditoría rastrea más de 40 tipos de eventos a nivel de cuenta: autenticación, tokens API, operaciones del almacén de configuración y licencias. Exportación vía panel de administración o la página de actividad del portal (exportación JSON disponible). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Seguridad del procesamiento | Medidas técnicas apropiadas | Cifrado LUKS2 AES-256 en reposo, aislamiento de red vía iptables y Docker daemons separados, subredes de IP loopback (/26) por repositorio. El almacén de configuración usa cifrado de triple capa: claves SDK con ventana temporal, derivación de CEK con clave dividida (passkey + secreto del servidor) y cifrado con frase de paso de la organización. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificación de brechas | Notificación en 72 horas con rastro forense | Los registros de auditoría proporcionan un rastro forense de todas las operaciones. La arquitectura autoalojada limita el radio de impacto a repositorios individuales. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notificación de brechas | Notificación en 72 horas a la autoridad de control | El informe de incidente por etapas incluye un mapa de campos de cada campo del informe a la lista de contenido del Art. 33(3), y los relojes de incidente muestran las 72 horas contadas desde el conocimiento. Los registros de flujo de red (con la captura activa, planes de pago) y el registro de auditoría aportan evidencia de lo ocurrido; los registros de flujo muestran volumen y destino, no contenido. Valorar si una brecha es notificable y qué se presenta sigue siendo juicio del responsable del tratamiento. La arquitectura autoalojada limita el radio de impacto a repositorios individuales. |
 
 ## Residencia de datos
 

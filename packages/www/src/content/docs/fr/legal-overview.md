@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: fr
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc s'exécute entièrement sur votre infrastructure. Lors du clonage, des sauvegardes et des déploiements, vos données restent sur vos machines. Vous êtes à la fois le responsable du traitement et le prestataire de traitement. Aucun SaaS tiers, aucun accès externe.
@@ -25,7 +25,7 @@ Nous mettons en correspondance les capacités techniques de Rediacc avec les exi
 | [CCPA](/fr/docs/legal-ccpa) | Droits de confidentialité des consommateurs californiens | Auto-hébergé (pas de vente/partage de données), chiffrement à connaissance nulle, suppression chiffrée, inventaire des données par dépôt |
 | [ISO 27001](/fr/docs/legal-iso27001) | Contrôles de gestion de la sécurité de l'information | Gestion des actifs, contrôles cryptographiques, magasin de configuration à connaissance nulle, contrôle d'accès, sécurité opérationnelle |
 | [PCI DSS](/fr/docs/legal-pci-dss) | Protection des données de cartes de paiement | Segmentation réseau par architecture, chiffrement obligatoire, journalisation d'audit, réduction du périmètre via l'auto-hébergement |
-| [NIS2 et DORA](/fr/docs/legal-nis2-dora) | Cybersécurité et résilience financière de l'UE | Élimination des risques liés à la chaîne d'approvisionnement, tests de résilience via clonage CoW, chiffrement, détection d'incidents |
+| [NIS2 et DORA](/fr/docs/legal-nis2-dora) | Cybersécurité et résilience financière de l'UE | Élimination des risques liés à la chaîne d'approvisionnement, tests de résilience via clonage CoW, chiffrement, avis d'anomalie et horloges de signalement d'incidents (offres payantes) |
 | [Souveraineté des données](/fr/docs/legal-data-sovereignty) | Lois mondiales sur la résidence des données (PIPL, LGPD, KVKK, PIPA et autres) | Auto-hébergé = les données ne quittent jamais votre juridiction. Pas de transferts transfrontaliers, pas d'évaluations d'adéquation |
 
 ## Fondations architecturales

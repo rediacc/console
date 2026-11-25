@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: tr
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Genel Veri Koruma Yönetmeliği (GDPR), Mayıs 2018'den bu yana yürürlükte olan Avrupa Birliği'nin veri koruma yasasıdır. Kuruluşların AB'deki bireylerin kişisel verilerini nasıl topladığını, işlediğini ve sakladığını düzenler.
@@ -27,7 +27,7 @@ Aşağıdaki tablo, belirli GDPR maddelerini Rediacc'ın teknik yetenekleriyle e
 | [Md. 28](https://gdpr-info.eu/art-28-gdpr/), İşleyici | Üçüncü taraf veri işleme yükümlülükleri | Kendi sunucunuzda barındırma: Rediacc sizin altyapınızda çalışır. Fork, klonlama veya yedekleme işlemleri sırasında hiçbir veri makinenizi terk etmez. Hiçbir SaaS bileşeni kişisel verileri işlemez. |
 | [Md. 30](https://gdpr-info.eu/art-30-gdpr/), İşleme kayıtları | İşleme faaliyetlerinin kayıtlarını tutma | Denetim günlüğü hesap düzeyinde 40'tan fazla olay türünü takip eder: kimlik doğrulama, API token'ları, yapılandırma deposu işlemleri ve lisanslama. Yönetici paneli veya portal aktivite sayfası üzerinden dışa aktarım (JSON dışa aktarma seçeneği mevcuttur). |
 | [Md. 32](https://gdpr-info.eu/art-32-gdpr/), İşleme güvenliği | Uygun teknik önlemler | Durağan halde LUKS2 AES-256 şifreleme, iptables ve ayrı Docker daemon'ları ile ağ izolasyonu, depo başına loopback IP alt ağları (/26). Yapılandırma deposu üç katmanlı şifreleme kullanır: zaman pencereli SDK anahtarları, bölünmüş anahtar CEK türetme (passkey + sunucu sırrı) ve kuruluş parola ifadesi şifrelemesi. |
-| [Md. 33](https://gdpr-info.eu/art-33-gdpr/), İhlal bildirimi | Adli iz ile 72 saat bildirim | Denetim günlükleri tüm işlemlerin adli izini sağlar. Kendi sunucunuzda barındırma mimarisi etki alanını bireysel depolarla sınırlar. |
+| [Md. 33](https://gdpr-info.eu/art-33-gdpr/), İhlal bildirimi | Denetim makamına 72 saat içinde bildirim | Aşamalı olay raporu, her rapor alanından Md. 33(3)'ün içerik listesine giden bir alan haritası taşır; olay sayaçları 72 saati farkındalıktan itibaren sayar. Ağ akış kayıtları (yakalama açıkken, ücretli planlar) ve denetim günlüğü, olanlara dair kanıt sağlar; akış kayıtları hacmi ve hedefi gösterir, içeriği değil. Bir ihlalin bildirime tabi olup olmadığı ve neyin sunulacağı veri sorumlusunun takdirinde kalır. Kendi sunucunuzda barındırma mimarisi etki alanını bireysel depolarla sınırlar. |
 
 ## Veri Yerleşimi
 
