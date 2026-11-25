@@ -63,18 +63,12 @@ interface Booted {
 }
 
 /**
- * The authorizer these cases run under. The account's `agent-session` answer carries neither a policy nor the grant user's org
- * role yet, so the real `authorize` reads a grant principal as a policy-less `member` and refuses everything (the last case
- * pins that). This stands in for the missing role, so the cases below test the rest of the route: the checks
- * that are the route's own, and the `decide` rules that need no policy (grand repos, cluster ops).
+ * Every case runs under the real `authorize`, judging the grant as its person: the role, email and team the account answered
+ * (the harness default is an owner under an allow-everything org policy), narrowed by the grant's overrides.
  */
-const asOwner: ServeDeps['authorize'] = (args) =>
-  authorize({ ...args, principal: { ...args.principal, orgRole: 'owner' } });
-
 async function boot(
   specs: Parameters<typeof makeGrant>[0][],
-  mode: ServeDeps['mode'] = 'container',
-  authorizer: ServeDeps['authorize'] = asOwner
+  mode: ServeDeps['mode'] = 'container'
 ): Promise<Booted> {
   const made = await Promise.all(specs.map((spec) => makeGrant(spec)));
   const account = fakeAccount(made);
@@ -111,7 +105,7 @@ async function boot(
       sessions
     ),
     agentGrants: sessions,
-    authorize: authorizer,
+    authorize,
     audit: (event) => audit(event),
   };
   return {
@@ -470,18 +464,63 @@ describe('POST /v1/mcp/call', () => {
     expect(JSON.stringify(world.audited)).not.toContain(grant.secret);
   });
 
-  it('refuses every command under the real authorizer: a grant has no policy and no role yet (fail closed)', async () => {
-    const world = await boot(
-      [{ grantId: 'g_a', configId: 'cfg-a', machine: 'machine-a' }],
-      'container',
-      authorize
-    );
-    const answer = await answerOf(
+  it('runs a member grant the policy allows, judged as its person on its team', async () => {
+    // One org policy: nothing by default, `repo status` for the members of team A's tier (keyed on the real team slug).
+    const org = {
+      version: 1 as const,
+      defaults: { commands: { allow: [] } },
+      teams: { 'slug-team-a': { commands: { allow: ['repo status'] } } },
+    };
+    const member = { orgRole: 'member' as const, policies: { org } };
+    const world = await boot([
+      { grantId: 'g_a', teamId: 'team-a', configId: 'cfg-a', machine: 'machine-a', ...member },
+      { grantId: 'g_b', teamId: 'team-b', configId: 'cfg-b', machine: 'machine-b', ...member },
+    ]);
+
+    const allowed = await answerOf(
       await call(world, world.grants.g_a as Grant, { tool: 'repo_status', args: GRAND })
     );
+    expect(allowed.result?.isError).toBe(false);
+    expect(world.executed.map((run) => run.machineName)).toEqual(['machine-a']);
+
+    // The same member on another team is outside the tier: the allow came from the policy, not from the grant.
+    const denied = await answerOf(
+      await call(world, world.grants.g_b as Grant, { tool: 'repo_status', args: GRAND })
+    );
+    expect(codeOf(denied)).toBe('POLICY_DENIED');
+    expect(world.executed).toHaveLength(1);
+  });
+
+  it("honours a deny rule of the team's policy record for an owner, under an org policy that allows everything", async () => {
+    const world = await boot([
+      {
+        grantId: 'g_deny',
+        teamId: 'team-a',
+        configId: 'cfg-a',
+        machine: 'machine-a',
+        orgRole: 'owner',
+        policies: {
+          team: { version: 1, defaults: { commands: { allow: ['*'], deny: ['repo status'] } } },
+        },
+      },
+    ]);
+    const answer = await answerOf(
+      await call(world, world.grants.g_deny as Grant, { tool: 'repo_status', args: GRAND })
+    );
     expect(codeOf(answer)).toBe('POLICY_DENIED');
-    expect(answer.result?.structuredContent?.message).toContain('No policy is configured');
     expect(world.executed).toEqual([]);
+  });
+
+  it('refuses a grant minted with no policy key as an ended grant, and runs nothing', async () => {
+    const world = await boot([
+      { grantId: 'g_nowrap', configId: 'cfg-a', machine: 'machine-a', wraps: false },
+    ]);
+    const answer = await answerOf(
+      await call(world, world.grants.g_nowrap as Grant, { tool: 'repo_status', args: GRAND })
+    );
+    expect(codeOf(answer)).toBe('REDIACC_GRANT_REVOKED');
+    expect(world.executed).toEqual([]);
+    expect(world.sessions.has('g_nowrap')).toBe(false);
   });
 
   describe('job_wait', () => {

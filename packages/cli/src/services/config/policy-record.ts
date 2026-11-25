@@ -13,6 +13,11 @@
  * CLI keeps the high-water marks in its token file (`SyncRecord.policyHighWater`), the executor in
  * RAM for the life of its container.
  *
+ * KEYS. A CEK holder opens every record (the per-pointer policy key is derived from the CEK on the
+ * spot). An agent grant holds no CEK: it carries one derived policy key per pointer it may read (its
+ * own config's and the org-level config's, agent-grant.ts), so its reader passes a resolver that
+ * answers the key of the pointer asked for and refuses any other.
+ *
  * A LOCAL-file config (no `remote` block) keeps its own `policy` field as a ceiling (D24): it has no
  * record to read, and `localPolicyCeiling` turns the field into the same effective shape.
  *
@@ -20,7 +25,11 @@
  * an executor or CLI that read it would let any member with write access rewrite the policy.
  */
 
-import { decryptPolicyRecord, type PolicyRecord } from '@rediacc/shared/config-crypto';
+import {
+  decryptPolicyRecord,
+  type PolicyKey,
+  type PolicyRecord,
+} from '@rediacc/shared/config-crypto';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
   type EffectivePolicy,
@@ -59,6 +68,12 @@ export class PolicyRecordInvalidError extends Error {
     this.name = 'PolicyRecordInvalidError';
   }
 }
+
+/**
+ * The key that opens one pointer's records: the CEK itself, or the policy key derived for that
+ * pointer (an agent grant's). A resolver that has no key for the pointer throws.
+ */
+export type PolicyKeyResolver = (pointer: PolicyPointer) => Promise<CryptoKey | PolicyKey>;
 
 /** The key a pointer's high-water mark is kept under. */
 export function policyPointerKey(pointer: PolicyPointer): string {
@@ -110,8 +125,8 @@ export function memoryPolicyHighWater(): PolicyHighWater {
 }
 
 /**
- * Open one record: check it against the high-water mark, decrypt it under `cek` and its own pointer,
- * validate the document, then raise the mark.
+ * Open one record: check it against the high-water mark, decrypt it under `key` (the CEK, or the
+ * policy key derived for this pointer) and its own pointer, validate the document, then raise the mark.
  *
  * @throws PolicyRollbackError for a version below the mark
  * @throws PolicyRecordIntegrityError when the blob was not sealed for this pointer, version and CEK
@@ -119,16 +134,16 @@ export function memoryPolicyHighWater(): PolicyHighWater {
  */
 export async function openPolicyRecord(
   record: PolicyRecord,
-  cek: CryptoKey,
+  key: CryptoKey | PolicyKey,
   pointer: PolicyPointer,
   highWater: PolicyHighWater
 ): Promise<PolicyDocument> {
-  const key = policyPointerKey(pointer);
-  const mark = highWater.get(key);
+  const markKey = policyPointerKey(pointer);
+  const mark = highWater.get(markKey);
   if (mark !== undefined && record.version < mark) {
     throw new PolicyRollbackError(pointer, record.version, mark);
   }
-  const plaintext = await decryptPolicyRecord(record, cek, pointer);
+  const plaintext = await decryptPolicyRecord(record, key, pointer);
   const parsed = PolicyDocumentSchema.safeParse(plaintext);
   if (!parsed.success) {
     throw new PolicyRecordInvalidError(
@@ -136,7 +151,7 @@ export async function openPolicyRecord(
       parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')
     );
   }
-  await highWater.raise(key, record.version);
+  await highWater.raise(markKey, record.version);
   return parsed.data;
 }
 
@@ -151,7 +166,8 @@ export interface EffectivePolicySource {
   orgConfigId: string | null;
   /** `GET /configs/:id/policy` for a pointer: the record, or null on 404 `policy_not_found`. */
   fetchRecord(configId: string, teamId: string | null): Promise<PolicyRecord | null>;
-  cek: CryptoKey;
+  /** The CEK, which opens every pointer, or a resolver answering each pointer's own policy key. */
+  key: CryptoKey | PolicyKeyResolver;
   highWater: PolicyHighWater;
 }
 
@@ -161,14 +177,16 @@ export interface EffectivePolicySource {
  * record IS the org policy.
  */
 export async function loadEffectivePolicy(source: EffectivePolicySource): Promise<EffectivePolicy> {
-  const { storeId, config, cek, highWater } = source;
+  const { storeId, config, highWater } = source;
+  const keyFor: PolicyKeyResolver =
+    typeof source.key === 'function' ? source.key : () => Promise.resolve(source.key as CryptoKey);
   const own: PolicyPointer = { storeId, configId: config.configId, teamId: config.teamId };
   const ownRecord =
     source.pulled === undefined
       ? await source.fetchRecord(config.configId, config.teamId)
       : source.pulled;
   const ownDocument = ownRecord
-    ? await openPolicyRecord(ownRecord, cek, own, highWater)
+    ? await openPolicyRecord(ownRecord, await keyFor(own), own, highWater)
     : undefined;
 
   if (config.teamId === null) return mergePolicies(ownDocument);
@@ -177,7 +195,14 @@ export async function loadEffectivePolicy(source: EffectivePolicySource): Promis
   if (source.orgConfigId !== null) {
     const orgPointer: PolicyPointer = { storeId, configId: source.orgConfigId, teamId: null };
     const orgRecord = await source.fetchRecord(source.orgConfigId, null);
-    if (orgRecord) orgDocument = await openPolicyRecord(orgRecord, cek, orgPointer, highWater);
+    if (orgRecord) {
+      orgDocument = await openPolicyRecord(
+        orgRecord,
+        await keyFor(orgPointer),
+        orgPointer,
+        highWater
+      );
+    }
   }
   return mergePolicies(orgDocument, ownDocument);
 }

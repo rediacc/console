@@ -4,8 +4,10 @@
  */
 
 import {
+  derivePolicyKey,
   encryptPolicyRecord,
   generateCek,
+  type PolicyKey,
   type PolicyRecord,
   PolicyRecordIntegrityError,
 } from '@rediacc/shared/config-crypto';
@@ -128,7 +130,7 @@ describe('loadEffectivePolicy', () => {
       pulled: await seal(ORG_POLICY, cek, ORG_CONFIG, 1),
       orgConfigId: ORG_CONFIG.configId,
       fetchRecord: () => Promise.reject(new Error('no fetch expected')),
-      cek,
+      key: cek,
       highWater: memoryPolicyHighWater(),
     });
     expect(effective.org).toEqual(ORG_POLICY);
@@ -148,7 +150,7 @@ describe('loadEffectivePolicy', () => {
         fetched.push(`${configId}/${teamId ?? ''}`);
         return Promise.resolve(orgRecord);
       },
-      cek,
+      key: cek,
       highWater: memoryPolicyHighWater(),
     });
     expect(fetched).toEqual(['cfg-org/']);
@@ -168,11 +170,48 @@ describe('loadEffectivePolicy', () => {
         fetched.push(configId);
         return Promise.resolve(null);
       },
-      cek,
+      key: cek,
       highWater: memoryPolicyHighWater(),
     });
     expect(fetched).toEqual(['cfg-team']);
     expect(effective).toEqual({ locked: [], ignoredLocked: [] });
+  });
+  it('opens each pointer under the key a resolver answers for it, and fails where it has none', async () => {
+    const cek = await generateCek();
+    const keys = new Map<string, PolicyKey>([
+      [
+        policyPointerKey(ORG_CONFIG),
+        await derivePolicyKey(cek, { ...ORG_CONFIG, cekGeneration: 1 }),
+      ],
+      [
+        policyPointerKey(TEAM_CONFIG),
+        await derivePolicyKey(cek, { ...TEAM_CONFIG, cekGeneration: 1 }),
+      ],
+    ]);
+    const asked: string[] = [];
+    const resolver = (pointer: PolicyPointer) => {
+      asked.push(policyPointerKey(pointer));
+      const key = keys.get(policyPointerKey(pointer));
+      return key ? Promise.resolve(key) : Promise.reject(new Error('no key for this pointer'));
+    };
+    const source = {
+      storeId: STORE,
+      config: TEAM_CONFIG,
+      pulled: await seal(TEAM_POLICY, cek, TEAM_CONFIG, 1),
+      orgConfigId: ORG_CONFIG.configId,
+      fetchRecord: () => seal(ORG_POLICY, cek, ORG_CONFIG, 1),
+      key: resolver,
+      highWater: memoryPolicyHighWater(),
+    };
+    const effective = await loadEffectivePolicy(source);
+    expect(asked).toEqual([policyPointerKey(TEAM_CONFIG), policyPointerKey(ORG_CONFIG)]);
+    expect(effective.org).toEqual(ORG_POLICY);
+    expect(effective.team).toEqual(TEAM_POLICY);
+
+    keys.delete(policyPointerKey(ORG_CONFIG));
+    await expect(
+      loadEffectivePolicy({ ...source, highWater: memoryPolicyHighWater() })
+    ).rejects.toThrow('no key for this pointer');
   });
 });
 

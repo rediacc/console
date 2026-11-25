@@ -272,7 +272,7 @@ export class RemoteConfigAdapter {
         config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
         orgConfigId,
         fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
-        cek,
+        key: cek,
         highWater: this.policyHighWater(lease),
       });
       return { principal: session.principal, policy };

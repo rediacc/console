@@ -450,7 +450,7 @@ export class SessionConfigStore implements ConfigWriteback {
       ...('policy' in pulled ? { pulled: parsePolicyRecordField(pulled.policy) } : {}),
       orgConfigId: this.options.orgConfigId,
       fetchRecord: (configId, teamId) => this.fetchPolicyRecord(configId, teamId, op),
-      cek,
+      key: cek,
       highWater: this.options.policyHighWater,
     });
     const version = pulled.envelope.version;

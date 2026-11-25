@@ -29,13 +29,16 @@
  * handed out unbound: a command that writes the spec is refused by the request scope before any host job
  * (CONFIG_WRITE_UNAVAILABLE, services/core/request-context.ts), and a state write lives for the request only.
  *
- * NO POLICY, SO EVERY CALL IS REFUSED FOR NOW. The org and team policy records are sealed under the CEK
- * (PLAN-rmcp-policy-record.md), which an agent grant never holds, and the `agent-session` answer carries
- * neither a policy nor the grant user's org role. The session therefore binds no effective policy, and its
- * principal is a `member`: `decide` answers "No policy is configured; members may not run ..." for every
- * command, which is the safe direction. Reading the role as `owner` instead would run an org that DOES have
- * a policy as if it had none (its deny rules invisible to the executor). The grant needs a policy it can open
- * before any tool can run under it; see the AG-X report.
+ * POLICY. The agent is judged as its person, narrowed by the grant (operator ruling ASKED:2026-11-25T19:55Z).
+ * The principal carries the grant user's real org role, email and team slug from the `agent-session` answer,
+ * and `authorize` makes it an agent through the grant's overrides. The policy is read from the records, as
+ * the user-keyed loader reads it (config-writeback.ts): the org-level config's record as the ceiling, the
+ * grant config's own record narrowing it. The grant holds no CEK, so each record opens under the policy key
+ * wrapped for that one pointer (`policyKeys`, unwrapped at open into non-extractable decrypt-only keys):
+ * the grant config's and the org-level config's, and no other. A grant that carries no policy key for its
+ * own config is refused (clean break), and a record whose pointer the grant holds no key for refuses the
+ * grant too, since nothing about it could be judged. The effective policy is bound to every document the
+ * session pulls, so the authorizer reads the records' verdict and never a `policy` field in the document.
  */
 
 import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
@@ -46,11 +49,22 @@ import {
   fromBase64,
   hashAuthTag,
   importAesKey,
+  type PolicyKey,
   selectiveDecryptWithConfigKey,
   unwrapConfigKeyForAgentGrant,
+  unwrapPolicyKeyForAgentGrant,
 } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import type { EffectivePolicy } from '@rediacc/shared/policy';
+import {
+  bindEffectivePolicy,
+  loadEffectivePolicy,
+  memoryPolicyHighWater,
+  type PolicyHighWater,
+  type PolicyPointer,
+  parsePolicyRecordField,
+} from '../config/policy-record.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { AgentGrantOverrides } from './policy.js';
 import { SessionError, type SessionPrincipal } from './sessions.js';
@@ -74,6 +88,15 @@ export interface AgentGrantScopeAnswer {
 /** An override axis in the account's shape: exact names, every one, or nothing. */
 type OverrideAxis = '*' | string[] | null;
 
+/** One policy key wrapped for the grant: it opens the records of `policyConfigId` (team `policyTeamId`). */
+interface WrappedPolicyKey {
+  policyConfigId: string;
+  policyTeamId: string | null;
+  wrapped: string;
+}
+
+const ORG_ROLES = new Set<SessionPrincipal['orgRole']>(['owner', 'admin', 'member']);
+
 /** The `agent-session` answer (private/account/src/dto/agent-grant.dto.ts `agentSessionResponse`). */
 interface AgentSessionAnswer {
   wrappedConfigKey: string;
@@ -87,6 +110,12 @@ interface AgentSessionAnswer {
   expiresAt: string;
   overrides: { grandRepos: OverrideAxis; clusterOps: OverrideAxis };
   scope: AgentGrantScopeAnswer;
+  /** The policy keys wrapped for the grant: its own config's and the org-level config's. */
+  policyKeys: WrappedPolicyKey[];
+  /** The grant user's org role, email and team slug, read live by the account. */
+  orgRole: SessionPrincipal['orgRole'];
+  userEmail: string;
+  teamSlug: string | null;
 }
 
 /** The account refused to open the grant (revoked, expired, wrong tag, or a membership that ended). Nothing says which. */
@@ -127,6 +156,10 @@ interface SessionRecord {
   expiresAtMs: number;
   overrides: AgentGrantOverrides;
   scope: AgentGrantScopeAnswer;
+  /** The principal the grant runs as: its user's role, email and team, from the open. */
+  principal: SessionPrincipal;
+  /** `pointerKey` of a policy record's config -> the policy key unwrapped for that pointer. */
+  policyKeys: Map<string, PolicyKey>;
   /** Config version -> the config decrypted at it; only the newest is kept. */
   documents: Map<string, RdcConfig>;
   /** The version `documents` last held, for the one-entry eviction. */
@@ -144,6 +177,8 @@ export interface AgentGrantSessionsOptions {
   orgId: string;
   fetchImpl?: typeof fetch;
   now?: () => number;
+  /** High-water marks of the policy records read; RAM for the container's life by default. */
+  policyHighWater?: PolicyHighWater;
 }
 
 /** Strict base64url (no padding) of exactly 32 bytes, or null. Never echoes the input. */
@@ -180,16 +215,35 @@ function tokenLapsed(answer: { status: number; body: Record<string, unknown> }):
 /** `${grantId}\0${version}`: the cache key of one decrypted document. */
 const documentKey = (grantId: string, version: number): string => `${grantId}\u0000${version}`;
 
-/** The principal an agent grant runs as. No user is named: the answer carries none, and an email nobody owns matches no `users` rule. The role is `member`, the least a policy-less org grants (see the module doc). */
-function principalOf(orgId: string, grantId: string, teamId: string | null): SessionPrincipal {
+/** `${configId}\0${teamId}`: the lookup key of one pointer's policy key within a session. */
+const pointerKey = (configId: string, teamId: string | null): string =>
+  `${configId}\u0000${teamId ?? ''}`;
+
+/**
+ * The principal an agent grant runs as: the grant user's org role, email and team slug, as the account
+ * read them for this open. The user id stays the grant's, so the audit names the grant that acted.
+ */
+function principalOf(orgId: string, grantId: string, answer: AgentSessionAnswer): SessionPrincipal {
   return {
     orgId,
-    teamId,
+    teamId: answer.teamId,
+    ...(answer.teamSlug ? { teamSlug: answer.teamSlug } : {}),
     userId: `agent-grant:${grantId}`,
-    userEmail: `agent-grant:${grantId}`,
-    orgRole: 'member',
+    userEmail: answer.userEmail,
+    orgRole: answer.orgRole,
     agentGrantId: grantId,
   };
+}
+
+function isWrappedPolicyKey(entry: unknown): entry is WrappedPolicyKey {
+  const item = entry as Partial<WrappedPolicyKey> | null;
+  return (
+    item !== null &&
+    typeof item === 'object' &&
+    typeof item.policyConfigId === 'string' &&
+    (item.policyTeamId === null || typeof item.policyTeamId === 'string') &&
+    typeof item.wrapped === 'string'
+  );
 }
 
 /**
@@ -214,11 +268,13 @@ export class AgentGrantSessions {
   private readonly accountUrl: string;
   private readonly fetch: typeof fetch;
   private readonly now: () => number;
+  private readonly policyHighWater: PolicyHighWater;
 
   constructor(private readonly options: AgentGrantSessionsOptions) {
     this.accountUrl = options.accountUrl.replace(/\/+$/, '');
     this.fetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
     this.now = options.now ?? Date.now;
+    this.policyHighWater = options.policyHighWater ?? memoryPolicyHighWater();
   }
 
   /** The org the sessions' principals carry. */
@@ -279,7 +335,7 @@ export class AgentGrantSessions {
       const config = await this.settled(record, bytes);
       return {
         grantId,
-        principal: principalOf(this.options.orgId, grantId, record.teamId),
+        principal: record.principal,
         scope: record.scope,
         overrides: record.overrides,
         config,
@@ -378,6 +434,7 @@ export class AgentGrantSessions {
       // A wrap that does not open under this grant's slot key is a grant the executor cannot serve: refused, and not held.
       throw new AgentSessionRefused();
     }
+    const policyKeys = await this.unwrapPolicyKeys(grantId, secret, answer);
     const record: SessionRecord = {
       grantId,
       authTagHash,
@@ -389,6 +446,8 @@ export class AgentGrantSessions {
       expiresAtMs: Date.parse(answer.expiresAt),
       overrides: overridesOf(answer.overrides),
       scope: answer.scope,
+      principal: principalOf(this.options.orgId, grantId, answer),
+      policyKeys,
       documents: new Map(),
       current: undefined,
       tail: Promise.resolve(),
@@ -397,6 +456,47 @@ export class AgentGrantSessions {
     if (this.isRevoked(grantId)) throw new AgentSessionRefused();
     this.sessions.set(grantId, record);
     return record;
+  }
+
+  /**
+   * The grant's policy keys, each unwrapped for its own pointer. A grant with no key for its own config is
+   * refused (clean break: no grant is served without the policy its person is judged by), and so is one
+   * whose wrap does not open under this grant's slot key and pointer.
+   */
+  private async unwrapPolicyKeys(
+    grantId: string,
+    secret: Uint8Array,
+    answer: AgentSessionAnswer
+  ): Promise<Map<string, PolicyKey>> {
+    const own = pointerKey(answer.configId, answer.teamId);
+    const wrapsOwn = answer.policyKeys.some(
+      (entry) => pointerKey(entry.policyConfigId, entry.policyTeamId) === own
+    );
+    if (!wrapsOwn) {
+      throw new AgentSessionRefused(
+        'This agent grant carries no policy key for its config, so its policy cannot be read. Create the grant again.'
+      );
+    }
+    const serverSecret = fromBase64(answer.serverSecret);
+    const keys = new Map<string, PolicyKey>();
+    for (const entry of answer.policyKeys) {
+      try {
+        keys.set(
+          pointerKey(entry.policyConfigId, entry.policyTeamId),
+          await unwrapPolicyKeyForAgentGrant(entry.wrapped, secret, serverSecret, {
+            grantId,
+            storeId: answer.storeId,
+            configId: answer.configId,
+            cekGeneration: answer.cekGeneration,
+            policyConfigId: entry.policyConfigId,
+            policyTeamId: entry.policyTeamId,
+          })
+        );
+      } catch {
+        throw new AgentSessionRefused();
+      }
+    }
+    return keys;
   }
 
   /** `POST /configs/agent-session` under the executor's bearer. A refusal drops any session held for the grant. */
@@ -426,12 +526,21 @@ export class AgentGrantSessions {
       );
     }
     const body = (await response.json().catch(() => null)) as AgentSessionAnswer | null;
+    if (body && !(Array.isArray(body.policyKeys) && body.policyKeys.every(isWrappedPolicyKey))) {
+      // No wraps at all, or wraps in no shape the executor reads: a grant whose policy cannot be opened is refused.
+      throw new AgentSessionRefused(
+        'This agent grant carries no policy keys, so its policy cannot be read. Create the grant again.'
+      );
+    }
     if (
       !body ||
       typeof body.wrappedConfigKey !== 'string' ||
       typeof body.configToken !== 'string' ||
       typeof body.configId !== 'string' ||
-      Number.isNaN(Date.parse(body.expiresAt))
+      Number.isNaN(Date.parse(body.expiresAt)) ||
+      !ORG_ROLES.has(body.orgRole) ||
+      typeof body.userEmail !== 'string' ||
+      (body.teamSlug !== null && typeof body.teamSlug !== 'string')
     ) {
       throw new AgentSessionUnavailable('The account server answered a malformed grant session.');
     }
@@ -466,7 +575,11 @@ export class AgentGrantSessions {
     const key = documentKey(record.grantId, entry.version);
     const cached = record.documents.get(key);
     if (cached) return this.seat(record, entry.version, key, cached);
-    return this.seat(record, entry.version, key, await this.pull(record, secret));
+    const org = entries.find(
+      (item) => (item.teamId ?? null) === null && typeof item.configId === 'string'
+    );
+    const orgConfigId = org ? (org.configId as string) : null;
+    return this.seat(record, entry.version, key, await this.pull(record, secret, orgConfigId));
   }
 
   /** Make `config` the session's current document, evicting the one it replaces. */
@@ -477,7 +590,11 @@ export class AgentGrantSessions {
     return config;
   }
 
-  private async pull(record: SessionRecord, secret: Uint8Array): Promise<RdcConfig> {
+  private async pull(
+    record: SessionRecord,
+    secret: Uint8Array,
+    orgConfigId: string | null
+  ): Promise<RdcConfig> {
     const query = record.teamId ? `?teamId=${encodeURIComponent(record.teamId)}` : '';
     const answer = await this.storeRequest(
       record,
@@ -492,6 +609,7 @@ export class AgentGrantSessions {
       sdk_derived: string;
       envelope: EncryptedConfigPayload['envelope'];
       hmac: string | null;
+      policy?: unknown;
     };
     const payload: EncryptedConfigPayload = {
       envelope: pulled.envelope,
@@ -508,7 +626,77 @@ export class AgentGrantSessions {
         'The pulled config did not open under this grant: it was not sealed for it.'
       );
     });
-    return { ...fullConfigToRdcConfig(decrypted), version: pulled.envelope.version };
+    const effective = await this.effectivePolicy(record, secret, orgConfigId, pulled.policy);
+    const config: RdcConfig = {
+      ...fullConfigToRdcConfig(decrypted),
+      version: pulled.envelope.version,
+    };
+    bindEffectivePolicy(config, effective);
+    return config;
+  }
+
+  /**
+   * The effective policy of the grant's config, from the records only: the one that rode with the pull and
+   * the org-level config's, each opened under the policy key the grant holds for its pointer.
+   */
+  private async effectivePolicy(
+    record: SessionRecord,
+    secret: Uint8Array,
+    orgConfigId: string | null,
+    pulledPolicy: unknown
+  ): Promise<EffectivePolicy> {
+    const keyFor = (pointer: PolicyPointer): Promise<PolicyKey> => {
+      const key = record.policyKeys.get(pointerKey(pointer.configId, pointer.teamId));
+      if (key) return Promise.resolve(key);
+      // A record the grant cannot open would leave its rules unread: the grant cannot be judged, so it is not served.
+      this.drop(record.grantId);
+      return Promise.reject(
+        new AgentSessionRefused(
+          `This agent grant holds no policy key for config ${pointer.configId}, whose policy applies to it. Create the grant again.`
+        )
+      );
+    };
+    try {
+      return await loadEffectivePolicy({
+        storeId: record.storeId,
+        config: { configId: record.configId, teamId: record.teamId },
+        ...(pulledPolicy === undefined ? {} : { pulled: parsePolicyRecordField(pulledPolicy) }),
+        orgConfigId,
+        fetchRecord: (configId, teamId) => this.fetchPolicyRecord(record, secret, configId, teamId),
+        key: keyFor,
+        highWater: this.policyHighWater,
+      });
+    } catch (error) {
+      if (error instanceof AgentSessionRefused || error instanceof AgentSessionUnavailable) {
+        throw error;
+      }
+      throw new AgentSessionUnavailable(
+        `The grant's policy could not be read: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /** `GET /configs/:id/policy` on the grant's chain: the record, or null when none is saved for that config. */
+  private async fetchPolicyRecord(
+    record: SessionRecord,
+    secret: Uint8Array,
+    configId: string,
+    teamId: string | null
+  ) {
+    const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
+    const answer = await this.storeRequest(
+      record,
+      secret,
+      `${API}/configs/${encodeURIComponent(configId)}/policy${query}`
+    );
+    if (answer.status === 404 && answer.body.code === 'policy_not_found') return null;
+    if (answer.status >= 400) {
+      throw new AgentSessionUnavailable(
+        `The config store refused the policy record read (${answer.status}).`
+      );
+    }
+    const { version, cekGeneration, blob } = answer.body;
+    return parsePolicyRecordField({ version, cekGeneration, blob });
   }
 
   /**

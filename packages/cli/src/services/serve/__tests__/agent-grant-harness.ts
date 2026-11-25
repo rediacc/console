@@ -3,10 +3,16 @@
  * exactly as a CLI push seals it, and that key is wrapped for the grant with `wrapConfigKeyForAgentGrant`, the
  * browser's own function. Nothing about the crypto is stubbed, so a session that could not truly open its grant
  * would hold nothing and every assertion over it would fail.
+ *
+ * The policy records are real too: sealed with `encryptPolicyRecord` under the grant's CEK, and their policy keys
+ * wrapped for the grant with `wrapPolicyKeyForAgentGrant`, one wrap for a grant on the org-level config and two (its
+ * own config's and the org-level config's) for a team grant, as the console mints them.
  */
 
 import {
   deriveAuthTag,
+  derivePolicyKey,
+  encryptPolicyRecord,
   exportAesKey,
   formatAgentBearer,
   generateCek,
@@ -14,17 +20,37 @@ import {
   generateSdkMaster,
   hashAuthTag,
   newAgentGrantSecret,
+  type PolicyRecord,
   randomBytes,
   sdkDerive,
   toBase64,
   wrapConfigKeyForAgentGrant,
+  wrapPolicyKeyForAgentGrant,
 } from '@rediacc/shared/config-crypto';
 import { buildConfigPushPayload, type RdcConfig } from '@rediacc/shared/config-schema';
+import type { PolicyDocument } from '@rediacc/shared/policy';
 import { expect } from 'vitest';
 
 export const EXECUTOR_TOKEN = 'rdt_executor';
 export const ORG_ID = 'org-1';
 const STORE_ID = 'store-1';
+/** The org-level config a team grant's listing carries beside its own. */
+export const ORG_CONFIG_ID = 'cfg-org';
+
+/** Everything allowed for every role: the policy a grant runs under unless a case names its own. */
+export const OPEN_POLICY: PolicyDocument = {
+  version: 1,
+  defaults: { commands: { allow: ['*'] } },
+};
+
+/** One wrapped policy key, as `agent-session` answers it. */
+interface FakePolicyKey {
+  policyConfigId: string;
+  policyTeamId: string | null;
+  wrapped: string;
+}
+
+const pointerOf = (configId: string, teamId: string | null) => `${configId}/${teamId ?? ''}`;
 
 export interface FakeGrant {
   grantId: string;
@@ -48,6 +74,14 @@ export interface FakeGrant {
   cekGeneration: number;
   payload: Awaited<ReturnType<typeof buildConfigPushPayload>>;
   sdkDerivedB64: string;
+  /** The grant user, as the account reads it for every open. */
+  orgRole: 'owner' | 'admin' | 'member';
+  userEmail: string;
+  teamSlug: string | null;
+  /** The policy keys wrapped for the grant; empty for a grant minted with none. */
+  policyKeys: FakePolicyKey[];
+  /** `configId/teamId` -> the policy record the store holds for it. */
+  policyRecords: Map<string, PolicyRecord>;
 }
 
 export interface FakeAccount {
@@ -94,6 +128,94 @@ export function configOf(id: string, machine: string): RdcConfig {
   };
 }
 
+/**
+ * The policy records that apply to a grant, sealed under its CEK, and the policy keys wrapped for it: its own config,
+ * and for a team grant the org-level config too (one wrap or two, as the console mints them).
+ */
+async function sealPolicies(input: {
+  grantId: string;
+  configId: string;
+  teamId: string | null;
+  cek: CryptoKey;
+  secretBytes: Uint8Array;
+  serverSecretBytes: Uint8Array;
+  cekGeneration: number;
+  policies: { org?: PolicyDocument; team?: PolicyDocument } | undefined;
+  wraps: boolean;
+}): Promise<{ policyKeys: FakePolicyKey[]; policyRecords: Map<string, PolicyRecord> }> {
+  const { cek, cekGeneration } = input;
+  const org = input.policies?.org ?? OPEN_POLICY;
+  const pointers: { configId: string; teamId: string | null; document?: PolicyDocument }[] =
+    input.teamId === null
+      ? [{ configId: input.configId, teamId: null, document: org }]
+      : [
+          { configId: input.configId, teamId: input.teamId, document: input.policies?.team },
+          { configId: ORG_CONFIG_ID, teamId: null, document: org },
+        ];
+  const policyKeys: FakePolicyKey[] = [];
+  const policyRecords = new Map<string, PolicyRecord>();
+  for (const pointer of pointers) {
+    const binding = { storeId: STORE_ID, configId: pointer.configId, teamId: pointer.teamId };
+    if (pointer.document) {
+      policyRecords.set(
+        pointerOf(pointer.configId, pointer.teamId),
+        await encryptPolicyRecord(pointer.document, cek, { ...binding, version: 1, cekGeneration })
+      );
+    }
+    if (!input.wraps) continue;
+    const policyKey = await derivePolicyKey(cek, { ...binding, cekGeneration });
+    policyKeys.push({
+      policyConfigId: pointer.configId,
+      policyTeamId: pointer.teamId,
+      wrapped: await wrapPolicyKeyForAgentGrant(
+        policyKey,
+        input.secretBytes,
+        input.serverSecretBytes,
+        {
+          grantId: input.grantId,
+          storeId: STORE_ID,
+          configId: input.configId,
+          cekGeneration,
+          policyConfigId: pointer.configId,
+          policyTeamId: pointer.teamId,
+        }
+      ),
+    });
+  }
+  return { policyKeys, policyRecords };
+}
+
+/** The store's answer to a request the grant's chain may make, once its token checked out. */
+function storeAnswer(
+  grant: FakeGrant,
+  url: string,
+  path: string,
+  newServerToken: string
+): Response {
+  if (path === '/configs') {
+    const entry = { configId: grant.configId, teamId: grant.teamId, version: grant.version };
+    // A team chain lists its own team's configs and the org-level one (config-team-access.ts).
+    const org = { configId: ORG_CONFIG_ID, teamId: null, version: 1 };
+    return json({ newServerToken, configs: grant.teamId === null ? [entry] : [entry, org] });
+  }
+  const policyPath = /^\/configs\/([^/]+)\/policy$/.exec(path);
+  if (policyPath) {
+    const teamId = new URL(url).searchParams.get('teamId');
+    const record = grant.policyRecords.get(pointerOf(policyPath[1] as string, teamId));
+    if (!record) return json({ newServerToken, code: 'policy_not_found', error: 'none' }, 404);
+    return json({ newServerToken, ...record });
+  }
+  if (path !== `/configs/${grant.configId}`) return json({ error: 'not found' }, 404);
+  return json({
+    newServerToken,
+    sdk_derived: grant.sdkDerivedB64,
+    configData: grant.payload.encryptedBlob,
+    envelope: grant.payload.envelope,
+    hmac: grant.payload.hmac,
+    policy: grant.policyRecords.get(pointerOf(grant.configId, grant.teamId)) ?? null,
+  });
+}
+
 export async function makeGrant(input: {
   grantId: string;
   teamId?: string | null;
@@ -102,6 +224,12 @@ export async function makeGrant(input: {
   scope?: FakeGrant['scope'];
   overrides?: FakeGrant['overrides'];
   expiresAt?: string;
+  /** The org policy (the org-level config's record) and the team policy (a team grant's own record). */
+  policies?: { org?: PolicyDocument; team?: PolicyDocument };
+  orgRole?: FakeGrant['orgRole'];
+  userEmail?: string;
+  /** False mints the grant with no policy key wrapped, as no grant may be any more. */
+  wraps?: boolean;
 }): Promise<FakeGrant & { cek: CryptoKey; sdkDerived: CryptoKey; configKey: CryptoKey }> {
   const teamId = input.teamId ?? null;
   const secretBytes = newAgentGrantSecret();
@@ -139,6 +267,17 @@ export async function makeGrant(input: {
     cekGeneration,
     configKey: { key: configKey, version: configKeyVersion, cekGeneration },
   });
+  const { policyKeys, policyRecords } = await sealPolicies({
+    grantId: input.grantId,
+    configId: input.configId,
+    teamId,
+    cek,
+    secretBytes,
+    serverSecretBytes,
+    cekGeneration,
+    policies: input.policies,
+    wraps: input.wraps !== false,
+  });
   return {
     grantId: input.grantId,
     teamId,
@@ -157,6 +296,11 @@ export async function makeGrant(input: {
     cekGeneration,
     payload,
     sdkDerivedB64: toBase64(await exportAesKey(sdkDerived)),
+    orgRole: input.orgRole ?? 'owner',
+    userEmail: input.userEmail ?? `person-${input.grantId}@example.test`,
+    teamSlug: teamId ? `slug-${teamId}` : null,
+    policyKeys,
+    policyRecords,
     cek,
     sdkDerived,
     configKey,
@@ -205,11 +349,15 @@ export function fakeAccount(
       expiresAt: grant.expiresAt,
       overrides: grant.overrides,
       scope: grant.scope,
+      policyKeys: grant.policyKeys,
+      orgRole: grant.orgRole,
+      userEmail: grant.userEmail,
+      teamSlug: grant.teamSlug,
     });
   };
 
   /** The config store: a config token, no Authorization; every answer rotates the token. */
-  const storeRequest = (path: string, init?: RequestInit): Response => {
+  const storeRequest = (url: string, path: string, init?: RequestInit): Response => {
     const token = (init?.headers as Record<string, string>)['X-Config-Token'];
     const grantId = tokens.get(token);
     if (account.expireNextToken) {
@@ -219,19 +367,7 @@ export function fakeAccount(
     const grant = grantId === undefined ? undefined : byId.get(grantId);
     if (!grant) return json({ code: 'invalid_token', error: 'unknown' }, 401);
     tokens.delete(token);
-    const newServerToken = mint(grant.grantId);
-    if (path === '/configs') {
-      const entry = { configId: grant.configId, teamId: grant.teamId, version: grant.version };
-      return json({ newServerToken, configs: [entry] });
-    }
-    if (path !== `/configs/${grant.configId}`) return json({ error: 'not found' }, 404);
-    return json({
-      newServerToken,
-      sdk_derived: grant.sdkDerivedB64,
-      configData: grant.payload.encryptedBlob,
-      envelope: grant.payload.envelope,
-      hmac: grant.payload.hmac,
-    });
+    return storeAnswer(grant, url, path, mint(grant.grantId));
   };
 
   const account: FakeAccount = {
@@ -267,7 +403,7 @@ export function fakeAccount(
       if (path === '/configs/agent-session' && method === 'POST') {
         return (account.holdOpens ?? Promise.resolve()).then(() => openSession(init));
       }
-      return Promise.resolve(storeRequest(path, init));
+      return Promise.resolve(storeRequest(String(url), path, init));
     }) as unknown as typeof fetch,
   };
   return account;

@@ -4,6 +4,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { boundEffectivePolicy } from '../../config/policy-record.js';
 import {
   AgentGrantSessions,
   AgentSessionRefused,
@@ -17,6 +18,8 @@ import {
   type FakeAccount,
   fakeAccount,
   makeGrant,
+  OPEN_POLICY,
+  ORG_CONFIG_ID,
   ORG_ID,
 } from './agent-grant-harness.js';
 
@@ -101,6 +104,108 @@ describe('agent grant sessions', () => {
     expect(second.principal.teamId).toBe('team-b');
     expect(first.principal.agentGrantId).toBe('g_team_a');
     expect(first.overrides).toEqual({ allowGrandRepos: false, allowClusterOps: false });
+  });
+
+  it('runs as its person: the role, email and team slug the account answered, and the policy of its records', async () => {
+    const team = { version: 1 as const, defaults: { commands: { allow: ['repo *'] } } };
+    const grant = await makeGrant({
+      grantId: 'g_person',
+      teamId: 'team-a',
+      configId: 'cfg-a',
+      machine: 'machine-a',
+      orgRole: 'member',
+      userEmail: 'ada@example.test',
+      policies: { team },
+    });
+    const account = fakeAccount([grant]);
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl: account.fetch,
+    });
+
+    const handle = await sessions.acquire(grant.grantId, grant.secret);
+    expect(handle.principal).toMatchObject({
+      orgRole: 'member',
+      userEmail: 'ada@example.test',
+      teamId: 'team-a',
+      teamSlug: 'slug-team-a',
+      agentGrantId: 'g_person',
+    });
+    // Two wraps for a team grant; the org record was read from the org-level config the listing names.
+    expect(grant.policyKeys.map((entry) => entry.policyConfigId)).toEqual(['cfg-a', ORG_CONFIG_ID]);
+    expect(account.count(`GET /configs/${ORG_CONFIG_ID}/policy`)).toBe(1);
+    const effective = boundEffectivePolicy(handle.config);
+    expect(effective?.org).toEqual(OPEN_POLICY);
+    expect(effective?.team).toEqual(team);
+  });
+
+  it('opens a grant on the org-level config with its one policy key', async () => {
+    const org = { version: 1 as const, defaults: { commands: { allow: ['machine *'] } } };
+    const grant = await makeGrant({
+      grantId: 'g_org',
+      configId: 'cfg-org-own',
+      machine: 'machine-o',
+      policies: { org },
+    });
+    const account = fakeAccount([grant]);
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl: account.fetch,
+    });
+
+    expect(grant.policyKeys).toHaveLength(1);
+    const handle = await sessions.acquire(grant.grantId, grant.secret);
+    expect(boundEffectivePolicy(handle.config)?.org).toEqual(org);
+    expect(account.count('GET /configs/cfg-org-own/policy')).toBe(0);
+  });
+
+  it('refuses a grant with no policy key, and does not hold it', async () => {
+    const grant = await makeGrant({
+      grantId: 'g_nowrap',
+      teamId: 'team-a',
+      configId: 'cfg-a',
+      machine: 'machine-a',
+      wraps: false,
+    });
+    const account = fakeAccount([grant]);
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl: account.fetch,
+    });
+
+    await expect(sessions.acquire(grant.grantId, grant.secret)).rejects.toBeInstanceOf(
+      AgentSessionRefused
+    );
+    expect(sessions.has(grant.grantId)).toBe(false);
+    expect(account.count('GET /configs')).toBe(0);
+  });
+
+  it('refuses a team grant missing the org-level key while the org policy record exists', async () => {
+    const grant = await makeGrant({
+      grantId: 'g_noorg',
+      teamId: 'team-a',
+      configId: 'cfg-a',
+      machine: 'machine-a',
+    });
+    grant.policyKeys = grant.policyKeys.filter((entry) => entry.policyConfigId === 'cfg-a');
+    const account = fakeAccount([grant]);
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl: account.fetch,
+    });
+
+    await expect(sessions.acquire(grant.grantId, grant.secret)).rejects.toThrow(
+      /no policy key for config cfg-org/
+    );
+    expect(sessions.has(grant.grantId)).toBe(false);
   });
 
   it('rebuilds from S with one agent-session call after a simulated sleep, and not before', async () => {
