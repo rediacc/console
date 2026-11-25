@@ -95,6 +95,20 @@ The server reads the caller's org role, the team and the team membership on ever
 
 **What this does not stop.** A member of team X holds the key that opens team Y's ciphertext, and decrypts it if it arrives some other way: a storage dump or leaked backup, a future authorization bug, or a compromised server. A member removed from a team keeps the key until a CEK rotation, and keeps whatever was already pulled. Isolation between teams, when a deployment needs it, takes one config store per team, each with its own CEK, slots and members. Per-team CEKs inside one store and per-team keys wrapped under the org CEK were rejected: the first costs the most for the same protection, and the second isolates nothing from members.
 
+### Agent grants
+
+An agent grant hands one config's content key to an MCP agent without handing it the org CEK (PLAN-rmcp-agent-grants.md Design 1; `packages/shared/src/config-crypto/agent-grant.ts`). The browser draws a 32-byte secret `S` and shows it once as the bearer `rmcp_<grantId>.<base64url(S)>`.
+
+| Value | Derivation | Held by |
+|---|---|---|
+| `authTag` | HMAC-SHA256(S, `rediacc-agent-grant-auth-v1`) | the account server stores SHA-256(authTag) only |
+| `K` | HKDF-SHA256(S, salt grantId, info `rediacc-agent-grant-wrap-v1`) | derived by the executor from the bearer |
+| slot key | HKDF-SHA256(K ‖ serverSecret, salt grantId, info `rediacc-agent-grant-slot-v1\|grantId\|storeId\|cekGeneration\|configId`) | derived by the executor while it holds both halves |
+
+The slot key wraps the config's own content key with AES-GCM. The wrap's AAD pins it to its grant, store, config, team, content-key version and CEK generation, so a wrap moved to another grant or config, relabelled, or carried past a CEK rotation does not open. The account server holds `serverSecret` and the tag hash and imports only `parseAgentBearer` and `hashAuthTag`; it never wraps or unwraps. Time expiry is not part of the derivation and is enforced server-side.
+
+Residual risk: an executor that holds `S` and the account server's `agent-session` answer can open the grant's one config, and nothing more.
+
 ## Architecture
 
 ### Key Hierarchy

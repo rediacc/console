@@ -157,9 +157,7 @@ export function requestOf(
     if (positionalNames.has(key)) positionals[key] = value;
     else if (optionByKey.has(key)) params[optionByKey.get(key) as string] = value;
     else if (key === BACKGROUND_FIELD && spec.attachWindow) background = value === true;
-    // Declared in the schema but neither a positional, an option nor a usable background ask
-    // (an undeclared field never reaches here: prepareCall refuses it first); passed on under
-    // its own name so prepareCommand refuses it as a smuggled flag.
+    // Declared in the schema but neither a positional, an option nor a usable background ask (an undeclared field never reaches here: prepareCall refuses it first); passed on under its own name so prepareCommand refuses it as a smuggled flag.
     else params[key] = value;
   }
   return { params, positionals, background };
