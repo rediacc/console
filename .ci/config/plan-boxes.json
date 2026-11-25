@@ -1560,6 +1560,32 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-drain-throughput.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "0805d1f2",
+        "2bf44646",
+        "363b4e26",
+        "4e57d026",
+        "6d3167e4",
+        "8b2cf989",
+        "923b43f0",
+        "b0732c24",
+        "b4de7e4f",
+        "b79d5112",
+        "b8c60921",
+        "baecbd27",
+        "bf06e728",
+        "e3189181",
+        "fafea12f"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",
       "owner": "unowned",
