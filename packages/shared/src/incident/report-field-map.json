@@ -1,0 +1,114 @@
+{
+  "regimes": [
+    {
+      "id": "nis2",
+      "name": "NIS2 Directive (EU) 2022/2555 Art. 23(4) with the NIS Cooperation Group reporting templates of 26 May 2026",
+      "url": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+      "retrievedAt": "2026-11-25"
+    },
+    {
+      "id": "ir-2025-302",
+      "name": "Implementing Regulation (EU) 2025/302 incident notification format",
+      "url": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj",
+      "retrievedAt": "2026-11-25"
+    },
+    {
+      "id": "gdpr-33",
+      "name": "GDPR Art. 33(3) content of a personal data breach notification",
+      "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "retrievedAt": "2026-11-25"
+    }
+  ],
+  "fields": {
+    "header.incidentId": {
+      "nis2": { "ref": "Art. 23(4)", "label": "Incident reference" },
+      "ir-2025-302": { "ref": "notification header", "label": "Incident reference" },
+      "gdpr-33": { "notApplicable": "GDPR Art. 33(3) prescribes no reference field" }
+    },
+    "header.orgId": {
+      "nis2": { "ref": "Art. 23(4)", "label": "Entity identification" },
+      "ir-2025-302": { "ref": "notification header", "label": "Entity identification" },
+      "gdpr-33": { "ref": "Art. 33(3)(b)", "label": "Controller identity" }
+    },
+    "header.generatedAt": {
+      "nis2": { "ref": "Art. 23(4)", "label": "Date and time of the notification" },
+      "ir-2025-302": { "ref": "notification header", "label": "Date and time of the notification" },
+      "gdpr-33": { "notApplicable": "the notification time is set by the supervisory authority portal" }
+    },
+    "header.awareAt": {
+      "nis2": { "ref": "Art. 23(4)(a)", "label": "Time the entity became aware of the incident" },
+      "ir-2025-302": { "ref": "incident timing", "label": "Time of awareness" },
+      "gdpr-33": { "ref": "Art. 33(1)", "label": "Time the controller became aware of the breach" }
+    },
+    "header.windowFrom": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Start of the incident" },
+      "ir-2025-302": { "ref": "incident timing", "label": "Start of the incident" },
+      "gdpr-33": { "ref": "Art. 33(3)(a)", "label": "Start of the breach" }
+    },
+    "header.windowTo": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "End of the observation window" },
+      "ir-2025-302": { "ref": "incident timing", "label": "End of the observation window" },
+      "gdpr-33": { "notApplicable": "Art. 33(3) asks for the nature of the breach, not a closing time" }
+    },
+    "header.contactPoint": {
+      "nis2": { "ref": "Art. 23(4)", "label": "Contact point" },
+      "ir-2025-302": { "ref": "notification header", "label": "Contact point" },
+      "gdpr-33": { "ref": "Art. 33(3)(b)", "label": "Data protection officer or other contact point" }
+    },
+    "header.disclaimers": {
+      "nis2": { "notApplicable": "the disclaimers state the limits of the evidence and are not a template field" },
+      "ir-2025-302": { "notApplicable": "the disclaimers state the limits of the evidence and are not a template field" },
+      "gdpr-33": { "notApplicable": "the disclaimers state the limits of the evidence and are not a template field" }
+    },
+    "timeline": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Chronology of the incident" },
+      "ir-2025-302": { "ref": "incident description", "label": "Chronology of the incident" },
+      "gdpr-33": { "ref": "Art. 33(3)(a)", "label": "Nature of the breach" }
+    },
+    "iocs": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Indicators of compromise" },
+      "ir-2025-302": { "ref": "technical details", "label": "Indicators of compromise" },
+      "gdpr-33": { "notApplicable": "Art. 33(3) asks for no technical indicators" }
+    },
+    "suspectedMalicious": {
+      "nis2": { "ref": "Art. 23(4)(a)", "label": "Suspected unlawful or malicious action" },
+      "ir-2025-302": { "ref": "early warning", "label": "Suspected malicious action" },
+      "gdpr-33": { "ref": "Art. 33(3)(a)", "label": "Nature of the breach" }
+    },
+    "crossBorderImpact": {
+      "nis2": { "ref": "Art. 23(4)(a)", "label": "Possible cross-border impact" },
+      "ir-2025-302": { "ref": "early warning", "label": "Cross-border impact" },
+      "gdpr-33": { "notApplicable": "Art. 33(3) asks for no cross-border field; member states appear under dataImpact" }
+    },
+    "assessment": {
+      "nis2": { "ref": "Art. 23(4)(b)", "label": "Initial assessment of the incident, severity and impact" },
+      "ir-2025-302": { "ref": "incident assessment", "label": "Initial assessment" },
+      "gdpr-33": { "ref": "Art. 33(3)(c)", "label": "Likely consequences of the breach" }
+    },
+    "dataImpact.categories": {
+      "nis2": { "ref": "Art. 23(4)(b)", "label": "Impact on services and data" },
+      "ir-2025-302": { "ref": "incident assessment", "label": "Affected data categories" },
+      "gdpr-33": { "ref": "Art. 33(3)(a)", "label": "Categories and approximate number of data subjects and records" }
+    },
+    "dataImpact.memberStates": {
+      "nis2": { "ref": "Art. 23(4)(b)", "label": "Member States affected" },
+      "ir-2025-302": { "ref": "incident assessment", "label": "Member States affected" },
+      "gdpr-33": { "notApplicable": "Art. 33(3) names no member state field; the controller chooses the supervisory authority" }
+    },
+    "techniques": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Type of threat or root cause likely to have triggered the incident" },
+      "ir-2025-302": { "ref": "technical details", "label": "Tactics, techniques and procedures" },
+      "gdpr-33": { "notApplicable": "Art. 33(3) asks for no attack technique" }
+    },
+    "rootCause": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Root cause" },
+      "ir-2025-302": { "ref": "final report", "label": "Root cause" },
+      "gdpr-33": { "ref": "Art. 33(3)(a)", "label": "Nature of the breach" }
+    },
+    "mitigation": {
+      "nis2": { "ref": "Art. 23(4)(d)", "label": "Applied and ongoing mitigation measures" },
+      "ir-2025-302": { "ref": "final report", "label": "Mitigation measures" },
+      "gdpr-33": { "ref": "Art. 33(3)(d)", "label": "Measures taken or proposed to address the breach" }
+    }
+  }
+}
