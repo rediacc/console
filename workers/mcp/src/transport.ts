@@ -1,9 +1,9 @@
 /**
  * The MCP transport of the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 1).
  *
- * One SDK v2 `createMcpHandler` per isolate, stateless, JSON responses, with the stateless legacy leg so 2025-revision clients still connect. In front of it, in this order: the route (`/g/<grantId>`, anything else 404), GET and DELETE answered 405 (there is no session to stream or end), the Origin allowlist (403 on a browser origin outside it; native clients send none and pass), a credential in the query string (400), and the credential itself (src/credential.ts, Design 3 and 5): none, or an OAuth access token that is expired or not valid for this grant, gets 401 with `WWW-Authenticate: Bearer resource_metadata=...` so an OAuth client refreshes or signs in; an agent bearer naming another grant, an unknown grant and a wrong tag all get one bare 401 with no detail. The SDK's own ladder then checks the protocol headers against the body (`MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name`; a mismatch is 400 with -32020) and the content type.
+ * One SDK v2 `createMcpHandler` per isolate, stateless, JSON responses, with the stateless legacy leg so 2025-revision clients still connect. In front of it, in this order: the route (`/g/<grantId>`, anything else 404), GET and DELETE answered 405 (there is no session to stream or end), the Origin allowlist (403 on a browser origin outside it; native clients send none and pass), a credential in the query string (400), and the credential itself (src/credential.ts, Design 3 and 5): none, or an OAuth access token that is expired or not valid for this grant, gets 401 with `WWW-Authenticate: Bearer resource_metadata=...` so an OAuth client refreshes or signs in; an agent bearer naming another grant, an unknown grant and a wrong tag all get one bare 401 with no detail, and a grant lookup that fails gets a 503 with `Retry-After`, never a 401 that would send the client to sign in again. The SDK's own ladder then checks the protocol headers against the body (`MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name`; a mismatch is 400 with -32020) and the content type.
  *
- * The resolved grant reaches the per-request server through `authInfo.extra`, which the SDK passes through untouched, so the server instance is built for exactly one grant's scope. `initialize`, `server/discover` and `tools/list` are answered from the shared registry and wake no container; `tools/call` is forwarded to the grant's org executor (src/call.ts).
+ * The resolved grant reaches the per-request server through `authInfo.extra`, which the SDK passes through untouched, so the server instance is built for exactly one grant's scope. `initialize`, `server/discover` and `tools/list` are answered from the shared registry and wake no container; `tools/call` is rate limited, confirmed and forwarded to the grant's org executor (src/call.ts); the server reads whether the client declared elicitation and the echoed `requestState` and passes them on.
  */
 import {
   type AuthInfo,
@@ -13,7 +13,8 @@ import {
   Server,
 } from '@modelcontextprotocol/server';
 import { deriveAuthTag } from '../../../packages/shared/src/config-crypto/agent-grant.js';
-import { type CallDeps, callTool, type GrantCaller } from './call.js';
+import { type CallDeps, callToolStep, type GrantCaller } from './call.js';
+import type { Confirmation } from './confirm.js';
 import {
   type AccessTokenCheck,
   credentialOf,
@@ -22,6 +23,7 @@ import {
   type VerifyAccessToken,
 } from './credential.js';
 import type { ExecutorBinding } from './executor.js';
+import type { RateLimiter } from './rate.js';
 import type { GrantContext } from './scope.js';
 import { listGrantTools } from './tools.js';
 
@@ -56,6 +58,12 @@ export interface McpTransportOptions {
   executor: ExecutorBinding | undefined;
   /** A fresh id per call; tests pin it. */
   newRequestId?: () => string;
+  /** The per-grant limits of `tools/call` (Design 8). */
+  rate?: RateLimiter;
+  /** Seals confirmation state (Design 6); absent, every client confirms through the `confirm` argument. */
+  confirm?: Confirmation;
+  /** The same lookup as `resolveGrant` with the cache skipped, for the retry after `EXECUTOR_RELOCATED`. */
+  refreshGrant?: ResolveGrant;
 }
 
 export interface McpTransport {
@@ -83,8 +91,12 @@ function buildServer(caller: GrantCaller, serverVersion: string, deps: CallDeps)
   );
   const tools = listGrantTools(caller.grant.scope);
   server.setRequestHandler('tools/list', () => ({ tools }));
-  server.setRequestHandler('tools/call', (request) =>
-    callTool(deps, caller, request.params.name, request.params.arguments ?? {})
+  server.setRequestHandler('tools/call', (request, ctx) =>
+    callToolStep(deps, caller, request.params.name, request.params.arguments ?? {}, {
+      elicitation: server.getClientCapabilities()?.elicitation !== undefined,
+      inputResponses: ctx.mcpReq.inputResponses,
+      requestState: ctx.mcpReq.requestState<string>(),
+    })
   );
   return server;
 }
@@ -161,9 +173,25 @@ async function callerOf(
 ): Promise<GrantCaller | Response> {
   const bearer = await bearerOf(options, request, grantId);
   if (bearer instanceof Response) return bearer;
-  const grant = await options.resolveGrant(bearer.grantId, await deriveAuthTag(bearer.secret));
+  let grant: GrantContext | null;
+  try {
+    grant = await options.resolveGrant(bearer.grantId, await deriveAuthTag(bearer.secret));
+  } catch {
+    // The lookup failed (the account is unreachable): a retryable answer, never the 401 that tells a client to sign in again.
+    return plain(503, 'Service unavailable', { 'retry-after': '5' });
+  }
   if (grant?.grantId !== bearer.grantId) return unauthorized();
   return { grant, secret: bearer.secretText };
+}
+
+/** The retry after `EXECUTOR_RELOCATED`: the caller's grant resolved again through `refresh`, which skips the cache. */
+function refreshWith(refresh: ResolveGrant): (caller: GrantCaller) => Promise<GrantContext | null> {
+  return async (caller) => {
+    const opened = openBearer(`rmcp_${caller.grant.grantId}.${caller.secret}`);
+    if (!opened) return null;
+    const grant = await refresh(opened.grantId, await deriveAuthTag(opened.secret));
+    return grant?.grantId === opened.grantId ? grant : null;
+  };
 }
 
 /** The transport for one Worker: routing, method, Origin and credential checks in front of the SDK handler. */
@@ -173,6 +201,9 @@ export function createMcpTransport(options: McpTransportOptions): McpTransport {
     executor: options.executor,
     newRequestId: options.newRequestId,
     reauthUrl: (grantId) => reauthUrlFor(options.accountUrl, grantId),
+    rate: options.rate,
+    confirm: options.confirm,
+    refreshGrant: options.refreshGrant && refreshWith(options.refreshGrant),
   };
   const handler = createMcpHandler(
     (ctx) => buildServer(callerFrom(ctx), options.serverVersion, deps),

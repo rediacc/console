@@ -1,13 +1,22 @@
 /**
- * `tools/call` for the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 7).
+ * `tools/call` for the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 6 to 8).
  *
- * A call is checked against the grant's scope, then forwarded over the `EXECUTOR` binding to the grant's org executor with `{grantId, secret, tool, args, requestId, attachMs}` as the RPC body: the agent secret never reaches a URL. The container's grant session runs decide() and the command and answers either a tool result, already paged the way the local stdio server pages (D18), or the handle of a job that outlived the window.
+ * A call is checked against the grant's scope, takes a slot of the grant's rate limiter, and is forwarded over the `EXECUTOR` binding to the grant's org executor with `{grantId, secret, tool, args, requestId, attachMs}` as the RPC body: the agent secret never reaches a URL. The container's grant session runs decide() and the command and answers either a tool result, already paged the way the local stdio server pages (D18), or the handle of a job that outlived the window.
  *
- * Time (D15): the Worker waits at most ATTACH_WINDOW_MS for the answer, well inside the 60 s budget of the strictest clients, and asks the container to answer by EXECUTOR_ATTACH_MS so a job handle or a `job_wait` status lands inside that window. Paging: `args.page` reaches the container unchanged and the result, its cursor included, comes back unchanged; a tool whose schema takes `page` carries `_meta["anthropic/maxResultSizeChars"]` so a client that caps results lower accepts a whole page.
+ * Limits and confirmation: a call over the grant's budget is refused with `REDIACC_RATE_LIMITED` before anything is forwarded (Design 8). When the executor answers `NEEDS_CONFIRMATION`, a client that declared elicitation gets an `input_required` result whose `requestState` is sealed to the grant, user, tool and arguments (src/confirm.ts), and the retry is forwarded with `confirm` added once the state opens; any other client gets the refusal naming the `confirm` argument (Design 6). When the executor answers `EXECUTOR_RELOCATED`, the org's placement moved: the grant is resolved again past the cache and the call is forwarded once more, to the new placement.
+ *
+ * Time (D15): the Worker waits at most ATTACH_WINDOW_MS in all, a relocation retry included, well inside the 60 s budget of the strictest clients, and asks the container to answer by EXECUTOR_ATTACH_MS so a job handle or a `job_wait` status lands inside that window. Paging: `args.page` reaches the container unchanged and the result, its cursor included, comes back unchanged; a tool whose schema takes `page` carries `_meta["anthropic/maxResultSizeChars"]` so a client that caps results lower accepts a whole page.
  */
-import type { CallToolResult } from '@modelcontextprotocol/server';
+import {
+  type CallToolResult,
+  type InputRequiredResult,
+  inputRequired,
+  isInputRequiredResult,
+} from '@modelcontextprotocol/server';
 import { getMcpTool, type McpToolEntry } from '../../../packages/shared/src/mcp/registry.js';
-import type { ExecutorBinding, McpCallAnswer } from './executor.js';
+import { type Confirmation, hashArgs } from './confirm.js';
+import type { ExecutorBinding, McpCallAnswer, McpCallForward } from './executor.js';
+import type { Acquired, RateLimiter } from './rate.js';
 import { type GrantContext, type GrantState, scopeAdmitsTool } from './scope.js';
 
 /** The longest one `tools/call` waits on the executor. */
@@ -24,6 +33,9 @@ const MAX_RESULT_META = 'anthropic/maxResultSizeChars';
 /** The seconds a capacity refusal asks a client to wait, as the proxy's `Retry-After` does. */
 const CAPACITY_RETRY_SECONDS = 30;
 
+/** The seconds a call that met a second relocation asks a client to wait. */
+const RELOCATED_RETRY_SECONDS = 5;
+
 /** A resolved grant and the agent secret that opened it (base64url of `S`), held for the one request only. */
 export interface GrantCaller {
   grant: GrantContext;
@@ -36,6 +48,21 @@ export interface CallDeps {
   newRequestId?: () => string;
   /** The page where the user authorizes `grantId` again; the URL carries the grant id and nothing else. */
   reauthUrl: (grantId: string) => string;
+  /** The per-grant limits (Design 8); without it a call is not limited, which only a test or a Worker deployed without the binding runs. */
+  rate?: RateLimiter;
+  /** Seals and opens confirmation state (Design 6); without it the `confirm` argument serves every client. */
+  confirm?: Confirmation;
+  /** The grant resolved again past the cache, for the retry after `EXECUTOR_RELOCATED`. */
+  refreshGrant?: (caller: GrantCaller) => Promise<GrantContext | null>;
+}
+
+/** What the request around a `tools/call` carries: whether the client declared elicitation, and the round-trip fields of a retry. */
+export interface CallInput {
+  elicitation: boolean;
+  /** The `inputResponses` of the retried request. */
+  inputResponses?: Record<string, unknown>;
+  /** The `requestState` of the retried request, as the client echoed it. */
+  requestState?: string;
 }
 
 /** The code and the wording for a grant that stopped serving (Design 5). */
@@ -120,6 +147,12 @@ function fromAnswer(entry: McpToolEntry, answer: McpCallAnswer): CallToolResult 
         retryAfterSeconds: CAPACITY_RETRY_SECONDS,
       });
     }
+    if (answer.code === 'EXECUTOR_RELOCATED') {
+      return toolError('SERVER_ERROR', 'The executor moved to a new placement; retry the call.', {
+        executorCode: answer.code,
+        retryAfterSeconds: RELOCATED_RETRY_SECONDS,
+      });
+    }
     return toolError('SERVER_ERROR', 'The executor refused the call.', {
       executorCode: answer.code,
     });
@@ -153,10 +186,10 @@ function windowPassed(tool: string): CallToolResult {
 
 type Outcome = { answer: McpCallAnswer } | 'window-passed';
 
-async function withinWindow(call: Promise<McpCallAnswer>): Promise<Outcome> {
+async function withinWindow(call: Promise<McpCallAnswer>, windowMs: number): Promise<Outcome> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const passed = new Promise<'window-passed'>((resolve) => {
-    timer = setTimeout(() => resolve('window-passed'), ATTACH_WINDOW_MS);
+    timer = setTimeout(() => resolve('window-passed'), windowMs);
   });
   try {
     return await Promise.race([call.then((answer) => ({ answer })), passed]);
@@ -165,14 +198,235 @@ async function withinWindow(call: Promise<McpCallAnswer>): Promise<Outcome> {
   }
 }
 
-/** One `tools/call` under `caller`'s grant. Never throws: every failure is an `isError` result with a code. */
-export async function callTool(
+/** The answer for a call over the grant's budget (Design 8). */
+function rateLimited(reason: 'calls' | 'concurrent', retryAfterSeconds: number): CallToolResult {
+  const why =
+    reason === 'calls'
+      ? 'This grant made too many calls in the last minute.'
+      : 'This grant has too many calls running at once.';
+  return toolError('REDIACC_RATE_LIMITED', `${why} Retry in ${retryAfterSeconds} s.`, {
+    retryAfterSeconds,
+    limit: reason,
+  });
+}
+
+function structured(result: CallToolResult): Record<string, unknown> {
+  return isRecord(result.structuredContent) ? result.structuredContent : {};
+}
+
+function messageOf(result: CallToolResult, fallback: string): string {
+  const message = structured(result).message;
+  return typeof message === 'string' ? message : fallback;
+}
+
+/** The `confirm` value the executor's refusal names, when it names one. */
+function confirmValueOf(result: CallToolResult): string | undefined {
+  const next = structured(result).next;
+  if (!isRecord(next) || !isRecord(next.confirm)) return undefined;
+  return typeof next.confirm.value === 'string' ? next.confirm.value : undefined;
+}
+
+function needsConfirmation(result: CallToolResult): boolean {
+  return result.isError === true && structured(result).code === 'NEEDS_CONFIRMATION';
+}
+
+/** Whether the retry of a confirmation carries the user's yes. */
+function confirmedByUser(responses: Record<string, unknown> | undefined): boolean {
+  const reply = responses?.confirm;
+  return (
+    isRecord(reply) &&
+    reply.action === 'accept' &&
+    isRecord(reply.content) &&
+    reply.content.confirm === true
+  );
+}
+
+/** The refusal for a client that cannot be asked: it names the `confirm` argument the retry carries. */
+function confirmByArgument(tool: string, result: CallToolResult): CallToolResult {
+  const value = confirmValueOf(result);
+  const shown = value === undefined ? 'true' : JSON.stringify(value);
+  const how = `To proceed, ask the user, then call ${tool} again with the same arguments and confirm set to ${shown}.`;
+  return toolError(
+    'NEEDS_CONFIRMATION',
+    `${messageOf(result, 'This call needs confirmation.')} ${how}`,
+    {
+      ...structured(result),
+      confirmArgument: 'confirm',
+    }
+  );
+}
+
+/** The `input_required` result that asks the user, or undefined when this Worker cannot seal a state for the grant. */
+async function askUser(
+  deps: CallDeps,
+  grant: GrantContext,
+  tool: string,
+  args: Record<string, unknown>,
+  result: CallToolResult
+): Promise<InputRequiredResult | undefined> {
+  if (!(deps.confirm && deps.rate && grant.userId)) return undefined;
+  let requestState: string;
+  try {
+    requestState = await deps.confirm.seal(
+      { grantId: grant.grantId, userId: grant.userId, tool, argsHash: await hashArgs(args) },
+      confirmValueOf(result)
+    );
+  } catch {
+    // A state that cannot be sealed falls back to the `confirm` argument; the call still gets its answer.
+    return undefined;
+  }
+  return inputRequired({
+    inputRequests: {
+      confirm: inputRequired.elicit({
+        message: messageOf(result, `Confirm ${tool}?`),
+        requestedSchema: {
+          type: 'object',
+          properties: { confirm: { type: 'boolean', title: 'Confirm' } },
+          required: ['confirm'],
+        },
+      }),
+    },
+    requestState,
+  });
+}
+
+/** The echoed state of a retry: the `confirm` value to forward, or the refusal. */
+async function openConfirmation(
+  deps: CallDeps,
+  grant: GrantContext,
+  tool: string,
+  args: Record<string, unknown>,
+  input: CallInput
+): Promise<{ value: string | true } | { refused: CallToolResult }> {
+  const stale = toolError(
+    'INVALID_REQUEST',
+    'The confirmation is no longer valid; call the tool again to be asked again.'
+  );
+  if (!(deps.confirm && deps.rate && grant.userId) || input.requestState === undefined) {
+    return { refused: stale };
+  }
+  let opened: Awaited<ReturnType<Confirmation['open']>>;
+  try {
+    opened = await deps.confirm.open(
+      input.requestState,
+      { grantId: grant.grantId, userId: grant.userId, tool, argsHash: await hashArgs(args) },
+      deps.rate
+    );
+  } catch {
+    return {
+      refused: toolError('SERVER_ERROR', 'The confirmation could not be checked; retry shortly.'),
+    };
+  }
+  if (!opened.ok) return { refused: stale };
+  if (!confirmedByUser(input.inputResponses)) {
+    return { refused: toolError('POLICY_DENIED', 'The user did not confirm the call.') };
+  }
+  return { value: opened.confirmValue ?? true };
+}
+
+const UNANSWERED = (): CallToolResult =>
+  // The RPC can fail after the executor accepted the call, so the tool may have run: the answer says so rather than inviting a blind retry (sibling of review 6eaea08c.1).
+  toolError(
+    'SERVER_ERROR',
+    'The executor did not answer; the tool may have run. Check its effect before retrying.'
+  );
+
+const routingOf = (grant: GrantContext) => ({
+  orgId: grant.orgId,
+  placement: grant.placement,
+  ...(grant.tier === undefined ? {} : { tier: grant.tier }),
+});
+
+/** One forward, waiting at most what is left of the window; undefined when the RPC itself failed. */
+async function sendOnce(
+  executor: ExecutorBinding,
+  grant: GrantContext,
+  forward: McpCallForward,
+  startedAt: number
+): Promise<Outcome | undefined> {
+  try {
+    return await withinWindow(
+      executor.call(routingOf(grant), forward),
+      Math.max(0, ATTACH_WINDOW_MS - (Date.now() - startedAt))
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The grant at its new placement when `outcome` is `EXECUTOR_RELOCATED` and the account now names a different, active placement; null otherwise. The pin refused before anything ran, so a second forward cannot repeat an effect, and a fresh answer naming the same placement would meet the same retired instance.
+ */
+async function relocatedGrant(
   deps: CallDeps,
   caller: GrantCaller,
-  name: string,
-  args: Record<string, unknown>
-): Promise<CallToolResult> {
-  const { grant } = caller;
+  grant: GrantContext,
+  outcome: Outcome
+): Promise<GrantContext | null> {
+  if (outcome === 'window-passed' || outcome.answer.ok) return null;
+  if (outcome.answer.code !== 'EXECUTOR_RELOCATED' || !deps.refreshGrant) return null;
+  let fresh: GrantContext | null;
+  try {
+    fresh = await deps.refreshGrant(caller);
+  } catch {
+    return null;
+  }
+  return fresh?.state === 'active' && fresh.placement !== grant.placement ? fresh : null;
+}
+
+/** The forward and, after `EXECUTOR_RELOCATED`, one more to the new placement. */
+async function forwardWithRelocation(
+  deps: CallDeps,
+  caller: GrantCaller,
+  executor: ExecutorBinding,
+  forward: McpCallForward
+): Promise<{ outcome: Outcome; grant: GrantContext } | { refused: CallToolResult }> {
+  const startedAt = Date.now();
+  let grant = caller.grant;
+  let outcome = await sendOnce(executor, grant, forward, startedAt);
+  if (!outcome) return { refused: UNANSWERED() };
+  const moved = await relocatedGrant(deps, caller, grant, outcome);
+  if (moved) {
+    grant = moved;
+    outcome = await sendOnce(executor, grant, forward, startedAt);
+    if (!outcome) return { refused: UNANSWERED() };
+  }
+  return { outcome, grant };
+}
+
+/** The forward, the answer, and what a `NEEDS_CONFIRMATION` answer turns into for this client. */
+async function forwardCall(
+  deps: CallDeps,
+  caller: GrantCaller,
+  entry: McpToolEntry,
+  args: Record<string, unknown>,
+  forwardArgs: Record<string, unknown>,
+  input: CallInput
+): Promise<CallToolResult | InputRequiredResult> {
+  const executor = deps.executor;
+  if (!executor) return toolError('SERVER_ERROR', 'This server has no executor binding.');
+  const forwarded = await forwardWithRelocation(deps, caller, executor, {
+    grantId: caller.grant.grantId,
+    secret: caller.secret,
+    tool: entry.name,
+    args: forwardArgs,
+    requestId: (deps.newRequestId ?? (() => crypto.randomUUID()))(),
+    attachMs: EXECUTOR_ATTACH_MS,
+  });
+  if ('refused' in forwarded) return forwarded.refused;
+  const { outcome, grant } = forwarded;
+  if (outcome === 'window-passed') return windowPassed(entry.name);
+  const result = fromAnswer(entry, outcome.answer);
+  if (!(needsConfirmation(result) && input.elicitation)) {
+    return needsConfirmation(result) ? confirmByArgument(entry.name, result) : result;
+  }
+  return (
+    (await askUser(deps, grant, entry.name, args, result)) ?? confirmByArgument(entry.name, result)
+  );
+}
+
+/** The tool the call names, or the refusal that answers it before anything is spent. */
+function admit(deps: CallDeps, grant: GrantContext, name: string): McpToolEntry | CallToolResult {
   if (grant.state !== 'active') return grantEnded(grant, grant.state, deps);
   const entry = getMcpTool(name);
   if (entry?.surface !== 'proxy') {
@@ -182,28 +436,66 @@ export async function callTool(
     return toolError('POLICY_DENIED', `The tool ${name} is outside this grant's scope.`);
   }
   if (!deps.executor) return toolError('SERVER_ERROR', 'This server has no executor binding.');
-  const forward = {
-    grantId: grant.grantId,
-    secret: caller.secret,
-    tool: name,
-    args,
-    requestId: (deps.newRequestId ?? (() => crypto.randomUUID()))(),
-    attachMs: EXECUTOR_ATTACH_MS,
-  };
-  const routing = {
-    orgId: grant.orgId,
-    placement: grant.placement,
-    ...(grant.tier === undefined ? {} : { tier: grant.tier }),
-  };
-  let outcome: Outcome;
+  return entry;
+}
+
+/** A slot of the grant's budget: the way to give it back (none without a limiter), or the refusal. */
+async function takeSlot(
+  deps: CallDeps,
+  grantId: string
+): Promise<{ release?: () => Promise<void> } | { refused: CallToolResult }> {
+  if (!deps.rate) return {};
+  let slot: Acquired;
   try {
-    outcome = await withinWindow(deps.executor.call(routing, forward));
+    slot = await deps.rate.acquire(grantId);
   } catch {
-    // The RPC can fail after the executor accepted the call, so the tool may have run: the answer says so rather than inviting a blind retry (sibling of review 6eaea08c.1).
-    return toolError(
-      'SERVER_ERROR',
-      'The executor did not answer; the tool may have run. Check its effect before retrying.'
-    );
+    // The limiter is the budget's only enforcer, so a call it cannot count is refused, not let through.
+    return {
+      refused: toolError('SERVER_ERROR', 'The rate limiter is unavailable; retry shortly.'),
+    };
   }
-  return outcome === 'window-passed' ? windowPassed(name) : fromAnswer(entry, outcome.answer);
+  return slot.ok
+    ? { release: slot.release }
+    : { refused: rateLimited(slot.reason, slot.retryAfterSeconds) };
+}
+
+/** One `tools/call` under `caller`'s grant. Never throws: every failure is an `isError` result with a code. The result is `input_required` only when `input.elicitation` is set. */
+export async function callToolStep(
+  deps: CallDeps,
+  caller: GrantCaller,
+  name: string,
+  args: Record<string, unknown>,
+  input: CallInput
+): Promise<CallToolResult | InputRequiredResult> {
+  const { grant } = caller;
+  const entry = admit(deps, grant, name);
+  if ('content' in entry) return entry;
+  const slot = await takeSlot(deps, grant.grantId);
+  if ('refused' in slot) return slot.refused;
+  try {
+    let forwardArgs = args;
+    if (input.requestState !== undefined) {
+      // After the slot, so a call over budget does not burn the state it carries.
+      const opened = await openConfirmation(deps, grant, name, args, input);
+      if ('refused' in opened) return opened.refused;
+      forwardArgs = { ...args, confirm: opened.value };
+    }
+    return await forwardCall(deps, caller, entry, args, forwardArgs, input);
+  } finally {
+    // A release that fails costs the slot its lease (src/rate.ts SLOT_LEASE_MS), never the answer.
+    await slot.release?.().catch(() => undefined);
+  }
+}
+
+/** `callToolStep` for a caller that cannot be asked questions: the answer is always a plain tool result. */
+export async function callTool(
+  deps: CallDeps,
+  caller: GrantCaller,
+  name: string,
+  args: Record<string, unknown>
+): Promise<CallToolResult> {
+  const result = await callToolStep(deps, caller, name, args, { elicitation: false });
+  return isInputRequiredResult(result)
+    ? toolError('SERVER_ERROR', 'The server asked for input a plain call cannot give.')
+    : result;
 }

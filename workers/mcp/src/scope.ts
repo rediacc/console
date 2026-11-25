@@ -34,6 +34,8 @@ export interface GrantContext {
   placement: number;
   /** The org's executor tier; a missing tier is `standard`. */
   tier?: string;
+  /** The grantor the agent acts as; a confirmation is bound to it (Design 6). */
+  userId?: string;
 }
 
 interface ScopedTool {
