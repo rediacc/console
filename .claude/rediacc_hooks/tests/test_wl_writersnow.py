@@ -461,11 +461,11 @@ def test_control_a_real_survey_written_after_the_start_counts(tmp_path) -> None:
     assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
 
 
-def test_a_missing_survey_counts_for_30_minutes_then_stops(tmp_path) -> None:
-    rows = two_rounds(tmp_path, "", second_written=None, second_ago=20)
+def test_a_missing_survey_counts_for_50_minutes_then_stops(tmp_path) -> None:
+    rows = two_rounds(tmp_path, "", second_written=None, second_ago=40)
     assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
     later = tmp_path / "later"
-    rows = two_rounds(later, "", second_written=None, second_ago=40)
+    rows = two_rounds(later, "", second_written=None, second_ago=55)
     fires, facts = WN.due(rows, ME8, NOW, 4, DEV, root=later)
     assert fires
     assert "survey never written" in WN.due_fields(facts, ME8)["last"]

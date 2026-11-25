@@ -23,7 +23,7 @@ LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
 # The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f: at least once per hour).
 WINDOW_MIN = 60
 # How long a round whose survey file does not exist yet still counts: the survey agent is running.
-SURVEY_GRACE_MIN = 30
+SURVEY_GRACE_MIN = 50
 # Why a round does not count toward the cadence (judge_round), shown in the writers-now-due message.
 WHY_COPIED_OLD = "its survey was written before the round started (a copied survey is not a round)"
 WHY_COPIED_SAME = (
