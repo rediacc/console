@@ -188,9 +188,10 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
       );
     expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
     const message = (err as Error).message;
-    expect(message).toContain(CONFIG_ID);
     expect(message).toMatch(/newer version of the CLI/);
     expect(message).toContain('envelope v5');
+    expect(message).toContain('envelope-skew');
+    expect(message).not.toContain(CONFIG_ID);
     expect(message).toMatch(/Upgrade rdc/);
     expect(message).not.toMatch(/key slot|enrolled|different key/i);
   });

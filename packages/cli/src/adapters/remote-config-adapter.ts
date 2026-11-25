@@ -29,6 +29,7 @@ import {
 } from '@rediacc/shared/config-schema';
 import type { EffectivePolicy } from '@rediacc/shared/policy';
 import { t } from '../i18n/index.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import {
   ConfigServerError,
   type ConfigServerFetchOptions,
@@ -55,6 +56,15 @@ import {
   RemoteStaleSlotError,
   RemoteTokenExpiredError,
 } from './remote-config-errors.js';
+import {
+  buildSyncRecord,
+  classifyDecryptFailure,
+  firstLegacyEnvelopeWarning,
+  optionalFields,
+  refuseRollback,
+  renewalFailure,
+  unwrapDeviceCek,
+} from './remote-config-support.js';
 import type {
   PulledEnvelope,
   PullResult,
@@ -64,14 +74,6 @@ import type {
   RemoteVersionInfo,
   SessionMaterial,
 } from './remote-config-types.js';
-import {
-  buildSyncRecord,
-  classifyDecryptFailure,
-  optionalFields,
-  refuseRollback,
-  renewalFailure,
-  unwrapDeviceCek,
-} from './remote-config-support.js';
 import type { RemoteTokenStorage, SyncRecord, TokenLease } from './remote-token-storage.js';
 
 export {
@@ -140,7 +142,7 @@ export class RemoteConfigAdapter {
     const { envelope } = pulled.data;
 
     const seen = this.syncRecord(lease);
-    refuseRollback(this.remote.configId, seen, envelope);
+    refuseRollback(this.remote.configId, this.configName, seen, envelope);
     // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
     await lease.recordSync(
       buildSyncRecord(
@@ -151,10 +153,11 @@ export class RemoteConfigAdapter {
         seen
       )
     );
-    if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
-      outputService.warn(
-        t('commands.config.remote.legacyEnvelope', { configId: this.remote.configId })
-      );
+    if (
+      envelope.envelopeVersion !== ENVELOPE_VERSION &&
+      firstLegacyEnvelopeWarning(this.configName)
+    ) {
+      outputService.warn(t('commands.config.remote.legacyEnvelope', { config: this.configName }));
     }
     return result;
   }
@@ -355,7 +358,12 @@ export class RemoteConfigAdapter {
     try {
       decrypted = await selectiveDecrypt(payload, cek, sdkDerived, this.binding());
     } catch (error) {
-      const failure = classifyDecryptFailure(this.remote.storeId, error, this.remote.configId);
+      const failure = classifyDecryptFailure(
+        this.remote.storeId,
+        error,
+        this.remote.configId,
+        this.configName
+      );
       throw await this.staleOr(lease, failure, data.cekGeneration);
     }
 
@@ -530,7 +538,7 @@ export class RemoteConfigAdapter {
   /** Refuse an operation whose lease holds no token, before any request. */
   private requireToken(lease: TokenLease): void {
     if (!lease.token) {
-      throw new RemoteTokenExpiredError();
+      throw new RemoteTokenExpiredError(this.configName);
     }
   }
 
@@ -573,14 +581,14 @@ export class RemoteConfigAdapter {
       }
     }
     return current !== undefined && current > recorded
-      ? new RemoteStaleSlotError({ cause: failure })
+      ? new RemoteStaleSlotError({ cause: failure }, this.configName)
       : failure;
   }
 
   /** Derive CEK from passkey_secret + server_secret */
   private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
     const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
-    return unwrapDeviceCek(passkeySecretStr, serverSecret, lease.data?.wrappedCek);
+    return unwrapDeviceCek(passkeySecretStr, serverSecret, lease.data?.wrappedCek, this.configName);
   }
 
   /**
@@ -653,6 +661,8 @@ export class RemoteConfigAdapter {
     if (!loginToken) {
       refusal.message = `${refusal.message}\n${t('commands.config.remote.tokenRefresh.noLogin', {
         apiUrl: this.remote.apiUrl,
+        loginCmd: rdcCommand('subscription login', this.configName),
+        cmd: rdcCommand('config remote enable', this.configName),
       })}`;
       throw refusal;
     }

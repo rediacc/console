@@ -26,6 +26,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { outputService } from '../services/core/output.js';
 import { authorizationExpired, CliExitError } from '../utils/cli-exit-error.js';
 import { ValidationError } from '../utils/errors.js';
@@ -110,7 +111,11 @@ export function parseHandoff(raw: string): CekHandoffBlob {
   try {
     return JSON.parse(raw) as CekHandoffBlob;
   } catch {
-    throw new ValidationError(t('commands.config.remote.enable.handoffUnreadable'));
+    throw new ValidationError(
+      t('commands.config.remote.enable.handoffUnreadable', {
+        cmd: rdcCommand('config remote enable'),
+      })
+    );
   }
 }
 
@@ -206,7 +211,7 @@ function classifyClaimError(error: unknown, relay: RelayHandoff, failures: numbe
   if (status === 404 || status === 410) {
     throw authorizationExpired(
       t('commands.config.remote.enable.expired'),
-      'rdc config remote enable'
+      rdcCommand('config remote enable')
     );
   }
   if (status === 429) {
@@ -239,7 +244,7 @@ async function claimOnce(
   if (res.status === 'expired') {
     throw authorizationExpired(
       t('commands.config.remote.enable.expired'),
-      'rdc config remote enable'
+      rdcCommand('config remote enable')
     );
   }
   if (res.status === 'complete' && res.configHandoff) {
@@ -257,7 +262,7 @@ async function claimUntilDeadline(apiUrl: string, relay: RelayHandoff): Promise<
     if (remaining <= 0)
       throw authorizationExpired(
         t('commands.config.remote.enable.expired'),
-        'rdc config remote enable'
+        rdcCommand('config remote enable')
       );
     await sleep(Math.min(waitMs, remaining));
     const step = await claimOnce(apiUrl, relay, failures);

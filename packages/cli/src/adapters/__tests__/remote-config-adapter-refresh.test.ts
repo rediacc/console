@@ -147,8 +147,8 @@ describe('RemoteConfigAdapter token renewal (T11)', () => {
     mockConfigServerFetch.mockRejectedValueOnce(authRefusal('ip_mismatch'));
     const error = await adapter.listVersions().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(RemoteTokenIpMismatchError);
-    expect((error as Error).message).toContain('rdc subscription login');
-    expect((error as Error).message).toContain('rdc config remote enable');
+    expect((error as Error).message).toContain('rdc --config cfg subscription login');
+    expect((error as Error).message).toContain('rdc --config cfg config remote enable');
     expect(mockRefresh).not.toHaveBeenCalled();
   });
 

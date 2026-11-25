@@ -18,6 +18,7 @@ import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
 import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/timeline.js';
+import { rdcCommand } from '../config/config-name.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
 import { backgroundEnvelope, backgroundStartedHint } from './job-client.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
@@ -262,7 +263,7 @@ async function loadEnrolledCek(): Promise<CryptoKey> {
   if (!hasRemoteConfig(config)) {
     throw new Error(
       `This executor runs in a container, and it can open your config only with the config key from config storage. ` +
-        `Config "${name}" is not in config storage yet: run "rdc config remote enable", then retry.`
+        `Config "${name}" is not in config storage yet: run "${rdcCommand('config remote enable', name)}", then retry.`
     );
   }
   const { RemoteConfigAdapter } = await import('../../adapters/remote-config-adapter.js');

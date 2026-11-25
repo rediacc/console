@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat, RdcConfig, RemoteConfig } from '../types/index.js';
@@ -174,7 +175,9 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     format
   );
   if (accessLoss !== null && format !== 'json') {
-    outputService.warn(t(accessLossKey(accessLoss)));
+    outputService.warn(
+      t(accessLossKey(accessLoss), { cmd: rdcCommand('config remote enable', configName) })
+    );
   }
 }
 
@@ -485,7 +488,10 @@ export function registerRemoteCommands(configCommand: Command): void {
           const { enrollmentUsable, reenroll } = await import('./config-remote-reenroll.js');
           if (await enrollmentUsable(config.remote, configName)) {
             throw new ValidationError(
-              t('commands.config.remote.enable.alreadyEnabled', { name: configName })
+              t('commands.config.remote.enable.alreadyEnabled', {
+                name: configName,
+                cmd: rdcCommand('config remote disable', configName),
+              })
             );
           }
           await reenroll(configName, config.remote, {

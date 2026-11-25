@@ -1,6 +1,7 @@
 import { t } from '../../i18n/index.js';
 import { authorizationExpired, CliExitError } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
+import { rdcCommand } from '../config/config-name.js';
 import { outputService } from '../core/output.js';
 import { accountServerFetch } from './account-client.js';
 import { assertActiveConfigExists } from './active-config-guard.js';
@@ -140,7 +141,7 @@ async function attemptDeviceCodePoll(
     if (result.status === 'expired') {
       throw authorizationExpired(
         t('commands.subscription.login.expired'),
-        'rdc subscription login'
+        rdcCommand('subscription login')
       );
     }
   } catch (error) {
@@ -165,7 +166,10 @@ async function pollForDeviceCodeToken(
     if (claim) return claim;
   }
 
-  throw authorizationExpired(t('commands.subscription.login.expired'), 'rdc subscription login');
+  throw authorizationExpired(
+    t('commands.subscription.login.expired'),
+    rdcCommand('subscription login')
+  );
 }
 
 function fetchLicenseStatus(serverUrl: string, token: string): Promise<LicenseStatusResponse> {

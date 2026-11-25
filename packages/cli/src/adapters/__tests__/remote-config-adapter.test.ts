@@ -64,6 +64,7 @@ import {
   RemoteUnreachableError,
   RemoteVersionConflictError,
 } from '../remote-config-adapter.js';
+import { resetLegacyEnvelopeWarnings } from '../remote-config-support.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
 // ─── Test Fixtures ───────────────────────────────────────────────────────
@@ -179,6 +180,7 @@ describe('RemoteConfigAdapter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetLegacyEnvelopeWarnings();
 
     tokenStorage = createMockTokenStorage();
     secureStorage = createMockSecureStorage();
@@ -355,7 +357,7 @@ describe('RemoteConfigAdapter', () => {
       expect(err).toBeInstanceOf(RemoteTokenIpMismatchError);
       expect(err).not.toBeInstanceOf(RemoteTokenExpiredError);
       expect((err as RemoteAuthError).reason).toBe('ip_mismatch');
-      expect((err as Error).message).toContain('rdc config remote enable');
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
       expect((err as Error).message).not.toBe(new RemoteTokenExpiredError().message);
     });
 
@@ -396,6 +398,16 @@ describe('RemoteConfigAdapter', () => {
       secureStorage.get.mockResolvedValue(null);
 
       await expect(adapter.pull()).rejects.toThrow(RemotePasskeySecretMissingError);
+    });
+
+    it('names the config in the enroll command of the missing-key error', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as RemotePasskeySecretMissingError).configName).toBe(CONFIG_NAME);
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
     });
 
     it('should throw RemoteTokenExpiredError when token storage is empty', async () => {
@@ -632,6 +644,14 @@ describe('RemoteConfigAdapter', () => {
       await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteRollbackError);
     });
 
+    it('names the config, not its GUID, when it refuses an envelope downgrade', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 2));
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect((err as Error).message).toContain(CONFIG_NAME);
+      expect((err as Error).message).not.toContain(REMOTE.configId);
+    });
+
     it('refuses the v3 envelope once the device has seen v4 for this config', async () => {
       tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 4) });
       mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 3));
@@ -671,6 +691,20 @@ describe('RemoteConfigAdapter', () => {
         envelopeVersion: 2,
         fckSalt: 'salt',
       });
+      warn.mockRestore();
+    });
+
+    it('names the config, not its GUID, and warns once per config per process', async () => {
+      const { outputService } = await import('../../services/core/output.js');
+      const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(4, 2));
+      await adapter.pull();
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(4, 2));
+      await adapter.pull();
+      expect(warn).toHaveBeenCalledTimes(1);
+      const text = String(warn.mock.calls[0]?.[0]);
+      expect(text).toContain(CONFIG_NAME);
+      expect(text).not.toContain(REMOTE.configId);
       warn.mockRestore();
     });
 

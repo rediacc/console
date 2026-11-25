@@ -28,6 +28,7 @@ import {
   getSubscriptionTokenState,
   normalizeServerUrl,
 } from '../services/account/subscription-auth.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
@@ -53,7 +54,10 @@ export function requireLoginToken(apiUrl: string): string {
     normalizeServerUrl(state.serverUrl) !== normalizeServerUrl(apiUrl)
   ) {
     throw new ValidationError(
-      t('commands.config.remote.enable.loginRequired', { apiUrl: normalizeServerUrl(apiUrl) })
+      t('commands.config.remote.enable.loginRequired', {
+        apiUrl: normalizeServerUrl(apiUrl),
+        cmd: rdcCommand('subscription login'),
+      })
     );
   }
   return state.token.token;
@@ -108,7 +112,9 @@ export async function checkEnablePrerequisites(apiUrl: string): Promise<EnablePr
         [
           t('commands.config.remote.enable.prereqMissing', { email: reqs.email }),
           ...missing.map((line) => `  - ${line}`),
-          t('commands.config.remote.enable.prereqRetry'),
+          t('commands.config.remote.enable.prereqRetry', {
+            cmd: rdcCommand('config remote enable'),
+          }),
         ].join('\n')
       );
     }

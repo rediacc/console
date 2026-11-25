@@ -5,6 +5,7 @@
  */
 
 import { t } from '../i18n/index.js';
+import { getEffectiveConfigName, rdcCommand } from '../services/config/config-name.js';
 import { ConfigServerError } from '../services/config/config-server-client.js';
 import type { RemoteConfig } from '../types/index.js';
 
@@ -27,8 +28,13 @@ export class RemoteAuthError extends Error {
 
 /** The token is past its lifetime, or this device holds none at all. */
 export class RemoteTokenExpiredError extends RemoteAuthError {
-  constructor() {
-    super('token_expired', t('commands.config.remote.tokenExpired'));
+  constructor(public readonly configName: string = getEffectiveConfigName()) {
+    super(
+      'token_expired',
+      t('commands.config.remote.tokenExpired', {
+        cmd: rdcCommand('config remote enable', configName),
+      })
+    );
     this.name = 'RemoteTokenExpiredError';
   }
 }
@@ -39,8 +45,13 @@ export class RemoteTokenExpiredError extends RemoteAuthError {
  * (the enabling browser, before the device-token fix) fails here.
  */
 export class RemoteTokenIpMismatchError extends RemoteAuthError {
-  constructor() {
-    super('ip_mismatch', t('commands.config.remote.tokenIpMismatch'));
+  constructor(public readonly configName: string = getEffectiveConfigName()) {
+    super(
+      'ip_mismatch',
+      t('commands.config.remote.tokenIpMismatch', {
+        cmd: rdcCommand('config remote enable', configName),
+      })
+    );
     this.name = 'RemoteTokenIpMismatchError';
   }
 }
@@ -51,22 +62,23 @@ const AUTH_REASON_RE = /Config auth failed: ([a-z_]+)/;
 const UNSTATED_AUTH_REASON = 'unauthorized';
 
 /** Map a 401 onto the error for the server's stated reason. */
-function remoteAuthErrorFor(serverMessage: string): RemoteAuthError {
+function remoteAuthErrorFor(serverMessage: string, configName: string): RemoteAuthError {
+  const cmd = rdcCommand('config remote enable', configName);
   const reason = AUTH_REASON_RE.exec(serverMessage)?.[1];
   switch (reason) {
     case 'token_expired':
-      return new RemoteTokenExpiredError();
+      return new RemoteTokenExpiredError(configName);
     case 'ip_mismatch':
-      return new RemoteTokenIpMismatchError();
+      return new RemoteTokenIpMismatchError(configName);
     case 'token_exhausted':
-      return new RemoteAuthError(reason, t('commands.config.remote.tokenExhausted'));
+      return new RemoteAuthError(reason, t('commands.config.remote.tokenExhausted', { cmd }));
     case 'invalid_token':
     case 'decryption_failed':
-      return new RemoteAuthError(reason, t('commands.config.remote.tokenInvalid'));
+      return new RemoteAuthError(reason, t('commands.config.remote.tokenInvalid', { cmd }));
     default:
       return new RemoteAuthError(
         reason ?? UNSTATED_AUTH_REASON,
-        t('commands.config.remote.tokenRejected', { reason: serverMessage })
+        t('commands.config.remote.tokenRejected', { reason: serverMessage, cmd })
       );
   }
 }
@@ -98,6 +110,7 @@ export class RemotePreconditionError extends Error {
       t('commands.config.remote.preconditionFailed', {
         config: configName,
         paths: paths.length > 0 ? paths.join(', ') : '-',
+        cmd: rdcCommand('config remote refresh', configName),
       })
     );
     this.name = 'RemotePreconditionError';
@@ -177,7 +190,13 @@ export class RemoteTeamNotFoundError extends Error {
     public readonly configName: string,
     public readonly teamId: string | undefined
   ) {
-    super(t('commands.config.remote.teamNotFound', { config: configName, team: teamId ?? '-' }));
+    super(
+      t('commands.config.remote.teamNotFound', {
+        config: configName,
+        team: teamId ?? '-',
+        cmd: rdcCommand('config remote enable', configName),
+      })
+    );
     this.name = 'RemoteTeamNotFoundError';
   }
 }
@@ -258,8 +277,12 @@ function isNetworkErrorNode(node: object): boolean {
 }
 
 export class RemotePasskeySecretMissingError extends Error {
-  constructor() {
-    super(t('commands.config.remote.passkeySecretMissing'));
+  constructor(public readonly configName: string = getEffectiveConfigName()) {
+    super(
+      t('commands.config.remote.passkeySecretMissing', {
+        cmd: rdcCommand('config remote enable', configName),
+      })
+    );
     this.name = 'RemotePasskeySecretMissingError';
   }
 }
@@ -273,8 +296,16 @@ export class RemotePasskeySecretMissingError extends Error {
  * again. `cause` keeps the refusal or decrypt failure it was diagnosed from.
  */
 export class RemoteStaleSlotError extends Error {
-  constructor(options?: { cause?: unknown }) {
-    super(t('commands.config.remote.staleSlot'), options);
+  constructor(
+    options?: { cause?: unknown },
+    public readonly configName: string = getEffectiveConfigName()
+  ) {
+    super(
+      t('commands.config.remote.staleSlot', {
+        cmd: rdcCommand('config remote enable', configName),
+      }),
+      options
+    );
     this.name = 'RemoteStaleSlotError';
   }
 }
@@ -327,7 +358,7 @@ function classifyServerAnswer(
   remote: RemoteConfig,
   configName: string
 ): Error | undefined {
-  if (error.status === 401) return remoteAuthErrorFor(error.message);
+  if (error.status === 401) return remoteAuthErrorFor(error.message, configName);
   if (error.status === 403 && error.code === 'team_forbidden') {
     return new RemoteTeamForbiddenError(configName);
   }
@@ -343,7 +374,7 @@ function classifyConflict(error: ConfigServerError, configName: string): Error {
   switch (error.code) {
     // The refusal names the store's generation, newer than the one this push was sealed under.
     case 'stale_cek_generation':
-      return new RemoteStaleSlotError({ cause: error });
+      return new RemoteStaleSlotError({ cause: error }, configName);
     case 'precondition_failed':
       return new RemotePreconditionError(configName, error.mismatchedPaths ?? []);
     default:

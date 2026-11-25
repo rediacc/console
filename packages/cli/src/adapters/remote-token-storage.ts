@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import type { StoredConfigKeyWrap } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { rdcCommand } from '../services/config/config-name.js';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
 
@@ -244,7 +245,9 @@ function withoutGeneration(sync: SyncRecord): SyncRecord {
 }
 
 function missingTokenFile(configName: string): Error {
-  return new Error(`No token file for config "${configName}". Run: rdc config remote enable`);
+  return new Error(
+    `No token file for config "${configName}". Run: ${rdcCommand('config remote enable', configName)}`
+  );
 }
 
 export const remoteTokenStorage = new RemoteTokenStorage();

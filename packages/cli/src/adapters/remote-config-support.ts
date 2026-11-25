@@ -14,6 +14,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { envelopeConfigKeyWrap } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { RemoteTokenRefreshError } from '../services/config/device-token-refresh.js';
 import {
   isNetworkError,
@@ -44,6 +45,7 @@ export function optionalFields<T extends Record<string, number | undefined>>(
  */
 export function refuseRollback(
   configId: string,
+  configName: string,
   seen: SyncRecord | undefined,
   envelope: PulledEnvelope['envelope']
 ): void {
@@ -58,7 +60,9 @@ export function refuseRollback(
     );
   }
   if (envelope.envelopeVersion < seen.envelopeVersion) {
-    throw new RemoteRollbackError(t('commands.config.remote.envelopeDowngrade', { configId }));
+    throw new RemoteRollbackError(
+      t('commands.config.remote.envelopeDowngrade', { config: configName })
+    );
   }
 }
 
@@ -97,7 +101,12 @@ export function buildSyncRecord(
  * failure PAST it means the CEK layer opened and the server-derived session
  * layer did not.
  */
-export function classifyDecryptFailure(storeId: string, error: unknown, configId: string): Error {
+export function classifyDecryptFailure(
+  storeId: string,
+  error: unknown,
+  configId: string,
+  configName: string
+): Error {
   const detail = error instanceof Error ? error.message : String(error);
 
   // The envelope-version guard already names its own problem.
@@ -107,7 +116,7 @@ export function classifyDecryptFailure(storeId: string, error: unknown, configId
   if (error instanceof ConfigEnvelopeTooNewError) {
     return new RemoteConfigUndecryptableError(
       t('commands.config.remote.envelopeTooNew', {
-        configId,
+        config: configName,
         envelope: error.envelopeVersion,
         legacy: LEGACY_ENVELOPE_VERSION,
         current: ENVELOPE_VERSION,
@@ -122,7 +131,11 @@ export function classifyDecryptFailure(storeId: string, error: unknown, configId
   }
 
   return new RemoteConfigUndecryptableError(
-    t('commands.config.remote.undecryptableSession', { configId, detail })
+    t('commands.config.remote.undecryptableSession', {
+      configId,
+      detail,
+      cmd: rdcCommand('config remote enable', configName),
+    })
   );
 }
 
@@ -135,7 +148,7 @@ export function renewalFailure(
 ): unknown {
   // A rotation revoked this device's token and left it no slot at the new generation (T10, F11).
   if (error instanceof RemoteTokenRefreshError && error.code === 'stale_cek_generation') {
-    return new RemoteStaleSlotError({ cause: error });
+    return new RemoteStaleSlotError({ cause: error }, configName);
   }
   if (error instanceof RemoteTokenRefreshError) return error;
   const e = error as { status?: unknown; code?: unknown } | null;
@@ -158,21 +171,37 @@ export function renewalFailure(
 export async function unwrapDeviceCek(
   passkeySecretStr: string | null | undefined,
   serverSecret: Uint8Array,
-  wrappedCek: string | undefined
+  wrappedCek: string | undefined,
+  configName: string
 ) {
   if (!passkeySecretStr) {
-    throw new RemotePasskeySecretMissingError();
+    throw new RemotePasskeySecretMissingError(configName);
   }
 
   const wrappingKey = await deriveWrappingKey(fromBase64(passkeySecretStr), serverSecret);
 
   if (!wrappedCek) {
-    throw new RemoteTokenExpiredError();
+    throw new RemoteTokenExpiredError(configName);
   }
 
   try {
     return await cekUnwrap(wrappedCek, wrappingKey);
   } catch {
-    throw new RemoteStaleSlotError();
+    throw new RemoteStaleSlotError(undefined, configName);
   }
+}
+
+/** Config names whose old-envelope warning was already printed in this process. */
+const legacyEnvelopeWarned = new Set<string>();
+
+/** True the first time it is asked for `configName` in this process: the warning prints once per config. */
+export function firstLegacyEnvelopeWarning(configName: string): boolean {
+  if (legacyEnvelopeWarned.has(configName)) return false;
+  legacyEnvelopeWarned.add(configName);
+  return true;
+}
+
+/** Forget the printed warnings (tests only). */
+export function resetLegacyEnvelopeWarnings(): void {
+  legacyEnvelopeWarned.clear();
 }

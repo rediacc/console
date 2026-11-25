@@ -366,7 +366,7 @@ describe('config remote enable on a linked config: controls', () => {
 
     expect(relay.runs).toBe(0);
     expect(account.enrollCalls).toBe(0);
-    const named = /rdc config remote (\w+)/.exec(error.message)?.[1];
+    const named = /rdc (?:--config \S+ )?config remote (\w+)/.exec(error.message)?.[1];
     expect(named).toBe('disable');
     await rdc(named as string);
     expect((await readConfigFile()).remote).toBeUndefined();
@@ -411,7 +411,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
     relay.payload = handoff();
 
     const error = await refusal('refresh');
-    const named = /rdc config remote (\w+)/.exec(error.message)?.[1];
+    const named = /rdc (?:--config \S+ )?config remote (\w+)/.exec(error.message)?.[1];
     expect(named).toBeDefined();
 
     await rdc(named as string);
@@ -485,7 +485,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
 
     const error = await refusal('enable');
     expect(error.message).toContain(CONFIG_ID);
-    expect(error.message).toContain('rdc config remote disable --local');
+    expect(error.message).toContain(`rdc --config ${active.name} config remote disable --local`);
     expect(pushSpy).not.toHaveBeenCalled();
     expect(secureMem.size).toBe(0);
   });
@@ -658,7 +658,7 @@ describe('config remote enable on a linked config: other lost and not-lost enrol
     relay.payload = handoff();
 
     const error = await refusal('enable');
-    expect(error.message).toContain('rdc config remote disable --local');
+    expect(error.message).toContain(`rdc --config ${active.name} config remote disable --local`);
     expect(error.message).toContain(CONFIG_ID);
     expect(error.message).toContain(STORE_ID);
     expect(error.message).not.toBe('Config not found');
@@ -684,7 +684,7 @@ describe('config remote status: can this device open the store', () => {
     await enrolledDevice();
     await rdc('status');
     expect(printed()).toMatchObject({ status: 'connected', deviceCanOpen: true });
-    expect(messages.join('\n')).not.toContain('rdc config remote enable');
+    expect(messages.join('\n')).not.toContain('config remote enable');
   });
 
   it('reads device-key-missing with deviceCanOpen false, and names enable, once the keyring is empty', async () => {
@@ -697,7 +697,7 @@ describe('config remote status: can this device open the store', () => {
       deviceCanOpen: false,
       storeId: STORE_ID,
     });
-    expect(messages.join('\n')).toContain('rdc config remote enable');
+    expect(messages.join('\n')).toContain(`rdc --config ${active.name} config remote enable`);
   });
 
   // A healthy local key says nothing about the server, so "connected" still needs the session probe.
@@ -726,7 +726,7 @@ describe('config remote status: can this device open the store', () => {
     await rdc('status');
     expect(printed()).toMatchObject({ status: 'device-cannot-open', deviceCanOpen: false });
     const text = messages.join('\n');
-    expect(text).toContain('rdc config remote enable');
+    expect(text).toContain(`rdc --config ${active.name} config remote enable`);
     expect(text).not.toContain('key is gone');
   });
 
