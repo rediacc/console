@@ -18,7 +18,7 @@ export function registerMcpCommands(program: Command): void {
     .option('--timeout <ms>', t('commands.mcp.serve.timeoutOption'), MCP_TIMEOUT_DEFAULT)
     .action(async (options: { config?: string; timeout?: string }) => {
       const { startMcpServer } = await import('./server.js');
-      await startMcpServer({
+      startMcpServer({
         configName: options.config,
         defaultTimeoutMs: Number.parseInt(options.timeout ?? MCP_TIMEOUT_DEFAULT, 10),
       });

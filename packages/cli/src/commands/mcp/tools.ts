@@ -1,4 +1,5 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
+import { z } from 'zod';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
@@ -45,7 +46,7 @@ export function registerAllTools(server: McpServer, options: McpServerOptions): 
       tool.name,
       {
         description: tool.description,
-        inputSchema: tool.schema,
+        inputSchema: z.object(tool.schema),
         annotations: toolAnnotations(tool),
       },
       async (args: Record<string, unknown>) => executeTool(tool, args, options)

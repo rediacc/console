@@ -18,7 +18,6 @@
  * The contract merely mirrors that policy for its other consumers.
  */
 
-import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import {
   CLI_CONTRACT,
   type ContractCommand,
@@ -35,15 +34,13 @@ import {
 } from '../../config/command-metadata.js';
 import { JOB_ATTACH_WINDOW_MS } from '../../services/jobs/attach.js';
 
-// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and v4 subpaths are bundled there) while this workspace imports zod from its own packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a structurally-identical $ZodType interface, TS treats them as distinct nominal types because they live at different file paths. Using the SDK's own
-// ZodRawShapeCompat alias keeps the registerTool() call site type-clean.
-
 export interface ToolDef {
   name: string;
   /** The contract `pathKey` of the command the tool runs, e.g. "repo up" (the custom machine_* views run "machine status"). */
   commandPath: string;
   description: string;
-  schema: ZodRawShapeCompat;
+  /** The tool's input fields; `registerTool` receives them wrapped in `z.object()`. */
+  schema: Record<string, z.ZodType>;
   command: (args: Record<string, unknown>) => string[];
   isDestructive: boolean;
   isIdempotent: boolean;
@@ -161,8 +158,8 @@ function deriveSchema(
   positionals: ContractPositional[],
   options: ContractOption[],
   requiredArgs?: string[]
-): ZodRawShapeCompat {
-  const schema: ZodRawShapeCompat = {};
+): Record<string, z.ZodType> {
+  const schema: Record<string, z.ZodType> = {};
   const requiredSet = new Set(requiredArgs ?? []);
   const argNames = new Set<string>();
 
