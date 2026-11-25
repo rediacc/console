@@ -27,9 +27,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { subset } from '@rediacc/locales';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
-import { byCodePoint } from '../lib/doc-providers.js';
 import { findRegions } from '../lib/doc-regions.js';
 import { exitWithMainIfEntryPoint } from '../lib/entry-point.js';
 
@@ -42,6 +42,9 @@ const SOURCE_LANG = 'en';
 /** The two tables, by the gen-docs provider id that renders the English copy. */
 const TABLES = ['mcp-tools', 'mcp-tools-local'] as const;
 type Table = (typeof TABLES)[number];
+
+/** Code-point order, the same as doc-providers.ts byCodePoint; kept local so this gate does not import that module and every record its providers read. */
+const byCodePoint = (a: string, b: string): number => Number(a > b) - Number(a < b);
 
 /**
  * Locales whose page does not carry the translated tables yet.
@@ -58,7 +61,7 @@ export const PENDING_TABLE_TRANSLATION: readonly string[] = [];
 export const RETIRED_FAMILIES: readonly string[] = ['agent', 'term'];
 
 /** Every locale of the page as of 2026-11-25; used only to spell the baseline below. */
-const ALL_13 = [
+const ALL_13 = subset('mcp-docs-stale-baseline', [
   'ar',
   'de',
   'en',
@@ -72,7 +75,7 @@ const ALL_13 = [
   'ru',
   'tr',
   'zh',
-] as const;
+]);
 
 /**
  * Stale tool mentions frozen on 2026-11-25: name -> the locales whose page still carries it.
@@ -547,7 +550,7 @@ function main(argv: string[]): number {
   const { pages, missing } = readPages(ROOT);
   if (pages.length === 0) {
     console.error(
-      `${RED}✗${NC} no ${PAGE} under ${DOCS}/<lang>/; the gate is not seeing the tree, so its green would mean nothing.`
+      `${RED}✗${NC} VACUOUS: no ${PAGE} under ${DOCS}/<lang>/; the gate is not seeing the tree, so its green would mean nothing.`
     );
     return 1;
   }

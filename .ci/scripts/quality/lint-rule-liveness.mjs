@@ -197,6 +197,12 @@ const MATRIX = {
     // The `allow` list (no-direct-sftp-client.js:38, set at eslint.config.js:631)
     // exempts machine-connection.ts, so the probe must not be that file.
   },
+  'custom/no-direct-guard-call': {
+    // A command file judging the policy beside decide(): the evaluator call fires from any
+    // file outside the rule's DEFAULT_ALLOW_EVALUATE (no-direct-guard-call.js).
+    filePath: 'packages/cli/src/commands/backup.ts',
+    code: "import { evaluatePolicy } from '@rediacc/shared/policy';\nexport const v = evaluatePolicy({}, {});\n",
+  },
   'custom/no-hardcoded-cli-text': {
     filePath: 'packages/cli/src/commands/backup.ts',
     // The string must contain a space, or shouldIgnore treats it as an identifier.

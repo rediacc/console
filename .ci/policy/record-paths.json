@@ -3245,7 +3245,9 @@
           "evidence": "scripts/gen/validate-cli-examples.ts:51 (cite) agent/**/*.{md"
         }
       ],
-      "notReaders": []
+      "notReaders": [
+        {"id": "check:ci-mcp-docs-parity", "reason": "Its only citation the derivation finds is the string 'agent' in RETIRED_FAMILIES (scripts/gates/check-mcp-docs-parity.ts), an MCP tool family name; the gate reads the MCP registry and the docs pages under packages/www, and no file under agent/."}
+      ]
     }
   ]
 }

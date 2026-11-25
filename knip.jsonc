@@ -47,6 +47,9 @@
         // Run BY PATH by hand (`npx tsx scripts/ci-runner/path-trace.ts --gate <id> --write`, `npx tsx scripts/ci-runner/trace-honest.ts --quick`): the PLAN-ciquick-cpu derivation and honesty tools, which no npm script names (the package.json key budget is shrink-only) and which only .ci/rediacc_ci/tests/test_path_trace*.py and each other reach.
         "scripts/ci-runner/path-trace.ts",
         "scripts/ci-runner/trace-honest.ts",
+        // Run BY PATH (`npx tsx scripts/ci-runner/verify-changed.ts --changed`), the one verify command .claude/commands/writers-now.md names; no npm script carries it (the package.json key budget is shrink-only), and its controls run the same way.
+        "scripts/ci-runner/verify-changed.ts",
+        "scripts/ci-runner/__tests__/verify-changed.test.ts",
         // scripts/ci-runner/trace-ledger.ts is the data module path-trace.ts writes by path (LEDGER_REL) and .ci/rediacc_ci/tests/test_path_trace.py reads; no TypeScript import reaches it.
         "scripts/ci-runner/trace-ledger.ts",
         // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
@@ -121,7 +124,11 @@
       ],
       "ignoreBinaries": [
         // BLOCKER: the serve hardening test mints its throwaway self-signed TLS pair with the host's openssl (src/services/serve/__tests__/hardening-daemon-bind.test.ts); a host tool, not an npm dependency
-        "openssl"
+        "openssl",
+        // BLOCKER: the completion test sources the printed pwsh script into a real PowerShell when one is installed and skips otherwise (src/commands/__tests__/completion.test.ts); a host shell, not an npm dependency
+        "pwsh",
+        // BLOCKER: the Linux Secret Service backend stores the passkey secret through the host's libsecret CLI (src/utils/secure-storage.ts and its native test); a host tool, not an npm dependency
+        "secret-tool"
       ]
     },
     "packages/e2e-tests": {

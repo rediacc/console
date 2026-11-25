@@ -337,10 +337,6 @@
       "path": "agent/plans/_done/PLAN-vm-check.md",
       "sha": "b68d78f06"
     },
-    "cadf1a7b5e32e413": {
-      "path": "scripts/ci-runner/manifest.ts",
-      "sha": "0327ab26b"
-    },
     "cb9dc7130daa2e97": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py",
       "sha": "056fe87b6"

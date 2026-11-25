@@ -682,6 +682,7 @@
       "CI_JOB_AGGREGATION_WORKFLOW",
       "CI_PARITY_MANIFEST",
       "CI_PARITY_ROOT",
+      "CI_RUNNER_SELFTEST_FORCE",
       "CI_STEP_ENV_PARITY_ROOT",
       "COMMIT_IDENTITY_FILE",
       "CONSOLE_ROOT_DIR",
@@ -825,6 +826,7 @@
       "REDIACC_CI_ROOT",
       "REDIACC_GUARD_DIFF_FULL",
       "REDIACC_KEY_USAGE_PROBE",
+      "REDIACC_MCP_JOB_WAIT_INTERVAL_MS",
       "REDIACC_PROC_BACKEND",
       "REDIACC_PROXY_HEARTBEAT_MS",
       "REDIACC_SMOKE_DOH_URL",
@@ -2142,6 +2144,7 @@
         "HOME",
         "REDIACC_CONFIG",
         "REDIACC_VM_DISK_DIR",
+        "TMPDIR",
         "VM_IMAGE",
         "XDG_CACHE_HOME"
       ],
@@ -3529,6 +3532,9 @@
       ".ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py": [
         "PATH"
       ],
+      ".ci/rediacc_ci/tests/test_dev_worktree_land_run.py": [
+        "PATH"
+      ],
       ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py": [
         "HOME"
       ],
@@ -3850,6 +3856,10 @@
       ],
       ".claude/hooks/post-bash/test-two-tree.py": [
         "TMPDIR"
+      ],
+      ".claude/hooks/post-bash/writers_now_note.py": [
+        "COMMIT_REVIEW_CHILD",
+        "STOPHOOK_CHILD"
       ],
       ".claude/hooks/post-tool/commit_remind.py": [
         "COMMIT_REVIEW_CHILD",
@@ -4315,6 +4325,9 @@
       ],
       ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
         "CI"
+      ],
+      ".claude/rediacc_hooks/tests/test_wl_ci_status.py": [
+        "PATH"
       ],
       ".claude/rediacc_hooks/tests/test_wl_cite_extensions.py": [
         "CI"

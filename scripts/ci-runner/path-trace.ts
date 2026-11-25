@@ -468,7 +468,10 @@ export function droppedDeclared(
   for (const g of prior) {
     if (next.includes(g)) continue;
     const unreached = files.filter(
-      (f) => matchGlob(g, f) && !next.some((n) => matchGlob(n, f)) && !GLOBAL_INPUTS.some((x) => matchGlob(x, f))
+      (f) =>
+        matchGlob(g, f) &&
+        !next.some((n) => matchGlob(n, f)) &&
+        !GLOBAL_INPUTS.some((x) => matchGlob(x, f))
     );
     if (unreached.length > 0) out.push({ glob: g, unreached });
   }
@@ -489,7 +492,8 @@ export function droppedNotes(
 ): string[] {
   if (!replacing || verdict.kind !== 'paths') return [];
   // A 'paths' verdict without its paths is a caller bug; treating it as an empty set would report every prior glob as dropped.
-  if (verdict.paths === undefined) throw new Error("droppedNotes: a 'paths' verdict carries no paths array");
+  if (verdict.paths === undefined)
+    throw new Error("droppedNotes: a 'paths' verdict carries no paths array");
   return droppedDeclared(prior, verdict.paths, files).map(
     (d) =>
       `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); this compares tracked files, not reads: confirm the gate never opens them`
@@ -3224,9 +3228,15 @@ async function selftest(): Promise<number> {
   // Review 9a666914.1: a replacement that narrows a declared set names what it gave up.
   {
     const files = ['a/x.yml', 'a/y.yml', 'b/z.py', 'b/w.py', 'c/q.md'];
-    const dropped = droppedDeclared(['a/*.yml', 'b/**', 'c/q.md'], ['a/*.yml', 'b/z.py', 'c/q.md'], files);
+    const dropped = droppedDeclared(
+      ['a/*.yml', 'b/**', 'c/q.md'],
+      ['a/*.yml', 'b/z.py', 'c/q.md'],
+      files
+    );
     check(
-      dropped.length === 1 && dropped[0].glob === 'b/**' && dropped[0].unreached.join() === 'b/w.py',
+      dropped.length === 1 &&
+        dropped[0].glob === 'b/**' &&
+        dropped[0].unreached.join() === 'b/w.py',
       'droppedDeclared: a declared glob only partly kept is dropped, naming the one file the new set no longer reaches (b/w.py); a verbatim-kept glob is not'
     );
     check(
@@ -3243,7 +3253,9 @@ async function selftest(): Promise<number> {
     const prior = ['a/*.yml', 'b/**', 'c/q.md'];
     const notes = droppedNotes(true, paths, prior, files);
     check(
-      notes.length === 1 && notes[0].includes('dropped declared b/**') && notes[0].includes('b/w.py'),
+      notes.length === 1 &&
+        notes[0].includes('dropped declared b/**') &&
+        notes[0].includes('b/w.py'),
       'droppedNotes: with both flags and a paths verdict, one line names the dropped glob and the file it stops reaching'
     );
     check(

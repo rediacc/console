@@ -141,7 +141,7 @@ jobs:
           generated=$(find pkg/ebpf -name '*_bpfel.o' | sort)
           [ -n "$committed" ] || { echo "::error::no committed BPF objects found"; exit 1; }
           [ "$committed" = "$generated" ] || { echo "::error::committed and generated BPF object lists differ"; exit 1; }
-          git diff --exit-code -- $committed
+          git diff --exit-code -- 'pkg/ebpf/*_bpfel.o'
 
       - name: Run renet unit tests (repodiff/delta/fiemap/kernel/procwalk)
         run: |

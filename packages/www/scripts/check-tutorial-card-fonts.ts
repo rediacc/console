@@ -122,7 +122,9 @@ function selftest(): number {
   for (const [name, family, text, expectMissing] of cases) {
     const file = resolveCardFontFile(family);
     if (file === null) {
-      console.error(`FAIL  ${name}: family "${family}" not resolvable, control cannot run`);
+      console.error(
+        `FAIL  ${name}: family "${family}" not resolvable, control cannot run; install the fonts CI installs: sudo apt-get install -y fonts-inter fonts-jetbrains-mono fonts-wqy-zenhei`
+      );
       failed++;
       continue;
     }

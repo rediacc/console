@@ -55,12 +55,12 @@ rdc subscription: login register logout status notices retire refresh proxy-toke
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc feedback:   report list show
-rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
+rdc doctor | credits | update | version | legal | completion | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-four differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-five differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -99,6 +99,7 @@ Thirty-four differences. The first six are deliberate and each is traceable to a
 | no `config import-machine` | `config import-machine <machine> --from <config> [--dry-run] [--strategy-from-source]` | PLAN-hostinger-to-bench Design 5: moving a machine between named configs by hand-editing JSON dropped its datastores, repositories and backup bindings, and a name clash silently overwrote the target's entry. The verb plans the whole import first (machine, datastores, strategies, bindings, repositories, tags), refuses a clash on a different identity, and writes nothing under `--dry-run`. |
 | `repo admin` with no orphan verbs | `repo admin orphan {list delete}` | Worklist #48d790e1: a repository image whose GUID left every config could not be removed, because `repo delete` resolves only config refs and `machine prune --orphaned-repos` deletes every orphan on the machine at once. `list <machine>` judges each image with the verdict `machine prune --orphaned-repos` reaches, and `delete <guid>@<machine>` removes exactly one orphan through renet `repository_delete`, refusing a GUID any readable config names. Both judge against the caller's configs, so neither is proxy-capable, and `machine prune` joins them because its `--orphaned-repos` and `--prune-unknown` flags decide at runtime. |
 | no `feedback` noun | `feedback {report list show}` | PLAN-rdc-feedback C3/C4: `report` files a redacted report of a failed command (the last one with `--last`) with the account service, and `list` and `show` read the reports the caller filed. All three talk to the account service only and reach no machine, so they are other-plane. A report is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| no shell completion | `completion <bash\|zsh\|fish\|pwsh>` | Prints the completion script for the named shell; the script asks the hidden `__complete` entry for candidates, so names of machines, repositories and configs complete from the active config. A leaf with no noun of its own, like `version` and `legal`. Not drift: it postdates this transcript. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * `npm run verify -- --changed [--base <ref>] [--dry-run]`: the one verify command for a unit of work.
+ * `npx tsx scripts/ci-runner/verify-changed.ts --changed [--base <ref>] [--dry-run]`: the one verify command for a unit of work.
  *
  * WHY (agent/plans/PLAN-drain-throughput.md DT6, Design B). A writer used to assemble its own checks from three selectors and a typecheck, one command per step and several turns per unit. This maps the changed files to the three step kinds and runs them one after another (CPU stays low), one summary line per step, one exit code.
  *
@@ -169,7 +169,9 @@ function execute(step: Step, base?: string): Omit<Result, 'label' | 'ms'> {
 
 export function main(argv: string[]): number {
   if (!argv.includes('--changed')) {
-    process.stderr.write('usage: npm run verify -- --changed [--base <ref>] [--dry-run]\n');
+    process.stderr.write(
+      'usage: npx tsx scripts/ci-runner/verify-changed.ts --changed [--base <ref>] [--dry-run]\n'
+    );
     return 2;
   }
   const bi = argv.indexOf('--base');
@@ -182,6 +184,13 @@ export function main(argv: string[]): number {
   const steps = planSteps(changed, (p) => fs.existsSync(path.join(REPO_ROOT, p)));
   process.stdout.write(`verify: ${changed.length} changed file(s), ${steps.length} step(s)\n`);
   for (const f of changed) process.stdout.write(`  changed ${f}\n`);
+  // An OK over zero steps would read as a verified unit while nothing ran.
+  if (steps.length === 0) {
+    process.stderr.write(
+      `verify: VACUOUS: ${changed.length === 0 ? 'no changed file' : 'no step maps to the changed files'}, so nothing would be verified; name the unit's own acceptance check instead.\n`
+    );
+    return 1;
+  }
   if (argv.includes('--dry-run')) {
     for (const s of steps) process.stdout.write(`  plan ${s.label}\n`);
     return 0;
