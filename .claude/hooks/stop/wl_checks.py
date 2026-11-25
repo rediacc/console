@@ -2327,7 +2327,7 @@ def phantom_identities(worklist, session_id, fold):
 # ---- the Stop battery -------------------------------------------------------
 
 
-def _agent_state_because(astate, aage):
+def _agent_state_because(astate, aage, keyed=False):
     """The parenthetical after the STATE.md verdict: WHY, not just how old.
 
     It used to print "(%d min old, limit %d)" for every verdict, and that single string is why a session read the check as pure wall-clock and concluded the code disagreed with its own documentation (plan section 1.4). Two separate lies were in it:
@@ -2342,9 +2342,18 @@ def _agent_state_because(astate, aage):
         the clock does.
 
     Age survives only for `stale`, and only as trailing context after the cause.
+
+    `keyed` says which branch of S.agent_state_state staled it. Keyed (the document names #ids under `## Next action` or `## Delegated`): every named item has closed. Unkeyed: the owned item set moved, and the reason says how to key it, because a lead with 6 to 16 live writers rewrote STATE.md 33 times in 18.5 h without learning that naming the ids keeps it fresh until they close (agent/plans/PLAN-stop-hook-retro-20261125.md friction 2).
     """
     if astate == "stale":
-        base = "; your world signature moved since it was written"
+        if keyed:
+            base = "; every #id its '## Next action' and '## Delegated' name has closed"
+        else:
+            base = (
+                "; your world signature moved since it was written. '## Next action' names no #id,"
+                " so any owned-item change stales it; name the ids of the next steps (ids under"
+                " '## Delegated' count too) and it stays fresh until they close"
+            )
         return " (%s)" % base.lstrip("; ") if aage is None else " (%d min old%s)" % (aage, base)
     if astate == "waitled":
         # Also age-irrelevant, and the cause has to be stated or the reader rewrites the same ordering: the document leads its '## Next action'
@@ -6719,7 +6728,7 @@ def _stop_idle_capacity(ns):
             % (
                 S.agent_session_slug(session_id),
                 astate,
-                _agent_state_because(astate, aage),
+                _agent_state_because(astate, aage, keyed=bool(S.next_action_ids(ns["_atext"]))),
                 S.AGENT_STATE_MIN_CHARS,
                 S.AGENT_STATE_MAX_CHARS,
                 me8,

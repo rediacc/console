@@ -3158,14 +3158,26 @@ def agent_state_dead(sections, session_id, projects_dir, now=None):
 _NEXT_ACTION_ID = re.compile(r"#([0-9a-f]{8,12})\b")
 
 
+_KEYED_HEADINGS = ("## Next action", "## Delegated")
+
+
 def next_action_ids(body):
-    """The `#<id>` item ids named under `## Next action` in one section body, in order."""
-    i = str(body or "").find("## Next action")
-    if i < 0:
-        return []
-    rest = body[i + len("## Next action") :]
-    j = rest.find("\n## ")
-    return _NEXT_ACTION_ID.findall(rest[:j] if j >= 0 else rest)
+    """The `#<id>` item ids named under `## Next action` and `## Delegated` in one section body, in order, each once.
+
+    `## Delegated` counts because the work a writer holds is the next step as surely as the lead's own: a document naming 8 delegated ids, none closed, was re-demanded on every owned-item change because only `## Next action` was read (agent/plans/PLAN-stop-hook-retro-20261125.md friction 2, the 14:09Z rewrite).
+    """
+    text = str(body or "")
+    out = []
+    for heading in _KEYED_HEADINGS:
+        i = text.find(heading)
+        if i < 0:
+            continue
+        rest = text[i + len(heading) :]
+        j = rest.find("\n## ")
+        for found in _NEXT_ACTION_ID.findall(rest[:j] if j >= 0 else rest):
+            if found not in out:
+                out.append(found)
+    return out
 
 
 def state_items_sig(fold, session_id):
@@ -3229,7 +3241,7 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=No
         return verdict, int(age), body
     if age <= AGENT_STATE_STALE_MIN:
         return "ok", int(age), body
-    # JUDGMENT-KEYED (2026-09-24, agent/plans/PLAN-stop-hook-continuity.md P1.2). When `## Next action` names items, the document is stale exactly when every one of them has left the open states: the action it hands a compacted session is then done. When it names none, the owned item set (`state_items_sig`, the caller's `cur_sig`) moving is the trigger.
+    # JUDGMENT-KEYED (2026-09-24, agent/plans/PLAN-stop-hook-continuity.md P1.2). When `## Next action` (or, since 2026-11-25, `## Delegated`) names items, the document is stale exactly when every one of them has left the open states: the action it hands a compacted session is then done. When it names none, the owned item set (`state_items_sig`, the caller's `cur_sig`) moving is the trigger.
     if fold is not None:
         named = next_action_ids(body)
         if named:
