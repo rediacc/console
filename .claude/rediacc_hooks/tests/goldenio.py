@@ -123,6 +123,27 @@ def rewritten_lines(old_text, new_text):
     return total
 
 
+class ShrinkRefusedError(RuntimeError):
+    """A re-record would write a golden that lost case ids the committed one has."""
+
+
+def refuse_shrink(label, old_silent, old_records, new_silent, new_records, allow_shrink=False):
+    """Raise `ShrinkRefusedError` naming the case ids the old golden holds and the new one lacks.
+
+    A FULL RE-RECORD ENUMERATES THE CASES THAT EXIST NOW, so a committed key it never asked for is a lost case, not a stale one. Dropping it silently let a regolden shrink a golden and only report the line count afterward (finding #569a06ac, sibling of #21c85057 in `.ci/rediacc_ci/tests/differential.py`, which mirrors this). `allow_shrink` is the operator's word that those cases no longer exist. Called before `write_golden`, so a refusal writes nothing.
+    """
+    if allow_shrink:
+        return
+    lost = sorted((set(old_silent) | set(old_records)) - (set(new_silent) | set(new_records)))
+    if lost:
+        msg = "%s would lose %d case(s) the committed golden holds: %s" % (
+            label,
+            len(lost),
+            ", ".join(lost),
+        )
+        raise ShrinkRefusedError(msg)
+
+
 def write_golden(path, header, silent_keys, records):
     """One JSONL file: a header line, a silent-key-list line, then records.
 

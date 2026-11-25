@@ -3,6 +3,8 @@
 
     regolden.py <stem|guards|shellscan|post-bash|all> --reason "<why>" [--out-dir <dir>]
 
+`--allow-shrink` is the one way a recording may lose case ids the committed golden holds (cases that no longer exist); without it the run exits 1 naming the lost ids and writes nothing for that target (finding #569a06ac). Targets run in order, so under `all` the ones before a refusal are already written.
+
 `--out-dir` writes each golden into that directory instead of over the committed one (still diffing against the committed one), so a recording can be compared without touching the tree.
 
 THE SUMMARY COUNTS EVERY REWRITTEN LINE (queued item #c2a39bea). `N changed` is the records whose value moved under a key both sides hold; `L line(s) rewritten` is the diff a reviewer sees, moved, added and dropped keys included. A run that rewrote lines while no record changed value used to print "0 changed" and look like a no-op.
@@ -75,7 +77,7 @@ def _write_path(path, out_dir):
     return path if out_dir is None else out_dir / path.name
 
 
-def _record_guard(stem, reason, out_dir=None):
+def _record_guard(stem, reason, out_dir=None, allow_shrink=False):
     cases = [c for c in gd.CASES if c[0] == stem]
     if not cases:
         raise SystemExit("no cases found for guard %s" % stem)
@@ -112,6 +114,7 @@ def _record_guard(stem, reason, out_dir=None):
         "case_count": len(cases),
         "source": "port",
     }
+    goldenio.refuse_shrink(stem, old_silent, old_records, silent, records, allow_shrink)
     path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, silent, records)
     return path, len(cases), changed
@@ -134,8 +137,8 @@ def _merge_shellscan_record(key, fields, old_records, reason, records, changed):
     records[key] = row
 
 
-def _record_shellscan(reason, out_dir=None):
-    _old_header, _old_silent, old_records = goldenio.read_golden(goldenio.golden_path("shellscan"))
+def _record_shellscan(reason, out_dir=None, allow_shrink=False):
+    _old_header, old_silent, old_records = goldenio.read_golden(goldenio.golden_path("shellscan"))
     records: dict[str, dict] = {}
     changed: list[str] = []
     for label, cmd in sd.CASES:
@@ -151,14 +154,15 @@ def _record_shellscan(reason, out_dir=None):
         "case_count": len(sd.CASES) + len(sd.JSON_CASES),
         "source": "port",
     }
+    goldenio.refuse_shrink("shellscan", old_silent, old_records, set(), records, allow_shrink)
     path = _write_path(goldenio.golden_path("shellscan"), out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(sd.CASES) + len(sd.JSON_CASES), changed
 
 
-def _record_post_bash(reason, out_dir=None):
+def _record_post_bash(reason, out_dir=None, allow_shrink=False):
     path = goldenio.golden_path("post-bash")
-    _old_header, _old_silent, old_records = goldenio.read_golden(path)
+    _old_header, old_silent, old_records = goldenio.read_golden(path)
     records: dict[str, dict] = {}
     changed: list[str] = []
     for subject, label, payload_doc, table in pd.CASES:
@@ -183,6 +187,7 @@ def _record_post_bash(reason, out_dir=None):
         "case_count": len(pd.CASES),
         "source": "port",
     }
+    goldenio.refuse_shrink("post-bash", old_silent, old_records, set(), records, allow_shrink)
     path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(pd.CASES), changed
@@ -223,6 +228,11 @@ def main(argv=None):
         type=pathlib.Path,
         help="write the goldens here instead of over the committed ones (diffed against the committed ones)",
     )
+    parser.add_argument(
+        "--allow-shrink",
+        action="store_true",
+        help="write a golden with fewer cases than the committed one (cases that no longer exist); without it the run refuses and names the lost case ids",
+    )
     args = parser.parse_args(argv)
     out_dir = args.out_dir.resolve() if args.out_dir else None
     if out_dir is not None:
@@ -232,15 +242,23 @@ def main(argv=None):
         started = time.monotonic()
         committed = goldenio.golden_path(name if kind == "guard" else kind)
         before = committed.read_text(encoding="utf-8") if committed.is_file() else ""
-        if kind == "guard":
-            path, n, changed = _record_guard(name, args.reason, out_dir)
-            label = name
-        elif kind == "shellscan":
-            path, n, changed = _record_shellscan(args.reason, out_dir)
-            label = "shellscan"
-        else:
-            path, n, changed = _record_post_bash(args.reason, out_dir)
-            label = "post-bash"
+        try:
+            if kind == "guard":
+                path, n, changed = _record_guard(name, args.reason, out_dir, args.allow_shrink)
+                label = name
+            elif kind == "shellscan":
+                path, n, changed = _record_shellscan(args.reason, out_dir, args.allow_shrink)
+                label = "shellscan"
+            else:
+                path, n, changed = _record_post_bash(args.reason, out_dir, args.allow_shrink)
+                label = "post-bash"
+        except goldenio.ShrinkRefusedError as exc:
+            print(
+                "regolden: refused, %s was not written: %s. Pass --allow-shrink when those cases "
+                "no longer exist." % (name if kind == "guard" else kind, exc),
+                file=sys.stderr,
+            )
+            return 1
         lines = goldenio.rewritten_lines(before, path.read_text(encoding="utf-8"))
         elapsed = time.monotonic() - started
         shown = path.relative_to(gd.ROOT) if path.is_relative_to(gd.ROOT) else path
