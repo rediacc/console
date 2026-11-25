@@ -19,7 +19,7 @@ WEBAUTHN_ORIGIN = "https://@@HOST@@"@@EXTRA_VARS@@
 
 # Nightly maintenance at 03:00 UTC plus the hourly backup sweep, as the shared account Workers.
 [triggers]
-crons = ["17 * * * *", "0 3 * * *"]
+crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]
 
 [observability]
 enabled = true

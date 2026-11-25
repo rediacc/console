@@ -40,7 +40,7 @@ EMAIL_CAPTURE_D1 = "true"
 [triggers]
 # Hourly backup maintenance, then the daily audit sweep and reminders.
 # private/account/src/entry/cloudflare.ts dispatches on these exact strings.
-crons = ["17 * * * *", "0 3 * * *"]
+crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]
 
 [observability]
 enabled = true
