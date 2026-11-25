@@ -2718,7 +2718,17 @@
           "failed": "Impossible de lire les droits",
           "unreadable": "La sortie des droits de la machine n'a pas pu être lue"
         }
-      }
+      },
+      "flows": {
+        "description": "Liste les flux réseau enregistrés pour un dépôt sur une fenêtre de temps : heure, processus, destination, octets sortants et entrants, ainsi que l'ASN et le pays de la destination lorsqu'ils sont connus. Une période sans preuve s'affiche comme une ligne de trou. Nécessite le scope forensics:read et un forfait payant.",
+        "descriptionShort": "Lister les flux réseau enregistrés d'un dépôt"
+      },
+      "opens": {
+        "description": "Liste les ouvertures de fichiers enregistrées pour un dépôt sur une fenêtre de temps : heure, processus et chemin, les chemins sensibles étant signalés. Une période sans preuve s'affiche comme une ligne de trou. Nécessite le scope forensics:read et un forfait payant.",
+        "descriptionShort": "Lister les ouvertures de fichiers enregistrées d'un dépôt"
+      },
+      "rowsSinceOption": "Début de la fenêtre : un instant ISO 8601 ou une durée à remonter depuis maintenant, comme 90m, 24h ou 7d (par défaut : 24h)",
+      "rowsUntilOption": "Fin de la fenêtre, dans les mêmes formats (par défaut : maintenant)"
     },
     "serve": {
       "description": "Exécute ce processus en tant qu'exécuteur afin que les clients puissent lancer des commandes via lui au lieu de se connecter eux-mêmes en SSH",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "Émet le certificat avec la connexion de l'appelant et l'écrit dans le fichier de l'appelant ; un exécuteur distant ne détient ni l'une ni l'autre. Lancez-la sans --proxy.",
       "serverStatus": "Trouve le serveur grâce au registre d'installation local de l'appelant ; un exécuteur distant n'en a aucun. Lancez-la sans --proxy.",
       "serverUpgrade": "Pilote des commandes filles et le registre d'installation local de l'appelant (et, avec --local-image, le Docker de l'appelant) ; un exécuteur distant agirait depuis le sien. Lancez-la sans --proxy."
+    },
+    "incident": {
+      "description": "Lit un incident de l'organisation. Les incidents sont déclarés dans la console web ; ces commandes lisent l'enregistrement, ses compteurs d'échéances et sa fenêtre de preuves. Nécessite le scope forensics:read, que la connexion CLI accorde aux propriétaires et aux admins après une approbation renforcée dans le navigateur, ainsi qu'un forfait payant.",
+      "descriptionShort": "Lire un incident et exporter sa fenêtre de preuves",
+      "idArgument": "Identifiant de l'incident, ou un préfixe qu'aucun autre incident ne partage",
+      "status": {
+        "description": "Liste les incidents de l'organisation, ou en affiche un avec son périmètre, sa fenêtre, ses étapes par machine et les compteurs d'échéances de l'alerte précoce, de la notification et du rapport final.",
+        "descriptionShort": "Lister les incidents ou en affiche un avec ses compteurs d'échéances"
+      },
+      "export": {
+        "description": "Écrit la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses compteurs, la chronologie fusionnée, les agrégats d'octets sortants et le manifeste de la chaîne brute. Les fichiers journaliers bruts listés par le manifeste peuvent être vérifiés avec rdc forensics verify.",
+        "descriptionShort": "Exporter la chronologie et le manifeste de preuves d'un incident",
+        "outOption": "Répertoire où écrire (par défaut : incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "Vérifie les preuves forensiques sur ce poste de travail avec la même vérification que celle de la console web.",
+      "descriptionShort": "Vérifier les preuves forensiques",
+      "verify": {
+        "description": "Recalcule la chaîne de hachages des fichiers journaliers d'audit et les chaînes signées de lots forensiques d'un répertoire de preuves, puis affiche chaque trou et chaque modification trouvés. Le répertoire contient les fichiers bruts sous leurs clés de manifeste (audit/<org>/days/<day>.ndjson.gz et f/<subscription>/<machine>/days/<day>/...). Se termine avec le code 1 dès qu'un trou ou une modification est trouvé. Les signatures de lots demandent la clé publique de la machine via --machine-key.",
+        "descriptionShort": "Vérifier les chaînes de hachages d'audit et forensiques d'un répertoire de preuves",
+        "dirOption": "Répertoire de preuves à vérifier",
+        "machineKeyOption": "Clé publique du spool de la machine sous la forme <machine>=<64 hex characters> (répétable)"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "Rapport {{id}} enregistré (empreinte {{fingerprint}}).",
     "sentDuplicate": "Le rapport {{id}} correspond à un échec connu et a été comptabilisé (empreinte {{fingerprint}})."
   },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" n'est ni un instant ISO 8601 ni une durée comme 90m, 24h ou 7d.",
+    "sinceAfterUntil": "--since est postérieur à --until.",
+    "windowTooLong": "Une fenêtre couvre au plus 31 jours.",
+    "reauthRequired": "Les lectures forensiques exigent une approbation renforcée récente. Ouvrez le portail du compte, réauthentifiez-vous, puis relancez la commande.",
+    "notEntitled": "L'investigation forensique est disponible avec les forfaits payants.",
+    "ambiguousIncident": "Plusieurs incidents commencent par \"{{id}}\" ; indiquez davantage de l'identifiant.",
+    "noSuchIncident": "Aucun incident \"{{id}}\" dans cette organisation.",
+    "timelineNeverEnds": "La chronologie ne s'est pas terminée après la limite de pages ; le serveur de compte a continué à renvoyer des pages.",
+    "flowBytes": "sortie {{out}} entrée {{in}} octets",
+    "sensitive": "sensible",
+    "gapLine": "-- aucune preuve de {{from}} à {{to}} ({{machine}}, {{reason}})",
+    "noFlows": "Aucun flux réseau enregistré dans cette fenêtre.",
+    "noOpens": "Aucune ouverture de fichier enregistrée dans cette fenêtre.",
+    "unreadable": "{{count}} enregistrement(s) stocké(s) dans cette fenêtre n'ont pas pu être lus.",
+    "noRepoGuid": "Le dépôt \"{{name}}\" n'a pas de GUID dans cette configuration.",
+    "noEvidenceDir": "Impossible de lire le répertoire de preuves \"{{dir}}\".",
+    "severalOrgs": "Le répertoire de preuves contient des fichiers d'audit de plusieurs organisations : {{orgs}}.",
+    "noEvidence": "Aucun fichier journalier d'audit ni en-tête forensique trouvé dans \"{{dir}}\".",
+    "badMachineKey": "\"{{entry}}\" n'a pas la forme <machine>=<64 hex characters>.",
+    "verifyWindow": "Fenêtre du {{from}} au {{to}}",
+    "verifyFiles": "{{count}} fichier(s) de preuves vérifié(s)",
+    "verifyGap": "trou  {{ref}} : {{reason}}",
+    "verifyEdit": "modification {{ref}} : {{reason}}",
+    "verifyClean": "Aucun trou ni aucune modification trouvé.",
+    "verifyFailed": "Les preuves ne passent pas la vérification : voir les trous et modifications ci-dessus."
+  },
   "help": {
     "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Une réf de dépôt (repo[:tag]) dérive sa propre machine, -m n'est donc pas nécessaire\n    • La sortie JSON est automatique : toutes les commandes renvoient { success, data, errors, metrics }\n    • Analysez toujours le JSON complet, n'utilisez jamais tail/head/grep sur une sortie JSON\n    • Utilisez les options de filtre (ex : --repositories, --containers) pour réduire la taille de la réponse\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "Ouvrir la machine dans VS Code",
       "repo": "Ouvrir le dépôt dans VS Code"
     }
+  },
+  "incident": {
+    "none": "Aucun incident.",
+    "detailHead": "Incident {{id}} ({{status}})",
+    "detailScope": "Périmètre : {{kind}} {{ref}}",
+    "detailWindow": "Fenêtre : du {{from}} au {{to}}",
+    "detailDeclared": "Déclaré par {{by}} le {{at}}, connu depuis le {{aware}}",
+    "detailFork": "Fork forensique : {{ref}}",
+    "detailRelease": "Les règles de rétention et de verrouillage prennent fin : {{at}}",
+    "detailStep": "Étape {{name}} : {{status}} à {{at}} {{detail}}",
+    "clockEarlyWarning": "Alerte précoce due le {{at}} ({{state}})",
+    "clockNotification": "Notification due le {{at}} ({{state}})",
+    "clockFinalReport": "Rapport final dû le {{at}} ({{state}})",
+    "exported": "Incident {{id}} exporté vers {{dir}} ({{rows}} lignes de chronologie).",
+    "rawTooLarge": "Le matériel brut de la chaîne dépasse la limite du manifeste et n'est pas listé.",
+    "rawListed": "raw-manifest.json liste {{count}} fichier(s) brut(s) pour rdc forensics verify."
   },
   "options": {
     "acceptTerms": "Accepter les Conditions d'utilisation pour une licence gratuite sans demander (ou définir RDC_ACCEPT_TERMS=1)",

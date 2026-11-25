@@ -2718,7 +2718,17 @@
           "failed": "付与を読み取れませんでした",
           "unreadable": "マシンの付与出力を読み取れませんでした"
         }
-      }
+      },
+      "flows": {
+        "description": "リポジトリについて記録されたネットワークフローを、指定した期間ごとに一覧表示します。時刻、プロセス、宛先、送信・受信バイト数のほか、わかる場合は宛先の ASN と国も表示します。証拠のない区間は空白行として表示されます。forensics:read スコープと有料プランが必要です。",
+        "descriptionShort": "リポジトリの記録済みネットワークフローを一覧表示する"
+      },
+      "opens": {
+        "description": "リポジトリについて記録されたファイルのオープンを、指定した期間ごとに一覧表示します。時刻、プロセス、パスを表示し、機密性の高いパスには印が付きます。証拠のない区間は空白行として表示されます。forensics:read スコープと有料プランが必要です。",
+        "descriptionShort": "リポジトリの記録済みファイルオープンを一覧表示する"
+      },
+      "rowsSinceOption": "期間の開始: ISO 8601 形式の日時、または現在からさかのぼる期間（90m、24h、7d など）（デフォルト: 24h）",
+      "rowsUntilOption": "期間の終了: 同じ形式で指定（デフォルト: 現在）"
     },
     "serve": {
       "description": "クライアントが自分で SSH 接続する代わりに、このプロセスをエグゼキューターとして実行し、コマンドを実行できるようにします",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "呼び出し元のログインで証明書を発行し、呼び出し元のファイルに書き込みます。リモート実行側はどちらも持っていません。--proxy なしで実行してください。",
       "serverStatus": "呼び出し元のローカルのインストール記録を通じてサーバーを探します。リモート実行側にはそれがありません。--proxy なしで実行してください。",
       "serverUpgrade": "子コマンドと呼び出し元のローカルのインストール記録 (および --local-image では呼び出し元の Docker) を操作します。リモート実行側は自分の環境で動作してしまいます。--proxy なしで実行してください。"
+    },
+    "incident": {
+      "description": "組織のインシデントを参照します。インシデントは Web コンソールで宣言され、これらのコマンドはその記録、期限のカウントダウン、証拠の対象期間を読み取ります。forensics:read スコープが必要で、オーナーと管理者の CLI ログインにはブラウザーでの昇格承認後に付与されます。有料プランが必要です。",
+      "descriptionShort": "インシデントを参照し、証拠の対象期間をエクスポートする",
+      "idArgument": "インシデント ID、または他のインシデントと重複しないその先頭部分",
+      "status": {
+        "description": "組織のインシデントを一覧表示するか、1 件を選んで、その対象範囲、期間、マシンごとの手順、早期警告・通知・最終報告の期限カウントダウンを表示します。",
+        "descriptionShort": "インシデントを一覧表示、または 1 件を期限カウントダウン付きで表示する"
+      },
+      "export": {
+        "description": "インシデントの対象期間をディレクトリに書き出します。内容は、カウントダウン付きのインシデント記録、統合したタイムライン、送信バイト数の集計、生チェーンのマニフェストです。マニフェストに載っている生の日次ファイルは rdc forensics verify で検証できます。",
+        "descriptionShort": "インシデントのタイムラインと証拠マニフェストをエクスポートする",
+        "outOption": "書き出し先のディレクトリ（デフォルト: incident-<id>）"
+      }
+    },
+    "forensics": {
+      "description": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。",
+      "descriptionShort": "フォレンジック証拠を検証する",
+      "verify": {
+        "description": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名検証には --machine-key でマシンの公開鍵を渡す必要があります。",
+        "descriptionShort": "証拠ディレクトリの監査・フォレンジックのハッシュチェーンを検証する",
+        "dirOption": "検証する証拠ディレクトリ",
+        "machineKeyOption": "マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定（複数回指定可）"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "レポート {{id}} を受け付けました(フィンガープリント {{fingerprint}})。",
     "sentDuplicate": "レポート {{id}} は既知の障害と一致したため、件数に加算しました(フィンガープリント {{fingerprint}})。"
   },
+  "forensics": {
+    "badInstant": "{{flag}} の \"{{value}}\" は、ISO 8601 形式の日時でも 90m、24h、7d のような期間でもありません。",
+    "sinceAfterUntil": "--since が --until より後になっています。",
+    "windowTooLong": "期間は最大 31 日までです。",
+    "reauthRequired": "フォレンジックの読み取りには、直近の昇格承認が必要です。アカウントポータルを開いて再認証し、もう一度コマンドを実行してください。",
+    "notEntitled": "フォレンジック調査は有料プランでご利用いただけます。",
+    "ambiguousIncident": "\"{{id}}\" で始まるインシデントが複数あります。ID をもう少し長く指定してください。",
+    "noSuchIncident": "この組織に \"{{id}}\" というインシデントはありません。",
+    "timelineNeverEnds": "ページ数の上限に達してもタイムラインが終わりませんでした。アカウントサーバーがページを返し続けています。",
+    "flowBytes": "送信 {{out}} 受信 {{in}} バイト",
+    "sensitive": "機密",
+    "gapLine": "-- {{from}} から {{to}} まで証拠なし（{{machine}}、{{reason}}）",
+    "noFlows": "この期間に記録されたネットワークフローはありません。",
+    "noOpens": "この期間に記録されたファイルのオープンはありません。",
+    "unreadable": "この期間に保存されていた {{count}} 件のレコードを読み取れませんでした。",
+    "noRepoGuid": "この設定では、リポジトリ \"{{name}}\" に GUID がありません。",
+    "noEvidenceDir": "証拠ディレクトリ \"{{dir}}\" を読み取れません。",
+    "severalOrgs": "証拠ディレクトリに複数の組織の監査ファイルが含まれています: {{orgs}}。",
+    "noEvidence": "\"{{dir}}\" の下に、監査の日次ファイルもフォレンジックヘッダーも見つかりません。",
+    "badMachineKey": "\"{{entry}}\" は <machine>=<64 hex characters> の形式ではありません。",
+    "verifyWindow": "期間: {{from}} から {{to}}",
+    "verifyFiles": "証拠ファイルを {{count}} 件検証しました",
+    "verifyGap": "欠落  {{ref}}: {{reason}}",
+    "verifyEdit": "改変 {{ref}}: {{reason}}",
+    "verifyClean": "欠落も改変も見つかりませんでした。",
+    "verifyFailed": "証拠の検証に失敗しました。上に表示された欠落と改変を確認してください。"
+  },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "VS Codeでマシンを開く",
       "repo": "VS Codeでリポジトリを開く"
     }
+  },
+  "incident": {
+    "none": "インシデントはありません。",
+    "detailHead": "インシデント {{id}}（{{status}}）",
+    "detailScope": "対象範囲: {{kind}} {{ref}}",
+    "detailWindow": "期間: {{from}} から {{to}}",
+    "detailDeclared": "{{by}} が {{at}} に宣言（認知時刻: {{aware}}）",
+    "detailFork": "フォレンジック用フォーク: {{ref}}",
+    "detailRelease": "保全とロックのルールの終了: {{at}}",
+    "detailStep": "手順 {{name}}: {{status}}（{{at}}）{{detail}}",
+    "clockEarlyWarning": "早期警告の期限: {{at}}（{{state}}）",
+    "clockNotification": "通知の期限: {{at}}（{{state}}）",
+    "clockFinalReport": "最終報告の期限: {{at}}（{{state}}）",
+    "exported": "インシデント {{id}} を {{dir}} にエクスポートしました（タイムライン {{rows}} 行）。",
+    "rawTooLarge": "生チェーンのデータがマニフェストの上限を超えているため、一覧に含まれていません。",
+    "rawListed": "raw-manifest.json には rdc forensics verify 用の生ファイルが {{count}} 件載っています。"
   },
   "options": {
     "acceptTerms": "無料ライセンスの利用規約を確認なしで承諾します（RDC_ACCEPT_TERMS=1 でも指定できます）",

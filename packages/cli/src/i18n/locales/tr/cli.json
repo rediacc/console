@@ -2718,7 +2718,17 @@
           "failed": "Yetki okunamadı",
           "unreadable": "Makinenin yetki çıktısı okunamadı"
         }
-      }
+      },
+      "flows": {
+        "description": "Bir deponun belirli bir zaman penceresinde kaydedilen ağ akışlarını listeler: zaman, süreç, hedef, giden ve gelen bayt ile biliniyorsa hedefin ASN'si ve ülkesi. Kanıtın bulunmadığı aralık boşluk satırı olarak görünür. forensics:read kapsamı ve ücretli bir plan gerekir.",
+        "descriptionShort": "Bir deponun kaydedilmiş ağ akışlarını listele"
+      },
+      "opens": {
+        "description": "Bir deponun belirli bir zaman penceresinde kaydedilen dosya açma olaylarını listeler: zaman, süreç ve yol; hassas yollar işaretlenir. Kanıtın bulunmadığı aralık boşluk satırı olarak görünür. forensics:read kapsamı ve ücretli bir plan gerekir.",
+        "descriptionShort": "Bir deponun kaydedilmiş dosya açma olaylarını listele"
+      },
+      "rowsSinceOption": "Pencerenin başlangıcı: ISO 8601 biçiminde bir an ya da şu andan geriye doğru 90m, 24h veya 7d gibi bir süre (varsayılan: 24h)",
+      "rowsUntilOption": "Pencerenin sonu, aynı biçimlerde (varsayılan: şimdi)"
     },
     "serve": {
       "description": "İstemcilerin SSH üzerinden kendileri bağlanmak yerine komutları bu süreç üzerinden çalıştırabilmesi için bu süreci yürütücü olarak çalıştır",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "Sertifikayı çağıranın oturumuyla üretir ve çağıranın dosyasına yazar; uzak bir yürütücüde ikisi de yoktur. --proxy olmadan çalıştırın.",
       "serverStatus": "Sunucuyu çağıranın yerel kurulum kaydı üzerinden bulur; uzak bir yürütücüde böyle bir kayıt yoktur. --proxy olmadan çalıştırın.",
       "serverUpgrade": "Alt komutları ve çağıranın yerel kurulum kaydını (ve --local-image ile çağıranın Docker'ını) yönetir; uzak bir yürütücü kendi ortamından hareket ederdi. --proxy olmadan çalıştırın."
+    },
+    "incident": {
+      "description": "Kuruluşun bir olayını okur. Olaylar web konsolunda bildirilir; bu komutlar kaydı, süre sayaçlarını ve kanıt penceresini okur. forensics:read kapsamı gerekir; CLI girişi bunu sahiplere ve yöneticilere tarayıcıda yükseltilmiş onaydan sonra verir. Ücretli bir plan da gerekir.",
+      "descriptionShort": "Bir olayı oku ve kanıt penceresini dışa aktar",
+      "idArgument": "Olay kimliği veya başka hiçbir olayın paylaşmadığı bir ön eki",
+      "status": {
+        "description": "Kuruluşun olaylarını listeler ya da birini kapsamı, penceresi, makine adımları ile erken uyarı, bildirim ve nihai rapor süre sayaçlarıyla birlikte gösterir.",
+        "descriptionShort": "Olayları listele veya birini süre sayaçlarıyla göster"
+      },
+      "export": {
+        "description": "Olayın penceresini bir dizine yazar: süre sayaçlarıyla olay kaydı, birleştirilmiş zaman çizelgesi, giden bayt toplamları ve ham zincir bildirimi. Bildirimde listelenen ham günlük dosyaları rdc forensics verify ile doğrulanabilir.",
+        "descriptionShort": "Bir olayın zaman çizelgesini ve kanıt bildirimini dışa aktar",
+        "outOption": "Yazılacak dizin (varsayılan: incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla denetler.",
+      "descriptionShort": "Adli kanıtları doğrula",
+      "verify": {
+        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları için makinenin açık anahtarı --machine-key ile verilmelidir.",
+        "descriptionShort": "Bir kanıt dizininin denetim ve adli karma zincirlerini doğrula",
+        "dirOption": "Doğrulanacak kanıt dizini",
+        "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde (tekrarlanabilir)"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "{{id}} raporu kaydedildi (parmak izi {{fingerprint}}).",
     "sentDuplicate": "{{id}} raporu bilinen bir hatayla eşleşti ve sayıma eklendi (parmak izi {{fingerprint}})."
   },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" ne bir ISO 8601 anı ne de 90m, 24h veya 7d gibi bir süre.",
+    "sinceAfterUntil": "--since, --until değerinden sonra.",
+    "windowTooLong": "Bir pencere en fazla 31 günü kapsayabilir.",
+    "reauthRequired": "Adli okumalar yakın zamanda verilmiş yükseltilmiş bir onay gerektirir. Hesap portalını açın, kimliğinizi yeniden doğrulayın ve komutu tekrar çalıştırın.",
+    "notEntitled": "Adli inceleme ücretli planlarda kullanılabilir.",
+    "ambiguousIncident": "Birden fazla olay \"{{id}}\" ile başlıyor; kimliğin daha fazlasını girin.",
+    "noSuchIncident": "Bu kuruluşta \"{{id}}\" adlı bir olay yok.",
+    "timelineNeverEnds": "Sayfa sınırından sonra zaman çizelgesi bitmedi; hesap sunucusu sayfa döndürmeye devam etti.",
+    "flowBytes": "giden {{out}} gelen {{in}} bayt",
+    "sensitive": "hassas",
+    "gapLine": "-- {{from}} ile {{to}} arasında kanıt yok ({{machine}}, {{reason}})",
+    "noFlows": "Bu pencerede kaydedilmiş ağ akışı yok.",
+    "noOpens": "Bu pencerede kaydedilmiş dosya açma olayı yok.",
+    "unreadable": "Bu penceredeki {{count}} kayıt okunamadı.",
+    "noRepoGuid": "\"{{name}}\" deposunun bu yapılandırmada GUID'i yok.",
+    "noEvidenceDir": "\"{{dir}}\" kanıt dizini okunamıyor.",
+    "severalOrgs": "Kanıt dizininde birden fazla kuruluşun denetim dosyaları var: {{orgs}}.",
+    "noEvidence": "\"{{dir}}\" altında denetim günlük dosyası veya adli başlık bulunamadı.",
+    "badMachineKey": "\"{{entry}}\" <machine>=<64 hex characters> biçiminde değil.",
+    "verifyWindow": "Pencere: {{from}} ile {{to}} arası",
+    "verifyFiles": "{{count}} kanıt dosyası denetlendi",
+    "verifyGap": "boşluk  {{ref}}: {{reason}}",
+    "verifyEdit": "değişiklik {{ref}}: {{reason}}",
+    "verifyClean": "Hiçbir boşluk ve değişiklik bulunamadı.",
+    "verifyFailed": "Kanıtlar doğrulamayı geçemedi: yukarıdaki boşluklara ve değişikliklere bakın."
+  },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "Makineyi VS Code'da aç",
       "repo": "Depoyu VS Code'da aç"
     }
+  },
+  "incident": {
+    "none": "Olay yok.",
+    "detailHead": "Olay {{id}} ({{status}})",
+    "detailScope": "Kapsam: {{kind}} {{ref}}",
+    "detailWindow": "Pencere: {{from}} ile {{to}} arası",
+    "detailDeclared": "{{by}} tarafından {{at}} tarihinde bildirildi, {{aware}} tarihinden beri biliniyor",
+    "detailFork": "Adli çatal: {{ref}}",
+    "detailRelease": "Saklama ve kilit kuralları sona erer: {{at}}",
+    "detailStep": "Adım {{name}}: {{status}}, {{at}} {{detail}}",
+    "clockEarlyWarning": "Erken uyarı son tarihi {{at}} ({{state}})",
+    "clockNotification": "Bildirim son tarihi {{at}} ({{state}})",
+    "clockFinalReport": "Nihai rapor son tarihi {{at}} ({{state}})",
+    "exported": "{{id}} olayı {{dir}} dizinine aktarıldı ({{rows}} zaman çizelgesi satırı).",
+    "rawTooLarge": "Ham zincir verisi bildirim sınırını aşıyor ve listelenmedi.",
+    "rawListed": "raw-manifest.json, rdc forensics verify için {{count}} ham dosyayı listeler."
   },
   "options": {
     "acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",

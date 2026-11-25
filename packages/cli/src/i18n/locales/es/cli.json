@@ -2718,7 +2718,17 @@
           "failed": "No se pudo leer la concesión",
           "unreadable": "No se pudo leer la salida de concesiones de la máquina"
         }
-      }
+      },
+      "flows": {
+        "description": "Lista los flujos de red registrados de un repositorio en una ventana de tiempo: hora, proceso, destino, bytes salientes y entrantes, y el ASN y el país del destino cuando se conocen. Un tramo sin evidencias aparece como una fila de hueco. Requiere el ámbito forensics:read y un plan de pago.",
+        "descriptionShort": "Listar los flujos de red registrados de un repositorio"
+      },
+      "opens": {
+        "description": "Lista las aperturas de archivos registradas de un repositorio en una ventana de tiempo: hora, proceso y ruta, con las rutas sensibles marcadas. Un tramo sin evidencias aparece como una fila de hueco. Requiere el ámbito forensics:read y un plan de pago.",
+        "descriptionShort": "Listar las aperturas de archivos registradas de un repositorio"
+      },
+      "rowsSinceOption": "Inicio de la ventana: un instante ISO 8601 o un lapso hacia atrás desde ahora, como 90m, 24h o 7d (por defecto: 24h)",
+      "rowsUntilOption": "Fin de la ventana, con los mismos formatos (por defecto: ahora)"
     },
     "serve": {
       "description": "Ejecuta este proceso como ejecutor para que los clientes puedan ejecutar comandos a través de él en lugar de conectarse ellos mismos por SSH",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "Emite el certificado con el inicio de sesión de quien llama y lo escribe en el archivo de quien llama; un ejecutor remoto no tiene ninguno de los dos. Ejecútalo sin --proxy.",
       "serverStatus": "Localiza el servidor a través del registro de instalación local de quien llama; un ejecutor remoto no tiene ninguno. Ejecútalo sin --proxy.",
       "serverUpgrade": "Dirige comandos hijos y el registro de instalación local de quien llama (y con --local-image, el Docker de quien llama); un ejecutor remoto actuaría desde el suyo. Ejecútalo sin --proxy."
+    },
+    "incident": {
+      "description": "Lee un incidente de la organización. Los incidentes se declaran en la consola web; estos verbos leen el registro, sus relojes de plazos y su ventana de evidencias. Requiere el ámbito forensics:read, que un inicio de sesión de la CLI incluye para propietarios y administradores tras una aprobación elevada en el navegador, y un plan de pago.",
+      "descriptionShort": "Leer un incidente y exportar su ventana de evidencias",
+      "idArgument": "ID del incidente, o un prefijo suyo que ningún otro incidente comparta",
+      "status": {
+        "description": "Lista los incidentes de la organización, o muestra uno con su alcance, ventana, pasos por máquina y los relojes de plazo de la alerta temprana, la notificación y el informe final.",
+        "descriptionShort": "Listar incidentes o mostrar uno con sus relojes de plazo"
+      },
+      "export": {
+        "description": "Escribe la ventana del incidente en un directorio: el registro del incidente con sus relojes, la línea de tiempo combinada, los agregados de bytes salientes y el manifiesto de la cadena en bruto. Los archivos diarios en bruto que lista el manifiesto se pueden comprobar con rdc forensics verify.",
+        "descriptionShort": "Exportar la línea de tiempo y el manifiesto de evidencias de un incidente",
+        "outOption": "Directorio donde escribir (por defecto: incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "Comprueba las evidencias forenses en esta estación de trabajo con la misma verificación que ejecuta la consola web.",
+      "descriptionShort": "Verificar evidencias forenses",
+      "verify": {
+        "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes necesitan la clave pública de la máquina mediante --machine-key.",
+        "descriptionShort": "Verificar las cadenas de hashes de auditoría y forenses de un directorio de evidencias",
+        "dirOption": "Directorio de evidencias que se va a verificar",
+        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters> (repetible)"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "Informe {{id}} enviado (huella {{fingerprint}}).",
     "sentDuplicate": "El informe {{id}} coincide con un fallo conocido y se contabilizó (huella {{fingerprint}})."
   },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" no es un instante ISO 8601 ni un lapso como 90m, 24h o 7d.",
+    "sinceAfterUntil": "--since es posterior a --until.",
+    "windowTooLong": "Una ventana abarca como máximo 31 días.",
+    "reauthRequired": "Las lecturas forenses necesitan una aprobación elevada reciente. Abre el portal de la cuenta, vuelve a autenticarte y ejecuta el comando de nuevo.",
+    "notEntitled": "La investigación forense está disponible en los planes de pago.",
+    "ambiguousIncident": "Más de un incidente empieza por \"{{id}}\"; indica más caracteres del ID.",
+    "noSuchIncident": "No hay ningún incidente \"{{id}}\" en esta organización.",
+    "timelineNeverEnds": "La línea de tiempo no terminó tras el límite de páginas; el servidor de la cuenta siguió devolviendo páginas.",
+    "flowBytes": "salida {{out}} entrada {{in}} bytes",
+    "sensitive": "sensible",
+    "gapLine": "-- sin evidencias de {{from}} a {{to}} ({{machine}}, {{reason}})",
+    "noFlows": "No se registraron flujos de red en esta ventana.",
+    "noOpens": "No se registraron aperturas de archivos en esta ventana.",
+    "unreadable": "No se pudieron leer {{count}} registros almacenados en esta ventana.",
+    "noRepoGuid": "El repositorio \"{{name}}\" no tiene GUID en esta configuración.",
+    "noEvidenceDir": "No se puede leer el directorio de evidencias \"{{dir}}\".",
+    "severalOrgs": "El directorio de evidencias contiene archivos de auditoría de varias organizaciones: {{orgs}}.",
+    "noEvidence": "No se encontraron archivos diarios de auditoría ni cabeceras forenses en \"{{dir}}\".",
+    "badMachineKey": "\"{{entry}}\" no tiene el formato <machine>=<64 hex characters>.",
+    "verifyWindow": "Ventana de {{from}} a {{to}}",
+    "verifyFiles": "{{count}} archivo(s) de evidencias comprobado(s)",
+    "verifyGap": "hueco  {{ref}}: {{reason}}",
+    "verifyEdit": "edición {{ref}}: {{reason}}",
+    "verifyClean": "No se encontró ningún hueco ni edición.",
+    "verifyFailed": "Las evidencias no superan la verificación: consulta los huecos y ediciones de arriba."
+  },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Solo forks: cree un fork antes de realizar cambios en cualquier repositorio\n    • Los repositorios grand (no fork) son de solo lectura para los agentes\n    • Flujo de trabajo: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Una referencia de repositorio (repo[:tag]) deriva su propia máquina, por lo que -m no es necesario\n    • La salida JSON es automática: todos los comandos devuelven { success, data, errors, metrics }\n    • Analice siempre el JSON completo, nunca use tail/head/grep sobre la salida JSON\n    • Use flags de filtro (p. ej., --repositories, --containers) para reducir el tamaño de la respuesta\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "Abrir máquina en VS Code",
       "repo": "Abrir repositorio en VS Code"
     }
+  },
+  "incident": {
+    "none": "No hay incidentes.",
+    "detailHead": "Incidente {{id}} ({{status}})",
+    "detailScope": "Alcance: {{kind}} {{ref}}",
+    "detailWindow": "Ventana: de {{from}} a {{to}}",
+    "detailDeclared": "Declarado por {{by}} el {{at}}, conocido desde {{aware}}",
+    "detailFork": "Fork forense: {{ref}}",
+    "detailRelease": "Las reglas de retención y bloqueo terminan: {{at}}",
+    "detailStep": "Paso {{name}}: {{status}} a las {{at}} {{detail}}",
+    "clockEarlyWarning": "Alerta temprana vence el {{at}} ({{state}})",
+    "clockNotification": "Notificación vence el {{at}} ({{state}})",
+    "clockFinalReport": "Informe final vence el {{at}} ({{state}})",
+    "exported": "Incidente {{id}} exportado a {{dir}} ({{rows}} filas de la línea de tiempo).",
+    "rawTooLarge": "El material en bruto de la cadena supera el límite del manifiesto y no se lista.",
+    "rawListed": "raw-manifest.json lista {{count}} archivo(s) en bruto para rdc forensics verify."
   },
   "options": {
     "acceptTerms": "Aceptar los Términos del Servicio para una licencia gratuita sin preguntar (o definir RDC_ACCEPT_TERMS=1)",

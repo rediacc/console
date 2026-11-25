@@ -2718,7 +2718,17 @@
           "failed": "无法读取授权",
           "unreadable": "无法读取机器的授权输出"
         }
-      }
+      },
+      "flows": {
+        "description": "列出某个仓库在指定时间窗口内记录的网络流量：时间、进程、目标地址、出入字节数，已知时还包括目标的 ASN 和国家。没有证据的时段会显示为空缺行。需要 forensics:read 权限范围和付费套餐。",
+        "descriptionShort": "列出仓库已记录的网络流量"
+      },
+      "opens": {
+        "description": "列出某个仓库在指定时间窗口内记录的文件打开事件：时间、进程和路径，敏感路径会被标记。没有证据的时段会显示为空缺行。需要 forensics:read 权限范围和付费套餐。",
+        "descriptionShort": "列出仓库已记录的文件打开事件"
+      },
+      "rowsSinceOption": "窗口起点：ISO 8601 时间点，或从现在往前推的时长，如 90m、24h、7d（默认：24h）",
+      "rowsUntilOption": "窗口终点，格式同上（默认：现在）"
     },
     "serve": {
       "description": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "使用调用方的登录状态签发证书，并写入调用方的文件；远程执行端两者都没有。请不要加 --proxy 运行。",
       "serverStatus": "通过调用方本地的安装记录查找服务器；远程执行端没有这份记录。请不要加 --proxy 运行。",
       "serverUpgrade": "驱动子命令和调用方本地的安装记录 (使用 --local-image 时还有调用方的 Docker)；远程执行端会从它自己的环境执行。请不要加 --proxy 运行。"
+    },
+    "incident": {
+      "description": "查看组织的某起事件。事件在网页控制台中声明，这些命令读取事件记录、各项期限倒计时和证据时间窗口。需要 forensics:read 权限范围，所有者和管理员通过 CLI 登录并在浏览器中完成提权批准后即可获得该权限。需要付费套餐。",
+      "descriptionShort": "查看事件并导出其证据时间窗口",
+      "idArgument": "事件 ID，或不与其他事件重复的 ID 前缀",
+      "status": {
+        "description": "列出组织的事件，或显示某一起事件的范围、时间窗口、各机器的处理步骤，以及早期预警、通报和最终报告的期限倒计时。",
+        "descriptionShort": "列出事件，或显示某起事件及其期限倒计时"
+      },
+      "export": {
+        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总以及原始链清单。清单中列出的原始日文件可用 rdc forensics verify 校验。",
+        "descriptionShort": "导出事件的时间线和证据清单",
+        "outOption": "写入的目录（默认：incident-<id>）"
+      }
+    },
+    "forensics": {
+      "description": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式。",
+      "descriptionShort": "校验取证证据",
+      "verify": {
+        "description": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。校验批次签名需要通过 --machine-key 提供机器的公钥。",
+        "descriptionShort": "校验证据目录的审计和取证哈希链",
+        "dirOption": "要校验的证据目录",
+        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>（可重复指定）"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "报告 {{id}} 已提交(指纹 {{fingerprint}})。",
     "sentDuplicate": "报告 {{id}} 与已知故障匹配,已计入统计(指纹 {{fingerprint}})。"
   },
+  "forensics": {
+    "badInstant": "{{flag}} 的值 \"{{value}}\" 既不是 ISO 8601 时间点，也不是 90m、24h、7d 这样的时长。",
+    "sinceAfterUntil": "--since 晚于 --until。",
+    "windowTooLong": "时间窗口最长为 31 天。",
+    "reauthRequired": "取证读取需要近期的提权批准。请打开账户门户重新验证身份，然后再次运行该命令。",
+    "notEntitled": "取证调查功能适用于付费套餐。",
+    "ambiguousIncident": "有多起事件的 ID 以 \"{{id}}\" 开头，请提供更长的 ID。",
+    "noSuchIncident": "此组织中没有 ID 为 \"{{id}}\" 的事件。",
+    "timelineNeverEnds": "达到页数上限后时间线仍未结束，账户服务器一直在返回新的页面。",
+    "flowBytes": "出 {{out}} 入 {{in}} 字节",
+    "sensitive": "敏感",
+    "gapLine": "-- {{from}} 至 {{to}} 无证据（{{machine}}，{{reason}}）",
+    "noFlows": "此时间窗口内没有记录到网络流量。",
+    "noOpens": "此时间窗口内没有记录到文件打开事件。",
+    "unreadable": "此时间窗口内有 {{count}} 条已存储的记录无法读取。",
+    "noRepoGuid": "在此配置中，仓库 \"{{name}}\" 没有 GUID。",
+    "noEvidenceDir": "无法读取证据目录 \"{{dir}}\"。",
+    "severalOrgs": "证据目录中包含多个组织的审计文件：{{orgs}}。",
+    "noEvidence": "在 \"{{dir}}\" 下未找到审计日文件或取证头文件。",
+    "badMachineKey": "\"{{entry}}\" 不符合 <machine>=<64 hex characters> 的格式。",
+    "verifyWindow": "时间窗口：{{from}} 至 {{to}}",
+    "verifyFiles": "已检查 {{count}} 个证据文件",
+    "verifyGap": "空缺  {{ref}}：{{reason}}",
+    "verifyEdit": "改动 {{ref}}：{{reason}}",
+    "verifyClean": "未发现空缺或改动。",
+    "verifyFailed": "证据未通过校验，请查看上方列出的空缺和改动。"
+  },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "在 VS Code 中打开机器",
       "repo": "在 VS Code 中打开仓库"
     }
+  },
+  "incident": {
+    "none": "没有事件。",
+    "detailHead": "事件 {{id}}（{{status}}）",
+    "detailScope": "范围：{{kind}} {{ref}}",
+    "detailWindow": "时间窗口：{{from}} 至 {{to}}",
+    "detailDeclared": "由 {{by}} 于 {{at}} 声明，知晓时间为 {{aware}}",
+    "detailFork": "取证分支：{{ref}}",
+    "detailRelease": "保留和锁定规则结束于：{{at}}",
+    "detailStep": "步骤 {{name}}：{{status}}，时间 {{at}} {{detail}}",
+    "clockEarlyWarning": "早期预警截止 {{at}}（{{state}}）",
+    "clockNotification": "通报截止 {{at}}（{{state}}）",
+    "clockFinalReport": "最终报告截止 {{at}}（{{state}}）",
+    "exported": "事件 {{id}} 已导出到 {{dir}}（时间线共 {{rows}} 行）。",
+    "rawTooLarge": "原始链数据超出清单上限，未被列出。",
+    "rawListed": "raw-manifest.json 列出了 {{count}} 个原始文件，供 rdc forensics verify 使用。"
   },
   "options": {
     "acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",

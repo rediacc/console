@@ -2718,7 +2718,17 @@
           "failed": "Luba ei õnnestunud lugeda",
           "unreadable": "Masina loa väljundit ei õnnestunud lugeda"
         }
-      }
+      },
+      "flows": {
+        "description": "Loetleb hoidla jaoks salvestatud võrgovood ajaaknas: aeg, protsess, sihtkoht, väljuvad ja sissetulevad baidid ning sihtkoha ASN ja riik, kui need on teada. Lõik ilma tõenditeta kuvatakse lünga reana. Nõuab õigust forensics:read ja tasulist plaani.",
+        "descriptionShort": "Loetle hoidla salvestatud võrgovood"
+      },
+      "opens": {
+        "description": "Loetleb hoidla jaoks salvestatud failiavamised ajaaknas: aeg, protsess ja tee, tundlikud teed on märgitud. Lõik ilma tõenditeta kuvatakse lünga reana. Nõuab õigust forensics:read ja tasulist plaani.",
+        "descriptionShort": "Loetle hoidla salvestatud failiavamised"
+      },
+      "rowsSinceOption": "Ajaakna algus: ISO 8601 ajahetk või ajavahemik praegusest tagasi, näiteks 90m, 24h või 7d (vaikimisi: 24h)",
+      "rowsUntilOption": "Ajaakna lõpp, samades vormingutes (vaikimisi: praegu)"
     },
     "serve": {
       "description": "Käivita see protsess täiturina, et kliendid saaksid käske käivitada selle kaudu ise SSH kaudu ühendumise asemel",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "Väljastab sertifikaadi kutsuja sisselogimisega ja kirjutab selle kutsuja faili; kaugtäitjal pole ei üht ega teist. Käivita see ilma valikuta --proxy.",
       "serverStatus": "Leiab serveri kutsuja kohaliku paigaldusjärjendi kaudu; kaugtäitjal seda pole. Käivita see ilma valikuta --proxy.",
       "serverUpgrade": "Juhib alamkäske ja kutsuja kohalikku paigaldusjärjendit (ning valikuga --local-image kutsuja Dockerit); kaugtäitja tegutseks enda omadest. Käivita see ilma valikuta --proxy."
+    },
+    "incident": {
+      "description": "Loeb organisatsiooni intsidenti. Intsidendid deklareeritakse veebikonsoolis; need käsud loevad kirjet, selle tähtaja kellasid ja tõendite ajaakent. Nõuab õigust forensics:read, mille CLI sisselogimine annab omanikele ja administraatoritele pärast brauseris antud kõrgendatud kinnitust, ning tasulist plaani.",
+      "descriptionShort": "Loe intsidenti ja ekspordi selle tõendite ajaaken",
+      "idArgument": "Intsidendi ID või selle eesliide, mida ükski teine intsident ei jaga",
+      "status": {
+        "description": "Loetleb organisatsiooni intsidendid või näitab ühte koos selle ulatuse, ajaakna, masinasammude ning varajase hoiatuse, teavituse ja lõpparuande tähtaja kelladega.",
+        "descriptionShort": "Loetle intsidendid või näita ühte koos tähtaja kelladega"
+      },
+      "export": {
+        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid ja toorahela manifesti. Manifestis loetletud toorpäevafaile saab kontrollida käsuga rdc forensics verify.",
+        "descriptionShort": "Ekspordi intsidendi ajajoon ja tõendite manifest",
+        "outOption": "Kataloog, kuhu kirjutada (vaikimisi: incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb.",
+      "descriptionShort": "Kontrolli kohtuekspertiisi tõendeid",
+      "verify": {
+        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirjad vajavad masina avalikku võtit valikuga --machine-key.",
+        "descriptionShort": "Kontrolli tõendite kataloogi auditi ja kohtuekspertiisi räsiahelaid",
+        "dirOption": "Kontrollitav tõendite kataloog",
+        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters> (korratav)"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "Aruanne {{id}} esitatud (sõrmejälg {{fingerprint}}).",
     "sentDuplicate": "Aruanne {{id}} sobis teadaoleva veaga ja loeti kokku (sõrmejälg {{fingerprint}})."
   },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" ei ole ISO 8601 ajahetk ega ajavahemik nagu 90m, 24h või 7d.",
+    "sinceAfterUntil": "--since on hilisem kui --until.",
+    "windowTooLong": "Ajaaken võib hõlmata kuni 31 päeva.",
+    "reauthRequired": "Kohtuekspertiisi lugemised vajavad hiljutist kõrgendatud kinnitust. Ava konto portaal, autendi uuesti ja käivita käsk uuesti.",
+    "notEntitled": "Kohtuekspertiisi uuring on saadaval tasulistes plaanides.",
+    "ambiguousIncident": "Rohkem kui üks intsident algab tähisega \"{{id}}\"; anna ID-st rohkem.",
+    "noSuchIncident": "Selles organisatsioonis pole intsidenti \"{{id}}\".",
+    "timelineNeverEnds": "Ajajoon ei lõppenud pärast lehtede piiri; konto server tagastas lehti edasi.",
+    "flowBytes": "välja {{out}} sisse {{in}} baiti",
+    "sensitive": "tundlik",
+    "gapLine": "-- tõendid puuduvad {{from}} kuni {{to}} ({{machine}}, {{reason}})",
+    "noFlows": "Selles ajaaknas ei salvestatud ühtegi võrgovoogu.",
+    "noOpens": "Selles ajaaknas ei salvestatud ühtegi failiavamist.",
+    "unreadable": "Selles ajaaknas ei õnnestunud lugeda {{count}} salvestatud kirjet.",
+    "noRepoGuid": "Hoidlal \"{{name}}\" pole selles konfiguratsioonis GUID-i.",
+    "noEvidenceDir": "Tõendite kataloogi \"{{dir}}\" ei saa lugeda.",
+    "severalOrgs": "Tõendite kataloog sisaldab mitme organisatsiooni auditifaile: {{orgs}}.",
+    "noEvidence": "Kataloogist \"{{dir}}\" ei leitud auditi päevafaile ega kohtuekspertiisi päiseid.",
+    "badMachineKey": "\"{{entry}}\" ei ole kujul <machine>=<64 hex characters>.",
+    "verifyWindow": "Ajaaken {{from}} kuni {{to}}",
+    "verifyFiles": "Kontrolliti {{count}} tõendifaili",
+    "verifyGap": "lünk  {{ref}}: {{reason}}",
+    "verifyEdit": "muudatus {{ref}}: {{reason}}",
+    "verifyClean": "Lünki ega muudatust ei leitud.",
+    "verifyFailed": "Tõendid ei läbi kontrolli: vaata ülal olevaid lünki ja muudatusi."
+  },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "Ava masin VS Code'is",
       "repo": "Ava repositoorium VS Code'is"
     }
+  },
+  "incident": {
+    "none": "Intsidente pole.",
+    "detailHead": "Intsident {{id}} ({{status}})",
+    "detailScope": "Ulatus: {{kind}} {{ref}}",
+    "detailWindow": "Ajaaken: {{from}} kuni {{to}}",
+    "detailDeclared": "Deklareeris {{by}} ajal {{at}}, teadlik alates {{aware}}",
+    "detailFork": "Kohtuekspertiisi fork: {{ref}}",
+    "detailRelease": "Hoidmis- ja lukustusreeglid lõpevad: {{at}}",
+    "detailStep": "Samm {{name}}: {{status}} ajal {{at}} {{detail}}",
+    "clockEarlyWarning": "Varajane hoiatus tähtajaga {{at}} ({{state}})",
+    "clockNotification": "Teavitus tähtajaga {{at}} ({{state}})",
+    "clockFinalReport": "Lõpparuanne tähtajaga {{at}} ({{state}})",
+    "exported": "Intsident {{id}} eksporditud kataloogi {{dir}} ({{rows}} ajajoone rida).",
+    "rawTooLarge": "Toorahela materjal ületab manifesti piiri ja seda ei loetleta.",
+    "rawListed": "raw-manifest.json loetleb {{count}} toorfaili käsu rdc forensics verify jaoks."
   },
   "options": {
     "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",

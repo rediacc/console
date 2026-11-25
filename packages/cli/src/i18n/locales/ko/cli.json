@@ -2718,7 +2718,17 @@
           "failed": "부여 내역을 읽을 수 없습니다",
           "unreadable": "머신의 부여 출력을 읽을 수 없습니다"
         }
-      }
+      },
+      "flows": {
+        "description": "저장소에 대해 기록된 네트워크 플로우를 기간별로 나열합니다. 시각, 프로세스, 목적지, 송신·수신 바이트 수를 보여 주며, 알려진 경우 목적지의 ASN과 국가도 표시합니다. 증거가 없는 구간은 공백 행으로 표시됩니다. forensics:read 스코프와 유료 플랜이 필요합니다.",
+        "descriptionShort": "저장소의 기록된 네트워크 플로우 나열"
+      },
+      "opens": {
+        "description": "저장소에 대해 기록된 파일 열기를 기간별로 나열합니다. 시각, 프로세스, 경로를 보여 주며 민감한 경로는 표시됩니다. 증거가 없는 구간은 공백 행으로 표시됩니다. forensics:read 스코프와 유료 플랜이 필요합니다.",
+        "descriptionShort": "저장소의 기록된 파일 열기 나열"
+      },
+      "rowsSinceOption": "기간 시작: ISO 8601 시각 또는 지금부터 거슬러 올라가는 기간 (예: 90m, 24h, 7d) (기본값: 24h)",
+      "rowsUntilOption": "기간 끝: 같은 형식으로 지정 (기본값: 지금)"
     },
     "serve": {
       "description": "클라이언트가 직접 SSH로 연결하는 대신 이 프로세스를 통해 명령을 실행할 수 있도록 실행기로 구동합니다",
@@ -3485,6 +3495,30 @@
       "serverLicenceMint": "호출자의 로그인으로 인증서를 발급하고 호출자의 파일에 기록합니다. 원격 실행기에는 둘 다 없습니다. --proxy 없이 실행하세요.",
       "serverStatus": "호출자의 로컬 설치 기록으로 서버를 찾습니다. 원격 실행기에는 그 기록이 없습니다. --proxy 없이 실행하세요.",
       "serverUpgrade": "하위 명령과 호출자의 로컬 설치 기록(그리고 --local-image에서는 호출자의 Docker)을 다룹니다. 원격 실행기는 자기 환경에서 동작하게 됩니다. --proxy 없이 실행하세요."
+    },
+    "incident": {
+      "description": "조직의 사고를 조회합니다. 사고는 웹 콘솔에서 선언되며, 이 명령은 사고 기록과 기한 타이머, 증거 기간을 읽습니다. forensics:read 스코프가 필요하며, 소유자와 관리자의 CLI 로그인에는 브라우저에서 상승 승인을 거친 뒤 부여됩니다. 유료 플랜이 필요합니다.",
+      "descriptionShort": "사고 조회 및 증거 기간 내보내기",
+      "idArgument": "사고 ID 또는 다른 사고와 겹치지 않는 앞부분",
+      "status": {
+        "description": "조직의 사고를 나열하거나, 하나를 골라 범위, 기간, 머신별 단계, 조기 경보·통지·최종 보고서 기한 타이머를 보여 줍니다.",
+        "descriptionShort": "사고 나열 또는 기한 타이머와 함께 하나 보기"
+      },
+      "export": {
+        "description": "사고 기간을 디렉터리에 기록합니다. 타이머가 포함된 사고 기록, 병합된 타임라인, 송신 바이트 집계, 원시 체인 매니페스트가 들어 있습니다. 매니페스트에 나열된 원시 일별 파일은 rdc forensics verify로 검증할 수 있습니다.",
+        "descriptionShort": "사고 타임라인과 증거 매니페스트 내보내기",
+        "outOption": "기록할 디렉터리 (기본값: incident-<id>)"
+      }
+    },
+    "forensics": {
+      "description": "웹 콘솔이 실행하는 것과 같은 검증으로 이 워크스테이션의 포렌식 증거를 확인합니다.",
+      "descriptionShort": "포렌식 증거 검증",
+      "verify": {
+        "description": "증거 디렉터리의 감사 일별 파일 해시 체인과 서명된 포렌식 배치 체인을 다시 계산하고, 발견된 모든 누락과 변조를 출력합니다. 디렉터리에는 매니페스트 키 아래의 원시 파일(audit/<org>/days/<day>.ndjson.gz 및 f/<subscription>/<machine>/days/<day>/...)이 들어 있어야 합니다. 누락이나 변조가 발견되면 종료 코드 1로 끝납니다. 배치 서명은 --machine-key로 머신의 공개 키를 지정해야 검증됩니다.",
+        "descriptionShort": "증거 디렉터리의 감사 및 포렌식 해시 체인 검증",
+        "dirOption": "검증할 증거 디렉터리",
+        "machineKeyOption": "머신 스풀 공개 키를 <machine>=<64 hex characters> 형식으로 지정 (여러 번 지정 가능)"
+      }
     }
   },
   "docs": {
@@ -3929,6 +3963,33 @@
     "sent": "보고서 {{id}}이(가) 접수되었습니다(지문 {{fingerprint}}).",
     "sentDuplicate": "보고서 {{id}}이(가) 알려진 실패와 일치하여 집계되었습니다(지문 {{fingerprint}})."
   },
+  "forensics": {
+    "badInstant": "{{flag}} 값 \"{{value}}\"은(는) ISO 8601 시각도, 90m, 24h, 7d 같은 기간도 아닙니다.",
+    "sinceAfterUntil": "--since가 --until보다 뒤입니다.",
+    "windowTooLong": "기간은 최대 31일까지입니다.",
+    "reauthRequired": "포렌식 조회에는 최근의 상승 승인이 필요합니다. 계정 포털을 열어 다시 인증한 뒤 명령을 다시 실행하세요.",
+    "notEntitled": "포렌식 조사는 유료 플랜에서 사용할 수 있습니다.",
+    "ambiguousIncident": "\"{{id}}\"(으)로 시작하는 사고가 둘 이상입니다. ID를 더 길게 입력하세요.",
+    "noSuchIncident": "이 조직에는 \"{{id}}\" 사고가 없습니다.",
+    "timelineNeverEnds": "페이지 한도를 넘어도 타임라인이 끝나지 않았습니다. 계정 서버가 계속 페이지를 반환했습니다.",
+    "flowBytes": "송신 {{out}} 수신 {{in}} 바이트",
+    "sensitive": "민감",
+    "gapLine": "-- {{from}}부터 {{to}}까지 증거 없음 ({{machine}}, {{reason}})",
+    "noFlows": "이 기간에 기록된 네트워크 플로우가 없습니다.",
+    "noOpens": "이 기간에 기록된 파일 열기가 없습니다.",
+    "unreadable": "이 기간에 저장된 레코드 {{count}}개를 읽을 수 없습니다.",
+    "noRepoGuid": "이 구성에서 저장소 \"{{name}}\"에는 GUID가 없습니다.",
+    "noEvidenceDir": "증거 디렉터리 \"{{dir}}\"을(를) 읽을 수 없습니다.",
+    "severalOrgs": "증거 디렉터리에 여러 조직의 감사 파일이 들어 있습니다: {{orgs}}.",
+    "noEvidence": "\"{{dir}}\" 아래에서 감사 일별 파일이나 포렌식 헤더를 찾지 못했습니다.",
+    "badMachineKey": "\"{{entry}}\"은(는) <machine>=<64 hex characters> 형식이 아닙니다.",
+    "verifyWindow": "기간: {{from}}부터 {{to}}까지",
+    "verifyFiles": "증거 파일 {{count}}개 검사 완료",
+    "verifyGap": "누락  {{ref}}: {{reason}}",
+    "verifyEdit": "변조 {{ref}}: {{reason}}",
+    "verifyClean": "누락과 변조가 발견되지 않았습니다.",
+    "verifyFailed": "증거 검증에 실패했습니다. 위에 표시된 누락과 변조를 확인하세요."
+  },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨: 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱하고, JSON 출력에는 tail/head/grep을 사용하지 마세요\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",
     "cli": {
@@ -3978,6 +4039,22 @@
       "machine": "VS Code에서 머신 열기",
       "repo": "VS Code에서 저장소 열기"
     }
+  },
+  "incident": {
+    "none": "사고가 없습니다.",
+    "detailHead": "사고 {{id}} ({{status}})",
+    "detailScope": "범위: {{kind}} {{ref}}",
+    "detailWindow": "기간: {{from}}부터 {{to}}까지",
+    "detailDeclared": "{{by}}이(가) {{at}}에 선언, 인지 시점 {{aware}}",
+    "detailFork": "포렌식 포크: {{ref}}",
+    "detailRelease": "보존 및 잠금 규칙 종료: {{at}}",
+    "detailStep": "단계 {{name}}: {{status}} ({{at}}) {{detail}}",
+    "clockEarlyWarning": "조기 경보 기한 {{at}} ({{state}})",
+    "clockNotification": "통지 기한 {{at}} ({{state}})",
+    "clockFinalReport": "최종 보고서 기한 {{at}} ({{state}})",
+    "exported": "사고 {{id}}을(를) {{dir}}에 내보냈습니다 (타임라인 {{rows}}행).",
+    "rawTooLarge": "원시 체인 자료가 매니페스트 한도를 넘어 목록에 포함되지 않았습니다.",
+    "rawListed": "raw-manifest.json에 rdc forensics verify용 원시 파일 {{count}}개가 나열되어 있습니다."
   },
   "options": {
     "acceptTerms": "무료 라이선스의 서비스 약관을 묻지 않고 동의합니다(RDC_ACCEPT_TERMS=1로도 설정 가능)",
