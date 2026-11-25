@@ -839,11 +839,17 @@ def verb_release(lab: Lab, p: Proof, *, bench: bool) -> None:
 
     planted = ids["medium"]
     run = lab.release(plant_failure=planted)
-    p.check("a planted failure stops the release", ok=run.rc != 0, detail="rc 0")
+    # A stop is a non-zero exit that names a stopped company: an rc 1 from anything else (the settle bound, an unreachable region) reached no planted step, and the 2026-11-25 bench run passed this claim on one.
+    said = run.error or "no error line"
+    p.check(
+        "a planted failure stops the release",
+        ok=run.rc != 0 and bool(run.stopped),
+        detail=f"rc {run.rc}, stopped on {run.stopped!r}: {said}",
+    )
     p.check(
         "the stop names the failed company",
         ok=run.stopped == planted,
-        detail=f"named {run.stopped!r}",
+        detail=f"named {run.stopped!r}: {said}",
     )
     after = lab.versions(targets)
     for ring in ("canary", "small"):

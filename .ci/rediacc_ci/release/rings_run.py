@@ -440,6 +440,10 @@ def _database(row: CompanyRow) -> str:
     return registry.control_database(row.region, row.bench)
 
 
+# The words a stop that never reached the control database is announced with; `lab_release` keeps every stderr line carrying them, since the lines after it would otherwise hide it.
+UNPERSISTED = "the stop could not be persisted"
+
+
 def _mark_failed(world: World, read: Read, row: CompanyRow, version: str) -> None:
     rid = _release_id(version, read.rollouts.get(row.id, []), "f")
     now = _stamp(world.now())
@@ -449,8 +453,8 @@ def _mark_failed(world: World, read: Read, row: CompanyRow, version: str) -> Non
         )
     except TRANSPORT_ERRORS as exc:
         _say(
-            "company %s failed on %s, but the stop could not be persisted (%s); a rerun will not know it"
-            % (row.id, version, type(exc).__name__)
+            "company %s failed on %s, but %s (%s); a rerun will not know it"
+            % (row.id, version, UNPERSISTED, type(exc).__name__)
         )
 
 
@@ -860,8 +864,8 @@ def lab_release(
 ) -> proof.ReleaseResult:
     """One bench release as `enterprise proof release` asks for it, as a `proof.ReleaseResult`.
 
-    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else, while `settle_s` seconds of wall time (`PROOF_SETTLE_S`) have not passed when a run would start, so the deadline is checked before each run only and the pause after the last run is always slept in full: the call returns at most one pause past `settle_s`;
-    a run still at a `wait` then fails naming that decision, and each wait is announced on stderr, since the runner's own lines are captured. `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
+    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else. `settle_s` seconds of wall time (`PROOF_SETTLE_S`) bound one wait that does not move: the deadline is armed when a run ends at a wait other than the last one, so the deploys between waits never spend it (the 2026-11-25 `proof release --bench` planted run deployed 15 bench companies for 33 minutes, hit the old start-of-call deadline at the first pause, and came back rc 1 naming no stopped company before it reached the planted one). The deadline is checked before each run only and the pause after the last run is always slept in full: the call returns at most one pause past the bound;
+    a run still at the same `wait` then fails naming that decision, and each wait is announced on stderr, since the runner's own lines are captured. `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`, and its error keeps every stderr line saying a stop was not persisted (`UNPERSISTED`) ahead of the last line and the decision. The runner's own lines are captured, not printed: the proof prints its claims."""
     w = world or live_world()
     v = version or target_version()
     nap = sleep or time.sleep
@@ -890,12 +894,16 @@ def lab_release(
         if rc == 2:
             return proof.ReleaseResult(rc, "", error or "refused")
         if rc != 0:
-            # A latched stop prints its decision on stdout and nothing on stderr, so the decision line is part of the error.
+            # A latched stop prints its decision on stdout and nothing on stderr, so the decision line is part of the error; a stop that never reached the control database is named first, since `stopped` cannot read it.
             decision = decided[-1] if decided else ""
-            parts = [p for p in (error, decision) if p]
+            unpersisted = [ln for ln in lines if UNPERSISTED in ln]
+            parts = [p for p in (*unpersisted, error, decision) if p]
             return proof.ReleaseResult(rc, _stopped(w, v), "; ".join(dict.fromkeys(parts)))
         if not decided or not decided[-1].startswith("wait"):
             return proof.ReleaseResult(0)
+        if decided[-1] != waited:
+            # A new wait is progress: the bound restarts, so only a wait that does not move spends it.
+            deadline = now() + settle_s
         waited = decided[-1]
         _say("waiting out a shortened pause (run %d): %s" % (runs, waited))
         nap(pause_minutes * 60.0)

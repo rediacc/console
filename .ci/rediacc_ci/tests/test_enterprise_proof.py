@@ -11,6 +11,8 @@ import pytest
 from rediacc_ci.enterprise import proof
 from rediacc_ci.enterprise.proof import AddResult, Answer, LabError, ReleaseResult, Reply
 
+UNSETTLED = "the release did not settle in 1200 s (1 runs)"
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -85,6 +87,8 @@ class FakeLab:
     skip_without_order_admitted: bool = False
     stop_names: str = ""
     fast_moves_on_stop: bool = False
+    # The 2026-11-25 bench run: the planted run ends rc 1 on the settle bound after canary and small, before it reaches the planted company, so nothing is stopped.
+    planted_unsettled: bool = False
     # An earlier rehearsal of the same version: the ring whose company it stopped on (the stop latches until a reset), or one that finished, so every ring company already runs it.
     left_stop: str = ""
     left_finished: bool = False
@@ -396,6 +400,8 @@ class FakeLab:
                 self.version[ids[ring]] = "0.9.1"
             if self.fast_moves_on_stop:
                 self.version["fast"] = "0.9.2"
+            if self.planted_unsettled:
+                return ReleaseResult(rc=1, error=UNSETTLED)
             return ReleaseResult(rc=1, stopped=self.stop_names or plant_failure)
         for cid in ids.values():
             self.version[cid] = "0.9.1"
@@ -607,6 +613,7 @@ BREAKS: list[tuple[str, FakeLab, str]] = [
     ("release", FakeLab(skip_without_order_admitted=True), "--skip-pauses without --order"),
     ("release", FakeLab(stop_names="cdeadbeef"), "the stop names the failed company"),
     ("release", FakeLab(fast_moves_on_stop=True), "fast is unchanged by the stop"),
+    ("release", FakeLab(planted_unsettled=True), "a planted failure stops the release"),
     # The 2026-11-24 bench run: a stop an earlier rehearsal latched, which a reset that takes nothing out leaves in place.
     (
         "release",
@@ -689,6 +696,17 @@ def test_a_resume_that_fails_names_its_rc_and_stop() -> None:
     assert rc == 1
     line = next(x for x in broken(lines) if "the resume finishes" in x)
     assert "rc 1, stopped on 'c0badc0de': no error line" in line
+
+
+def test_a_planted_run_without_a_stop_breaks_both_stop_claims_and_quotes_its_error() -> None:
+    """An rc 1 that names no stopped company is no stop: the 2026-11-25 bench run passed `a planted failure stops the release` on the settle bound's rc 1, and `named ''` hid why."""
+    rc, lines = run("release", FakeLab(planted_unsettled=True))
+    assert rc == 1
+    bad = broken(lines)
+    stops = next(x for x in bad if "a planted failure stops the release" in x)
+    names = next(x for x in bad if "the stop names the failed company" in x)
+    assert UNSETTLED in stops
+    assert UNSETTLED in names
 
 
 def test_every_verb_has_at_least_one_break_case() -> None:

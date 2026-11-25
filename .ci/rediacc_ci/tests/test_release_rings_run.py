@@ -769,6 +769,59 @@ def test_the_settle_bound_is_checked_before_each_run_so_the_last_pause_may_pass_
     assert 100 < sum(naps) < 100 + 60
 
 
+def deploy_clock(r, naps, seconds=600.0):
+    """Wall time as a live bench run spends it: every pause slept, and `seconds` per company deploy (the 2026-11-25 `proof release --bench` took about two minutes per company, and its planted run deployed 15 bench companies before the first pause)."""
+    return lambda: sum(naps) + seconds * len(r.kids.deployed())
+
+
+def test_deploy_time_does_not_spend_the_settle_bound_so_the_planted_company_is_reached(tmp_path):
+    """The 2026-11-25 `proof release --bench`: canary and small took the whole bound deploying, the bound ran out at the first pause, and the planted run came back rc 1 naming no stopped company, before it reached the planted one. The bound covers a wait that does not move, not the deploys between waits."""
+    r = four(tmp_path)
+    sleep, naps = napper(r)
+    got = rings_run.lab_release(
+        world=r.world,
+        version=V,
+        sleep=sleep,
+        clock=deploy_clock(r, naps),
+        settle_s=1200,
+        plant_failure=MEDIUM,
+    )
+    assert got.rc == 1
+    assert got.stopped == MEDIUM, got.error
+    assert "did not settle" not in got.error
+    assert r.kids.deployed() == [CANARY, SMALL]
+    assert "planted-failure" in r.kids.steps_of(MEDIUM)
+
+
+def test_deploy_time_does_not_spend_the_settle_bound_on_a_clean_run(tmp_path):
+    """Control: the same deploy-heavy wall clock with nothing planted finishes and names no stop."""
+    r = four(tmp_path)
+    sleep, naps = napper(r)
+    got = rings_run.lab_release(
+        world=r.world, version=V, sleep=sleep, clock=deploy_clock(r, naps), settle_s=1200
+    )
+    assert got == proof.ReleaseResult(0)
+    assert r.kids.deployed() == [CANARY, SMALL, MEDIUM, LARGE]
+
+
+def test_a_stop_that_cannot_be_persisted_is_named_in_the_lab_error(tmp_path):
+    """The runner's stderr is captured and only its last line used to be kept, which is the `the release is stopped` line, so a stop that never reached the control database left the proof reading `stopped ''` with no cause. The persist failure is kept in the error."""
+    r = four(tmp_path)
+    inner = r.world.query
+
+    def query(database: str, sql: str, params: list) -> list[dict]:
+        if sql == rings_run.ROLLOUT_INSERT:
+            msg = "fake: write refused"
+            raise RuntimeError(msg)
+        return inner(database, sql, params)
+
+    r.world.query = query
+    got, _naps = release(r, plant_failure=MEDIUM)
+    assert got.rc == 1
+    assert "company %s failed on %s, but the stop could not be persisted" % (MEDIUM, V) in got.error
+    assert "the release is stopped" in got.error
+
+
 def test_a_workers_only_record_counts_as_bench_taken(monkeypatch):
     """`edge.json` absent (no full release), `edge-workers.json` present: the version is taken. Both absent: it is not."""
     asked: list[str] = []
