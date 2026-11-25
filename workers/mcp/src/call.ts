@@ -1,7 +1,7 @@
 /**
  * `tools/call` for the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 6 to 8).
  *
- * A call is checked against the grant's scope, takes a slot of the grant's rate limiter, and is forwarded over the `EXECUTOR` binding to the grant's org executor with `{grantId, secret, tool, args, requestId, attachMs}` as the RPC body: the agent secret never reaches a URL. The container's grant session runs decide() and the command and answers either a tool result, already paged the way the local stdio server pages (D18), or the handle of a job that outlived the window.
+ * A call is checked against the grant's scope and its one config (D55), takes a slot of the grant's rate limiter, and is forwarded over the `EXECUTOR` binding to the grant's org executor with `{grantId, secret, tool, args, requestId, attachMs}` as the RPC body: the agent secret never reaches a URL. The container's grant session runs decide() and the command and answers either a tool result, already paged the way the local stdio server pages (D18), or the handle of a job that outlived the window.
  *
  * Limits and confirmation: a call over the grant's budget is refused with `REDIACC_RATE_LIMITED` before anything is forwarded (Design 8). When the executor answers `NEEDS_CONFIRMATION`, a client that declared elicitation gets an `input_required` result whose `requestState` is sealed to the grant, user, tool and arguments (src/confirm.ts), and the retry is forwarded with `confirm` added once the state opens; any other client gets the refusal naming the `confirm` argument (Design 6). When the executor answers `EXECUTOR_RELOCATED`, the org's placement moved: the grant is resolved again past the cache (within the same window; a lookup that outlasts it leaves the relocation answer standing) and the call is forwarded once more, to the new placement.
  *
@@ -436,8 +436,35 @@ async function forwardCall(
   );
 }
 
+/** The argument names that select a config: the CLI's global `--config` and the spellings a client may use for it. */
+const CONFIG_ARGUMENTS = ['config', 'config_id', 'configId'] as const;
+
+/** The refusal when an argument names a config other than the grant's own (D55, Design 4), or undefined. The check runs before a slot is taken and before anything is forwarded. */
+function configRefusal(
+  grant: GrantContext,
+  args: Record<string, unknown>
+): CallToolResult | undefined {
+  for (const key of CONFIG_ARGUMENTS) {
+    const named = args[key];
+    if (named === undefined || named === null) continue;
+    if (typeof named !== 'string' || named !== grant.configId) {
+      return toolError(
+        'REDIACC_GRANT_SCOPE',
+        'This grant serves one config; the call names another. Remove the config argument or ask the user for a grant on that config.',
+        { argument: key }
+      );
+    }
+  }
+  return undefined;
+}
+
 /** The tool the call names, or the refusal that answers it before anything is spent. */
-function admit(deps: CallDeps, grant: GrantContext, name: string): McpToolEntry | CallToolResult {
+function admit(
+  deps: CallDeps,
+  grant: GrantContext,
+  name: string,
+  args: Record<string, unknown>
+): McpToolEntry | CallToolResult {
   if (grant.state !== 'active') return grantEnded(grant, grant.state, deps);
   const entry = getMcpTool(name);
   if (entry?.surface !== 'proxy') {
@@ -446,6 +473,8 @@ function admit(deps: CallDeps, grant: GrantContext, name: string): McpToolEntry 
   if (!scopeAdmitsTool(grant.scope, entry)) {
     return toolError('POLICY_DENIED', `The tool ${name} is outside this grant's scope.`);
   }
+  const outOfConfig = configRefusal(grant, args);
+  if (outOfConfig) return outOfConfig;
   if (!deps.executor) return toolError('SERVER_ERROR', 'This server has no executor binding.');
   return entry;
 }
@@ -479,7 +508,7 @@ export async function callToolStep(
   input: CallInput
 ): Promise<CallToolResult | InputRequiredResult> {
   const { grant } = caller;
-  const entry = admit(deps, grant, name);
+  const entry = admit(deps, grant, name, args);
   if ('content' in entry) return entry;
   const slot = await takeSlot(deps, grant.grantId);
   if ('refused' in slot) return slot.refused;

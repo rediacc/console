@@ -11,13 +11,20 @@
  *
  * Audience. The library keeps one protected resource per authorization server, fixed at construction, so every token's audience is this Worker's origin. A client that sends `resource=https://<host>/g/<grantId>` (the URL it connects to) is mapped to that audience here, and the grant id it named is remembered with the request: `/authorize/complete` refuses a grant other than the one named. A token is bound to its grant through its props, and `verifyAccessToken` refuses a token for any grant id but the one in the URL it is presented at.
  *
- * Not here: capping token lifetimes at the grant's expiry and the per-config scope (RW-SCOPE), and the on-premise store adapters (RW-KV, RW-OP*). Refresh tokens live 30 days, the longest a grant may.
+ * Lifetime (D54). `tokenExchangeCallback` looks the grant up uncached at every code exchange and every refresh: a grant that no longer serves (expired, revoked, key rotated) is answered `invalid_grant`, which also revokes the OAuth grant, and an access token never outlives the grant (`accessTokenTTL` is `min(1 h, time left)`). The refresh token of a new OAuth grant lives `min(30 days, time left)` and the library's fixed lifetime then holds across refreshes, so no refresh token outlasts the Rediacc grant. The library takes no refresh-token lifetime under 60 s, so one with less than a minute left lives that minute and meets the callback's refusal.
+ *
+ * Region (D58). With `region` set, a grant id that is not prefixed `<region>_` is never accepted as a `resource`, as the grant of `/authorize/complete`, in metadata or in a token's URL, so no OAuth state binds across regions.
+ *
+ * Not here: the per-config scope (src/call.ts, RW-SCOPE) and the on-premise store adapters (RW-KV, RW-OP*).
  */
 import {
   AuthorizationError,
   type AuthRequest,
   CimdFetchError,
   OAuthAuthorizationServer,
+  OAuthError,
+  type TokenExchangeCallbackOptions,
+  type TokenExchangeCallbackResult,
 } from '@cloudflare/workers-oauth-provider';
 import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
 import { withRefreshReuseGuard } from '../../../../packages/shared/src/mcp-host/refresh-reuse-guard.js';
@@ -26,6 +33,7 @@ import { openBearer } from '../credential.js';
 import type { GrantContext } from '../scope.js';
 import type { ResolveGrant } from '../transport.js';
 import { createAuthRequestStore, type HandleKv, type StoredAuthRequest } from './handle.js';
+import { grantServedHere } from './region.js';
 import {
   type ClientUrlGuard,
   ClientUrlRefused,
@@ -43,6 +51,8 @@ export interface OAuthEnv {
 export interface OAuthOptions {
   /** The Worker's public host, e.g. mcp.eu.rediacc.cloud. */
   host: string;
+  /** The Worker's region; grants of any other region are refused. Unset on-premise, which is one region. */
+  region?: string;
   /** The region's account origin: where the authorize page lives, and the one browser origin allowed to read `/authorize/request`. */
   accountUrl: string;
   /** Worker secret signing the `authRequest` handles. */
@@ -73,8 +83,10 @@ const RESOURCE_METADATA_PREFIX = '/.well-known/oauth-protected-resource/g/';
 /** The one scope this server grants: the grant's own scope filters tools (src/scope.ts), so OAuth carries no finer one. */
 export const MCP_SCOPE = 'mcp';
 export const ACCESS_TOKEN_TTL_SECONDS = 3600;
-/** The longest a grant lives (Design 4); RW-SCOPE caps each token at its grant's own expiry. */
+/** The longest a grant lives (Design 4); each token is capped at its grant's own expiry. */
 export const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 3600;
+/** The library takes no refresh-token lifetime under this. */
+const MIN_REFRESH_TTL_SECONDS = 60;
 
 const GRANT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const RESOURCE_PATH = /^\/g\/([A-Za-z0-9_-]{1,64})$/;
@@ -99,14 +111,19 @@ function isFormPost(request: Request): boolean {
 }
 
 /** The grant id a `resource` value names (`https://<host>/g/<id>`), or null when it names anything else. */
-function grantOfResource(host: string, value: string | null): string | null {
+function grantOfResource(
+  host: string,
+  region: string | undefined,
+  value: string | null
+): string | null {
   if (value === null) return null;
   try {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.host !== host || url.search !== '' || url.hash !== '') {
       return null;
     }
-    return RESOURCE_PATH.exec(url.pathname)?.[1] ?? null;
+    const grantId = RESOURCE_PATH.exec(url.pathname)?.[1] ?? null;
+    return grantId !== null && grantServedHere(grantId, region) ? grantId : null;
   } catch {
     return null;
   }
@@ -128,19 +145,20 @@ async function clientUrlOf(request: Request, path: string): Promise<string | nul
 async function withCanonicalResource(
   request: Request,
   host: string,
+  region: string | undefined,
   audience: string
 ): Promise<{ request: Request; grantId: string | null }> {
   const url = new URL(request.url);
   const path = url.pathname;
   if (path === AUTHORIZE_PATH && request.method === 'GET') {
-    const grantId = grantOfResource(host, url.searchParams.get('resource'));
+    const grantId = grantOfResource(host, region, url.searchParams.get('resource'));
     if (grantId === null) return { request, grantId: null };
     url.searchParams.set('resource', audience);
     return { request: new Request(url, request), grantId };
   }
   if (path === TOKEN_PATH && isFormPost(request)) {
     const body = new URLSearchParams(await request.clone().text());
-    const grantId = grantOfResource(host, body.get('resource'));
+    const grantId = grantOfResource(host, region, body.get('resource'));
     if (grantId === null) return { request, grantId: null };
     body.set('resource', audience);
     const headers = new Headers(request.headers);
@@ -172,12 +190,65 @@ function describeError(error: unknown): Response {
 
 export function createOAuth(options: OAuthOptions): OAuth {
   const { host } = options;
+  const clock = options.now ?? Date.now;
   const audience = `https://${host}`;
   const portalOrigin = new URL(options.accountUrl).origin;
   const guard: ClientUrlGuard = createClientUrlGuard(
     options.resolveHost ?? dohResolver,
     options.now
   );
+
+  /** The grant behind an OAuth grant's props, looked up uncached; null when it is unknown, 'failed' when the lookup itself failed. */
+  async function liveGrant(props: unknown): Promise<GrantContext | null | 'failed'> {
+    const { grantId, S } = (props ?? {}) as { grantId?: unknown; S?: unknown };
+    const bearer =
+      typeof grantId === 'string' && typeof S === 'string'
+        ? openBearer(`rmcp_${grantId}.${S}`)
+        : null;
+    if (!bearer) return null;
+    try {
+      const grant = await options.resolveGrant(bearer.grantId, await deriveAuthTag(bearer.secret));
+      return grant?.grantId === bearer.grantId ? grant : null;
+    } catch {
+      return 'failed';
+    }
+  }
+
+  /** The seconds the grant has left, or the refusal when it does not serve (an unknown, ended or expired grant). */
+  function secondsLeft(grant: GrantContext | null): number {
+    const left = grant ? Math.floor((Date.parse(grant.expiresAt) - clock()) / 1000) : 0;
+    if (grant?.state !== 'active' || !(left > 0)) {
+      throw new OAuthError('invalid_grant', { description: 'The grant does not serve.' });
+    }
+    return left;
+  }
+
+  /** The token lifetimes of one code exchange or refresh (D54), or the refusal that ends the OAuth grant. */
+  async function capToGrant(
+    exchange: TokenExchangeCallbackOptions<OAuthEnv>
+  ): Promise<TokenExchangeCallbackResult | undefined> {
+    if (exchange.grantType !== 'authorization_code' && exchange.grantType !== 'refresh_token') {
+      return undefined;
+    }
+    const grant = await liveGrant(exchange.props);
+    if (grant === 'failed') {
+      throw new OAuthError('temporarily_unavailable', {
+        description: 'The grant could not be checked; try again.',
+        statusCode: 503,
+        headers: { 'Retry-After': '5' },
+      });
+    }
+    const left = secondsLeft(grant);
+    const refreshTokenTTL = Math.max(
+      MIN_REFRESH_TTL_SECONDS,
+      Math.min(REFRESH_TOKEN_TTL_SECONDS, left)
+    );
+    return {
+      accessTokenTTL: Math.min(ACCESS_TOKEN_TTL_SECONDS, left),
+      // The library applies this at the code exchange only; a refresh keeps the grant's fixed lifetime.
+      refreshTokenTTL,
+    };
+  }
 
   const server = new OAuthAuthorizationServer<OAuthEnv>({
     issuer: audience,
@@ -189,6 +260,7 @@ export function createOAuth(options: OAuthOptions): OAuth {
     accessTokenTTL: ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenTTL: REFRESH_TOKEN_TTL_SECONDS,
     clientIdMetadataDocumentEnabled: true,
+    tokenExchangeCallback: (exchange) => capToGrant(exchange),
   });
 
   const library = withRefreshReuseGuard<OAuthEnv, ExecutionContext>(
@@ -207,7 +279,12 @@ export function createOAuth(options: OAuthOptions): OAuth {
 
   /** `GET /authorize`: validate, keep the request, send the browser to the account page. */
   async function authorize(request: Request, env: OAuthEnv): Promise<Response> {
-    const { request: canonical, grantId } = await withCanonicalResource(request, host, audience);
+    const { request: canonical, grantId } = await withCanonicalResource(
+      request,
+      host,
+      options.region,
+      audience
+    );
     let authRequest: AuthRequest;
     try {
       authRequest = await server.getOAuthApi(env).parseAuthRequest(canonical);
@@ -280,7 +357,11 @@ export function createOAuth(options: OAuthOptions): OAuth {
     const fields = new URLSearchParams(await request.text());
     const grantId = fields.get('grantId') ?? '';
     const secret = fields.get('S') ?? '';
-    if (!GRANT_ID.test(grantId) || !SECRET_TEXT.test(secret)) {
+    if (
+      !GRANT_ID.test(grantId) ||
+      !grantServedHere(grantId, options.region) ||
+      !SECRET_TEXT.test(secret)
+    ) {
       return oauthError(400, 'invalid_request', 'The grant is not valid.');
     }
     return { handle: fields.get('authRequest') ?? '', grantId, secret };
@@ -364,8 +445,13 @@ export function createOAuth(options: OAuthOptions): OAuth {
   /** The RFC 9728 document of one grant's resource URL. */
   function resourceMetadata(request: Request, path: string): Response {
     const grantId = path.slice(RESOURCE_METADATA_PREFIX.length);
-    if (request.method !== 'GET' || !GRANT_ID.test(grantId))
+    if (
+      request.method !== 'GET' ||
+      !GRANT_ID.test(grantId) ||
+      !grantServedHere(grantId, options.region)
+    ) {
       return json(404, { error: 'not_found' });
+    }
     return json(
       200,
       {
@@ -415,7 +501,12 @@ export function createOAuth(options: OAuthOptions): OAuth {
     if (path === AUTHORIZE_PATH) {
       return request.method === 'GET' ? authorize(request, env) : methodNotAllowed();
     }
-    const { request: canonical } = await withCanonicalResource(request, host, audience);
+    const { request: canonical } = await withCanonicalResource(
+      request,
+      host,
+      options.region,
+      audience
+    );
     return library(canonical, env, ctx);
   }
 
@@ -449,7 +540,7 @@ export function createOAuth(options: OAuthOptions): OAuth {
     token: string,
     resource: string
   ): Promise<AccessTokenCheck> {
-    const grantId = grantOfResource(host, resource);
+    const grantId = grantOfResource(host, options.region, resource);
     if (grantId === null) return { status: 'invalid' };
     // The library answers null for an unknown, expired, revoked and wrong-audience token alike.
     const valid = await server.validateToken<{ grantId?: string; S?: string }>(

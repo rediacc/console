@@ -1,11 +1,12 @@
 /**
  * The remote MCP Worker, one per region at `mcp.<region>.rediacc.cloud` (agent/plans/PLAN-rmcp-remote-worker.md).
  *
- * The transport, the `tools/call` forward, the bearer path, grant resolution (src/resolve.ts over the `GRANTS` binding), the rate limits (the `RATE` Durable Object) and confirmation are in place; the OAuth authorization server (src/oauth, RW-A1) supplies `verifyAccessToken` and owns the authorize, token, register and metadata routes. A Worker deployed without `OAUTH_KV` or `AUTH_REQUEST_KEY` serves no OAuth route and answers every OAuth access token as invalid. A Worker deployed without `GRANTS` resolves every grant to nothing, so each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5). `/internal/revoke` purges the grant cache (src/revoke.ts).
+ * The transport, the `tools/call` forward, the bearer path, grant resolution (src/resolve.ts over the `GRANTS` binding), the rate limits (the `RATE` Durable Object) and confirmation are in place; the OAuth authorization server (src/oauth, RW-A1) supplies `verifyAccessToken` and owns the authorize, token, register and metadata routes. A Worker deployed without `OAUTH_KV` or `AUTH_REQUEST_KEY` serves no OAuth route and answers every OAuth access token as invalid. A Worker deployed without `GRANTS` resolves every grant to nothing, so each MCP request is answered 401, which is the answer an unknown grant gets anyway (Design 5). `/internal/revoke` purges the grant cache (src/revoke.ts). A request at `/g/<id>` whose id carries another region's prefix is answered `REDIACC_WRONG_REGION` with that region's URL before anything else runs (src/oauth/region.ts, Design 12).
  */
 import { createConfirmation } from './confirm.js';
 import type { ExecutorBinding } from './executor.js';
 import { createOAuth, type OAuth } from './oauth/index.js';
+import { wrongRegionResponse } from './oauth/region.js';
 import { doRateLimiter, MemoryRateLimiter, type RateNamespace } from './rate.js';
 import { createGrantResolver, type GrantResolver, type GrantsBinding } from './resolve.js';
 import { handleRevoke, REVOKE_PATH } from './revoke.js';
@@ -53,6 +54,7 @@ function oauthFor(env: Env): OAuth | undefined {
   if (!env.OAUTH_KV || !env.AUTH_REQUEST_KEY) return undefined;
   oauth ??= createOAuth({
     host: env.MCP_HOST,
+    region: env.REGION,
     accountUrl: env.ACCOUNT_URL,
     authRequestKey: env.AUTH_REQUEST_KEY,
     resolveGrant: resolverFor(env).fresh,
@@ -86,6 +88,9 @@ export default {
         resolver: resolverFor(env),
       });
     }
+    // A grant of another region is refused before any lookup, OAuth state or executor call (Design 12).
+    const elsewhere = wrongRegionResponse(request, { host: env.MCP_HOST, region: env.REGION });
+    if (elsewhere) return elsewhere;
     const auth = oauthFor(env);
     if (auth && env.OAUTH_KV) {
       const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);

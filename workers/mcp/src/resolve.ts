@@ -68,6 +68,7 @@ export function grantContextOf(wire: ResolvedGrantWire): GrantContext {
     placement: wire.placement,
     tier: wire.tier,
     userId: wire.userId,
+    configId: wire.configId,
   };
 }
 

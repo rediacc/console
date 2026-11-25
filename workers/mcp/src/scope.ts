@@ -36,6 +36,8 @@ export interface GrantContext {
   tier?: string;
   /** The grantor the agent acts as; a confirmation is bound to it (Design 6). */
   userId?: string;
+  /** The one config the grant names (D55): a `tools/call` naming another is refused with `REDIACC_GRANT_SCOPE`. */
+  configId?: string;
 }
 
 interface ScopedTool {
