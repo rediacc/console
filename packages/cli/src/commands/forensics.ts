@@ -2,7 +2,11 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { parseMachineKeys, verifyEvidenceDir } from '../services/forensics/evidence.js';
+import {
+  manifestMachineKeys,
+  parseMachineKeys,
+  verifyEvidenceDir,
+} from '../services/forensics/evidence.js';
 import { parseWindow } from '../services/forensics/window.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
@@ -17,15 +21,19 @@ function collect(value: string, previous: string[] = []): string[] {
   return [...previous, value];
 }
 
-/** `rdc forensics verify --dir <evidence>`: recompute both chains; exit 1 on any gap or edit. */
+/**
+ * `rdc forensics verify --dir <evidence>`: recompute both chains; exit 1 on any gap or edit. The
+ * machine keys are the ones the directory's raw-manifest.json lists, and a `--machine-key` entry
+ * replaces the listed key of its machine.
+ */
 export async function runForensicsVerify(options: VerifyOptions): Promise<void> {
   const window =
     options.since === undefined && options.until === undefined ? undefined : parseWindow(options);
-  const report = await verifyEvidenceDir(
-    options.dir,
-    window,
-    parseMachineKeys(options.machineKey ?? [])
-  );
+  const keys = new Map([
+    ...manifestMachineKeys(options.dir),
+    ...parseMachineKeys(options.machineKey ?? []),
+  ]);
+  const report = await verifyEvidenceDir(options.dir, window, keys);
   if (getOutputFormat() === 'json') {
     outputService.print(report, 'json');
   } else {

@@ -9,9 +9,11 @@
  *
  * Nothing here trusts the files: a batch whose header, signature or sections were changed
  * fails the signature, the section hashes or the chain link, and a day file changed after the
- * next day recorded its hash is an edit at that day.
+ * next day recorded its hash is an edit at that day. The machine keys come from the
+ * `raw-manifest.json` an `rdc incident export` writes beside the files (the keys the server
+ * pinned), and a `--machine-key` entry replaces the manifest's key for that machine.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, sep } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import {
@@ -35,6 +37,19 @@ const HEADERS = /^f\/[^/]+\/([^/]+)\/days\/(\d{4}-\d{2}-\d{2})\/headers\.ndjson\
 const REPO_FILE = /^repo-(.+?)(\.pii)?\.ndjson\.gz$/;
 const HEX_KEY = /^[0-9a-f]{64}$/i;
 const VERIFIER = 'rdc forensics verify';
+/** The manifest file an export writes at the root of the evidence directory. */
+export const RAW_MANIFEST_FILE = 'raw-manifest.json';
+
+/** True for a key the verifier reads: an audit day file or a forensics headers file. */
+export function isChainKey(key: string): boolean {
+  return AUDIT_DAY.test(key) || HEADERS.test(key);
+}
+
+/** True when a server-named key stays inside the directory it is written under. */
+export function isSafeEvidenceKey(key: string): boolean {
+  if (key === '' || key.startsWith('/') || key.includes('\\') || key.includes('\0')) return false;
+  return key.split('/').every((part) => part !== '' && part !== '.' && part !== '..');
+}
 
 export interface LoadedEvidence {
   org: string;
@@ -204,6 +219,24 @@ export function parseMachineKeys(entries: readonly string[]): Map<string, string
     if (machine === '' || !HEX_KEY.test(hex))
       throw invalid(t('forensics.badMachineKey', { entry }));
     keys.set(machine, hex.toLowerCase());
+  }
+  return keys;
+}
+
+/** The pinned machine keys of the `raw-manifest.json` in `directory`; empty when there is none. */
+export function manifestMachineKeys(directory: string): Map<string, string> {
+  const keys = new Map<string, string>();
+  const file = join(directory, RAW_MANIFEST_FILE);
+  if (!existsSync(file)) return keys;
+  let manifest: { machineKeys?: { machineId?: unknown; publicKey?: unknown }[] };
+  try {
+    manifest = JSON.parse(readFileSync(file, 'utf8')) as typeof manifest;
+  } catch {
+    throw invalid(t('forensics.badManifest', { file }));
+  }
+  for (const entry of manifest.machineKeys ?? []) {
+    if (typeof entry.machineId !== 'string' || typeof entry.publicKey !== 'string') continue;
+    if (HEX_KEY.test(entry.publicKey)) keys.set(entry.machineId, entry.publicKey.toLowerCase());
   }
   return keys;
 }

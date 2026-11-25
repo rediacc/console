@@ -3491,8 +3491,8 @@
         "descriptionShort": "List incidents or show one with its deadline clocks"
       },
       "export": {
-        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.",
-        "descriptionShort": "Export an incident's timeline and evidence manifest",
+        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. rdc forensics verify repeats the check over the same directory.",
+        "descriptionShort": "Export and verify an incident's timeline and evidence",
         "outOption": "Directory to write (default: incident-<id>)"
       }
     },
@@ -3500,10 +3500,10 @@
       "description": "Check forensic evidence on this workstation with the same verification the web console runs.",
       "descriptionShort": "Verify forensic evidence",
       "verify": {
-        "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.",
+        "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one.",
         "descriptionShort": "Verify audit and forensics hash chains of an evidence directory",
         "dirOption": "Evidence directory to verify",
-        "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters> (repeatable)"
+        "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable)"
       }
     },
     "legal": {
@@ -3960,6 +3960,9 @@
     "severalOrgs": "The evidence directory holds audit files of several organizations: {{orgs}}.",
     "noEvidence": "No audit day files or forensics headers found under \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" is not <machine>=<64 hex characters>.",
+    "badManifest": "Cannot read the machine keys of \"{{file}}\".",
+    "badEvidenceKey": "The account server named an evidence file outside the export directory: \"{{key}}\".",
+    "rawFileTruncated": "The evidence file \"{{key}}\" arrived with a length other than the one the server stated.",
     "verifyWindow": "Window {{from}} to {{to}}",
     "verifyFiles": "{{count}} evidence file(s) checked",
     "verifyGap": "gap  {{ref}}: {{reason}}",
@@ -3981,7 +3984,9 @@
     "clockFinalReport": "Final report due {{at}} ({{state}})",
     "exported": "Incident {{id}} exported to {{dir}} ({{rows}} timeline rows).",
     "rawTooLarge": "The raw chain material is over the manifest limit and is not listed.",
-    "rawListed": "raw-manifest.json lists {{count}} raw file(s) for rdc forensics verify."
+    "rawListed": "{{count}} raw file(s) downloaded; none is an audit day file or a forensics headers file for rdc forensics verify.",
+    "rawVerified": "Raw evidence downloaded and verified: {{count}} chain file(s), no gap and no edit.",
+    "rawNotVerified": "The downloaded evidence does not verify: {{gaps}} gap(s) and {{edits}} edit(s), listed above and in verification.json."
   },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",

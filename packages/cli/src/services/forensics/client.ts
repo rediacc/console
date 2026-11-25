@@ -68,6 +68,14 @@ export interface Aggregates {
   topDestinations: Record<string, unknown>[];
 }
 
+export interface MachineKey {
+  machineId: string;
+  subscriptionId: string;
+  /** The pinned Ed25519 spool key as 64 hex characters. */
+  publicKey: string;
+  pinnedAt?: string;
+}
+
 export interface RawManifest {
   files: {
     key: string;
@@ -78,6 +86,8 @@ export interface RawManifest {
   }[];
   bytes: number;
   tooLarge: boolean;
+  /** The spool keys the server pinned for the scope's machines. */
+  machineKeys: MachineKey[];
 }
 
 export interface TimelineRead {
@@ -169,5 +179,17 @@ export class ForensicsClient {
     return this.call<RawManifest>(
       `/forensics/investigations/${encodeURIComponent(investigationId)}/raw?${windowQuery(window)}`
     );
+  }
+
+  /** The bytes of one manifest file; the route answers them base64 inside JSON. */
+  async rawFile(investigationId: string, window: ForensicsWindow, key: string): Promise<Buffer> {
+    const read = await this.call<{ key: string; bytes: number; data: string }>(
+      `/forensics/investigations/${encodeURIComponent(investigationId)}/raw/file?${windowQuery(window)}&key=${encodeURIComponent(key)}`
+    );
+    const bytes = Buffer.from(read.data, 'base64');
+    if (bytes.length !== read.bytes) {
+      throw new CliExitError(ERROR_CODES.SERVER_ERROR, t('forensics.rawFileTruncated', { key }));
+    }
+    return bytes;
   }
 }

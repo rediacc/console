@@ -83,6 +83,33 @@ describe('forensics verify', () => {
     expect(printed()).toContain('no public key');
   });
 
+  it('takes the machine key from raw-manifest.json, and a --machine-key entry replaces it', async () => {
+    writeFileSync(
+      join(dir, 'raw-manifest.json'),
+      JSON.stringify({
+        files: [],
+        bytes: 0,
+        tooLarge: false,
+        machineKeys: [
+          { machineId: 'machine-1', subscriptionId: 'sub-1', publicKey: fixture.publicKeyHex },
+        ],
+      })
+    );
+    await runForensicsVerify({ dir });
+    expect(m.setExitCode).not.toHaveBeenCalled();
+    expect(printed()).toContain('forensics.verifyClean');
+
+    m.print.mockClear();
+    await runForensicsVerify({ dir, machineKey: [`machine-1=${'ab'.repeat(32)}`] });
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    expect(printed()).toContain('signature does not verify');
+  });
+
+  it('refuses a raw-manifest.json that is not JSON', async () => {
+    writeFileSync(join(dir, 'raw-manifest.json'), '{not json');
+    await expect(runForensicsVerify({ dir })).rejects.toThrow('forensics.badManifest');
+  });
+
   it('prints the stamped report as JSON', async () => {
     m.format.current = 'json';
     await runForensicsVerify({ dir, machineKey: key() });

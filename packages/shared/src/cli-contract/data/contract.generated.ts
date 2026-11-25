@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'b41ad6713624ed9d';
+export const CLI_CONTRACT_VERSION = '7b1e270ecf5134d3';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "b41ad6713624ed9d",
+  "version": "7b1e270ecf5134d3",
   "languages": [
     "ar",
     "de",
@@ -6762,7 +6762,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.forensics.verify.description",
-      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.",
+      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one.",
       "summaryKey": "commands.forensics.verify.descriptionShort",
       "summary": "Verify audit and forensics hash chains of an evidence directory",
       "severity": "none",
@@ -6809,7 +6809,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.forensics.verify.machineKeyOption",
-          "label": "Machine spool public key as <machine>=<64 hex characters> (repeatable)"
+          "label": "Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable)"
         }
       ],
       "positionals": [],
@@ -6835,9 +6835,9 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.incident.export.description",
-      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. rdc forensics verify repeats the check over the same directory.",
       "summaryKey": "commands.incident.export.descriptionShort",
-      "summary": "Export an incident's timeline and evidence manifest",
+      "summary": "Export and verify an incident's timeline and evidence",
       "severity": "none",
       "options": [
         {

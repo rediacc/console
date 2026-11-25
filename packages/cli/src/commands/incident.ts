@@ -1,8 +1,10 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { ForensicsClient } from '../services/forensics/client.js';
 import {
+  type ExportResult,
   exportIncident,
   incidentDetailLines,
   incidentListLines,
@@ -34,7 +36,10 @@ export async function runIncidentStatus(
   else outputService.print(incidentDetailLines(view));
 }
 
-/** `rdc incident export <id> --out <dir>`: the incident's window written to a directory. */
+/**
+ * `rdc incident export <id> --out <dir>`: the incident's window written to a directory with its
+ * raw files, verified on the way; exit 1 when the downloaded evidence shows a gap or an edit.
+ */
 export async function runIncidentExport(
   id: string,
   options: { out?: string },
@@ -47,10 +52,16 @@ export async function runIncidentExport(
     options.out ?? `incident-${incident.id}`,
     deps.now()
   );
+  const failed = result.verification !== null && !result.verification.clean;
   if (getOutputFormat() === 'json') {
     outputService.print(result, 'json');
-    return;
+  } else {
+    printExport(result);
   }
+  if (failed) setExitCode(1);
+}
+
+function printExport(result: ExportResult): void {
   outputService.success(
     t('incident.exported', {
       id: result.incident,
@@ -60,11 +71,25 @@ export async function runIncidentExport(
   );
   if (result.unreadable > 0)
     outputService.warn(t('forensics.unreadable', { count: result.unreadable }));
-  outputService.info(
-    result.rawTooLarge
-      ? t('incident.rawTooLarge')
-      : t('incident.rawListed', { count: result.rawFiles })
-  );
+  const verification = result.verification;
+  if (result.rawTooLarge) {
+    outputService.info(t('incident.rawTooLarge'));
+  } else if (verification === null) {
+    outputService.info(t('incident.rawListed', { count: result.rawFiles }));
+  } else if (verification.clean) {
+    outputService.info(t('incident.rawVerified', { count: verification.files }));
+  } else {
+    for (const g of verification.gaps)
+      outputService.warn(t('forensics.verifyGap', { ref: g.ref, reason: g.reason }));
+    for (const e of verification.edits)
+      outputService.warn(t('forensics.verifyEdit', { ref: e.ref, reason: e.reason }));
+    outputService.warn(
+      t('incident.rawNotVerified', {
+        gaps: verification.gaps.length,
+        edits: verification.edits.length,
+      })
+    );
+  }
 }
 
 export function registerIncidentCommand(program: Command): void {

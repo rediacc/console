@@ -2301,7 +2301,7 @@ List the incidents of the organization, or show one with its scope, window, mach
 
 ### rdc incident export <id>
 
-Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates and the raw chain manifest. The raw day files the manifest lists can be checked with rdc forensics verify.
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. rdc forensics verify repeats the check over the same directory.
 
 **Options:**
 
@@ -2311,14 +2311,14 @@ Write the incident's window to a directory: the incident record with its clocks,
 
 ### rdc forensics verify
 
-Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures need the machine's public key through --machine-key.
+Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one.
 
 **Options:**
 
 - `--dir <path>`: Evidence directory to verify
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
-- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters> (repeatable)
+- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable)
 
 > MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
 
