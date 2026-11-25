@@ -16746,6 +16746,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-detect-wasm',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.detect_wasm',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/detect_wasm.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Check the detector WASM rebuilds from the renet gitlink',
+    },
+  },
+  {
     id: 'check:ci-env-registry',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry',
     slow: true,
@@ -16768,6 +16780,18 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Gate declarations agree',
+    },
+  },
+  {
+    id: 'check:ci-step-phase-coverage',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.step_phase_coverage',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/step_phase_coverage.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Check renet step ids against the console phase map',
     },
   },
   // <<< gen-gates
