@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1121 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1122 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 1 live (session d778be9d): worker:abff8a1becbf303ca.
-- Leased items: 1: #89ed03c7 (worker:abff8a1becbf303ca, d778be9d).
+- Writers: 2 live (session d778be9d): worker:abff8a1becbf303ca, worker:abfac5f7021ffcc42.
+- Leased items: 2: #89ed03c7 (worker:abff8a1becbf303ca, d778be9d), #e83591b9 (worker:abfac5f7021ffcc42, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 97 plans done, 1357 of 1842 boxes done (73%).
+Promoted: 11 of 97 plans done, 1363 of 1842 boxes done (73%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -135,14 +135,14 @@ Promoted: 11 of 97 plans done, 1357 of 1842 boxes done (73%).
 | 73 | PLAN-rmcp-decide.md | 3/9 | 6 open |
 | 74 | PLAN-rmcp-writeback.md | 12/17 | 5 open |
 | 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
-| 76 | PLAN-rmcp-agent-grants.md | 0/15 | 15 open |
-| 77 | PLAN-console-ai-providers.md | 9/15 | 6 open |
+| 76 | PLAN-rmcp-agent-grants.md | 1/15 | 14 open |
+| 77 | PLAN-console-ai-providers.md | 10/15 | 5 open |
 | 78 | PLAN-console-ai-assistant.md | 2/15 | 13 open |
 | 79 | PLAN-console-ai-credits.md | 2/15 | 13 open |
 | 80 | PLAN-console-ai-feedback.md | 1/9 | 8 open |
 | 81 | PLAN-console-ai-in-pages.md | 2/10 | 8 open |
 | 82 | PLAN-rmcp-config-edit-removal.md | 0/9 | 9 open |
-| 83 | PLAN-rmcp-local-mcp.md | 2/13 | 11 open |
+| 83 | PLAN-rmcp-local-mcp.md | 6/13 | 7 open |
 | 84 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
 | 85 | PLAN-rmcp-remote-worker.md | 0/27 | 27 open |
 | 86 | PLAN-rmcp-docs.md | 2/20 | 18 open |

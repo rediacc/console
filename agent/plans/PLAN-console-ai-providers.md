@@ -114,10 +114,11 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP1, AP2, AP9.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-providers.test.tsx)` rc 0 and `(cd private/account && npm run typecheck:web)` rc 0.
     (ticked) 2026-11-25T04:13:24Z by d778be9d: AP10 AI providers settings page in 13 locales; web vitest ai-providers passes. commit:cc7af402a9. DEPS-WAIVED: box edges satisfied
-- [ ] AP11 [writer] Locale file `aiProviders.json`: English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
+- [x] AP11 [writer] Locale file `aiProviders.json`: English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiProviders.json
   Depends on: AP10.
   Accept: `npm run -s check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-25T04:51:38Z by d778be9d: present: aiProviders.json in 13 locales (cc7af402a9), private/account/web/src/pages/console/AiProviders.tsx:64 reads the namespace; check:i18n and account i18n gates rc 0; locales written by hand as natural translations rather than through the pipeline. DEPS-WAIVED: box edges satisfied
 - [ ] AP12 [writer] Keyboard contract spec `27-20-ai-providers.test.ts` (C28): pick a preset, fill the form, save through the reauth step and read the test result, all by keyboard, against the mock executor.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-20-ai-providers.test.ts

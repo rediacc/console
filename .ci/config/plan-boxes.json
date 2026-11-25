@@ -1102,11 +1102,10 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 9,
+      "open": 5,
+      "done": 10,
       "open_sigs": [
         "0e707089",
-        "156b3e65",
         "1feeff95",
         "2a92e9a8",
         "33d4b9af",
@@ -1114,6 +1113,7 @@
       ],
       "done_sigs": [
         "08c8e072",
+        "156b3e65",
         "17ba7070",
         "21f07a49",
         "2bac5624",
@@ -3470,14 +3470,13 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 14,
+      "done": 1,
       "open_sigs": [
         "05121adc",
         "256f2acd",
         "3c77a1a6",
         "3e1ed71f",
-        "44aec628",
         "45b9222b",
         "4fbcdc18",
         "53baa3bf",
@@ -3489,7 +3488,9 @@
         "dcae26e2",
         "f92d134b"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "44aec628"
+      ]
     },
     "agent/plans/PLAN-rmcp-config-edit-removal.md": {
       "status": "approved",
@@ -3602,23 +3603,23 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 2,
+      "open": 7,
+      "done": 6,
       "open_sigs": [
         "159f43c4",
         "3e26bb22",
         "46dd6201",
-        "62ca0c97",
         "6beaba55",
-        "6e8dbcd6",
-        "77342953",
         "786d846e",
         "85efac7c",
-        "a340bf9f",
         "bbece844"
       ],
       "done_sigs": [
         "3195837d",
+        "62ca0c97",
+        "6e8dbcd6",
+        "77342953",
+        "a340bf9f",
         "b29fd45f"
       ]
     },
