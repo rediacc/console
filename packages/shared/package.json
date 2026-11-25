@@ -241,6 +241,10 @@
       "types": "./dist/ai/*.d.ts",
       "default": "./dist/ai/*.js"
     },
+    "./mcp/*": {
+      "types": "./dist/mcp/*.d.ts",
+      "default": "./dist/mcp/*.js"
+    },
     "./forensics": {
       "types": "./dist/forensics/index.d.ts",
       "default": "./dist/forensics/index.js"
