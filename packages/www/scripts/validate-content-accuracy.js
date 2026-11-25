@@ -42,10 +42,27 @@ const EXCLUDED_DOC_SLUGS = new Set(['cli-application.md']);
 // Commands that exist in the CLI but are not exported to command-tree.json
 const TREE_UNLISTED_COMMANDS = new Set(['shortcuts']);
 
-// Valid *.rediacc.com domains
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+
+// Product hosts the tracked deploy config defines: each region's account domain (regions.json) and each MCP Worker's custom domain (workers/mcp/wrangler.*.toml routes).
+function productHosts() {
+  const hosts = [];
+  const regions = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'regions.json'), 'utf8')).regions;
+  for (const region of regions) hosts.push(region.domain);
+  const mcpDir = path.join(REPO_ROOT, 'workers/mcp');
+  for (const name of fs.readdirSync(mcpDir)) {
+    if (!/^wrangler\..+\.toml$/.test(name)) continue;
+    const toml = fs.readFileSync(path.join(mcpDir, name), 'utf8');
+    for (const m of toml.matchAll(/pattern\s*=\s*"([a-z0-9.-]+)"/g)) hosts.push(m[1]);
+  }
+  return hosts;
+}
+
+// Valid rediacc hosts: the site, the releases host, and the product hosts above.
 const VALID_REDIACC_DOMAINS = new Set([
   new URL(WK_SITE_ORIGIN).host,
   new URL(WK_RELEASES_ORIGIN).host,
+  ...productHosts(),
 ]);
 
 // Regex to extract rdc commands from inline backticks
