@@ -41,22 +41,12 @@ export const PROXY_EXCLUSIONS: Record<string, string> = {
   // ── The operator's credential ─────────────────────────────────────────
   'backup churn':
     'a client-side loop of probes that can run for hours, and it must forget its base when it ends',
-  'backup check':
-    'reads a listing and restores a file with the repository credential, which stays where the config lives',
-  'backup repair':
-    "Deletes bad chunks on the account with the caller's backup:manage token, then re-uploads from the machine; a remote executor holds neither the token nor the caller's config. Run it without --proxy.",
-  'backup toc-key sync':
-    'derives the public key from the repository credential, which stays where the config lives',
 
   // ── Local effect ──────────────────────────────────────────────────────
   'machine infra cert pull':
     "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
   'cluster kubeconfig':
     'Caches the kubeconfig to a local 0600 file and prints that path; a remote executor would write the file onto its own disk. Run it without --proxy.',
-  'machine scan-keys':
-    "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
-  'config reconcile':
-    "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
   'machine access push':
     "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
 
@@ -79,13 +69,69 @@ export const PROXY_EXCLUSIONS: Record<string, string> = {
     "Judges each image against every config the CALLER can read; a remote executor would judge against its own configs and report the caller's repositories as orphans. Run it without --proxy.",
   'repo admin orphan delete':
     "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
+};
 
-  'machine prune':
-    "With --orphaned-repos or --prune-unknown it judges each image against every config the CALLER can read; a remote executor would judge against its own configs and delete the caller's repositories. Run it without --proxy.",
-
-  // ── Caller-held secrets ───────────────────────────────────────────────
-  'machine converge':
-    "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
+/**
+ * Config-plane and `other`-plane commands the executor serves against the session config (PLAN-rmcp-local-mcp LM10, decision D57): each reads or writes only the config the request scope holds, or calls the account server with the session token, and so needs no machine. Every other non-machine command stays refused. None of them reaches a machine, so none is a machine job and `--background` refuses them.
+ */
+export const EXECUTOR_SERVED: Record<string, string> = {
+  'backup immutability show':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup manifests':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup reconcile':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup retention':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup retention preview':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup strategy list':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'backup strategy show':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'backup undelete':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'backup usage':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'cluster status':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'config access list':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'config prune':
+    'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'config show':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  credits: "Prints the credits bundled with the CLI build; nothing of the caller's is read.",
+  'feedback list':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'feedback report':
+    'Calls the account server with the session token the executor holds for the grant.',
+  'feedback show':
+    'Calls the account server with the session token the executor holds for the grant.',
+  legal:
+    'Prints the bundled legal documents and reads the accepted terms from the account server with the session token.',
+  'machine access show':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'machine add':
+    'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'machine infra show':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'machine list':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'machine provider add':
+    'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'machine provider list':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'machine provider remove':
+    'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'machine remove':
+    'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'repo replicate status':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'repo secret get':
+    'Reads the session config held by the request scope, never another config on the executor.',
+  'repo secret list':
+    'Reads the session config held by the request scope, never another config on the executor.',
 };
 
 /**
@@ -100,6 +146,14 @@ export const PROXY_EXCLUSIONS: Record<string, string> = {
  * run instead.
  */
 export const DETACH_EXCLUSIONS: Record<string, string> = {
+  'backup check':
+    'Drives several renet calls from the operator side with a credential the config holds, so there is no single machine job to detach. Run it without --background.',
+  'backup repair':
+    'Drives several renet calls from the operator side with a token and credential the config holds, so there is no single machine job to detach. Run it without --background.',
+  'backup toc-key sync':
+    'Drives several renet calls from the operator side with a credential the config holds, so there is no single machine job to detach. Run it without --background.',
+  'machine scan-keys':
+    'Runs ssh-keyscan locally and writes the config, with no renet call to run as a job. Run it without --background.',
   'cluster destroy':
     'Tears the cluster down with local OpenTofu or ops calls and never reaches a machine over SSH, so there is no machine job to detach. Run it without --background.',
   'datastore list':
@@ -187,4 +241,10 @@ export const GENERIC_PROXY_BLOCKED = {
     'Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.',
   localTooling:
     'Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.',
+} as const;
+
+/** The `--background` refusal of a command the executor serves without a machine (EXECUTOR_SERVED): there is no machine job to detach. */
+export const GENERIC_DETACH_BLOCKED = {
+  executorServed:
+    'Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.',
 } as const;

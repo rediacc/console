@@ -207,16 +207,13 @@ function checkIdentity(cmd: ContractCommand): string[] {
 
 /**
  * proxyCapable is derived, and a consumer must never be handed a proxyable
- * command that is interactive or off the machine plane. Every refusal must also
+ * command that is interactive. A non-machine command is proxyable only through the generator's EXECUTOR_SERVED table, and then it can never be detachable (checkDetachable). Every refusal must also
  * carry a reason, so the CLI can always tell the operator why.
  */
 function checkProxyCapability(cmd: ContractCommand): string[] {
   const problems: string[] = [];
 
   if (cmd.proxyCapable) {
-    if (cmd.plane !== 'machine') {
-      problems.push(`${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}"`);
-    }
     if (cmd.interactive) {
       problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
     }
@@ -380,6 +377,19 @@ function checkPositionalBindings(cmd: ContractCommand): string[] {
   return problems;
 }
 
+/** What a detachable command must not be: off the proxy, off the machine plane (it runs no machine job there), or a job verb. */
+function checkDetachableCommand(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+  if (!cmd.proxyCapable) problems.push(`${cmd.pathKey}: detachable but not proxyCapable`);
+  if (cmd.plane !== 'machine') {
+    problems.push(
+      `${cmd.pathKey}: detachable but plane is "${cmd.plane}", so it runs no machine job`
+    );
+  }
+  if (cmd.domain === 'job') problems.push(`${cmd.pathKey}: a job verb cannot be detachable`);
+  return problems;
+}
+
 /**
  * detachable is derived from proxyCapable, so it can never be set on a command
  * that is not, nor on a `job` verb. A proxyable non-job command that is not
@@ -388,12 +398,7 @@ function checkPositionalBindings(cmd: ContractCommand): string[] {
  */
 function checkDetachable(cmd: ContractCommand): string[] {
   const problems: string[] = [];
-  if (cmd.detachable && !cmd.proxyCapable) {
-    problems.push(`${cmd.pathKey}: detachable but not proxyCapable`);
-  }
-  if (cmd.detachable && cmd.domain === 'job') {
-    problems.push(`${cmd.pathKey}: a job verb cannot be detachable`);
-  }
+  if (cmd.detachable) problems.push(...checkDetachableCommand(cmd));
   const exception = cmd.proxyCapable && cmd.domain !== 'job' && !cmd.detachable;
   if (exception && !cmd.detachBlockedReason) {
     problems.push(`${cmd.pathKey}: proxyable but not detachable, with no detachBlockedReason`);

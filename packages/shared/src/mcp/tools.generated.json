@@ -112,9 +112,9 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Restores one file with the repository credential, which the granted config carries.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -133,9 +133,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Reads the delayed-deletion window from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -209,9 +209,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists manifests from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -243,9 +243,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Calls the account server with the session token to reset a stored-bytes ledger.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -274,9 +274,9 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Needs the backup:manage token and the repository credential, which the executor holds through the session grant.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -387,9 +387,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Reads the retention policy from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -414,9 +414,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Reads the next sweep preview from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -572,9 +572,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists the backup strategies stored in the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -598,9 +598,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows one backup strategy stored in the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -633,9 +633,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Derives the listing key from the repository credential, which the granted config carries.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -660,9 +660,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Cancels a delayed delete on the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -681,9 +681,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Calls the account server with the session token; nothing local is read.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -816,9 +816,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists clusters, or shows one, from the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -837,9 +837,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists the access keys stored in the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -991,16 +991,16 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Sweeps stale entries from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
     {
       "name": "config_reconcile",
       "command": "config reconcile",
-      "description": "Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12).",
+      "description": "Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1011,6 +1011,10 @@
           "dry_run": {
             "type": "boolean",
             "description": "Show what would be done without making changes"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1021,11 +1025,11 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Queries every machine and writes the rebuilt runtime state into the session config through the write-back path (WB1, WB4).",
+      "localReason": null,
       "timeoutClass": "write",
-      "attachWindow": false
+      "attachWindow": true
     },
     {
       "name": "config_show",
@@ -1042,9 +1046,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows the granted config, redacted, from the copy the executor already holds.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1068,9 +1072,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Prints the bundled third-party credits, which the executor ships too.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1182,9 +1186,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists feedback reports from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1224,9 +1228,9 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Sends a report to the account server with the session token; the recorded-command forms read the history of the executor that ran the commands.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -1251,9 +1255,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows one feedback report from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1506,9 +1510,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Prints the bundled legal documents and reads the accepted terms from the account server with the session token.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1533,9 +1537,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows the access keys bound to a machine, resolved from the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1572,9 +1576,9 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Adds a machine to the session config; a config-plane write that rides the write-back path (PLAN-rmcp-writeback WB1, WB4) and keeps its knowledge gates.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -1608,7 +1612,7 @@
     {
       "name": "machine_converge",
       "command": "machine converge",
-      "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.",
+      "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1632,6 +1636,10 @@
           "continue_on_error": {
             "type": "boolean",
             "description": "Keep going after a repository fails instead of stopping the pass"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
           }
         },
         "required": ["name"],
@@ -1643,11 +1651,11 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Restarts repo daemons with the env secrets the granted config carries.",
+      "localReason": null,
       "timeoutClass": "write",
-      "attachWindow": false
+      "attachWindow": true
     },
     {
       "name": "machine_deprovision",
@@ -1788,9 +1796,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows a machine's infrastructure block from the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1823,9 +1831,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists the machines of the granted config the executor already holds.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1919,9 +1927,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Adds a cloud provider to the session config; a config-plane write through the write-back path (WB1, WB4) that keeps its knowledge gates.",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -1940,9 +1948,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists the cloud providers of the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -1967,9 +1975,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Removes a cloud provider from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -2031,7 +2039,7 @@
     {
       "name": "machine_prune",
       "command": "machine prune",
-      "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
+      "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2058,6 +2066,10 @@
           "force": {
             "type": "boolean",
             "description": "Skip confirmation prompts"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
           }
         },
         "required": ["name"],
@@ -2069,11 +2081,11 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Judges images against the session config only, so it can run on the executor without reading other configs.",
+      "localReason": null,
       "timeoutClass": "write",
-      "attachWindow": false
+      "attachWindow": true
     },
     {
       "name": "machine_remove",
@@ -2104,9 +2116,9 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Removes a machine from the session config; a config-plane write through the write-back path (WB1, WB4).",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -2196,9 +2208,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "executor",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Scans host keys from the executor, which is where later SSH connections come from, and writes knownHosts back through the write-back path (WB1, WB4).",
+      "localReason": null,
       "timeoutClass": "write",
       "attachWindow": false
     },
@@ -3291,9 +3303,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Shows replica sets recorded in the granted config.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -3322,9 +3334,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Returns the digest of a secret held in the granted config, never the plaintext.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },
@@ -3349,9 +3361,9 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "surface": "in-memory",
+      "surface": "proxy",
       "localBasis": null,
-      "localReason": "Lists secret keys and modes from the granted config, never values.",
+      "localReason": null,
       "timeoutClass": "read",
       "attachWindow": false
     },

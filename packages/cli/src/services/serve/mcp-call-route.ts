@@ -265,6 +265,14 @@ async function openGrant(
   }
 }
 
+/** The refusal of a tool this server does not serve: a local tool names its registry reason (D57: it reads the caller's own disk or needs a terminal), any other name is unknown. */
+function unservedTool(tool: string, entry: McpToolEntry | undefined): CallToolResult {
+  const refusal = entry
+    ? `The tool ${tool} runs only on the caller's own machine: ${entry.localReason ?? 'it is not served remotely'}`
+    : `There is no tool named ${tool} on this server.`;
+  return toolError('INVALID_REQUEST', refusal);
+}
+
 /** Register `POST /v1/mcp/call`. Container tier only: see the module doc. */
 export function registerMcpCallRoute(
   app: Hono,
@@ -282,13 +290,7 @@ export function registerMcpCallRoute(
     const { grantId, secret, tool, args, requestId, attachMs } = parsed.data;
 
     const entry = getMcpTool(tool);
-    if (entry?.surface !== 'proxy') {
-      const unknown = toolError(
-        'INVALID_REQUEST',
-        `There is no tool named ${tool} on this server.`
-      );
-      return c.json({ result: unknown });
-    }
+    if (entry?.surface !== 'proxy') return c.json({ result: unservedTool(tool, entry) });
     const opened = await openGrant(sessions, grantId, secret);
     if (!('handle' in opened)) return c.json(opened.body, opened.status);
     const { handle } = opened;

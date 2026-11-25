@@ -136,10 +136,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply',
   },
   'machine list': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Lists the machines of the granted config the executor already holds.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'machine gpu list': {
@@ -147,35 +144,21 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'machine add': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Adds a machine to the session config; a config-plane write that rides the write-back path (PLAN-rmcp-writeback WB1, WB4) and keeps its knowledge gates.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
   'machine remove': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Removes a machine from the session config; a config-plane write through the write-back path (WB1, WB4).',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['yes'] },
   },
 
   // ── Backup noun (strategies, machine-scoped runs, artifacts) ────────────
   'backup strategy list': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Lists the backup strategies stored in the granted config.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup strategy show': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Shows one backup strategy stored in the granted config.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup run': {
@@ -200,33 +183,21 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup usage': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Calls the account server with the session token; nothing local is read.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Applying rewrites the ledger that feeds quota (never deletes data); re-running converges.
   // A dry run or --check changes nothing.
   'backup reconcile': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Calls the account server with the session token to reset a stored-bytes ledger.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'read' },
   },
   'backup manifests': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Lists manifests from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup retention': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Reads the retention policy from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // The two MUTATIONS opt OUT of MCP. A retention policy decides what the server DELETES, and an agent that narrows one silently discards snapshots the operator meant to keep; `set` also REPLACES every knob rather than merging, so a partial call is a data-loss shape. The read above is fine.
@@ -242,10 +213,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // A dry run of the policy against the live manifests: it reports which snapshots a prune would delete and deletes nothing.
   'backup retention preview': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Reads the next sweep preview from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup snapshots delete': {
@@ -262,10 +230,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // The delayed-deletion window (D-immutable). `show` is a read. `set` changes how long a delete waits, so it opts OUT like a retention mutation: a shortening is itself delayed by the server, but an agent should not move the safety window.
   'backup immutability show': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Reads the delayed-deletion window from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup immutability set': {
@@ -275,10 +240,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Cancels a delayed delete: it only keeps data, and repeating it is harmless.
   'backup undelete': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Cancels a delayed delete on the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'write' },
   },
   // Samples run for minutes to hours, with a reflink base held on the machine until the verb ends, which no MCP timeout covers.
@@ -289,28 +251,17 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Opts IN as a write: it asks the server to delete a corrupt chunk and re-uploads from the machine's anchor.
   'backup repair': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Needs the backup:manage token and the repository credential, which the executor holds through the session grant.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   // Opts IN as a write: it restores one file to scratch and records the verdict on the server.
   'backup check': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Restores one file with the repository credential, which the granted config carries.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin.
   'backup toc-key sync': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Derives the listing key from the repository credential, which the granted config carries.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup verify': {
@@ -344,10 +295,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine infra show': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: "Shows a machine's infrastructure block from the granted config.",
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -489,11 +437,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine prune': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Judges images against the session config only, so it can run on the executor without reading other configs.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -503,10 +447,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Restarts every stale repo daemon on the machine (a short outage per repo), destroys no data, and a second run finds nothing stale.
   'machine converge': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Restarts repo daemons with the env secrets the granted config carries.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -543,11 +484,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider add': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Adds a cloud provider to the session config; a config-plane write through the write-back path (WB1, WB4) that keeps its knowledge gates.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -556,11 +493,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider remove': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Removes a cloud provider from the session config; a config-plane write through the write-back path (WB1, WB4).',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -569,7 +502,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider list': {
-    mcpSurface: { kind: 'in-memory', reason: 'Lists the cloud providers of the granted config.' },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -595,11 +528,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'machine scan-keys': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Scans host keys from the executor, which is where later SSH connections come from, and writes knownHosts back through the write-back path (WB1, WB4).',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -633,10 +562,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.',
   },
   'machine access show': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Shows the access keys bound to a machine, resolved from the granted config.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared destructive precisely so the console would confirm them; that is not a licence to also hand them to an agent.)
@@ -720,10 +646,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // `--reveal` prints decrypted secrets and the handler refuses it to an agent at run time (config.ts applyRevealGate), so the tool does not advertise it.
   'config show': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Shows the granted config, redacted, from the copy the executor already holds.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
   },
   'config current': {
@@ -749,10 +672,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.',
   },
   'config access list': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Lists the access keys stored in the granted config.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config audit log': {
@@ -794,11 +714,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Rewrites a damaged config from backup; the operator must see what changed.',
   },
   'config prune': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Sweeps stale entries from the session config; a config-plane write through the write-back path (WB1, WB4).',
-    },
+    mcpSurface: PROXY,
     // ★ SPEC-MANDATED: spec/03 §5 grants mcp(write, idempotent) and withholds only --purge-archived (which drops EVERY archived record regardless of grace). I had excluded the whole leaf by inference; the spec is narrower and better, prune is a safe, idempotent cleanup, and only its nuclear option is agent-inappropriate.
     mcp: {
       destructive: false,
@@ -816,10 +732,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   credits: {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Prints the bundled third-party credits, which the executor ships too.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -837,11 +750,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   legal: {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Prints the bundled legal documents and reads the accepted terms from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   completion: {
@@ -850,25 +759,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Files a report with the account service: a write, and never idempotent (each send can consume the daily limit).
   'feedback report': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Sends a report to the account server with the session token; the recorded-command forms read the history of the executor that ran the commands.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
   'feedback list': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Lists feedback reports from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'feedback show': {
-    mcpSurface: {
-      kind: 'executor',
-      reason: 'Shows one feedback report from the account server with the session token.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
 
@@ -921,11 +820,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Config value deletion: use CLI directly',
   },
   'config reconcile': {
-    mcpSurface: {
-      kind: 'executor',
-      reason:
-        'Queries every machine and writes the rebuilt runtime state into the session config through the write-back path (WB1, WB4).',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -1179,10 +1074,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Writes (set/unset) require --current/--rotate-secret ceremony, so they stay CLI-only. Reads (list/get) ARE exposed as repo_secret_list and repo_secret_get MCP tools.',
   },
   'repo secret list': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Lists secret keys and modes from the granted config, never values.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -1193,10 +1085,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo secret get': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Returns the digest of a secret held in the granted config, never the plaintext.',
-    },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -1274,7 +1163,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo replicate status': {
-    mcpSurface: { kind: 'in-memory', reason: 'Shows replica sets recorded in the granted config.' },
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -1328,10 +1217,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // ── Cluster group ──────────────────────────────────────────────────────
   'cluster status': {
-    mcpSurface: {
-      kind: 'in-memory',
-      reason: 'Lists clusters, or shows one, from the granted config.',
-    },
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'cluster kubeconfig': {

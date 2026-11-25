@@ -121,12 +121,16 @@ describe('CLI contract', () => {
     expect(translate({ 'commands.x': 'Dagit' }, 'commands.x', 'Deploy')).toBe('Dagit');
   });
 
-  it('proxyCapable implies a machine plane and a non-interactive command', () => {
+  it('proxyCapable implies a non-interactive command, and an off-machine one only through EXECUTOR_SERVED', () => {
     for (const cmd of CLI_CONTRACT.commands) {
-      if (cmd.proxyCapable) {
-        expect(cmd.plane, cmd.pathKey).toBe('machine');
-        expect(cmd.interactive, cmd.pathKey).toBe(false);
-      }
+      if (cmd.proxyCapable) expect(cmd.interactive, cmd.pathKey).toBe(false);
+    }
+    // PLAN-rmcp-local-mcp LM10 (D57): the 29 config and `other` plane commands of the surface table run on the executor against the session config. A command joins this set only through the EXECUTOR_SERVED table of the generator, so the count is a drift alarm, and none of them is a machine job.
+    const offMachine = CLI_CONTRACT.commands.filter((c) => c.proxyCapable && c.plane !== 'machine');
+    expect(offMachine).toHaveLength(29);
+    for (const cmd of offMachine) {
+      expect(cmd.detachable, cmd.pathKey).toBe(false);
+      expect(cmd.detachBlockedReason, cmd.pathKey).toMatch(/without --background/);
     }
 
     // A pinned count is a deliberate drift alarm: it fires when the proxy-capable
@@ -161,7 +165,9 @@ describe('CLI contract', () => {
     //
     // 96 -> 97: `rdc job dismiss` landed. It acknowledges a ticket in the machine's job spool over SSH like the other `job *` verbs, which are proxy-capable and never detachable.
     // 97 -> 96: `machine prune` judges --orphaned-repos and --prune-unknown against the caller's configs, so it is excluded from proxying.
-    expect(proxyCapableCommands().length).toBe(96);
+    //
+    // 96 -> 132: PLAN-rmcp-local-mcp LM10 (D57). Seven machine-plane commands left PROXY_EXCLUSIONS (`backup check`, `backup repair`, `backup toc-key sync`, `machine converge`, `machine prune`, `machine scan-keys`, `config reconcile`), because the executor holds the session config their reason named as the caller's, and 29 config and `other` plane commands joined through EXECUTOR_SERVED.
+    expect(proxyCapableCommands().length).toBe(132);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -183,23 +189,17 @@ describe('CLI contract', () => {
       'repo sync status',
       'machine infra cert pull',
       'cluster kubeconfig',
-      'machine scan-keys',
-      'config reconcile',
     ];
-    // Caller-held secrets: the executor would restart repo daemons with its own env secrets, not the caller's.
-    excluded.push('machine converge');
     // Rewrites the machine's authorized_keys, including the executor's own key's line: an executor never changes its own access (PLAN-ssh-key-source-ranges C1).
     excluded.push('machine access push');
     // Client-side rsync of the encrypted repo image to or from the operator's own disk (PLAN-backup-local-image C1).
     excluded.push('backup download', 'backup upload');
     // The operator's credential or token drives them: the listing key, the passphrase checks and the repair's account calls (PLAN-backup-integrity C3 to C5, S2).
-    excluded.push('backup check', 'backup churn', 'backup repair', 'backup toc-key sync');
+    excluded.push('backup churn');
     // `rdc server` finds the box through the caller's install record, drives child commands and prints the server's keys; `server install` is interactive (PLAN-enterprise-tenants C7).
     excluded.push('server status', 'server upgrade', 'server backup', 'server licence');
     // Judged against every config the caller can read: an executor would judge against its own configs and could delete an image the caller's config names.
     excluded.push('repo admin orphan list', 'repo admin orphan delete');
-    // `machine prune --orphaned-repos` and `--prune-unknown` share that verdict, and the flags decide at runtime, so the whole verb is excluded.
-    excluded.push('machine prune');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -360,26 +360,31 @@ describe('CLI contract', () => {
   });
 
   it('pins the detachable set to the J0b machine-plane job audit', () => {
-    // agent/plans/PLAN-detached-jobs.md, "J0b machine-plane job audit": every proxyable machine-plane command runs as one machine job (section 14) except the rows whose form is `exempt`. The proxyable exempt rows are exactly these six, each with its reason in DETACH_EXCLUSIONS. A command added to the machine plane joins the detachable set by default, and this list changes with it, which is the point: the set is decided, never drifted into.
+    // agent/plans/PLAN-detached-jobs.md, "J0b machine-plane job audit": every proxyable machine-plane command runs as one machine job (section 14) except the rows whose form is `exempt`. The proxyable exempt rows are exactly these ten, each with its reason in DETACH_EXCLUSIONS. A command added to the machine plane joins the detachable set by default, and this list changes with it, which is the point: the set is decided, never drifted into.
     const exceptions = CLI_CONTRACT.commands
-      .filter((c) => c.proxyCapable && c.domain !== 'job' && !c.detachable)
+      .filter((c) => c.proxyCapable && c.plane === 'machine' && c.domain !== 'job' && !c.detachable)
       .map((c) => c.pathKey)
       .sort((a, b) => a.localeCompare(b));
     expect(exceptions).toEqual([
+      'backup check',
+      'backup repair',
+      'backup toc-key sync',
       'cluster destroy',
       'datastore list',
       'machine deprovision',
       'machine infra cert push',
+      'machine scan-keys',
       'vscode serve status',
       'vscode serve stop',
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
     // 81 -> 82: `repo health` (one repository_health read job, its print a step).
     // 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4).
-    expect(detachable).toHaveLength(83);
-    // 84 -> 83: `machine prune` is not proxy-capable, so not detachable.
-    expect(getCommand('machine prune')?.proxyCapable).toBe(false);
-    expect(getCommand('machine prune')?.detachable).toBe(false);
+    // 84 -> 83: `machine prune` was not proxy-capable, so not detachable.
+    // 83 -> 86: LM10 (D57) made seven machine-plane commands of the surface table proxy-capable; `machine prune`, `machine converge` and `config reconcile` run as machine jobs, and the other four are section 24 exceptions above.
+    expect(detachable).toHaveLength(86);
+    expect(getCommand('machine prune')?.proxyCapable).toBe(true);
+    expect(getCommand('machine prune')?.detachable).toBe(true);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',
@@ -416,24 +421,31 @@ describe('CLI contract', () => {
     const generatorStale = new Function(
       'PROXY_EXCLUSIONS',
       'DETACH_EXCLUSIONS',
+      'EXECUTOR_SERVED',
       'livePathKeys',
       `return ${expression.replaceAll(' as const', '')};`
     ) as (
       proxy: Record<string, string>,
       detach: Record<string, string>,
+      served: Record<string, string>,
       live: Set<string>
     ) => Array<readonly [string, string]>;
     const proxy = tableKeys('PROXY_EXCLUSIONS');
     const detach = tableKeys('DETACH_EXCLUSIONS');
+    const served = tableKeys('EXECUTOR_SERVED');
     expect(Object.keys(proxy).length).toBeGreaterThan(0);
     expect(Object.keys(detach).length).toBeGreaterThan(0);
+    expect(Object.keys(served).length).toBeGreaterThan(0);
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
-    expect(generatorStale(proxy, detach, live)).toEqual([]);
-    expect(generatorStale(proxy, { ...detach, 'repo no-such-verb': '' }, live)).toEqual([
+    expect(generatorStale(proxy, detach, served, live)).toEqual([]);
+    expect(generatorStale(proxy, { ...detach, 'repo no-such-verb': '' }, served, live)).toEqual([
       ['repo no-such-verb', 'DETACH_EXCLUSIONS'],
     ]);
-    expect(generatorStale({ ...proxy, 'repo no-such-proxy': '' }, detach, live)).toEqual([
+    expect(generatorStale({ ...proxy, 'repo no-such-proxy': '' }, detach, served, live)).toEqual([
       ['repo no-such-proxy', 'PROXY_EXCLUSIONS'],
+    ]);
+    expect(generatorStale(proxy, detach, { ...served, 'repo no-such-served': '' }, live)).toEqual([
+      ['repo no-such-served', 'EXECUTOR_SERVED'],
     ]);
   });
 

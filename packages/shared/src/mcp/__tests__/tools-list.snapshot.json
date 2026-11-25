@@ -74,6 +74,46 @@
     }
   },
   {
+    "name": "backup_check",
+    "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "path": {
+          "type": "string",
+          "description": "The file to restore and compare (default: the smallest non-empty file)"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_immutability_show",
+    "description": "Show the delayed-deletion window in force",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "backup_list",
     "description": "List backup artifacts on a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
     "inputSchema": {
@@ -102,6 +142,91 @@
       "readOnlyHint": true,
       "destructiveHint": false,
       "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_manifests",
+    "description": "List backup snapshot manifests recorded on the server",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "limit": {
+          "type": "string",
+          "description": "Rows per page (default and maximum 500)"
+        },
+        "before": {
+          "type": "string",
+          "description": "Page cursor from a previous listing (nextBefore)"
+        },
+        "include_deleted": {
+          "type": "boolean",
+          "description": "Include snapshots whose delayed delete is pending"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_reconcile",
+    "description": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository to reconcile (default: every repository in the token's scope)"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Report the figures without changing the ledger"
+        },
+        "check": {
+          "type": "boolean",
+          "description": "Dry run that exits 1 when the ledger differs from the store"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_repair",
+    "description": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Report what would be deleted and re-uploaded; change nothing"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
       "openWorldHint": true
     }
   },
@@ -183,6 +308,47 @@
       "readOnlyHint": false,
       "destructiveHint": true,
       "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_retention",
+    "description": "Show the snapshot retention policy the server is enforcing.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_retention_preview",
+    "description": "Show which snapshots the next sweep would delete and the space it would free.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
       "openWorldHint": true
     }
   },
@@ -306,6 +472,106 @@
     }
   },
   {
+    "name": "backup_strategy_list",
+    "description": "List all backup strategies",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_strategy_show",
+    "description": "Show backup strategy details",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "description": "Backup strategy name"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_toc-key_sync",
+    "description": "Install the repository's listing key on its machine, or replace a different one",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "repo-ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "replace": {
+          "type": "boolean",
+          "description": "Replace a different key already on the machine (sends the passphrase to prove it)"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Report what would be done; touch nothing"
+        }
+      },
+      "required": ["repo-ref"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_undelete",
+    "description": "Cancel a delayed snapshot delete before it takes effect",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "snapshot-id": {
+          "type": "string",
+          "description": "Snapshot id (see rdc backup manifests)"
+        }
+      },
+      "required": ["snapshot-id"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "backup_usage",
+    "description": "Show backup storage quota, stored bytes, and per-repo usage",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "backup_verify",
     "description": "Verify a repository's backup anchor against the chunk store. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
     "inputSchema": {
@@ -376,6 +642,148 @@
     }
   },
   {
+    "name": "cluster_status",
+    "description": "List all clusters, or pass a cluster name to show that cluster's full config.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "cluster": {
+          "type": "string",
+          "description": "Cluster name"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "config_access_list",
+    "description": "List the config's access keys",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "config_prune",
+    "description": "Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "dry_run": {
+          "type": "boolean",
+          "description": "Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands."
+        },
+        "certs_only": {
+          "type": "boolean",
+          "description": "Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only."
+        },
+        "archives_only": {
+          "type": "boolean",
+          "description": "Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only."
+        },
+        "refs_only": {
+          "type": "boolean",
+          "description": "Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only."
+        },
+        "orphan_repos": {
+          "type": "boolean",
+          "description": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines."
+        },
+        "gone_machine_repos": {
+          "type": "boolean",
+          "description": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given."
+        },
+        "grace_days": {
+          "type": "string",
+          "description": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set."
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "config_reconcile",
+    "description": "Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Limit the reconcile to these machines"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Show what would be done without making changes"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "config_show",
+    "description": "Show current config details",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "credits",
+    "description": "Show the remaining credit balance for this account.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "licenses": {
+          "type": "boolean",
+          "description": "Print the full THIRD_PARTY_LICENSES text bundled with release builds"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "datastore_list",
     "description": "List named datastores, where they are attached, and what they hold.",
     "inputSchema": {
@@ -437,6 +845,83 @@
         }
       },
       "required": ["datastore"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "feedback_list",
+    "description": "List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "feedback_report",
+    "description": "Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "last": {
+          "type": "boolean",
+          "description": "Use the newest failed command"
+        },
+        "command": {
+          "type": "string",
+          "description": "Use the recorded command at this index (1 is the newest; see --list-recent)"
+        },
+        "list_recent": {
+          "type": "boolean",
+          "description": "List the recorded commands and exit"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Report kind: bug, feedback or docs"
+        },
+        "message": {
+          "type": "string",
+          "description": "Free-text note to include (scrubbed before sending)"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "feedback_show",
+    "description": "Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "id"
+        }
+      },
+      "required": ["id"]
     },
     "annotations": {
       "readOnlyHint": true,
@@ -633,6 +1118,80 @@
     }
   },
   {
+    "name": "legal",
+    "description": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "json": {
+          "type": "boolean",
+          "description": "Print machine-readable JSON"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_access_show",
+    "description": "Show the access keys bound to a machine and the ranges each resolves to there",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_add",
+    "description": "Register an existing machine you can reach over SSH.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "ip": {
+          "type": "string",
+          "description": "Machine IP address or hostname"
+        },
+        "user": {
+          "type": "string",
+          "description": "SSH username"
+        },
+        "port": {
+          "type": "string",
+          "description": "SSH port"
+        }
+      },
+      "required": ["name", "ip", "user"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "machine_containers",
     "description": "List Docker containers on a machine. JSON includes full container details (labels, port_mappings, image), repository resolved to name (original in repository_guid), domain, and autoRoute ({service}.{repo}.{machine}.{baseDomain})",
     "inputSchema": {
@@ -649,6 +1208,48 @@
     "annotations": {
       "readOnlyHint": true,
       "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_converge",
+    "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Print the plan without restarting anything"
+        },
+        "include_unknown": {
+          "type": "boolean",
+          "description": "Also restart stale repositories missing from the local config (their env secrets are unknown)"
+        },
+        "policy": {
+          "type": "string",
+          "enum": ["epoch", "always"],
+          "description": "Restart policy: epoch (layout changes only) or always (also any renet binary change)"
+        },
+        "continue_on_error": {
+          "type": "boolean",
+          "description": "Keep going after a repository fails instead of stopping the pass"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
       "idempotentHint": true,
       "openWorldHint": true
     }
@@ -733,6 +1334,182 @@
     }
   },
   {
+    "name": "machine_infra_show",
+    "description": "Show infrastructure configuration for a machine (base domain, public IPs, ports), shared TLS settings (cert email, CF DNS token), and Cloudflare zone ID",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Machine name"
+        }
+      },
+      "required": ["machine"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_list",
+    "description": "List machines",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "string",
+          "description": "Search in name"
+        },
+        "sort": {
+          "type": "string",
+          "enum": ["name", "ip", "user", "port", "datastore"],
+          "description": "Sort by field"
+        },
+        "desc": {
+          "type": "boolean",
+          "description": "Sort in descending order"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_provider_add",
+    "description": "Add a cloud provider",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)"
+        },
+        "source": {
+          "type": "string",
+          "description": "Custom OpenTofu provider source (e.g., vultr/vultr)"
+        },
+        "token_env": {
+          "type": "string",
+          "description": "Name of the environment variable holding the provider API token; the token itself never goes on the command line"
+        },
+        "region": {
+          "type": "string",
+          "description": "Default region for new machines"
+        },
+        "type": {
+          "type": "string",
+          "description": "Default instance type/size"
+        },
+        "image": {
+          "type": "string",
+          "description": "Default OS image"
+        },
+        "ssh_user": {
+          "type": "string",
+          "description": "SSH username for new VMs (default: root)"
+        },
+        "resource": {
+          "type": "string",
+          "description": "Custom: OpenTofu resource type for VM"
+        },
+        "label_attr": {
+          "type": "string",
+          "description": "Custom: attribute name for VM label"
+        },
+        "region_attr": {
+          "type": "string",
+          "description": "Custom: attribute name for region"
+        },
+        "size_attr": {
+          "type": "string",
+          "description": "Custom: attribute name for instance type"
+        },
+        "image_attr": {
+          "type": "string",
+          "description": "Custom: attribute name for OS image"
+        },
+        "ipv4_output": {
+          "type": "string",
+          "description": "Custom: output attribute for IPv4 address"
+        },
+        "ipv6_output": {
+          "type": "string",
+          "description": "Custom: output attribute for IPv6 address"
+        },
+        "ssh_key_attr": {
+          "type": "string",
+          "description": "Custom: attribute name for SSH keys"
+        },
+        "ssh_key_format": {
+          "type": "string",
+          "enum": ["inline_list", "resource_id"],
+          "description": "Custom: SSH key format (inline_list or resource_id)"
+        },
+        "ssh_key_resource": {
+          "type": "string",
+          "description": "Custom: OpenTofu resource type for SSH keys"
+        }
+      },
+      "required": ["name", "token_env"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_provider_list",
+    "description": "List configured cloud providers for machine provisioning",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {}
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_provider_remove",
+    "description": "Remove a cloud provider configuration",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
     "name": "machine_provision",
     "description": "Provision a new machine on a cloud provider using OpenTofu. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
     "inputSchema": {
@@ -773,6 +1550,80 @@
         }
       },
       "required": ["name", "provider"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_prune",
+    "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Show what would be removed without making changes"
+        },
+        "orphaned_repos": {
+          "type": "boolean",
+          "description": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror."
+        },
+        "prune_unknown": {
+          "type": "boolean",
+          "description": "Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket."
+        },
+        "force_delete_mounted": {
+          "type": "boolean",
+          "description": "Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown."
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Skip confirmation prompts"
+        },
+        "background": {
+          "description": "Start the job and return its job id at once instead of waiting for it.",
+          "type": "boolean"
+        }
+      },
+      "required": ["name"]
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_remove",
+    "description": "Remove a machine from the config. Does not touch the machine itself.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
+        },
+        "archive_repos": {
+          "type": "boolean",
+          "description": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
+        }
+      },
+      "required": ["name"]
     },
     "annotations": {
       "readOnlyHint": false,
@@ -831,6 +1682,26 @@
     "annotations": {
       "readOnlyHint": false,
       "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "machine_scan-keys",
+    "description": "Record the machine's SSH host keys in the local config. Required before any command can reach it.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Resource name"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
       "idempotentHint": true,
       "openWorldHint": true
     }
@@ -1755,6 +2626,73 @@
     "annotations": {
       "readOnlyHint": false,
       "destructiveHint": true,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_replicate_status",
+    "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_secret_get",
+    "description": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        "key": {
+          "type": "string",
+          "description": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
+        }
+      },
+      "required": ["ref", "key"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "repo_secret_list",
+    "description": "List secret keys and modes (never values, never digests).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      },
+      "required": ["ref"]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
       "idempotentHint": true,
       "openWorldHint": true
     }

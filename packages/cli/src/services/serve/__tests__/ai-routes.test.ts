@@ -299,8 +299,8 @@ describe('POST /v1/ai/approval', () => {
         .status
     ).toBe(400);
     const config = await post(hono, AI_ROUTES.approval, {
-      ...approval('machine list', 'x'),
-      command: { pathKey: 'machine list', params: {}, positionals: {} },
+      ...approval('config current', 'x'),
+      command: { pathKey: 'config current', params: {}, positionals: {} },
     });
     expect(config.status).toBe(400);
     expect((await post(hono, AI_ROUTES.approval, approval('no such', 'x'))).status).toBe(400);

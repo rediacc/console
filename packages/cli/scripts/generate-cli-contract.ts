@@ -64,6 +64,8 @@ import {
 import {
   classifyPositional,
   DETACH_EXCLUSIONS,
+  EXECUTOR_SERVED,
+  GENERIC_DETACH_BLOCKED,
   GENERIC_PROXY_BLOCKED,
   PROXY_EXCLUSIONS,
 } from './lib/contract-curation.js';
@@ -262,6 +264,7 @@ const livePathKeys = new Set(walked.map((w) => w.pathKey));
 const staleExclusions = [
   ...Object.keys(PROXY_EXCLUSIONS).map((k) => [k, 'PROXY_EXCLUSIONS'] as const),
   ...Object.keys(DETACH_EXCLUSIONS).map((k) => [k, 'DETACH_EXCLUSIONS'] as const),
+  ...Object.keys(EXECUTOR_SERVED).map((k) => [k, 'EXECUTOR_SERVED'] as const),
 ].filter(([pathKey]) => !livePathKeys.has(pathKey));
 
 if (staleExclusions.length > 0) {
@@ -481,7 +484,10 @@ const commands: ContractCommand[] = walked.map((w) => {
   const keywords = buildCommandKeywords(w.pathKey);
   const output = buildCommandOutput(w.pathKey);
 
-  const proxyCapable = plane === 'machine' && !interactive && !(w.pathKey in PROXY_EXCLUSIONS);
+  const proxyCapable =
+    (plane === 'machine' || w.pathKey in EXECUTOR_SERVED) &&
+    !interactive &&
+    !(w.pathKey in PROXY_EXCLUSIONS);
   const blockedReason = proxyCapable
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
@@ -499,8 +505,14 @@ const commands: ContractCommand[] = walked.map((w) => {
 
   // Every proxyable machine-plane command runs as one machine job (PLAN-detached-jobs section 14), minus the `job *` verbs (they read the spool) and the
   // section 24 exceptions in DETACH_EXCLUSIONS. `--background` is accepted exactly where this is true.
-  const detachable = proxyCapable && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
-  const detachBlockedReason = proxyCapable ? DETACH_EXCLUSIONS[w.pathKey] : undefined;
+  const noMachineJob = proxyCapable && plane !== 'machine';
+  const detachable =
+    proxyCapable && !noMachineJob && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
+  const detachBlockedReason = noMachineJob
+    ? GENERIC_DETACH_BLOCKED.executorServed
+    : proxyCapable
+      ? DETACH_EXCLUSIONS[w.pathKey]
+      : undefined;
 
   return {
     path: w.path,

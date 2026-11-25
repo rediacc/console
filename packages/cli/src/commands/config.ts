@@ -7,6 +7,7 @@ import {
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { currentRequestContext } from '../services/core/request-context.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerAuditCommands } from './config/audit.js';
@@ -224,6 +225,8 @@ function hasInitFlags(options: {
 
 /** Gate --reveal: refuse agents and non-TTY; emit audit log. */
 async function applyRevealGate(cfg: RdcConfig): Promise<void> {
+  // The executor answers a remote caller, who has no terminal to confirm at: it never reveals, whatever the executor process's own stdout is.
+  if (currentRequestContext()) throw new ValidationError(t('errors.agent.showReveal'));
   const { isAgentEnvironment } = await import('../utils/agent-guard.js');
   const { auditLog } = await import('../services/core/audit-log.js');
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;

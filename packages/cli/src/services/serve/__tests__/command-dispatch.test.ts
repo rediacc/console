@@ -203,7 +203,8 @@ describe('prepareCommand enforces proxyCapable (SEC-1)', () => {
   it.each([
     // config plane: returns the executor's OWN decrypted config in plaintext.
     ['config ssh show', {}], // the executor's SSH private key
-    ['config show', {}],
+    // LM10 (D57): `config show` is served now, redacted, from the session config; `config current` names the caller's own file and stays refused.
+    ['config current', {}],
     // client-side transfer: the paths are the EXECUTOR's filesystem when proxied. (sync now takes a positional <ref>; the machine is derived, so only the client-side --local path remains as a flag.)
     ['repo sync upload', { local: '/root/.ssh/id_rsa' }],
     ['repo sync download', { local: '/tmp/exfil' }],
