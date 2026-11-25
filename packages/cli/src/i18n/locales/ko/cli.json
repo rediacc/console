@@ -3505,8 +3505,8 @@
         "descriptionShort": "사고 나열 또는 기한 타이머와 함께 하나 보기"
       },
       "export": {
-        "description": "사고 기간을 디렉터리에 기록합니다. 타이머가 포함된 사고 기록, 병합된 타임라인, 송신 바이트 집계, 원시 체인 매니페스트가 들어 있습니다. 매니페스트에 나열된 원시 일별 파일은 rdc forensics verify로 검증할 수 있습니다.",
-        "descriptionShort": "사고 타임라인과 증거 매니페스트 내보내기",
+        "description": "사고 기간을 디렉터리에 기록합니다. 타이머가 포함된 사고 기록, 병합된 타임라인, 송신 바이트 집계, 원시 체인 매니페스트, 그리고 매니페스트에 나열된 원시 파일이 매니페스트 키 이름으로 저장됩니다. 이 과정에서 감사 일별 파일 체인과 서명된 포렌식 배치 체인을 서버가 고정해 둔 머신 키로 검증하고, 보고서를 verification.json에 씁니다. 증거에 누락이나 변조가 있으면 종료 코드 1로 끝납니다. rdc forensics verify로 같은 디렉터리를 다시 검증할 수 있습니다.",
+        "descriptionShort": "사고 타임라인과 증거를 내보내고 검증",
         "outOption": "기록할 디렉터리 (기본값: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "웹 콘솔이 실행하는 것과 같은 검증으로 이 워크스테이션의 포렌식 증거를 확인합니다.",
       "descriptionShort": "포렌식 증거 검증",
       "verify": {
-        "description": "증거 디렉터리의 감사 일별 파일 해시 체인과 서명된 포렌식 배치 체인을 다시 계산하고, 발견된 모든 누락과 변조를 출력합니다. 디렉터리에는 매니페스트 키 아래의 원시 파일(audit/<org>/days/<day>.ndjson.gz 및 f/<subscription>/<machine>/days/<day>/...)이 들어 있어야 합니다. 누락이나 변조가 발견되면 종료 코드 1로 끝납니다. 배치 서명은 --machine-key로 머신의 공개 키를 지정해야 검증됩니다.",
+        "description": "증거 디렉터리의 감사 일별 파일 해시 체인과 서명된 포렌식 배치 체인을 다시 계산하고, 발견된 모든 누락과 변조를 출력합니다. 디렉터리에는 매니페스트 키 아래의 원시 파일(audit/<org>/days/<day>.ndjson.gz 및 f/<subscription>/<machine>/days/<day>/...)이 들어 있어야 합니다. 누락이나 변조가 발견되면 종료 코드 1로 끝납니다. 배치 서명은 rdc incident export가 쓴 디렉터리의 raw-manifest.json에 나열된 머신 키로 검증됩니다. --machine-key로 키를 추가하거나 나열된 키를 바꿀 수 있습니다.",
         "descriptionShort": "증거 디렉터리의 감사 및 포렌식 해시 체인 검증",
         "dirOption": "검증할 증거 디렉터리",
-        "machineKeyOption": "머신 스풀 공개 키를 <machine>=<64 hex characters> 형식으로 지정 (여러 번 지정 가능)"
+        "machineKeyOption": "머신 스풀 공개 키를 <machine>=<64 hex characters> 형식으로 지정하며, raw-manifest.json에 나열된 키를 대체 (여러 번 지정 가능)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "증거 디렉터리에 여러 조직의 감사 파일이 들어 있습니다: {{orgs}}.",
     "noEvidence": "\"{{dir}}\" 아래에서 감사 일별 파일이나 포렌식 헤더를 찾지 못했습니다.",
     "badMachineKey": "\"{{entry}}\"은(는) <machine>=<64 hex characters> 형식이 아닙니다.",
+    "badManifest": "\"{{file}}\"의 머신 키를 읽을 수 없습니다.",
+    "badEvidenceKey": "계정 서버가 내보내기 디렉터리 밖의 증거 파일을 지정했습니다: \"{{key}}\"",
+    "rawFileTruncated": "증거 파일 \"{{key}}\"의 길이가 서버가 알려 준 길이와 다릅니다.",
     "verifyWindow": "기간: {{from}}부터 {{to}}까지",
     "verifyFiles": "증거 파일 {{count}}개 검사 완료",
     "verifyGap": "누락  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "최종 보고서 기한 {{at}} ({{state}})",
     "exported": "사고 {{id}}을(를) {{dir}}에 내보냈습니다 (타임라인 {{rows}}행).",
     "rawTooLarge": "원시 체인 자료가 매니페스트 한도를 넘어 목록에 포함되지 않았습니다.",
-    "rawListed": "raw-manifest.json에 rdc forensics verify용 원시 파일 {{count}}개가 나열되어 있습니다."
+    "rawListed": "원시 파일 {{count}}개를 다운로드했습니다. rdc forensics verify로 검증할 수 있는 감사 일별 파일이나 포렌식 헤더 파일은 없습니다.",
+    "rawVerified": "원시 증거를 다운로드하고 검증했습니다. 체인 파일 {{count}}개, 누락과 변조 없음.",
+    "rawNotVerified": "다운로드한 증거가 검증을 통과하지 못했습니다. 누락 {{gaps}}건, 변조 {{edits}}건이며 위와 verification.json에 나열되어 있습니다."
   },
   "options": {
     "acceptTerms": "무료 라이선스의 서비스 약관을 묻지 않고 동의합니다(RDC_ACCEPT_TERMS=1로도 설정 가능)",

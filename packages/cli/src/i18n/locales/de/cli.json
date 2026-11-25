@@ -3505,8 +3505,8 @@
         "descriptionShort": "Vorfälle auflisten oder einen mit seinen Fristenuhren zeigen"
       },
       "export": {
-        "description": "Schreibt das Zeitfenster des Vorfalls in ein Verzeichnis: den Vorfallseintrag mit seinen Fristenuhren, die zusammengeführte Zeitleiste, die Aggregate der ausgehenden Bytes und das Manifest der Rohkette. Die im Manifest aufgeführten Roh-Tagesdateien lassen sich mit rdc forensics verify prüfen.",
-        "descriptionShort": "Zeitleiste und Beweismanifest eines Vorfalls exportieren",
+        "description": "Schreibt das Zeitfenster des Vorfalls in ein Verzeichnis: den Vorfallseintrag mit seinen Fristenuhren, die zusammengeführte Zeitleiste, die Aggregate der ausgehenden Bytes, das Manifest der Rohkette und die darin aufgeführten Rohdateien unter ihren Manifest-Schlüsseln. Die Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten werden dabei mit den vom Server hinterlegten Maschinenschlüsseln geprüft; der Bericht landet in verification.json. Endet mit Exit-Code 1, wenn die Beweise eine Lücke oder Änderung zeigen. Die Prüfung über dasselbe Verzeichnis wiederholt rdc forensics verify.",
+        "descriptionShort": "Zeitleiste und Beweise eines Vorfalls exportieren und prüfen",
         "outOption": "Zielverzeichnis (Standard: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Forensische Beweise auf diesem Arbeitsplatz mit derselben Prüfung kontrollieren, die die Web-Konsole ausführt.",
       "descriptionShort": "Forensische Beweise prüfen",
       "verify": {
-        "description": "Berechnet die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses neu und gibt jede gefundene Lücke und Änderung aus. Das Verzeichnis enthält die Rohdateien unter ihren Manifest-Schlüsseln (audit/<org>/days/<day>.ndjson.gz und f/<subscription>/<machine>/days/<day>/...). Endet mit Exit-Code 1, sobald eine Lücke oder Änderung vorliegt. Batch-Signaturen brauchen den öffentlichen Schlüssel der Maschine über --machine-key.",
+        "description": "Berechnet die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses neu und gibt jede gefundene Lücke und Änderung aus. Das Verzeichnis enthält die Rohdateien unter ihren Manifest-Schlüsseln (audit/<org>/days/<day>.ndjson.gz und f/<subscription>/<machine>/days/<day>/...). Endet mit Exit-Code 1, sobald eine Lücke oder Änderung vorliegt. Batch-Signaturen werden mit den Maschinenschlüsseln geprüft, die die raw-manifest.json des Verzeichnisses aufführt, so wie rdc incident export sie schreibt; mit --machine-key lässt sich ein Schlüssel ergänzen oder der aufgeführte ersetzen.",
         "descriptionShort": "Audit- und Forensik-Hash-Ketten eines Beweisverzeichnisses prüfen",
         "dirOption": "Zu prüfendes Beweisverzeichnis",
-        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters> (wiederholbar)"
+        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters>, ersetzt den in raw-manifest.json aufgeführten Schlüssel (wiederholbar)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "Das Beweisverzeichnis enthält Audit-Dateien mehrerer Organisationen: {{orgs}}.",
     "noEvidence": "Unter \"{{dir}}\" wurden keine Audit-Tagesdateien oder Forensik-Header gefunden.",
     "badMachineKey": "\"{{entry}}\" hat nicht die Form <machine>=<64 hex characters>.",
+    "badManifest": "Die Maschinenschlüssel aus \"{{file}}\" lassen sich nicht lesen.",
+    "badEvidenceKey": "Der Kontoserver hat eine Beweisdatei außerhalb des Exportverzeichnisses genannt: \"{{key}}\".",
+    "rawFileTruncated": "Die Beweisdatei \"{{key}}\" ist mit einer anderen Länge eingetroffen, als der Server angegeben hat.",
     "verifyWindow": "Zeitfenster {{from}} bis {{to}}",
     "verifyFiles": "{{count}} Beweisdatei(en) geprüft",
     "verifyGap": "Lücke  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Abschlussbericht fällig {{at}} ({{state}})",
     "exported": "Vorfall {{id}} nach {{dir}} exportiert ({{rows}} Zeilen der Zeitleiste).",
     "rawTooLarge": "Das Rohmaterial der Kette überschreitet das Manifest-Limit und ist nicht aufgeführt.",
-    "rawListed": "raw-manifest.json listet {{count}} Rohdatei(en) für rdc forensics verify auf."
+    "rawListed": "{{count}} Rohdatei(en) heruntergeladen; keine davon ist eine Audit-Tagesdatei oder eine Forensik-Headers-Datei für rdc forensics verify.",
+    "rawVerified": "Rohbeweise heruntergeladen und geprüft: {{count}} Kettendatei(en), keine Lücke und keine Änderung.",
+    "rawNotVerified": "Die heruntergeladenen Beweise bestehen die Prüfung nicht: {{gaps}} Lücke(n) und {{edits}} Änderung(en), oben und in verification.json aufgeführt."
   },
   "options": {
     "acceptTerms": "Nutzungsbedingungen für eine kostenlose Lizenz ohne Rückfrage akzeptieren (oder RDC_ACCEPT_TERMS=1 setzen)",

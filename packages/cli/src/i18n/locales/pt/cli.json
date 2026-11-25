@@ -3505,8 +3505,8 @@
         "descriptionShort": "Listar incidentes ou mostrar um com os seus relógios de prazo"
       },
       "export": {
-        "description": "Escreve a janela do incidente num diretório: o registo do incidente com os seus relógios, a cronologia combinada, os agregados de bytes de saída e o manifesto da cadeia bruta. Os ficheiros diários brutos que o manifesto lista podem ser verificados com rdc forensics verify.",
-        "descriptionShort": "Exportar a cronologia e o manifesto de evidências de um incidente",
+        "description": "Escreve a janela do incidente num diretório: o registo do incidente com os seus relógios, a cronologia combinada, os agregados de bytes de saída, o manifesto da cadeia bruta e os ficheiros brutos que ele lista, sob as chaves do manifesto. A cadeia de ficheiros diários de auditoria e as cadeias assinadas de lotes forenses são verificadas pelo caminho com as chaves de máquina que o servidor fixou, e o relatório é escrito em verification.json. Termina com o código 1 se as evidências mostrarem uma lacuna ou uma edição. A verificação sobre o mesmo diretório repete-se com rdc forensics verify.",
+        "descriptionShort": "Exportar e verificar a cronologia e as evidências de um incidente",
         "outOption": "Diretório onde escrever (predefinição: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa.",
       "descriptionShort": "Verificar evidências forenses",
       "verify": {
-        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes precisam da chave pública da máquina através de --machine-key.",
+        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes são verificadas com as chaves de máquina que o raw-manifest.json do diretório lista, tal como o rdc incident export o escreve; --machine-key acrescenta uma chave ou substitui a listada.",
         "descriptionShort": "Verificar as cadeias de hashes de auditoria e forenses de um diretório de evidências",
         "dirOption": "Diretório de evidências a verificar",
-        "machineKeyOption": "Chave pública do spool da máquina como <machine>=<64 hex characters> (repetível)"
+        "machineKeyOption": "Chave pública do spool da máquina como <machine>=<64 hex characters>, substitui a chave listada em raw-manifest.json (repetível)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "O diretório de evidências contém ficheiros de auditoria de várias organizações: {{orgs}}.",
     "noEvidence": "Não foram encontrados ficheiros diários de auditoria nem cabeçalhos forenses em \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" não tem o formato <machine>=<64 hex characters>.",
+    "badManifest": "Não é possível ler as chaves de máquina de \"{{file}}\".",
+    "badEvidenceKey": "O servidor de contas indicou um ficheiro de evidências fora do diretório de exportação: \"{{key}}\".",
+    "rawFileTruncated": "O ficheiro de evidências \"{{key}}\" chegou com um tamanho diferente do indicado pelo servidor.",
     "verifyWindow": "Janela de {{from}} a {{to}}",
     "verifyFiles": "{{count}} ficheiro(s) de evidências verificado(s)",
     "verifyGap": "lacuna  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Relatório final com prazo em {{at}} ({{state}})",
     "exported": "Incidente {{id}} exportado para {{dir}} ({{rows}} linhas da cronologia).",
     "rawTooLarge": "O material bruto da cadeia excede o limite do manifesto e não é listado.",
-    "rawListed": "raw-manifest.json lista {{count}} ficheiro(s) bruto(s) para rdc forensics verify."
+    "rawListed": "{{count}} ficheiro(s) bruto(s) descarregado(s); nenhum é um ficheiro diário de auditoria nem um ficheiro de cabeçalhos forenses para rdc forensics verify.",
+    "rawVerified": "Evidências brutas descarregadas e verificadas: {{count}} ficheiro(s) de cadeia, sem lacunas nem edições.",
+    "rawNotVerified": "As evidências descarregadas não são verificadas: {{gaps}} lacuna(s) e {{edits}} edição(ões), listadas acima e em verification.json."
   },
   "options": {
     "acceptTerms": "Aceitar os Termos de Serviço para uma licença gratuita sem perguntar (ou definir RDC_ACCEPT_TERMS=1)",

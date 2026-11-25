@@ -3505,8 +3505,8 @@
         "descriptionShort": "Loetle intsidendid või näita ühte koos tähtaja kelladega"
       },
       "export": {
-        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid ja toorahela manifesti. Manifestis loetletud toorpäevafaile saab kontrollida käsuga rdc forensics verify.",
-        "descriptionShort": "Ekspordi intsidendi ajajoon ja tõendite manifest",
+        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid, toorahela manifesti ja selles loetletud toorfailid manifesti võtmete all. Auditi päevafailide ahel ja allkirjastatud kohtuekspertiisi partiiahelad kontrollitakse samal ajal serveri kinnitatud masinavõtmetega ning aruanne kirjutatakse faili verification.json. Lõpeb koodiga 1, kui tõendites on lünk või muudatus. Sama kataloogi kontrolli kordab käsk rdc forensics verify.",
+        "descriptionShort": "Ekspordi ja kontrolli intsidendi ajajoon ja tõendid",
         "outOption": "Kataloog, kuhu kirjutada (vaikimisi: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb.",
       "descriptionShort": "Kontrolli kohtuekspertiisi tõendeid",
       "verify": {
-        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirjad vajavad masina avalikku võtit valikuga --machine-key.",
+        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse masinavõtmetega, mida kataloogi raw-manifest.json loetleb, nii nagu käsk rdc incident export selle kirjutab; valik --machine-key lisab võtme või asendab loetletud võtme.",
         "descriptionShort": "Kontrolli tõendite kataloogi auditi ja kohtuekspertiisi räsiahelaid",
         "dirOption": "Kontrollitav tõendite kataloog",
-        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters> (korratav)"
+        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, asendab failis raw-manifest.json loetletud võtme (korratav)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "Tõendite kataloog sisaldab mitme organisatsiooni auditifaile: {{orgs}}.",
     "noEvidence": "Kataloogist \"{{dir}}\" ei leitud auditi päevafaile ega kohtuekspertiisi päiseid.",
     "badMachineKey": "\"{{entry}}\" ei ole kujul <machine>=<64 hex characters>.",
+    "badManifest": "Faili \"{{file}}\" masinavõtmeid ei saa lugeda.",
+    "badEvidenceKey": "Kontoserver nimetas tõendifaili väljaspool eksportkataloogi: \"{{key}}\".",
+    "rawFileTruncated": "Tõendifail \"{{key}}\" saabus pikkusega, mis erineb serveri teatatust.",
     "verifyWindow": "Ajaaken {{from}} kuni {{to}}",
     "verifyFiles": "Kontrolliti {{count}} tõendifaili",
     "verifyGap": "lünk  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Lõpparuanne tähtajaga {{at}} ({{state}})",
     "exported": "Intsident {{id}} eksporditud kataloogi {{dir}} ({{rows}} ajajoone rida).",
     "rawTooLarge": "Toorahela materjal ületab manifesti piiri ja seda ei loetleta.",
-    "rawListed": "raw-manifest.json loetleb {{count}} toorfaili käsu rdc forensics verify jaoks."
+    "rawListed": "Alla laaditi {{count}} toorfaili; ükski neist pole auditi päevafail ega kohtuekspertiisi päisefail, mida kontrollib käsk rdc forensics verify.",
+    "rawVerified": "Toortõendid alla laaditud ja kontrollitud: {{count}} ahelafaili, lünki ega muudatusi pole.",
+    "rawNotVerified": "Allalaaditud tõendid ei läbi kontrolli: {{gaps}} lünka ja {{edits}} muudatust, loetletud eespool ja failis verification.json."
   },
   "options": {
     "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",

@@ -3505,8 +3505,8 @@
         "descriptionShort": "インシデントを一覧表示、または 1 件を期限カウントダウン付きで表示する"
       },
       "export": {
-        "description": "インシデントの対象期間をディレクトリに書き出します。内容は、カウントダウン付きのインシデント記録、統合したタイムライン、送信バイト数の集計、生チェーンのマニフェストです。マニフェストに載っている生の日次ファイルは rdc forensics verify で検証できます。",
-        "descriptionShort": "インシデントのタイムラインと証拠マニフェストをエクスポートする",
+        "description": "インシデントの対象期間をディレクトリに書き出します。内容は、カウントダウン付きのインシデント記録、統合したタイムライン、送信バイト数の集計、生チェーンのマニフェスト、およびマニフェストに載っている生ファイル（マニフェストのキー名で保存）です。書き出しの途中で、監査の日次ファイルのチェーンと署名付きフォレンジックバッチのチェーンを、サーバーに固定されたマシンキーで検証し、結果を verification.json に出力します。証拠に欠落または改変があると終了コード 1 で終了します。rdc forensics verify を使えば、同じディレクトリで検証をやり直せます。",
+        "descriptionShort": "インシデントのタイムラインと証拠をエクスポートして検証する",
         "outOption": "書き出し先のディレクトリ（デフォルト: incident-<id>）"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。",
       "descriptionShort": "フォレンジック証拠を検証する",
       "verify": {
-        "description": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名検証には --machine-key でマシンの公開鍵を渡す必要があります。",
+        "description": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名は、rdc incident export が書き出すディレクトリ内の raw-manifest.json に載っているマシンキーで検証されます。--machine-key を使うと、キーを追加するか、載っているキーを置き換えられます。",
         "descriptionShort": "証拠ディレクトリの監査・フォレンジックのハッシュチェーンを検証する",
         "dirOption": "検証する証拠ディレクトリ",
-        "machineKeyOption": "マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定（複数回指定可）"
+        "machineKeyOption": "マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定し、raw-manifest.json に載っているキーを置き換えます（複数回指定可）"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "証拠ディレクトリに複数の組織の監査ファイルが含まれています: {{orgs}}。",
     "noEvidence": "\"{{dir}}\" の下に、監査の日次ファイルもフォレンジックヘッダーも見つかりません。",
     "badMachineKey": "\"{{entry}}\" は <machine>=<64 hex characters> の形式ではありません。",
+    "badManifest": "\"{{file}}\" のマシンキーを読み取れません。",
+    "badEvidenceKey": "アカウントサーバーがエクスポート先ディレクトリの外にある証拠ファイルを指定しました: \"{{key}}\"",
+    "rawFileTruncated": "証拠ファイル \"{{key}}\" のサイズが、サーバーが示した長さと一致しません。",
     "verifyWindow": "期間: {{from}} から {{to}}",
     "verifyFiles": "証拠ファイルを {{count}} 件検証しました",
     "verifyGap": "欠落  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "最終報告の期限: {{at}}（{{state}}）",
     "exported": "インシデント {{id}} を {{dir}} にエクスポートしました（タイムライン {{rows}} 行）。",
     "rawTooLarge": "生チェーンのデータがマニフェストの上限を超えているため、一覧に含まれていません。",
-    "rawListed": "raw-manifest.json には rdc forensics verify 用の生ファイルが {{count}} 件載っています。"
+    "rawListed": "生ファイルを {{count}} 件ダウンロードしました。rdc forensics verify の対象となる監査の日次ファイルやフォレンジックのヘッダーファイルは含まれていません。",
+    "rawVerified": "生の証拠をダウンロードして検証しました。チェーンファイル {{count}} 件に欠落も改変もありません。",
+    "rawNotVerified": "ダウンロードした証拠の検証に失敗しました。欠落 {{gaps}} 件、改変 {{edits}} 件（上記および verification.json に一覧があります）。"
   },
   "options": {
     "acceptTerms": "無料ライセンスの利用規約を確認なしで承諾します（RDC_ACCEPT_TERMS=1 でも指定できます）",

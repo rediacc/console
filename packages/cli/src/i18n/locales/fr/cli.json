@@ -3505,8 +3505,8 @@
         "descriptionShort": "Lister les incidents ou en affiche un avec ses compteurs d'échéances"
       },
       "export": {
-        "description": "Écrit la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses compteurs, la chronologie fusionnée, les agrégats d'octets sortants et le manifeste de la chaîne brute. Les fichiers journaliers bruts listés par le manifeste peuvent être vérifiés avec rdc forensics verify.",
-        "descriptionShort": "Exporter la chronologie et le manifeste de preuves d'un incident",
+        "description": "Écrit la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses compteurs, la chronologie fusionnée, les agrégats d'octets sortants, le manifeste de la chaîne brute et les fichiers bruts qu'il liste, sous leurs clés de manifeste. La chaîne des fichiers journaliers d'audit et les chaînes signées de lots forensiques sont vérifiées au passage avec les clés de machine épinglées par le serveur, et le rapport est écrit dans verification.json. Se termine avec le code 1 si les preuves montrent un trou ou une modification. La vérification sur le même répertoire se refait avec rdc forensics verify.",
+        "descriptionShort": "Exporter et vérifier la chronologie et les preuves d'un incident",
         "outOption": "Répertoire où écrire (par défaut : incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Vérifie les preuves forensiques sur ce poste de travail avec la même vérification que celle de la console web.",
       "descriptionShort": "Vérifier les preuves forensiques",
       "verify": {
-        "description": "Recalcule la chaîne de hachages des fichiers journaliers d'audit et les chaînes signées de lots forensiques d'un répertoire de preuves, puis affiche chaque trou et chaque modification trouvés. Le répertoire contient les fichiers bruts sous leurs clés de manifeste (audit/<org>/days/<day>.ndjson.gz et f/<subscription>/<machine>/days/<day>/...). Se termine avec le code 1 dès qu'un trou ou une modification est trouvé. Les signatures de lots demandent la clé publique de la machine via --machine-key.",
+        "description": "Recalcule la chaîne de hachages des fichiers journaliers d'audit et les chaînes signées de lots forensiques d'un répertoire de preuves, puis affiche chaque trou et chaque modification trouvés. Le répertoire contient les fichiers bruts sous leurs clés de manifeste (audit/<org>/days/<day>.ndjson.gz et f/<subscription>/<machine>/days/<day>/...). Se termine avec le code 1 dès qu'un trou ou une modification est trouvé. Les signatures de lots se vérifient avec les clés de machine que liste le raw-manifest.json du répertoire, tel que l'écrit rdc incident export ; --machine-key ajoute une clé ou remplace celle qui est listée.",
         "descriptionShort": "Vérifier les chaînes de hachages d'audit et forensiques d'un répertoire de preuves",
         "dirOption": "Répertoire de preuves à vérifier",
-        "machineKeyOption": "Clé publique du spool de la machine sous la forme <machine>=<64 hex characters> (répétable)"
+        "machineKeyOption": "Clé publique du spool de la machine sous la forme <machine>=<64 hex characters>, remplace la clé listée par raw-manifest.json (répétable)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "Le répertoire de preuves contient des fichiers d'audit de plusieurs organisations : {{orgs}}.",
     "noEvidence": "Aucun fichier journalier d'audit ni en-tête forensique trouvé dans \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" n'a pas la forme <machine>=<64 hex characters>.",
+    "badManifest": "Impossible de lire les clés de machine de \"{{file}}\".",
+    "badEvidenceKey": "Le serveur de compte a nommé un fichier de preuves situé hors du répertoire d'export : \"{{key}}\".",
+    "rawFileTruncated": "Le fichier de preuves \"{{key}}\" est arrivé avec une longueur différente de celle annoncée par le serveur.",
     "verifyWindow": "Fenêtre du {{from}} au {{to}}",
     "verifyFiles": "{{count}} fichier(s) de preuves vérifié(s)",
     "verifyGap": "trou  {{ref}} : {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Rapport final dû le {{at}} ({{state}})",
     "exported": "Incident {{id}} exporté vers {{dir}} ({{rows}} lignes de chronologie).",
     "rawTooLarge": "Le matériel brut de la chaîne dépasse la limite du manifeste et n'est pas listé.",
-    "rawListed": "raw-manifest.json liste {{count}} fichier(s) brut(s) pour rdc forensics verify."
+    "rawListed": "{{count}} fichier(s) brut(s) téléchargé(s) ; aucun n'est un fichier journalier d'audit ni un fichier d'en-têtes forensiques pour rdc forensics verify.",
+    "rawVerified": "Preuves brutes téléchargées et vérifiées : {{count}} fichier(s) de chaîne, aucun trou et aucune modification.",
+    "rawNotVerified": "Les preuves téléchargées ne se vérifient pas : {{gaps}} trou(s) et {{edits}} modification(s), listés ci-dessus et dans verification.json."
   },
   "options": {
     "acceptTerms": "Accepter les Conditions d'utilisation pour une licence gratuite sans demander (ou définir RDC_ACCEPT_TERMS=1)",

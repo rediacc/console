@@ -3505,8 +3505,8 @@
         "descriptionShort": "Listar incidentes o mostrar uno con sus relojes de plazo"
       },
       "export": {
-        "description": "Escribe la ventana del incidente en un directorio: el registro del incidente con sus relojes, la línea de tiempo combinada, los agregados de bytes salientes y el manifiesto de la cadena en bruto. Los archivos diarios en bruto que lista el manifiesto se pueden comprobar con rdc forensics verify.",
-        "descriptionShort": "Exportar la línea de tiempo y el manifiesto de evidencias de un incidente",
+        "description": "Escribe la ventana del incidente en un directorio: el registro del incidente con sus relojes, la línea de tiempo combinada, los agregados de bytes salientes, el manifiesto de la cadena en bruto y los archivos en bruto que lista, bajo las claves del manifiesto. Por el camino se verifican la cadena de archivos diarios de auditoría y las cadenas firmadas de lotes forenses con las claves de máquina que fijó el servidor, y el informe se escribe en verification.json. Termina con código 1 si las evidencias muestran un hueco o una edición. La comprobación sobre el mismo directorio se repite con rdc forensics verify.",
+        "descriptionShort": "Exportar y verificar la línea de tiempo y las evidencias de un incidente",
         "outOption": "Directorio donde escribir (por defecto: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Comprueba las evidencias forenses en esta estación de trabajo con la misma verificación que ejecuta la consola web.",
       "descriptionShort": "Verificar evidencias forenses",
       "verify": {
-        "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes necesitan la clave pública de la máquina mediante --machine-key.",
+        "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes se verifican con las claves de máquina que lista el raw-manifest.json del directorio, tal como lo escribe rdc incident export. Con --machine-key se añade una clave o se sustituye la listada.",
         "descriptionShort": "Verificar las cadenas de hashes de auditoría y forenses de un directorio de evidencias",
         "dirOption": "Directorio de evidencias que se va a verificar",
-        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters> (repetible)"
+        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters>, sustituye la clave que lista raw-manifest.json (repetible)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "El directorio de evidencias contiene archivos de auditoría de varias organizaciones: {{orgs}}.",
     "noEvidence": "No se encontraron archivos diarios de auditoría ni cabeceras forenses en \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" no tiene el formato <machine>=<64 hex characters>.",
+    "badManifest": "No se pueden leer las claves de máquina de \"{{file}}\".",
+    "badEvidenceKey": "El servidor de cuentas indicó un archivo de evidencias fuera del directorio de exportación: \"{{key}}\".",
+    "rawFileTruncated": "El archivo de evidencias \"{{key}}\" llegó con una longitud distinta de la que indicó el servidor.",
     "verifyWindow": "Ventana de {{from}} a {{to}}",
     "verifyFiles": "{{count}} archivo(s) de evidencias comprobado(s)",
     "verifyGap": "hueco  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Informe final vence el {{at}} ({{state}})",
     "exported": "Incidente {{id}} exportado a {{dir}} ({{rows}} filas de la línea de tiempo).",
     "rawTooLarge": "El material en bruto de la cadena supera el límite del manifiesto y no se lista.",
-    "rawListed": "raw-manifest.json lista {{count}} archivo(s) en bruto para rdc forensics verify."
+    "rawListed": "{{count}} archivo(s) en bruto descargado(s); ninguno es un archivo diario de auditoría ni un archivo de cabeceras forenses para rdc forensics verify.",
+    "rawVerified": "Evidencias en bruto descargadas y verificadas: {{count}} archivo(s) de cadena, sin huecos ni ediciones.",
+    "rawNotVerified": "Las evidencias descargadas no se verifican: {{gaps}} hueco(s) y {{edits}} edición(es), listados arriba y en verification.json."
   },
   "options": {
     "acceptTerms": "Aceptar los Términos del Servicio para una licencia gratuita sin preguntar (o definir RDC_ACCEPT_TERMS=1)",

@@ -3505,8 +3505,8 @@
         "descriptionShort": "列出事件，或显示某起事件及其期限倒计时"
       },
       "export": {
-        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总以及原始链清单。清单中列出的原始日文件可用 rdc forensics verify 校验。",
-        "descriptionShort": "导出事件的时间线和证据清单",
+        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总、原始链清单，以及清单中列出的原始文件（以清单键命名）。导出过程中，会用服务器固定的机器密钥校验审计日文件链和已签名的取证批次链，并将报告写入 verification.json。证据存在空缺或改动时以退出码 1 结束。rdc forensics verify 可对同一目录重复这次校验。",
+        "descriptionShort": "导出并校验事件的时间线和证据",
         "outOption": "写入的目录（默认：incident-<id>）"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式。",
       "descriptionShort": "校验取证证据",
       "verify": {
-        "description": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。校验批次签名需要通过 --machine-key 提供机器的公钥。",
+        "description": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。批次签名使用目录中 raw-manifest.json 列出的机器公钥校验（该文件由 rdc incident export 写入）；--machine-key 可添加密钥，或替换已列出的密钥。",
         "descriptionShort": "校验证据目录的审计和取证哈希链",
         "dirOption": "要校验的证据目录",
-        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>（可重复指定）"
+        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>，替换 raw-manifest.json 中列出的密钥（可重复指定）"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "证据目录中包含多个组织的审计文件：{{orgs}}。",
     "noEvidence": "在 \"{{dir}}\" 下未找到审计日文件或取证头文件。",
     "badMachineKey": "\"{{entry}}\" 不符合 <machine>=<64 hex characters> 的格式。",
+    "badManifest": "无法读取 \"{{file}}\" 中的机器密钥。",
+    "badEvidenceKey": "账户服务器指定了导出目录之外的证据文件：\"{{key}}\"。",
+    "rawFileTruncated": "证据文件 \"{{key}}\" 的长度与服务器声明的不一致。",
     "verifyWindow": "时间窗口：{{from}} 至 {{to}}",
     "verifyFiles": "已检查 {{count}} 个证据文件",
     "verifyGap": "空缺  {{ref}}：{{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "最终报告截止 {{at}}（{{state}}）",
     "exported": "事件 {{id}} 已导出到 {{dir}}（时间线共 {{rows}} 行）。",
     "rawTooLarge": "原始链数据超出清单上限，未被列出。",
-    "rawListed": "raw-manifest.json 列出了 {{count}} 个原始文件，供 rdc forensics verify 使用。"
+    "rawListed": "已下载 {{count}} 个原始文件；其中没有可供 rdc forensics verify 使用的审计日文件或取证头文件。",
+    "rawVerified": "原始证据已下载并校验：{{count}} 个链文件，无空缺，无改动。",
+    "rawNotVerified": "已下载的证据未通过校验：{{gaps}} 处空缺，{{edits}} 处改动，详见上方及 verification.json。"
   },
   "options": {
     "acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",

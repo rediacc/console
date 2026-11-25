@@ -3505,8 +3505,8 @@
         "descriptionShort": "Olayları listele veya birini süre sayaçlarıyla göster"
       },
       "export": {
-        "description": "Olayın penceresini bir dizine yazar: süre sayaçlarıyla olay kaydı, birleştirilmiş zaman çizelgesi, giden bayt toplamları ve ham zincir bildirimi. Bildirimde listelenen ham günlük dosyaları rdc forensics verify ile doğrulanabilir.",
-        "descriptionShort": "Bir olayın zaman çizelgesini ve kanıt bildirimini dışa aktar",
+        "description": "Olayın penceresini bir dizine yazar: süre sayaçlarıyla olay kaydı, birleştirilmiş zaman çizelgesi, giden bayt toplamları, ham zincir bildirimi ve bildirimde listelenen ham dosyalar (bildirim anahtarlarıyla adlandırılır). Denetim günlük dosyası zinciri ve imzalı adli parti zincirleri bu sırada sunucunun sabitlediği makine anahtarlarıyla doğrulanır; rapor verification.json dosyasına yazılır. Kanıtlarda bir boşluk veya değişiklik görülürse 1 koduyla çıkar. Aynı dizinde denetimi yinelemek için komut: rdc forensics verify.",
+        "descriptionShort": "Bir olayın zaman çizelgesini ve kanıtlarını dışa aktar ve doğrula",
         "outOption": "Yazılacak dizin (varsayılan: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla denetler.",
       "descriptionShort": "Adli kanıtları doğrula",
       "verify": {
-        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları için makinenin açık anahtarı --machine-key ile verilmelidir.",
+        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları, dizindeki raw-manifest.json dosyasının listelediği makine anahtarlarıyla doğrulanır (dosyayı rdc incident export yazar); --machine-key bir anahtar ekler ya da listelenen anahtarın yerine geçer.",
         "descriptionShort": "Bir kanıt dizininin denetim ve adli karma zincirlerini doğrula",
         "dirOption": "Doğrulanacak kanıt dizini",
-        "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde (tekrarlanabilir)"
+        "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; raw-manifest.json içinde listelenen anahtarın yerine geçer (tekrarlanabilir)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "Kanıt dizininde birden fazla kuruluşun denetim dosyaları var: {{orgs}}.",
     "noEvidence": "\"{{dir}}\" altında denetim günlük dosyası veya adli başlık bulunamadı.",
     "badMachineKey": "\"{{entry}}\" <machine>=<64 hex characters> biçiminde değil.",
+    "badManifest": "\"{{file}}\" içindeki makine anahtarları okunamıyor.",
+    "badEvidenceKey": "Hesap sunucusu, dışa aktarma dizininin dışında bir kanıt dosyası bildirdi: \"{{key}}\".",
+    "rawFileTruncated": "\"{{key}}\" kanıt dosyası, sunucunun bildirdiğinden farklı bir uzunlukta geldi.",
     "verifyWindow": "Pencere: {{from}} ile {{to}} arası",
     "verifyFiles": "{{count}} kanıt dosyası denetlendi",
     "verifyGap": "boşluk  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Nihai rapor son tarihi {{at}} ({{state}})",
     "exported": "{{id}} olayı {{dir}} dizinine aktarıldı ({{rows}} zaman çizelgesi satırı).",
     "rawTooLarge": "Ham zincir verisi bildirim sınırını aşıyor ve listelenmedi.",
-    "rawListed": "raw-manifest.json, rdc forensics verify için {{count}} ham dosyayı listeler."
+    "rawListed": "{{count}} ham dosya indirildi; hiçbiri denetim günlük dosyası ya da adli başlık dosyası değil (rdc forensics verify).",
+    "rawVerified": "Ham kanıtlar indirildi ve doğrulandı: {{count}} zincir dosyası, boşluk ve değişiklik yok.",
+    "rawNotVerified": "İndirilen kanıtlar doğrulanamadı: {{gaps}} boşluk ve {{edits}} değişiklik var; yukarıda ve verification.json içinde listelendi."
   },
   "options": {
     "acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",

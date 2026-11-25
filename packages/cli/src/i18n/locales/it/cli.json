@@ -3505,8 +3505,8 @@
         "descriptionShort": "Elenca gli incidenti o ne mostra uno con i suoi timer delle scadenze"
       },
       "export": {
-        "description": "Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi timer, la timeline unificata, gli aggregati dei byte in uscita e il manifest della catena grezza. I file giornalieri grezzi elencati nel manifest si possono controllare con rdc forensics verify.",
-        "descriptionShort": "Esportare la timeline e il manifest delle evidenze di un incidente",
+        "description": "Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi timer, la timeline unificata, gli aggregati dei byte in uscita, il manifest della catena grezza e i file grezzi che elenca, sotto le loro chiavi del manifest. Lungo il percorso vengono verificate la catena dei file giornalieri di audit e le catene firmate dei batch forensi, con le chiavi delle macchine fissate dal server; il report viene scritto in verification.json. Termina con codice 1 se le evidenze mostrano un vuoto o una modifica. Il controllo sulla stessa directory si ripete con rdc forensics verify.",
+        "descriptionShort": "Esportare e verificare la timeline e le evidenze di un incidente",
         "outOption": "Directory in cui scrivere (predefinito: incident-<id>)"
       }
     },
@@ -3514,10 +3514,10 @@
       "description": "Controlla le evidenze forensi su questa workstation con la stessa verifica eseguita dalla console web.",
       "descriptionShort": "Verificare le evidenze forensi",
       "verify": {
-        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch richiedono la chiave pubblica della macchina tramite --machine-key.",
+        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano con le chiavi delle macchine elencate nel raw-manifest.json della directory, come lo scrive rdc incident export. Con --machine-key si aggiunge una chiave o si sostituisce quella elencata.",
         "descriptionShort": "Verificare le catene di hash di audit e forensi di una directory di evidenze",
         "dirOption": "Directory di evidenze da verificare",
-        "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters> (ripetibile)"
+        "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters>, sostituisce la chiave elencata in raw-manifest.json (ripetibile)"
       }
     }
   },
@@ -3985,6 +3985,9 @@
     "severalOrgs": "La directory di evidenze contiene file di audit di più organizzazioni: {{orgs}}.",
     "noEvidence": "Nessun file giornaliero di audit o header forense trovato in \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" non ha la forma <machine>=<64 hex characters>.",
+    "badManifest": "Impossibile leggere le chiavi delle macchine di \"{{file}}\".",
+    "badEvidenceKey": "Il server dell'account ha indicato un file di evidenze fuori dalla directory di esportazione: \"{{key}}\".",
+    "rawFileTruncated": "Il file di evidenze \"{{key}}\" è arrivato con una lunghezza diversa da quella dichiarata dal server.",
     "verifyWindow": "Finestra da {{from}} a {{to}}",
     "verifyFiles": "{{count}} file di evidenze controllati",
     "verifyGap": "vuoto  {{ref}}: {{reason}}",
@@ -4056,7 +4059,9 @@
     "clockFinalReport": "Rapporto finale in scadenza il {{at}} ({{state}})",
     "exported": "Incidente {{id}} esportato in {{dir}} ({{rows}} righe della timeline).",
     "rawTooLarge": "Il materiale grezzo della catena supera il limite del manifest e non viene elencato.",
-    "rawListed": "raw-manifest.json elenca {{count}} file grezzi per rdc forensics verify."
+    "rawListed": "Scaricati {{count}} file grezzi; nessuno è un file giornaliero di audit né un file di header forensi per rdc forensics verify.",
+    "rawVerified": "Evidenze grezze scaricate e verificate: {{count}} file di catena, nessun vuoto e nessuna modifica.",
+    "rawNotVerified": "Le evidenze scaricate non risultano valide: vuoti {{gaps}}, modifiche {{edits}}, elencati sopra e in verification.json."
   },
   "options": {
     "acceptTerms": "Accetta i Termini di servizio per una licenza gratuita senza chiedere (oppure imposta RDC_ACCEPT_TERMS=1)",
