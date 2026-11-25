@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import { WK_ACCOUNT_EGRESS_HOST, WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import { validateBaseUrl } from '../base-url.js';
 
 const refused = (url: string): string | null => {
@@ -48,10 +48,10 @@ describe('validateBaseUrl', () => {
   });
 
   it.each([
-    'https://account.internal/v1',
+    `https://${WK_ACCOUNT_EGRESS_HOST}/v1`,
     'https://ai.internal/v1',
-    'https://ACCOUNT.INTERNAL/v1',
-    'https://account.internal./v1',
+    `https://${WK_ACCOUNT_EGRESS_HOST.toUpperCase()}/v1`,
+    `https://${WK_ACCOUNT_EGRESS_HOST}./v1`,
     'https://anything.internal/v1',
     'https://localhost/v1',
     'https://LocalHost:8443/v1',

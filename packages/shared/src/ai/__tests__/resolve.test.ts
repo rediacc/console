@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import { WK_ACCOUNT_EGRESS_HOST, WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import { omitKey } from '../../utils/omit-key.js';
 import type { AiConfig, Profile } from '../profile.js';
 import { resolveProfile } from '../resolve.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 function profile(model: string, overrides: Partial<Profile> = {}): Profile {
   return {
@@ -100,7 +100,7 @@ describe('resolveProfile', () => {
 
   it('never returns a profile whose base URL the guard refuses', () => {
     const bad: AiConfig = {
-      providers: { main: profile('m', { baseURL: 'https://account.internal/v1' }) },
+      providers: { main: profile('m', { baseURL: `https://${WK_ACCOUNT_EGRESS_HOST}/v1` }) },
       default: 'main',
     };
     const result = resolveProfile({ team: bad, shared });

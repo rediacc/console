@@ -62,7 +62,8 @@ export const IocSchema = z.strictObject({
   asn: z.number().int().min(0).max(4294967295).optional(),
   evidence: fact(text(500)),
 });
-export type Ioc = z.infer<typeof IocSchema>;
+type Ioc = z.infer<typeof IocSchema>;
+export type { Ioc };
 
 const technique = z.strictObject({
   id: z.string().regex(/^T\d{4}(\.\d{3})?$/, 'an ATT&CK technique id such as T1041'),
@@ -105,4 +106,5 @@ export const IncidentReportSchema = z.discriminatedUnion('stage', [
   z.strictObject({ stage: z.literal('notification'), ...notification }),
   z.strictObject({ stage: z.literal('final'), ...final }),
 ]);
-export type IncidentReport = z.infer<typeof IncidentReportSchema>;
+type IncidentReport = z.infer<typeof IncidentReportSchema>;
+export type { IncidentReport };

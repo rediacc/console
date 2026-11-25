@@ -108,7 +108,10 @@ function row(id: string, ts: string): TimelineRow {
 describe('timeline rows', () => {
   it('parses every kind and refuses a field the kind does not name', () => {
     expect(TimelineRowSchema.safeParse(row('a', '2026-11-20T10:00:00.000Z')).success).toBe(true);
-    const bad = { ...row('a', '2026-11-20T10:00:00.000Z'), data: { path: '/x', content: 'secret' } };
+    const bad = {
+      ...row('a', '2026-11-20T10:00:00.000Z'),
+      data: { path: '/x', content: 'secret' },
+    };
     expect(TimelineRowSchema.safeParse(bad).success).toBe(false);
   });
 

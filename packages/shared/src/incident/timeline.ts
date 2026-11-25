@@ -117,7 +117,8 @@ export const TimelineRowSchema = z.discriminatedUnion('kind', [
   gapRow,
   incidentRow,
 ]);
-export type TimelineRow = z.infer<typeof TimelineRowSchema>;
+type TimelineRow = z.infer<typeof TimelineRowSchema>;
+export type { TimelineRow };
 
 /** Time order; equal instants fall back to the id so a cursor never skips or repeats a row. */
 export function compareRows(

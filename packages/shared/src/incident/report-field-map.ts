@@ -48,36 +48,47 @@ const FieldMapSchema = z
     fields: z.record(z.string(), z.record(z.string(), MappingSchema)),
   })
   .superRefine((map, ctx) => {
-    const regimeIds = map.regimes.map((r) => r.id);
-    if (new Set(regimeIds).size !== regimeIds.length) {
-      ctx.addIssue({ code: 'custom', message: 'duplicate regime id' });
-    }
-    for (const path of REPORT_FIELD_PATHS) {
-      const row = map.fields[path];
-      if (!row) {
-        ctx.addIssue({ code: 'custom', message: `report field ${path} is not mapped` });
-        continue;
-      }
-      for (const id of regimeIds) {
-        if (!row[id]) {
-          ctx.addIssue({ code: 'custom', message: `${path} has no entry for regime ${id}` });
-        }
-      }
-      for (const id of Object.keys(row)) {
-        if (!regimeIds.includes(id)) {
-          ctx.addIssue({ code: 'custom', message: `${path} names unknown regime ${id}` });
-        }
-      }
-    }
-    for (const path of Object.keys(map.fields)) {
-      if (!(REPORT_FIELD_PATHS as readonly string[]).includes(path)) {
-        ctx.addIssue({ code: 'custom', message: `${path} is not a report field` });
-      }
+    for (const message of fieldMapIssues(map.regimes, map.fields)) {
+      ctx.addIssue({ code: 'custom', message });
     }
   });
 
-export type ReportFieldMap = z.infer<typeof FieldMapSchema>;
-export type RegimeMapping = z.infer<typeof MappingSchema>;
+/** Every way a field map misses a report field or a regime, or names one that does not exist. */
+function fieldMapIssues(
+  regimes: readonly { id: string }[],
+  fields: Record<string, Record<string, unknown>>
+): string[] {
+  const regimeIds = regimes.map((r) => r.id);
+  const issues: string[] = [];
+  if (new Set(regimeIds).size !== regimeIds.length) issues.push('duplicate regime id');
+  for (const path of REPORT_FIELD_PATHS) issues.push(...rowIssues(path, fields[path], regimeIds));
+  for (const path of Object.keys(fields)) {
+    if (!(REPORT_FIELD_PATHS as readonly string[]).includes(path)) {
+      issues.push(`${path} is not a report field`);
+    }
+  }
+  return issues;
+}
+
+/** The issues of one report field's row: unmapped, a regime missing, or an unknown regime named. */
+function rowIssues(
+  path: string,
+  row: Record<string, unknown> | undefined,
+  regimeIds: readonly string[]
+): string[] {
+  if (!row) return [`report field ${path} is not mapped`];
+  return [
+    ...regimeIds.filter((id) => !row[id]).map((id) => `${path} has no entry for regime ${id}`),
+    ...Object.keys(row)
+      .filter((id) => !regimeIds.includes(id))
+      .map((id) => `${path} names unknown regime ${id}`),
+  ];
+}
+
+type ReportFieldMap = z.infer<typeof FieldMapSchema>;
+type RegimeMapping = z.infer<typeof MappingSchema>;
+
+export type { RegimeMapping, ReportFieldMap };
 
 /** Parse a field map; throws with every missing or unknown entry named. */
 export function parseReportFieldMap(raw: unknown): ReportFieldMap {

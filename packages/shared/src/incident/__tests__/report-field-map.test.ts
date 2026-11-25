@@ -19,20 +19,23 @@ function modelPaths(): string[] {
   if (!final) throw new Error('no final stage');
   const out: string[] = [];
   for (const [key, schema] of Object.entries(final.shape)) {
-    if (key === 'stage') continue;
-    if (key === 'header' || key === 'dataImpact') {
-      const inner = (schema as unknown as { shape: Record<string, unknown> }).shape;
-      for (const k of Object.keys(inner)) out.push(`${key}.${k}`);
-    } else {
-      out.push(key);
-    }
+    if (key !== 'stage') out.push(...leafPaths(key, schema));
   }
   return out;
 }
 
+/** `key` itself, or `key.<field>` for each field of the two expanded objects. */
+function leafPaths(key: string, schema: unknown): string[] {
+  if (key !== 'header' && key !== 'dataImpact') return [key];
+  const inner = (schema as { shape: Record<string, unknown> }).shape;
+  return Object.keys(inner).map((k) => `${key}.${k}`);
+}
+
+const byCodePoint = (a: string, b: string): number => Number(a > b) - Number(a < b);
+
 describe('report field map', () => {
   it('lists exactly the fields of the report model', () => {
-    expect([...REPORT_FIELD_PATHS].sort()).toEqual(modelPaths().sort());
+    expect([...REPORT_FIELD_PATHS].sort(byCodePoint)).toEqual(modelPaths().sort(byCodePoint));
   });
 
   it('maps every report field for every regime or says why not', () => {

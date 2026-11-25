@@ -181,9 +181,7 @@ describe('verifyBatchChains', () => {
     );
     expect(result.gaps).toEqual([]);
     expect(result.edits).toEqual([]);
-    expect(result.heads).toEqual([
-      { machineId: 'machine-1', seq: 2, hash: batches[2]?.hash },
-    ]);
+    expect(result.heads).toEqual([{ machineId: 'machine-1', seq: 2, hash: batches[2]?.hash }]);
   });
 
   it('reports a missing batch as a gap', async () => {
@@ -213,7 +211,12 @@ describe('verifyBatchChains', () => {
 
   it('reports a changed section as an edit', async () => {
     const s = signer();
-    const batch = await makeBatch(s, 0, GENESIS_HASH, new Uint8Array(Buffer.from('tampered-bytes')));
+    const batch = await makeBatch(
+      s,
+      0,
+      GENESIS_HASH,
+      new Uint8Array(Buffer.from('tampered-bytes'))
+    );
     const result = await verifyBatchChains([batch.input], async () => s.key);
     expect(result.edits[0]?.reason).toMatch(/changed/);
   });

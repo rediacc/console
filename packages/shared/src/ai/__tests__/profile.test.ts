@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import { WK_ACCOUNT_EGRESS_HOST, WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import { omitKey } from '../../utils/omit-key.js';
 import { buildProfile, getPreset, PRESETS } from '../presets.js';
 import { AiConfigSchema, type Profile, ProfileSchema, validateProfile } from '../profile.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 const base: Profile = {
   format: 'openai-chat',
@@ -71,7 +71,7 @@ describe('validateProfile', () => {
   });
 
   it('adds the base URL guard on top of the shape check', () => {
-    const r = validateProfile({ ...base, baseURL: 'https://account.internal/v1' });
+    const r = validateProfile({ ...base, baseURL: `https://${WK_ACCOUNT_EGRESS_HOST}/v1` });
     expect(r).toMatchObject({
       ok: false,
       issues: [{ path: '/baseURL', refusal: 'internal-host' }],

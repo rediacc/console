@@ -46,16 +46,19 @@ export function canonicalize(value: CanonicalValue): string {
   if (Array.isArray(value)) {
     return `[${(value as readonly CanonicalValue[]).map((v) => canonicalize(v)).join(',')}]`;
   }
-  if (typeof value === 'object') {
-    const proto: unknown = Object.getPrototypeOf(value);
-    if (proto !== Object.prototype && proto !== null) {
-      throw new TypeError(
-        'canonical JSON carries plain objects only; convert a Date or class instance first'
-      );
-    }
-    return canonicalObject(value as { readonly [key: string]: CanonicalValue | undefined });
-  }
+  if (typeof value === 'object') return canonicalPlainObject(value);
   throw new TypeError(`canonical JSON cannot carry a ${typeof value}`);
+}
+
+/** A plain object's canonical form; a Date or class instance is refused rather than flattened. */
+function canonicalPlainObject(value: object): string {
+  const proto: unknown = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) {
+    throw new TypeError(
+      'canonical JSON carries plain objects only; convert a Date or class instance first'
+    );
+  }
+  return canonicalObject(value as { readonly [key: string]: CanonicalValue | undefined });
 }
 
 /** The UTF-8 bytes that are hashed and signed. */

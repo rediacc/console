@@ -20,7 +20,8 @@ export const IncidentStepSchema = z.strictObject({
   at: z.iso.datetime(),
   detail: z.string().max(500).optional(),
 });
-export type IncidentStep = z.infer<typeof IncidentStepSchema>;
+type IncidentStep = z.infer<typeof IncidentStepSchema>;
+export type { IncidentStep };
 
 /** Days after close before the hold and the lock rules are released. */
 export const INCIDENT_RELEASE_DAYS = 30;
@@ -54,7 +55,8 @@ export const IncidentSchema = z
     message: 'awareAt may be earlier than declaredAt, never later',
     path: ['awareAt'],
   });
-export type Incident = z.infer<typeof IncidentSchema>;
+type Incident = z.infer<typeof IncidentSchema>;
+export type { Incident };
 
 /** The instant a closed incident's hold and lock rules may be released, null while it is open. */
 export function releaseAt(incident: Pick<Incident, 'closedAt'>): string | null {
