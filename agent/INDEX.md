@@ -611,7 +611,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 118 | 15 | 0 | 26395 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 90 | 7 | 2 | 15279 |
-| `agent/plans/PLAN-rmcp-docs.md` | approved | 99 | 19 | 1 | 23655 |
+| `agent/plans/PLAN-rmcp-docs.md` | approved | 100 | 18 | 2 | 23916 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 73 | 11 | 2 | 17718 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
