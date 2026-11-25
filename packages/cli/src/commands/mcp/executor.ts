@@ -46,17 +46,25 @@ interface ExecError extends Error {
   code?: string | number;
 }
 
+/** Node flags a child must not inherit: a debugger port the parent already holds. */
+const PARENT_ONLY_NODE_FLAG = /^--(inspect|debug)/;
+
 /**
  * Resolve the rdc binary for child process execution.
  * Handles both SEA binary and development (tsx/node) modes.
+ *
+ * Under `tsx src/index.ts` the TypeScript loader arrives as node flags (`process.execArgv`), so the child gets
+ * them too; without them `node src/index.ts` fails to resolve its first `.js` import and every tool call of a
+ * dev-run server returned EXECUTION_ERROR (found by stdio-e2e.test.ts).
  */
 export function resolveRdcBinary(): { command: string; prefixArgs: string[] } {
   // SEA binary: process.execPath IS the rdc binary
   if (!process.argv[1] || process.execPath === process.argv[1]) {
     return { command: process.execPath, prefixArgs: [] };
   }
-  // Development: node/tsx + script path
-  return { command: process.execPath, prefixArgs: [process.argv[1]] };
+  // Development or the bundle: node + its flags + script path
+  const flags = process.execArgv.filter((flag) => !PARENT_ONLY_NODE_FLAG.test(flag));
+  return { command: process.execPath, prefixArgs: [...flags, process.argv[1]] };
 }
 
 /** Whether the command starts a machine job the child attaches to for the window (the contract says which). */
