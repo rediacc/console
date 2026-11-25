@@ -2,6 +2,7 @@
  * The `AccountEgress` entrypoint (box W3, Design A): the instance and org checks that run before the allowlist and before the issuer (agent/plans/PLAN-console-executor-multi-org.md box W1, MU1), and the entrypoint's placement check and egress-unreachable report route (agent/plans/PLAN-org-executor-connect-timeout-relocate.md box E7).
  */
 
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('cloudflare:workers', () => ({
@@ -569,5 +570,53 @@ describe('config write-back routes (PLAN-rmcp-writeback.md WB5)', () => {
     expect(response.status).toBe(403);
     expect(await response.json()).toMatchObject({ reason });
     expect(seen).toHaveLength(0);
+  });
+});
+
+describe('executor write-back requests against the real allowlist', () => {
+  const send = (path: string, init: RequestInit = {}) =>
+    new Request(`http://account.internal${path}`, {
+      headers: { 'x-config-token': 'ct-1' },
+      ...init,
+    });
+
+  it('admits GET /configs (the revalidate listing) with the token kept and forwards it', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(send('/account/api/v1/configs'), env, 'org-a');
+    expect(response.status).toBe(200);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.url).toBe('https://account.test/account/api/v1/configs');
+    expect(seen[0]?.headers.get('x-config-token')).toBe('ct-1');
+  });
+
+  it.each([
+    ['POST /configs', 'POST', '/account/api/v1/configs', 'route-not-allowed'],
+    ['GET /configs with a query', 'GET', '/account/api/v1/configs?teamId=t', 'query-not-allowed'],
+    ['GET /configs/ (trailing slash)', 'GET', '/account/api/v1/configs/', 'route-not-allowed'],
+  ])('still refuses %s', async (_name, method, path, reason) => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(send(path, { method }), env, 'org-a');
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason });
+    expect(seen).toHaveLength(0);
+  });
+
+  it('admits every literal path the executor chain requests in config-writeback.ts', async () => {
+    const source = readFileSync(
+      new URL('../../../../packages/cli/src/services/serve/config-writeback.ts', import.meta.url)
+        .pathname,
+      'utf8'
+    );
+    const paths = [...source.matchAll(/chain\.request\(\s*'(\/account\/api\/v1\/[^']*)'/g)].map(
+      (m) => m[1] as string
+    );
+    // The scan must find revalidate's listing, or the loop below proves nothing.
+    expect(paths).toContain('/account/api/v1/configs');
+    for (const path of paths) {
+      const { env, seen } = setup();
+      const response = await forwardAccountEgress(send(path), env, 'org-a');
+      expect(response.status, path).toBe(200);
+      expect(seen, path).toHaveLength(1);
+    }
   });
 });

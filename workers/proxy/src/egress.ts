@@ -46,6 +46,9 @@ const OPEN_ROUTES: ReadonlySet<string> = new Set([
 /** The config pull and push, `GET` and `PUT configs/<id>` with an `X-Config-Token`, optionally `?teamId=`. */
 const CONFIG_PULL_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}$/;
 
+/** The config listing, `GET configs` with an `X-Config-Token` and no query: the executor's version check before each command (`revalidate` in packages/cli/src/services/serve/config-writeback.ts). The account route answers metadata only, filtered to what the token's own pull may read. */
+const CONFIG_LIST_PATH = `${API}/configs`;
+
 /** The config session handshake, `POST configs/session` with an `X-Config-Token` and no query (the executor's write-back, agent/plans/PLAN-rmcp-writeback.md Design 3). */
 const CONFIG_SESSION_PATH = `${API}/configs/session`;
 
@@ -86,6 +89,7 @@ function routeOf(
   const key = `${method} ${path}`;
   if (BEARER_ROUTES.has(key)) return { kind: 'bearer', query: 'none' };
   if (OPEN_ROUTES.has(key)) return { kind: 'open', query: 'none' };
+  if (key === `GET ${CONFIG_LIST_PATH}`) return { kind: 'open', query: 'none' };
   if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: 'teamId' };
   if (key === `POST ${CONFIG_SESSION_PATH}`) {
     return { kind: 'open', query: 'none', maxBody: MAX_SESSION_BODY_BYTES };
