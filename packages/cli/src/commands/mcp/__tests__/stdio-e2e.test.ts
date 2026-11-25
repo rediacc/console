@@ -9,12 +9,12 @@
  *
  * Nothing is mocked: the server, its child `rdc` processes and the policy decision are the shipped code. The
  * config is a temporary XDG_CONFIG_HOME fixture whose machine address is unroutable (TEST-NET-1).
- * The snapshot is compared parsed, so biome's JSON formatting of the committed file never decides the result.
- * After an intended tools/list change, rewrite it with `UPDATE_MCP_PARITY_SNAPSHOT=1 npx vitest run <this file>`
- * (packages/cli); the test writes the file, formats it with biome and still asserts against what it wrote.
+ * The listing is put through biome's JSON formatter before the file-snapshot comparison, so the committed file is
+ * exactly what biome's check accepts. After an intended tools/list change, refresh it with
+ * `npx vitest run -u <this file>` (packages/cli).
  */
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/client';
@@ -61,13 +61,15 @@ function byCodeUnits(a: string, b: string): number {
   return a > b ? 1 : 0;
 }
 
-/** Rewrite the parity snapshot (UPDATE_MCP_PARITY_SNAPSHOT=1) in the form biome's JSON check accepts. */
-function writeSnapshot(surface: unknown): void {
-  writeFileSync(SNAPSHOT, `${JSON.stringify(surface, null, 2)}\n`);
+/** The listing as biome formats a JSON file of the snapshot's name, so the committed snapshot passes its check. */
+function biomeJson(value: unknown): string {
   const biome = path.resolve(CLI_ROOT, '..', '..', 'node_modules', '.bin', 'biome');
-  const formatted = spawnSync(biome, ['format', '--write', SNAPSHOT], { encoding: 'utf-8' });
-  if (formatted.status !== 0)
-    throw new Error(`biome format failed on ${SNAPSHOT}: ${formatted.stderr}`);
+  const formatted = spawnSync(biome, ['format', `--stdin-file-path=${SNAPSHOT}`], {
+    input: `${JSON.stringify(value, null, 2)}\n`,
+    encoding: 'utf-8',
+  });
+  if (formatted.status !== 0) throw new Error(`biome format failed: ${formatted.stderr}`);
+  return formatted.stdout;
 }
 
 let home: string;
@@ -128,7 +130,7 @@ afterAll(async () => {
   if (home) rmSync(home, { recursive: true, force: true });
 });
 
-describe('rdc mcp serve over stdio (SDK v2 client)', () => {
+describe('the mcp serve stdio server, driven by the SDK v2 client', () => {
   it('negotiates spec 2026-07-28 through server/discover', () => {
     expect(client.getProtocolEra(), stderr).toBe('modern');
     expect(client.getNegotiatedProtocolVersion()).toBe(SPEC);
@@ -154,8 +156,7 @@ describe('rdc mcp serve over stdio (SDK v2 client)', () => {
     // Control: the slice is a real subset (the local-only tools drop out) and not empty.
     expect(surface.length).toBeGreaterThan(20);
     expect(surface.length).toBeLessThan(tools.length);
-    if (process.env.UPDATE_MCP_PARITY_SNAPSHOT === '1') writeSnapshot(surface);
-    expect(surface).toEqual(JSON.parse(readFileSync(SNAPSHOT, 'utf-8')));
+    await expect(biomeJson(surface)).toMatchFileSnapshot(SNAPSHOT);
   });
 
   it('a read tool (machine_list) answers from the config through the child rdc', async () => {

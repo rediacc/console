@@ -1,6 +1,7 @@
 import type { Transport } from '@modelcontextprotocol/server';
 import { McpServer } from '@modelcontextprotocol/server';
 import { type StdioServerHandle, serveStdio } from '@modelcontextprotocol/server/stdio';
+import { writeStderr } from '../../services/core/request-context.js';
 import { VERSION } from '../../version.js';
 import { registerAllTools } from './tools.js';
 
@@ -27,6 +28,6 @@ export function startMcpServer(
 ): StdioServerHandle {
   return serveStdio(() => createMcpServer(options), {
     ...(transport ? { transport } : {}),
-    onerror: (error) => process.stderr.write(`rdc mcp: ${error.message}\n`),
+    onerror: (error) => writeStderr(`rdc mcp: ${error.message}\n`),
   });
 }

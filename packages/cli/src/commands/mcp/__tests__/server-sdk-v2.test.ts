@@ -42,7 +42,7 @@ afterEach(async () => {
   for (const h of handles.splice(0)) await h.close();
 });
 
-describe('rdc mcp serve on SDK v2', () => {
+describe('the mcp serve server on SDK v2', () => {
   it('answers server/discover with spec 2026-07-28 and negotiates the modern era', async () => {
     const client = await connect('auto');
     expect(client.getProtocolEra()).toBe('modern');
