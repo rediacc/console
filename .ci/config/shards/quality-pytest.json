@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T00:15:31.166Z",
+  "generatedAt": "2026-11-25T01:11:32.234Z",
   "legs": [
     {
       "index": 1,
@@ -540,6 +540,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_queue.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_two_trees.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_roster_cache.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_silent_a.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_silent_b.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_snapshot.py",
@@ -1033,6 +1034,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_dispatch.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_backup_receipt.py",
+        "pytest:.claude/rediacc_hooks/tests/test_githook_core_slot.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_reference_transaction_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_wiring.py",
