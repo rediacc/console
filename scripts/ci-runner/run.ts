@@ -2818,6 +2818,27 @@ async function selftest(): Promise<number> {
       leaseAnchor('/m', fake) === 'BASE',
       'a lease anchors on merge-base(HEAD, live branch tip)'
     );
+    {
+      const r = leaseReceipt('BASE');
+      require_(
+        r.head === 'BASE' && r.failed?.length === 0 && Object.keys(r.findings ?? {}).length === 0,
+        'a lease narrows on its anchor with no carried fails, never on the copied main receipt'
+      );
+    }
+    {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'selftest-key-'));
+      fs.mkdirSync(path.join(dir, 'scripts/ci-runner'), { recursive: true });
+      fs.mkdirSync(path.join(dir, 'scripts/lib'), { recursive: true });
+      fs.writeFileSync(path.join(dir, 'package.json'), '{}');
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'one');
+      const k1 = selftestKey(dir);
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'two');
+      const k2 = selftestKey(dir);
+      require_(k1 !== k2, 'a runner source edit must change the selftest key');
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'one');
+      require_(selftestKey(dir) === k1, 'CONTROL: restoring the source restores the key');
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
     require_(
       leaseAnchor('/m', () => undefined) === undefined,
       'CONTROL: git that cannot answer gives no lease anchor, so the receipt reading applies'
@@ -6259,7 +6280,7 @@ function narrowChangeSet(
 }
 
 /**
- * THE LEASE ANCHOR for `--narrow`: the merge-base of the lease's HEAD with the branch the main checkout holds, which is the commit the lease was cut from. Undefined when git cannot answer, and the receipt reading then applies. `git` is a parameter so the selftest can plant answers.
+ * THE LEASE ANCHOR for `--narrow`: the merge-base of the lease's HEAD with the branch the main checkout holds. That is the commit the lease was cut from until the lease merges main in; from then on it is main's tip at that merge. Undefined when git cannot answer, and the receipt reading then applies. `git` is a parameter so the selftest can plant answers.
  */
 function leaseAnchor(
   main: string,
@@ -6272,6 +6293,57 @@ function leaseAnchor(
   if (tip === undefined || tip === '') return undefined;
   const base = git(['merge-base', 'HEAD', tip]);
   return base === undefined || base === '' ? undefined : base;
+}
+
+/** The receipt a lease narrows against, standing in for the copied main receipt: the anchor as head, nothing failed. The copied receipt's fails belong to other work, and re-running them cost about 146 s a run (PLAN-drain-throughput DT7). Pure, so the selftest pins that the lease branch never reads a receipt. */
+function leaseReceipt(leaseBase: string): Partial<Receipt> {
+  return { head: leaseBase, failed: [], findings: {} };
+}
+
+/** The runner's own sources and the inputs its `--selftest` reads: any edit to one changes the key. */
+const SELFTEST_KEY_ROOTS = ['scripts/ci-runner', 'scripts/lib', 'package.json'];
+
+/** SHA-256 over every file under the key roots (path and bytes, sorted), `node_modules` and `__tests__` excluded from neither: a test edit changes what the selftest drives. Pure over `root`. */
+export function selftestKey(root: string): string {
+  const hash = createHash('sha256');
+  const walk = (rel: string): void => {
+    const abs = path.join(root, rel);
+    const stat = fs.statSync(abs, { throwIfNoEntry: false });
+    if (stat === undefined) return;
+    if (stat.isDirectory()) {
+      for (const name of fs.readdirSync(abs).sort())
+        if (name !== 'node_modules') walk(path.join(rel, name));
+      return;
+    }
+    hash.update(`${rel}\0`);
+    hash.update(fs.readFileSync(abs));
+  };
+  for (const rel of SELFTEST_KEY_ROOTS) walk(rel);
+  return hash.digest('hex');
+}
+
+/** Where a lease's selftest pass is recorded: under the home directory, outside every tree, one empty file per source key. */
+const SELFTEST_PASS_DIR = path.join(os.homedir(), '.cache', 'rediacc-selftest-pass');
+
+/**
+ * `--selftest`, skipped in a lease when the same runner sources already passed it. The 17 s preflight of `npm run ci -- --narrow` re-proved an unchanged runner on every call (PLAN-drain-throughput DT7). Only a lease takes the shortcut: the main checkout and CI always run it, because the receipt is minted only by a runner that proved it can fail. A pass is recorded only by a real run that returned 0, and the key covers every runner source, so a runner edit in the lease runs the selftest again.
+ */
+async function selftestCached(): Promise<number> {
+  if (leaseMainOf(REPO_ROOT) === undefined || process.env.CI_RUNNER_SELFTEST_FORCE === '1')
+    return selftest();
+  const marker = path.join(SELFTEST_PASS_DIR, selftestKey(REPO_ROOT));
+  if (fs.existsSync(marker)) {
+    process.stderr.write('ci-runner: --selftest skipped: these runner sources already passed it\n');
+    return 0;
+  }
+  const code = await selftest();
+  if (code === 0) {
+    // tree-write: safe a marker file under the home directory, outside every tree
+    fs.mkdirSync(SELFTEST_PASS_DIR, { recursive: true });
+    // tree-write: safe a marker file under the home directory, outside every tree
+    fs.writeFileSync(marker, '');
+  }
+  return code;
 }
 
 /**
@@ -6289,8 +6361,7 @@ function narrowPlan(
   const dest = receiptPathFor(opts);
   let receipt: Partial<Receipt>;
   if (leaseBase !== undefined) {
-    // A lease judges its own change against the base it was cut from: the copied main receipt's fails belong to other work, and re-running them cost about 146 s a run (PLAN-drain-throughput DT7).
-    receipt = { head: leaseBase, failed: [], findings: {} };
+    receipt = leaseReceipt(leaseBase);
   } else {
     try {
       receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
@@ -6440,7 +6511,7 @@ async function main(): Promise<number> {
       return 1;
     }
   }
-  if (opts.selftest) return selftest();
+  if (opts.selftest) return selftestCached();
 
   const specs = await loadManifest(opts.manifest);
   if (specs.length === 0) {
