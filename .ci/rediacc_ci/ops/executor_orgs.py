@@ -73,6 +73,14 @@ BLOCK_SQL = (
         "(SELECT id FROM config_stores WHERE org_id = '@ORG@');"
     ),
     (
+        "UPDATE config_agent_grants SET revoked_at = '@NOW@', revoked_reason = 'console_blocked', "
+        "wrapped_config_key = NULL WHERE org_id = '@ORG@' AND revoked_at IS NULL;"
+    ),
+    (
+        "DELETE FROM config_tokens WHERE agent_grant_id IN "
+        "(SELECT id FROM config_agent_grants WHERE org_id = '@ORG@');"
+    ),
+    (
         "INSERT INTO event_log (id, type, source, actor_role, org_id, customer_id, data, timestamp) "
         "SELECT lower(hex(randomblob(16))), 'console_executor.blocked', 'ops-executor-orgs', 'root', "
         "o.id, o.customer_id, '{\"via\":\"wrangler-d1\"}', '@NOW@' "
