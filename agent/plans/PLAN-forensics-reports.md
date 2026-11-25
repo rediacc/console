@@ -68,10 +68,11 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_forensics_reports.sql, private/account/drizzle/meta/**, private/account/src/services/incident-report.service.ts, private/account/src/container.ts, private/account/tests/integration/incident-report-build.test.ts
   Depends on: FR1, PLAN-forensics-investigation.md#FI2, PLAN-forensics-investigation.md#FI3.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-report-build.test.ts)` rc 0 (a fork and a secret rotation in the window appear as actions, a suggested technique stays `inferred` until accepted, the volume-not-content statement is present in every stage); `npm run check:ci-account-scope-audit` rc 0.
-- [ ] FR5 [writer] Signing and storage (D3): `report-signing.service.ts` over the report key, the `REPORT_ED25519_*` env keys, the files written under `reports/<org>/<incident>/`, and `GET /reports/keys`.
+- [x] FR5 [writer] Signing and storage (D3): `report-signing.service.ts` over the report key, the `REPORT_ED25519_*` env keys, the files written under `reports/<org>/<incident>/`, and `GET /reports/keys`.
   Owns: private/account/src/services/report-signing.service.ts, private/account/src/types/env.ts, private/account/src/routes/report-verify.ts, private/account/tests/integration/incident-report-sign.test.ts
   Depends on: FR1.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-report-sign.test.ts)` rc 0 (a signature verifies with the served key, a changed byte fails, the licence signer is never called, a missing report key refuses generation with a named error).
+    (ticked) 2026-11-25T18:05:02Z by d778be9d: FR5 landed (account gitlink 0c8969657f); 9 tests pass, account tsc rc 0. DEPS-WAIVED: used prerequisites landed
 - [ ] FR6 [writer] PDF renderer (D5): `incident-report-pdf.ts` with paged sections, stamp, disclaimer, QR and hash footer, `report-fonts.ts` with pinned Noto subsets and `REPORT_FONT_DIR`, and `@pdf-lib/fontkit` added with the lockfile written by the pinned npm.
   Owns: private/account/src/services/pdf/incident-report-pdf.ts, private/account/src/services/pdf/report-fonts.ts, private/account/package.json, private/account/package-lock.json, private/account/tests/unit/incident-report-pdf.test.ts
   Depends on: FR1, FR10.
