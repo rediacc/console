@@ -6049,23 +6049,6 @@
         "f48d7d67"
       ]
     },
-    "agent/plans/_done/PLAN-repair-prose-style-findings.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-15",
-      "open": 0,
-      "done": 6,
-      "open_sigs": [],
-      "done_sigs": [
-        "01a4718b",
-        "3c926cc8",
-        "734eba3a",
-        "7cc30b07",
-        "9b97d598",
-        "d2157a79"
-      ]
-    },
     "agent/plans/_done/PLAN-repo-docker-storage-prune.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -6851,22 +6834,6 @@
         "f81620de",
         "fce2c5e8",
         "fde098b5"
-      ]
-    },
-    "agent/plans/_done/PLAN-typecheck-orphan-packages.md": {
-      "status": "done",
-      "owner": "unowned",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-15",
-      "open": 0,
-      "done": 5,
-      "open_sigs": [],
-      "done_sigs": [
-        "38ef7043",
-        "5d984411",
-        "80bd0b71",
-        "8959a3b8",
-        "c7cf8d2c"
       ]
     },
     "agent/plans/_done/PLAN-vm-check.md": {

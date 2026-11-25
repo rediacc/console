@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 302 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 300 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -733,7 +733,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-renet-fetch-retries.md` | done | 55 | 0 | 3 | 7265 |
 | `agent/plans/_done/PLAN-renet-run-docker-sock-isolation.md` | done | 101 | 0 | 4 | 11702 |
 | `agent/plans/_done/PLAN-renet-runtime-converge.md` | done | 63 | 0 | 5 | 10385 |
-| `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |
 | `agent/plans/_done/PLAN-repo-docker-storage-prune.md` | done | 156 | 0 | 14 | 36740 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.A0.md` | done | 279 | 0 | 7 | 32197 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.md` | done | 935 | 0 | 15 | 108469 |
@@ -761,13 +760,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-terms-acceptance.md` | done | 292 | 0 | 25 | 58161 |
 | `agent/plans/_done/PLAN-token-ip-rebind.md` | done | 426 | 0 | 11 | 42025 |
 | `agent/plans/_done/PLAN-tooling-transformation.md` | done | 7511 | 0 | 154 | 754149 |
-| `agent/plans/_done/PLAN-typecheck-orphan-packages.md` | done | 84 | 0 | 5 | 7157 |
 | `agent/plans/_done/PLAN-vm-check.md` | done | 159 | 0 | 8 | 37578 |
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-302 plan(s), 240 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+300 plan(s), 238 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
@@ -826,6 +824,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-prose-style-under-wrap.md` | PLAN: prose-style under-wrap detection (R19) | 2026-09-17 | 2026-11-03 | `cbb8ca416d4af8672ee533e29be959cef88c0813` |
 | `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | PLAN: port renet's apt-only Ceph, fork-dest and GPU flows to dnf and zypper | 2026-09-29 | 2026-11-09 | `7e1301a5eece90ff70ca3be94e16d3e5f56d8c1f` |
 | `agent/plans/_done/PLAN-renet-obs-mirror.md` | PLAN: decision D2 -- keep the openSUSE Leap 16.0 Ceph pin alive after OBS drops it | 2026-09-30 | 2026-11-10 | `b4480a8fdfd4749cc35b7e2a2049b7395cd88100` |
+| `agent/plans/_done/PLAN-repair-prose-style-findings.md` | PLAN: repair the 171 committed prose-style findings that hold check:ci-prose-style red | 2026-10-04 | 2026-11-25 | `ec2dbef404a85b1a13c10f4471289d55661583ca` |
 | `agent/plans/_done/PLAN-rotation-gh-removal.md` | Removing `gh` from secret rotation | 2026-09-17 | 2026-11-04 | `ab1e9fdb4636aee6591e6cd38a7b94f53a1c0aa0` |
 | `agent/plans/_done/PLAN-scheduled-red-detector.md` | PLAN: scheduled-workflow reds and PR bot comments reach the agent session | 2026-10-04 | 2026-11-14 | `cc3c1167370058d19f562abc30ff11eac782a01c` |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | PLAN: what a session is told at its FIRST TOUCH, and how we would know it changed anything | 2026-09-17 | 2026-11-03 | `087188ce3923ae3e124a60a0de238dc16df28ffa` |
@@ -839,8 +838,9 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-sweep-obligation-carry-forward.md` | PLAN: the stop judge discards an outstanding sweep or proof demand on every fix stop | 2026-09-23 | 2026-11-03 | `fb2724f8c5e22ce9700a37b18e052530ba745ef2` |
 | `agent/plans/_done/PLAN-sys-path-canonical-form.md` | PLAN: sys.path hop debt -- canonicalize the 5 gate-flagged sites | 2026-09-22 | 2026-11-03 | `76bfc271936160674f441fb080973e3744e92837` |
 | `agent/plans/_done/PLAN-trap-enforcement.md` | PLAN: Trap enforcement, from prose to instruments | 2026-09-17 | 2026-11-14 | `eafe9439a6c9d9aae909455cf281cd2f05e5cbb5` |
+| `agent/plans/_done/PLAN-typecheck-orphan-packages.md` | PLAN: four packages nothing typechecks | 2026-09-17 | 2026-11-25 | `659a8f32da3bebb480b616b0302c8ec58f8334dc` |
 | `agent/plans/_done/PLAN-w9p2-script-relocation.md` | PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops) | 2026-09-17 | 2026-11-04 | `03cc02f95dd3d0ea1dfb67a9275b929f561c80f3` |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | PLAN: a Stop-hook uncommitted-work exposure check (a push to commit, session-attributed) | 2026-10-04 | 2026-11-16 | `849e7060c1d52adf5602070c91b5096c723f41d7` |
 
-67 expired plan(s). The row is the receipt; the blob is the text.
+69 expired plan(s). The row is the receipt; the blob is the text.
