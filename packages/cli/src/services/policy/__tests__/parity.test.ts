@@ -96,6 +96,7 @@ const FORK_GUID = '22222222-2222-4222-8222-222222222222';
 /** The verdict a stable code stands for (the HTTP and CLI surfaces report the code only). */
 function verdictOfCode(code: string): string {
   if (code === 'ALLOWED') return 'allow';
+  if (code.startsWith('UNEXPECTED_FAILURE')) return 'error';
   return code === 'CONFIRMATION_REQUIRED' ? 'needs_confirmation' : 'deny';
 }
 
@@ -183,12 +184,28 @@ interface Envelope {
   errors: { code?: string; details?: string[] }[] | null;
 }
 
-/** The code a run answered: the decision code leading a refusal's details, else ALLOWED (it got past policy). */
+/**
+ * The failures an allowed command reaches AFTER policy: the config's repo has no network id and
+ * its machine sits at a refused port. Only these (or a success) are positive evidence that policy
+ * let the command through; any other failure is no evidence of that.
+ */
+const POST_POLICY_FAILURE = /has no network ID in this config|ECONNREFUSED|connection refused/i;
+
+/** The code reported for a run that failed outside policy, so no allow row can pass on it. */
+const UNEXPECTED_FAILURE = 'UNEXPECTED_FAILURE';
+
+/**
+ * The code a run answered: the decision code leading a refusal's details; ALLOWED only on a
+ * success or a known post-policy failure; anything else (a crash, an unknown config, a tool
+ * error) is an UNEXPECTED_FAILURE carrying its message, which matches no row.
+ */
 function codeOfEnvelope(envelope: Envelope): string {
   const lead = envelope.errors?.[0]?.details?.[0];
-  return lead !== undefined && (DECISION_CODES as readonly string[]).includes(lead)
-    ? lead
-    : 'ALLOWED';
+  if (lead !== undefined && (DECISION_CODES as readonly string[]).includes(lead)) return lead;
+  if (envelope.success) return 'ALLOWED';
+  const message = envelope.errors?.[0]?.message ?? '';
+  if (POST_POLICY_FAILURE.test(message)) return 'ALLOWED';
+  return `${UNEXPECTED_FAILURE}: ${message.slice(0, 200)}`;
 }
 
 const EXTRA_ARGS: Record<string, { argv: string[]; tool: Record<string, unknown> }> = {
@@ -351,7 +368,7 @@ async function viaExecutor(row: FixtureRow): Promise<Expectation> {
   const body = await response.text();
   if (response.status === 200) return { verdict: 'allow', code: 'ALLOWED' };
   const parsed = JSON.parse(body) as { error: string; code?: string };
-  if (parsed.code === undefined) {
+  if (parsed.code === undefined || !(DECISION_CODES as readonly string[]).includes(parsed.code)) {
     throw new Error(`The executor refused without a decision code (${response.status}): ${body}`);
   }
   return { verdict: verdictOfCode(parsed.code), code: parsed.code };
@@ -439,16 +456,22 @@ for (const surface of ['decide', 'cli', 'mcp', 'executor'] as const) {
   describe(`surface ${surface}`, () => {
     const cases = CASES.filter((c) => c.surfaces.includes(surface));
 
-    // A human principal on the CLI is a process with no agent among its ancestors (the child walks the same /proc chain as this process), so under an agent session those rows cannot be reached and are skipped by name; CI has no agent ancestor and runs them.
+    // A human principal on the CLI is a process with no agent among its ancestors (the child walks the same /proc chain as this process), so under an agent session those rows cannot be reached and are reported as skipped by name; CI has no agent ancestor and runs them.
     const unreachable = (c: ParityCase) =>
       surface === 'cli' && rowOf(c.row).principal.kind === 'human' && AGENT_ANCESTRY;
+    const entries = cases.map((c) => [c.row, c] as const);
 
-    it.each(cases.map((c) => [c.row, c] as const))(
+    it.each(entries.filter(([, c]) => !unreachable(c)))(
       '%s answers as the table expects',
       async (_id, c) => {
-        if (unreachable(c)) return;
         expect(await mismatch(surface, c)).toBeNull();
       },
+      SLOW
+    );
+
+    it.skip.each(entries.filter(([, c]) => unreachable(c)))(
+      '%s answers as the table expects (human principal, agent ancestor)',
+      () => undefined,
       SLOW
     );
 
