@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 6018,
-    "sourceCommit": "fb7c5f45f0aa58a2f5a875e6327aa6898d0fb11d"
+    "sourceCommit": "4f4dc043f0c8df574b76d9c9dc05a575871f5daa"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -1752,7 +1752,7 @@
     "pages.resourcesNis2Directive.companions.items.0.blurb": "2648eed8",
     "pages.resourcesNis2Directive.companions.items.0.slug": "831fce82",
     "pages.resourcesNis2Directive.companions.items.0.title": "e2a7122b",
-    "pages.resourcesNis2Directive.companions.items.1.blurb": "76828352",
+    "pages.resourcesNis2Directive.companions.items.1.blurb": "b21241f5",
     "pages.resourcesNis2Directive.companions.items.1.slug": "160f3d2b",
     "pages.resourcesNis2Directive.companions.items.1.title": "53b4c448",
     "pages.resourcesNis2Directive.companions.items.2.blurb": "5a978814",

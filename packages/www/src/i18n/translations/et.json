@@ -3184,7 +3184,7 @@
             "title": "Article 21(2)(d) on hankijapoolne küsimus"
           },
           {
-            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse-ajaga fork, mis teeb nädalalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kohtuekspertiisi-taseme artefaktideta. SRE ja ops-juhtidele.",
+            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse-ajaga fork, mis teeb nädalalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kontrollitavate tõenditeta. SRE ja ops-juhtidele.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Pidev tõhusus ilma näitemänguta"
           },

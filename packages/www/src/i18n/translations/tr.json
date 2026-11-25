@@ -3163,7 +3163,7 @@
             "title": "Madde 21(2)(d) Bir Tedarikçi Sorusudur"
           },
           {
-            "blurb": "Madde 21(2)(e), (f) ve 23 birlikte okunduğunda: haftalık tatbikatları gerçekçi kılan sabit zamanlı fork ve adli kalitede kanıtlar olmaksızın yerine getiremeyeceğiniz Madde 23 bildirim zaman çizelgesi. SRE ve operasyon sorumluları için.",
+            "blurb": "Madde 21(2)(e), (f) ve 23 birlikte okunduğunda: haftalık tatbikatları gerçekçi kılan sabit zamanlı fork ve doğrulayabileceğiniz kanıtlar olmaksızın yerine getiremeyeceğiniz Madde 23 bildirim zaman çizelgesi. SRE ve operasyon sorumluları için.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Etkili Sistem, Göstermelik Değil"
           },
