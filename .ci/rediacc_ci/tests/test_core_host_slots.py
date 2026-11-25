@@ -146,14 +146,17 @@ def test_an_unusable_pool_is_loud_and_runs_unthrottled(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("failing", ["register", "acquire"])
+@pytest.mark.parametrize("exc_type", [OSError, core_lease.LeaseError])
 def test_a_pool_that_fails_after_opening_is_loud_and_runs_unthrottled(
-    pool_env, monkeypatch, failing
+    pool_env, monkeypatch, failing, exc_type
 ):
-    """Review 426f94b6.1: the docstring promises an unusable pool runs the block unthrottled, and that holds for a pool that opens and then fails on `register` or `acquire`."""
+    """Reviews 426f94b6.1 and b04212c7.1: the docstring promises an unusable pool (`LeaseError` or `OSError`) runs the block unthrottled, and that holds for a pool that opens and then fails on `register` or `acquire` with either."""
     pool = core_lease.Pool.from_env(pool_env)
 
     def broken(*_a, **_k):
-        raise OSError(28, "No space left on device")
+        if exc_type is OSError:
+            raise OSError(28, "No space left on device")
+        raise exc_type("No space left on device")
 
     monkeypatch.setattr(pool, failing, broken)
     out = io.StringIO()

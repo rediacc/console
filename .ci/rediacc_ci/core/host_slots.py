@@ -103,7 +103,7 @@ def host_slot(
     want = min(weight, pool.size)
     try:
         marker = pool.register(label)
-    except OSError as exc:
+    except (core_lease.LeaseError, OSError) as exc:
         _say(
             stream,
             "the core pool is unusable (%s); %s runs UNTHROTTLED" % (exc, label or "this block"),
@@ -122,7 +122,7 @@ def host_slot(
             tokens = pool.acquire(
                 want, want, wait=True, timeout=timeout, label=label, on_wait=notice
             )
-        except OSError as exc:
+        except (core_lease.LeaseError, OSError) as exc:
             _say(
                 stream,
                 "the core pool is unusable (%s); %s runs UNTHROTTLED"
