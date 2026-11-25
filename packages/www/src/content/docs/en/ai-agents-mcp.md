@@ -156,7 +156,7 @@ Scans: the tools in `packages/shared/src/mcp/tools.generated.json` a remote MCP 
 <!-- <<< gen-docs -->
 
 <!-- >>> gen-docs: mcp-tools-local -->
-<!-- The tools only the local rdc mcp serve offers, from the same registry. -->
+<!-- The tools only the local MCP server offers, from the same registry. -->
 
 Scans: the tools in `packages/shared/src/mcp/tools.generated.json` only the local `rdc mcp serve` offers (surface `local`), one row per tool.
 
