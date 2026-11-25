@@ -463,3 +463,59 @@ def test_control_stop_hook_says_nothing_for_an_agent_that_finished(wl):
     plant_agent(fixture_subagents(wl), "afine00000000002", done_record())
     got = wl.run()
     assert "AGENT CUT BY AN API ERROR" not in got.out, got.out[-3000:]
+
+
+def test_tail_lines_of_an_unreadable_file_is_empty(tmp_path):
+    """Review 95861937.2: `wl_core.tail_bytes` answers None for a path it cannot read, and `_tail_lines` turns that into no lines rather than an exception."""
+    assert RR._tail_lines(tmp_path / "no-such-transcript.jsonl", 1024) == []
+
+
+def test_tail_lines_drops_the_partial_first_line_when_the_tail_starts_mid_file(tmp_path):
+    path = tmp_path / "t.jsonl"
+    lines = ["alpha-record", "bravo-record", "charlie-record"]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # 20 bytes from the end begins inside "bravo-record" ("charlie-record\n" is 15 bytes).
+    assert RR._tail_lines(path, 20) == ["charlie-record"]
+
+
+def test_control_tail_lines_keeps_the_first_line_when_the_tail_reaches_the_file_start(tmp_path):
+    path = tmp_path / "t.jsonl"
+    lines = ["alpha-record", "bravo-record", "charlie-record"]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    assert RR._tail_lines(path, 1024 * 1024) == lines
+
+
+class _SpawnSeenError(Exception):
+    """Raised by the Popen spy once it holds the env the fork parent would start with."""
+
+
+def _env_the_fork_parent_starts_with(monkeypatch) -> dict[str, str]:
+    seen: dict[str, dict[str, str]] = {}
+
+    def spy(*_args, **kwargs):
+        seen["env"] = kwargs["env"]
+        raise _SpawnSeenError
+
+    monkeypatch.setattr(wlfix._ForkParent, "proc", None)
+    monkeypatch.setattr(wlfix.subprocess, "Popen", spy)
+    with pytest.raises(_SpawnSeenError):
+        wlfix._ForkParent.run(["true"], "", {})
+    return seen["env"]
+
+
+def test_the_fork_parent_starts_with_the_import_time_environment_not_the_cases(
+    monkeypatch, tmp_path
+):
+    """Review f0af10f3.1: a case that monkeypatches its fixture env into os.environ (TMPDIR among it) and is the first to call a hook must not hand that env to the parent, whose scratch dir would then live inside the case's directory."""
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "case-fixture-tmp"))
+    monkeypatch.setenv("WLFIX_CASE_ONLY_PROBE", "1")
+    env = _env_the_fork_parent_starts_with(monkeypatch)
+    assert env.get("TMPDIR") != str(tmp_path / "case-fixture-tmp")
+    assert "WLFIX_CASE_ONLY_PROBE" not in env
+
+
+def test_control_the_fork_parent_environment_is_the_pytest_process_as_imported(monkeypatch):
+    """The silent control: the parent still gets a real environment (PATH from the pytest process), so the plant above is not satisfied by an empty dict."""
+    env = _env_the_fork_parent_starts_with(monkeypatch)
+    assert env.get("PATH") == wlfix._PARENT_ENV.get("PATH")
+    assert env.get("PATH")
