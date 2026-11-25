@@ -2612,19 +2612,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 5,
+      "open": 2,
+      "done": 7,
       "open_sigs": [
-        "0ee4a6dc",
         "24a60f6f",
-        "bf5a7979",
         "c9ea2164"
       ],
       "done_sigs": [
+        "0ee4a6dc",
         "2fbb5e4b",
         "5c371f4d",
         "6d85b2e3",
         "7c93b255",
+        "bf5a7979",
         "ff094cd7"
       ]
     },
