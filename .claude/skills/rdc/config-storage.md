@@ -43,7 +43,7 @@ device-code handoff, so it is not available to agents unattended
 
 ## Headless enrollment
 
-A machine with no browser enrolls with a machine secret (`RM1-`, minted in the portal, shown once): `REDIACC_MACHINE_SECRET=... rdc config remote enable --machine-secret <id>`, with an API token holding the `config:enroll` scope. The secret comes from the environment, stdin or a hidden prompt, never argv.
+A machine with no browser enrolls with a machine secret (`RM1-`, minted in the portal, shown once): `REDIACC_MACHINE_SECRET=... rdc config remote enable --machine-secret <id>`, with an API token holding the `config:enroll` scope. `<id>` is the machine secret's id (`machineSecretId`), not the secret (`RM1-...`) itself. The secret comes from the environment, stdin or a hidden prompt, never argv.
 
 ## PRF Provider Compatibility
 
