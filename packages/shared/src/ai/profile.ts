@@ -14,6 +14,9 @@
 import { z } from 'zod';
 import { type BaseUrlRefusal, validateBaseUrl } from './base-url.js';
 
+/** The highest per-turn output token cap a profile may name. */
+export const MAX_OUTPUT_TOKENS_CEILING = 1_000_000;
+
 export const PROFILE_FORMATS = ['anthropic-messages', 'openai-chat'] as const;
 export type ProfileFormat = (typeof PROFILE_FORMATS)[number];
 
@@ -39,6 +42,8 @@ export const ProfileSchema = z
     model: z.string().min(1),
     /** The model the Auto-mode judge runs on (D5 of PLAN-console-ai-assistant); `model` when absent. */
     judgeModel: z.string().min(1).optional(),
+    /** The output token cap of one chat turn on this profile (D11); the loop's default when absent. */
+    maxOutputTokens: z.number().int().min(1).max(MAX_OUTPUT_TOKENS_CEILING).optional(),
     headers: z.record(z.string().min(1), z.string()).optional(),
     capabilities: CapabilitiesSchema,
     preset: z.string().min(1).optional(),

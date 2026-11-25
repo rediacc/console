@@ -26,7 +26,15 @@
  * through the conversation's autonomy gate (services/ai/autonomy.ts), the Auto-mode judge included. A
  * chat bound to an agent grant (`grant` in the body) takes the grant's session: its config, its
  * opt-ins and its scope, through the same grant sessions `POST /v1/mcp/call` uses. The client
- * leaving aborts the provider stream and every running tool.
+ * leaving aborts the provider stream and every running tool, and cancels each machine job a tool
+ * call of the turn started (`renet job cancel`, authorized and audited as `job cancel`). A command
+ * runs in-process between its machine calls, where nothing interrupts it: a job it starts after the
+ * abort is cancelled as soon as it is announced, so it may run for that moment.
+ *
+ * A chat on the caller's own session is recorded (services/ai/recorder.ts `AiTranscripts`): the
+ * turn's new messages are sealed under the session key and posted before the model runs, because
+ * the account's approval route answers only in a conversation whose row they created, and the
+ * reply is posted once the turn ends. A grant-bound chat belongs to no user and is not recorded.
  *
  * `POST /v1/ai/test` runs the tool-calling smoke of the resolved profile (D12) and answers its
  * verdict as JSON; nothing is stored.
@@ -37,6 +45,7 @@ import { isPreviewRun, isStepUpMethod, STEP_UP_METHODS } from '@rediacc/shared/a
 import { getCommand } from '@rediacc/shared/cli-contract';
 import {
   type AiApprovalCommand,
+  type AiEvent,
   PROXY_ROUTES,
   type StreamLine,
 } from '@rediacc/shared/cli-contract/wire';
@@ -67,6 +76,7 @@ import {
 } from '../ai/judge.js';
 import { runAiTurn } from '../ai/loop.js';
 import { createProviderModel, ProviderProfileError } from '../ai/provider.js';
+import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke, type SmokeResult } from '../ai/smoke.js';
 import {
   type AiGateCall,
@@ -85,8 +95,8 @@ import {
 } from './agent-grant-session.js';
 import { type BusyCounter, createBusyCounter } from './busy.js';
 import { prepareCommand } from './command-dispatch.js';
-import type { ServeDeps } from './deps.js';
-import type { JobRouteHelpers } from './job-routes.js';
+import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
+import { cancelOnMachine, type JobRouteHelpers } from './job-routes.js';
 import { dispatcher, HandedBack } from './mcp-call-dispatch.js';
 import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
 import { clusterSubjectOf, resolveExecutorTarget } from './policy.js';
@@ -175,13 +185,34 @@ export interface AiChatDeps {
    * The profile sources of a request, team over shared (D3). Absent: the session's own config is the
    * only source. The container tier lends the second config when it loads both.
    */
-  aiConfigs?: (principal: SessionPrincipal, config: RdcConfig) => Promise<AiConfigs>;
+  aiConfigs?: (
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    configSessionId?: string
+  ) => Promise<AiConfigs>;
   /** Counts a running tool as a running dispatch, as `/v1/command` does. */
   busy?: BusyCounter;
-  /** The per-turn output token cap; the loop's default when absent. */
+  /** The per-turn output token cap when the profile names none; the loop's default when absent. */
   maxOutputTokens?: number;
   /** The Auto-mode judge of a profile; `runJudge` on the profile's judge model when absent. */
   judge?: (profile: Profile, input: JudgeInput) => Promise<JudgeVerdict>;
+  /** Records each turn of a chat on the caller's own session; absent, no turn is recorded. */
+  recording?: AiChatRecording;
+  /** `renet job cancel` of one job, run inside the turn's config scope; `cancelOnMachine` when absent. */
+  cancelJob?: (machine: string, jobId: string) => Promise<unknown>;
+}
+
+/** Where a chat's turns are recorded, and the session key each is sealed under. */
+export interface AiChatRecording {
+  transcripts: AiTranscripts;
+  /** The key a turn of this session is sealed under, or why the session has none. */
+  keyOf: (
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    configSessionId: string | undefined
+  ) => TranscriptKey | string;
+  /** Told why a turn was not recorded. */
+  onUnrecorded?: (reason: string, conversationId: string) => void;
 }
 
 export interface AiRouteDeps {
@@ -330,6 +361,61 @@ function untilAborted<T>(work: Promise<T>, signal: AbortSignal | undefined): Pro
   });
 }
 
+/** How one turn is recorded: its opening messages before the model runs, its reply after; neither rejects. */
+interface TurnRecord {
+  opening: () => Promise<void>;
+  reply: (text: string, model: string | undefined) => Promise<void>;
+}
+
+/** The record of a turn that is not recorded. */
+const UNRECORDED: TurnRecord = {
+  opening: () => Promise.resolve(),
+  reply: () => Promise.resolve(),
+};
+
+/** A machine job a tool call started. */
+interface StartedJob {
+  jobId: string;
+  machine: string;
+}
+
+/**
+ * The machine jobs of one tool call, cancelled when the chat aborts. Once the call settles without
+ * an abort, a job it handed back is the user's to follow and is never cancelled; once the chat has
+ * aborted, every job the still-running command announces is cancelled on arrival.
+ */
+class ToolCallJobs {
+  private readonly jobs: StartedJob[] = [];
+  /** Empty while the call runs, then `aborted` or `settled`, whichever came first. */
+  private readonly phase = new Set<'aborted' | 'settled'>();
+
+  constructor(
+    signal: AbortSignal | undefined,
+    private readonly cancel: (job: StartedJob) => void
+  ) {
+    if (!signal) return;
+    const abort = () => {
+      if (this.phase.size > 0) return;
+      this.phase.add('aborted');
+      for (const job of this.jobs) this.cancel(job);
+    };
+    if (signal.aborted) abort();
+    else signal.addEventListener('abort', abort, { once: true });
+  }
+
+  started(jobId: string, machine: string | undefined): void {
+    if (this.phase.has('settled') || !machine) return;
+    const job = { jobId, machine };
+    this.jobs.push(job);
+    if (this.phase.has('aborted')) this.cancel(job);
+  }
+
+  /** The call answered; without an abort its jobs are no longer the turn's to cancel. */
+  settled(): void {
+    if (this.phase.size === 0) this.phase.add('settled');
+  }
+}
+
 interface ChatToolHost {
   deps: ServeDeps;
   busy: BusyCounter;
@@ -337,6 +423,8 @@ interface ChatToolHost {
   conversationId: string;
   forward: (line: StreamLine) => void;
   gate: AiToolGate;
+  /** Cancel one job of an aborted chat: authorized and audited as `job cancel`; never rejects. */
+  cancelJob: (job: StartedJob) => void;
 }
 
 /** The argv the judge reads: the path, the positionals in order, then each option as `--name value`. */
@@ -365,6 +453,7 @@ async function runChatTool(
   const request = requestOf(entry, command, input);
   const outside = await globRefusal(handle.scope, command, request, handle.config);
   if (outside) return { status: 'refused', code: 'POLICY_DENIED', reason: outside };
+  const jobs = new ToolCallJobs(call.abortSignal, host.cancelJob);
   const dispatch = dispatcher(
     {
       deps: host.deps,
@@ -372,6 +461,7 @@ async function runChatTool(
       handle,
       requestId: toolRequestId(host.conversationId, call.toolCallId),
       windowMs: TOOL_WINDOW_MS,
+      onJobStarted: (jobId, machine) => jobs.started(jobId, machine),
     },
     request
   );
@@ -395,6 +485,8 @@ async function runChatTool(
         `The command started job ${error.jobId}${where} and keeps running; follow it with the job tools.`
       ).text,
     };
+  } finally {
+    jobs.settled();
   }
 }
 
@@ -493,7 +585,7 @@ export function registerAiRoutes(
     const session = helpers.configSession(c.req.header('x-config-session'));
     if (session) deps.sessions.sessionForExec(principal, session);
     const config = await deps.loadConfig(principal, session);
-    return { principal, body: parsed.data, config };
+    return { principal, body: parsed.data, config, configSessionId: session };
   }
 
   function refusal(c: Context, error: unknown) {
@@ -577,7 +669,8 @@ export function registerAiRoutes(
   async function openChat(
     principal: SessionPrincipal,
     config: RdcConfig,
-    grant: ChatRequest['grant']
+    grant: ChatRequest['grant'],
+    configSessionId: string | undefined
   ): Promise<OpenedChat> {
     if (grant) return await openGrant(deps, grant);
     const handle: AgentGrantHandle = {
@@ -587,14 +680,16 @@ export function registerAiRoutes(
       overrides: NO_GRANT_OVERRIDES,
       config: helpers.requestScopedConfig(config) ?? config,
     };
-    return { session: { handle, sources: await profileSources(principal, config) } };
+    const sources = await profileSources(principal, config, configSessionId);
+    return { session: { handle, sources } };
   }
 
   async function profileSources(
     principal: SessionPrincipal,
-    config: RdcConfig
+    config: RdcConfig,
+    configSessionId: string | undefined
   ): Promise<AiConfigs> {
-    return (await ai.chat?.aiConfigs?.(principal, config)) ?? { team: config.ai };
+    return (await ai.chat?.aiConfigs?.(principal, config, configSessionId)) ?? { team: config.ai };
   }
 
   const modelOf = (profile: Profile): LanguageModel =>
@@ -659,6 +754,44 @@ export function registerAiRoutes(
     };
   }
 
+  /**
+   * `renet job cancel` of one job an aborted chat started, as the cancel route runs it: authorized
+   * for the session's principal, recorded as `started` before it runs (and skipped when that record
+   * cannot be delivered), then recorded with its outcome.
+   */
+  async function cancelAudited(handle: AgentGrantHandle, job: StartedJob): Promise<void> {
+    const { principal, config, overrides } = handle;
+    const commandPath = 'job cancel';
+    deps.authorize({
+      principal,
+      commandPath,
+      config,
+      machineName: job.machine,
+      agentGrant: overrides,
+    });
+    const startedAt = Date.now();
+    const event = (success: boolean, outcome?: 'started'): ExecutorAuditEvent => ({
+      principal,
+      commandPath,
+      machineName: job.machine,
+      params: { id: job.jobId },
+      success,
+      exitCode: success ? 0 : 1,
+      durationMs: outcome ? 0 : Date.now() - startedAt,
+      destructive: getCommand(commandPath)?.destructive ?? true,
+      ...(outcome ? { outcome } : {}),
+    });
+    await deps.audit?.(event(true, 'started'));
+    const cancel = ai.chat?.cancelJob ?? cancelOnMachine;
+    const ok = await helpers
+      .withRequestConfig(helpers.requestScopedConfig(config), () => cancel(job.machine, job.jobId))
+      .then(
+        () => true,
+        () => false
+      );
+    await deps.audit?.(event(ok));
+  }
+
   const chatHost = (
     session: ChatSession,
     conversationId: string,
@@ -671,30 +804,85 @@ export function registerAiRoutes(
     conversationId,
     forward,
     gate,
+    // The client has left, so a cancel that fails has nobody to answer; its audit record carries the outcome.
+    cancelJob: (job) => {
+      cancelAudited(session.handle, job).catch(() => undefined);
+    },
   });
 
+  /** The text an assistant reply streamed, folded from the turn's events. */
+  function replyFold() {
+    let text = '';
+    return {
+      take(event: AiEvent): void {
+        if (event.type === 'text_delta') text += event.text;
+      },
+      text: () => text,
+    };
+  }
+
   /** Stream one turn as NDJSON; the client leaving aborts the provider stream and the running tools. */
-  function streamChat(c: Context, built: BuiltModel, session: ChatSession, body: ChatRequest) {
+  function streamChat(
+    c: Context,
+    built: BuiltModel,
+    session: ChatSession,
+    body: ChatRequest,
+    record: TurnRecord
+  ) {
     const { model, profile } = built;
     const abort = new AbortController();
     c.req.raw.signal.addEventListener('abort', () => abort.abort(), { once: true });
+    const maxOutputTokens = profile.maxOutputTokens ?? ai.chat?.maxOutputTokens;
     return streamText(c, async (stream) => {
       stream.onAbort(() => abort.abort());
       const forward = (line: StreamLine) => {
         stream.write(`${JSON.stringify(line)}\n`).catch(() => undefined);
       };
+      // Before the model runs: a held call is approvable only in a conversation the store holds.
+      await record.opening();
+      const reply = replyFold();
       const gate = chatGate(session, profile, body);
       await runAiTurn({
         model,
         tools: chatTools(chatHost(session, body.conversationId, forward, gate)),
         messages: messagesOf(body),
-        ...(ai.chat?.maxOutputTokens ? { maxOutputTokens: ai.chat.maxOutputTokens } : {}),
+        ...(maxOutputTokens ? { maxOutputTokens } : {}),
         abortSignal: abort.signal,
-        emit: (event) => forward({ kind: 'ai', ai: event }),
+        emit: (event) => {
+          reply.take(event);
+          forward({ kind: 'ai', ai: event });
+        },
         issueApproval: ({ toolCallId, command }) =>
           ai.approvals.issue(session.handle.principal, body.conversationId, toolCallId, command),
       });
+      await record.reply(reply.text(), profile.model);
     });
+  }
+
+  /** How a chat on the caller's own session records its turn; a no-op for one that records none. */
+  function turnRecordOf(
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    body: ChatRequest,
+    configSessionId: string | undefined
+  ): TurnRecord {
+    const recording = ai.chat?.recording;
+    if (!recording || body.grant) return UNRECORDED;
+    const key = recording.keyOf(principal, config, configSessionId);
+    if (typeof key === 'string') {
+      recording.onUnrecorded?.(key, body.conversationId);
+      return UNRECORDED;
+    }
+    const turn: TranscriptTurn = {
+      principal,
+      conversationId: body.conversationId,
+      messages: body.messages,
+      key,
+    };
+    return {
+      opening: () => recording.transcripts.opening(turn),
+      reply: (text, model) => recording.transcripts.reply(turn, text, model),
+    };
   }
 
   /** The model of the profile a request resolves to, or the refusal that answers it. */
@@ -716,13 +904,14 @@ export function registerAiRoutes(
 
   app.post(AI_ROUTES.chat, async (c) => {
     try {
-      const { principal, body, config } = await admit(c, ChatRequestSchema);
-      const opened = await openChat(principal, config, body.grant);
+      const { principal, body, config, configSessionId } = await admit(c, ChatRequestSchema);
+      const opened = await openChat(principal, config, body.grant, configSessionId);
       if ('refusal' in opened) return c.json(opened.refusal, opened.status);
       const { session } = opened;
       const built = buildModel(session.sources, body.profile);
       if ('refusal' in built) return c.json(built.refusal, built.status);
-      return streamChat(c, built, session, body);
+      const record = turnRecordOf(principal, config, body, configSessionId);
+      return streamChat(c, built, session, body, record);
     } catch (error) {
       return refusal(c, error);
     }
@@ -730,8 +919,9 @@ export function registerAiRoutes(
 
   app.post(AI_ROUTES.test, async (c) => {
     try {
-      const { principal, body, config } = await admit(c, TestRequestSchema);
-      const resolved = resolveProfile(await profileSources(principal, config), body.profile);
+      const { principal, body, config, configSessionId } = await admit(c, TestRequestSchema);
+      const sources = await profileSources(principal, config, configSessionId);
+      const resolved = resolveProfile(sources, body.profile);
       if (!resolved.ok) {
         return c.json({ error: resolved.message, code: AI_PROFILE_UNRESOLVED }, 404);
       }

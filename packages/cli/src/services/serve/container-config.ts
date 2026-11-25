@@ -28,6 +28,7 @@
  * independently-rotating tokens keep the two apart.
  */
 
+import type { AiConfigs } from '@rediacc/shared/ai';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { memoryPolicyHighWater } from '../config/policy-record.js';
 import { deadlineFetch } from './account-fetch.js';
@@ -181,6 +182,29 @@ export function routeAgentPrincipals(
     if (!principal.agentGrantId) return await userLoader(principal, configSessionId);
     if (!agentSessions) throw new SessionError('This executor does not serve agent grants.');
     return agentSessions.currentConfig(principal);
+  };
+}
+
+/**
+ * The AI profile sources of a chat, team over shared (D3 of PLAN-console-ai-providers): the config
+ * the request runs against, and the org's shared config beside it, opened through the same loader
+ * under the same session. A principal with no team runs against the shared config already, and an
+ * agent grant's principal has only its grant's config, so both get the one source. A team with no
+ * config of its own falls back to the shared one in `pickConfig`, which makes both sources the same
+ * document and changes nothing. A shared config that cannot be opened fails the request, as the
+ * team config would: a profile is never resolved against half of what the store holds.
+ */
+export function teamOverSharedAiConfigs(
+  loadConfig: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>
+): (
+  principal: SessionPrincipal,
+  config: RdcConfig,
+  configSessionId?: string
+) => Promise<AiConfigs> {
+  return async (principal, config, configSessionId) => {
+    if (principal.agentGrantId || !principal.teamId) return { team: config.ai };
+    const shared = await loadConfig({ ...principal, teamId: null }, configSessionId);
+    return { team: config.ai, shared: shared.ai };
   };
 }
 

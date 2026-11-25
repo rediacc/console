@@ -7,9 +7,11 @@
  * different config sources without either one growing a mode flag.
  */
 
+import type { AiConfigs } from '@rediacc/shared/ai';
 import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
+import type { AiRecorder } from '../ai/recorder.js';
 import type { Executor } from '../executor/types.js';
 import type { AgentGrantSessions } from './agent-grant-session.js';
 import type { AuthVerifier } from './auth.js';
@@ -115,4 +117,21 @@ export interface ServeDeps {
    * tier; without it the route is not registered.
    */
   agentGrants?: AgentGrantSessions;
+  /**
+   * Seals and posts each AI chat message to the account server's conversation store
+   * (services/ai/recorder.ts). The store's conversation row is what the account's approval route
+   * looks up, so a chat this executor does not record cannot have a held call approved from the
+   * page. Absent in a harness that does not want the account round trips.
+   */
+  aiRecorder?: AiRecorder;
+  /**
+   * The AI profile sources of a chat, team over shared (container-config.ts
+   * `teamOverSharedAiConfigs`). Absent: the request's own config is the only source, which is the
+   * daemon tier's one enrolled config.
+   */
+  aiConfigs?: (
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    configSessionId?: string
+  ) => Promise<AiConfigs>;
 }

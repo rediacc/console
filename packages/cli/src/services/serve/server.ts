@@ -38,6 +38,7 @@ import { streamText } from 'hono/streaming';
 import { VERSION } from '../../version.js';
 import { AiApprovalLedger } from '../ai/approvals.js';
 import { AiConversationStore } from '../ai/autonomy.js';
+import { AiTranscripts } from '../ai/recorder.js';
 import { outputService } from '../core/output.js';
 import {
   createOutputState,
@@ -46,11 +47,12 @@ import {
 } from '../core/request-context.js';
 import { InvalidJobIdError } from '../executor/job-client.js';
 import { traceProxyRequest } from '../executor/proxy-trace.js';
-import { registerAiRoutes } from './ai-routes.js';
+import { type AiChatRecording, registerAiRoutes } from './ai-routes.js';
 import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import { AuthError, type AuthVerifier } from './auth.js';
 import { createBusyCounter } from './busy.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
+import { cekGenerationOf } from './config-writeback.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
@@ -502,7 +504,11 @@ export function createServeApp(deps: ServeDeps): Hono {
   registerAiRoutes(app, deps, routeHelpers, {
     modes: new AiConversationStore(),
     approvals: new AiApprovalLedger(),
-    chat: { busy },
+    chat: {
+      busy,
+      ...(deps.aiConfigs ? { aiConfigs: deps.aiConfigs } : {}),
+      ...(deps.aiRecorder ? { recording: chatRecording(deps, deps.aiRecorder) } : {}),
+    },
   });
 
   // The hosted MCP call route, container tier only (it carries no bearer: only the proxy's `mcpCall` reaches it).
@@ -574,6 +580,38 @@ async function auditOutcome(
  */
 function requestScopedConfig(deps: ServeDeps, config: RdcConfig): RdcConfig | undefined {
   return deps.mode === 'container' ? config : undefined;
+}
+
+/**
+ * How the chat route records a turn: sealed under the session's granted key, at the CEK generation
+ * the config store wrapped the session's config under. A config the store named no generation for
+ * (the daemon's enrolled file) cannot be sealed for the store, and the turn goes unrecorded.
+ */
+function chatRecording(deps: ServeDeps, recorder: NonNullable<ServeDeps['aiRecorder']>) {
+  const recording: AiChatRecording = {
+    transcripts: new AiTranscripts(recorder),
+    keyOf: (principal, config, configSessionId) => {
+      const cekGeneration = cekGenerationOf(config);
+      if (cekGeneration === undefined) {
+        return 'the config store named no CEK generation for this config, so its messages cannot be sealed';
+      }
+      return {
+        cekGeneration,
+        // Read at sealing time, so the recorder never holds key material.
+        cek: () => {
+          try {
+            return deps.sessions.cekBytes(deps.sessions.sessionForExec(principal, configSessionId));
+          } catch {
+            return Promise.resolve(undefined);
+          }
+        },
+      };
+    },
+    onUnrecorded: (reason, conversationId) => {
+      outputService.warn(`AI conversation ${conversationId} is not recorded: ${reason}`);
+    },
+  };
+  return recording;
 }
 
 /**

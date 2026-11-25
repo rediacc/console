@@ -181,8 +181,8 @@ function cancelAnswer(
   return { body: { state, ...(exitCode == null ? {} : { exitCode }), ...audit }, status: 200 };
 }
 
-/** `renet job cancel` on the job's machine, over a pooled connection. */
-async function cancelOnMachine(machine: string, jobId: string) {
+/** `renet job cancel` on the job's machine, over a pooled connection; run inside the request's config scope. */
+export async function cancelOnMachine(machine: string, jobId: string) {
   const conn = await connectForJobs(machine, 'read-only');
   try {
     return await cancelJob(conn, jobId);

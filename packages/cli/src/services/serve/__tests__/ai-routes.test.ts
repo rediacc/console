@@ -33,7 +33,8 @@ import {
   type AiApprovals,
 } from '../../ai/approvals.js';
 import { AiConversationStore } from '../../ai/autonomy.js';
-import { MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
+import { DEFAULT_MAX_OUTPUT_TOKENS, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
+import { AiTranscripts, createAiRecorder } from '../../ai/recorder.js';
 import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
 import {
   AI_APPROVAL_STEPUP_REQUIRED,
@@ -44,6 +45,7 @@ import {
   type AiApprovalSubmit,
   type AiApprovalVerdict,
   type AiChatDeps,
+  type AiChatRecording,
   type AiMode,
   registerAiRoutes,
 } from '../ai-routes.js';
@@ -66,6 +68,7 @@ const OWNER = {
   createdByUserId: 'user-owner',
   userEmail: 'owner@example.com',
   orgRole: 'owner',
+  tokenId: 'tok-owner',
 };
 
 /** `shop` is a grand repo (tag latest); `shop:trial` is a fork of it. */
@@ -533,6 +536,21 @@ describe('POST /v1/ai/chat', () => {
     expect(used).toEqual(['team-model', 'shared-model']);
   });
 
+  it("caps a turn's output at the profile's cap, and at the loop default when it names none", async () => {
+    const capped = new MockLanguageModelV4({ doStream: [textStep('hi')] });
+    const withCap: RdcConfig = {
+      ...fleetConfig(),
+      ai: { providers: { main: { ...profileOf('m'), maxOutputTokens: 1234 } }, default: 'main' },
+    };
+    await (await chat(app(withCap, { chat: { createModel: () => capped } }))).text();
+    expect(capped.doStreamCalls[0]?.maxOutputTokens).toBe(1234);
+
+    const plain = new MockLanguageModelV4({ doStream: [textStep('hi')] });
+    await (await chat(app(withAi('m'), { chat: { createModel: () => plain } }))).text();
+    expect(plain.doStreamCalls[0]?.maxOutputTokens).toBe(DEFAULT_MAX_OUTPUT_TOKENS);
+    expect(DEFAULT_MAX_OUTPUT_TOKENS).toBe(8192);
+  });
+
   it('answers 404 with a code when no profile is configured, and 401 without a token', async () => {
     const hono = app(fleetConfig());
     const none = await chat(hono);
@@ -646,7 +664,12 @@ describe('the approval token, end to end', () => {
 
   function flow(
     policy: PolicyDocument = OPEN,
-    extra: { judge?: AiChatDeps['judge']; failApprovalAudit?: boolean } = {}
+    extra: {
+      judge?: AiChatDeps['judge'];
+      failApprovalAudit?: boolean;
+      chat?: Pick<AiChatDeps, 'recording' | 'cancelJob'>;
+      executor?: ServeDeps['executor'];
+    } = {}
   ): Flow {
     const store = new AiConversationStore();
     const audited: Flow['audited'] = [];
@@ -655,6 +678,7 @@ describe('the approval token, end to end', () => {
       {
         approvals: new AiApprovalLedger(),
         modes: store,
+        ...(extra.executor ? { executor: extra.executor } : {}),
         audit: (event) => {
           if (extra.failApprovalAudit && event.commandPath === 'ai approval') {
             return Promise.reject(new Error('audit sink down'));
@@ -672,6 +696,7 @@ describe('the approval token, end to end', () => {
               doStream: [toolCallStep(toolOf.name, toolOf.input), textStep('Done.')],
             }),
           ...(extra.judge ? { judge: extra.judge } : {}),
+          ...extra.chat,
         },
       }
     );
@@ -860,5 +885,114 @@ describe('the approval token, end to end', () => {
     const held = await pendingApproval(hono);
     expect(held.reason).toContain('judge');
     expect(started()).toBe(1);
+  });
+
+  /** The account's conversation store as `POST /console/ai/messages` keeps it: a row per conversation, replays no-ops. */
+  function accountStore() {
+    const rows = new Map<string, Record<string, unknown>[]>();
+    const fetchImpl = ((_url: string | URL, init?: RequestInit) => {
+      const write = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      const id = String(write.conversationId);
+      const messages = rows.get(id) ?? [];
+      if (messages.some((m) => m.messageId === write.messageId)) {
+        return Promise.resolve(Response.json({ ok: true, created: false }));
+      }
+      if (write.parentId && !messages.some((m) => m.messageId === write.parentId)) {
+        return Promise.resolve(Response.json({ code: 'AI_PARENT_MISSING' }, { status: 409 }));
+      }
+      rows.set(id, [...messages, write]);
+      return Promise.resolve(Response.json({ ok: true, created: true }));
+    }) as typeof fetch;
+    const recording: AiChatRecording = {
+      transcripts: new AiTranscripts(
+        createAiRecorder({
+          accountUrl: 'https://account.test',
+          executorToken: 'rdt_executor',
+          fetchImpl,
+        })
+      ),
+      keyOf: () => ({ cekGeneration: 1, cek: () => Promise.resolve(new Uint8Array(32).fill(7)) }),
+    };
+    return { rows, recording };
+  }
+
+  /**
+   * The page's approval as the account route answers it (private/account/src/routes/console-ai.ts
+   * `POST /conversations/:id/approvals`): a conversation the store holds no row for is a 404, and
+   * one it holds is forwarded with the step-up the account judged and the `remember` flag.
+   */
+  function pageApproval(
+    hono: Hono,
+    rows: Map<string, unknown[]>,
+    held: { approvalToken: string; toolCallId: string; command: object },
+    remember?: boolean
+  ) {
+    if (!rows.has(CHAT.conversationId)) {
+      return Promise.resolve({ status: 404, body: { error: 'Conversation not found' } });
+    }
+    return post(hono, AI_ROUTES.approval, answer(held, remember === undefined ? {} : { remember }));
+  }
+
+  it('approves a held call from the page: the turn recorded the conversation the account looks up', async () => {
+    const { rows, recording } = accountStore();
+    const { hono, started } = flow(OPEN, { chat: { recording } });
+    const held = await pendingApproval(hono);
+    const stored = rows.get(CHAT.conversationId) ?? [];
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({
+      conversationId: CHAT.conversationId,
+      parentId: null,
+      seq: 0,
+      onBehalfOfTokenId: 'tok-owner',
+      cekGeneration: 1,
+    });
+    expect(typeof stored[0]?.titleSealed).toBe('string');
+
+    expect((await pageApproval(hono, rows, held, true)).status).toBe(200);
+    const ran = await turnEvents(hono);
+    expect(ran.map((e) => e.type)).not.toContain('approval_required');
+    expect(started()).toBe(1);
+    // The reply of the turn that ran is recorded under the user's message; the replayed message is not posted again.
+    expect((rows.get(CHAT.conversationId) ?? []).map((m) => [m.seq, m.parentId])).toEqual([
+      [0, null],
+      [1, stored[0]?.messageId],
+    ]);
+  });
+
+  it('cancels the machine job of a running tool call when the client aborts', async () => {
+    const cancelled: [string, string][] = [];
+    let announce: () => void = () => undefined;
+    const announced = new Promise<void>((resolve) => {
+      announce = resolve;
+    });
+    const { hono, store, audited } = flow(OPEN, {
+      executor: {
+        execute: (options) =>
+          new Promise(() => {
+            options.onJobStarted?.('job-1', options.machineName);
+            announce();
+          }),
+      },
+      chat: {
+        cancelJob: (machine, jobId) => {
+          cancelled.push([machine, jobId]);
+          return Promise.resolve();
+        },
+      },
+    });
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
+    const abort = new AbortController();
+    const response = await chat(hono, CHAT, { signal: abort.signal });
+    expect(response.status).toBe(200);
+    await announced;
+    expect(cancelled).toEqual([]);
+    abort.abort();
+    await vi.waitFor(() => expect(cancelled).toEqual([['m1', 'job-1']]));
+    await vi.waitFor(() =>
+      expect(audited.filter((a) => a.commandPath === 'job cancel')).toEqual([
+        { commandPath: 'job cancel', success: true, outcome: 'started' },
+        { commandPath: 'job cancel', success: true },
+      ])
+    );
   });
 });

@@ -24,6 +24,7 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { createAiRecorder } from '../services/ai/recorder.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
@@ -35,6 +36,7 @@ import {
   createContainerConfigLoader,
   createExecutorGrantRecorder,
   routeAgentPrincipals,
+  teamOverSharedAiConfigs,
 } from '../services/serve/container-config.js';
 import { serveCrypto } from '../services/serve/crypto.js';
 import type { ExecutorAuditEvent, ServeDeps } from '../services/serve/deps.js';
@@ -118,6 +120,7 @@ export function registerServeCommand(program: Command): void {
               );
             },
           }),
+          ...aiChatDeps({ mode: options.mode, accountUrl, executorToken, loadConfig }),
           audit: createExecutorAudit({
             accountUrl,
             executorToken,
@@ -181,6 +184,31 @@ function configLoading(input: {
       ? undefined
       : new AgentGrantSessions({ accountUrl, executorToken, orgId: pinnedOrgId });
   return { loadConfig: routeAgentPrincipals(baseLoader, agentGrants), agentGrants };
+}
+
+/**
+ * What the AI chat routes take from the executor's wiring. A chat's messages, sealed under the
+ * session key, are what the account's conversation row (and with it every page approval) is made
+ * of. The container opens the org's shared config beside the team's for profile resolution; the
+ * daemon has one enrolled config.
+ */
+function aiChatDeps(input: {
+  mode: 'daemon' | 'container';
+  accountUrl: string;
+  executorToken: string;
+  loadConfig: ServeDeps['loadConfig'];
+}): Pick<ServeDeps, 'aiRecorder' | 'aiConfigs'> {
+  const aiRecorder = createAiRecorder({
+    accountUrl: input.accountUrl,
+    executorToken: input.executorToken,
+    onFailure: (reason, message) => {
+      outputService.warn(
+        `AI message ${message.messageId} of conversation ${message.conversationId} was not recorded: ${reason}`
+      );
+    },
+  });
+  if (input.mode !== 'container') return { aiRecorder };
+  return { aiRecorder, aiConfigs: teamOverSharedAiConfigs(input.loadConfig) };
 }
 
 /** The warning the daemon prints for an audit record the account server did not take. */

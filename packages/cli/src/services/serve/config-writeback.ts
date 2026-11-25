@@ -228,6 +228,17 @@ function storedEnvelopeOf(envelope: EncryptedConfigPayload['envelope']): StoredE
   };
 }
 
+/**
+ * The CEK generation each served document's content key is wrapped under, keyed by the very object
+ * the store hands out. A v4 envelope names it; an older one does not, and its document has no entry.
+ */
+const cekGenerations = new WeakMap<RdcConfig, number>();
+
+/** The CEK generation the store's copy of `config` is wrapped under; undefined when no store named one. */
+export function cekGenerationOf(config: RdcConfig): number | undefined {
+  return cekGenerations.get(config);
+}
+
 export interface SessionConfigStoreOptions {
   chain: ConfigChain;
   sessionId: string;
@@ -486,6 +497,8 @@ export class SessionConfigStore implements ConfigWriteback {
     this.stored = stored;
     bindConfigWriteback(config, this);
     bindEffectivePolicy(config, this.effective);
+    const generation = stored.configKey?.cekGeneration;
+    if (generation !== undefined) cekGenerations.set(config, generation);
   }
 
   /** A chain request (or a pull), its transport failures turned into a failed write. */

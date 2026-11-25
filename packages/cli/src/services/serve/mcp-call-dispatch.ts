@@ -37,6 +37,8 @@ export interface DispatchCall {
   requestId: string;
   /** How long the call waits for the dispatch, in milliseconds. */
   windowMs: number;
+  /** Told of every machine job the dispatch starts, also after the call answered (an AI chat cancels them on abort). */
+  onJobStarted?: (jobId: string, machine: string | undefined) => void;
 }
 
 /** `{[key]: value}` when `value` is present, else nothing: keeps the optional audit fields out of the branch count. */
@@ -138,6 +140,7 @@ export function dispatcher(call: DispatchCall, request: ReturnType<typeof reques
         ...(run.background ? { background: true } : {}),
         onJobStarted: (jobId, machine) => {
           job = { jobId, machine };
+          call.onJobStarted?.(jobId, machine);
         },
         onEvent: run.onEvent,
       })

@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { WK_ACCOUNT_EGRESS_HOST, WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import { omitKey } from '../../utils/omit-key.js';
 import { buildProfile, getPreset, PRESETS } from '../presets.js';
-import { AiConfigSchema, type Profile, ProfileSchema, validateProfile } from '../profile.js';
+import {
+  AiConfigSchema,
+  MAX_OUTPUT_TOKENS_CEILING,
+  type Profile,
+  ProfileSchema,
+  validateProfile,
+} from '../profile.js';
 
 const base: Profile = {
   format: 'openai-chat',
@@ -46,6 +52,16 @@ describe('ProfileSchema', () => {
       ProfileSchema.safeParse({ ...base, capabilities: { tools: true, streaming: true } }).success
     ).toBe(false);
     expect(ProfileSchema.safeParse({ ...base, model: '' }).success).toBe(false);
+  });
+
+  it('takes an optional whole, positive output token cap up to the ceiling', () => {
+    expect(ProfileSchema.safeParse({ ...base, maxOutputTokens: 2048 }).success).toBe(true);
+    expect(
+      ProfileSchema.safeParse({ ...base, maxOutputTokens: MAX_OUTPUT_TOKENS_CEILING }).success
+    ).toBe(true);
+    for (const bad of [0, -1, 1.5, MAX_OUTPUT_TOKENS_CEILING + 1, '2048']) {
+      expect(ProfileSchema.safeParse({ ...base, maxOutputTokens: bad }).success).toBe(false);
+    }
   });
 });
 

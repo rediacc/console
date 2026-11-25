@@ -53,8 +53,12 @@ import {
 import { resetProxySessions } from '../../executor/proxy-client.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
-import { ConfigChain, SessionConfigStore } from '../config-writeback.js';
-import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
+import { ConfigChain, cekGenerationOf, SessionConfigStore } from '../config-writeback.js';
+import {
+  createContainerConfigLoader,
+  createExecutorGrantRecorder,
+  teamOverSharedAiConfigs,
+} from '../container-config.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
@@ -909,6 +913,17 @@ describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', 
     },
   });
 
+  it('names the CEK generation the store wrapped each served document under', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    const generation = (store.storedEnvelope() as { cekGeneration?: number }).cekGeneration;
+    expect(typeof generation).toBe('number');
+    const session = await openDirect(store);
+    expect(cekGenerationOf(session.config)).toBe(generation);
+    const written = await session.write(addMachine);
+    expect(cekGenerationOf(written)).toBe(generation);
+    expect(cekGenerationOf(seeded())).toBeUndefined();
+  });
+
   it('pulls a v4 config and pushes v4 under the same content key', async () => {
     const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
     expect(store.storedEnvelope().envelopeVersion).toBe(4);
@@ -940,5 +955,57 @@ describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', 
     store.sessionCekGeneration = undefined;
     await expect(session.write(addMachine)).rejects.toThrow(/CEK generation/);
     expect(store.puts).toHaveLength(0);
+  });
+});
+
+describe('teamOverSharedAiConfigs', () => {
+  const profile = (model: string) => ({
+    providers: {
+      main: {
+        format: 'openai-chat' as const,
+        baseURL: 'https://api.openai.com/v1',
+        key: 'sk-test',
+        authScheme: 'bearer' as const,
+        model,
+        capabilities: { tools: true, streaming: true, parallelToolCalls: false, vision: false },
+      },
+    },
+    default: 'main',
+  });
+  const configWith = (model: string) =>
+    ({ schemaVersion: 3, id: 'cfg', version: 1, ai: profile(model) }) as unknown as RdcConfig;
+  const member = {
+    orgId: 'org-1',
+    teamId: 'team-a',
+    userId: 'user-1',
+    userEmail: 'u@example.com',
+    orgRole: 'member' as const,
+  };
+
+  it("opens the org's shared config beside a team member's config, under the same session", async () => {
+    const asked: { teamId: string | null; session: string | undefined }[] = [];
+    const sources = teamOverSharedAiConfigs((principal, session) => {
+      asked.push({ teamId: principal.teamId, session });
+      return Promise.resolve(configWith('shared-model'));
+    });
+    const team = configWith('team-model');
+    const answer = await sources(member, team, 'sess-1');
+    expect(asked).toEqual([{ teamId: null, session: 'sess-1' }]);
+    expect(answer.team?.providers.main?.model).toBe('team-model');
+    expect(answer.shared?.providers.main?.model).toBe('shared-model');
+  });
+
+  it('gives a principal with no team, and an agent grant, the one config they run against', async () => {
+    const loader = vi.fn(() => Promise.resolve(configWith('never')));
+    const sources = teamOverSharedAiConfigs(loader);
+    const own = configWith('own-model');
+    expect(await sources({ ...member, teamId: null }, own)).toEqual({ team: own.ai });
+    expect(await sources({ ...member, agentGrantId: 'g1' }, own)).toEqual({ team: own.ai });
+    expect(loader).not.toHaveBeenCalled();
+  });
+
+  it('fails the request when the shared config cannot be opened', async () => {
+    const sources = teamOverSharedAiConfigs(() => Promise.reject(new Error('pull refused')));
+    await expect(sources(member, configWith('team-model'))).rejects.toThrow('pull refused');
   });
 });

@@ -9,7 +9,14 @@ import { randomBytes } from '@rediacc/shared/config-crypto';
 import { omitKey } from '@rediacc/shared/utils/omit-key';
 import { describe, expect, it } from 'vitest';
 import type { SessionPrincipal } from '../../serve/sessions.js';
-import { AI_MESSAGE_ATTEMPTS, type AiMessageRecord, createAiRecorder } from '../recorder.js';
+import {
+  AI_MESSAGE_ATTEMPTS,
+  type AiMessageRecord,
+  AiTranscripts,
+  createAiRecorder,
+  type TranscriptTurn,
+  transcriptMessageId,
+} from '../recorder.js';
 
 const PRINCIPAL: SessionPrincipal = {
   userId: 'user-1',
@@ -315,5 +322,66 @@ describe('AI conversation recorder', () => {
     expect(failures[0]).toContain('timed out');
     expect(calls()).toBe(0);
     expect(recorder.pendingConversations()).toBe(0);
+  });
+});
+
+describe('AI transcripts', () => {
+  const key = { cekGeneration: 2, cek: () => Promise.resolve(CEK) };
+  const turn = (messages: TranscriptTurn['messages']): TranscriptTurn => ({
+    principal: PRINCIPAL,
+    conversationId: 'conv-1',
+    messages,
+    key,
+  });
+  const recorderOn = (fetchImpl: typeof fetch) =>
+    createAiRecorder({ accountUrl: 'https://account.test', executorToken: 'rdt_x', fetchImpl });
+
+  it('records the transcript linearly by position, titled by the first message', async () => {
+    const { posted, fetchImpl } = capture();
+    const transcripts = new AiTranscripts(recorderOn(fetchImpl));
+    const first = turn([{ role: 'user', content: 'list my machines\nand their repos' }]);
+    await transcripts.opening(first);
+    await transcripts.reply(first, 'Two machines.', 'model-a');
+    expect(posted.map((p) => [p.messageId, p.parentId, p.seq])).toEqual([
+      [transcriptMessageId('conv-1', 0), null, 0],
+      [transcriptMessageId('conv-1', 1), transcriptMessageId('conv-1', 0), 1],
+    ]);
+    const ctx = { orgId: 'org-1', userId: 'user-1', conversationId: 'conv-1', cekGeneration: 2 };
+    expect(await openAiTitle(CEK, ctx, posted[0]?.titleSealed as string)).toBe('list my machines');
+    expect(
+      await openAiMessage(CEK, ctx, posted[1]?.messageId as string, posted[1]?.body as string)
+    ).toEqual({ role: 'assistant', text: 'Two machines.', model: 'model-a' });
+    expect(transcriptMessageId('conv-1', 0)).toMatch(/^m[0-9a-f]{32}$/);
+  });
+
+  it('posts only the messages a previous turn did not deliver, and replays all after a restart', async () => {
+    const { posted, fetchImpl } = capture();
+    const recorder = recorderOn(fetchImpl);
+    const transcripts = new AiTranscripts(recorder);
+    const opening = turn([{ role: 'user', content: 'hi' }]);
+    await transcripts.opening(opening);
+    await transcripts.reply(opening, 'hello', undefined);
+    const second = turn([
+      { role: 'user', content: 'hi' },
+      { role: 'assistant', content: 'hello' },
+      { role: 'user', content: 'list machines' },
+    ]);
+    await transcripts.opening(second);
+    expect(posted.map((p) => p.seq)).toEqual([0, 1, 2]);
+
+    await new AiTranscripts(recorder).opening(second);
+    expect(posted.map((p) => p.seq)).toEqual([0, 1, 2, 0, 1, 2]);
+  });
+
+  it('posts an undelivered message again on the next turn', async () => {
+    const statuses = [403, 200];
+    const { posted, fetchImpl } = capture(() =>
+      Response.json({ ok: true }, { status: statuses.shift() ?? 200 })
+    );
+    const transcripts = new AiTranscripts(recorderOn(fetchImpl));
+    const opening = turn([{ role: 'user', content: 'hi' }]);
+    await transcripts.opening(opening);
+    await transcripts.opening(opening);
+    expect(posted.map((p) => p.seq)).toEqual([0, 0]);
   });
 });
