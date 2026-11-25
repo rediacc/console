@@ -779,3 +779,32 @@ def test_a_failed_shared_build_refuses_the_deploy_before_vite():
     refusal = src.index("raise DeployError(", guard)
     assert refusal < src.index('"vite build",')
     assert "stale dist" in src[guard : refusal + 160]
+
+
+FORENSICS_BENCH = {
+    "ACCOUNT_FORENSICS_S3_ENDPOINT": "https://evidence.example.invalid",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID": "fk",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY": "fs",
+}
+
+
+def test_the_payload_carries_the_forensics_triple(monkeypatch):
+    """The bench forensics store reaches the Worker under its Worker names (PLAN-forensics-shipping FS12), and an unbound triple is pushed empty."""
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
+    _bench_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert [payload[name] for name in FORENSICS_BENCH] == ["", "", ""]
+    _bench_env(monkeypatch, **FORENSICS_BENCH)
+    payload = deploy_bench.secrets_payload()
+    assert {name: payload[name] for name in FORENSICS_BENCH} == FORENSICS_BENCH
+
+
+@pytest.mark.parametrize("missing", sorted(FORENSICS_BENCH))
+def test_a_half_configured_forensics_triple_refuses_the_bench_push(monkeypatch, missing):
+    """A partly bound triple is refused by name, since the Worker throws on a half-configured store."""
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
+    _bench_env(monkeypatch, **{k: v for k, v in FORENSICS_BENCH.items() if k != missing})
+    with pytest.raises(deploy_bench.DeployError, match="half configured.*%s" % missing):
+        deploy_bench.secrets_payload()

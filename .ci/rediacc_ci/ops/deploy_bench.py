@@ -213,6 +213,29 @@ def _backup_values() -> tuple[str, str, str]:
     return endpoint, key_id, secret
 
 
+FORENSICS_NAMES = (
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+)
+
+
+def _forensics_values() -> tuple[str, str, str]:
+    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
+    values = (
+        os.environ.get("ACCOUNT_FORENSICS_S3_ENDPOINT") or "",
+        os.environ.get("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID") or "",
+        os.environ.get("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY") or "",
+    )
+    if any(values) and not all(values):
+        unset = [n for n, v in zip(FORENSICS_NAMES, values, strict=True) if not v]
+        raise DeployError(
+            "the bench forensics store is half configured, %s unset: bind all three names "
+            "in the deploy-bench-<region> profile or none of them" % ", ".join(unset)
+        )
+    return values[0], values[1], values[2]
+
+
 def bench_bucket(region: str = DEFAULT_REGION) -> str:
     """The bench backup bucket, read from the BACKUP_BUCKET binding in the region's bench config, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
     return bench_backup_binding(region)[0]
@@ -287,6 +310,7 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
     )
     endpoint, backup_key, backup_secret = _backup_values()
     backup_bucket, backup_jurisdiction = bench_backup_binding(region)
+    forensics_endpoint, forensics_key, forensics_secret = _forensics_values()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):
@@ -320,6 +344,9 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "ACCOUNT_BACKUP_S3_BUCKET": backup_bucket,
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
+        "ACCOUNT_FORENSICS_S3_ENDPOINT": forensics_endpoint,
+        "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID": forensics_key,
+        "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY": forensics_secret,
         "OBS_OTLP_CREDENTIALS": otlp,
         "SELLER_NAME": os.environ.get("SELLER_NAME") or "",
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER") or "",

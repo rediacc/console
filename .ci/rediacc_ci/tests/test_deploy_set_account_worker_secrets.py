@@ -205,14 +205,14 @@ PORT_ONLY_ADDRESSES = (
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient and the four contact and alerts addresses (the document's last five keys, so their lines and the comma before them go)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient, the four contact and alerts addresses and the three forensics store values (the document's last eight keys, so their lines and the comma before them go)."""
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
-    tail = "|".join(("SALES_NOTIFY_EMAIL", *PORT_ONLY_ADDRESSES))
+    tail = "|".join(("SALES_NOTIFY_EMAIL", *PORT_ONLY_ADDRESSES, *port.FORENSICS_PREFIXES))
     return re.sub(r'(,\n  "(?:%s)": "[^\n]*")+\n\}' % tail, "\n}", calls)
 
 
@@ -627,7 +627,7 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 37
+    assert len(port.KEYS) == 40
     assert len(www.KEYS) == 22
     assert len(preview.KEYS) == 12
     assert len(port.REQUIRED_NONEMPTY) == 23
@@ -686,7 +686,7 @@ def test_pure_helpers() -> None:
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
     assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
-    assert argv[-1].endswith("ALERTS_NOTIFY_EMAIL: .alerts_notify}")
+    assert argv[-1].endswith("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY: .forensics_secret}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
@@ -1213,3 +1213,69 @@ def test_the_contact_and_alerts_addresses_are_pushed_and_demanded(
     assert "%s is EMPTY for" % name in proc.stderr
     assert proc.stdout == ""
     assert port.REQUIRED_NONEMPTY.count(name) == 1
+
+
+FORENSICS_EU = {
+    "ACCOUNT_FORENSICS_S3_ENDPOINT_EU": "https://evidence.example.invalid",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID_EU": "fkey-eu",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY_EU": "fsecret-eu",
+}
+
+
+def test_the_forensics_triple_is_pushed_under_the_worker_names(tmp_path: pathlib.Path) -> None:
+    """The region's three suffixed names reach the Worker as the unsuffixed binding names, and no suffixed name is pushed."""
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR, **FORENSICS_EU)
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    assert doc["ACCOUNT_FORENSICS_S3_ENDPOINT"] == "https://evidence.example.invalid"
+    assert doc["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] == "fkey-eu"
+    assert doc["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] == "fsecret-eu"
+    assert not [name for name in doc if name.endswith("_EU")]
+
+
+def test_the_forensics_triple_follows_the_region(tmp_path: pathlib.Path) -> None:
+    """With SUFFIX=US the EU triple is ignored and the US one is pushed."""
+    proc, calls = _port_raw(
+        tmp_path,
+        SUFFIX="US",
+        **STABLE_PAIR,
+        AWS_SES_ACCESS_KEY_ID_US="sk-us",
+        AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
+        OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
+        ACCOUNT_CONFIG_SERVER_KEY_US_STABLE=CONFIG_KEY,
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE=KEK_VALUE,
+        ACCOUNT_FORENSICS_S3_ENDPOINT_US="https://evidence-us.example.invalid",
+        ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID_US="fkey-us",
+        ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY_US="fsecret-us",
+        **FORENSICS_EU,
+    )
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    assert doc["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] == "fkey-us"
+    assert doc["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] == "fsecret-us"
+
+
+def test_a_region_without_forensics_names_pushes_them_empty(tmp_path: pathlib.Path) -> None:
+    """No store entries yet is a valid push: the Worker answers 503 FORENSICS_NOT_CONFIGURED for empty values."""
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR)
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    for name in port.FORENSICS_PREFIXES:
+        assert doc[name] == ""
+
+
+@pytest.mark.parametrize("missing", sorted(FORENSICS_EU))
+def test_a_half_configured_forensics_triple_is_refused(
+    tmp_path: pathlib.Path, missing: str
+) -> None:
+    """The Worker throws on a half-configured store, so the push is refused by NAME before wrangler runs, with no value echoed."""
+    partial = {k: v for k, v in FORENSICS_EU.items() if k != missing}
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR, **partial)
+    assert proc.returncode == 1
+    assert calls == "", "a refused run still called wrangler"
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith("%s: the forensics store of SUFFIX=EU is half configured" % port.SELF)
+    assert first.endswith("%s unset." % missing)
+    for value in partial.values():
+        assert value not in proc.stderr
+        assert value not in proc.stdout

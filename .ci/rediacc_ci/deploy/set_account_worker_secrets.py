@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes thirty-seven runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty-seven `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes forty runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not forty `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
 THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, three times over, and every decision is a place a port can be quietly wrong:
 
@@ -132,6 +132,13 @@ SUFFIXED_PREFIXES: tuple[str, ...] = (
     "OBS_OTLP_CREDENTIALS",
 )
 
+# The forensics evidence bucket's connection (PLAN-forensics-shipping FS12), one triple per REGION: the bucket `forensics-<region>` serves both channels, so the names carry the suffix only, `<PREFIX>_<SUFFIX>`. The bucket name and region are plain vars in workers/account/wrangler.*.toml. The endpoint is the evidence account's own S3 host, so no jurisdiction label is spliced into it.
+FORENSICS_PREFIXES: tuple[str, ...] = (
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+)
+
 # What bash will accept as the target of `${!var}`. Divergence B: bash also
 # accepts an array reference, this does not.
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
@@ -194,7 +201,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The thirty-seven `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name, the sales-digest recipient and the four contact and alerts sender and recipient addresses) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
+# The forty `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name, the sales-digest recipient the four contact and alerts sender and recipient addresses and the three forensics store values) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
 # (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the nine values this script COMPUTES rather than reads, and those nine are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
@@ -235,6 +242,9 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ALERTS_FROM_EMAIL", "alerts_from", "ALERTS_FROM_EMAIL"),
     ("CONTACT_NOTIFY_EMAIL", "contact_notify", "CONTACT_NOTIFY_EMAIL"),
     ("ALERTS_NOTIFY_EMAIL", "alerts_notify", "ALERTS_NOTIFY_EMAIL"),
+    ("ACCOUNT_FORENSICS_S3_ENDPOINT", "forensics_endpoint", ""),
+    ("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID", "forensics_akid", ""),
+    ("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY", "forensics_secret", ""),
 )
 
 # The unconditional `_require_nonempty` calls (the twin's fifteen at :198-212, plus the port's own: the config server key, the store KEK, the free-licence key, the Analytics Engine pair and the four contact and alerts addresses), in order. The FIRST empty one ends the run, so the order is observable in the message.
@@ -391,6 +401,10 @@ def read_env() -> dict[str, str]:
     for prefix in SUFFIXED_PREFIXES:
         name = "%s_%s" % (prefix, suffix)
         env[name] = os.environ.get(name, "")
+    # The forensics triple of this region, read by the same constructed-name rule.
+    for prefix in FORENSICS_PREFIXES:
+        name = "%s_%s" % (prefix, suffix)
+        env[name] = os.environ.get(name, "")
     # BOTH channels' config server key names for this region, so that `resolve` can REFUSE the other one.
     for prefix in SUFFIXED_CHANNEL_PREFIXES:
         for channel in (CHANNEL_STABLE, CHANNEL_EDGE):
@@ -408,6 +422,24 @@ def indirect(env: dict[str, str], prefix: str, suffix: str) -> str:
     if not IDENTIFIER.match(name):
         raise ScriptRefusalError(INVALID_VARIABLE_NAME % name)
     return env.get(name, "")
+
+
+def forensics_triple(env: dict[str, str], suffix: str) -> tuple[str, str, str]:
+    """The (endpoint, key id, secret) of SUFFIX's forensics bucket, all empty when the region has none yet.
+
+    The Worker reads all three or none (`forensicsStoreFromEnv` throws on a half-configured store), so a partly set triple is refused here rather than deployed as a Worker whose forensics routes fail at request time. All empty is a valid push: the routes answer 503 FORENSICS_NOT_CONFIGURED until the store entries exist.
+    """
+    values = tuple(indirect(env, prefix, suffix) for prefix in FORENSICS_PREFIXES)
+    if any(values) and not all(values):
+        unset = [
+            "%s_%s" % (p, suffix) for p, v in zip(FORENSICS_PREFIXES, values, strict=True) if not v
+        ]
+        raise ScriptRefusalError(
+            "%s: the forensics store of SUFFIX=%s is half configured, %s unset."
+            % (SELF, suffix, ", ".join(unset)),
+            "  Set all three of the region's forensics names or none of them.",
+        )
+    return values[0], values[1], values[2]
 
 
 def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
@@ -488,6 +520,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
         ses_secret_access_key = env.get(ASIA_BORROWS[1], "")
 
     otlp_creds = indirect(env, "OBS_OTLP_CREDENTIALS", suffix)
+    forensics = forensics_triple(env, suffix)
 
     # 3. The backup plane. The bucket follows the CHANNEL and is refused when empty: backup-chunk-store.ts reads `env.ACCOUNT_BACKUP_S3_BUCKET ?? ''`, so an empty value does NOT throw there. It mints presigned URLs against bucket "" and every backup upload 404s at runtime.
     bucket_var = BUCKET_VAR_STABLE if target == STABLE else BUCKET_VAR_EDGE
@@ -518,6 +551,9 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "backup_secret": backup_secret,
             "config_server_key": config_key,
             "backup_store_kek": store_kek,
+            "forensics_endpoint": forensics[0],
+            "forensics_akid": forensics[1],
+            "forensics_secret": forensics[2],
         }
     )
     return values
