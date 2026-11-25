@@ -268,9 +268,9 @@ def scan(root: pathlib.Path, files: list[str]) -> dict[str, list[tuple[int, str]
     for rel in files:
         path = root / rel
         if not path.is_file():
-            # AN UNTRACKED FILE THAT VANISHED AFTER THE LISTING is another writer's transient file, the same case `_corpus`'s `existing=True` already drops when it is gone before the listing: on 2026-11-25 test_gate_docs_gen.py's B2 probe (`.claude/hooks/context/zz_untracked_probe.py`, planted and unlinked in the real tree) was listed here and gone before this read, which failed this test under xdist. A TRACKED path missing is still a partial checkout and still raises.
+            # AN UNTRACKED FILE THAT VANISHED AFTER THE LISTING is another writer's transient file, the same case `_corpus`'s `existing=True` already drops when it is gone before the listing: on 2026-11-25 test_gate_docs_gen.py's B2 probe (`.claude/hooks/context/zz_untracked_probe.py`, planted and unlinked in the real tree) was listed here and gone before this read, which failed this test under xdist. A TRACKED path missing is still a partial checkout and still raises; the tracked set is every tracked path, not only `*.py`, so a tracked file of another suffix that goes missing raises too.
             if tracked is None:
-                tracked = set(gitx.ls_files("*.py", root=root))
+                tracked = set(gitx.ls_files(root=root))
             if rel not in tracked:
                 continue
             msg = (
@@ -461,6 +461,40 @@ def test_the_floor_fires_when_the_corpus_collapses() -> None:
     )
     # And the mirror: the real corpus must NOT report a collapse, or the two directions of this control would both be satisfied by a permanently red floor.
     assert vanished(scan(paths.repo_root(), _corpus())) == []
+
+
+def _scratch_repo(tmp_path: pathlib.Path, tracked: dict[str, str]) -> pathlib.Path:
+    """A throwaway git repo whose index holds `tracked` (staged, not committed, which `ls-files --cached` lists), with the real tree untouched."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, env=env, check=True)
+    for rel, text in tracked.items():
+        (tmp_path / rel).write_text(text, encoding="utf-8")
+    subprocess.run(["git", "add", "--", *tracked], cwd=tmp_path, env=env, check=True)
+    return tmp_path
+
+
+def test_a_vanished_untracked_file_is_skipped_and_the_rest_still_scans(tmp_path) -> None:
+    """Review e09c27d5.1, the silent direction: a listed path that is not tracked and is gone is another writer's transient file."""
+    hop = "import sys\nsys.path.insert(0, '/x')\n"
+    root = _scratch_repo(tmp_path, {"kept.py": hop})
+    found = scan(root, ["kept.py", "transient_probe.py"])
+    assert list(found) == ["kept.py"], found
+
+
+def test_a_vanished_tracked_py_file_still_raises(tmp_path) -> None:
+    """Review e09c27d5.1, the firing direction: the same shape for a TRACKED path is a partial checkout."""
+    root = _scratch_repo(tmp_path, {"kept.py": "X = 1\n", "gone.py": "X = 2\n"})
+    (root / "gone.py").unlink()
+    with pytest.raises(AssertionError, match=r"gone\.py is listed by git but is not on disk"):
+        scan(root, ["kept.py", "gone.py"])
+
+
+def test_a_vanished_tracked_non_py_file_still_raises(tmp_path) -> None:
+    """Review e09c27d5.2: the tracked set is not limited to `*.py`."""
+    root = _scratch_repo(tmp_path, {"kept.py": "X = 1\n", "notes.txt": "n\n"})
+    (root / "notes.txt").unlink()
+    with pytest.raises(AssertionError, match=r"notes\.txt is listed by git but is not on disk"):
+        scan(root, ["kept.py", "notes.txt"])
 
 
 def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
