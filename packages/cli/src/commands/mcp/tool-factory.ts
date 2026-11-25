@@ -58,7 +58,13 @@ export interface ToolDef {
   attachWindowMs?: number;
 }
 
-/** The MCP annotations a tool is registered with; the stdio server and the generated registry read this one function. */
+/**
+ * The MCP annotations a tool is registered with; the stdio server and the generated registry read this one function.
+ *
+ * `readOnlyHint` comes from the timeout class (the contract carries no separate read flag): a `read` tool is
+ * read-only unless it is also destructive, so a non-destructive write (`repo up`, `backup run`) is never
+ * advertised read-only. Clients run read-only tools in parallel and skip their confirmation.
+ */
 export function toolAnnotations(tool: ToolDef): {
   destructiveHint: boolean;
   readOnlyHint: boolean;
@@ -67,7 +73,7 @@ export function toolAnnotations(tool: ToolDef): {
 } {
   return {
     destructiveHint: tool.isDestructive,
-    readOnlyHint: !tool.isDestructive,
+    readOnlyHint: tool.timeoutClass === 'read' && !tool.isDestructive,
     idempotentHint: tool.isIdempotent,
     openWorldHint: true,
   };
