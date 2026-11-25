@@ -36,7 +36,8 @@ export const TOOL_OUTPUT_RULE = [
  * CSI sequences (`ESC [ ... final`), OSC sequences (`ESC ] ... BEL` or
  * `ESC ] ... ESC \`), the string sequences DCS, SOS, PM and APC (`ESC P`,
  * `ESC X`, `ESC ^`, `ESC _`, payload included, up to `ESC \` or the end of the
- * text), the 8-bit CSI introducer and the remaining two-byte escapes. Built
+ * text), their 8-bit introducers U+0090, U+0098, U+009E and U+009F (up to
+ * `ESC \`, the 8-bit ST U+009C or the end of the text), the 8-bit CSI introducer and the remaining two-byte escapes. Built
  * from code points so the source carries no control bytes.
  */
 const ESC = '\u001b';
@@ -46,6 +47,7 @@ const ANSI_PATTERN = new RegExp(
     `${ESC}\\][^\u0007${ESC}]*(?:\u0007|${ESC}\\\\)`,
     `\u009b[0-?]*[ -/]*[@-~]`,
     `${ESC}[PX^_](?:[^${ESC}]|${ESC}(?!\\\\))*(?:${ESC}\\\\|$)`,
+    `[\u0090\u0098\u009e\u009f](?:[^\u009c${ESC}]|${ESC}(?!\\\\))*(?:${ESC}\\\\|\u009c|$)`,
     `${ESC}[@-Z\\\\-_]`,
   ].join('|'),
   'g'
