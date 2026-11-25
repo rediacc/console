@@ -119,7 +119,11 @@ def _main(rt: FakeRuntime, stack_env: pathlib.Path, lines: list[dict], *argv: st
 
 @pytest.fixture
 def scratch(monkeypatch: pytest.MonkeyPatch) -> dict:
-    """An empty registry the test fills, so the shipped suites do not run."""
+    """An empty registry the test fills, so the shipped suites do not run.
+
+    The shipped suites register into `SUITES` when their module is FIRST imported, and `load_all` imports them. So they are loaded into the real registry before the swap: a scratch case that was the first on its worker to reach `main` imported smoke and daemon into this throwaway dict, and every later case on that worker read "unknown suite daemon; registered: orphan, writeback".
+    """
+    onprem_suites.load_all()
     registry: dict = {}
     monkeypatch.setattr(onprem_suites, "SUITES", registry)
     return registry
