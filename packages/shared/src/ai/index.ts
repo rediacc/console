@@ -38,3 +38,4 @@ export {
   type ResolveFailure,
   resolveProfile,
 } from './resolve.js';
+export * from './scripted/index.js';
