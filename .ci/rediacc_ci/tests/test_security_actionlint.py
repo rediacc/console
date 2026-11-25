@@ -288,7 +288,13 @@ def drive(
         hidden = fx / "fake" / "nobin"
         hidden.mkdir(parents=True, exist_ok=True)
         write(hidden / "curl", FAKE_CURL, mode=0o755)
-        env["PATH"] = "%s%s%s" % (hidden, os.pathsep, differential.BASE_ENV["PATH"])
+        # Minus every host directory holding an actionlint too: a host install (~/.local/bin, measured 2026-11-25) left on PATH is reached before curl and the case never sees the acquisition path.
+        host = [
+            d
+            for d in differential.BASE_ENV["PATH"].split(os.pathsep)
+            if d and not (pathlib.Path(d) / "actionlint").exists()
+        ]
+        env["PATH"] = os.pathsep.join([str(hidden), *host])
     if subject_rel.endswith(".sh"):
         command = "bash %s" % (fx / subject_rel)
     else:

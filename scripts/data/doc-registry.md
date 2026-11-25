@@ -768,7 +768,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/syspath.py | (none) | via .claude/hooks/context/onboard.py | py |
 | .claude/rediacc_hooks/tests/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/tests/ci_status_world.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
-| .claude/rediacc_hooks/tests/conftest.py | (none) | via .claude/rediacc_hooks/tests/__init__.py | py |
+| .claude/rediacc_hooks/tests/conftest.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
 | .claude/rediacc_hooks/tests/corpus.py | (none) | via .claude/hooks/context/onboard.py | py |
 | .claude/rediacc_hooks/tests/fixtures/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/tests/fixtures/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |

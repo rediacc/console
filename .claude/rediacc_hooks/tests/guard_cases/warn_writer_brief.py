@@ -1,16 +1,14 @@
 """The test tables of `warn_writer_brief`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import importlib
-import os
 import pathlib
-import tempfile
 
 from rediacc_hooks import hookio, syspath
 from rediacc_hooks.guards.warn_writer_brief import STOP_DIR
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # ---- the differential's world: a tree whose review store holds three fixed doc findings on a/x.py ------
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-writerbrief-world")
+WORLD = hookio.golden_world("rediacc-guard-writerbrief-world")
 
 
 _SID = "c0ffee11-1111-2222-3333-444444444444"

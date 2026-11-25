@@ -1,7 +1,6 @@
 """The test tables of `block_plan_without_tasks`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import os
-import tempfile
 
 from rediacc_hooks import hookio
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
@@ -10,7 +9,7 @@ from rediacc_hooks.tests.fixtures.guards.loader import load_table
 #
 # Two plan files must EXIST on disk for the `[ -f "$FILE" ]` branch and the grandfather clause to be reachable, and the payload names its path literally, so the path has to be known when this module is imported. Same arrangement as block_roundlog_write.py: a deterministic directory under the system temp dir, built through an ENVS token this guard never reads. Using the repo's own
 # agent/PLAN-*.md files instead would make the differential's answer depend on whichever plans happen to be checked out today.
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-plans")
+WORLD = hookio.golden_world("rediacc-guard-plans")
 
 
 LEGACY_PLAN = "%s/agent/PLAN-legacy-prose.md" % WORLD

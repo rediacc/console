@@ -2,14 +2,12 @@
 
 import datetime
 import json
-import os
 import pathlib
-import tempfile
 
 from rediacc_hooks import hookio
 
 # ---- the differential's world: a tree with an exclusive plan E held by a peer's fresh lease ------
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-planconc-world")
+WORLD = hookio.golden_world("rediacc-guard-planconc-world")
 
 
 _SID = "c0ffee11-1111-2222-3333-444444444444"

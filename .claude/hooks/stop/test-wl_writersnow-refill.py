@@ -3,6 +3,7 @@
 
 import datetime
 import importlib
+import importlib.util
 import os
 import pathlib
 import sys
@@ -10,7 +11,20 @@ import tempfile
 import types
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+
+
+def _load_syspath():
+    """The canonical `.claude` hop, loaded BY PATH: this runs as a script, so `rediacc_hooks` is not importable by name until the hop has run."""
+    hop_file = HERE.parents[1] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("rediacc_hooks_syspath", hop_file)
+    if spec is None or spec.loader is None:
+        raise ImportError("no loadable %s" % hop_file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_load_syspath().on_sys_path(HERE)
 wl_checks = importlib.import_module("wl_checks")
 wl_hints = importlib.import_module("wl_hints")
 wl_storestatus = importlib.import_module("wl_storestatus")

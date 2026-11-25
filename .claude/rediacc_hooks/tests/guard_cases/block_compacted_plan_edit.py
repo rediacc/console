@@ -1,7 +1,6 @@
 """The test tables of `block_compacted_plan_edit`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import os
-import tempfile
 
 from rediacc_hooks import hookio
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
@@ -10,7 +9,7 @@ from rediacc_hooks.tests.fixtures.guards.loader import load_table
 #
 # Every branch of this guard is behind `[ -f "$FILE" ]` and reads the record out of the file on disk, so the differential cannot reach any of them without a real record at a path the payload names literally. Same deterministic-temp-dir arrangement as block_roundlog_write.py, and for the same reason: the repo's own agent/PLAN-*.md files would make the answer depend on which plans
 # happen to be compacted today.
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-records")
+WORLD = hookio.golden_world("rediacc-guard-records")
 
 
 RECORD = "%s/agent/PLAN-a-compacted-record.md" % WORLD

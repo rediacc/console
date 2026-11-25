@@ -8,6 +8,7 @@ The capacity refill rides the same note and the same throttle (operator ask 2026
 Informational only: the tool call already ran, nothing is refused, and the exit status is 0 whatever happens.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -17,6 +18,18 @@ import time
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 STOP = HOOKS / "stop"
+
+
+def _load_syspath():
+    """The canonical `.claude` hop, loaded BY PATH: this runs as a script, so `rediacc_hooks` is not importable by name until the hop has run."""
+    hop_file = HOOKS.parent / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("rediacc_hooks_syspath", hop_file)
+    if spec is None or spec.loader is None:
+        raise ImportError("no loadable %s" % hop_file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 
 # Minutes between two notes for one session: a due round is named again if the turn keeps running without starting it.
 NOTE_EVERY_MIN = 10
@@ -48,7 +61,7 @@ def note_for(doc, now=None):
     me8 = session[:8]
     if _recent(me8, now):
         return ""
-    sys.path.insert(0, str(STOP))
+    _load_syspath().on_sys_path(STOP)
     import wl_core as C
     import wl_planqueue
     import wl_writersnow

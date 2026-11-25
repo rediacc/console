@@ -2299,6 +2299,9 @@
       ".ci/rediacc_ci/ops/build_server.py": [
         "ACCOUNT_ED25519_PUBLIC_KEY"
       ],
+      ".ci/rediacc_ci/ops/cf_ai_gateway.py": [
+        "CF_MANAGEMENT_TOKEN"
+      ],
       ".ci/rediacc_ci/ops/cf_auth.py": [
         "AWS_SES_ADMIN_KEY_ID",
         "AWS_SES_ADMIN_REGION",

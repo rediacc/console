@@ -5,7 +5,7 @@
 
 WHY IT EXISTS. Each region has a directory database (shard 0, where every global table lives and where `subscription_shards` names each subscription's shard) and N tenant shards. src/db/shard-router.ts routes a subscription's tenant rows to its shard; this tool moves those rows when N changes (H4 bench proof, H5 cutover).
 
-THE TENANT SET is read from `SHARD_CLASS` in private/account/src/db/shard-router.ts at run time, each export name mapped to its SQL table through schema.ts and config-schema.ts, so the tool follows the router and never carries a second list. Each tenant table is selected by the first rule its columns fit:
+THE TENANT SET is read from `SHARD_CLASS` in private/account/src/db/shard-router.ts at run time, each export name mapped to its SQL table through the schema modules db/index.ts imports, so the tool follows the router and never carries a second list. Each tenant table is selected by the first rule its columns fit:
   - a `subscription_id` column: the moved subscriptions (`event_log` also takes its org-level rows: no subscription, a moved org);
   - `config_stores` and `audit_compaction_state` (one row per org, keyed by `org_id`): `org_id` in the moved orgs (`subscriptions.org_id` is the subscription-to-org relation);
   - a `config_store_id` column: the moved stores; `config_entry_id`: the moved entries.
@@ -197,6 +197,16 @@ def now_iso() -> str:
 SHARD_CLASS_BLOCK = re.compile(r"export const SHARD_CLASS = \{(.*?)\}\s*as const", re.DOTALL)
 SHARD_CLASS_ENTRY = re.compile(r"^\s*(\w+):\s*'(global|tenant)'", re.MULTILINE)
 TABLE_EXPORT = re.compile(r"export const (\w+)\s*=\s*sqliteTable\(\s*'([a-z0-9_]+)'")
+# The modules db/index.ts hands drizzle as its schema (`import * as x from './y.js'`): the same set the account server itself queries, so a new schema module is read without this tool learning its name.
+SCHEMA_IMPORT = re.compile(r"^import \* as \w+ from '\./([\w-]+)\.js';", re.MULTILINE)
+
+
+def schema_modules(db_dir: Path) -> list[str]:
+    """The schema module files db/index.ts imports, in its order; none is a refusal, never an empty schema."""
+    found = SCHEMA_IMPORT.findall((db_dir / "index.ts").read_text(encoding="utf-8"))
+    if not found:
+        raise MoveError("db/index.ts imports no schema module, so no table can be mapped")
+    return ["%s.ts" % name for name in found]
 
 
 def load_tenant_tables(root: Path | None = None) -> list[str]:
@@ -207,7 +217,7 @@ def load_tenant_tables(root: Path | None = None) -> list[str]:
     if not block:
         raise MoveError("shard-router.ts carries no SHARD_CLASS map")
     names: dict[str, str] = {}
-    for schema in ("schema.ts", "config-schema.ts"):
+    for schema in schema_modules(db_dir):
         names.update(TABLE_EXPORT.findall((db_dir / schema).read_text(encoding="utf-8")))
     tenant: list[str] = []
     for export, shard_class in SHARD_CLASS_ENTRY.findall(block.group(1)):
@@ -305,6 +315,12 @@ ORG_KEYED = (
     "forensics_eviction_holds",
     "forensics_support_grants",
     "forensics_investigations",
+    "forensics_reports",
+    "forensics_report_inputs",
+    "ai_conversations",
+    "ai_messages",
+    "user_ai_preferences",
+    "ai_suggestion_dismissals",
 )
 
 

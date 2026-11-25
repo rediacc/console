@@ -82,6 +82,7 @@ UNCITABLE = {
     "wav",
     "o",
     "native",
+    "wasm",
     "gitkeep",
 }
 

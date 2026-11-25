@@ -1,13 +1,12 @@
 """The test tables of `block_roundlog_write`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import os
-import tempfile
 
 from rediacc_hooks import hookio
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # A fixed location, named by both the builder and the edge cases below. See the port note in the module docstring for why it cannot be the harness's own per-session temporary directory.
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-roundlog")
+WORLD = hookio.golden_world("rediacc-guard-roundlog")
 
 
 EXISTING_LOG = "%s/reports/pr-babysit-0831-1.md" % WORLD

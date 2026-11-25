@@ -11,7 +11,20 @@ import tempfile
 from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "stop"))
+
+
+def _load_syspath():
+    """The canonical `.claude` hop, loaded BY PATH: this runs as a script, so `rediacc_hooks` is not importable by name until the hop has run."""
+    hop_file = HERE.parents[1] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("rediacc_hooks_syspath", hop_file)
+    if spec is None or spec.loader is None:
+        raise ImportError("no loadable %s" % hop_file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_load_syspath().on_sys_path(HERE.parent / "stop")
 spec = importlib.util.spec_from_file_location("writers_now_note", HERE / "writers_now_note.py")
 if spec is None or spec.loader is None:
     raise SystemExit("cannot load %s" % (HERE / "writers_now_note.py"))

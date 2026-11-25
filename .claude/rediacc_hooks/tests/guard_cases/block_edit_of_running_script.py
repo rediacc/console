@@ -5,13 +5,12 @@ import fcntl
 import os
 import signal
 import subprocess
-import tempfile
 import time
 
-from rediacc_hooks import proc
+from rediacc_hooks import hookio, proc
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-running")
+WORLD = hookio.golden_world("rediacc-guard-running")
 
 
 LIVE_SCRIPT = "%s/long-running-suite.sh" % WORLD

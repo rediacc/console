@@ -230,7 +230,7 @@ def test_a_root_seam_inside_temp_is_honoured(module, attr, seam, tmp_path):
 # (module, expression the module answers its root with, the seam naming it, the answer without the seam). 321c4189.3: the adopters whose root is a function or a private table, not a module attribute.
 ROOT_EXPR_SEAMS = [
     ("gate_argv", "scan_root()", "GATE_ARGV_SCAN_ROOT", str(REPO)),
-    ("plan_lifecycle", "repo_root()", "PLAN_FOLDERS_ROOT", str(REPO)),
+    ("plan_lifecycle", "resolve_root()[0]", "PLAN_FOLDERS_ROOT", str(REPO)),
     ("tree_shape", "repo_root()", "TREE_SHAPE_ROOT", str(REPO)),
     (
         "hook_exec_baseline",

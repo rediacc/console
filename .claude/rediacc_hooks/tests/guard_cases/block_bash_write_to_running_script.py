@@ -5,10 +5,9 @@ import fcntl
 import os
 import signal
 import subprocess
-import tempfile
 import time
 
-from rediacc_hooks import proc
+from rediacc_hooks import hookio, proc
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 # --------------------------------------------------------------------------- The fixture world ---------------------------------------------------------------------------
@@ -16,7 +15,7 @@ from rediacc_hooks.tests.fixtures.guards.loader import load_table
 # ITS OWN WORLD, not the Edit-side guard's. The two could share one, and sharing would halve the processes; they do not, because the pgrep pattern is built
 # from a BASENAME and two worlds holding the same basename would each report the
 # other's process in the message. Distinct names keep each guard's output about its own world.
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-bashwrite")
+WORLD = hookio.golden_world("rediacc-guard-bashwrite")
 
 
 LIVE_SCRIPT = "%s/bash-side-suite.sh" % WORLD

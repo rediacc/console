@@ -601,6 +601,15 @@ def landing(path, cwd=None, root=None):
     return landed, judged, shown
 
 
+# The temp directory the differential goldens were recorded under: they quote `/tmp/rediacc-guard-*` literally, so a guard case builds its world there whatever TMPDIR says. The test conftest points TMPDIR at a private directory when the host's TMPDIR is outside /tmp, and a world built there is one no golden payload names.
+GOLDEN_TEMP_DIR = "/tmp"
+
+
+def golden_world(name):
+    """The fixed world directory `name` of a guard case, under the temp directory the goldens quote."""
+    return os.path.join(GOLDEN_TEMP_DIR, name)
+
+
 def write_world_file(path, text):
     """Write a differential fixture file at a FIXED path without a torn read.
 
