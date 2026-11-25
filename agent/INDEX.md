@@ -526,7 +526,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1068 | 8 | 33 | 195366 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
-| `agent/plans/PLAN-drain-throughput.md` | approved | 63 | 10 | 5 | 10828 |
+| `agent/plans/PLAN-drain-throughput.md` | approved | 64 | 9 | 6 | 10983 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
@@ -571,7 +571,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-multi-region-bench.md` | approved | 340 | 7 | 16 | 57510 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
-| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 42 | 7 | 2 | 8846 |
+| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 45 | 4 | 5 | 9373 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
