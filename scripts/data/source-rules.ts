@@ -438,6 +438,15 @@ const CLI_I18N: RuleInstance[] = [
     ignores: ['packages/cli/src/__tests__/**'],
     options: [{ allow: ['src/services/machine/machine-connection.ts'] }],
   },
+  {
+    // PLAN-rmcp-decide.md D5: no retired guard import, no policy evaluation beside decide(), and enforce() only at the decision step (utils/command-policy.ts) and the executor (services/serve/policy.ts), the rule's defaults.
+    ruleId: 'custom/no-direct-guard-call',
+    kind: 'source',
+    modulePath: 'eslint-rules/no-direct-guard-call.js',
+    exportName: 'noDirectGuardCall',
+    files: ['packages/cli/src/**/*.ts'],
+    ignores: ['packages/cli/src/**/__tests__/**'],
+  },
 ];
 
 /** i18n.js:194-215's account-web i18n enforcement block. */

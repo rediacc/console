@@ -4,7 +4,8 @@
  * The positive fixtures are the three shapes that reopen a second decision path: a retired guard
  * imported, the policy evaluator called beside decide(), and enforce() called from a command file.
  * The negative fixtures are the files allowed to do each, plus look-alikes the rule must leave
- * alone (an unrelated `enforce`, an `authorize` of another module).
+ * alone (an unrelated `enforce` by name, by namespace or by a relative path outside
+ * services/policy/, a retired import on the allowGuardImports list).
  */
 
 export const ruleId = 'custom/no-direct-guard-call';
@@ -47,6 +48,22 @@ export default async ({ sourceRuleTester, runCases }) => {
           code: "import { DecisionError } from '../services/policy/enforce.js';\nexport const isDecision = (e) => e instanceof DecisionError;\n",
           filename: COMMAND_FILE,
         },
+        // allowGuardImports admits a retired guard's import in a listed file.
+        {
+          code: "import { assertCommandPolicy } from '../command-policy.js';\n",
+          filename: 'packages/cli/src/utils/__tests__/legacy.test.ts',
+          options: [{ allowGuardImports: ['src/utils/__tests__/legacy.test.ts'] }],
+        },
+        // A namespace import of another module named like the step is not the enforcement step.
+        {
+          code: "import * as limits from '../utils/limits.js';\nexport const f = (a) => limits.enforce(a);\n",
+          filename: COMMAND_FILE,
+        },
+        // A relative `./enforce.js` outside services/policy/ is some other module.
+        {
+          code: "import { enforce } from './enforce.js';\nexport const f = (a) => enforce(a);\n",
+          filename: 'packages/cli/src/services/limits/check.ts',
+        },
         // A guard the plan keeps (repo create) is not retired.
         {
           code: "import { assertAgentRepoCreate } from '../utils/agent-guard.js';\nexport const g = (n) => assertAgentRepoCreate(n, undefined);\n",
@@ -83,6 +100,24 @@ export default async ({ sourceRuleTester, runCases }) => {
           code: "import { enforce as check } from '../services/policy/enforce.js';\nexport const f = (a) => check(a);\n",
           filename: COMMAND_FILE,
           errors: [{ messageId: 'directEnforce' }],
+        },
+        // A namespace import of the enforcement module, called as a member.
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nexport const f = (a) => enforcement.enforce(a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
+        // A sibling's relative import inside services/policy/ is the enforcement module.
+        {
+          code: "import { enforce } from './enforce.js';\nexport const f = (a) => enforce(a);\n",
+          filename: 'packages/cli/src/services/policy/target-check.ts',
+          errors: [{ messageId: 'directEnforce' }],
+        },
+        // Without the option, the same retired import is refused.
+        {
+          code: "import { assertCommandPolicy } from '../command-policy.js';\n",
+          filename: 'packages/cli/src/utils/__tests__/legacy.test.ts',
+          errors: [{ messageId: 'retiredGuard' }],
         },
       ],
     }),

@@ -11,11 +11,14 @@
  * 2. calling the policy evaluator (`evaluatePolicy`, `evaluateEffectivePolicy`) outside the
  *    decision function and the evaluator's own composer, so no caller judges the policy beside
  *    `decide`;
- * 3. calling `enforce`, imported from the enforcement module, outside the enforcement points.
+ * 3. calling `enforce`, imported from the enforcement module (by name, or as a member of a
+ *    namespace import), outside the enforcement points.
  *
  * Options: `{ allowGuardImports, allowEvaluate, allowEnforce }`, each a list of path suffixes. A
  * file on a list may do what that list names; the registration says why for each entry.
  */
+
+import { posix } from 'node:path';
 
 const RETIRED_GUARDS = new Set([
   'assertCommandPolicy',
@@ -37,8 +40,17 @@ const DEFAULT_ALLOW_ENFORCE = [
   'packages/cli/src/services/serve/policy.ts',
 ];
 
-/** An import source that names the enforcement module (`.../policy/enforce.js`, `.../enforce`). */
-const isEnforceModule = (source) => /(^|\/)policy\/enforce(\.[cm]?[jt]s)?$/.test(source);
+/** A path that ends at the enforcement module (`.../policy/enforce.js`, `.../policy/enforce`). */
+const ENFORCE_PATH = /(^|\/)policy\/enforce(\.[cm]?[jt]s)?$/;
+
+/**
+ * Whether an import source names the enforcement module. A relative source is resolved against
+ * the importing file first, so a sibling's `./enforce.js` inside services/policy/ counts too.
+ */
+function isEnforceModule(source, filename) {
+  if (!source.startsWith('.')) return ENFORCE_PATH.test(source);
+  return ENFORCE_PATH.test(posix.join(posix.dirname(filename), source));
+}
 
 const importedName = (spec) =>
   spec.imported.type === 'Identifier' ? spec.imported.name : spec.imported.value;
@@ -75,7 +87,7 @@ export const noDirectGuardCall = {
       directEvaluate:
         '"{{name}}" judges the policy beside decide(). Ask decide() (packages/shared/src/policy/decide.ts), through enforce(), for the whole decision instead.',
       directEnforce:
-        "enforce() is called only at an enforcement point (the CLI root hook, the executor). A command whose target is resolved inside its action goes on the rule's allowEnforce list with its reason.",
+        'enforce() is called only at an enforcement point: the CLI decision step (packages/cli/src/utils/command-policy.ts, which the root hook calls) and the executor (packages/cli/src/services/serve/policy.ts). A command whose target is resolved inside its action calls enforceResolvedTarget and is named on ACTION_RESOLVED_TARGETS.',
     },
   },
 
@@ -87,6 +99,7 @@ export const noDirectGuardCall = {
     const allowEvaluate = listed(options.allowEvaluate ?? DEFAULT_ALLOW_EVALUATE);
     const allowEnforce = listed(options.allowEnforce ?? DEFAULT_ALLOW_ENFORCE);
     const enforceLocals = new Set();
+    const enforceNamespaces = new Set();
 
     const checkSpecifier = (spec, fromEnforce) => {
       const name = importedName(spec);
@@ -98,9 +111,12 @@ export const noDirectGuardCall = {
 
     return {
       ImportDeclaration(node) {
-        const fromEnforce = isEnforceModule(String(node.source.value));
+        const fromEnforce = isEnforceModule(String(node.source.value), filename);
         for (const spec of node.specifiers) {
           if (spec.type === 'ImportSpecifier') checkSpecifier(spec, fromEnforce);
+          if (spec.type === 'ImportNamespaceSpecifier' && fromEnforce) {
+            enforceNamespaces.add(spec.local.name);
+          }
         }
       },
       CallExpression(node) {
@@ -108,9 +124,14 @@ export const noDirectGuardCall = {
         if (EVALUATORS.has(name) && !allowEvaluate) {
           context.report({ node, messageId: 'directEvaluate', data: { name } });
         }
-        if (node.callee.type === 'Identifier' && enforceLocals.has(name) && !allowEnforce) {
-          context.report({ node, messageId: 'directEnforce' });
-        }
+        if (allowEnforce) return;
+        const viaName = node.callee.type === 'Identifier' && enforceLocals.has(name);
+        const viaNamespace =
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object.type === 'Identifier' &&
+          enforceNamespaces.has(node.callee.object.name) &&
+          name === 'enforce';
+        if (viaName || viaNamespace) context.report({ node, messageId: 'directEnforce' });
       },
     };
   },
