@@ -105,6 +105,29 @@ describe('runSmoke', () => {
     });
   });
 
+  it('fails a turn that calls the tool with a wrong nonce beside the right one (review 645fb53d.2)', async () => {
+    const calls = [
+      { type: 'tool-call', toolCallId: 'c-1', toolName: SMOKE_TOOL_NAME, input: JSON.stringify({ nonce: 'n-guess' }) },
+      { type: 'tool-call', toolCallId: 'c-2', toolName: SMOKE_TOOL_NAME, input: JSON.stringify({ nonce: NONCE }) },
+    ] as StreamPart[];
+    const mock = model([step([...calls, finish('tool-calls')]), textStep('Done.')]);
+    expect(await runSmoke(mock, { nonce: NONCE, now })).toMatchObject({
+      ok: false,
+      reason: 'wrong-nonce',
+    });
+  });
+
+  it('control: two calls that both carry the nonce pass', async () => {
+    const calls = ['c-1', 'c-2'].map((id) => ({
+      type: 'tool-call',
+      toolCallId: id,
+      toolName: SMOKE_TOOL_NAME,
+      input: JSON.stringify({ nonce: NONCE }),
+    })) as StreamPart[];
+    const mock = model([step([...calls, finish('tool-calls')]), textStep('Done.')]);
+    expect(await runSmoke(mock, { nonce: NONCE, now })).toMatchObject({ ok: true });
+  });
+
   it('fails a turn that stops after the tool result without a final message', async () => {
     const mock = model([toolCallStep(SMOKE_TOOL_NAME, { nonce: NONCE }), textStep('   ')]);
     expect(await runSmoke(mock, { nonce: NONCE, now })).toMatchObject({
@@ -187,5 +210,20 @@ describe('smokeProfile', () => {
     expect(result).toMatchObject({ ok: false, reason: 'profile-refused' });
     expect(result.ok ? '' : result.message).toMatch(/internal host/);
     expect(sent).toBe(0);
+  });
+
+  it('rejects the returned promise when building the model throws something other than a profile refusal (review 645fb53d.1)', async () => {
+    const broken = new Proxy({} as Profile, {
+      get: () => {
+        throw new Error('profile store unreadable');
+      },
+    });
+    const call = (): Promise<unknown> => smokeProfile(broken);
+    // A synchronous throw would escape this call; the contract is a rejected promise.
+    let promise: Promise<unknown>;
+    expect(() => {
+      promise = call();
+    }).not.toThrow();
+    await expect(promise!).rejects.toThrow('profile store unreadable');
   });
 });

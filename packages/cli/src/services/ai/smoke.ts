@@ -129,7 +129,8 @@ function verdictOf(state: TurnState, nonce: string): SmokeFailure | null {
   if (state.echoed.length === 0) {
     return { reason: 'no-tool-call', message: `the model did not call ${SMOKE_TOOL_NAME}` };
   }
-  if (!state.echoed.includes(nonce)) {
+  // Every call must carry the nonce: a wrong value beside the right one is still a model that cannot repeat what it was given.
+  if (!state.echoed.every((echoed) => echoed === nonce)) {
     return {
       reason: 'wrong-nonce',
       message: `the model called ${SMOKE_TOOL_NAME} without the nonce it was given`,
@@ -203,7 +204,7 @@ export async function runSmoke(
 }
 
 /** Build the model of `profile` and run the smoke; a refused profile fails without a request. */
-export function smokeProfile(
+export async function smokeProfile(
   profile: Profile,
   options: SmokeOptions & ProviderModelOptions = {}
 ): Promise<SmokeResult> {
@@ -212,13 +213,13 @@ export function smokeProfile(
     model = createProviderModel(profile, { fetch: options.fetch });
   } catch (error) {
     if (!(error instanceof ProviderProfileError)) throw error;
-    return Promise.resolve({
+    return {
       ok: false,
       reason: 'profile-refused',
       message: error.message,
       latencyMs: 0,
       observed: { tools: false, streaming: false },
-    });
+    };
   }
   return runSmoke(model, options);
 }
