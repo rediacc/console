@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T12:10:30.214Z",
+  "generatedAt": "2026-11-25T12:20:23.179Z",
   "legs": [
     {
       "index": 1,
@@ -419,6 +419,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_common.py",
         "pytest:.ci/rediacc_ci/tests/test_core_devbox.py",
         "pytest:.ci/rediacc_ci/tests/test_core_dockerx.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_local_common_missing_program.py",
         "pytest:.ci/rediacc_ci/tests/test_core_platform.py",
         "pytest:.ci/rediacc_ci/tests/test_core_review_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_d1_shard_move.py",
@@ -939,6 +940,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_plan_citations_reachable.py",
+        "pytest:.ci/rediacc_ci/tests/test_agent_stalls.py",
         "pytest:.ci/rediacc_ci/tests/test_blocker_implementations.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_agg.py",
         "pytest:.ci/rediacc_ci/tests/test_build_linux_packages.py",
