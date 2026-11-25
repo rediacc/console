@@ -121,7 +121,12 @@ def test_the_real_tree_passes_and_says_what_it_counted(gate):
             "the success line counted %s plans, so the scan saw no tree" % counted.group(1)
         )
     held = re.search(r"(\d+) past-retention plan\(s\) held by a live citation", result.out)
-    if held is not None and result.out.count("F3-held ") != int(held.group(1)):
+    if held is None:
+        gate.log_fail(
+            "the success line does not carry the held-by-citation count (zero is printed too): %r"
+            % result.out
+        )
+    elif result.out.count("F3-held ") != int(held.group(1)):
         gate.log_fail(
             "the success line says %s plans are held but %d F3-held lines were printed"
             % (held.group(1), result.out.count("F3-held "))
