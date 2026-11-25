@@ -228,8 +228,9 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
     (ticked) 2026-11-16T17:24:53Z by d778be9d: run: ./run.sh enterprise proof proxy --bench rc=0, 14 claims 0 broken log=/tmp/live-bench/ent-proxy.log
 - [ ] V5 [live] Rings.
   - Accept: `./run.sh enterprise proof release --bench` rc 0.
-- [ ] V8 [live] Cost.
+- [x] V8 [live] Cost.
   - Accept: `./run.sh enterprise proof cost --bench` rc 0.
+    (ticked) 2026-11-25T02:58:45Z by d778be9d: bench-only: enterprise proof cost --bench rc=0, 38 claims 0 broken on the tree at commit:ebc8e87024 (before-record fix c829e2f190 included); log /tmp/live-bench/r6-entb-cost.log. DEPS-WAIVED: the cost proof reads deploy records, the usage report and Cloudflare limits, none of which the open isolation, domain-rename or routing boxes change
 - [x] V11 [live] Remove. Now also checks zone routes.
   - Accept: `./run.sh enterprise proof remove --bench` rc 0.
     (ticked) 2026-11-16T17:25:19Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log

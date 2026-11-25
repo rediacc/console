@@ -1692,8 +1692,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 31,
+      "open": 15,
+      "done": 32,
       "open_sigs": [
         "11388dba",
         "1820379b",
@@ -1704,7 +1704,6 @@
         "7adc0235",
         "8b441cea",
         "92d4fea4",
-        "966c5266",
         "9ca6d32f",
         "b59bc60d",
         "bb372ae9",
@@ -1730,6 +1729,7 @@
         "6cf97542",
         "7dd8d0d5",
         "91c28630",
+        "966c5266",
         "99d7a3df",
         "99e29212",
         "9ec5caec",
@@ -3516,20 +3516,20 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 2,
+      "open": 6,
+      "done": 3,
       "open_sigs": [
         "26e29ac5",
         "516df172",
         "795eb35a",
         "99480236",
         "9ad645c3",
-        "c103f83d",
         "c1822dd6"
       ],
       "done_sigs": [
         "3e83af32",
-        "b3c86ecb"
+        "b3c86ecb",
+        "c103f83d"
       ]
     },
     "agent/plans/PLAN-rmcp-docs.md": {
