@@ -11,6 +11,7 @@ TWO JOBS, BOTH CHEAP.
 Advisory: always exits 0, never blocks the tool call that already ran, and does nothing at all inside a reviewer or a Stop-hook child (`COMMIT_REVIEW_CHILD`, `STOPHOOK_CHILD`).
 """
 
+import contextlib
 import importlib.util
 import json
 import os
@@ -125,6 +126,94 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     return lines
 
 
+# ---- 3. A COMMIT THAT DID NOT LAND (agent/plans/PLAN-stop-hook-retro-20261125.md R20261125.4) --------------------
+#
+# A `git commit ... 2>&1 | grep '^\['` hides a commit-policy refusal (its lines start `commit-policy:`) and leaves the index staged; on 2026-11-25 that cost 14 minutes and a failed cherry-pick. This hook cannot read the exit code, so it compares HEAD with the HEAD it recorded after the PREVIOUS Bash call of this session (every Bash call passes through here, so that record is the HEAD this command started from). HEAD unmoved and paths still staged is a commit that did not land. No record yet (the session's first call) says nothing, and so does a commit whose own message subject (`-m`, or a readable `-F` file) is HEAD's subject: that one landed, whatever the record says, which covers a parallel Bash call that recorded the new HEAD first.
+
+
+def _head_record(session, repo):
+    """The file holding the HEAD this session last saw in `repo`."""
+    import hashlib
+
+    key = hashlib.sha1(str(pathlib.Path(repo).resolve()).encode("utf-8")).hexdigest()[:16]
+    d = R.state_dir() / "heads"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / ("%s-%s" % (str(session or "nosession")[:8], key))
+
+
+def record_heads(root, session):
+    """Write each project repository's HEAD for this session, the `before` of the next Bash call."""
+    for tree in _bound_paths(root):
+        for repo in _project_repos(tree):
+            head = R.git_out(pathlib.Path(repo), "rev-parse", "HEAD")
+            if head:
+                with contextlib.suppress(OSError):
+                    _head_record(session, repo).write_text(head + "\n", encoding="utf-8")
+
+
+def _message_subject(run, base):
+    """The subject line a `git commit` run names (`-m`, `--message`, `-F`, `--file`), or "" when it names none or the file cannot be read."""
+    argv = list(run.argv or [])
+    for i, word in enumerate(argv):
+        msg = path = None
+        if word in ("-m", "--message") and i + 1 < len(argv):
+            msg = argv[i + 1]
+        elif word.startswith("--message="):
+            msg = word.split("=", 1)[1]
+        elif word.startswith("-m") and len(word) > 2 and not word.startswith("--"):
+            msg = word[2:]
+        elif word in ("-F", "--file") and i + 1 < len(argv):
+            path = argv[i + 1]
+        elif word.startswith("--file="):
+            path = word.split("=", 1)[1]
+        if path and path != "-":
+            p = pathlib.Path(path)
+            if not p.is_absolute():
+                p = pathlib.Path(run.cwd or base) / p
+            try:
+                msg = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                msg = None
+        if msg is not None:
+            return next((ln.strip() for ln in msg.splitlines() if ln.strip()), "")
+    return ""
+
+
+def commit_landed_lines(cmd, cwd, root, session):
+    """The `COMMIT DID NOT LAND` notice for each repository where a command-position `git commit` left HEAD where it was with paths still staged."""
+    base = pathlib.Path(cwd or root)
+    trees = _bound_paths(root)
+    lines = []
+    seen = set()
+    for run in shellscan._analyse(cmd).runs:
+        if run.git_sub != "commit":
+            continue
+        where = base if run.git_dir in (None, "", ".") else base / run.git_dir
+        top = R.git_out(where, "rev-parse", "--show-toplevel")
+        if not top or top in seen or commit_policy.owning_tree(top, trees) is None:
+            continue
+        seen.add(top)
+        try:
+            before = _head_record(session, top).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        repo = pathlib.Path(top)
+        after = R.git_out(repo, "rev-parse", "HEAD")
+        if not after or after != before:
+            continue
+        staged = [p for p in R.git_out(repo, "diff", "--cached", "--name-only").splitlines() if p]
+        if not staged:
+            continue
+        subject = _message_subject(run, base)
+        if subject and subject == R.git_out(repo, "log", "-1", "--format=%s", "HEAD").strip():
+            continue
+        lines.append(
+            "COMMIT DID NOT LAND in %s: HEAD is still %s and %d path(s) are staged; rerun the commit without the output filter to read the refusal (a commit-policy refusal starts `commit-policy:`, which a filter for git's `[branch sha]` line drops)"
+            % (top, after[:10], len(staged))
+        )
+    return lines
+
+
 def main():
     if os.environ.get("COMMIT_REVIEW_CHILD") or os.environ.get("STOPHOOK_CHILD"):
         return 0
@@ -135,8 +224,20 @@ def main():
     root = pathlib.Path(root)
     cmd = ev.field("tool_input", "command")
     lines = []
+    session = ev.field("session_id")
+    if cmd and "git" in cmd and "commit" in cmd:
+        try:
+            lines += commit_landed_lines(cmd, ev.field("cwd") or None, root, session)
+        except Exception as exc:
+            lines.append(
+                "commit-landed check failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
+            )
     if cmd and "git" in cmd and any(sub in cmd for sub in R.TRIGGER_SUBS):
         lines += trigger_lines(cmd, ev.field("cwd") or None, root)
+    try:
+        record_heads(root, session)
+    except Exception as exc:
+        lines.append("HEAD record failed (%s: %s)" % (type(exc).__name__, str(exc)[:160]))
     try:
         for tree in _bound_paths(root):
             lines += R.surface_new(tree, R.current_branch(tree), ev.field("session_id"))
