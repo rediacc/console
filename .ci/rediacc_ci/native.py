@@ -16,9 +16,9 @@ TWO BEHAVIOURS CHANGED ON PURPOSE, both stated here rather than discovered later
   1. TRAILING ARGUMENTS ARE REFUSED. `rdc.sh` did `shift` and then never looked at
      `"$@"` again, so `./rdc.sh --native --platform win` built for the LOCAL platform
      and said nothing. Silence there is a wrong answer, not a convenience.
-  2. `Install dir ... does not exist - is rdc installed?` loses its em dash.
-     `.ci/rediacc_ci` is a scanned surface for `check:ci-em-dash-surfaces` whose
-     baseline refuses additions, and the house rule bans them in authored text.
+  2. The install directory is CREATED when missing (it used to be refused with
+     `Install dir ... does not exist - is rdc installed?`). A fresh native host has no
+     `~/.local/share/rediacc/bin` yet, and the build is what puts the first binary there.
 
 WHAT IS UNCHANGED, because a port that improves things is a rewrite: the step order, the artefact paths, the backup naming (`getOldBinaryPath()` in `packages/cli/src/utils/platform.ts` looks for `rdc.old` / `rdc.old.exe` and will not find anything else), the refusal on an unsupported platform or arch, the `--version` run at the end, and the exit codes.
 """
@@ -160,12 +160,23 @@ def prepare_toolchain(root: pathlib.Path) -> None:
         raise NativeError("toolchain preparation failed")
 
 
+def _renet_account_key(root: pathlib.Path) -> str:
+    """The licence key renet's `build.sh stage_linux` bakes, resolved the way the regular build path resolves it (env, the public-key cache, then bws)."""
+    local_common = importlib.import_module("rediacc_ci.core.local_common")
+    try:
+        return local_common.resolve_renet_account_key(str(root / "private" / "renet"), os.environ)
+    except local_common.LocalCommonError as exc:
+        raise NativeError("no renet licence key (exit %d)" % exc.code) from exc
+
+
 def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     """Steps 1-3 of the sequence `rdc.sh`'s header documented, in that order."""
     # 1. Cross-build renet for BOTH linux arches into the slots rediacc_ci.build.build_cli_executables embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
     log.step("Cross-building renet (both linux arches) -> private/bin")
     _stream(
-        ["./build.sh", "stage_linux", str(root / "private" / "bin")], cwd=root / "private" / "renet"
+        ["./build.sh", "stage_linux", str(root / "private" / "bin")],
+        cwd=root / "private" / "renet",
+        env={**os.environ, "ACCOUNT_ED25519_PUBLIC_KEY": _renet_account_key(root)},
     )
 
     # 2. Assemble the SEA. sea-inject/ streams the blob and has no size ceiling.
@@ -187,15 +198,18 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     if not pathlib.Path(built_plan.built).is_file():
         raise NativeError("Built SEA not found at %s" % built_plan.built)
 
-    # 3. Back up the existing user binary and replace it. The install directory is NOT created: its absence means rdc was never installed, and silently creating it would put a binary somewhere nothing on PATH points at.
+    # 3. Back up the existing user binary and replace it. The install directory is created when missing: a fresh native host has none yet.
     dest = pathlib.Path(built_plan.dest)
-    if not dest.parent.is_dir():
-        raise NativeError("Install dir %s does not exist; is rdc installed?" % dest.parent)
-    if dest.is_file():
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    backed_up = dest.is_file()
+    if backed_up:
         _copy(dest, pathlib.Path(built_plan.backup))
     _copy(pathlib.Path(built_plan.built), dest)
     dest.chmod(0o755)
-    log.step("Installed dev SEA -> %s (backup at %s)" % (dest, built_plan.backup))
+    log.step(
+        "Installed dev SEA -> %s%s"
+        % (dest, " (backup at %s)" % built_plan.backup if backed_up else "")
+    )
     _stream([str(dest), "--version"])
 
 

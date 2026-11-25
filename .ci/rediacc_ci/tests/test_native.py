@@ -11,9 +11,8 @@ WHAT THESE CASES ARE FOR, since `.ci/scripts/quality/check_rdc_native.py` alread
                   first is the behaviour change this port MADE and the one most likely to
                   be "helpfully" reverted; the bash ignored trailing arguments in silence.
   no side effects `--print-plan` must not touch the filesystem. A plan that created the
-                  install directory would make the "is rdc installed?" refusal
-                  unreachable, and that refusal is the only thing stopping a build from
-                  landing somewhere nothing on PATH points at.
+                  install directory would be a side effect of a read-only query; the
+                  directory is created only by the install step itself.
 """
 
 import json
@@ -166,6 +165,7 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
             raise StopError
 
     monkeypatch.setattr(native, "_stream", fake_stream)
+    monkeypatch.setattr(native, "_renet_account_key", lambda _root: "KEY")
     monkeypatch.setenv("PYTHONPATH", "/caller/site")
     plan = native.plan(tmp_path, tmp_path, "Linux", "x86_64")
     with pytest.raises(StopError):
@@ -174,3 +174,52 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
     assert "rediacc_ci.build.build_cli_executables" in argv
     assert cwd == tmp_path
     assert env["PYTHONPATH"].split(os.pathsep)[0] == str(tmp_path / ".ci")
+
+
+def _install_fixture(monkeypatch, tmp_path):
+    """Run build_and_install past the build steps into a tmp install tree; returns (plan, logged steps)."""
+    calls = []
+    steps = []
+
+    def fake_stream(argv, cwd=None, env=None):
+        calls.append((argv, cwd, env))
+
+    monkeypatch.setattr(native, "_stream", fake_stream)
+    monkeypatch.setattr(native, "_renet_account_key", lambda _root: "KEY123")
+    monkeypatch.setattr(native.log, "step", steps.append)
+    built = tmp_path / "built" / "rdc"
+    built.parent.mkdir()
+    built.write_bytes(b"new")
+    dest = tmp_path / "share" / "bin" / "rdc"
+    plan = native.plan(tmp_path, tmp_path, "Linux", "x86_64")
+    plan = native.dataclasses.replace(
+        plan, built=str(built), dest=str(dest), backup=str(dest) + ".old"
+    )
+    return plan, calls, steps, dest
+
+
+def test_the_stage_linux_call_carries_the_resolved_account_key(monkeypatch, tmp_path):
+    plan, calls, _steps, _dest = _install_fixture(monkeypatch, tmp_path)
+    native.build_and_install(tmp_path, plan)
+    argv, _cwd, env = calls[0]
+    assert argv[:2] == ["./build.sh", "stage_linux"]
+    assert env["ACCOUNT_ED25519_PUBLIC_KEY"] == "KEY123"
+
+
+def test_a_missing_install_directory_is_created(monkeypatch, tmp_path):
+    plan, _calls, _steps, dest = _install_fixture(monkeypatch, tmp_path)
+    assert not dest.parent.exists()
+    native.build_and_install(tmp_path, plan)
+    assert dest.read_bytes() == b"new"
+
+
+def test_the_backup_clause_prints_only_when_a_backup_was_written(monkeypatch, tmp_path):
+    plan, _calls, steps, dest = _install_fixture(monkeypatch, tmp_path)
+    native.build_and_install(tmp_path, plan)
+    assert "(backup at" not in steps[-1]
+    assert not pathlib.Path(plan.backup).exists()
+    dest.write_bytes(b"old")
+    steps.clear()
+    native.build_and_install(tmp_path, plan)
+    assert "backup at %s" % plan.backup in steps[-1]
+    assert pathlib.Path(plan.backup).read_bytes() == b"old"
