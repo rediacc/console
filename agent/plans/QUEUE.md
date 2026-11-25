@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1227 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1234 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 6 live (session d778be9d): worker:a078be1d1ccdbb514, worker:af9a320ef8f5fa633, worker:ad76725b7fcf05d5d, worker:ab67a5ce03ccd2b8a, worker:a80a18733d22dda92, worker:af36ab2a0a56a3936.
-- Leased items: 7: #06d2ab8f (worker:ad76725b7fcf05d5d, d778be9d), #2dbe68ea (worker:ab67a5ce03ccd2b8a, d778be9d), #6735de22 (worker:a80a18733d22dda92, d778be9d), #77e3f60b (worker:af36ab2a0a56a3936, d778be9d), #7b3029c9 (worker:ab67a5ce03ccd2b8a, d778be9d), #7c525f70 (worker:af9a320ef8f5fa633, d778be9d), #ada0a87c (worker:a078be1d1ccdbb514, d778be9d).
+- Writers: 7 live (session d778be9d): worker:a078be1d1ccdbb514, worker:a80a18733d22dda92, worker:a044d046f54f5b3f5, worker:a82d2a97f7ab282f8, worker:aad1ae82960fe41b1, worker:ac6a7df8849e77bff, worker:a7b99de4534712f2f.
+- Leased items: 7: #1476c1f5 (worker:a7b99de4534712f2f, d778be9d), #53d8c24b (worker:a044d046f54f5b3f5, d778be9d), #6735de22 (worker:a80a18733d22dda92, d778be9d), #709db1bc (worker:aad1ae82960fe41b1, d778be9d), #7275239e (worker:a82d2a97f7ab282f8, d778be9d), #ada0a87c (worker:a078be1d1ccdbb514, d778be9d), #b09fb9ae (worker:ac6a7df8849e77bff, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 99 plans done, 1389 of 1866 boxes done (74%).
+Promoted: 11 of 99 plans done, 1391 of 1866 boxes done (74%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -152,7 +152,7 @@ Promoted: 11 of 99 plans done, 1389 of 1866 boxes done (74%).
 | 90 | PLAN-forensics-detection.md | 6/15 | 9 open |
 | 91 | PLAN-forensics-investigation.md | 4/17 | 13 open |
 | 92 | PLAN-forensics-alerts-notices.md | 2/15 | 13 open |
-| 93 | PLAN-forensics-reports.md | 0/14 | 14 open |
+| 93 | PLAN-forensics-reports.md | 2/14 | 12 open |
 | 94 | PLAN-forensics-docs-legal.md | 0/13 | 13 open |
 | 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 96 | PLAN-writers-now-cadence.md | 5/5 | done |

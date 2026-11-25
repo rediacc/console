@@ -49,14 +49,16 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
 
 ## Tasks
 
-- [ ] FR1 [writer] Report model and canonical form (D1, D3): `report.ts` with stages, sections, basis and confidence, and `canonical.ts` with a test that key order and whitespace never change the hash.
+- [x] FR1 [writer] Report model and canonical form (D1, D3): `report.ts` with stages, sections, basis and confidence, and `canonical.ts` with a test that key order and whitespace never change the hash.
   Owns: packages/shared/src/incident/report.ts, packages/shared/src/incident/canonical.ts, packages/shared/src/incident/__tests__/report-model.test.ts, packages/shared/src/incident/__tests__/canonical.test.ts
   Depends on: PLAN-forensics-investigation.md#FI1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/report-model.test.ts src/incident/__tests__/canonical.test.ts)` rc 0 (an early warning carrying a final-only section fails to parse, an inferred fact without confidence fails, two key orders hash the same).
-- [ ] FR2 [writer] STIX 2.1 bundle (D4): `stix.ts` with indicators, observables, observed-data and relationships, content-derived UUIDv5 ids, and a test of every object against the STIX 2.1 required properties and pattern grammar.
+    (ticked) 2026-11-25T16:07:46Z by d778be9d: FR1 staged report model with canonical hashing; landed 35e28ea1f4; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
+- [x] FR2 [writer] STIX 2.1 bundle (D4): `stix.ts` with indicators, observables, observed-data and relationships, content-derived UUIDv5 ids, and a test of every object against the STIX 2.1 required properties and pattern grammar.
   Owns: packages/shared/src/incident/stix.ts, packages/shared/src/incident/__tests__/stix.test.ts
   Depends on: FR1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/stix.test.ts)` rc 0 (two runs give identical bytes, an IPv6 destination gets an `ipv6-addr` pattern, a missing process hash emits no file indicator, a control object without `spec_version` fails).
+    (ticked) 2026-11-25T16:07:47Z by d778be9d: FR2 deterministic STIX bundle; landed d2a4633aae; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
 - [ ] FR3 [writer] Regulatory field map (D7): read the NIS Cooperation Group templates of 26 May 2026, Implementing Regulation (EU) 2025/302 and GDPR Art. 33(3), then write `report-field-map.json` and its typed loader with source URLs and retrieval dates.
   Owns: packages/shared/src/incident/report-field-map.json, packages/shared/src/incident/report-field-map.ts, packages/shared/src/incident/__tests__/report-field-map.test.ts
   Depends on: FR1.

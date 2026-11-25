@@ -547,7 +547,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-detection.md` | approved | 129 | 9 | 6 | 23918 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 135 | 13 | 4 | 30913 |
-| `agent/plans/PLAN-forensics-reports.md` | approved | 112 | 14 | 0 | 21897 |
+| `agent/plans/PLAN-forensics-reports.md` | approved | 114 | 12 | 2 | 22314 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |

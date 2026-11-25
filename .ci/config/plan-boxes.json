@@ -2064,13 +2064,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 0,
+      "open": 12,
+      "done": 2,
       "open_sigs": [
         "07a5fd57",
-        "11f03fae",
         "28cde5ec",
-        "2d7c07ae",
         "3e5b6553",
         "5f8525bd",
         "824e14dc",
@@ -2082,7 +2080,10 @@
         "f61bfc21",
         "fe023d7c"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "11f03fae",
+        "2d7c07ae"
+      ]
     },
     "agent/plans/PLAN-forensics-shipping.md": {
       "status": "approved",
