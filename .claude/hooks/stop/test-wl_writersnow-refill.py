@@ -16,7 +16,7 @@ wl_hints = importlib.import_module("wl_hints")
 wl_storestatus = importlib.import_module("wl_storestatus")
 W = importlib.import_module("wl_writersnow")
 
-FAILURES = []
+FAILURES: list[str] = []
 CASES = [0]
 ME = "d778be9d-0000-0000-0000-000000000000"
 NOW = datetime.datetime(2026, 11, 25, 18, 0, tzinfo=datetime.UTC)
@@ -232,7 +232,7 @@ class Patched:
 
 
 def run_segment(tmp, items, writers=("w1",), rows=None):
-    fired = []
+    fired: list = []
     ns = segment_ns(tmp, items, fired, writers)
     planted = plant(tmp)
     with Patched(rows or planted):

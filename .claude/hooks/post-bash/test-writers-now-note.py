@@ -13,13 +13,15 @@ from unittest import mock
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "stop"))
 spec = importlib.util.spec_from_file_location("writers_now_note", HERE / "writers_now_note.py")
+if spec is None or spec.loader is None:
+    raise SystemExit("cannot load %s" % (HERE / "writers_now_note.py"))
 note = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(note)
 wl_core = importlib.import_module("wl_core")
 wl_planqueue = importlib.import_module("wl_planqueue")
 wl_writersnow = importlib.import_module("wl_writersnow")
 
-FAILURES = []
+FAILURES: list[str] = []
 CASES = [0]
 SESSION = "d778be9d-0000-0000-0000-000000000000"
 NOW = datetime.datetime(2026, 11, 25, 18, 0, tzinfo=datetime.UTC)
