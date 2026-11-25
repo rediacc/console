@@ -701,12 +701,15 @@
           "id": "details",
           "title": "4. Detalles del tratamiento",
           "items": [
-            "<strong>Objeto y finalidad:</strong> prestación de la Plataforma, incluidas la gestión de Cuentas y equipos, la emisión de licencias, el almacenamiento cifrado de configuraciones, el almacenamiento alojado de copias de seguridad y el soporte",
+            "<strong>Objeto y finalidad:</strong> prestación de la Plataforma, incluidas la gestión de Cuentas y equipos, la emisión de licencias, el almacenamiento cifrado de configuraciones, el almacenamiento alojado de copias de seguridad y el soporte y, en los planes de pago en los que el Cliente lo activa para un repositorio, las pruebas forenses de red que sirven a la seguridad de ese repositorio y a la investigación de incidentes",
             "<strong>Duración:</strong> la vigencia de las Condiciones del servicio, más el plazo de supresión de la Sección 11",
             "<strong>Naturaleza del tratamiento:</strong> recogida, almacenamiento, transmisión, consulta y supresión",
-            "<strong>Categorías de interesados:</strong> los Usuarios Autorizados del Cliente, los miembros del equipo invitados y los contactos de socios",
-            "<strong>Categorías de datos personales:</strong> nombres, direcciones de correo electrónico, organización y cargo, datos de autenticación (hashes de contraseñas, claves públicas de passkeys), direcciones de red y agentes de usuario de las sesiones, y cualquier dato personal contenido en los datos cifrados que el Cliente almacena en la Plataforma",
-            "<strong>Categorías especiales:</strong> ninguna prevista; el Cliente no debe almacenar categorías especiales de datos en la Plataforma sin cifrar"
+            "<strong>Categorías de interesados:</strong> los Usuarios Autorizados del Cliente, los miembros del equipo invitados y los contactos de socios y las personas cuyas direcciones de red aparecen en los registros de flujo de red de un repositorio, como los clientes que se conectan a un servicio que el Cliente ejecuta",
+            "<strong>Categorías de datos personales:</strong> nombres, direcciones de correo electrónico, organización y cargo, datos de autenticación (hashes de contraseñas, claves públicas de passkeys), direcciones de red y agentes de usuario de las sesiones, y cualquier dato personal contenido en los datos cifrados que el Cliente almacena en la Plataforma; en las pruebas forenses, metadatos de flujos de red (direcciones, puertos, recuentos de bytes y paquetes, instantes), nombres y respuestas DNS, nombres e identificadores de procesos y las rutas de archivos sensibles que abrió un proceso",
+            "<strong>Categorías especiales:</strong> ninguna prevista; el Cliente no debe almacenar categorías especiales de datos en la Plataforma sin cifrar",
+            "<strong>Pruebas forenses, direcciones:</strong> las direcciones de destino de los flujos salientes se conservan completas porque son la prueba. La dirección del cliente de un flujo entrante se escribe en el registro truncada a su parte de red (/24 en IPv4, /48 en IPv6), y la dirección completa viaja en una sección aparte del mismo lote",
+            "<strong>Pruebas forenses, conservación:</strong> las pruebas se conservan hasta la cuota de almacenamiento del plan del Cliente y, cuando la cuota se llena, se eliminan primero los archivos diarios más antiguos. Un lote queda bloqueado contra su eliminación durante 7 días, y las pruebas de un incidente que el Cliente declara se conservan hasta 30 días después de su cierre",
+            "<strong>Pruebas forenses, base:</strong> Rediacc las trata solo por instrucción documentada del Cliente, cuando este activa la función forense para un repositorio"
           ]
         },
         "confidentiality": {
@@ -9959,7 +9962,7 @@
         "introduction": {
           "content": [
             "Los productos de software de Rediacc recopilan telemetría de uso anonimizada para ayudarnos a mejorar la calidad del producto, diagnosticar problemas y comprender cómo se utilizan nuestras herramientas. Esta Política de Telemetría describe exactamente qué datos se recopilan, por qué, cómo se procesan y cómo puede darse de baja.",
-            "Esta política abarca dos productos: la <strong>CLI de Rediacc</strong> y el <strong>Agente Renet de Rediacc</strong>. Las analíticas del sitio web (Plausible) se tratan por separado en nuestra <a href=\"privacy-policy\">Política de Privacidad</a> y nuestra <a href=\"cookie-policy\">Política de Cookies</a>."
+            "Esta política abarca dos productos: la <strong>CLI de Rediacc</strong> y el <strong>Agente Renet de Rediacc</strong>. La captura forense de la actividad de red de un repositorio no es telemetría; se trata como Datos Personales del Cliente conforme al <a href=\"data-processing-agreement\">Acuerdo de encargo de tratamiento de datos</a>. Las analíticas del sitio web (Plausible) se tratan por separado en nuestra <a href=\"privacy-policy\">Política de Privacidad</a> y nuestra <a href=\"cookie-policy\">Política de Cookies</a>."
           ],
           "id": "introduction",
           "title": "1. Introducción"

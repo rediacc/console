@@ -720,12 +720,15 @@
         "details": {
           "id": "details",
           "items": [
-            "<strong>Konu ve amaç:</strong> Hesap ve ekip yönetimi, lisans verme, şifreli yapılandırma depolama, barındırılan yedek depolama ve destek dahil Platformun sunulması",
+            "<strong>Konu ve amaç:</strong> Hesap ve ekip yönetimi, lisans verme, şifreli yapılandırma depolama, barındırılan yedek depolama ve destek dahil Platformun sunulması ve Müşterinin bir depo için etkinleştirdiği ücretli planlarda, o deponun güvenliğine ve olayların soruşturulmasına hizmet eden ağ adli bilişim kanıtları",
             "<strong>Süre:</strong> Hizmet Koşullarının süresi ve Bölüm 11'deki silme süresi",
             "<strong>İşlemenin niteliği:</strong> toplama, saklama, iletme, erişme ve silme",
-            "<strong>Veri sahibi kategorileri:</strong> Müşterinin Yetkili Kullanıcıları, davet edilen ekip üyeleri ve iş ortağı iletişim kişileri",
-            "<strong>Kişisel veri kategorileri:</strong> adlar, e-posta adresleri, kuruluş ve rol, kimlik doğrulama verileri (parola karmaları, geçiş anahtarı (passkey) açık anahtarları), oturumların ağ adresleri ve user agent bilgileri ile Müşterinin Platformda sakladığı şifreli verilerin içindeki her türlü kişisel veri",
-            "<strong>Özel kategoriler:</strong> öngörülmemektedir; Müşteri, özel kategorilerdeki verileri Platformda şifrelemeden saklamamalıdır"
+            "<strong>Veri sahibi kategorileri:</strong> Müşterinin Yetkili Kullanıcıları, davet edilen ekip üyeleri ve iş ortağı iletişim kişileri ve ağ adresleri bir deponun ağ akışı kayıtlarında görünen kişiler (örneğin Müşterinin çalıştırdığı bir hizmete bağlanan istemciler)",
+            "<strong>Kişisel veri kategorileri:</strong> adlar, e-posta adresleri, kuruluş ve rol, kimlik doğrulama verileri (parola karmaları, geçiş anahtarı (passkey) açık anahtarları), oturumların ağ adresleri ve user agent bilgileri ile Müşterinin Platformda sakladığı şifreli verilerin içindeki her türlü kişisel veri; adli bilişim kanıtları için ağ akışı üst verileri (adresler, bağlantı noktaları, bayt ve paket sayıları, zamanlar), DNS adları ve yanıtları, işlem adları ve işlem kimlikleri ile bir işlemin açtığı hassas dosyaların yolları",
+            "<strong>Özel kategoriler:</strong> öngörülmemektedir; Müşteri, özel kategorilerdeki verileri Platformda şifrelemeden saklamamalıdır",
+            "<strong>Adli bilişim kanıtları, adresler:</strong> giden akışların hedef adresleri, kanıtın kendisi oldukları için tam olarak saklanır. Gelen bir akışın istemci adresi kayda ağ bölümüne kısaltılarak yazılır (IPv4 için /24, IPv6 için /48) ve adresin tamamı aynı toplu işin ayrı bir bölümünde iletilir",
+            "<strong>Adli bilişim kanıtları, saklama:</strong> kanıtlar Müşterinin planının depolama kotasına kadar saklanır ve kota dolduğunda önce en eski günlük dosyalar silinir. Bir toplu iş 7 gün boyunca silinmeye karşı kilitlenir; Müşterinin ilan ettiği bir olayın kanıtları olayın kapatılmasından 30 gün sonrasına kadar tutulur",
+            "<strong>Adli bilişim kanıtları, dayanak:</strong> Rediacc bunları yalnızca Müşterinin belgelenmiş talimatı üzerine, Müşteri bir depo için adli bilişimi etkinleştirdiğinde işler"
           ],
           "title": "4. İşlemenin Ayrıntıları"
         },
@@ -9943,7 +9946,7 @@
         "introduction": {
           "content": [
             "Rediacc yazılım ürünleri, ürün kalitesini artırmamıza, sorunları teşhis etmemize ve araçlarımızın nasıl kullanıldığını anlamamıza yardımcı olmak için anonimleştirilmiş kullanım telemetrisi toplar. Bu Telemetri Politikası, tam olarak hangi verilerin toplandığını, neden toplandığını, nasıl işlendiğini ve nasıl devre dışı bırakabileceğinizi açıklar.",
-            "Bu politika iki ürünü kapsar: <strong>Rediacc CLI</strong> ve <strong>Rediacc Renet Ajanı</strong>. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
+            "Bu politika iki ürünü kapsar: <strong>Rediacc CLI</strong> ve <strong>Rediacc Renet Ajanı</strong>. Bir deponun ağ etkinliğinin adli bilişim amaçlı yakalanması telemetri değildir; <a href=\"data-processing-agreement\">Veri İşleme Sözleşmesi</a> kapsamında Müşterinin Kişisel Verileri olarak işlenir. Web sitesi analitiği (Plausible) ayrı olarak <a href=\"privacy-policy\">Gizlilik Politikamızda</a> ve <a href=\"cookie-policy\">Çerez Politikamızda</a> ele alınmaktadır."
           ],
           "id": "introduction",
           "title": "1. Giriş"

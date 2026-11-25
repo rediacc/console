@@ -724,12 +724,15 @@
         "details": {
           "id": "details",
           "items": [
-            "<strong>Teema ja eesmärk:</strong> platvormi osutamine, sealhulgas konto ja meeskonna haldus, litsentside väljastamine, krüpteeritud konfiguratsioonisalvestus, majutatud varukoopiasalvestus ja tugi",
+            "<strong>Teema ja eesmärk:</strong> platvormi osutamine, sealhulgas konto ja meeskonna haldus, litsentside väljastamine, krüpteeritud konfiguratsioonisalvestus, majutatud varukoopiasalvestus ja tugi ning tasulistel plaanidel, kus klient selle repositooriumi jaoks sisse lülitab, võrgu kohtuekspertiisi tõendid, mis teenivad selle repositooriumi turvalisust ja intsidentide uurimist",
             "<strong>Kestus:</strong> teenuse kasutustingimuste kehtivusaeg ning jaotises 11 sätestatud kustutamisperiood",
             "<strong>Töötlemise laad:</strong> kogumine, säilitamine, edastamine, päringute tegemine ja kustutamine",
-            "<strong>Andmesubjektide kategooriad:</strong> kliendi volitatud kasutajad, kutsutud meeskonnaliikmed ja partnerite kontaktisikud",
-            "<strong>Isikuandmete kategooriad:</strong> nimed, e-posti aadressid, organisatsioon ja roll, autentimisandmed (paroolide räsid, pääsuvõtmete (passkey) avalikud võtmed), seansside võrguaadressid ja kasutajaagendid ning kõik isikuandmed krüpteeritud andmetes, mida klient platvormil hoiab",
-            "<strong>Eriliigid:</strong> ei ole ette nähtud; klient ei tohi platvormil krüpteerimata kujul hoida eriliigilisi andmeid"
+            "<strong>Andmesubjektide kategooriad:</strong> kliendi volitatud kasutajad, kutsutud meeskonnaliikmed ja partnerite kontaktisikud ning isikud, kelle võrguaadressid esinevad repositooriumi võrguvoo kirjetes, näiteks kliendid, kes ühenduvad kliendi käitatava teenusega",
+            "<strong>Isikuandmete kategooriad:</strong> nimed, e-posti aadressid, organisatsioon ja roll, autentimisandmed (paroolide räsid, pääsuvõtmete (passkey) avalikud võtmed), seansside võrguaadressid ja kasutajaagendid ning kõik isikuandmed krüpteeritud andmetes, mida klient platvormil hoiab; kohtuekspertiisi tõendite puhul võrguvoo metaandmed (aadressid, pordid, baitide ja pakettide arvud, ajad), DNS-nimed ja -vastused, protsesside nimed ja tunnused ning tundlike failide teed, mille protsess avas",
+            "<strong>Eriliigid:</strong> ei ole ette nähtud; klient ei tohi platvormil krüpteerimata kujul hoida eriliigilisi andmeid",
+            "<strong>Kohtuekspertiisi tõendid, aadressid:</strong> väljuvate voogude sihtaadressid säilitatakse tervikuna, sest need ongi tõend. Sissetuleva voo kliendiaadress kirjutatakse kirjesse lühendatuna selle võrguosani (/24 IPv4 puhul, /48 IPv6 puhul) ning täisaadress liigub sama partii eraldi jaotises",
+            "<strong>Kohtuekspertiisi tõendid, säilitamine:</strong> tõendeid säilitatakse kliendi plaani salvestuskvoodi piires ning kui kvoot täitub, eemaldatakse esimesena kõige vanemad päevafailid. Partii on eemaldamise vastu lukustatud 7 päeva ning kliendi välja kuulutatud intsidendi tõendeid hoitakse kuni 30 päeva pärast intsidendi sulgemist",
+            "<strong>Kohtuekspertiisi tõendid, alus:</strong> Rediacc töötleb neid ainult kliendi dokumenteeritud juhise alusel, kui klient lülitab repositooriumi jaoks kohtuekspertiisi sisse"
           ],
           "title": "4. Töötlemise üksikasjad"
         },
@@ -9964,7 +9967,7 @@
         "introduction": {
           "content": [
             "Rediacc tarkvaratooted koguvad anonümiseeritud kasutustelemetriat, et aidata meil parandada toote kvaliteeti, diagnoosida probleeme ja mõista, kuidas meie tööriistu kasutatakse. Käesolev telemetria poliitika kirjeldab täpselt, milliseid andmeid kogutakse, miks, kuidas neid töödeldakse ja kuidas saate loobuda.",
-            "See poliitika hõlmab kahte toodet: <strong>Rediacc CLI-d</strong> ja <strong>Rediacc Renet agenti</strong>. Veebisaidi analüütikat (Plausible) käsitleme eraldi oma <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
+            "See poliitika hõlmab kahte toodet: <strong>Rediacc CLI-d</strong> ja <strong>Rediacc Renet agenti</strong>. Repositooriumi võrgutegevuse kohtuekspertiisi salvestus ei ole telemeetria; seda töödeldakse kliendi isikuandmetena vastavalt dokumendile <a href=\"data-processing-agreement\">Andmetöötluslepe</a>. Veebisaidi analüütikat (Plausible) käsitleme eraldi oma <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
           ],
           "id": "introduction",
           "title": "1. Sissejuhatus"

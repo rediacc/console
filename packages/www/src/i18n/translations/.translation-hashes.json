@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6015,
-    "sourceCommit": "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+    "keyCount": 6018,
+    "sourceCommit": "fb7c5f45f0aa58a2f5a875e6327aa6898d0fb11d"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -437,12 +437,15 @@
     "pages.dataProcessingAgreement.sections.deletion.id": "2dddd925",
     "pages.dataProcessingAgreement.sections.deletion.title": "ffd5b652",
     "pages.dataProcessingAgreement.sections.details.id": "72260b8a",
-    "pages.dataProcessingAgreement.sections.details.items.0": "cd6839b0",
+    "pages.dataProcessingAgreement.sections.details.items.0": "a5bbd867",
     "pages.dataProcessingAgreement.sections.details.items.1": "5c7218d4",
     "pages.dataProcessingAgreement.sections.details.items.2": "a6da9855",
-    "pages.dataProcessingAgreement.sections.details.items.3": "3f0369ab",
-    "pages.dataProcessingAgreement.sections.details.items.4": "ca356a82",
+    "pages.dataProcessingAgreement.sections.details.items.3": "43b71944",
+    "pages.dataProcessingAgreement.sections.details.items.4": "69327bd3",
     "pages.dataProcessingAgreement.sections.details.items.5": "9c27ec16",
+    "pages.dataProcessingAgreement.sections.details.items.6": "d776875e",
+    "pages.dataProcessingAgreement.sections.details.items.7": "337c92e1",
+    "pages.dataProcessingAgreement.sections.details.items.8": "d3e5d66b",
     "pages.dataProcessingAgreement.sections.details.title": "4d640d5a",
     "pages.dataProcessingAgreement.sections.instructions.content.0": "43c2c019",
     "pages.dataProcessingAgreement.sections.instructions.id": "997d812b",
@@ -5726,7 +5729,7 @@
     "pages.telemetryPolicy.sections.internationalTransfers.id": "7bbd2bd8",
     "pages.telemetryPolicy.sections.internationalTransfers.title": "3fc28d41",
     "pages.telemetryPolicy.sections.introduction.content.0": "d67849d1",
-    "pages.telemetryPolicy.sections.introduction.content.1": "e79032a5",
+    "pages.telemetryPolicy.sections.introduction.content.1": "d7c4f77c",
     "pages.telemetryPolicy.sections.introduction.id": "f5005424",
     "pages.telemetryPolicy.sections.introduction.title": "81ea56c0",
     "pages.telemetryPolicy.sections.legalBasis.content.0": "aea05ac2",

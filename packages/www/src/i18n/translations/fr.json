@@ -703,12 +703,15 @@
           "id": "details",
           "title": "4. Détails du traitement",
           "items": [
-            "<strong>Objet et finalité :</strong> fourniture de la Plateforme, y compris la gestion des Comptes et des équipes, la délivrance de licences, le stockage chiffré des configurations, le stockage hébergé de sauvegardes et l'assistance",
+            "<strong>Objet et finalité :</strong> fourniture de la Plateforme, y compris la gestion des Comptes et des équipes, la délivrance de licences, le stockage chiffré des configurations, le stockage hébergé de sauvegardes et l'assistance et, sur les offres payantes où le Client l'active pour un dépôt, des preuves réseau d'investigation numérique qui servent la sécurité de ce dépôt et l'investigation des incidents",
             "<strong>Durée :</strong> la durée des Conditions d'utilisation, augmentée du délai de suppression prévu à la Section 11",
             "<strong>Nature du traitement :</strong> collecte, stockage, transmission, consultation et suppression",
-            "<strong>Catégories de personnes concernées :</strong> les Utilisateurs autorisés du Client, les membres d'équipe invités et les contacts de partenaires",
-            "<strong>Catégories de données personnelles :</strong> noms, adresses e-mail, organisation et fonction, données d'authentification (hachages de mots de passe, clés publiques de passkeys), adresses réseau et agents utilisateurs des sessions, et toute donnée personnelle contenue dans les données chiffrées que le Client stocke sur la Plateforme",
-            "<strong>Catégories particulières :</strong> aucune prévue ; le Client ne doit pas stocker de catégories particulières de données non chiffrées sur la Plateforme"
+            "<strong>Catégories de personnes concernées :</strong> les Utilisateurs autorisés du Client, les membres d'équipe invités et les contacts de partenaires et les personnes dont les adresses réseau figurent dans les enregistrements de flux réseau d'un dépôt, comme les clients qui se connectent à un service que le Client exécute",
+            "<strong>Catégories de données personnelles :</strong> noms, adresses e-mail, organisation et fonction, données d'authentification (hachages de mots de passe, clés publiques de passkeys), adresses réseau et agents utilisateurs des sessions, et toute donnée personnelle contenue dans les données chiffrées que le Client stocke sur la Plateforme ; pour les preuves d'investigation, les métadonnées de flux réseau (adresses, ports, nombres d'octets et de paquets, horodatages), les noms et réponses DNS, les noms et identifiants de processus, et les chemins de fichiers sensibles ouverts par un processus",
+            "<strong>Catégories particulières :</strong> aucune prévue ; le Client ne doit pas stocker de catégories particulières de données non chiffrées sur la Plateforme",
+            "<strong>Preuves d'investigation, adresses :</strong> les adresses de destination des flux sortants sont conservées entières, car elles constituent la preuve. L'adresse du client d'un flux entrant est écrite dans l'enregistrement tronquée à sa partie réseau (/24 en IPv4, /48 en IPv6), et l'adresse complète voyage dans une section distincte du même lot",
+            "<strong>Preuves d'investigation, conservation :</strong> les preuves sont conservées dans la limite du quota de stockage de l'offre du Client ; une fois le quota atteint, les plus anciens fichiers journaliers sont supprimés en premier. Un lot est verrouillé contre la suppression pendant 7 jours, et les preuves d'un incident déclaré par le Client sont conservées jusqu'à 30 jours après sa clôture",
+            "<strong>Preuves d'investigation, base :</strong> Rediacc ne les traite que sur instruction documentée du Client, lorsque celui-ci active la fonction d'investigation pour un dépôt"
           ]
         },
         "confidentiality": {
@@ -9963,7 +9966,7 @@
         "introduction": {
           "content": [
             "Les produits logiciels Rediacc collectent des données de télémétrie d'utilisation anonymisées pour nous aider à améliorer la qualité des produits, diagnostiquer les problèmes et comprendre comment nos outils sont utilisés. Cette Politique de Télémétrie décrit exactement quelles données sont collectées, pourquoi, comment elles sont traitées, et comment vous pouvez vous désinscrire.",
-            "Cette politique couvre deux produits : le <strong>CLI Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. Les statistiques du site web (Plausible) sont traitées séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
+            "Cette politique couvre deux produits : le <strong>CLI Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. La capture d'investigation de l'activité réseau d'un dépôt n'est pas de la télémétrie ; elle est traitée comme Données personnelles du Client au titre de l'<a href=\"data-processing-agreement\">Accord de traitement des données</a>. Les statistiques du site web (Plausible) sont traitées séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
           ],
           "id": "introduction",
           "title": "1. Introduction"

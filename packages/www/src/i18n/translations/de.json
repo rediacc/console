@@ -701,12 +701,15 @@
           "id": "details",
           "title": "4. Einzelheiten der Verarbeitung",
           "items": [
-            "<strong>Gegenstand und Zweck:</strong> Bereitstellung der Plattform, einschließlich Konto- und Teamverwaltung, Lizenzausstellung, verschlüsseltem Konfigurationsspeicher, gehostetem Backup-Speicher und Support",
+            "<strong>Gegenstand und Zweck:</strong> Bereitstellung der Plattform, einschließlich Konto- und Teamverwaltung, Lizenzausstellung, verschlüsseltem Konfigurationsspeicher, gehostetem Backup-Speicher und Support, sowie in kostenpflichtigen Tarifen, in denen der Kunde dies für ein Repository aktiviert, forensische Netzwerkbelege, die der Sicherheit dieses Repositorys und der Untersuchung von Vorfällen dienen",
             "<strong>Dauer:</strong> die Laufzeit der Nutzungsbedingungen zuzüglich der Löschfrist nach Abschnitt 11",
             "<strong>Art der Verarbeitung:</strong> Erhebung, Speicherung, Übermittlung, Abruf und Löschung",
-            "<strong>Kategorien betroffener Personen:</strong> die Autorisierten Benutzer des Kunden, eingeladene Teammitglieder und Ansprechpartner von Partnern",
-            "<strong>Kategorien personenbezogener Daten:</strong> Namen, E-Mail-Adressen, Organisation und Rolle, Authentifizierungsdaten (Passwort-Hashes, öffentliche Passkey-Schlüssel), Netzwerkadressen und User-Agents von Sitzungen sowie alle personenbezogenen Daten innerhalb verschlüsselter Daten, die der Kunde auf der Plattform speichert",
-            "<strong>Besondere Kategorien:</strong> keine vorgesehen; der Kunde darf besondere Kategorien von Daten nicht unverschlüsselt auf der Plattform speichern"
+            "<strong>Kategorien betroffener Personen:</strong> die Autorisierten Benutzer des Kunden, eingeladene Teammitglieder und Ansprechpartner von Partnern und Personen, deren Netzwerkadressen in den Netzwerkflussdaten eines Repositorys erscheinen, etwa Clients, die sich mit einem vom Kunden betriebenen Dienst verbinden",
+            "<strong>Kategorien personenbezogener Daten:</strong> Namen, E-Mail-Adressen, Organisation und Rolle, Authentifizierungsdaten (Passwort-Hashes, öffentliche Passkey-Schlüssel), Netzwerkadressen und User-Agents von Sitzungen sowie alle personenbezogenen Daten innerhalb verschlüsselter Daten, die der Kunde auf der Plattform speichert; bei forensischen Belegen Metadaten des Netzwerkflusses (Adressen, Ports, Byte- und Paketzahlen, Zeitpunkte), DNS-Namen und -Antworten, Prozessnamen und Prozesskennungen sowie die Pfade sensibler Dateien, die ein Prozess geöffnet hat",
+            "<strong>Besondere Kategorien:</strong> keine vorgesehen; der Kunde darf besondere Kategorien von Daten nicht unverschlüsselt auf der Plattform speichern",
+            "<strong>Forensische Belege, Adressen:</strong> Zieladressen ausgehender Flüsse werden vollständig gespeichert, weil sie der Beleg sind. Die Client-Adresse eines eingehenden Flusses wird im Datensatz auf ihren Netzwerkanteil gekürzt (/24 bei IPv4, /48 bei IPv6); die vollständige Adresse wird in einem getrennten Abschnitt derselben Charge übertragen",
+            "<strong>Forensische Belege, Aufbewahrung:</strong> Belege werden bis zum Speicherkontingent des Tarifs des Kunden aufbewahrt; ist das Kontingent voll, werden die ältesten Tagesdateien zuerst entfernt. Eine Charge ist 7 Tage lang gegen Entfernung gesperrt, und Belege zu einem vom Kunden gemeldeten Vorfall werden bis 30 Tage nach dessen Abschluss gehalten",
+            "<strong>Forensische Belege, Grundlage:</strong> Rediacc verarbeitet sie nur auf dokumentierte Weisung des Kunden, indem der Kunde die Forensik für ein Repository aktiviert"
           ]
         },
         "confidentiality": {
@@ -9963,7 +9966,7 @@
         "introduction": {
           "content": [
             "Rediacc-Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um uns bei der Verbesserung der Produktqualität, der Diagnose von Problemen und dem Verständnis der Nutzung unserer Tools zu helfen. Diese Telemetrie-Richtlinie beschreibt genau, welche Daten erfasst werden, warum, wie sie verarbeitet werden und wie Sie sich abmelden können.",
-            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
+            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die forensische Erfassung der Netzwerkaktivität eines Repositorys ist keine Telemetrie; sie wird als Personenbezogene Daten des Kunden gemäß dem <a href=\"data-processing-agreement\">Auftragsverarbeitungsvertrag</a> verarbeitet. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
           ],
           "id": "introduction",
           "title": "1. Einleitung"

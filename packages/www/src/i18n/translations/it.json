@@ -705,12 +705,15 @@
           "id": "details",
           "title": "4. Dettagli del trattamento",
           "items": [
-            "<strong>Oggetto e finalità:</strong> fornitura della Piattaforma, compresi la gestione di Account e team, il rilascio delle licenze, l'archiviazione cifrata delle configurazioni, lo storage di backup ospitato e il supporto",
+            "<strong>Oggetto e finalità:</strong> fornitura della Piattaforma, compresi la gestione di Account e team, il rilascio delle licenze, l'archiviazione cifrata delle configurazioni, lo storage di backup ospitato e il supporto e, nei piani a pagamento in cui il Cliente lo attiva per un repository, le prove forensi di rete che servono alla sicurezza di quel repository e all'indagine sugli incidenti",
             "<strong>Durata:</strong> la durata dei Termini di servizio, più il periodo di cancellazione di cui alla Sezione 11",
             "<strong>Natura del trattamento:</strong> raccolta, archiviazione, trasmissione, consultazione e cancellazione",
-            "<strong>Categorie di interessati:</strong> gli Utenti Autorizzati del Cliente, i membri del team invitati e i referenti dei partner",
-            "<strong>Categorie di dati personali:</strong> nomi, indirizzi email, organizzazione e ruolo, dati di autenticazione (hash delle password, chiavi pubbliche delle passkey), indirizzi di rete e user agent delle sessioni, e qualsiasi dato personale contenuto nei dati cifrati che il Cliente archivia sulla Piattaforma",
-            "<strong>Categorie particolari:</strong> nessuna prevista; il Cliente non deve archiviare sulla Piattaforma categorie particolari di dati non cifrati"
+            "<strong>Categorie di interessati:</strong> gli Utenti Autorizzati del Cliente, i membri del team invitati e i referenti dei partner e le persone i cui indirizzi di rete compaiono nei record di flusso di rete di un repository, come i client che si collegano a un servizio gestito dal Cliente",
+            "<strong>Categorie di dati personali:</strong> nomi, indirizzi email, organizzazione e ruolo, dati di autenticazione (hash delle password, chiavi pubbliche delle passkey), indirizzi di rete e user agent delle sessioni, e qualsiasi dato personale contenuto nei dati cifrati che il Cliente archivia sulla Piattaforma; per le prove forensi, metadati dei flussi di rete (indirizzi, porte, conteggi di byte e pacchetti, orari), nomi e risposte DNS, nomi e identificatori di processo e percorsi di file sensibili aperti da un processo",
+            "<strong>Categorie particolari:</strong> nessuna prevista; il Cliente non deve archiviare sulla Piattaforma categorie particolari di dati non cifrati",
+            "<strong>Prove forensi, indirizzi:</strong> gli indirizzi di destinazione dei flussi in uscita sono conservati interi perché costituiscono la prova. L'indirizzo del client di un flusso in ingresso è scritto nel record troncato alla sua parte di rete (/24 per IPv4, /48 per IPv6), mentre l'indirizzo completo viaggia in una sezione separata dello stesso lotto",
+            "<strong>Prove forensi, conservazione:</strong> le prove sono conservate fino alla quota di archiviazione del piano del Cliente e, a quota piena, i file giornalieri più vecchi sono rimossi per primi. Un lotto è bloccato contro la rimozione per 7 giorni, e le prove di un incidente dichiarato dal Cliente sono mantenute fino a 30 giorni dopo la sua chiusura",
+            "<strong>Prove forensi, base:</strong> Rediacc le tratta solo su istruzione documentata del Cliente, quando questi attiva la funzione forense per un repository"
           ]
         },
         "confidentiality": {
@@ -9977,7 +9980,7 @@
         "introduction": {
           "content": [
             "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualità del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perché, come vengono elaborati e come è possibile disattivarla.",
-            "La presente informativa riguarda due prodotti: la <strong>Rediacc CLI</strong> e il <strong>Rediacc Renet Agent</strong>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
+            "La presente informativa riguarda due prodotti: la <strong>Rediacc CLI</strong> e il <strong>Rediacc Renet Agent</strong>. L'acquisizione forense dell'attività di rete di un repository non è telemetria; è trattata come Dati Personali del Cliente ai sensi dell'<a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
           ],
           "id": "introduction",
           "title": "1. Introduzione"
