@@ -225,6 +225,8 @@ class World(vm_check.Host):
         self.dev_list_err = over.pop("dev_list_err", "")
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
+        # The account server the default config names; the dev gateway unless a test plants a production origin.
+        self.stored_server = over.pop("stored_server", "http://localhost:%s" % GATEWAY_PORT)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
         # The worker's renet lists the grands; an `extra_repos` entry is a config entry only (the P5 sweep's input), and a leftover on the worker is planted with `worker_extra`.
         self.worker_grands = set(self.repos)
@@ -347,6 +349,9 @@ class World(vm_check.Host):
 
     def drive_root(self) -> str:
         return str(self.mnt)
+
+    def stored_account_server(self, _environ: Any) -> str:
+        return self.stored_server
 
     def vm_net_address(self, net_base: str) -> str | None:
         assert net_base == NET
@@ -1884,6 +1889,24 @@ def test_a_valid_stored_token_mints_nothing_and_keeps_the_default_config(
     assert world.dev_machines == []
     assert "dev" not in world.written_in
     assert ["machine", "scan-keys", "vm11"] in world.rdc_calls()
+
+
+def test_a_valid_stored_production_token_takes_the_dev_config_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A production token stored in the default config is no proof the dev gateway works: P4 mints and P2 registers the worker in the dev config."""
+    world = make_world(
+        tmp_path,
+        stored_ok=True,
+        stored_server="https://eu.rediacc.cloud",
+        machines=[{"name": "prod-1", "ip": PROD_IP}],
+    )
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 1
+    assert any(e.get("RDC_DEV") == "1" for e in world.envs)
+    assert "dev" in world.written_in
 
 
 def _rdc_envs(world: World) -> list[tuple[list[str], dict[str, str]]]:

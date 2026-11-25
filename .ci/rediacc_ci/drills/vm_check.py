@@ -61,6 +61,7 @@ import sys
 import threading
 import time
 import traceback
+import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
@@ -1234,6 +1235,18 @@ class Host:
     def vm_net_address(self, net_base: str) -> str | None:
         """This host's own address on the ops VM network (`wire.bridge_host`), None while no interface sits on it."""
         return wire.bridge_host(net_base)
+
+    def stored_account_server(self, environ: Mapping[str, str]) -> str:
+        """The account server (`account.accountServer`) of the config an unflagged `./rdc.sh` reads (REDIACC_CONFIG, else `rediacc`), "" when the file or the field is absent. Only that one field is read; the token and keys beside it are never touched."""
+        name = (environ.get("REDIACC_CONFIG") or upgrade_converge.DEFAULT_CLI_CONFIG).strip()
+        base = pathlib.Path(environ.get("HOME") or "~").expanduser() / ".config" / "rediacc"
+        try:
+            doc = json.loads((base / ("%s.json" % name)).read_text())
+        except (OSError, ValueError):
+            return ""
+        account = doc.get("account") if isinstance(doc, dict) else None
+        server = account.get("accountServer") if isinstance(account, dict) else None
+        return server.strip() if isinstance(server, str) else ""
 
     def alias_configs(self, environ: Mapping[str, str]) -> list[pathlib.Path]:
         """Every file `vscode connect` may have written its alias to: the Windows home's under the drive mounts first (getSSHHome() on WSL), then $HOME's."""
@@ -2957,9 +2970,15 @@ class VmCheck:
 
     def p4_account(self) -> None:
         stored = self.rdc("subscription", "status", "-o", "json")
-        if stored.rc == 0:
-            self.record("P4", "the config's stored token is valid; nothing minted", True)
+        if stored.rc == 0 and self._stored_server_is_dev_gateway():
+            self.record(
+                "P4", "the config's stored token is valid on the dev gateway; nothing minted", True
+            )
             return
+        if stored.rc == 0:
+            self.say(
+                "        the config's stored token is valid, but its account server is not the dev gateway; a production token is no proof the gateway works, so a dev token is minted"
+            )
         if not self.account.gateway_healthy():
             raise NotVerifiedError(
                 "account-unavailable",
@@ -2973,6 +2992,23 @@ class VmCheck:
                 % self.opts.net_base
             )
         self._mint_on(addr or "localhost")
+
+    def _stored_server_is_dev_gateway(self) -> bool:
+        """True when the active config's account server is the dev gateway this run uses: a loopback or VM-network host on the gateway's port."""
+        server = self.host.stored_account_server(self.environ)
+        if not server:
+            return False
+        try:
+            parsed = urllib.parse.urlsplit(server)
+            port = str(parsed.port or "")
+        except ValueError:
+            return False
+        gateway_port = str(self.account.gateway_state().get("port") or "")
+        local = {"localhost", "127.0.0.1", "::1"}
+        vm_addr = self.host.vm_net_address(self.opts.net_base)
+        if vm_addr:
+            local.add(vm_addr)
+        return bool(gateway_port) and port == gateway_port and (parsed.hostname or "") in local
 
     def _mint_on(self, host: str) -> None:
         """Mint a token, check it, and route every later CLI call to the gateway at `host`. The CLI names that server on every licence request, and the account stamps the licence's renewalUrl from it, so `host` is the address the worker reaches it at (wire.bridge_host: measured 2026-10-20, the worker reaches http://192.168.111.254:<port> and every blob minted over localhost carried a renewalUrl it could not)."""
