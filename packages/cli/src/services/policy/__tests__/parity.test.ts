@@ -12,6 +12,9 @@
  *                   agent rows reach it as a remote-MCP grant principal, the only way an agent
  *                   arrives there
  *
+ * The on-premise daemon (parity-onprem.test.ts) and the hosted MCP path (parity-remote.test.ts) are
+ * the two further legs, driven by the same case file.
+ *
  * Expectations come from the table rows, written by hand, never from any surface. A control case
  * (a row whose expectation is flipped) must be reported as a mismatch by every surface, so a
  * harness that stopped comparing fails here. The expectation of the one deliberate executor
@@ -67,7 +70,8 @@ type Surface = 'decide' | 'cli' | 'mcp' | 'executor';
 
 interface ParityCase {
   row: string;
-  surfaces: Surface[];
+  /** The surfaces of this file, and the legs of the sibling files (`onprem` in parity-onprem.test.ts, `remote` in parity-remote.test.ts). */
+  surfaces: (Surface | 'onprem' | 'remote')[];
   executorDeviation?: Expectation & { why: string };
 }
 
@@ -181,7 +185,7 @@ function childEnv(agent: boolean): Record<string, string> {
 
 interface Envelope {
   success: boolean;
-  errors: { code?: string; details?: string[] }[] | null;
+  errors: { code?: string; message?: string; details?: string[] }[] | null;
 }
 
 /**
@@ -189,7 +193,8 @@ interface Envelope {
  * its machine sits at a refused port. Only these (or a success) are positive evidence that policy
  * let the command through; any other failure is no evidence of that.
  */
-const POST_POLICY_FAILURE = /has no network ID in this config|ECONNREFUSED|connection refused/i;
+const POST_POLICY_FAILURE =
+  /^(Repository ["'][^"']*["'] has no network ID in this config\b|127\.0\.0\.1:1 refused the TCP connection\b|connect ECONNREFUSED 127\.0\.0\.1:1\b)/;
 
 /** The code reported for a run that failed outside policy, so no allow row can pass on it. */
 const UNEXPECTED_FAILURE = 'UNEXPECTED_FAILURE';
