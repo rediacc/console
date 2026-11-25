@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3191,
-    "sourceCommit": "9189b878235718de4ed56f5f375be61192e6ecd8"
+    "keyCount": 3192,
+    "sourceCommit": "b1ad947341a067566d1a061c55307f557d0e7421"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -734,6 +734,7 @@
     "commands.config.remote.enable.attachEntry": "a7d87183",
     "commands.config.remote.enable.attachNew": "2979832b",
     "commands.config.remote.enable.attachPrompt": "b05b9279",
+    "commands.config.remote.enable.backupKept": "a05b8693",
     "commands.config.remote.enable.cancelled": "5348e55f",
     "commands.config.remote.enable.configIdNotFound": "ef9c7d52",
     "commands.config.remote.enable.description": "26d99cec",

@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, изменена {{modified}})",
   "commands.config.remote.enable.attachNew": "Создать новую запись из этой локальной конфигурации",
   "commands.config.remote.enable.attachPrompt": "В этом хранилище уже есть конфигурации. Подключиться к одной из них или создать новую запись?",
+  "commands.config.remote.enable.backupKept": "Предыдущий файл конфигурации сохранён в {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Отменено. Ссылка больше не действует; чтобы начать заново, снова запустите команду.",
   "commands.config.remote.enable.configIdNotFound": "Конфигурация {{id}} недоступна вам в этом хранилище. Доступны: {{available}}",
   "commands.config.remote.enable.description": "Привязать эту конфигурацию к удалённому зашифрованному хранилищу",

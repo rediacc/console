@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, değiştirilme: {{modified}})",
   "commands.config.remote.enable.attachNew": "Bu yerel yapılandırmadan yeni bir kayıt oluştur",
   "commands.config.remote.enable.attachPrompt": "Bu depoda zaten yapılandırmalar var. Birine bağlanmak mı, yoksa yeni kayıt oluşturmak mı istersiniz?",
+  "commands.config.remote.enable.backupKept": "Önceki yapılandırma dosyası {{backupPath}} konumunda saklanır",
   "commands.config.remote.enable.cancelled": "İptal edildi. Bağlantı artık çalışmıyor; baştan başlamak için komutu yeniden çalıştırın.",
   "commands.config.remote.enable.configIdNotFound": "Bu depoda size görünen {{id}} yapılandırması yok. Mevcut olanlar: {{available}}",
   "commands.config.remote.enable.description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",

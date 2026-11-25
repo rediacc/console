@@ -34,6 +34,7 @@ import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { omitKey } from '../utils/omit-key.js';
 import { askChoice, askConfirm } from '../utils/prompt.js';
+import { preEnableBackupName, writePreEnableBackup } from './config-remote-backup.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
 /** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
@@ -514,13 +515,14 @@ export async function finalizeEnable(
   );
 
   const counts = countResources(local);
+  const configPath = configFileStorage.getConfigPath(configName);
+  const startedAt = new Date();
   if (!seeded && !opts.force && localContentWouldBeReplaced(local, pulled.config)) {
-    await confirmOverwrite(
-      configName,
-      counts,
-      `${configFileStorage.getConfigPath(configName)}.bak`
-    );
+    await confirmOverwrite(configName, counts, preEnableBackupName(configPath, startedAt));
   }
+
+  // The generic `.bak` the save below writes is last-save-wins, so a second enable would replace the only record of the config as it stood before the first: keep a copy no later save touches.
+  const preEnableCopy = await writePreEnableBackup(configPath, startedAt);
 
   // The pointer file write IS the cache write: full server content, host-local sections (encryption mode included) preserved from the pre-enable config.
   const { mergeRemoteIntoCache } = await import('../services/config/remote-cache.js');
@@ -528,6 +530,11 @@ export async function finalizeEnable(
   // An attached config takes the store entry's identity: the local id and remote.configId name the same config.
   if (target) cached.id = target.configId;
   await configFileStorage.save(cached, configName);
+  if (preEnableCopy) {
+    outputService.info(
+      t('commands.config.remote.enable.backupKept', { backupPath: preEnableCopy })
+    );
+  }
 }
 
 /**

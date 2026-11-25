@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}}（v{{version}}，修改于 {{modified}}）",
   "commands.config.remote.enable.attachNew": "用这份本地配置新建条目",
   "commands.config.remote.enable.attachPrompt": "此存储中已有配置。要连接到其中一份，还是新建条目？",
+  "commands.config.remote.enable.backupKept": "旧配置文件保留在 {{backupPath}}",
   "commands.config.remote.enable.cancelled": "已取消。该链接已失效；请重新运行命令以重新开始。",
   "commands.config.remote.enable.configIdNotFound": "在此存储中看不到配置 {{id}}。可用配置：{{available}}",
   "commands.config.remote.enable.description": "将此配置链接到远程加密存储",

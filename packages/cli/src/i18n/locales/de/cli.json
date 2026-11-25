@@ -957,6 +957,7 @@
           "optionForce": "Abweichenden lokalen Inhalt ohne Bestätigung durch die Serverkopie ersetzen",
           "overwriteAborted": "Aktivierung abgebrochen: Die lokale Konfiguration \"{{config}}\" enthält Inhalte, die von der Serverkopie abweichen. Führen Sie den Befehl mit --force erneut aus, um sie zu ersetzen, oder bestätigen Sie in einem interaktiven Terminal.",
           "overwriteConfirm": "Die lokale Konfiguration \"{{config}}\" enthält {{machines}} Maschine(n) und {{repos}} Repository/Repositories, die durch die Serverkopie ersetzt werden (die bisherige Datei bleibt unter {{backupPath}} erhalten). Fortfahren?",
+          "backupKept": "Die bisherige Konfigurationsdatei bleibt unter {{backupPath}} erhalten",
           "received": "Übergabe empfangen",
           "reenrollConfigIdMismatch": "Konfiguration \"{{name}}\" ist mit der Remote-Konfiguration {{linkedConfig}} verknüpft, daher kann --config-id {{requestedConfig}} nicht zum erneuten Registrieren verwendet werden. Es wurde nichts geändert. Führe den Befehl ohne --config-id erneut aus oder mit --config-id {{linkedConfig}}.",
           "reenrollConfigMismatch": "Konfiguration \"{{name}}\" ist mit der Remote-Konfiguration {{linkedConfig}} verknüpft, die Registrierung wurde aber für die Remote-Konfiguration {{offeredConfig}} freigegeben. Es wurde nichts geändert. Führe den Befehl erneut aus und gib sie für {{linkedConfig}} frei.",

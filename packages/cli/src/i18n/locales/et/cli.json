@@ -957,6 +957,7 @@
           "optionForce": "Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta",
           "overwriteAborted": "Aktiveerimine katkestati: kohalik konfiguratsioon \"{{config}}\" sisaldab serveri koopiast erinevat sisu. Käivita uuesti lipuga --force, et see asendada, või kinnita interaktiivses terminalis.",
           "overwriteConfirm": "Kohalikus konfiguratsioonis \"{{config}}\" on {{machines}} masin(at) ja {{repos}} hoidla(t), mis asendatakse serveri koopiaga (eelmine fail säilib asukohas {{backupPath}}). Kas jätkata?",
+          "backupKept": "Eelmine konfiguratsioonifail säilib asukohas {{backupPath}}",
           "received": "Käepigistus saadud",
           "reenrollConfigIdMismatch": "Konfiguratsioon \"{{name}}\" on seotud kaugkonfiguratsiooniga {{linkedConfig}}, seega ei saa selle uuesti registreerimiseks kasutada --config-id {{requestedConfig}}. Midagi ei muudetud. Käivita käsk uuesti ilma valikuta --config-id või käsuga --config-id {{linkedConfig}}.",
           "reenrollConfigMismatch": "Konfiguratsioon \"{{name}}\" on seotud kaugkonfiguratsiooniga {{linkedConfig}}, kuid registreerimine kinnitati kaugkonfiguratsiooni {{offeredConfig}} jaoks. Midagi ei muudetud. Käivita käsk uuesti ja kinnita see kaugkonfiguratsiooni {{linkedConfig}} jaoks.",

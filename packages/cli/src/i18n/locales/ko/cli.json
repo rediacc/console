@@ -957,6 +957,7 @@
           "optionForce": "확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다",
           "overwriteAborted": "활성화가 중단되었습니다: 로컬 설정 \"{{config}}\"에 서버 사본과 다른 내용이 있습니다. 교체하려면 --force로 다시 실행하거나 대화형 터미널에서 확인하세요.",
           "overwriteConfirm": "로컬 설정 \"{{config}}\"에는 서버 사본으로 교체될 {{machines}}개의 머신과 {{repos}}개의 저장소가 있습니다 (이전 파일은 {{backupPath}}에 보관됩니다). 계속하시겠습니까?",
+          "backupKept": "이전 설정 파일은 {{backupPath}}에 보관됩니다",
           "received": "핸드오프 수신됨",
           "reenrollConfigIdMismatch": "설정 \"{{name}}\"은(는) 원격 설정 {{linkedConfig}}에 연결되어 있어 --config-id {{requestedConfig}}로는 다시 등록할 수 없습니다. 변경된 내용은 없습니다. --config-id 없이, 또는 --config-id {{linkedConfig}}로 다시 실행하세요.",
           "reenrollConfigMismatch": "설정 \"{{name}}\"은(는) 원격 설정 {{linkedConfig}}에 연결되어 있지만 등록은 원격 설정 {{offeredConfig}}에 대해 승인되었습니다. 변경된 것은 없습니다. 명령을 다시 실행하고 {{linkedConfig}}에 대해 승인하세요.",

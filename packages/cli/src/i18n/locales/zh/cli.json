@@ -957,6 +957,7 @@
           "optionForce": "无需确认，直接用服务器副本替换不同的本地内容",
           "overwriteAborted": "已中止启用：本地配置 \"{{config}}\" 的内容与服务器副本不同。使用 --force 重新运行以替换它，或在交互式终端中确认。",
           "overwriteConfirm": "本地配置 \"{{config}}\" 包含 {{machines}} 台机器和 {{repos}} 个仓库，将被服务器副本替换（旧文件保留在 {{backupPath}}）。是否继续？",
+          "backupKept": "旧配置文件保留在 {{backupPath}}",
           "received": "已接收移交数据",
           "reenrollConfigIdMismatch": "配置 \"{{name}}\" 已关联到远程配置 {{linkedConfig}}，因此不能用 --config-id {{requestedConfig}} 重新注册。未做任何更改。请不带 --config-id 重新运行，或使用 --config-id {{linkedConfig}}。",
           "reenrollConfigMismatch": "配置 \"{{name}}\" 链接到远程配置 {{linkedConfig}}，但注册是针对远程配置 {{offeredConfig}} 批准的。未做任何更改。请重新运行命令，并针对 {{linkedConfig}} 批准。",

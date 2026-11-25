@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, modificada {{modified}})",
   "commands.config.remote.enable.attachNew": "Crear una entrada nueva a partir de esta configuración local",
   "commands.config.remote.enable.attachPrompt": "Este almacén ya contiene configuraciones. ¿Quieres vincular una o crear una entrada nueva?",
+  "commands.config.remote.enable.backupKept": "El archivo de configuración anterior se conserva en {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Cancelado. El enlace ya no sirve; vuelve a ejecutar el comando para empezar de nuevo.",
   "commands.config.remote.enable.configIdNotFound": "No ves ninguna configuración {{id}} en este almacén. Disponibles: {{available}}",
   "commands.config.remote.enable.description": "Vincular esta configuración al almacenamiento cifrado remoto",

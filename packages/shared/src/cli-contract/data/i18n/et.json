@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, muudetud {{modified}})",
   "commands.config.remote.enable.attachNew": "Loo selle kohaliku konfiguratsiooni põhjal uus kirje",
   "commands.config.remote.enable.attachPrompt": "Selles hoidlas on juba konfiguratsioone. Kas ühendad ühega neist või loo uus kirje?",
+  "commands.config.remote.enable.backupKept": "Eelmine konfiguratsioonifail säilib asukohas {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Tühistatud. Link enam ei tööta; alustamiseks käivita käsk uuesti.",
   "commands.config.remote.enable.configIdNotFound": "Konfiguratsioon {{id}} pole selles hoidlas sulle nähtav. Saadaval: {{available}}",
   "commands.config.remote.enable.description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",

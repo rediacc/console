@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (الإصدار {{version}}، آخر تعديل {{modified}})",
   "commands.config.remote.enable.attachNew": "إنشاء إدخال جديد من هذه الإعدادات المحلية",
   "commands.config.remote.enable.attachPrompt": "يحتوي هذا المخزن على إعدادات بالفعل. هل تريد الإرفاق بإحداها أم إنشاء إدخال جديد؟",
+  "commands.config.remote.enable.backupKept": "تم الاحتفاظ بملف الإعدادات السابق في {{backupPath}}",
   "commands.config.remote.enable.cancelled": "أُلغيت العملية. لم يعد الرابط صالحًا؛ شغّل الأمر من جديد للبدء مرة أخرى.",
   "commands.config.remote.enable.configIdNotFound": "لا توجد إعدادات {{id}} ظاهرة لك في هذا المخزن. المتاح: {{available}}",
   "commands.config.remote.enable.description": "ربط هذه الإعدادات بالتخزين المشفر عن بُعد",

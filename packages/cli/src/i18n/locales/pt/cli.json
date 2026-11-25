@@ -957,6 +957,7 @@
           "optionForce": "Substituir o conteúdo local divergente pela cópia do servidor sem confirmação",
           "overwriteAborted": "Activação abortada: a configuração local \"{{config}}\" tem conteúdo que difere da cópia do servidor. Execute novamente com --force para a substituir, ou confirme num terminal interativo.",
           "overwriteConfirm": "A configuração local \"{{config}}\" tem {{machines}} máquina(s) e {{repos}} repositório(s) que serão substituídos pela cópia do servidor (o ficheiro anterior é mantido em {{backupPath}}). Continuar?",
+          "backupKept": "O ficheiro de configuração anterior é mantido em {{backupPath}}",
           "received": "Transferência recebida",
           "reenrollConfigIdMismatch": "A configuração \"{{name}}\" está vinculada à configuração remota {{linkedConfig}}, portanto --config-id {{requestedConfig}} não pode ser usado para registrá-la de novo. Nada foi alterado. Execute novamente sem --config-id, ou com --config-id {{linkedConfig}}.",
           "reenrollConfigMismatch": "A configuração \"{{name}}\" está ligada à configuração remota {{linkedConfig}}, mas a inscrição foi aprovada para a configuração remota {{offeredConfig}}. Nada foi alterado. Execute o comando de novo e aprove-a para {{linkedConfig}}.",

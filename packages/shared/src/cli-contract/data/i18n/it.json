@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, modificata {{modified}})",
   "commands.config.remote.enable.attachNew": "Crea una nuova voce da questa configurazione locale",
   "commands.config.remote.enable.attachPrompt": "Questo storage contiene già delle configurazioni. Vuoi collegarne una o creare una nuova voce?",
+  "commands.config.remote.enable.backupKept": "Il file di configurazione precedente viene mantenuto in {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Annullato. Il link non funziona più; esegui di nuovo il comando per ricominciare.",
   "commands.config.remote.enable.configIdNotFound": "Nessuna configurazione {{id}} è visibile per te in questo storage. Disponibili: {{available}}",
   "commands.config.remote.enable.description": "Collega questa configurazione allo storage cifrato remoto",

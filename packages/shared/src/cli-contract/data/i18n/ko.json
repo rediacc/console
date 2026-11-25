@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, 수정 {{modified}})",
   "commands.config.remote.enable.attachNew": "이 로컬 설정으로 새 항목 만들기",
   "commands.config.remote.enable.attachPrompt": "이 저장소에는 이미 설정이 있습니다. 기존 설정에 연결할까요, 아니면 새 항목을 만들까요?",
+  "commands.config.remote.enable.backupKept": "이전 설정 파일은 {{backupPath}}에 보관됩니다",
   "commands.config.remote.enable.cancelled": "취소했습니다. 이 링크는 더 이상 쓸 수 없습니다. 처음부터 하려면 명령을 다시 실행하세요.",
   "commands.config.remote.enable.configIdNotFound": "이 저장소에서 볼 수 있는 설정 {{id}}이(가) 없습니다. 사용 가능: {{available}}",
   "commands.config.remote.enable.description": "이 설정을 원격 암호화 스토리지에 연결합니다",

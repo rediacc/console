@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, modificada {{modified}})",
   "commands.config.remote.enable.attachNew": "Criar uma nova entrada a partir desta configuração local",
   "commands.config.remote.enable.attachPrompt": "Este armazenamento já tem configurações. Associar a uma delas ou criar uma nova entrada?",
+  "commands.config.remote.enable.backupKept": "O ficheiro de configuração anterior é mantido em {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Cancelado. O link deixou de funcionar; execute o comando novamente para recomeçar.",
   "commands.config.remote.enable.configIdNotFound": "Nenhuma configuração {{id}} está visível para si neste armazenamento. Disponíveis: {{available}}",
   "commands.config.remote.enable.description": "Ligar esta configuração ao armazenamento encriptado remoto",

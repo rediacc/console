@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, geändert {{modified}})",
   "commands.config.remote.enable.attachNew": "Neuen Eintrag aus dieser lokalen Config anlegen",
   "commands.config.remote.enable.attachPrompt": "Dieser Speicher enthält bereits Configs. An eine anhängen oder einen neuen Eintrag anlegen?",
+  "commands.config.remote.enable.backupKept": "Die bisherige Konfigurationsdatei bleibt unter {{backupPath}} erhalten",
   "commands.config.remote.enable.cancelled": "Abgebrochen. Der Link ist nicht mehr gültig; führen Sie den Befehl erneut aus, um neu zu beginnen.",
   "commands.config.remote.enable.configIdNotFound": "Config {{id}} ist für Sie in diesem Speicher nicht sichtbar. Verfügbar: {{available}}",
   "commands.config.remote.enable.description": "Diese Konfiguration mit verschlüsseltem Remote-Speicher verknüpfen",

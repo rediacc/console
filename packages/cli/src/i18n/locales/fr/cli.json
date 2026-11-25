@@ -957,6 +957,7 @@
           "optionForce": "Remplacer le contenu local différent par la copie du serveur sans confirmation",
           "overwriteAborted": "Activation annulée : la configuration locale \"{{config}}\" contient un contenu différent de la copie du serveur. Relancez avec --force pour la remplacer, ou confirmez dans un terminal interactif.",
           "overwriteConfirm": "La configuration locale \"{{config}}\" contient {{machines}} machine(s) et {{repos}} dépôt(s) qui seront remplacés par la copie du serveur (l'ancien fichier est conservé sous {{backupPath}}). Continuer ?",
+          "backupKept": "L'ancien fichier de configuration est conservé sous {{backupPath}}",
           "received": "Transfert reçu",
           "reenrollConfigIdMismatch": "La configuration \"{{name}}\" est liée à la configuration distante {{linkedConfig}}, donc --config-id {{requestedConfig}} ne peut pas servir à la réinscrire. Rien n'a été modifié. Relancez sans --config-id, ou avec --config-id {{linkedConfig}}.",
           "reenrollConfigMismatch": "La configuration \"{{name}}\" est liée à la configuration distante {{linkedConfig}}, mais l'inscription a été approuvée pour la configuration distante {{offeredConfig}}. Rien n'a été modifié. Relancez la commande et approuvez-la pour {{linkedConfig}}.",

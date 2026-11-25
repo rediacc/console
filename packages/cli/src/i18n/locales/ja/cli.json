@@ -957,6 +957,7 @@
           "optionForce": "確認なしでローカルの相違内容をサーバーのコピーで置き換える",
           "overwriteAborted": "有効化を中止しました: ローカル設定 \"{{config}}\" にはサーバーのコピーと異なる内容が含まれています。置き換えるには --force を付けて再実行するか、対話的なターミナルで確認してください。",
           "overwriteConfirm": "ローカル設定 \"{{config}}\" にはサーバーのコピーで置き換えられる {{machines}} 台のマシンと {{repos}} 個のリポジトリがあります（以前のファイルは {{backupPath}} に保持されます）。続行しますか？",
+          "backupKept": "以前の設定ファイルは {{backupPath}} に保持されます",
           "received": "ハンドオフを受信",
           "reenrollConfigIdMismatch": "設定 \"{{name}}\" はリモート設定 {{linkedConfig}} にリンクされているため、--config-id {{requestedConfig}} では再登録できません。何も変更されていません。--config-id を付けずに、または --config-id {{linkedConfig}} を付けて再実行してください。",
           "reenrollConfigMismatch": "設定 \"{{name}}\" はリモート設定 {{linkedConfig}} にリンクされていますが、登録はリモート設定 {{offeredConfig}} に対して承認されました。何も変更されていません。コマンドをもう一度実行し、{{linkedConfig}} に対して承認してください。",

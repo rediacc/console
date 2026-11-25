@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}}（v{{version}}、更新 {{modified}}）",
   "commands.config.remote.enable.attachNew": "このローカル設定から新しいエントリを作成",
   "commands.config.remote.enable.attachPrompt": "このストアにはすでに設定があります。既存の設定に接続しますか、それとも新しいエントリを作成しますか？",
+  "commands.config.remote.enable.backupKept": "以前の設定ファイルは {{backupPath}} に保持されます",
   "commands.config.remote.enable.cancelled": "キャンセルしました。このリンクはもう使えません。最初からやり直すには、コマンドをもう一度実行してください。",
   "commands.config.remote.enable.configIdNotFound": "このストアには、あなたから見える設定 {{id}} がありません。利用可能: {{available}}",
   "commands.config.remote.enable.description": "この設定をリモート暗号化ストレージにリンク",

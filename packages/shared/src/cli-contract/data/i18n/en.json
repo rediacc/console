@@ -726,6 +726,7 @@
   "commands.config.remote.enable.attachEntry": "{{id}} (v{{version}}, modified {{modified}})",
   "commands.config.remote.enable.attachNew": "Create a new entry from this local config",
   "commands.config.remote.enable.attachPrompt": "This store already holds configs. Attach to one, or create a new entry?",
+  "commands.config.remote.enable.backupKept": "Previous config file kept at {{backupPath}}",
   "commands.config.remote.enable.cancelled": "Cancelled. The link no longer works; run the command again to start over.",
   "commands.config.remote.enable.configIdNotFound": "No config {{id}} is visible to you in this store. Available: {{available}}",
   "commands.config.remote.enable.description": "Link this config to remote encrypted storage",

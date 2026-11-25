@@ -384,6 +384,7 @@
           "seeded": "Store was empty; pushed the local config as version 1.",
           "overwriteConfirm": "Local config \"{{config}}\" has {{machines}} machine(s) and {{repos}} repository(ies) that will be replaced by the server copy (the previous file is kept at {{backupPath}}). Continue?",
           "overwriteAborted": "Enable aborted: local config \"{{config}}\" has content that differs from the server copy. Re-run with --force to replace it, or confirm in an interactive terminal.",
+          "backupKept": "Previous config file kept at {{backupPath}}",
           "optionMachineSecret": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line",
           "machineSecretPrompt": "Machine secret:",
           "machineSecretEmpty": "No machine secret was given: set {{env}} or pipe the secret on stdin.",
