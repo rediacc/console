@@ -46,3 +46,16 @@ export {
   levelRank,
   levelWithinClaim,
 } from './claim.js';
+export {
+  type AuditDayInput,
+  BROWSER_VERIFY_LIMIT_BYTES,
+  type BatchInput,
+  type EvidenceFinding,
+  type EvidenceSource,
+  type VerificationReport,
+  type VerifyHeads,
+  type VerifyWindowInput,
+  verifyAuditDays,
+  verifyBatchChains,
+  verifyWindow,
+} from './verify.js';

@@ -253,6 +253,10 @@
       "types": "./dist/forensics/*.d.ts",
       "default": "./dist/forensics/*.js"
     },
+    "./incident": {
+      "types": "./dist/incident/index.d.ts",
+      "default": "./dist/incident/index.js"
+    },
     "./command-line": {
       "types": "./dist/command-line/index.d.ts",
       "default": "./dist/command-line/index.js"

@@ -25,6 +25,13 @@ export const CONSOLE_AUDIT_TYPES = [
   // Emitted by the AI assistant plans, not by the console exec path.
   'console.ai.approval',
   'console.feedback.sent',
+  // Forensics investigation (PLAN-forensics-investigation D3, D4).
+  'console.forensics.open',
+  'console.forensics.view',
+  'console.forensics.grant',
+  'console.incident.declared',
+  'console.incident.contained',
+  'console.incident.closed',
 ] as const;
 
 export const consoleAuditTypeEnum = z.enum(CONSOLE_AUDIT_TYPES);
@@ -47,7 +54,7 @@ const severity = z.enum(['none', 'caution', 'destructive']);
 
 const actorSchema = z.strictObject({
   userId: z.string().min(1).max(200),
-  kind: z.enum(['human', 'agent']),
+  kind: z.enum(['human', 'agent', 'support']),
 });
 
 const envelope = {
@@ -152,6 +159,79 @@ const feedbackSent = z.strictObject({
   }),
 });
 
+const isoWindow = {
+  from: z.iso.datetime(),
+  to: z.iso.datetime(),
+};
+const scopeKind = z.enum(['repo', 'machine']);
+const rowKind = z.enum(['audit', 'run', 'flow', 'open', 'anomaly', 'gap', 'incident']);
+
+// Opening an investigation: which scope and how long the 60 minute window holds.
+const forensicsOpen = z.strictObject({
+  ...envelope,
+  type: z.literal('console.forensics.open'),
+  data: z.strictObject({
+    investigationId: z.string().min(1).max(100),
+    scopeKind,
+    expiresAt: z.iso.datetime(),
+    method: stepUpMethod.nullable(),
+  }),
+});
+
+// One per read: the scope, the window and the row kinds returned, never a row's content.
+const forensicsView = z.strictObject({
+  ...envelope,
+  type: z.literal('console.forensics.view'),
+  data: z.strictObject({
+    investigationId: z.string().min(1).max(100).nullable(),
+    grantId: z.string().min(1).max(100).optional(),
+    scopeKind,
+    ...isoWindow,
+    kinds: z.array(rowKind).max(7),
+  }),
+});
+
+const forensicsGrant = z.strictObject({
+  ...envelope,
+  type: z.literal('console.forensics.grant'),
+  data: z.strictObject({
+    grantId: z.string().min(1).max(100),
+    action: z.enum(['issued', 'revoked']),
+    scopeKind,
+    expiresAt: z.iso.datetime(),
+  }),
+});
+
+const incidentData = {
+  incidentId: z.string().min(1).max(100),
+  scopeKind,
+};
+
+const incidentDeclared = z.strictObject({
+  ...envelope,
+  type: z.literal('console.incident.declared'),
+  data: z.strictObject({
+    ...incidentData,
+    ...isoWindow,
+    awareAt: z.iso.datetime(),
+  }),
+});
+
+const incidentContained = z.strictObject({
+  ...envelope,
+  type: z.literal('console.incident.contained'),
+  data: z.strictObject(incidentData),
+});
+
+const incidentClosed = z.strictObject({
+  ...envelope,
+  type: z.literal('console.incident.closed'),
+  data: z.strictObject({
+    ...incidentData,
+    releaseAt: z.iso.datetime(),
+  }),
+});
+
 export const ConsoleAuditEventSchema = z.discriminatedUnion('type', [
   commandRun,
   commandResult,
@@ -161,6 +241,12 @@ export const ConsoleAuditEventSchema = z.discriminatedUnion('type', [
   reveal,
   aiApproval,
   feedbackSent,
+  forensicsOpen,
+  forensicsView,
+  forensicsGrant,
+  incidentDeclared,
+  incidentContained,
+  incidentClosed,
 ]);
 type ConsoleAuditEvent = z.infer<typeof ConsoleAuditEventSchema>;
 

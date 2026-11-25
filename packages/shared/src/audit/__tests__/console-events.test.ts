@@ -40,6 +40,38 @@ const DATA: Record<(typeof CONSOLE_AUDIT_TYPES)[number], Record<string, unknown>
   'console.reveal': { pathKey: 'repo secret list', method: 'password' },
   'console.ai.approval': { pathKey: 'repo up', decision: 'approved' },
   'console.feedback.sent': { feedbackId: 'f-1' },
+  'console.forensics.open': {
+    investigationId: 'inv-1',
+    scopeKind: 'repo',
+    expiresAt: '2026-11-23T11:00:00.000Z',
+    method: 'passkey',
+  },
+  'console.forensics.view': {
+    investigationId: 'inv-1',
+    scopeKind: 'repo',
+    from: '2026-11-22T00:00:00.000Z',
+    to: '2026-11-23T00:00:00.000Z',
+    kinds: ['flow', 'open'],
+  },
+  'console.forensics.grant': {
+    grantId: 'g-1',
+    action: 'issued',
+    scopeKind: 'machine',
+    expiresAt: '2026-11-30T10:00:00.000Z',
+  },
+  'console.incident.declared': {
+    incidentId: 'i-1',
+    scopeKind: 'repo',
+    from: '2026-11-22T00:00:00.000Z',
+    to: '2026-11-23T00:00:00.000Z',
+    awareAt: '2026-11-23T09:00:00.000Z',
+  },
+  'console.incident.contained': { incidentId: 'i-1', scopeKind: 'repo' },
+  'console.incident.closed': {
+    incidentId: 'i-1',
+    scopeKind: 'repo',
+    releaseAt: '2026-12-23T10:00:00.000Z',
+  },
 };
 
 function event(type: string, data: Record<string, unknown>): unknown {
