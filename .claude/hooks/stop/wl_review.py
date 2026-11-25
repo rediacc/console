@@ -2803,7 +2803,7 @@ def run_command(label, sha, branch):
 def mark_commands(finding_id, holder=""):
     """The ways out of an open finding: the three resolutions, then the in-flight route.
 
-    The fourth line is the stand-down branch_state already honours (`blocking_in_flight`): a live `[>]` item whose text, last note or lease note names the finding turns its block into a note. Without the line the lead could not find that route from the block it was given (agent/plans/PLAN-stop-hook-retro-20261125.md friction 1). `holder`, when given, is a live `[>]` item of this session, named so the command runs as printed.
+    The fourth line is the stand-down branch_state already honours (`blocking_in_flight`): a live `[>]` item whose text, last note or lease note names the finding turns its block into a note. Without the line the lead could not find that route from the block it was given (agent/plans/PLAN-stop-hook-retro-20261125.md friction 1). `holder`, when given, is the one live `[>]` item of this session; with several the caller leaves it empty, since the finding belongs to whichever writer is fixing it.
     """
     return (
         "worklist.py --review-mark <me> %s fixed <sha-of-the-fix>" % finding_id,
@@ -3025,7 +3025,7 @@ def _malformed_remedy(path, err, branch):
 def stop_texts(st, limit=5, holders=()):
     """(block, malformed, note) for the Stop hook: the `commit-review` block, the `commit-review-malformed` block and the advisory, each "" when there is nothing to say.
 
-    `holders` are the ids of this session's `[>]` items whose worker is verified live: the open-finding block names the first in its in-flight line, and all of them once, so the lead can hand a finding to a working writer without looking an id up.
+    `holders` are the ids of this session's `[>]` items whose worker is verified live: the open-finding block lists every one of them once, and names the item in the in-flight line only when exactly one is live, since with several the finding belongs to whichever writer is fixing it.
     """
     holders = [h for h in holders or () if h]
     block = malformed = ""
@@ -3054,9 +3054,11 @@ def stop_texts(st, limit=5, holders=()):
         lines = []
         for _p, f in open_blocking[:limit]:
             lines.append("[%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
-            lines.extend("    " + c for c in mark_commands(f.id, holders[0] if holders else ""))
+            lines.extend(
+                "    " + c for c in mark_commands(f.id, holders[0] if len(holders) == 1 else "")
+            )
         if holders:
-            lines.append("live [>] item(s) of this session: %s" % ", ".join(holders[:limit]))
+            lines.append("live [>] item(s) of this session: %s" % ", ".join(holders))
         parts.append(
             "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer. A finding a live writer is already fixing waits as a note once its leased [>] item names it:\n  %s"
             % (st["branch"], len(open_blocking), "\n  ".join(lines))

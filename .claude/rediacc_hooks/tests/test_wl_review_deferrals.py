@@ -216,3 +216,13 @@ def test_mark_commands_keeps_the_three_resolutions_first():
     assert len(got) == 4, got
     assert [g.split()[4] for g in got[:3]] == ["fixed", "not-a-bug", "waived"], got
     assert got[3].startswith("in flight with a live writer: worklist.py --update <me> "), got
+
+
+def test_several_live_items_are_all_listed_and_none_is_named_in_the_update_line(tmp_path):
+    """Findings 85ee5a27.1 and .2: the list is not cut at the block limit, and the update line does not pick an unrelated first item."""
+    ids = ["%08x" % (0xA0000000 + i) for i in range(7)]
+    st = _state(tmp_path, "open", "high", items={})
+    block, _malformed, _note = R.stop_texts(st, holders=ids)
+    assert "live [>] item(s) of this session: %s" % ", ".join(ids) in block, block
+    assert "worklist.py --update <me> <its [>] item> '%s ...'" % FID in block, block
+    assert ids[0] not in block.split("live [>] item(s)")[0], block
