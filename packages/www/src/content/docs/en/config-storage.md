@@ -190,5 +190,6 @@ Other safeguards:
 
 ## Related
 
+- [Security Model](/en/docs/security-model), who can see what, key scope, agents and what is recoverable
 - [Web Console](/en/docs/web-console), unlocking the store in the browser to run commands
 - [Proxy & Executor](/en/docs/proxy-and-executor), how the unlocked key is granted to an executor

@@ -77,6 +77,8 @@ For encrypted, server-synced configuration, see [Config Storage](/en/docs/config
 - Passkey-based key derivation (WebAuthn + PRF)
 - Rotating tokens with per-request rotation
 
+The [Security Model](/en/docs/security-model) page states who can see what, how keys are scoped and what is recoverable.
+
 ### Session Security
 
 | Token Type | Lifetime | Storage | Refresh |
