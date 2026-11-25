@@ -108,6 +108,7 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "datastore_validate": { tier: "none", pending: false },
   "datastore_volumes_close": { tier: "none", pending: false },
   "datastore_volumes_open": { tier: "operate", pending: false },
+  "forensics_level": { tier: "operate", pending: false },
   "kube_apply": { tier: "none", pending: false },
   "kube_delete": { tier: "none", pending: false },
   "kube_fork_dest_prep": { tier: "none", pending: false },

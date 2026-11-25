@@ -427,6 +427,11 @@ export const ContainerUnpauseParamsSchema = z.object({
   container: z.string().min(1).describe('Container name'),
 });
 
+/** Set the repository's forensic capture level: basic, standard or full */
+export const ForensicsLevelParamsSchema = z.object({
+  level: z.string().min(1).regex(/^(basic|standard|full)$/).describe('Capture level'),
+});
+
 /** Check whether the API server is ready */
 export const KubeHealthParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
@@ -836,6 +841,7 @@ export const FUNCTION_SCHEMAS = {
   container_stats: ContainerStatsParamsSchema,
   container_stop: ContainerStopParamsSchema,
   container_unpause: ContainerUnpauseParamsSchema,
+  forensics_level: ForensicsLevelParamsSchema,
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
   machine_converge_runtime: MachineConvergeRuntimeParamsSchema,
