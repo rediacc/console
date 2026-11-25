@@ -456,6 +456,25 @@ export function recordCitations(
   return [...hit].sort(byteOrder);
 }
 
+/**
+ * The declared `paths` a re-trace would DROP, each with the tracked files it matched that the new set no longer reaches (review 9a666914.1: a replacement that narrows a human's set must say what it gave up, or the narrowing is silent). A prior glob kept verbatim, or whose every tracked match is reached by a new content glob, is not dropped. `lists` and `names` hash names, not bytes, so they never count as reaching a file. A dropped glob is evidence the trace did not read it, which is the whole case for dropping it, and the printout is where a reviewer checks that claim.
+ */
+export function droppedDeclared(
+  prior: readonly string[],
+  next: readonly string[],
+  files: readonly string[]
+): { glob: string; unreached: string[] }[] {
+  const out: { glob: string; unreached: string[] }[] = [];
+  for (const g of prior) {
+    if (next.includes(g)) continue;
+    const unreached = files.filter(
+      (f) => matchGlob(g, f) && !next.some((n) => matchGlob(n, f)) && !GLOBAL_INPUTS.some((x) => matchGlob(x, f))
+    );
+    if (unreached.length > 0) out.push({ glob: g, unreached });
+  }
+  return out;
+}
+
 export function repoView(root: string): RepoView {
   const out = spawnSync('git', ['ls-files', '-s', '-z'], {
     cwd: root,
@@ -2641,6 +2660,13 @@ async function main(argv: string[]): Promise<number> {
       console.error(
         `      strace named seccomp; retry this gate without the filter: npx tsx scripts/ci-runner/path-trace.ts --gate ${r.id} --no-seccomp`
       );
+    if (args.write && args.replaceDeclared && v.kind === 'paths') {
+      const prior = todo.find((e) => e.id === r.id)?.paths ?? [];
+      for (const d of droppedDeclared(prior, v.paths, view.files))
+        console.error(
+          `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); the trace did not read them, confirm that is true of the gate`
+        );
+    }
     if (args.write)
       writeResult(args.root, r, tree, undefined, { replaceDeclared: args.replaceDeclared });
     if (args.out !== undefined)
@@ -3177,6 +3203,25 @@ async function selftest(): Promise<number> {
       !declaresInputs({ ...base, pathsOrigin: TRACED_ORIGIN } as LockEntry),
     "declaresInputs: a set with no origin or a declared one is a human's, and so is origin declared with every set empty (83f9183b.1); a traced set and no set are not"
   );
+
+  // Review 9a666914.1: a replacement that narrows a declared set names what it gave up.
+  {
+    const files = ['a/x.yml', 'a/y.yml', 'b/z.py', 'b/w.py', 'c/q.md'];
+    const dropped = droppedDeclared(['a/*.yml', 'b/**', 'c/q.md'], ['a/*.yml', 'b/z.py', 'c/q.md'], files);
+    check(
+      dropped.length === 1 && dropped[0].glob === 'b/**' && dropped[0].unreached.join() === 'b/w.py',
+      'droppedDeclared: a declared glob only partly kept is dropped, naming the one file the new set no longer reaches (b/w.py); a verbatim-kept glob is not'
+    );
+    check(
+      droppedDeclared(['a/**'], ['a/*.yml', 'a/**/*.yml'], ['a/x.yml', 'a/d/y.yml']).length === 0 &&
+        droppedDeclared(['a/**'], [], ['a/x.yml']).length === 1,
+      'droppedDeclared: a glob whose every tracked match a new glob reaches is not dropped; CONTROL: the same glob against an empty new set is'
+    );
+    check(
+      droppedDeclared(['gone/**'], ['a/x.yml'], files).length === 0,
+      'droppedDeclared: a declared glob matching no tracked file gives up nothing, so it is not reported'
+    );
+  }
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
   const lsAcc = parseStraceLog(

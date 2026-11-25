@@ -3132,6 +3132,7 @@
     "slow": true,
     "gate": true,
     "needs": [
+      "build:packages",
       "build:www"
     ],
     "paths": [
@@ -3145,48 +3146,17 @@
       "packages/locales/package.json",
       "packages/provisioning/package.json",
       "packages/shared/package.json",
-      "packages/shared/src/audit/event-schema.ts",
-      "packages/shared/src/audit/index.ts",
-      "packages/shared/src/cli-contract/data/contract.generated.ts",
-      "packages/shared/src/cli-contract/discovery.ts",
-      "packages/shared/src/cli-contract/i18n.ts",
-      "packages/shared/src/cli-contract/index.ts",
-      "packages/shared/src/cli-contract/validation.ts",
-      "packages/shared/src/cli-contract/wire.ts",
-      "packages/shared/src/config-crypto/**",
-      "packages/shared/src/config/**",
-      "packages/shared/src/e2e/**",
-      "packages/shared/src/encryption/**",
-      "packages/shared/src/error-parser/index.ts",
-      "packages/shared/src/formatters/index.ts",
-      "packages/shared/src/i18n/types.ts",
-      "packages/shared/src/index.ts",
-      "packages/shared/src/legal/**",
-      "packages/shared/src/renet-contract/**",
-      "packages/shared/src/services/**",
-      "packages/shared/src/subscription/constants.ts",
-      "packages/shared/src/subscription/crypto.ts",
-      "packages/shared/src/subscription/delegation-cert-id.ts",
-      "packages/shared/src/subscription/delegation-cert-policy.ts",
-      "packages/shared/src/subscription/fingerprint.ts",
-      "packages/shared/src/subscription/index.ts",
-      "packages/shared/src/subscription/onprem-free-tier.ts",
-      "packages/shared/src/subscription/renewal-manifest.ts",
-      "packages/shared/src/subscription/signing-keys.ts",
-      "packages/shared/src/subscription/validation.ts",
-      "packages/shared/src/telemetry/**",
-      "packages/shared/src/types/api.ts",
-      "packages/shared/src/types/derived.ts",
-      "packages/shared/src/types/index.ts",
-      "packages/shared/src/utils/**",
-      "packages/shared/src/validation/cidr.ts",
-      "packages/shared/src/validation/index.ts",
-      "packages/shared/tsconfig.json",
+      "packages/shared/src/config/well-known.generated.ts",
       "packages/www/package.json",
       "private/account",
       "regions.json",
+      "packages/shared/src/**",
+      "packages/shared/tsconfig.json",
       "tsconfig.json",
       "workers/**"
+    ],
+    "lists": [
+      ""
     ],
     "pathsOrigin": "traced",
     "leaves": [
@@ -13493,6 +13463,10 @@
       "tsconfig.json",
       "workers/www/src/redirects.json"
     ],
+    "lists": [
+      "scripts",
+      "scripts/gates"
+    ],
     "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-redirect-integrity.ts"
@@ -13610,6 +13584,11 @@
       "scripts/lib/console.ts",
       "scripts/lib/findings-report.ts",
       "tsconfig.json"
+    ],
+    "lists": [
+      "scripts",
+      "scripts/gates",
+      "scripts/lib"
     ],
     "pathsOrigin": "traced",
     "leaves": [
@@ -15160,6 +15139,11 @@
       "scripts/lib/repo-root.ts",
       "tsconfig.json"
     ],
+    "lists": [
+      "scripts",
+      "scripts/gates",
+      "scripts/lib"
+    ],
     "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-player-css-scope.ts"
@@ -15187,6 +15171,11 @@
       "scripts/gates/check-client-bundle-budget.ts",
       "scripts/lib/findings-report.ts",
       "tsconfig.json"
+    ],
+    "lists": [
+      "scripts",
+      "scripts/gates",
+      "scripts/lib"
     ],
     "pathsOrigin": "traced",
     "leaves": [
@@ -15615,6 +15604,13 @@
     "slow": true,
     "gate": true,
     "paths": [
+      "eslint-rules/**",
+      "packages/e2e-tests/**",
+      "packages/provisioning/**",
+      "packages/shared/**",
+      "packages/www/src/pages/**",
+      "packages/www/src/plugins/**",
+      "scripts/**",
       ".ci/scripts/test/smoke-test-preview.ts",
       ".github/actions/profiler/index.js",
       ".npmrc",
