@@ -491,6 +491,7 @@ class Registry:
         self.memory_dir = memory_dir
         self._shapes: tuple[dict, dict] | None = None
         self._live_l1: list[pathlib.Path] | None = None
+        self._loaded: dict[pathlib.Path, frozenset[str]] = {}
         self._stems: list[str] | None = None
         self._markdown: list[str] | None = None
 
@@ -676,11 +677,21 @@ class Registry:
             text = read_text(candidate)
             if base in text:
                 return True
-            if stem is not None and candidate.suffix == ".py" and stem in python_loaded_names(text):
+            if (
+                stem is not None
+                and candidate.suffix == ".py"
+                and stem in self.loaded_names(candidate, text)
+            ):
                 return True
         return path.endswith(".py") and pathlib.PurePosixPath(path).stem in self.dispatched_guards(
             path
         )
+
+    def loaded_names(self, candidate: pathlib.Path, text: str) -> frozenset[str]:
+        """`python_loaded_names(text)` for a hop-1 file, parsed once per registry."""
+        if candidate not in self._loaded:
+            self._loaded[candidate] = python_loaded_names(text)
+        return self._loaded[candidate]
 
     def dispatched_guards(self, path: str) -> list[str]:
         """Guard stems the pre-tool dispatcher loads by GLOB, for a `file:` inside its guards package.
@@ -1233,7 +1244,7 @@ CONTROL_MANIFEST = """export const GATES = [
     id: 'check:ctl-direct',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry',
     gate: true,
-    leaves: ['sub/ctl-guard.sh', 'sub/ctl_gate.py'],
+    leaves: ['sub/ctl-guard.sh', 'sub/ctl_gate.py', 'sub/ctl_broken_gate.py', 'sub/ctl_parsed_gate.py'],
   },
   {
     id: 'check:ctl-keyless',
@@ -2139,7 +2150,14 @@ def selftest() -> int:
             '"""\nimport ctl_doc\n"""\n',
             encoding="utf-8",
         )
+        # Two hop-1 leaves with the same shape: one that does not parse, one that does.
+        (files / "sub" / "ctl_broken_gate.py").write_text(
+            "import ctl_unparsed\nthis is ( not python\n", encoding="utf-8"
+        )
+        (files / "sub" / "ctl_parsed_gate.py").write_text("import ctl_parsed\n", encoding="utf-8")
         for stem in (
+            "ctl_unparsed",
+            "ctl_parsed",
             "ctl_lib",
             "ctl_from",
             "ctl_mention",
@@ -2276,6 +2294,23 @@ def selftest() -> int:
         ctl.falsy(
             "PLANT: `import ctl_pre_longer` does not load the shorter stem `ctl_pre`",
             registry.file_is_live("sub/ctl_pre.py"),
+        )
+
+        ctl.truthy(
+            "CONTROL: a module a parsing hop-1 leaf imports is live (the unparsed plant's twin)",
+            registry.file_is_live("sub/ctl_parsed.py"),
+        )
+        ctl.falsy(
+            "PLANT: a module only a hop-1 leaf that does not parse imports is not live",
+            registry.file_is_live("sub/ctl_unparsed.py"),
+        )
+        ctl.check(
+            "CONTROL: an unparseable source loads nothing, a parseable one its names",
+            (
+                python_loaded_names("import a\n("),
+                python_loaded_names("import a\n"),
+            ),
+            (frozenset(), frozenset({"a"})),
         )
 
         # -- the whole scan, both directions --------------------------------
