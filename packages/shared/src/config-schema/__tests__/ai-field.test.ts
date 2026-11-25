@@ -10,9 +10,9 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  blindPointer,
   deriveFieldCommitmentKey,
   derivePointerBlindingKey,
-  blindPointer,
   generateCek,
   generateSdkMaster,
   sdkDerive,
@@ -91,9 +91,9 @@ describe('ai in the config', () => {
     delete noKey.providers.anthropic.key;
     expect(RdcConfigSchema.safeParse(configWith(noKey)).success).toBe(false);
     // control: the byokOnly gateway profile carries no key and parses
-    expect(RdcConfigSchema.safeParse(configWith({ providers: { g: AI.providers.gateway } })).success).toBe(
-      true
-    );
+    expect(
+      RdcConfigSchema.safeParse(configWith({ providers: { g: AI.providers.gateway } })).success
+    ).toBe(true);
   });
 
   it('refuses an unknown profile field and an unknown format', () => {
@@ -169,7 +169,9 @@ describe('ai in the config', () => {
 
     const headerPointer = '/ai/providers/gateway/headers/cf-aig-authorization';
     const header = fields[await blindPointer(blinding, headerPointer)];
-    expect(await verifyCommitment(fck, headerPointer, `Bearer ${GATEWAY_TOKEN}`, header)).toBe(true);
+    expect(await verifyCommitment(fck, headerPointer, `Bearer ${GATEWAY_TOKEN}`, header)).toBe(
+      true
+    );
     expect(await verifyCommitment(fck, headerPointer, 'Bearer other', header)).toBe(false);
 
     // A public leaf carries no commitment: changing the model needs no knowledge.
