@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-25T13:17:42.966Z",
+  "generatedAt": "2026-11-25T15:40:34.446Z",
   "legs": [
     {
       "index": 1,
@@ -155,6 +155,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_advisories_rotation.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_session_archival.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_armed_model.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_checks_review_controls.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_status.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_effort_tune.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_feedback_triage.py",
@@ -706,6 +707,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_state_keyed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_armed_seeds.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_ci_category.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_core_blocking.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_effort.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_handover.py",

@@ -2347,7 +2347,7 @@ jobs:
       # redirect-aliases.test.ts imports directly.
       - name: Worker unit tests (workers/www, workers/proxy)
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm ci --prefix workers/ops-health && npm run check:test-workers
+        run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm ci --prefix workers/ops-health && npm ci --prefix workers/mcp && npm run check:test-workers
 
   # ============================================================================
   # L9 SECURITY -- split three ways (PLAN-ci-time-budget.md T2.15, 2026-09-26).
