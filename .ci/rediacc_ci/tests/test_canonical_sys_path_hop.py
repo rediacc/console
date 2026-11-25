@@ -264,9 +264,15 @@ def scan(root: pathlib.Path, files: list[str]) -> dict[str, list[tuple[int, str]
     control never touched.
     """
     found: dict[str, list[tuple[int, str]]] = {}
+    tracked: set[str] | None = None
     for rel in files:
         path = root / rel
         if not path.is_file():
+            # AN UNTRACKED FILE THAT VANISHED AFTER THE LISTING is another writer's transient file, the same case `_corpus`'s `existing=True` already drops when it is gone before the listing: on 2026-11-25 test_gate_docs_gen.py's B2 probe (`.claude/hooks/context/zz_untracked_probe.py`, planted and unlinked in the real tree) was listed here and gone before this read, which failed this test under xdist. A TRACKED path missing is still a partial checkout and still raises.
+            if tracked is None:
+                tracked = set(gitx.ls_files("*.py", root=root))
+            if rel not in tracked:
+                continue
             msg = (
                 f"{rel} is listed by git but is not on disk, so this control cannot "
                 "read it. A partial checkout means the scan is not seeing the tree "
