@@ -5,6 +5,7 @@
  */
 import { createConfirmation } from './confirm.js';
 import type { ExecutorBinding } from './executor.js';
+import { type MetricsDataset, messageOf, outcomeOf, recordCall, toolOf } from './metrics.js';
 import { createOAuth, type OAuth } from './oauth/index.js';
 import { wrongRegionResponse } from './oauth/region.js';
 import { doRateLimiter, MemoryRateLimiter, type RateNamespace } from './rate.js';
@@ -34,6 +35,8 @@ export interface Env {
   AUTH_REQUEST_KEY?: string;
   /** Worker secret the account presents to `/internal/revoke`; absent, the route answers 404. */
   INTERNAL_REVOKE_TOKEN?: string;
+  /** The Analytics Engine dataset of per-grant call counters (Design 10); absent, nothing is recorded. */
+  MCP_METRICS?: MetricsDataset;
 }
 
 /** Placeholder until the deploy injects the release version (RW-D2). */
@@ -80,6 +83,35 @@ function transportFor(env: Env): McpTransport {
   return transport;
 }
 
+const GRANT_PATH = /^\/g\/([A-Za-z0-9_-]{1,64})$/;
+
+/** Record one `tools/call` after it answered: the counters of Design 10, written off the request path. */
+async function observeCall(
+  env: Env,
+  grantId: string,
+  request: Request,
+  response: Response,
+  startedAt: number
+): Promise<void> {
+  const latencyMs = Date.now() - startedAt;
+  try {
+    const tool = toolOf(await request.json());
+    if (tool === undefined) return;
+    let code = `HTTP_${response.status}`;
+    if (response.ok) code = outcomeOf(messageOf(await response.text()));
+    // A request the transport refused with 401 never proved its grant id, so it is not an index.
+    recordCall(env.MCP_METRICS, {
+      grantId: response.status === 401 ? undefined : grantId,
+      region: env.REGION,
+      tool,
+      code,
+      latencyMs,
+    });
+  } catch {
+    // An unreadable body is not a counted call.
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (new URL(request.url).pathname === REVOKE_PATH) {
@@ -96,6 +128,17 @@ export default {
       const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);
       if (answered) return answered;
     }
-    return transportFor(env).fetch(request);
+    const grantId = GRANT_PATH.exec(new URL(request.url).pathname)?.[1];
+    if (!env.MCP_METRICS || grantId === undefined || request.method !== 'POST') {
+      return transportFor(env).fetch(request);
+    }
+    const startedAt = Date.now();
+    const seen = request.clone();
+    const response = await transportFor(env).fetch(request);
+    const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
+    // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
+    if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(observed);
+    else await observed;
+    return response;
   },
 };
