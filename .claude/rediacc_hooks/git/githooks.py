@@ -1240,7 +1240,7 @@ def pre_commit(_argv: list[str]) -> int:
     return artifacts_pre_commit()
 
 
-# ONE CORE OF THE MACHINE-WIDE POOL FOR THE HEAVY PART OF A COMMIT HOOK (PR-TASK 79b7e92e, operator 2026-11-24: load 134 on 24 cores). A gen-docs verify (a full checkout-index of the commit's tree plus a node run) and an enrolled artifact's checker are the only parts of a commit that cost seconds of CPU, and ten lease writers committing at once ran them with nothing asking the pool `core_lease` keeps. The cheap selection that decides whether either runs takes no slot, so a commit that stages no provider input never waits on a busy machine. A pool that cannot be imported or opened runs the block unthrottled and says so: this is a throttle, never a verdict.
+# ONE CORE OF THE MACHINE-WIDE POOL FOR THE HEAVY PART OF A COMMIT HOOK (PR-TASK 79b7e92e, operator 2026-11-24: load 134 on 24 cores). A gen-docs verify (a full checkout-index of the commit's tree plus a node run) and an enrolled artifact's checker are the only parts of a commit that cost seconds of CPU, and ten lease writers committing at once ran them with nothing asking the pool `core_lease` keeps. The cheap selection that decides whether either runs takes no slot, so a commit that stages no provider input never waits on a busy machine. A pool that cannot be imported (a missing module, a half-edited one that raises SyntaxError, an unreadable file) or opened runs the block unthrottled and says so, `host_slot` itself covering a pool that opens and then fails: this is a throttle, never a verdict. An error of any other kind from the import is a bug and propagates.
 CORE_SLOT_LABEL = "commit hook %s"
 
 
@@ -1249,7 +1249,7 @@ def _core_slot(what: str):
     """Hold one token of `rediacc_ci.core.host_slots` for the block, yielding the env a child runs under (empty when unthrottled)."""
     try:
         slots = sp.import_from_ci("rediacc_ci.core.host_slots")
-    except ImportError as exc:
+    except (ImportError, SyntaxError, OSError) as exc:
         sys.stderr.write(
             "commit-policy hook: rediacc_ci.core.host_slots cannot be imported (%s); %s runs unthrottled\n"
             % (exc, what)

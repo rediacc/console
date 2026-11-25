@@ -10,6 +10,8 @@ import importlib.util
 import pathlib
 import types
 
+import pytest
+
 HOOKS = pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py"
 
 
@@ -50,6 +52,46 @@ def test_an_unimportable_pool_runs_unthrottled_and_says_so(monkeypatch, capsys):
     with GH._core_slot("artifact check") as env:
         assert env == {}
     assert "no pool here" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "error",
+    [SyntaxError("half-edited module"), OSError(13, "permission denied")],
+    ids=["syntax-error", "oserror"],
+)
+def test_a_pool_module_that_fails_to_load_for_any_reason_runs_unthrottled(
+    monkeypatch, capsys, error
+):
+    """Review S75 (githooks.py `_core_slot` caught only ImportError): a module a writer is mid-edit on raises SyntaxError, an unreadable one OSError, and a throttle must never refuse the commit over either."""
+
+    def boom(_name):
+        raise error
+
+    monkeypatch.setattr(GH.sp, "import_from_ci", boom)
+    with GH._core_slot("artifact check") as env:
+        assert env == {}
+    err = capsys.readouterr().err
+    assert "artifact check runs unthrottled" in err
+    assert str(error) in err
+
+
+def test_control_an_unrelated_error_from_the_import_is_not_folded_into_unthrottled(monkeypatch):
+    def boom(_name):
+        raise ValueError("a real bug")
+
+    monkeypatch.setattr(GH.sp, "import_from_ci", boom)
+    with pytest.raises(ValueError, match="a real bug"), GH._core_slot("artifact check"):
+        pytest.fail("the block must not run when the loader raises an unrelated error")
+
+
+def test_control_an_error_from_the_commit_check_itself_is_not_taken_for_a_pool_failure(
+    monkeypatch,
+):
+    taken = []
+    monkeypatch.setattr(GH.sp, "import_from_ci", lambda _name: _recording_slots(taken))
+    with pytest.raises(OSError, match="check failed"), GH._core_slot("gen-docs verify"):
+        raise OSError("check failed")
+    assert taken == [(1, "commit hook gen-docs verify")]
 
 
 def _artifacts_world(monkeypatch, selected):

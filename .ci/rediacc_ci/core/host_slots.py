@@ -79,7 +79,7 @@ def host_slot(
     pool: core_lease.Pool | None = None,
     on_wait: Callable[[str], None] | None = None,
 ) -> Iterator[Slot]:
-    """Hold `weight` tokens for the `with` block, waiting for them. Raises TimeoutError when `timeout` seconds pass first."""
+    """Hold `weight` tokens for the `with` block, waiting for them. Raises TimeoutError when `timeout` seconds pass first. A pool that cannot be opened, registered with or drawn from (`LeaseError`, `OSError`) runs the block unthrottled after one loud line; an error raised by the block itself is never taken for a pool failure."""
     env = os.environ if environ is None else environ
     stream = sys.stderr if stream is None else stream
     if weight < 1:
@@ -101,7 +101,15 @@ def host_slot(
             yield Slot(cores=weight, held=False, nested=False)
             return
     want = min(weight, pool.size)
-    marker = pool.register(label)
+    try:
+        marker = pool.register(label)
+    except OSError as exc:
+        _say(
+            stream,
+            "the core pool is unusable (%s); %s runs UNTHROTTLED" % (exc, label or "this block"),
+        )
+        yield Slot(cores=weight, held=False, nested=False)
+        return
     try:
 
         def notice() -> None:
@@ -110,7 +118,18 @@ def host_slot(
                 on_wait(line)
             _say(stream, line)
 
-        tokens = pool.acquire(want, want, wait=True, timeout=timeout, label=label, on_wait=notice)
+        try:
+            tokens = pool.acquire(
+                want, want, wait=True, timeout=timeout, label=label, on_wait=notice
+            )
+        except OSError as exc:
+            _say(
+                stream,
+                "the core pool is unusable (%s); %s runs UNTHROTTLED"
+                % (exc, label or "this block"),
+            )
+            yield Slot(cores=weight, held=False, nested=False)
+            return
         if not tokens:
             msg = "%s: %d core slot(s) were not free within %ss" % (
                 label or "host_slot",

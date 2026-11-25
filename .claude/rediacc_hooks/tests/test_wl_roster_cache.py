@@ -399,3 +399,86 @@ def test_pinned_estimate_computes_once_and_unpins_on_exit(monkeypatch):
     wl_roster.live_estimate("/c", "s")
     assert len(calls) == 4
     assert wl_roster._PINNED == {}
+
+
+# ---- save() failure contract (review 05db4e68.2) ------------------------------------------------
+
+
+def test_save_swallows_an_oserror_and_stays_dirty(tmp_path):
+    """The write is only an optimisation: a parent that cannot be created costs the next process a re-read, so save() returns quietly and keeps the doc dirty."""
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("x", encoding="utf-8")
+    cache = wl_roster.RosterCache(blocker / "s.json")
+    cache.put("edits", "k", [1])
+    cache.save()
+    assert cache.dirty is True
+    assert blocker.read_text(encoding="utf-8") == "x"
+
+
+def test_save_does_not_swallow_a_non_oserror_and_leaves_no_temp_file(tmp_path):
+    """Anything but OSError means the doc holds something unserialisable, a bug in the writer: it propagates, and the temp file is removed rather than left under the git common dir."""
+    store = tmp_path / "cache" / "s.json"
+    cache = wl_roster.RosterCache(store)
+    cache.put("edits", "k", object())
+    with pytest.raises(TypeError):
+        cache.save()
+    assert list(store.parent.iterdir()) == []
+    assert not store.exists()
+
+
+# ---- the one-stat horizon of transcript_waiting (review 05db4e68.3) ----------------------------
+
+
+def _armed_idle(tmp_path):
+    jsonl = tmp_path / "agent-armed.jsonl"
+    launch = {
+        "type": "user",
+        "message": {"content": [{"type": "tool_result", "content": "running"}]},
+        "toolUseResult": {"backgroundTaskId": "bshell01"},
+    }
+    # Compact separators, as the harness writes them: `armed_shells` matches the raw bytes `"backgroundTaskId":"<id>"`.
+    jsonl.write_text(
+        json.dumps(launch, separators=(",", ":")) + "\n" + json.dumps(idle()) + "\n",
+        encoding="utf-8",
+    )
+    return jsonl
+
+
+def _spy_tail(monkeypatch):
+    reads = []
+    real = wl_roster.last_record
+
+    def spy(path):
+        reads.append(path)
+        return real(path)
+
+    monkeypatch.setattr(wl_roster, "last_record", spy)
+    return reads
+
+
+def test_transcript_waiting_past_the_horizon_answers_empty_without_reading_the_tail(
+    tmp_path, monkeypatch
+):
+    jsonl = _armed_idle(tmp_path)
+    reads = _spy_tail(monkeypatch)
+    now = jsonl.stat().st_mtime + wl_roster.WAIT_HORIZON_MIN * 60 + 1
+    assert wl_roster.transcript_waiting(jsonl, now) == ""
+    assert reads == [], "past the horizon the one stat answers; no tail may be read"
+
+
+def test_control_transcript_waiting_just_inside_the_horizon_still_reads_and_names_the_shell(
+    tmp_path, monkeypatch
+):
+    jsonl = _armed_idle(tmp_path)
+    reads = _spy_tail(monkeypatch)
+    now = jsonl.stat().st_mtime + wl_roster.WAIT_HORIZON_MIN * 60 - 1
+    assert wl_roster.transcript_waiting(jsonl, now) == "bshell01"
+    assert reads == [jsonl]
+
+
+def test_transcript_waiting_for_a_missing_transcript_is_empty_without_reading(
+    tmp_path, monkeypatch
+):
+    reads = _spy_tail(monkeypatch)
+    assert wl_roster.transcript_waiting(tmp_path / "agent-gone.jsonl", time.time()) == ""
+    assert reads == []

@@ -145,6 +145,50 @@ def test_an_unusable_pool_is_loud_and_runs_unthrottled(tmp_path, monkeypatch):
     assert "seed runs UNTHROTTLED" in out.getvalue()
 
 
+@pytest.mark.parametrize("failing", ["register", "acquire"])
+def test_a_pool_that_fails_after_opening_is_loud_and_runs_unthrottled(
+    pool_env, monkeypatch, failing
+):
+    """Review 426f94b6.1: the docstring promises an unusable pool runs the block unthrottled, and that holds for a pool that opens and then fails on `register` or `acquire`."""
+    pool = core_lease.Pool.from_env(pool_env)
+
+    def broken(*_a, **_k):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(pool, failing, broken)
+    out = io.StringIO()
+    ran = []
+    with host_slots.host_slot(2, label="seed", stream=out, pool=pool) as slot:
+        ran.append(slot)
+    assert ran
+    assert not ran[0].held
+    assert "the core pool is unusable" in out.getvalue()
+    assert "No space left on device" in out.getvalue()
+    assert "seed runs UNTHROTTLED" in out.getvalue()
+
+
+def test_control_an_oserror_from_the_block_body_is_not_swallowed(pool_env):
+    """A pool failure is forgiven, the caller's own OSError is not: it must still reach the caller, and the tokens still come back."""
+    with (
+        pytest.raises(OSError, match="from the body"),
+        host_slots.host_slot(1, label="body", timeout=2, stream=io.StringIO()),
+    ):
+        raise OSError("from the body")
+    assert _free(pool_env) == 2
+
+
+def test_control_a_timeout_is_still_a_refusal_not_an_unthrottled_run(pool_env):
+    holder = _holder(pool_env, weight=2, label="full")
+    try:
+        with (
+            pytest.raises(TimeoutError),
+            host_slots.host_slot(1, label="late", timeout=0.3, stream=io.StringIO()),
+        ):
+            pass
+    finally:
+        _release(holder)
+
+
 @pytest.mark.usefixtures("pool_env")
 def test_weight_below_one_is_refused():
     with pytest.raises(ValueError, match="at least 1"), host_slots.host_slot(0):

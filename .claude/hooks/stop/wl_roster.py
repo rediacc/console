@@ -440,7 +440,7 @@ class RosterCache:
             self.dirty = True
 
     def save(self):
-        """Write the file when anything changed. A write that fails costs only the next process a re-read, so it is swallowed."""
+        """Write the file when anything changed. An OSError (no directory, no space, no permission) costs only the next process a re-read, so it is swallowed and the doc stays dirty. Any other error means the doc holds something unserialisable, a bug in the writer, so it propagates after the temp file is removed."""
         if not self.dirty or self.path is None:
             return
         path = pathlib.Path(self.path)

@@ -101,6 +101,9 @@ def test_git_env_is_part_of_the_key(counting, tmp_path):
     [
         (["git", "status", "--porcelain"], {"capture_output": True}),
         (["git", "symbolic-ref", "HEAD", "refs/heads/elsewhere"], {"capture_output": True}),
+        (["git", "symbolic-ref", "-d", "HEAD"], {"capture_output": True}),
+        (["git", "symbolic-ref", "--delete", "-q", "HEAD"], {"capture_output": True}),
+        (["git", "symbolic-ref", "-m", "why", "HEAD"], {"capture_output": True}),
         (["git", "rev-parse", "--show-toplevel"], {"capture_output": True, "check": True}),
         (["git", "rev-parse", "--stdin"], {"capture_output": True, "input": b"HEAD\n"}),
         (["git", "rev-parse", "--show-toplevel"], {}),
@@ -126,6 +129,38 @@ def test_reading_symbolic_ref_and_dash_c_forms_are_memoized(counting, tmp_path):
                 ["git", "-C", str(repo), "symbolic-ref", "--short", "-q", "HEAD"],
                 capture_output=True,
                 check=False,
+            )
+    assert len(counting) == 1
+
+
+def test_a_deleted_working_directory_reaches_git_unmemoized(counting, tmp_path, monkeypatch):
+    """Review ed6cdfea.2: with the process's own directory gone and no `cwd`, `os.getcwd()` raised out of the key before git ran. The question now passes through, git's own failure comes back as a result, and nothing is stored."""
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    monkeypatch.chdir(gone)
+    gone.rmdir()
+    counting.clear()
+    with _gitmemo.chain_memo() as memo:
+        for _ in range(2):
+            got = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"], capture_output=True, check=False
+            )
+            assert got.returncode != 0
+    assert len(counting) == 2
+    assert memo.table == {}
+    assert memo.hits == 0
+
+
+def test_control_a_live_working_directory_is_still_memoized_with_no_cwd(
+    counting, tmp_path, monkeypatch
+):
+    repo = _git_init(tmp_path / "r")
+    monkeypatch.chdir(repo)
+    counting.clear()
+    with _gitmemo.chain_memo():
+        for _ in range(2):
+            subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"], capture_output=True, check=False
             )
     assert len(counting) == 1
 

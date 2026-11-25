@@ -4,7 +4,7 @@ WHY (PR-TASK 79b7e92e, operator 2026-11-24: "This is a throttle!", load 134 on 2
 
 WHY THE ANSWER CANNOT CHANGE INSIDE THE RUN. A PreToolUse chain runs BEFORE the tool: the command it judges has not started, and no guard writes to git (they ask, they never commit, check out or move a ref). So the repository a directory sits in, its common directory, its superproject and the branch HEAD names are fixed for the chain's whole life, which is a few hundred milliseconds. The memo lives exactly that long: `chain_memo()` installs it, and leaving the `with` drops every answer, so the next tool call asks git again.
 
-WHAT IS MEMOIZED, AND WHAT IS NOT. Only `subprocess.run` calls whose argv is git's and whose subcommand (the first word after git's global options, `-C <dir>` and `-c <k=v>` included) is in `READ_ONLY` (or is `symbolic-ref` in its reading form), with captured stdout, no stdin data and no `check=True`. The key is the argv, the directory it runs in (the process's own when `cwd` is unset), every `GIT_*` variable of the environment it runs under, and the keyword arguments that shape the returned object (`text`, `encoding`, `errors`, `universal_newlines`, `stderr`, `timeout` is deliberately NOT in it, since it changes no answer). An exception (git missing, a timeout) is never stored, so the next caller asks again. Anything else passes straight through to the real `subprocess.run`.
+WHAT IS MEMOIZED, AND WHAT IS NOT. Only `subprocess.run` calls whose argv is git's and whose subcommand (the first word after git's global options, `-C <dir>` and `-c <k=v>` included) is in `READ_ONLY` (or is `symbolic-ref` in its reading form: at most one operand and only `-q`, `--quiet`, `--short`, `--recurse`, `--no-recurse`), with captured stdout, no stdin data and no `check=True`. The key is the argv, the directory it runs in (the process's own when `cwd` is unset), every `GIT_*` variable of the environment it runs under, and the keyword arguments that shape the returned object (`text`, `encoding`, `errors`, `universal_newlines`, `stderr`, `timeout` is deliberately NOT in it, since it changes no answer). An exception (git missing, a timeout) is never stored, so the next caller asks again. Anything else passes straight through to the real `subprocess.run`.
 
 PLANTED DEFECT. `tests/test_gitmemo.py` replaces `DEFECT[0]` with `DEFECT[1]`, which keys on the argv alone: two directories in different repositories then share one `--show-toplevel`, and the test that asks both must go red.
 """
@@ -15,10 +15,12 @@ import contextlib
 import os
 import subprocess
 
-# git subcommands that only read. `rev-parse` answers where a repository is and what a name points at; `symbolic-ref` with no new value only reads HEAD.
+# git subcommands that only read. `rev-parse` answers where a repository is and what a name points at; `symbolic-ref` with no new value and only reading options only reads HEAD.
 READ_ONLY = frozenset({"rev-parse"})
 # `symbolic-ref` reads with one or two words after its options (`-q --short HEAD`) and WRITES with a second operand (`symbolic-ref HEAD refs/heads/x`), so it is memoized only in its reading form.
 SYMBOLIC_REF = "symbolic-ref"
+# The only options a READING `symbolic-ref` carries. Any other (`-d`/`--delete` removes the symref with ONE operand, `-m` sets a reflog message for a write) makes it a write, which passes through every time.
+_SYMBOLIC_REF_READ_FLAGS = frozenset({"-q", "--quiet", "--short", "--recurse", "--no-recurse"})
 
 # git's global options that take the next word as their value.
 _VALUE_OPTS = frozenset({"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"})
@@ -54,14 +56,20 @@ def _reads_only(argv):
     if sub in READ_ONLY:
         return True
     if sub == SYMBOLIC_REF:
-        operands = [w for w in argv[at + 1 :] if not str(w).startswith("-")]
-        return len(operands) <= 1
+        rest = [str(w) for w in argv[at + 1 :]]
+        flags = [w for w in rest if w.startswith("-")]
+        operands = [w for w in rest if not w.startswith("-")]
+        return len(operands) <= 1 and all(f in _SYMBOLIC_REF_READ_FLAGS for f in flags)
     return False
 
 
 def _key(argv, kwargs):
+    """The memo key, or None when the directory git would run in cannot be named (the process's own was deleted): that question is not memoized, so the real call answers it and raises or fails exactly as it would unmemoized."""
     cwd = kwargs.get("cwd")
-    where = os.path.abspath(os.fspath(cwd)) if cwd else os.getcwd()
+    try:
+        where = os.path.abspath(os.fspath(cwd)) if cwd else os.getcwd()
+    except FileNotFoundError:
+        return None
     env = kwargs.get("env")
     env = os.environ if env is None else env
     git_env = tuple(sorted((k, v) for k, v in env.items() if k.startswith("GIT_")))
@@ -99,6 +107,8 @@ class Memo:
         if argv is None:
             return self.real(*args, **kwargs)
         key = _key(argv, kwargs)
+        if key is None:
+            return self.real(*args, **kwargs)
         got = self.table.get(key)
         if got is not None:
             self.hits += 1
