@@ -50,7 +50,7 @@ vi.mock('../../services/jobs/command-job.js', () => ({
 }));
 vi.mock('../../utils/command-policy.js', () => ({
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
-  assertCommandPolicy: vi.fn(() => Promise.resolve()),
+  enforceResolvedTarget: vi.fn(() => Promise.resolve()),
 }));
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: vi.fn((ref: string) =>

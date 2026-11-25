@@ -92,7 +92,7 @@ vi.mock('../../utils/agent-guard.js', () => ({
   assertAgentRepoCreate: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: vi.fn().mockResolvedValue(undefined) }));

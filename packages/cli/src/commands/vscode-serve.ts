@@ -14,7 +14,7 @@ import { outputService } from '../services/core/output.js';
 import { serverStatus, stopServer } from '../services/core/vscode-server-remote.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveConnectTarget } from '../utils/repo-target.js';
 
@@ -37,7 +37,7 @@ async function resolveServeContext(target: string, options: VSCodeServeOptions) 
   }
 
   // Same synthetic policy key as `vscode connect`'s repo form (see vscode.ts).
-  await assertCommandPolicy(CMD.VSCODE_CONNECT, resolved.repoKey);
+  await enforceResolvedTarget(CMD.VSCODE_CONNECT, { ref: resolved.repoKey });
 
   const provider = getServerProvider(options.serverProvider);
   // Teams are retired vocabulary (`-t` is deleted in P4); the SSH-connection

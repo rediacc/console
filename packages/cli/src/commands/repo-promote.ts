@@ -8,7 +8,7 @@ import { runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -109,7 +109,7 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
       throw new ValidationError(t('commands.repo.promote.grandNotFound', { name: forkRef }));
     }
 
-    await assertCommandPolicy(CMD.REPO_PROMOTE, grandEntry.name);
+    await enforceResolvedTarget(CMD.REPO_PROMOTE, { ref: grandEntry.name });
 
     if (!options.yes) {
       const { askConfirm } = await import('../utils/prompt.js');

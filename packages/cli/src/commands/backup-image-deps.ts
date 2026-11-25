@@ -61,7 +61,7 @@ import { REMOTE_RENET_PATH } from '../services/renet/renet-provisioner.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -215,7 +215,7 @@ async function targetFor(ref: string, listed: ListedRepo[]): Promise<ImageTarget
   }
   const repo = await configService.getRepository(resolved.repoKey);
   if (!repo) throw new ValidationError(t('errors.backupImage.repoUnknown', { ref }));
-  await assertCommandPolicy(CMD.BACKUP_DOWNLOAD, resolved.repoKey);
+  await enforceResolvedTarget(CMD.BACKUP_DOWNLOAD, { ref: resolved.repoKey });
   const entry = listed.find((r) => r.guid === repo.repositoryGuid);
   return {
     repo: resolved.name,
@@ -419,7 +419,10 @@ export async function realUploadDeps(
     signal,
     datastorePath: (machine, datastore) => machineDatastorePath(machine, datastore),
     assertCreate: async (name, machine) => {
-      await assertCommandPolicy(CMD.BACKUP_UPLOAD, name);
+      await enforceResolvedTarget(CMD.BACKUP_UPLOAD, {
+        ref: name,
+        ...(machine ? { machine } : {}),
+      });
       const placement: Placement = opts.datastore ? { datastore: opts.datastore } : { machine };
       await assertAgentRepoCreate(name, placement);
     },

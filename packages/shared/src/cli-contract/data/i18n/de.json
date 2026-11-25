@@ -2702,6 +2702,7 @@
   "options.config": "Bestimmte Konfiguration für diesen Befehl verwenden",
   "options.configKey": "Konfigurationsschlüssel",
   "options.configValue": "Konfigurationswert",
+  "options.confirmGrand": "Eine destruktive Änderung an einem Grand-Repository bestätigen, indem der in der Ablehnung genannte Name wiederholt wird",
   "options.confirmSync": "Änderungen anzeigen und vor der Synchronisierung um Bestätigung bitten",
   "options.connectionName": "Spezifische Verbindung entfernen",
   "options.connectTarget": "Ziel: ein Maschinen- oder Cluster-Name für eine Shell darauf, oder eine Repository-Referenz (Name, Name:Tag, optional @machine) für eine Shell darin",

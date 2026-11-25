@@ -90,7 +90,7 @@ vi.mock('../../utils/repo-target.js', () => ({
 }));
 vi.mock('../../utils/command-policy.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../utils/local-execution-failures.js', () => ({

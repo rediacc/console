@@ -27,6 +27,12 @@ export interface TargetRef {
   machine?: string;
   /** The cluster or datastore name a cluster opt-in must cover. */
   subject?: string;
+  /**
+   * A repo the caller identified without the config: an orphan image addressed by GUID, whose fork
+   * state the machine's own marker reports. It takes the place of `ref`, and the ops-VM test is the
+   * machine's.
+   */
+  identified?: { name: string; state: RepoState };
 }
 
 /** Parse a ref, or null when it breaks the ref grammar (any other failure propagates). */
@@ -56,6 +62,9 @@ export async function resolveTarget(input: TargetRef): Promise<DecisionTarget> {
     ...(machine ? { machine } : {}),
     ...(input.subject ? { subject: input.subject } : {}),
   };
+  if (input.identified) {
+    return { ...base, repo: input.identified, isOpsVm: await isOpsVmMachine(machine) };
+  }
   if (!ref) return { ...base, isOpsVm: await isOpsVmMachine(machine) };
 
   // The policy's `repos` globs and the opt-in lists name a repo without its `@place`.

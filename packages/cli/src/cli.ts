@@ -67,7 +67,12 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
-import { enforceProxiedAgentCommand } from './utils/command-policy.js';
+import {
+  CONFIRM_GRAND_FLAG,
+  enforceProxiedAgentCommand,
+  enforceRootCommand,
+  setConfirmGrand,
+} from './utils/command-policy.js';
 import { getOutputFormat, handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
@@ -228,6 +233,7 @@ export function createCli(): Command {
     .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
     .option('-q, --quiet', t('options.quiet'))
     .option('-y, --yes', t('options.yes'))
+    .option(`${CONFIRM_GRAND_FLAG} <name>`, t('options.confirmGrand'))
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
     .option('--license-region <id>', t('options.licenseRegion'))
@@ -249,6 +255,8 @@ export function createCli(): Command {
         // subcommand's own -y/--yes never fires; hand the value down.
         actionCommand.setOptionValue('yes', true);
       }
+      // The confirmation a destructive change to a grand repo asks an agent for (PLAN-rmcp-decide.md D21). Not --yes: the local MCP server passes --yes on every call.
+      setConfirmGrand(opts.confirmGrand as string | undefined);
       // Set --quiet mode to suppress informational output
       if (opts.quiet) {
         outputService.setQuiet(true);
@@ -314,7 +322,9 @@ export function createCli(): Command {
         const entry = getCommand(commandPath);
         assertProxyCapable(commandPath, entry?.proxyCapable ?? false, entry?.proxyBlockedReason);
         // The executor cannot tell an agent from a human, so the agent's opt-in is judged here, before the request leaves (PLAN-rmcp-decide.md D22).
-        if (entry) await enforceProxiedAgentCommand(commandPath, entry, actionCommand);
+        // A refusal renders the way an action's own error does (handleError), so a JSON caller gets the envelope.
+        if (entry)
+          await enforceProxiedAgentCommand(commandPath, entry, actionCommand).catch(handleError);
 
         // Never returns: it ends the process with the executor's exit code.
         await runCommandThroughProxy(commandPath, actionCommand, {
@@ -331,6 +341,14 @@ export function createCli(): Command {
             return Promise.resolve(state.token.token);
           },
         });
+      }
+
+      // The CLI's one enforcement point (PLAN-rmcp-decide.md Design 3): every local command is judged once here, before its action runs. A command whose action resolves its own target is named on ACTION_RESOLVED_TARGETS and judged there instead.
+      {
+        const commandPath = commandPathOf(actionCommand);
+        await enforceRootCommand(commandPath, getCommand(commandPath), actionCommand).catch(
+          handleError
+        );
       }
 
       // Telemetry must never gate the user's command. The OTLP credential fetch (unauthenticated, ~100-300ms to the account server) used to be

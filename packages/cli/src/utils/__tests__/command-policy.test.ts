@@ -1,10 +1,30 @@
+/**
+ * The CLI's decision step (command-policy.ts): a local run judged by `decide` through `enforce`,
+ * with the local principal, the local-file policy (D24), the ancestry-verified env opt-ins and the
+ * `--confirm-grand` retry. Driven here through `enforceResolvedTarget`, which shares every step
+ * with the root hook (`enforceRootCommand`, command-policy-root.test.ts) but the target reading.
+ */
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const state = vi.hoisted(() => ({
+  config: undefined as unknown,
+  fileExists: true,
+}));
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: vi.fn(),
-    // The grand-pointer fallback (command-policy-grand-ref.test.ts covers it against the real resolver).
-    getCurrent: vi.fn(() => Promise.resolve(null)),
+    getCurrentName: vi.fn(() => 'rediacc'),
+    // The ops-VM test reads machines and datastores from the current config.
+    getCurrent: vi.fn(() => Promise.resolve(state.config ?? null)),
+  },
+}));
+
+vi.mock('../../adapters/config-file-storage.js', () => ({
+  configFileStorage: {
+    exists: vi.fn(() => Promise.resolve(state.fileExists)),
+    load: vi.fn(() => Promise.resolve(state.config ?? {})),
   },
 }));
 
@@ -16,6 +36,7 @@ vi.mock('../process-ancestry.js', () => ({
   isOverrideLegitimate: vi.fn(() => true),
   isAncestryVerificationAvailable: vi.fn(() => true),
   OVERRIDE_VAR_CLUSTER: 'REDIACC_ALLOW_CLUSTER_OPS',
+  OVERRIDE_VAR_GRAND: 'REDIACC_ALLOW_GRAND_REPO',
 }));
 
 vi.mock('../../services/core/audit-log.js', () => ({
@@ -31,13 +52,20 @@ vi.mock('../../i18n/index.js', () => ({
 
 import { configService } from '../../services/config/config-resources.js';
 import { auditLog } from '../../services/core/audit-log.js';
+import {
+  createOutputState,
+  createRequestConfigScope,
+  runInRequestContext,
+} from '../../services/core/request-context.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../agent-guard.js';
+import { CliExitError } from '../cli-exit-error.js';
 import {
-  assertCommandPolicy,
-  assertOrphanDeletePolicy,
+  ACTION_RESOLVED_TARGETS,
   CMD,
   COMMAND_POLICIES,
+  enforceResolvedTarget,
+  setConfirmGrand,
   validateRemotePath,
 } from '../command-policy.js';
 import { isAncestryVerificationAvailable, isOverrideLegitimate } from '../process-ancestry.js';
@@ -48,427 +76,384 @@ const mockIsOverrideLegitimate = vi.mocked(isOverrideLegitimate);
 const mockIsAncestryAvailable = vi.mocked(isAncestryVerificationAvailable);
 const mockAuditLog = vi.mocked(auditLog);
 
-describe('command-policy', () => {
+const GRAND: RepositoryConfig = { repositoryGuid: 'abc-123' };
+const FORK: RepositoryConfig = { repositoryGuid: 'def-456', grandGuid: 'abc-123' };
+
+/** term connect: grand-guarded, not destructive, so an opt-in alone clears it. */
+const connect = (ref: string) => enforceResolvedTarget(CMD.TERM_CONNECT, { ref });
+/** backup restore: grand-guarded and destructive, so an agent is asked to confirm. */
+const restore = (ref: string) => enforceResolvedTarget(CMD.BACKUP_RESTORE, { ref });
+
+/** The decision code a refusal carries first in its details. */
+async function refusalCode(run: Promise<void>): Promise<unknown> {
+  const error = await run.catch((e: unknown) => e);
+  expect(error).toBeInstanceOf(CliExitError);
+  return (error as CliExitError).details?.[0];
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  state.config = undefined;
+  state.fileExists = true;
+  mockIsOverrideLegitimate.mockReturnValue(true);
+  mockIsAncestryAvailable.mockReturnValue(true);
+  setConfirmGrand(undefined);
+  delete process.env.REDIACC_ALLOW_GRAND_REPO;
+  delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
+});
+
+afterEach(() => {
+  setConfirmGrand(undefined);
+  delete process.env.REDIACC_ALLOW_GRAND_REPO;
+  delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
+});
+
+describe('a human', () => {
+  beforeEach(() => mockIsAgent.mockReturnValue(false));
+
+  it('with no policy is allowed without resolving the target (an owner may run anything)', async () => {
+    await expect(connect('mail')).resolves.toBeUndefined();
+    expect(mockGetRepo).not.toHaveBeenCalled();
+  });
+
+  it('with no config file yet is judged with no policy', async () => {
+    state.fileExists = false;
+    await expect(connect('mail')).resolves.toBeUndefined();
+  });
+
+  it('is refused by a local-file policy that denies the command (D19, D24)', async () => {
+    state.config = {
+      policy: { version: 1, defaults: { commands: { allow: ['*'], deny: ['term connect'] } } },
+    };
+    mockGetRepo.mockResolvedValue(FORK);
+    const error = await connect('mail').catch((e: unknown) => e);
+    expect((error as CliExitError).details?.[0]).toBe('POLICY_DENIED');
+    expect((error as Error).message).toContain('errors.agent.policyDenied');
+  });
+
+  it('is refused a grand by a local-file policy that leaves allowGrandRepos unset', async () => {
+    state.config = { policy: { version: 1, defaults: { commands: { allow: ['*'] } } } };
+    mockGetRepo.mockResolvedValue(GRAND);
+    expect(await refusalCode(connect('mail'))).toBe('GRAND_REPO_DENIED');
+  });
+
+  it('control: a local-file policy that allows grand repos lets the human through, no opt-in asked', async () => {
+    state.config = {
+      policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
+    };
+    mockGetRepo.mockResolvedValue(GRAND);
+    await expect(restore('mail')).resolves.toBeUndefined();
+  });
+
+  it('refuses a local-file policy whose deny rule names no live command', async () => {
+    state.config = {
+      policy: { version: 1, defaults: { commands: { allow: ['*'], deny: ['repo vanished'] } } },
+    };
+    await expect(connect('mail')).rejects.toThrow('repo vanished');
+  });
+
+  it('is judged with no policy on a remote config (no org-role source on the CLI)', async () => {
+    state.config = { remote: { storeId: 's', configId: 'c' } };
+    await expect(connect('mail')).resolves.toBeUndefined();
+    expect(mockGetRepo).not.toHaveBeenCalled();
+  });
+});
+
+describe('an agent on a grand-guarded command', () => {
+  beforeEach(() => mockIsAgent.mockReturnValue(true));
+
+  it('is refused a grand with no opt-in, with the fork-first message', async () => {
+    mockGetRepo.mockResolvedValue(GRAND);
+    const error = await connect('mail').catch((e: unknown) => e);
+    expect((error as CliExitError).details?.[0]).toBe('AGENT_OPT_IN_MISSING');
+    expect((error as Error).message).toBe('errors.agent.grandGuard:{"name":"mail"}');
+  });
+
+  it('is let through on a fork', async () => {
+    mockGetRepo.mockResolvedValue(FORK);
+    await expect(connect('mail:t')).resolves.toBeUndefined();
+  });
+
+  it('is refused a repo the config does not name: unresolved counts as grand (fail closed)', async () => {
+    mockGetRepo.mockResolvedValue(undefined);
+    expect(await refusalCode(connect('nothere'))).toBe('AGENT_OPT_IN_MISSING');
+  });
+
+  it.each([
+    ['*', 'mail'],
+    ['mail', 'mail'],
+    ['web,mail,db', 'mail'],
+    [' web , mail ', 'mail'],
+    ['web,*', 'mail'],
+  ])('honours REDIACC_ALLOW_GRAND_REPO=%j for %s', async (value, ref) => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = value;
+    mockGetRepo.mockResolvedValue(GRAND);
+    await expect(connect(ref)).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ['web', 'mail'],
+    ['web,db', 'mail'],
+    ['Mail', 'mail'],
+  ])('refuses with REDIACC_ALLOW_GRAND_REPO=%j for %s', async (value, ref) => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = value;
+    mockGetRepo.mockResolvedValue(GRAND);
+    expect(await refusalCode(connect(ref))).toBe('AGENT_OPT_IN_MISSING');
+  });
+
+  it('names an opt-in the agent set itself', async () => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    mockGetRepo.mockResolvedValue(GRAND);
+    await expect(connect('mail')).rejects.toThrow('errors.agent.grandGuardOverride:');
+  });
+
+  it('names an opt-in whose origin cannot be verified on this platform', async () => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    mockIsAncestryAvailable.mockReturnValue(false);
+    mockGetRepo.mockResolvedValue(GRAND);
+    await expect(connect('mail')).rejects.toThrow('errors.agent.grandGuardOverrideNonLinux:');
+  });
+
+  it('is asked to confirm a destructive command on a grand even with the opt-in (D21)', async () => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+    mockGetRepo.mockResolvedValue(GRAND);
+    const error = await restore('mail').catch((e: unknown) => e);
+    expect((error as CliExitError).details?.[0]).toBe('CONFIRMATION_REQUIRED');
+    expect((error as Error).message).toContain('errors.agent.confirmationRequired:');
+    expect((error as Error).message).toContain('"value":"mail"');
+  });
+
+  it('control: --confirm-grand naming the repo confirms it', async () => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+    mockGetRepo.mockResolvedValue(GRAND);
+    setConfirmGrand('mail');
+    await expect(restore('mail')).resolves.toBeUndefined();
+  });
+
+  it('a --confirm-grand naming another repo confirms nothing', async () => {
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+    mockGetRepo.mockResolvedValue(GRAND);
+    setConfirmGrand('web');
+    expect(await refusalCode(restore('mail'))).toBe('CONFIRMATION_REQUIRED');
+  });
+
+  it('a --confirm-grand does not stand in for the opt-in', async () => {
+    mockGetRepo.mockResolvedValue(GRAND);
+    setConfirmGrand('mail');
+    expect(await refusalCode(restore('mail'))).toBe('AGENT_OPT_IN_MISSING');
+  });
+});
+
+describe('ops VM exemption (operator ruling 2026-10-15)', () => {
+  const config = {
+    resources: {
+      machines: {
+        'ops-worker': { ip: '192.168.111.11', user: 'muhammed' },
+        'ops-worker-prod': { ip: '203.0.113.7', user: 'root' },
+        'edge-112': { ip: '192.168.112.11', user: 'muhammed' },
+      },
+      datastores: { 'ops-pool': {} },
+    },
+    state: { datastores: { 'ops-pool': { attachedTo: 'ops-worker' } } },
+  };
+  const grandOn = (placement: RepositoryConfig['placement']): RepositoryConfig => ({
+    repositoryGuid: 'abc-123',
+    placement,
+  });
+
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockIsOverrideLegitimate.mockReturnValue(true);
-    mockIsAncestryAvailable.mockReturnValue(true);
-    delete process.env.REDIACC_ALLOW_GRAND_REPO;
-    delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
+    mockIsAgent.mockReturnValue(true);
+    state.config = config;
   });
 
-  afterEach(() => {
-    delete process.env.REDIACC_ALLOW_GRAND_REPO;
-    delete process.env.REDIACC_ALLOW_CLUSTER_OPS;
+  it('allows a grand-guarded change to a grand placed on an ops VM', async () => {
+    mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker' }));
+    await expect(connect('vmcheck-base')).resolves.toBeUndefined();
+    await expect(restore('vmcheck-base')).resolves.toBeUndefined();
   });
 
-  describe('assertCommandPolicy', () => {
-    it('allows non-agent environments', async () => {
-      mockIsAgent.mockReturnValue(false);
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
-      expect(mockGetRepo).not.toHaveBeenCalled();
+  it('allows a grand on a datastore attached to an ops VM', async () => {
+    mockGetRepo.mockResolvedValue(grandOn({ datastore: 'ops-pool' }));
+    await expect(connect('vmcheck-base')).resolves.toBeUndefined();
+  });
+
+  it('still refuses an ops-looking machine name on a production address', async () => {
+    mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker-prod' }));
+    expect(await refusalCode(connect('mail'))).toBe('AGENT_OPT_IN_MISSING');
+  });
+
+  it('still refuses an address just outside the ops range', async () => {
+    mockGetRepo.mockResolvedValue(grandOn({ machine: 'edge-112' }));
+    expect(await refusalCode(connect('mail'))).toBe('AGENT_OPT_IN_MISSING');
+  });
+
+  it('still refuses a grand with no recorded placement', async () => {
+    mockGetRepo.mockResolvedValue(grandOn(undefined));
+    expect(await refusalCode(connect('mail'))).toBe('AGENT_OPT_IN_MISSING');
+  });
+});
+
+describe('repo admin orphan delete: the machine marker decides grand or fork', () => {
+  const GUID = '260f0a05-1111-4222-8333-444455556666';
+  const orphan = (machine: string, isFork: boolean) =>
+    enforceResolvedTarget(CMD.REPO_ADMIN_ORPHAN_DELETE, {
+      machine,
+      identified: { name: GUID, state: isFork ? 'fork' : 'grand' },
     });
+  const machines = (ip: string) => {
+    state.config = { resources: { machines: { box: { ip } } } };
+  };
 
-    it('blocks grand repos in agent mode', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+  beforeEach(() => mockIsAgent.mockReturnValue(true));
 
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuard'
-      );
-    });
+  it('lets an agent delete an orphan the machine marks as a fork', async () => {
+    machines('203.0.113.7');
+    await expect(orphan('box', true)).resolves.toBeUndefined();
+    expect(mockGetRepo).not.toHaveBeenCalled();
+  });
 
-    it('allows fork repos for grandGuard commands', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockGetRepo.mockResolvedValue({
-        repositoryGuid: 'fork-guid',
-        grandGuid: 'parent-guid',
-      } satisfies RepositoryConfig);
+  it('lets an agent delete a non-fork orphan on a machine inside the ops fleet network', async () => {
+    machines('192.168.111.11');
+    await expect(orphan('box', false)).resolves.toBeUndefined();
+  });
 
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail-fork')).resolves.not.toThrow();
-    });
+  it('refuses the same delete on a machine outside the ops fleet network', async () => {
+    machines('203.0.113.7');
+    await expect(orphan('box', false)).rejects.toThrow('errors.agent.grandGuard');
+  });
 
-    it('blocks fork repos for forkBlocked commands', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockGetRepo.mockResolvedValue({
-        repositoryGuid: 'fork-guid',
-        grandGuid: 'parent-guid',
-      } satisfies RepositoryConfig);
+  it('control: the opt-in naming the GUID lets it through', async () => {
+    machines('203.0.113.7');
+    process.env.REDIACC_ALLOW_GRAND_REPO = GUID;
+    await expect(orphan('box', false)).resolves.toBeUndefined();
+  });
+});
 
-      await expect(assertCommandPolicy(CMD.REPO_RESIZE, 'mail-fork')).rejects.toThrow(
-        'errors.agent.forkBlocked'
-      );
-    });
+describe('cluster operations (REDIACC_ALLOW_CLUSTER_OPS)', () => {
+  const join = (cluster: string | undefined) =>
+    enforceResolvedTarget(CMD.CLUSTER_JOIN, cluster ? { subject: cluster } : {});
 
-    describe('ops VM exemption (operator ruling 2026-10-15)', () => {
-      const config = {
-        resources: {
-          machines: {
-            'ops-worker': { ip: '192.168.111.11', user: 'muhammed' },
-            'ops-worker-prod': { ip: '203.0.113.7', user: 'root' },
-            'edge-112': { ip: '192.168.112.11', user: 'muhammed' },
-          },
-          datastores: { 'ops-pool': {} },
-        },
-        state: { datastores: { 'ops-pool': { attachedTo: 'ops-worker' } } },
-      };
-      const grandOn = (placement: RepositoryConfig['placement']): RepositoryConfig => ({
-        repositoryGuid: 'abc-123',
-        placement,
-      });
+  beforeEach(() => mockIsAgent.mockReturnValue(true));
 
-      beforeEach(() => {
-        mockIsAgent.mockReturnValue(true);
-        vi.mocked(configService.getCurrent).mockResolvedValue(config as never);
-      });
+  it('refuses an agent with no cluster opt-in', async () => {
+    await expect(join('prod')).rejects.toThrow('errors.agent.clusterOpBlocked');
+  });
 
-      afterEach(() => {
-        vi.mocked(configService.getCurrent).mockResolvedValue(null);
-      });
-
-      it('allows a grand-guarded write to a grand placed on an ops VM', async () => {
-        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker' }));
-        await expect(assertCommandPolicy(CMD.REPO_UP, 'vmcheck-base')).resolves.toBeUndefined();
-        await expect(assertCommandPolicy(CMD.REPO_DELETE, 'vmcheck-base')).resolves.toBeUndefined();
-      });
-
-      it('allows a grand on a datastore attached to an ops VM', async () => {
-        mockGetRepo.mockResolvedValue(grandOn({ datastore: 'ops-pool' }));
-        await expect(assertCommandPolicy(CMD.REPO_UP, 'vmcheck-base')).resolves.toBeUndefined();
-      });
-
-      it('still blocks an ops-looking machine name on a production address', async () => {
-        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker-prod' }));
-        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-          'errors.agent.grandGuard:{"name":"mail"}'
-        );
-      });
-
-      it('still blocks an address just outside the ops range', async () => {
-        mockGetRepo.mockResolvedValue(grandOn({ machine: 'edge-112' }));
-        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-          'errors.agent.grandGuard:{"name":"mail"}'
-        );
-      });
-
-      it('still blocks a grand with no recorded placement', async () => {
-        mockGetRepo.mockResolvedValue(grandOn(undefined));
-        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-          'errors.agent.grandGuard:{"name":"mail"}'
-        );
-      });
-
-      it('keeps `rdc run` blocked on an ops VM', async () => {
-        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker' }));
-        await expect(assertCommandPolicy(CMD.RUN, 'vmcheck-base')).rejects.toThrow(
-          'errors.agent.commandBlocked'
-        );
-      });
-    });
-
-    it('respects REDIACC_ALLOW_GRAND_REPO=*', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = '*';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
-    });
-
-    it('respects REDIACC_ALLOW_GRAND_REPO=<name>', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
-    });
-
-    it('blocks when REDIACC_ALLOW_GRAND_REPO does not match', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'other';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuard'
-      );
-    });
-
-    it('respects REDIACC_ALLOW_GRAND_REPO=<comma list> for each listed repo', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web,gitlab';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'web')).resolves.not.toThrow();
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'gitlab')).resolves.not.toThrow();
-    });
-
-    it('tolerates whitespace around comma-separated entries', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = ' mail , web ';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).resolves.not.toThrow();
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'web')).resolves.not.toThrow();
-    });
-
-    it('blocks repos not in the comma list', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'web,gitlab';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuard'
-      );
-    });
-
-    it('grand-repo match is case-sensitive', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'Mail';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuard'
-      );
-    });
-
-    it('treats `*` inside a list as wildcard', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,*';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'anything')).resolves.not.toThrow();
-    });
-
-    it('reports agent-injected override when ancestry verification is available', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(false);
-      mockIsAncestryAvailable.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuardOverride:'
-      );
-    });
-
-    it('reports unverifiable override when ancestry verification is unavailable', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(false);
-      mockIsAncestryAvailable.mockReturnValue(false);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
-      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
-        'errors.agent.grandGuardOverrideNonLinux'
-      );
-    });
-
-    it('agentBlocked ignores comma-list override', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web';
-
-      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
-    });
-
-    it('skips check when repo not found', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockGetRepo.mockResolvedValue(undefined);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP, 'nonexistent')).resolves.not.toThrow();
-    });
-
-    it('skips check when no repoName provided', async () => {
-      mockIsAgent.mockReturnValue(true);
-
-      await expect(assertCommandPolicy(CMD.REPO_UP)).resolves.not.toThrow();
-      expect(mockGetRepo).not.toHaveBeenCalled();
-    });
-
-    it('blocks agentBlocked commands unconditionally in agent mode', async () => {
-      mockIsAgent.mockReturnValue(true);
-
-      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
-      expect(mockGetRepo).not.toHaveBeenCalled();
-    });
-
-    it('allows agentBlocked commands for non-agent environments', async () => {
-      mockIsAgent.mockReturnValue(false);
-
-      await expect(assertCommandPolicy(CMD.RUN)).resolves.not.toThrow();
-    });
-
-    it('agentBlocked ignores REDIACC_ALLOW_GRAND_REPO override', async () => {
-      mockIsAgent.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_GRAND_REPO = '*';
-
-      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
+  it('allows a named cluster and audits the honoured opt-in', async () => {
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod';
+    await expect(join('prod')).resolves.toBeUndefined();
+    expect(mockAuditLog).toHaveBeenCalledOnce();
+    expect(mockAuditLog.mock.calls[0]?.[1]).toMatchObject({
+      command: 'cluster join',
+      paths: ['prod'],
+      outcome: 'ok',
     });
   });
 
-  describe('cluster-ops override (REDIACC_ALLOW_CLUSTER_OPS)', () => {
-    it('allows a cluster verb with a legitimate wildcard override in agent mode', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
-
-      await expect(
-        assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, 'prod')
-      ).resolves.not.toThrow();
-      expect(mockGetRepo).not.toHaveBeenCalled();
-    });
-
-    it('audits actor.kind=agent (via auditLog) when a legitimate override is honored', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
-
-      await assertCommandPolicy(CMD.CLUSTER_DESTROY, undefined, 'prod');
-
-      expect(mockAuditLog).toHaveBeenCalledTimes(1);
-      const draft = mockAuditLog.mock.calls[0][1];
-      expect(draft.command).toBe('cluster destroy');
-      expect(draft.paths).toEqual(['prod']);
-      expect(draft.outcome).toBe('ok');
-      expect(draft.reason).toContain('REDIACC_ALLOW_CLUSTER_OPS');
-    });
-
-    it('blocks when the override is present only in a descendant (agent self-set)', async () => {
-      mockIsAgent.mockReturnValue(true);
-      // isOverrideLegitimate=false models the ancestry walk finding the override
-      // BELOW the agent boundary (the agent set it itself).
-      mockIsOverrideLegitimate.mockReturnValue(false);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
-
-      await expect(assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, 'prod')).rejects.toThrow(
-        'errors.agent.clusterOpBlocked'
-      );
-      expect(mockAuditLog).not.toHaveBeenCalled();
-    });
-
-    it('blocks a cluster verb when no override is set', async () => {
-      mockIsAgent.mockReturnValue(true);
-
-      await expect(assertCommandPolicy(CMD.CLUSTER_SCALE, undefined, 'prod')).rejects.toThrow(
-        'errors.agent.clusterOpBlocked'
-      );
-    });
-
-    it('allows cluster verbs for non-agent environments regardless of override', async () => {
-      mockIsAgent.mockReturnValue(false);
-
-      await expect(
-        assertCommandPolicy(CMD.CLUSTER_DESTROY, undefined, 'prod')
-      ).resolves.not.toThrow();
-    });
-
-    it('keeps `run` absolutely blocked even with REDIACC_ALLOW_CLUSTER_OPS=*', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
-
-      await expect(assertCommandPolicy(CMD.RUN)).rejects.toThrow('errors.agent.commandBlocked');
-      expect(mockAuditLog).not.toHaveBeenCalled();
-    });
-
-    it('name-list matches the target cluster and rejects others', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod,edge';
-
-      await expect(
-        assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'prod')
-      ).resolves.not.toThrow();
-      await expect(
-        assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'edge')
-      ).resolves.not.toThrow();
-      await expect(assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, 'staging')).rejects.toThrow(
-        'errors.agent.clusterOpBlocked'
-      );
-    });
-
-    it('a name-list override does NOT unlock a different cluster even if legitimate', async () => {
-      mockIsAgent.mockReturnValue(true);
-      mockIsOverrideLegitimate.mockReturnValue(true);
-      process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod';
-
-      await expect(assertCommandPolicy(CMD.CLUSTER_FORK, undefined, 'other')).rejects.toThrow(
-        'errors.agent.clusterOpBlocked'
-      );
-      expect(mockAuditLog).not.toHaveBeenCalled();
-    });
+  it('a name-list opt-in does not unlock a different cluster', async () => {
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = 'staging';
+    await expect(join('prod')).rejects.toThrow('errors.agent.clusterOpBlocked');
+    expect(mockAuditLog).not.toHaveBeenCalled();
   });
 
-  describe('validateRemotePath', () => {
-    it('accepts valid relative paths', () => {
-      expect(() => validateRemotePath('data')).not.toThrow();
-      expect(() => validateRemotePath('data/subdir')).not.toThrow();
-      expect(() => validateRemotePath('.')).not.toThrow();
-      expect(() => validateRemotePath('./data')).not.toThrow();
-    });
-
-    it('rejects ../ traversal', () => {
-      expect(() => validateRemotePath('../etc')).toThrow('errors.sync.pathTraversalBlocked');
-      expect(() => validateRemotePath('data/../../etc')).toThrow(
-        'errors.sync.pathTraversalBlocked'
-      );
-      expect(() => validateRemotePath('..')).toThrow('errors.sync.pathTraversalBlocked');
-    });
-
-    it('rejects absolute paths', () => {
-      expect(() => validateRemotePath('/etc/passwd')).toThrow('errors.sync.absolutePathBlocked');
-      expect(() => validateRemotePath('/var/run')).toThrow('errors.sync.absolutePathBlocked');
-    });
+  it('a named opt-in does not cover a command that names no cluster; `*` does', async () => {
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod';
+    await expect(join(undefined)).rejects.toThrow('errors.agent.clusterOpBlocked');
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+    await expect(join(undefined)).resolves.toBeUndefined();
   });
 
-  describe('policy consistency', () => {
-    it('every forkBlocked entry also has grandGuard', () => {
-      for (const [cmd, policy] of COMMAND_POLICIES) {
-        if (policy.forkBlocked) {
-          expect(policy.grandGuard, `${cmd} is forkBlocked but not grandGuard`).toBe(true);
-        }
+  it('refuses an opt-in the agent set itself', async () => {
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = '*';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    await expect(join('prod')).rejects.toThrow('errors.agent.clusterOpBlocked');
+  });
+
+  it('judges cluster rehearse as cluster fork', async () => {
+    const rehearse = () => enforceResolvedTarget('cluster rehearse', { subject: 'prod' });
+    await expect(rehearse()).rejects.toThrow(
+      'errors.agent.clusterOpBlocked:{"command":"cluster fork"}'
+    );
+    process.env.REDIACC_ALLOW_CLUSTER_OPS = 'prod';
+    await expect(rehearse()).resolves.toBeUndefined();
+  });
+
+  it('control: a human runs a cluster operation with no opt-in', async () => {
+    mockIsAgent.mockReturnValue(false);
+    await expect(join('prod')).resolves.toBeUndefined();
+  });
+});
+
+describe('enforceResolvedTarget boundaries', () => {
+  it('refuses a command the root hook judges (not on ACTION_RESOLVED_TARGETS)', async () => {
+    mockIsAgent.mockReturnValue(false);
+    await expect(enforceResolvedTarget(CMD.REPO_UP, { ref: 'mail' })).rejects.toThrow(
+      'judged by the root hook'
+    );
+  });
+
+  it('judges nothing inside an executor request (the executor already did)', async () => {
+    mockIsAgent.mockReturnValue(true);
+    mockGetRepo.mockResolvedValue(GRAND);
+    const inRequest = runInRequestContext(
+      {
+        output: createOutputState(),
+        stdout: [],
+        stderr: [],
+        config: createRequestConfigScope({} as never),
+      },
+      () => connect('mail')
+    );
+    await expect(inRequest).resolves.toBeUndefined();
+    expect(mockGetRepo).not.toHaveBeenCalled();
+  });
+
+  it('every listed command carries a reason, and every judgedAs names a guarded command', () => {
+    for (const [path, { reason, judgedAs }] of ACTION_RESOLVED_TARGETS) {
+      expect(reason.length, path).toBeGreaterThan(10);
+      if (judgedAs) expect(COMMAND_POLICIES.has(judgedAs as never), path).toBe(true);
+    }
+  });
+});
+
+describe('validateRemotePath', () => {
+  it('accepts valid relative paths', () => {
+    expect(() => validateRemotePath('data')).not.toThrow();
+    expect(() => validateRemotePath('data/sub')).not.toThrow();
+    expect(() => validateRemotePath('./data')).not.toThrow();
+  });
+
+  it('rejects ../ traversal', () => {
+    expect(() => validateRemotePath('../etc')).toThrow('errors.sync.pathTraversalBlocked');
+    expect(() => validateRemotePath('data/../../etc')).toThrow('errors.sync.pathTraversalBlocked');
+  });
+
+  it('rejects absolute paths', () => {
+    expect(() => validateRemotePath('/etc/passwd')).toThrow('errors.sync.absolutePathBlocked');
+  });
+});
+
+describe('policy consistency', () => {
+  it('every forkBlocked entry also has grandGuard', () => {
+    for (const [cmd, policy] of COMMAND_POLICIES) {
+      if (policy.forkBlocked) {
+        expect(policy.grandGuard, `${cmd} is forkBlocked but not grandGuard`).toBe(true);
       }
-    });
-
-    it('all CMD values are unique', () => {
-      const values = Object.values(CMD);
-      expect(new Set(values).size).toBe(values.length);
-    });
-
-    it('every CMD value has a policy entry', () => {
-      for (const [key, value] of Object.entries(CMD)) {
-        expect(COMMAND_POLICIES.has(value), `${key} (${value}) missing from COMMAND_POLICIES`).toBe(
-          true
-        );
-      }
-    });
+    }
   });
-  describe('assertOrphanDeletePolicy ops VM exemption', () => {
-    const GUID = '260f0a05-1111-4222-8333-444455556666';
-    const machines = (ip: string) =>
-      vi.mocked(configService.getCurrent).mockResolvedValue({
-        resources: { machines: { box: { ip } } },
-      } as never);
 
-    it('lets an agent delete a non-fork orphan on a machine inside the ops fleet network', async () => {
-      mockIsAgent.mockReturnValue(true);
-      machines('192.168.111.11');
-      await expect(assertOrphanDeletePolicy(GUID, 'box', false)).resolves.toBeUndefined();
-    });
+  it('all CMD values are unique', () => {
+    const values = Object.values(CMD);
+    expect(new Set(values).size).toBe(values.length);
+  });
 
-    it('blocks the same delete on a machine outside the ops fleet network', async () => {
-      mockIsAgent.mockReturnValue(true);
-      machines('203.0.113.7');
-      await expect(assertOrphanDeletePolicy(GUID, 'box', false)).rejects.toThrow(
-        'errors.agent.grandGuard'
+  it('every CMD value has a policy entry', () => {
+    for (const [key, value] of Object.entries(CMD)) {
+      expect(COMMAND_POLICIES.has(value), `${key} (${value}) missing from COMMAND_POLICIES`).toBe(
+        true
       );
-    });
-
-    it('does not exempt by machine name alone', async () => {
-      mockIsAgent.mockReturnValue(true);
-      vi.mocked(configService.getCurrent).mockResolvedValue(null as never);
-      await expect(assertOrphanDeletePolicy(GUID, 'ops-worker', false)).rejects.toThrow(
-        'errors.agent.grandGuard'
-      );
-    });
+    }
   });
 });

@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "Agendid ei saa muuta grand-hoidla \"{{name}}\" teeõigusi: selle Rediaccfile jõuaks hosti teedeni, mida kasutaja pole kunagi heaks kiitnud.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist. Fork ei vaja ülekirjutust.",
       "pathGrantOverride": "Agendi algatatud ülekirjutusi grand-hoidla \"{{name}}\" teeloa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
       "limitsGrantBlocked": "Agendid ei saa muuta põhihoidla \"{{name}}\" ressursipiiranguid: madalam piir võib selle konteinerid OOM-iga lõpetada.\n\nKasutaja: lubamiseks sea enne agendi seansi alustamist terminalis REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi hoidlate jaoks). Haru jaoks pole seda vaja.",
-      "limitsGrantOverride": "Põhihoidla \"{{name}}\" piirangumuudatuse jaoks ei aktsepteerita agendi algatatud erandeid.\n\nÄra proovi seada REDIACC_ALLOW_GRAND_REPO. Seda saab lubada ainult kasutaja enne agendi käivitamist."
+      "limitsGrantOverride": "Põhihoidla \"{{name}}\" piirangumuudatuse jaoks ei aktsepteerita agendi algatatud erandeid.\n\nÄra proovi seada REDIACC_ALLOW_GRAND_REPO. Seda saab lubada ainult kasutaja enne agendi käivitamist.",
+      "policyDenied": "Kehtiv poliitika ei luba käsku \"rdc {{command}}\". Üksikasjad nimetavad reegli, mis selle keelas.",
+      "grandRepoDenied": "\"rdc {{command}}\" muudaks hoidlat \"{{name}}\", mis on grand-hoidla (toodang), ja kehtiv poliitika ei luba grand-hoidlaid muuta.\n\nTööta selle asemel forgiga:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" on klastritoiming ja kehtiv poliitika ei luba klastritoiminguid.",
+      "confirmationRequired": "\"rdc {{command}}\" on hävitav käsk ja muudaks hoidlat \"{{name}}\", mis on grand-hoidla (toodang).\n\nKüsi kasutajalt kinnitust ja käivita sama käsk uuesti koos {{flag}} {{value}}."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "Prindi URL ilma kohalikku brauserit käivitamata",
     "vscodeServerArchive": "Serveritarball-i eellavastatud tee masinal (õhust eraldatud paigaldused)",
     "vscodeServerProvider": "Brauseri VS Code serveri implementatsioon (openvscode, code-server)",
-    "yes": "Jäta kinnitusviip vahele"
+    "yes": "Jäta kinnitusviip vahele",
+    "confirmGrand": "Kinnita grand-hoidla hävitav muudatus, korrates nime, mida keeldumine küsis"
   },
   "prompts": {
     "cancelled": "Tühistatud",

@@ -2702,6 +2702,7 @@
   "options.config": "Utiliser une configuration spécifique pour cette commande",
   "options.configKey": "Clé de configuration",
   "options.configValue": "Valeur de configuration",
+  "options.confirmGrand": "Confirmer une modification destructive d'un dépôt grand en répétant le nom demandé par le refus",
   "options.confirmSync": "Aperçu des modifications et demande de confirmation avant synchronisation",
   "options.connectionName": "Supprimer une connexion spécifique",
   "options.connectTarget": "Cible : un nom de machine ou de cluster pour un shell dessus, ou une réf de dépôt (nom, nom:tag, éventuellement @machine) pour un shell à l'intérieur",

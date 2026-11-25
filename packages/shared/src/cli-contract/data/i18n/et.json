@@ -2702,6 +2702,7 @@
   "options.config": "Kasuta selle käsu jaoks konkreetset konfiguratsiooni",
   "options.configKey": "Konfiguratsioonivõti",
   "options.configValue": "Konfiguratsiooniväärtus",
+  "options.confirmGrand": "Kinnita grand-hoidla hävitav muudatus, korrates nime, mida keeldumine küsis",
   "options.confirmSync": "Kuva muudatuste eelvaade ja küsi kinnitust enne sünkroonimist",
   "options.connectionName": "Eemalda konkreetne ühendus",
   "options.connectTarget": "Sihtmärk: masina või klastri nimi shelli avamiseks sellel, või hoidla viide (nimi, nimi:silt, valikuliselt @machine) shelli avamiseks selle sees",

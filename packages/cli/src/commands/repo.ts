@@ -8,7 +8,6 @@ import { parseCapturedJson } from '../services/executor/renet-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -50,7 +49,6 @@ interface RepoUpSingleOptions {
 
 async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Promise<void> {
   const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-  await assertCommandPolicy(CMD.REPO_UP, repoKey);
 
   // `--no-start` folds the retired `repo mount`: LUKS open / PV generation without running the Rediaccfile up() steps.
   const noStart = options.start === false;
@@ -263,7 +261,6 @@ export function registerRepoCommands(program: Command): void {
               throw new ValidationError(t('commands.repo.batchRefConflict', { verb: 'down' }));
             }
             const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-            await assertCommandPolicy(CMD.REPO_DOWN, repoKey);
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;

@@ -26,7 +26,6 @@ import { removeReplicaSet, replicateRepo } from '../services/cluster/repo-replic
 import { refreshReplicaSet } from '../services/cluster/repo-replicate-refresh.js';
 import { outputService } from '../services/core/output.js';
 import { notFound } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 
@@ -83,7 +82,6 @@ export function registerRepoReplicateCommands(repo: Command): void {
           if (!value) throw new ValidationError(`${flag} is required`);
         }
         const { repoKey, cluster, datastore } = await resolveClusterRepo(ref);
-        await assertCommandPolicy(CMD.REPO_REPLICATE, repoKey);
         await replicateRepo({
           repo: repoKey,
           cluster,
@@ -131,7 +129,6 @@ export function registerRepoReplicateCommands(repo: Command): void {
     .action(async function (this: Command, ref: string) {
       try {
         const { repoKey } = await resolveRepoRef(ref);
-        await assertCommandPolicy(CMD.REPO_REPLICATE_REMOVE, repoKey);
         await removeReplicaSet(repoKey, this.optsWithGlobals().debug);
       } catch (error) {
         handleError(error);
@@ -147,7 +144,6 @@ export function registerRepoReplicateCommands(repo: Command): void {
     .action(async function (this: Command, ref: string) {
       try {
         const { repoKey } = await resolveRepoRef(ref);
-        await assertCommandPolicy(CMD.REPO_REPLICATE_REFRESH, repoKey);
         await refreshReplicaSet(repoKey, this.optsWithGlobals().debug);
       } catch (error) {
         handleError(error);

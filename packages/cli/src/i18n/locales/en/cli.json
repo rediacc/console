@@ -3569,7 +3569,11 @@
       "pathGrantBlocked": "Agents cannot change the path grants of the grand repository \"{{name}}\": its Rediaccfile would reach host paths the user never approved.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
       "pathGrantOverride": "Agent-initiated overrides are not accepted for a path grant on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
       "limitsGrantBlocked": "Agents cannot change the resource limits of the grand repository \"{{name}}\": a lower cap can OOM-kill its containers.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
-      "limitsGrantOverride": "Agent-initiated overrides are not accepted for a limit change on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts."
+      "limitsGrantOverride": "Agent-initiated overrides are not accepted for a limit change on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
+      "policyDenied": "\"rdc {{command}}\" is not allowed by the policy in force. The details name the rule that refused it.",
+      "grandRepoDenied": "\"rdc {{command}}\" would change \"{{name}}\", a grand (production) repository, and the policy in force does not allow changes to grand repositories.\n\nWork on a fork instead:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" is a cluster operation, and the policy in force does not allow cluster operations.",
+      "confirmationRequired": "\"rdc {{command}}\" is destructive and would change \"{{name}}\", a grand (production) repository.\n\nAsk the user to confirm, then run the same command again with {{flag}} {{value}}."
     },
     "authRequired": "Authentication required. Run: rdc subscription login",
     "cluster": {
@@ -3977,7 +3981,8 @@
     "vscodeNoOpen": "Print the URL without launching the local browser",
     "vscodeServerArchive": "Pre-staged server tarball path on the machine (airgapped installs)",
     "vscodeServerProvider": "Browser VS Code server implementation (openvscode, code-server)",
-    "yes": "Skip confirmation prompt"
+    "yes": "Skip confirmation prompt",
+    "confirmGrand": "Confirm a destructive change to a grand repository by repeating the name the refusal asked for"
   },
   "prompts": {
     "cancelled": "Cancelled",

@@ -46,7 +46,7 @@ vi.mock('../../services/backup/repo-change-hook.js', () => ({
 }));
 vi.mock('../../utils/repo-executor.js', () => ({ recordedDatastoreMount: () => undefined }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn(),
+  enforceResolvedTarget: vi.fn(),
   CMD: { REPO_PROMOTE: 'repo.promote' },
 }));
 vi.mock('../../services/core/output.js', () => ({

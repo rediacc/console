@@ -2702,6 +2702,7 @@
   "options.config": "このコマンドに特定の設定を使用する",
   "options.configKey": "設定キー",
   "options.configValue": "設定値",
+  "options.confirmGrand": "拒否メッセージが求めた名前を繰り返して、grand リポジトリへの破壊的な変更を確認します",
   "options.confirmSync": "同期前に変更をプレビューして確認を要求する",
   "options.connectionName": "特定の接続を削除する",
   "options.connectTarget": "対象: シェルを開くマシンまたはクラスター名、あるいはリポジトリ内でシェルを開くためのリポジトリ ref（名前、名前:タグ、任意で @machine）",

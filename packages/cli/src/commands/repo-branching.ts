@@ -8,7 +8,7 @@ import type { ExecuteResult } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -55,7 +55,6 @@ async function handleCommit(
   try {
     // Mutating verb: derive the execution machine from the ref's placement (spec/03 §2.3). No `-m`/`--cluster` any more.
     const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-    await assertCommandPolicy(CMD.REPO_COMMIT, repoKey);
 
     const cfg = await configService.getRepository(repoKey);
     if (!cfg) throw new ValidationError(`Repository "${name}" not found in context`);
@@ -126,7 +125,6 @@ async function handleBranch(ref: string, options: { branch: string }): Promise<v
     // Config-only ref op (spec §5.4): points a branch at a working fork in the
     // config; it never dispatches to a machine, so resolve the family locally.
     const { name, repoKey } = await resolveRepoRefLocal(ref);
-    await assertCommandPolicy(CMD.REPO_BRANCH, repoKey);
     const cfg = await configService.getRepository(repoKey);
     if (!cfg) throw new ValidationError(`Repository "${name}" not found in context`);
     const tip = cfg.headCommit;
@@ -178,7 +176,7 @@ async function handleCheckout(
     // kubeCluster, so a kubernetes-world source forks with KUBECONFIG threaded;
     // a docker source leaves it unset and forks against the machine's daemon.
     const { repoKey, machineName, kubeCluster } = await resolveRepoRef(options.from ?? baseName);
-    await assertCommandPolicy(CMD.REPO_CHECKOUT, repoKey);
+    await enforceResolvedTarget(CMD.REPO_CHECKOUT, { ref: repoKey });
 
     // The new working fork's tip = the checked-out commit, recorded as a step on the fork job's ticket (PLAN-detached-jobs J4).
     await handleForkAction(commitRef, options.tag, {
@@ -297,7 +295,6 @@ async function handleMerge(
 ): Promise<void> {
   try {
     const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-    await assertCommandPolicy(CMD.REPO_MERGE, repoKey);
 
     const targetCfg = await configService.getRepository(repoKey);
     if (!targetCfg) throw new ValidationError(`Repository "${name}" not found in context`);

@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "Los agentes no pueden cambiar las concesiones de ruta del repo grand \"{{name}}\": su Rediaccfile alcanzaría rutas del host que el usuario nunca aprobó.\n\nUsuario: para permitirlo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente. Un fork no necesita anulación.",
       "pathGrantOverride": "No se aceptan anulaciones iniciadas por el agente para una concesión de ruta en el repo grand \"{{name}}\".\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que el agente se inicie.",
       "limitsGrantBlocked": "Los agentes no pueden cambiar los límites de recursos del repositorio grand \"{{name}}\": un tope más bajo puede terminar sus contenedores por OOM.\n\nUsuario: para permitirlo, defina REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente. Un fork no necesita ninguna excepción.",
-      "limitsGrantOverride": "No se aceptan excepciones iniciadas por un agente para un cambio de límites en el repositorio grand \"{{name}}\".\n\nNo intente definir REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que se inicie el agente."
+      "limitsGrantOverride": "No se aceptan excepciones iniciadas por un agente para un cambio de límites en el repositorio grand \"{{name}}\".\n\nNo intente definir REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que se inicie el agente.",
+      "policyDenied": "La política vigente no permite \"rdc {{command}}\". Los detalles indican la regla que lo rechazó.",
+      "grandRepoDenied": "\"rdc {{command}}\" modificaría \"{{name}}\", un repositorio grand (producción), y la política vigente no permite cambios en repositorios grand.\n\nTrabaja en un fork:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" es una operación de clúster, y la política vigente no permite operaciones de clúster.",
+      "confirmationRequired": "\"rdc {{command}}\" es destructivo y modificaría \"{{name}}\", un repositorio grand (producción).\n\nPide confirmación al usuario y vuelve a ejecutar el mismo comando con {{flag}} {{value}}."
     },
     "authRequired": "Se requiere autenticación. Ejecute: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "Imprimir la URL sin abrir el navegador local",
     "vscodeServerArchive": "Ruta al tarball del servidor preinstalado en la máquina (instalaciones sin conexión)",
     "vscodeServerProvider": "Implementación del servidor VS Code para el navegador (openvscode, code-server)",
-    "yes": "Omitir indicador de confirmación"
+    "yes": "Omitir indicador de confirmación",
+    "confirmGrand": "Confirma un cambio destructivo en un repositorio grand repitiendo el nombre que pidió el rechazo"
   },
   "prompts": {
     "cancelled": "Cancelado",

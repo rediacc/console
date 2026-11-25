@@ -10,7 +10,6 @@ import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js'
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
@@ -274,7 +273,6 @@ async function preparePush(
  */
 async function pushRepo(ref: string, options: Record<string, unknown>): Promise<void> {
   const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-  await assertCommandPolicy(CMD.REPO_PUSH, repoKey);
   const repoConfig = await configService.getRepository(repoKey);
   if (!repoConfig) {
     throw new ValidationError(t('errors.repositoryNotFound', { name }));
@@ -409,7 +407,6 @@ export async function postPullDeploy(
  */
 async function pullRepo(ref: string, options: Record<string, unknown>): Promise<void> {
   const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-  await assertCommandPolicy(CMD.REPO_PULL, repoKey);
   const params: Record<string, unknown> = { repository: repoKey };
 
   const execOptions: Record<string, unknown> = {

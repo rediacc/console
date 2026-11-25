@@ -19,7 +19,6 @@ import { runCommandJob } from '../services/jobs/command-job.js';
 import { planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -134,7 +133,6 @@ export async function handleRepoDelete(
     });
     const { key: target, config: repoConfig } =
       await configService.resolveDestructiveTarget(repoKey);
-    await assertCommandPolicy(CMD.REPO_DELETE, target);
     // Refused before anything is deleted: a fork's lineage is its parent's, and a purge would take the parent's backups with it.
     if (options.purgeBackups && isFork(repoConfig)) {
       throw new ValidationError(t('commands.repo.delete.purgeForkRefused', { repository: target }));

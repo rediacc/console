@@ -101,7 +101,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
 }));
 vi.mock('../../services/executor/local-executor.js', () => ({ parseCapturedJson: JSON.parse }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: {
     DATASTORE_RESIZE: 'datastore resize',
     DATASTORE_CREATE: 'datastore create',

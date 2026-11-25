@@ -2702,6 +2702,7 @@
   "options.config": "Bu komut için belirli bir yapılandırma kullanın",
   "options.configKey": "Yapılandırma anahtarı",
   "options.configValue": "Yapılandırma değeri",
+  "options.confirmGrand": "Bir grand deposundaki yıkıcı değişikliği, reddin istediği adı tekrarlayarak onaylar",
   "options.confirmSync": "Değişiklikleri önizleyin ve senkronizasyondan önce onay isteyin",
   "options.connectionName": "Belirli bir bağlantıyı kaldırın",
   "options.connectTarget": "Hedef: üzerinde bir kabuk için bir makine veya küme adı, ya da içinde bir kabuk için bir depo referansı (ad, ad:etiket, isteğe bağlı olarak @makine)",

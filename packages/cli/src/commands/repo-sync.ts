@@ -32,7 +32,7 @@ import {
 } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
-import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
+import { validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { oraOptions, withSpinner } from '../utils/spinner.js';
@@ -161,7 +161,6 @@ interface ValidatedSyncOptions {
 async function validateSyncOptions(
   ref: string,
   options: SyncUploadOptions | SyncDownloadOptions,
-  command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD,
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<ValidatedSyncOptions> {
   // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no renet function call, so there is no executor sink to thread a kubeCluster marker into (and no control-node rerouting, the executor's kubeCluster override does not apply here). resolveRepoRef derives the machine that actually HOLDS the data (the datastore's attach machine), which is exactly the host
@@ -171,7 +170,6 @@ async function validateSyncOptions(
     resolveOptions
   );
 
-  await assertCommandPolicy(command, repoKey);
   if (options.remote) validateRemotePath(options.remote);
   if (options.remoteFile) validateRemotePath(options.remoteFile);
 
@@ -324,7 +322,7 @@ export function sftpUploadTransfer(
 
 async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_UPLOAD);
+  const validated = await validateSyncOptions(ref, options);
   const { isFileMode, sources } = validateUploadOptions(options);
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
@@ -432,7 +430,7 @@ async function syncDownload(
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_DOWNLOAD, resolveOptions);
+  const validated = await validateSyncOptions(ref, options, resolveOptions);
   const { localPath, isFileMode } = validateDownloadOptions(options);
   // Download (and `sync status`, its dry run) only reads: never replace the machine's renet.
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {

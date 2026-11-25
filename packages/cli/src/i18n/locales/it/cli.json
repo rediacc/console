@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "Gli agenti non possono modificare le concessioni di percorso del repo grand \"{{name}}\": il suo Rediaccfile raggiungerebbe percorsi dell'host che l'utente non ha mai approvato.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente. Un fork non richiede alcuna sostituzione.",
       "pathGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per una concessione di percorso sul repo grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato.",
       "limitsGrantBlocked": "Gli agenti non possono modificare i limiti di risorse del repository grand \"{{name}}\": un tetto più basso può far terminare per OOM i suoi container.\n\nUtente: per consentirlo, impostare REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repository) nel terminale prima di avviare la sessione dell'agente. Un fork non richiede deroghe.",
-      "limitsGrantOverride": "Le deroghe avviate da un agente non sono accettate per una modifica dei limiti sul repository grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO. Solo l'utente può autorizzarlo prima dell'avvio dell'agente."
+      "limitsGrantOverride": "Le deroghe avviate da un agente non sono accettate per una modifica dei limiti sul repository grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO. Solo l'utente può autorizzarlo prima dell'avvio dell'agente.",
+      "policyDenied": "La policy in vigore non consente \"rdc {{command}}\". I dettagli indicano la regola che l'ha rifiutato.",
+      "grandRepoDenied": "\"rdc {{command}}\" modificherebbe \"{{name}}\", un repository grand (produzione), e la policy in vigore non consente modifiche ai repository grand.\n\nLavora invece su un fork:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" è un'operazione di cluster, e la policy in vigore non consente operazioni di cluster.",
+      "confirmationRequired": "\"rdc {{command}}\" è distruttivo e modificherebbe \"{{name}}\", un repository grand (produzione).\n\nChiedi conferma all'utente, poi esegui di nuovo lo stesso comando con {{flag}} {{value}}."
     },
     "authRequired": "Autenticazione richiesta. Esegui: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "Stampa l'URL senza aprire il browser locale",
     "vscodeServerArchive": "Percorso del tarball del server pre-caricato sul macchinario (installazioni air-gap)",
     "vscodeServerProvider": "Implementazione del server VS Code nel browser (openvscode, code-server)",
-    "yes": "Salta la richiesta di conferma"
+    "yes": "Salta la richiesta di conferma",
+    "confirmGrand": "Conferma una modifica distruttiva a un repository grand ripetendo il nome richiesto dal rifiuto"
   },
   "prompts": {
     "cancelled": "Annullato",

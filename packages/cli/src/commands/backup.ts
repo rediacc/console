@@ -13,7 +13,7 @@ import { runCommandJob } from '../services/jobs/command-job.js';
 import { type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
@@ -374,10 +374,11 @@ function restoredIdentity(lineage: string): { repositoryGuid: string; grandGuid?
  * Validate a restore's artifact ref and resolve the source repo record.
  *
  * The ORDER here is load-bearing and unchanged from when this lived inline:
- * command policy runs before the target-exists check, and the agent create-gate
- * runs after it, because `assertCommandPolicy` returns early for a repo that is
- * not in config yet and would otherwise let a restore register a brand-new grand
- * repo without clearing the same gate `repo create` has to clear.
+ * the decision (`enforceResolvedTarget`) runs before the target-exists check, and
+ * the agent create-gate runs after it, so a restore that registers a brand-new
+ * grand repo clears the same gate `repo create` has to clear. The decision counts
+ * a repo not yet in config as grand (fail closed); the create-gate is the one
+ * whose message names repo creation.
  *
  * `place` is asserted non-optional in the return type so the caller keeps the
  * narrowing the inline version got from the guard below.
@@ -397,7 +398,7 @@ async function resolveRestoreTarget(
     throw new ValidationError(t('commands.backup.restore.placeRequired'));
   }
   const targetName = options.as ?? ref.name;
-  await assertCommandPolicy(CMD.BACKUP_RESTORE, targetName);
+  await enforceResolvedTarget(CMD.BACKUP_RESTORE, { ref: targetName });
 
   const existing = await configService.getRepository(targetName);
   if (existing) {

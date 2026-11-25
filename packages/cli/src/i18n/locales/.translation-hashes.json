@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3186,
-    "sourceCommit": "fc4df4afe0d79c69700aa19274b979b3a83e06c8"
+    "keyCount": 3191,
+    "sourceCommit": "0cb79d5fca41017c4f9c434a4de839e981799c5e"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2761,9 +2761,11 @@
     "docs.tableHeaders.meaning": "f08cc99e",
     "docs.tableHeaders.required": "19edc75f",
     "errors.agent.clusterOpBlocked": "bed44c0d",
+    "errors.agent.clusterOpsDenied": "7134804d",
     "errors.agent.commandBlocked": "50f69976",
     "errors.agent.configEdit": "e1933233",
     "errors.agent.configEditAncestry": "429ec590",
+    "errors.agent.confirmationRequired": "d6d7da52",
     "errors.agent.createGuard": "8d2296bb",
     "errors.agent.createGuardOverride": "0fe4eef3",
     "errors.agent.createGuardOverrideNonLinux": "7579097a",
@@ -2772,6 +2774,7 @@
     "errors.agent.grandGuard": "ef2ee192",
     "errors.agent.grandGuardOverride": "c7a01f16",
     "errors.agent.grandGuardOverrideNonLinux": "40e69c60",
+    "errors.agent.grandRepoDenied": "608ffe22",
     "errors.agent.limitsGrantBlocked": "9358857a",
     "errors.agent.limitsGrantOverride": "bd2f391b",
     "errors.agent.machineGuard": "d34e3616",
@@ -2779,6 +2782,7 @@
     "errors.agent.machineGuardOverrideNonLinux": "2c782289",
     "errors.agent.pathGrantBlocked": "023e0b38",
     "errors.agent.pathGrantOverride": "205d60d3",
+    "errors.agent.policyDenied": "872f12cb",
     "errors.agent.revealRequiresTty": "fbb0a32d",
     "errors.agent.rootGrantBlocked": "44d27858",
     "errors.agent.rootGrantOverride": "474388b1",
@@ -3088,6 +3092,7 @@
     "options.config": "47388300",
     "options.configKey": "74c0e8c1",
     "options.configValue": "5f8657e1",
+    "options.confirmGrand": "e9aaf15c",
     "options.confirmSync": "e48f9c93",
     "options.connectionName": "201b8887",
     "options.connectTarget": "78211b9a",

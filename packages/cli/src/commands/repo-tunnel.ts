@@ -14,7 +14,6 @@ import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-executio
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -154,8 +153,6 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
   if (kubeCluster) {
     throw new ValidationError(t('errors.cluster.dockerOnlyVerb', { verb: 'tunnel' }));
   }
-
-  await assertCommandPolicy(CMD.REPO_TUNNEL, repoKey);
 
   const repoName = repoKey;
   const teamName = '';

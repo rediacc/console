@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "Agenten können die Pfadfreigaben des Grand-Repos \"{{name}}\" nicht ändern: Die Rediaccfile würde Host-Pfade erreichen, die der Benutzer nie genehmigt hat.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten. Ein Fork braucht keine Überschreibung.",
       "pathGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für eine Pfadfreigabe am Grand-Repo \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren.",
       "limitsGrantBlocked": "Agents können die Ressourcenlimits des Grand-Repositorys \"{{name}}\" nicht ändern: eine niedrigere Obergrenze kann seine Container per OOM beenden.\n\nBenutzer: Um es zu erlauben, REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) im Terminal setzen, bevor die Agent-Sitzung startet. Ein Fork braucht keine Freigabe.",
-      "limitsGrantOverride": "Von einem Agent gesetzte Freigaben werden für eine Limit-Änderung am Grand-Repository \"{{name}}\" nicht akzeptiert.\n\nNicht versuchen, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agents erlauben."
+      "limitsGrantOverride": "Von einem Agent gesetzte Freigaben werden für eine Limit-Änderung am Grand-Repository \"{{name}}\" nicht akzeptiert.\n\nNicht versuchen, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agents erlauben.",
+      "policyDenied": "\"rdc {{command}}\" ist nach der geltenden Richtlinie nicht erlaubt. Die Details nennen die Regel, die den Befehl abgelehnt hat.",
+      "grandRepoDenied": "\"rdc {{command}}\" würde \"{{name}}\" ändern, ein Grand-Repository (Produktion), und die geltende Richtlinie erlaubt keine Änderungen an Grand-Repositories.\n\nArbeiten Sie stattdessen mit einem Fork:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" ist eine Cluster-Operation, und die geltende Richtlinie erlaubt keine Cluster-Operationen.",
+      "confirmationRequired": "\"rdc {{command}}\" ist destruktiv und würde \"{{name}}\" ändern, ein Grand-Repository (Produktion).\n\nBitten Sie den Benutzer um Bestätigung und führen Sie denselben Befehl dann erneut mit {{flag}} {{value}} aus."
     },
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "URL ausgeben, ohne den lokalen Browser zu starten",
     "vscodeServerArchive": "Vorinstallierter Server-Archivpfad auf der Maschine (für Offline-Installationen)",
     "vscodeServerProvider": "Browser-VS-Code-Server-Implementierung (openvscode, code-server)",
-    "yes": "Bestätigungsaufforderung überspringen"
+    "yes": "Bestätigungsaufforderung überspringen",
+    "confirmGrand": "Eine destruktive Änderung an einem Grand-Repository bestätigen, indem der in der Ablehnung genannte Name wiederholt wird"
   },
   "prompts": {
     "cancelled": "Abgebrochen",

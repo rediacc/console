@@ -71,7 +71,7 @@ vi.mock('../../utils/errors.js', () => {
 vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRefLocal: mockResolveRef }));
 vi.mock('../../utils/command-policy.js', () => ({
   CMD: { BACKUP_PURGE: 'backup purge' },
-  assertCommandPolicy: mockPolicy,
+  enforceResolvedTarget: mockPolicy,
 }));
 vi.mock('../../utils/prompt.js', () => ({ askInput: mockAskInput }));
 
@@ -187,7 +187,7 @@ describe('backup purge', () => {
     expect(deletes).toHaveLength(1);
     expect(deletes[0][0]).toBe(`/account/api/v1/backups/lineages/${LINEAGE}`);
     expect(mockAskInput).not.toHaveBeenCalled();
-    expect(mockPolicy).toHaveBeenCalledWith('backup purge', 'shop');
+    expect(mockPolicy).toHaveBeenCalledWith('backup purge', { ref: 'shop' });
     expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
     // The server reports no chunk count, so the usage before and after is printed.
     expect(mockInfo).toHaveBeenCalledWith('commands.backup.purge.usageDelta');
@@ -412,7 +412,7 @@ describe('backup purge', () => {
       expect(deletes[0][0]).toBe(`/account/api/v1/backups/lineages/${LINEAGE}`);
       expect(mockResolveRef).not.toHaveBeenCalled();
       expect(mockAskInput).not.toHaveBeenCalled();
-      expect(mockPolicy).toHaveBeenCalledWith('backup purge', undefined, LINEAGE);
+      expect(mockPolicy).toHaveBeenCalledWith('backup purge', { ref: LINEAGE });
       expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
       expect(configWrites).toEqual([]);
     });

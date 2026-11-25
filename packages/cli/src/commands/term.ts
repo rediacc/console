@@ -24,7 +24,7 @@ import {
   isLegitimateWildcardOverride,
 } from '../utils/agent-guard.js';
 import { assertCommandNotBlank } from '../utils/command-blank.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
@@ -285,7 +285,7 @@ async function enforceTermPolicy(
 
   if (target.kind === 'repo') {
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
-    await assertCommandPolicy(CMD.TERM_CONNECT, target.repoKey);
+    await enforceResolvedTarget(CMD.TERM_CONNECT, { ref: target.repoKey });
   } else {
     await assertAgentMachineAccess(target.machineName);
   }

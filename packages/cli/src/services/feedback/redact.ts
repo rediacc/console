@@ -32,6 +32,7 @@ export const GLOBAL_VALUE_OPTIONS: ReadonlySet<string> = new Set([
   '--fields',
   '--proxy',
   '--license-region',
+  '--confirm-grand',
 ]);
 
 /** The argv tokens that are command or positional words: options and the values of root options are dropped. */

@@ -3592,7 +3592,11 @@
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。",
       "limitsGrantBlocked": "代理无法更改主仓库 “{{name}}” 的资源限制：更低的上限可能导致其容器因 OOM 被终止。\n\n用户：如需允许，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或用 * 表示所有仓库）。分叉无需此设置。",
-      "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。"
+      "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。",
+      "policyDenied": "当前策略不允许“rdc {{command}}”。拒绝它的规则见详细信息。",
+      "grandRepoDenied": "“rdc {{command}}”会更改 grand（生产）仓库“{{name}}”，而当前策略不允许更改 grand 仓库。\n\n请改为在分叉上操作：\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "“rdc {{command}}”是集群操作，而当前策略不允许集群操作。",
+      "confirmationRequired": "“rdc {{command}}”是破坏性命令，会更改 grand（生产）仓库“{{name}}”。\n\n请先征得用户确认，然后加上 {{flag}} {{value}} 再次运行同一命令。"
     },
     "authRequired": "需要身份验证。运行：rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "输出 URL 而不启动本地浏览器",
     "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
-    "yes": "跳过确认提示"
+    "yes": "跳过确认提示",
+    "confirmGrand": "重复拒绝信息中要求的名称，以确认对 grand 仓库的破坏性更改"
   },
   "prompts": {
     "cancelled": "已取消",

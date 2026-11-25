@@ -54,7 +54,7 @@ vi.mock('../../utils/repo-target.js', () => ({
 }));
 
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
 

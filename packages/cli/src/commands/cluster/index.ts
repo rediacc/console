@@ -23,7 +23,7 @@ import {
 import { getCluster } from '../../services/config/config-cluster-ops.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
-import { assertCommandPolicy, CMD } from '../../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../../utils/command-policy.js';
 import { getOutputFormat, ValidationError } from '../../utils/errors.js';
 import { askConfirm } from '../../utils/prompt.js';
 
@@ -83,7 +83,6 @@ function registerCreate(cluster: Command): void {
           controlDsPool?: string;
         } & DebugOpt
       ) => {
-        await assertCommandPolicy(CMD.CLUSTER_CREATE, undefined, name);
         if (
           options.controlDsBackend &&
           options.controlDsBackend !== 'local' &&
@@ -163,7 +162,6 @@ function registerScale(cluster: Command): void {
     .requiredOption('--count <n>', t('commands.cluster.scale.countOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { pool: string; count: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_SCALE, undefined, name);
       // Number() (not parseInt) so "3abc" and "1.5" are rejected, not truncated.
       const count = Number(options.count);
       if (!Number.isInteger(count) || count < 0) {
@@ -184,7 +182,6 @@ function registerDestroy(cluster: Command): void {
     .option('--force', t('commands.cluster.destroy.forceOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { force?: boolean } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_DESTROY, undefined, name);
       if (!options.force) {
         const confirmed = await askConfirm(t('commands.cluster.destroy.confirm', { name }));
         if (!confirmed) {
@@ -235,7 +232,6 @@ function registerForkMigrate(cluster: Command): void {
           up?: boolean;
         } & DebugOpt
       ) => {
-        await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, name);
         if (options.writes && options.writes !== 'local' && options.writes !== 'ceph') {
           throw new ValidationError(t('errors.cluster.forkWritesInvalid'));
         }
@@ -259,7 +255,6 @@ function registerForkMigrate(cluster: Command): void {
     .requiredOption('--to <dest-cluster>', t('commands.cluster.migrate.toOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { to: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_MIGRATE, undefined, name);
       await withClusterVerb('cluster migrate', () =>
         migrateCluster(name, { to: options.to, debug: options.debug })
       );
@@ -274,8 +269,8 @@ function registerForkMigrate(cluster: Command): void {
     .option('--tag <tag>', t('commands.cluster.rehearse.tagOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { on: string; tag?: string } & DebugOpt) => {
-      // Rehearse composes a fork; gate it under the same policy as cluster fork.
-      await assertCommandPolicy(CMD.CLUSTER_FORK, undefined, name);
+      // Rehearse composes a fork; ACTION_RESOLVED_TARGETS judges it as cluster fork.
+      await enforceResolvedTarget('cluster rehearse', { subject: name });
       await withClusterVerb('cluster rehearse', () =>
         rehearseCluster(name, {
           cluster: options.on,
@@ -300,7 +295,6 @@ function registerSnapshot(cluster: Command): void {
     .option('--snapshot <label>', t('commands.cluster.snapshot.create.labelOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options: { snapshot?: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_SNAPSHOT_CREATE, undefined, name);
       await withClusterVerb('cluster snapshot create', () =>
         createClusterSnapshot(name, { snapshot: options.snapshot, debug: options.debug })
       );
@@ -328,7 +322,7 @@ function registerMembership(cluster: Command): void {
     .requiredOption('--cluster <name>', t('commands.cluster.join.clusterOption'))
     .option('--debug', t('options.debug'))
     .action(async (machine: string, options: { cluster: string } & DebugOpt) => {
-      await assertCommandPolicy(CMD.CLUSTER_JOIN, undefined, options.cluster);
+      await enforceResolvedTarget(CMD.CLUSTER_JOIN, { subject: options.cluster });
       await joinCluster(machine, { cluster: options.cluster, debug: options.debug });
     });
 
@@ -341,7 +335,9 @@ function registerMembership(cluster: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (machine: string, options: { force?: boolean } & DebugOpt) => {
       const target = await configService.getLocalMachine(machine);
-      await assertCommandPolicy(CMD.CLUSTER_EVICT, undefined, target.cluster?.cluster);
+      await enforceResolvedTarget(CMD.CLUSTER_EVICT, {
+        ...(target.cluster?.cluster ? { subject: target.cluster.cluster } : {}),
+      });
       await evictCluster(machine, { force: options.force, debug: options.debug });
     });
 }

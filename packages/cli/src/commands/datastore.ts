@@ -41,7 +41,6 @@ import {
 import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { stateMismatch } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
 import { assertMachineExists } from './_validate.js';
@@ -308,7 +307,6 @@ function registerCreate(datastore: Command): void {
         } & DebugOpt
       ) => {
         try {
-          await assertCommandPolicy(CMD.DATASTORE_CREATE, undefined, name);
           assertCreatableName(name);
           if (name in (await listDatastores())) {
             throw new ValidationError(`datastore "${name}" already exists.`);
@@ -471,7 +469,6 @@ function registerAttach(datastore: Command): void {
       ) => {
         try {
           const record = await getDatastore(ref);
-          await assertCommandPolicy(CMD.DATASTORE_ATTACH, undefined, ref);
           await assertMachineExists(options.to);
           const isFork = parseDatastoreRef(ref).tag !== undefined || record.parent !== undefined;
 
@@ -575,7 +572,6 @@ function registerAttach(datastore: Command): void {
     .action(async (ref: string, options: { discard?: boolean; yes?: boolean } & DebugOpt) => {
       try {
         await getDatastore(ref);
-        await assertCommandPolicy(CMD.DATASTORE_DETACH, undefined, ref);
         const state = await listDatastoreState();
         const entry = at(state, ref);
         const host = entry?.attachedTo;
@@ -654,7 +650,6 @@ function registerFork(datastore: Command): void {
       ) => {
         try {
           const record = await getDatastore(name);
-          await assertCommandPolicy(CMD.DATASTORE_FORK, undefined, name);
           // Gate ruling C8 (spec 01 wins): there is no block-level clone primitive
           // for the local backend, so a local datastore cannot fork AT ALL, not even
           // on its own machine. Repos inside it fork individually by reflink.
@@ -730,7 +725,6 @@ function registerSnapshot(datastore: Command): void {
     .action(async (ref: string, options: { snapshot?: string } & DebugOpt) => {
       try {
         await getDatastore(ref);
-        await assertCommandPolicy(CMD.DATASTORE_SNAPSHOT_CREATE, undefined, ref);
         const label = options.snapshot ?? new Date().toISOString().replaceAll(/[:.]/g, '-');
         const host = await requireDatastoreHost(ref);
         const outcome = await dispatchAsJob(
@@ -784,7 +778,6 @@ function registerMutators(datastore: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: { size: string } & DebugOpt) => {
       try {
-        await assertCommandPolicy(CMD.DATASTORE_RESIZE, undefined, ref);
         const host = await requireDatastoreHost(ref);
         const outcome = await dispatchAsJob(
           'datastore resize',
@@ -812,7 +805,6 @@ function registerMutators(datastore: Command): void {
     .action(async (ref: string, options: { yes?: boolean; force?: boolean } & DebugOpt) => {
       try {
         await getDatastore(ref);
-        await assertCommandPolicy(CMD.DATASTORE_DELETE, undefined, ref);
 
         // Detach-before-unlink (03 hygiene rule 1): a datastore with repo records still pointing at it is not garbage, it is someone's data.
         const repos = await reposInDatastore(ref);

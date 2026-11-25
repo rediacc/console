@@ -32,7 +32,6 @@ import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js'
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { jsonParam, str } from '../services/jobs/steps-support.js';
 import { notFound } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -259,7 +258,6 @@ export function registerRepoCanaryCommands(repo: Command): void {
       ) => {
         try {
           const { repoKey, cluster } = await resolveClusterRepo(ref);
-          await assertCommandPolicy(CMD.REPO_CANARY_CREATE, repoKey);
           await createCanary({
             repo: repoKey,
             cluster,
@@ -308,7 +306,6 @@ export function registerRepoCanaryCommands(repo: Command): void {
     .action(async (ref: string, options: { weight: string; debug?: boolean }) => {
       try {
         const { repoKey } = await resolveRepoRef(ref);
-        await assertCommandPolicy(CMD.REPO_CANARY_WEIGHT, repoKey);
         await setCanaryWeight(repoKey, Number(options.weight), options.debug);
       } catch (error) {
         handleError(error);
@@ -324,7 +321,6 @@ export function registerRepoCanaryCommands(repo: Command): void {
     .action(async (ref: string, options: { debug?: boolean }) => {
       try {
         const { repoKey } = await resolveRepoRef(ref);
-        await assertCommandPolicy(CMD.REPO_CANARY_REMOVE, repoKey);
         await removeCanary(repoKey, options.debug);
       } catch (error) {
         handleError(error);

@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "Ajanlar \"{{name}}\" grand deposunun yol yetkilerini değiştiremez: Rediaccfile'ı, kullanıcının hiç onaylamadığı ana makine yollarına ulaşırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın. Bir fork için geçersiz kılma gerekmez.",
       "pathGrantOverride": "\"{{name}}\" grand deposundaki yol yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
       "limitsGrantBlocked": "Ajanlar ana depo \"{{name}}\" kaynak sınırlarını değiştiremez: daha düşük bir üst sınır kapsayıcılarının OOM ile sonlandırılmasına yol açabilir.\n\nKullanıcı: izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (tüm depolar için *) ayarlayın. Bir çatal için gerekmez.",
-      "limitsGrantOverride": "Ana depo \"{{name}}\" üzerindeki bir sınır değişikliği için ajanın başlattığı istisnalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Buna yalnızca kullanıcı, ajan başlamadan önce izin verebilir."
+      "limitsGrantOverride": "Ana depo \"{{name}}\" üzerindeki bir sınır değişikliği için ajanın başlattığı istisnalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Buna yalnızca kullanıcı, ajan başlamadan önce izin verebilir.",
+      "policyDenied": "Geçerli politika \"rdc {{command}}\" komutuna izin vermiyor. Ayrıntılar, komutu reddeden kuralı belirtir.",
+      "grandRepoDenied": "\"rdc {{command}}\", bir grand (üretim) deposu olan \"{{name}}\" deposunu değiştirir ve geçerli politika grand depolarında değişikliğe izin vermiyor.\n\nBunun yerine bir fork üzerinde çalışın:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" bir küme işlemidir ve geçerli politika küme işlemlerine izin vermiyor.",
+      "confirmationRequired": "\"rdc {{command}}\" yıkıcı bir komuttur ve bir grand (üretim) deposu olan \"{{name}}\" deposunu değiştirir.\n\nKullanıcıdan onay isteyin, ardından aynı komutu {{flag}} {{value}} ile yeniden çalıştırın."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "Yerel tarayıcıyı açmadan URL'yi yazdır",
     "vscodeServerArchive": "Makinede önceden konumlandırılmış sunucu tarball yolu (ağ dışı kurulumlar için)",
     "vscodeServerProvider": "Tarayıcı VS Code sunucu uygulaması (openvscode, code-server)",
-    "yes": "Onay istemini atla"
+    "yes": "Onay istemini atla",
+    "confirmGrand": "Bir grand deposundaki yıkıcı değişikliği, reddin istediği adı tekrarlayarak onaylar"
   },
   "prompts": {
     "cancelled": "İptal edildi",

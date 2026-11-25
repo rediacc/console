@@ -26,7 +26,7 @@ import {
   readExecutorEvents,
 } from '../services/repo/orphan-repos.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
-import { assertOrphanDeletePolicy } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertMachineExists } from './_validate.js';
@@ -66,6 +66,18 @@ async function handleOrphanList(
   outputService.print(rows, format);
 }
 
+/**
+ * The decision for an orphan delete. The config names no orphan, so the machine's own fork marker
+ * says grand or fork: an image renet does not mark as a fork is judged as a grand, and an agent
+ * needs REDIACC_ALLOW_GRAND_REPO=<guid> (or `*`). The ops VM fleet is exempt by the machine.
+ */
+function enforceOrphanDelete(guid: string, machine: string, isFork: boolean): Promise<void> {
+  return enforceResolvedTarget(CMD.REPO_ADMIN_ORPHAN_DELETE, {
+    machine,
+    identified: { name: guid, state: isFork ? 'fork' : 'grand' },
+  });
+}
+
 async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Promise<void> {
   const { guid, machine } = parseOrphanRef(ref);
   await assertMachineExists(machine);
@@ -88,7 +100,7 @@ async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Pr
       })
     );
   }
-  await assertOrphanDeletePolicy(guid, machine, row.isFork);
+  await enforceOrphanDelete(guid, machine, row.isFork);
 
   if (options.dryRun) {
     outputService.print(

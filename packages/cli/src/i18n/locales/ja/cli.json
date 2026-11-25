@@ -3592,7 +3592,11 @@
       "pathGrantBlocked": "エージェントは grand リポジトリ「{{name}}」のパス付与を変更できません。Rediaccfile が、ユーザーが承認していないホストのパスに届いてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。フォークには上書きは不要です。",
       "pathGrantOverride": "grand リポジトリ「{{name}}」のパス付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
       "limitsGrantBlocked": "エージェントはグランドリポジトリ「{{name}}」のリソース制限を変更できません。上限を下げるとそのコンテナが OOM で終了する可能性があります。\n\nユーザー: 許可するには、エージェントのセッションを開始する前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（すべてのリポジトリなら *）を設定してください。フォークには不要です。",
-      "limitsGrantOverride": "グランドリポジトリ「{{name}}」の制限変更では、エージェントが設定した上書きは受け付けません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。許可できるのは、エージェントの起動前のユーザーだけです。"
+      "limitsGrantOverride": "グランドリポジトリ「{{name}}」の制限変更では、エージェントが設定した上書きは受け付けません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。許可できるのは、エージェントの起動前のユーザーだけです。",
+      "policyDenied": "現在のポリシーでは「rdc {{command}}」は許可されていません。拒否したルールは詳細に示されています。",
+      "grandRepoDenied": "「rdc {{command}}」は grand（本番）リポジトリ「{{name}}」を変更しますが、現在のポリシーでは grand リポジトリの変更は許可されていません。\n\n代わりにフォークで作業してください:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "「rdc {{command}}」はクラスター操作ですが、現在のポリシーではクラスター操作は許可されていません。",
+      "confirmationRequired": "「rdc {{command}}」は破壊的なコマンドで、grand（本番）リポジトリ「{{name}}」を変更します。\n\nユーザーに確認を求めてから、同じコマンドを {{flag}} {{value}} を付けて再実行してください。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {
@@ -4050,7 +4054,8 @@
     "vscodeNoOpen": "ローカルブラウザを起動せずに URL のみを表示する",
     "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
     "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
-    "yes": "確認プロンプトをスキップする"
+    "yes": "確認プロンプトをスキップする",
+    "confirmGrand": "拒否メッセージが求めた名前を繰り返して、grand リポジトリへの破壊的な変更を確認します"
   },
   "prompts": {
     "cancelled": "キャンセルされました",

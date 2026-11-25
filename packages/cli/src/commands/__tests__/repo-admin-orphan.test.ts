@@ -52,6 +52,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     list: async () => ['dev', ...Object.keys(mocks.others)],
+    // The decision step reads the current config's own policy field; this one has none.
+    exists: async () => false,
     load: async (name: string) => mocks.others[name] ?? {},
   },
 }));

@@ -1,21 +1,19 @@
 /**
- * The local agent guard against the REAL config resolver.
+ * The one repo resolver of the decision step (services/policy/target.ts) against the REAL config
+ * resolver.
  *
- * command-policy.test.ts mocks configService.getRepository wholesale, which is
- * exactly the seam this file exercises: the guard asks the resolver whether a
- * ref is a grand repo, and a resolver miss makes the guard return early (it
- * fails open). The config here is real, held request-scoped, and read by the
- * real configService.
+ * command-policy.test.ts mocks configService.getRepository wholesale, which is exactly the seam
+ * this file exercises: the decision asks the resolver whether a ref is a grand repo. The config
+ * here is real, held request-scoped, and read by the real configService.
  *
- * Finding (c), PLAN-cloudflare-proxy.md "Writer B status": a bare ref names the
- * family's GRAND POINTER (resolve-machine.ts resolveStoredTag), but
- * getRepository's bare fallback tries only `<name>:latest`. A grand stored under
- * any other tag was therefore invisible to the guard, and an agent could
- * `repo up` / `repo down` / `repo exec` it by its bare name.
+ * Finding (c), PLAN-cloudflare-proxy.md "Writer B status": a bare ref names the family's GRAND
+ * POINTER (resolve-machine.ts resolveStoredTag), but getRepository's bare fallback tries only
+ * `<name>:latest`. A grand stored under any other tag was therefore invisible to the guard, and an
+ * agent could `repo up` / `repo down` / `repo exec` it by its bare name.
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 await vi.hoisted(async () => {
   const { mkdtempSync } = await import('node:fs');
@@ -27,14 +25,12 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
-vi.mock('../agent-guard.js', () => ({ isAgentEnvironment: vi.fn(() => true) }));
-
 import {
   createOutputState,
   createRequestConfigScope,
   runInRequestContext,
 } from '../../services/core/request-context.js';
-import { assertCommandPolicy, CMD } from '../command-policy.js';
+import { resolveTarget } from '../../services/policy/target.js';
 
 const GRAND_GUID = '11111111-1111-4111-8111-111111111111';
 const FORK_GUID = '22222222-2222-4222-8222-222222222222';
@@ -63,7 +59,7 @@ function config(grandTag: string): RdcConfig {
   };
 }
 
-function guard(grandTag: string, ref: string): Promise<void> {
+function stateOf(grandTag: string, ref: string): Promise<string | undefined> {
   return runInRequestContext(
     {
       output: createOutputState(),
@@ -71,41 +67,34 @@ function guard(grandTag: string, ref: string): Promise<void> {
       stderr: [],
       config: createRequestConfigScope(config(grandTag)),
     },
-    () => assertCommandPolicy(CMD.REPO_UP, ref)
+    async () => (await resolveTarget({ ref })).repo?.state
   );
 }
 
-describe('agent grand guard, real resolver', () => {
-  beforeEach(() => {
-    delete process.env.REDIACC_ALLOW_GRAND_REPO;
-  });
-  afterEach(() => {
-    delete process.env.REDIACC_ALLOW_GRAND_REPO;
+describe('the decision target, real resolver', () => {
+  it('resolves a bare ref whose grand line is `latest` to the grand', async () => {
+    expect(await stateOf('latest', 'shop')).toBe('grand');
   });
 
-  it('refuses a bare ref whose grand line is `latest`', async () => {
-    await expect(guard('latest', 'shop')).rejects.toThrow(/shop/);
+  it('resolves a bare ref whose grand line is NOT `latest` to the grand (finding c)', async () => {
+    expect(await stateOf('prod', 'shop')).toBe('grand');
   });
 
-  it('refuses a bare ref whose grand line is NOT `latest` (finding c)', async () => {
-    await expect(guard('prod', 'shop')).rejects.toThrow(/shop/);
+  it('never resolves the reserved `:base` spelling to a fork', async () => {
+    // parseRef refuses `:base`, so it is unresolved, which decide counts as grand.
+    expect(await stateOf('prod', 'shop:base')).not.toBe('fork');
+    expect(await stateOf('latest', 'shop:base')).not.toBe('fork');
   });
 
-  it('refuses the reserved `:base` spelling of the grand', async () => {
-    // parseRef refuses `:base` before any verb gets here; the guard must not depend on that.
-    await expect(guard('prod', 'shop:base')).rejects.toThrow(/shop/);
-    await expect(guard('latest', 'shop:base')).rejects.toThrow(/shop/);
+  it('resolves the grand addressed by its explicit tag', async () => {
+    expect(await stateOf('prod', 'shop:prod')).toBe('grand');
   });
 
-  it('refuses the grand addressed by its explicit tag', async () => {
-    await expect(guard('prod', 'shop:prod')).rejects.toThrow(/shop/);
+  it('resolves a fork', async () => {
+    expect(await stateOf('prod', 'shop:trial')).toBe('fork');
   });
 
-  it('lets a fork through', async () => {
-    await expect(guard('prod', 'shop:trial')).resolves.toBeUndefined();
-  });
-
-  it('lets an unknown repo through (the command itself reports not-found)', async () => {
-    await expect(guard('prod', 'nothere')).resolves.toBeUndefined();
+  it('reports an unknown repo as unresolved, which decide counts as grand (fail closed)', async () => {
+    expect(await stateOf('prod', 'nothere')).toBe('unresolved');
   });
 });

@@ -1,32 +1,46 @@
 /**
- * Centralized command policy enforcement for agent security guards.
- *
- * Policy data (grandGuard, forkBlocked) is defined in command-metadata.ts.
- * This module provides the runtime enforcement and typed path constants.
+ * The CLI's command policy: the typed command paths, the one enforcement point the root hook
+ * calls (`enforceRootCommand`), the named commands whose action judges its own resolved target
+ * (`enforceResolvedTarget`), and the agent check of a `--proxy` run. Every decision is
+ * `decide`'s (packages/shared/src/policy/decide.ts), asked through `enforce`
+ * (services/policy/enforce.ts); the command flags (grandGuard, forkBlocked, agentBlocked) come
+ * from the CLI contract, generated from command-metadata.ts.
  */
 import path from 'node:path';
-import type { ContractCommand } from '@rediacc/shared/cli-contract';
-import type { DecisionCommand } from '@rediacc/shared/policy';
+import { CLI_CONTRACT, type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
+import { POLICY_DEFAULTS } from '@rediacc/shared/config/defaults';
+import {
+  type Decision,
+  type DecisionCommand,
+  type DecisionPrincipal,
+  type DecisionTarget,
+  type EffectivePolicy,
+  findStaleCommandGlobs,
+  isClusterLifecycleCommand,
+  staleDenyRefusal,
+} from '@rediacc/shared/policy';
 import type { Command } from 'commander';
+import { configFileStorage } from '../adapters/config-file-storage.js';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { localPolicyCeiling } from '../services/config/policy-record.js';
 import { auditLog } from '../services/core/audit-log.js';
+import { currentRequestContext } from '../services/core/request-context.js';
 import { paramsFromCommand, positionalsFromCommand } from '../services/executor/proxy-command.js';
 import { DecisionError, enforce } from '../services/policy/enforce.js';
 import { readEnvOverrides } from '../services/policy/overrides-env.js';
-import type { TargetRef } from '../services/policy/target.js';
+import { resolveTarget, type TargetRef } from '../services/policy/target.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { CliExitError } from './cli-exit-error.js';
-import { isClusterAllowedByEnv } from './cluster-env.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
-import { isOpsVmMachine, isOpsVmPlacement } from './ops-vm.js';
 import {
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
   OVERRIDE_VAR_CLUSTER,
+  OVERRIDE_VAR_GRAND,
 } from './process-ancestry.js';
 
 export interface CommandPolicy {
@@ -116,22 +130,6 @@ export const CMD = {
 export type CommandPath = (typeof CMD)[keyof typeof CMD];
 
 /**
- * Look up the policy for a command path from COMMAND_METADATA.
- * Returns null if no policy is defined.
- */
-function getPolicy(commandPath: string): CommandPolicy | null {
-  const meta = COMMAND_METADATA[commandPath] as
-    | { grandGuard?: boolean; forkBlocked?: boolean; agentBlocked?: boolean }
-    | undefined;
-  if (!meta || (!meta.grandGuard && !meta.forkBlocked && !meta.agentBlocked)) return null;
-  return {
-    grandGuard: meta.grandGuard ?? false,
-    forkBlocked: meta.forkBlocked ?? false,
-    agentBlocked: meta.agentBlocked ?? false,
-  };
-}
-
-/**
  * Backward-compatible Map view of COMMAND_METADATA for consumers that expect a Map.
  * Constructed lazily from the unified metadata.
  */
@@ -154,47 +152,129 @@ function buildPoliciesMap(): ReadonlyMap<CommandPath, CommandPolicy> {
 
 export const COMMAND_POLICIES: ReadonlyMap<CommandPath, CommandPolicy> = buildPoliciesMap();
 
-type OverrideResult = 'allowed' | 'not-set' | 'agent-injected';
+/**
+ * Commands whose target the action itself resolves, so the root hook cannot read it off the
+ * parsed arguments and leaves the decision to the action (agent/plans/PLAN-rmcp-decide.md
+ * Design 3). Each action calls `enforceResolvedTarget` once it holds the target; `judgedAs`
+ * names the contract entry whose flags the decision reads when it differs from the command's own.
+ * Every other command is judged once, by `enforceRootCommand`, before its action runs.
+ */
+export const ACTION_RESOLVED_TARGETS: ReadonlyMap<string, { reason: string; judgedAs?: string }> =
+  new Map<string, { reason: string; judgedAs?: string }>([
+    [CMD.BACKUP_DOWNLOAD, { reason: 'each of the variadic refs is resolved and judged in turn' }],
+    [CMD.BACKUP_UPLOAD, { reason: 'the repo name comes from the image file name' }],
+    [
+      CMD.BACKUP_PURGE,
+      {
+        reason:
+          'the target is the ref, else the lineage of a repository the config no longer names',
+      },
+    ],
+    [CMD.BACKUP_RESTORE, { reason: 'the target repo is derived from the artifact ref' }],
+    [CMD.REPO_PROMOTE, { reason: 'the target is the grand the fork replaces, not the fork named' }],
+    [
+      CMD.REPO_CHECKOUT,
+      { reason: 'the target is the --from working fork, else the repo the commit belongs to' },
+    ],
+    [
+      CMD.REPO_ADMIN_ORPHAN_DELETE,
+      {
+        reason:
+          "the image is addressed by GUID and its fork state is read from the machine's marker",
+      },
+    ],
+    [CMD.TERM_CONNECT, { reason: 'the target is a machine or a repo, told apart in the action' }],
+    [CMD.VSCODE_CONNECT, { reason: 'the target is a machine or a repo, told apart in the action' }],
+    [CMD.CLUSTER_JOIN, { reason: 'the cluster is named by the --cluster option' }],
+    [CMD.CLUSTER_EVICT, { reason: 'the cluster is the one the named machine belongs to' }],
+    [
+      'cluster rehearse',
+      {
+        reason: 'a rehearsal forks the cluster, so it is judged as cluster fork',
+        judgedAs: CMD.CLUSTER_FORK,
+      },
+    ],
+  ]);
 
-function checkGrandOverride(repoName: string): OverrideResult {
-  if (!isRepoAllowedByGrandEnv(repoName)) return 'not-set';
+/** The root option a `needs_confirmation` retry repeats the asked-for name in (cli.ts registers it). */
+export const CONFIRM_GRAND_FLAG = '--confirm-grand';
 
-  // Verify override was set by user, not injected by agent
-  return isOverrideLegitimate() ? 'allowed' : 'agent-injected';
-}
+/** The `--confirm-grand` value of this invocation (set by the root hook), or undefined. */
+let confirmGrandValue: string | undefined;
 
-/** Enforce the grand-guard policy: block grand repos in agent mode unless overridden. */
-function enforceGrandGuard(repoName: string): void {
-  const override = checkGrandOverride(repoName);
-  if (override === 'agent-injected') {
-    const errorKey = isAncestryVerificationAvailable()
-      ? 'errors.agent.grandGuardOverride'
-      : 'errors.agent.grandGuardOverrideNonLinux';
-    throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
-  }
-  if (override !== 'allowed') {
-    throw new ValidationError(t('errors.agent.grandGuard', { name: repoName }));
-  }
-}
-
-function checkClusterOverride(clusterName: string): OverrideResult {
-  if (!isClusterAllowedByEnv(clusterName)) return 'not-set';
-
-  // Verify the override was set by the operator (pre-agent), not the agent.
-  return isOverrideLegitimate(OVERRIDE_VAR_CLUSTER) ? 'allowed' : 'agent-injected';
+/** Record the root `--confirm-grand <name>` value the confirmation retry of a decision reads. */
+export function setConfirmGrand(value: string | undefined): void {
+  confirmGrandValue = value;
 }
 
 /**
- * Record that an agent ran a cluster op through a legitimate operator override.
- * actor.kind is stamped `agent` automatically by auditLog. Best-effort: an
- * audit-log failure must never block the allowed operation.
+ * The principal of a local run. The person at the keyboard owns their own config file, so the
+ * role is `owner`; an agent environment (agent-guard.ts) makes the principal an agent.
  */
-function auditClusterOverride(commandPath: string, clusterName: string): void {
+function localPrincipal(): DecisionPrincipal {
+  return { kind: isAgentEnvironment() ? 'agent' : 'human', userEmail: '', orgRole: 'owner' };
+}
+
+/**
+ * The policy a local run is judged against.
+ *
+ * A LOCAL-file config keeps its own `policy` field as the ceiling (D24), refused when malformed or
+ * when a deny rule names a command that does not exist, as the executor refuses it. No field, or
+ * no config file yet, is no policy.
+ *
+ * A REMOTE config takes its policy from the policy record and the caller's org role from the
+ * account server. The CLI holds no source for that role (the config session answers with key
+ * material only), so a local run of a remote config is judged with no policy here, the agent
+ * rules alone; the executor judges the policy on every `--proxy` run.
+ */
+async function localPolicy(): Promise<EffectivePolicy | null> {
+  const name = configService.getCurrentName();
+  if (!(await configFileStorage.exists(name))) return null;
+  const config = await configFileStorage.load(name);
+  if (config.remote !== undefined || config.policy === undefined) return null;
+  const effective = localPolicyCeiling(config);
+  for (const document of [effective.org, effective.team]) {
+    if (!document) continue;
+    const stale = findStaleCommandGlobs(document, LIVE_COMMANDS);
+    if (stale.deny.length > 0) throw new ValidationError(staleDenyRefusal(stale.deny));
+  }
+  return effective;
+}
+
+const LIVE_COMMANDS: readonly string[] = CLI_CONTRACT.commands.map((c) => c.pathKey);
+
+/**
+ * The contract fields `decide` reads. A hidden command has no contract entry (`rdc run`), so its
+ * guard flags come from COMMAND_METADATA, the source the contract is generated from.
+ */
+function decisionCommandOf(
+  commandPath: string,
+  entry: ContractCommand | undefined
+): DecisionCommand {
+  const meta = COMMAND_METADATA[commandPath] as
+    | { grandGuard?: boolean; forkBlocked?: boolean; agentBlocked?: boolean }
+    | undefined;
+  const source = entry ?? meta;
+  return {
+    pathKey: commandPath,
+    destructive: entry?.destructive === true,
+    grandGuard: source?.grandGuard === true,
+    forkBlocked: source?.forkBlocked === true,
+    agentBlocked: source?.agentBlocked === true,
+  };
+}
+
+/**
+ * Record that an agent ran a cluster operation through a legitimate operator opt-in.
+ * actor.kind is stamped `agent` automatically by auditLog. Best-effort: an audit-log failure
+ * never blocks the allowed operation.
+ */
+function auditClusterOverride(commandPath: string, subject: string | undefined): void {
   try {
     const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
     auditLog(`${xdg}/rediacc`, {
       command: commandPath,
-      paths: clusterName ? [clusterName] : [],
+      paths: subject ? [subject] : [],
       outcome: 'ok',
       reason: `${OVERRIDE_VAR_CLUSTER} override honored`,
     });
@@ -203,95 +283,115 @@ function auditClusterOverride(commandPath: string, clusterName: string): void {
   }
 }
 
+/** The grand-repo refusal for an agent, naming an opt-in the agent set itself when there is one. */
+function grandOptInMessage(name: string): string {
+  if (isRepoAllowedByGrandEnv(name) && !isOverrideLegitimate(OVERRIDE_VAR_GRAND)) {
+    const key = isAncestryVerificationAvailable()
+      ? 'errors.agent.grandGuardOverride'
+      : 'errors.agent.grandGuardOverrideNonLinux';
+    return t(key, { name, platform: process.platform });
+  }
+  return t('errors.agent.grandGuard', { name });
+}
+
+/** The translated message of a refusal, chosen by its stable code. */
+export function decisionMessage(
+  decision: Decision,
+  command: DecisionCommand,
+  target: DecisionTarget
+): string {
+  const name = target.repo?.name ?? POLICY_DEFAULTS.UNNAMED_REPO;
+  switch (decision.code) {
+    case 'AGENT_BLOCKED':
+      return t('errors.agent.commandBlocked', { command: command.pathKey });
+    case 'FORK_BLOCKED':
+      return t('errors.agent.forkBlocked', { command: command.pathKey });
+    case 'AGENT_OPT_IN_MISSING':
+      return isClusterLifecycleCommand(command)
+        ? t('errors.agent.clusterOpBlocked', { command: command.pathKey })
+        : grandOptInMessage(name);
+    case 'POLICY_DENIED':
+      return t('errors.agent.policyDenied', { command: command.pathKey });
+    case 'GRAND_REPO_DENIED':
+      return t('errors.agent.grandRepoDenied', { command: command.pathKey, name });
+    case 'CLUSTER_OPS_DENIED':
+      return t('errors.agent.clusterOpsDenied', { command: command.pathKey });
+    case 'CONFIRMATION_REQUIRED':
+      return t('errors.agent.confirmationRequired', {
+        command: command.pathKey,
+        name,
+        flag: CONFIRM_GRAND_FLAG,
+        value: decision.next?.confirm?.value ?? name,
+      });
+    case 'ALLOWED':
+      return decision.reason;
+  }
+}
+
+/** A refusal as the CLI error: the translated message, then the code, the reason and the way past. */
+function refusalError(decision: Decision, command: DecisionCommand, target: DecisionTarget) {
+  const { code, reason, next } = decision;
+  return new CliExitError(
+    ERROR_CODES.VALIDATION_ERROR,
+    decisionMessage(decision, command, target),
+    {
+      details: [code, reason, ...(next?.run ? [next.run] : [])],
+    }
+  );
+}
+
+interface JudgeArgs {
+  principal: DecisionPrincipal;
+  command: DecisionCommand;
+  target: TargetRef;
+  policy: EffectivePolicy | null;
+}
+
 /**
- * Enforce the infrastructure-operations guard (gate class D, spec §4.7): the verb
- * is blocked in agent mode unless the operator set REDIACC_ALLOW_CLUSTER_OPS
- * before the agent started. Both a missing override and an agent-injected
- * (self-set) one fail closed, only the operator can authorize this, and never
- * from inside the agent.
+ * Ask `enforce` once; a `needs_confirmation` answer whose value the root `--confirm-grand` option
+ * repeats is asked again as confirmed. Any refusal becomes the CLI error.
+ */
+async function judge({ principal, command, target, policy }: JudgeArgs): Promise<void> {
+  const overrides = readEnvOverrides();
+  const args = { principal, command, target, policy, overrides };
+  try {
+    await enforce(args);
+  } catch (error) {
+    if (!(error instanceof DecisionError)) throw error;
+    const { decision } = error;
+    const confirmed =
+      decision.verdict === 'needs_confirmation' &&
+      confirmGrandValue !== undefined &&
+      confirmGrandValue === decision.next?.confirm?.value;
+    if (!confirmed) throw refusalError(decision, command, await resolveTarget(target));
+    await enforce({ ...args, confirmation: { granted: true } }).catch(async (retry: unknown) => {
+      if (!(retry instanceof DecisionError)) throw retry;
+      throw refusalError(retry.decision, command, await resolveTarget(target));
+    });
+  }
+  if (principal.kind === 'agent' && isClusterLifecycleCommand(command)) {
+    auditClusterOverride(command.pathKey, target.subject);
+  }
+}
+
+/**
+ * Judge a local run of `commandPath` on `target` against the local policy and the agent rules.
  *
- * `subject` is the name the per-name unlock matches, and it is the SUBJECT of the
- * verb, not always a cluster: a cluster name for `cluster <verb>`, the DATASTORE
- * name for `datastore <verb>` (spec §4.7 ruling R6). `*` covers both.
+ * Inside an executor request the executor has already judged the command with the caller's real
+ * principal and policy (services/serve/policy.ts), so nothing is judged twice. A human with no
+ * policy is not asked: with no policy document an owner may run every command
+ * (`MISSING_POLICY_DEFAULT`), so the answer is `allow` without resolving the target.
  */
-function enforceInfraGuard(commandPath: string, subject: string | undefined): void {
-  const name = subject ?? '';
-  if (checkClusterOverride(name) === 'allowed') {
-    auditClusterOverride(commandPath, name);
-    return;
-  }
-  throw new ValidationError(t('errors.agent.clusterOpBlocked', { command: commandPath }));
-}
-
-/**
- * Enforce an agentBlocked policy. The class-D families (`cluster`, `datastore`)
- * are the ones an operator can unlock via REDIACC_ALLOW_CLUSTER_OPS
- * (ancestry-verified). They share the env var because they share a blast radius:
- * a datastore verb moves every repo in the pool at once. Every other agentBlocked
- * command (run, mcp) stays an absolute block with no unlock at all.
- */
-function enforceAgentBlock(commandPath: string, subject: string | undefined): void {
-  if (commandPath.startsWith('cluster ') || commandPath.startsWith('datastore ')) {
-    enforceInfraGuard(commandPath, subject);
-    return;
-  }
-  throw new ValidationError(t('errors.agent.commandBlocked', { command: commandPath }));
-}
-
-/**
- * Unified command policy enforcement.
- *
- * Checks both grandGuard (blocks grand repos in agent mode) and forkBlocked
- * (blocks fork repos for commands that don't apply to interim environments).
- */
-export async function assertCommandPolicy(
-  commandPath: CommandPath,
-  repoName?: string,
-  subject?: string
+async function enforceLocal(
+  commandPath: string,
+  entry: ContractCommand | undefined,
+  target: TargetRef
 ): Promise<void> {
-  if (!isAgentEnvironment()) return;
-
-  const policy = getPolicy(commandPath);
-  if (!policy) return;
-
-  if (policy.agentBlocked) {
-    enforceAgentBlock(commandPath, subject);
-    return;
-  }
-
-  if (!repoName) return;
-
-  // A bare (or `:base`) ref resolves to the family's grand whatever its tag (configService.getRepository).
-  const repo = await configService.getRepository(repoName);
-  if (!repo) return;
-  const isFork = !!(repo.grandGuid && repo.grandGuid !== repo.repositoryGuid);
-
-  // The development-only ops VM fleet is exempt (ops-vm.ts): the placement, not the ref's name, decides.
-  if (policy.grandGuard && !isFork && !(await isOpsVmPlacement(repo.placement))) {
-    enforceGrandGuard(repoName);
-  }
-
-  if (policy.forkBlocked && isFork) {
-    throw new ValidationError(t('errors.agent.forkBlocked', { command: commandPath }));
-  }
-}
-
-/**
- * The grand guard for a repository the config does not name (`repo admin orphan delete`). assertCommandPolicy reads
- * grand-or-fork from the config entry, and an orphan has none, so the machine's own fork marker decides: an image
- * renet does not mark as a fork is treated as a grand, and the agent needs REDIACC_ALLOW_GRAND_REPO=<guid> (or `*`),
- * set by the operator before the session. The ops VM fleet is exempt by the machine's address, as for repo delete.
- */
-export async function assertOrphanDeletePolicy(
-  guid: string,
-  machineName: string,
-  isFork: boolean
-): Promise<void> {
-  if (!isAgentEnvironment()) return;
-  const policy = getPolicy(CMD.REPO_ADMIN_ORPHAN_DELETE);
-  if (!policy?.grandGuard || isFork) return;
-  if (await isOpsVmMachine(machineName)) return;
-  enforceGrandGuard(guid);
+  if (currentRequestContext() !== undefined) return;
+  const principal = localPrincipal();
+  const policy = await localPolicy();
+  if (principal.kind === 'human' && policy === null) return;
+  await judge({ principal, command: decisionCommandOf(commandPath, entry), target, policy });
 }
 
 /** A positional or flag value as the name it carries, or undefined. */
@@ -304,25 +404,62 @@ function boundValue(bag: Record<string, unknown>, name: string | null): string |
   return name ? refValue(bag[name]) : undefined;
 }
 
-/** The repo ref and machine an action names, through the contract's positional or flag binding. */
-function proxiedTarget(entry: ContractCommand, actionCommand: Command): TargetRef {
+/** Positional kinds that name the subject a cluster opt-in must cover. */
+const SUBJECT_KINDS: ReadonlySet<string> = new Set(['cluster', 'datastore-ref']);
+
+/**
+ * The repo ref, machine and cluster subject an action names, through the contract's positional or
+ * flag bindings. A command that names no repo leaves the ref absent, and `decide` counts an absent
+ * repo as grand (fail closed).
+ */
+function targetOf(entry: ContractCommand, actionCommand: Command): TargetRef {
   const params = paramsFromCommand(entry, actionCommand);
   const positionals = positionalsFromCommand(entry, actionCommand);
   const ref = boundValue(positionals, entry.repoPositional) ?? boundValue(params, entry.repoOption);
   const machine =
     boundValue(positionals, entry.machinePositional) ?? boundValue(params, entry.machineOption);
-  return { ...(ref ? { ref } : {}), ...(machine ? { machine } : {}) };
+  const subjectPositional = entry.positionals.find((p) => SUBJECT_KINDS.has(p.kind));
+  const subject = subjectPositional ? refValue(positionals[subjectPositional.name]) : undefined;
+  return {
+    ...(ref ? { ref } : {}),
+    ...(machine ? { machine } : {}),
+    ...(subject ? { subject } : {}),
+  };
 }
 
-/** The contract fields `decide` reads. */
-function decisionCommandOf(commandPath: string, entry: ContractCommand): DecisionCommand {
-  return {
-    pathKey: commandPath,
-    destructive: entry.destructive === true,
-    grandGuard: entry.grandGuard === true,
-    forkBlocked: entry.forkBlocked === true,
-    agentBlocked: entry.agentBlocked === true,
-  };
+/**
+ * The CLI's one enforcement point (agent/plans/PLAN-rmcp-decide.md Design 3), called by the root
+ * `preAction` hook for every command before its action runs. The target is read off the parsed
+ * arguments through the contract bindings; a command on `ACTION_RESOLVED_TARGETS` is left to its
+ * action, which calls `enforceResolvedTarget` once it holds the target.
+ *
+ * @throws CliExitError carrying the decision code for any verdict but `allow`
+ */
+export async function enforceRootCommand(
+  commandPath: string,
+  entry: ContractCommand | undefined,
+  actionCommand: Command
+): Promise<void> {
+  if (ACTION_RESOLVED_TARGETS.has(commandPath)) return;
+  const target = entry ? targetOf(entry, actionCommand) : {};
+  await enforceLocal(commandPath, entry, target);
+}
+
+/**
+ * The decision for a command on `ACTION_RESOLVED_TARGETS`, called by its action with the target it
+ * resolved. Any other command is judged by the root hook, so a call for one is a programming error.
+ *
+ * @throws CliExitError carrying the decision code for any verdict but `allow`
+ */
+export async function enforceResolvedTarget(commandPath: string, target: TargetRef): Promise<void> {
+  const listed = ACTION_RESOLVED_TARGETS.get(commandPath);
+  if (!listed) {
+    throw new Error(
+      `"rdc ${commandPath}" is judged by the root hook; only a command on ACTION_RESOLVED_TARGETS judges its own target.`
+    );
+  }
+  const policyPath = listed.judgedAs ?? commandPath;
+  await enforceLocal(policyPath, getCommand(policyPath), target);
 }
 
 /**
@@ -345,21 +482,12 @@ export async function enforceProxiedAgentCommand(
   actionCommand: Command
 ): Promise<void> {
   if (!isAgentEnvironment()) return;
-  try {
-    await enforce({
-      principal: { kind: 'agent', userEmail: '', orgRole: 'owner' },
-      command: decisionCommandOf(commandPath, entry),
-      target: proxiedTarget(entry, actionCommand),
-      policy: null,
-      overrides: readEnvOverrides(),
-    });
-  } catch (error) {
-    if (!(error instanceof DecisionError)) throw error;
-    const { code, reason, next } = error.decision;
-    throw new CliExitError(ERROR_CODES.VALIDATION_ERROR, reason, {
-      details: [code, ...(next?.run ? [next.run] : [])],
-    });
-  }
+  await judge({
+    principal: { kind: 'agent', userEmail: '', orgRole: 'owner' },
+    command: decisionCommandOf(commandPath, entry),
+    target: targetOf(entry, actionCommand),
+    policy: null,
+  });
 }
 
 /**

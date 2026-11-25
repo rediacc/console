@@ -39,7 +39,7 @@ import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-executio
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveConnectTarget } from '../utils/repo-target.js';
@@ -356,7 +356,7 @@ async function resolveVSCodeTarget(target: string, options: VSCodeConnectOptions
 
   if (resolved.kind === 'repo') {
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
-    await assertCommandPolicy(CMD.VSCODE_CONNECT, resolved.repoKey);
+    await enforceResolvedTarget(CMD.VSCODE_CONNECT, { ref: resolved.repoKey });
   } else {
     await assertAgentMachineAccess(resolved.machineName);
   }

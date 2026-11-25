@@ -2702,6 +2702,7 @@
   "options.config": "Usar una configuración específica para este comando",
   "options.configKey": "Clave de configuración",
   "options.configValue": "Valor de configuración",
+  "options.confirmGrand": "Confirma un cambio destructivo en un repositorio grand repitiendo el nombre que pidió el rechazo",
   "options.confirmSync": "Previsualizar cambios y solicitar confirmación antes de sincronizar",
   "options.connectionName": "Eliminar conexión específica",
   "options.connectTarget": "Destino: un nombre de máquina o clúster para una shell en él, o una referencia de repositorio (nombre, nombre:etiqueta, opcionalmente @machine) para una shell dentro de él",

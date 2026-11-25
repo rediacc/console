@@ -58,7 +58,7 @@ vi.mock('../../utils/remote-resolve.js', () => ({
 }));
 
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn(),
+  enforceResolvedTarget: vi.fn(),
   CMD: { BACKUP_RESTORE: 'backup.restore' },
 }));
 

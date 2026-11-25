@@ -6,7 +6,7 @@
  *
  * - Commands with `mcp` field are auto-derived as MCP tools from the Commander tree.
  * - Commands with `mcpExcludeReason` are explicitly excluded from MCP.
- * - Commands with `grandGuard`/`forkBlocked` are enforced by assertCommandPolicy().
+ * - Commands with `grandGuard`/`forkBlocked`/`agentBlocked` are judged by the CLI decision step (utils/command-policy.ts enforceRootCommand) through decide().
  */
 
 interface McpMeta {
@@ -952,7 +952,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Remote config management: interactive browser flow, use CLI directly',
   },
 
-  // ══════════════════════════════════════════════════════════════════════ Policy-only entries (no MCP tools, enforced by assertCommandPolicy) ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ Policy-only entries (no MCP tools, judged by the CLI decision step) ══════════════════════════════════════════════════════════════════════
 
   'repo admin template apply': {
     grandGuard: true,

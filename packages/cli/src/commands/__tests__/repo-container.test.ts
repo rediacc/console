@@ -29,7 +29,7 @@ vi.mock('../../utils/repo-target.js', () => ({
     Promise.resolve({ repoKey: ref, machineName: 'm1', kubeCluster: undefined }),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn(() => Promise.resolve()),
+  enforceResolvedTarget: vi.fn(() => Promise.resolve()),
   CMD: { REPO_EXEC: 'repo exec' },
 }));
 vi.mock('../../services/core/output.js', () => ({

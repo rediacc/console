@@ -2702,6 +2702,7 @@
   "options.config": "为此命令使用特定配置",
   "options.configKey": "配置键",
   "options.configValue": "配置值",
+  "options.confirmGrand": "重复拒绝信息中要求的名称，以确认对 grand 仓库的破坏性更改",
   "options.confirmSync": "预览更改并在同步前请求确认",
   "options.connectionName": "移除特定连接",
   "options.connectTarget": "目标：机器或集群名称（在其上打开 shell），或仓库引用（name、name:tag，可选 @machine）（在其内部打开 shell）",
