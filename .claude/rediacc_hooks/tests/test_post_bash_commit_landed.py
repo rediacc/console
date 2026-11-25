@@ -7,6 +7,8 @@ Every world is a real repository driven through `lifecycle.run_pattern`, the way
 
 from __future__ import annotations
 
+import importlib.util
+import io
 import json
 import os
 import pathlib
@@ -147,10 +149,70 @@ def test_control_with_no_record_yet_nothing_is_claimed(tmp_path, monkeypatch):
 
 
 def test_a_commit_whose_subject_is_heads_landed_even_when_the_record_already_moved(world):
-    """A parallel Bash call can record the new HEAD before this call's hook reads it: the commit's own subject is the witness."""
+    """A parallel Bash call can record the new HEAD before this call's hook reads it: the commit's own subject, on a fresh HEAD, is the witness."""
     world.stage()
-    world.shell(FILTERED)
-    world.hook("git status")
     world.stage("g.py")
-    ctx = world.hook(FILTERED)
+    command = "git commit -q -m 'feat(x): add f' -- f.py 2>&1 | grep '^\\['"
+    before = world.head()
+    world.shell(command)
+    assert world.head() != before, "the commit must really land in this call"
+    world.hook("git status")
+    ctx = world.hook(command)
     assert "COMMIT DID NOT LAND" not in ctx, ctx
+
+
+def test_a_refused_commit_repeating_an_old_heads_subject_still_gives_the_notice(world):
+    """Finding 433dcdb5.1: a repeated subject is no witness once HEAD is old."""
+    world.stage("old.py")
+    old = dict(world.env, GIT_COMMITTER_DATE="2020-01-01T00:00:00Z")
+    subprocess.run(
+        ["git", "-C", str(world.repo), "commit", "-q", "-m", "feat(x): add f"],
+        env=old,
+        check=True,
+        capture_output=True,
+    )
+    world.hook("git status")
+    world.stage()
+    hook = world.repo / ".git" / "hooks" / "pre-commit"
+    hook.write_text(REFUSAL, encoding="utf-8")
+    hook.chmod(0o755)
+    assert world.shell(FILTERED) == ""
+    ctx = world.hook(FILTERED)
+    assert "COMMIT DID NOT LAND" in ctx, ctx
+
+
+def test_a_dry_run_commit_gives_no_notice(world):
+    """Finding 433dcdb5.4: a dry run leaves HEAD where it was by intent."""
+    world.stage()
+    command = "git commit --dry-run -q -m 'feat(x): add f'"
+    world.shell(command)
+    ctx = world.hook(command)
+    assert "COMMIT DID NOT LAND" not in ctx, ctx
+
+
+def test_a_failing_trigger_still_records_the_head(world, monkeypatch):
+    """Finding 433dcdb5.3: trigger_lines raising must not skip the HEAD record, or the next refusal goes unreported."""
+    for key, val in world.env.items():
+        monkeypatch.setenv(key, val)
+    spec = importlib.util.spec_from_file_location("review_commit_under_test", HOOK)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    def boom(*_a, **_k):
+        raise RuntimeError("trigger broke")
+
+    monkeypatch.setattr(mod, "trigger_lines", boom)
+    world.stage()
+    world.shell("git commit -q -m 'feat(y): add g'")
+    payload = json.dumps(
+        {
+            "session_id": SID,
+            "cwd": str(world.repo),
+            "tool_name": "Bash",
+            "tool_input": {"command": "git commit -q -m 'feat(y): add g'"},
+        }
+    )
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
+    assert mod.main() == 0
+    record = mod._head_record(SID, str(world.repo))
+    assert record.read_text(encoding="utf-8").strip() == world.head()

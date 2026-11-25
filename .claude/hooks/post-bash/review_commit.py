@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """PostToolUse/Bash: start a detached haiku review for every new commit, and tell the session about each review that finished (agent/plans/PLAN-per-commit-review.md section 3.1; operator ruling 2026-10-02).
 
-TWO JOBS, BOTH CHEAP.
+THREE JOBS, ALL CHEAP.
 
 1. TRIGGER. When the command ran `git commit`, `rebase`, `cherry-pick`, `merge`, `revert`, `pull` or `am` at a command position (the shell lexer's own reading, so an `echo` or a commit message quoting the words is not a commit), each repository those invocations ran in is asked `wl_review.uncovered()`: the branch's commits with no review record and no live reviewer. Up to `max_spawn_per_trigger` of them get a
    reviewer started with `wl_review.spawn_detached`, which takes the per-sha lock and detaches the child from this hook's pipes. The hook does not read `tool_response` (it carries no exit code): a failed commit made no new sha, so nothing is uncovered and nothing starts.
 
 2. SURFACE. On EVERY Bash call, the review records (ledger lines and `.md` files) that finished since this session last heard of them are reported as `additionalContext`. With the Stop hook disabled (operator, 2026-10-02) this is the channel that brings a review back to the session that made the commit, one tool call after it lands; SessionStart and the push guard are the other two.
+
+3. COMMIT LANDED. When the command ran a `git commit` that left HEAD where the session's previous Bash call recorded it with paths still staged, the commit is reported as not landed (a filtered output hides a refusal); every Bash call then records each repository's HEAD for the next call's comparison.
 
 Advisory: always exits 0, never blocks the tool call that already ran, and does nothing at all inside a reviewer or a Stop-hook child (`COMMIT_REVIEW_CHILD`, `STOPHOOK_CHILD`).
 """
@@ -17,6 +19,7 @@ import json
 import os
 import pathlib
 import sys
+import time
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 
@@ -128,7 +131,11 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
 
 # ---- 3. A COMMIT THAT DID NOT LAND (agent/plans/PLAN-stop-hook-retro-20261125.md R20261125.4) --------------------
 #
-# A `git commit ... 2>&1 | grep '^\['` hides a commit-policy refusal (its lines start `commit-policy:`) and leaves the index staged; on 2026-11-25 that cost 14 minutes and a failed cherry-pick. This hook cannot read the exit code, so it compares HEAD with the HEAD it recorded after the PREVIOUS Bash call of this session (every Bash call passes through here, so that record is the HEAD this command started from). HEAD unmoved and paths still staged is a commit that did not land. No record yet (the session's first call) says nothing, and so does a commit whose own message subject (`-m`, or a readable `-F` file) is HEAD's subject: that one landed, whatever the record says, which covers a parallel Bash call that recorded the new HEAD first.
+# A `git commit ... 2>&1 | grep '^\['` hides a commit-policy refusal (its lines start `commit-policy:`) and leaves the index staged; on 2026-11-25 that cost 14 minutes and a failed cherry-pick. This hook cannot read the exit code, so it compares HEAD with the HEAD it recorded after the PREVIOUS Bash call of this session (every Bash call passes through here, so that record is the HEAD this command started from). HEAD unmoved and paths still staged is a commit that did not land. No record yet (the session's first call) says nothing, and so does a commit whose own message subject (`-m`, or a readable `-F` file) is HEAD's subject while HEAD is at most SUBJECT_WITNESS_SEC seconds old: that one landed, whatever the record says, which covers a parallel Bash call that recorded the new HEAD first. An older HEAD with the same subject (a repeated `wip`) is no witness. A `--dry-run` commit never intends to land and is skipped.
+
+
+# A parallel call's commit is seconds old; a HEAD older than this that merely shares the subject does not witness a landing.
+SUBJECT_WITNESS_SEC = 120
 
 
 def _head_record(session, repo):
@@ -186,7 +193,7 @@ def commit_landed_lines(cmd, cwd, root, session):
     lines = []
     seen = set()
     for run in shellscan._analyse(cmd).runs:
-        if run.git_sub != "commit":
+        if run.git_sub != "commit" or "--dry-run" in (run.argv or []):
             continue
         where = base if run.git_dir in (None, "", ".") else base / run.git_dir
         top = R.git_out(where, "rev-parse", "--show-toplevel")
@@ -206,7 +213,9 @@ def commit_landed_lines(cmd, cwd, root, session):
             continue
         subject = _message_subject(run, base)
         if subject and subject == R.git_out(repo, "log", "-1", "--format=%s", "HEAD").strip():
-            continue
+            stamp = R.git_out(repo, "log", "-1", "--format=%ct", "HEAD").strip()
+            if stamp.isdigit() and time.time() - int(stamp) <= SUBJECT_WITNESS_SEC:
+                continue
         lines.append(
             "COMMIT DID NOT LAND in %s: HEAD is still %s and %d path(s) are staged; rerun the commit without the output filter to read the refusal (a commit-policy refusal starts `commit-policy:`, which a filter for git's `[branch sha]` line drops)"
             % (top, after[:10], len(staged))
@@ -233,7 +242,12 @@ def main():
                 "commit-landed check failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
             )
     if cmd and "git" in cmd and any(sub in cmd for sub in R.TRIGGER_SUBS):
-        lines += trigger_lines(cmd, ev.field("cwd") or None, root)
+        try:
+            lines += trigger_lines(cmd, ev.field("cwd") or None, root)
+        except Exception as exc:
+            lines.append(
+                "per-commit review trigger failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
+            )
     try:
         record_heads(root, session)
     except Exception as exc:
