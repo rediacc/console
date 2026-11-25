@@ -129,11 +129,20 @@ dead_letter_queue = "backup-replicate-bench-dlq"
 name = "BACKUP_REPLICATOR"
 class_name = "BackupReplicator"
 
+# The per-org AI credit ledger (workers/account/src/credit-ledger.ts, PLAN-console-ai-credits.md D4): the proxy reaches it only through its CreditLedgerGate entrypoint.
+[[durable_objects.bindings]]
+name = "CREDIT_LEDGER"
+class_name = "CreditLedger"
+
 # Each Worker script has its own Durable Object namespace, so this migration applies afresh to
 # every target.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BackupReplicator"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["CreditLedger"]
 
 # Telemetry mirror (PLAN-d1-scaling Z3): EventLogService writes telemetry event types to this Analytics
 # Engine dataset as well as D1. The portal's reads use the SQL API with ACCOUNT_AE_READ_TOKEN.

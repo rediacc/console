@@ -84,6 +84,15 @@ dead_letter_queue = "backup-replicate-@@COMPANY@@-dlq"
 name = "BACKUP_REPLICATOR"
 class_name = "BackupReplicator"
 
+# The per-org AI credit ledger (workers/account/src/credit-ledger.ts, PLAN-console-ai-credits.md D4): the proxy reaches it only through its CreditLedgerGate entrypoint.
+[[durable_objects.bindings]]
+name = "CREDIT_LEDGER"
+class_name = "CreditLedger"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BackupReplicator"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["CreditLedger"]
