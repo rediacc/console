@@ -106,7 +106,8 @@ import {
 } from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
-import { seedReceipt } from './lease-seed';
+import { seedReceipt, seedTypecheckCache } from './lease-seed';
+import { cacheDirFor } from './typecheck-incremental';
 import {
   cappedChanged,
   type GateLedger,
@@ -2908,6 +2909,44 @@ async function selftest(): Promise<number> {
       require_(
         fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
         "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // DT8: a lease's typecheck cache is seeded from the main checkout's, prefix rewritten, stamps left out, the main side untouched.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-tscache-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'trees', 'lease');
+    try {
+      fs.mkdirSync(live, { recursive: true });
+      fs.mkdirSync(lease, { recursive: true });
+      require_(
+        seedTypecheckCache(lease, live, dir).includes('none') &&
+          !fs.existsSync(cacheDirFor(lease, dir)),
+        'CONTROL: a main checkout with no typecheck cache seeds no lease directory'
+      );
+      const src = cacheDirFor(live, dir);
+      fs.mkdirSync(src, { recursive: true });
+      const prefixLive = path.relative(src, live).split(path.sep).join('/');
+      const prefixLease = path.relative(cacheDirFor(lease, dir), lease).split(path.sep).join('/');
+      const body = `{"packageJsons":["${prefixLive}/node_modules/a/package.json"]}`;
+      fs.writeFileSync(path.join(src, 'p.tsbuildinfo'), body);
+      fs.writeFileSync(path.join(src, 'p.stamp.json'), '{}');
+      seedTypecheckCache(lease, live, dir);
+      const got = fs.readFileSync(path.join(cacheDirFor(lease, dir), 'p.tsbuildinfo'), 'utf8');
+      require_(
+        got === body.split(prefixLive).join(prefixLease) && prefixLive !== prefixLease,
+        "the seeded tsbuildinfo must name the lease's files, not the main checkout's"
+      );
+      require_(
+        !fs.existsSync(path.join(cacheDirFor(lease, dir), 'p.stamp.json')),
+        "a stamp holds the other tree's mtimes and must not be seeded"
+      );
+      require_(
+        fs.readFileSync(path.join(src, 'p.tsbuildinfo'), 'utf8') === body,
+        "the seed must never write into the main checkout's cache"
       );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });

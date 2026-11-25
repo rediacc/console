@@ -38,12 +38,17 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 /**
  * tsbuildinfo files and stamps, one directory per checkout, OUTSIDE the repository: check:ci-gate-tree-writes counts even the gitignored .ci/cache as the shared tree, and a cache nothing else reads has no reason to sit beside the gates that read the tree.
  */
-export const CACHE_DIR = path.join(
-  os.homedir(),
-  '.cache',
-  'rediacc-typecheck',
-  REPO_ROOT.replace(/^\/+/, '').replace(/\//g, '-')
-);
+export const CACHE_DIR = cacheDirFor(REPO_ROOT);
+
+/** The cache directory of the checkout at `root`: one directory per checkout path, so a lease starts cold unless lease-seed.ts seeds it (PLAN-drain-throughput DT8). */
+export function cacheDirFor(root: string, home: string = os.homedir()): string {
+  return path.join(
+    home,
+    '.cache',
+    'rediacc-typecheck',
+    root.replace(/^\/+/, '').replace(/\//g, '-')
+  );
+}
 const WORKERS_CLAUSE = 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers';
 const WWW_CLAUSE = 'npm run typecheck --workspace packages/www';
 const WWW_EXPECTED = 'astro sync && tsc --noEmit';
