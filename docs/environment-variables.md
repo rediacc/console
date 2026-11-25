@@ -36,11 +36,13 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 
 ## Agent gates (ancestry-validated; set them BEFORE starting an agent)
 
+Each opt-in is the local half of one decision: an agent acts only where its opt-in AND the policy ceiling allow it (`packages/shared/src/policy/decide.ts`). The ceiling is the org policy narrowed by the team policy, read from the policy record; an opt-in never widens it.
+
 | Variable | Purpose |
 |---|---|
-| `REDIACC_ALLOW_GRAND_REPO` | Grants grand-repo / direct machine access. |
-| `REDIACC_ALLOW_CONFIG_EDIT` | Pointer-glob scope allowing agent config edits. |
-| `REDIACC_ALLOW_CLUSTER_OPS` | Gates destructive cluster operations. |
+| `REDIACC_ALLOW_GRAND_REPO` | Opt-in for grand-repo / direct machine access, within the policy's `allowGrandRepos`. |
+| `REDIACC_ALLOW_CONFIG_EDIT` | Pointer-glob scope opting an agent in to config edits, within the policy ceiling. |
+| `REDIACC_ALLOW_CLUSTER_OPS` | Opt-in for destructive cluster operations, within the policy's `allowClusterOps`. |
 | `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI`, `CURSOR_TRACE_ID` | Agent-environment detection (set by the agent runtime, not by you). |
 
 ## Test-infra gates and escape hatches

@@ -17,7 +17,7 @@ A "rediacc" config storage provider lets teams sync CLI configuration files thro
 
 This section describes the system as built. Where an older section below says more, this one holds.
 
-**The claim.** Stored configs are confidential against a compromise of the server's storage and against a passive operator. Every blob is bound to its store, config, team and version, so the server cannot swap one config's blob for another's or edit a blob undetected. The design does NOT protect against an operator who serves malicious portal code, or who withholds the newest version from a device that has never seen it.
+**The claim.** Stored configs are confidential against a compromise of the server's storage and against a passive operator. Every blob is bound to its store, config, team and version, so the server cannot swap one config's blob for another's or edit a blob undetected. The design does NOT protect against an operator who serves malicious portal code, or who withholds the newest version from a device that has never seen it. While an [agent grant](#agent-grants) lives, the executor can reach the CEK-derived keys of one config and two policy records unattended, so a leaked bearer acts as its user on that config until expiry or revocation.
 
 Confidentiality rests on one key, the CEK. The server holds the other two layers' keys: the org passphrase (layer 3, stored server-recoverable under the per-Worker `ACCOUNT_CONFIG_SERVER_KEY`, see [The layer-3 server key](#the-layer-3-server-key)) and `sdkMaster` (layer 1). Layer 2 is the CEK, wrapped per slot under `HKDF(slotSecret ‖ serverSecret)`; the slot secret stays on the device (the OS keyring for the CLI, RAM in the portal).
 
@@ -97,7 +97,7 @@ The server reads the caller's org role, the team and the team membership on ever
 
 ### Agent grants
 
-An agent grant hands one config's content key to an MCP agent without handing it the org CEK (PLAN-rmcp-agent-grants.md Design 1; `packages/shared/src/config-crypto/agent-grant.ts`). The browser draws a 32-byte secret `S` and shows it once as the bearer `rmcp_<grantId>.<base64url(S)>`.
+An agent grant is a key-holder type beside passkey slots, recovery slots and machine secrets. It hands an MCP agent one config's content key and the policy keys its person would read, without handing it the org CEK (`packages/shared/src/config-crypto/agent-grant.ts`). The browser draws a 32-byte secret `S` and shows it once as the bearer `rmcp_<grantId>.<base64url(S)>`. A grant lives 7 days by default and 30 days at most, reaches one config, and belongs to one region.
 
 | Value | Derivation | Held by |
 |---|---|---|
@@ -105,9 +105,26 @@ An agent grant hands one config's content key to an MCP agent without handing it
 | `K` | HKDF-SHA256(S, salt grantId, info `rediacc-agent-grant-wrap-v1`) | derived by the executor from the bearer |
 | slot key | HKDF-SHA256(K ‖ serverSecret, salt grantId, info `rediacc-agent-grant-slot-v1\|grantId\|storeId\|cekGeneration\|configId`) | derived by the executor while it holds both halves |
 
-The slot key wraps the config's own content key with AES-GCM. The wrap's AAD pins it to its grant, store, config, team, content-key version and CEK generation, so a wrap moved to another grant or config, relabelled, or carried past a CEK rotation does not open. The account server holds `serverSecret` and the tag hash and imports only `parseAgentBearer` and `hashAuthTag`; it never wraps or unwraps. Time expiry is not part of the derivation and is enforced server-side.
+The slot key wraps three things with AES-GCM: the config's own content key, the policy key of the grant's config, and the policy key of the org-level config (see [Policy record](#policy-record)). The content-key wrap's AAD pins it to its grant, store, config, team, content-key version and CEK generation. A policy-key wrap carries its own label (`rediacc-agent-grant-policy-key-v1`) and names the policy record's pointer beside the grant's config. A wrap moved to another grant, config or pointer, relabelled, presented as the other kind of wrap, or carried past a CEK rotation does not open. The account server holds `serverSecret` and the tag hash and imports only `parseAgentBearer` and `hashAuthTag`; it never wraps or unwraps. Time expiry is not part of the derivation and is enforced server-side.
 
-Residual risk: an executor that holds `S` and the account server's `agent-session` answer can open the grant's one config, and nothing more.
+An agent therefore reads exactly what its person reads: its own config, and the policy records of its own team and of the org. Agent grants and machine secrets do not count as key holders for the safety net.
+
+Residual risk: an executor that holds `S` and the account server's `agent-session` answer can open the grant's one config and its two policy records, and nothing more. The CEK is reachable unattended only through the executor's RAM for the grant's lifetime, and a leaked bearer acts as its user on that one config until it expires or is revoked.
+
+### Policy record
+
+The authorization policy (which commands each user and team may run, on which machines and repositories, with the grand-repo and cluster-operation switches) is not part of the config document. A pushed config cannot carry `policy`: the schema refuses it, so a member's push changes no executor decision. Each config entry, org-level or per team, has its own record in `config_policies`, keyed by store and config, with a `version` that starts at 1 and an inline `cek_generation` (`packages/shared/src/config-crypto/policy-record.ts`).
+
+- **Key.** The blob is sealed under a per-pointer policy key derived from the CEK: HKDF-SHA256(CEK, empty salt, info `rediacc-policy-key-v1` NUL canonical({storeId, configId, teamId or null, cekGeneration})). A CEK holder derives it on the spot. A holder of one derived key opens that pointer's records under that generation and no other, and never learns the CEK. This is what an agent grant carries.
+- **AAD.** `rediacc-policy-aad-v2` NUL canonical({v: 2, storeId, configId, teamId or null, version, cekGeneration}). A reader rebuilds it from its own pointer plus the version and generation the record carries, so a blob served for another store, config or team, an older record replayed under a newer number, or a blob from another CEK generation fails the GCM tag. The version is therefore authentic, and a client-side high-water mark on it is meaningful. A v1 blob does not open.
+- **Server layer.** The server adds the org-passphrase layer at rest, as it does for configs. It cannot read the policy.
+- **Who reads.** Every member of the store through the config-team read rule, and every executor serving them. The route is `GET /:id/policy` behind a config token.
+- **Who writes.** `PUT /:id/policy` behind a session, 2FA and an elevated session, plus a bound passkey when the store sets `requirePasskey`. The role check is the only place the policy changes: for the org-level config an org owner or admin, for a team's config that team's `team_admin` or an org owner or admin. A write sealed under a rotated-out generation is refused with 409 `stale_cek_generation`. History is an audit event, not stored versions.
+- **Evaluation.** The effective policy is the org policy as a ceiling narrowed by the team policy (`packages/shared/src/policy/merge.ts`): allow lists intersect, deny lists union, opt-in switches AND, and `allowGrandRepos` as a glob list matches only when an org glob and a team glob both match. A key the org locks is ignored in the team policy and reported. Every caller, human or agent, decides through the one `decide` function, and an agent additionally needs a human opt-in, so an agent acts only where the opt-in AND the policy ceiling allow it.
+
+### Executor write path
+
+A command the hosted executor dispatches runs against the config it pulled and decrypted for the session, and its writes are pushed back to the store (`packages/cli/src/services/serve/config-writeback.ts`). One config-token chain per container instance per (user, team) serializes every store request. The chain is minted writable, and the account server honours that only under a live grant for the session, executor and user and applies the team access table to every push. A push uses compare-and-swap on the version; on a conflict the executor pulls the store's copy and applies the edit again, and a conflict that outlasts every replay fails the write with `CONFIG_CONFLICT`. A write that cannot be saved fails the command before the host job runs, so a `repo create` has saved its registration and credential first.
 
 ## Architecture
 
