@@ -22,6 +22,25 @@ export {
   randomBytes,
   toBase64,
 } from './aes.js';
+// Agent grants: split-secret wrap of one config's content key (PLAN-rmcp-agent-grants.md Design 1)
+export type { AgentBearer, AgentGrantBinding } from './agent-grant.js';
+export {
+  AGENT_BEARER_PREFIX,
+  AGENT_GRANT_INFO,
+  AGENT_GRANT_SECRET_BYTES,
+  agentGrantHkdf,
+  agentGrantSlotInfo,
+  agentGrantWrapAad,
+  deriveAgentGrantKey,
+  deriveAgentGrantSlotKeyRaw,
+  deriveAuthTag,
+  formatAgentBearer,
+  hashAuthTag,
+  newAgentGrantSecret,
+  parseAgentBearer,
+  unwrapConfigKeyForAgentGrant,
+  wrapConfigKeyForAgentGrant,
+} from './agent-grant.js';
 export type { CommitmentValueKind } from './canonical.js';
 // Canonical serialization for field-commitment HMACs
 export { canonicalize, valueKind } from './canonical.js';
