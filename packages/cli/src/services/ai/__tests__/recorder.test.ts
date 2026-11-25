@@ -281,4 +281,38 @@ describe('AI conversation recorder', () => {
     const order = posted.filter((p) => p.conversationId === 'busy').map((p) => p.messageId);
     expect(order).toEqual(['parent', 'child']);
   });
+
+  it('drops a settled conversation from the chain map', async () => {
+    const { fetchImpl } = capture();
+    const recorder = createAiRecorder({
+      accountUrl: 'https://account.test',
+      executorToken: 't',
+      fetchImpl,
+    });
+    const pending = recorder.record(message({ conversationId: 'done', messageId: 'm' }));
+    expect(recorder.pendingConversations()).toBe(1);
+    await pending;
+    await Promise.resolve();
+    expect(recorder.pendingConversations()).toBe(0);
+  });
+
+  it('settles a conversation whose key read never answers', async () => {
+    const { calls, fetchImpl } = capture();
+    const failures: string[] = [];
+    const recorder = createAiRecorder({
+      accountUrl: 'https://account.test',
+      executorToken: 't',
+      fetchImpl,
+      keyTimeoutMs: 20,
+      onFailure: (reason) => failures.push(reason),
+    });
+    const outcome = await recorder.record(
+      message({ conversationId: 'stuck', cek: () => new Promise<Uint8Array>(() => undefined) })
+    );
+    await Promise.resolve();
+    expect(outcome.delivered).toBe(false);
+    expect(failures[0]).toContain('timed out');
+    expect(calls()).toBe(0);
+    expect(recorder.pendingConversations()).toBe(0);
+  });
 });

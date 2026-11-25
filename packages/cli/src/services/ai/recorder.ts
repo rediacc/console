@@ -51,9 +51,16 @@ export interface AiRecordOutcome {
 export interface AiRecorder {
   /** Seal and post one message. Resolves once it was delivered or given up on; never rejects. */
   record(message: AiMessageRecord): Promise<AiRecordOutcome>;
+  /** Conversations with a delivery still in flight; a settled conversation is not counted. */
+  pendingConversations(): number;
 }
 
+/** How long a delivery waits for the session's config key before it gives up on the message. */
+export const AI_KEY_TIMEOUT_MS = 30_000;
+
 export interface AiRecorderOptions {
+  /** Bound on reading the config key, so a stuck key read settles its chain entry. */
+  keyTimeoutMs?: number;
   accountUrl: string;
   executorToken: string;
   fetchImpl?: typeof globalThis.fetch;
@@ -129,12 +136,22 @@ export function createAiRecorder(options: AiRecorderOptions): AiRecorder {
 
   /** The session's config key, or why there is none. */
   async function readKey(message: AiMessageRecord): Promise<Uint8Array | string> {
+    let timer: NodeJS.Timeout | undefined;
     try {
-      return (
-        (await message.cek()) ?? 'the session holds no config key, so the message cannot be sealed'
-      );
+      const limit = new Promise<string>((resolve) => {
+        timer = setTimeout(
+          () => resolve('the session config key read timed out, so the message cannot be sealed'),
+          options.keyTimeoutMs ?? AI_KEY_TIMEOUT_MS
+        );
+      });
+      const read = message
+        .cek()
+        .then((key) => key ?? 'the session holds no config key, so the message cannot be sealed');
+      return await Promise.race([read, limit]);
     } catch (error) {
       return `the session's config key could not be read: ${describeFetchError(error)}`;
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -168,6 +185,7 @@ export function createAiRecorder(options: AiRecorderOptions): AiRecorder {
   }
 
   return {
+    pendingConversations: () => chains.size,
     record(message) {
       const messageId = message.messageId ?? randomUUID();
       const previous = chains.get(message.conversationId) ?? Promise.resolve();
