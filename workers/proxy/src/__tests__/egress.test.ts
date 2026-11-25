@@ -607,16 +607,58 @@ describe('executor write-back requests against the real allowlist', () => {
         .pathname,
       'utf8'
     );
-    const paths = [...source.matchAll(/chain\.request\(\s*'(\/account\/api\/v1\/[^']*)'/g)].map(
-      (m) => m[1] as string
-    );
-    // The scan must find revalidate's listing, or the loop below proves nothing.
-    expect(paths).toContain('/account/api/v1/configs');
-    for (const path of paths) {
+    // Every `chain.request(<'literal' or `template`>, ...` call: a `${...}` that holds a query string becomes empty, any other becomes a placeholder id. The method is the first `method: '<M>'` before the call's `op` argument, else GET.
+    const calls = [
+      ...source.matchAll(/chain\.request\(\s*(['`])(\/account\/api\/v1\/[^'`]*)\1([\s\S]*?)\bop\b/g),
+    ].map((m) => {
+      const path = (m[2] as string)
+        .replace(/\$\{query\}/g, '')
+        .replace(/\$\{[^}]*(?:\{[^}]*\}[^}]*)*\}/g, 'cfg-1');
+      return { path, method: /method: '(\w+)'/.exec(m[3] as string)?.[1] ?? 'GET' };
+    });
+    // Five call sites today: the listing, the session handshake, the push, the pull and the policy read. A scan that finds fewer proves nothing.
+    expect(calls.map((c) => `${c.method} ${c.path}`).sort()).toEqual([
+      'GET /account/api/v1/configs',
+      'GET /account/api/v1/configs/cfg-1',
+      'GET /account/api/v1/configs/cfg-1/policy',
+      'POST /account/api/v1/configs/session',
+      'PUT /account/api/v1/configs/cfg-1',
+    ]);
+    for (const { path, method } of calls) {
+      for (const query of method === 'POST' || path.endsWith('/configs') ? [''] : ['', '?teamId=t']) {
+        const { env, seen } = setup();
+        const response = await forwardAccountEgress(
+          send(`${path}${query}`, method === 'GET' ? {} : { method, body: '{}' }),
+          env,
+          'org-a'
+        );
+        expect(response.status, `${method} ${path}${query}`).toBe(200);
+        expect(seen, `${method} ${path}${query}`).toHaveLength(1);
+      }
+    }
+  });
+
+  it('admits GET /configs/<id>/policy with and without teamId, and refuses other shapes', async () => {
+    for (const path of [
+      '/account/api/v1/configs/cfg-1/policy',
+      '/account/api/v1/configs/cfg-1/policy?teamId=t',
+    ]) {
       const { env, seen } = setup();
       const response = await forwardAccountEgress(send(path), env, 'org-a');
       expect(response.status, path).toBe(200);
-      expect(seen, path).toHaveLength(1);
+      expect(seen[0]?.headers.get('x-config-token')).toBe('ct-1');
+    }
+    for (const [method, path, reason] of [
+      ['PUT', '/account/api/v1/configs/cfg-1/policy', 'route-not-allowed'],
+      ['POST', '/account/api/v1/configs/cfg-1/policy', 'route-not-allowed'],
+      ['GET', '/account/api/v1/configs/cfg-1/policy?all=1', 'query-not-allowed'],
+      ['GET', '/account/api/v1/configs/cfg-1/policy/x', 'route-not-allowed'],
+    ] as const) {
+      const { env, seen } = setup();
+      const response = await forwardAccountEgress(send(path, { method }), env, 'org-a');
+      expect(response.status, `${method} ${path}`).toBe(403);
+      expect(await response.json()).toMatchObject({ reason });
+      expect(seen).toHaveLength(0);
     }
   });
 });
