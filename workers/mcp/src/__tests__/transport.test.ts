@@ -175,8 +175,8 @@ describe('the hosted MCP transport', () => {
     expect(ro.length).toBeLessThan(snapshot.length);
     expect(ro.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
 
-    // machine_list is not a proxy-surface tool, so naming it in the allowlist does not serve it.
-    const allow = ['repo_list', 'machine_list', 'backup_browse'];
+    // config_list is a local-surface tool, so naming it in the allowlist does not serve it.
+    const allow = ['repo_list', 'config_list', 'backup_browse'];
     const listed = await connect(transportWith({ ...FULL, tools: allow }), { pin: MODERN });
     const names = (await listed.listTools()).tools.map((t) => t.name);
     await listed.close();

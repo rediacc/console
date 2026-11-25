@@ -148,7 +148,8 @@ describe('tools/call forwarding', () => {
     );
     const client = await connect(executor, { ...FULL, tools: ['repo_list'] });
     const outside = await client.callTool({ name: 'repo_up', arguments: { ref: 'shop' } });
-    const notProxy = await client.callTool({ name: 'machine_list', arguments: {} });
+    // config_list is a local-surface tool: the hosted server does not serve it at all.
+    const notProxy = await client.callTool({ name: 'config_list', arguments: {} });
     const inside = await client.callTool({ name: 'repo_list', arguments: {} });
     await client.close();
 
