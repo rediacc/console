@@ -291,6 +291,8 @@ describe('executor refusals', () => {
       {}
     );
     expect(thrown.structuredContent).toMatchObject({ code: 'SERVER_ERROR' });
+    // A throw can follow delivery, so the text must not read as "never ran".
+    expect(JSON.stringify(thrown.content)).toContain('may have run');
     const unbound = await callTool({ executor: undefined, reauthUrl }, caller(), 'repo_list', {});
     expect(unbound.structuredContent).toMatchObject({ code: 'SERVER_ERROR' });
     const shapeless = await callTool(

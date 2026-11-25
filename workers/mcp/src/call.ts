@@ -196,7 +196,11 @@ export async function callTool(
   try {
     outcome = await withinWindow(deps.executor.call(routing, forward));
   } catch {
-    return toolError('SERVER_ERROR', 'The executor could not be reached.');
+    // The RPC can fail after the executor accepted the call, so the tool may have run: the answer says so rather than inviting a blind retry (sibling of review 6eaea08c.1).
+    return toolError(
+      'SERVER_ERROR',
+      'The executor did not answer; the tool may have run. Check its effect before retrying.'
+    );
   }
   return outcome === 'window-passed' ? windowPassed(name) : fromAnswer(entry, outcome.answer);
 }
