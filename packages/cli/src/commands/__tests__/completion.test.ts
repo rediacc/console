@@ -10,7 +10,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { CLI_CONTRACT, type CliContract } from '@rediacc/shared/cli-contract';
 import { describe, expect, it } from 'vitest';
 import {
@@ -168,6 +168,24 @@ describe('rdc completion: shell syntax', () => {
     }
   );
 
+  // The parser checks above are skipped on a host without the shell. This structural
+  // check always runs, so a broken quote or bracket in the zsh, fish or pwsh script
+  // still fails there, though it is no replacement for the parser.
+  for (const shell of ['zsh', 'fish', 'pwsh']) {
+    it(`${shell} script has balanced quotes and brackets (runs without the ${shell} binary)`, () => {
+      const code = readFileSync(writeScript(shell), 'utf-8')
+        .split('\n')
+        .filter((line) => !/^\s*#/.test(line))
+        .join('\n');
+      expect((code.match(/'/g) ?? []).length % 2, 'single quotes').toBe(0);
+      // zsh `case` arms (`*)`) carry unmatched parentheses by design.
+      const pairs = [['{', '}'], ['[', ']'], ...(shell === 'zsh' ? [] : [['(', ')']])];
+      for (const [open, close] of pairs) {
+        expect(code.split(open).length, `${open}${close}`).toBe(code.split(close).length);
+      }
+    });
+  }
+
   it('renders a script for every supported shell', () => {
     for (const shell of COMPLETION_SHELLS) {
       expect(renderCompletionScript(shell, CLI_CONTRACT)).toContain("'rdc repo fork'");
@@ -220,6 +238,27 @@ describe('rdc completion bash: driven for real', () => {
     expect(asked()).toEqual([
       '__complete --kind repo --config stubbed',
       '__complete --kind repo --config stubbed',
+    ]);
+  });
+
+  it('does not cache a failed lookup: the next Tab asks again', () => {
+    const bin = join(work, 'bin-failing');
+    const log = join(work, 'failing.log');
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(log, '');
+    writeFileSync(
+      join(bin, 'rdc'),
+      `#!/bin/sh\necho "$*" >> '${log}'\nprintf 'half\\n'\nexit 1\n`,
+      {
+        mode: 0o755,
+      }
+    );
+    writeConfig('failing', FIXTURE_CONFIG);
+    const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` };
+    expect(bashComplete(script, 'rdc --config failing repo fork ', { env })).toEqual([]);
+    expect(readFileSync(log, 'utf-8').trim().split('\n')).toEqual([
+      '__complete --kind repo --config failing',
+      '__complete --kind repo --config failing',
     ]);
   });
 
@@ -278,6 +317,31 @@ describe('rdc __complete', () => {
     expect(() => completeNames({ kind: 'repo', config: 'remote' })).toThrow(/remote/);
     writeConfig('broken', { ...FIXTURE_CONFIG, resources: { repositories: { shop: 1 } } });
     expect(() => completeNames({ kind: 'repo', config: 'broken' })).toThrow(/broken\.json/);
+  });
+
+  it('keeps the parser text of a malformed config out of the error', () => {
+    const file = join(configDir(), 'secretive.json');
+    writeFileSync(file, 's3cr3t-value');
+    let message = '';
+    try {
+      completeNames({ kind: 'repo', config: 'secretive' });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/secretive\.json/);
+    expect(message).not.toContain('s3cr3t-value');
+  });
+
+  it('reads only a plain config name from the config dir', () => {
+    writeFileSync(join(work, 'outside.json'), JSON.stringify(FIXTURE_CONFIG));
+    const escape = relative(configDir(), join(work, 'outside'));
+    expect(() => completeNames({ kind: 'repo', config: escape })).toThrow(/plain config name/);
+    expect(() => completeNames({ kind: 'repo', config: '..' })).toThrow(/plain config name/);
+    writeConfig('plain-name_1', FIXTURE_CONFIG);
+    expect(completeNames({ kind: 'machine', config: 'plain-name_1' })).toEqual([
+      'server-1',
+      'server-2',
+    ]);
   });
 
   it('is answered by the CLI entry without the full command tree', () => {

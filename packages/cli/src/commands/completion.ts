@@ -796,9 +796,10 @@ function readConfigFile(file: string): Record<string, unknown> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch (error) {
+  } catch {
+    // The parser's message may quote the file's text, which can hold tokens: name only the file.
     throw new ValidationError(
-      t('commands.completion.errors.configInvalid', { path: file, error: String(error) })
+      t('commands.completion.errors.configInvalid', { path: file, error: 'not valid JSON' })
     );
   }
   if (!isRecord(parsed)) {
@@ -849,10 +850,21 @@ export function resourceNames(
   return kind === 'repo' ? repoRefs(family, file) : Object.keys(family);
 }
 
+/** A config name is one file stem: no path separator and no leading dot (so no `..`), so the lookup stays in the config dir. */
+const PLAIN_CONFIG_NAME = /^(?!\.)[^/\\\0]+$/;
+
 /** The names `rdc __complete` prints: the config file is `<config dir>/<name>.json`. */
 export function completeNames(options: { kind: string; config?: string }): string[] {
   const kind = parseConfigKind(options.kind);
   const name = options.config ?? getEffectiveConfigName();
+  if (!PLAIN_CONFIG_NAME.test(name)) {
+    throw new ValidationError(
+      t('commands.completion.errors.configInvalid', {
+        path: name,
+        error: 'not a plain config name',
+      })
+    );
+  }
   const file = join(getConfigDir(), `${name}.json`);
   return resourceNames(readConfigFile(file), kind, file);
 }
