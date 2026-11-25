@@ -21,6 +21,12 @@
       "defaultValue": null
     },
     {
+      "flags": "--confirm-grand <name>",
+      "descriptionKey": "options.confirmGrand",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "--fields <fields>",
       "descriptionKey": "options.fields",
       "mandatory": false,
@@ -7308,8 +7314,8 @@
               "defaultValue": null
             },
             {
-              "flags": "--dry-run",
-              "descriptionKey": "commands.subscription.retire.optionDryRun",
+              "flags": "--apply",
+              "descriptionKey": "commands.subscription.retire.optionApply",
               "mandatory": false,
               "defaultValue": null
             }

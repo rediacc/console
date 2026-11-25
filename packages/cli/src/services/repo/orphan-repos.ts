@@ -16,6 +16,7 @@ import {
   type RepositoryInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { t } from '../../i18n/index.js';
+import { settleDeletedRepoLicense } from '../account/license-retire.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import type { ExecuteResult } from '../executor/types.js';
@@ -116,21 +117,24 @@ export async function classifyMachineRepos(
 
 /**
  * Delete one repository image by GUID through renet `repository_delete` (it stops the repository's Docker daemon,
- * unmounts, closes LUKS and removes the image, its grants, licence blobs and backup state). The one delete call of
- * every GUID-addressed path, so `machine prune` and `repo admin orphan delete` cannot drift apart.
+ * unmounts, closes LUKS and removes the image, its grants, licence blobs and backup state), then retire its licence
+ * on the account server so the licence summary stops counting a repository that no longer exists. The one delete
+ * call of every GUID-addressed path, so `machine prune` and `repo admin orphan delete` cannot drift apart.
  */
-export function deleteRepoImageByGuid(
+export async function deleteRepoImageByGuid(
   machineName: string,
   guid: string,
   options: { debug?: boolean; quietSpinners?: boolean } = {}
 ): Promise<ExecuteResult> {
-  return getExecutor().execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_delete',
     machineName,
     params: { repository: guid },
     debug: options.debug,
     ...(options.quietSpinners ? { quietSpinners: true } : {}),
   });
+  if (result.success) await settleDeletedRepoLicense(guid, guid);
+  return result;
 }
 
 /** One line of `executor_orphans list --json` (.ci/rediacc_ci/ops/executor_orphans.py): an executor-created repo, fork or machine. */

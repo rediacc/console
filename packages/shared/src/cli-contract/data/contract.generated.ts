@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'e335f868110fa1f4';
+export const CLI_CONTRACT_VERSION = 'a9d9bd61f6935ed6';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "e335f868110fa1f4",
+  "version": "a9d9bd61f6935ed6",
   "languages": [
     "ar",
     "de",
@@ -17538,8 +17538,8 @@ export const CLI_CONTRACT: CliContract = {
       "summary": "Retire the license of a repository that is gone, so it leaves the license counts and notices",
       "severity": "destructive",
       "preview": {
-        "flag": "dry-run",
-        "polarity": "opt-in"
+        "flag": "apply",
+        "polarity": "default"
       },
       "options": [
         {
@@ -17562,18 +17562,18 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.subscription.retire.optionExpired",
-          "label": "Retire every hard-expired license of a deleted repository or one not in this config"
+          "label": "List every hard-expired license of a repository that is gone: deleted, not in this config, or absent from its machine"
         },
         {
-          "flags": "--dry-run",
-          "long": "dry-run",
+          "flags": "--apply",
+          "long": "apply",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.subscription.retire.optionDryRun",
-          "label": "With --expired: list what would be retired and change nothing"
+          "descriptionKey": "commands.subscription.retire.optionApply",
+          "label": "With --expired: retire the listed licenses (without it, --expired only lists them)"
         }
       ],
       "positionals": [

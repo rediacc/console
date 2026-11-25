@@ -255,7 +255,7 @@ export const COMMAND_SEVERITY: Readonly<Record<string, CommandSeverity>> = {
   'vscode serve stop': 'caution',
 };
 
-/** Commands that preview. `repo gc` and `repo prune` act only with `--apply`. */
+/** Commands that preview. `repo gc`, `repo prune` and `subscription retire --expired` act only with `--apply`. */
 export const COMMAND_PREVIEW: Readonly<Record<string, CommandPreview>> = {
   'backup purge': { flag: 'dry-run', polarity: 'opt-in' },
   'backup reconcile': { flag: 'dry-run', polarity: 'opt-in' },
@@ -281,7 +281,7 @@ export const COMMAND_PREVIEW: Readonly<Record<string, CommandPreview>> = {
   'repo sync download': { flag: 'dry-run', polarity: 'opt-in' },
   'repo sync upload': { flag: 'dry-run', polarity: 'opt-in' },
   'repo up': { flag: 'dry-run', polarity: 'opt-in' },
-  'subscription retire': { flag: 'dry-run', polarity: 'opt-in' },
+  'subscription retire': { flag: 'apply', polarity: 'default' },
 };
 
 /** Commands that take `--dry-run` or `--apply` without being a preview, each with its reason. */

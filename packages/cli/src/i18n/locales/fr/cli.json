@@ -3159,9 +3159,10 @@
         "othersHeader": "  Licences supprimées et inconnues :",
         "overLimitCell": "AU-DELÀ DE LA LIMITE",
         "refreshHint": "Renouveler avec : rdc subscription refresh",
-        "retireHint": "Retirer celles expirées définitivement : rdc subscription retire --expired",
+        "retireHint": "Lister celles expirées définitivement avant de les retirer : rdc subscription retire --expired (--apply les retire)",
         "whereAbsent": "absent de cette configuration",
-        "whereDeleted": "supprimé"
+        "whereDeleted": "supprimé",
+        "whereGone": "disparu de {{machine}}"
       },
       "licenceState": {
         "valid": "valide",
@@ -3180,18 +3181,18 @@
         "description": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis.",
         "argGuid": "GUID du dépôt, ou au moins 8 caractères d'une licence du rapport du compte",
         "optionForce": "Retire une licence dont le dépôt figure encore dans cette configuration et n'a pas expiré définitivement",
-        "dryRunNeedsExpired": "--dry-run s'utilise avec --expired.",
-        "expiredConfirm": "Retirer {{count}} licences ? Un renouvellement ne les ramènera pas.",
-        "expiredDryRun": "Simulation : rien n'a été retiré.",
+        "expiredDryRun": "Simulation : rien n'a été retiré. Pour les retirer : rdc subscription retire --expired --apply",
         "expiredFailed": "Impossible de retirer {{name}} : {{error}}",
-        "expiredList": "{{count}} licences expirées définitivement de dépôts supprimés ou inconnus :",
+        "expiredList": "{{count}} licences expirées définitivement de dépôts qui n'existent plus :",
         "expiredNeedsConfig": "Cette configuration ne contient aucun dépôt, donc --expired ne peut pas savoir quelles licences sont orphelines. Choisissez la configuration avec --config.",
-        "expiredNone": "Aucune licence expirée définitivement d'un dépôt supprimé ou inconnu à retirer.",
-        "expiredResult": "Retirées : {{retired}}, ignorées : {{skipped}} (dépôts actifs), en échec : {{failed}}.",
+        "expiredNone": "Aucune licence expirée définitivement d'un dépôt qui n'existe plus.",
+        "expiredResult": "Retirées : {{retired}}, conservées : {{skipped}} (encore sur une machine, ou impossibles à vérifier), en échec : {{failed}}.",
         "expiredWithGuid": "--expired retire toutes les licences expirées définitivement et n'accepte pas de GUID.",
         "needsGuidOrExpired": "Indiquez le GUID d'un dépôt, ou --expired.",
-        "optionDryRun": "Avec --expired : liste ce qui serait retiré sans rien modifier",
-        "optionExpired": "Retire toutes les licences expirées définitivement des dépôts supprimés ou absents de cette configuration"
+        "optionExpired": "Liste toutes les licences expirées définitivement des dépôts qui n'existent plus : supprimés, absents de cette configuration ou disparus de leur machine",
+        "applyNeedsExpired": "--apply s'utilise avec --expired.",
+        "expiredListFailed": "Impossible de lister les dépôts de {{place}} ({{error}}). Les licences des dépôts qui s'y trouvent sont conservées.",
+        "optionApply": "Avec --expired : retire les licences listées (sans cette option, --expired se contente de les lister)"
       },
       "notices": {
         "descriptionShort": "Liste les avis du compte : expiration des licences, état des sauvegardes, renouvellements, certificats et conditions",

@@ -3159,9 +3159,10 @@
         "othersHeader": "  Licenças excluídas e desconhecidas:",
         "overLimitCell": "ACIMA DO LIMITE",
         "refreshHint": "Renove com: rdc subscription refresh",
-        "retireHint": "Retire as expiradas de vez: rdc subscription retire --expired",
+        "retireHint": "Liste as expiradas de vez para retirar: rdc subscription retire --expired (--apply as retira)",
         "whereAbsent": "não está nesta configuração",
-        "whereDeleted": "excluído"
+        "whereDeleted": "excluído",
+        "whereGone": "já não está em {{machine}}"
       },
       "licenceState": {
         "valid": "válida",
@@ -3180,18 +3181,18 @@
         "description": "Retira a licença de um repositório que já não existe, para que saia das contagens de licenças e dos avisos.",
         "argGuid": "GUID do repositório, ou pelo menos 8 caracteres de uma licença do relatório da conta",
         "optionForce": "Retira uma licença cujo repositório ainda está nesta configuração e não expirou de vez",
-        "dryRunNeedsExpired": "--dry-run vai junto com --expired.",
-        "expiredConfirm": "Retirar {{count}} licenças? Renovar não as traz de volta.",
-        "expiredDryRun": "Simulação: nada foi retirado.",
+        "expiredDryRun": "Simulação: nada foi retirado. Para retirá-las: rdc subscription retire --expired --apply",
         "expiredFailed": "Não foi possível retirar {{name}}: {{error}}",
-        "expiredList": "{{count}} licenças expiradas de vez de repositórios excluídos ou desconhecidos:",
+        "expiredList": "{{count}} licenças expiradas de vez de repositórios que já não existem:",
         "expiredNeedsConfig": "Esta configuração não tem repositórios, então --expired não consegue saber quais licenças sobraram. Escolha a configuração com --config.",
-        "expiredNone": "Nenhuma licença expirada de vez de repositório excluído ou desconhecido para retirar.",
-        "expiredResult": "Retiradas: {{retired}}, ignoradas: {{skipped}} (repositórios ativos), com falha: {{failed}}.",
+        "expiredNone": "Nenhuma licença expirada de vez de um repositório que já não existe.",
+        "expiredResult": "Retiradas: {{retired}}, mantidas: {{skipped}} (ainda numa máquina ou impossíveis de verificar), com falha: {{failed}}.",
         "expiredWithGuid": "--expired retira todas as licenças expiradas de vez e não aceita GUID.",
         "needsGuidOrExpired": "Informe o GUID de um repositório ou use --expired.",
-        "optionDryRun": "Com --expired: lista o que seria retirado e não altera nada",
-        "optionExpired": "Retira todas as licenças expiradas de vez de repositórios excluídos ou que não estão nesta configuração"
+        "optionExpired": "Lista todas as licenças expiradas de vez de repositórios que já não existem: excluídos, fora desta configuração ou ausentes da sua máquina",
+        "applyNeedsExpired": "--apply vai junto com --expired.",
+        "expiredListFailed": "Não foi possível listar os repositórios em {{place}} ({{error}}). As licenças dos repositórios de lá são mantidas.",
+        "optionApply": "Com --expired: retira as licenças listadas (sem esta opção, --expired só as lista)"
       },
       "notices": {
         "descriptionShort": "Lista os avisos da conta: vencimento de licença, saúde dos backups, renovações, certificados e Termos",

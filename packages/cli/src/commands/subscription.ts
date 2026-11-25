@@ -525,7 +525,7 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  // subscription retire <guid> [--force] | --expired [--dry-run]; -y/--yes is the global option.
+  // subscription retire <guid> [--force] | --expired [--apply]; -y/--yes is the global option (the single-GUID prompt).
   sub
     .command('retire')
     .summary(t('commands.subscription.retire.descriptionShort'))
@@ -533,7 +533,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .argument('[guid]', t('commands.subscription.retire.argGuid'))
     .option('--force', t('commands.subscription.retire.optionForce'))
     .option('--expired', t('commands.subscription.retire.optionExpired'))
-    .option('--dry-run', t('commands.subscription.retire.optionDryRun'))
+    .option('--apply', t('commands.subscription.retire.optionApply'))
     .action(async (guid: string | undefined, options) => {
       try {
         await executeSubscriptionRetire(guid, options);

@@ -3159,9 +3159,10 @@
         "othersHeader": "  Licenze eliminate e sconosciute:",
         "overLimitCell": "OLTRE IL LIMITE",
         "refreshHint": "Rinnova con: rdc subscription refresh",
-        "retireHint": "Ritira quelle scadute definitivamente: rdc subscription retire --expired",
+        "retireHint": "Elenca quelle scadute definitivamente da ritirare: rdc subscription retire --expired (--apply le ritira)",
         "whereAbsent": "non presente in questa configurazione",
-        "whereDeleted": "eliminato"
+        "whereDeleted": "eliminato",
+        "whereGone": "non più su {{machine}}"
       },
       "licenceState": {
         "valid": "valida",
@@ -3180,18 +3181,18 @@
         "description": "Ritira la licenza di un repository che non esiste più, così esce dai conteggi delle licenze e dagli avvisi.",
         "argGuid": "GUID del repository, o almeno 8 caratteri di una licenza del report dell'account",
         "optionForce": "Ritira una licenza il cui repository è ancora in questa configurazione e non è scaduta definitivamente",
-        "dryRunNeedsExpired": "--dry-run va usato con --expired.",
-        "expiredConfirm": "Ritirare {{count}} licenze? Un rinnovo non le riporta indietro.",
-        "expiredDryRun": "Prova a vuoto: non è stato ritirato nulla.",
+        "expiredDryRun": "Prova a vuoto: non è stato ritirato nulla. Per ritirarle: rdc subscription retire --expired --apply",
         "expiredFailed": "Impossibile ritirare {{name}}: {{error}}",
-        "expiredList": "{{count}} licenze scadute definitivamente di repository eliminati o sconosciuti:",
+        "expiredList": "{{count}} licenze scadute definitivamente di repository che non esistono più:",
         "expiredNeedsConfig": "Questa configurazione non contiene repository, quindi --expired non può capire quali licenze siano orfane. Scegli la configurazione con --config.",
-        "expiredNone": "Nessuna licenza scaduta definitivamente di un repository eliminato o sconosciuto da ritirare.",
-        "expiredResult": "Ritirate: {{retired}}, saltate: {{skipped}} (repository attivi), fallite: {{failed}}.",
+        "expiredNone": "Nessuna licenza scaduta definitivamente di un repository che non esiste più.",
+        "expiredResult": "Ritirate: {{retired}}, mantenute: {{skipped}} (ancora su una macchina o non verificabili), fallite: {{failed}}.",
         "expiredWithGuid": "--expired ritira ogni licenza scaduta definitivamente e non accetta un GUID.",
         "needsGuidOrExpired": "Indica il GUID di un repository oppure --expired.",
-        "optionDryRun": "Con --expired: elenca cosa verrebbe ritirato senza cambiare nulla",
-        "optionExpired": "Ritira ogni licenza scaduta definitivamente di un repository eliminato o non presente in questa configurazione"
+        "optionExpired": "Elenca ogni licenza scaduta definitivamente di un repository che non esiste più: eliminato, assente da questa configurazione o sparito dalla sua macchina",
+        "applyNeedsExpired": "--apply va usato con --expired.",
+        "expiredListFailed": "Impossibile elencare i repository su {{place}} ({{error}}). Le licenze dei repository che si trovano lì restano.",
+        "optionApply": "Con --expired: ritira le licenze elencate (senza questa opzione --expired si limita a elencarle)"
       },
       "notices": {
         "descriptionShort": "Elenca gli avvisi dell'account: scadenza delle licenze, stato dei backup, rinnovi, certificati e termini",

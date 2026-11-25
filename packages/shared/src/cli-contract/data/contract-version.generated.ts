@@ -2,4 +2,4 @@
 // Run: npm run generate:cli-contract -w @rediacc/cli
 // The contract version alone, so a web bundle can send it without loading the contract.
 
-export const CLI_CONTRACT_VERSION = 'e335f868110fa1f4';
+export const CLI_CONTRACT_VERSION = 'a9d9bd61f6935ed6';

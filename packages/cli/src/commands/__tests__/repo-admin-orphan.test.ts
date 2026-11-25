@@ -23,6 +23,17 @@ vi.mock('../../utils/errors.js', async (importOriginal) => ({
   },
 }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: async () => undefined }));
+// A successful delete retires the image's licence; the account side is faked so no test reaches a real server.
+const retired = vi.hoisted(() => [] as string[]);
+vi.mock('../../services/account/subscription-auth.js', () => ({
+  getSubscriptionTokenState: () => ({ kind: 'ready', token: {} }),
+}));
+vi.mock('../../services/account/account-client.js', () => ({
+  accountServerFetch: (path: string) => {
+    retired.push(path);
+    return Promise.resolve({ retired: true });
+  },
+}));
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({
     execute: (req: { functionName: string; params?: { repository?: string } }) => {
@@ -137,9 +148,12 @@ describe('repo admin orphan list', () => {
 
 describe('repo admin orphan delete', () => {
   it('deletes an orphan through renet repository_delete with its GUID', async () => {
+    retired.length = 0;
     await run('delete', `${ORPHAN.toUpperCase()}@hostinger`, '--yes');
     expect(deletes()).toEqual([{ functionName: 'repository_delete', repository: ORPHAN }]);
     expect(process.exitCode).toBeUndefined();
+    // The image is gone, so its licence leaves the account's counts too.
+    expect(retired).toEqual([`/account/api/v1/licenses/repos/${ORPHAN}/retire`]);
   });
 
   it('refuses a GUID the config names, before any delete', async () => {

@@ -4,9 +4,11 @@
  */
 
 import { WK_SITE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import type { RepoNameEntry } from '@rediacc/shared/config-schema';
 import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/subscription';
 import { t } from '../i18n/index.js';
 import { fetchSubscriptionLicenseReport } from '../services/account/license.js';
+import { licenceRows, readRepoNames } from '../services/account/license-retire.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import type { CheckResult, CheckSection, CheckStatus } from './doctor.js';
 
@@ -70,7 +72,29 @@ function checkMachineSlots(checks: CheckResult[], report: LicenseReport): void {
   });
 }
 
-function checkRepoLicenses(checks: CheckResult[], report: LicenseReport): void {
+const REFRESH_HINT = 'rdc subscription refresh -m <machine>';
+const RETIRE_HINT = 'rdc subscription retire --expired (lists them; --apply retires)';
+
+/** How many hard-expired licences belong to repositories this config holds; null when the report lists no licence. */
+function liveExpiredCount(report: LicenseReport, names: Map<string, RepoNameEntry>): number | null {
+  const recent = report.repoLicenses.recent ?? [];
+  if (recent.length === 0) return null;
+  return licenceRows(recent, names).filter(
+    (row) => row.freshness === 'hard_expired' && row.presence === 'config'
+  ).length;
+}
+
+/**
+ * The repo-licence row. A hard-expired licence of a repository this config holds fails: that repository needs a
+ * refresh. One of a repository that is gone (deleted, or never in this config) only warns, and the hint names the
+ * one command that clears it from the account's counts: `subscription refresh` re-issues licences of repositories
+ * on a machine and never touches a deleted one.
+ */
+function checkRepoLicenses(
+  checks: CheckResult[],
+  report: LicenseReport,
+  names: Map<string, RepoNameEntry>
+): void {
   const { totalTrackedRepos, validCount, refreshRecommendedCount, hardExpiredCount } =
     report.repoLicenses;
   const name = t('commands.doctor.checks.subscriptionRepoLicenses');
@@ -79,18 +103,35 @@ function checkRepoLicenses(checks: CheckResult[], report: LicenseReport): void {
     value = 'no tracked repos';
     status = 'ok';
   } else if (hardExpiredCount > 0) {
+    const live = liveExpiredCount(report, names);
     value = `${validCount} valid, ${refreshRecommendedCount} need refresh, ${hardExpiredCount} expired`;
-    status = 'fail';
-    hint = 'Run: rdc subscription refresh -m <machine> to fix expired repo licenses';
+    if (live === 0) {
+      value += ` (none in this config)`;
+      status = 'warn';
+      hint = `Run: ${RETIRE_HINT} to retire the expired licenses of deleted repositories`;
+    } else {
+      if (live !== null) value += ` (${live} in this config)`;
+      status = 'fail';
+      hint = `Run: ${REFRESH_HINT} for repositories still on a machine, and ${RETIRE_HINT} for deleted ones`;
+    }
   } else if (refreshRecommendedCount > 0) {
     value = `${validCount} valid, ${refreshRecommendedCount} need refresh`;
     status = 'warn';
-    hint = 'Run: rdc subscription refresh -m <machine> to refresh repo licenses';
+    hint = `Run: ${REFRESH_HINT} to refresh repo licenses`;
   } else {
     value = `${validCount}/${totalTrackedRepos} valid`;
     status = 'ok';
   }
   checks.push({ name, value, status, hint });
+}
+
+/** The active config's GUID-to-name join; an unreadable config knows no names, so every licence reads as not in it. */
+async function readNamesForDoctor(): Promise<Map<string, RepoNameEntry>> {
+  try {
+    return await readRepoNames();
+  } catch {
+    return new Map();
+  }
 }
 
 export async function checkSubscription(): Promise<CheckSection> {
@@ -138,7 +179,7 @@ export async function checkSubscription(): Promise<CheckSection> {
 
   checkSubscriptionStatus(checks, result);
   checkMachineSlots(checks, result);
-  checkRepoLicenses(checks, result);
+  checkRepoLicenses(checks, result, await readNamesForDoctor());
 
   return { title: t('commands.doctor.sections.subscription'), checks };
 }

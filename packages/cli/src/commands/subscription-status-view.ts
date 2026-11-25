@@ -41,18 +41,23 @@ function liveCell(row: LicenceRow): Cell {
   };
 }
 
+/** Where an other licence's repository went: deleted from the config, gone from its machine, or never in this config. */
+function otherWhere(row: LicenceRow): string {
+  if (row.presence === 'deleted') return t('commands.subscription.status.whereDeleted');
+  if (row.presence === 'gone') {
+    return t('commands.subscription.status.whereGone', { machine: row.machine ?? '-' });
+  }
+  return t('commands.subscription.status.whereAbsent');
+}
+
 function otherCell(row: LicenceRow): Cell {
-  const where =
-    row.presence === 'deleted'
-      ? 'commands.subscription.status.whereDeleted'
-      : 'commands.subscription.status.whereAbsent';
   return {
     guid: shortGuid(row.guid),
     name: row.name ?? '-',
     kind: row.kind ?? '-',
     state: licenceStateLabel(row.freshness),
     hardExpiry: day(row.hardExpiresAt),
-    where: t(where),
+    where: otherWhere(row),
   };
 }
 

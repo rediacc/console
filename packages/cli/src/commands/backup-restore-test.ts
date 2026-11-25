@@ -15,6 +15,7 @@ import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
+import { settleDeletedRepoLicense } from '../services/account/license-retire.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
@@ -120,6 +121,8 @@ async function deleteCopy(
   }
   if (ok) {
     await dropRegistrationAfterFailure(name);
+    // The copy ran under its own GUID, so its licence would otherwise stay tracked and hard-expire on the account.
+    await settleDeletedRepoLicense(name, copyGuid);
     return 'deleted';
   }
   outputService.warn(

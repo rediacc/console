@@ -168,3 +168,31 @@ export async function probeRepoNetwork(
 function validNetworkId(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }
+
+/**
+ * Every repository GUID (lowercase) one datastore of the machine holds: one `repository_list` call. Unlike the
+ * probes above this THROWS when the listing cannot be read, because its caller (`subscription retire --expired`)
+ * treats an absent GUID as proof the repository is gone and must never read a failed probe as an empty machine.
+ */
+export async function listRepoGuids(
+  machineName: string,
+  options: ProbeOptions = {}
+): Promise<Set<string>> {
+  const result = await getExecutor().execute({
+    functionName: 'repository_list',
+    machineName,
+    datastore: options.datastore,
+    params: {},
+    captureOutput: true,
+    quietSpinners: true,
+    // A probe: the caller reads the listing, so `--background` must not hand back a ticket here.
+    probe: true,
+    debug: options.debug,
+  });
+  if (!result.success || !result.stdout) {
+    const reason = result.error ?? result.stderr?.trim();
+    throw new Error(reason || `repository_list exited ${result.exitCode}`);
+  }
+  const repos = parseRepositoryListOutput(result.stdout);
+  return new Set(repos.map((r) => String(r.name ?? '').toLowerCase()).filter(Boolean));
+}

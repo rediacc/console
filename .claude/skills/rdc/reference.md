@@ -2454,8 +2454,8 @@ Retire the license of a repository that is gone, so it leaves the license counts
 **Options:**
 
 - `--force`: Retire a license whose repository is still in this config and not hard-expired
-- `--expired`: Retire every hard-expired license of a deleted repository or one not in this config
-- `--dry-run`: With --expired: list what would be retired and change nothing
+- `--expired`: List every hard-expired license of a repository that is gone: deleted, not in this config, or absent from its machine
+- `--apply`: With --expired: retire the listed licenses (without it, --expired only lists them)
 
 ### rdc subscription refresh
 

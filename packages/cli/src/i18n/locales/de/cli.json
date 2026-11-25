@@ -3159,9 +3159,10 @@
         "othersHeader": "  Gelöschte und unbekannte Lizenzen:",
         "overLimitCell": "ÜBER DEM LIMIT",
         "refreshHint": "Erneuern mit: rdc subscription refresh",
-        "retireHint": "Endgültig abgelaufene zurückgeben: rdc subscription retire --expired",
+        "retireHint": "Endgültig abgelaufene zum Zurückgeben auflisten: rdc subscription retire --expired (--apply gibt sie zurück)",
         "whereAbsent": "nicht in dieser Konfiguration",
-        "whereDeleted": "gelöscht"
+        "whereDeleted": "gelöscht",
+        "whereGone": "nicht mehr auf {{machine}}"
       },
       "licenceState": {
         "valid": "gültig",
@@ -3180,18 +3181,18 @@
         "description": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet.",
         "argGuid": "Repository-GUID oder mindestens 8 Zeichen einer Lizenz aus dem Kontobericht",
         "optionForce": "Eine Lizenz zurückgeben, deren Repository noch in dieser Konfiguration liegt und nicht endgültig abgelaufen ist",
-        "dryRunNeedsExpired": "--dry-run gehört zu --expired.",
-        "expiredConfirm": "{{count}} Lizenzen zurückgeben? Eine Erneuerung holt sie nicht zurück.",
-        "expiredDryRun": "Probelauf: Es wurde nichts zurückgegeben.",
+        "expiredDryRun": "Probelauf: Es wurde nichts zurückgegeben. Zurückgeben mit: rdc subscription retire --expired --apply",
         "expiredFailed": "{{name}} ließ sich nicht zurückgeben: {{error}}",
-        "expiredList": "{{count}} endgültig abgelaufene Lizenzen gelöschter oder unbekannter Repositories:",
+        "expiredList": "{{count}} endgültig abgelaufene Lizenzen von Repositories, die es nicht mehr gibt:",
         "expiredNeedsConfig": "Diese Konfiguration enthält keine Repositories, daher kann --expired nicht erkennen, welche Lizenzen verwaist sind. Wähle die Konfiguration mit --config.",
-        "expiredNone": "Keine endgültig abgelaufene Lizenz eines gelöschten oder unbekannten Repositorys zum Zurückgeben.",
-        "expiredResult": "Zurückgegeben: {{retired}}, übersprungen: {{skipped}} (aktive Repositories), fehlgeschlagen: {{failed}}.",
+        "expiredNone": "Keine endgültig abgelaufene Lizenz eines Repositorys, das es nicht mehr gibt.",
+        "expiredResult": "Zurückgegeben: {{retired}}, behalten: {{skipped}} (noch auf einer Maschine oder nicht prüfbar), fehlgeschlagen: {{failed}}.",
         "expiredWithGuid": "--expired gibt jede endgültig abgelaufene Lizenz zurück und nimmt keine GUID.",
         "needsGuidOrExpired": "Gib eine Repository-GUID an oder --expired.",
-        "optionDryRun": "Mit --expired: zeigt, was zurückgegeben würde, und ändert nichts",
-        "optionExpired": "Gibt jede endgültig abgelaufene Lizenz eines gelöschten Repositorys oder eines Repositorys außerhalb dieser Konfiguration zurück"
+        "optionExpired": "Listet jede endgültig abgelaufene Lizenz eines Repositorys auf, das es nicht mehr gibt: gelöscht, nicht in dieser Konfiguration oder nicht mehr auf seiner Maschine",
+        "applyNeedsExpired": "--apply gehört zu --expired.",
+        "expiredListFailed": "Die Repositories auf {{place}} ließen sich nicht auflisten ({{error}}). Die Lizenzen der Repositories dort bleiben bestehen.",
+        "optionApply": "Mit --expired: gibt die aufgelisteten Lizenzen zurück (ohne diese Option listet --expired sie nur auf)"
       },
       "notices": {
         "descriptionShort": "Die Hinweise des Kontos auflisten: Lizenzablauf, Backup-Zustand, Verlängerungen, Zertifikate und Nutzungsbedingungen",

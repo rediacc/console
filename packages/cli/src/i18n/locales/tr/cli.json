@@ -3159,9 +3159,10 @@
         "othersHeader": "  Silinmiş ve bilinmeyen lisanslar:",
         "overLimitCell": "LİMİT AŞILDI",
         "refreshHint": "Yenilemek için: rdc subscription refresh",
-        "retireHint": "Kesin olarak süresi dolanları iade etmek için: rdc subscription retire --expired",
+        "retireHint": "İade edilecek kesin süresi dolmuş lisansları listelemek için: rdc subscription retire --expired (--apply iade eder)",
         "whereAbsent": "bu yapılandırmada yok",
-        "whereDeleted": "silinmiş"
+        "whereDeleted": "silinmiş",
+        "whereGone": "artık {{machine}} üzerinde değil"
       },
       "licenceState": {
         "valid": "geçerli",
@@ -3180,18 +3181,18 @@
         "description": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar.",
         "argGuid": "Deponun GUID değeri ya da hesap raporundaki bir lisansın en az 8 karakteri",
         "optionForce": "Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder",
-        "dryRunNeedsExpired": "--dry-run, --expired ile birlikte kullanılır.",
-        "expiredConfirm": "{{count}} lisans iade edilsin mi? Yenileme onları geri getirmez.",
-        "expiredDryRun": "Deneme çalıştırması: hiçbir şey iade edilmedi.",
+        "expiredDryRun": "Deneme çalıştırması: hiçbir şey iade edilmedi. İade etmek için: rdc subscription retire --expired --apply",
         "expiredFailed": "{{name}} iade edilemedi: {{error}}",
-        "expiredList": "Silinmiş veya bilinmeyen depolara ait, kesin olarak süresi dolmuş {{count}} lisans:",
+        "expiredList": "Artık var olmayan depolara ait, kesin olarak süresi dolmuş {{count}} lisans:",
         "expiredNeedsConfig": "Bu yapılandırmada hiç depo yok, bu yüzden --expired hangi lisansların artık gereksiz olduğunu anlayamaz. Yapılandırmayı --config ile seçin.",
-        "expiredNone": "İade edilecek, silinmiş veya bilinmeyen bir depoya ait kesin süresi dolmuş lisans yok.",
-        "expiredResult": "İade edilen: {{retired}}, atlanan: {{skipped}} (etkin depolar), başarısız: {{failed}}.",
+        "expiredNone": "Artık var olmayan bir depoya ait kesin süresi dolmuş lisans yok.",
+        "expiredResult": "İade edilen: {{retired}}, korunan: {{skipped}} (hâlâ bir makinede ya da denetlenemiyor), başarısız: {{failed}}.",
         "expiredWithGuid": "--expired, kesin olarak süresi dolmuş tüm lisansları iade eder ve GUID almaz.",
         "needsGuidOrExpired": "Bir depo GUID'si verin ya da --expired kullanın.",
-        "optionDryRun": "--expired ile: nelerin iade edileceğini listeler, hiçbir şeyi değiştirmez",
-        "optionExpired": "Silinmiş veya bu yapılandırmada olmayan depolara ait, kesin olarak süresi dolmuş tüm lisansları iade eder"
+        "optionExpired": "Artık var olmayan depolara ait kesin olarak süresi dolmuş tüm lisansları listeler: silinmiş, bu yapılandırmada olmayan ya da makinesinden kaybolmuş",
+        "applyNeedsExpired": "--apply, --expired ile birlikte kullanılır.",
+        "expiredListFailed": "{{place}} üzerindeki depolar listelenemedi ({{error}}). Oradaki depoların lisansları korunur.",
+        "optionApply": "--expired ile: listelenen lisansları iade eder (bu seçenek olmadan --expired yalnızca listeler)"
       },
       "notices": {
         "descriptionShort": "Hesabın bildirimlerini listeler: lisans süresi, yedek sağlığı, yenilemeler, sertifikalar ve Şartlar",

@@ -3,21 +3,31 @@
  * license counts and the notices. Retirement is sticky (a renewal does not bring the repository
  * back), so a repository the config still holds is refused unless its license is hard-expired or
  * `--force` is given.
+ *
+ * `subscription retire --expired [--apply]`: the reconcile of licences whose repository is gone
+ * (deleted, unknown to this config, or absent from the machine the config places it on). It lists
+ * by default and retires only with `--apply`; goneExpiredLicences decides, from the machines'
+ * listings, which ones are provably gone.
  */
 
 import { t } from '../i18n/index.js';
 import { fetchSubscriptionLicenseReportOrThrow } from '../services/account/license.js';
 import {
-  expiredRetireTargets,
+  configuredRepoPlaces,
+  goneExpiredLicences,
   type LicenceRow,
   licenceDisplayName,
   licenceRows,
+  type RepoPlace,
   readRepoNames,
   retireRepoLicense,
 } from '../services/account/license-retire.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
+import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
+import { listRepoGuids } from '../services/repo/repo-mount-check.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
 import {
@@ -33,7 +43,8 @@ export interface SubscriptionRetireOptions {
   yes?: boolean;
   force?: boolean;
   expired?: boolean;
-  dryRun?: boolean;
+  /** With `expired`: retire what the list shows. Without it `--expired` only lists. */
+  apply?: boolean;
 }
 
 /** The one licence the argument names: a full GUID, or a prefix of exactly one licence in the report. */
@@ -58,14 +69,6 @@ function matchLicence<T extends { repositoryGuid: string }>(arg: string, recent:
   return matches[0];
 }
 
-/** The batch prompt of `--expired`, refused outright when nobody can answer it. */
-function confirmExpired(count: number): Promise<boolean> {
-  if (process.stdin.isTTY !== true) {
-    throw new ValidationError(t('commands.subscription.retire.needsYes'));
-  }
-  return askConfirm(t('commands.subscription.retire.expiredConfirm', { count }));
-}
-
 /** The prompt, for a run without `--yes`: refused outright when nobody can answer it. */
 function confirmRetire(name: string, guid: string, state: string): Promise<boolean> {
   if (process.stdin.isTTY !== true) {
@@ -85,8 +88,8 @@ function assertRetireArguments(
   if (!options.expired && guidArg === undefined) {
     throw new ValidationError(t('commands.subscription.retire.needsGuidOrExpired'));
   }
-  if (!options.expired && options.dryRun) {
-    throw new ValidationError(t('commands.subscription.retire.dryRunNeedsExpired'));
+  if (!options.expired && options.apply) {
+    throw new ValidationError(t('commands.subscription.retire.applyNeedsExpired'));
   }
 }
 
@@ -175,10 +178,36 @@ async function retireEach(targets: LicenceRow[]): Promise<{
   return { retired, failed };
 }
 
+/** The repository GUIDs one place holds: its machine's default datastore, or the named datastore's mount. */
+function listPlace(place: RepoPlace): Promise<Set<string>> {
+  return listRepoGuids(place.machine, {
+    ...(place.datastore !== null && { datastore: namedDatastoreMount(place.datastore) }),
+  });
+}
+
+/** The provably gone hard-expired licences, each unreadable place warned by name (its licences are kept). */
+async function findGoneLicences(
+  recent: Parameters<typeof licenceRows>[0],
+  names: Awaited<ReturnType<typeof readRepoNames>>
+): Promise<{ targets: LicenceRow[]; kept: LicenceRow[] }> {
+  const rows = licenceRows(recent, names);
+  const places = configuredRepoPlaces(await configService.getCurrent());
+  const { targets, kept, unreachable } = await goneExpiredLicences(rows, names, places, listPlace);
+  for (const { place, error } of unreachable) {
+    outputService.warn(
+      t('commands.subscription.retire.expiredListFailed', {
+        place: place.datastore === null ? place.machine : `${place.datastore}@${place.machine}`,
+        error,
+      })
+    );
+  }
+  return { targets, kept };
+}
+
 /**
- * `subscription retire --expired`: every hard-expired licence of a deleted repository or one this
- * config does not know, never a live one. One confirmation for the batch; `--dry-run` lists and stops.
- * A failed retire sets a non-zero exit after the rest were tried.
+ * `subscription retire --expired`: every hard-expired licence whose repository is provably gone (deleted, unknown to
+ * this config, or absent from the listing of the place the config records for it), never one a listing still shows.
+ * Lists and stops by default; `--apply` retires. A failed retire sets a non-zero exit after the rest were tried.
  */
 async function retireExpired(
   recent: Parameters<typeof licenceRows>[0],
@@ -188,11 +217,9 @@ async function retireExpired(
   if (names.size === 0) {
     throw new ValidationError(t('commands.subscription.retire.expiredNeedsConfig'));
   }
-  const rows = licenceRows(recent, names);
-  const targets = expiredRetireTargets(rows);
-  const skipped = rows.filter((r) => r.freshness === 'hard_expired' && r.presence === 'config');
+  const { targets, kept } = await findGoneLicences(recent, names);
   const format = getOutputFormat();
-  const counts = { skipped: skipped.length, dryRun: options.dryRun === true };
+  const counts = { skipped: kept.length, dryRun: options.apply !== true };
 
   if (targets.length === 0) {
     if (format === 'table') outputService.info(t('commands.subscription.retire.expiredNone'));
@@ -203,12 +230,8 @@ async function retireExpired(
     outputService.report(t('commands.subscription.retire.expiredList', { count: targets.length }));
     printOtherLicences(targets);
   }
-  if (options.dryRun) {
+  if (options.apply !== true) {
     printDryRun(targets, counts, format);
-    return;
-  }
-  if (!options.yes && !(await confirmExpired(targets.length))) {
-    outputService.info(t('status.cancelled'));
     return;
   }
 
@@ -219,7 +242,7 @@ async function retireExpired(
 
 type ExpiredCounts = { skipped: number; dryRun: boolean };
 
-/** The `--dry-run` outcome: the stop line for a table, the would-retire list otherwise. */
+/** The outcome without `--apply`: the stop line naming the apply command for a table, the would-retire list otherwise. */
 function printDryRun(
   targets: LicenceRow[],
   counts: ExpiredCounts,

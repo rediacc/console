@@ -3159,9 +3159,10 @@
         "othersHeader": "  已删除和未知的许可证:",
         "overLimitCell": "超出上限",
         "refreshHint": "刷新请用:rdc subscription refresh",
-        "retireHint": "退还已彻底过期的许可证:rdc subscription retire --expired",
+        "retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired(--apply 执行退还)",
         "whereAbsent": "不在此配置中",
-        "whereDeleted": "已删除"
+        "whereDeleted": "已删除",
+        "whereGone": "已不在 {{machine}} 上"
       },
       "licenceState": {
         "valid": "有效",
@@ -3180,18 +3181,18 @@
         "description": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。",
         "argGuid": "仓库 GUID,或账户报告中某个许可证的至少前 8 个字符",
         "optionForce": "退还其仓库仍在此配置中且尚未彻底过期的许可证",
-        "dryRunNeedsExpired": "--dry-run 需要与 --expired 一起使用。",
-        "expiredConfirm": "要退还 {{count}} 个许可证吗?续期不会让它们恢复。",
-        "expiredDryRun": "试运行:没有退还任何许可证。",
+        "expiredDryRun": "试运行:没有退还任何许可证。退还请运行:rdc subscription retire --expired --apply",
         "expiredFailed": "无法退还 {{name}}:{{error}}",
-        "expiredList": "已删除或未知仓库的 {{count}} 个已彻底过期的许可证:",
+        "expiredList": "已不存在的仓库的 {{count}} 个已彻底过期的许可证:",
         "expiredNeedsConfig": "此配置中没有任何仓库,--expired 无法判断哪些许可证已无用。请用 --config 选择配置。",
-        "expiredNone": "没有可退还的许可证(已删除或未知仓库的已彻底过期许可证)。",
-        "expiredResult": "已退还 {{retired}} 个,跳过 {{skipped}} 个(在用的仓库),失败 {{failed}} 个。",
+        "expiredNone": "没有已不存在的仓库的已彻底过期许可证。",
+        "expiredResult": "已退还 {{retired}} 个,保留 {{skipped}} 个(仍在某台机器上,或无法核实),失败 {{failed}} 个。",
         "expiredWithGuid": "--expired 会退还所有已彻底过期的许可证,不接受 GUID。",
         "needsGuidOrExpired": "请提供仓库 GUID,或使用 --expired。",
-        "optionDryRun": "与 --expired 搭配:只列出将要退还的内容,不做任何更改",
-        "optionExpired": "退还已删除或不在此配置中的仓库的所有已彻底过期许可证"
+        "optionExpired": "列出已不存在的仓库(已删除、不在此配置中或已不在其机器上)的所有已彻底过期许可证",
+        "applyNeedsExpired": "--apply 需要与 --expired 一起使用。",
+        "expiredListFailed": "无法列出 {{place}} 上的仓库({{error}})。那里的仓库的许可证予以保留。",
+        "optionApply": "与 --expired 搭配:退还列出的许可证(不加此选项时 --expired 只列出)"
       },
       "notices": {
         "descriptionShort": "列出账户的通知: 许可证到期、备份健康、续订、证书和条款",

@@ -97,12 +97,14 @@ describe('command safety table', () => {
     expect(COMMAND_SEVERITY['repo prune']).toBe('destructive');
     expect(COMMAND_PREVIEW['repo prune']).toEqual({ flag: 'apply', polarity: 'default' });
     expect(COMMAND_PREVIEW['repo gc']).toEqual({ flag: 'apply', polarity: 'default' });
+    expect(COMMAND_SEVERITY['subscription retire']).toBe('destructive');
+    expect(COMMAND_PREVIEW['subscription retire']).toEqual({ flag: 'apply', polarity: 'default' });
   });
 
-  it('previews every --dry-run command: 23 opt-in rows plus repo gc and repo prune', () => {
+  it('previews every --dry-run command: 22 opt-in rows plus repo gc, repo prune and subscription retire', () => {
     expect(Object.keys(COMMAND_PREVIEW).length).toBe(25);
     const dry = COMMANDS.filter((c) => c.longs.includes('dry-run'));
-    expect(dry.length).toBe(23);
+    expect(dry.length).toBe(22);
     for (const c of dry) {
       expect(COMMAND_PREVIEW[c.pathKey]).toEqual({ flag: 'dry-run', polarity: 'opt-in' });
     }

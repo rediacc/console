@@ -3159,9 +3159,10 @@
         "othersHeader": "  التراخيص المحذوفة وغير المعروفة:",
         "overLimitCell": "فوق الحد",
         "refreshHint": "للتجديد: rdc subscription refresh",
-        "retireHint": "لسحب المنتهية نهائيًا: rdc subscription retire --expired",
+        "retireHint": "لعرض المنتهية نهائيًا تمهيدًا لسحبها: rdc subscription retire --expired (و--apply يسحبها)",
         "whereAbsent": "ليس في هذا الإعداد",
-        "whereDeleted": "محذوف"
+        "whereDeleted": "محذوف",
+        "whereGone": "لم يعد على {{machine}}"
       },
       "licenceState": {
         "valid": "صالح",
@@ -3180,18 +3181,18 @@
         "description": "سحب ترخيص مستودع لم يعد موجودًا، ليخرج من أعداد التراخيص والإشعارات.",
         "argGuid": "GUID المستودع، أو 8 أحرف على الأقل من أحد التراخيص في تقرير الحساب",
         "optionForce": "سحب ترخيص مستودعه ما زال في هذا الإعداد ولم ينتهِ نهائيًا",
-        "dryRunNeedsExpired": "يُستخدم --dry-run مع --expired.",
-        "expiredConfirm": "هل تريد سحب {{count}} من التراخيص؟ لن يعيدها التجديد.",
-        "expiredDryRun": "تشغيل تجريبي: لم يُسحب أي شيء.",
+        "expiredDryRun": "تشغيل تجريبي: لم يُسحب أي شيء. لسحبها: rdc subscription retire --expired --apply",
         "expiredFailed": "تعذّر سحب {{name}}: {{error}}",
-        "expiredList": "{{count}} من التراخيص المنتهية نهائيًا لمستودعات محذوفة أو غير معروفة:",
+        "expiredList": "{{count}} من التراخيص المنتهية نهائيًا لمستودعات لم تعد موجودة:",
         "expiredNeedsConfig": "لا يحتوي هذا الإعداد على أي مستودع، لذلك لا يستطيع --expired تحديد التراخيص الزائدة. اختر الإعداد باستخدام --config.",
-        "expiredNone": "لا يوجد ترخيص منتهٍ نهائيًا لمستودع محذوف أو غير معروف لسحبه.",
-        "expiredResult": "تم سحب {{retired}}، وتخطي {{skipped}} (مستودعات قيد الاستخدام)، وفشل {{failed}}.",
+        "expiredNone": "لا يوجد ترخيص منتهٍ نهائيًا لمستودع لم يعد موجودًا.",
+        "expiredResult": "تم سحب {{retired}}، والإبقاء على {{skipped}} (ما زالت على جهاز، أو تعذّر التحقق منها)، وفشل {{failed}}.",
         "expiredWithGuid": "يسحب --expired كل التراخيص المنتهية نهائيًا ولا يقبل GUID.",
         "needsGuidOrExpired": "أدخل GUID لمستودع أو استخدم --expired.",
-        "optionDryRun": "مع --expired: يعرض ما سيُسحب دون تغيير أي شيء",
-        "optionExpired": "يسحب كل التراخيص المنتهية نهائيًا للمستودعات المحذوفة أو غير الموجودة في هذا الإعداد"
+        "optionExpired": "يعرض كل التراخيص المنتهية نهائيًا لمستودعات لم تعد موجودة: محذوفة، أو ليست في هذا الإعداد، أو غائبة عن جهازها",
+        "applyNeedsExpired": "يُستخدم --apply مع --expired.",
+        "expiredListFailed": "تعذّر سرد المستودعات على {{place}} ({{error}}). تُترك تراخيص المستودعات الموجودة هناك كما هي.",
+        "optionApply": "مع --expired: يسحب التراخيص المعروضة (من دونه يكتفي --expired بعرضها)"
       },
       "notices": {
         "descriptionShort": "عرض إشعارات الحساب: انتهاء التراخيص وسلامة النسخ الاحتياطي والتجديدات والشهادات والشروط",

@@ -3159,9 +3159,10 @@
         "othersHeader": "  Licencias eliminadas y desconocidas:",
         "overLimitCell": "SOBRE EL LÍMITE",
         "refreshHint": "Renueva con: rdc subscription refresh",
-        "retireHint": "Retira las caducadas del todo: rdc subscription retire --expired",
+        "retireHint": "Lista las caducadas del todo para retirarlas: rdc subscription retire --expired (--apply las retira)",
         "whereAbsent": "no está en esta configuración",
-        "whereDeleted": "eliminado"
+        "whereDeleted": "eliminado",
+        "whereGone": "ya no está en {{machine}}"
       },
       "licenceState": {
         "valid": "válida",
@@ -3180,18 +3181,18 @@
         "description": "Retira la licencia de un repositorio que ya no existe, para que salga de los recuentos de licencias y de los avisos.",
         "argGuid": "GUID del repositorio, o al menos 8 caracteres de una licencia del informe de la cuenta",
         "optionForce": "Retira una licencia cuyo repositorio sigue en esta configuración y no ha caducado del todo",
-        "dryRunNeedsExpired": "--dry-run va junto con --expired.",
-        "expiredConfirm": "¿Retirar {{count}} licencias? Renovar no las recupera.",
-        "expiredDryRun": "Simulación: no se retiró nada.",
+        "expiredDryRun": "Simulación: no se retiró nada. Para retirarlas: rdc subscription retire --expired --apply",
         "expiredFailed": "No se pudo retirar {{name}}: {{error}}",
-        "expiredList": "{{count}} licencias caducadas del todo de repositorios eliminados o desconocidos:",
+        "expiredList": "{{count}} licencias caducadas del todo de repositorios que ya no existen:",
         "expiredNeedsConfig": "Esta configuración no tiene repositorios, así que --expired no puede saber qué licencias sobran. Elige la configuración con --config.",
-        "expiredNone": "No hay ninguna licencia caducada del todo de un repositorio eliminado o desconocido que retirar.",
-        "expiredResult": "Retiradas: {{retired}}, omitidas: {{skipped}} (repositorios activos), con error: {{failed}}.",
+        "expiredNone": "No hay ninguna licencia caducada del todo de un repositorio que ya no exista.",
+        "expiredResult": "Retiradas: {{retired}}, conservadas: {{skipped}} (siguen en una máquina o no se pudieron comprobar), con error: {{failed}}.",
         "expiredWithGuid": "--expired retira todas las licencias caducadas del todo y no admite GUID.",
         "needsGuidOrExpired": "Indica el GUID de un repositorio o usa --expired.",
-        "optionDryRun": "Con --expired: muestra lo que se retiraría y no cambia nada",
-        "optionExpired": "Retira todas las licencias caducadas del todo de repositorios eliminados o que no están en esta configuración"
+        "optionExpired": "Lista todas las licencias caducadas del todo de repositorios que ya no existen: eliminados, fuera de esta configuración o ausentes de su máquina",
+        "applyNeedsExpired": "--apply va junto con --expired.",
+        "expiredListFailed": "No se pudieron listar los repositorios de {{place}} ({{error}}). Se conservan las licencias de los repositorios que hay allí.",
+        "optionApply": "Con --expired: retira las licencias listadas (sin esta opción, --expired solo las lista)"
       },
       "notices": {
         "descriptionShort": "Lista los avisos de la cuenta: caducidad de licencias, estado de las copias de seguridad, renovaciones, certificados y términos",

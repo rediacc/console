@@ -7,7 +7,7 @@ order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "fa2550ea14e2d031"
+sourceHash: "698401260fc429cf"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3418,7 +3418,7 @@ rdc subscription retire [guid] [options]
 |------|-------------|----------|---------|
 | `--force` | {{t:cli.commands.subscription.retire.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--expired` | {{t:cli.commands.subscription.retire.optionExpired}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--dry-run` | {{t:cli.commands.subscription.retire.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--apply` | {{t:cli.commands.subscription.retire.optionApply}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-subscription-notices"></a>

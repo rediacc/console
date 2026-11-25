@@ -5,7 +5,7 @@
 
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
-import { retireRepoLicense } from '../services/account/license-retire.js';
+import { settleDeletedRepoLicense } from '../services/account/license-retire.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -128,22 +128,8 @@ export async function settleCloudBackups(
 
 /**
  * Tell the account server the deleted repository's license is retired, so its license summary stops
- * counting it. Best effort: a failure warns and never fails the delete.
+ * counting it. Best effort: a failure warns and never fails the delete (settleDeletedRepoLicense).
  */
-export async function settleRepoLicense(
-  name: string,
-  repoConfig: DeletedRepoConfig
-): Promise<void> {
-  // No account token means no license was ever issued from this config: nothing to retire, nothing to say.
-  if (getSubscriptionTokenState().kind !== 'ready') return;
-  try {
-    await retireRepoLicense(repoConfig.repositoryGuid);
-  } catch (error) {
-    outputService.warn(
-      t('commands.repo.delete.licenseRetireFailed', {
-        repository: name,
-        reason: error instanceof Error ? error.message : String(error),
-      })
-    );
-  }
+export function settleRepoLicense(name: string, repoConfig: DeletedRepoConfig): Promise<void> {
+  return settleDeletedRepoLicense(name, repoConfig.repositoryGuid);
 }

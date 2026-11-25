@@ -339,6 +339,23 @@ describe('backup verify --restore-test', () => {
       expect(mocks.setExitCode).toHaveBeenCalledWith(1);
       expect(mocks.warn.mock.calls.join('\n')).toContain(copyName());
     });
+
+    const retires = () =>
+      mocks.fetch.mock.calls.map((c) => String(c[0])).filter((url) => url.endsWith('/retire'));
+
+    it("retires the deleted copy's licence, and never the source's", async () => {
+      await run(['verify', 'shop', '--restore-test']);
+      const copyGuid = (mocks.addRepository.mock.calls[0][1] as { repositoryGuid: string })
+        .repositoryGuid;
+      expect(retires()).toEqual([`/account/api/v1/licenses/repos/${copyGuid}/retire`]);
+      expect(retires().join()).not.toContain(SOURCE_GUID);
+    });
+
+    it('retires nothing when the copy could not be deleted (control)', async () => {
+      script({ del: { success: false } });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(retires()).toEqual([]);
+    });
   });
 
   it('refuses --restore-test combined with --store or --deep, and a repo with no credential', async () => {

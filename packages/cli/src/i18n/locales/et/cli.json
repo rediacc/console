@@ -3159,9 +3159,10 @@
         "othersHeader": "  Kustutatud ja tundmatud litsentsid:",
         "overLimitCell": "ÜLE PIIRI",
         "refreshHint": "Uuendamiseks: rdc subscription refresh",
-        "retireHint": "Lõplikult aegunute tagastamiseks: rdc subscription retire --expired",
+        "retireHint": "Lõplikult aegunute loetlemiseks tagastamise eel: rdc subscription retire --expired (--apply tagastab need)",
         "whereAbsent": "pole selles konfiguratsioonis",
-        "whereDeleted": "kustutatud"
+        "whereDeleted": "kustutatud",
+        "whereGone": "pole enam masinas {{machine}}"
       },
       "licenceState": {
         "valid": "kehtiv",
@@ -3180,18 +3181,18 @@
         "description": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest.",
         "argGuid": "Hoidla GUID või vähemalt 8 märki konto aruandes olevast litsentsist",
         "optionForce": "Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud",
-        "dryRunNeedsExpired": "--dry-run käib koos valikuga --expired.",
-        "expiredConfirm": "Kas tagastada {{count}} litsentsi? Uuendamine ei too neid tagasi.",
-        "expiredDryRun": "Proovikäivitus: midagi ei tagastatud.",
+        "expiredDryRun": "Proovikäivitus: midagi ei tagastatud. Tagastamiseks: rdc subscription retire --expired --apply",
         "expiredFailed": "{{name}} tagastamine ebaõnnestus: {{error}}",
-        "expiredList": "{{count}} lõplikult aegunud litsentsi kustutatud või tundmatutelt hoidlatelt:",
+        "expiredList": "{{count}} lõplikult aegunud litsentsi hoidlatelt, mida enam pole:",
         "expiredNeedsConfig": "Selles konfiguratsioonis pole ühtegi hoidlat, nii et --expired ei saa teada, millised litsentsid on üleliigsed. Vali konfiguratsioon valikuga --config.",
-        "expiredNone": "Pole ühtegi tagastatavat lõplikult aegunud litsentsi kustutatud või tundmatult hoidlalt.",
-        "expiredResult": "Tagastatud: {{retired}}, vahele jäetud: {{skipped}} (kasutusel hoidlad), ebaõnnestunud: {{failed}}.",
+        "expiredNone": "Pole ühtegi lõplikult aegunud litsentsi hoidlalt, mida enam pole.",
+        "expiredResult": "Tagastatud: {{retired}}, alles jäetud: {{skipped}} (endiselt masinas või kontrollimatu), ebaõnnestunud: {{failed}}.",
         "expiredWithGuid": "--expired tagastab kõik lõplikult aegunud litsentsid ega võta GUID-i.",
         "needsGuidOrExpired": "Anna hoidla GUID või kasuta --expired.",
-        "optionDryRun": "Koos --expired: loetleb, mis tagastataks, ega muuda midagi",
-        "optionExpired": "Tagastab kõik lõplikult aegunud litsentsid kustutatud hoidlatelt ja hoidlatelt, mida selles konfiguratsioonis pole"
+        "optionExpired": "Loetleb kõik lõplikult aegunud litsentsid hoidlatelt, mida enam pole: kustutatud, selles konfiguratsioonis puuduvad või oma masinast kadunud",
+        "applyNeedsExpired": "--apply käib koos valikuga --expired.",
+        "expiredListFailed": "Masina {{place}} hoidlaid ei õnnestunud loetleda ({{error}}). Sealsete hoidlate litsentsid jäetakse alles.",
+        "optionApply": "Koos --expired: tagastab loetletud litsentsid (ilma selleta ainult loetleb --expired neid)"
       },
       "notices": {
         "descriptionShort": "Näitab konto teateid: litsentside aegumine, varukoopiate seisukord, pikendused, sertifikaadid ja tingimused",

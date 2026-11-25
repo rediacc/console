@@ -3159,9 +3159,10 @@
         "othersHeader": "  削除済みと不明のライセンス:",
         "overLimitCell": "上限超過",
         "refreshHint": "更新するには: rdc subscription refresh",
-        "retireHint": "完全に失効したものを返却: rdc subscription retire --expired",
+        "retireHint": "返却対象の完全に失効したものを一覧表示: rdc subscription retire --expired (--apply で返却)",
         "whereAbsent": "この構成にはありません",
-        "whereDeleted": "削除済み"
+        "whereDeleted": "削除済み",
+        "whereGone": "{{machine}} 上にない"
       },
       "licenceState": {
         "valid": "有効",
@@ -3180,18 +3181,18 @@
         "description": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。",
         "argGuid": "リポジトリの GUID、またはアカウントレポートにあるライセンスの先頭 8 文字以上",
         "optionForce": "リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します",
-        "dryRunNeedsExpired": "--dry-run は --expired と一緒に使います。",
-        "expiredConfirm": "{{count}} 件のライセンスを返却しますか?更新しても元には戻りません。",
-        "expiredDryRun": "ドライラン: 何も返却していません。",
+        "expiredDryRun": "ドライラン: 何も返却していません。返却するには: rdc subscription retire --expired --apply",
         "expiredFailed": "{{name}} を返却できませんでした: {{error}}",
-        "expiredList": "削除済みまたは不明のリポジトリで完全に失効したライセンス {{count}} 件:",
+        "expiredList": "存在しなくなったリポジトリで完全に失効したライセンス {{count}} 件:",
         "expiredNeedsConfig": "この構成にはリポジトリがないため、--expired では不要なライセンスを判別できません。--config で構成を選んでください。",
-        "expiredNone": "返却する対象の、削除済みまたは不明のリポジトリで完全に失効したライセンスはありません。",
-        "expiredResult": "返却 {{retired}} 件、スキップ {{skipped}} 件(稼働中のリポジトリ)、失敗 {{failed}} 件。",
+        "expiredNone": "存在しなくなったリポジトリで完全に失効したライセンスはありません。",
+        "expiredResult": "返却 {{retired}} 件、保持 {{skipped}} 件(まだマシン上にある、または確認できない)、失敗 {{failed}} 件。",
         "expiredWithGuid": "--expired は完全に失効したライセンスをすべて返却するため、GUID は指定できません。",
         "needsGuidOrExpired": "リポジトリの GUID か --expired を指定してください。",
-        "optionDryRun": "--expired と併用: 返却される内容を一覧表示し、何も変更しません",
-        "optionExpired": "削除済み、またはこの構成にないリポジトリで完全に失効したライセンスをすべて返却します"
+        "optionExpired": "存在しなくなったリポジトリ(削除済み、この構成にない、またはマシン上にない)で完全に失効したライセンスをすべて一覧表示します",
+        "applyNeedsExpired": "--apply は --expired と一緒に使います。",
+        "expiredListFailed": "{{place}} のリポジトリを一覧できませんでした ({{error}})。そこにあるリポジトリのライセンスは残します。",
+        "optionApply": "--expired と併用: 一覧にあるライセンスを返却します(指定しない場合、--expired は一覧表示のみ)"
       },
       "notices": {
         "descriptionShort": "アカウントの通知を一覧表示する (ライセンスの有効期限、バックアップの状態、更新、証明書、利用規約)",

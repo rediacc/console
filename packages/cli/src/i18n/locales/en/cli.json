@@ -2688,9 +2688,10 @@
         "othersHeader": "  Deleted and unknown licenses:",
         "overLimitCell": "OVER LIMIT",
         "refreshHint": "Refresh with: rdc subscription refresh",
-        "retireHint": "Retire the hard-expired ones: rdc subscription retire --expired",
+        "retireHint": "List the hard-expired ones to retire: rdc subscription retire --expired (--apply retires them)",
         "whereAbsent": "not in this config",
-        "whereDeleted": "deleted"
+        "whereDeleted": "deleted",
+        "whereGone": "gone from {{machine}}"
       },
       "activation": {
         "status": {
@@ -2767,18 +2768,18 @@
         "description": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
         "argGuid": "Repository GUID, or at least 8 characters of one license in the account report",
         "optionForce": "Retire a license whose repository is still in this config and not hard-expired",
-        "dryRunNeedsExpired": "--dry-run goes with --expired.",
-        "expiredConfirm": "Retire {{count}} licenses? A renewal will not bring them back.",
-        "expiredDryRun": "Dry run: nothing was retired.",
+        "expiredDryRun": "Dry run: nothing was retired. Retire them with: rdc subscription retire --expired --apply",
         "expiredFailed": "Could not retire {{name}}: {{error}}",
-        "expiredList": "{{count}} hard-expired licenses of deleted or unknown repositories:",
+        "expiredList": "{{count}} hard-expired licenses of repositories that are gone:",
         "expiredNeedsConfig": "This config holds no repositories, so --expired cannot tell which licenses are gone. Select the config with --config.",
-        "expiredNone": "No hard-expired license of a deleted or unknown repository to retire.",
-        "expiredResult": "Retired {{retired}}, skipped {{skipped}} (live repositories), failed {{failed}}.",
+        "expiredNone": "No hard-expired license of a repository that is gone.",
+        "expiredResult": "Retired {{retired}}, kept {{skipped}} (still on a machine, or not checkable), failed {{failed}}.",
         "expiredWithGuid": "--expired retires every hard-expired license and takes no GUID.",
         "needsGuidOrExpired": "Give a repository GUID, or --expired.",
-        "optionDryRun": "With --expired: list what would be retired and change nothing",
-        "optionExpired": "Retire every hard-expired license of a deleted repository or one not in this config"
+        "optionExpired": "List every hard-expired license of a repository that is gone: deleted, not in this config, or absent from its machine",
+        "applyNeedsExpired": "--apply goes with --expired.",
+        "expiredListFailed": "Could not list the repositories on {{place}} ({{error}}). Licenses of repositories there are kept.",
+        "optionApply": "With --expired: retire the listed licenses (without it, --expired only lists them)"
       },
       "notices": {
         "descriptionShort": "List the account's notices: license expiry, backup health, renewals, certificates and Terms",
