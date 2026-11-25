@@ -2345,11 +2345,13 @@ jobs:
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-cta-bolt
 
-      # These need BOTH of this job's expensive inputs, which is why they live
-      # here and not with the other unit tests: the account submodule (imports
-      # above) and packages/www/dist/route-manifest.json, which
-      # redirect-aliases.test.ts imports directly.
-      - name: Worker unit tests (workers/www, workers/proxy)
+      # workers/www and workers/proxy need BOTH of this job's expensive inputs,
+      # which is why this step lives here and not with the other unit tests: the
+      # account submodule (imports above) and packages/www/dist/route-manifest.json,
+      # which redirect-aliases.test.ts imports directly. workers/ops-health and
+      # workers/mcp need neither; they ride along because check:test-workers runs
+      # all four suites in one script.
+      - name: Worker unit tests (workers/www, proxy, ops-health, mcp)
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm ci --prefix workers/ops-health && npm ci --prefix workers/mcp && npm run check:test-workers
 
@@ -2493,6 +2495,9 @@ jobs:
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_vars
+      - name: MCP credentials never reach a log or a URL
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.mcp_logging_guard
       - name: Override ranges
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-override-ranges

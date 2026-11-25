@@ -3008,7 +3008,7 @@ export const GATES: readonly GateSpec[] = [
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-www-build',
-      step: 'Worker unit tests (workers/www, workers/proxy)',
+      step: 'Worker unit tests (workers/www, proxy, ops-health, mcp)',
     },
   },
   // >>> gen-manifest: region 2
@@ -16780,6 +16780,18 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Gate declarations agree',
+    },
+  },
+  {
+    id: 'check:ci-mcp-logging-guard',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.mcp_logging_guard',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/mcp_logging_guard.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'MCP credentials never reach a log or a URL',
     },
   },
   {
