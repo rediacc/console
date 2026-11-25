@@ -5,6 +5,7 @@
  * with the root hook (`enforceRootCommand`, command-policy-root.test.ts) but the target reading.
  */
 
+import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -70,6 +71,7 @@ import {
   COMMAND_POLICIES,
   enforceResolvedTarget,
   enforceRootCommand,
+  SESSION_RECOVERY_COMMANDS,
   setConfirmGrand,
   validateRemotePath,
 } from '../command-policy.js';
@@ -226,12 +228,37 @@ describe('a remote config, judged as the session names its member (D2)', () => {
     await expect(connect('mail:t')).rejects.toThrow('server unreachable');
   });
 
-  it('leaves an enrollment command unjudged when the session cannot be opened', async () => {
-    mockIsAgent.mockReturnValue(true);
-    state.adapter = { policyContext: () => Promise.reject(new Error('token expired')) };
-    await expect(
-      enforceRootCommand('config remote reenroll', undefined, {} as Command)
-    ).resolves.toBeUndefined();
+  it.each([
+    'config set',
+    'config access add',
+    'config delete',
+    'config import-machine',
+    'config remote restore',
+    'subscription retire',
+  ])("refuses a member's %s when the session cannot be opened", async (commandPath) => {
+    mockIsAgent.mockReturnValue(false);
+    state.adapter = { policyContext: () => Promise.reject(new Error('server unreachable')) };
+    await expect(enforceRootCommand(commandPath, undefined, {} as Command)).rejects.toThrow(
+      'server unreachable'
+    );
+  });
+
+  it.each([...SESSION_RECOVERY_COMMANDS])(
+    'control: leaves the recovery command %s unjudged when the session cannot be opened',
+    async (commandPath) => {
+      mockIsAgent.mockReturnValue(true);
+      state.adapter = { policyContext: () => Promise.reject(new Error('token expired')) };
+      await expect(
+        enforceRootCommand(commandPath, undefined, {} as Command)
+      ).resolves.toBeUndefined();
+    }
+  );
+
+  it('names only live commands as recovery commands, re-enrollment and subscription login among them', () => {
+    const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
+    for (const path of SESSION_RECOVERY_COMMANDS) expect(live).toContain(path);
+    expect(SESSION_RECOVERY_COMMANDS).toContain('config remote enable');
+    expect(SESSION_RECOVERY_COMMANDS).toContain('subscription login');
   });
 });
 

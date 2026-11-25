@@ -212,12 +212,26 @@ export function setConfirmGrand(value: string | undefined): void {
 }
 
 /**
- * Command families that manage the config and its enrollment themselves. A remote config's store
- * answers for them server-side, and `config remote reenroll` or `subscription login` must still run
- * when the session cannot be opened (an expired token, an unreachable server), so a failed session
- * leaves them unjudged rather than refused. When the session opens they are judged like any other.
+ * The commands that recover access to a remote config, by full command path. They must still run
+ * when the session cannot be opened (an expired token, an unreachable server, a lost enrollment),
+ * so a failed session leaves exactly these unjudged; every other command, config mutations
+ * included, is refused with the session error. When the session opens they are judged like any
+ * other command.
+ *
+ * - `config remote enable` re-enrolls a linked config whose device credentials are gone
+ *   (config-remote-reenroll.ts) and links a config for the first time.
+ * - `config remote status` reports whether this device can open the store.
+ * - `config remote disable` is the refusal's own way out when the server path is closed for good
+ *   (`--local`, config-remote-unlink.ts).
+ * - `subscription login` and `subscription refresh` renew the token the session is opened with.
  */
-const ENROLLMENT_FAMILIES: ReadonlySet<string> = new Set(['config', 'subscription']);
+export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
+  'config remote enable',
+  'config remote status',
+  'config remote disable',
+  'subscription login',
+  'subscription refresh',
+]);
 
 /** The principal and policy a local run is judged with. */
 interface LocalJudgement {
@@ -240,7 +254,7 @@ const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyCo
  * A REMOTE config is judged as the account server names its token's member: the org role and
  * email from `/configs/session` and the effective policy from the policy record
  * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
- * cannot be opened the run is refused with that error, save for the enrollment families.
+ * cannot be opened the run is refused with that error, save for SESSION_RECOVERY_COMMANDS.
  */
 async function localJudgement(commandPath: string): Promise<LocalJudgement | null> {
   const kind = isAgentEnvironment() ? 'agent' : 'human';
@@ -275,7 +289,7 @@ async function remoteJudgement(
     const { principal, policy } = await pending;
     return { principal: { kind, ...principal }, policy };
   } catch (error) {
-    if (ENROLLMENT_FAMILIES.has(commandPath.split(' ')[0] ?? '')) return null;
+    if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return null;
     throw error;
   }
 }
