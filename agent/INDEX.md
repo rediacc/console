@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 121 | 12 | 3 | 27005 |
+| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 123 | 10 | 5 | 27476 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 92 | 5 | 4 | 15718 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 103 | 15 | 5 | 24550 |
