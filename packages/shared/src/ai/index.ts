@@ -32,6 +32,21 @@ export {
   validateProfile,
 } from './profile.js';
 export {
+  asCreditRefusalCode,
+  buildRediaccProfile,
+  CREDIT_REFUSAL_MESSAGES,
+  type CreditRefusalCode,
+  isRediaccProfile,
+  parseRediaccChoice,
+  REDIACC_AI_BASE_URL,
+  REDIACC_AI_HOST,
+  REDIACC_CHOICE_PREFIX,
+  REDIACC_DEFAULT_MODELS,
+  REDIACC_TIERS,
+  type RediaccTier,
+  rediaccChoice,
+} from './rediacc-tier.js';
+export {
   type AiConfigs,
   type ProfileSource,
   type ResolvedProfile,

@@ -7,10 +7,15 @@
  * A `default` that names a missing profile is an error rather than a reason to
  * fall through to the other config, and a profile that fails validation (shape or
  * the base URL guard) is never returned.
+ *
+ * `rediacc:standard` and `rediacc:premium` are built in (rediacc-tier.ts): they win over a config
+ * profile of the same name, so a config can never shadow the metered path, and they skip the base URL
+ * guard because their `ai.internal` host is the one that guard refuses for customer profiles.
  */
 import { type AiConfig, type Profile, validateProfile } from './profile.js';
+import { buildRediaccProfile, parseRediaccChoice } from './rediacc-tier.js';
 
-export type ProfileSource = 'team' | 'shared';
+export type ProfileSource = 'team' | 'shared' | 'rediacc';
 
 export type ResolveFailure =
   | { ok: false; reason: 'none-configured'; message: string }
@@ -42,7 +47,15 @@ function validated(name: string, source: ProfileSource, raw: unknown): ResolvedP
 
 const SOURCES = ['team', 'shared'] as const;
 
+function builtIn(name: string): ResolvedProfile | undefined {
+  const tier = parseRediaccChoice(name);
+  if (tier === undefined) return undefined;
+  return { ok: true, name, source: 'rediacc', profile: buildRediaccProfile(tier) };
+}
+
 function resolveNamed(configs: AiConfigs, name: string): ResolvedProfile {
+  const own = builtIn(name);
+  if (own) return own;
   for (const source of SOURCES) {
     const config = configs[source];
     if (config && Object.hasOwn(config.providers, name)) {
@@ -61,6 +74,8 @@ function resolveDefault(configs: AiConfigs): ResolvedProfile {
     const config = configs[source];
     const name = config?.default;
     if (config === undefined || name === undefined) continue;
+    const own = builtIn(name);
+    if (own) return own;
     if (!Object.hasOwn(config.providers, name)) {
       return {
         ok: false,

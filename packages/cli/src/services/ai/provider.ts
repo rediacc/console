@@ -19,12 +19,14 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
+  isRediaccProfile,
   type Profile,
   type ProfileIssue,
   validateBaseUrl,
   validateProfile,
 } from '@rediacc/shared/ai';
 import type { LanguageModel } from 'ai';
+import { createRediaccModel } from './rediacc-provider.js';
 
 type FetchFunction = typeof globalThis.fetch;
 
@@ -46,6 +48,11 @@ export interface ProviderModelOptions {
    * has checked the profile's real URL.
    */
   fetch?: FetchFunction;
+  /**
+   * Who a Rediacc tier call is for (`rediacc:standard` and `rediacc:premium` profiles): the ledger's
+   * per-user and per-conversation caps key on these. Required to build a profile of that tier.
+   */
+  rediacc?: { userId: string; conversationId: string };
 }
 
 /** The provider name the OpenAI-compatible SDK reports when a profile names no preset. */
@@ -152,13 +159,25 @@ export function guardedFetch(
 }
 
 /**
- * Build the AI SDK model of `profile`. Throws ProviderProfileError when the
+ * Build the AI SDK model of `profile`; a Rediacc tier profile goes to rediacc-provider.ts, which
+ * skips the customer base URL guard its `ai.internal` host would fail. Throws ProviderProfileError when the
  * profile fails its shape check or the base URL guard.
  */
 export function createProviderModel(
   profile: Profile,
   options: ProviderModelOptions = {}
 ): LanguageModel {
+  if (isRediaccProfile(profile)) {
+    if (options.rediacc === undefined) {
+      throw new ProviderProfileError([
+        { path: '/preset', message: 'a Rediacc tier profile needs the user and conversation ids' },
+      ]);
+    }
+    return createRediaccModel(profile, {
+      ...options.rediacc,
+      ...(options.fetch ? { fetch: options.fetch } : {}),
+    });
+  }
   const checked = validateProfile(profile);
   if (!checked.ok) throw new ProviderProfileError(checked.issues);
   const valid = checked.profile;
