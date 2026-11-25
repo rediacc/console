@@ -1,8 +1,6 @@
 """A missing program answers 127 in `_run` and `_capture`, as the shell twin does, instead of raising.
 
-`ensure_docker_installed` probes `docker version` first; on a host without docker that probe raised
-FileNotFoundError and `./run.sh setup` crashed before reaching its install branch (native Ubuntu,
-2026-11-25).
+`ensure_docker_installed` probes `docker version` first; on a host without docker that probe raised FileNotFoundError and `./run.sh setup` crashed before reaching its install branch (native Ubuntu, 2026-11-25).
 """
 
 from rediacc_ci.core import local_common as lc

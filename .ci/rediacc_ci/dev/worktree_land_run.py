@@ -108,10 +108,7 @@ def _dirty_index(dirs):
 def keep_head_hunks(text: str) -> str:
     """Resolve each conflict hunk to its HEAD side and keep every cleanly merged line as it is.
 
-    Only called once `confined_to_generated` holds, so every hunk sits inside a `gen-docs` region that the
-    regenerate step rewrites next. Taking HEAD's whole file instead (`checkout --ours`) would drop the lease
-    commit's clean-merged edits outside the regions. A diff3 base section (`|||||||`) is dropped with the
-    lease side. An unterminated hunk raises ValueError.
+    Only called once `confined_to_generated` holds, so every hunk sits inside a `gen-docs` region that the regenerate step rewrites next. Taking HEAD's whole file instead (`checkout --ours`) would drop the lease commit's clean-merged edits outside the regions. A diff3 base section (`|||||||`) is dropped with the lease side. An unterminated hunk raises ValueError.
     """
     out: list[str] = []
     state = "clean"

@@ -14,7 +14,7 @@ allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash
 
 ## Task: pause for the operator
 
-The operator invoked `/pause $ARGUMENTS`. The machine may restart, Docker or WSL may be updated, or the operator is simply away: anything not on disk or in git may be gone afterwards, `/tmp` included.
+The operator invoked `/pause $ARGUMENTS`. The machine may restart, Docker or the host may be updated, or the operator is simply away: anything not on disk or in git may be gone afterwards, `/tmp` included (a tmpfs on the native host, emptied by every reboot).
 
 1. **Quiet the hook.** Note the effort level in force above, then `worklist.py --queue-set <me> effort=quiet`. The resume level is the first argument when it names a level. Otherwise it is the noted level, except when that is already `quiet`: an earlier pause set it, so keep the resume level that pause recorded in STATE.md's pause line and never overwrite it with `quiet` (a second `/pause` would otherwise resume the session still quiet). With no recorded level, use `smart`.
 2. **Cancel the session's crons** (`CronList`, then `CronDelete` each): a continue-loop or heartbeat would restart work the operator asked to stop. Keep each cancelled cron's schedule and prompt for the resume point.

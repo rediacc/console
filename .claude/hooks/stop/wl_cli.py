@@ -189,9 +189,7 @@ STATE_STDIN_WAIT_SECONDS = 30.0
 def _read_document(seconds: float = STATE_STDIN_WAIT_SECONDS):
     """Read a document from stdin to EOF, bounded on the FIRST byte. -> (text, ok).
 
-    WHY THIS IS NOT `sys.stdin.read()`, which is what `--state` used to call. `isatty()` catches an interactive terminal and nothing else, and the case it misses is the one that actually happens: stdin inherited from a parent that holds the write end open and never writes. A backgrounded tool invocation hands over exactly that, and a bare read then blocks forever. Measured
-    2026-09-08 -- a `--state` call sat for 81 minutes, silent, its OS process alive, until it was killed by hand. `_read_event` above already carries this lesson in its own docstring: a process that hangs is worse than one that fails, because it stalls the session instead of failing it. The verb that writes the compaction-recovery document had the property the hook beside it was
-    fixed for.
+    WHY THIS IS NOT `sys.stdin.read()`, which is what `--state` used to call. `isatty()` catches an interactive terminal and nothing else, and the case it misses is the one that actually happens: stdin inherited from a parent that holds the write end open and never writes. A backgrounded tool invocation hands over exactly that, and a bare read then blocks forever. Measured 2026-09-08 -- a `--state` call sat for 81 minutes, silent, its OS process alive, until it was killed by hand. `_read_event` above already carries this lesson in its own docstring: a process that hangs is worse than one that fails, because it stalls the session instead of failing it. The verb that writes the compaction-recovery document had the property the hook beside it was fixed for.
 
     THE DEADLINE IS ON THE FIRST BYTE, not on the whole document. A writer that has started is a writer that will finish, and bounding the total would refuse a legitimate slow producer halfway through and write nothing. Nothing arriving at all is the failure being bounded here.
     """
@@ -281,8 +279,7 @@ def _store_status_cli(argv, worklist, die):
 def _triage_cli(argv, worklist, me, die):
     """--triage <me> [--id <id>] <finding...>: how does this finding get fixed?
 
-    WHY (operator, 2026-07-31): the fix-in-session rule says a finding is fixed by the session that finds it, and the only excuse that ever beat that rule was "it is too big for right now". So the machinery answers the size question itself and hands back the exact next command: fix it inline, or write a plan file and implement it this session, or the one door that genuinely makes
-    it someone else's.
+    WHY (operator, 2026-07-31): the fix-in-session rule says a finding is fixed by the session that finds it, and the only excuse that ever beat that rule was "it is too big for right now". So the machinery answers the size question itself and hands back the exact next command: fix it inline, or write a plan file and implement it this session, or the one door that genuinely makes it someone else's.
 
     DELIBERATELY ASYMMETRIC with the stop judge, which fails CLOSED because it gates an exit. This is a decision aid on a CLI path, so a judge error DEGRADES to the self-assessment printout with the error named, exit 0,
     and WORKLIST_JUDGE=off degrades the same way silently. Degraded mode
@@ -304,8 +301,7 @@ def _triage_cli(argv, worklist, me, die):
         rec = fold.by_id.get(item_id)
         if rec is None:
             die("no item #%s (worklist.py --list shows ids)" % item_id)
-        # owned_by_me, NOT same_session: the latter is a PEER comparison and has no notion of lineage, so a compaction that renamed this session would make it refuse its own items -- which is the bug this branch exists to stop. The resolved id is passed rather than `me` because owned_by_me tests `session_id.startswith(owner)` (a tag is a short prefix of a full id), and `me` has
-        # already been identity-checked against the environment.
+        # owned_by_me, NOT same_session: the latter is a PEER comparison and has no notion of lineage, so a compaction that renamed this session would make it refuse its own items -- which is the bug this branch exists to stop. The resolved id is passed rather than `me` because owned_by_me tests `session_id.startswith(owner)` (a tag is a short prefix of a full id), and `me` has already been identity-checked against the environment.
         if rec["owner"] is not None and not C.owned_by_me(
             rec["owner"], C.resolve_session_id() or me
         ):
@@ -363,13 +359,11 @@ def _triage_cli(argv, worklist, me, die):
 def _planrec_cli(argv):
     """--plan-compact / --plan-revive: the W12 record verbs.
 
-    WHY THESE ARE VERBS AND NOT AN EDIT. A record's `Full-Text-Blob` is `git hash-object` of the plan's bytes, and the record then OVERWRITES those bytes. Get the order wrong by hand -- edit first, hash after -- and the pointer names content that exists nowhere, which loses the plan. So the ordering lives in one function, the path is refused when it is dirty, and the write is a
-    tempfile plus `os.replace` (wl_planrec.write_atomic).
+    WHY THESE ARE VERBS AND NOT AN EDIT. A record's `Full-Text-Blob` is `git hash-object` of the plan's bytes, and the record then OVERWRITES those bytes. Get the order wrong by hand -- edit first, hash after -- and the pointer names content that exists nowhere, which loses the plan. So the ordering lives in one function, the path is refused when it is dirty, and the write is a tempfile plus `os.replace` (wl_planrec.write_atomic).
 
     A DRY RUN IS THE DEFAULT. `--write` is opt-in because compaction is the one operation here that replaces a document with a smaller one, and a session should read the record before it stands in for the plan.
 
-    THE BLOB EXISTS BECAUSE THE PATH WAS COMMITTED, not because anything here stored it. `git hash-object` without `-w` computes an id and writes NOTHING, and `wl_planrec.derive` does not pass `-w`. What makes the pointer real is the dirty-path refusal: a committed file's blob is already in the object database and stays reachable through history. The two are one mechanism, so do
-    not relax the refusal without giving the pointer another guarantee.
+    THE BLOB EXISTS BECAUSE THE PATH WAS COMMITTED, not because anything here stored it. `git hash-object` without `-w` computes an id and writes NOTHING, and `wl_planrec.derive` does not pass `-w`. What makes the pointer real is the dirty-path refusal: a committed file's blob is already in the object database and stays reachable through history. The two are one mechanism, so do not relax the refusal without giving the pointer another guarantee.
 
     NEVER COMMITS. Same rule as every other verb in this file, and it matters more here: the record and `.ci/config/plan-boxes.json` must land in the SAME commit or check:ci-plan-boxes reads the ledger's staleness as a vanished box. The success message says so rather than doing it.
     """
@@ -481,8 +475,7 @@ def _planwhy_cli(argv):
     NO IDENTITY IS REQUIRED and that is deliberate: this verb writes nothing, and the sibling verbs take `<me>` only because a WRITE has to be attributable. A leading argument that looks like a session prefix is accepted and skipped anyway, because a session that has just typed `--plan-compact <me> ...` will
     type it here too, and refusing that would be a usage error over a habit.
 
-    THE EMPTY ANSWER IS AFFIRMATIVE. "No record names this file" is a RESULT: the index was read, N records were searched, none of them cited this path. That is different from "there is no index", and both are different from printing nothing -- which is what a session reads as "the tool is broken" and then stops using. wl_planrec.why_lines returns which of the three it is, and each
-    gets its own sentence.
+    THE EMPTY ANSWER IS AFFIRMATIVE. "No record names this file" is a RESULT: the index was read, N records were searched, none of them cited this path. That is different from "there is no index", and both are different from printing nothing -- which is what a session reads as "the tool is broken" and then stops using. wl_planrec.why_lines returns which of the three it is, and each gets its own sentence.
     """
 
     def die(msg):
@@ -516,8 +509,7 @@ def _planwhy_cli(argv):
 def _hint_propose_cli(argv):
     """--hint-propose <me> <text...> [SOURCE: <pointer>].
 
-    WRITES ONE ROW to agent/ledgers/hint-proposals.jsonl AND NOTHING ELSE. It never opens, never edits and never checks docs/agent-reference/HINTS.md: promotion is a reviewed hand edit to that file, by design, so a session cannot promote its own proposal by accident, by a bad parse, or by a future edit that
-    flips a status field. See wl_hints.propose's own docstring for the full reasoning.
+    WRITES ONE ROW to agent/ledgers/hint-proposals.jsonl AND NOTHING ELSE. It never opens, never edits and never checks docs/agent-reference/HINTS.md: promotion is a reviewed hand edit to that file, by design, so a session cannot promote its own proposal by accident, by a bad parse, or by a future edit that flips a status field. See wl_hints.propose's own docstring for the full reasoning.
 
     An optional trailing `SOURCE: <pointer>` names where the lesson came from, for the human who later reviews the backlog; the CLI splits on the LAST occurrence of the literal token so a hint sentence that happens to contain the word "source" elsewhere is not mistaken for the marker.
     """
@@ -767,8 +759,7 @@ def _plantick_cli(argv):
 
     root = C.project_root(C.project_start())
     if len(argv) == 2:
-        # NO PATH IS A LISTING, the same shape --plan-compact and --plan-revive take and for the same two reasons. A caller needs a box SIGNATURE to tick unambiguously and this is where signatures come from, so the read is a genuine prerequisite of the write rather than a convenience. And it is the only mode of this verb whose effect is a printed line rather than two written files,
-        # which is what lets the identity suite drive it without planting a git repository and a committed box ledger per verb.
+        # NO PATH IS A LISTING, the same shape --plan-compact and --plan-revive take and for the same two reasons. A caller needs a box SIGNATURE to tick unambiguously and this is where signatures come from, so the read is a genuine prerequisite of the write rather than a convenience. And it is the only mode of this verb whose effect is a printed line rather than two written files, which is what lets the identity suite drive it without planting a git repository and a committed box ledger per verb.
         n = 0
         print(R.TICKABLE_HEADER)
         for rel, boxes in R.tickable(root, CK.plan_records(root)):
@@ -986,9 +977,7 @@ def _applyticks_cli(argv):
         cmds = []
         latest = R.investigation_for(root, rel, row["sig"])
         if latest is not None and latest.get("verdict") != "present":
-            # A writer's report never overrides a recorded partial or absent verdict: the lead found a clause unmet
-            # (DT7, 2026-11-25: ticked "done" over `partial, owed code` with its timing accept unmet). Re-investigate
-            # once the owed work lands, then the row applies.
+            # A writer's report never overrides a recorded partial or absent verdict: the lead found a clause unmet (DT7, 2026-11-25: ticked "done" over `partial, owed code` with its timing accept unmet). Re-investigate once the owed work lands, then the row applies.
             tally["refused"] += 1
             refused += 1
             print(
@@ -1432,8 +1421,7 @@ def _planpreflight_cli(argv):
 def _planinvestigate_cli(argv):
     """--plan-investigate <me> <path> <box> <verdict> [--owed <kind>] <kind>:<tok>... -- <note...> [--write].
 
-    THE VERB THE OPERATOR ASKED FOR: "we must investigate if they're implemented before implement". Everything it does is re-derivation and none of it is trust -- see wl_planrec.plan_investigate. Ordinary shell quoting is the interface and no new parser is introduced; a bare `--` separates the pointer list from the note, the same way a shell separates a command's flags from its
-    operands.
+    THE VERB THE OPERATOR ASKED FOR: "we must investigate if they're implemented before implement". Everything it does is re-derivation and none of it is trust -- see wl_planrec.plan_investigate. Ordinary shell quoting is the interface and no new parser is introduced; a bare `--` separates the pointer list from the note, the same way a shell separates a command's flags from its operands.
 
     NEVER COMMITS, same as every verb in this file. The row rides the same commit as the tick it licenses, and the success message says so.
     """
@@ -1464,7 +1452,7 @@ def _planinvestigate_cli(argv):
         # `--retro` after `--` is note text by grammar, but a trailing `-- <note> --retro --write` is the natural spelling, so the last word is read as the flag.
         retro = True
         rest = rest[:-1]
-    # `--evidence <text>` is the `    (ticked) ` line a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
+    # `--evidence <text>` is the ` (ticked) ` line a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
     evidence = None
     cut_at = rest.index("--") if "--" in rest else len(rest)
     if "--evidence" in rest[:cut_at]:
@@ -1625,7 +1613,8 @@ COMMIT_REF_PICKED_LINE = "(cherry picked from commit %s)"
 def commit_ref_problem(root, text, transcript=None):
     """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
 
-    `commit:<sha>` must name a commit of `root` or one of its submodules that `_commit_ref_landed` reads as landed: an ancestor of HEAD, `refs/remotes/origin/main` or the landing record's branch, a patch-equivalent of a commit on HEAD (`git cherry`), or a commit a `(cherry picked from commit <sha>)` line on HEAD names (R20261123.6: a rebase, the landing tree and an operator hotfix each moved a real commit off HEAD). A fabricated or foreign sha is still refused, and a probe that fails refuses as ("probe", "<sha>: <why>") rather than being read either way. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
+    `commit:<sha>` must name a commit of `root` or one of its submodules that `_commit_ref_landed` reads as landed: an ancestor of HEAD, `refs/remotes/origin/main` or the landing record's branch, a patch-equivalent of a commit on HEAD (`git cherry`), or a commit a `(cherry picked from commit <sha>)` line on HEAD names (R20261123.6: a rebase, the landing tree and an operator hotfix each moved a real commit off HEAD). A fabricated or foreign sha is still refused, and a probe that fails refuses as ("probe", "<sha>: <why>") rather than being read either way. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one.
+    Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
 
     An `ASKED:<minute>Z` that `CK._asked_in_transcript` verifies against `transcript` (the lead's) also stands in, the way a door does (R20261101.2): an operator ruling has no commit, and the answer is stronger evidence than an unrelated sha. A malformed or unmatched ASKED stands for nothing, and a `nocommit:` word outside the three reasons is still refused."""
     import wl_git
@@ -2020,8 +2009,7 @@ def _item_cli(argv, worklist):
         transcript = _lead_transcript(me)
         # BOTH GATES ARE EVALUATED BEFORE EITHER REFUSES (R20261101.1): the evidence gate and the commit-reference gate used to answer one at a time, so a refusal named only the next requirement.
         evidence_ok = bool(rest) and CK.completion_evidence(root, rest, transcript)
-        # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
-        # that path.
+        # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into that path.
         bad = commit_ref_problem(root, rest, transcript)
         if evidence_ok and CK.issue_only_evidence(root, rest):
             _log_tick_refusal(
@@ -2077,8 +2065,7 @@ def _item_cli(argv, worklist):
                 "a [?] without a DEFAULT: is a note, not a decision; append "
                 "'DEFAULT: <what you will do if unanswered>'"
             )
-        # A HOLD IS CHECKED AT WRITE TIME (#f2402dba). An over-cap or impossible NOT-BEFORE was accepted and then silently ignored, so the DEFAULT executed on the ordinary window while the author believed it held; the Stop hook named the problem only stops later. A `NOT-BEFORE:` that is not the `YYYY-MM-DDTHH:MM[:SS]Z` shape holds nothing either.
-        # The Stop hook's wording ends "and is ignored"; at write time nothing is ignored yet, it is refused.
+        # A HOLD IS CHECKED AT WRITE TIME (#f2402dba). An over-cap or impossible NOT-BEFORE was accepted and then silently ignored, so the DEFAULT executed on the ordinary window while the author believed it held; the Stop hook named the problem only stops later. A `NOT-BEFORE:` that is not the `YYYY-MM-DDTHH:MM[:SS]Z` shape holds nothing either. The Stop hook's wording ends "and is ignored"; at write time nothing is ignored yet, it is refused.
         hold_problem = C.not_before_problem(rest).replace(" and is ignored", "")
         if not hold_problem and "NOT-BEFORE:" in rest and not C.NOT_BEFORE.search(rest):
             hold_problem = "NOT-BEFORE: is not followed by a YYYY-MM-DDTHH:MMZ instant"
@@ -2133,11 +2120,9 @@ def _item_cli(argv, worklist):
     if mode == "--update":
         if not rest:
             die("an empty update updates nothing: one line of what moved")
-        # v17 THE VANISHING DEFAULT. An --update on a `- [?]` silently dropped its DEFAULT:, because the rendered line carries only the MOST RECENT update (CK scans rec["line"]). So the deferral's default stopped being visible the instant any progress landed, and the next stop blocked on a [?] that demonstrably HAD a default when it was written. Hit live, by the session that wrote
-        # this.
+        # v17 THE VANISHING DEFAULT. An --update on a `- [?]` silently dropped its DEFAULT:, because the rendered line carries only the MOST RECENT update (CK scans rec["line"]). So the deferral's default stopped being visible the instant any progress landed, and the next stop blocked on a [?] that demonstrably HAD a default when it was written. Hit live, by the session that wrote this.
         #
-        # REFUSING was the first fix and it was WRONG, caught by case 141: a refresh is documented as "the exit is always available", and the aged-deferral rung tells a session to refresh. Blocking it removes the only exit the rung offers -- the same shape as the --lease release comment below. So the default is carried forward VERBATIM and the carry is announced. Silence was the
-        # defect; the exit is not.
+        # REFUSING was the first fix and it was WRONG, caught by case 141: a refresh is documented as "the exit is always available", and the aged-deferral rung tells a session to refresh. Blocking it removes the only exit the rung offers -- the same shape as the --lease release comment below. So the default is carried forward VERBATIM and the carry is announced. Silence was the defect; the exit is not.
         _cur = next((r for r in fold.items if r["id"] == item_id), None)
         if _cur is not None and _cur["state"] == "?" and not C.DEFAULT_TOKEN.search(rest):
             _src = _cur.get("text") or ""
@@ -2164,8 +2149,7 @@ def _item_cli(argv, worklist):
     if mode == "--lease":
         if len(argv) < 4:
             die(M.CLI_ITEM_USAGE)
-        # RELEASE, the missing third exit. The quiet-worker rung tells a session to "finish the item, re-delegate with a new worker id, or RECLASSIFY it" -- and until this existed the third option had no verb. --lease could only ever set [>]; nothing moved an item back to open. So a session whose worker had legitimately finished, with the item NOT done and no honest successor to
-        # lease, had exactly two false choices: tick work that was not finished, or lease a worker that was not measuring it. Both are the stale claim the rung exists to prevent, arrived at by following the rung's own instructions.
+        # RELEASE, the missing third exit. The quiet-worker rung tells a session to "finish the item, re-delegate with a new worker id, or RECLASSIFY it" -- and until this existed the third option had no verb. --lease could only ever set [>]; nothing moved an item back to open. So a session whose worker had legitimately finished, with the item NOT done and no honest successor to lease, had exactly two false choices: tick work that was not finished, or lease a worker that was not measuring it. Both are the stale claim the rung exists to prevent, arrived at by following the rung's own instructions.
         if argv[3] in ("release", "none", "-"):
             # `item_id`, NOT a second read of argv[2]. Review finding on PR #551: this branch used the raw argument while every other verb in this
             # function goes through the `.lstrip("#")` at the top, so
@@ -2255,8 +2239,7 @@ def _item_cli(argv, worklist):
                 % (until, C.MAX_LEASE_MIN)
             )
         wid = wm.split(":", 1)[1]
-        # v14 gap 3: validate the worker id against the harness's last event AT LEASE TIME. The hook verifies leases against OS-visible task ids, and an Agent's NAME is not its task id: a lease on the name reads as unverifiable forever, which cost a false "worker is gone" round. A warning, not a refusal, because the sidecar can lag a just-started task; a genuinely wrong id still
-        # gets caught by the hook's verifier.
+        # v14 gap 3: validate the worker id against the harness's last event AT LEASE TIME. The hook verifies leases against OS-visible task ids, and an Agent's NAME is not its task id: a lease on the name reads as unverifiable forever, which cost a false "worker is gone" round. A warning, not a refusal, because the sidecar can lag a just-started task; a genuinely wrong id still gets caught by the hook's verifier.
         verified = ""
         try:
             _ev = json.loads(
@@ -2346,8 +2329,7 @@ def _relay_cli(argv, worklist, me, die):
 def _annotated_running(ids, me):
     """Render harness-reported running task ids with their output-file age.
 
-    The bare id list reads as a roster of LIVE workers, and it is not: it is the harness's last word, and an entry stays in it after its process dies. A caller in this session read that list literally, concluded a worker was alive, and came within one command of pointing a second writer at the files a dead worker had been given. The age is the cheapest available correction: it
-    comes from the output stream's mtime, which no self-report can fake.
+    The bare id list reads as a roster of LIVE workers, and it is not: it is the harness's last word, and an entry stays in it after its process dies. A caller in this session read that list literally, concluded a worker was alive, and came within one command of pointing a second writer at the files a dead worker had been given. The age is the cheapest available correction: it comes from the output stream's mtime, which no self-report can fake.
 
     Silent about what it cannot measure. A task with no output file yet (an agent that reports only at completion) is printed bare rather than accused,
     for the same reason the ladder reports an unverifiable worker instead of
@@ -2401,8 +2383,7 @@ def _migrate_cli(argv):
         sys.stderr.write(M.CLI_MIGRATE_USAGE)
         sys.exit(2)
     _identity_or_die(me, _die2)
-    # C.worklist_for(C.project_start()), NOT worklist_for(project_root(...)). The doubled form resolves to the REPO root and ignores CLAUDE_PROJECT_DIR, so under the test harness this verb read its items from the fixture store (which the env var does redirect) while looking for `.lastevent-*` beside the OPERATOR'S REAL worklist -- found none, called a live session idle, and
-    # migrated it. Every other verb here uses the single form; so does this one.
+    # C.worklist_for(C.project_start()), NOT worklist_for(project_root(...)). The doubled form resolves to the REPO root and ignores CLAUDE_PROJECT_DIR, so under the test harness this verb read its items from the fixture store (which the env var does redirect) while looking for `.lastevent-*` beside the OPERATOR'S REAL worklist -- found none, called a live session idle, and migrated it. Every other verb here uses the single form; so does this one.
     worklist = C.worklist_for(C.project_start())
     root = C.project_root(C.project_start())
     projects = C.projects_dir(root)
@@ -2567,8 +2548,7 @@ def _migrate_cli(argv):
                 print("  skipped %d already-migrated item(s)" % len(refused))
         # THE PREDECESSOR'S NEXT ACTION, printed rather than merged: its STATE.md is a peer's document, which this session reads and never writes. The section is quoted whole -- the operator asked for the next action to come across, and a one-line lead is not that.
         #
-        # This runs REGARDLESS of whether an item moved. A session that ticks every worklist item before dying has nothing for the branch above to move, but its STATE.md can still name the one thing that actually matters -- an earlier version of this function `continue`d past this block on exactly that "nothing moved" path, so naming a zero-item predecessor here printed nothing at
-        # all: the one case the whole verb exists for was also the one case it stayed silent on.
+        # This runs REGARDLESS of whether an item moved. A session that ticks every worklist item before dying has nothing for the branch above to move, but its STATE.md can still name the one thing that actually matters -- an earlier version of this function `continue`d past this block on exactly that "nothing moved" path, so naming a zero-item predecessor here printed nothing at all: the one case the whole verb exists for was also the one case it stayed silent on.
         section = S.agent_next_action(root, prev)
         if section:
             print("\n  HANDED OFF NEXT ACTION from %s (agent/%s/STATE.md):" % (prev, prev))
@@ -2602,11 +2582,9 @@ def _migrate_cli(argv):
 def _adopt_cli(argv):
     """`--adopt <me> <prev>`: record that a compaction split one conversation.
 
-    THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and is proven by ABSENCE: an identity that wrote events and never stopped. --adopt joins two REAL identities and is proven by PRESENCE: harness-written evidence that both transcripts belong to one conversation. Merging them would mean one verb whose evidence test flips depending on its argument, so they
-    stay apart.
+    THE SIBLING OF --reassign, AND ITS OPPOSITE. --reassign repairs a FICTION and is proven by ABSENCE: an identity that wrote events and never stopped. --adopt joins two REAL identities and is proven by PRESENCE: harness-written evidence that both transcripts belong to one conversation. Merging them would mean one verb whose evidence test flips depending on its argument, so they stay apart.
 
-    There is deliberately NO --force. The whole value of the edge is that it was proven; an unprovable one recorded anyway would let any session claim any other's items, which is precisely what the ownership rule exists to prevent. When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID override remains, and that is recorded as a human's declaration rather than as
-    a derived fact.
+    There is deliberately NO --force. The whole value of the edge is that it was proven; an unprovable one recorded anyway would let any session claim any other's items, which is precisely what the ownership rule exists to prevent. When the evidence is genuinely absent the operator's WORKLIST_SESSION_ID override remains, and that is recorded as a human's declaration rather than as a derived fact.
     """
     if len(argv) < 3:
         sys.stderr.write(M.CLI_ADOPT_USAGE)
@@ -2707,11 +2685,9 @@ def _reassign_cli(argv):
     fold = S.load(worklist, sync=True)
     # AGE GATE, and without it the guarantee above is not delivered. The `.lastevent-` file is written exactly once, when the Stop hook first runs
     # for a session. A session that is mid-turn -- it has added items but has
-    # not yet reached its first stop -- has no such file either, so the check above cannot tell it from a genuine phantom. Any session can read a peer's prefix out of `--list --open` output, and concurrent sessions in one tree are routine here, so without this a peer's OPEN items could be moved onto the caller WHILE that peer was actively working on them. The
-    # docstring and the refusal message both promise this cannot happen; this is the code that makes the promise true.
+    # not yet reached its first stop -- has no such file either, so the check above cannot tell it from a genuine phantom. Any session can read a peer's prefix out of `--list --open` output, and concurrent sessions in one tree are routine here, so without this a peer's OPEN items could be moved onto the caller WHILE that peer was actively working on them. The docstring and the refusal message both promise this cannot happen; this is the code that makes the promise true.
     #
-    # Same threshold and same derivation as the advisory backstop (wl_checks.phantom_identities), deliberately: two different answers to "is this identity a phantom" is how the two drift apart. BOTH the writer and the owner, via the derivation shared with the backstop. Scanning `by` alone made this gate refuse every phantom in a store that had ever been compacted, because compact()
-    # rewrites the writer of the whole history to "compact" and keeps only the owner -- and the selection three statements below matches on `owner`. The two disagreed, so the repair verb reported "has written no events at all" about items it could see and would have moved.
+    # Same threshold and same derivation as the advisory backstop (wl_checks.phantom_identities), deliberately: two different answers to "is this identity a phantom" is how the two drift apart. BOTH the writer and the owner, via the derivation shared with the backstop. Scanning `by` alone made this gate refuse every phantom in a store that had ever been compacted, because compact() rewrites the writer of the whole history to "compact" and keeps only the owner -- and the selection three statements below matches on `owner`. The two disagreed, so the repair verb reported "has written no events at all" about items it could see and would have moved.
     _first = ""
     for _who, (_n, _at0) in S.identity_activity(worklist).items():
         if _at0 and C.same_session(_who, phantom) and (not _first or _at0 < _first):
@@ -2749,8 +2725,7 @@ def _teammate_idle_cli():
 
     The payload carries the COMMON hook fields (session_id, transcript_path, cwd, hook_event_name) plus agent_id/agent_type in subagent context. It does NOT carry the teammate's name, so the name is recovered from the sibling meta.json the harness wrote next to the transcript -- the same file `wl_liveness._teammate_meta` joins on, read from the other end.
 
-    A record with NO name is still written, keyed by agent id. It costs one line and it is the only evidence available that this hook fires here AT ALL, which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature that silently writes nothing when the event does not fire is indistinguishable from one that is working, which is the whole class of error this item exists to
-    remove.
+    A record with NO name is still written, keyed by agent id. It costs one line and it is the only evidence available that this hook fires here AT ALL, which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature that silently writes nothing when the event does not fire is indistinguishable from one that is working, which is the whole class of error this item exists to remove.
     """
     import wl_store as S
 
@@ -2763,8 +2738,7 @@ def _teammate_idle_cli():
         event = {}
     cwd = event.get("cwd") or os.getcwd()
     transcript = event.get("transcript_path") or ""
-    # `teammate_name` FIRST, because that is what the event actually carries. Measured on a live probe 2026-08-23 rather than read off a doc page: the published hook reference documents no input schema for TeammateIdle at all, and the payload turned out to be cwd, hook_event_name, permission_mode, prompt_id, session_id, team_name, teammate_name, transcript_path -- no `agent_id`,
-    # and no `name`. The first cut of this function looked for `agent_id` and fell back to the transcript's sibling meta.json, so every
+    # `teammate_name` FIRST, because that is what the event actually carries. Measured on a live probe 2026-08-23 rather than read off a doc page: the published hook reference documents no input schema for TeammateIdle at all, and the payload turned out to be cwd, hook_event_name, permission_mode, prompt_id, session_id, team_name, teammate_name, transcript_path -- no `agent_id`, and no `name`. The first cut of this function looked for `agent_id` and fell back to the transcript's sibling meta.json, so every
     # record landed with name=null and `idle_edge`, which joins on name, could
     # never match one. The journal fired correctly and was unusable, which is the failure mode that looks exactly like a hook that never fires.
     name = event.get("teammate_name") or None
@@ -2784,8 +2758,7 @@ def _teammate_idle_cli():
         "session": event.get("session_id"),
     }
     if name is None:
-        # DIAGNOSTIC, and it earns its place. Measured 2026-08-23 on a live probe: TeammateIdle fires, but the payload arrived with no agent_id and no usable transcript_path, so the name could not be recovered and `idle_edge` -- which joins on name -- can never match the record. A record that cannot be joined is indistinguishable from a hook that never fired, which is the exact
-        # ambiguity this whole item exists to remove. Recording the payload's KEYS (never its values) makes the next occurrence self-diagnosing instead of another round of probing.
+        # DIAGNOSTIC, and it earns its place. Measured 2026-08-23 on a live probe: TeammateIdle fires, but the payload arrived with no agent_id and no usable transcript_path, so the name could not be recovered and `idle_edge` -- which joins on name -- can never match the record. A record that cannot be joined is indistinguishable from a hook that never fired, which is the exact ambiguity this whole item exists to remove. Recording the payload's KEYS (never its values) makes the next occurrence self-diagnosing instead of another round of probing.
         rec["unjoinable_payload_keys"] = sorted(event)
     path = S.teammate_idle_path(C.worklist_for(C.project_start({"cwd": cwd})))
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -3493,8 +3466,7 @@ def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--state":
         # `... --state <prefix>` with THIS SESSION'S SECTION BODY on stdin.
         #
-        # It used to be the whole document, and last-write-wins was called deliberate: "a document whose contract is rewrite-every-time has no merge semantics". On 2026-08-09 that contract met three live sessions in one checkout. The staleness gate nagged 99ccf057 about a document 2fd369e0 owned, 99ccf057 obeyed, and a peer's entire state document (a live canary campaign, attempt 6
-        # in flight) was destroyed. It came back only because the single-slot .prev backup was read before the next write overwrote it.
+        # It used to be the whole document, and last-write-wins was called deliberate: "a document whose contract is rewrite-every-time has no merge semantics". On 2026-08-09 that contract met three live sessions in one checkout. The staleness gate nagged 99ccf057 about a document 2fd369e0 owned, 99ccf057 obeyed, and a peer's entire state document (a live canary campaign, attempt 6 in flight) was destroyed. It came back only because the single-slot .prev backup was read before the next write overwrote it.
         #
         # So the document has merge semantics now: one OWNED SECTION per session, replaced or appended in place under the existing flock, every other section byte-identical afterwards. flock + tempfile + os.replace still makes the write atomic. The success line names what was kept and what was reaped, because a session that cannot see the peers cannot be expected to respect them.
         wl = _local_worklist_path(_local_project_start())
@@ -3630,8 +3602,7 @@ def main():
                     max(0.0, (time.time() - mine["ts"]) / 60.0)
                 )
                 mine["tail"] = stamp
-                # AFTER `replaced` above, which deliberately reports the age of the section being replaced. Without this line the kept_rows confirmation below re-uses the OLD ts and tells the writer its freshly-written section is minutes old, which is exactly the kind of thing this whole change exists to stop a session believing. The on-disk document was always right; only the
-                # confirmation lied. Caught in review of PR #565.
+                # AFTER `replaced` above, which deliberately reports the age of the section being replaced. Without this line the kept_rows confirmation below re-uses the OLD ts and tells the writer its freshly-written section is minutes old, which is exactly the kind of thing this whole change exists to stop a session believing. The on-disk document was always right; only the confirmation lied. Caught in review of PR #565.
                 mine["ts"] = time.time()
                 mine["body"] = body.strip()
             else:
@@ -3658,8 +3629,7 @@ def main():
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(merged)
             os.replace(tmp, target)
-        # Name the backup ONLY when a previous document existed AND the copy actually landed (findings 3688770247/3688779150/3688787850: the old line advertised a recovery path that a failed write had never created, which is worse than no promise at all). The condition is "there was a document", not "the session replaced its own section": since the merge, a write that only APPENDS a section
-        # still rewrites the file, so the backup is real and worth naming either way.
+        # Name the backup ONLY when a previous document existed AND the copy actually landed (findings 3688770247/3688779150/3688787850: the old line advertised a recovery path that a failed write had never created, which is worse than no promise at all). The condition is "there was a document", not "the session replaced its own section": since the merge, a write that only APPENDS a section still rewrites the file, so the backup is real and worth naming either way.
         if had_prev:
             if backed_up:
                 replaced += "; previous document saved to %s" % backup
@@ -3703,8 +3673,7 @@ def main():
         root = pathlib.Path(
             os.environ.get("WORKLIST_PUBLISH_ROOT") or C.project_root(os.getcwd()) or os.getcwd()
         )
-        # THE BRANCH DEFAULTS TO HEAD'S (R20260924.22). A `--publish <me>` with no branch used to print usage and write nothing, and on 2026-09-24 a session spent three calls finding that out after a commit guard judged the snapshot this call was meant to write. `symbolic-ref`, not `rev-parse --abbrev-ref`: a detached HEAD answers EMPTY here rather than the literal "HEAD", so it still
-        # asks for a branch instead of writing agent/pr/HEAD.md (the same reason wl_core.git_branch gives).
+        # THE BRANCH DEFAULTS TO HEAD'S (R20260924.22). A `--publish <me>` with no branch used to print usage and write nothing, and on 2026-09-24 a session spent three calls finding that out after a commit guard judged the snapshot this call was meant to write. `symbolic-ref`, not `rev-parse --abbrev-ref`: a detached HEAD answers EMPTY here rather than the literal "HEAD", so it still asks for a branch instead of writing agent/pr/HEAD.md (the same reason wl_core.git_branch gives).
         branch = sys.argv[3] if len(sys.argv) > 3 else ""
         if branch == "":
             import subprocess
@@ -4035,8 +4004,7 @@ def main():
         # THE ROSTER. `.sessions` is the registry of who exists here -- it is what peer reporting reads and what the liveness ladder counts -- and until now an unvalidated command-line string populated it. A phantom identity that briefs itself looks exactly like a real session.
         _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
-        # A lone id is a MISREAD of this verb, not a short brief. The word reads both ways (publish a brief / a briefing on X) and the argument shape is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes and the roster then advertises it as live activity. Shape only, no store read: this branch stays self-contained on purpose (see above), and a
-        # bare hex token is never a real brief either way.
+        # A lone id is a MISREAD of this verb, not a short brief. The word reads both ways (publish a brief / a briefing on X) and the argument shape is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes and the roster then advertises it as live activity. Shape only, no store read: this branch stays self-contained on purpose (see above), and a bare hex token is never a real brief either way.
         if (
             len(sys.argv) == 4
             and 6 <= len(text) <= 16
@@ -4144,8 +4112,7 @@ def main():
         import wl_report
 
         rest = sys.argv[2:]
-        # `--reports --all` MUST work, and it did not: the dispatcher forwarded `--all` as if it were a MODE, and wl_report answered "unknown mode --all" (exit 2). It matters more than a papercut because that exact flag was in the announcement broadcast to other sessions, so the first thing a peer tried, on our instructions, failed. Anything that is not a mode is a modifier, and
-        # modifiers belong to --list.
+        # `--reports --all` MUST work, and it did not: the dispatcher forwarded `--all` as if it were a MODE, and wl_report answered "unknown mode --all" (exit 2). It matters more than a papercut because that exact flag was in the announcement broadcast to other sessions, so the first thing a peer tried, on our instructions, failed. Anything that is not a mode is a modifier, and modifiers belong to --list.
         if not rest:
             rest = ["--list", "--unread"]
         elif rest[0] not in wl_report.MODES:
@@ -4240,8 +4207,7 @@ def main():
         _item_cli(sys.argv[1:], C.worklist_for(C.project_start()))
         return True
 
-    # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has noticed; this closes the shape. ANY unrecognised flag reaching this point used to be handed to the Stop battery, which reads its event from stdin -- so `worklist.py --tpyo` emitted a genuine block verdict at exit 0 with stdin closed, and hung forever with stdin open. Both measured, not theorised. A bare
-    # invocation (no argv) is the real hook and passes through untouched, which is why this tests for a LEADING DASH and not for "unmatched".
+    # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has noticed; this closes the shape. ANY unrecognised flag reaching this point used to be handed to the Stop battery, which reads its event from stdin -- so `worklist.py --tpyo` emitted a genuine block verdict at exit 0 with stdin closed, and hung forever with stdin open. Both measured, not theorised. A bare invocation (no argv) is the real hook and passes through untouched, which is why this tests for a LEADING DASH and not for "unmatched".
     if sys.argv[1:2] and str(sys.argv[1]).startswith("-"):
         sys.stderr.write(M.CLI_UNKNOWN_VERB % sys.argv[1])
         sys.exit(2)
