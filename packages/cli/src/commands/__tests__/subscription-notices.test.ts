@@ -270,6 +270,40 @@ describe('subscription notices', () => {
     expect(printedRows()[0].summary).toBe('forensics_quota');
   });
 
+  it.each([
+    ['early_warning', 'earlyWarning'],
+    ['notification', 'notification'],
+    ['final', 'final'],
+  ])('summarizes a security_incident notice in the %s stage', async (stage, key) => {
+    respondWith([
+      {
+        notices: [
+          notice('s1', 1, {
+            kind: 'security_incident',
+            severity: 'critical',
+            payload: { incidentId: 'inc-1', stage, publishedAt: '2026-11-25T10:00:00.000Z' },
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe(
+      `commands.subscription.notices.summary.securityIncident.${key}:{"date":"2026-11-25"}`
+    );
+  });
+
+  it('prints the bare kind for a security_incident notice with a stage it does not know (control)', async () => {
+    respondWith([
+      {
+        notices: [notice('s2', 1, { kind: 'security_incident', payload: { stage: 'novel' } })],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe('security_incident');
+  });
+
   it('prints a line, not an empty table, when there are no notices', async () => {
     respondWith([{ notices: [], nextCursor: null }]);
     await executeSubscriptionNotices();

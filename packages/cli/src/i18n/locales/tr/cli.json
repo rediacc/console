@@ -3214,6 +3214,11 @@
             "warning": "Adli veri deposu {{quota}} GB içinde {{used}} GB dolu, {{locked}} GB kilitli.",
             "levelCapped": "Kilitli pencere artık sığmadığı için adli veri toplama Basic düzeyine indi. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli.",
             "refused": "Basic düzeyindeki toplama bile sığmadığı için adli veri toplu gönderimleri reddediliyor. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc, {{date}} tarihinde bir güvenlik olayına ilişkin erken uyarı yayımladı.",
+            "notification": "Rediacc, {{date}} tarihinde bir güvenlik olayı bildirimi yayımladı.",
+            "final": "Rediacc, {{date}} tarihinde bir güvenlik olayının nihai raporunu yayımladı."
           }
         }
       }

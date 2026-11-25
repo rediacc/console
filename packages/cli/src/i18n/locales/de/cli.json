@@ -3214,6 +3214,11 @@
             "warning": "Der Forensik-Speicher belegt {{used}} GB von {{quota}} GB, davon sind {{locked}} GB gesperrt.",
             "levelCapped": "Die Forensik-Erfassung wurde auf Basic zurückgestuft, weil das gesperrte Zeitfenster nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt.",
             "refused": "Forensik-Batches werden abgelehnt, weil auch die Basic-Erfassung nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc hat am {{date}} eine Frühwarnung zu einem Sicherheitsvorfall veröffentlicht.",
+            "notification": "Rediacc hat am {{date}} eine Meldung zu einem Sicherheitsvorfall veröffentlicht.",
+            "final": "Rediacc hat am {{date}} den Abschlussbericht zu einem Sicherheitsvorfall veröffentlicht."
           }
         }
       }

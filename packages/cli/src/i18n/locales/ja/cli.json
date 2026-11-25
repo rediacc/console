@@ -3214,6 +3214,11 @@
             "warning": "フォレンジック用ストレージは {{quota}} GB のうち {{used}} GB を使用中で、{{locked}} GB はロックされています。",
             "levelCapped": "ロック済みの期間が収まらなくなったため、フォレンジックの取得を Basic に下げました。{{quota}} GB 中 {{used}} GB 使用、{{locked}} GB ロック。",
             "refused": "Basic の取得も収まらないため、フォレンジックのバッチを拒否しています。{{quota}} GB 中 {{used}} GB 使用、{{locked}} GB ロック。"
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc は {{date}} にセキュリティインシデントの早期警告を公開しました。",
+            "notification": "Rediacc は {{date}} にセキュリティインシデントの通知を公開しました。",
+            "final": "Rediacc は {{date}} にセキュリティインシデントの最終報告を公開しました。"
           }
         }
       }

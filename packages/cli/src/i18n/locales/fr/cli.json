@@ -3214,6 +3214,11 @@
             "warning": "Le stockage forensique utilise {{used}} Go sur {{quota}} Go, dont {{locked}} Go verrouillés.",
             "levelCapped": "La capture forensique est passée en Basic, car la fenêtre verrouillée ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés.",
             "refused": "Les lots forensiques sont refusés, car même la capture Basic ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc a publié une alerte précoce sur un incident de sécurité le {{date}}.",
+            "notification": "Rediacc a publié une notification d'incident de sécurité le {{date}}.",
+            "final": "Rediacc a publié le rapport final d'un incident de sécurité le {{date}}."
           }
         }
       }

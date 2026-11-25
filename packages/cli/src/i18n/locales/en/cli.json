@@ -2801,6 +2801,11 @@
             "warning": "Forensics storage is at {{used}} GB of {{quota}} GB, with {{locked}} GB locked.",
             "levelCapped": "Forensics capture dropped to Basic because the locked window no longer fits. Used {{used}} GB of {{quota}} GB, {{locked}} GB locked.",
             "refused": "Forensics batches are refused because Basic capture does not fit either. Used {{used}} GB of {{quota}} GB, {{locked}} GB locked."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc published an early warning about a security incident on {{date}}.",
+            "notification": "Rediacc published a security incident notification on {{date}}.",
+            "final": "Rediacc published the final security incident report on {{date}}."
           }
         }
       }

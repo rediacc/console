@@ -3214,6 +3214,11 @@
             "warning": "取证存储已用 {{used}} GB，配额 {{quota}} GB，其中 {{locked}} GB 已锁定。",
             "levelCapped": "锁定的时间窗口已放不下，取证采集已降为 Basic。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。",
             "refused": "连 Basic 采集也放不下，取证批次已被拒绝。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。"
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc 于 {{date}} 发布了一起安全事件的早期预警。",
+            "notification": "Rediacc 于 {{date}} 发布了一起安全事件的通报。",
+            "final": "Rediacc 于 {{date}} 发布了一起安全事件的最终报告。"
           }
         }
       }

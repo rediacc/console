@@ -3214,6 +3214,11 @@
             "warning": "L'archiviazione forense occupa {{used}} GB su {{quota}} GB, di cui {{locked}} GB bloccati.",
             "levelCapped": "L'acquisizione forense è passata a Basic perché la finestra bloccata non entra più. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati.",
             "refused": "I batch forensi vengono rifiutati perché nemmeno l'acquisizione Basic entra. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati."
+          },
+          "securityIncident": {
+            "earlyWarning": "Il {{date}} Rediacc ha pubblicato un preallarme su un incidente di sicurezza.",
+            "notification": "Il {{date}} Rediacc ha pubblicato una notifica di incidente di sicurezza.",
+            "final": "Il {{date}} Rediacc ha pubblicato il rapporto finale su un incidente di sicurezza."
           }
         }
       }

@@ -136,6 +136,13 @@ const FORENSICS_STATE_KEYS = {
   refused: 'commands.subscription.notices.summary.forensicsQuota.refused',
 } as const;
 
+/** One literal key per incident stage, so the CLI key-usage gate sees each one referenced. */
+const SECURITY_INCIDENT_STAGE_KEYS = {
+  early_warning: 'commands.subscription.notices.summary.securityIncident.earlyWarning',
+  notification: 'commands.subscription.notices.summary.securityIncident.notification',
+  final: 'commands.subscription.notices.summary.securityIncident.final',
+} as const;
+
 /** Bytes as decimal gigabytes with one fractional digit, the unit the quota is sold in. */
 function gb(value: unknown): string {
   return typeof value === 'number' ? (value / 1e9).toFixed(1) : '-';
@@ -152,6 +159,15 @@ function forensicsQuotaSummary(p: Record<string, unknown>): string {
     quota: gb(p.quotaBytes),
     locked: gb(p.lockedBytes),
   });
+}
+
+/** The stage is the server's three-way enum; a stage this CLI does not know prints as the bare kind. */
+function securityIncidentSummary(p: Record<string, unknown>): string {
+  const stage = p.stage;
+  if (stage !== 'early_warning' && stage !== 'notification' && stage !== 'final') {
+    return 'security_incident';
+  }
+  return t(SECURITY_INCIDENT_STAGE_KEYS[stage], { date: day(p.publishedAt) });
 }
 
 /** The one line a table row carries for a notice. A kind this CLI does not know prints as its own name. */
@@ -187,6 +203,8 @@ function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): strin
       });
     case 'forensics_quota':
       return forensicsQuotaSummary(p);
+    case 'security_incident':
+      return securityIncidentSummary(p);
     default:
       return notice.kind;
   }

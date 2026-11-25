@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3195,
-    "sourceCommit": "be022f272f64a1866522f11cc779d67e9d9fea1f"
+    "keyCount": 3198,
+    "sourceCommit": "a4efbb47c889845450d5701d5722c79c89066332"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2436,6 +2436,9 @@
     "commands.subscription.notices.summary.forensicsQuota.warning": "114feffa",
     "commands.subscription.notices.summary.licenceRenewal": "56e38656",
     "commands.subscription.notices.summary.repoLicence": "e0671574",
+    "commands.subscription.notices.summary.securityIncident.earlyWarning": "e0da1a68",
+    "commands.subscription.notices.summary.securityIncident.final": "af91ba68",
+    "commands.subscription.notices.summary.securityIncident.notification": "e78111db",
     "commands.subscription.notices.summary.termsNotice": "0209528d",
     "commands.subscription.proxyToken.description": "3cf16ae5",
     "commands.subscription.proxyToken.descriptionShort": "3cf16ae5",

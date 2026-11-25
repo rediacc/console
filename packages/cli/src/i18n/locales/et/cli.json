@@ -3214,6 +3214,11 @@
             "warning": "Kohtuekspertiisi salvestus kasutab {{used}} GB kvoodist {{quota}} GB, millest {{locked}} GB on lukus.",
             "levelCapped": "Kohtuekspertiisi jäädvustus langes tasemele Basic, sest lukustatud ajaaken ei mahu enam ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB.",
             "refused": "Kohtuekspertiisi partiisid lükatakse tagasi, sest isegi Basic-jäädvustus ei mahu ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc avaldas {{date}} turvaintsidendi varajase hoiatuse.",
+            "notification": "Rediacc avaldas {{date}} turvaintsidendi teate.",
+            "final": "Rediacc avaldas {{date}} turvaintsidendi lõpparuande."
           }
         }
       }

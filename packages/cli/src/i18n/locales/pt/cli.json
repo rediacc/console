@@ -3214,6 +3214,11 @@
             "warning": "O armazenamento forense usa {{used}} GB de {{quota}} GB, com {{locked}} GB bloqueados.",
             "levelCapped": "A captura forense passou para Basic porque a janela bloqueada já não cabe. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados.",
             "refused": "Os lotes forenses são recusados porque nem a captura Basic cabe. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados."
+          },
+          "securityIncident": {
+            "earlyWarning": "A Rediacc publicou, em {{date}}, um alerta precoce sobre um incidente de segurança.",
+            "notification": "A Rediacc publicou, em {{date}}, uma notificação de incidente de segurança.",
+            "final": "A Rediacc publicou, em {{date}}, o relatório final de um incidente de segurança."
           }
         }
       }

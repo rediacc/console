@@ -3214,6 +3214,11 @@
             "warning": "포렌식 저장소가 {{quota}} GB 중 {{used}} GB를 사용 중이며, {{locked}} GB는 잠겨 있습니다.",
             "levelCapped": "잠긴 기간이 더 이상 들어가지 않아 포렌식 수집이 Basic으로 낮아졌습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김.",
             "refused": "Basic 수집조차 들어가지 않아 포렌식 배치를 거부하고 있습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김."
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc가 {{date}}에 보안 사고에 대한 조기 경보를 게시했습니다.",
+            "notification": "Rediacc가 {{date}}에 보안 사고 통지를 게시했습니다.",
+            "final": "Rediacc가 {{date}}에 보안 사고 최종 보고서를 게시했습니다."
           }
         }
       }
