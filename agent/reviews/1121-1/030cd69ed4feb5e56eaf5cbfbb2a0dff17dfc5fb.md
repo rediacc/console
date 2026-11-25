@@ -22,4 +22,4 @@ Body-Sig: b4ea20c6fd4587d1
 Anchor: in-diff
 Claim: The English singular moves from runAnimationSteps_one to the base key runAnimationSteps, so count=1 resolves only through i18next's fall-back to the base key, and no test in this diff asserts the resolved plural strings per locale, so a later key rename would pass the existing 22-test run unnoticed.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed fd1de395c79656d464fd377c3fa5056bf90a66d0 | d778be9d 2026-11-25T01:46:26Z
