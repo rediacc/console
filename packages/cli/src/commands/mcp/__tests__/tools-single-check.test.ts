@@ -266,6 +266,7 @@ describe('the fork-blocked check the MCP server leaves to the child (review aa3f
   it('control: the same command on the grand repo is not stopped by the fork check', async () => {
     const env = { ...process.env, REDIACC_AGENT: '1', REDIACC_ALLOW_GRAND_REPO: 'shop' };
     const { out } = await autostartDisable(env);
+    expect(child.reached, `the child stopped short: ${out}`).toHaveBeenCalled();
     expect(forkRefusal(out)).not.toContain('fork repositories');
   });
 
