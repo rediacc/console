@@ -1302,11 +1302,13 @@ function selftest(): number {
     .split('\0')
     .filter((f) => f !== '');
   ck(`could-affect: the www source tree is seen at all (${www.length} path(s))`, www.length > 100);
+  // A www page MAY carry a region (the MCP tool tables of ai-agents-mcp.md do), and a writer owning that page is rightly told so. What must stay true is that NO PROVIDER READS the www tree: every www hit is a marker-bearing target, never an input or the machinery.
   const wwwHits = couldAffect(ROOT, www);
+  const wwwNonTargets = wwwHits.filter((h) => h.why !== 'target');
   ck(
-    'control: an Owns of packages/www/src/** could move no provider and no region',
-    wwwHits.length === 0,
-    wwwHits.slice(0, 6)
+    `control: an Owns of packages/www/src/** could move no provider (${wwwHits.length} region target(s) named, ${wwwNonTargets.length} other hit(s))`,
+    wwwNonTargets.length === 0,
+    wwwNonTargets.slice(0, 6)
   );
   const anyPath: Provider = { ...P, id: 'reads-everything', inputs: { scope: () => true } };
   ck(
