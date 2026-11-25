@@ -22,10 +22,17 @@
  * config, to be routed to.
  */
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { ExecutorCapacity } from './capacity';
 import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
-import type { ExecutorRefusalCode, OrgExecutor, PinAnswer } from './org-executor';
+import type {
+  ExecutorRefusalCode,
+  McpCallAnswer,
+  McpCallForward,
+  OrgExecutor,
+  PinAnswer,
+} from './org-executor';
 import { executorName, placementOf } from './placement';
 import { internalOccupancy, readiness } from './ready';
 import {
@@ -162,7 +169,7 @@ function startRefused(code: ExecutorRefusalCode, span: RuntimeSpan | undefined):
 }
 
 /** The slice of an OrgExecutor stub the Worker calls, typed from the class itself so a signature change there fails the typecheck here. */
-type OrgExecutorStub = Pick<OrgExecutor, 'oomAt' | 'oomHeavyAt' | 'pin'> & {
+type OrgExecutorStub = Pick<OrgExecutor, 'mcpCall' | 'oomAt' | 'oomHeavyAt' | 'pin'> & {
   fetch(request: Request): Promise<Response>;
 };
 
@@ -293,6 +300,48 @@ async function operationalRoute(
     return answered;
   }
   return undefined;
+}
+
+/**
+ * Where a hosted MCP call runs: the grant's org and executor placement, as the MCP Worker resolved them through the account Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 4).
+ */
+export interface McpCallRouting {
+  orgId: string;
+  placement: number;
+  /** The org's executor tier; a missing tier is `standard`. */
+  tier?: string;
+}
+
+/**
+ * The entrypoint the MCP Worker's `EXECUTOR` service binding names (agent/plans/PLAN-rmcp-remote-worker.md Design 1). An RPC entrypoint, not a fetch route: no request from the internet can address it, so the routing the MCP Worker resolved is trusted here the way `ExecutorIssuer.route`'s answer is on the fetch path, and the call reaches the org's container through `OrgExecutor.mcpCall` with the forward as its body.
+ */
+export class McpExecutor extends WorkerEntrypoint<Env> {
+  async call(routing: McpCallRouting, forward: McpCallForward): Promise<McpCallAnswer> {
+    return await mcpCallVia(this.env, routing, forward);
+  }
+}
+
+/** The body of `McpExecutor.call`. Not exported: every export of this module must be an entrypoint or a Durable Object class. Every refusal is a code, never a guess. */
+async function mcpCallVia(
+  env: Env,
+  routing: McpCallRouting,
+  forward: McpCallForward
+): Promise<McpCallAnswer> {
+  const placement = placementOf(routing.placement);
+  const namespace = env.ORG_EXECUTOR;
+  if (!namespace || typeof routing.orgId !== 'string' || routing.orgId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  if (placement === undefined) return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  const tenant: Tenant = { orgId: routing.orgId, tier: tierOf(routing.tier), placement };
+  try {
+    const { stub, answer } = await pinAtPlacement(namespace, tenant, undefined);
+    // A relocated org is not re-routed here: the MCP Worker's grant answer names the placement, and its next resolution names the new one.
+    if (!answer.ok) return { ok: false, code: answer.code, status: 503 };
+    return await stub.mcpCall(forward);
+  } catch {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
 }
 
 export default {

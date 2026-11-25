@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vitest';
 import snapshot from '../../../../packages/shared/src/mcp/__tests__/tools-list.snapshot.json' with {
   type: 'json',
 };
-import type { GrantContext, GrantScope } from '../scope.js';
+import type { GrantCaller } from '../call.js';
+import type { GrantScope } from '../scope.js';
 import { createMcpTransport, type McpTransport } from '../transport.js';
 
 const HOST = 'mcp.eu.rediacc.cloud';
@@ -21,8 +22,11 @@ function transportWith(scope: GrantScope = FULL): McpTransport {
   return createMcpTransport({
     host: HOST,
     serverVersion: '0.0.0-test',
-    resolveGrant: async (grantId): Promise<GrantContext | null> =>
-      grantId === GRANT_ID ? { grantId, scope } : null,
+    resolveGrant: async (grantId): Promise<GrantCaller | null> =>
+      grantId === GRANT_ID
+        ? { grant: { grantId, scope, orgId: 'org-t1', placement: 0 }, secret: 'unused' }
+        : null,
+    executor: undefined,
   });
 }
 
