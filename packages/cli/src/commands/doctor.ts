@@ -23,6 +23,7 @@ import { findOnPath, type PathLookupOptions } from '../services/tools/path-looku
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
+import { getSecureStorage, type SecureStorage } from '../utils/secure-storage.js';
 import { VERSION } from '../version.js';
 import { checkSubscription } from './doctor-subscription.js';
 import { toolSourceLabel } from './tools.js';
@@ -306,6 +307,46 @@ function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
   });
 }
 
+export interface SecretStoreCheckDeps {
+  /** The storage selection; defaults to the generic `getSecureStorage()`, which honours REDIACC_SECRET_STORE. */
+  getStorage?: () => SecureStorage;
+}
+
+const SECRET_STORE_HINT =
+  'Linux: install keyutils (keyctl) and run `keyctl link @u @s` if the session keyring is private; or set REDIACC_SECRET_STORE=file';
+
+/** Store, read back and remove a throwaway key through the active backend: the calls a real secret takes. */
+export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise<CheckResult> {
+  const name = 'Secret store';
+  const choice = process.env.REDIACC_SECRET_STORE;
+  try {
+    const storage = (deps.getStorage ?? getSecureStorage)();
+    const key = `rdc:doctor:${process.pid}-${Date.now()}`;
+    const value = `probe-${Math.random().toString(36).slice(2)}`;
+    try {
+      await storage.set(key, value);
+      if ((await storage.get(key)) !== value) {
+        return {
+          name,
+          value: `${storage.type}: a stored secret did not read back`,
+          status: 'fail',
+          hint: SECRET_STORE_HINT,
+        };
+      }
+    } finally {
+      await storage.delete(key).catch(() => undefined);
+    }
+    return {
+      name,
+      value: choice ? `${storage.type} (REDIACC_SECRET_STORE=${choice})` : storage.type,
+      status: 'ok',
+    };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return { name, value: detail, status: 'fail', hint: SECRET_STORE_HINT };
+  }
+}
+
 async function checkConfiguration(): Promise<CheckSection> {
   const checks: CheckResult[] = [];
   const contextName = configService.getCurrentName();
@@ -322,6 +363,7 @@ async function checkConfiguration(): Promise<CheckSection> {
   );
   await checkMachineCount(checks);
   checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
+  checks.push(await checkSecretStore());
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 

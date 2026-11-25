@@ -166,6 +166,33 @@ def test_the_table_covers_the_toolchain_acquire_arms() -> None:
     assert arms - {row.name for row in tools.TOOLS} == set()
 
 
+def test_the_linux_secret_store_tools_have_rows_for_every_linux_manager() -> None:
+    """`rdc` needs keyctl on Linux; a missing row left the first command after setup failing.
+
+    The package names are asserted too: apt calls the Secret Service client libsecret-tools, the others libsecret.
+    """
+    by_name = {row.name: row for row in tools.TOOLS}
+    expected = {
+        "keyctl": {"apt": "keyutils", "dnf": "keyutils", "pacman": "keyutils", "apk": "keyutils"},
+        "secret-tool": {
+            "apt": "libsecret-tools",
+            "dnf": "libsecret",
+            "pacman": "libsecret",
+            "apk": "libsecret",
+        },
+    }
+    for name, packages in expected.items():
+        assert name in by_name, "no %s row" % name
+        row = by_name[name]
+        assert row.probe is not None
+        assert row.probe[0] == name
+        assert "LINUX-ONLY" in row.note
+        for manager in tools.LINUX_MANAGERS:
+            command = row.install[manager]
+            assert re.search(r"\b%s\b" % re.escape(packages[manager]), command), (name, manager)
+        assert row.install["brew"].startswith("echo ")
+
+
 # --------------------------------------------------------------------------- The program contract: exit codes and streams ---------------------------------------------------------------------------
 
 
