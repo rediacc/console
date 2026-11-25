@@ -22,28 +22,28 @@ Body-Sig: 763854f041b28993
 Anchor: in-diff
 Claim: The subject witness suppresses the notice for a refused commit whose -m subject equals HEAD's current subject (e.g. a repeated 'wip' or 'fix' message), so that refusal is silent, which is the failure this commit is meant to stop.
 Class: other
-Resolution: open
+Resolution: fixed f968db1797a7b48760e861498b1d73c54abc5e69 | d778be9d 2026-11-25T11:55:47Z
 
 ### 433dcdb5.2 [low] .claude/rediacc_hooks/tests/test_post_bash_commit_landed.py:156
 Anchor: in-diff
 Claim: The subject-witness test never runs a commit in its own call (only g.py is staged after an earlier shell commit), so it passes on a not-landed commit and pins the silence from review_commit.py line 208 rather than testing a parallel landed commit.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed f968db1797a7b48760e861498b1d73c54abc5e69 | d778be9d 2026-11-25T11:55:47Z
 
 ### 433dcdb5.3 [low] .claude/hooks/post-bash/review_commit.py:236
 Anchor: in-diff
 Claim: If trigger_lines raises here, main() exits before record_heads at line 238 runs, so the HEAD record stays stale and a later refused commit in that session goes unreported.
 Class: other
-Resolution: open
+Resolution: fixed f968db1797a7b48760e861498b1d73c54abc5e69 | d778be9d 2026-11-25T11:55:47Z
 
 ### 433dcdb5.4 [low] .claude/hooks/post-bash/review_commit.py:210
 Anchor: in-diff
 Claim: A `git commit --dry-run` with paths staged leaves HEAD unmoved, so it is reported as COMMIT DID NOT LAND and told to be rerun, though a dry run never intends to land; no test covers this.
 Class: other
-Resolution: open
+Resolution: fixed f968db1797a7b48760e861498b1d73c54abc5e69 | d778be9d 2026-11-25T11:55:47Z
 
 ### 433dcdb5.5 [low] .claude/hooks/post-bash/review_commit.py:6
 Anchor: in-diff
 Claim: The module docstring still says 'TWO JOBS, BOTH CHEAP' and lists only trigger and surface, while the module now also performs the commit-landed check and HEAD recording.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed f968db1797a7b48760e861498b1d73c54abc5e69 | d778be9d 2026-11-25T11:55:47Z
