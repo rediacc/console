@@ -38,15 +38,19 @@ _NOTE_API_RE = re.compile(r"terminated early due to an API error|API Error", re.
 
 
 def _tail_lines(path, tail_bytes):
-    try:
-        size = path.stat().st_size
-        with path.open("rb") as fh:
-            if size > tail_bytes:
-                fh.seek(size - tail_bytes)
-                fh.readline()
-            blob = fh.read()
-    except (OSError, AttributeError, TypeError):
+    """The whole lines in the last `tail_bytes` of `path`, a partial first line dropped; [] when it cannot be read.
+
+    Read through `wl_core.tail_bytes`, the Stop run's one memoized transcript reader: opening the file here made a stop read the parent transcript a second time (test_wl_stop_speed_reads.py).
+    """
+    import wl_core
+
+    got = wl_core.tail_bytes(path, tail_bytes)
+    if got is None:
         return []
+    _size, start, blob = got
+    if start > 0:
+        cut = blob.find(b"\n")
+        blob = b"" if cut < 0 else blob[cut + 1 :]
     return blob.decode("utf-8", errors="replace").splitlines()
 
 
