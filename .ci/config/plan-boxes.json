@@ -2011,24 +2011,24 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 3,
+      "open": 7,
+      "done": 6,
       "open_sigs": [
         "06d04335",
         "081f7c45",
         "2fffdcc9",
-        "69e8b793",
         "a2e0ffd0",
-        "a95c860b",
         "c0384c17",
         "d9efbe05",
-        "f1d2facd",
-        "f392088c"
+        "f1d2facd"
       ],
       "done_sigs": [
         "2202d690",
+        "69e8b793",
         "8d487a0e",
-        "d0224321"
+        "a95c860b",
+        "d0224321",
+        "f392088c"
       ]
     },
     "agent/plans/PLAN-forensics-investigation.md": {
