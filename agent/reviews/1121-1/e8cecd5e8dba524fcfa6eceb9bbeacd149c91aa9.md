@@ -22,10 +22,10 @@ Body-Sig: 70c474c0265e9d23
 Anchor: in-diff
 Claim: When the stored token is valid (rc 0) but the account server is not the dev gateway and the gateway is unhealthy, the NotVerifiedError says 'the stored token is refused', which is false: the token was accepted and only its server was wrong.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 8b6b4ac1ec2b90e0d9e31771b4a27606afee3bde | d778be9d 2026-11-25T15:00:08Z
 
 ### e8cecd5e.2 [medium] .ci/rediacc_ci/drills/vm_check.py:3011
 Anchor: in-diff
 Claim: The port comparison and the VM-network-address acceptance in _stored_server_is_dev_gateway are new behaviour with no test: the only new test uses a production https host, so a loopback server on the wrong port or a config pointing at the VM-network address would be misclassified and nothing would fail.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 8b6b4ac1ec2b90e0d9e31771b4a27606afee3bde | d778be9d 2026-11-25T15:00:09Z
