@@ -509,9 +509,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 93 | 8 | 1 | 15365 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
-| `agent/plans/PLAN-console-ai-providers.md` | approved | 139 | 8 | 7 | 23320 |
+| `agent/plans/PLAN-console-ai-providers.md` | approved | 141 | 6 | 9 | 23710 |
 | `agent/plans/PLAN-console-animations.md` | approved | 95 | 3 | 6 | 13444 |
-| `agent/plans/PLAN-console-audit-r2.md` | approved | 127 | 4 | 9 | 22035 |
+| `agent/plans/PLAN-console-audit-r2.md` | approved | 128 | 3 | 10 | 22260 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 139 | 2 | 14 | 26456 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 125 | 1 | 10 | 22793 |
 | `agent/plans/PLAN-console-contract-semantics.md` | approved | 133 | 4 | 11 | 26076 |

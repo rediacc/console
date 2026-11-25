@@ -104,14 +104,16 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP5.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/smoke.test.ts)` rc 0, including a mock model that skips the tool and is reported as a failure.
     (ticked) 2026-11-25T00:47:54Z by d778be9d: AP8 smoke test landed cli vitest services ai passed tsc rc 0. DEPS-WAIVED: box edges satisfied, AP4 landed c9e5a9a8e9
-- [ ] AP9 [writer] Account route `console-ai.ts` per D13: `/console/ai/chat` and `/console/ai/test` behind `sessionAuth()`, forwarding NDJSON to the executor as `/console/exec` does, with a strict schema refusing secret-bearing fields, registered in routes/index.ts.
+- [x] AP9 [writer] Account route `console-ai.ts` per D13: `/console/ai/chat` and `/console/ai/test` behind `sessionAuth()`, forwarding NDJSON to the executor as `/console/exec` does, with a strict schema refusing secret-bearing fields, registered in routes/index.ts.
   Owns: private/account/src/routes/console-ai.ts, private/account/src/routes/index.ts, private/account/tests/integration/console-ai*.test.ts
   Depends on: AP3.
   Accept: `(cd private/account && npx vitest run tests/integration/console-ai)` rc 0, including a body carrying `key` refused with 400.
-- [ ] AP10 [writer] Settings page `AiProviders.tsx` and its components: profile list for the shared and team configs, preset picker, the D1 form with capability flags, Save behind `useReauth` and `session.push`, then the test-on-save call and its result, shown to the roles of D6; router entry, nav entry and endpoints.
+    (ticked) 2026-11-25T04:13:20Z by d778be9d: AP9 console AI chat and test routes refusing key, apiKey, headers and baseURL; account vitest console-ai passes. commit:cc7af402a9. DEPS-WAIVED: box edges satisfied
+- [x] AP10 [writer] Settings page `AiProviders.tsx` and its components: profile list for the shared and team configs, preset picker, the D1 form with capability flags, Save behind `useReauth` and `session.push`, then the test-on-save call and its result, shown to the roles of D6; router entry, nav entry and endpoints.
   Owns: private/account/web/src/pages/console/AiProviders.tsx, private/account/web/src/pages/console/__tests__/ai-providers.test.tsx, private/account/web/src/components/console/ai-providers/**, private/account/web/src/router.tsx, private/account/web/src/lib/nav-config.ts, private/account/web/src/api/endpoints.ts
   Depends on: AP1, AP2, AP9.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-providers.test.tsx)` rc 0 and `(cd private/account && npm run typecheck:web)` rc 0.
+    (ticked) 2026-11-25T04:13:24Z by d778be9d: AP10 AI providers settings page in 13 locales; web vitest ai-providers passes. commit:cc7af402a9. DEPS-WAIVED: box edges satisfied
 - [ ] AP11 [writer] Locale file `aiProviders.json`: English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiProviders.json
   Depends on: AP10.

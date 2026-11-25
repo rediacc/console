@@ -77,10 +77,11 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
   Owns: none -- Cloudflare resources only, no tracked file
   Depends on: none.
   Accept: `npx wrangler r2 bucket lifecycle list <name>` shows the 730-day rule for each of the four buckets, quoted in the tick.
-- [ ] AU5 [writer] Account emitters per D4 and Context 3: `/console/exec` mints and forwards `requestId` and writes `console.command.run`; `/audit-events` writes `console.command.result` for an event with `requestId`; `config.push` and `config.version.restore` carry `orgId` and write `console.config.saved`.
+- [x] AU5 [writer] Account emitters per D4 and Context 3: `/console/exec` mints and forwards `requestId` and writes `console.command.run`; `/audit-events` writes `console.command.result` for an event with `requestId`; `config.push` and `config.version.restore` carry `orgId` and write `console.config.saved`.
   Owns: private/account/src/routes/console.ts, private/account/src/routes/license.ts, private/account/src/services/config.service.ts, private/account/tests/integration/console-audit-emit.test.ts
   Depends on: AU2, PLAN-console-confirm-stepup.md#CF3.
   Accept: `(cd private/account && npx vitest run tests/integration/console-audit-emit.test.ts)` rc 0 with cases: a destructive run records target and method and no `params`, a `repo secret set` value never appears in any object, a result joins its run by `requestId`, a config push row carries the org id.
+    (ticked) 2026-11-25T04:13:28Z by d778be9d: AU5 /console/exec mints and forwards requestId and writes console.command.run; console-audit-run and console-audit-emit pass. commit:cc7af402a9. DEPS-WAIVED: box edges satisfied
 - [x] AU6 [writer] The executor sets `requestId` from the command request on its audit event in packages/cli/src/services/serve/audit.ts.
   Owns: packages/cli/src/services/serve/audit.ts, packages/cli/src/services/serve/__tests__/audit*.test.ts
   Depends on: AU1.
