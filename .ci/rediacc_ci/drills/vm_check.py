@@ -1256,6 +1256,10 @@ class Host:
             found.append(pathlib.Path(home) / ".ssh" / ALIAS_CONFIG)
         return found
 
+    def proc_mounts(self) -> str:
+        """The text of /proc/mounts; an unreadable file raises OSError for the caller to name."""
+        return pathlib.Path("/proc/mounts").read_text()
+
     def disk_space(self, disk_dir: str) -> tuple[int, int]:
         """(bytes available at `disk_dir`, allocated bytes of the VM system and ceph disks under it): the free space is read at the nearest existing parent, as renet does (`inspectFilesystem`), and the disks are the ones `reclaimedDiskBytes` credits."""
         probe = pathlib.Path(disk_dir)
@@ -1400,6 +1404,20 @@ class DrillAccount:
 
 
 # --------------------------------------------------------------------------- the lock
+
+
+def tmp_is_tmpfs(mounts: str, path: str = "/tmp") -> bool:
+    """Whether `path` lives on a tmpfs, read from /proc/mounts text: the longest mount point that holds it decides (a /tmp without a mount of its own sits on its parent)."""
+    best = ("", "")
+    for line in mounts.splitlines():
+        fields = line.split()
+        if len(fields) < 3:
+            continue
+        point, fstype = fields[1].replace("\\040", " "), fields[2]
+        inside = point in ("/", path) or path.startswith(point.rstrip("/") + "/")
+        if inside and len(point) >= len(best[0]):
+            best = (point, fstype)
+    return best[1] == "tmpfs"
 
 
 def lock_path(environ: Mapping[str, str] | None = None) -> pathlib.Path:
@@ -1823,6 +1841,7 @@ class VmCheck:
         self.rdc_sh = str(root / "rdc.sh")
         self.renet_bin = root / trigger.RENET_SUBMODULE / "bin" / "renet"
         self.ssh_user = vm_ssh.default_user(self.environ)
+        self._disk_tmpdir()
         self.ssh_key = vm_ssh.default_key(self.environ)
         self.bridge_ip = opts.net_base + BRIDGE_SUFFIX
         self.worker_ip = opts.net_base + WORKER_SUFFIX
@@ -1903,6 +1922,21 @@ class VmCheck:
         self.tags: tuple[str, str] = ("", "")
 
     # ------------------------------------------------------------------ output
+
+    def _disk_tmpdir(self) -> None:
+        """Points TMPDIR at a disk directory under the receipt cache (`.ci/cache/vm-check/tmp`, never the tmpfs-backed work dir) when /tmp is a tmpfs, for every child (CLI calls, suites, drills): a per-user tmpfs quota (usrquota) made the A1.1 server suite fail with EDQUOT on a native host (2026-11-25). An exported TMPDIR is the caller's choice and stays; an unreadable /proc/mounts is said, and the environment is left as found."""
+        if self.environ.get("TMPDIR"):
+            return
+        try:
+            on_tmpfs = tmp_is_tmpfs(self.host.proc_mounts())
+        except OSError as exc:
+            self.say("        /proc/mounts is unreadable (%s); TMPDIR is left unset" % exc)
+            return
+        if not on_tmpfs:
+            return
+        tmp = self.root / receipt_mod.CACHE_DIR / "tmp"
+        tmp.mkdir(parents=True, exist_ok=True)
+        self.environ["TMPDIR"] = str(tmp)
 
     def say(self, text: str = "") -> None:
         print(text, file=self.out)
@@ -2980,9 +3014,14 @@ class VmCheck:
                 "        the config's stored token is valid, but its account server is not the dev gateway; a production token is no proof the gateway works, so a dev token is minted"
             )
         if not self.account.gateway_healthy():
+            why = (
+                "the stored token is valid but its account server is not the dev gateway"
+                if stored.rc == 0
+                else "the stored token is refused"
+            )
             raise NotVerifiedError(
                 "account-unavailable",
-                "the stored token is refused and no healthy dev gateway answers; start one with ./run.sh account dev",
+                "%s and no healthy dev gateway answers; start one with ./run.sh account dev" % why,
             )
         addr = self.host.vm_net_address(self.opts.net_base) or ""
         self.minted_on_loopback = not addr

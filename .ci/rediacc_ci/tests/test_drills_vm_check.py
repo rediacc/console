@@ -225,6 +225,9 @@ class World(vm_check.Host):
         self.dev_list_err = over.pop("dev_list_err", "")
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
+        # /proc/mounts as the host reads it: /tmp on the root disk unless a test mounts a tmpfs there; `mounts_error` makes the read fail.
+        self.mounts = over.pop("mounts", "/dev/sda1 / ext4 rw 0 0\n")
+        self.mounts_error = over.pop("mounts_error", "")
         # The account server the default config names; the dev gateway unless a test plants a production origin.
         self.stored_server = over.pop("stored_server", "http://localhost:%s" % GATEWAY_PORT)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
@@ -352,6 +355,11 @@ class World(vm_check.Host):
 
     def stored_account_server(self, _environ: Any) -> str:
         return self.stored_server
+
+    def proc_mounts(self) -> str:
+        if self.mounts_error:
+            raise OSError(self.mounts_error)
+        return self.mounts
 
     def vm_net_address(self, net_base: str) -> str | None:
         assert net_base == NET
@@ -5638,3 +5646,104 @@ def test_resolve_pin_refuses_a_clone_not_at_the_commit_and_a_non_ancestor(
     assert "names no commit" in str(vm_check.resolve_pin(live, "f" * 40, env))
     vcs(live, "checkout", "-q", "--detach", first)
     assert "not an ancestor" in str(vm_check.resolve_pin(live, tip, env))
+
+
+TMPFS_MOUNTS = "/dev/sda1 / ext4 rw 0 0\ntmpfs /tmp tmpfs rw,usrquota 0 0\n"
+
+
+def _tmpdirs(world: World) -> set[str | None]:
+    return {e.get("TMPDIR") for e in world.envs}
+
+
+def test_a_tmpfs_tmp_gives_every_child_a_disk_tmpdir(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    dirs = _tmpdirs(world)
+    assert len(dirs) == 1, dirs
+    (chosen,) = dirs
+    assert chosen
+    assert pathlib.Path(chosen) == world.root / receipt_mod.CACHE_DIR / "tmp"
+    assert pathlib.Path(chosen).is_dir()
+
+
+def test_a_disk_tmp_leaves_tmpdir_unset(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _tmpdirs(world) == {None}
+
+
+def test_an_exported_tmpdir_wins_over_the_tmpfs_rule(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    rc, out, _ = run_check(tmp_path, world, env={"TMPDIR": "/var/tmp/mine"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _tmpdirs(world) == {"/var/tmp/mine"}
+
+
+def test_an_unreadable_proc_mounts_is_named_and_leaves_tmpdir_unset(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, mounts_error="Permission denied")
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "/proc/mounts is unreadable (Permission denied)" in out, out
+    assert _tmpdirs(world) == {None}
+
+
+def test_tmp_is_tmpfs_follows_the_longest_mount_point() -> None:
+    assert vm_check.tmp_is_tmpfs(TMPFS_MOUNTS)
+    assert not vm_check.tmp_is_tmpfs("/dev/sda1 / ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs("tmpfs /run tmpfs rw 0 0\n/dev/sda1 / ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs(TMPFS_MOUNTS + "/dev/sdb1 /tmp ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs("tmpfs /tmpx tmpfs rw 0 0\n/dev/sda1 / ext4 rw 0 0\n")
+
+
+def test_a_stored_dev_token_on_the_wrong_gateway_port_is_not_the_dev_gateway(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.2: a loopback server on another port is no proof; P4 mints."""
+    world = make_world(tmp_path, stored_ok=True, stored_server="http://localhost:1")
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 1
+
+
+def test_a_stored_token_on_the_vm_network_address_is_the_dev_gateway(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.2 control: the VM-network address on the gateway port keeps the stored token."""
+    world = make_world(
+        tmp_path, stored_ok=True, stored_server="http://%s:%s" % (HOST_ADDR, GATEWAY_PORT)
+    )
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 0
+
+
+class _GatewayNeverHealthyForP4(FakeAccount):
+    """A0 sees a running gateway (`gateway_state`); P4's own health ask fails."""
+
+    def gateway_healthy(self) -> bool:
+        return False
+
+
+def test_a_valid_token_on_a_foreign_server_with_no_gateway_does_not_call_the_token_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.1: the token was accepted; only its server is wrong."""
+    world = make_world(tmp_path, stored_ok=True, stored_server="https://eu.rediacc.cloud")
+    rc, out, receipt = run_check(tmp_path, world, account=_GatewayNeverHealthyForP4())
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    detail = json.dumps(receipt["reason"])
+    assert "stored token is valid but its account server is not the dev gateway" in detail
+    assert "is refused" not in detail
+
+
+def test_a_refused_stored_token_with_no_gateway_still_says_refused(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=False)
+    rc, out, receipt = run_check(tmp_path, world, account=_GatewayNeverHealthyForP4())
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "the stored token is refused and no healthy dev gateway" in json.dumps(receipt["reason"])
