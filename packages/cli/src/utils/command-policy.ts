@@ -36,6 +36,7 @@ import { DecisionError, enforce } from '../services/policy/enforce.js';
 import { readEnvOverrides } from '../services/policy/overrides-env.js';
 import { resolveTarget, type TargetRef } from '../services/policy/target.js';
 import { ERROR_CODES } from '../types/errors.js';
+import type { RemoteConfig } from '../types/index.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { CliExitError } from './cli-exit-error.js';
 import { ValidationError } from './errors.js';
@@ -231,17 +232,30 @@ export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Recovery commands exempt only in one form. `config remote disable --local` is the refusal's own
- * way out when the server path is closed for good (config-remote-unlink.ts); the server-backed
- * form needs the session anyway, so it stays judged.
+ * Recovery commands exempt only in one form, and only for one kind of session failure.
+ * `config remote disable --local` is the refusal's own way out when the server path is closed for
+ * good (config-remote-unlink.ts): the store no longer holds the config, or the server refuses this
+ * account. An unreachable server, a timeout or a 5xx is not that, so the unlink is refused with the
+ * session error; otherwise a member could unlink during an outage and then run as the owner of the
+ * now-local config. The server-backed form needs the session anyway, so it stays judged.
  */
 const LOCAL_FORM_RECOVERY_COMMANDS: ReadonlySet<string> = new Set(['config remote disable']);
 
-/** Whether this run is a session-recovery command in the form that skips the session. */
-function isSessionRecovery(commandPath: string, actionCommand: Command): boolean {
-  if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return true;
-  if (!LOCAL_FORM_RECOVERY_COMMANDS.has(commandPath)) return false;
-  return (actionCommand.opts() as { local?: unknown }).local === true;
+/**
+ * Which session failures leave a run unjudged: `none` refuses every one, `any` admits every one
+ * (SESSION_RECOVERY_COMMANDS), and `closed-server-path` admits only a definitive answer that the
+ * server path is closed for good, by `closedServerPath`, the same test that names `--local` in the
+ * server-backed refusal.
+ */
+type SessionRecovery = 'none' | 'any' | 'closed-server-path';
+
+/** The session failures this run may skip judgement on. */
+function sessionRecoveryOf(commandPath: string, actionCommand: Command): SessionRecovery {
+  if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return 'any';
+  if (!LOCAL_FORM_RECOVERY_COMMANDS.has(commandPath)) return 'none';
+  return (actionCommand.opts() as { local?: unknown }).local === true
+    ? 'closed-server-path'
+    : 'none';
 }
 
 /** The principal and policy a local run is judged with. */
@@ -265,15 +279,15 @@ const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyCo
  * A REMOTE config is judged as the account server names its token's member: the org role and
  * email from `/configs/session` and the effective policy from the policy record
  * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
- * cannot be opened the run is refused with that error, save for a recovery run (`isSessionRecovery`).
+ * cannot be opened the run is refused with that error, save for a recovery run (`sessionRecoveryOf`).
  */
-async function localJudgement(recovery: boolean): Promise<LocalJudgement | null> {
+async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement | null> {
   const kind = isAgentEnvironment() ? 'agent' : 'human';
   const owner: DecisionPrincipal = { kind, userEmail: '', orgRole: 'owner' };
   const name = configService.getCurrentName();
   if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);
-  if (config.remote !== undefined) return remoteJudgement(kind, recovery);
+  if (config.remote !== undefined) return remoteJudgement(kind, recovery, name, config.remote);
   if (config.policy === undefined) return { principal: owner, policy: null };
   const effective = localPolicyCeiling(config);
   for (const document of [effective.org, effective.team]) {
@@ -287,7 +301,9 @@ async function localJudgement(recovery: boolean): Promise<LocalJudgement | null>
 /** The session's principal and policy for a remote config (see `localJudgement`). */
 async function remoteJudgement(
   kind: DecisionPrincipal['kind'],
-  recovery: boolean
+  recovery: SessionRecovery,
+  configName: string,
+  remote: RemoteConfig
 ): Promise<LocalJudgement | null> {
   try {
     const adapter = await configService.getActiveRemoteAdapter();
@@ -300,7 +316,12 @@ async function remoteJudgement(
     const { principal, policy } = await pending;
     return { principal: { kind, ...principal }, policy };
   } catch (error) {
-    if (recovery) return null;
+    if (recovery === 'any') return null;
+    if (recovery === 'closed-server-path') {
+      // Loaded only on this failure path; the unlink module owns the test of a closed server path.
+      const { closedServerPath } = await import('../commands/config-remote-unlink.js');
+      if (closedServerPath(error, configName, remote) !== undefined) return null;
+    }
     throw error;
   }
 }
@@ -450,7 +471,7 @@ async function enforceLocal(
   commandPath: string,
   entry: ContractCommand | undefined,
   target: TargetRef,
-  recovery = false
+  recovery: SessionRecovery = 'none'
 ): Promise<void> {
   if (currentRequestContext() !== undefined) return;
   const judgement = await localJudgement(recovery);
@@ -508,7 +529,7 @@ export async function enforceRootCommand(
 ): Promise<void> {
   if (ACTION_RESOLVED_TARGETS.has(commandPath)) return;
   const target = entry ? targetOf(entry, actionCommand) : {};
-  await enforceLocal(commandPath, entry, target, isSessionRecovery(commandPath, actionCommand));
+  await enforceLocal(commandPath, entry, target, sessionRecoveryOf(commandPath, actionCommand));
 }
 
 /**

@@ -5,8 +5,8 @@
  * with the root hook (`enforceRootCommand`, command-policy-root.test.ts) but the target reading.
  */
 
-import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
-import type { Command } from 'commander';
+import { CLI_CONTRACT, getCommand } from '@rediacc/shared/cli-contract';
+import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
@@ -55,7 +55,9 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
+import { RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
 import { configService } from '../../services/config/config-resources.js';
+import { ConfigServerError } from '../../services/config/config-server-client.js';
 import { auditLog } from '../../services/core/audit-log.js';
 import {
   createOutputState,
@@ -254,14 +256,56 @@ describe('a remote config, judged as the session names its member (D2)', () => {
     for (const path of REFUSED_WITHOUT_SESSION) expect(live).toContain(path);
   });
 
-  it('leaves config remote disable unjudged only in its --local form', async () => {
-    mockIsAgent.mockReturnValue(false);
-    state.adapter = { policyContext: () => Promise.reject(new Error('token expired')) };
-    const local = { opts: () => ({ local: true }) } as unknown as Command;
-    await expect(
-      enforceRootCommand('config remote disable', undefined, local)
-    ).resolves.toBeUndefined();
+  /** `config remote disable --local` as Commander parses it from the contract's own option flags. */
+  function disableLocal(): Command {
+    const entry = getCommand('config remote disable');
+    const command = new Command('disable').exitOverride();
+    for (const option of entry?.options ?? []) command.option(option.flags);
+    return command.parse(['--local'], { from: 'user' });
+  }
+
+  it('reads the --local form through the option the contract names', () => {
+    expect(disableLocal().opts()).toEqual({ local: true });
   });
+
+  const SESSION_NOT_ANSWERED: readonly [string, Error][] = [
+    [
+      'an unreachable server',
+      new RemoteUnreachableError('https://acct.example', new TypeError('fetch failed')),
+    ],
+    [
+      'a 5xx',
+      new RemoteUnreachableError('https://acct.example', new ConfigServerError('bad gateway', 502)),
+    ],
+    ['a token that will not renew', new Error('token expired')],
+  ];
+
+  it.each(SESSION_NOT_ANSWERED)(
+    "refuses a member's config remote disable --local on %s",
+    async (_label, failure) => {
+      mockIsAgent.mockReturnValue(false);
+      state.adapter = { policyContext: () => Promise.reject(failure) };
+      await expect(
+        enforceRootCommand('config remote disable', undefined, disableLocal())
+      ).rejects.toBe(failure);
+    }
+  );
+
+  const SERVER_PATH_CLOSED: readonly [string, Error][] = [
+    ['the store holds no such config (404)', new ConfigServerError('not found', 404)],
+    ['the server refuses this account (403)', new ConfigServerError('forbidden', 403)],
+  ];
+
+  it.each(SERVER_PATH_CLOSED)(
+    'leaves config remote disable --local unjudged when %s',
+    async (_label, failure) => {
+      mockIsAgent.mockReturnValue(false);
+      state.adapter = { policyContext: () => Promise.reject(failure) };
+      await expect(
+        enforceRootCommand('config remote disable', undefined, disableLocal())
+      ).resolves.toBeUndefined();
+    }
+  );
 
   it.each([...SESSION_RECOVERY_COMMANDS])(
     'control: leaves the recovery command %s unjudged when the session cannot be opened',
