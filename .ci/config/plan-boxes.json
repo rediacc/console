@@ -4145,17 +4145,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 2,
+      "done": 4,
       "open_sigs": [
         "43b1dd50",
-        "56e3fe94",
+        "56e3fe94"
+      ],
+      "done_sigs": [
         "75ecf0fc",
         "a9334e2a",
         "f455bccb",
         "fc7bc128"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-store-status.md": {
       "status": "approved",
