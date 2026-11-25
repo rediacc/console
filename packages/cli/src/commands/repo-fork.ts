@@ -57,6 +57,7 @@ import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 import { type ForkKeyState, registerFork, rollbackFork } from './repo-fork-registration.js';
+import { rollbackRefusedStart } from './repo-rollback.js';
 import {
   createForkEventHandler,
   finishTimeline,
@@ -164,7 +165,7 @@ async function startForkJob(
       forkLegOptions(plan, params, renetSteps),
       steps
     );
-    // From here the job's own failure step (rollbackFork) owns the registration, not the caller's catch.
+    // From here the registration is the job's: a failed job's rollbackFork step removes it, a finished one keeps it, and the caller's catch touches neither.
     plan.keyState.jobStarted = true;
     return outcome;
   } catch (error) {
@@ -476,9 +477,9 @@ export async function handleForkAction(
       lease.release();
     }
   } catch (error) {
-    // Once the job exists on the machine the registration and the deployed key stay: the job's own rollbackFork step settles them when it ends.
+    // Once the job exists on the machine, or its state is unknown after a timeout, the registration and the deployed key stay: a failed job's own rollbackFork step settles them, and a finished one keeps them.
     if (keyState.jobStarted !== true && forkGuid !== undefined) {
-      await rollbackFork(forkKey, keyState, forkGuid);
+      await rollbackRefusedStart(error, rollbackFork, forkKey, keyState, forkGuid);
     }
     handleError(error);
   }

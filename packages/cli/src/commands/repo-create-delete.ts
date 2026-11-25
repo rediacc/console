@@ -32,6 +32,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { assertMachineExists } from './_validate.js';
+import { rollbackRefusedStart } from './repo-rollback.js';
 
 function generateCredential(): string {
   return randomBytes(24).toString('base64');
@@ -321,7 +322,9 @@ async function handleRepoCreateOnMachine(
       skipRouterRestart: options.skipRouterRestart,
     });
   } catch (error) {
-    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
+    if (createdGuid !== undefined) {
+      await rollbackRefusedStart(error, rollbackCreateRepo, name, createdGuid);
+    }
     handleError(error);
   }
 }
@@ -411,7 +414,9 @@ async function handleRepoCreateOnDatastore(
       skipRouterRestart: options.skipRouterRestart,
     });
   } catch (error) {
-    if (createdGuid !== undefined) await rollbackCreateRepo(name, createdGuid);
+    if (createdGuid !== undefined) {
+      await rollbackRefusedStart(error, rollbackCreateRepo, name, createdGuid);
+    }
     handleError(error);
   }
 }

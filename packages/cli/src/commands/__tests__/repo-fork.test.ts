@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 
 // i18n stub
 vi.mock('../../i18n/index.js', () => ({
@@ -403,9 +405,23 @@ describe('repo fork: a started job keeps its registration', () => {
     expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the registration and the key when the dispatch timed out and the job state is unknown', async () => {
+    setCommandJobDeps({ store: () => new TicketStore('test', ticketDir) });
+    mockExecute.mockRejectedValueOnce(
+      new CliExitError(ERROR_CODES.NETWORK_ERROR, 'proxy timed out', { retryable: true })
+    );
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'proxy timed out'
+    );
+
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+  });
+
   it('still rolls back when the job never started', async () => {
     setCommandJobDeps({ store: () => new TicketStore('test', ticketDir) });
-    mockExecute.mockRejectedValue(new Error('refused before any job'));
+    mockExecute.mockRejectedValueOnce(new Error('refused before any job'));
 
     await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
       'refused before any job'
