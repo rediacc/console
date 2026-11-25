@@ -21,7 +21,7 @@ import tempfile
 import pytest
 from rediacc_ci import xdist_groups
 from rediacc_ci.core import tmp_capacity
-from rediacc_ci.tests import differential
+from rediacc_ci.tests import differential, scratch_tmp
 
 # The sweep of basetemps a KILLED run left, for every test in both pytest roots; see that module for why it is a plugin rather than code here.
 pytest_plugins = ["rediacc_ci.pytest_tmp"]
@@ -337,9 +337,10 @@ def _named_paths_or_exit(config: pytest.Config) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Drop the harness's project root and AWS_BIN, refuse a temp filesystem below its floor and a named path that does not exist, then install the write record once per process, rooted at the rootdir."""
+    """Drop the harness's project root and AWS_BIN, keep scratch space under the system temp base, refuse a temp filesystem below its floor and a named path that does not exist, then install the write record once per process, rooted at the rootdir."""
     for name in (*HARNESS_ROOT_ENV, *AWS_BIN_ENV):
         os.environ.pop(name, None)
+    scratch_tmp.install(config)
     _tmp_capacity_or_exit(config)
     _named_paths_or_exit(config)
     differential.set_basetemp(config.option.basetemp)

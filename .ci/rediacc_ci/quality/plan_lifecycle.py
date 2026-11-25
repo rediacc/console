@@ -796,10 +796,6 @@ def load_config(root: pathlib.Path) -> dict:
     return json.loads((root / DEFAULT_CONFIG_REL).read_text(encoding="utf-8"))
 
 
-def repo_root() -> pathlib.Path:
-    return resolve_root()[0]
-
-
 def resolve_root() -> tuple[pathlib.Path, bool]:
     """The scan root, and whether a set PLAN_FOLDERS_ROOT was refused, so the repository stands in for the tree the caller named.
 

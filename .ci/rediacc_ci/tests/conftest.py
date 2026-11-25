@@ -2,37 +2,16 @@
 
 from __future__ import annotations
 
-import os
 import shutil
-import tempfile
 from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.quality import seams
 from rediacc_ci.tests import sqlite_tracking
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-
-def pytest_configure(config) -> None:
-    """Keep every test's scratch space under the system temp base, which is the only place `quality.seams` honours a `*_ROOT` override.
-
-    On a host whose TMPDIR points outside `/tmp` (the native host sets `~/.cache/tmp`), `tmp_path` and `tempfile.mkdtemp` landed outside it, every seam was ignored, and the gates under test scanned and wrote the real repository: on 2026-11-25 `test_gate_plan_folders.py` ran `plan_folders --sweep --write` against the tree and `git rm`-ed 34 plan files. A private 0700 directory under the system temp base replaces TMPDIR for the run (subprocesses inherit it) and becomes pytest's basetemp.
-    """
-    # Ubuntu's default umask 002 makes every fixture directory group-writable, which `seams` refuses as a scratch root just the same, so the run creates files with group and other write cleared.
-    current = os.umask(0o022)
-    os.umask(current | 0o022)
-    base = seams.system_temp_base()
-    if base is None or seams.inside_temp(tempfile.gettempdir()):
-        return
-    scratch = tempfile.mkdtemp(prefix="rediacc-pytest-", dir=base)
-    os.environ["TMPDIR"] = scratch
-    tempfile.tempdir = None
-    if config.option.basetemp is None:
-        config.option.basetemp = os.path.join(scratch, "basetemp")
 
 
 @pytest.fixture(autouse=True)

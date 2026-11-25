@@ -311,6 +311,23 @@ def test_a_finished_plan_an_open_item_binds_is_held_not_f2(gate, tmp_path):
     gate.log_pass("F2 holds exactly while the mover's own binding check refuses the move")
 
 
+def test_a_writing_verb_refuses_when_the_root_override_is_refused(gate, tmp_path):
+    """review b49f597f.2: `PLAN_FOLDERS_ROOT` naming a path `seams` refuses (the repository itself, outside the system temp base) falls back to the repository, which a writing verb must not touch: exit 2 naming the variable. The verb names a plan that does not exist, so the run writes nothing even if the refusal were removed. The twin, the same verb at a honoured scratch root, never prints that refusal."""
+    verb = ("--move", "agent/plans/PLAN-does-not-exist.md")
+    env = {"PLAN_FOLDERS_ROOT": str(paths.repo_root())}
+    refused = harness.run(_fixture_argv(*verb), cwd=paths.repo_root(), env=env)
+    gate.assert_exit(2, refused, "an ignored root plus a writing verb must refuse")
+    gate.assert_contains(refused.err, "names a tree this run may not use", "the refusal says why")
+    gate.assert_contains(refused.err, "PLAN_FOLDERS_ROOT", "the refusal names the variable")
+    twin = _gate(_seed(tmp_path, {}), *verb)
+    gate.assert_eq(
+        "names a tree this run may not use" in twin.combined,
+        False,
+        "a honoured root is not refused",
+    )
+    gate.log_pass("a writing verb under a refused root override exits 2 and writes nothing")
+
+
 def test_the_move_refusal_offers_plan_revive_only_for_a_record(gate, tmp_path):
     """`worklist.py --plan-revive` refuses anything but a compacted or parked record, so the refusal of a plain plan must not offer it. The twin, a compacted record, keeps the line. The twin, a record, sits in _done/ where a compacted plan lives; the mover reaches every plan's bindings through `_binding_refusal`, whatever its folder."""
     record_rel = "agent/plans/_done/PLAN-rec.md"
