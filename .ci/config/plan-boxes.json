@@ -3751,13 +3751,12 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 12,
+      "open": 4,
+      "done": 13,
       "open_sigs": [
         "43ed1e7b",
         "4eed4a7d",
         "6f6ad235",
-        "8af4e51e",
         "a8f5898f"
       ],
       "done_sigs": [
@@ -3767,6 +3766,7 @@
         "5b1cee9c",
         "5d5d5243",
         "673d0d14",
+        "8af4e51e",
         "92637737",
         "a3f2f92a",
         "d4f01da9",
