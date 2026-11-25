@@ -1,0 +1,25 @@
+{
+  "$comment": "Parity cases for parity.test.ts (agent/plans/PLAN-rmcp-decide.md box D6). Each case names a row of packages/shared/src/policy/__fixtures__/decision-table.json by id; that row supplies the principal, the command, the target, the policy and the hand-written expectation, so no expectation is repeated here. A case adds only which `surfaces` can express the row. The CLI and the local MCP server judge a local-file config as its owner, the MCP child is always an agent, and an env opt-in counts only when the process ancestry proves a human set it, so a row with a member role or an env opt-in runs on `decide` and `executor` only, a human row never on `mcp`, and a command the MCP server does not expose (`repo resize`) never on `mcp`. `executorDeviation` pins the one place the executor answers differently on purpose (serve/policy.ts noPolicyGrandRefusal): the case is held to that answer, not skipped.",
+  "cases": [
+    { "row": "null-agent-grand-no-optin", "surfaces": ["decide", "cli", "mcp", "executor"] },
+    { "row": "null-agent-fork", "surfaces": ["decide", "cli", "mcp", "executor"] },
+    { "row": "null-agent-destructive-fork", "surfaces": ["decide", "cli", "mcp", "executor"] },
+    { "row": "null-agent-forkblocked-fork", "surfaces": ["decide", "cli", "executor"] },
+    { "row": "null-agent-unresolved-no-optin", "surfaces": ["decide", "cli", "mcp", "executor"] },
+    { "row": "null-human-owner-forkblocked", "surfaces": ["decide", "cli", "executor"] },
+    {
+      "row": "null-human-owner-grand",
+      "surfaces": ["decide", "cli", "executor"],
+      "executorDeviation": {
+        "verdict": "deny",
+        "code": "GRAND_REPO_DENIED",
+        "why": "with no policy document the executor fails closed on a grand repo whatever the role"
+      }
+    },
+    { "row": "restr-human-owner-grand", "surfaces": ["decide", "cli", "executor"] },
+    { "row": "restr-human-fork-in-scope", "surfaces": ["decide", "executor"] },
+    { "row": "restr-human-explicit-deny", "surfaces": ["decide", "executor"] },
+    { "row": "glist-human-unlisted", "surfaces": ["decide", "executor"] },
+    { "row": "restr-agent-optin-exceeds", "surfaces": ["decide", "executor"] }
+  ]
+}
