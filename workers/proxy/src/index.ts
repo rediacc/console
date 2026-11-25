@@ -26,13 +26,9 @@ import { WorkerEntrypoint } from 'cloudflare:workers';
 import type { ExecutorCapacity } from './capacity';
 import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
-import type {
-  ExecutorRefusalCode,
-  McpCallAnswer,
-  McpCallForward,
-  OrgExecutor,
-  PinAnswer,
-} from './org-executor';
+import type { OrgExecutor } from './org-executor';
+import type { McpCallAnswer, McpCallForward } from './org-executor-mcp';
+import type { ExecutorRefusalCode, PinAnswer } from './org-executor-support';
 import { executorName, placementOf } from './placement';
 import { internalOccupancy, readiness } from './ready';
 import {

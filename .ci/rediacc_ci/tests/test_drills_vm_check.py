@@ -31,7 +31,7 @@ from rediacc_ci import paths, well_known
 from rediacc_ci.core import prepare_lock, run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.proof import vm_tier as receipt_mod
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, DATASTORE_PATH
 
 if TYPE_CHECKING:
     import types
@@ -1906,7 +1906,7 @@ def test_a_valid_stored_production_token_takes_the_dev_config_path(
     world = make_world(
         tmp_path,
         stored_ok=True,
-        stored_server="https://eu.rediacc.cloud",
+        stored_server=ACCOUNT_DEFAULT_ORIGIN,
         machines=[{"name": "prod-1", "ip": PROD_IP}],
     )
     account = FakeAccount()
@@ -5734,7 +5734,7 @@ def test_a_valid_token_on_a_foreign_server_with_no_gateway_does_not_call_the_tok
     tmp_path: pathlib.Path,
 ) -> None:
     """e8cecd5e.1: the token was accepted; only its server is wrong."""
-    world = make_world(tmp_path, stored_ok=True, stored_server="https://eu.rediacc.cloud")
+    world = make_world(tmp_path, stored_ok=True, stored_server=ACCOUNT_DEFAULT_ORIGIN)
     rc, out, receipt = run_check(tmp_path, world, account=_GatewayNeverHealthyForP4())
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
     detail = json.dumps(receipt["reason"])

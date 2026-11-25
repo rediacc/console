@@ -17,7 +17,7 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { durationMs, type ExecutorRecord, RENEW_THROTTLE_MS } from '../org-executor';
+import { durationMs, type ExecutorRecord, RENEW_THROTTLE_MS } from '../org-executor-support';
 import {
   flush,
   harness,

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -12,7 +13,7 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
 
 // forensics_level keeps the operate licence tier, so the call names a licensed repository.
 const REPO = e2eRepoGuid();
-const SETTINGS_PATH = `/etc/rediacc/forensics/${REPO}.json`;
+const SETTINGS_PATH = `${WK_ETC_DIR}/forensics/${REPO}.json`;
 
 test.describe
   .serial('Forensics level @bridge', () => {

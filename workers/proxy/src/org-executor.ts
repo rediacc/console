@@ -12,6 +12,12 @@ import { DurableObject } from 'cloudflare:workers';
 import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capacity';
 import { drillProbeTarget } from './drill';
 import {
+  callMcp,
+  isMcpCallPath,
+  type McpCallAnswer,
+  type McpCallForward,
+} from './org-executor-mcp';
+import {
   type ExecutorIdentity,
   outsideProbe,
   pinRefusal,
@@ -69,74 +75,6 @@ import {
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
-
-export {
-  ACCOUNT_EGRESS_HOST,
-  BUSY_PATH,
-  CONTAINER_CALL_TIMEOUT_MS,
-  COORDINATOR_TIMEOUT_MS,
-  durationMs,
-  type EgressReportAnswer,
-  type ExecutorEgressProps,
-  type ExecutorRecord,
-  type ExecutorRefusalCode,
-  executorEnv,
-  isOomExit,
-  MAX_DISPATCH_HOLD_MS,
-  type OrgExecutorEnv,
-  type PinAnswer,
-  READY_TIMEOUT_MS,
-  RENEW_THROTTLE_MS,
-  type RelocateAnswer,
-} from './org-executor-support';
-
-/**
- * The container route a hosted MCP `tools/call` reaches (agent/plans/PLAN-rmcp-remote-worker.md Design 1): the container's grant session (PLAN-rmcp-agent-grants.md Design 4) runs decide() and the command for the grant the body names.
- *
- * Only `mcpCall` reaches it, from the MCP Worker over the `McpExecutor` entrypoint (src/index.ts), which no public request can address. The public forward refuses it like the busy route, so the MCP Worker's scope and rate checks cannot be stepped around with a proxy token.
- */
-export const MCP_CALL_PATH = '/v1/mcp/call';
-
-/**
- * What the MCP Worker hands the container for one `tools/call`. The agent secret `secret` (base64url of `S`) travels in this body and nowhere else: never in a URL, a header or a log line.
- */
-export interface McpCallForward {
-  grantId: string;
-  /** base64url of the agent secret `S`, from which the container derives the grant's keys (PLAN-rmcp-agent-grants.md Design 1). */
-  secret: string;
-  /** The registry tool name, e.g. `repo_list`. */
-  tool: string;
-  /** The tool arguments as the client sent them, `page` included: the container pages, the Worker passes the cursor through. */
-  args: Record<string, unknown>;
-  /** One id per call, for the audit record and the logs. */
-  requestId: string;
-  /** The container answers within this many milliseconds: a run still going by then answers its job handle, and `job_wait` answers its latest status. */
-  attachMs: number;
-}
-
-/**
- * The answer of `mcpCall`. `answer` is the container's JSON body, passed through untouched (the proxy routes, it does not interpret); a refusal carries the Durable Object's or the container's code.
- */
-export type McpCallAnswer =
-  | { ok: true; answer: unknown }
-  | { ok: false; code: string; status: number };
-
-/** Whether `pathname` reaches the container's MCP call route, decoded and with repeated and trailing slashes folded the way the container's router reads it; a pathname that does not decode fails closed. */
-function isMcpCallPath(pathname: string): boolean {
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(pathname);
-  } catch {
-    return true;
-  }
-  return decoded.replace(/\/{2,}/g, '/').replace(/\/+$/, '') === MCP_CALL_PATH;
-}
-
-/** The code of a refused or failed container answer: the body's `code` when it names one, else a code for the HTTP status. */
-async function answerCode(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => undefined)) as { code?: unknown } | undefined;
-  return typeof body?.code === 'string' && body.code !== '' ? body.code : 'EXECUTOR_FAILED';
-}
 
 /** The size named in the out-of-memory log line when the container never reported one. */
 const UNKNOWN_SIZE = 'unknown';
@@ -369,20 +307,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /**
    * One hosted MCP `tools/call` (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 7): POST the forward to the container's MCP call route as the request body, through the same in-flight count and lease as `fetch`, and hand back the container's JSON answer untouched.
    */
-  async mcpCall(forward: McpCallForward): Promise<McpCallAnswer> {
-    const request = new Request(`http://container${MCP_CALL_PATH}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(forward),
-    });
-    const response = await this.forward(request);
-    if (!response.ok)
-      return { ok: false, code: await answerCode(response), status: response.status };
-    try {
-      return { ok: true, answer: await response.json() };
-    } catch {
-      return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
-    }
+  mcpCall(forward: McpCallForward): Promise<McpCallAnswer> {
+    return callMcp(forward, (request) => this.forward(request));
   }
 
   /** The forward behind `fetch` and `mcpCall`: wait out a start, check the instance can serve, then proxy with in-flight counting. */

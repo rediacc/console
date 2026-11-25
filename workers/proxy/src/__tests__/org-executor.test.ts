@@ -25,7 +25,7 @@ import {
   type ExecutorRecord,
   executorEnv,
   READY_TIMEOUT_MS,
-} from '../org-executor';
+} from '../org-executor-support';
 import { flush, harness, IMAGE_V1, IMAGE_V2, LEASE, ORG, T0 } from './helpers/org-executor-harness';
 
 beforeEach(() => {

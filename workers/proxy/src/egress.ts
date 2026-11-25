@@ -18,7 +18,7 @@
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
-import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor';
+import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor-support';
 import { executorName, placementOf } from './placement';
 import { type ProbeTarget, probeTarget, type TargetRefusal } from './reachability';
 import { activeSpan } from './span';

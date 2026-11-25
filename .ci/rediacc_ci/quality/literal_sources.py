@@ -157,8 +157,12 @@ def entry_for(key: str, value: str) -> Entry:
 def region_entries(regions: dict[str, Any]) -> list[Entry]:
     out = []
     for region in regions.get("regions", []):
-        for field in ("domain",):
-            host = str(region.get(field) or "").lower()
+        # `bench.host` is the region's bench account host, which regions.json alone defines; the bench wrangler TOMLs carry it.
+        for field in ("domain", "bench.host"):
+            value: Any = region
+            for part in field.split("."):
+                value = value.get(part) if isinstance(value, dict) else None
+            host = str(value or "").lower()
             if host:
                 out.append(
                     Entry(

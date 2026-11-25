@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
-import type { PinAnswer } from '../org-executor';
+import type { PinAnswer } from '../org-executor-support';
 import * as placementModule from '../placement';
 import { resetReadyCache } from '../ready';
 

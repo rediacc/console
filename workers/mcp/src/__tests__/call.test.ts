@@ -3,8 +3,13 @@
  *
  * The forwarding cases drive the real SDK v2 client through the Worker's fetch face; the timing cases call `callTool` directly under fake timers, since the client's own request timers would race the fake clock.
  */
+
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import {
   ATTACH_WINDOW_MS,
   type CallDeps,
@@ -23,7 +28,7 @@ import type { GrantScope } from '../scope.js';
 import { createMcpTransport } from '../transport.js';
 import { activeGrant, bearerFor, resolverFor, secretTextOf } from './helpers/grant.js';
 
-const HOST = 'mcp.eu.rediacc.cloud';
+const HOST = WK_MCP_EU_HOST;
 const GRANT_ID = 'eu_grant_t2';
 /** base64url(S) of the test grant: anywhere but the forward body is a leak. */
 const SECRET = secretTextOf(GRANT_ID);
@@ -37,7 +42,7 @@ function caller(scope: GrantScope = FULL): GrantCaller {
 }
 
 const reauthUrl = (grantId: string) =>
-  `https://eu.rediacc.cloud/account/mcp/authorize?grant=${grantId}`;
+  `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/mcp/authorize?grant=${grantId}`;
 
 interface Recorded {
   routing: McpCallRouting;
@@ -64,7 +69,7 @@ async function connect(executor: ExecutorBinding, scope: GrantScope = FULL, bodi
   const worker = createMcpTransport({
     host: HOST,
     serverVersion: '0.0.0-test',
-    accountUrl: 'https://eu.rediacc.cloud',
+    accountUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
     resolveGrant: resolverFor([grantWith(scope)]),
     executor,
     newRequestId: () => 'req-fixed',

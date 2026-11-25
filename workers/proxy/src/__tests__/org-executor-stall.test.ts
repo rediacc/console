@@ -17,8 +17,12 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { CONTAINER_CALL_TIMEOUT_MS, type ExecutorRecord, READY_TIMEOUT_MS } from '../org-executor';
-import { COORDINATOR_TIMEOUT_MS } from '../org-executor-support';
+import {
+  CONTAINER_CALL_TIMEOUT_MS,
+  COORDINATOR_TIMEOUT_MS,
+  type ExecutorRecord,
+  READY_TIMEOUT_MS,
+} from '../org-executor-support';
 import { FakeContainer, harness, IMAGE_V1, LEASE, ORG, T0 } from './helpers/org-executor-harness';
 
 /** EXECUTOR_LEG_TOKEN_TTL_MS in private/account/src/routes/console.ts. */

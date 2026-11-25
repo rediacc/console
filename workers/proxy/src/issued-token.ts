@@ -10,7 +10,7 @@
  * The token value is never logged and never handed to the container (src/egress.ts swaps it in on the way out).
  */
 
-import type { RelocateAnswer } from './org-executor';
+import type { RelocateAnswer } from './org-executor-support';
 
 /** What `ExecutorIssuer.issue()` answers: the token and its expiry as an ISO 8601 instant. */
 export interface IssuedToken {

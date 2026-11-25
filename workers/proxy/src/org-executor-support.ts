@@ -2,6 +2,7 @@
  * The constants, types and stateless helpers of `OrgExecutor` (src/org-executor.ts), which re-exports the public ones. Nothing here holds Durable Object state.
  */
 
+import { WK_ACCOUNT_EGRESS_HOST } from '../../../packages/shared/src/config/well-known.generated.js';
 import type { AcquireAnswer, ExecutorCapacity, ExecutorSize } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
 import type { ExecutorIssuerRpc } from './issued-token';
@@ -9,7 +10,7 @@ import { executorName, placementOf } from './placement';
 import type { ProbeResult, ProbeTarget, ProbeVerdict } from './reachability';
 
 /** The host the container addresses the account server by; `interceptOutboundHttp` routes it to the `AccountEgress` entrypoint. A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post a container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. */
-export const ACCOUNT_EGRESS_HOST = 'account.internal';
+export const ACCOUNT_EGRESS_HOST = WK_ACCOUNT_EGRESS_HOST;
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
 const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
 /** `rdc serve` listens here. */

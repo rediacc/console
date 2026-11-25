@@ -17,7 +17,7 @@ vi.mock('cloudflare:workers', () => {
 });
 
 import { type Env, McpExecutor } from '../index';
-import { MCP_CALL_PATH, type McpCallAnswer, type McpCallForward } from '../org-executor';
+import { MCP_CALL_PATH, type McpCallAnswer, type McpCallForward } from '../org-executor-mcp';
 import { executorName } from '../placement';
 import { harness, ORG, T0 } from './helpers/org-executor-harness';
 

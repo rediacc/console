@@ -18,7 +18,7 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { BUSY_PATH, MAX_DISPATCH_HOLD_MS } from '../org-executor';
+import { BUSY_PATH, MAX_DISPATCH_HOLD_MS } from '../org-executor-support';
 import { flush, harness, IDLE_MS, ORG, openStream, T0 } from './helpers/org-executor-harness';
 
 beforeEach(() => {

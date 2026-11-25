@@ -1,8 +1,13 @@
 /**
  * The hosted Worker's transport (agent/plans/PLAN-rmcp-remote-worker.md RW-T1, Design 1), driven by the real SDK v2 client over the Worker's fetch face: a client pinned to 2026-07-28 negotiates through `server/discover`, a 2025-11-25 client opens with `initialize` on the stateless legacy leg, and both must list the same tools as the local stdio server's parity snapshot.
  */
+
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { describe, expect, it } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import snapshot from '../../../../packages/shared/src/mcp/__tests__/tools-list.snapshot.json' with {
   type: 'json',
 };
@@ -10,7 +15,7 @@ import type { GrantScope } from '../scope.js';
 import { createMcpTransport, type McpTransport } from '../transport.js';
 import { activeGrant, bearerFor, resolverFor } from './helpers/grant.js';
 
-const HOST = 'mcp.eu.rediacc.cloud';
+const HOST = WK_MCP_EU_HOST;
 const GRANT_ID = 'grant_t1';
 const URL_ = `https://${HOST}/g/${GRANT_ID}`;
 const MODERN = '2026-07-28';
@@ -22,7 +27,7 @@ function transportWith(scope: GrantScope = FULL): McpTransport {
   return createMcpTransport({
     host: HOST,
     serverVersion: '0.0.0-test',
-    accountUrl: 'https://eu.rediacc.cloud',
+    accountUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
     resolveGrant: resolverFor([activeGrant(GRANT_ID, { scope })]),
     executor: undefined,
   });

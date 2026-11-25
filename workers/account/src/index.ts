@@ -1,4 +1,5 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import { WK_MEDIA_ORIGIN } from '../../../packages/shared/src/config/well-known.generated.js';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
 import { WRITES_FROZEN_QUEUE_DELAY_SECONDS } from '../../../private/account/src/errors.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
@@ -41,7 +42,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "img-src 'self' data:",
     "font-src 'self'",
     // media.rediacc.com serves the local speech model files, which exceed the Workers static-asset limit.
-    "connect-src 'self' https://challenges.cloudflare.com https://media.rediacc.com",
+    `connect-src 'self' https://challenges.cloudflare.com ${WK_MEDIA_ORIGIN}`,
     "frame-src 'self' https://challenges.cloudflare.com",
     "form-action 'self'",
     "base-uri 'self'",

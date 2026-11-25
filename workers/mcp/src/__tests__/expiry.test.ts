@@ -1,16 +1,21 @@
 /**
  * Expiry, revocation and the credential paths (agent/plans/PLAN-rmcp-remote-worker.md RW-T4, Design 3 and 5): an unknown grant and a wrong tag are indistinguishable bare 401s; a grant that stopped serving still lists tools and answers each call with its code and a re-authorization link carrying only the grant id; an OAuth token that expired gets the 401 an OAuth client acts on; a credential in the query string is refused; `x-api-key` is the bearer header's twin.
  */
+
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { describe, expect, it } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import type { AccessTokenCheck } from '../credential.js';
 import type { ExecutorBinding, McpCallForward } from '../executor.js';
 import type { GrantContext, GrantState } from '../scope.js';
 import { createMcpTransport, type McpTransport } from '../transport.js';
 import { activeGrant, bearerFor, resolverFor, secretTextOf } from './helpers/grant.js';
 
-const HOST = 'mcp.eu.rediacc.cloud';
-const ACCOUNT = 'https://eu.rediacc.cloud';
+const HOST = WK_MCP_EU_HOST;
+const ACCOUNT = WK_ACCOUNT_DEFAULT_ORIGIN;
 const LIVE = 'eu_live';
 const METADATA = (grantId: string) =>
   `https://${HOST}/.well-known/oauth-protected-resource/g/${grantId}`;
