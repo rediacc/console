@@ -2806,6 +2806,34 @@ async function selftest(): Promise<number> {
       'CONTROL: git that cannot answer yields no change set, not an empty one read as clean'
     );
   }
+  {
+    // DT7: in a lease the anchor is the merge-base with the main checkout's branch tip; the receipt is not consulted.
+    const fake = (a: readonly string[]): string | undefined => {
+      if (a.join(' ') === '-C /m symbolic-ref --short HEAD') return '1125-1';
+      if (a.join(' ') === '-C /m rev-parse 1125-1') return 'TIP';
+      if (a.join(' ') === 'merge-base HEAD TIP') return 'BASE';
+      return undefined;
+    };
+    require_(
+      leaseAnchor('/m', fake) === 'BASE',
+      'a lease anchors on merge-base(HEAD, live branch tip)'
+    );
+    require_(
+      leaseAnchor('/m', () => undefined) === undefined,
+      'CONTROL: git that cannot answer gives no lease anchor, so the receipt reading applies'
+    );
+    const oneFile = narrowChangeSet({}, 'BASE', (a) =>
+      a.join(' ') === 'diff --cached --name-only'
+        ? ''
+        : a.join(' ') === 'diff --name-only BASE HEAD'
+          ? 'scripts/ci-runner/lease-seed.ts'
+          : undefined
+    );
+    require_(
+      oneFile?.paths.length === 1 && oneFile.paths[0] === 'scripts/ci-runner/lease-seed.ts',
+      'in a lease a one-file change is the whole change set, anchored on the base'
+    );
+  }
   require_(
     receiptDue(parseArgs(['--quick']), false) &&
       !receiptDue(parseArgs(['--quick', '--narrow']), false) &&
@@ -6231,6 +6259,22 @@ function narrowChangeSet(
 }
 
 /**
+ * THE LEASE ANCHOR for `--narrow`: the merge-base of the lease's HEAD with the branch the main checkout holds, which is the commit the lease was cut from. Undefined when git cannot answer, and the receipt reading then applies. `git` is a parameter so the selftest can plant answers.
+ */
+function leaseAnchor(
+  main: string,
+  git: (args: readonly string[]) => string | undefined
+): string | undefined {
+  const branch = git(['-C', main, 'symbolic-ref', '--short', 'HEAD']);
+  const tip = branch
+    ? git(['-C', main, 'rev-parse', branch])
+    : git(['-C', main, 'rev-parse', 'HEAD']);
+  if (tip === undefined || tip === '') return undefined;
+  const base = git(['merge-base', 'HEAD', tip]);
+  return base === undefined || base === '' ? undefined : base;
+}
+
+/**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
 function narrowPlan(
@@ -6240,15 +6284,22 @@ function narrowPlan(
   anchors: readonly Anchor[],
   carried: readonly CarriedEntry[]
 ): { ids?: Set<string>; lines: string[]; error?: string } {
+  const leaseMain = leaseMainOf(REPO_ROOT);
+  const leaseBase = leaseMain === undefined ? undefined : leaseAnchor(leaseMain, gitTry);
   const dest = receiptPathFor(opts);
   let receipt: Partial<Receipt>;
-  try {
-    receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
-  } catch {
-    return {
-      lines: [],
-      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
-    };
+  if (leaseBase !== undefined) {
+    // A lease judges its own change against the base it was cut from: the copied main receipt's fails belong to other work, and re-running them cost about 146 s a run (PLAN-drain-throughput DT7).
+    receipt = { head: leaseBase, failed: [], findings: {} };
+  } else {
+    try {
+      receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
+    } catch {
+      return {
+        lines: [],
+        error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
+      };
+    }
   }
   const gates = specs.filter((s) => s.gate);
   const known = new Set(gates.map((s) => s.id));
@@ -6317,7 +6368,7 @@ function narrowPlan(
     return a.length === 0 ? '0' : `${a.length}: ${a.join(', ')}`;
   };
   const lines = [
-    `ci-runner: --narrow from ${dest} (tree ${(receipt.headTree ?? '').slice(0, 9) || '(none)'}, head ${head.slice(0, 9) || '(none)'}, ${failed.length} failed, ${carriedF.length} of them carried):\n`,
+    `ci-runner: --narrow from ${leaseBase === undefined ? dest : `the lease base ${leaseBase.slice(0, 9)} (main receipt not read)`} (tree ${(receipt.headTree ?? '').slice(0, 9) || '(none)'}, head ${head.slice(0, 9) || '(none)'}, ${failed.length} failed, ${carriedF.length} of them carried):\n`,
     `  F  non-carried fails ${list(F)}\n`,
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
