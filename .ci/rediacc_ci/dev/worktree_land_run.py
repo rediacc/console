@@ -18,6 +18,12 @@ from typing import NamedTuple
 GEN_DOCS = ("npx", "tsx", "scripts/gen/gen-docs.ts", "--write")
 SHARD_CHECK = ("npx", "tsx", "scripts/gates/check-shard-manifest-coverage.ts")
 SHARD_PLACE_RE = re.compile(r"npm run shard:place -- ([A-Za-z0-9._-]+)")
+# A lane `shard:place` refuses (scripts/ci-runner/shard-place.ts PLACE_REFUSED) gets another verb in the gate's line, which only the lead can run: a bucketed lane is rebalanced, quality-code is generated.
+UNPLACEABLE_RE = re.compile(
+    r"^.*?(?:lightest leg|Add it to a leg): (?!npm run shard:place)(npx tsx .+?)\s*$", re.MULTILINE
+)
+REBALANCE_LANE_RE = re.compile(r"--rebalance ([A-Za-z0-9._-]+)")
+FIXES_REVIEW_RE = re.compile(r"^Fixes-Review:\s*(\S+)\s*$", re.MULTILINE)
 BEGIN_MARK = ">>> gen-docs"
 END_MARK = "<<< gen-docs"
 TRAILER_KEYS = ("PR-TASK:", "Plan-Box:")
@@ -93,6 +99,7 @@ class Runner:
     def __init__(self, emit):
         self.emit = emit
         self.rc = 0
+        self.landed: list[tuple[str, str]] = []  # (lease sha, landed sha), in landing order
 
     def step(self, name, rc, detail=""):
         self.emit("step %s rc=%d%s" % (name, rc, (" " + detail) if detail else ""))
@@ -135,38 +142,58 @@ def keep_head_hunks(text: str) -> str:
     return "".join(out)
 
 
-def _resolve_generated(plan, run, gen_cmd, sha):
-    """Resolve the pick in progress when every conflicted path is a `gen-docs` region. False leaves it untouched."""
+def _read(path):
+    """The file's text with its line endings untouched (no universal-newline translation), or None for a missing or non-UTF-8 file."""
+    try:
+        return path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def _resolve_generated(plan, run, gen_cmd, sha, emit):
+    """Resolve the pick in progress when every conflicted path is a `gen-docs` region.
+
+    None: not applicable (a conflict outside the regions, a modify/delete or binary conflict); nothing was touched. True: resolved and continued. False: a step failed after the first file was rewritten; the stop line naming the paths has been emitted and the pick is left in progress.
+    """
     paths = _unmerged(plan.live)
     if not paths:
+        return None
+    texts = [_read(plan.live / p) for p in paths]
+    if not all(t is not None and confined_to_generated(t) for t in texts):
+        return None
+
+    def stop(step):
+        emit(
+            "stop: %s failed for %s; the cherry-pick is left in progress" % (step, " ".join(paths))
+        )
         return False
-    if not all(confined_to_generated((plan.live / p).read_text(encoding="utf-8")) for p in paths):
-        return False
-    for p in paths:
-        target = plan.live / p
+
+    for p, text in zip(paths, texts, strict=True):
         try:
-            target.write_text(keep_head_hunks(target.read_text(encoding="utf-8")), encoding="utf-8")
+            (plan.live / p).write_bytes(keep_head_hunks(text).encode("utf-8"))
             rc = 0
         except (OSError, ValueError):
             rc = 1
         if run.step("take-head %s" % p, rc):
-            return False
+            return stop("take-head")
     done = subprocess.run(
         list(gen_cmd), cwd=str(plan.live), check=False, capture_output=True, text=True
     )
     if run.step(
         "gen-docs", done.returncode, done.stderr.strip()[-TAIL:] if done.returncode else ""
     ):
-        return False
+        return stop("gen-docs")
     if run.step("add generated", git(plan.live, "add", "--", *paths).returncode):
-        return False
+        return stop("add generated")
     env = {**os.environ, "GIT_EDITOR": "true"}
     cont = git(plan.live, "cherry-pick", "--continue", env=env)
-    return not run.step(
+    if run.step(
         "continue %s" % sha[:12],
         cont.returncode,
         cont.stderr.strip()[-TAIL:] if cont.returncode else "",
-    )
+    ):
+        return stop("continue")
+    return True
 
 
 def _land_sub(plan, run, key, sub, shas, branch):
@@ -186,6 +213,8 @@ def _land_sub(plan, run, key, sub, shas, branch):
         run.emit("stop: conflict in %s: %s" % (key, " ".join(_unmerged(sub)) or "see git status"))
         return False
     landed = git(sub, "rev-list", "--reverse", "%s..HEAD" % before).stdout.split()
+    if len(landed) == len(shas):
+        run.landed.extend(zip(shas, landed, strict=True))
     fd, msg = tempfile.mkstemp(prefix="land-run-", suffix=".msg")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -199,8 +228,8 @@ def _land_sub(plan, run, key, sub, shas, branch):
         os.unlink(msg)
 
 
-def execute(plan: LandPlan, *, emit=print, gen_cmd=GEN_DOCS) -> int:
-    """Run the picks. Returns 0 when every pick landed, 1 on the first stop."""
+def execute(plan: LandPlan, *, emit=print, gen_cmd=GEN_DOCS, me="") -> int:
+    """Run the picks. Returns 0 when every pick landed, 1 on the first stop. With `me`, the review findings the landed commits name (`Fixes-Review:` trailers) are marked fixed once every pick has landed."""
     run = Runner(emit)
     live = plan.live
     dirty = _dirty_index([live, *(d for _k, d, _s in plan.subs)])
@@ -215,9 +244,14 @@ def execute(plan: LandPlan, *, emit=print, gen_cmd=GEN_DOCS) -> int:
         pick = git(live, "cherry-pick", "-x", sha)
         if pick.returncode == 0:
             run.step("pick %s" % sha[:12], 0)
+            run.landed.append((sha, git(live, "rev-parse", "HEAD").stdout.strip()))
             continue
-        if _resolve_generated(plan, run, gen_cmd, sha):
+        resolved = _resolve_generated(plan, run, gen_cmd, sha, emit)
+        if resolved:
+            run.landed.append((sha, git(live, "rev-parse", "HEAD").stdout.strip()))
             continue
+        if resolved is False:
+            return 1
         paths = _unmerged(live)
         run.step("pick %s" % sha[:12], 1)
         emit(
@@ -225,17 +259,44 @@ def execute(plan: LandPlan, *, emit=print, gen_cmd=GEN_DOCS) -> int:
             % (" ".join(paths) or pick.stderr.strip()[-TAIL:])
         )
         return 1
+    if me:
+        _mark_reviews(plan, run, me)
     return run.rc
 
 
-def after_picks(live, me, *, emit=print, shard_check=SHARD_CHECK) -> int:
-    """Place new tests on a shard when the coverage gate names a lane, then apply the queued ticks for `me`."""
-    run = Runner(emit)
-    checked = subprocess.run(
+def _mark_reviews(plan, run, me):
+    """`worklist.py --review-mark <me> <id> fixed <landed sha>` for each `Fixes-Review:` trailer of a landed commit, one step line each."""
+    script = pathlib.Path(plan.live) / ".claude" / "hooks" / "stop" / "worklist.py"
+    for lease_sha, landed in run.landed:
+        for finding in dict.fromkeys(FIXES_REVIEW_RE.findall(plan.messages.get(lease_sha, ""))):
+            done = subprocess.run(
+                [sys.executable, str(script), "--review-mark", me, finding, "fixed", landed],
+                cwd=str(plan.live),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            tail = (done.stderr or done.stdout).strip()[-TAIL:] if done.returncode else ""
+            run.step("review-mark %s %s" % (finding, landed[:12]), done.returncode, tail)
+
+
+def _coverage(live, shard_check):
+    done = subprocess.run(
         list(shard_check), cwd=str(live), capture_output=True, text=True, check=False
     )
-    lanes = list(dict.fromkeys(SHARD_PLACE_RE.findall(checked.stdout + checked.stderr)))
-    if not checked.returncode:
+    return done.returncode, done.stdout + done.stderr
+
+
+def after_picks(live, me, *, emit=print, shard_check=SHARD_CHECK) -> int:
+    """Place new tests on a shard when the coverage gate names a lane, then apply the queued ticks for `me`.
+
+    A lane the gate sends to another verb (a bucketed lane's `check-lane-budget.ts --rebalance`, quality-code's `gate-bind`) is a stop for the lead: it is named with the gate's own line. After a placement the gate runs again, so a red gate is never reported green because `shard:place` itself succeeded.
+    """
+    run = Runner(emit)
+    code, text = _coverage(live, shard_check)
+    lanes = list(dict.fromkeys(SHARD_PLACE_RE.findall(text)))
+    refused = [m.group(0).strip() for m in UNPLACEABLE_RE.finditer(text)]
+    if not code:
         emit("step shard-coverage rc=0")
     for lane in lanes:
         done = subprocess.run(
@@ -246,8 +307,16 @@ def after_picks(live, me, *, emit=print, shard_check=SHARD_CHECK) -> int:
             check=False,
         )
         run.step("shard:place %s" % lane, done.returncode)
-    if checked.returncode and not lanes:
-        run.step("shard-coverage", checked.returncode, "names no lane to place")
+    for line in dict.fromkeys(refused):
+        found = REBALANCE_LANE_RE.search(line)
+        lane = found.group(1) if found else "(see the gate line)"
+        run.step("shard-coverage", code, "lane %s is not placed by --run" % lane)
+        emit("stop: coverage gate line for the lead: %s" % line)
+    if code and lanes:
+        again, _text = _coverage(live, shard_check)
+        run.step("shard-coverage recheck", again, "still red after placing" if again else "")
+    elif code and not refused:
+        run.step("shard-coverage", code, "names no lane to place")
     if me:
         script = pathlib.Path(live) / ".claude" / "hooks" / "stop" / "worklist.py"
         done = subprocess.run(

@@ -677,7 +677,11 @@ picked commits), then the console picks one at a time. A conflict confined to
 gen-docs regions takes HEAD's copy, runs `npx tsx scripts/gen/gen-docs.ts
 --write`, adds those paths and continues; any other conflict prints the paths
 and leaves the pick in progress. After the picks, a lane the shard coverage
-gate names is placed with `npm run shard:place`, and with --me <prefix>
+gate names is placed with `npm run shard:place` and the gate runs again; a
+lane the gate sends to another verb (`--rebalance`, `gate-bind`) is a stop
+for the lead, printed with the gate's own line. With --me <prefix>, each
+`Fixes-Review: <id>` trailer of a landed commit runs `worklist.py
+--review-mark <prefix> <id> fixed <landed sha>` after the picks, and
 `worklist.py --apply-ticks <prefix> --write` runs.
 """
 AGENT_PREFIX = "agent/"
@@ -1087,7 +1091,7 @@ def _say(line):
 def _cmd_run(lease_id, me):
     try:
         plan = _land_run_plan(paths.repo_root(), lease_id)
-        rc = worktree_land_run.execute(plan, emit=_say)
+        rc = worktree_land_run.execute(plan, emit=_say, me=me)
         if rc == 0:
             rc = worktree_land_run.after_picks(plan.live, me, emit=_say)
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:

@@ -5,6 +5,7 @@ Nothing here touches a real checkout: every repository is built under a tmp dire
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 import sys
@@ -147,3 +148,196 @@ def test_refused_inside_a_lease(tmp_path, monkeypatch, capsys):
 def test_run_is_named_in_the_usage():
     assert "--run" in lease.LAND_HELP.splitlines()[0]
     assert isinstance(pathlib.Path(run.__file__), pathlib.Path)
+
+
+# ---- review findings of landed commits (6f2bf605.2 .3 .4, fe5a894d.1) and the two --run gaps ----
+
+FAIL_CMD = (sys.executable, "-c", "import sys; sys.exit(3)")
+NOOP_CMD = (sys.executable, "-c", "pass")
+LANE = "test-e2e-workers"
+REBALANCE_LINE = (
+    '"e2e#smoke" runs in no CI job: the lane\'s enumerator lists it and no leg names it. '
+    "Place it on the lightest leg: npx tsx scripts/gates/check-lane-budget.ts "
+    "--rebalance %s --write" % LANE
+)
+
+
+def test_a_failed_regenerate_names_the_paths_and_leaves_the_pick(repo):
+    """6f2bf605.2: after the take-head rewrite, a gen-docs failure is a stop that lists the paths."""
+    sha = lease_commit(repo, {"doc.md": "intro\n" + REGION % "from-lease"}, "feat: doc")
+    live_commit(repo, {"doc.md": "intro\n" + REGION % "from-head"}, "chore: doc head")
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=FAIL_CMD) == 1
+    assert "stop: gen-docs failed for doc.md; the cherry-pick is left in progress" in lines
+    assert (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+
+
+def test_control_a_working_regenerate_emits_no_stop(repo):
+    sha = lease_commit(repo, {"doc.md": "intro\n" + REGION % "from-lease"}, "feat: doc")
+    live_commit(repo, {"doc.md": "intro\n" + REGION % "from-head"}, "chore: doc head")
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 0
+    assert not [line for line in lines if line.startswith("stop:")]
+
+
+def test_a_binary_conflict_stops_instead_of_raising(repo):
+    """6f2bf605.4: a conflicted file that is not UTF-8 text used to raise out of execute."""
+    (repo / "blob.bin").write_bytes(b"\xff\x00base\n")
+    sh(repo, "add", "--", "blob.bin")
+    sh(repo, "commit", "-q", "-m", "chore: blob", "--", "blob.bin")
+    sh(repo, "switch", "-q", "-c", "lease-bin", "live")
+    (repo / "blob.bin").write_bytes(b"\xff\x00lease\n")
+    sh(repo, "commit", "-q", "-m", "feat: blob", "--", "blob.bin")
+    sha = sh(repo, "rev-parse", "HEAD")
+    sh(repo, "switch", "-q", "live")
+    (repo / "blob.bin").write_bytes(b"\xff\x00head\n")
+    sh(repo, "commit", "-q", "-m", "chore: blob head", "--", "blob.bin")
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 1
+    assert any(line.startswith("stop: conflict in blob.bin") for line in lines), lines
+    assert (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+
+
+def test_crlf_line_endings_survive_the_generated_resolve(repo):
+    """fe5a894d.1: a CRLF file keeps its endings, outside the region and inside."""
+    region = REGION.replace("\n", "\r\n")
+    body = "intro\r\nmiddle\r\n"
+    live_commit(repo, {"doc.md": body + region % "old"}, "chore: crlf")
+    sha = lease_commit(
+        repo, {"doc.md": body.replace("intro", "INTRO") + region % "from-lease"}, "feat: doc"
+    )
+    live_commit(repo, {"doc.md": body + region % "from-head"}, "chore: doc head")
+    assert run.execute(plan_for(repo, [sha]), emit=lambda _l: None, gen_cmd=NOOP_CMD) == 0
+    assert (repo / "doc.md").read_bytes() == (
+        body.replace("intro", "INTRO") + region % "from-head"
+    ).encode()
+
+
+def test_control_lf_files_resolve_unchanged(repo):
+    sha = lease_commit(repo, {"doc.md": "INTRO\n" + REGION % "from-lease"}, "feat: doc")
+    live_commit(repo, {"doc.md": "intro\n" + REGION % "from-head"}, "chore: doc head")
+    assert run.execute(plan_for(repo, [sha]), emit=lambda _l: None, gen_cmd=NOOP_CMD) == 0
+    assert (repo / "doc.md").read_bytes() == ("INTRO\n" + REGION % "from-head").encode()
+
+
+# ---- --run marks the review findings a landed commit fixes ----
+
+
+def fake_worklist(root):
+    """A worklist.py that records its argv, so the call is read without the real store."""
+    script = root / ".claude" / "hooks" / "stop" / "worklist.py"
+    script.parent.mkdir(parents=True)
+    log = root / "marks.log"
+    script.write_text(
+        "import sys\nopen(%r, 'a').write(' '.join(sys.argv[1:]) + '\\n')\n" % str(log),
+        encoding="utf-8",
+    )
+    return log
+
+
+def test_run_marks_each_fixes_review_trailer_with_the_landed_sha(repo):
+    log = fake_worklist(repo)
+    sha = lease_commit(
+        repo,
+        {"code.txt": "b\n"},
+        "fix: b\n\nFixes-Review: abc12345.1\nFixes-Review: abc12345.2\nPR-TASK: 1",
+    )
+    lines: list[str] = []
+    plan = plan_for(repo, [sha], {sha: sh(repo, "log", "-1", "--format=%B", sha)})
+    assert run.execute(plan, emit=lines.append, me="d778") == 0
+    landed = sh(repo, "rev-parse", "HEAD")
+    assert landed != sha
+    assert log.read_text().splitlines() == [
+        "--review-mark d778 abc12345.1 fixed %s" % landed,
+        "--review-mark d778 abc12345.2 fixed %s" % landed,
+    ]
+    assert "step review-mark abc12345.1 %s rc=0" % landed[:12] in lines
+    assert "step review-mark abc12345.2 %s rc=0" % landed[:12] in lines
+
+
+def test_control_run_marks_nothing_without_me_or_without_a_trailer(repo):
+    log = fake_worklist(repo)
+    first = lease_commit(repo, {"code.txt": "b\n"}, "fix: b\n\nFixes-Review: abc12345.1")
+    plan = plan_for(repo, [first], {first: sh(repo, "log", "-1", "--format=%B", first)})
+    assert run.execute(plan, emit=lambda _l: None) == 0
+    second = lease_commit(repo, {"code.txt": "c\n"}, "fix: c")
+    plan = plan_for(repo, [second], {second: "fix: c"})
+    lines: list[str] = []
+    assert run.execute(plan, emit=lines.append, me="d778") == 0
+    assert not log.exists()
+    assert not [line for line in lines if "review-mark" in line]
+
+
+def test_a_failed_review_mark_is_a_failed_step(repo):
+    script = repo / ".claude" / "hooks" / "stop" / "worklist.py"
+    script.parent.mkdir(parents=True)
+    script.write_text("import sys\nsys.exit(2)\n", encoding="utf-8")
+    sha = lease_commit(repo, {"code.txt": "b\n"}, "fix: b\n\nFixes-Review: abc12345.1")
+    lines: list[str] = []
+    plan = plan_for(repo, [sha], {sha: sh(repo, "log", "-1", "--format=%B", sha)})
+    assert run.execute(plan, emit=lines.append, me="d778") == 1
+    assert any(line.startswith("step review-mark abc12345.1") and "rc=2" in line for line in lines)
+
+
+# ---- after_picks: a lane `--run` cannot place, and a gate that stays red ----
+
+
+def gate_script(tmp_path, text, *, red_runs):
+    """A coverage gate that prints `text` and exits 1 for its first `red_runs` runs, then 0."""
+    counter = tmp_path / "gate-runs"
+    script = tmp_path / "gate.py"
+    script.write_text(
+        "import pathlib, sys\n"
+        "c = pathlib.Path(%r)\n"
+        "n = int(c.read_text()) if c.exists() else 0\n"
+        "c.write_text(str(n + 1))\n"
+        "if n < %d:\n"
+        "    print(%r)\n"
+        "    sys.exit(1)\n" % (str(counter), red_runs, text),
+        encoding="utf-8",
+    )
+    return (sys.executable, str(script))
+
+
+@pytest.fixture
+def fake_npm(tmp_path, monkeypatch):
+    """`npm run shard:place` succeeds without placing anything."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    npm = bin_dir / "npm"
+    npm.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    npm.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (bin_dir, os.environ["PATH"]))
+
+
+def test_a_bucketed_lane_is_a_named_stop_for_the_lead(tmp_path):
+    lines: list[str] = []
+    gate = gate_script(tmp_path, REBALANCE_LINE, red_runs=9)
+    assert run.after_picks(tmp_path, "", emit=lines.append, shard_check=gate) == 1
+    assert "step shard-coverage rc=1 lane %s is not placed by --run" % LANE in lines
+    assert "stop: coverage gate line for the lead: %s" % REBALANCE_LINE in lines
+    assert not [line for line in lines if "names no lane" in line]
+
+
+@pytest.mark.usefixtures("fake_npm")
+def test_control_a_placeable_lane_is_placed_and_the_gate_rechecked(tmp_path):
+    hint = "x runs in no CI job. Place it on the lightest leg: npm run shard:place -- unit-lane"
+    lines: list[str] = []
+    gate = gate_script(tmp_path, hint, red_runs=1)
+    assert run.after_picks(tmp_path, "", emit=lines.append, shard_check=gate) == 0
+    assert "step shard:place unit-lane rc=0" in lines
+    assert "step shard-coverage recheck rc=0" in lines
+    assert not [line for line in lines if line.startswith("stop:")]
+
+
+@pytest.mark.usefixtures("fake_npm")
+def test_a_gate_still_red_after_placing_is_reported_red(tmp_path):
+    """6f2bf605.3: shard:place succeeding does not clear a gate that fails on the next run."""
+    hint = "x runs in no CI job. Place it on the lightest leg: npm run shard:place -- unit-lane"
+    lines: list[str] = []
+    gate = gate_script(tmp_path, hint, red_runs=9)
+    assert run.after_picks(tmp_path, "", emit=lines.append, shard_check=gate) == 1
+    assert any(
+        line.startswith("step shard-coverage recheck rc=1") and "still red" in line
+        for line in lines
+    )
