@@ -1005,11 +1005,9 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 4,
+      "open": 9,
+      "done": 6,
       "open_sigs": [
-        "141ac6df",
-        "2f931b8c",
         "3e3d0041",
         "436b5f1b",
         "4a23af14",
@@ -1021,7 +1019,9 @@
         "e85200b3"
       ],
       "done_sigs": [
+        "141ac6df",
         "2e003f58",
+        "2f931b8c",
         "aa4f5836",
         "b6d1d9ec",
         "ce5d6b97"
@@ -1984,12 +1984,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 6,
+      "open": 8,
+      "done": 7,
       "open_sigs": [
         "2890d249",
         "3200a31d",
-        "33e724f6",
         "7a3a6d49",
         "c0384c17",
         "caf53341",
@@ -1999,6 +1998,7 @@
       ],
       "done_sigs": [
         "1e4d7024",
+        "33e724f6",
         "547068ea",
         "95b5b05b",
         "a46796dc",
@@ -3519,25 +3519,25 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 7,
+      "open": 6,
+      "done": 9,
       "open_sigs": [
         "05121adc",
         "3c77a1a6",
-        "3e1ed71f",
         "45b9222b",
         "6a8d35a0",
         "c0384c17",
-        "da2dd9be",
         "dcae26e2"
       ],
       "done_sigs": [
         "256f2acd",
+        "3e1ed71f",
         "44aec628",
         "4fbcdc18",
         "53baa3bf",
         "6ba9c33f",
         "9744ed6d",
+        "da2dd9be",
         "f92d134b"
       ]
     },
@@ -3566,18 +3566,18 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 4,
+      "open": 4,
+      "done": 5,
       "open_sigs": [
         "26e29ac5",
         "795eb35a",
-        "99480236",
         "9ad645c3",
         "c1822dd6"
       ],
       "done_sigs": [
         "3e83af32",
         "516df172",
+        "99480236",
         "b3c86ecb",
         "c103f83d"
       ]
@@ -3735,8 +3735,8 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 24,
-      "done": 3,
+      "open": 23,
+      "done": 4,
       "open_sigs": [
         "06d21c3a",
         "08d96cc0",
@@ -3760,13 +3760,13 @@
         "d07a6d4d",
         "d16411f2",
         "e772f5b7",
-        "e7c4e207",
         "f8d74808"
       ],
       "done_sigs": [
         "0864fb41",
         "29be2688",
-        "8fe4b010"
+        "8fe4b010",
+        "e7c4e207"
       ]
     },
     "agent/plans/PLAN-rmcp-writeback.md": {

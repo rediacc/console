@@ -505,7 +505,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 139 | 11 | 4 | 27683 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 141 | 9 | 6 | 28181 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 126 | 13 | 2 | 23131 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 94 | 7 | 2 | 15633 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 94 | 8 | 2 | 15632 |
@@ -544,7 +544,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 130 | 10 | 5 | 28677 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
-| `agent/plans/PLAN-forensics-detection.md` | approved | 129 | 9 | 6 | 23918 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 130 | 8 | 7 | 24150 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19371 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 137 | 11 | 6 | 31345 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 118 | 8 | 6 | 23131 |
@@ -610,15 +610,15 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 125 | 8 | 7 | 27819 |
+| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 127 | 6 | 9 | 28341 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
-| `agent/plans/PLAN-rmcp-decide.md` | approved | 92 | 5 | 4 | 15718 |
+| `agent/plans/PLAN-rmcp-decide.md` | approved | 93 | 4 | 5 | 15852 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 103 | 15 | 5 | 24550 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 77 | 7 | 6 | 18579 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 163 | 10 | 16 | 39181 |
-| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 138 | 24 | 3 | 33458 |
+| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 139 | 23 | 4 | 33698 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 98 | 4 | 13 | 20795 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 327 | 8 | 11 | 35091 |
