@@ -142,6 +142,24 @@ def wake_report(me: str, minutes: float, root: pathlib.Path) -> str:
     ) % (minutes, me, arm_command(me), listing)
 
 
+def _writers_now_due_in(me: str) -> float:
+    """Minutes until this session's next /writers-now round is due (at least 1), or WAKE_DEFAULT_MIN when the round ledger cannot be read. A timer armed without --minutes wakes no later than that, so an idle wait does not overshoot the hourly round by up to a whole sleep (operator report 2026-11-25: rounds 63 to 107 min apart)."""
+    try:
+        import wl_core as C
+        import wl_writersnow
+
+        root = pathlib.Path(__file__).resolve().parents[3]
+        mine = [
+            r for r in wl_writersnow.read_rounds(root) if str(r.get("session", "")).startswith(me)
+        ]
+        if not mine:
+            return 1.0
+        age = (C.utcnow() - C.parse_stamp(mine[-1]["at"])).total_seconds() / 60.0
+        return max(1.0, wl_writersnow.WINDOW_MIN - age)
+    except Exception:
+        return float(WAKE_DEFAULT_MIN)
+
+
 def main(argv) -> int:
     args = list(argv[1:])
     if not args or not SESSION_RE.match(args[0]):
@@ -151,6 +169,8 @@ def main(argv) -> int:
     minutes: float = WAKE_DEFAULT_MIN
     rest = args[1:]
     # AN UNKNOWN ARGUMENT IS REFUSED. `wl_wake.py <me> --status` once armed a 30-minute timer instead of reporting one (2026-10-04), and a typo that arms a timer is a sleeper under the harness default timeout nobody asked for.
+    if not rest:
+        minutes = min(minutes, _writers_now_due_in(me))
     if rest[:1] == ["--minutes"]:
         try:
             minutes = float(rest[1])
