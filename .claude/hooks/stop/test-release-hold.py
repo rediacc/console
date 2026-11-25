@@ -61,6 +61,7 @@ def worktree_check_cases():
             mock.patch.object(wl_checks, "vm_check_running", stub(vm)),
             mock.patch.object(wl_checks, "release_local_running", stub(rel)),
             mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(rcpt)),
+            mock.patch.object(wl_checks, "staged_index_paths", stub([])),
             mock.patch.object(wl_checks, "outq_add", queue),
         ):
             wl_checks.worktree_check(
@@ -151,6 +152,7 @@ def pinned_vm_check_cases(tmp):
                     mock.patch.object(wl_worktrees, "unlanded_lines", stub("l")),
                     mock.patch.object(wl_checks, "release_local_running", stub(False)),
                     mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(False)),
+                    mock.patch.object(wl_checks, "staged_index_paths", stub([])),
                     mock.patch.object(
                         wl_checks,
                         "outq_add",
@@ -218,6 +220,26 @@ def pinned_vm_check_cases(tmp):
     )
 
 
+def staged_index_cases(tmp):
+    """staged_index_paths: a real repo answers its staged path, a clean one answers [], and a path that is no repo answers [] (worktree land refuses on a staged index, so the unlanded-lease block is held while it is non-empty)."""
+    import subprocess
+
+    repo = os.path.join(tmp, "repo")
+    os.makedirs(repo)
+
+    def run(*a):
+        return subprocess.run(["git", "-C", repo, *a], check=True, capture_output=True)
+
+    run("init", "-q")
+    run("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "base")
+    check("clean index", wl_checks.staged_index_paths(repo), [])
+    with open(os.path.join(repo, "a.txt"), "w") as f:
+        f.write("x")
+    run("add", "a.txt")
+    check("staged path", wl_checks.staged_index_paths(repo), ["a.txt"])
+    check("not a repo", wl_checks.staged_index_paths(os.path.join(tmp, "absent")), [])
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         root = os.path.join(tmp, "console")
@@ -260,6 +282,8 @@ def main():
     worktree_check_cases()
     with tempfile.TemporaryDirectory() as tmp:
         pinned_vm_check_cases(tmp)
+    with tempfile.TemporaryDirectory() as tmp:
+        staged_index_cases(tmp)
 
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))

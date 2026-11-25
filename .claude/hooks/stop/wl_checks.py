@@ -2934,6 +2934,23 @@ def green_receipt_on_unpushed_head(root):
     return pushed.returncode == 1
 
 
+def staged_index_paths(root):
+    """The paths staged in `root`'s index, or [] when none are staged or git cannot answer. `worktree land` refuses while the index holds staged changes (2026-11-25: a gate repair staged 34 plan deletions and every stop blocked on a landing the lead could not run without unstaging another agent's work), so a staged index holds the unlanded-lease block the way a running vm:check does."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "diff", "--cached", "--name-only"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if out.returncode != 0:
+        return []
+    return [line for line in out.stdout.splitlines() if line.strip()]
+
+
 def release_local_running(root, proc="/proc"):
     """True when a live process of THIS checkout runs `release:local` (the `rediacc_ci.release.local` module). A branch release ships HEAD only while HEAD is the pushed tip and its receipts name HEAD^{tree}, so landing a lease mid-run would make it refuse or ship a tree nobody verified. A process of another checkout, or an unreadable /proc, reads False."""
     try:
@@ -3123,6 +3140,17 @@ def worktree_check(
             state_doc,
             "worktree-orphan",
             M.N_WORKTREE_RELEASE % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and (staged := staged_index_paths(root)):
+        # `worktree land` refuses on a staged index, and the staged paths may be another agent's (unstaging them is not the lead's call), so the lease waits for the index to clear: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_STAGED
+            % (len(staged), ", ".join(staged[:5]), wl_worktrees.unlanded_lines(got)),
             3,
         )
     elif got["unlanded"] and green_receipt_on_unpushed_head(root):

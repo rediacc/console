@@ -3449,6 +3449,12 @@ N_WORKTREE_RELEASE = (
     "once it ends:\n%s"
 )
 
+N_WORKTREE_STAGED = (
+    "UNLANDED LEASE, held for the staged index: `worktree land` refuses while the main checkout's "
+    "index holds %d staged path(s) (first: %s), and those may belong to another agent. Land these "
+    "once the index clears:\n%s"
+)
+
 N_WORKTREE_RECEIPT = (
     "UNLANDED LEASE, held for the push: the pre-push receipt passed for HEAD's tree (directly or "
     "through its record-only advances) and HEAD is not on its upstream yet, so landing now would "
