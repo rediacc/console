@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: et
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Autentimine
@@ -78,6 +78,8 @@ Krüpteeritud serveripoolse sünkroonimisega konfiguratsiooni jaoks vaadake täi
 - Nullteadmiste krüpteerimist (server ei näe kunagi lihtteksti)
 - Passkey-põhist võtme tuletamist (WebAuthn + PRF)
 - Päringupõhiselt pöörlevaid tokeneid
+
+Leht [Turvamudel](/et/docs/security-model) selgitab, kes mida näha saab, kuidas võtmete ulatus piiritletakse ja mida saab taastada.
 
 ### Seansi turvalisus
 

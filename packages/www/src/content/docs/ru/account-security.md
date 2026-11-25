@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ru
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Аутентификация
@@ -78,6 +78,8 @@ rdc subscription login
 - Шифрование с нулевым разглашением (сервер никогда не видит открытый текст)
 - Деривацию ключей на основе passkey (WebAuthn + PRF)
 - Ротируемые токены с ротацией при каждом запросе
+
+На странице [Модель безопасности](/ru/docs/security-model) описано, кто что может видеть, как ограничена область действия ключей и что можно восстановить.
 
 ### Безопасность сессий
 

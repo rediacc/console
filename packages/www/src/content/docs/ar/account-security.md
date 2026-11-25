@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ar
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### المصادقة
@@ -78,6 +78,8 @@ rdc subscription login
 - تشفير بدون معرفة (الخادم لا يرى النص العادي ابدا)
 - اشتقاق المفاتيح القائم على Passkey (WebAuthn + PRF)
 - رموز دوارة مع تدوير لكل طلب
+
+تحدد صفحة [النموذج الأمني](/ar/docs/security-model) من يستطيع رؤية ماذا، وكيف تُحدَّد نطاقات المفاتيح، وما الذي يمكن استرداده.
 
 ### امان الجلسة
 

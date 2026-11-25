@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Armazenamento de Configuração
@@ -192,5 +192,6 @@ Outras proteções:
 
 ## Relacionados
 
+- [Modelo de Segurança](/pt/docs/security-model), quem pode ver o quê, âmbito das chaves, agentes e o que é recuperável
 - [Consola Web](/pt/docs/web-console), desbloquear o armazenamento no browser para executar comandos
 - [Proxy e Executor](/pt/docs/proxy-and-executor), como a chave desbloqueada é concedida a um executor

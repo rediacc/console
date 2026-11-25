@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: pt
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Autenticação
@@ -78,6 +78,8 @@ Para configuração encriptada e sincronizada com o servidor, consulte [Armazena
 - Encriptação de conhecimento zero (o servidor nunca vê texto em claro)
 - Derivação de chave baseada em passkey (WebAuthn + PRF)
 - Tokens rotativos com rotação por pedido
+
+A página [Modelo de Segurança](/pt/docs/security-model) explica quem pode ver o quê, como as chaves são delimitadas e o que é recuperável.
 
 ### Segurança de Sessão
 

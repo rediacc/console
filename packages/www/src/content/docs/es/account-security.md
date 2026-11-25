@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: es
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Autenticación
@@ -78,6 +78,8 @@ Para configuración cifrada y sincronizada con el servidor, consulta [Config Sto
 - Cifrado de conocimiento cero (el servidor nunca ve texto plano)
 - Derivación de claves basada en passkey (WebAuthn + PRF)
 - Tokens rotativos con rotación por solicitud
+
+La página [Modelo de seguridad](/es/docs/security-model) explica quién puede ver qué, cómo se acotan las claves y qué se puede recuperar.
 
 ### Seguridad de sesión
 

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Konfiguratsioonisalv
@@ -192,5 +192,6 @@ Muud kaitsemeetmed:
 
 ## Seotud
 
+- [Turvamudel](/et/docs/security-model), kes mida näha saab, võtmete ulatus, agendid ja mida saab taastada
 - [Veebikonsool](/et/docs/web-console), salve avamine brauseris käskude käivitamiseks
 - [Proxy ja käitaja](/et/docs/proxy-and-executor), kuidas avatud võti käitajale antakse

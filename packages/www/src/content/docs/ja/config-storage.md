@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ja
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # 設定ストレージ
@@ -192,5 +192,6 @@ rdc config remote restore <version>
 
 ## 関連
 
+- [セキュリティモデル](/ja/docs/security-model)、誰が何を見られるか、キーのスコープ、エージェント、復旧できるもの
 - [Webコンソール](/ja/docs/web-console)、ブラウザでストアをアンロックしてコマンドを実行する
 - [プロキシとエグゼキュータ](/ja/docs/proxy-and-executor)、アンロックされたキーがエグゼキュータに付与される仕組み

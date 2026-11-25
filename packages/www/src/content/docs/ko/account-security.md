@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ko
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### 인증
@@ -78,6 +78,8 @@ rdc subscription login
 - 제로 지식 암호화 (서버가 평문을 볼 수 없음)
 - 패스키 기반 키 파생 (WebAuthn + PRF)
 - 요청별 교체를 통한 회전 토큰
+
+[보안 모델](/ko/docs/security-model) 페이지에서 누가 무엇을 볼 수 있는지, 키 범위가 어떻게 정해지는지, 무엇을 복구할 수 있는지 설명합니다.
 
 ### 세션 보안
 

@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: et
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Arhitektuur
@@ -240,6 +240,8 @@ rdc config audit verify
 > See fail sisaldab tundlikke andmeid (SSH-privaatvõtmed, LUKS-volitused, Cloudflare tokenid). See salvestatakse õigustega `0600` (ainult omanik saab lugeda ja kirjutada). Ära jaga seda ega lisa versioonihaldusesse. Kui mõni `rdc` käsk seda loeb, [redakteeritakse](/et/docs/ai-agents-safety) tundlikud väljad vaikimisi: lihttekst ilmub ainult koos `--reveal`-iga interaktiivsel inimese TTY-l.
 
 ### Ümbrik v2 ja serveripoolne jõustamine
+
+Vaata lehte [Turvamudel](/et/docs/security-model), et teada saada, kes mida näha saab ja kuidas võtmete ulatus piiritletakse.
 
 Kui konfiguratsioon sünkroonitakse [krüpteeritud konfiguratsioonisalvega](/et/docs/config-storage), mähib CLI iga tundliku välja välja-kohasesse HMAC-sidemesse ja kannab need kohustused lihtteksti ümbrikku. Server näeb ainult kuueteistkümnendarvude kokkuvõtteid: mitte kunagi väärtusi: kuid saab jõustada teadmisväravaid igal kirjutusel:
 

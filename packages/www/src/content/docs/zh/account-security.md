@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### 身份验证
@@ -78,6 +78,8 @@ rdc subscription login
 - 零知识加密（服务器永远看不到明文）
 - 基于Passkey的密钥派生（WebAuthn + PRF）
 - 按请求轮换的轮换令牌
+
+[安全模型](/zh/docs/security-model)页面说明了谁能看到什么、密钥如何划定范围，以及哪些内容可以恢复。
 
 ### 会话安全
 

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ko
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # 설정 저장소
@@ -192,5 +192,6 @@ rdc config remote restore <version>
 
 ## 관련 문서
 
+- [보안 모델](/ko/docs/security-model), 누가 무엇을 볼 수 있는지, 키 범위, 에이전트, 복구 가능한 항목
 - [웹 콘솔](/ko/docs/web-console), 브라우저에서 저장소 잠금을 해제해 명령을 실행하는 방법
 - [프록시 & 실행기](/ko/docs/proxy-and-executor), 잠금 해제된 키가 실행기에 전달되는 방식

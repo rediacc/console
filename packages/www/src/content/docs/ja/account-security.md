@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ja
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### 認証
@@ -78,6 +78,8 @@ rdc subscription login
 - ゼロ知識暗号化（サーバーは平文を見ることがない）
 - Passkeyベースの鍵導出（WebAuthn + PRF）
 - リクエストごとのローテーション付きローテーショントークン
+
+[セキュリティモデル](/ja/docs/security-model)のページでは、誰が何を見られるか、キーのスコープがどう決まるか、何を復旧できるかを説明しています。
 
 ### セッションセキュリティ
 

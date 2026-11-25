@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Almacenamiento de configuración
@@ -194,5 +194,6 @@ Otras salvaguardas:
 
 ## Relacionado
 
+- [Modelo de seguridad](/es/docs/security-model), quién puede ver qué, alcance de las claves, agentes y qué se puede recuperar
 - [Consola web](/es/docs/web-console), desbloquear el almacén en el navegador para ejecutar comandos
 - [Proxy y ejecutor](/es/docs/proxy-and-executor), cómo se concede la clave desbloqueada a un ejecutor

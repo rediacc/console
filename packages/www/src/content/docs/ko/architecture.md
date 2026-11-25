@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ko
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # 아키텍처
@@ -239,6 +239,8 @@ rdc config audit verify
 > 이 파일에는 민감한 데이터(SSH 개인 키, LUKS 자격 증명, Cloudflare 토큰)가 포함되어 있습니다. `0600` 권한(소유자 읽기/쓰기 전용)으로 저장됩니다. 공유하거나 버전 관리에 커밋하지 마세요. `rdc` 명령어가 파일을 읽을 때 민감 필드는 [기본적으로 리댁션됩니다](/en/docs/ai-agents-safety). 평문은 대화형 사람 TTY에서 `--reveal`을 사용해야만 나타납니다.
 
 ### 봉투 v2와 서버 측 강제
+
+누가 무엇을 볼 수 있는지, 키 범위가 어떻게 정해지는지는 [보안 모델](/ko/docs/security-model)을 참고하세요.
 
 설정이 [암호화된 설정 저장소](/en/docs/config-storage)에 동기화되면 CLI는 각 민감 필드를 필드별 HMAC 커밋으로 래핑하고 해당 커밋을 평문 봉투에 담습니다. 서버는 16진수 다이제스트만 봅니다. 값은 절대 보지 않지만 모든 쓰기에 지식 게이트를 적용할 수 있습니다.
 

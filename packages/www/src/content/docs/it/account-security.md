@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: it
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Autenticazione
@@ -78,6 +78,8 @@ Per la configurazione cifrata e sincronizzata con il server, consulta [Config St
 - Cifratura zero-knowledge (il server non vede mai il testo in chiaro)
 - Derivazione della chiave basata su passkey (WebAuthn + PRF)
 - Token rotanti con rotazione per ogni richiesta
+
+La pagina [Modello di sicurezza](/it/docs/security-model) spiega chi può vedere cosa, come sono delimitate le chiavi e cosa è recuperabile.
 
 ### Sicurezza della sessione
 

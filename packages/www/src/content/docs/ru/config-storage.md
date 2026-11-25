@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: ru
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Хранилище конфигурации
@@ -194,5 +194,6 @@ rdc config remote restore <version>
 
 ## Смотрите также
 
+- [Модель безопасности](/ru/docs/security-model), кто что может видеть, область действия ключей, агенты и что можно восстановить
 - [Веб-консоль](/ru/docs/web-console): разблокировка хранилища в браузере для запуска команд
 - [Прокси и executor](/ru/docs/proxy-and-executor): как разблокированный ключ передаётся executor'у

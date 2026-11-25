@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: zh
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # 配置存储
@@ -192,5 +192,6 @@ rdc config remote restore <version>
 
 ## 相关
 
+- [安全模型](/zh/docs/security-model)：谁能看到什么、密钥范围、代理以及哪些内容可以恢复
 - [网页控制台](/zh/docs/web-console)：在浏览器中解锁存储以运行命令
 - [代理与执行器](/zh/docs/proxy-and-executor)：解锁后的密钥如何被授予执行器

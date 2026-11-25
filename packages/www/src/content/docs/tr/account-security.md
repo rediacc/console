@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Kimlik Doğrulama
@@ -78,6 +78,8 @@ Bir yapılandırmayı [Config Storage](/en/docs/config-storage) ile bağlamak, y
 - Sıfır bilgi şifreleme (sunucu düz metni asla görmez)
 - Passkey tabanlı anahtar türetme (WebAuthn + PRF)
 - İstek başına rotasyonlu döndürmeli tokenler
+
+[Güvenlik Modeli](/tr/docs/security-model) sayfası kimin neyi görebildiğini, anahtarların nasıl kapsamlandırıldığını ve nelerin kurtarılabildiğini açıklar.
 
 ### Oturum Güvenliği
 

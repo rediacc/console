@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: it
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Archivio di Configurazione
@@ -192,5 +192,6 @@ Altre protezioni:
 
 ## Correlati
 
+- [Modello di sicurezza](/it/docs/security-model), chi può vedere cosa, ambito delle chiavi, agenti e cosa è recuperabile
 - [Console Web](/it/docs/web-console), sbloccare l'archivio nel browser per eseguire comandi
 - [Proxy ed Executor](/it/docs/proxy-and-executor), come la chiave sbloccata viene concessa a un executor

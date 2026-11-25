@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Yapılandırma Depolama
@@ -192,5 +192,6 @@ Diğer korumalar:
 
 ## İlgili
 
+- [Güvenlik Modeli](/tr/docs/security-model), kimin neyi görebildiği, anahtar kapsamı, ajanlar ve nelerin kurtarılabildiği
 - [Web Konsolu](/tr/docs/web-console), depoyu tarayıcıda açarak komut çalıştırma
 - [Proxy ve Executor](/tr/docs/proxy-and-executor), açılmış anahtarın bir executor'a nasıl verildiği

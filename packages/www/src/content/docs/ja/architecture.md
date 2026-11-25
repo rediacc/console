@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: ja
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # アーキテクチャ
@@ -239,6 +239,8 @@ rdc config audit verify
 > このファイルには機密データ(SSH秘密鍵、LUKS認証情報、Cloudflareトークン)が含まれています。`0600`パーミッション(所有者読み書きのみ)で保存されます。共有したり、バージョン管理にコミットしないでください。いかなる`rdc`コマンドがこれを読み込むときも、機密フィールドは[デフォルトで削除されます](/en/docs/ai-agents-safety):平文は対話型の人間TTYで`--reveal`を使用する場合のみ出現します。
 
 ### Envelope v2とサーバー側の強制
+
+誰が何を見られるか、キーのスコープがどう決まるかは、[セキュリティモデル](/ja/docs/security-model)をご覧ください。
 
 設定が[暗号化設定ストア](/en/docs/config-storage)に同期される場合、CLIはフィールド単位のHMAC約束ですべての機密フィールドをラップし、これらの約束を平文エンベロープで保持します。サーバーは16進数ダイジェストのみを表示します。値は決して表示されません。しかしすべての書き込みで知識ゲートを強制できます:
 

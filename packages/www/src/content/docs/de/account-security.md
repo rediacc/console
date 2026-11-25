@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: de
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "99e2c8b45d41e3b9"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 ### Authentifizierung
@@ -78,6 +78,8 @@ Für verschlüsselte, serversynchronisierte Konfiguration siehe [Config Storage]
 - Zero-Knowledge-Verschlüsselung (Server sieht nie Klartext)
 - Passkey-basierte Schlüsselableitung (WebAuthn + PRF)
 - Rotierende Token mit Rotation pro Anfrage
+
+Die Seite [Sicherheitsmodell](/de/docs/security-model) legt dar, wer was sehen kann, wie Schlüssel abgegrenzt sind und was sich wiederherstellen lässt.
 
 ### Sitzungssicherheit
 

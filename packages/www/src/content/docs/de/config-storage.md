@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Konfigurationsspeicher
@@ -192,5 +192,6 @@ Weitere Schutzmaßnahmen:
 
 ## Verwandte Seiten
 
+- [Sicherheitsmodell](/de/docs/security-model), wer was sehen kann, Schlüsselbereiche, Agenten und was wiederherstellbar ist
 - [Web-Konsole](/de/docs/web-console), den Speicher im Browser entsperren, um Befehle auszuführen
 - [Proxy & Executor](/de/docs/proxy-and-executor), wie der entsperrte Schlüssel an einen Executor übergeben wird

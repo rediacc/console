@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Stockage de configuration
@@ -194,5 +194,6 @@ Autres garanties :
 
 ## Voir aussi
 
+- [Modèle de sécurité](/fr/docs/security-model), qui peut voir quoi, portée des clés, agents et ce qui est récupérable
 - [Console Web](/fr/docs/web-console), déverrouiller le store dans le navigateur pour exécuter des commandes
 - [Proxy et executor](/fr/docs/proxy-and-executor), comment la clé déverrouillée est accordée à un executor

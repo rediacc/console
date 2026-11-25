@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ar
-sourceHash: "1c0e9dc904bfd47b"
-sourceCommit: "c5f0b8f193e44cc4002c077ac4c26cfdde9ccbb0"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # تخزين الإعدادات
@@ -192,5 +192,6 @@ rdc config remote restore <version>
 
 ## ذو صلة
 
+- [النموذج الأمني](/ar/docs/security-model)، من يرى ماذا ونطاق المفاتيح والوكلاء وما يمكن استرداده
 - [وحدة التحكم على الويب](/ar/docs/web-console)، فك قفل المخزن في المتصفح لتشغيل الأوامر
 - [الوسيط والمنفِّذ](/ar/docs/proxy-and-executor)، كيف يُمنح المفتاح المفكوك القفل إلى منفِّذ
