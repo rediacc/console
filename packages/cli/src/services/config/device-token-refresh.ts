@@ -110,7 +110,10 @@ function refusalFor(error: unknown, remote: RemoteConfig, configName: string): u
   const enrollCmd = rdcCommand('config remote enable', configName);
 
   if (e.status === 401) {
-    return refused('login_invalid', t('commands.config.remote.tokenRefresh.loginInvalid', { cmd: loginCmd }));
+    return refused(
+      'login_invalid',
+      t('commands.config.remote.tokenRefresh.loginInvalid', { cmd: loginCmd })
+    );
   }
   if (e.status === 429) {
     return refused(
@@ -160,7 +163,10 @@ function refusalFor(error: unknown, remote: RemoteConfig, configName: string): u
       );
     case undefined:
       // A bare 403 from the api-token middleware: the login lacks `config:enroll` (a login made before the refresh route existed), or its team is gone.
-      return refused('login_scope', t('commands.config.remote.tokenRefresh.loginScope', { cmd: loginCmd }));
+      return refused(
+        'login_scope',
+        t('commands.config.remote.tokenRefresh.loginScope', { cmd: loginCmd })
+      );
     default:
       return refused(
         e.code,

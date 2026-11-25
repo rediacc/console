@@ -82,7 +82,10 @@ const RETIRE_HINT = 'rdc subscription retire --expired (lists them; --apply reti
 type LiveRow = { guid: string; machine: string | null };
 
 /** The hard-expired licences of repositories this config holds; null when the report lists no licence. */
-function liveExpiredRows(report: LicenseReport, names: Map<string, RepoNameEntry>): LiveRow[] | null {
+function liveExpiredRows(
+  report: LicenseReport,
+  names: Map<string, RepoNameEntry>
+): LiveRow[] | null {
   const recent = report.repoLicenses.recent ?? [];
   if (recent.length === 0) return null;
   return licenceRows(recent, names).filter(
@@ -107,24 +110,34 @@ async function foreignIssuers(rows: LiveRow[]): Promise<Map<string, string>> {
   }
   for (const [machine, guids] of byMachine) {
     try {
-      const datastore = await configService
-        .getLocalMachine(machine)
-        .then((m) => m.datastore ?? DEFAULT_DATASTORE)
-        .catch(() => DEFAULT_DATASTORE);
-      const scanned = await scanRemoteRepoLicenses(machine, datastore);
-      for (const guid of guids) {
-        const origins = scanned
-          .filter((entry) => entry.repositoryGuid === guid && entry.currentRenewalUrl)
-          .map((entry) => renewalOrigin(entry.currentRenewalUrl as string));
-        if (origins.length > 0 && origins.every((origin) => origin !== expected)) {
-          foreign.set(guid, origins[0]);
-        }
-      }
+      await scanForeignOnMachine(machine, guids, expected, foreign);
     } catch {
       // An unreadable machine leaves its licences counted as this server's.
     }
   }
   return foreign;
+}
+
+/** Scan one machine and record each licence of `guids` whose every renewal origin is another server's. */
+async function scanForeignOnMachine(
+  machine: string,
+  guids: Set<string>,
+  expected: string,
+  foreign: Map<string, string>
+): Promise<void> {
+  const datastore = await configService
+    .getLocalMachine(machine)
+    .then((m) => m.datastore ?? DEFAULT_DATASTORE)
+    .catch(() => DEFAULT_DATASTORE);
+  const scanned = await scanRemoteRepoLicenses(machine, datastore);
+  for (const guid of guids) {
+    const origins = scanned
+      .filter((entry) => entry.repositoryGuid === guid && entry.currentRenewalUrl)
+      .map((entry) => renewalOrigin(entry.currentRenewalUrl as string));
+    if (origins.length > 0 && origins.every((origin) => origin !== expected)) {
+      foreign.set(guid, origins[0]);
+    }
+  }
 }
 
 /**
@@ -140,35 +153,8 @@ function checkRepoLicenses(
   rows: LiveRow[] | null,
   foreign: Map<string, string>
 ): void {
-  const { totalTrackedRepos, validCount, refreshRecommendedCount, hardExpiredCount } =
-    report.repoLicenses;
   const name = t('commands.doctor.checks.subscriptionRepoLicenses');
-  const expiredHere = hardExpiredCount - foreign.size;
-  let value: string, status: CheckStatus, hint: string | undefined;
-  if (totalTrackedRepos === 0) {
-    value = 'no tracked repos';
-    status = 'ok';
-  } else if (expiredHere > 0) {
-    const live = rows === null ? null : rows.filter((row) => !foreign.has(row.guid)).length;
-    value = `${validCount} valid, ${refreshRecommendedCount} need refresh, ${expiredHere} expired`;
-    if (live === 0) {
-      value += ` (none in this config)`;
-      status = 'warn';
-      hint = `Run: ${RETIRE_HINT} to retire the expired licenses of deleted repositories`;
-    } else {
-      if (live !== null) value += ` (${live} in this config)`;
-      status = 'fail';
-      hint = `Run: ${REFRESH_HINT} for repositories still on a machine, and ${RETIRE_HINT} for deleted ones`;
-    }
-  } else if (refreshRecommendedCount > 0) {
-    value = `${validCount} valid, ${refreshRecommendedCount} need refresh`;
-    status = 'warn';
-    hint = `Run: ${REFRESH_HINT} to refresh repo licenses`;
-  } else {
-    value = `${validCount}/${totalTrackedRepos} valid`;
-    status = 'ok';
-  }
-  checks.push({ name, value, status, hint });
+  checks.push({ name, ...repoLicenseVerdict(report, rows, foreign) });
   if (foreign.size > 0) {
     const origins = [...new Set(foreign.values())].join(', ');
     checks.push({
@@ -178,6 +164,42 @@ function checkRepoLicenses(
       hint: 'That server keeps them alive. `rdc subscription refresh -m <machine> --adopt-origin` moves them to this config deliberately',
     });
   }
+}
+
+/** The value, status and hint of the repo-licence row, before the info row about foreign issuers. */
+function repoLicenseVerdict(
+  report: LicenseReport,
+  rows: LiveRow[] | null,
+  foreign: Map<string, string>
+): { value: string; status: CheckStatus; hint?: string } {
+  const { totalTrackedRepos, validCount, refreshRecommendedCount, hardExpiredCount } =
+    report.repoLicenses;
+  const expiredHere = hardExpiredCount - foreign.size;
+  if (totalTrackedRepos === 0) return { value: 'no tracked repos', status: 'ok' };
+  if (expiredHere > 0) {
+    const live = rows === null ? null : rows.filter((row) => !foreign.has(row.guid)).length;
+    const value = `${validCount} valid, ${refreshRecommendedCount} need refresh, ${expiredHere} expired`;
+    if (live === 0) {
+      return {
+        value: `${value} (none in this config)`,
+        status: 'warn',
+        hint: `Run: ${RETIRE_HINT} to retire the expired licenses of deleted repositories`,
+      };
+    }
+    return {
+      value: live === null ? value : `${value} (${live} in this config)`,
+      status: 'fail',
+      hint: `Run: ${REFRESH_HINT} for repositories still on a machine, and ${RETIRE_HINT} for deleted ones`,
+    };
+  }
+  if (refreshRecommendedCount > 0) {
+    return {
+      value: `${validCount} valid, ${refreshRecommendedCount} need refresh`,
+      status: 'warn',
+      hint: `Run: ${REFRESH_HINT} to refresh repo licenses`,
+    };
+  }
+  return { value: `${validCount}/${totalTrackedRepos} valid`, status: 'ok' };
 }
 
 /** The active config's GUID-to-name join; an unreadable config knows no names, so every licence reads as not in it. */

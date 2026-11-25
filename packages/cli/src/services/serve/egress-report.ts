@@ -11,8 +11,10 @@
  * never throws, because a failed report must not lose the command's result line.
  */
 
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
+
 export const EGRESS_UNREACHABLE_CODE = 'EGRESS_UNREACHABLE';
-export const EGRESS_REPORT_URL = 'http://account.internal/executor/v1/egress-unreachable';
+export const EGRESS_REPORT_URL = `http://${WK_ACCOUNT_EGRESS_HOST}/executor/v1/egress-unreachable`;
 /** Covers the proxy's own 4 s probe of the target plus the round trip. */
 const EGRESS_REPORT_DEADLINE_MS = 12_000;
 

@@ -27,7 +27,10 @@ describe('enrollment marker', () => {
 
     expect(await mine.enrolledHere('eu')).toBe(true);
     const marker = JSON.parse(await fs.readFile(join(testDir, 'eu.enrolled'), 'utf-8'));
-    expect(Object.keys(marker).sort()).toEqual(['deviceId', 'enrolledAt']);
+    expect(Object.keys(marker).sort((a, b) => a.localeCompare(b))).toEqual([
+      'deviceId',
+      'enrolledAt',
+    ]);
     expect(marker.deviceId).toBe('device-here');
     expect(Number.isNaN(Date.parse(marker.enrolledAt))).toBe(false);
     expect((await fs.stat(join(testDir, 'eu.enrolled'))).mode & 0o777).toBe(0o600);

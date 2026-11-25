@@ -297,9 +297,10 @@ function formatExpiry(epochMs: number): string {
   return new Date(epochMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export async function tryOpenBrowser(url: string): Promise<void> {
+export function tryOpenBrowser(url: string): Promise<void> {
   // Detached with ignored stdio: a launcher that leaves the browser running would otherwise hold the pipes of a piped child, and with them the event loop, until the browser quits.
   openBrowser(url);
+  return Promise.resolve();
 }
 
 /**

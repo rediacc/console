@@ -6,9 +6,11 @@
  * production sees; the fetch handed to the adapter then sends the guarded
  * request to the mock server on loopback.
  */
+
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Profile } from '@rediacc/shared/ai';
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import { jsonSchema, streamText, tool } from 'ai';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createProviderModel, guardedFetch, ProviderProfileError } from '../provider.js';
@@ -289,7 +291,7 @@ describe('openai-chat profile', () => {
 
 describe('the D5 guard', () => {
   it.each([
-    ['account.internal', 'https://account.internal/v1'],
+    ['account.internal', `https://${WK_ACCOUNT_EGRESS_HOST}/v1`],
     ['loopback', 'https://127.0.0.1/v1'],
     ['RFC 1918', 'https://192.168.1.10/v1'],
     ['plain http', 'http://api.anthropic.example/v1'],

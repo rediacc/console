@@ -23,9 +23,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { serve } from '@hono/node-server';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -38,6 +38,7 @@ import {
   PolicyDocumentSchema,
 } from '@rediacc/shared/policy';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { isAgentByAncestry } from '../../../utils/process-ancestry.js';
 import type { ExecuteOptions } from '../../executor/types.js';
 import { AuthVerifier } from '../../serve/auth.js';
 import { serveCrypto } from '../../serve/crypto.js';
@@ -45,7 +46,6 @@ import type { ServeDeps } from '../../serve/deps.js';
 import { type AgentGrantOverrides, authorize } from '../../serve/policy.js';
 import { createServeApp } from '../../serve/server.js';
 import { SessionStore } from '../../serve/sessions.js';
-import { isAgentByAncestry } from '../../../utils/process-ancestry.js';
 
 interface Expectation {
   verdict: string;
@@ -150,9 +150,7 @@ function viaDecide(row: FixtureRow): Expectation {
     principal: row.principal,
     command: row.command,
     target: row.target,
-    policy: row.policy
-      ? mergePolicies(parseDoc(row.policy.org), parseDoc(row.policy.team))
-      : null,
+    policy: row.policy ? mergePolicies(parseDoc(row.policy.org), parseDoc(row.policy.team)) : null,
     overrides: row.overrides,
     confirmation: row.confirmation,
   });
@@ -321,7 +319,8 @@ function bootExecutor(): void {
     },
     loadConfig: () => Promise.resolve(activeConfig),
     // The grant principal is the one way an agent reaches the executor (the HTTP route carries no agent claim of its own), so the case's grant is added here.
-    authorize: (args) => authorize({ ...args, ...(activeGrant ? { agentGrant: activeGrant } : {}) }),
+    authorize: (args) =>
+      authorize({ ...args, ...(activeGrant ? { agentGrant: activeGrant } : {}) }),
     audit: () => Promise.resolve(),
     detach: () => false,
   };
@@ -390,7 +389,7 @@ async function mismatch(surface: Surface, c: ParityCase, flip = false): Promise<
   return `${surface} ${c.row}: expected ${expected.verdict}/${expected.code}, got ${got.verdict}/${got.code}`;
 }
 
-beforeAll(async () => {
+beforeAll(() => {
   home = mkdtempSync(path.join(tmpdir(), 'rdc-parity-'));
   const configDir = path.join(home, 'config', 'rediacc');
   mkdirSync(configDir, { recursive: true });

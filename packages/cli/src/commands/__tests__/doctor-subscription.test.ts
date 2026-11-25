@@ -21,11 +21,16 @@ const scan = vi.hoisted(() => ({ current: [] as unknown[] }));
 vi.mock('../../services/backup/backup-store-universe.js', () => ({
   expectedAccountServerOrigin: () => expectedOrigin.current,
 }));
-vi.mock('../../services/account/license-machine.js', () => ({
-  DEFAULT_DATASTORE: '/mnt/rediacc',
+vi.mock('../../services/account/license-machine.js', async () => ({
+  DEFAULT_DATASTORE: (await import('@rediacc/shared/config/well-known.generated'))
+    .WK_DATASTORE_PATH,
   scanRemoteRepoLicenses: async () => scan.current,
 }));
 
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { checkSubscription } from '../doctor-subscription.js';
 
 function base(status: string) {
@@ -171,7 +176,7 @@ describe('the doctor repo-licence check across account servers', () => {
   const LIVE = '11111111-aaaa-4aaa-8aaa-000000000001';
 
   beforeEach(() => {
-    expectedOrigin.current = 'https://eu.rediacc.cloud';
+    expectedOrigin.current = WK_ACCOUNT_DEFAULT_ORIGIN;
     config.current = {
       resources: {
         repositories: {
@@ -199,7 +204,7 @@ describe('the doctor repo-licence check across account servers', () => {
     scan.current = [
       {
         repositoryGuid: LIVE,
-        currentRenewalUrl: 'https://bench-eu.rediacc.cloud/api/license/renew',
+        currentRenewalUrl: `${WK_BENCH_ORIGIN}/api/license/renew`,
       },
     ];
     const section = await checkSubscription();
@@ -207,13 +212,13 @@ describe('the doctor repo-licence check across account servers', () => {
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((c) => c.status === 'ok')).toBe(true);
     const info = rows.find((c) => String(c.value).startsWith('info:'));
-    expect(info?.value).toContain('https://bench-eu.rediacc.cloud');
+    expect(info?.value).toContain(WK_BENCH_ORIGIN);
     expect(info?.hint).toContain('--adopt-origin');
   });
 
   it('CONTROL: an expired licence this config server issued still fails', async () => {
     scan.current = [
-      { repositoryGuid: LIVE, currentRenewalUrl: 'https://eu.rediacc.cloud/api/license/renew' },
+      { repositoryGuid: LIVE, currentRenewalUrl: `${WK_ACCOUNT_DEFAULT_ORIGIN}/api/license/renew` },
     ];
     const section = await checkSubscription();
     const row = section.checks.find((c) => String(c.value).includes('expired'));
