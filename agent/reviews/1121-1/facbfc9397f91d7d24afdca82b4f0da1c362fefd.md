@@ -28,4 +28,4 @@ Resolution: fixed 5775bcdaf2a53f9c71111ba08cacea77c87ae36e | d778be9d 2026-11-24
 Anchor: in-diff
 Claim: The note's provenance stamp "ASKED:2026-11-24T17:3xZ" is not a valid timestamp, so the operator-ruling record it is meant to document cannot be checked against the ruling time.
 Class: other
-Resolution: open
+Resolution: fixed 6fecf7a5248269b437edffa7bbde647bf58e7b82 | d778be9d 2026-11-26T16:56:45Z

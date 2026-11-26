@@ -22,4 +22,4 @@ Body-Sig: cb0c0d9a122d737c
 Anchor: in-diff
 Claim: The commit message says the manifest drops 13 ids, but the diff removes 18 account-e2e id lines (6 from 10-stripe, 7 from 12-stripe-e2e, 5 from 11-lifecycle), so the message's count does not match the change.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | .ci/config/shards/test-account-e2e.json:8 | d778be9d 2026-11-26T16:53:41Z

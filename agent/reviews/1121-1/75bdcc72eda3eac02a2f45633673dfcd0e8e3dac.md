@@ -22,16 +22,16 @@ Body-Sig: 9b63eb3cf217d5d3
 Anchor: in-diff
 Claim: The archived 2026-11-24 text states 'Effective Date: November 11, 2026', but the version record in legal-documents.json and documents.generated.ts gives effective 2026-12-24, so the published text and its metadata disagree on when it takes effect.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: waived #4966e06d ASKED:2026-11-26T17:03Z | d778be9d 2026-11-26T17:03:27Z
 
 ### 75bdcc72.2 [low] packages/www/public/legal/archive/data-processing-agreement-2026-11-24.txt:2
 Anchor: in-diff
 Claim: The archived 2026-11-24 DPA states 'Effective Date: November 11, 2026', but the version record gives effective 2026-12-24, so the document text and the metadata disagree on the effective date.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: waived #4966e06d ASKED:2026-11-26T17:03Z | d778be9d 2026-11-26T17:03:28Z
 
 ### 75bdcc72.3 [low] packages/www/public/legal/archive/privacy-policy-2026-11-24.txt:68
 Anchor: in-diff
 Claim: The telemetry bullet says telemetry goes to 'our own telemetry endpoint' and that 'No telemetry data is shared with third parties', while the DPA in the same commit lists Hostinger as a subprocessor hosting otlp.rediacc.io, which receives Telemetry Data.
 Class: other
-Resolution: open
+Resolution: waived #4966e06d ASKED:2026-11-26T17:03Z | d778be9d 2026-11-26T17:03:29Z

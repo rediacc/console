@@ -22,7 +22,7 @@ Body-Sig: 4f13daa2c72540bc
 Anchor: in-diff
 Claim: The assertion expect(regimeMapping(path, regime.id)).toBeDefined() cannot fail independently: REPORT_FIELD_MAP is parsed at module load, so any missing row already throws at import, and the test adds no check the loader does not already make.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed a7f224652a7beca741251213090f4e45bdef5ca9 | d778be9d 2026-11-26T16:52:38Z
 
 ### 4ab1dce5.2 [low] packages/shared/src/incident/report-field-map.json:5
 Anchor: in-diff

@@ -22,4 +22,4 @@ Body-Sig: f0c58c60a0512c5e
 Anchor: in-diff
 Claim: The module header says the shared helpers are used by /console/ai/* in console-ai.ts, but nothing in this diff adds that file or any importer; those AI routes only arrive later under AP9, so the comment describes a consumer that does not exist at this commit.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | private/account/src/routes/console-executor.ts:3 | d778be9d 2026-11-26T16:55:59Z

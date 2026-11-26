@@ -566,7 +566,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md` | proposed | 57 | 7 | 1 | 11467 |
-| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 71 | 8 | 2 | 10590 |
+| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 76 | 3 | 7 | 11261 |
 | `agent/plans/PLAN-licence-expiry-notices.md` | approved | 69 | 0 | 7 | 16665 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |

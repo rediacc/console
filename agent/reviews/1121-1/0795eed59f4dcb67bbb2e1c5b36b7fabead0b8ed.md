@@ -22,4 +22,4 @@ Body-Sig: bcfe49472996aa80
 Anchor: in-diff
 Claim: applyEvent now throws a RangeError for an oversized tail instead of truncating it; the route tests in console-run-routes.test.ts add no oversized-tail case, so the HTTP status the POST /runs/events caller gets for this refusal is untested.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 180a355b90ba5767166023ea17f4ef4e66c6a585 | d778be9d 2026-11-26T16:50:51Z

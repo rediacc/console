@@ -22,16 +22,16 @@ Body-Sig: f941895b2699d08f
 Anchor: in-diff
 Claim: The commit says a client disconnect aborts the upstream turn via `signal: c.req.raw.signal`, but no test in tests/integration/console-ai.test.ts aborts a request or checks the upstream signal, so a regression that drops the signal would pass the suite.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 3a314ca3d93bbb743ed57afad321269fbc38c92f | d778be9d 2026-11-26T16:52:40Z
 
 ### 56edfda7.2 [low] src/routes/console-ai.ts:102
 Anchor: in-diff
 Claim: The comment says `opts.forceRateLimit` exists for a test that proves the per-org budget, but no test in this diff forces the limiter or checks the 30-per-minute cap, so the budget is unverified.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 3a314ca3d93bbb743ed57afad321269fbc38c92f | d778be9d 2026-11-26T16:52:40Z
 
 ### 56edfda7.3 [low] src/routes/console-ai.ts:144
 Anchor: in-diff
 Claim: When the executor returns ok with an empty body, the 502 message says 'The executor rejected the request', which misdescribes a successful response with no body.
 Class: other
-Resolution: open
+Resolution: fixed 3a314ca3d93bbb743ed57afad321269fbc38c92f | d778be9d 2026-11-26T16:52:41Z

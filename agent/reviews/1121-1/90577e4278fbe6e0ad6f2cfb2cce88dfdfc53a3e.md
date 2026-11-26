@@ -34,7 +34,7 @@ Resolution: fixed 07bc0bfbf014bf6bd3de628fcdad7a79cb3da001 | d778be9d 2026-11-24
 Anchor: in-diff
 Claim: previewTouchOption throws a ValidationError whenever a preview overlay exists and machineName is undefined, on every acquireRemoteRenet call, before the provisioner decides whether a replacement is needed, so a no-op provision of an unnamed machine now fails during a preview.
 Class: other
-Resolution: open
+Resolution: fixed e386cc46f6d7feba651aab3a2c9ba780a8106050 | d778be9d 2026-11-26T16:59:43Z
 
 ### 90577e42.4 [medium] packages/cli/src/services/preview/touch.ts:23
 Anchor: in-diff

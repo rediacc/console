@@ -28,16 +28,16 @@ Resolution: fixed 37d92106a7cbba839e14850d254b6e85ec1b3d10 | d778be9d 2026-11-26
 Anchor: in-diff
 Claim: The delete in the adjustLot catch block sits outside any try, so if the delete itself fails the error escapes refund() instead of returning 'failed' as the other error paths do.
 Class: other
-Resolution: open
+Resolution: fixed 180a355b90ba5767166023ea17f4ef4e66c6a585 | d778be9d 2026-11-26T16:54:16Z
 
 ### a1dd3baa.3 [medium] src/services/ai-reconcile.service.ts:396
 Anchor: in-diff
 Claim: The partial-credit branch (applied > 0 and applied !== credits) rewrites the row's credits via an unguarded update, and no test exercises it, so a partial adjustLot result is untested; if this update fails after the credit applied, refund() rejects and the row keeps the full requested amount.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 180a355b90ba5767166023ea17f4ef4e66c6a585 | d778be9d 2026-11-26T16:54:17Z
 
 ### a1dd3baa.4 [low] tests/integration/ai-reconcile.test.ts:233
 Anchor: in-diff
 Claim: The new test only covers the success path (row present when adjustLot runs); the new delete-on-throw and delete-on-zero branches have no test asserting the row is removed.
 Class: missing-control-test
-Resolution: open
+Resolution: not-a-bug | private/account/tests/integration/ai-reconcile.test.ts:233 | d778be9d 2026-11-26T16:54:17Z

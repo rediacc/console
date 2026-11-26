@@ -45,13 +45,18 @@ D8. `i18n-stamp-keys.ts --restamp` rewrites an existing ledger entry only where 
 
 ## Boxes
 
-- [ ] L1 [writer] Apply the D3 English values and the D date to en.json, add the two D1 entries without sha256 to `.ci/config/legal-documents.json`, run `npx tsx scripts/gen/gen-legal.ts` (dry run lists exactly 2 new archives, the manifest and documents.generated.ts), then `--write` and `npm run i18n:generate-hashes -- --surface www`. Accept: `npm run check:ci-terms-version` rc 0 and line 2 of both new archives is the D date.
-- [ ] L1b [writer] Check 7 and `SUPERSEDED_ARCHIVES` per D4 with the two selftest controls. Accept: `npm run check:ci-terms-version` rc 0 with the three superseded entries printed and both controls PASS.
+- [x] L1 [writer] Apply the D3 English values and the D date to en.json, add the two D1 entries without sha256 to `.ci/config/legal-documents.json`, run `npx tsx scripts/gen/gen-legal.ts` (dry run lists exactly 2 new archives, the manifest and documents.generated.ts), then `--write` and `npm run i18n:generate-hashes -- --surface www`. Accept: `npm run check:ci-terms-version` rc 0 and line 2 of both new archives is the D date.
+    (ticked) 2026-11-26T17:01:47Z by d778be9d: L1 landed, check:ci-terms-version rc 0 commit:ddd7e99e4b
+- [x] L1b [writer] Check 7 and `SUPERSEDED_ARCHIVES` per D4 with the two selftest controls. Accept: `npm run check:ci-terms-version` rc 0 with the three superseded entries printed and both controls PASS.
+    (ticked) 2026-11-26T17:01:49Z by d778be9d: L1b landed, check:ci-terms-version rc 0 with the three superseded entries printed commit:af26b78dcf
 - [x] L2 [writer] MCP flags per D5 and parity checks per D6. Accept: `cd packages/cli && npx vitest run src/commands/mcp src/config` rc 0, `npm run check:ci-cli-contract` rc 0, `npm run check:ci-mcp-docs-parity` rc 0 with both new controls PASS.
     (ticked) 2026-11-26T15:46:36Z by d778be9d: L2 landed, check:ci-mcp-docs-parity and check:ci-cli-contract rc 0 commit:154bfe13fb
-- [ ] L3a [writer] D7 deltas for ar, de, es, et after L1. Accept: all seven keys differ from HEAD in each of the four locales and the stamp dry run rc 0.
-- [ ] L3b [writer] D7 deltas for fr, it, ja, ko after L1. Accept: as L3a.
-- [ ] L3c [writer] D7 deltas for pt, ru, tr, zh after L1. Accept: as L3a.
+- [x] L3a [writer] D7 deltas for ar, de, es, et after L1. Accept: all seven keys differ from HEAD in each of the four locales and the stamp dry run rc 0.
+    (ticked) 2026-11-26T17:08:21Z by d778be9d: L3a landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:394d10666b
+- [x] L3b [writer] D7 deltas for fr, it, ja, ko after L1. Accept: as L3a.
+    (ticked) 2026-11-26T17:08:22Z by d778be9d: L3b landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:85335d81b4
+- [x] L3c [writer] D7 deltas for pt, ru, tr, zh after L1. Accept: as L3a.
+    (ticked) 2026-11-26T17:08:23Z by d778be9d: L3c landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:76ce683f14
 - [x] L5 [writer] `--restamp` per D8 with controls (re-translated stale key restamped, unchanged stale key listed only, placeholder mismatch refused). Accept: `npx tsx scripts/__tests__/i18n-stamp-keys.control.ts` rc 0.
     (ticked) 2026-11-26T15:26:15Z by d778be9d: L5 --restamp landed, npx tsx scripts/__tests__/i18n-stamp-keys.control.ts rc 0 commit:9baa26e9fb
 - [ ] L4 [writer] Stamp the four new-ledger keys, restamp the three existing ones, run `npm run i18n:generate-hashes` and `npm run i18n:naturalize-status` after L3a-c and L5. Accept: `npm run check:i18n`, `npm run check:ci-terms-version` and `npm run check:ci-prose-style` rc 0.
