@@ -15,9 +15,9 @@ const DEFAULT_FINISH = 'stop';
 /** The code an `error` line carries when the provider refused the call. */
 export const SCRIPTED_PROVIDER_ERROR_CODE = 'PROVIDER_ERROR';
 
-/** Split a text into word-sized deltas, each keeping its trailing space, so a stream has several. */
+/** Split a text into word-sized deltas, each keeping its surrounding whitespace, so a stream has several and its deltas join back into the text. */
 function deltas(text: string): string[] {
-  return text.match(/\S+\s*/g) ?? [text];
+  return text.match(/\s*\S+\s*/g) ?? [text];
 }
 
 const aiLine = (ai: AiEvent): StreamLine => ({ kind: 'ai', ai });

@@ -95,6 +95,13 @@ describe('validateBaseUrl', () => {
     expect(validateBaseUrl('https://[2002:808:808::]/v1').ok).toBe(true);
   });
 
+  it('refuses a deprecated IPv4-compatible literal for the range it embeds, not as unspecified', () => {
+    expect(refused('https://[::a00:1]/v1')).toBe('private-address');
+    expect(refused('https://[::7f00:1]/v1')).toBe('loopback');
+    // Control: one embedding a public IPv4 is as acceptable as that IPv4.
+    expect(validateBaseUrl('https://[::808:808]/v1').ok).toBe(true);
+  });
+
   it('carries a message for each refusal', () => {
     const r = validateBaseUrl('https://10.0.0.5/v1');
     expect(r.ok).toBe(false);

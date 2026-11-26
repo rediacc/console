@@ -8,6 +8,7 @@ import {
   scriptNdjson,
   scriptStreamLines,
 } from '../index.js';
+import type { AiScript } from '../scripts.js';
 
 describe('scripted AI provider', () => {
   it('ships the six scripts the plan names', () => {
@@ -50,6 +51,30 @@ describe('scripted AI provider', () => {
     ]);
     expect(kinds.slice(-2)).toEqual(['usage', 'finish']);
   });
+
+  it.each([' hi', '  two  leading and trailing  ', 'plain words here', 'one', '   ', ''])(
+    'streams text %j as deltas that join back into it',
+    (text) => {
+      const script: AiScript = {
+        ...getScript('text'),
+        steps: [
+          {
+            parts: [{ type: 'text', text }],
+            finish: 'stop',
+            usage: { inputTokens: 1, outputTokens: 1 },
+          },
+        ],
+      };
+      const fromLines = scriptStreamLines(script).flatMap((line) =>
+        line.kind === 'ai' && line.ai.type === 'text_delta' ? [line.ai.text] : []
+      );
+      expect(fromLines.join('')).toBe(text);
+      const fromModel = scriptModelSteps(script)
+        .flat()
+        .flatMap((part) => (part.type === 'text-delta' ? [part.delta] : []));
+      expect(fromModel.join('')).toBe(text);
+    }
+  );
 
   it('ends the turn at an approval request without a tool result', () => {
     const lines = scriptStreamLines(getScript('approval'));
