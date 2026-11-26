@@ -11,6 +11,7 @@ interface VMInfo {
   name: string;
   ip: string;
   status: string;
+  ssh_port?: number;
 }
 
 interface OpsStatusResponse {
