@@ -22,10 +22,10 @@ import secrets
 import wl_core as C
 
 LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
-# The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f set once per hour; operator request 2026-11-26 halved it, "make writers-now 2x more aggressive").
-WINDOW_MIN = 30
+# The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f set once per hour; operator request 2026-11-26 halved it, "make writers-now 2x more aggressive"; a second request the same day asked for 1.5x more, "Increase the writers-now pushing 1.5 times more").
+WINDOW_MIN = 20
 # How long a round whose survey file does not exist yet still counts with no liveness witness: halved with the window (was 50 of 60), and a survey agent the hook sees running keeps its round counting up to SURVEY_LIVE_MAX_MIN.
-SURVEY_GRACE_MIN = 25
+SURVEY_GRACE_MIN = 15
 # The most a liveness witness extends a missing survey: a surveyor measured at 21 to 48 minutes, so a task still naming the file after this long is a watcher or a reader, not the producer.
 SURVEY_LIVE_MAX_MIN = 180
 # Why a round does not count toward the cadence (judge_round), shown in the writers-now-due message.
@@ -322,11 +322,11 @@ def refresh_fields(facts, cap, why, me8) -> dict:
 # WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once per window leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey. Operator request 2026-11-26 ("we still have hundreds of waiting tasks ... they're mostly independent already") raised the floor from 6 to 8, made the refill staff every free cluster rather than only up to the floor, and halved the refresh numbers.
 
 # The live-writer floor: below it, every unstaffed startable cluster of the current survey is named to start, clock or no clock. A trigger, not a ceiling: there is no writer limit (agent/plans/PLAN-unlimited-writers.md).
-CAPACITY_FLOOR = 8
+CAPACITY_FLOOR = 12
 # Boxes ticked in the Promoted plans since the newest survey was written that make it stale enough to re-survey before the window closes (was 15).
-REFRESH_TICKS = 8
+REFRESH_TICKS = 5
 # How long a survey stands before its exhaustion or its tick count asks for the next one (was 15): without the floor, a survey whose every startable cluster is already staffed or blocked would ask for a new survey at every stop.
-REFRESH_GAP_MIN = 8
+REFRESH_GAP_MIN = 5
 # How many free clusters one message lists before it says how many more the survey holds.
 REFILL_LIST_MAX = 16
 # The survey's cluster section and the bullets of its startable run (`- **CL-<id> (...)**: <plan> <BOX> <sig8> + ... Files: ...`).

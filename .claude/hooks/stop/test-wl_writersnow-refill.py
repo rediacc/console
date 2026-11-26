@@ -83,7 +83,7 @@ def at(minutes_ago):
     return (NOW - datetime.timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def plant(tmp, text=SURVEY, survey_age_min=20):
+def plant(tmp, text=SURVEY, survey_age_min=12):
     """One round of this session started two minutes before its survey was written, so the round counts and the clock stays quiet while the survey is younger than WINDOW_MIN minus two."""
     path = pathlib.Path(tmp) / "survey.md"
     path.write_text(text, encoding="utf-8")
@@ -131,7 +131,7 @@ def refill_cases(tmp):
     check("one slot free below the floor", (roomy_fields["slots"], roomy_fields["n"]), (1, 3))
     at_floor = cap(tmp, live=W.CAPACITY_FLOOR)
     check("live writers at the floor refill nothing", W.assess(False, OPEN, at_floor), ("", ""))
-    check("the floor is 8", W.CAPACITY_FLOOR, 8)
+    check("the floor is 12", W.CAPACITY_FLOOR, 12)
     # Control (operator request 2026-11-26): no open CODE box, so no capacity trigger even with no writer alive. Every startable cluster ticked, the survey younger than the refresh gap.
     no_code = cap(
         tmp,
@@ -175,7 +175,7 @@ def refresh_cases(tmp):
         W.assess(False, OPEN, cap(tmp, items=staffed)),
         want,
     )
-    young = cap(tmp, items=staffed, survey_age_min=5)
+    young = cap(tmp, items=staffed, survey_age_min=3)
     check("an exhausted survey younger than the gap waits", W.assess(False, OPEN, young), ("", ""))
     unreadable = cap(tmp, text="# survey with no cluster section\n")
     check("an unreadable survey asks for nothing", W.assess(False, OPEN, unreadable), ("", ""))
@@ -190,7 +190,7 @@ def refresh_cases(tmp):
     )
     fewer = cap(tmp, text=text, done=tuple(many[1:]))
     check("one tick fewer refills instead", W.assess(False, OPEN, fewer), ("refill", ""))
-    check("the refresh numbers are halved", (W.REFRESH_TICKS, W.REFRESH_GAP_MIN), (8, 8))
+    check("the refresh numbers are 1.5x faster", (W.REFRESH_TICKS, W.REFRESH_GAP_MIN), (5, 5))
 
 
 def clock_cases(tmp):
@@ -204,19 +204,19 @@ def clock_cases(tmp):
     ]
     fires, facts = W.due(rows, ME, NOW, 40, None, root=tmp)
     check(
-        "the clock still fires after 30 minutes",
+        "the clock still fires after 20 minutes",
         (fires, W.assess(fires, facts, cap(tmp))),
         (True, ("due", W.WHY_CLOCK)),
     )
-    check("the window is 30 minutes", (W.WINDOW_MIN, W.SURVEY_GRACE_MIN), (30, 25))
-    fresh = [dict(rows[0], at=at(25))]
+    check("the window is 20 minutes", (W.WINDOW_MIN, W.SURVEY_GRACE_MIN), (20, 15))
+    fresh = [dict(rows[0], at=at(15))]
     check(
-        "a round 25 minutes old keeps the clock quiet",
+        "a round 15 minutes old keeps the clock quiet",
         W.due(fresh, ME, NOW, 40, None, root=tmp)[0],
         False,
     )
     fired = run_segment(tmp, [LEASED_B], rows=rows)
-    clock = "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last 30"
+    clock = "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last 20"
     check(
         "the segment renders the clock message",
         [(k, t.startswith(clock)) for k, t in fired],
@@ -227,7 +227,7 @@ def clock_cases(tmp):
         "the clock message carries the shortfall below the floor",
         [
             (
-                "Meanwhile the roster counts 1 live writer(s) against a floor of 8 (7 slot(s) free)"
+                "Meanwhile the roster counts 1 live writer(s) against a floor of 12 (11 slot(s) free)"
                 in t
                 and "  - CL-A a1a1a1a1 a2a2a2a2" in t
             )
@@ -306,7 +306,7 @@ def segment_cases(tmp):
     )
     check(
         "the refill names the free slots",
-        "against a floor of 8 (7 slot(s) free)" in fired[0][1]
+        "against a floor of 12 (11 slot(s) free)" in fired[0][1]
         and "presumed independent" in fired[0][1],
         True,
     )
