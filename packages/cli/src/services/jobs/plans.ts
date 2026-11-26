@@ -78,7 +78,7 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
     'one raw write of a local file with no renet call (J0b, proposed; the alternative is a cert-write allow-list entry)',
   'machine deprovision': 'local tofu destroy and config removal, with no SSH leg (J0b finding 6)',
   'machine scan-keys':
-    'local ssh-keyscan; the config write is the command (section 24 not-proxyable row)',
+    'local ssh2 host-key read; the config write is the command (section 24 not-proxyable row)',
   'datastore list': 'reads config and state only, with no machine call',
   // Not proxyable (PROXY_EXCLUSIONS): the verdict reads every config the caller can read, which a job unit on the machine cannot.
   'repo admin orphan delete':
