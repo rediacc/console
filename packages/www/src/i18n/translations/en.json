@@ -1061,7 +1061,7 @@
       },
       "hero": {
         "title": "Our Privacy Commitment",
-        "effectiveDate": "Effective Date: November 11, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -1152,9 +1152,9 @@
           "items": [
             "<strong>Service providers (subprocessors)</strong> who host and operate our platform, deliver email and process payments, bound by contractual obligations to protect your data. The current list, with each provider's role and location, is in our <a href=\"data-processing-agreement\">Data Processing Agreement</a>",
             "<strong>Plausible Analytics</strong> for cookieless, anonymized website analytics (no personal data is shared)",
-            "<strong>Telemetry processing</strong> for anonymized product usage data, which is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
+            "<strong>Telemetry processing</strong> for anonymized product usage data, which is sent to our own telemetry endpoint in the European Union for aggregation and analysis. The endpoint runs on virtual servers provided by Hostinger, which hosts the data for us as our processor, listed in our <a href=\"data-processing-agreement\">Data Processing Agreement</a>, and does not use it for its own purposes. We do not sell telemetry data or share it with anyone else (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
             "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process",
-            "<strong>The model provider the user connects</strong> when an AI agent is used through remote MCP: tool output returned to the agent is processed by that provider under its own terms. Rediacc does not choose that provider, and some connectors, such as the Claude API MCP connector, are not eligible for zero data retention"
+            "<strong>The model provider you connect</strong>, at your direction, when you use an AI agent through remote MCP: tool output returned to the agent goes to that provider, which processes it under your own agreement with it. That provider is not our processor or subprocessor, because Rediacc neither selects it nor instructs it. Some connectors, such as the Claude API MCP connector, are not eligible for zero data retention"
           ]
         },
         "dataRetention": {
@@ -1914,7 +1914,7 @@
       },
       "hero": {
         "title": "Our Telemetry Practices",
-        "effectiveDate": "Effective Date: February 1, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -2019,7 +2019,7 @@
             "<strong>Encryption:</strong> All data is encrypted in transit using TLS. The Renet Agent additionally uses gzip compression.",
             "<strong>Retention:</strong> Raw telemetry traces are stored for up to 90 days for debugging and incident investigation. Aggregated metrics are retained for up to 12 months and then deleted.",
             "<strong>Access:</strong> Telemetry data is accessible only to Rediacc engineering and operations staff on a need-to-know basis.",
-            "<strong>No third-party sharing:</strong> Telemetry data is not shared with, sold to, or accessible by any third party.",
+            "<strong>No third-party sharing:</strong> Telemetry data is not sold, and not shared with anyone for their own use. It is stored on virtual servers in the European Union provided by Hostinger, which hosts it for us as our processor (see our <a href=\"data-processing-agreement\">Data Processing Agreement</a>).",
             "<strong>Infrastructure:</strong> All telemetry data is processed and stored on infrastructure located within the European Union."
           ]
         },
@@ -2339,7 +2339,7 @@
       },
       "hero": {
         "title": "Data Processing Agreement",
-        "effectiveDate": "Effective Date: November 11, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -2351,7 +2351,7 @@
           "content": [
             "This Data Processing Agreement (\"DPA\") forms part of the <a href=\"terms-of-service\">Terms of Service</a> between {{legalName}} (\"Rediacc\", the \"Processor\") and the Customer, where the Customer uses the Services as a business and Rediacc processes Customer Personal Data on the Customer's behalf. Terms defined in the Terms of Service have the same meaning here.",
             "For Customer Personal Data, the Customer is the controller (or a processor acting for its own controller) and Rediacc is the processor (or subprocessor). For Account, billing and acceptance records and for Telemetry Data, Rediacc is an independent controller, as described in the <a href=\"privacy-policy\">Privacy Policy</a>, and this DPA does not apply to that processing.",
-            "Customer Data on the Customer's Machines is not processed by Rediacc. Encrypted configuration storage and hosted backups are encrypted with keys Rediacc does not hold, so Rediacc stores those blobs but cannot read their contents."
+            "Apart from the network forensics evidence described in Section 4, which Rediacc receives only for a repository on which the Customer turns forensics on, Rediacc does not process Customer Data on the Customer's Machines. Encrypted configuration storage and hosted backups are encrypted with keys Rediacc does not hold, so Rediacc stores those blobs but cannot read their contents."
           ]
         },
         "definitions": {

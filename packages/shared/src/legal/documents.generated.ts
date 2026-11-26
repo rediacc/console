@@ -43,6 +43,13 @@ export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocu
         sha256: '068e820e3db21b955d9c6551df30dc231ca2c1302d171989edcdcb5ae18daf8c',
         archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/privacy-policy-2026-11-24.txt`,
       },
+      {
+        version: '2026-11-26',
+        effective: '2026-11-26',
+        material: false,
+        sha256: '508897a4c9be709583a833322618b81fe039abab5d0ac5307002e7ef435aa27f',
+        archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/privacy-policy-2026-11-26.txt`,
+      },
     ],
   },
   'acceptable-use-policy': {
@@ -82,6 +89,13 @@ export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocu
         material: false,
         sha256: '93e0837eaf9baa2567682cdf65c4c6a9650f43fdfcad48579d201e84aa75d312',
         archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/data-processing-agreement-2026-11-25.txt`,
+      },
+      {
+        version: '2026-11-26',
+        effective: '2026-11-26',
+        material: false,
+        sha256: 'c864bbe69f96a1ef0c4c772913d09e217647345bdfeac91576de01bdc1533798',
+        archiveUrl: `${WK_SITE_ORIGIN}/legal/archive/data-processing-agreement-2026-11-26.txt`,
       },
     ],
   },
