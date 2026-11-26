@@ -13,7 +13,7 @@
 - 06:07Z tokens minted; 07:34Z C42 cd- exemption, rotation-admin store (DONE: project dabba09c holds the 4 keys, ./run.sh rotation list rc 0; machine account read only again at ~10:25Z; also holds the parked IAM admin pair; Cloudflare hardening #f7128272); 08:13Z narrow five profiles (#cf7b9860: code landed df62ac3c9f; next mint 4 scoped CF tokens via rotation slugs, operator creates IAM users rediacc-bench-check and rediacc-enterprise-ses-minter); 09:17/09:19Z host temp disposal (PLAN-host-temp-disposal.md committed, Promoted #100; 2 open questions: /var/tmp per-lease TMPDIR, summary one stop later); 09:24-09:27Z Cloudflare inventory (#957e0e50: remove proof companies now; investigate 4 buckets; ci:quick red past deadline; reap command run by sessions; every delete path dry-run by default with a coded refusal list, a safeguard against AI bugs). Write agent/plans/PLAN-cf-inventory.md from agent/d778be9d/cf-inventory-findings.md.
 
 ## Writers r26 (leases, land as each reports)
-- a421dc18487b54878 CL-BW; a4f270206eb695505 CL-CH; a3401720bb944cf56 CL-CC; a8149917d64be3317 CL-X.
+- a421dc18487b54878 CL-BW running; CL-CH, CL-CC and CL-X landed (AI10 c9e75130 owed, needs the real Whisper model hash). a532f657e09fcdc3f fixes the two cf_retire listing defects that block the bucket retire (#66f4558b). a5f14d5b05f02223a plans the Cloudflare token hardening from the official docs (#f7128272).
 
 ## Owed ticks
 - Live-owed per box audit (`worklist.py --box-audit d778be9d --live-owed`): preview-signer N2 2df4a7f5 (plan text grep, C2 route), AI13 62309d70 (Playwright), DO18/DO19 (www build), AI16 b5180148 (lint:unused), AF4, AI14, AC7, FN12, RW-D2, R1, LM-OP1/R-OP1, AG-OP-L1 (#9354c584).
