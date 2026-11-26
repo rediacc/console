@@ -3444,12 +3444,15 @@
       "description": "rdc'nin bu makinede çalıştırdığı yerel araçları yönetir. `rdc tools install tofu`, sabitlenmiş OpenTofu sürümünü indirir, açmadan önce SHA-256 değerini rdc'ye gömülü sağlama toplamıyla karşılaştırır ve ikili dosyayı rdc'nin araç dizinine yerleştirir. `rdc tools list` her aracı sürümü ve bulunduğu yerle birlikte gösterir.",
       "install": {
         "descriptionShort": "Sabitlenmiş ve sağlama toplamıyla doğrulanmış bir araç kur",
-        "description": "Bu CLI'de sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır.",
-        "argTool": "Kurulacak araç (tofu)",
+        "description": "Bu CLI'de sabitlenmiş bir araç sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. `tofu`, OpenTofu'yu her platforma kurar. `rsync` ise MSYS2 rsync'i ve yüklediği çalışma zamanı kitaplıklarını yalnızca Windows'a kurar; diğer sistemlerde rsync, sistemin paket yöneticisinden gelir. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır.",
+        "argTool": "Kurulacak araç (tofu; Windows'ta rsync de olabilir)",
         "optionForce": "Sabitlenmiş sürüm zaten varsa bile yeniden kur",
         "downloading": "{{platform}} için OpenTofu {{version}} indiriliyor...",
+        "downloadingPackage": "MSYS2 paketi {{name}} {{version}} indiriliyor...",
         "installed": "OpenTofu {{version}} şuraya kuruldu: {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} zaten şurada kurulu: {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} zaten şurada kurulu: {{path}}",
+        "rsyncInstalled": "rsync {{version}} şuraya kuruldu: {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} zaten şurada kurulu: {{path}}"
       },
       "list": {
         "descriptionShort": "Kurulu araçları, sürümlerini ve kaynaklarını göster",
@@ -3466,7 +3469,8 @@
         "unsupportedPlatform": "{{platform}}/{{arch}} için sabitlenmiş bir OpenTofu derlemesi yok",
         "insecureUrl": "HTTPS olmayan bir adresten indirme reddedildi: {{url}}",
         "checksumMismatch": "{{url}} için sağlama toplamı tutmuyor: beklenen {{expected}}, gelen {{actual}}. İndirilen dosya silindi, hiçbir şey kurulmadı.",
-        "badArchive": "İndirilen arşiv kullanılamıyor: {{reason}}"
+        "badArchive": "İndirilen arşiv kullanılamıyor: {{reason}}",
+        "rsyncFromSystem": "rdc, rsync'i yalnızca Windows'a kurar. {{platform}} üzerinde rsync, sistemin paket yöneticisinden gelir (örneğin apt install rsync, dnf install rsync ya da brew install rsync)."
       }
     },
     "version": {

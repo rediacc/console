@@ -3444,12 +3444,15 @@
       "description": "يدير الأدوات المحلية التي يشغّلها rdc على هذا الجهاز. يقوم `rdc tools install tofu` بتنزيل إصدار OpenTofu المحدد، ويطابق قيمة SHA-256 الخاصة به مع المجموع الاختباري المضمّن في rdc قبل فك الضغط، ثم يضع الملف التنفيذي في مجلد أدوات rdc. ويعرض `rdc tools list` كل أداة مع إصدارها ومكان العثور عليها.",
       "install": {
         "descriptionShort": "تثبيت أداة بإصدار محدد وتم التحقق منها بالمجموع الاختباري",
-        "description": "ينزّل إصدار OpenTofu المحدد في أداة CLI هذه، ويتحقق من مجموعه الاختباري SHA-256، ثم يثبّته في مجلد أدوات rdc. إذا لم يتطابق المجموع الاختباري يُحذف الملف المنزَّل ولا يُثبَّت أي شيء. لا يثبّت rdc أداة Terraform أبدًا، وإن كانت موجودة في PATH فتُستخدم كما هي.",
-        "argTool": "الأداة المراد تثبيتها (tofu)",
+        "description": "ينزّل إصدار أداة مثبّتًا في هذه الواجهة، ويتحقق من مجموع SHA-256 الخاص به، ثم يثبّته في مجلد أدوات rdc. يثبّت `tofu` أداة OpenTofu على أي منصة. ويثبّت `rsync` نسخة rsync من MSYS2 مع مكتبات التشغيل التي تحمّلها، على Windows فقط؛ أما على الأنظمة الأخرى فيأتي rsync من مدير حزم النظام. إذا لم يتطابق المجموع الاختباري، يُحذف الملف المنزّل ولا يُثبَّت شيء. لا يُثبَّت Terraform أبدًا؛ وإن كان موجودًا في PATH فيُستخدم كما هو.",
+        "argTool": "الأداة المراد تثبيتها (tofu، أو rsync على Windows)",
         "optionForce": "إعادة التثبيت حتى لو كان الإصدار المحدد موجودًا",
         "downloading": "جارٍ تنزيل OpenTofu {{version}} لـ {{platform}}...",
+        "downloadingPackage": "جارٍ تنزيل حزمة MSYS2 {{name}} {{version}}...",
         "installed": "تم تثبيت OpenTofu {{version}} في {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} مثبّت بالفعل في {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} مثبّت بالفعل في {{path}}",
+        "rsyncInstalled": "تم تثبيت rsync {{version}} في {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} مثبّت بالفعل في {{path}}"
       },
       "list": {
         "descriptionShort": "عرض الأدوات المثبّتة وإصداراتها ومصادرها",
@@ -3466,7 +3469,8 @@
         "unsupportedPlatform": "لا يوجد إصدار محدد من OpenTofu للمنصة {{platform}}/{{arch}}",
         "insecureUrl": "تم رفض التنزيل من عنوان لا يستخدم HTTPS: {{url}}",
         "checksumMismatch": "المجموع الاختباري لـ {{url}} غير مطابق: المتوقع {{expected}}، والفعلي {{actual}}. تم حذف الملف المنزَّل ولم يُثبَّت أي شيء.",
-        "badArchive": "لا يمكن استخدام الأرشيف المنزَّل: {{reason}}"
+        "badArchive": "لا يمكن استخدام الأرشيف المنزَّل: {{reason}}",
+        "rsyncFromSystem": "لا يثبّت rdc أداة rsync إلا على Windows. على {{platform}} يأتي rsync من مدير حزم النظام (مثل apt install rsync أو dnf install rsync أو brew install rsync)."
       }
     },
     "version": {

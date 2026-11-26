@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'b8b97d7e3bdd53e6';
+export const CLI_CONTRACT_VERSION = '05efdb7735270bd1';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "b8b97d7e3bdd53e6",
+  "version": "05efdb7735270bd1",
   "languages": [
     "ar",
     "de",
@@ -18256,7 +18256,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.tools.install.description",
-      "label": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+      "label": "Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. `tofu` installs OpenTofu on any platform. `rsync` installs the MSYS2 rsync and the runtime libraries it loads, on Windows only; elsewhere rsync comes from the system package manager. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
       "summaryKey": "commands.tools.install.descriptionShort",
       "summary": "Install a pinned, checksum-verified tool",
       "severity": "caution",
@@ -18280,7 +18280,7 @@ export const CLI_CONTRACT: CliContract = {
           "required": true,
           "variadic": false,
           "descriptionKey": "commands.tools.install.argTool",
-          "label": "Tool to install (tofu)"
+          "label": "Tool to install (tofu, or rsync on Windows)"
         }
       ],
       "hasSubcommands": false,

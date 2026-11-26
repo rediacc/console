@@ -3444,12 +3444,15 @@
       "description": "管理 rdc 在本机运行的本地工具。`rdc tools install tofu` 会下载固定版本的 OpenTofu，在解压前将其 SHA-256 与 rdc 内置的校验和比对，然后把二进制文件放入 rdc 的工具目录。`rdc tools list` 显示每个工具的版本及其来源。",
       "install": {
         "descriptionShort": "安装经过校验和验证的固定版本工具",
-        "description": "下载此 CLI 中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。",
-        "argTool": "要安装的工具 （tofu）",
+        "description": "下载此 CLI 中固定版本的工具，校验其 SHA-256 校验和，然后安装到 rdc 的工具目录。`tofu` 可在任何平台上安装 OpenTofu。`rsync` 仅在 Windows 上安装 MSYS2 版 rsync 及其加载的运行时库；在其他系统上，rsync 由系统包管理器提供。校验和不匹配时会删除下载内容，不安装任何东西。rdc 从不安装 Terraform；如果 PATH 中已有，则直接使用。",
+        "argTool": "要安装的工具（tofu，在 Windows 上也可以是 rsync）",
         "optionForce": "即使固定版本已存在也重新安装",
         "downloading": "正在下载适用于 {{platform}} 的 OpenTofu {{version}}...",
+        "downloadingPackage": "正在下载 MSYS2 软件包 {{name}} {{version}}...",
         "installed": "已将 OpenTofu {{version}} 安装到 {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} 已安装在 {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} 已安装在 {{path}}",
+        "rsyncInstalled": "已将 rsync {{version}} 安装到 {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} 已安装在 {{path}}"
       },
       "list": {
         "descriptionShort": "显示已安装的工具、版本和来源",
@@ -3466,7 +3469,8 @@
         "unsupportedPlatform": "没有适用于 {{platform}}/{{arch}} 的固定 OpenTofu 构建",
         "insecureUrl": "拒绝从非 HTTPS 地址下载：{{url}}",
         "checksumMismatch": "{{url}} 的校验和不匹配：应为 {{expected}}，实际为 {{actual}}。已删除下载的文件，未安装任何内容。",
-        "badArchive": "下载的归档文件无法使用：{{reason}}"
+        "badArchive": "下载的归档文件无法使用：{{reason}}",
+        "rsyncFromSystem": "rdc 仅在 Windows 上安装 rsync。在 {{platform}} 上，rsync 由系统包管理器提供（例如 apt install rsync、dnf install rsync 或 brew install rsync）。"
       }
     },
     "version": {

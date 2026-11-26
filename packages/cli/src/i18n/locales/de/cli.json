@@ -3444,12 +3444,15 @@
       "description": "Verwaltet die lokalen Werkzeuge, die rdc auf diesem Rechner ausführt. `rdc tools install tofu` lädt das fest hinterlegte OpenTofu-Release herunter, prüft vor dem Entpacken seine SHA-256-Prüfsumme gegen den in rdc eingebauten Wert und legt die Binärdatei im Werkzeugverzeichnis von rdc ab. `rdc tools list` zeigt jedes Werkzeug mit Version und Fundort.",
       "install": {
         "descriptionShort": "Ein fest hinterlegtes, per Prüfsumme verifiziertes Werkzeug installieren",
-        "description": "Lädt das in dieser CLI fest hinterlegte OpenTofu-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist.",
-        "argTool": "Zu installierendes Werkzeug (tofu)",
+        "description": "Lädt ein in dieser CLI fest hinterlegtes Werkzeug-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. `tofu` installiert OpenTofu auf jeder Plattform. `rsync` installiert das MSYS2-rsync samt den Laufzeitbibliotheken, die es lädt, und zwar nur unter Windows; anderswo stammt rsync aus dem Paketmanager des Systems. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist.",
+        "argTool": "Zu installierendes Werkzeug (tofu, unter Windows auch rsync)",
         "optionForce": "Neu installieren, auch wenn die hinterlegte Version schon vorhanden ist",
         "downloading": "Lade OpenTofu {{version}} für {{platform}} herunter...",
+        "downloadingPackage": "Lade MSYS2-Paket {{name}} {{version}} herunter...",
         "installed": "OpenTofu {{version}} installiert unter {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} ist bereits unter {{path}} installiert"
+        "alreadyInstalled": "OpenTofu {{version}} ist bereits unter {{path}} installiert",
+        "rsyncInstalled": "rsync {{version}} installiert unter {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} ist bereits unter {{path}} installiert"
       },
       "list": {
         "descriptionShort": "Installierte Werkzeuge mit Version und Herkunft anzeigen",
@@ -3466,7 +3469,8 @@
         "unsupportedPlatform": "Für {{platform}}/{{arch}} gibt es keinen hinterlegten OpenTofu-Build",
         "insecureUrl": "Download über eine URL ohne HTTPS verweigert: {{url}}",
         "checksumMismatch": "Prüfsumme für {{url}} stimmt nicht: erwartet {{expected}}, erhalten {{actual}}. Der Download wurde gelöscht, nichts wurde installiert.",
-        "badArchive": "Das heruntergeladene Archiv ist unbrauchbar: {{reason}}"
+        "badArchive": "Das heruntergeladene Archiv ist unbrauchbar: {{reason}}",
+        "rsyncFromSystem": "rdc tools install rsync funktioniert nur unter Windows. Unter {{platform}} kommt rsync aus dem Paketmanager des Systems (etwa apt install rsync, dnf install rsync oder brew install rsync)."
       }
     },
     "version": {

@@ -24,6 +24,10 @@
  *   cli-tool:opentofu  GitHub releases for the version; every sha256 from the release SHA256SUMS
  *                   after its cosign keyless signature verified (scripts/pins/signed-release.ts),
  *                   which is recorded beside the pin, into the generated constants rdc ships.
+ *   cli-tool:msys2-*  packages.msys2.org for the version and build instant of each MSYS2 package
+ *                   `rdc tools install rsync` places on Windows (rsync and the runtime its
+ *                   rsync.exe imports), and each package archive downloaded from repo.msys2.org
+ *                   and hashed, into packages/cli/src/services/tools/msys2-rsync-pin.generated.ts.
  *
  * `toolchain:node` has a `none` source (the Node major is the operator's), and answers "not compared".
  */
@@ -57,6 +61,7 @@ import {
   byNewest,
   type Dated,
   githubReleases,
+  msys2Versions,
   newerThan,
   npmVersions,
   pypiVersions,
@@ -178,6 +183,7 @@ export function createToolchainDriver(
     if (s.type === 'go-dl') return goReleases(entry, current);
     if (s.type === 'npm-registry' && s.package) return bare(await npmVersions(up, s.package, who));
     if (s.type === 'pypi' && s.package) return bare(await pypiVersions(up, s.package, who));
+    if (s.type === 'msys2-repo' && s.package) return bare(await msys2Versions(up, s.package, who));
     if (s.type === 'github-release' && s.repo)
       return githubReleases(up, s.repo, s.tagPrefix ?? '', who, current);
     if (s.type === 'none') throw new Error(s.reason ?? 'the registry names no source');

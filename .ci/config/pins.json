@@ -2177,6 +2177,457 @@
       "literals": []
     },
     {
+      "id": "cli-tool:msys2-rsync",
+      "kind": "leaf",
+      "name": "MSYS2 rsync (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "rsync"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'rsync', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN rsync version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'rsync', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN rsync sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/rsync-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-msys2-runtime",
+      "kind": "leaf",
+      "name": "MSYS2 MSYS2 runtime (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "msys2-runtime"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'msys2-runtime', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN msys2-runtime version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'msys2-runtime', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN msys2-runtime sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/msys2-runtime-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libiconv",
+      "kind": "leaf",
+      "name": "MSYS2 libiconv (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libiconv"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libiconv', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libiconv version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libiconv', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libiconv sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libiconv-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libidn2",
+      "kind": "leaf",
+      "name": "MSYS2 libidn2 (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libidn2"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libidn2', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libidn2 version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libidn2', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libidn2 sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libidn2-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libintl",
+      "kind": "leaf",
+      "name": "MSYS2 libintl (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libintl"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libintl', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libintl version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libintl', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libintl sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libintl-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-liblz4",
+      "kind": "leaf",
+      "name": "MSYS2 liblz4 (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "liblz4"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'liblz4', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN liblz4 version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'liblz4', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN liblz4 sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/liblz4-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libopenssl",
+      "kind": "leaf",
+      "name": "MSYS2 libopenssl (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libopenssl"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libopenssl', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libopenssl version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libopenssl', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libopenssl sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libopenssl-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libunistring",
+      "kind": "leaf",
+      "name": "MSYS2 libunistring (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libunistring"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libunistring', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libunistring version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libunistring', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libunistring sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libunistring-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libxxhash",
+      "kind": "leaf",
+      "name": "MSYS2 libxxhash (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libxxhash"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libxxhash', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libxxhash version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libxxhash', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libxxhash sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libxxhash-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libzstd",
+      "kind": "leaf",
+      "name": "MSYS2 libzstd (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libzstd"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libzstd', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libzstd version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libzstd', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libzstd sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libzstd-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-popt",
+      "kind": "leaf",
+      "name": "MSYS2 popt (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "popt"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'popt', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN popt version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'popt', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN popt sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/popt-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "cli-tool:tofu-providers",
       "kind": "leaf",
       "name": "OpenTofu providers",

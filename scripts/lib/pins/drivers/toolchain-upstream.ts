@@ -275,6 +275,38 @@ export async function pypiVersions(up: Upstream, pkg: string, who: string): Prom
   return byNewest(out);
 }
 
+/**
+ * MSYS2 `msys` repository: the one version of binary package `pkg` it serves now, dated by its build instant.
+ * The repository keeps only the current build, so the list has at most one entry; the package
+ * archive publishes no digest beside it, and a `sha256:` site names its full URL so the driver
+ * downloads and hashes it (the awscli path).
+ */
+export async function msys2Versions(up: Upstream, pkg: string, who: string): Promise<Dated[]> {
+  const doc = (await up.json(
+    `https://packages.msys2.org/api/search?query=${encodeURIComponent(pkg)}&qtype=binpkg`,
+    who
+  )) as {
+    results?: {
+      exact?: { name?: string; version?: string; build_date?: number; repos?: string[] } | null;
+    };
+  } | null;
+  const hit = doc?.results?.exact;
+  // The search answers with the base package a binary was built from (libzstd -> zstd); every split
+  // package of one base shares its version and build, and a wrong base cannot slip through, since
+  // the sha256 step downloads `<pkg>-<version>-x86_64.pkg.tar.zst` and a version that is not pkg's
+  // has no archive there.
+  if (!hit?.repos?.includes('msys') || !hit.version)
+    throw new UnreadableListing(`${pkg}: packages.msys2.org lists no msys package of that name`);
+  if (!/^\d+(?:\.\d+)*-\d+$/.test(hit.version))
+    throw new UnreadableListing(`${pkg}: version ${hit.version} is not <pkgver>-<pkgrel>`);
+  return [
+    {
+      version: hit.version,
+      publishedMs: typeof hit.build_date === 'number' ? hit.build_date * 1000 : null,
+    },
+  ];
+}
+
 /** The Go module proxy escapes capitals as `!lower`. */
 const escapeModule = (m: string): string => m.replace(/[A-Z]/g, (c) => `!${c.toLowerCase()}`);
 

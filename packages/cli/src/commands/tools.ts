@@ -4,6 +4,7 @@ import { outputService } from '../services/core/output.js';
 import { resolveTofu, type TofuSource } from '../services/tofu/executor.js';
 import { installTofu, listInstalledTofu, TOOL_NAMES } from '../services/tools/install.js';
 import { OPENTOFU_PIN } from '../services/tools/pins.js';
+import { installRsync } from '../services/tools/rsync.js';
 import type { OutputFormat } from '../types/index.js';
 import { handleError } from '../utils/errors.js';
 
@@ -57,6 +58,23 @@ async function collectToolRows(): Promise<ToolRow[]> {
   return rows;
 }
 
+/** `rdc tools install rsync`: the pinned MSYS2 rsync on Windows; elsewhere an error naming the system package manager. */
+async function runInstallRsync(force: boolean | undefined): Promise<void> {
+  const result = await installRsync(
+    { force },
+    {
+      onDownloadStart: ({ name, version }) =>
+        outputService.info(t('commands.tools.install.downloadingPackage', { name, version })),
+    }
+  );
+  const params = { version: result.version, path: result.path };
+  if (result.alreadyInstalled) {
+    outputService.info(t('commands.tools.install.rsyncAlreadyInstalled', params));
+  } else {
+    outputService.success(t('commands.tools.install.rsyncInstalled', params));
+  }
+}
+
 export function registerToolsCommands(program: Command): void {
   const tools = program
     .command('tools')
@@ -75,6 +93,10 @@ export function registerToolsCommands(program: Command): void {
           throw new Error(
             t('commands.tools.errors.unknownTool', { tool, available: TOOL_NAMES.join(', ') })
           );
+        }
+        if (tool === 'rsync') {
+          await runInstallRsync(options.force);
+          return;
         }
         const result = await installTofu(
           { force: options.force },

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3344,
-    "sourceCommit": "ebe45bf66a33ab70f5c5038f17a9dc7b416fe48a"
+    "keyCount": 3348,
+    "sourceCommit": "4f037bc95d047b36e0f293ff5566e8a2d44bed55"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2645,15 +2645,19 @@
     "commands.tools.errors.badArchive": "4cf7c30a",
     "commands.tools.errors.checksumMismatch": "0b373076",
     "commands.tools.errors.insecureUrl": "3f6f1ec8",
+    "commands.tools.errors.rsyncFromSystem": "cc6e445e",
     "commands.tools.errors.unknownTool": "55105029",
     "commands.tools.errors.unsupportedPlatform": "64bce905",
     "commands.tools.install.alreadyInstalled": "41552821",
-    "commands.tools.install.argTool": "ca35e281",
-    "commands.tools.install.description": "61fe8328",
+    "commands.tools.install.argTool": "8ef05346",
+    "commands.tools.install.description": "e49722b7",
     "commands.tools.install.descriptionShort": "0ac49bd8",
     "commands.tools.install.downloading": "e993bd9b",
+    "commands.tools.install.downloadingPackage": "807587b6",
     "commands.tools.install.installed": "9170698d",
     "commands.tools.install.optionForce": "c862ae7f",
+    "commands.tools.install.rsyncAlreadyInstalled": "39ae9629",
+    "commands.tools.install.rsyncInstalled": "ccd11efe",
     "commands.tools.list.description": "b21b063e",
     "commands.tools.list.descriptionShort": "675d1926",
     "commands.tools.list.empty": "d33c709e",

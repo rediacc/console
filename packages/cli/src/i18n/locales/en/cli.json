@@ -3443,12 +3443,15 @@
       "description": "Manage the local tools this CLI runs on the workstation. `rdc tools install tofu` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into this CLI before extracting it, and places the binary in the CLI's tools directory. `rdc tools list` shows each tool with its version and where it was found.",
       "install": {
         "descriptionShort": "Install a pinned, checksum-verified tool",
-        "description": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
-        "argTool": "Tool to install (tofu)",
+        "description": "Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. `tofu` installs OpenTofu on any platform. `rsync` installs the MSYS2 rsync and the runtime libraries it loads, on Windows only; elsewhere rsync comes from the system package manager. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+        "argTool": "Tool to install (tofu, or rsync on Windows)",
         "optionForce": "Reinstall even when the pinned version is already present",
         "downloading": "Downloading OpenTofu {{version}} for {{platform}}...",
+        "downloadingPackage": "Downloading MSYS2 package {{name}} {{version}}...",
         "installed": "Installed OpenTofu {{version}} at {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} is already installed at {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} is already installed at {{path}}",
+        "rsyncInstalled": "Installed rsync {{version}} at {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} is already installed at {{path}}"
       },
       "list": {
         "descriptionShort": "Show installed tools, their versions and sources",
@@ -3465,7 +3468,8 @@
         "unsupportedPlatform": "No pinned OpenTofu build exists for {{platform}}/{{arch}}",
         "insecureUrl": "Refusing to download over a non-HTTPS URL: {{url}}",
         "checksumMismatch": "Checksum mismatch for {{url}}: expected {{expected}}, got {{actual}}. The download was deleted and nothing was installed.",
-        "badArchive": "The downloaded archive cannot be used: {{reason}}"
+        "badArchive": "The downloaded archive cannot be used: {{reason}}",
+        "rsyncFromSystem": "rdc tools install rsync works only on Windows. On {{platform}}, rsync comes from the system package manager (for example apt install rsync, dnf install rsync or brew install rsync)."
       }
     },
     "version": {

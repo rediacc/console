@@ -3444,12 +3444,15 @@
       "description": "このマシンでrdcが実行するローカルツールを管理します。`rdc tools install tofu` は固定されたOpenTofuリリースをダウンロードし、展開する前にrdcに組み込まれたチェックサムとSHA-256を照合して、バイナリをrdcのツールディレクトリに配置します。`rdc tools list` は各ツールのバージョンと検出元を表示します。",
       "install": {
         "descriptionShort": "固定されチェックサム検証済みのツールをインストール",
-        "description": "このCLIに固定されたOpenTofuリリースをダウンロードし、SHA-256チェックサムを検証してからrdcのツールディレクトリにインストールします。チェックサムが一致しない場合はダウンロードを削除し、何もインストールしません。Terraformは決してインストールせず、PATH上にあるものはそのまま使います。",
-        "argTool": "インストールするツール (tofu)",
+        "description": "この CLI に固定されたツールのリリースをダウンロードし、SHA-256 チェックサムを検証してから rdc のツールディレクトリにインストールします。`tofu` はどのプラットフォームでも OpenTofu をインストールします。`rsync` は MSYS2 の rsync と、それが読み込むランタイムライブラリを Windows でのみインストールします。ほかの OS では rsync はシステムのパッケージマネージャーから入手します。チェックサムが一致しない場合はダウンロードを削除し、何もインストールしません。Terraform はインストールしません。すでに PATH にあるものはそのまま使います。",
+        "argTool": "インストールするツール (tofu、Windows では rsync も可)",
         "optionForce": "固定バージョンがすでにあっても再インストールする",
         "downloading": "{{platform}} 向けのOpenTofu {{version}}をダウンロード中...",
+        "downloadingPackage": "MSYS2 パッケージ {{name}} {{version}} をダウンロードしています...",
         "installed": "OpenTofu {{version}}を {{path}} にインストールしました",
-        "alreadyInstalled": "OpenTofu {{version}}はすでに {{path}} にインストールされています"
+        "alreadyInstalled": "OpenTofu {{version}}はすでに {{path}} にインストールされています",
+        "rsyncInstalled": "rsync {{version}} を {{path}} にインストールしました",
+        "rsyncAlreadyInstalled": "rsync {{version}} はすでに {{path}} にインストールされています"
       },
       "list": {
         "descriptionShort": "インストール済みツールとバージョン、入手元を表示",
@@ -3466,7 +3469,8 @@
         "unsupportedPlatform": "{{platform}}/{{arch}} 向けの固定されたOpenTofuビルドはありません",
         "insecureUrl": "HTTPSでないURLからのダウンロードを拒否しました: {{url}}",
         "checksumMismatch": "{{url}} のチェックサムが一致しません。期待値 {{expected}}、実際 {{actual}}。ダウンロードを削除し、何もインストールしていません。",
-        "badArchive": "ダウンロードしたアーカイブは使用できません: {{reason}}"
+        "badArchive": "ダウンロードしたアーカイブは使用できません: {{reason}}",
+        "rsyncFromSystem": "rdc が rsync をインストールするのは Windows だけです。{{platform}} では rsync をシステムのパッケージマネージャーから入手します (例: apt install rsync、dnf install rsync、brew install rsync)。"
       }
     },
     "version": {

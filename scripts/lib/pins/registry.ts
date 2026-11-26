@@ -61,6 +61,7 @@ export const SOURCE_TYPES = [
   'github-tags',
   'pypi',
   'obs-repomd',
+  'msys2-repo',
   'quay-tags',
   'dockerhub',
   'none',
@@ -91,7 +92,7 @@ export interface PinSource {
   repo?: string;
   /** Release-tag prefix stripped to yield the pinned value (`cli-v`, `gopls/v`). */
   tagPrefix?: string;
-  /** Package name, for npm-registry and pypi. */
+  /** Package name, for npm-registry, pypi and msys2-repo. */
   package?: string;
   /** Module path, for go-list. */
   module?: string;
@@ -325,7 +326,7 @@ export function registryProblems(raw: unknown): string[] {
         )
           bad(`${at}.source.repo`, `${String(src.type)} needs an owner/repo`);
         if (
-          (src.type === 'npm-registry' || src.type === 'pypi') &&
+          (src.type === 'npm-registry' || src.type === 'pypi' || src.type === 'msys2-repo') &&
           (typeof src.package !== 'string' || src.package === '')
         )
           bad(`${at}.source.package`, `${String(src.type)} needs a package name`);

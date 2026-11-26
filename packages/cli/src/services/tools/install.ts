@@ -1,7 +1,7 @@
 /**
  * Installs pinned, checksum-verified local tools into rdc's tools directory.
  *
- * The only tool is OpenTofu. Its archive is downloaded over HTTPS into a private staging directory under the tools root, its SHA-256 is checked against the pin compiled into rdc before a single byte is extracted, the binary is read out of the zip in-process, and it reaches `<toolsDir>/opentofu/<version>/tofu(.exe)` by one rename. Any failure removes the staging directory, so an interrupted or tampered download leaves nothing behind. Terraform is never installed (BUSL); a user-installed one on PATH is only ever found, by the executor.
+ * This module installs OpenTofu (rsync for Windows lives in rsync.ts). Its archive is downloaded over HTTPS into a private staging directory under the tools root, its SHA-256 is checked against the pin compiled into rdc before a single byte is extracted, the binary is read out of the zip in-process, and it reaches `<toolsDir>/opentofu/<version>/tofu(.exe)` by one rename. Any failure removes the staging directory, so an interrupted or tampered download leaves nothing behind. Terraform is never installed (BUSL); a user-installed one on PATH is only ever found, by the executor.
  */
 
 import { promises as fs } from 'node:fs';
@@ -13,8 +13,8 @@ import { OPENTOFU_PIN } from './pins.js';
 import type { ToolPin, ToolPlatform } from './types.js';
 import { readZipEntry, ZipError } from './zip.js';
 
-export const TOOL_NAMES = ['tofu'] as const;
-type ToolName = (typeof TOOL_NAMES)[number];
+/** Every tool `rdc tools install` takes; rsync is Windows-only (services/tools/rsync.ts). */
+export const TOOL_NAMES = ['tofu', 'rsync'] as const;
 
 /** Root of rdc-managed tools: `<stateDir>/tools` (XDG state on Linux, LOCALAPPDATA on Windows). */
 function getToolsDir(): string {
@@ -60,7 +60,7 @@ export interface InstallDeps {
 }
 
 export interface InstallResult {
-  tool: ToolName;
+  tool: 'tofu';
   version: string;
   path: string;
   alreadyInstalled: boolean;
