@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from rediacc_ci import paths, well_known
+from rediacc_ci import paths, runtmp, well_known
 from rediacc_ci.core import prepare_lock, run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.proof import vm_tier as receipt_mod
@@ -5663,8 +5663,37 @@ def test_a_tmpfs_tmp_gives_every_child_a_disk_tmpdir(tmp_path: pathlib.Path) -> 
     assert len(dirs) == 1, dirs
     (chosen,) = dirs
     assert chosen
-    assert pathlib.Path(chosen) == world.root / receipt_mod.CACHE_DIR / "tmp"
+    cache = world.root / receipt_mod.CACHE_DIR
+    assert pathlib.Path(chosen).parent == cache
+    assert pathlib.Path(chosen).name.startswith("vm-check-tmp-")
     assert pathlib.Path(chosen).is_dir()
+
+
+def test_the_disk_tmpdir_is_removed_at_exit_and_a_dead_one_is_swept(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registered: list[tuple[Any, tuple[Any, ...], dict[str, Any]]] = []
+    monkeypatch.setattr(
+        "rediacc_ci.runtmp.atexit.register",
+        lambda fn, *a, **kw: registered.append((fn, a, kw)),
+    )
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    cache = world.root / receipt_mod.CACHE_DIR
+    cache.mkdir(parents=True, exist_ok=True)
+    dead = subprocess.Popen(["true"])
+    dead.wait()
+    stale = cache / runtmp.stamp("vm-check-tmp-", dead.pid)
+    stale.mkdir()
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    (chosen,) = _tmpdirs(world)
+    assert chosen
+    assert pathlib.Path(chosen).is_dir()
+    assert not stale.exists(), "the next run sweeps a killed run's directory"
+    assert [a[0] for _, a, _ in registered] == [chosen], registered
+    for fn, a, kw in registered:
+        fn(*a, **kw)
+    assert not pathlib.Path(chosen).exists(), "the exit handler removes the run directory"
 
 
 def test_a_disk_tmp_leaves_tmpdir_unset(tmp_path: pathlib.Path) -> None:

@@ -200,5 +200,6 @@ async function main(): Promise<void> {
 if (process.argv[2] === 'child') {
   childMain(process.argv[3] as Mode, process.argv[4]);
 } else {
-  void main();
+  // Awaited: a gate's `--selftest` imports this harness through `foldedControl`, which exits as soon as the import settles.
+  await main();
 }

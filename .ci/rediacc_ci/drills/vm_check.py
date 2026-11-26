@@ -64,7 +64,7 @@ import traceback
 import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, runtmp
 from rediacc_ci.core import host_slots, prepare_lock
 from rediacc_ci.drills import (
     backup_check_trigger,
@@ -1924,7 +1924,7 @@ class VmCheck:
     # ------------------------------------------------------------------ output
 
     def _disk_tmpdir(self) -> None:
-        """Points TMPDIR at a disk directory under the receipt cache (`.ci/cache/vm-check/tmp`, never the tmpfs-backed work dir) when /tmp is a tmpfs, for every child (CLI calls, suites, drills): a per-user tmpfs quota (usrquota) made the A1.1 server suite fail with EDQUOT on a native host (2026-11-25). An exported TMPDIR is the caller's choice and stays; an unreadable /proc/mounts is said, and the environment is left as found."""
+        """Points TMPDIR at a run directory under the receipt cache (`.ci/cache/vm-check/vm-check-tmp-<stamp>`, never the tmpfs-backed work dir) when /tmp is a tmpfs, for every child (CLI calls, suites, drills): a per-user tmpfs quota (usrquota) made the A1.1 server suite fail with EDQUOT on a native host (2026-11-25). An exported TMPDIR is the caller's choice and stays; an unreadable /proc/mounts is said, and the environment is left as found."""
         if self.environ.get("TMPDIR"):
             return
         try:
@@ -1934,9 +1934,10 @@ class VmCheck:
             return
         if not on_tmpfs:
             return
-        tmp = self.root / receipt_mod.CACHE_DIR / "tmp"
-        tmp.mkdir(parents=True, exist_ok=True)
-        self.environ["TMPDIR"] = str(tmp)
+        cache = self.root / receipt_mod.CACHE_DIR
+        cache.mkdir(parents=True, exist_ok=True)
+        # A stamped run directory, removed at exit and swept by the next run when this one is killed (PLAN-host-temp-disposal HT8a).
+        self.environ["TMPDIR"] = runtmp.run_dir("vm-check-tmp-", base=str(cache))
 
     def say(self, text: str = "") -> None:
         print(text, file=self.out)

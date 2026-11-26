@@ -16,7 +16,6 @@ import { execFileSync } from 'node:child_process';
  * ---- end gate ----
  */
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -28,6 +27,8 @@ import {
 } from '../data/source-rules.ts';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { type Finding, type RuleModule, runJsonRule, runSourceRule } from '../lib/rule-host.ts';
+import { shared } from '../lib/runtmp.js';
+import { foldedControl } from './lib/run-control.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -201,7 +202,7 @@ function keyPath(obj: unknown, dotted: string): unknown {
 
 /** Two on-disk locale fixtures for the two rules that read `localesDir` directly rather than the linted text: one asymmetric (both rules must fire), one symmetric (both must stay silent). Built once, reused across probes and by `selftest`'s GREEN half. */
 function localeFixtures(): { asymmetric: string; symmetric: string } {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'check-source-rules-'));
+  const root = fs.mkdtempSync(path.join(shared('check-source-rules-'), 'fx-'));
   const write = (dir: string, en: object, tr: object) => {
     fs.mkdirSync(path.join(dir, 'en'), { recursive: true });
     fs.mkdirSync(path.join(dir, 'tr'), { recursive: true });
@@ -985,7 +986,17 @@ async function main(): Promise<number> {
 
 if (isEntryPoint(import.meta.filename)) {
   main()
-    .then((code) => process.exit(code))
+    .then((code) => {
+      // `--selftest` then runs the two temp-dir harnesses (un-awaited, see lib/run-control.ts); the second starts only when the first left a clean exit code.
+      if (
+        code !== 0 ||
+        !foldedControl(async () => {
+          await import('../__tests__/runtmp.control.ts');
+          if ((process.exitCode ?? 0) === 0) await import('../__tests__/vitest-run-tmp.control.ts');
+        })
+      )
+        process.exit(code);
+    })
     .catch((error: unknown) => {
       console.error('✗ check-source-rules crashed');
       console.error(error);
