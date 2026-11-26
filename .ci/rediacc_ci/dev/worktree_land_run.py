@@ -1,6 +1,6 @@
 """`./run.sh worktree land <id> --run`: execute the picks `land` prints (PLAN-drain-throughput Design D, DT12).
 
-Order: each submodule's picks, then the gitlink commit that bumps it, then the console's picks one at a time. A console conflict confined to `gen-docs` regions takes HEAD's copy, regenerates and continues; any other conflict stops with the paths printed and the pick left in progress. Afterwards new test files are placed on a shard and the queued TICK rows are applied. One line per step, with its rc.
+Order: each submodule's picks, then the gitlink commit that bumps it, then the console's picks one at a time. A console conflict confined to `gen-docs` regions takes HEAD's copy, regenerates and continues; any other conflict stops with the paths printed and the pick left in progress. A git step refused because another git process holds the index lock (a background reviewer running git in the same repository) waits and retries a bounded number of times, resuming a pick left in progress with `cherry-pick --continue`; a lock still held is named as a lock, never as a conflict. Afterwards new test files are placed on a shard and the queued TICK rows are applied. One line per step, with its rc.
 
 `execute` is the testable core: it takes the resolved plan and runs git in the directories given.
 """
@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from typing import NamedTuple
 
 GEN_DOCS = ("npx", "tsx", "scripts/gen/gen-docs.ts", "--write")
@@ -28,6 +29,11 @@ BEGIN_MARK = ">>> gen-docs"
 END_MARK = "<<< gen-docs"
 TRAILER_KEYS = ("PR-TASK:", "Plan-Box:")
 TAIL = 300
+# #125874ca: git refuses a step when another process holds a `.lock` (index.lock most often); the holder is usually gone within a second.
+LOCK_RE = re.compile(r"Unable to create '([^'\n]+\.lock)': File exists")
+LOCK_WAITS = (0.5, 1.0, 2.0, 4.0)
+SLEEP = time.sleep
+CONTINUE_ENV = {**os.environ, "GIT_EDITOR": "true"}
 
 
 class LandPlan(NamedTuple):
@@ -71,6 +77,74 @@ def confined_to_generated(text: str) -> bool:
 def _unmerged(live):
     listed = git(live, "diff", "--name-only", "--diff-filter=U").stdout
     return [p for p in listed.splitlines() if p]
+
+
+def held_lock(cwd, done) -> str:
+    """The full path of the lock file a failed git step could not create, or "" when it failed for another reason."""
+    if done.returncode == 0:
+        return ""
+    found = LOCK_RE.search((done.stderr or "") + (done.stdout or ""))
+    return str(pathlib.Path(cwd) / found.group(1)) if found else ""
+
+
+def _picking(cwd) -> bool:
+    return git(cwd, "rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD").returncode == 0
+
+
+def _sequencing(cwd) -> bool:
+    rel = git(cwd, "rev-parse", "--git-path", "sequencer").stdout.strip()
+    return bool(rel) and (pathlib.Path(cwd) / rel).is_dir()
+
+
+def retry_lock(cwd, *args, env=None):
+    """Run a git step, and while it fails on a held lock wait and run it again, up to `len(LOCK_WAITS)` times. Returns the last result.
+
+    A cherry-pick the lock stopped after it applied (CHERRY_PICK_HEAD set, no conflicted path) resumes with `cherry-pick --continue` rather than starting again. A sequence stopped with no CHERRY_PICK_HEAD is not resumed: `--continue` would skip its current commit, so the lock failure is returned for the caller to name.
+    """
+    done = git(cwd, *args, env=env)
+    for wait in LOCK_WAITS:
+        if not held_lock(cwd, done):
+            return done
+        SLEEP(wait)
+        if args[0] == "cherry-pick" and _picking(cwd):
+            if _unmerged(cwd):
+                return done
+            done = git(cwd, "cherry-pick", "--continue", env=CONTINUE_ENV)
+        elif args[0] == "cherry-pick" and _sequencing(cwd):
+            return done
+        else:
+            done = git(cwd, *args, env=env)
+    return done
+
+
+def _first_line(text):
+    return next((line.strip() for line in (text or "").splitlines() if line.strip()), "")
+
+
+def _failed_pick_stop(cwd, done, what, prefix=""):
+    """The stop line for a pick that failed: the conflicted paths (under `prefix`, a submodule's key), a held lock with its full path, or git's own first line."""
+    left = (
+        "the cherry-pick is left in progress"
+        if _picking(cwd) or _sequencing(cwd)
+        else "the pick of %s did not run" % what
+    )
+    lock = held_lock(cwd, done)
+    if lock:
+        kind = "index lock" if lock.endswith("index.lock") else "git lock"
+        return "stop: %s %s is still held by another git process after %d retries; %s" % (
+            kind,
+            lock,
+            len(LOCK_WAITS),
+            left,
+        )
+    paths = [prefix + p for p in _unmerged(cwd)]
+    if paths:
+        return "stop: conflict in %s; the cherry-pick is left in progress" % " ".join(paths)
+    return "stop: the pick of %s failed without a conflicted path: %s; %s" % (
+        what,
+        _first_line(done.stderr or done.stdout) or "rc=%d" % done.returncode,
+        left,
+    )
 
 
 def _trailers(messages):
@@ -183,10 +257,9 @@ def _resolve_generated(plan, run, gen_cmd, sha, emit):
         "gen-docs", done.returncode, done.stderr.strip()[-TAIL:] if done.returncode else ""
     ):
         return stop("gen-docs")
-    if run.step("add generated", git(plan.live, "add", "--", *paths).returncode):
+    if run.step("add generated", retry_lock(plan.live, "add", "--", *paths).returncode):
         return stop("add generated")
-    env = {**os.environ, "GIT_EDITOR": "true"}
-    cont = git(plan.live, "cherry-pick", "--continue", env=env)
+    cont = retry_lock(plan.live, "cherry-pick", "--continue", env=CONTINUE_ENV)
     if run.step(
         "continue %s" % sha[:12],
         cont.returncode,
@@ -202,26 +275,29 @@ def _land_sub(plan, run, key, sub, shas, branch):
     if (
         branch
         and detached
-        and run.step("switch %s" % key, git(sub, "switch", "-c", branch).returncode)
+        and run.step("switch %s" % key, retry_lock(sub, "switch", "-c", branch).returncode)
     ):
         return False
     before = git(sub, "rev-parse", "HEAD").stdout.strip()
-    pick = git(sub, "cherry-pick", "-x", *shas)
-    if run.step(
-        "pick %s" % key, pick.returncode, pick.stderr.strip()[-TAIL:] if pick.returncode else ""
-    ):
-        run.emit("stop: conflict in %s: %s" % (key, " ".join(_unmerged(sub)) or "see git status"))
+    pick = retry_lock(sub, "cherry-pick", "-x", *shas)
+    if run.step("pick %s" % key, pick.returncode):
+        run.emit(_failed_pick_stop(sub, pick, key, key.rstrip("/") + "/"))
         return False
     landed = git(sub, "rev-list", "--reverse", "%s..HEAD" % before).stdout.split()
     if len(landed) == len(shas):
         run.landed.extend(zip(shas, landed, strict=True))
+    return _land_gitlink(plan, run, key, landed, shas)
+
+
+def _land_gitlink(plan, run, key, landed, shas):
+    """The console commit that bumps submodule `key` to its landed tip. True on success."""
     fd, msg = tempfile.mkstemp(prefix="land-run-", suffix=".msg")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(_gitlink_message(plan, key, landed, shas))
-        if run.step("add %s" % key, git(plan.live, "add", "--", key).returncode):
+        if run.step("add %s" % key, retry_lock(plan.live, "add", "--", key).returncode):
             return False
-        done = git(plan.live, "commit", "-F", msg, "--", key)
+        done = retry_lock(plan.live, "commit", "-F", msg, "--", key)
         detail = (done.stderr or done.stdout).strip()[-TAIL:] if done.returncode else ""
         return not run.step("gitlink %s" % key, done.returncode, detail)
     finally:
@@ -241,23 +317,21 @@ def execute(plan: LandPlan, *, emit=print, gen_cmd=GEN_DOCS, me="") -> int:
         if not _land_sub(plan, run, key, sub, shas, branch):
             return 1
     for sha in plan.console:
-        pick = git(live, "cherry-pick", "-x", sha)
+        pick = retry_lock(live, "cherry-pick", "-x", sha)
         if pick.returncode == 0:
             run.step("pick %s" % sha[:12], 0)
             run.landed.append((sha, git(live, "rev-parse", "HEAD").stdout.strip()))
             continue
-        resolved = _resolve_generated(plan, run, gen_cmd, sha, emit)
+        resolved = (
+            None if held_lock(live, pick) else _resolve_generated(plan, run, gen_cmd, sha, emit)
+        )
         if resolved:
             run.landed.append((sha, git(live, "rev-parse", "HEAD").stdout.strip()))
             continue
         if resolved is False:
             return 1
-        paths = _unmerged(live)
         run.step("pick %s" % sha[:12], 1)
-        emit(
-            "stop: conflict in %s; the cherry-pick is left in progress"
-            % (" ".join(paths) or pick.stderr.strip()[-TAIL:])
-        )
+        emit(_failed_pick_stop(live, pick, sha[:12]))
         return 1
     if me:
         _mark_reviews(plan, run, me)

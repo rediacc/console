@@ -341,3 +341,111 @@ def test_a_gate_still_red_after_placing_is_reported_red(tmp_path):
         line.startswith("step shard-coverage recheck rc=1") and "still red" in line
         for line in lines
     )
+
+
+def index_lock(root):
+    return root / sh(root, "rev-parse", "--git-path", "index.lock")
+
+
+def test_a_held_index_lock_waits_and_retries_the_pick(repo, monkeypatch):
+    """#125874ca: a background git holding index.lock failed the pick and was reported as a conflict."""
+    sha = lease_commit(repo, {"code.txt": "b\n"}, "feat: b")
+    lock = index_lock(repo)
+    lock.write_text("")
+    waits: list[float] = []
+
+    def release(seconds):
+        waits.append(seconds)
+        lock.unlink(missing_ok=True)
+
+    monkeypatch.setattr(run, "SLEEP", release, raising=False)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append) == 0, lines
+    assert waits, "the held lock was never waited on"
+    assert (repo / "code.txt").read_text() == "b\n"
+    assert not any(line.startswith("stop:") for line in lines), lines
+
+
+def test_a_pick_left_in_progress_by_a_held_lock_is_continued(repo, monkeypatch):
+    """#125874ca: the pick applied, its commit hit the lock, and `cherry-pick --continue` finishes it."""
+    sha = lease_commit(repo, {"code.txt": "b\n"}, "feat: b")
+    real = run.git
+    calls: list[tuple] = []
+
+    def flaky(cwd, *args, env=None):
+        first = args[:2] == ("cherry-pick", "-x") and ("cherry-pick", "-x") not in (
+            c[:2] for c in calls
+        )
+        calls.append(args)
+        if first:
+            real(cwd, "cherry-pick", "-x", "--no-commit", *args[2:])
+            real(cwd, "update-ref", "CHERRY_PICK_HEAD", args[-1])
+            stderr = (
+                "fatal: Unable to create '%s': File exists.\n\nAnother git process seems "
+                "to be running in this repository, e.g.\nan editor opened by 'git commit'. "
+                "Please make sure all processes\nare terminated then try again.\n"
+                % index_lock(pathlib.Path(cwd))
+            )
+            return subprocess.CompletedProcess(["git", *args], 128, "", stderr)
+        return real(cwd, *args, env=env)
+
+    monkeypatch.setattr(run, "git", flaky)
+    monkeypatch.setattr(run, "SLEEP", lambda _s: None, raising=False)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append) == 0, lines
+    assert ("cherry-pick", "--continue") in calls
+    assert not (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+    assert sh(repo, "log", "-1", "--format=%s") == "feat: b"
+    assert (repo / "code.txt").read_text() == "b\n"
+
+
+def test_a_lock_still_held_is_named_as_a_lock_with_its_full_path(repo, monkeypatch):
+    sha = lease_commit(repo, {"code.txt": "b\n"}, "feat: b")
+    lock = index_lock(repo)
+    lock.write_text("")
+    waits: list[float] = []
+    monkeypatch.setattr(run, "SLEEP", waits.append, raising=False)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append) == 1
+    tries = len(getattr(run, "LOCK_WAITS", ()))
+    assert tries
+    assert len(waits) == tries
+    stops = [line for line in lines if line.startswith("stop:")]
+    assert stops == [
+        "stop: index lock %s is still held by another git process after %d retries; "
+        "the pick of %s did not run" % (lock, tries, sha[:12])
+    ], lines
+    assert not any("conflict" in line for line in lines), lines
+
+
+def test_a_held_lock_in_a_submodule_pick_is_retried(repo, tmp_path, monkeypatch):
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    sh(sub, "init", "-q", "-b", "live")
+    sh(sub, "config", "user.email", "t@example.invalid")
+    sh(sub, "config", "user.name", "t")
+    (sub / "s.txt").write_text("a\n")
+    sh(sub, "add", "--", "s.txt")
+    sh(sub, "commit", "-q", "-m", "base", "--", "s.txt")
+    sha = lease_commit(sub, {"s.txt": "b\n"}, "feat: s")
+    lock = index_lock(sub)
+    lock.write_text("")
+    monkeypatch.setattr(run, "SLEEP", lambda _s: lock.unlink(missing_ok=True), raising=False)
+    monkeypatch.setattr(run, "_land_gitlink", lambda *_a: True, raising=False)
+    lines: list[str] = []
+    plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {})
+    assert run.execute(plan, emit=lines.append) == 0, lines
+    assert (sub / "s.txt").read_text() == "b\n"
+    assert not any(line.startswith("stop:") for line in lines), lines
+
+
+def test_control_a_real_conflict_is_never_retried_as_a_lock(repo, monkeypatch):
+    sha = lease_commit(repo, {"doc.md": "lease-intro\n" + REGION % "old"}, "feat: intro")
+    live_commit(repo, {"doc.md": "head-intro\n" + REGION % "old"}, "chore: intro head")
+    waits: list[float] = []
+    monkeypatch.setattr(run, "SLEEP", waits.append, raising=False)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 1
+    assert waits == []
+    assert any(line.startswith("stop: conflict in doc.md") for line in lines), lines
+    assert not any("index lock" in line for line in lines), lines
