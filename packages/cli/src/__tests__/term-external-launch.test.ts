@@ -7,6 +7,7 @@
  * refusal when `--external` was passed. Spawn is a recording fake.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface Spawned {
@@ -36,7 +37,7 @@ import { launchExternalTerminal, reportExternalLaunchFailure } from '../commands
 import { SSHConnection } from '../remote/ssh/connection.js';
 import { outputService } from '../services/core/output.js';
 
-const REMOTE_PATH = '/mnt/rediacc/mounts/0f0e0d0c-aaaa-bbbb-cccc-111122223333';
+const REMOTE_PATH = `${WK_DATASTORE_PATH}/mounts/0f0e0d0c-aaaa-bbbb-cccc-111122223333`;
 const details = { environment: {}, workingDirectory: REMOTE_PATH } as never;
 
 function fakeConnection() {

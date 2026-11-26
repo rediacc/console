@@ -15,10 +15,7 @@ export interface SecretStoreCheckDeps {
 const FILE_STORE_HINT = 'or set REDIACC_SECRET_STORE=file';
 
 /** The remedy of the platform the check ran on, never another platform's. `detail` is the probe's own error line. */
-function secretStoreHint(
-  platform: NodeJS.Platform = process.platform,
-  detail?: string
-): string {
+function secretStoreHint(platform: NodeJS.Platform = process.platform, detail?: string): string {
   switch (platform) {
     case 'win32':
       return `Windows: the DPAPI probe through \`powershell\` failed${detail ? ` (${detail})` : ''}; check that powershell.exe runs for this user, ${FILE_STORE_HINT}`;
