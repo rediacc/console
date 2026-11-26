@@ -302,3 +302,21 @@ def test_a_raise_in_the_branch_itself_is_a_guard() -> None:
     """Control: the raise and the name in the branch's own scope still make a guard."""
     body = ast.parse("raise SystemExit('RELEASE_SIGNING_REQUIRED')\n").body
     assert rsc._guards(body) is True
+
+
+def test_a_raise_in_a_class_body_runs_at_definition_so_it_is_a_guard() -> None:
+    """3746819d.1: a class body executes when the class statement does, so a raise there is in the branch's own scope."""
+    body = ast.parse("class C:\n    raise SystemExit('RELEASE_SIGNING_REQUIRED')\n").body
+    assert rsc._guards(body) is True
+
+
+def test_the_name_in_a_def_default_or_decorator_is_seen() -> None:
+    """3746819d.2: argument defaults and decorators run at definition time, so the name there is still read (the raise stays in the branch)."""
+    default = ast.parse("raise SystemExit\ndef f(a='RELEASE_SIGNING_REQUIRED'):\n    pass\n").body
+    decorated = ast.parse(
+        "raise SystemExit\n@d('RELEASE_SIGNING_REQUIRED')\ndef f():\n    pass\n"
+    ).body
+    inside = ast.parse("raise SystemExit\ndef f():\n    x = 'RELEASE_SIGNING_REQUIRED'\n").body
+    assert rsc._guards(default) is True
+    assert rsc._guards(decorated) is True
+    assert rsc._guards(inside) is False

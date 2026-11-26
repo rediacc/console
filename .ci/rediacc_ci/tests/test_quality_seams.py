@@ -15,6 +15,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.quality import seams
+from rediacc_ci.quality import tmpfs_health as th
 from rediacc_ci.quality import trap_registry as TR
 
 REPO = paths.repo_root()
@@ -374,3 +375,30 @@ def test_system_temp_base_reads_a_mount_point_with_a_tab_or_backslash(monkeypatc
     monkeypatch.setattr(seams, "SYSTEM_TEMP_CANDIDATES", (os.fspath(odd), os.fspath(dirs[1])))
     (tmp_path / "mounts").write_text("tmpfs %s tmpfs rw 0 0\n" % escaped)
     assert seams.system_temp_base() == dirs[1]
+
+
+def test_tmpfs_health_cli_runs_selftest_or_the_gate(monkeypatch: pytest.MonkeyPatch) -> None:
+    """db09591e.1: `cli` is the gate's entry point; `--selftest` runs only the controls, a plain run checks the paths and returns 1 on a red one."""
+    ran: list[str] = []
+    monkeypatch.setattr(th, "controls", lambda: ran.append("controls"))
+    monkeypatch.setattr(th, "main", lambda: ran.append("main") or 7)
+    assert th.cli(["--selftest"]) == 0
+    assert ran == ["controls"]
+    assert th.cli([]) == 7
+    assert ran == ["controls", "main"]
+
+
+def test_tmpfs_health_main_is_red_on_an_exhausted_path_and_green_on_a_healthy_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """db09591e.1: the plain-run path of `cli` reaches `main`, which exits 1 when a checked path has too few inodes."""
+    monkeypatch.setattr(th, "controls", lambda: None)
+    monkeypatch.setattr(th, "CHECK_PATHS", ["/p"])
+    monkeypatch.setattr(
+        th.os, "statvfs", lambda _p: os.statvfs_result((0, 0, 0, 0, 0, 1000, 2, 2, 0, 255))
+    )
+    assert th.cli([]) == 1
+    monkeypatch.setattr(
+        th.os, "statvfs", lambda _p: os.statvfs_result((0, 0, 0, 0, 0, 1000, 900, 900, 0, 255))
+    )
+    assert th.cli([]) == 0

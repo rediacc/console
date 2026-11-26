@@ -1095,13 +1095,24 @@ def _guard(value: object) -> str:
     return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
 
 
+def _executed_lines(run: str) -> str:
+    """The lines of a `run:` script that execute: comment lines, a trailing ` # comment`, and `echo`/`printf` lines dropped, so a gate named only in text does not read as run."""
+    kept = []
+    for line in run.splitlines():
+        code = line.split(" #", 1)[0].strip()
+        if not code or code.startswith(("#", "echo ", "printf ")):
+            continue
+        kept.append(code)
+    return "\n".join(kept)
+
+
 def upstream_gate_steps(quality_doc: object) -> dict[str, list[tuple[str, int, dict]]]:
     """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`, or the gate's registered module (UPSTREAM_GATE_MODULES)."""
     found: dict[str, list[tuple[str, int, dict]]] = {gate: [] for gate in UPSTREAM_GATES}
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     for job, body in (jobs if isinstance(jobs, dict) else {}).items():
         for i, st in enumerate(_steps(body)):
-            run = _text(st.get("run"))
+            run = _executed_lines(_text(st.get("run")))
             for gate in UPSTREAM_GATES:
                 module = UPSTREAM_GATE_MODULES.get(gate)
                 if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run) or (

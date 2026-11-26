@@ -68,7 +68,10 @@ _CONST_LINE_RE = re.compile(r'\bconst\s+(\w+)\s*(?:[\w.]+\s*)?=\s*"((?:\\.|[^"\\
 _CONST_ENTRY_RE = re.compile(r'^\s*(\w+)\s*(?:[\w.]+\s*)?=\s*"((?:\\.|[^"\\\n])*)"', re.MULTILINE)
 _TYPED_NAME_RE = re.compile(r"\b(\w+)\s+\*output\.StepTimer\b")
 _NEW_TIMER_RE = re.compile(r"\b(\w+)\s*:?=\s*output\.NewStepTimer\w*\s*\(")
-_TIMER_FUNC_RE = re.compile(r"\bfunc\s+(\w+)\s*\([^)]*\)\s*\*output\.StepTimer\b")
+# `func Name(...)` or a method `func (r *R) Name(...)`; either returns the timer.
+_TIMER_FUNC_RE = re.compile(r"\bfunc\s+(?:\([^)]*\)\s*)?(\w+)\s*\([^)]*\)\s*\*output\.StepTimer\b")
+# A declaration prefix right before an alias name: `func ` or a method `func (r *R) `.
+_FUNC_DECL_TAIL_RE = re.compile(r"\bfunc\s*(?:\([^)]*\)\s*)?$")
 _RECEIVER_CALL_RE = re.compile(r"\b(\w+)\.(Start|Record)\s*\(\s*")
 _FIRST_ARG_RE = re.compile(r'"((?:\\.|[^"\\\n])*)"\s*[,)]|`([^`]*)`\s*[,)]|([A-Za-z_]\w*)\s*[,)]')
 
@@ -120,7 +123,7 @@ def timer_names(sources: list[str]) -> set[str]:
         names.update(_NEW_TIMER_RE.findall(src))
         funcs.update(_TIMER_FUNC_RE.findall(src))
     for fn in funcs:
-        pat = re.compile(r"\b(\w+)\s*:?=\s*" + re.escape(fn) + r"\s*\(")
+        pat = re.compile(r"\b(\w+)\s*:?=\s*(?:\w+\.)*" + re.escape(fn) + r"\s*\(")
         for src in sources:
             names.update(pat.findall(src))
     # A function's own name is not a holder, and `func` keyword captures are impossible by construction of the patterns above.
@@ -152,9 +155,9 @@ def calls_in(src: str, names: set[str], aliases: set[str], consts: dict[str, str
     if aliases:
         alt = "|".join(sorted(re.escape(a) for a in aliases))
         for m in re.finditer(r"(?<![\w])(?:\w+\.)?(?:" + alt + r")\s*\(\s*", masked):
-            # A declaration `func mark(` is not a call.
-            before = masked[max(0, m.start() - 5) : m.start()]
-            if before.endswith("func "):
+            # A declaration `func mark(` or a method `func (r *R) mark(` is not a call.
+            before = masked[max(0, m.start() - 80) : m.start()]
+            if _FUNC_DECL_TAIL_RE.search(before):
                 continue
             sites.append(m.end())
     for end in sorted(set(sites)):

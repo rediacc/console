@@ -411,6 +411,29 @@ def selftest() -> int:
         "CONTROL: a module spec that resolves to nothing provisions nothing",
         module_names(ROOT, "python3 -m rediacc_ci.nowhere.at_all") == set(),
     )
+    # CONTROL on toolchain_names' refusal (review 8e956744.1): a failed, timed-out or empty listing raises, and a good listing returns its names. The runner is swapped for a stub so no real listing is consulted.
+    real_run = ci_proc.run
+    try:
+        for label, stub, refused in (
+            ("a non-zero exit", ci_proc.Result([], 1, "PIN=1\n", ""), True),
+            ("a timeout", ci_proc.Result([], 0, "PIN=1\n", "", timed_out=True), True),
+            ("an empty listing", ci_proc.Result([], 0, "", ""), True),
+            ("a good listing", ci_proc.Result([], 0, "PIN=1\nOTHER=2\n", ""), False),
+        ):
+            ci_proc.run = lambda *_a, _stub=stub, **_k: _stub
+            try:
+                got = toolchain_names(ROOT)
+                raised = False
+            except RuntimeError:
+                got, raised = set(), True
+            check(
+                "%s: toolchain_names %s"
+                % ("PLANT" if refused else "CONTROL", "refuses " + label if refused else label),
+                raised is refused and (refused or got == {"PIN", "OTHER"}),
+                "raised=%s got=%s" % (raised, got),
+            )
+    finally:
+        ci_proc.run = real_run
     return bad
 
 

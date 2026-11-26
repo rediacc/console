@@ -22,3 +22,21 @@ def test_control_another_module_does_not_count() -> None:
         _doc("PYTHONPATH=.ci python3 -m rediacc_ci.quality.ops_health_extra")
     )
     assert found["check:ci-ops-health"] == []
+
+
+def test_a_gate_named_only_in_an_echo_or_a_comment_does_not_count() -> None:
+    """ee21aba7.1: text that mentions the module or the npm script without running it is not the step."""
+    for run in (
+        "echo PYTHONPATH=.ci python3 -m rediacc_ci.quality.ops_health",
+        "# PYTHONPATH=.ci python3 -m rediacc_ci.quality.ops_health\ntrue",
+        "true # npm run check:ci-ops-health",
+        'printf "%s" "npm run check:ci-ops-health"',
+    ):
+        assert inv.upstream_gate_steps(_doc(run))["check:ci-ops-health"] == [], run
+
+
+def test_a_gate_run_after_other_lines_still_counts() -> None:
+    found = inv.upstream_gate_steps(
+        _doc("echo start\nPYTHONPATH=.ci python3 -m rediacc_ci.quality.ops_health\n")
+    )
+    assert len(found["check:ci-ops-health"]) == 1

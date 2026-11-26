@@ -415,6 +415,31 @@ def test_the_typescript_shallow_root_is_the_python_one(tmp_path: pathlib.Path) -
     assert out.stdout.strip() == str(runtmp.shallow_root())
 
 
+def test_loaded_by_file_the_seams_come_from_beside_it_and_load_once() -> None:
+    """1a88774b.2 and .3: with no `.ci` on sys.path the package is not importable, so `_seams()` loads `quality/seams.py` by path, and a second call returns the same module rather than executing another copy."""
+    code = (
+        "import importlib.util, sys\n"
+        "spec = importlib.util.spec_from_file_location('_rt', %r)\n"
+        "rt = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(rt)\n"
+        "assert rt._SEAMS is None, 'the package was importable; the by-file path is not exercised'\n"
+        "first, second = rt._seams(), rt._seams()\n"
+        "assert first is second, 'a second call executed another copy of seams.py'\n"
+        "assert first.__name__ == '_runtmp_seams', first.__name__\n"
+        "print(rt.shallow_root())\n"
+    ) % str(CI_DIR / "rediacc_ci" / "runtmp.py")
+    out = subprocess.run(
+        [sys.executable, "-I", "-c", code],
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == str(runtmp.shallow_root())
+
+
 def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
     _sweep_removes_a_killed_typescript_dir(tmp_path)
 

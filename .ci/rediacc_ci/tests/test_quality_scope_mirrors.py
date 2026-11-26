@@ -299,3 +299,15 @@ def test_canonical_reading_refuses_a_file_outside_the_corpus() -> None:
         assert [(f.check, f.clause) for f in reading.findings] == [("C0", "pr.home")]
         assert reading.unreadable == ["pr.home"]
         assert "pr.home" not in reading.spans
+
+
+def test_a_mirror_naming_the_clauses_own_canonical_file_is_c0_whatever_its_where() -> None:
+    """e1ecd8e0.1: the own-canonical refusal does not depend on `where`; both spellings are C0."""
+    own = ".claude/agents/loop.md"
+    for mirror in ({"path": own}, {"path": own, "where": "frontmatter"}):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, reg = _tree(tmp, own)
+            reg["clauses"]["pr.home"]["mirrors"] = [mirror]
+            reading = sm.canonical_reading(root, reg, sm.corpus_files(root))
+            assert [(f.check, f.clause) for f in reading.findings] == [("C0", "pr.home")], mirror
+            assert reading.unreadable == ["pr.home"]

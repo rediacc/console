@@ -208,7 +208,7 @@ def third_party_imports(script: pathlib.Path) -> set[str]:
     # A module under .ci/rediacc_ci runs as `PYTHONPATH=.ci python3 -m rediacc_ci.x`, so the package root is on the path without any sys.path hop in the file.
     if script.is_relative_to(REPO / ".ci" / "rediacc_ci"):
         local = local | {"rediacc_ci"}
-    # A gate that anchors `.claude` on its own file (`parent / "hooks" / "stop"`, `rediacc_hooks`) names the hop by a variable no literal-directory arm above can resolve; the two hook trees are first-party by name.
+    # A gate that anchors `.claude` on its own file (`parent / "hooks" / "stop"`, `rediacc_hooks`) names the hop by a variable no literal-directory arm above can resolve; the two hook trees are first-party by name, each only while its directory exists (the guards below).
     # Named by the text AND present in the tree: a mention in a comment of a gate that imports a package nobody ships must not hide that import from this gate.
     if "rediacc_hooks" in body and (REPO / ".claude" / "rediacc_hooks").is_dir():
         local = local | {"rediacc_hooks"}

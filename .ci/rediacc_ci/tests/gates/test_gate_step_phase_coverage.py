@@ -15,6 +15,7 @@ import shutil
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.quality import step_phase_coverage as spc
 from rediacc_ci.tests.gates import harness
 
 MODULE = "rediacc_ci.quality.step_phase_coverage"
@@ -192,3 +193,50 @@ def test_renet_without_timer_calls_cannot_run(gate, tmp_path):
     gate.assert_exit(77, result, "a renet with no timer calls must refuse a verdict")
     gate.assert_contains(result.combined, "VACUOUS", "the floor refusal is named")
     gate.log_pass("collapsed corpus refused")
+
+
+_METHOD_TIMER_GO = """package x
+
+import "example.com/pkg/output"
+
+type R struct{}
+
+func (r *R) Timer() *output.StepTimer { return nil }
+
+func use(r *R) {
+	t := r.Timer()
+	t.Start("method-held-id")
+}
+
+type W struct{}
+
+func (w *W) mark(s string) {}
+"""
+
+
+def _scan(src: str) -> dict:
+    text = spc.blank_comments(src)
+    names = spc.timer_names([spc.mask_strings(text)])
+    aliases = spc.timer_aliases([spc.mask_strings(text)], names)
+    calls = list(spc.calls_in(text, names, aliases, spc.package_constants([text])))
+    return {"names": names, "aliases": aliases, "calls": calls}
+
+
+def test_a_timer_returned_by_a_method_is_a_holder():
+    """66c37f32.2: `func (r *R) Timer() *output.StepTimer` records `t` as a holder, so its Start id is scanned."""
+    got = _scan(_METHOD_TIMER_GO)
+    assert "t" in got["names"]
+    assert [sid for _line, sid, _raw in got["calls"]] == ["method-held-id"]
+
+
+def test_a_method_declaration_named_like_an_alias_is_not_a_call():
+    """66c37f32.3: `func (w *W) mark(s string)` is a declaration, never an unresolved R4 call."""
+    src = (
+        _METHOD_TIMER_GO
+        + '\nfunc f(t *output.StepTimer) {\n\tmark := t.Start\n\tmark("real-id")\n}\n'
+    )
+    got = _scan(src)
+    assert "mark" in got["aliases"]
+    ids = [sid for _line, sid, _raw in got["calls"]]
+    assert None not in ids
+    assert sorted(ids) == ["method-held-id", "real-id"]

@@ -12,7 +12,7 @@ byte-identical or the gate refuses its own verdict.
 PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until .ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason the pristine pass is not a permanent hole. Seeding from one machine's first run is how a bad number gets enshrined, so the seed command
 refuses an EMPTY corpus outright; seeds accumulate, and only a NAMED --reseed-class can replace a class's numbers.
 
-THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding. Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
+THE KILL TRIGGER, fixed in advance. `installed` in the baseline is the first seeding's time and later seeds keep it. Past 30 days from it, if fewer than two commits in the last 30 days carry a `Resprofile:` trailer AND touch a file outside the layer (`acted_on_commits`), this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
 
 ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean: warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
 
@@ -195,6 +195,10 @@ def seed(captures_dir: Path, reseed: set[str]) -> int:
     doc = {
         "format": 1,
         "seeded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        # Set once and kept: the kill trigger measures from here, so a re-seed cannot extend the window.
+        "installed": prior.get("installed")
+        or prior.get("seeded_at")
+        or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "sunset": time.strftime(
             "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + SUNSET_DAYS * 86400)
         ),

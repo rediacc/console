@@ -498,13 +498,27 @@ class Registry:
     # -- F4/F5 for `gate:` --------------------------------------------------
 
     def gate_resolves(self, gate_id: str) -> bool:
-        """The manifest declares this id AND its run can start: an `npm run <script>` hop needs package.json to define the script, a direct run (`tsx <file>`, `PYTHONPATH=.ci python3 -m <module>`, the D2 form a header-declared gate takes with no npm key) needs nothing more."""
+        """The manifest declares this id AND its run can start: an `npm run <script>` hop needs package.json to define the script, a direct run (`tsx <file>`, `PYTHONPATH=.ci python3 -m <module>`, the D2 form a header-declared gate takes with no npm key) needs the file or module it names to exist."""
         run = self.entry_run(gate_id)
         if run is None:
             return False
         if not run.startswith("npm run "):
-            return True
+            return all((self.file_root / rel).is_file() for rel in self.direct_run_files(run))
         return '"%s":' % run.split()[2] in read_text(self.package_json)
+
+    @staticmethod
+    def direct_run_files(run: str) -> list[str]:
+        """The repo-relative files a direct run names: a `python3 -m a.b` module (`.ci/a/b.py`) and any path-form script token (`.ci/x/y.py`, `scripts/z.ts`). A bare command word (`tsx`, `bash`) names no file."""
+        found = [
+            ".ci/%s.py" % module.replace(".", "/")
+            for module in re.findall(r"\s-m\s+([A-Za-z_][\w.]*)", run)
+        ]
+        found.extend(
+            token
+            for token in run.split()
+            if "/" in token and token.endswith((".py", ".ts", ".sh", ".mjs", ".js"))
+        )
+        return found
 
     def entry_run(self, gate_id: str) -> str | None:
         """The `run:` of THIS id's manifest entry, None when no entry declares the id or its block has no run."""
@@ -516,7 +530,7 @@ class Registry:
                 continue
             if "id: '" in line:
                 return None
-            hit = re.match(r"""\s*run:\s*(['"])(.*)\1,\s*$""", line)
+            hit = re.match(r"""\s*run:\s*(['"])(.*)\1,?\s*$""", line)
             if hit:
                 return hit.group(2)
         return None
@@ -1242,9 +1256,19 @@ CONTROL_MANIFEST = """export const GATES = [
   },
   {
     id: 'check:ctl-direct',
-    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry',
+    run: 'python3 sub/ctl_direct.py',
     gate: true,
     leaves: ['sub/ctl-guard.sh', 'sub/ctl_gate.py', 'sub/ctl_broken_gate.py', 'sub/ctl_parsed_gate.py'],
+  },
+  {
+    id: 'check:ctl-direct-gone',
+    run: 'python3 sub/ctl_deleted.py',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh'],
+  },
+  {
+    id: 'check:ctl-lastkey',
+    run: 'npm run check:ctl-lastkey'
   },
   {
     id: 'check:ctl-keyless',
@@ -2155,6 +2179,7 @@ def selftest() -> int:
             "import ctl_unparsed\nthis is ( not python\n", encoding="utf-8"
         )
         (files / "sub" / "ctl_parsed_gate.py").write_text("import ctl_parsed\n", encoding="utf-8")
+        (files / "sub" / "ctl_direct.py").write_text("X = 1\n", encoding="utf-8")
         for stem in (
             "ctl_unparsed",
             "ctl_parsed",
@@ -2171,7 +2196,7 @@ def selftest() -> int:
             (files / "sub" / ("%s.py" % stem)).write_text("X = 1\n", encoding="utf-8")
         (base / "manifest.ts").write_text(CONTROL_MANIFEST, encoding="utf-8")
         (base / "package.json").write_text(
-            '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true" } }\n',
+            '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true", "check:ctl-lastkey": "true" } }\n',
             encoding="utf-8",
         )
         (base / "settings.json").write_text('{ "hooks": {} }\n', encoding="utf-8")
@@ -2201,6 +2226,19 @@ def selftest() -> int:
         ctl.truthy(
             "CONTROL: a direct-run gate (no npm hop, no package.json key) resolves",
             registry.gate_resolves("check:ctl-direct"),
+        )
+        ctl.falsy(
+            "PLANT: a direct run whose module file is gone does not resolve",
+            registry.gate_resolves("check:ctl-direct-gone"),
+        )
+        ctl.truthy(
+            "CONTROL: a module run names its `.ci/<dotted path>.py` file",
+            registry.direct_run_files("PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry")
+            == [".ci/rediacc_ci/quality/trap_registry.py"],
+        )
+        ctl.truthy(
+            "CONTROL: a run that is the entry's last property, with no trailing comma, resolves",
+            registry.gate_resolves("check:ctl-lastkey"),
         )
         ctl.falsy(
             "PLANT: an npm hop whose script package.json lacks does not resolve",

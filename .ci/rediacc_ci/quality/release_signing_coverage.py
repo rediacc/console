@@ -179,12 +179,17 @@ def _guards(body: list[ast.stmt]) -> bool:
     return raises and names
 
 
-_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
-
-
 def _walk_own_scope(node: ast.AST):
-    """`ast.walk` that does not enter a nested def, lambda or class: a raise defined there only runs if it is called, so it guards nothing (the swallowed-failures sibling, review 3982781b.4)."""
-    if isinstance(node, _SCOPES):
+    """`ast.walk` that does not enter a nested def or lambda BODY: a raise defined there only runs if it is called, so it guards nothing (the swallowed-failures sibling, review 3982781b.4).
+
+    What runs when the definition statement executes is still walked: a def's decorators and argument defaults, a lambda's defaults, and a class's whole body (a class body runs immediately)."""
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        yield node
+        args = node.args
+        for child in [*args.defaults, *[d for d in args.kw_defaults if d is not None]]:
+            yield from _walk_own_scope(child)
+        for child in getattr(node, "decorator_list", []):
+            yield from _walk_own_scope(child)
         return
     yield node
     for child in ast.iter_child_nodes(node):
@@ -276,7 +281,7 @@ class GateTally:
 
 
 def resolve_root() -> str:
-    """`${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel || echo .)}`.
+    """The signing-coverage root: `$SIGNING_COVERAGE_ROOT` inside a private scratch directory, else `git rev-parse --show-toplevel`, else `.`.
 
     Three rungs, and `$REDIACC_CI_ROOT` is not one of them. `$SIGNING_COVERAGE_ROOT` is honoured only when it names a private scratch directory (`seams.scratch_root`); an override anywhere else is ignored and the next rung answers. The bash twin that honoured any value is retired, so no second implementation reads the variable.
     """
