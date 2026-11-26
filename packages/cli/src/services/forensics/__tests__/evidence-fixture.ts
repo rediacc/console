@@ -16,7 +16,7 @@ import {
   sha256Hex,
 } from '@rediacc/shared/forensics';
 
-export const ORG = 'org-1';
+const ORG = 'org-1';
 export const MACHINE = 'machine-1';
 export const GUID = '3f2b8c1e-5d4a-4e7b-9a10-0c2d4e6f8a1b';
 const SUBSCRIPTION = 'sub-1';

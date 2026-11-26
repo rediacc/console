@@ -10,7 +10,7 @@ const MINUTE_MS = 60_000;
 const UNIT_MS = { m: MINUTE_MS, h: 60 * MINUTE_MS, d: 24 * 60 * MINUTE_MS } as const;
 const SPAN = /^(\d+)([mhd])$/;
 const DEFAULT_SINCE = '24h';
-export const MAX_WINDOW_MS = 31 * UNIT_MS.d;
+const MAX_WINDOW_MS = 31 * UNIT_MS.d;
 
 export interface ForensicsWindow {
   from: string;

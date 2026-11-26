@@ -24,7 +24,7 @@ import {
 } from './evidence.js';
 import type { ForensicsWindow } from './window.js';
 
-export interface ClockRow {
+interface ClockRow {
   name: 'earlyWarning' | 'notification' | 'finalReport';
   dueAt: string;
   state: string;
@@ -104,7 +104,7 @@ function clockLine(clock: ClockRow): string {
 }
 
 /** The verification an export ran over the raw files it downloaded; null when it had none to check. */
-export type ExportVerification = (VerificationReport & { files: number }) | null;
+type ExportVerification = (VerificationReport & { files: number }) | null;
 
 export interface ExportResult {
   incident: string;

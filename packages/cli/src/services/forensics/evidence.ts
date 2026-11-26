@@ -51,7 +51,7 @@ export function isSafeEvidenceKey(key: string): boolean {
   return key.split('/').every((part) => part !== '' && part !== '.' && part !== '..');
 }
 
-export interface LoadedEvidence {
+interface LoadedEvidence {
   org: string;
   window: ForensicsWindow;
   auditDays: AuditDayInput[];
@@ -172,10 +172,7 @@ function auditWindowDays(audit: Classified['audit'], window: ForensicsWindow) {
 }
 
 /** Read the evidence directory; audit days are limited to the window plus the day before it. Without a window, every day found is checked. */
-export function loadEvidence(
-  directory: string,
-  requested: ForensicsWindow | undefined
-): LoadedEvidence {
+function loadEvidence(directory: string, requested: ForensicsWindow | undefined): LoadedEvidence {
   let paths: string[];
   try {
     paths = walk(directory);
@@ -224,7 +221,7 @@ export function parseMachineKeys(entries: readonly string[]): Map<string, string
 }
 
 /** The file an export stamps at the root of the evidence directory, naming its incident. */
-export const EXPORT_STAMP_FILE = 'export.json';
+const EXPORT_STAMP_FILE = 'export.json';
 const INCIDENT_FILE = 'incident.json';
 
 /** `{machineId, publicKey}` entries (the server's pinned list) as a map from machine id to 64 hex. */

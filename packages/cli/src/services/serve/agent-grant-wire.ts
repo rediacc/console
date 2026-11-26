@@ -7,10 +7,10 @@ import type { AgentGrantOverrides } from './policy.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** The 401 reasons a fresh open cures: the chain's token was spent, expired, or is unknown to the store. */
-export const REMINT_REASONS = new Set(['token_exhausted', 'token_expired', 'invalid_token']);
+const REMINT_REASONS = new Set(['token_exhausted', 'token_expired', 'invalid_token']);
 
 /** An override axis in the account's shape: exact names, every one, or nothing. */
-export type OverrideAxis = '*' | string[] | null;
+type OverrideAxis = '*' | string[] | null;
 
 /** One policy key wrapped for the grant: it opens the records of `policyConfigId` (team `policyTeamId`). */
 export interface WrappedPolicyKey {

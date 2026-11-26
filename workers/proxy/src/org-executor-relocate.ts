@@ -93,7 +93,7 @@ export function vantageName(hint: string): string {
 }
 
 /** The target `probeFromVantage` probes, or why the call is refused: the instance must be the unpinned vantage named for a known `hint`, and the target must pass `probeTarget` again. */
-export function vantageTarget(
+function vantageTarget(
   self: ExecutorIdentity,
   hint: string,
   target: unknown

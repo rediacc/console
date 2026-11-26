@@ -19,7 +19,7 @@ export interface RowsRead {
 }
 
 /** The rows of `kind` and every gap row, in the server's time order. */
-export function selectRows(rows: readonly TimelineRow[], kind: RowKind): TimelineRow[] {
+function selectRows(rows: readonly TimelineRow[], kind: RowKind): TimelineRow[] {
   return rows.filter((row) => row.kind === kind || row.kind === 'gap');
 }
 
@@ -67,7 +67,7 @@ function gapLine(row: TimelineRow): string {
   });
 }
 
-export function rowLine(row: TimelineRow): string {
+function rowLine(row: TimelineRow): string {
   if (row.kind === 'gap') return gapLine(row);
   return row.kind === 'flow' ? flowLine(row) : openLine(row);
 }

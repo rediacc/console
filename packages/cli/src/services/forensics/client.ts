@@ -21,7 +21,7 @@ const PAGE_LIMIT = 500;
 /** A timeline that never ends is a server fault: stop after this many pages. */
 const MAX_PAGES = 200;
 
-export type ScopeKind = 'repo' | 'machine';
+type ScopeKind = 'repo' | 'machine';
 
 export interface Scope {
   kind: ScopeKind;
@@ -37,7 +37,7 @@ export interface TimelineRow {
   data?: Record<string, unknown>;
 }
 
-export interface IncidentStep {
+interface IncidentStep {
   name: string;
   status: string;
   at: string;
@@ -68,7 +68,7 @@ export interface Aggregates {
   topDestinations: Record<string, unknown>[];
 }
 
-export interface MachineKey {
+interface MachineKey {
   machineId: string;
   subscriptionId: string;
   /** The pinned Ed25519 spool key as 64 hex characters. */
