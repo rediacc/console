@@ -163,9 +163,10 @@ elif [[ $- != *i* ]] && {
     # started by an earlier call) would otherwise merge two calls into one count.
     __bashcov_keep=0
     if [[ ${BASHCOV_CALL:-} =~ ^([0-9]+)-[0-9]+$ ]]; then
+        __bashcov_id=${BASH_REMATCH[1]} # copied out: the `=~` in the loop below resets BASH_REMATCH
         __bashcov_p=$$
         for __bashcov_c in {1..64}; do
-            if [[ $__bashcov_p == "${BASH_REMATCH[1]}" ]]; then
+            if [[ $__bashcov_p == "$__bashcov_id" ]]; then
                 __bashcov_keep=1
                 break
             fi
