@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: et
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## Ülevaade
@@ -242,6 +242,8 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `config_audit_verify` | ei | Kontrollib, et auditilogi räsiahelat ei ole muudetud. |
 | `config_current` | ei | Näitab aktiivset konfiguratsiooni: nimi, fail, lahendatud server ja kanal, žetooni olek. |
 | `config_list` | ei | Loetleb kõik konfiguratsioonifailid. |
+| `forensics_verify` | ei | Arvutab uuesti välja auditi päevafailide räsiahela ja tõendikataloogi (rdc incident ekspordikataloogi) allkirjastatud kohtuekspertiisi partiiahelad ning loetleb iga lünga ja muudatuse. |
+| `incident_export` | ei | Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos selle kelladega, ühendatud ajajoone, väljuvate baitide koondid, ahela toore manifesti ja selles loetletud toorfailid manifesti võtmete all. |
 | `machine_infra_cert_status` | ei | Näitab vahemällu salvestatud sertifikaatide inventuuri. |
 | `server_status` | ei | Näitab paigaldatud serveri tervist, taset, sertifikaati ja tõmmist. |
 | `version` | ei | Prindib CLI versiooni, platvormi, uuenduskanali ja aktiivse litsentsi: sisselogituna paketi, sisselogimata "anonymous (FREE per repository)" ja "unknown (server unreachable)", kui kontoserverini ei jõua. |

@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: zh
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## 概述
@@ -242,6 +242,8 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `config_audit_verify` | 否 | 验证审计日志的哈希链未被篡改。 |
 | `config_current` | 否 | 显示当前生效的配置：名称、文件、解析出的服务器和通道、令牌状态。 |
 | `config_list` | 否 | 列出所有配置文件。 |
+| `forensics_verify` | 否 | 重新计算证据目录(rdc incident 导出目录)中审计按日文件的哈希链和已签名的取证批次链,并列出每一处缺口和每一处改动。 |
+| `incident_export` | 否 | 将事件的时间窗口写入一个目录:带有各时钟信息的事件记录、合并后的时间线、出站字节汇总、原始链清单,以及清单中列出的原始文件(按清单键存放)。 |
 | `machine_infra_cert_status` | 否 | 显示已缓存的证书清单。 |
 | `server_status` | 否 | 显示已安装服务器的健康状况、层级、证书和镜像。 |
 | `version` | 否 | 输出 CLI 版本、平台、更新通道和当前许可证：登录时显示套餐，未登录时显示 "anonymous (FREE per repository)"，无法连接账户服务器时显示 "unknown (server unreachable)"。 |

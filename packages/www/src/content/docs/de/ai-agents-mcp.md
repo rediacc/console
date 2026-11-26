@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: de
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## Überblick
@@ -242,6 +242,8 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `config_audit_verify` | nein | Prüfen, dass die Hash-Kette des Audit-Logs nicht manipuliert wurde. |
 | `config_current` | nein | Die aktive Konfiguration anzeigen: Name, Datei, aufgelöster Server und Kanal, Token-Zustand. |
 | `config_list` | nein | Alle Konfigurationsdateien auflisten. |
+| `forensics_verify` | nein | Die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses (eines Exportverzeichnisses von rdc incident) neu berechnen und jede Lücke und jede Änderung auflisten. |
+| `incident_export` | nein | Das Zeitfenster des Vorfalls in ein Verzeichnis schreiben: den Vorfallsdatensatz mit seinen Uhren, die zusammengeführte Zeitachse, die Aggregate der ausgehenden Bytes, das rohe Ketten-Manifest und die darin aufgeführten Rohdateien unter ihren Manifest-Schlüsseln. |
 | `machine_infra_cert_status` | nein | Das zwischengespeicherte Zertifikatsinventar anzeigen. |
 | `server_status` | nein | Zustand, Tarif, Zertifikat und Image eines installierten Servers anzeigen. |
 | `version` | nein | Die CLI-Version, Plattform, den Update-Kanal und die aktive Lizenz ausgeben: den Tarif bei Anmeldung, "anonymous (FREE per repository)" ohne Anmeldung und "unknown (server unreachable)", wenn der Account-Server nicht erreichbar ist. |

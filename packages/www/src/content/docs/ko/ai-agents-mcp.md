@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: ko
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## 개요
@@ -242,6 +242,8 @@ Worker는 PKCE(S256만 지원)를 쓰는 OAuth 2.1 인증 서버입니다. 클�
 | `config_audit_verify` | 아니요 | 감사 로그의 해시 체인이 변조되지 않았는지 검증합니다. |
 | `config_current` | 아니요 | 활성 구성을 보여 줍니다. 이름, 파일, 확인된 서버와 채널, 토큰 상태를 확인할 수 있습니다. |
 | `config_list` | 아니요 | 모든 구성 파일을 나열합니다. |
+| `forensics_verify` | 아니요 | 증거 디렉터리(rdc incident 내보내기 디렉터리)의 감사 일별 파일 해시 체인과 서명된 포렌식 배치 체인을 다시 계산하고, 누락과 변조를 모두 나열합니다. |
+| `incident_export` | 아니요 | 인시던트 기간을 디렉터리에 기록합니다. 시계 정보가 담긴 인시던트 레코드, 병합된 타임라인, 송신 바이트 집계, 원본 체인 매니페스트, 그리고 매니페스트 키별로 나열된 원본 파일이 대상입니다. |
 | `machine_infra_cert_status` | 아니요 | 캐시된 인증서 인벤토리를 보여 줍니다. |
 | `server_status` | 아니요 | 설치된 서버의 상태, 티어, 인증서, 이미지를 보여 줍니다. |
 | `version` | 아니요 | CLI 버전, 플랫폼, 업데이트 채널, 활성 라이선스를 출력합니다. 로그인한 경우 플랜, 로그인하지 않은 경우 "anonymous (FREE per repository)", 계정 서버에 연결할 수 없는 경우 "unknown (server unreachable)"이 표시됩니다. |

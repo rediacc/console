@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: tr
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## Genel Bakış
@@ -242,6 +242,8 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `config_audit_verify` | hayır | Denetim günlüğünün karma zincirinin kurcalanmadığını doğrular. |
 | `config_current` | hayır | Etkin yapılandırmayı gösterir: ad, dosya, çözümlenen sunucu ve kanal, belirteç durumu. |
 | `config_list` | hayır | Tüm yapılandırma dosyalarını listeler. |
+| `forensics_verify` | hayır | Bir kanıt dizininin (rdc incident dışa aktarım dizini) denetim günlük dosyalarının hash zincirini ve imzalı adli bilişim toplu iş zincirlerini yeniden hesaplar, her boşluğu ve her düzenlemeyi listeler. |
+| `incident_export` | hayır | Olayın zaman aralığını bir dizine yazar: saat bilgileriyle olay kaydını, birleştirilmiş zaman çizelgesini, giden bayt toplamlarını, ham zincir manifestosunu ve manifestonun listelediği ham dosyaları manifest anahtarları altında. |
 | `machine_infra_cert_status` | hayır | Önbellekteki sertifika envanterini gösterir. |
 | `server_status` | hayır | Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını gösterir. |
 | `version` | hayır | CLI sürümünü, platformu, güncelleme kanalını ve etkin lisansı yazdırır: oturum açıkken plan, oturumsuzken "anonymous (FREE per repository)", hesap sunucusuna ulaşılamıyorsa "unknown (server unreachable)". |

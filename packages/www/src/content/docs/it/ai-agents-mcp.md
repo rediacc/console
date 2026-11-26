@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: it
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## Panoramica
@@ -242,6 +242,8 @@ Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamen
 | `config_audit_verify` | no | Verifica che la catena di hash del log di audit non sia stata manomessa. |
 | `config_current` | no | Mostra la configurazione attiva: nome, file, server e canale risolti, stato del token. |
 | `config_list` | no | Elenca tutti i file di configurazione. |
+| `forensics_verify` | no | Ricalcola la catena di hash dei file giornalieri di audit e le catene dei batch forensi firmati di una directory di prove (una directory di esportazione di rdc incident) ed elenca ogni lacuna e ogni modifica. |
+| `incident_export` | no | Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi orologi, la timeline unificata, gli aggregati dei byte in uscita, il manifest grezzo della catena e i file grezzi che elenca, sotto le chiavi del manifest. |
 | `machine_infra_cert_status` | no | Mostra l'inventario dei certificati in cache. |
 | `server_status` | no | Mostra lo stato, il livello, il certificato e l'immagine di un server installato. |
 | `version` | no | Stampa la versione della CLI, la piattaforma, il canale di aggiornamento e la licenza attiva: il piano dopo l'accesso, "anonymous (FREE per repository)" senza accesso e "unknown (server unreachable)" quando il server degli account non è raggiungibile. |

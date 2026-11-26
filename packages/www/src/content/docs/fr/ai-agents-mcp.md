@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: fr
-sourceHash: "f8172807e77b0c6d"
-sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
+sourceHash: "844e1461f5149322"
+sourceCommit: "504925af13712be329813824338192f58efb3e08"
 ---
 
 ## Aperçu
@@ -242,6 +242,8 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `config_audit_verify` | non | Vérifier que la chaîne de hachage du journal d'audit n'a pas été altérée. |
 | `config_current` | non | Afficher la configuration active : nom, fichier, serveur et canal résolus, état du jeton. |
 | `config_list` | non | Lister tous les fichiers de configuration. |
+| `forensics_verify` | non | Recalculer la chaîne de hachage des fichiers journaliers d'audit et les chaînes de lots forensiques signés d'un répertoire de preuves (un répertoire d'export de rdc incident), puis lister chaque trou et chaque modification. |
+| `incident_export` | non | Écrire la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses horloges, la chronologie fusionnée, les agrégats d'octets sortants, le manifeste brut de la chaîne et les fichiers bruts qu'il liste, sous leurs clés de manifeste. |
 | `machine_infra_cert_status` | non | Afficher l'inventaire des certificats en cache. |
 | `server_status` | non | Afficher l'état, l'offre, le certificat et l'image d'un serveur installé. |
 | `version` | non | Afficher la version de la CLI, la plateforme, le canal de mise à jour et la licence active : l'offre une fois connecté, « anonymous (FREE per repository) » sans connexion et « unknown (server unreachable) » quand le serveur de comptes est injoignable. |
