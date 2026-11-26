@@ -1329,6 +1329,7 @@ jobs:
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Set Image Tags
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.set_image_tags

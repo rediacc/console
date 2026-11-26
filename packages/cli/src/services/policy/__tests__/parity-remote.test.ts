@@ -180,9 +180,7 @@ async function hostFor(row: FixtureRow): Promise<Hosted> {
     },
     ...(org === undefined ? {} : { policies: { org: PolicyDocumentSchema.parse(org) } }),
   });
-  // The harness seals an allow-all org record unless a case names one; a row with no org tier (no
-  // policy, or a policy naming no org document) has no record at all, so the session loads no policy
-  // and `decide` sees the missing-policy default.
+  // The harness seals an allow-all org record unless a case names one; a row with no org tier (no policy, or a policy naming no org document) has no record at all, so the session loads no policy and `decide` sees the missing-policy default.
   if (org === undefined) made.policyRecords.clear();
   const account = fakeAccount([made]);
   await account.bump(grantId, configFor(row, made.configId));
