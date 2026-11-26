@@ -1,7 +1,8 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { debugLog } from '../../utils/debug.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { decodeSSHKey } from '../utils/sshKeyText.js';
 
@@ -11,12 +12,43 @@ import { decodeSSHKey } from '../utils/sshKeyText.js';
  */
 const SSH_AGENT_TIMEOUT_MS = 10000;
 
+/** Named pipe of the Win32-OpenSSH agent service. */
+export const WINDOWS_SSH_AGENT_PIPE = '\\\\.\\pipe\\openssh-ssh-agent';
+
+/** Upper bound for the Windows service probe; `sc.exe query` answers in milliseconds. */
+const WINDOWS_AGENT_PROBE_TIMEOUT_MS = 3000;
+
 /**
- * SSH agent result containing socket path and agent PID
+ * SSH agent result containing socket path and agent PID.
+ * agentPid is empty when the agent is not ours to stop (the Windows service).
  */
 export interface SSHAgentResult {
   socketPath: string;
   agentPid: string;
+}
+
+/**
+ * Whether the Win32-OpenSSH agent service is RUNNING.
+ * The service is Disabled by default, so a stopped or missing service is the normal answer, not an error.
+ */
+export function isWindowsSSHAgentServiceRunning(
+  timeoutMs = WINDOWS_AGENT_PROBE_TIMEOUT_MS
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(
+      'sc.exe',
+      ['query', 'ssh-agent'],
+      { timeout: timeoutMs, windowsHide: true },
+      (err, stdout) => {
+        if (err) {
+          debugLog(`ssh-agent service probe failed: ${err.message}`);
+          resolve(false);
+          return;
+        }
+        resolve(/STATE\s*:\s*\d+\s+RUNNING/i.test(String(stdout)));
+      }
+    );
+  });
 }
 
 /**
@@ -30,10 +62,12 @@ export async function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<S
   const platform = getPlatform();
 
   if (platform === 'windows') {
-    // On Windows, check if ssh-agent is available
-    if (!(await commandExists('ssh-agent'))) {
-      throw new Error('ssh-agent not found. Ensure OpenSSH is installed.');
+    // Win32-OpenSSH's agent is a service on a named pipe: `ssh-agent -s` never works there
+    // (error 1058 when the service is disabled, a hang otherwise). Use the service or nothing.
+    if (!(await isWindowsSSHAgentServiceRunning())) {
+      throw new Error('ssh-agent service is not running');
     }
+    return { socketPath: WINDOWS_SSH_AGENT_PIPE, agentPid: '' };
   }
 
   return new Promise((resolve, reject) => {
@@ -224,6 +258,11 @@ export async function stopSSHAgent(agentPid: string, gracePeriodMs = 1000): Prom
  *
  * @returns True if ssh-agent is available
  */
-export function isSSHAgentAvailable(): Promise<boolean> {
-  return commandExists('ssh-agent');
+export async function isSSHAgentAvailable(): Promise<boolean> {
+  if (!(await commandExists('ssh-agent'))) return false;
+  if (getPlatform() === 'windows' && !(await isWindowsSSHAgentServiceRunning())) {
+    debugLog('ssh-agent service is not running, using file-based keys');
+    return false;
+  }
+  return true;
 }
