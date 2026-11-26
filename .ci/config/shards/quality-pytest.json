@@ -1,7 +1,11 @@
 {
   "lane": "quality-pytest",
   "of": 6,
+<<<<<<< HEAD
   "generatedAt": "2026-11-26T13:26:34.251Z",
+=======
+  "generatedAt": "2026-11-26T13:54:28.056Z",
+>>>>>>> f1d434d2d8 (chore(ci): place four new pytest units on quality-pytest legs)
   "legs": [
     {
       "index": 1,
