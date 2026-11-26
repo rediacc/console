@@ -56,11 +56,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1500 of 1891 boxes done (79%).
+Promoted: 11 of 100 plans done, 1509 of 1891 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-ciquick-cpu.md | 29/38 | 9 open |
+| 1 | PLAN-ciquick-cpu.md | 30/38 | 8 open |
 | 2 | PLAN-backup-program.md | 189/192 | 3 open |
 | 3 | PLAN-cloudflare-proxy.md | 29/29 | done |
 | 4 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
@@ -118,7 +118,7 @@ Promoted: 11 of 100 plans done, 1500 of 1891 boxes done (79%).
 | 56 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
 | 57 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
 | 58 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
-| 59 | PLAN-preview-signer.md | 20/37 | 17 open |
+| 59 | PLAN-preview-signer.md | 23/37 | 14 open |
 | 60 | PLAN-weekly-lessons.md | 6/8 | 2 open |
 | 61 | PLAN-tooling-speed.md | 6/8 | 2 open |
 | 62 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |
@@ -148,12 +148,12 @@ Promoted: 11 of 100 plans done, 1500 of 1891 boxes done (79%).
 | 86 | PLAN-rmcp-docs.md | 9/20 | 11 open |
 | 87 | PLAN-stripe-disable.md | 6/8 | 2 open |
 | 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
-| 89 | PLAN-forensics-shipping.md | 10/16 | 6 open |
+| 89 | PLAN-forensics-shipping.md | 12/16 | 4 open |
 | 90 | PLAN-forensics-detection.md | 10/15 | 5 open |
 | 91 | PLAN-forensics-investigation.md | 13/17 | 4 open |
-| 92 | PLAN-forensics-alerts-notices.md | 9/15 | 6 open |
+| 92 | PLAN-forensics-alerts-notices.md | 11/15 | 4 open |
 | 93 | PLAN-forensics-reports.md | 11/14 | 3 open |
-| 94 | PLAN-forensics-docs-legal.md | 7/13 | 6 open |
+| 94 | PLAN-forensics-docs-legal.md | 8/13 | 5 open |
 | 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 96 | PLAN-writers-now-cadence.md | 5/5 | done |
 | 97 | PLAN-armed-actions.md | 6/6 | done |

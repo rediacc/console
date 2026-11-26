@@ -47,10 +47,11 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
 
 ## Tasks
 
-- [ ] FL1 [writer] English feature docs per D3: `forensics.md`, `incident-response.md` and `incident-reports.md` under packages/www/src/content/docs/en with frontmatter in the Guides category, every `rdc` example taken from the landed command tree.
+- [x] FL1 [writer] English feature docs per D3: `forensics.md`, `incident-response.md` and `incident-reports.md` under packages/www/src/content/docs/en with frontmatter in the Guides category, every `rdc` example taken from the landed command tree.
   Owns: packages/www/src/content/docs/en/forensics.md, packages/www/src/content/docs/en/incident-response.md, packages/www/src/content/docs/en/incident-reports.md
   Depends on: PLAN-forensics-reports.md#FR9, PLAN-forensics-investigation.md#FI8.
   Accept: `npm run check:cli-docs` rc 0, `npm run check:ci-docs-frontmatter` rc 0 and `npm run check:ci-prose-style` rc 0.
+    (ticked) 2026-11-26T11:00:21Z by d778be9d: FL1 English forensics, incident-response and incident-reports docs: check:ci-docs-frontmatter rc 0 on the merged tree, check:cli-docs rc 0 commit:0531ce955e plan:agent/plans/PLAN-forensics-docs-legal.md
 - [ ] FL2 [writer] Translate the three FL1 docs into ar, de, es and et, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/ar/forensics.md, packages/www/src/content/docs/ar/incident-*.md, packages/www/src/content/docs/de/forensics.md, packages/www/src/content/docs/de/incident-*.md, packages/www/src/content/docs/es/forensics.md, packages/www/src/content/docs/es/incident-*.md, packages/www/src/content/docs/et/forensics.md, packages/www/src/content/docs/et/incident-*.md
   Depends on: FL1.

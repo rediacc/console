@@ -495,7 +495,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
-| `agent/plans/PLAN-ciquick-cpu.md` | approved | 213 | 9 | 29 | 38472 |
+| `agent/plans/PLAN-ciquick-cpu.md` | approved | 214 | 8 | 30 | 38700 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 34 | 0 | 7 | 7626 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
@@ -543,13 +543,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 134 | 6 | 9 | 29766 |
+| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 136 | 4 | 11 | 30283 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 133 | 5 | 10 | 25119 |
-| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
+| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 113 | 5 | 8 | 20998 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 144 | 4 | 13 | 33674 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 123 | 3 | 11 | 24577 |
-| `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
+| `agent/plans/PLAN-forensics-shipping.md` | approved | 139 | 4 | 12 | 35479 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-ghcr-registry-cleanup.md` | proposed | 54 | 7 | 0 | 13059 |
@@ -583,7 +583,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
-| `agent/plans/PLAN-preview-signer.md` | approved | 342 | 17 | 20 | 71433 |
+| `agent/plans/PLAN-preview-signer.md` | approved | 345 | 14 | 23 | 72168 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 227 | 3 | 25 | 45968 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
