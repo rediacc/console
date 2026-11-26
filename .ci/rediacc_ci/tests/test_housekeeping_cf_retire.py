@@ -470,7 +470,7 @@ def test_archive_d1_is_verified_only_for_a_clean_export_holding_a_table(monkeypa
 
 class _Obj:
     def __init__(self, rel, size, etag=""):
-        self.rel, self.size, self.etag = rel, size, etag
+        self.rel, self.size, self.etag, self.modified = rel, size, etag, 0
 
 
 def _r2(monkeypatch, objs, remote: dict, tmp_path):
@@ -511,17 +511,49 @@ def test_archive_r2_dir_checks_size_etag_and_never_verifies_an_empty_bucket(monk
     assert empty["verified"] is False
 
 
-def test_archive_r2_bucket_needs_a_clean_copy_and_no_differences(monkeypatch):
+def _bucket(monkeypatch, src, dst, diffs=()):
+    copied = []
+
     class Transfers:
-        def __init__(self, *_a, **_k):
-            pass
+        def __init__(self, *_a, bucket="", **_k):
+            self.bucket = bucket
 
         def list_tree(self, _prefix):
-            return [_Obj("a", 1)]
+            return src if self.bucket == "b" else dst
+
+        def copy_all(self, pairs):
+            copied.extend(pairs)
 
     monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
     monkeypatch.setattr(cr.r2_promote, "Transfers", Transfers)
-    for rc, diffs, verified in ((0, [], True), (0, ["a"], False), (2, [], False)):
-        monkeypatch.setattr(cr.rbc, "copy", lambda *_a, rc=rc: rc)
-        monkeypatch.setattr(cr.rbc, "deep_differences", lambda *_a, diffs=diffs: diffs)
-        assert cr.archive_r2_bucket("b", None, "dst")["verified"] is verified
+    monkeypatch.setattr(cr.rbc, "deep_differences", lambda *_a: list(diffs))
+    return cr.archive_r2_bucket("b", None, "dst"), copied
+
+
+def test_archive_r2_bucket_ignores_destination_only_keys(monkeypatch):
+    both = [_Obj("a", 1, "x" * 32), _Obj("b", 2, "y" * 32)]
+    res, copied = _bucket(monkeypatch, both, [*both, _Obj("extra", 9), _Obj("more", 3)])
+    assert res["verified"] is True
+    assert res["destination_only_keys"] == 2
+    assert res["mismatches"] == []
+    assert copied == []
+
+
+def test_archive_r2_bucket_fails_on_missing_or_mismatched_source_keys(monkeypatch):
+    src = [_Obj("a", 1, "x" * 32), _Obj("b", 2, "y" * 32)]
+    res, copied = _bucket(monkeypatch, src, [_Obj("a", 1, "x" * 32)])
+    assert res["verified"] is False
+    assert res["mismatches"] == ["missing in destination: b"]
+    assert [k for k, _ in copied] == ["b"]
+    res, _ = _bucket(
+        monkeypatch, src, [_Obj("a", 1, "x" * 32), _Obj("b", 3, "y" * 32), _Obj("z", 1)]
+    )
+    assert res["verified"] is False
+    assert res["mismatches"] == ["size differs: b (source 2, destination 3)"]
+    res, _ = _bucket(monkeypatch, src, [_Obj("a", 1, "q" * 32), _Obj("b", 2, "y" * 32)])
+    assert res["verified"] is False
+    assert "etag differs: a" in res["mismatches"][0]
+    res, _ = _bucket(monkeypatch, src, src, diffs=["sha256 differs: a"])
+    assert res["verified"] is False
+    res, _ = _bucket(monkeypatch, [], [_Obj("a", 1)])
+    assert res["verified"] is False
