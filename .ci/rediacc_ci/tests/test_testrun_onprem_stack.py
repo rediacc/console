@@ -563,7 +563,7 @@ class _NoOpRuntime(mod.Runtime):
         argv: list[str],
         env: dict[str, str] | None = None,
         cwd: pathlib.Path | None = None,
-        timeout: int = 600,
+        timeout: float = 600,
     ) -> subprocess.CompletedProcess:
         del env, cwd, timeout
         self.runs.append(list(argv))

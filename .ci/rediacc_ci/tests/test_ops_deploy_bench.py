@@ -880,7 +880,7 @@ def test_the_rotation_check_runs_directly_off_the_rotation_profile(monkeypatch, 
 
 def test_the_rotation_check_hands_its_env_to_the_child(monkeypatch, tmp_path):
     """The bootstrap token reaches the child through env=, not only through the helper."""
-    seen = {}
+    seen: dict[str, Any] = {}
 
     class Proc:
         returncode = 0

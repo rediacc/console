@@ -380,8 +380,16 @@ def test_system_temp_base_reads_a_mount_point_with_a_tab_or_backslash(monkeypatc
 def test_tmpfs_health_cli_runs_selftest_or_the_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     """db09591e.1: `cli` is the gate's entry point; `--selftest` runs only the controls, a plain run checks the paths and returns 1 on a red one."""
     ran: list[str] = []
-    monkeypatch.setattr(th, "controls", lambda: ran.append("controls"))
-    monkeypatch.setattr(th, "main", lambda: ran.append("main") or 7)
+
+    def controls() -> None:
+        ran.append("controls")
+
+    def main() -> int:
+        ran.append("main")
+        return 7
+
+    monkeypatch.setattr(th, "controls", controls)
+    monkeypatch.setattr(th, "main", main)
     assert th.cli(["--selftest"]) == 0
     assert ran == ["controls"]
     assert th.cli([]) == 7

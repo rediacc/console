@@ -12,6 +12,7 @@ import subprocess
 import sys
 import threading
 import time
+import typing
 
 import pytest
 
@@ -822,7 +823,7 @@ def test_main_thread_naps_drops_subprocess_polling_and_keeps_other_callers(monke
     naps = _main_thread_naps(monkeypatch)
     subprocess.run([sys.executable, "-c", "import time; time.sleep(0.3)"], timeout=30, check=True)
     assert naps == [], naps
-    ns = {"__name__": "subprocess", "time": time}
+    ns: dict[str, typing.Any] = {"__name__": "subprocess", "time": time}
     exec("def nap():\n    time.sleep(0.001)", ns)
     ns["nap"]()
     assert naps == []

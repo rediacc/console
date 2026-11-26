@@ -159,11 +159,12 @@ def test_fresh_tmp_points_tmpdir_at_one_root_and_empties_it(fresh_tmp):
 def test_chain_witnesses_resets_before_every_probe(monkeypatch):
     """a745aa77.2: every in-process probe runs on a reset root; the control counts probes against resets, so a probe without its reset fails here."""
     events = []
-    monkeypatch.setattr(
-        sys.modules[__name__],
-        "chain_inprocess",
-        lambda _chain, _p: events.append("probe") or (0, "", ""),
-    )
+
+    def probe(_chain, _p):
+        events.append("probe")
+        return (0, "", "")
+
+    monkeypatch.setattr(sys.modules[__name__], "chain_inprocess", probe)
     chain = LIVE_CHAINS[0]
     _deny, allow = chain_witnesses(chain, lambda: events.append("reset"))
     assert allow is not None

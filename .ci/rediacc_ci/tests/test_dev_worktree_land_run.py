@@ -535,7 +535,12 @@ def test_a_landed_count_that_differs_from_the_picked_count_is_a_failed_step(
 
     monkeypatch.setattr(run, "git", fewer)
     bumped: list[object] = []
-    monkeypatch.setattr(run, "_land_gitlink", lambda *a: bumped.append(a) or True)
+
+    def land_gitlink(*a):
+        bumped.append(a)
+        return True
+
+    monkeypatch.setattr(run, "_land_gitlink", land_gitlink)
     lines: list[str] = []
     plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {sha: "Fixes-Review: x.1"})
     assert run.execute(plan, emit=lines.append, me="") == 1

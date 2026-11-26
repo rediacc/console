@@ -10,6 +10,7 @@ An adopted script must refuse in the shared format on stderr (`<gate>.py: unknow
 import ast
 import pathlib
 import sys
+import typing
 
 import pytest
 
@@ -190,7 +191,7 @@ def runpy_entries(quality: pathlib.Path) -> list[str]:
                 names = [node.module or ""]
             elif isinstance(node, ast.Call) and _is_dynamic_import(node):
                 # `__import__("runpy")` and `importlib.import_module("runpy")` reach the same hop without an import statement.
-                names = [node.args[0].value]
+                names = [str(typing.cast("ast.Constant", node.args[0]).value)]
             if any(n == "runpy" or n.startswith("runpy.") for n in names):
                 hits.append(script.stem)
                 break

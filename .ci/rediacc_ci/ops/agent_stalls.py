@@ -89,7 +89,8 @@ def read_transcript(path: Path, role: str, since: float, until: float) -> Transc
             if transcript.first is None:
                 transcript.first = at
             transcript.last = at
-            message = row.get("message") if isinstance(row.get("message"), dict) else {}
+            raw_message = row.get("message")
+            message: dict = raw_message if isinstance(raw_message, dict) else {}
             if kind == "assistant":
                 model = message.get("model") or "unknown"
                 if model != "unknown" and transcript.model == "unknown":

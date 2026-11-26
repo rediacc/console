@@ -192,8 +192,8 @@ def _walk_own_scope(node: ast.AST):
             yield from _walk_own_scope(child)
         return
     yield node
-    for child in ast.iter_child_nodes(node):
-        yield from _walk_own_scope(child)
+    for inner in ast.iter_child_nodes(node):
+        yield from _walk_own_scope(inner)
 
 
 def guarded_in(fmt: str, text: str) -> str:

@@ -396,7 +396,7 @@ def test_live_arm_is_inert_on_a_done_item():
     assert arm is not None
     assert A.live_arm({"state": " ", "arm": arm}) is arm
     assert A.live_arm({"state": "x", "arm": arm}) is None
-    assert A.live_arm({"state": " ", "arm": dict(arm, started_at=at(1))}) is None
+    assert A.live_arm({"state": " ", "arm": dict(arm or {}, started_at=at(1))}) is None
 
 
 # ---------------------------------------------------------------------------- the store: fold, latch, compaction

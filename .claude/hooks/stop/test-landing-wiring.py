@@ -706,7 +706,7 @@ def stop1_review_cases(check):
 
     # ---- ci: 65dcaec1.3 and b74a99a2.4, a ledger failure is named, not swallowed ---------------------------
 
-    info = {"pr": 5, "contexts": []}
+    info: dict[str, object] = {"pr": 5, "contexts": []}
 
     def boom(*_a, **_k):
         raise RuntimeError("ledger exploded")
@@ -716,7 +716,7 @@ def stop1_review_cases(check):
     check("ci_longred failure: returns None", got, None)
     check(
         "ci_longred failure: the line names the error",
-        "RuntimeError: ledger exploded" in info.get("longred", ""),
+        "RuntimeError: ledger exploded" in str(info.get("longred", "")),
         True,
     )
 
@@ -1036,6 +1036,11 @@ def stop1_review_cases(check):
     def survey_run(draft):
         survey.write_text(survey_text % draft, encoding="utf-8")
         err = []
+
+        def wrote(*_a, **_k):
+            err.append("WROTE")
+            return "abcd1234"
+
         fold = types.SimpleNamespace(by_id={}, items=[])
         with (
             swapped(
@@ -1050,7 +1055,7 @@ def stop1_review_cases(check):
                 resolve_session_id=lambda: "deadbeef-test",
             ),
             swapped(wl_cli_mod.S, load=lambda *_a, **_k: fold),
-            swapped(wl_cli_mod.S, add_item=lambda *_a, **_k: err.append("WROTE") or "abcd1234"),
+            swapped(wl_cli_mod.S, add_item=wrote),
         ):
             try:
                 wl_cli_mod._armed_cli(["--arm-from-survey", "deadbeef-test", str(survey)])
