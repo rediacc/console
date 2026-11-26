@@ -29,6 +29,10 @@ const RSYNC_EXE = 'rsync.exe';
 const RUNTIME_DLL = 'msys-2.0.dll';
 /** Directories the MSYS2 runtime expects beside `usr` in its root; the extracted tree has none, and rsync then exits non-zero after printing its banner. */
 const MSYS2_ROOT_DIRS = ['etc', 'tmp', 'dev'] as const;
+/** MSYS2's own /etc/fstab line: cygdrive prefix "/" makes `/c/...` resolve; without it the runtime defaults to `/cygdrive` and rdc's MSYS form fails with change_dir. */
+export const MSYS2_FSTAB = 'none / cygdrive binary,posix=0,noacl,user 0 0\n';
+/** `~` resolves to the Windows profile, so the ssh config lookups are predictable. */
+export const MSYS2_NSSWITCH = 'db_home: windows\n';
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
 /** The archive URL of one pinned package, in the repository's `<name>-<version>-x86_64.pkg.tar.zst` naming. */
@@ -68,6 +72,17 @@ function rsyncInstallPath(options: { pin?: Msys2RsyncPin; toolsDir?: string } = 
 /** Create the MSYS2 root directories (etc, tmp, dev) under an installed tree; idempotent, so a tree installed before they were created is repaired too. */
 async function ensureMsys2RootDirs(root: string): Promise<void> {
   for (const dir of MSYS2_ROOT_DIRS) await fs.mkdir(join(root, dir), { recursive: true });
+  // Only the rdc tool root is written, and a file already there is left as is.
+  for (const [name, text] of [
+    ['fstab', MSYS2_FSTAB],
+    ['nsswitch.conf', MSYS2_NSSWITCH],
+  ] as const) {
+    await fs
+      .writeFile(join(root, 'etc', name), text, { flag: 'wx' })
+      .catch((err: NodeJS.ErrnoException) => {
+        if (err.code !== 'EEXIST') throw err;
+      });
+  }
 }
 
 /** The pinned rdc-managed rsync.exe when it and its runtime DLL are on disk, else null. */

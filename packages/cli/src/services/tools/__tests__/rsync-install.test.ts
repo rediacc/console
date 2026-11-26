@@ -8,6 +8,8 @@ import { MSYS2_REPO, MSYS2_RSYNC_PIN } from '../pins.js';
 import {
   findInstalledRsync,
   installRsync,
+  MSYS2_FSTAB,
+  MSYS2_NSSWITCH,
   type Msys2RsyncPin,
   msys2PackageUrl,
   rsyncInstallDir,
@@ -151,6 +153,8 @@ describe('installRsync', () => {
         `msys2-rsync/${key}`,
         `msys2-rsync/${key}/dev`,
         `msys2-rsync/${key}/etc`,
+        `msys2-rsync/${key}/etc/fstab`,
+        `msys2-rsync/${key}/etc/nsswitch.conf`,
         `msys2-rsync/${key}/tmp`,
         `msys2-rsync/${key}/usr`,
         `msys2-rsync/${key}/usr/bin`,
@@ -221,6 +225,31 @@ describe('installRsync', () => {
     const again = await installRsync({}, { pin, toolsDir, platform: 'win32', download });
     expect(again.alreadyInstalled).toBe(true);
     expect((await stat(join(dir, 'tmp'))).isDirectory()).toBe(true);
+  });
+
+  it('writes etc/fstab with the cygdrive-prefix-/ line and nsswitch.conf at install', async () => {
+    const toolsDir = await tempDir();
+    const { pin, download } = fixture();
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    const dir = rsyncInstallDir({ pin, toolsDir });
+    expect(await readFile(join(dir, 'etc', 'fstab'), 'utf8')).toBe(
+      'none / cygdrive binary,posix=0,noacl,user 0 0\n'
+    );
+    expect(await readFile(join(dir, 'etc', 'nsswitch.conf'), 'utf8')).toBe(MSYS2_NSSWITCH);
+  });
+
+  it('adds fstab to an existing tree without one and keeps an edited one', async () => {
+    const toolsDir = await tempDir();
+    const { pin, download } = fixture();
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    const fstab = join(rsyncInstallDir({ pin, toolsDir }), 'etc', 'fstab');
+    await rm(fstab);
+    const again = await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(again.alreadyInstalled).toBe(true);
+    expect(await readFile(fstab, 'utf8')).toBe(MSYS2_FSTAB);
+    await writeFile(fstab, 'custom\n');
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(await readFile(fstab, 'utf8')).toBe('custom\n');
   });
 
   it('refuses anywhere but Windows, naming the system package manager, and downloads nothing', async () => {
