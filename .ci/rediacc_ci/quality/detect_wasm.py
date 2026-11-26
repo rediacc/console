@@ -1,13 +1,15 @@
 """check:ci-detect-wasm -- the account server's committed detector WASM is exactly what the renet gitlink builds.
 
-WHY. The account Worker and the on-premise Node server score shipped forensics batches with `detect.wasm`, a `GOOS=js GOARCH=wasm` build of renet's own `pkg/detect` and `pkg/models` (agent/plans/PLAN-forensics-detection.md D6). The binary is committed in private/account beside Go's `wasm_exec.js` and `detect-wasm.json` (renet commit, dirt, Go version, model key, both sha256s), because a Worker cannot run Go and a TypeScript port would be a second implementation that drifts. A committed binary drifts too, just silently: a renet change to the detector, a gitlink bump without a rebuild, or a hand-touched byte would leave the server scoring with code no source describes. This gate is FD11: it rebuilds from the gitlink and compares.
+WHY. The account Worker and the on-premise Node server score shipped forensics batches with `detect.wasm`, a `GOOS=js GOARCH=wasm` build of renet's own `pkg/detect` and `pkg/models` (agent/plans/PLAN-forensics-detection.md D6). The binary is committed in private/account beside Go's `wasm_exec.js` and `detect-wasm.json` (the digest of the renet inputs the build reads, Go version, model key, both sha256s), because a Worker cannot run Go and a TypeScript port would be a second implementation that drifts. A committed binary drifts too, just silently: a renet change to the detector, a gitlink bump without a rebuild, or a hand-touched byte would leave the server scoring with code no source describes. This gate is FD11: it rebuilds from the gitlink and compares.
+
+PROVENANCE IS A DIGEST OF THE INPUTS, NOT THE COMMIT. The json used to record the renet commit, so every renet commit, a test-only one included, made the committed manifest stale and forced an account commit. `renet_inputs_sha256` is `./build.sh detect_wasm_inputs`: a sha256 over the non-test source files (and go:embed targets) of the module's packages in the GOOS=js GOARCH=wasm dependency closure of `cmd/detectwasm`, plus go.mod and go.sum. Only a change the WASM build can read moves it; a test, a doc or any other renet package does not.
 
 THE RULES, in the order they are checked.
 - R1 manifest: the three files exist, the json carries every field, and its two sha256s are the committed files' own. A flipped byte in a copy fails here first.
-- R2 provenance: `renet_dirty` is false, `renet_commit` is the console's private/renet gitlink, and `go_version` is the `GO_VERSION` pin of .devcontainer/toolchain.env.
+- R2 provenance: `renet_inputs_sha256` equals the digest the checkout at the console's private/renet gitlink computes now, and `go_version` is the `GO_VERSION` pin of .devcontainer/toolchain.env.
 - R3 reproduction: `./build.sh detect_wasm <tmp>` at the gitlink, under the pinned Go and the json's model key, writes byte-identical `detect.wasm` and `wasm_exec.js` and the same json fields. A changed byte whose sha256 was also rewritten in the json passes R1 and fails here.
 
-WHAT CANNOT RUN (exit 77, never a pass). private/renet or the artifact directory not checked out; the renet checkout not at its gitlink, or dirty, since the rebuild would then describe some other source; `go` missing or not at the pin, since a different toolchain emits different bytes and the comparison would be about the machine; the rebuild itself failing. Each refusal names the fix.
+WHAT CANNOT RUN (exit 77, never a pass). private/renet or the artifact directory not checked out; the renet checkout not at its gitlink, since the rebuild would then describe some other source (a dirty working tree is judged as it stands and the verdict line says so, because the digest and the rebuild both read the files on disk); `go` missing or not at the pin, since a different toolchain emits different bytes and the comparison would be about the machine; the rebuild itself failing. Each refusal names the fix.
 
 `--artifact-dir` compares another directory (a copy) against the same rebuild; it exists for the gate test's planted copies and is printed in every verdict line. CI never passes it.
 
@@ -44,8 +46,7 @@ WASM = "detect.wasm"
 EXEC = "wasm_exec.js"
 MANIFEST = "detect-wasm.json"
 FIELDS = (
-    "renet_commit",
-    "renet_dirty",
+    "renet_inputs_sha256",
     "go_version",
     "model_public_key",
     "sha256",
@@ -114,18 +115,13 @@ def consistency_findings(directory: str, manifest: dict) -> list[str]:
     return out
 
 
-def provenance_findings(manifest: dict, gitlink: str, go_pin: str) -> list[str]:
-    """R2: built clean, at the gitlink, under the pinned Go."""
+def provenance_findings(manifest: dict, inputs: str, go_pin: str) -> list[str]:
+    """R2: built from the detector inputs the gitlink has, under the pinned Go."""
     out: list[str] = []
-    if manifest["renet_dirty"] is not False:
+    if manifest["renet_inputs_sha256"] != inputs:
         out.append(
-            "%s records renet_dirty=%s: the artifact was built from uncommitted renet source (R2). %s"
-            % (MANIFEST, json.dumps(manifest["renet_dirty"]), REBUILD_HINT)
-        )
-    if manifest["renet_commit"] != gitlink:
-        out.append(
-            "%s records renet_commit %s but the console's %s gitlink is %s: renet moved without a rebuild (R2). %s"
-            % (MANIFEST, manifest["renet_commit"], RENET_REL, gitlink, REBUILD_HINT)
+            "%s records renet_inputs_sha256 %s but the detector inputs of %s now hash to %s: a file the detector build reads (pkg/detect, pkg/models, cmd/detectwasm, go.mod, go.sum) changed without a rebuild (R2). %s"
+            % (MANIFEST, manifest["renet_inputs_sha256"], RENET_REL, inputs, REBUILD_HINT)
         )
     if manifest["go_version"] != go_pin:
         out.append(
@@ -196,6 +192,27 @@ def gitlink_of(root: str) -> str:
     return out[1]
 
 
+def detector_inputs(renet: str) -> str:
+    """`./build.sh detect_wasm_inputs`: the digest of every file the WASM build reads."""
+    env = dict(os.environ)
+    env["GOTOOLCHAIN"] = "local"
+    proc = subprocess.run(
+        ["bash", os.path.join(renet, "build.sh"), "detect_wasm_inputs"],
+        cwd=renet,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    digest = proc.stdout.strip()
+    if proc.returncode != 0 or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise CannotRunError(
+            "./build.sh detect_wasm_inputs exited %d and printed %r, so the inputs digest is unknown:\n%s"
+            % (proc.returncode, digest[:80], "\n".join(proc.stderr.strip().splitlines()[-20:]))
+        )
+    return digest
+
+
 def renet_checkout_state(renet: str) -> tuple[str, bool]:
     head = _git("-C", renet, "rev-parse", "HEAD").strip()
     dirty = bool(_git("-C", renet, "status", "--porcelain").strip())
@@ -256,17 +273,11 @@ def judge(root: str, artifact: str) -> dict:
     findings = consistency_findings(artifact, manifest)
     gitlink = gitlink_of(root)
     pin = go_pin(root)
-    findings += provenance_findings(manifest, gitlink, pin)
     head, dirty = renet_checkout_state(renet)
     if head != gitlink:
         raise CannotRunError(
             "%s is checked out at %s but its gitlink is %s; run `git submodule update %s`"
             % (RENET_REL, head[:12], gitlink[:12], RENET_REL)
-        )
-    if dirty:
-        raise CannotRunError(
-            "%s has uncommitted changes, so a rebuild would not describe the gitlink; commit or set them aside first"
-            % RENET_REL
         )
     local = local_go_version()
     if local != pin:
@@ -274,6 +285,8 @@ def judge(root: str, artifact: str) -> dict:
             "the local Go is %s but %s pins %s; a different toolchain emits different bytes. Install %s (./run.sh setup)"
             % (local, TOOLCHAIN_REL, pin, pin)
         )
+    inputs = detector_inputs(renet)
+    findings += provenance_findings(manifest, inputs, pin)
     with tempfile.TemporaryDirectory(prefix="detect-wasm-") as tmp:
         rebuild(renet, tmp, str(manifest["model_public_key"]))
         findings += reproduction_findings(artifact, tmp)
@@ -282,6 +295,8 @@ def judge(root: str, artifact: str) -> dict:
         "findings": findings,
         "rebuilt": True,
         "gitlink": gitlink,
+        "dirty": dirty,
+        "inputs": inputs,
         "go": pin,
         "size": size,
         "sha256": manifest["sha256"],
@@ -290,7 +305,7 @@ def judge(root: str, artifact: str) -> dict:
 
 # ---- selftest ------------------------------------------------------------------
 
-GITLINK = "a" * 40
+INPUTS = "a" * 64
 PIN = "go1.0.0"
 
 
@@ -301,8 +316,7 @@ def _write_artifact(directory: str, wasm: bytes, exec_js: bytes, **overrides) ->
     with open(os.path.join(directory, EXEC), "wb") as fh:
         fh.write(exec_js)
     manifest = {
-        "renet_commit": GITLINK,
-        "renet_dirty": False,
+        "renet_inputs_sha256": INPUTS,
         "go_version": PIN,
         "model_public_key": "",
         "sha256": hashlib.sha256(wasm).hexdigest(),
@@ -335,7 +349,7 @@ def controls_fired() -> list[str]:
             return found
         return (
             consistency_findings(committed, manifest)
-            + provenance_findings(manifest, GITLINK, PIN)
+            + provenance_findings(manifest, INPUTS, PIN)
             + reproduction_findings(committed, rebuilt)
         )
 
@@ -367,8 +381,11 @@ def controls_fired() -> list[str]:
             w=flipped,
         )
         case("R3 wasm_exec.js changed", "wasm_exec.js (sha256", e=exec_js + b"//\n")
-        case("R2 dirty build", "renet_dirty=true", renet_dirty=True)
-        case("R2 gitlink moved", "renet moved without a rebuild", renet_commit="b" * 40)
+        case(
+            "R2 detector inputs changed",
+            "changed without a rebuild (R2)",
+            renet_inputs_sha256="b" * 64,
+        )
         case("R2 unpinned Go", "rebuild under the pinned toolchain", go_version="go9.9.9")
         case(
             "R3 model key differs from the rebuild", "field model_public_key", model_public_key="k"
@@ -381,7 +398,7 @@ def controls_fired() -> list[str]:
         _write_artifact(committed, wasm, exec_js)
         with open(os.path.join(committed, MANIFEST), "w", encoding="utf-8") as fh:
             json.dump({"sha256": "x"}, fh)
-        expect("R1 a field missing", all_findings(committed, rebuilt), "lacks renet_commit")
+        expect("R1 a field missing", all_findings(committed, rebuilt), "lacks renet_inputs_sha256")
         # Negative: the json's key order and whitespace are not part of the comparison, only its fields.
         committed = os.path.join(tmp, "reordered")
         _write_artifact(committed, wasm, exec_js)
@@ -453,12 +470,14 @@ def main(argv: list[str]) -> int:
             print("  %s" % f, file=sys.stderr)
         return 1
     print(
-        "%s✓%s detect-wasm: %s rebuilt from renet %s under %s; %s (%d bytes, sha256 %s), %s and %s identical"
+        "%s✓%s detect-wasm: %s rebuilt from renet %s%s (inputs %s) under %s; %s (%d bytes, sha256 %s), %s and %s identical"
         % (
             GREEN,
             NC,
             artifact,
             result["gitlink"][:12],
+            " (working tree dirty, judged as it stands)" if result["dirty"] else "",
+            result["inputs"][:16],
             result["go"],
             WASM,
             result["size"],

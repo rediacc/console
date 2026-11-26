@@ -4,6 +4,8 @@ The gate rebuilds `detect.wasm` from the private/renet gitlink with `./build.sh 
 
 BOTH DIRECTIONS, ON THE REAL ARTIFACT. The selftest proves the comparison helpers on a synthetic byte string. That proves the helpers, not that the real rebuild matches, so the cases here run the whole gate, build included: green on the committed artifact, green on an untouched COPY of it under `--artifact-dir` (the control for every plant), and red on a copy with ONE flipped byte. The flip is planted twice: once with the json untouched, which R1 catches before any build, and once with the json's sha256 rewritten to match the flipped binary, which only the rebuild (R3) can catch. The second plant is the one that proves the rebuild is load bearing.
 
+PROVENANCE IS THE INPUTS DIGEST. `renet_inputs_sha256` must move when a file the WASM build reads changes and must NOT move for a test-only or unrelated renet change, or every renet commit would again force an account commit. The digest cases run `./build.sh detect_wasm_inputs` over a scratch copy of the files the build needs (so the real tree is never planted): identical copy equal to the real tree (the control), a `_test.go` edit and an unrelated-package edit leave it unchanged, a detector source edit, a new detector file, and a go.mod edit each move it. A manifest recording a stale digest is rc 1 through R2 on the real rebuild path.
+
 CANNOT RUN IS 77. With no `go` on PATH the gate must refuse a verdict and name the fix, never pass and never report a finding about the artifact.
 
 The build is cached by Go after the first case, so the module runs in seconds. NO `xdist_group`: every case reads the real tree or writes only under its own tmp_path.
@@ -75,8 +77,8 @@ def test_gate_green_on_the_committed_artifact(gate):
     manifest = json.loads((REAL_ARTIFACT / "detect-wasm.json").read_text(encoding="utf-8"))
     gate.assert_contains(
         result.combined,
-        "rebuilt from renet %s" % manifest["renet_commit"][:12],
-        "the verdict names the gitlink",
+        "inputs %s" % manifest["renet_inputs_sha256"][:16],
+        "the verdict names the detector inputs digest",
     )
     gate.assert_contains(
         result.combined, "sha256 %s" % manifest["sha256"][:16], "the verdict names the hash"
@@ -158,3 +160,101 @@ def test_missing_go_cannot_run(gate, tmp_path):
         result.combined, "`go` is not on PATH", "the refusal names the missing tool"
     )
     gate.log_pass("missing go refused")
+
+
+def _inputs_digest(renet: pathlib.Path) -> str:
+    result = harness.run(
+        ["bash", str(renet / "build.sh"), "detect_wasm_inputs"],
+        cwd=renet,
+        env={"GOTOOLCHAIN": "local"},
+    )
+    assert result.rc == 0, result.combined
+    digest = result.out.strip()
+    assert len(digest) == 64, "expected a bare sha256 on stdout, got %r" % digest
+    return digest
+
+
+def _scratch_renet(tmp_path: pathlib.Path) -> pathlib.Path:
+    """The files the detector build needs, copied; nothing under the real tree is written."""
+    scratch = tmp_path / "renet"
+    scratch.mkdir()
+    for rel in ("build.sh", "go.mod", "go.sum"):
+        shutil.copy2(REAL_BUILD.parent / rel, scratch / rel)
+    for rel in ("scripts/pull-with-retry.sh",):
+        (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REAL_BUILD.parent / rel, scratch / rel)
+    for rel in ("pkg/detect", "pkg/models", "cmd/detectwasm", "pkg/i18n"):
+        shutil.copytree(REAL_BUILD.parent / rel, scratch / rel)
+    return scratch
+
+
+def test_inputs_digest_ignores_tests_and_unrelated_packages(gate, tmp_path):
+    gate.log_test(
+        "CONTROL: the digest is stable under a copy and under test-only and unrelated edits"
+    )
+    _require_subject(gate)
+    scratch = _scratch_renet(tmp_path)
+    base = _inputs_digest(scratch)
+    manifest = json.loads((REAL_ARTIFACT / "detect-wasm.json").read_text(encoding="utf-8"))
+    gate.assert_eq(
+        base,
+        manifest["renet_inputs_sha256"],
+        "a copy of the build's files digests like the real tree, which the committed manifest records",
+    )
+    tests = sorted((scratch / "cmd" / "detectwasm").glob("*_test.go"))
+    gate.assert_eq(
+        bool(len(tests) > 0), True, "the scratch copy holds a detector test file to edit"
+    )
+    with tests[0].open("a", encoding="utf-8") as fh:
+        fh.write("// test-only edit\n")
+    gate.assert_eq(_inputs_digest(scratch), base, "a _test.go edit does not move the digest")
+    (scratch / "pkg" / "unrelated_pkg").mkdir()
+    (scratch / "pkg" / "unrelated_pkg" / "x.go").write_text(
+        "package unrelated_pkg\n", encoding="utf-8"
+    )
+    (scratch / "README.md").write_text("docs\n", encoding="utf-8")
+    gate.assert_eq(_inputs_digest(scratch), base, "an unrelated package and a doc do not move it")
+    gate.log_pass("digest ignores tests and unrelated files")
+
+
+def test_inputs_digest_moves_on_detector_changes(gate, tmp_path):
+    gate.log_test(
+        "PLANT: a detector source edit, a new detector file and a go.mod edit each move the digest"
+    )
+    _require_subject(gate)
+    scratch = _scratch_renet(tmp_path)
+    base = _inputs_digest(scratch)
+    seen = {base}
+    with (scratch / "cmd" / "detectwasm" / "api.go").open("a", encoding="utf-8") as fh:
+        fh.write("// detector edit\n")
+    edited = _inputs_digest(scratch)
+    gate.assert_eq(
+        bool(edited not in seen), True, "an edit to cmd/detectwasm/api.go moves the digest"
+    )
+    seen.add(edited)
+    (scratch / "pkg" / "detect" / "zz_planted.go").write_text("package detect\n", encoding="utf-8")
+    added = _inputs_digest(scratch)
+    gate.assert_eq(bool(added not in seen), True, "a new file in pkg/detect moves the digest")
+    seen.add(added)
+    with (scratch / "go.mod").open("a", encoding="utf-8") as fh:
+        fh.write("// go.mod edit\n")
+    gate.assert_eq(
+        bool(_inputs_digest(scratch) not in seen), True, "a go.mod edit moves the digest"
+    )
+    gate.log_pass("detector-side changes move the digest")
+
+
+def test_stale_inputs_digest_is_caught(gate, tmp_path):
+    gate.log_test("PLANT: a manifest recording another inputs digest is rc 1 through R2")
+    _require_subject(gate)
+    copy = _copy(tmp_path)
+    manifest_path = copy / "detect-wasm.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["renet_inputs_sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    result = _run("--artifact-dir", str(copy))
+    gate.assert_exit(1, result, "a stale digest must be a finding")
+    gate.assert_contains(
+        result.combined, "changed without a rebuild (R2)", "R2 names the stale inputs"
+    )
+    gate.log_pass("stale digest caught")
