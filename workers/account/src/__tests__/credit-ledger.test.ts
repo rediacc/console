@@ -318,6 +318,31 @@ describe('grant', () => {
     expect(core.balance(new Date(NOW - 1000).toISOString())).toBe(500);
   });
 
+  it('rewrites a lot stored with a raw expiry when the ledger opens', () => {
+    const sqlite = new DatabaseSync(':memory:');
+    const sql = {
+      exec: (query: string, ...bindings: unknown[]) => {
+        const rows = sqlite.prepare(query).all(...bindings);
+        return { toArray: () => rows };
+      },
+    };
+    const first = new CreditLedgerCore(sql);
+    sql.exec(
+      "INSERT INTO lots (id, credits_granted, credits_remaining, expires_at, payment_reference) VALUES ('old', 500, 500, '2026-11-25T10:00:00Z', 'p')"
+    );
+    expect(first.balance(new Date(NOW).toISOString())).toBe(500);
+    const reopened = new CreditLedgerCore(sql);
+    expect(reopened.balance(new Date(NOW).toISOString())).toBe(0);
+    // Control: a lot already in the milliseconds form is left as it was.
+    sql.exec(
+      "INSERT INTO lots (id, credits_granted, credits_remaining, expires_at, payment_reference) VALUES ('ok', 7, 7, '2099-01-01T00:00:00.000Z', 'p')"
+    );
+    new CreditLedgerCore(sql);
+    expect(sql.exec("SELECT expires_at e FROM lots WHERE id='ok'").toArray()).toEqual([
+      { e: '2099-01-01T00:00:00.000Z' },
+    ]);
+  });
+
   it('refuses an expiry that is not a timestamp', () => {
     expect(() =>
       ledger().grant({ id: 'x', credits: 5, expiresAt: 'soon', paymentReference: 'p' })
@@ -346,7 +371,7 @@ describe('commit with reported usage that is not whole and non-negative', () => 
 });
 
 /** The Durable Object class over real SQLite storage and a scripted D1, as the Worker runs it. */
-function durableObject(db: { first: () => unknown; run: () => unknown }) {
+function durableObject(db: { first: () => unknown; run: (args: unknown[]) => unknown }) {
   const sqlite = new DatabaseSync(':memory:');
   let alarm: number | null = null;
   const ctx = {
@@ -373,7 +398,7 @@ function durableObject(db: { first: () => unknown; run: () => unknown }) {
         bind: (...args: unknown[]) => ({
           run: () => {
             inserted.push(args);
-            db.run();
+            db.run(args);
             return Promise.resolve();
           },
         }),
@@ -455,6 +480,29 @@ describe('the history row of a charge', () => {
     // Nothing is left to retry.
     await object.alarm();
     expect(inserted).toHaveLength(2);
+  });
+
+  it('a row D1 rejects for good does not hold the rows behind it', async () => {
+    const d1 = { failing: true as boolean, poison: 'r1' };
+    const { object, inserted } = durableObject({
+      first: () => ({ p: null }),
+      run: (args) => {
+        if (d1.failing || args[5] === d1.poison) throw new Error('D1 write failed');
+      },
+    });
+    for (const id of ['r1', 'r2']) {
+      expect((await object.reserve(request(id))).ok).toBe(true);
+      await object.commit('org1', id);
+    }
+    d1.failing = false;
+    inserted.length = 0;
+    await object.alarm();
+    // r1 fails again, r2 behind it still lands.
+    expect(inserted.map((a) => a[5])).toEqual(['r1', 'r2']);
+    // The poisoned row is retried, behind the rest, and nothing else is left.
+    inserted.length = 0;
+    await object.alarm();
+    expect(inserted.map((a) => a[5])).toEqual(['r1']);
   });
 
   it('control: a write that succeeds leaves nothing queued and no retry armed', async () => {

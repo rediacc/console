@@ -33,6 +33,7 @@ export const RESERVATION_TTL_MS = 10 * 60 * 1000;
 export const HISTORY_RETRY_MS = 60 * 1000;
 /** Outbox rows retried per flush, so one flush stays inside an invocation's subrequest budget. */
 const HISTORY_FLUSH_BATCH = 25;
+const HISTORY_FLUSH_MAX_MISSES = 3;
 /** How long a read of the global pause (D10) is trusted. */
 const PAUSE_CACHE_MS = 30 * 1000;
 
@@ -140,6 +141,10 @@ export class CreditLedgerCore {
     private readonly limits: LedgerLimits = DEFAULT_LIMITS
   ) {
     for (const statement of SCHEMA) this.sql.exec(statement);
+    // Lots written before grant() normalised expiry may hold a raw '...:00Z'; rewrite them to the toISOString form the string comparison needs.
+    this.sql.exec(
+      "UPDATE lots SET expires_at = strftime('%Y-%m-%dT%H:%M:%fZ', expires_at) WHERE expires_at NOT GLOB '*.[0-9][0-9][0-9]Z' AND strftime('%Y-%m-%dT%H:%M:%fZ', expires_at) IS NOT NULL"
+    );
   }
 
   private one(query: string, ...bindings: unknown[]): Record<string, unknown> | undefined {
@@ -515,11 +520,19 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
     }
   }
 
-  /** Retries the rows a failed write left in the outbox, oldest first, stopping at the first failure. */
+  /**
+   * Retries the rows a failed write left in the outbox, oldest first. A row that fails again goes to the back of the queue, so one row D1 rejects for good cannot hold the rows behind it; the pass stops after HISTORY_FLUSH_MAX_MISSES failures in a row, which is an outage rather than a bad row.
+   */
   private async flushHistory(): Promise<void> {
+    let misses = 0;
     for (const { id, orgId, row } of this.core.pendingHistory(HISTORY_FLUSH_BATCH)) {
-      if (!(await this.insertHistory(id, orgId, row))) return;
-      this.core.dropHistory(id);
+      if (await this.insertHistory(id, orgId, row)) {
+        misses = 0;
+        this.core.dropHistory(id);
+        continue;
+      }
+      this.core.queueHistory(id, orgId, row);
+      if (++misses >= HISTORY_FLUSH_MAX_MISSES) return;
     }
   }
 
