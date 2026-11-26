@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 99 plans done, 1480 of 1872 boxes done (79%).
+Promoted: 11 of 99 plans done, 1481 of 1872 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -150,7 +150,7 @@ Promoted: 11 of 99 plans done, 1480 of 1872 boxes done (79%).
 | 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
 | 89 | PLAN-forensics-shipping.md | 10/16 | 6 open |
 | 90 | PLAN-forensics-detection.md | 9/15 | 6 open |
-| 91 | PLAN-forensics-investigation.md | 10/17 | 7 open |
+| 91 | PLAN-forensics-investigation.md | 11/17 | 6 open |
 | 92 | PLAN-forensics-alerts-notices.md | 9/15 | 6 open |
 | 93 | PLAN-forensics-reports.md | 9/14 | 5 open |
 | 94 | PLAN-forensics-docs-legal.md | 7/13 | 6 open |

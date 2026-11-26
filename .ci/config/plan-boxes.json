@@ -2038,16 +2038,15 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 10,
+      "open": 6,
+      "done": 11,
       "open_sigs": [
         "542a4370",
         "57ff82ed",
         "7ddaf217",
         "b3c360be",
         "c0384c17",
-        "ed4df7d5",
-        "fcaafcc9"
+        "ed4df7d5"
       ],
       "done_sigs": [
         "19042123",
@@ -2059,7 +2058,8 @@
         "7d4c3d3d",
         "ab43afc6",
         "b5163282",
-        "d1115075"
+        "d1115075",
+        "fcaafcc9"
       ]
     },
     "agent/plans/PLAN-forensics-reports.md": {

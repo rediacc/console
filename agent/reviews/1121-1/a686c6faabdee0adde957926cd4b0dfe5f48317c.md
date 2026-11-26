@@ -28,16 +28,16 @@ Resolution: fixed e92638b7dfa98e6887f5a9a673c6e99445a8f21a | d778be9d 2026-11-26
 Anchor: in-diff
 Claim: If raw-manifest.json contains the JSON value `null`, JSON.parse succeeds and `manifest.machineKeys` throws a raw TypeError outside the try, so the intended forensics.badManifest refusal never fires.
 Class: other
-Resolution: open
+Resolution: fixed 504925af13712be329813824338192f58efb3e08 | d778be9d 2026-11-26T04:56:23Z
 
 ### a686c6fa.3 [low] packages/cli/src/i18n/locales/en/cli.json:3494
 Anchor: in-diff
 Claim: The incident export description says the report is written to verification.json, but verification.json is only written when the manifest lists an audit or headers chain file; otherwise no report is written.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 504925af13712be329813824338192f58efb3e08 | d778be9d 2026-11-26T04:56:23Z
 
 ### a686c6fa.4 [low] packages/cli/src/services/forensics/client.ts:191
 Anchor: in-diff
 Claim: The byte-length mismatch refusal (forensics.rawFileTruncated) has no test in incident-read.test.ts or elsewhere in this diff, so a regression that drops the check would not fail any test.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 504925af13712be329813824338192f58efb3e08 | d778be9d 2026-11-26T04:56:23Z
