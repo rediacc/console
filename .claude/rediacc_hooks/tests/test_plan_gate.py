@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 import threading
 import time
 
@@ -799,14 +800,20 @@ def test_merged_plan_prs_parses_each_body_through_the_plan_line_reader(tmp_path,
 
 
 def _main_thread_naps(monkeypatch) -> list[float]:
-    """The naps this thread takes through `time.sleep`, recorded exactly: the patch is process-wide, so another thread's short naps are dropped at the source and the retry's pause sequence can be asserted whole."""
+    """The naps this thread takes through `time.sleep`, recorded exactly: the patch is process-wide, so another thread's short naps are dropped at the source and the retry's pause sequence can be asserted whole.
+
+    `subprocess` itself naps too: `Popen._wait` with a timeout polls with a doubling 0.001 s sleep while a slow child (a loaded host) has not exited, and those naps once filled the list. They are dropped by their caller's module, so only the code under test's own pauses count."""
     naps: list[float] = []
     main = threading.get_ident()
-    monkeypatch.setattr(
-        time,
-        "sleep",
-        lambda seconds: naps.append(seconds) if threading.get_ident() == main else None,
-    )
+
+    def record(seconds):
+        if (
+            threading.get_ident() == main
+            and sys._getframe(1).f_globals.get("__name__") != "subprocess"
+        ):
+            naps.append(seconds)
+
+    monkeypatch.setattr(time, "sleep", record)
     return naps
 
 
