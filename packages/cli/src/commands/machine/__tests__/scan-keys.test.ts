@@ -83,7 +83,7 @@ beforeEach(() => {
 
 describe('machine scan-keys exit status', () => {
   it('single machine: a failed scan throws a NETWORK_ERROR carrying the reason', async () => {
-    const err = await run(['scan-keys', 'bad']).catch((e) => e);
+    const err = (await run(['scan-keys', 'bad']).catch((e: unknown) => e)) as Error;
     expect(err).toMatchObject({ code: 'NETWORK_ERROR', exitCode: EXIT_CODES.NETWORK_ERROR });
     expect(String(err.message)).toContain('unreachable');
     expect(h.updated).toEqual([]);

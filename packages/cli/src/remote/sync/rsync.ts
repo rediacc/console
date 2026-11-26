@@ -73,7 +73,7 @@ export function formatRsyncExitCode(code: number): string {
 }
 
 /** Last lines of a stderr text, for an error line that names why a process failed. */
-export function stderrTail(text: string, maxLines = 5): string {
+function stderrTail(text: string, maxLines = 5): string {
   return text.trim().split(/\r?\n/).slice(-maxLines).join('\n').trim();
 }
 

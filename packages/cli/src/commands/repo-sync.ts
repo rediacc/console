@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
@@ -17,13 +16,12 @@ import {
   sftpDownloadFile,
   sftpUploadFile,
   sftpUploadPaths,
-  warnSkippedEntries,
 } from '../remote/sync/index.js';
 import type { SyncProgress } from '../remote/types/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
-import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
+import { writeStderr } from '../services/core/request-context.js';
 import { withPooledSftp } from '../services/machine/machine-connection.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import {
@@ -38,8 +36,13 @@ import { handleError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { oraOptions, withSpinner } from '../utils/spinner.js';
 import {
+  displaySftpDryRunResult,
+  displaySyncResult,
+  SSH_KEY_FAILURE_PATTERN,
+  sshKeyDiagnostic,
+} from './repo-sync-display.js';
+import {
   buildSyncRemotePaths,
-  formatBytes,
   handleConfirmMode,
   handleDryRun,
   isRsyncNotFoundError,
@@ -63,64 +66,6 @@ async function ensureRenetProvisioned(machineName: string, access: RenetAccess):
     // Non-fatal, sync may still work with existing renet on remote
   }
 }
-
-function writeDeletedCount(deleted: number | undefined): void {
-  if (deleted !== undefined && deleted > 0) {
-    writeStdout(`${t('commands.sync.deleted', { count: deleted })}\n`);
-  }
-}
-
-function displaySyncResult(
-  result: {
-    success: boolean;
-    filesTransferred: number;
-    bytesTransferred: number;
-    duration: number;
-    errors: string[];
-    skipped?: string[];
-    deleted?: number;
-  },
-  spinner: ReturnType<typeof ora>,
-  mode: 'upload' | 'download'
-): void {
-  if (result.success) {
-    spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
-    if (result.bytesTransferred > 0) {
-      writeStdout(
-        `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
-      );
-    }
-    writeDeletedCount(result.deleted);
-    writeStdout(
-      `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
-    );
-    warnSkippedEntries(result.skipped ?? [], t, writeStderr);
-  } else {
-    spinner.fail(t(`commands.sync.${mode}.failed`));
-    if (result.errors.length > 0) {
-      writeStderr(`${t('commands.sync.errors')}\n`);
-      for (const err of result.errors) {
-        writeStderr(`  ${err}\n`);
-      }
-    }
-    setExitCode(1);
-  }
-}
-
-/**
- * Non-secret shape summary of the SSH key the rsync leg will write to its temp
- * file: PEM header line, byte length, and a hash prefix. Appended to the error
- * output when the ssh client rejects the key ("Load key … error in libcrypto",
- * observed once in CI with no local reproduction) so the next occurrence
- * identifies WHICH key content was written without leaking any material.
- */
-function sshKeyDiagnostic(privateKey: string): string {
-  const header = privateKey.trimStart().split('\n', 1)[0] ?? '';
-  const digest = createHash('sha256').update(privateKey).digest('hex').slice(0, 12);
-  return `ssh key diagnostic: header="${header}" length=${privateKey.length} sha256=${digest}`;
-}
-
-const SSH_KEY_FAILURE_PATTERN = /load key|libcrypto|permission denied \(publickey/i;
 
 async function executeSyncWithProgress(
   rsyncOptions: RsyncExecutorOptions,
@@ -240,15 +185,6 @@ async function prepareSyncConnection(
   };
 
   return { details, remotePath, sftpRemotePath, baseRemotePath, sftpConfig };
-}
-
-function displaySftpDryRunResult(result: {
-  filesTransferred: number;
-  bytesTransferred: number;
-}): void {
-  writeStdout(
-    `\nSFTP fallback (rsync not available):\n  Files to transfer: ${result.filesTransferred}\n  Total size: ${formatBytes(result.bytesTransferred)}\n`
-  );
 }
 
 async function withTempSshFiles<T>(
