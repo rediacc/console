@@ -383,7 +383,35 @@ def parse_survey(text) -> tuple[list[dict] | None, set[str]]:
         named = list(dict.fromkeys(t for t in SIG_TOKEN_RE.findall(head) if t in sigs))
         if named:
             clusters.append({"id": got.group(1), "sigs": named, "head": _clip_to(head)})
+        elif REVIEW_BOX_RE.search(head):
+            # A review-finding cluster (`box none`) names no plan sig; it is staffed by an item naming its id (see `capacity`).
+            clusters.append(
+                {"id": got.group(1), "sigs": [], "head": _clip_to(head), "review": True}
+            )
     return clusters, sigs
+
+
+REVIEW_BOX_RE = re.compile(r"\bbox none\b", re.IGNORECASE)
+
+
+def _ident(text) -> str:
+    """Letters and digits only, upper-cased: `CL-W-CI-PY-1` and `CL W CI PY 1` name the same cluster."""
+    return re.sub(r"[^A-Za-z0-9]", "", str(text or "")).upper()
+
+
+def review_staffed(items, session, since) -> str:
+    """The joined identities of this session's items of any state first written at or after `since` (the round's start): a review cluster an item of the round names is staffed or done, never free."""
+    out = []
+    for rec in items or ():
+        if not C.owned_by_me(rec.get("owner"), session):
+            continue
+        first = C.parse_stamp(rec.get("first"))
+        if first is None or first < since:
+            continue
+        out.append(
+            _ident(" ".join(str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note")))
+        )
+    return "|".join(out)
 
 
 def _clip_to(text, limit=CLUSTER_HEAD_MAX) -> str:
@@ -454,7 +482,12 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
     facts["age"] = (now.timestamp() - mtime) / 60.0
     # The survey's plan tables list the OPEN boxes of its round (the /writers-now survey sorts every open box), so a table sig ticked now was ticked after the survey was written, which is what WHY_TICKED and REFRESH_TICKS count (review 7d036d68.1).
     facts["ticked"] = len(table & done)
+    staffed = review_staffed(items, session, C.parse_stamp(last["at"]))
     for cl in clusters:
+        if cl.get("review"):
+            if _ident(cl["id"]) not in staffed:
+                facts["free"].append(cl)
+            continue
         left = [s for s in cl["sigs"] if s not in done]
         if left and not any(s in named for s in cl["sigs"]):
             facts["free"].append({**cl, "sigs": left})

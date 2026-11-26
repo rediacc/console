@@ -328,9 +328,71 @@ def segment_cases(tmp):
     check("no read failure is noted", "writers-now-due" in wl_checks.READ_FAILURES, False)
 
 
+REVIEW_SURVEY = SURVEY.replace(
+    "- **CL-C (sonnet)**: plan-c C1 c1c1c1c1. Files: c.py.\n",
+    "- **CL-C (sonnet)**: plan-c C1 c1c1c1c1. Files: c.py.\n"
+    "- **CL-W-CI-PY-1**: 30 findings (10 medium, 0 high), box none, console. Findings: de7bea05.1. Files: x.py.\n"
+    "- **CL-W-ROOT**: 11 findings, box none, console. Findings: 77d836f1.3. Files: knip.jsonc.\n",
+)
+
+
+def review_cases(tmp):
+    """A review cluster (`box none`) is startable work: free until an item of this round names its id, in any spelling (review of the r40/r41 misfire, where a survey of open review clusters read as exhausted)."""
+    clusters, _sigs = W.parse_survey(REVIEW_SURVEY)
+    check(
+        "review clusters are read beside the box clusters",
+        [c["id"] for c in clusters],
+        ["CL-A", "CL-B", "CL-C", "CL-W-CI-PY-1", "CL-W-ROOT"],
+    )
+    new = {
+        "id": "9",
+        "state": ">",
+        "owner": ME,
+        "text": "(me) writer r41 CL W ROOT",
+        "first": at(1),
+    }
+    old = {"id": "8", "state": "x", "owner": ME, "text": "writer r40 CL-W-CI-PY-1", "first": at(60)}
+    peer = {
+        "id": "7",
+        "state": ">",
+        "owner": "ffffffff-peer",
+        "text": "CL-W-CI-PY-1",
+        "first": at(1),
+    }
+    facts = cap(tmp, items=(LEASED_B, new, old, peer), text=REVIEW_SURVEY)
+    check(
+        "a review cluster an item of the round names is staffed",
+        "CL-W-ROOT" in free_ids(facts),
+        False,
+    )
+    check(
+        "control: an item from before the round, or a peer's, leaves it free",
+        "CL-W-CI-PY-1" in free_ids(facts),
+        True,
+    )
+    done = {**new, "state": "x"}
+    facts = cap(tmp, items=(LEASED_B, done), text=REVIEW_SURVEY)
+    check(
+        "a finished writer of the round keeps its cluster off the free list",
+        "CL-W-ROOT" in free_ids(facts),
+        False,
+    )
+    facts = cap(
+        tmp,
+        items=(LEASED_B, OPEN_A2, new, {**old, "first": at(1), "text": "CL-W-CI-PY-1 writer"}),
+        text=REVIEW_SURVEY,
+        survey_age_min=20,
+    )
+    check(
+        "a survey whose review clusters are all staffed is exhausted",
+        W.assess(False, {"open": 3}, facts)[0],
+        "due",
+    )
+
+
 def main():
     parse_cases()
-    for group in (refill_cases, refresh_cases, clock_cases, segment_cases):
+    for group in (refill_cases, refresh_cases, clock_cases, segment_cases, review_cases):
         with tempfile.TemporaryDirectory() as tmp:
             group(tmp)
     if FAILURES:
