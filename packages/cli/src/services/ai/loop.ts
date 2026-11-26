@@ -24,10 +24,19 @@ import {
   streamText,
   type ToolSet,
 } from 'ai';
+import { decideFeedbackOffer, type FeedbackOfferDeps } from './feedback-offer.js';
 import { rediaccErrorEvent } from './rediacc-provider.js';
 import { approvalResultOf, stopOnApproval, toolResultEventOf } from './tools.js';
 import { UI_TOOL_NAMES, uiEventOf, uiTools } from './ui-tools.js';
 import { TOOL_OUTPUT_RULE } from './untrusted.js';
+
+/** The host's half of the bug-report offer (AF4 of agent/plans/PLAN-console-ai-feedback.md). */
+interface AiFeedbackHost {
+  /** The offer's deps: the run reader, the session key's tail opener, the settings and the models. */
+  deps: FeedbackOfferDeps;
+  /** The run index id of one tool call's run (the request id the call ran under). */
+  runIdOf: (toolCallId: string) => string;
+}
 
 /** D11: tool steps per turn. */
 export const MAX_TOOL_STEPS = 12;
@@ -59,6 +68,8 @@ export interface AiTurnInput {
   /** Aborted when the client disconnects; stops the provider stream and the running tools. */
   abortSignal?: AbortSignal;
   emit: (event: AiEvent) => void;
+  /** Judges each failed tool run once for a bug-report offer; absent: no offer is made. */
+  feedback?: AiFeedbackHost;
   /** Mints the single-use token of one held tool call, bound by the host to its principal and conversation. */
   issueApproval: (request: { toolCallId: string; command: AiApprovalCommand }) => string;
 }
@@ -86,6 +97,8 @@ class TurnFold {
   lastStepReason = '';
   aborted = false;
   failed = false;
+  /** The offer decisions of failed runs, settled by {@link settled} once the stream ends. */
+  private readonly offers: Promise<void>[] = [];
 
   constructor(private readonly input: AiTurnInput) {}
 
@@ -149,7 +162,9 @@ class TurnFold {
     }
     const approval = approvalResultOf(part.output);
     if (!approval) {
-      this.input.emit(toolResultEventOf({ toolCallId, output: part.output }));
+      const event = toolResultEventOf({ toolCallId, output: part.output });
+      this.input.emit(event);
+      if (event.type === 'tool_result' && !event.ok) this.offerFor(toolCallId, part.output);
       return;
     }
     this.input.emit({
@@ -162,6 +177,22 @@ class TurnFold {
       risk: approval.risk,
       reason: approval.reason,
     });
+  }
+
+  /** A run that ran and failed is judged once; a refusal or a hold never ran, so there is no run to report. */
+  private offerFor(toolCallId: string, output: unknown): void {
+    const { feedback, emit } = this.input;
+    if (!feedback || (output as { status?: unknown } | null)?.status !== 'failed') return;
+    this.offers.push(
+      decideFeedbackOffer(feedback.runIdOf(toolCallId), feedback.deps).then((verdict) => {
+        if (verdict.offer) emit(verdict.event);
+      })
+    );
+  }
+
+  /** Resolves when every offer decision has emitted its event, if any. */
+  async settled(): Promise<void> {
+    await Promise.all(this.offers);
   }
 
   private finish(part: StreamPart): void {
@@ -199,6 +230,7 @@ export async function runAiTurn(input: AiTurnInput): Promise<void> {
       if (input.abortSignal?.aborted) break;
       fold.part(part as StreamPart);
     }
+    await fold.settled();
   } catch (error) {
     if (!input.abortSignal?.aborted) input.emit(errorEvent(error));
   }

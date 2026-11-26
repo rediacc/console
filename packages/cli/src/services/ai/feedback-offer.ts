@@ -95,7 +95,7 @@ async function redact(run: FeedbackRunRecord, deps: FeedbackOfferDeps): Promise<
     }
   }
   return {
-    pathKey: run.pathKey,
+    pathKey: scrubText(run.pathKey),
     ...(run.exitCode === undefined ? {} : { exitCode: run.exitCode }),
     ...(run.errorCode === undefined ? {} : { errorCode: run.errorCode }),
     tail,
@@ -252,7 +252,7 @@ export async function runFeedbackClassify(
       await ask(profile, FEEDBACK_CLASSIFY_PROMPT, record, options)
     );
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
+    const detail = scrubText(error instanceof Error ? error.message : String(error));
     return { offer: false, reason: `The classifier could not be asked: ${detail}`.slice(0, 2000) };
   }
 }
