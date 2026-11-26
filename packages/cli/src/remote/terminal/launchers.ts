@@ -83,6 +83,36 @@ export function cmdEscape(commandLine: string): string {
   return commandLine.replaceAll(/[()%!^"<>&|]/g, '^$&');
 }
 
+/**
+ * The cmd.exe tail that deletes `files` after the command before it ends, with
+ * its exit code ignored: ` & del /q "<file>" ...`. Each path sits in double
+ * quotes, which hold spaces, `&` and `^` literally; a path with `"` or `%`
+ * (cmd expands it even inside quotes), a `;` (Windows Terminal splits on it) or
+ * a line break cannot be quoted safely and is refused.
+ */
+export function cmdCleanupSuffix(files: string[]): string {
+  if (files.length === 0) return '';
+  const quoted = files.map((file) => {
+    if (/["%;\r\n]/.test(file)) {
+      throw new Error(`cannot quote a temp file path for cmd.exe: ${JSON.stringify(file)}`);
+    }
+    return `"${file.replaceAll('/', '\\')}"`;
+  });
+  return ` & del /q ${quoted.join(' ')}`;
+}
+
+/** The PowerShell tail that deletes `files` after the command, ignoring failures. */
+export function powershellCleanupSuffix(files: string[]): string {
+  if (files.length === 0) return '';
+  const list = files.map((file) => `'${file.replaceAll("'", "''")}'`).join(',');
+  return `\nRemove-Item -LiteralPath ${list} -Force -ErrorAction SilentlyContinue`;
+}
+
+/** The cmd.exe line for a launch: the escaped command, then the unescaped cleanup tail. */
+function cmdLaunchLine(options: TerminalLaunchOptions): string {
+  return cmdEscape(windowsCommandLine(options.argv)) + cmdCleanupSuffix(options.cleanupFiles ?? []);
+}
+
 /** Windows Terminal splits its own command line on `;`; an escaped one passes through. */
 function wtEscape(commandLine: string): string {
   return commandLine.replaceAll(';', '\\;');
@@ -94,9 +124,13 @@ function wtEscape(commandLine: string): string {
  * version, and its `-EncodedCommand` form (UTF-16LE, base64), so the script
  * itself crosses powershell.exe's own command line without quoting.
  */
-export function powershellEncodedCommand(argv: string[], keepOpen: boolean): string {
+export function powershellEncodedCommand(
+  argv: string[],
+  keepOpen: boolean,
+  cleanupFiles: string[] = []
+): string {
   const [program, ...args] = argv;
-  const run = `& '${program.replaceAll("'", "''")}' --% ${windowsCommandLine(args)}`;
+  const run = `& '${program.replaceAll("'", "''")}' --% ${windowsCommandLine(args)}${powershellCleanupSuffix(cleanupFiles)}`;
   const script = keepOpen ? run : `${run}\nRead-Host -Prompt 'Press Enter to exit'`;
   return Buffer.from(script, 'utf16le').toString('base64');
 }
@@ -254,7 +288,7 @@ const launchers: Record<TerminalType, LauncherFn> = {
     if (options.title) {
       args.push('--title', windowsQuoteArg(options.title));
     }
-    args.push('cmd.exe', '/k', wtEscape(cmdEscape(windowsCommandLine(options.argv))));
+    args.push('cmd.exe', '/k', wtEscape(cmdLaunchLine(options)));
     return spawnDetached('wt.exe', args, options, {
       cwd: options.workingDirectory,
       windowsVerbatimArguments: true,
@@ -264,13 +298,17 @@ const launchers: Record<TerminalType, LauncherFn> = {
   powershell: (options) =>
     spawnDetached(
       'powershell.exe',
-      ['-NoExit', '-EncodedCommand', powershellEncodedCommand(options.argv, !!options.keepOpen)],
+      [
+        '-NoExit',
+        '-EncodedCommand',
+        powershellEncodedCommand(options.argv, !!options.keepOpen, options.cleanupFiles),
+      ],
       options,
       { cwd: options.workingDirectory }
     ),
 
   cmd: (options) =>
-    spawnDetached('cmd.exe', ['/k', cmdEscape(windowsCommandLine(options.argv))], options, {
+    spawnDetached('cmd.exe', ['/k', cmdLaunchLine(options)], options, {
       cwd: options.workingDirectory,
       windowsVerbatimArguments: true,
     }),
@@ -338,7 +376,11 @@ export function launchTerminal(
   options: TerminalLaunchOptions
 ): LaunchResult {
   const launcher = launchers[terminalType];
-  return launcher(options);
+  try {
+    return launcher(options);
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 /**

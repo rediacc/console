@@ -491,6 +491,13 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   }
 }
 
+/** The Windows terminals whose launch line deletes the handed-off files when ssh ends. */
+const WINDOWS_CLEANUP_TERMINALS: ReadonlySet<string> = new Set([
+  'windows-terminal',
+  'cmd',
+  'powershell',
+]);
+
 export async function launchExternalTerminal(
   sshConnection: SSHConnection,
   destination: string,
@@ -502,13 +509,19 @@ export async function launchExternalTerminal(
   if (remoteCommand) {
     sshArgv.push(remoteCommand);
   }
-  // The external terminal's ssh outlives this process's 500 ms wait, so on POSIX the credentials move to it: it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. Windows shells cannot run that wrapper and keep parent-side cleanup.
-  const resources = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
-  // All or nothing: with an agent pid the wrapper cannot put in its script, everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
-  const handoff =
-    resources && (!resources.agentPid || isNumericPid(resources.agentPid)) ? resources : undefined;
-  const argv = handoff ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
   const terminalType = getDefaultTerminalType();
+  // The external terminal's ssh outlives this process's 500 ms wait, so the credentials move to it. On POSIX it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. On Windows the cmd/PowerShell line itself deletes the key and known_hosts when ssh ends (the launcher's cleanupFiles), and the parent skips its own deletion.
+  const resources = sshConnection.handoffResources;
+  // All or nothing: with an agent pid the wrapper cannot put in its script, everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
+  const eligible = !resources.agentPid || isNumericPid(resources.agentPid);
+  const onWindows = getPlatform() === 'windows';
+  const handoff =
+    eligible && (!onWindows || WINDOWS_CLEANUP_TERMINALS.has(terminalType)) ? resources : undefined;
+  const argv = handoff && !onWindows ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
+  const cleanupFiles =
+    handoff && onWindows
+      ? [handoff.keyFilePath, handoff.knownHostsPath].filter((f): f is string => !!f)
+      : [];
 
   outputService.info(t('commands.term.launchingTerminal', { type: terminalType }));
 
@@ -516,6 +529,7 @@ export async function launchExternalTerminal(
     argv,
     title,
     keepOpen: true,
+    ...(cleanupFiles.length > 0 && { cleanupFiles }),
     environmentVariables: {
       ...splitSecretEnv(connectionDetails.environment).plain,
       ...(handoff?.agentSocketPath && { SSH_AUTH_SOCK: handoff.agentSocketPath }),
