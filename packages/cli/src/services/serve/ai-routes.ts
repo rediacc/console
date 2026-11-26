@@ -330,7 +330,13 @@ export function registerAiRoutes(
           requestId,
           destructive: call.entry.severity === 'destructive',
           mode: 'ask',
-        }).catch(() => undefined);
+        }).catch((modeError: unknown) => {
+          // Both records are lost and the mode is already Ask in memory: the judge failure is what the call answers, so the second loss is warned instead of dropped.
+          const why = modeError instanceof Error ? modeError.message : String(modeError);
+          outputService.warn(
+            `AI judge fell back to Ask in conversation ${body.conversationId}, and the mode record could not be delivered: ${why}`
+          );
+        });
       }
       throw error;
     }

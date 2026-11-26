@@ -1066,6 +1066,31 @@ describe('the approval token, end to end', () => {
     expect(audited.filter((a) => a.commandPath === 'ai mode ask')).toHaveLength(1);
   });
 
+  it('warns when the fallback to Ask cannot be recorded either, and still fails the call', async () => {
+    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+    try {
+      const sink: { down: boolean } = { down: false };
+      const { hono, store, started } = flow(OPEN, {
+        judge: () => Promise.resolve({ verdict: 'block', reason: 'because' }),
+        failAudit: (p) => sink.down && (p.startsWith('ai judge') || p.startsWith('ai mode')),
+      });
+      store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'auto');
+      await turnEvents(hono);
+      await turnEvents(hono);
+      // Control: while the sink is up, the fallback is recorded and nothing is warned.
+      expect(warn).not.toHaveBeenCalled();
+      sink.down = true;
+      const events = await turnEvents(hono);
+      expect(events.find((e) => e.type === 'tool_result')).toMatchObject({ ok: false });
+      expect(started()).toBe(0);
+      expect(store.get(OWNER_PRINCIPAL, CHAT.conversationId)).toBe('ask');
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0]?.[0])).toContain('mode record could not be delivered');
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('hands a started job back as an ok result once the answer window passes', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {

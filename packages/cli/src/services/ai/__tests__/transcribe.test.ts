@@ -29,7 +29,7 @@ import { AuthError, AuthVerifier } from '../../serve/auth.js';
 import { serveCrypto } from '../../serve/crypto.js';
 import type { ServeDeps } from '../../serve/deps.js';
 import { authorize } from '../../serve/policy.js';
-import { SessionStore } from '../../serve/sessions.js';
+import { SESSION_UNKNOWN_CODE, SessionError, SessionStore } from '../../serve/sessions.js';
 import { ProviderProfileError } from '../provider.js';
 import {
   AI_TRANSCRIBE_FAILED,
@@ -204,10 +204,18 @@ function app(config: RdcConfig, transcribeFetch: typeof globalThis.fetch): Hono 
         if (!token) return Promise.reject(new AuthError('no token', 401));
         return deps.auth.verify(token);
       },
-      statusFor: (error) =>
-        error instanceof AuthError
-          ? { status: error.status, message: error.message }
-          : { status: 500 as const, message: error instanceof Error ? error.message : 'failed' },
+      // The server's own mapping of the two refusals this suite reaches, so a refusal is told from an unrelated failure.
+      statusFor: (error) => {
+        if (error instanceof AuthError) return { status: error.status, message: error.message };
+        if (error instanceof SessionError) {
+          return {
+            status: 404 as const,
+            message: error.message,
+            ...(error.code ? { code: error.code } : {}),
+          };
+        }
+        return { status: 500 as const, message: error instanceof Error ? error.message : 'failed' };
+      },
       requestScopedConfig: (c) => c,
       withRequestConfig: (_c, fn) => fn(),
       configSession: (header) => header?.trim() || undefined,
@@ -358,8 +366,13 @@ describe('POST /v1/ai/transcribe', () => {
       },
       body: AUDIO as BodyInit,
     });
-    expect(response.status).not.toBe(200);
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ code: SESSION_UNKNOWN_CODE });
     expect(p.sent).toHaveLength(0);
+    // Control: the same recording without the foreign session header is transcribed.
+    const control = await transcribe(hono, { query: '?profile=whisper' });
+    expect(control.status).toBe(200);
+    expect(p.sent).toHaveLength(1);
   });
 
   it('refuses a caller without a token', async () => {
