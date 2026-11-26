@@ -656,7 +656,13 @@ def test_selftest_is_wired_into_the_npm_key(gate):
         gate.log_fail("package.json is missing, so the wiring claim cannot be checked")
     ci_key = json.loads(pkg.read_text(encoding="utf-8")).get("scripts", {}).get("ci", "")
     gate.assert_contains(ci_key, "--selftest", "the ci npm key must invoke the runner's control")
-    result = harness.run([tsx, os.fspath(RUNNER), "--selftest"], cwd=paths.repo_root(), timeout=300)
+    # CI_RUNNER_SELFTEST_FORCE: in a lease the runner skips a selftest these sources already passed (`selftestCached`, run.ts) and prints no "selftest ok", so this case forces the real run it claims to observe.
+    result = harness.run(
+        [tsx, os.fspath(RUNNER), "--selftest"],
+        cwd=paths.repo_root(),
+        env={"CI_RUNNER_SELFTEST_FORCE": "1"},
+        timeout=300,
+    )
     gate.assert_exit(0, result, "--selftest passes on a healthy runner")
     gate.assert_contains(result.out, "selftest ok", "--selftest reports its assertion count")
     gate.log_pass("case 11: the anti-vacuity control is wired into the ci npm key and fires")
