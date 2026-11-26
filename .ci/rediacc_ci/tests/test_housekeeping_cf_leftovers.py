@@ -247,7 +247,7 @@ def test_followed_with_valid_result_info_paginates():
     assert [i["id"] for i in cfl.followed("/c", TOKEN, get)] == ["a", "b", "c"]
 
 
-@pytest.mark.parametrize("info", [{}, {"per_page": 20}, {"total_pages": "x"}, "bad"])
+@pytest.mark.parametrize("info", [{"total_pages": "x"}, "bad", {"count": 1, "per_page": 20}])
 def test_followed_with_malformed_result_info_raises(info):
     def get(_path, _token):
         return {"success": True, "result": [{"id": "a"}], "result_info": info}
@@ -734,10 +734,12 @@ def test_an_empty_listing_with_a_zero_count_is_an_empty_list_not_an_error():
 
 
 def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
-    """Review 9900887b.1: a `result_info` with no page count is refused; a body with no `result_info` at all is the whole listing."""
+    """Review 9900887b.1: a `result_info` with an unusable page count is refused; a body with no `result_info` at all is the whole listing."""
     with pytest.raises(cfl.CfError, match="total_pages"):
         cfl.followed(
-            "/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}], "result_info": {}}
+            "/c",
+            TOKEN,
+            lambda _p, _t: {"success": True, "result": [{"id": 1}], "result_info": {"count": "x"}},
         )
     assert cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}]}) == [
         {"id": 1}
@@ -779,6 +781,44 @@ def test_containers_follow_every_page_the_listing_reports():
 
     assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
     assert seen == ["/c", "/c?page=2", "/c?page=3"]
+
+
+def test_containers_listing_with_the_real_empty_result_info_is_complete():
+    """Live read 2026-11-26: GET /accounts/<id>/containers/applications answers 7 items and `result_info: {}` (cursor pagination, no next token)."""
+    names = ["proxy-eu-orgexecutor", "proxy-us-orgexecutor"]
+    calls: list = []
+
+    def get(path, _token):
+        calls.append(path)
+        return {
+            "success": True,
+            "result": [{"name": n} for n in names],
+            "errors": [],
+            "messages": [],
+            "result_info": {},
+        }
+
+    assert [c["name"] for c in cfl.followed("/c", TOKEN, get)] == names
+    assert calls == ["/c"]
+
+
+def test_containers_cursor_listing_follows_next_page_token_and_refuses_a_loop():
+    calls: list = []
+
+    def get(path, _token):
+        calls.append(path)
+        if "page_token=t1" in path:
+            return {"success": True, "result": [{"id": 2}], "result_info": {}}
+        return {"success": True, "result": [{"id": 1}], "result_info": {"next_page_token": "t1"}}
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2]
+    assert calls == ["/c", "/c?page_token=t1"]
+
+    def looping(_path, _token):
+        return {"success": True, "result": [{"id": 1}], "result_info": {"next_page_token": "t1"}}
+
+    with pytest.raises(cfl.CfError, match="next_page_token"):
+        cfl.followed("/c", TOKEN, looping)
 
 
 @pytest.mark.parametrize("info", [{"count": 2}, {"total_count": 2}, {"count": 2, "cursor": "x"}])

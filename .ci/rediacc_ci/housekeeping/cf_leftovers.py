@@ -333,6 +333,13 @@ def _total_pages(body: dict, path: str = "listing") -> int:
     return total
 
 
+def _is_cursor_info(info) -> bool:
+    """A `result_info` object that carries none of the page-count fields: cursor pagination, whose end is a missing `next_page_token`."""
+    return isinstance(info, dict) and not (
+        info.keys() & {"total_pages", "total_count", "count", "page"}
+    )
+
+
 def listing_by_page(path: str, token: str, get=fetch) -> list:
     """Every `result` item of a path that pages by `page` alone (Pages projects refuse `per_page`)."""
     sep = "&" if "?" in path else "?"
@@ -351,6 +358,22 @@ def followed(path: str, token: str, get=fetch) -> list:
     body = get(path, token)
     items = list(body.get("result") or [])
     sep = "&" if "?" in path else "?"
+    if _is_cursor_info(body.get("result_info")):
+        # Cursor pagination (the containers applications listing: `next_page_token` / `page_token` / `per_page`, and a bare `{}` observed live 2026-11-26): the listing ends where the response names no next token.
+        seen: set = set()
+        while True:
+            token_next = body["result_info"].get("next_page_token")
+            if not token_next:
+                return items
+            if not isinstance(token_next, str) or token_next in seen:
+                raise CfError("%s: result_info.next_page_token repeats or is malformed" % path)
+            seen.add(token_next)
+            body = get(
+                "%s%spage_token=%s" % (path, sep, urllib.parse.quote(token_next, safe="")), token
+            )
+            items.extend(body.get("result") or [])
+            if not _is_cursor_info(body.get("result_info")):
+                raise CfError("%s: a cursor page answered without cursor result_info" % path)
     for page in range(2, _total_pages(body, path) + 1):
         items.extend(get("%s%spage=%d" % (path, sep, page), token).get("result") or [])
     return items
