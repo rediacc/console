@@ -14,7 +14,9 @@ import { pushInfraConfig } from '../../services/provision/infra-provision.js';
 import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
 import { REMOTE_RENET_PATH } from '../../services/renet/renet-provisioner.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
-import type { OutputFormat } from '../../types/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { EXIT_CODES, type OutputFormat } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { convergeAfterSetup } from './converge.js';
@@ -104,8 +106,10 @@ async function scanSingleMachine(machineName: string): Promise<void> {
   try {
     keyscan = await scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
   } catch (error) {
-    outputService.warn(scanFailure(machineName, error));
-    return;
+    // The scan is this command's whole purpose: a failed one exits nonzero (NETWORK_ERROR), so a script or CI step can see it.
+    throw new CliExitError(ERROR_CODES.NETWORK_ERROR, scanFailure(machineName, error), {
+      retryable: true,
+    });
   }
   await configService.updateMachine(machineName, { knownHosts: keyscan });
   reportKeyChanges(machineName, previous, keyscan);
@@ -117,9 +121,16 @@ function scanFailure(name: string, error: unknown): string {
   return `${t('commands.machine.scanKeys.noKeys', { name })}: ${reason}`;
 }
 
-async function scanAllMachines(): Promise<void> {
+/** One machine's outcome in the all-machines scan; `-o json` prints these rows. */
+interface ScanKeysRow {
+  name: string;
+  ok: boolean;
+  error?: string;
+}
+
+async function scanAllMachines(format: OutputFormat): Promise<void> {
   const machines = await configService.listMachines();
-  let scanned = 0;
+  const rows: ScanKeysRow[] = [];
   for (const m of machines) {
     try {
       const previous = m.config.knownHosts ?? '';
@@ -131,14 +142,26 @@ async function scanAllMachines(): Promise<void> {
       } else {
         outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
       }
-      scanned++;
+      rows.push({ name: m.name, ok: true });
     } catch (error) {
       outputService.warn(scanFailure(m.name, error));
+      rows.push({
+        name: m.name,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
-  outputService.success(
-    t('commands.machine.scanKeys.completed', { count: scanned, total: machines.length })
-  );
+  const scanned = rows.filter((r) => r.ok).length;
+  if (format === 'table') {
+    outputService.success(
+      t('commands.machine.scanKeys.completed', { count: scanned, total: machines.length })
+    );
+  } else {
+    outputService.print(rows, format);
+  }
+  // Any machine that failed makes the run fail, after every machine was tried and the rows were printed.
+  if (scanned < machines.length) setExitCode(EXIT_CODES.NETWORK_ERROR);
 }
 
 /** `machine add <name>`, register an existing SSH-reachable machine. */
@@ -257,7 +280,7 @@ function registerList(machine: Command, program: Command): void {
 }
 
 /** `machine scan-keys [name]`, pin SSH host keys for one or all machines. */
-function registerScanKeys(machine: Command): void {
+function registerScanKeys(machine: Command, program: Command): void {
   machine
     .command('scan-keys')
     .argument('[name]', t('options.name'))
@@ -268,7 +291,7 @@ function registerScanKeys(machine: Command): void {
         if (name) {
           await scanSingleMachine(name);
         } else {
-          await scanAllMachines();
+          await scanAllMachines(program.opts().output as OutputFormat);
         }
       } catch (error) {
         handleError(error);
@@ -417,6 +440,6 @@ export function registerMachineRegistrationCommands(machine: Command, program: C
   registerAdd(machine);
   registerRemove(machine);
   registerList(machine, program);
-  registerScanKeys(machine);
+  registerScanKeys(machine, program);
   registerSetup(machine);
 }
