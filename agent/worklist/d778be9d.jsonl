@@ -7924,3 +7924,4 @@
 {"ev":"lease","id":"dfe84c23","at":"2026-11-26T12:57:46Z","by":"d778be9d","until":"2026-11-26T14:57Z","worker":"a39014bcda2625f23","note":"","worker_verified":false,"h":"02f93d58","br":"1121-1","ns":1795697866636920303}
 {"ev":"lease","id":"66f4558b","at":"2026-11-26T12:59:12Z","by":"d778be9d","until":"2026-11-26T14:59Z","worker":"a43686e70e1d4151e","note":"","worker_verified":true,"h":"02f93d58","br":"1121-1","ns":1795697952829756673}
 {"ev":"lease","id":"66f4558b","at":"2026-11-26T12:59:44Z","by":"d778be9d","until":"2026-11-26T14:59Z","worker":"bxhnqm2th","note":"","worker_verified":true,"h":"02f93d58","br":"1121-1","ns":1795697984012809169}
+{"ev":"state","id":"804fd592","at":"2026-11-26T13:01:24Z","by":"d778be9d","s":"x","note":"3 fixed, 1 not-a-bug; 296-test related set rc 0 on the merged tree commit:7d60928294","h":"02f93d58","br":"1121-1","ns":1795698084672227779}
