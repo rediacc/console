@@ -27,6 +27,13 @@ describe('maskParams', () => {
     });
   });
 
+  it('masks a positional by its name alone: a sensitive name is masked, an innocuous one keeps its value', () => {
+    expect(maskParams(ENTRY, { password: 'x', ref: 'web:prod' })).toEqual({
+      password: MASKED,
+      ref: 'web:prod',
+    });
+  });
+
   it('masks a sensitive key when no contract entry exists', () => {
     expect(maskParams(undefined, { 'api-token': 'x', note: 'n' })).toEqual({
       'api-token': MASKED,
