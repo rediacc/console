@@ -817,6 +817,9 @@ PORT_ONLY_SECRETS = (
     "ACCOUNT_FORENSICS_S3_ENDPOINT",
     "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
     "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+    # 851b6d636e: the forensics bucket and region travel as secrets beside the triple (blank beside an empty one).
+    "ACCOUNT_FORENSICS_S3_BUCKET",
+    "ACCOUNT_FORENSICS_S3_REGION",
     # ab89774522: the AI Gateway logs-read token of the nightly credit reconcile.
     "AI_GATEWAY_LOGS_TOKEN",
 )
@@ -1055,8 +1058,13 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
     # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
     bound = _port_deploy_env(env)
-    # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, never an environment value, so it is not in `bound`.
-    needed = [name for name in PORT_ONLY_SECRETS if name != "CLOUDFLARE_ACCOUNT_ID"]
+    # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, and the forensics bucket and region are derived from the region and the endpoint, never environment values, so none is in `bound`.
+    derived = {
+        "CLOUDFLARE_ACCOUNT_ID",
+        "ACCOUNT_FORENSICS_S3_BUCKET",
+        "ACCOUNT_FORENSICS_S3_REGION",
+    }
+    needed = [name for name in PORT_ONLY_SECRETS if name not in derived]
     missing = [name for name in needed if name not in bound]
     assert not missing, f"_port_deploy_env dropped port-only secrets: {missing}"
     keyed = {
