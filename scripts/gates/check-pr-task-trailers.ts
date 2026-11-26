@@ -135,6 +135,8 @@ export const judge = (
       out.push({ sha: c.sha, subject, problem: 'untagged' });
       continue;
     }
+    // A trailer naming no epic (a mistyped or wrong id) is repaired by an attribution entry, since history is never rewritten.
+    if (attributed.has(c.sha)) continue;
     for (const id of ids) {
       if (!known.includes(id)) out.push({ sha: c.sha, subject, problem: 'unknown-epic', id });
     }
@@ -227,8 +229,11 @@ export const checkAttributions = (
       problems.push(`${label}: STALE, not a commit reachable from the tip (rewritten away?)`);
       continue;
     }
-    if (trailerIds(facts.message).length > 0) {
-      problems.push(`${label}: REDUNDANT, the commit carries a PR-TASK trailer`);
+    const carried = trailerIds(facts.message);
+    if (carried.length > 0 && carried.every((id) => known.includes(id))) {
+      problems.push(
+        `${label}: REDUNDANT, the commit carries a PR-TASK trailer naming a known epic`
+      );
       continue;
     }
     if (inRange.has(e.sha)) attributed.add(e.sha);
@@ -359,14 +364,16 @@ const selftestBody = (): number => {
   const S1 = '1'.repeat(40);
   const S2 = '2'.repeat(40);
   const S3 = '3'.repeat(40);
+  const S5 = '5'.repeat(40);
   const why = 'pushed from a machine whose commit-msg hook was not installed';
   const facts: Record<string, CommitFacts> = {
     [S1]: { reachable: true, message: 'feat: untagged' },
     [S2]: { reachable: true, message: 'feat: tagged\n\nPR-TASK: abc123' },
     [S3]: { reachable: true, message: 'feat: merged already' },
+    [S5]: { reachable: true, message: 'feat: wrong id\n\nPR-TASK: fff000' },
   };
   const look = (sha: string): CommitFacts => facts[sha] ?? { reachable: false, message: '' };
-  const range = new Set([S1, S2]);
+  const range = new Set([S1, S2, S5]);
   const att = (entries: Attribution[]) => checkAttributions(entries, known, range, look);
   const good = att([{ sha: S1, epic: 'abc123', reason: why }]);
   check(
@@ -394,6 +401,20 @@ const selftestBody = (): number => {
   check(
     'a REDUNDANT entry (commit carries a trailer) is refused',
     att([{ sha: S2, epic: 'abc123', reason: why }]).problems.some((p) => p.includes('REDUNDANT'))
+  );
+  const wrongId = att([{ sha: S5, epic: 'abc123', reason: why }]);
+  check(
+    'an entry for a commit whose trailer names an unknown epic is accepted',
+    wrongId.problems.length === 0 && wrongId.attributed.has(S5)
+  );
+  check(
+    'an attributed commit with an unknown-epic trailer is not a verdict',
+    judge([{ sha: S5, message: 'feat: wrong id\n\nPR-TASK: fff000' }], known, wrongId.attributed)
+      .length === 0
+  );
+  check(
+    'CONTROL: the same unknown-epic commit without an attribution IS caught',
+    judge([{ sha: S5, message: 'feat: wrong id\n\nPR-TASK: fff000' }], known).length === 1
   );
   check(
     'a DUPLICATE sha is refused',
