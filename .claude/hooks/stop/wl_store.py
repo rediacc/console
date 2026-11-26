@@ -2668,12 +2668,12 @@ def plan_cited_item_ids(root):
 def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
     """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns (archived_lines, orphaned_lines, changed).
 
-    AN ITEM A PLAN CITES IS NEVER TOMBSTONED (#28742604). A plan's `Ruling:` and `dropped by ruling #<id>` lines resolve against the store with tombstones dropped (`wl_planfile.store_item_states`), so archiving a closed ruling item turned every box it released back into a binding: the 2026-11-26 archive of 725 dead-session items dropped `#d969cb29`, which `PLAN-ci-quick-cpu-scheduling.md` and `PLAN-stop-hook-refactor-enforcement.md` cite, and check:ci-plan-bindings went red until the ruling was re-recorded under a new id. A cited item is left in place, neither archived nor reported as orphaned. The plan scan runs only once a candidate is found, so a stop with nothing to archive reads no plan."""
+    AN ITEM A PLAN CITES IS NEVER TOMBSTONED (#28742604). A plan's `Ruling:` and `dropped by ruling #<id>` lines resolve against the store with tombstones dropped (`wl_planfile.store_item_states`), so archiving a closed ruling item turned every box it released back into a binding: the 2026-11-26 archive of 725 dead-session items dropped `#d969cb29`, which `PLAN-ci-quick-cpu-scheduling.md` and `PLAN-stop-hook-refactor-enforcement.md` cite, and check:ci-plan-bindings went red until the ruling was re-recorded under a new id. A cited item is left in place, neither archived nor reported as orphaned. The plan scan runs once, at the first item whose dead owner is past WORKLIST_DEAD_HOURS (an archive or an orphan candidate alike, since a cited item is spared from both), so a stop with no such item reads no plan. A scan that fails (root resolution, the plan listing) fails closed: every item counts as cited and the stop archives and orphans nothing, since an empty citation set would tombstone every ruling item a plan names."""
     dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
     archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
     archived, orphaned, changed = [], [], False
     ages = {}
-    cited_box: list[set[str]] = []
+    cited_box: list[set[str] | None] = []
 
     def age_of(owner):
         if owner not in ages:
@@ -2685,9 +2685,12 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
             try:
                 base = root if root is not None else C.project_root(C.project_start())
                 cited_box.append(plan_cited_item_ids(pathlib.Path(base)))
-            except (OSError, ValueError, TypeError):
-                cited_box.append(set())
-        return item_id in cited_box[0]
+            except (OSError, ValueError, TypeError) as exc:
+                sys.stderr.write(
+                    "worklist: dead-session archive skipped, plan citation scan failed: %s\n" % exc
+                )
+                cited_box.append(None)
+        return cited_box[0] is None or item_id in cited_box[0]
 
     # CLI-origin items: same policy, expressed as events.
     for rec in fold.items:

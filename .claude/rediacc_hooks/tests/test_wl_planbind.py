@@ -147,6 +147,36 @@ def test_open_box_elsewhere_citing_a_box_binds():
         assert "citing-box" in kinds(found), cite
 
 
+def test_hyphen_glued_ref_resolves_to_its_box():
+    """`PLAN-x.md#T1-lands` names box T1: the ref group takes hyphens for labels like `LP-bench`, so a glued word must be cut back to the box it names (8c5ee489.1)."""
+    text = plan(boxes=("[x] T1 finished work", "[ ] T2 open work here", "[x] LP-bench done hop"))
+    for cite in (
+        "after PLAN-x.md#T1-lands",
+        "after PLAN-x.md#LP-bench",
+        "after PLAN-x.md#LP-bench-ok",
+    ):
+        found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 %s" % cite,))})
+        assert "citing-box" not in kinds(found), cite
+    # CONTROL: a glued ref naming the open box still binds.
+    found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 after PLAN-x.md#T2-lands",))})
+    assert "citing-box" in kinds(found)
+
+
+def test_ref_resolving_to_no_done_box_still_binds():
+    """An unknown label or unknown signature resolves to no done box, so the citation binds (8c5ee489.2: the fall-through `return True`)."""
+    text = plan(boxes=("[x] T1 finished work", "[ ] T2 open work here"))
+    for cite in (
+        "after PLAN-x.md#T9 lands",
+        "after PLAN-x.md#deadbeef lands",
+        "after PLAN-x.md [deadbeef] lands",
+    ):
+        found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 %s" % cite,))})
+        assert "citing-box" in kinds(found), cite
+    # CONTROL: the done label does not bind, so the verdict above is the ref's, not the fixture's.
+    found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 after PLAN-x.md#T1 lands",))})
+    assert "citing-box" not in kinds(found)
+
+
 def test_citing_box_controls():
     text = plan(boxes=("[x] T1 finished work",))
     # naming the plan with no box reference is not a citation of a box

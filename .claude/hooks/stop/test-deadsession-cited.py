@@ -32,13 +32,16 @@ def _by_file(name):
 
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
+# Every process-wide seam this file sets is restored before it reports (75590cfb.3), so an in-process import leaves no store, root or TMPDIR behind.
+_ENV0 = dict(os.environ)
+_TEMPDIR0 = tempfile.tempdir
 _TMP = runtmp.run_dir("deadcite-test-")
 os.environ["TMPDIR"] = _TMP
 tempfile.tempdir = _TMP
 for _k in [k for k in os.environ if k.startswith("WORKLIST_")]:
     del os.environ[_k]
 
-T = controls.Controls("deadsession_cited", floor=13)
+T = controls.Controls("deadsession_cited", floor=19)
 check = T.check
 
 ME = "cafe0000"
@@ -120,6 +123,32 @@ try:
     check("twin: an uncited markdown ruling is flipped", md_state(worklist2, MD_CITED), "~")
     check("twin: all four items archived", len(archived2), 4)
 
+    # A citation scan that raises fails closed (75590cfb.1): nothing is archived or orphaned, where an empty set would tombstone the cited ruling item. The first world above is the control: the same dead owner with a working scan archives the uncited pair.
+    root3, worklist3, projects3, ids3 = make_world(cite=True)
+    roots.append(root3)
+    _, fold3 = states(worklist3)
+    real_files = S.agent_plan_files
+
+    def broken_files(*_args, **_kwargs):
+        raise OSError("plan listing unreadable")
+
+    S.agent_plan_files = broken_files
+    try:
+        archived3, orphaned3, changed3 = S.cleanup_dead_sessions(
+            worklist3, fold3, SID, str(projects3), root=root3
+        )
+    finally:
+        S.agent_plan_files = real_files
+    after3, _ = states(worklist3)
+    check("failed scan: the cited CLI item is not tombstoned", after3.get(ids3["cited"]), "x")
+    check("failed scan: the uncited CLI item is spared too", after3.get(ids3["free"]), "x")
+    check("failed scan: no markdown item is flipped", md_state(worklist3, MD_FREE), "x")
+    check(
+        "failed scan: nothing archived or orphaned",
+        (archived3, orphaned3, changed3),
+        ([], [], False),
+    )
+
     check(
         "citation regex: a longer hex run is not an 8-char citation",
         S.PLAN_ITEM_CITE_RE.findall("#d969cb29 #0123456789abcdef x#d969cb30 (#936e6c58)"),
@@ -128,5 +157,11 @@ try:
 finally:
     for d in roots:
         shutil.rmtree(d, ignore_errors=True)
+    os.environ.clear()
+    os.environ.update(_ENV0)
+    tempfile.tempdir = _TEMPDIR0
+
+check("the environment is restored after the run", dict(os.environ) == _ENV0, True)
+check("tempfile.tempdir is restored after the run", tempfile.tempdir, _TEMPDIR0)
 
 raise SystemExit(0 if T.report() else 1)

@@ -130,6 +130,16 @@ def _box_label(body: str) -> str:
     return words[0] if words else ""
 
 
+def _resolve_ref(ref: str, *known) -> str:
+    """The `#` ref cut back to the longest hyphen prefix naming a known box (`T1-lands` is `T1`, `LP-bench` stays `LP-bench`), or `ref` itself when no prefix names one. The ref group takes hyphens because a label may hold them, so a citation glued to a hyphenated word must not read as an unknown label (8c5ee489.1)."""
+    parts = ref.split("-")
+    for n in range(len(parts), 0, -1):
+        head = "-".join(parts[:n])
+        if any(head in pool for pool in known):
+            return head
+    return ref
+
+
 def _cites_open_box(
     body: str, cite: re.Pattern[str], sig_pat, open_sigs, done_sigs, done_labels, open_labels
 ) -> bool:
@@ -137,7 +147,7 @@ def _cites_open_box(
 
     A citation of a box already ticked in the cited plan holds nothing open, so it does not bind (#c033133b: R2 of PLAN-multi-region-bench cited the ticked LP-bench 89d70106 of a finished plan, which stayed bound forever). A ref that resolves to no done box (an open box, an unknown label or signature) still binds."""
     for m in cite.finditer(body):
-        ref = m.group(1) or m.group(2)
+        ref = _resolve_ref(m.group(1) or m.group(2), open_sigs, done_sigs, done_labels, open_labels)
         if ref in open_sigs or ref in open_labels:
             return True
         if ref in done_sigs or ref in done_labels:
