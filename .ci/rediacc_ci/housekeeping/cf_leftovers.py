@@ -304,6 +304,21 @@ def _total_pages(body: dict, path: str = "listing") -> int:
     # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it.
     if total == 0 or (isinstance(info, dict) and total is None and info.get("total_count") == 0):
         return 1
+    # An unpaginated endpoint (no per_page, no page count) that states how many items it returned, and the result holds exactly that many, is a complete list.
+    if (
+        total is None
+        and isinstance(info, dict)
+        and "per_page" not in info
+        and "page" not in info
+        and isinstance(body.get("result"), list)
+    ):
+        stated = info.get("count") if info.get("count") is not None else info.get("total_count")
+        if (
+            isinstance(stated, int)
+            and not isinstance(stated, bool)
+            and stated == len(body["result"])
+        ):
+            return 1
     if (
         total is None
         and isinstance(info, dict)
@@ -416,6 +431,11 @@ class Inventory:
         return out
 
 
+def _worker_gone(exc: CfError) -> bool:
+    """True when Cloudflare answered code 10007 ("This Worker does not exist") for a settings read."""
+    return '"code": 10007' in str(exc)
+
+
 def read_inventory(account: str, token: str, get=fetch, with_bindings: bool = True) -> Inventory:
     """Read every object class. Raises CfError when any listing cannot be read."""
     scripts = sorted(
@@ -426,11 +446,20 @@ def read_inventory(account: str, token: str, get=fetch, with_bindings: bool = Tr
         }
     )
     bindings: dict[str, list[dict]] = {}
+    gone: set[str] = set()
     if with_bindings:
         for name in scripts:
-            body = get("/accounts/%s/workers/scripts/%s/settings" % (account, name), token)
+            try:
+                body = get("/accounts/%s/workers/scripts/%s/settings" % (account, name), token)
+            except CfError as exc:
+                if _worker_gone(exc):
+                    # Deleted between the list and the read: it has no bindings to hide, and is no longer a Worker.
+                    gone.add(name)
+                    continue
+                raise
             items = (body.get("result") or {}).get("bindings") or []
             bindings[name] = [b for b in items if isinstance(b, dict)]
+    scripts = [n for n in scripts if n not in gone]
     routes: list[tuple[str, str, dict]] = []
     # Only this account's zones: a route in another account's zone may name a script that lives here and is not a leftover of this account.
     for zone in listing("/zones?account.id=%s" % account, token, get):

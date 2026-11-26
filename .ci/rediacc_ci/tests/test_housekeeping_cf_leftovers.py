@@ -779,3 +779,65 @@ def test_containers_follow_every_page_the_listing_reports():
 
     assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
     assert seen == ["/c", "/c?page=2", "/c?page=3"]
+
+
+@pytest.mark.parametrize("info", [{"count": 2}, {"total_count": 2}, {"count": 2, "cursor": "x"}])
+def test_unpaginated_listing_stating_its_complete_count_is_one_page(info):
+    """The containers listing answers a `result_info` with no `total_pages`; a count equal to the items returned, with no paging fields, is the whole list."""
+    calls: list = []
+
+    def get(path, _token):
+        calls.append(path)
+        return {"success": True, "result": [{"id": 1}, {"id": 2}], "result_info": info}
+
+    assert cfl.followed("/c", TOKEN, get) == [{"id": 1}, {"id": 2}]
+    assert calls == ["/c"]
+
+
+@pytest.mark.parametrize(
+    "info",
+    [
+        {"count": 5},  # states more items than the result holds: truncated
+        {"count": 2, "per_page": 2},  # paginated and no page count
+        {"count": 2, "page": 1},
+        {"count": "2"},
+    ],
+)
+def test_truncated_or_paginated_listing_without_total_pages_still_refuses(info):
+    def get(_path, _token):
+        return {"success": True, "result": [{"id": 1}, {"id": 2}], "result_info": info}
+
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.followed("/c", TOKEN, get)
+
+
+def _gone_error():
+    return cfl.CfError(
+        'GET /settings: [{"code": 10007, "message": "This Worker does not exist"}]', 404
+    )
+
+
+def test_worker_deleted_between_list_and_settings_read_is_skipped_as_gone():
+    base = fake_api(["keep", "vanished"], [], [], extra={"bindings": {"keep": [{"type": "d1"}]}})
+
+    def get(path, token, jurisdiction=None):
+        if path.endswith("/scripts/vanished/settings"):
+            raise _gone_error()
+        return base(path, token, jurisdiction)
+
+    inv = cfl.read_inventory("acc", TOKEN, get)
+    assert inv.scripts == ["keep"]
+    assert "vanished" not in inv.bindings
+    assert inv.bindings["keep"] == [{"type": "d1"}]
+
+
+def test_other_settings_errors_still_abort_the_inventory():
+    base = fake_api(["a"], [], [])
+
+    def get(path, token, jurisdiction=None):
+        if path.endswith("/scripts/a/settings"):
+            raise cfl.CfError('GET /settings: [{"code": 10000, "message": "Authentication"}]', 403)
+        return base(path, token, jurisdiction)
+
+    with pytest.raises(cfl.CfError, match="10000"):
+        cfl.read_inventory("acc", TOKEN, get)
