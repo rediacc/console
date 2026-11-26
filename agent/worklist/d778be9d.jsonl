@@ -7794,3 +7794,4 @@
 {"ev":"lease","id":"b6662c0a","at":"2026-11-26T11:11:23Z","by":"d778be9d","until":"2026-11-26T13:11Z","worker":"aa061c9fb5976fe4f","note":"","worker_verified":false,"h":"02f93d58","br":"1121-1","ns":1795691483258919653}
 {"ev":"add","id":"cd478d30","at":"2026-11-26T11:11:23Z","by":"d778be9d","s":" ","o":"d778be9d","t":"(d778be9d) writer r27 CL-CM cf_leftovers findings","h":"02f93d58","br":"1121-1","ns":1795691483724233895}
 {"ev":"lease","id":"cd478d30","at":"2026-11-26T11:11:24Z","by":"d778be9d","until":"2026-11-26T13:11Z","worker":"a8f4009042ed20d3b","note":"","worker_verified":false,"h":"02f93d58","br":"1121-1","ns":1795691484355797570}
+{"ev":"lease","id":"6283d807","at":"2026-11-26T11:11:47Z","by":"d778be9d","until":"2026-11-26T12:11Z","worker":"afb6e0163ab09c221","note":"auto-lease: named by live task afb6e0163ab09c221","worker_verified":true,"h":"02f93d58","br":"1121-1","ns":1795691507316725810}
