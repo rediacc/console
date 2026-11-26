@@ -924,6 +924,8 @@
         "pkg/infra/mesh",
         "pkg/infra/opsconfig",
         "pkg/infra/renetsource",
+        "pkg/infra/sshexec",
+        "pkg/infra/vm",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
@@ -985,6 +987,7 @@
         "pkg/infra/pkgset",
         "pkg/infra/qemuimg",
         "pkg/infra/renetsource",
+        "pkg/infra/sshexec",
         "pkg/infra/worker"
       ],
       "dependents": [
@@ -993,6 +996,7 @@
         "pkg/functions/commands",
         "pkg/infra/ceph",
         "pkg/infra/mesh",
+        "pkg/infra/vm",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",

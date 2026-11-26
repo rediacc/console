@@ -517,6 +517,10 @@ function clearLinuxStores(): void {
   }
 }
 
+// Each created key is deleted through the native store's CLI (secret-tool, security, PowerShell), one process per key; under
+// a loaded ci:quick that took over vitest's 10 s hook default, so the cleanup gets its own bound.
+const CLEANUP_TIMEOUT_MS = 60_000;
+
 afterAll(async () => {
   if (probe.type !== 'none') {
     const storage = getSecureStorage();
@@ -538,7 +542,7 @@ afterAll(async () => {
   }
   expect(declaredNative.length).toBeGreaterThan(0);
   expect(missed).toEqual([]);
-});
+}, CLEANUP_TIMEOUT_MS);
 
 // ─── 1. Key allowlist ───────────────────────────────────────────────────
 
