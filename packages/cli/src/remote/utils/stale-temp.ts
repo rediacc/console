@@ -6,11 +6,11 @@ import { getTempPath } from './platform.js';
 export const STALE_TEMP_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 /** The names this tool gives its temp files (tempFiles.ts: prefix, 16 hex digits, extension). */
-const OWN_TEMP_NAMES: readonly RegExp[] = [
+const OWN_TEMP_NAMES = [
   /^ssh-key-[0-9a-f]{16}\.pem$/,
   /^known_hosts-[0-9a-f]{16}$/,
   /^rdc-term-[0-9a-f]{16}\.cmd$/,
-];
+] as const;
 
 /** Whether `path` is a regular file of this user's whose mtime is past the age limit. */
 function isStaleOwnFile(path: string, now: number): boolean {
