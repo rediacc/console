@@ -2403,15 +2403,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 12,
+      "open": 6,
+      "done": 13,
       "open_sigs": [
         "095996c0",
         "5a843445",
         "714a9aba",
         "82726446",
         "af353057",
-        "dbed164d",
         "dee9542d"
       ],
       "done_sigs": [
@@ -2426,6 +2425,7 @@
         "76ab309a",
         "7beffdd0",
         "ac42fa87",
+        "dbed164d",
         "f01d3a26"
       ]
     },
@@ -4457,17 +4457,17 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 5,
+      "open": 5,
+      "done": 6,
       "open_sigs": [
         "36d35046",
         "4c29250e",
         "53e18fa0",
-        "547ffb5a",
         "7e1402a9",
         "c288a491"
       ],
       "done_sigs": [
+        "547ffb5a",
         "622da616",
         "9c185837",
         "bd8a600b",

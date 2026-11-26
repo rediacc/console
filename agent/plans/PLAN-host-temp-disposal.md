@@ -108,11 +108,12 @@ Temp files from tests, gates, traces and finished writers must not pile up on th
     (ticked) 2026-11-26T10:45:29Z by d778be9d: HT12 host_temp sweep, reclaim --legacy and status landed: test_host_temp.py 15 passed rc 0 on the merged tree commit:f2b58581b5 plan:agent/plans/PLAN-host-temp-disposal.md
 
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_host_temp.py` rc 0, including a planted-defect control (the 1800 s check removed) that must fail.
-- [ ] HT13 [writer] Stop segment `host-temp` (D7, Design 6): `wl_hosttemp.py`, the `run_stop` mark, the registry row, the effort row (shown at every level), and the one-line note in the bgsweep docstring. Tests:
+- [x] HT13 [writer] Stop segment `host-temp` (D7, Design 6): `wl_hosttemp.py`, the `run_stop` mark, the registry row, the effort row (shown at every level), and the one-line note in the bgsweep docstring. Tests:
     - with 15 fixture leases, `assess` makes no subprocess call and runs in under 150 ms median over 20 runs;
     - a due sweep starts exactly one detached sweeper, and a second stop while it runs starts none;
     - rows already printed are not printed again in that session;
     - a peer session prints them once as well.
+    (ticked) 2026-11-26T13:35:10Z by d778be9d: HT13 host-temp Stop segment starts one detached sweeper after the 30-minute grace and prints each sweep row once per session; test-hosttemp 15 cases, test-bgsweep 79 checks, test_host_temp and stuck-shell 39 passed on the merged tree commit:2872d8feaf plan:agent/plans/PLAN-host-temp-disposal.md
 
   Accept: `PYTHONPATH=.claude/hooks/stop python3 .claude/hooks/stop/test-hosttemp.py` rc 0 and `PYTHONPATH=.claude/hooks/stop python3 -m pytest -q .claude/rediacc_hooks/tests/test_wl_stop_speed_metas.py .claude/rediacc_hooks/tests -k stop_speed_registry` rc 0.
 - [ ] HT-R1 [lead] One-time reclaim of today's leftovers, after HT12 lands, all through `host_temp`:

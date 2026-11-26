@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1526 of 1891 boxes done (80%).
+Promoted: 11 of 100 plans done, 1528 of 1891 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -121,7 +121,7 @@ Promoted: 11 of 100 plans done, 1526 of 1891 boxes done (80%).
 | 59 | PLAN-preview-signer.md | 24/37 | 13 open |
 | 60 | PLAN-weekly-lessons.md | 6/8 | 2 open |
 | 61 | PLAN-tooling-speed.md | 6/8 | 2 open |
-| 62 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |
+| 62 | PLAN-tooling-code-reduction.md | 6/11 | 5 open |
 | 63 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 64 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
 | 65 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
@@ -159,7 +159,7 @@ Promoted: 11 of 100 plans done, 1526 of 1891 boxes done (80%).
 | 97 | PLAN-armed-actions.md | 6/6 | done |
 | 98 | PLAN-drain-throughput.md | 6/15 | 9 open |
 | 99 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
-| 100 | PLAN-host-temp-disposal.md | 12/19 | 7 open |
+| 100 | PLAN-host-temp-disposal.md | 13/19 | 6 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
