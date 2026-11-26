@@ -1613,7 +1613,7 @@ jobs:
           path: workers/www/dist/
 
       # Mint a per-PR Turnstile widget so the preview hostname
-      # `pr-N.rediacc.workers.dev` is on its own widget allowlist.
+      # `<preview name>.rediacc.workers.dev` (the derived pv- word name) is on its own widget allowlist.
       # Cloudflare Turnstile does not support wildcards or parent-domain
       # inheritance, so each PR needs its own widget.
       # See private/account/docs/infra/cloudflare.md and
@@ -1621,7 +1621,7 @@ jobs:
       - name: Create PR Turnstile widget
         id: create-widget
         working-directory: private/account
-        run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}"
+        run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}" "${PREVIEW_NAME}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
