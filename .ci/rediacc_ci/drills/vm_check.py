@@ -65,7 +65,7 @@ import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import prepare_lock
+from rediacc_ci.core import host_slots, prepare_lock
 from rediacc_ci.drills import (
     backup_check_trigger,
     converge_preflight,
@@ -4859,5 +4859,42 @@ def main(
         drill.teardown()
 
 
+# The cores a run holds on the machine-wide pool (`core_lease`) while its battery and drills run. The suites, forks and drills of one run keep several cores busy for tens of minutes, and a run that took none was one of the uncounted loads behind load 134 on 24 cores of 2026-11-24 while `core_lease.py status` showed 24 of 24 tokens free (host_slots, PR-TASK 79b7e92e). Four is a quarter of the pool the tests use and a sixth of a 24-core host: enough that a second lease client sees the run, little enough that a writer wave still fits beside it.
+CORE_SLOTS = 4
+# How long a run waits for its tokens. Past it the run goes ahead and says so, since a long ci:quick holding the pool must not stall a verdict that needs a fleet this run already waited for under `--wait`.
+CORE_SLOT_WAIT_S = 900.0
+
+
+def leased_main(argv: Sequence[str], **kwargs: Any) -> int:
+    """`main`, run holding `CORE_SLOTS` tokens of the machine-wide core pool. A read-only invocation (`LEASE_SAFE_FLAGS`) takes none, and a run already under a held lease (`CI_CORE_LEASE_HELD=1`) takes nothing and waits for nothing, as `host_slots.host_slot` defines."""
+    if LEASE_SAFE_FLAGS.intersection(argv):
+        return main(argv, **kwargs)
+    environ = kwargs.get("environ")
+    env = os.environ if environ is None else environ
+    stack = contextlib.ExitStack()
+    slot = None
+    try:
+        slot = stack.enter_context(
+            host_slots.host_slot(
+                CORE_SLOTS, label="vm:check", timeout=CORE_SLOT_WAIT_S, environ=env
+            )
+        )
+    except TimeoutError as exc:
+        log.warn("%s: %s; going ahead without the tokens" % (NAME, exc))
+    grant = slot.env if slot is not None else {}
+    with stack:
+        # The suites and drills this run starts inherit the grant, so a pytest wrapper under them does not lease the pool a second time.
+        saved = {key: os.environ.get(key) for key in grant}
+        os.environ.update(grant)
+        try:
+            return main(argv, **kwargs)
+        finally:
+            for key, previous in saved.items():
+                if previous is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous
+
+
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(leased_main(sys.argv[1:]))
