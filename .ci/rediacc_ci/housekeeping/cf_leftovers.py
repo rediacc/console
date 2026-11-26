@@ -295,6 +295,10 @@ def referenced_by(name: str, texts: dict[str, str], kind: str = "") -> list[str]
     return [rel for rel, text in texts.items() if pat.search(text)]
 
 
+_CURSOR_KEYS = frozenset({"next_page_token", "page_token", "cursor"})
+_CONTINUATION_KEYS = _CURSOR_KEYS | {"next_cursor", "next", "next_page"}
+
+
 def _total_pages(body: dict, path: str = "listing") -> int:
     """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`. A body with no `result_info` is the whole listing on one page (1); a `result_info` that names no usable count raises."""
     info = body.get("result_info")
@@ -304,19 +308,19 @@ def _total_pages(body: dict, path: str = "listing") -> int:
     # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it.
     if total == 0 or (isinstance(info, dict) and total is None and info.get("total_count") == 0):
         return 1
-    # An unpaginated endpoint (no per_page, no page count) that states how many items it returned, and the result holds exactly that many, is a complete list.
+    # An unpaginated endpoint (no per_page, no page count, no continuation field) whose every stated item count (`count`, `total_count`) equals the number of items returned is a complete list.
     if (
         total is None
         and isinstance(info, dict)
         and "per_page" not in info
         and "page" not in info
+        and not info.keys() & _CONTINUATION_KEYS
         and isinstance(body.get("result"), list)
     ):
-        stated = info.get("count") if info.get("count") is not None else info.get("total_count")
-        if (
-            isinstance(stated, int)
-            and not isinstance(stated, bool)
-            and stated == len(body["result"])
+        stated = [info[k] for k in ("count", "total_count") if info.get(k) is not None]
+        if stated and all(
+            isinstance(n, int) and not isinstance(n, bool) and n == len(body["result"])
+            for n in stated
         ):
             return 1
     if (
@@ -334,9 +338,11 @@ def _total_pages(body: dict, path: str = "listing") -> int:
 
 
 def _is_cursor_info(info) -> bool:
-    """A `result_info` object that carries none of the page-count fields: cursor pagination, whose end is a missing `next_page_token`."""
-    return isinstance(info, dict) and not (
-        info.keys() & {"total_pages", "total_count", "count", "page"}
+    """A `result_info` object that is cursor pagination: it carries none of the count fields (`total_pages`, `total_count`, `count`, `page`) and is either empty (the end of the list, observed live) or names a cursor key (`next_page_token`, `page_token`, `cursor`). A bare `{"per_page": 20}` is neither, so `_total_pages` refuses it."""
+    return (
+        isinstance(info, dict)
+        and not info.keys() & {"total_pages", "total_count", "count", "page"}
+        and (not info or bool(info.keys() & _CURSOR_KEYS))
     )
 
 

@@ -733,7 +733,7 @@ def test_an_empty_listing_with_a_zero_count_is_an_empty_list_not_an_error():
         )
 
 
-def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
+def test_containers_listing_with_unusable_paging_metadata_is_an_error_and_with_none_is_whole():
     """Review 9900887b.1: a `result_info` with an unusable page count is refused; a body with no `result_info` at all is the whole listing."""
     with pytest.raises(cfl.CfError, match="total_pages"):
         cfl.followed(
@@ -821,7 +821,7 @@ def test_containers_cursor_listing_follows_next_page_token_and_refuses_a_loop():
         cfl.followed("/c", TOKEN, looping)
 
 
-@pytest.mark.parametrize("info", [{"count": 2}, {"total_count": 2}, {"count": 2, "cursor": "x"}])
+@pytest.mark.parametrize("info", [{"count": 2}, {"total_count": 2}, {"count": 2, "total_count": 2}])
 def test_unpaginated_listing_stating_its_complete_count_is_one_page(info):
     """The containers listing answers a `result_info` with no `total_pages`; a count equal to the items returned, with no paging fields, is the whole list."""
     calls: list = []
@@ -841,6 +841,11 @@ def test_unpaginated_listing_stating_its_complete_count_is_one_page(info):
         {"count": 2, "per_page": 2},  # paginated and no page count
         {"count": 2, "page": 1},
         {"count": "2"},
+        {"count": 2, "total_count": 500},  # ca0a/62cc.1: the larger stated count is not ignored
+        {"total_count": 500, "count": 2},
+        {"count": 2, "cursor": "x"},  # 62cc.2: a continuation field is not a complete list
+        {"count": 2, "next_page_token": "x"},
+        {"per_page": 20},  # ca0a.1: only per_page is not cursor info
     ],
 )
 def test_truncated_or_paginated_listing_without_total_pages_still_refuses(info):
@@ -881,3 +886,20 @@ def test_other_settings_errors_still_abort_the_inventory():
 
     with pytest.raises(cfl.CfError, match="10000"):
         cfl.read_inventory("acc", TOKEN, get)
+
+
+def test_cursor_info_with_per_page_and_a_token_key_is_still_cursor_pagination():
+    """Control for ca0a1f05.1: `per_page` beside a cursor key stays cursor pagination; `per_page` alone is not."""
+
+    def get(path, _token):
+        if "page_token=t1" in path:
+            return {"success": True, "result": [{"id": 2}], "result_info": {"next_page_token": ""}}
+        return {
+            "success": True,
+            "result": [{"id": 1}],
+            "result_info": {"per_page": 1, "next_page_token": "t1"},
+        }
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2]
+    assert cfl._is_cursor_info({"per_page": 1, "next_page_token": "t1"})
+    assert not cfl._is_cursor_info({"per_page": 20})
