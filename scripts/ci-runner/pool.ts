@@ -334,7 +334,7 @@ export interface LoadWaitState {
 /** Polls of silence after which a running hold clock is dropped (the pool only reads the load while a gate is ready). */
 const LOAD_GAP_POLLS = 5;
 
-/** One reading's verdict: `wait` holds every start, `go` admits. `own` is the cores this run's own gates hold: the system-wide load average includes them, so they are taken off the reading and a sized-to-machine run never holds itself back (review c2c50947.2). Pure apart from `state` and `gate.say`. */
+/** One reading's verdict: `wait` holds every start, `go` admits. `own` is the cores this run's own gates hold: the system-wide load average includes them, so they are taken off the reading and a sized-to-machine run never holds itself back (review c2c50947.2); the reservation stands in for the cores the gates burn (the run cannot read a gate's own CPU), so a gate that holds more than it uses makes the external load read low by the difference, the price of never counting the run's own work as foreign (review d775d774.2). Pure apart from `state` and `gate.say`. */
 export function loadVerdict(
   gate: LoadGate,
   state: LoadWaitState,

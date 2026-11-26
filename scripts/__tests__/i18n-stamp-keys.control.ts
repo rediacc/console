@@ -13,11 +13,19 @@
  * rewrites a stale entry only where the locale value differs from HEAD, lists an unchanged
  * one, and applies the normal refusals.
  */
+
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
-import { type Ledger, planStamps, run, serializeLedger } from '../gen/i18n-stamp-keys.ts';
+import {
+  gitHeadValues,
+  type Ledger,
+  planStamps,
+  run,
+  serializeLedger,
+} from '../gen/i18n-stamp-keys.ts';
 import { flattenAndHash } from '../lib/crc32.ts';
 
 // Throws so the finally block below still removes the mkdtemp fixture; the catch exits 1.
@@ -217,6 +225,60 @@ try {
       fail('--since did not restamp a value changed after <rev>');
     }
     if (badRc !== 2) fail(`--since without --restamp was not rejected (rc ${badRc})`);
+    mute();
+    const badHeadRc = run(['--prefix', 'r', '--since', 'HEAD'], root2, revReader);
+    // Without --since r.b is listed as unchanged on stdout; capture it through a dry run.
+    fs.writeFileSync(ledger2, serializeLedger({ languages: { de: { ...stale } } }));
+    const captured: string[] = [];
+    const realWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((c: string | Uint8Array) => {
+      captured.push(String(c));
+      return true;
+    }) as typeof process.stdout.write;
+    run(['--prefix', 'r.b', '--lang', 'de', '--restamp'], root2, revReader);
+    process.stdout.write = realWrite;
+    unmute();
+    if (badHeadRc !== 2) fail(`--since HEAD without --restamp was not rejected (rc ${badHeadRc})`);
+    if (!captured.join('').includes('= r.b: stale, locale value unchanged since HEAD')) {
+      fail('an unchanged stale key was not listed as unchanged without --since');
+    }
+
+    // (11) the real reader: a file present at HEAD, a file absent from HEAD, a bad rev, a corrupt file.
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-keys-gitreader-'));
+    try {
+      const sh = (...a: string[]) =>
+        execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], {
+          cwd: repo,
+          stdio: 'ignore',
+        });
+      sh('init', '-q');
+      fs.writeFileSync(path.join(repo, 'de.json'), '{"r":{"a":"Eins"}}\n');
+      fs.writeFileSync(path.join(repo, 'fr.json'), '{not json\n');
+      sh('add', '--', 'de.json', 'fr.json');
+      sh('commit', '-q', '-m', 'seed');
+      if (JSON.stringify(gitHeadValues(repo, 'de')) !== '{"r.a":"Eins"}') {
+        fail('the real reader did not return the committed values');
+      }
+      if (Object.keys(gitHeadValues(repo, 'it')).length !== 0) {
+        fail('a locale file absent from HEAD was not read as {}');
+      }
+      let badRev = '';
+      try {
+        gitHeadValues(repo, 'de', 'NOSUCHREV');
+      } catch (e) {
+        badRev = (e as Error).message;
+      }
+      if (!badRev.includes('cannot resolve revision NOSUCHREV')) fail('a bad rev was not named');
+      let corrupt = '';
+      try {
+        gitHeadValues(repo, 'fr');
+      } catch (e) {
+        corrupt = (e as Error).message;
+      }
+      if (!corrupt.includes('not readable JSON')) fail(`a corrupt file lost its cause: ${corrupt}`);
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
   } finally {
     fs.rmSync(root2, { recursive: true, force: true });
   }

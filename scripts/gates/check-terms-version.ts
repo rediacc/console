@@ -96,6 +96,12 @@ export interface SupersededArchive {
 export const CHECK7_SINCE = '2026-11-26';
 /** The record only shrinks: the three archives below are the whole of it. */
 export const SUPERSEDED_LIMIT = 3;
+/** The three names the record may hold; swapping one for another pre-check-7 archive is a finding even at the same count. */
+export const FROZEN_ARCHIVE_NAMES: readonly string[] = Object.freeze([
+  'privacy-policy-2026-11-24.txt',
+  'data-processing-agreement-2026-11-24.txt',
+  'data-processing-agreement-2026-11-25.txt',
+]);
 
 /**
  * Archives are immutable, so the three published with a stale "Effective Date: November 11, 2026"
@@ -136,7 +142,8 @@ export function heroLine(effective: string): string {
 
 /** Findings on the shape of the exemption record alone, independent of any tree. */
 export function supersededRecordFindings(
-  record: Readonly<Record<string, SupersededArchive>>
+  record: Readonly<Record<string, SupersededArchive>>,
+  frozen?: readonly string[]
 ): string[] {
   const findings: string[] = [];
   const names = Object.keys(record);
@@ -146,6 +153,11 @@ export function supersededRecordFindings(
     );
   }
   for (const name of names) {
+    if (frozen !== undefined && !frozen.includes(name)) {
+      findings.push(
+        `7: SUPERSEDED_ARCHIVES entry ${name} is not one of the ${frozen.length} frozen archives (${frozen.join(', ')})`
+      );
+    }
     const m = /-(\d{4}-\d{2}-\d{2})\.txt$/.exec(name);
     if (!m) {
       findings.push(`7: SUPERSEDED_ARCHIVES entry ${name} is not an archive file name`);
@@ -206,7 +218,13 @@ export function check(
   }
 
   // 7. the hero line of every archive, and the frozen exemption record
-  findings.push(...supersededRecordFindings(superseded));
+  // Fixture records in the selftest are judged on shape alone; only the real record is held to the frozen names.
+  findings.push(
+    ...supersededRecordFindings(
+      superseded,
+      superseded === SUPERSEDED_ARCHIVES ? FROZEN_ARCHIVE_NAMES : undefined
+    )
+  );
   const exempt = new Set<string>();
   for (const [name, entry] of Object.entries(superseded)) {
     const owner = docs.find(([id, doc]) =>
@@ -702,7 +720,22 @@ function selftest(): number {
   };
   control(
     'CONTROL: the frozen SUPERSEDED_ARCHIVES record has no finding of its own',
-    supersededRecordFindings(SUPERSEDED_ARCHIVES).length === 0
+    supersededRecordFindings(SUPERSEDED_ARCHIVES, FROZEN_ARCHIVE_NAMES).length === 0
+  );
+  const swapped = Object.fromEntries(
+    Object.entries(SUPERSEDED_ARCHIVES).map(([n, e], i) => [
+      i === 0 ? 'terms-of-service-2026-03-15.txt' : n,
+      e,
+    ])
+  );
+  control(
+    'swapping one frozen archive for another pre-check-7 archive is red even at the same count',
+    swapped !== SUPERSEDED_ARCHIVES &&
+      Object.keys(swapped).length === SUPERSEDED_LIMIT &&
+      supersededRecordFindings(swapped, FROZEN_ARCHIVE_NAMES).some((f) =>
+        f.includes('is not one of the 3 frozen archives')
+      ) &&
+      supersededRecordFindings(swapped).length === 0
   );
   control(
     'a fourth SUPERSEDED_ARCHIVES entry is red (the record is frozen)',

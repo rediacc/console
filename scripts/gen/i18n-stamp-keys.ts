@@ -179,11 +179,11 @@ interface Args {
   write: boolean;
   restamp: boolean;
   /** --restamp only: the revision the comparison base is read from; HEAD by default. */
-  since: string;
+  since: string | undefined;
 }
 
 export function parseArgs(argv: readonly string[]): Args {
-  const args: Args = { prefixes: [], langs: [], write: false, restamp: false, since: 'HEAD' };
+  const args: Args = { prefixes: [], langs: [], write: false, restamp: false, since: undefined };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--write') args.write = true;
@@ -201,7 +201,7 @@ export function parseArgs(argv: readonly string[]): Args {
     } else throw new Error(`unknown argument: ${a}`);
   }
   validatePrefixes(args.prefixes);
-  if (args.since !== 'HEAD' && !args.restamp) {
+  if (args.since !== undefined && !args.restamp) {
     throw new Error('--since only applies with --restamp');
   }
   for (const l of args.langs) {
@@ -213,20 +213,30 @@ export function parseArgs(argv: readonly string[]): Args {
   return args;
 }
 
-/** Flattened values of `<lang>.json` as committed at `rev` (HEAD by default). */
+/** Flattened values of `<lang>.json` as committed at `rev` (HEAD by default); `{}` when the file is not in that revision's tree, so every key reads as changed. A bad revision, a non-git directory or an unparsable file throws with its own cause. */
 export function gitHeadValues(dir: string, lang: string, rev = 'HEAD'): Record<string, string> {
-  try {
-    const raw = execFileSync('git', ['show', `${rev}:./${lang}.json`], {
+  const git = (args: string[]): string =>
+    execFileSync('git', args, {
       cwd: dir,
       encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      stdio: ['ignore', 'pipe', 'pipe'],
       maxBuffer: 64 * 1024 * 1024,
     });
-    return flattenValues(JSON.parse(raw));
+  try {
+    git(['rev-parse', '--verify', '--quiet', `${rev}^{commit}`]);
   } catch {
-    throw new Error(
-      `cannot read ${rev}:${lang}.json (git show failed); --restamp needs a git tree`
-    );
+    throw new Error(`cannot resolve revision ${rev} in ${dir}; --restamp needs a git tree`);
+  }
+  let raw: string;
+  try {
+    raw = git(['show', `${rev}:./${lang}.json`]);
+  } catch {
+    return {};
+  }
+  try {
+    return flattenValues(JSON.parse(raw));
+  } catch (e) {
+    throw new Error(`${rev}:${lang}.json is not readable JSON: ${(e as Error).message}`);
   }
 }
 
@@ -266,7 +276,9 @@ export function run(
   let headValues: Record<string, Record<string, string>> | undefined;
   if (args.restamp) {
     try {
-      headValues = Object.fromEntries(args.langs.map((l) => [l, headReader(dir, l, args.since)]));
+      headValues = Object.fromEntries(
+        args.langs.map((l) => [l, headReader(dir, l, args.since ?? 'HEAD')])
+      );
     } catch (e) {
       process.stderr.write(`i18n-stamp-keys: ${(e as Error).message}\n`);
       return 1;
@@ -304,7 +316,9 @@ export function run(
     if (!args.write) for (const [k] of p.stamp) process.stdout.write(`    + ${k}\n`);
     if (!args.write) for (const [k] of p.restamp) process.stdout.write(`    ~ ${k}\n`);
     for (const k of p.unchanged)
-      process.stdout.write(`    = ${k}: stale, locale value unchanged since ${args.since}\n`);
+      process.stdout.write(
+        `    = ${k}: stale, locale value unchanged since ${args.since ?? 'HEAD'}\n`
+      );
     for (const r of p.refused) process.stdout.write(`    ! ${r.key}: ${r.reason}\n`);
   }
   if (args.write) {

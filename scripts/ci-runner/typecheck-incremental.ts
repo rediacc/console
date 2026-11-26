@@ -526,6 +526,12 @@ function tscPath(root: string): string | undefined {
   return fs.existsSync(p) ? p : undefined;
 }
 
+/** Whether `dir` lies outside `root`: its relative path is `..` itself, climbs by a `..` SEGMENT, or is absolute (another drive). A first segment merely spelled `..cache` is inside. */
+function isOutside(root: string, dir: string): boolean {
+  const rel = path.relative(root, dir);
+  return rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel);
+}
+
 async function selftest(): Promise<number> {
   const failures: string[] = [];
   const require_ = (cond: boolean, message: string): void => {
@@ -558,10 +564,16 @@ async function selftest(): Promise<number> {
     workerConfigs(REPO_ROOT)
   );
   const labels = real.steps.map((s) => s.label);
+  check(
+    isOutside('/r', '/x/y') &&
+      isOutside('/r/a', '/r/b') &&
+      !isOutside('/r', '/r/..cache') &&
+      !isOutside('/r', '/r'),
+    "CONTROL: isOutside reads a first segment spelled '..cache' as inside, and a sibling or foreign path as outside"
+  );
   // The `tree-write: safe` pragmas cite CACHE_DIR as outside every tree; this is the assertion they lean on.
   check(
-    CACHE_DIR.startsWith(`${os.homedir()}${path.sep}`) &&
-      path.relative(REPO_ROOT, CACHE_DIR).startsWith('..'),
+    CACHE_DIR.startsWith(`${os.homedir()}${path.sep}`) && isOutside(REPO_ROOT, CACHE_DIR),
     `CACHE_DIR (${CACHE_DIR}) must sit under the home directory and outside the repository, or the tree-write pragmas are false`
   );
   check(

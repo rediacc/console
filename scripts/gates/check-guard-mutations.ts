@@ -998,6 +998,13 @@ async function hookSelftest(): Promise<Control[]> {
       ) === 'broken' &&
       runVerdict('plant', redTail('E   File "x.py", line 3\nE   SyntaxError: invalid syntax')) ===
         'broken' &&
+      runVerdict(
+        'plant',
+        redTail(
+          'E   AssertionError: reason quotes SyntaxError: bad\nE   -  SyntaxError: bad\nE   +  deny'
+        ),
+        'block_x.py'
+      ) === 'caught' &&
       runVerdict('plant', redTail('FAIL case 3: expected deny'), 'block_x.py') === 'caught' &&
       runVerdict(
         'plant',

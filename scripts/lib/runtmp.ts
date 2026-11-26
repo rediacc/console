@@ -117,20 +117,11 @@ export function removeOwned(): void {
 /** The candidates `rediacc_ci.quality.seams.SYSTEM_TEMP_CANDIDATES` names, in its order. */
 const SYSTEM_TEMP_CANDIDATES = ['/tmp', '/var/tmp', '/usr/tmp'];
 
-/** Whether the longest mount point above `dir` is tmpfs or ramfs; false when /proc/mounts cannot be read (seams `_on_ram_filesystem`). */
-function onRamFilesystem(dir: string): boolean {
-  let rows: string[][];
-  try {
-    rows = fs
-      .readFileSync('/proc/mounts', 'utf8')
-      .split('\n')
-      .map((line) => line.split(' '));
-  } catch {
-    return false;
-  }
+/** Whether the longest mount point above `dir` in the `/proc/mounts` text `mounts` is tmpfs or ramfs (seams `_on_ram_filesystem`'s ranking, octal escapes in a mount point undone). Pure, so a control can feed a fabricated table. */
+export function ramFilesystemIn(mounts: string, dir: string): boolean {
   let best = -1;
   let ram = false;
-  for (const row of rows) {
+  for (const row of mounts.split('\n').map((line) => line.split(/\s+/))) {
     if (row.length < 3) continue;
     const mount = row[1].replace(/\\([0-7]{3})/g, (_m, oct: string) =>
       String.fromCharCode(Number.parseInt(oct, 8))
@@ -143,6 +134,15 @@ function onRamFilesystem(dir: string): boolean {
     }
   }
   return ram;
+}
+
+/** Whether `dir` sits on tmpfs or ramfs by the host's own mount table; false when /proc/mounts cannot be read. */
+function onRamFilesystem(dir: string): boolean {
+  try {
+    return ramFilesystemIn(fs.readFileSync('/proc/mounts', 'utf8'), dir);
+  } catch {
+    return false;
+  }
 }
 
 /**

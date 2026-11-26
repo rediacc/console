@@ -69,7 +69,8 @@ export class GateCores {
   /** Wait for at least one token, take up to the per-gate grant, and return it with the gate's environment. */
   async take(label: string): Promise<GateGrant> {
     let blocked = false;
-    const deadline = Date.now() + (this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS);
+    const startedAt = Date.now();
+    const deadline = startedAt + (this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS);
     for (;;) {
       const got = await this.serial(async () => {
         const view = await this.lease.available(this.inUse);
@@ -99,7 +100,7 @@ export class GateCores {
       blocked = true;
       if (Date.now() >= deadline)
         throw new Error(
-          `gate-cores: ${label} waited ${Math.round((this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS) / 1000)}s for a core token and none came free: all ${got.total} are held by ${got.runs ?? '?'} live run(s) (who: python3 .ci/rediacc_ci/core_lease.py status)`
+          `gate-cores: ${label} waited ${((Date.now() - startedAt) / 1000).toFixed(1)}s (bound ${Math.round((this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS) / 1000)}s) for a core token and none came free: all ${got.total} are held by ${got.runs ?? '?'} live run(s) (who: python3 .ci/rediacc_ci/core_lease.py status)`
         );
       await new Promise((r) => setTimeout(r, this.opts.pollMs ?? GATE_CORES_POLL_MS));
     }
@@ -183,7 +184,11 @@ export async function gateCoresSelftest(): Promise<string[]> {
     () => '',
     (e: Error) => e.message
   );
-  if (!/starved waited 0s for a core token/.test(refusal) || !/held by 1 live run/.test(refusal))
+  // The text carries the time actually waited (at least the 60 ms bound, so 0.1s), not the configured bound in whole seconds.
+  if (
+    !/starved waited 0\.[1-9]s \(bound 0s\) for a core token/.test(refusal) ||
+    !/held by 1 live run/.test(refusal)
+  )
     failures.push(
       `a take past its deadline must refuse naming the holders, got ${JSON.stringify(refusal)}`
     );

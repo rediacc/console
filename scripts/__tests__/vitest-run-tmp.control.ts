@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { removeTree, shared } from '../lib/runtmp.js';
+import { ramFilesystemIn, removeTree, shared } from '../lib/runtmp.js';
 
 const REPO = path.resolve(import.meta.dirname, '../..');
 const SETUP = path.join(REPO, 'scripts/lib/vitest-run-tmp.ts');
@@ -118,6 +118,38 @@ function main(): void {
   check(
     !listsGlobalSetup("const p ='scripts/lib/vitest-run-tmp.ts';\nexport default { test: {} };"),
     'CONTROL (scan): the path outside a globalSetup array is refused'
+  );
+  // CONTROL (runtmp.ts onRamFilesystem, review aca7dc2d.1): a fabricated mount table drives the longest-mount ranking and the octal unescape.
+  const table = [
+    'rootfs / ext4 rw 0 0',
+    'tmpfs /tmp tmpfs rw 0 0',
+    'ext4 /tmp/disk ext4 rw 0 0',
+    'tmpfs /mnt/my\\040ram tmpfs rw 0 0',
+    'ramfs /mnt/rf ramfs rw 0 0',
+  ].join('\n');
+  check(
+    ramFilesystemIn(table, '/tmp/x'),
+    'CONTROL (ram): a path under a tmpfs /tmp is on a RAM filesystem'
+  );
+  check(
+    !ramFilesystemIn(table, '/tmp/disk/x'),
+    'CONTROL (ram): the longer ext4 mount under a tmpfs /tmp wins'
+  );
+  check(
+    !ramFilesystemIn(table, '/var/tmp/x'),
+    'CONTROL (ram): a path outside every tmpfs falls to the root mount'
+  );
+  check(
+    ramFilesystemIn(table, '/mnt/my ram/x'),
+    'CONTROL (ram): an octal-escaped mount point is unescaped before matching'
+  );
+  check(
+    ramFilesystemIn(table, '/mnt/rf'),
+    'CONTROL (ram): ramfs counts and the mount point itself is inside'
+  );
+  check(
+    !ramFilesystemIn(table, '/tmpfoo/x'),
+    'CONTROL (ram): a sibling sharing a name prefix is not under the mount'
   );
   for (const cfg of configs) {
     check(

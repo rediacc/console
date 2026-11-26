@@ -2872,6 +2872,11 @@ async function selftest(): Promise<number> {
         narrowReceipt(undefined, () => '{ nope') === undefined,
         'CONTROL: an unreadable receipt outside a lease gives undefined, so --narrow names the missing receipt'
       );
+      for (const text of ['null', '[]', '3', '"x"'])
+        require_(
+          narrowReceipt(undefined, () => text) === undefined,
+          `CONTROL: a receipt whose JSON is ${text} gives undefined, not a value narrowPlan would dereference`
+        );
     }
     {
       const r = leaseReceipt('BASE');
@@ -6520,14 +6525,17 @@ function leaseReceipt(leaseBase: string): Partial<Receipt> {
   return { head: leaseBase, failed: [], findings: {} };
 }
 
-/** The receipt `--narrow` judges against: a lease's anchor stand-in WITHOUT calling `read` (the copied main receipt is never consulted there), else the parsed receipt `read` returns, undefined when it cannot be read or parsed. */
+/** The receipt `--narrow` judges against: a lease's anchor stand-in WITHOUT calling `read` (the copied main receipt is never consulted there), else the parsed receipt `read` returns, undefined when it cannot be read, cannot be parsed, or parses to anything but a JSON object (`null` included). */
 export function narrowReceipt(
   leaseBase: string | undefined,
   read: () => string
 ): Partial<Receipt> | undefined {
   if (leaseBase !== undefined) return leaseReceipt(leaseBase);
   try {
-    return JSON.parse(read()) as Partial<Receipt>;
+    const parsed: unknown = JSON.parse(read());
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Partial<Receipt>)
+      : undefined;
   } catch {
     return undefined;
   }
