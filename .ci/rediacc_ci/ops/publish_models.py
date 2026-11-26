@@ -6,13 +6,13 @@
         env PYTHONPATH=.ci python3 -m rediacc_ci.ops.publish_models --channel stable --promote
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.publish_models --dry-run --channel edge
 
-PUBLISH (`--channel edge|stable` without `--promote`). `renet models pack` builds `objects/<sha256>` and the unsigned manifest from `private/renet/models/`; `cmd/modelsign` (never shipped) signs the manifest and writes the channel pointer with its `.sig`. The upload order is objects, manifest and its signature, and the pointer last, so a machine that reads the new pointer always finds everything it names.
+PUBLISH (`--channel edge|stable` without `--promote`). `renet models pack` builds `objects/<sha256>` and the unsigned manifest from `private/renet/models/`; `cmd/modelsign` (never shipped) signs the manifest and writes the channel pointer with its `.sig`. The upload order is objects, manifest and its signature, and the pointer last (its signature lands just before it), so a machine that reads the new pointer always finds everything it names.
 
-PROMOTE (`--promote`, stable only). The current edge pointer is read from the origin, its manifest and signature are downloaded, and a stable pointer for the same manifest is signed at 100 percent. Nothing is repacked and no object is uploaded again.
+PROMOTE (`--promote`, stable only). The current edge pointer is read from the bucket, its manifest and signature are downloaded from the origin, the signature stays as downloaded (`modelsign pointer` verifies it against the model key before signing), and a stable pointer for the same manifest is signed at 100 percent. Nothing is repacked and no object is uploaded again.
 
 HEADERS (D8). Objects and manifests carry `public, max-age=31536000, immutable`; a pointer carries `public, max-age=60`, which the Cache Rule honours as an origin TTL.
 
-SEQUENCE. `--seq` is the pointer sequence; without it the run reads the channel's current pointer from the origin and takes the next number (a missing pointer counts as 0). Machines refuse a pointer whose `seq` is not above the last one they saw.
+SEQUENCE. `--seq` is the pointer sequence; without it the run reads the channel's current pointer from the bucket (the origin caches it for 60 seconds) and takes the next number (a missing pointer counts as 0). Machines refuse a pointer whose `seq` is not above the last one they saw.
 
 `--dry-run` prints every command it would run and touches neither the network nor the bucket. The model key (`MODEL_ED25519_PRIVATE_KEY`) and the bucket credentials (`R2_PUBLIC_DATA_ACCESS_KEY_ID`, `R2_PUBLIC_DATA_SECRET_ACCESS_KEY`) come from the two Bitwarden profiles and only ever sit in a child environment.
 """
@@ -99,8 +99,35 @@ def upload_argv(local: pathlib.Path, key: str, cache: str, endpoint: str) -> lis
     ]
 
 
-def pointer_url(channel: str) -> str:
-    return "%s/%s/channels/%s.json" % (PUBLIC_DATA_ORIGIN, PREFIX, channel)
+def pointer_key(channel: str) -> str:
+    return "%s/channels/%s.json" % (PREFIX, channel)
+
+
+def bucket_reader(env: Mapping[str, str], endpoint: str) -> Fetcher:
+    """A fetcher of `key` read straight from the bucket with the write credentials: the public origin caches a pointer for 60 seconds, so a sequence or an edge version read through it can be a minute stale."""
+
+    def read(key: str) -> bytes | None:
+        argv = [
+            awscli.AWS,
+            "s3",
+            "cp",
+            "s3://%s/%s" % (PUBLIC_DATA_BUCKET, key),
+            "-",
+            "--endpoint-url",
+            endpoint,
+            "--no-progress",
+        ]
+        done = awscli.run(argv, env=dict(env), capture_output=True, check=False)
+        if done.returncode == 0:
+            return bytes(done.stdout)
+        err = bytes(done.stderr)
+        if b"404" in err or b"NoSuchKey" in err or b"Not Found" in err:
+            return None
+        raise PublishError(
+            "reading %s from the bucket failed: %s" % (key, err.decode(errors="replace").strip())
+        )
+
+    return read
 
 
 def fetch(url: str) -> bytes | None:
@@ -116,8 +143,9 @@ def fetch(url: str) -> bytes | None:
         raise PublishError("GET %s failed: %s" % (url, exc)) from exc
 
 
-def current_seq(channel: str, get: Fetcher) -> int:
-    body = get(pointer_url(channel))
+def current_seq(channel: str, read: Fetcher) -> int:
+    """The channel pointer's `seq` as the bucket holds it (see `bucket_reader`), 0 when there is no pointer."""
+    body = read(pointer_key(channel))
     if body is None:
         return 0
     try:
@@ -181,7 +209,9 @@ def build_steps(
                 ],
             )
         )
-    steps.append(Step("sign manifest", modelsign_argv("sign", str(manifest)), renet_dir()))
+    if not args.promote:
+        # A promote keeps the edge signature it downloaded: signing the downloaded bytes here would put the model key under whatever the bucket held, and `modelsign pointer` verifies that signature against the key before it signs a pointer.
+        steps.append(Step("sign manifest", modelsign_argv("sign", str(manifest)), renet_dir()))
     pointer = [
         "pointer",
         "-channel",
@@ -213,13 +243,14 @@ def expand_upload(step: Step, work: pathlib.Path, endpoint: str) -> list[list[st
     if target.is_dir():
         files = sorted(p for p in target.rglob("*") if p.is_file())
     else:
-        files = [target, target.with_name(target.name + ".sig")]
+        # The signature first: the pointer is the last object to land, so a machine that reads it finds its signature already there.
+        files = [target.with_name(target.name + ".sig"), target]
     return [upload_argv(p, p.relative_to(work).as_posix(), step.cache, endpoint) for p in files]
 
 
-def fetch_promote_inputs(work: pathlib.Path, get: Fetcher) -> int:
+def fetch_promote_inputs(work: pathlib.Path, get: Fetcher, read: Fetcher) -> int:
     """Download the edge pointer's manifest and signature into `work`; return the manifest version."""
-    body = get(pointer_url("edge"))
+    body = read(pointer_key("edge"))
     if body is None:
         raise PublishError("there is no edge pointer at the origin to promote")
     try:
@@ -288,6 +319,7 @@ def run(
     *,
     runner: Runner = _run,
     get: Fetcher = fetch,
+    read_bucket: Fetcher | None = None,
 ) -> int:
     endpoint = args.endpoint or default_endpoint()
     renet = args.renet or str(paths.repo_root() / "bin" / "renet")
@@ -307,13 +339,16 @@ def run(
         return 0
     require_secrets(source)
     env = child_env(source)
+    read = read_bucket or bucket_reader(env, endpoint)
     with tempfile.TemporaryDirectory(prefix="publish-models-") as tmp:
         work = pathlib.Path(tmp)
         (work / "channels").mkdir()
         version = (
-            fetch_promote_inputs(work, get) if args.promote else (args.version or int(time.time()))
+            fetch_promote_inputs(work, get, read)
+            if args.promote
+            else (args.version or int(time.time()))
         )
-        seq = args.seq or current_seq(args.channel, get) + 1
+        seq = args.seq or current_seq(args.channel, read) + 1
         # Upload steps list the files the earlier steps wrote, so each expands only when it is reached.
         for step in build_steps(args, work, seq, version, renet):
             commands = [step.argv] if step.argv else expand_upload(step, work, endpoint)

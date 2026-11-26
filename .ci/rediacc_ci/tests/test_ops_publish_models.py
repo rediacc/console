@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import subprocess
 
 import pytest
 
@@ -54,6 +55,17 @@ def fetcher(files: dict[str, bytes]):
     return get
 
 
+BUCKET: dict[str, bytes] = {}
+REAL_READER = pm.bucket_reader
+
+
+@pytest.fixture(autouse=True)
+def _bucket(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The bucket reader serves `BUCKET`, never a real `aws`."""
+    BUCKET.clear()
+    monkeypatch.setattr(pm, "bucket_reader", lambda _env, _endpoint: BUCKET.get)
+
+
 def args(*extra: str):
     return pm.parse_args(["--renet", "/bin/renet", *extra])
 
@@ -77,8 +89,8 @@ def test_publish_orders_objects_manifest_then_pointer() -> None:
         "objects/ab12",
         "manifests/7.json",
         "manifests/7.json.sig",
-        "channels/edge.json",
         "channels/edge.json.sig",
+        "channels/edge.json",
     ]
     assert runner.calls[0][1:3] == ["models", "pack"]
 
@@ -98,8 +110,8 @@ def test_headers_follow_the_bundle_format() -> None:
 
 def test_sequence_is_one_above_the_origin_pointer() -> None:
     runner = FakeRunner()
-    get = fetcher({pm.pointer_url("edge"): json.dumps({"seq": 41}).encode()})
-    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=get)
+    BUCKET[pm.pointer_key("edge")] = json.dumps({"seq": 41}).encode()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
     pointer_call = next(c for c in runner.calls if "pointer" in c)
     assert pointer_call[pointer_call.index("-seq") + 1] == "42"
 
@@ -122,10 +134,10 @@ def test_missing_pointer_starts_at_one_and_explicit_seq_wins() -> None:
 
 def test_promote_signs_stable_from_the_edge_manifest_without_repacking() -> None:
     base = "%s/models" % pm.PUBLIC_DATA_ORIGIN
+    BUCKET[pm.pointer_key("edge")] = json.dumps({"seq": 5, "version": 12}).encode()
+    BUCKET[pm.pointer_key("stable")] = json.dumps({"seq": 2}).encode()
     get = fetcher(
         {
-            pm.pointer_url("edge"): json.dumps({"seq": 5, "version": 12}).encode(),
-            pm.pointer_url("stable"): json.dumps({"seq": 2}).encode(),
             base + "/manifests/12.json": b"{}",
             base + "/manifests/12.json.sig": b"s",
         }
@@ -138,7 +150,51 @@ def test_promote_signs_stable_from_the_edge_manifest_without_repacking() -> None
     assert pointer_call[pointer_call.index("-seq") + 1] == "3"
     assert pointer_call[pointer_call.index("-percent") + 1] == "100"
     keys = [c[4].split("/models/", 1)[1] for c in uploads(runner.calls)]
-    assert keys == ["channels/stable.json", "channels/stable.json.sig"]
+    assert keys == ["channels/stable.json.sig", "channels/stable.json"]
+
+
+def test_promote_never_signs_the_downloaded_manifest() -> None:
+    """5dc50111.2: a promote that re-signed the edge manifest would sign whatever the bucket held."""
+    base = "%s/models" % pm.PUBLIC_DATA_ORIGIN
+    BUCKET[pm.pointer_key("edge")] = json.dumps({"seq": 5, "version": 12}).encode()
+    get = fetcher({base + "/manifests/12.json": b"{}", base + "/manifests/12.json.sig": b"s"})
+    runner = FakeRunner()
+    pm.run(args("--channel", "stable", "--promote"), SECRETS, runner=runner, get=get)
+    assert not any(c[-2:-1] == ["sign"] for c in runner.calls)
+    assert any("pointer" in c for c in runner.calls)
+
+
+def test_publish_still_signs_its_own_manifest() -> None:
+    """Control for the promote test: a publish signs the manifest it packed."""
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
+    assert sum(1 for c in runner.calls if c[-2:-1] == ["sign"]) == 1
+
+
+def test_the_sequence_comes_from_the_bucket_not_the_cached_origin() -> None:
+    """5dc50111.3: the origin serves a pointer from a 60 second cache, so a stale seq repeats."""
+    BUCKET[pm.pointer_key("edge")] = json.dumps({"seq": 41}).encode()
+    stale = {"%s/models/channels/edge.json" % pm.PUBLIC_DATA_ORIGIN: b'{"seq": 3}'}
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher(stale))
+    pointer_call = next(c for c in runner.calls if "pointer" in c)
+    assert pointer_call[pointer_call.index("-seq") + 1] == "42"
+
+
+def test_the_bucket_reader_maps_a_missing_key_to_none_and_other_errors_to_a_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    outcomes = [
+        subprocess.CompletedProcess([], 0, b"{}", b""),
+        subprocess.CompletedProcess([], 1, b"", b"An error occurred (404) when calling HeadObject"),
+        subprocess.CompletedProcess([], 1, b"", b"AccessDenied"),
+    ]
+    monkeypatch.setattr(pm.awscli, "run", lambda *_a, **_k: outcomes.pop(0))
+    read = REAL_READER({}, "https://e")
+    assert read("models/x") == b"{}"
+    assert read("models/x") is None
+    with pytest.raises(pm.PublishError, match="AccessDenied"):
+        read("models/x")
 
 
 def test_promote_without_an_edge_pointer_is_refused() -> None:
