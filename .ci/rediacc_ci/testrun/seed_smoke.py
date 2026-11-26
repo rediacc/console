@@ -123,8 +123,8 @@ def terms_sql(d: dict[str, str]) -> str:
     )
 
 
-def wrangler_config(preview_name: str, db_name: str, db_uuid: str) -> str:
-    return f"""name = "{preview_name}"
+def wrangler_config(worker_name: str, db_name: str, db_uuid: str) -> str:
+    return f"""name = "{worker_name}"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 [[d1_databases]]

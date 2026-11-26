@@ -1051,3 +1051,49 @@ def test_half_a_caller_report_pair_is_ignored(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"])
     keys = sa.server_keys()
     assert keys["reportPriv"] != pair["edPriv"]
+
+
+def _report_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sa, "generate_keys", lambda: {"edPriv": "g", "edPub": "g"})
+    for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "REPORT-PRIV")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "REPORT-PUB")
+
+
+def test_a_matching_report_pair_is_taken(monkeypatch: pytest.MonkeyPatch) -> None:
+    """153d0c38.4: the report key's own value is what gets derived."""
+    _report_env(monkeypatch)
+    seen: list[str | None] = []
+
+    def derive(private: str | None = None, label: str = "signing") -> str:
+        del label
+        seen.append(private)
+        return "REPORT-PUB"
+
+    monkeypatch.setattr(sa, "derived_public_key", derive)
+    keys = sa.server_keys()
+    assert seen == ["REPORT-PRIV"]
+    assert (keys["reportPriv"], keys["reportPub"]) == ("REPORT-PRIV", "REPORT-PUB")
+
+
+def test_a_mismatched_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    _report_env(monkeypatch)
+
+    def derive(private: str | None = None, label: str = "signing") -> str:
+        del private, label
+        return "OTHER"
+
+    monkeypatch.setattr(sa, "derived_public_key", derive)
+    with pytest.raises(sa.LegError, match="REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC"):
+        sa.server_keys()
+
+
+def test_an_underivable_report_key_is_named_as_the_report_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """153d0c38.5: the error names the report key, not the signing key."""
+    _report_env(monkeypatch)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "not-a-key")
+    with pytest.raises(sa.LegError, match="report signing private key"):
+        sa.server_keys()

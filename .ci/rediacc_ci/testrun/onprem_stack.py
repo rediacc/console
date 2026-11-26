@@ -320,6 +320,15 @@ class Seeded:
     machine_secret: str
 
 
+def container_endpoint(endpoint: str) -> str:
+    """`endpoint` with a loopback host (127.0.0.1, localhost or [::1]) renamed to the name the account container reaches the host by; any other host is left alone."""
+    parts = urllib.parse.urlsplit(endpoint)
+    if parts.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        return endpoint
+    port = "" if parts.port is None else ":%d" % parts.port
+    return urllib.parse.urlunsplit(parts._replace(netloc="host.docker.internal" + port))
+
+
 class Stack:
     def __init__(self, layout: Layout, runtime: Runtime | None = None) -> None:
         self.layout = layout
@@ -348,7 +357,7 @@ class Stack:
         return any(self.state[key] for key in self.state)
 
     def record_group(self, name: str, pgid: int) -> None:
-        """Record a started group with its leader's start time. A leader already unreadable here (`start` None) has exited, so only its surviving members remain, and teardown signals the group without the recycled-id check: the id stays reserved while any member lives, and a recycled leader pid cannot be told apart without a start time to compare."""
+        """Record a started group with its leader's start time. A leader whose start time cannot be read here is recorded as `start` None (unreadable, not necessarily exited), and teardown then signals the group without the recycled-id check, because there is no start time to compare."""
         self.state["groups"].append(
             {"name": name, "pgid": pgid, "start": self.rt.group_start(pgid)}
         )
@@ -570,7 +579,7 @@ class Stack:
             if endpoint:
                 argv += [
                     "-e",
-                    "CONFIG_R2_ENDPOINT=" + endpoint.replace("127.0.0.1", "host.docker.internal"),
+                    "CONFIG_R2_ENDPOINT=" + container_endpoint(endpoint),
                 ]
             for name in passthrough:
                 argv += ["-e", name]
@@ -694,7 +703,14 @@ class Stack:
     def enroll(self, account_url: str, seeded: Seeded, machine: dict[str, str]) -> None:
         log.step("Enrolling the daemon's config...")
         # A config left by an earlier `up` makes `config init` refuse, so every start begins from an empty config home, as it begins from an empty account database.
-        shutil.rmtree(self.layout.daemon_home, ignore_errors=True)
+        try:
+            shutil.rmtree(self.layout.daemon_home)
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            raise StackError(
+                "cannot clear the old config home %s: %s" % (self.layout.daemon_home, exc)
+            ) from None
         env = self.cli_env(account_url, seeded.enroll)
         self.rdc(env, "config", "init", CONFIG_NAME)
         self.rdc(

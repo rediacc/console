@@ -237,3 +237,10 @@ def test_delta_missing_or_malformed_preview_name_is_refused(tmp_path: pathlib.Pa
         assert new.code == 1, value
         assert not new.calls, value
         assert "PREVIEW_NAME must be a preview Worker name" in new.err
+
+
+def test_wrangler_config_names_the_worker_it_is_given() -> None:
+    """e5bc9ef7.1: the parameter is `worker_name`, so it no longer shadows the `preview_name` module."""
+    text = seed_smoke.wrangler_config("rediacc-account-pr-7", "db", "uuid-1")
+    assert 'name = "rediacc-account-pr-7"' in text
+    assert "preview_name" not in seed_smoke.wrangler_config.__code__.co_varnames

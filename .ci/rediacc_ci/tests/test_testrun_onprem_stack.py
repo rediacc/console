@@ -506,3 +506,114 @@ def test_http_get_https_honours_insecure_tls(monkeypatch: pytest.MonkeyPatch) ->
     assert seen[0].verify_mode == ssl.CERT_NONE
     assert seen[0].check_hostname is False
     assert seen[1].verify_mode == ssl.CERT_REQUIRED
+
+
+def _image_run_argv(layout: mod.Layout) -> list[str]:
+    rt = FakeRuntime()
+    assert mod.main(["up"], runtime=rt, root=layout.root) == 0
+    return next(a for a, _ in rt.runs if a[:2] == ["docker", "run"] and mod.IMAGE in a)
+
+
+def test_image_run_publishes_the_loopback_port_and_names_the_host_gateway(
+    tmp_path: pathlib.Path,
+) -> None:
+    """5f43b688.2: the published port and host-gateway alias replaced host networking, and a regression to the host-network argv must fail."""
+    argv = _image_run_argv(mod.Layout(tmp_path))
+    port = mod.Options().account_port
+    assert argv[argv.index("-p") + 1] == "127.0.0.1:%d:%d" % (port, port)
+    assert argv[argv.index("--add-host") + 1] == "host.docker.internal:host-gateway"
+    assert "--network" not in argv
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "expected"),
+    [
+        ("http://127.0.0.1:9000", "http://host.docker.internal:9000"),
+        ("http://localhost:9000", "http://host.docker.internal:9000"),
+        ("http://localhost", "http://host.docker.internal"),
+        ("http://[::1]:9000/bucket", "http://host.docker.internal:9000/bucket"),
+        ("https://r2.example.com:443", "https://r2.example.com:443"),
+        ("http://localhost.example.com:9000", "http://localhost.example.com:9000"),
+    ],
+)
+def test_container_endpoint_renames_only_loopback_hosts(endpoint: str, expected: str) -> None:
+    """5f43b688.1: `localhost` is a loopback host too; a hostname that merely starts with it is not."""
+    assert mod.container_endpoint(endpoint) == expected
+
+
+def test_a_localhost_endpoint_reaches_the_container_as_the_host_name(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CONFIG_R2_ENDPOINT", "http://localhost:9000")
+    argv = _image_run_argv(mod.Layout(tmp_path))
+    assert "CONFIG_R2_ENDPOINT=http://host.docker.internal:9000" in argv
+
+
+class _NoOpRuntime(mod.Runtime):
+    def __init__(self) -> None:
+        self.runs: list[list[str]] = []
+
+    def run(
+        self,
+        argv: list[str],
+        env: dict[str, str] | None = None,
+        cwd: pathlib.Path | None = None,
+        timeout: int = 600,
+    ) -> subprocess.CompletedProcess:
+        del env, cwd, timeout
+        self.runs.append(list(argv))
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+
+def _seeded() -> mod.Seeded:
+    return mod.Seeded("e", "n", "o", "ms-1", "secret")
+
+
+def _machine() -> dict[str, str]:
+    return {
+        "ONPREM_MACHINE_IP": "127.0.0.1",
+        "ONPREM_MACHINE_PORT": "2222",
+        "ONPREM_MACHINE_USER": "root",
+    }
+
+
+def test_enroll_sets_the_ssh_key_after_a_fresh_config_init(tmp_path: pathlib.Path) -> None:
+    """5f43b688.2: the dropped-key regression and the stale config home are both visible in the argv and the tree."""
+    layout = mod.Layout(tmp_path)
+    layout.daemon_home.mkdir(parents=True)
+    (layout.daemon_home / "stale.json").write_text("{}", encoding="utf-8")
+    rt = _NoOpRuntime()
+    machine = {
+        "ONPREM_MACHINE_IP": "127.0.0.1",
+        "ONPREM_MACHINE_PORT": "2222",
+        "ONPREM_MACHINE_USER": "root",
+        "ONPREM_MACHINE_KEY": "/k/id",
+    }
+    mod.Stack(layout, rt).enroll("http://127.0.0.1:1", _seeded(), machine)
+    assert not (layout.daemon_home / "stale.json").exists()
+    ssh = [a for a in rt.runs if "ssh" in a and "set" in a]
+    assert len(ssh) == 1
+    assert ssh[0][ssh[0].index("--key") + 1] == "/k/id"
+
+
+def test_enroll_refuses_a_config_home_it_cannot_clear(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """5f43b688.3: a failed removal is named, not swallowed, so a stale config cannot reach `config init`."""
+    layout = mod.Layout(tmp_path)
+    layout.daemon_home.mkdir(parents=True)
+
+    def denied(_path: object) -> None:
+        raise PermissionError("denied")
+
+    monkeypatch.setattr(mod.shutil, "rmtree", denied)
+    rt = _NoOpRuntime()
+    with pytest.raises(mod.StackError, match="cannot clear the old config home"):
+        mod.Stack(layout, rt).enroll("http://127.0.0.1:1", _seeded(), {})
+    assert rt.runs == []
+
+
+def test_a_missing_config_home_is_fine(tmp_path: pathlib.Path) -> None:
+    rt = _NoOpRuntime()
+    mod.Stack(mod.Layout(tmp_path), rt).enroll("http://127.0.0.1:1", _seeded(), _machine())
+    assert rt.runs
