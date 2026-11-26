@@ -22,7 +22,7 @@ Body-Sig: ae5e6bfaccf04e40
 Anchor: in-diff
 Claim: The evaluate docstring still says every read failure 'degrades to silence', but when all of a PR's plans fail to parse this commit now returns ADVISORY with the unparsed text, not SILENT, so the stated behaviour is wrong.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed c4b38c552f2fc619619240ab6195e4d002cee125 | d778be9d 2026-11-26T18:48:11Z
 
 ### cbafdaaf.2 [low] .claude/rediacc_hooks/tests/test_wl_silent_a.py:170
 Anchor: in-diff

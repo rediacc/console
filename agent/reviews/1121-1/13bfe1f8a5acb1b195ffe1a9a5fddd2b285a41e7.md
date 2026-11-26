@@ -22,10 +22,10 @@ Body-Sig: 112d000ca3ab48dc
 Anchor: in-diff
 Claim: The control test says exactly the floor plus two leases is enough, but fake_free rounds free bytes up to 4096-byte blocks, and 2 * LEASE_ESTIMATE_BYTES is not a multiple of 4096, so the value tested is slightly above the boundary and a `<` to `<=` change at the gate would still pass both tests.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed ef59d037b01b9fe7d72f1d5f677ecdbe6da9ebf6 | d778be9d 2026-11-26T18:45:53Z
 
 ### 13bfe1f8.2 [low] .ci/rediacc_ci/dev/worktree_lease.py:46
 Anchor: in-diff
 Claim: FREE_FLOOR_BYTES is 10 * GIB (2^30 bytes) while LEASE_ESTIMATE_BYTES is decimal 4.4e9, and the refusal message prints both as 'GB', so the stated floor is about 0.74 GB more than a reader of 'GB' expects.
 Class: other
-Resolution: open
+Resolution: fixed ef59d037b01b9fe7d72f1d5f677ecdbe6da9ebf6 | d778be9d 2026-11-26T18:45:53Z

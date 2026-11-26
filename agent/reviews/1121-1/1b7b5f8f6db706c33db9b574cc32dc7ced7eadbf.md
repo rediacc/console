@@ -22,4 +22,4 @@ Body-Sig: 9691a3397651a840
 Anchor: in-diff
 Claim: The diff changes model_public_key from "" to "svx7r1RfnJOcJjRxdrJu5eDfX6jZE5PnaasSHjZUuBw=", but the commit message describes only a rebuild for renet input hashes, so the change to the pinned verification key is undisclosed and no added test is shown that checks it.
 Class: other
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/quality/detect_wasm.py:290 the gate rebuilds with the manifest model_public_key and compares; control at :390 fails on a differing key | d778be9d 2026-11-26T18:57:06Z

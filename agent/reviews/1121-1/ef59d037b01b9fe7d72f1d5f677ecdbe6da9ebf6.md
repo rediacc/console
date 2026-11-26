@@ -22,16 +22,16 @@ Body-Sig: a8d0c077910414bf
 Anchor: in-diff
 Claim: The landed-count mismatch is recorded with run.step but its return value is ignored, so _land_sub still calls _land_gitlink and bumps the console submodule pointer to the partial landed tip in the same run.
 Class: other
-Resolution: open
+Resolution: fixed f17af425d2ebbe6f1f46a962c22c1ce0dbeb939f | d778be9d 2026-11-26T18:48:21Z
 
 ### ef59d037.2 [medium] .ci/rediacc_ci/drills/vm_check.py:4320
 Anchor: in-diff
 Claim: When _publish_pinned fails, _unfiled downgrades status to NOT_VERIFIED, but the receipt already written to the clone by receipt_mod.write(self.root, ...) still records VERIFIED and is never rewritten, so the on-disk receipt contradicts the run's exit code.
 Class: other
-Resolution: open
+Resolution: fixed f17af425d2ebbe6f1f46a962c22c1ce0dbeb939f | d778be9d 2026-11-26T18:48:21Z
 
 ### ef59d037.3 [medium] .ci/rediacc_ci/drills/vm_check.py:4413
 Anchor: in-diff
 Claim: In the --only merge path the merged receipt is written with the pre-downgrade VERIFIED status before _publish_pinned is checked; a failed filing then only changes the in-memory status and the receipt on disk still reads VERIFIED.
 Class: other
-Resolution: open
+Resolution: fixed f17af425d2ebbe6f1f46a962c22c1ce0dbeb939f | d778be9d 2026-11-26T18:48:21Z

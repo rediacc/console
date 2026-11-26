@@ -22,4 +22,4 @@ Body-Sig: 962b64dc12e50689
 Anchor: in-diff
 Claim: The header says check 7 fails when SUPERSEDED_ARCHIVES is not 'the frozen set of the three archives', but supersededRecordFindings only enforces a count of at most 3 and a pre-CHECK7_SINCE date, so replacing one exempted archive with a different pre-2026-11-26 archive produces no finding.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 3d8d8e0fb9333b3c8d14ee3be0b16c3dabdfc085 | d778be9d 2026-11-26T18:47:55Z

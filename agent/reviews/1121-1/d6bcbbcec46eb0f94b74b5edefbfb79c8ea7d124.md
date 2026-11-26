@@ -22,13 +22,13 @@ Body-Sig: e86af6371ad38b38
 Anchor: in-diff
 Claim: The gate.ok line runs for every driver after the broken-check, so a driver whose problems() were just reported via log_fail at line 415 also gets a success line saying its subjects declare a timeout. The ok is unconditional in the original too, but this commit rewrites that line.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 39f2a137f4c26d3b9970e251ba57603a377bdae5 | d778be9d 2026-11-26T18:48:13Z
 
 ### d6bcbbce.2 [low] .ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py:38
 Anchor: in-diff
 Claim: The comment says the real scan lists 'well over a thousand test and hook modules', but the commit never measures the scanned subset: its probe counted 2,184 .py across the whole tree, and the 200 floor is set without the scanned count.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 39f2a137f4c26d3b9970e251ba57603a377bdae5 | d778be9d 2026-11-26T18:48:14Z
 
 ### d6bcbbce.3 [low] .ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py:390
 Anchor: in-diff
