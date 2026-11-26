@@ -17,7 +17,7 @@ docker users never type `--datastore`.
 5. Gating carries over by verb class (grandGuard on mutating repo verbs; cluster family
 behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blocked).
 
-## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
+## 1. The tree — AS BUILT (shape verified against the live CLI, 2026-07-13; counts re-pinned by plane-coverage.test.ts)
 
 This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **239 contract commands** (125 machine-plane, 58 config-plane, 56 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
 
@@ -62,7 +62,7 @@ rdc doctor | credits | update | version | legal | completion | serve | mcp serve
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-eight differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|

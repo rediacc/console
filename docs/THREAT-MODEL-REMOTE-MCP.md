@@ -22,7 +22,7 @@ Scope: the hosted MCP endpoint (`mcp.<region>`), the agent grant behind each URL
 
 ## Threats and mitigations
 
-### Leaked bearer URL or header
+### Leaked bearer
 
 An attacker holding a bearer acts as the grant's user on the grant's one config until the grant ends.
 
