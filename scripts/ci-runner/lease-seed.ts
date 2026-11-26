@@ -120,16 +120,28 @@ export function seedTypecheckCache(
   const prefixLive = path.relative(from, live).split(path.sep).join('/');
   const prefixLease = path.relative(to, lease).split(path.sep).join('/');
   let copied = 0;
-  for (const name of fs.readdirSync(from)) {
-    if (!name.endsWith('.tsbuildinfo')) continue;
-    const text = fs.readFileSync(path.join(from, name), 'utf8');
-    // tree-write: safe a directory under the home directory, the lease's own typecheck cache, never the main checkout's
-    fs.mkdirSync(to, { recursive: true });
-    // tree-write: safe a file in the lease's own typecheck cache under the home directory
-    fs.writeFileSync(path.join(to, name), text.split(`"${prefixLive}/`).join(`"${prefixLease}/`));
-    copied++;
+  let skipped = 0;
+  // A cache that cannot be read only costs a cold typecheck, so no failure here may fail the lease seed (review 91209a47.1).
+  let names: string[];
+  try {
+    names = fs.readdirSync(from);
+  } catch (err) {
+    return `typecheck cache: ${from} cannot be listed (${(err as Error).message}), the first typecheck is cold`;
   }
-  return `typecheck cache: ${copied} tsbuildinfo file(s) seeded from the main checkout`;
+  for (const name of names) {
+    if (!name.endsWith('.tsbuildinfo')) continue;
+    try {
+      const text = fs.readFileSync(path.join(from, name), 'utf8');
+      // tree-write: safe a directory under the home directory, the lease's own typecheck cache, never the main checkout's
+      fs.mkdirSync(to, { recursive: true });
+      // tree-write: safe a file in the lease's own typecheck cache under the home directory
+      fs.writeFileSync(path.join(to, name), text.split(`"${prefixLive}/`).join(`"${prefixLease}/`));
+      copied++;
+    } catch {
+      skipped++;
+    }
+  }
+  return `typecheck cache: ${copied} tsbuildinfo file(s) seeded from the main checkout${skipped === 0 ? '' : `, ${skipped} unreadable and left cold`}`;
 }
 
 /** Public keys only (the account Ed25519 and X25519 public halves: the cache's version header comment and `ACCOUNT_*_PUBLIC_KEY=` lines are kept, any other line, a comment included, is dropped, so the copy holds nothing secret whatever the source file grows), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */

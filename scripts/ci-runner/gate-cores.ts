@@ -14,6 +14,9 @@ import type { RunnerLease } from './lease-client';
 /** How often a waiting take re-reads the lease, ms. */
 export const GATE_CORES_POLL_MS = 1000;
 
+/** How long one take waits for a token before it refuses, ms: a broker that keeps every token held would otherwise stall the launcher with no end and no verdict (review 2cefaa4d.3). */
+export const GATE_CORES_MAX_WAIT_MS = 60 * 60 * 1000;
+
 export interface GateGrant {
   readonly cores: number;
   readonly env: NodeJS.ProcessEnv;
@@ -33,6 +36,8 @@ export class GateCores {
     private readonly opts: {
       cpus?: number;
       pollMs?: number;
+      /** Longest one take waits, ms; defaults to GATE_CORES_MAX_WAIT_MS. */
+      maxWaitMs?: number;
       warn?: (text: string) => void;
       env?: NodeJS.ProcessEnv;
     } = {}
@@ -64,6 +69,7 @@ export class GateCores {
   /** Wait for at least one token, take up to the per-gate grant, and return it with the gate's environment. */
   async take(label: string): Promise<GateGrant> {
     let blocked = false;
+    const deadline = Date.now() + (this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS);
     for (;;) {
       const got = await this.serial(async () => {
         const view = await this.lease.available(this.inUse);
@@ -91,6 +97,10 @@ export class GateCores {
         );
       }
       blocked = true;
+      if (Date.now() >= deadline)
+        throw new Error(
+          `gate-cores: ${label} waited ${Math.round((this.opts.maxWaitMs ?? GATE_CORES_MAX_WAIT_MS) / 1000)}s for a core token and none came free: all ${got.total} are held by ${got.runs ?? '?'} live run(s) (who: python3 .ci/rediacc_ci/core_lease.py status)`
+        );
       await new Promise((r) => setTimeout(r, this.opts.pollMs ?? GATE_CORES_POLL_MS));
     }
   }
@@ -165,6 +175,18 @@ export async function gateCoresSelftest(): Promise<string[]> {
   await gc.give(c);
   if (lease.tokens !== 0)
     failures.push(`every give must return its tokens, ${lease.tokens} still held`);
+
+  // The wait has a deadline: a pool that never frees ends in an error naming the holders, not a hang (review 2cefaa4d.3).
+  const stuck = new GateCores(fake(2), 1, { pollMs: 5, maxWaitMs: 60, warn: () => {}, env: {} });
+  await stuck.take('hold');
+  const refusal = await stuck.take('starved').then(
+    () => '',
+    (e: Error) => e.message
+  );
+  if (!/starved waited 0s for a core token/.test(refusal) || !/held by 1 live run/.test(refusal))
+    failures.push(
+      `a take past its deadline must refuse naming the holders, got ${JSON.stringify(refusal)}`
+    );
 
   // CONTROL: no lease (Infinity) never waits and still names every gate's width.
   const none = new GateCores(

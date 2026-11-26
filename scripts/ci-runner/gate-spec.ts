@@ -606,14 +606,6 @@ export function derivedRun(repoPath: string, selftest = false): string {
 }
 
 /**
- * Capabilities a gate needs, inferred from its own source, so an author who forgets to
- * declare one is told rather than finding out from a job that lacks it.
- *
- * `--recurse-submodules` is here because it is the exact shape that shipped twice: a
- * gate enumerating with it, placed in a lane with no submodules, silently loses the
- * files it exists to judge.
- */
-/**
  * Strip PROSE: `#` and `//` line comments, `/* *\/` blocks, and Python docstrings.
  *
  * A comment is not code, and this helper read it as code. check_allowlist_key_matching.py
@@ -634,6 +626,16 @@ function stripProse(source: string): string {
     .replace(/(^|\s)#.*$/gm, '$1');
 }
 
+/**
+ * Capabilities a gate needs, inferred from its own source, so an author who forgets to
+ * declare one is told rather than finding out from a job that lacks it.
+ *
+ * `--recurse-submodules` is here because it is the exact shape that shipped twice: a
+ * gate enumerating with it, placed in a lane with no submodules, silently loses the
+ * files it exists to judge.
+ *
+ * Returns each inferred need once (`submodules`, `python-yaml`, `node`, `go`), sorted in descending code-unit order.
+ */
 export function inferredNeeds(rawSource: string): string[] {
   const source = stripProse(rawSource);
   const out = new Set<string>();

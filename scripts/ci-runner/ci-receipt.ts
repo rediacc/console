@@ -93,6 +93,8 @@ export type StepOutcome = 'success' | 'skipped' | 'failure' | 'unknown';
 interface WorkflowStep {
   name: string | null;
   cond: string | null;
+  /** True when the step declares `continue-on-error` as anything but a literal `false`: its recorded conclusion is `success` even when it failed, so the record cannot vouch for it. */
+  tolerant: boolean;
 }
 
 /** One step as the jobs API records it while the job runs. */
@@ -166,13 +168,18 @@ export function jobSteps(workflow: string, job: string): WorkflowStep[] | null {
     const dash = /^ {6}- (.*)$/.exec(line);
     let body: string | null = null;
     if (dash) {
-      cur = { name: null, cond: null };
+      cur = { name: null, cond: null, tolerant: false };
       steps.push(cur);
       body = dash[1];
     } else if (cur && /^ {8}\S/.test(line)) {
       body = line.slice(8);
     }
     if (cur === null || body === null) continue;
+    const coe = /^continue-on-error:\s*(.*)$/.exec(body);
+    if (coe) {
+      cur.tolerant = unquote(coe[1].replace(/\s+#.*$/, '')) !== 'false';
+      continue;
+    }
     const kv = /^(name|if):\s*(.*)$/.exec(body);
     if (!kv) continue;
     const value = /^[|>][-+]?\s*$/.test(kv[2]) ? '<block>' : unquote(kv[2]);
@@ -283,7 +290,11 @@ export function laneOutcomes(
   for (const s of steps.slice(0, at[0])) {
     if (s.name === null) continue;
     const r = recorded.get(s.name) ?? [];
-    outcomes.set(s.name, seen.has(s.name) || r.length !== 1 ? 'unknown' : recordedOutcome(r[0]));
+    // A tolerant step records `success` whether or not it failed, so it is never read as a pass.
+    outcomes.set(
+      s.name,
+      seen.has(s.name) || r.length !== 1 || s.tolerant ? 'unknown' : recordedOutcome(r[0])
+    );
     seen.add(s.name);
   }
   return { outcomes };
@@ -918,6 +929,31 @@ function coreCases(): { failures: string[]; count: number } {
     'a step the job record does not name reads unknown, never passed'
   );
   check(!oc.has('After gate'), 'a step after the receipt step has not run and is not read');
+  // Review 68d8179a.1: a continue-on-error step records success even when it failed.
+  const tolerantWf = wf.replace(
+    '        run: npm run check:a',
+    '        continue-on-error: true\n        run: npm run check:a'
+  );
+  const tolerantSteps = jobSteps(tolerantWf, 'lane') ?? [];
+  const tolerantLo = laneOutcomes(tolerantSteps, runRecord);
+  check(
+    'outcomes' in tolerantLo &&
+      tolerantLo.outcomes.get('Plain gate') === 'unknown' &&
+      tolerantLo.outcomes.get('Bare gate') === 'success',
+    'a continue-on-error step reads unknown even when its record says success, and its neighbours are unaffected (review 68d8179a.1)'
+  );
+  const coeFalse = jobSteps(
+    wf.replace(
+      '        run: npm run check:a',
+      '        continue-on-error: false\n        run: npm run check:a'
+    ),
+    'lane'
+  );
+  const coeFalseLo = laneOutcomes(coeFalse ?? [], runRecord);
+  check(
+    'outcomes' in coeFalseLo && coeFalseLo.outcomes.get('Plain gate') === 'success',
+    'CONTROL: continue-on-error: false is the default and reads as a pass'
+  );
   const judged = (...extra: JobRunStep[]): Map<string, StepOutcome> => {
     const r = steps ? laneOutcomes(steps, record(...extra)) : { error: 'no steps' };
     return 'outcomes' in r ? r.outcomes : new Map<string, StepOutcome>();

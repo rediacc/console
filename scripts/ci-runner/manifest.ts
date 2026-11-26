@@ -2670,7 +2670,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // check:types's project set through tsc's incremental caches, so the quick lane reads the test tsconfigs (a TS2322 in a CLI test file reached CI on 2026-10-01 because check:types is slow). Measured 2026-10-01 on 24 cores: cold 28.6 s, warm 8.6-8.9 s, about 90 CPU-s warm.
+    // check:types's project set through tsc's incremental caches, so a run that includes slow gates (a full `npm run ci`, or a change that touches it) reads the test tsconfigs warm; the pre-push lane skips it since it went slow (a TS2322 in a CLI test file reached CI on 2026-10-01 because check:types is slow). Measured 2026-10-01 on 24 cores: cold 28.6 s, warm 8.6-8.9 s, about 90 CPU-s warm.
     id: 'check:types:incremental',
     run: 'npm run check:types:incremental',
     // Slow (2026-11-24): the recorded runs on this host took 20.5-106 s while writers shared the machine; a quiet warm run takes 12 s, so it leaves the pre-push lane.
@@ -3913,7 +3913,7 @@ export const GATES: readonly GateSpec[] = [
     // The leaf must be inside the paths, or editing the runner does not select the gate that checks the runner (check:ci-gate-manifest asserts this). gate-costs.json: the selftest holds every declared `heavy` to the measured peak RSS there (lanes.ts measuredHeavyFindings, PLAN-ciquick-cpu W14).
     paths: ['scripts/ci-runner/**', '.ci/config/gate-costs.json'],
     pathsOrigin: 'declared',
-    leaves: ['scripts/ci-runner/run.ts'],
+    leaves: ['scripts/ci-runner/__tests__/verify-changed.test.ts', 'scripts/ci-runner/run.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

@@ -106,7 +106,7 @@ import {
 } from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
-import { seedReceipt, seedTypecheckCache } from './lease-seed';
+import { publicKeyLines, seedPublicKeys, seedReceipt, seedTypecheckCache } from './lease-seed';
 import {
   cappedChanged,
   type GateLedger,
@@ -1450,7 +1450,7 @@ function readProcGroups():
 }
 
 /**
- * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group, plus every descendant of the leader that left the group (a tool that calls setsid or setpgid keeps its parent chain, review c428c052.1). The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
+ * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group, plus every descendant of the leader that left the group while its parent chain is still alive (a tool that calls setsid or setpgid keeps that chain, review c428c052.1). A worker whose intermediate parent has exited is reparented to init or a subreaper, the chain walk stops at pid 1, and that worker is not counted: its gate's cores can be released while it still runs, a limit of this reader (review 2b62b14e.1). The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
  */
 function startBusySampler(elasticIds: ReadonlySet<string>): {
   stop: () => void;
@@ -1475,7 +1475,7 @@ function startBusySampler(elasticIds: ReadonlySet<string>): {
     const t = Date.now();
     const rise = new Map<number, number>();
     const leaders = new Set(live.map((g) => g.pgid));
-    // The gate a process belongs to: its own group when a gate leads it, else the first gate leader on its parent chain (bounded, so a cycle in a racy read ends).
+    // The gate a process belongs to: its own group when a gate leads it, else the first gate leader on its parent chain. The 64-hop bound only ends a walk over a racy read, it does not make the owner right: a cycle that runs out the bound reports no owner (review 2b62b14e.3).
     const ownerOf = (pid: number): number | undefined => {
       const grp = snap.group.get(pid);
       if (grp !== undefined && leaders.has(grp)) return grp;
@@ -2073,10 +2073,20 @@ async function coreReleaseSelftest(): Promise<string[]> {
  */
 async function busySamplerSelftest(): Promise<string[]> {
   if (process.platform !== 'linux') {
-    process.stderr.write(
-      `ci-runner: busy-sampler probe not run on ${process.platform} (/proc only)\n`
-    );
-    return [];
+    // Without /proc the reader must cover no window, so nothing is ever released: assert that, rather than pass on a skipped probe (review c428c052.3).
+    const only = 'selftest:busy-nolinux';
+    const probe = startBusySampler(new Set([only]));
+    const gate = execGate(syntheticSpec(only, 'sleep 1.6'), { cwd: REPO_ROOT, mergeOutput: false });
+    await new Promise((r) => setTimeout(r, 1_400));
+    const at = Date.now();
+    const window = probe.busyCores(only, at - 1_000, at);
+    await gate;
+    probe.stop();
+    return window === undefined
+      ? []
+      : [
+          `busy sampler: on ${process.platform} (no /proc) the reader must cover no window, so no core is released, read ${window}`,
+        ];
   }
   const BUSY = 'selftest:busy-two';
   const IDLE = 'selftest:busy-idle';
@@ -2129,7 +2139,11 @@ async function busySamplerSelftest(): Promise<string[]> {
   // Review c428c052.1: workers that called setsid still count for their gate, or their cores would read idle and be released while they run.
   const detachedAvg = (detachedRun.cpuMs ?? 0) / Math.max(1, detachedRun.ms);
   const detachedRead = detached === undefined ? undefined : detached / 1_000;
-  if (detachedAvg >= 0.05 && (detachedRead === undefined || detachedRead < detachedAvg * 0.5))
+  if (detachedAvg < 0.05)
+    failures.push(
+      `busy sampler: the setsid probe's two yes workers averaged ${detachedAvg.toFixed(2)} cores by times, so it measured nothing (setsid missing, or a machine too loaded to run the probe)`
+    );
+  else if (detachedRead === undefined || detachedRead < detachedAvg * 0.5)
     failures.push(
       `busy sampler: a gate whose two yes workers called setsid must read near its own times average of ${detachedAvg.toFixed(2)} cores, read ${detachedRead === undefined ? 'no window' : detachedRead.toFixed(2)}`
     );
@@ -2321,6 +2335,25 @@ function laneCostSelftest(): string[] {
       );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // A malformed baseline throws and an absent one reads empty (review 36622f0d.2): a silent {} would drop every measured price.
+  const costsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-costs-'));
+  try {
+    if (Object.keys(readBaselineCosts(costsDir)).length !== 0)
+      failures.push('an absent gate-costs.json must read as an empty baseline');
+    fs.mkdirSync(path.join(costsDir, '.ci', 'config'), { recursive: true });
+    fs.writeFileSync(path.join(costsDir, '.ci', 'config', 'gate-costs.json'), '{ not json');
+    let threw = false;
+    try {
+      readBaselineCosts(costsDir);
+    } catch (err) {
+      threw = /not valid JSON/.test((err as Error).message);
+    }
+    if (!threw)
+      failures.push('a malformed gate-costs.json must throw, not read as an empty baseline');
+  } finally {
+    fs.rmSync(costsDir, { recursive: true, force: true });
   }
 
   // THE REAL TREE: gate-costs.json is read (an empty baseline would make the check below vacuous), and no declared `heavy` disagrees with a measurement.
@@ -2820,6 +2853,27 @@ async function selftest(): Promise<number> {
       'a lease anchors on merge-base(HEAD, live branch tip)'
     );
     {
+      // The lease branch of narrowPlan's receipt choice never reads the copied main receipt (review be935e63.2).
+      let reads = 0;
+      const viaLease = narrowReceipt('BASE', () => {
+        reads++;
+        return '{"head":"MAIN","failed":["x"]}';
+      });
+      require_(
+        reads === 0 && viaLease?.head === 'BASE' && viaLease.failed?.length === 0,
+        'in a lease narrowPlan must take the anchor receipt and never read the main receipt'
+      );
+      const viaMain = narrowReceipt(undefined, () => '{"head":"MAIN","failed":["x"]}');
+      require_(
+        viaMain?.head === 'MAIN' && viaMain.failed?.[0] === 'x',
+        'CONTROL: outside a lease the receipt is read'
+      );
+      require_(
+        narrowReceipt(undefined, () => '{ nope') === undefined,
+        'CONTROL: an unreadable receipt outside a lease gives undefined, so --narrow names the missing receipt'
+      );
+    }
+    {
       const r = leaseReceipt('BASE');
       require_(
         r.head === 'BASE' && r.failed?.length === 0 && Object.keys(r.findings ?? {}).length === 0,
@@ -2839,6 +2893,48 @@ async function selftest(): Promise<number> {
       fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'one');
       require_(selftestKey(dir) === k1, 'CONTROL: restoring the source restores the key');
       fs.rmSync(dir, { recursive: true, force: true });
+    }
+    {
+      // selftestCached (review be935e63.3): skip only in a lease, record only a pass, and let the override re-run.
+      const passDir = fs.mkdtempSync(path.join(os.tmpdir(), 'selftest-pass-'));
+      try {
+        let ran = 0;
+        const drive = (inLease: boolean, force: boolean, rc: number): Promise<number> =>
+          selftestCached({
+            inLease,
+            force,
+            passDir,
+            key: () => 'K',
+            run: async () => {
+              ran++;
+              return rc;
+            },
+          });
+        await drive(false, false, 0);
+        require_(
+          ran === 1 && !fs.existsSync(path.join(passDir, 'K')),
+          'outside a lease the selftest always runs and records no pass'
+        );
+        await drive(true, false, 1);
+        require_(
+          ran === 2 && !fs.existsSync(path.join(passDir, 'K')),
+          'a failing selftest in a lease records no pass marker'
+        );
+        await drive(true, false, 0);
+        require_(
+          ran === 3 && fs.existsSync(path.join(passDir, 'K')),
+          'a passing selftest in a lease records the marker'
+        );
+        const skipped = await drive(true, false, 1);
+        require_(
+          ran === 3 && skipped === 0,
+          'a lease with a marker for this key skips the run and reports 0'
+        );
+        await drive(true, true, 0);
+        require_(ran === 4, 'CI_RUNNER_SELFTEST_FORCE re-runs despite the marker');
+      } finally {
+        fs.rmSync(passDir, { recursive: true, force: true });
+      }
     }
     require_(
       leaseAnchor('/m', () => undefined) === undefined,
@@ -2930,6 +3026,11 @@ async function selftest(): Promise<number> {
       const src = cacheDirFor(live, dir);
       // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
       fs.mkdirSync(src, { recursive: true });
+      // The `tree-write: safe` pragmas below lean on this: the cache root is the mkdtemp dir, so nothing lands in the tree (review b8289f14.2).
+      require_(
+        path.relative(dir, src) !== '' && !path.relative(dir, src).startsWith('..'),
+        'the lease typecheck-cache control must write under its own temp directory, never the tree'
+      );
       const prefixLive = path.relative(src, live).split(path.sep).join('/');
       const prefixLease = path.relative(cacheDirFor(lease, dir), lease).split(path.sep).join('/');
       const body = `{"packageJsons":["${prefixLive}/node_modules/a/package.json"]}`;
@@ -2950,6 +3051,76 @@ async function selftest(): Promise<number> {
       require_(
         fs.readFileSync(path.join(src, 'p.tsbuildinfo'), 'utf8') === body,
         "the seed must never write into the main checkout's cache"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // A tsbuildinfo that cannot be read costs a cold typecheck, never the lease seed (review 91209a47.1).
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-tsbad-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'trees', 'lease');
+    try {
+      fs.mkdirSync(live, { recursive: true });
+      fs.mkdirSync(lease, { recursive: true });
+      const src = cacheDirFor(live, dir);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.mkdirSync(path.join(src, 'bad.tsbuildinfo'), { recursive: true });
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.writeFileSync(path.join(src, 'good.tsbuildinfo'), '{}');
+      let note = '';
+      let threw = false;
+      try {
+        note = seedTypecheckCache(lease, live, dir);
+      } catch {
+        threw = true;
+      }
+      require_(
+        !threw &&
+          note.includes('1 tsbuildinfo') &&
+          note.includes('1 unreadable') &&
+          fs.existsSync(path.join(cacheDirFor(lease, dir), 'good.tsbuildinfo')),
+        `an unreadable tsbuildinfo must be skipped while a readable one still seeds, got ${threw ? 'a throw' : note}`
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // seedPublicKeys: copies only the public lines, and each skip branch says why (review 4de21416.1).
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-keys-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'lease');
+    const keyRel = 'private/account/.cache/public-keys.env';
+    try {
+      fs.mkdirSync(path.join(lease, 'private', 'account'), { recursive: true });
+      require_(
+        seedPublicKeys(lease, live).includes('none in the main checkout') &&
+          !fs.existsSync(path.join(lease, keyRel)),
+        'CONTROL: a main checkout with no public-key cache seeds none'
+      );
+      fs.mkdirSync(path.dirname(path.join(live, keyRel)), { recursive: true });
+      const text =
+        '# rediacc public-key cache v1\nACCOUNT_ED25519_PUBLIC_KEY=abc\n# secret note\nACCOUNT_PRIVATE_KEY_X=zzz\nOTHER=1\n';
+      fs.writeFileSync(path.join(live, keyRel), text);
+      require_(
+        publicKeyLines(text).join('|') ===
+          '# rediacc public-key cache v1|ACCOUNT_ED25519_PUBLIC_KEY=abc',
+        'only the version header and ACCOUNT_*_PUBLIC_KEY= lines may travel'
+      );
+      seedPublicKeys(lease, live);
+      require_(
+        fs.readFileSync(path.join(lease, keyRel), 'utf8') ===
+          '# rediacc public-key cache v1\nACCOUNT_ED25519_PUBLIC_KEY=abc\n',
+        'the seeded cache must hold the public lines and nothing else'
+      );
+      const bare = path.join(dir, 'bare');
+      fs.mkdirSync(bare);
+      require_(
+        seedPublicKeys(bare, live).includes('no private/account in this tree') &&
+          !fs.existsSync(path.join(bare, keyRel)),
+        'a tree with no private/account gets no cache directory'
       );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -3821,6 +3992,13 @@ async function selftest(): Promise<number> {
       const steady = [0, 2_000, 4_000].map((t) => loadVerdict(gate, state, t));
       const afterGap = loadVerdict(gate, state, 400_000);
       const stillHeld = loadVerdict(gate, state, 402_000);
+      // The run's own gates are off the reading: load 8 on 4 cores with 4 of them its own is 4, under the line (review c2c50947.2).
+      const selfLoad = loadVerdict(gate, { expired: false }, 0, 4);
+      const outsideLoad = loadVerdict(gate, { expired: false }, 0, 1);
+      require_(
+        selfLoad === 'go' && outsideLoad === 'wait',
+        `a run's own cores must not count toward the load that holds it, got own=4 ${selfLoad}, own=1 ${outsideLoad}`
+      );
       const edge: LoadWaitState = { expired: false };
       let control = 'wait';
       for (let t = 0; t <= 120_000; t += 2_000) control = loadVerdict(gate, edge, t);
@@ -6342,10 +6520,23 @@ function leaseReceipt(leaseBase: string): Partial<Receipt> {
   return { head: leaseBase, failed: [], findings: {} };
 }
 
+/** The receipt `--narrow` judges against: a lease's anchor stand-in WITHOUT calling `read` (the copied main receipt is never consulted there), else the parsed receipt `read` returns, undefined when it cannot be read or parsed. */
+export function narrowReceipt(
+  leaseBase: string | undefined,
+  read: () => string
+): Partial<Receipt> | undefined {
+  if (leaseBase !== undefined) return leaseReceipt(leaseBase);
+  try {
+    return JSON.parse(read()) as Partial<Receipt>;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The runner's own sources and the inputs its `--selftest` reads: any edit to one changes the key. */
 const SELFTEST_KEY_ROOTS = ['scripts/ci-runner', 'scripts/lib', 'package.json'];
 
-/** SHA-256 over every file under the key roots (path and bytes, sorted), `node_modules` and `__tests__` excluded from neither: a test edit changes what the selftest drives. Pure over `root`. */
+/** SHA-256 over every file under the key roots (path and bytes, sorted), every directory named `node_modules` skipped and `__tests__` included: a test edit changes what the selftest drives. Pure over `root`. */
 export function selftestKey(root: string): string {
   const hash = createHash('sha256');
   const walk = (rel: string): void => {
@@ -6370,17 +6561,32 @@ const SELFTEST_PASS_DIR = path.join(os.homedir(), '.cache', 'rediacc-selftest-pa
 /**
  * `--selftest`, skipped in a lease when the same runner sources already passed it. The 17 s preflight of `npm run ci -- --narrow` re-proved an unchanged runner on every call (PLAN-drain-throughput DT7). Only a lease takes the shortcut: the main checkout and CI always run it, because the receipt is minted only by a runner that proved it can fail. A pass is recorded only by a real run that returned 0, and the key covers every runner source, so a runner edit in the lease runs the selftest again.
  */
-async function selftestCached(): Promise<number> {
-  if (leaseMainOf(REPO_ROOT) === undefined || process.env.CI_RUNNER_SELFTEST_FORCE === '1')
-    return selftest();
-  const marker = path.join(SELFTEST_PASS_DIR, selftestKey(REPO_ROOT));
+async function selftestCached(
+  io: {
+    inLease: boolean;
+    force: boolean;
+    passDir: string;
+    key: () => string;
+    run: () => Promise<number>;
+  } = {
+    inLease: leaseMainOf(REPO_ROOT) !== undefined,
+    force: process.env.CI_RUNNER_SELFTEST_FORCE === '1',
+    passDir: SELFTEST_PASS_DIR,
+    key: () => selftestKey(REPO_ROOT),
+    run: selftest,
+  }
+): Promise<number> {
+  if (!io.inLease || io.force) return io.run();
+  const marker = path.join(io.passDir, io.key());
   if (fs.existsSync(marker)) {
     process.stderr.write('ci-runner: --selftest skipped: these runner sources already passed it\n');
     return 0;
   }
-  const code = await selftest();
+  const code = await io.run();
   if (code === 0) {
-    fs.mkdirSync(SELFTEST_PASS_DIR, { recursive: true });
+    // tree-write: safe the pass marker sits under the home directory (the selftest passes a temp dir), outside every tree
+    fs.mkdirSync(io.passDir, { recursive: true });
+    // tree-write: safe the pass marker sits under the home directory (the selftest passes a temp dir), outside every tree
     fs.writeFileSync(marker, '');
   }
   return code;
@@ -6399,19 +6605,12 @@ function narrowPlan(
   const leaseMain = leaseMainOf(REPO_ROOT);
   const leaseBase = leaseMain === undefined ? undefined : leaseAnchor(leaseMain, gitTry);
   const dest = receiptPathFor(opts);
-  let receipt: Partial<Receipt>;
-  if (leaseBase !== undefined) {
-    receipt = leaseReceipt(leaseBase);
-  } else {
-    try {
-      receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
-    } catch {
-      return {
-        lines: [],
-        error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
-      };
-    }
-  }
+  const receipt = narrowReceipt(leaseBase, () => fs.readFileSync(dest, 'utf8'));
+  if (receipt === undefined)
+    return {
+      lines: [],
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
+    };
   const gates = specs.filter((s) => s.gate);
   const known = new Set(gates.map((s) => s.id));
   const findings = receipt.findings ?? {};

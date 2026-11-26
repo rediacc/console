@@ -143,7 +143,7 @@ export type Sched = 'slots' | 'cores';
  */
 export const DEFAULT_SCHED: Sched = 'cores';
 
-/** The budget a `cores` pool gets when the caller passes none: `jobs` cores with no over-admission, 2 x jobs processes, and no memory bound, since nothing measured the machine. run.ts always passes its own (`coreBudget`). */
+/** The budget a `cores` pool gets when the caller passes none: `jobs` cores (at least 1, so a `jobs` below 1 gets 1) with no over-admission, 2 x jobs processes, and no memory bound, since nothing measured the machine. run.ts always passes its own (`coreBudget`). */
 function jobsBudget(jobs: number): CoreBudget {
   const c = Math.max(1, jobs);
   return { cores: c, epsilon: 0, maxProcs: 2 * c, memMb: Number.POSITIVE_INFINITY };
@@ -334,9 +334,15 @@ export interface LoadWaitState {
 /** Polls of silence after which a running hold clock is dropped (the pool only reads the load while a gate is ready). */
 const LOAD_GAP_POLLS = 5;
 
-/** One reading's verdict: `wait` holds every start, `go` admits. Pure apart from `state` and `gate.say`. */
-export function loadVerdict(gate: LoadGate, state: LoadWaitState, now: number): 'go' | 'wait' {
-  const load = gate.read();
+/** One reading's verdict: `wait` holds every start, `go` admits. `own` is the cores this run's own gates hold: the system-wide load average includes them, so they are taken off the reading and a sized-to-machine run never holds itself back (review c2c50947.2). Pure apart from `state` and `gate.say`. */
+export function loadVerdict(
+  gate: LoadGate,
+  state: LoadWaitState,
+  now: number,
+  own = 0
+): 'go' | 'wait' {
+  const raw = gate.read();
+  const load = raw === undefined ? undefined : Math.max(0, raw - Math.max(0, own));
   const gap = (gate.pollMs ?? LOAD_POLL_MS) * LOAD_GAP_POLLS;
   if (state.seen !== undefined && now - state.seen > gap) state.since = undefined;
   state.seen = now;
@@ -1512,7 +1518,7 @@ export async function runPool(
     const loadHeld =
       opts.load !== undefined &&
       ready.length > 0 &&
-      loadVerdict(opts.load, loadState, now) === 'wait';
+      loadVerdict(opts.load, loadState, now, coresInUse()) === 'wait';
     const pending = [...unstarted].map(candidate);
     const view =
       lease !== undefined && sched === 'cores' && ready.length > 0 && !loadHeld

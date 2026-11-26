@@ -648,14 +648,20 @@ export function baselineCostsOf(raw: unknown): Record<string, BaselineCost> {
   return out;
 }
 
-/** `baselineCostsOf` over `<root>/.ci/config/gate-costs.json`; {} when the file cannot be read, which leaves every gate to the step p90 and the lane median as before the baseline existed. */
+/** `baselineCostsOf` over `<root>/.ci/config/gate-costs.json`; {} when the file is absent, which leaves every gate to the step p90 and the lane median as before the baseline existed. A file that exists but is unreadable or malformed THROWS: returning {} would silently drop every baseline price and every measured `heavy` (review 36622f0d.2). */
 export function readBaselineCosts(root: string): Record<string, BaselineCost> {
+  const file = path.join(root, '.ci', 'config', 'gate-costs.json');
+  let text: string;
   try {
-    return baselineCostsOf(
-      JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'gate-costs.json'), 'utf-8'))
-    );
-  } catch {
-    return {};
+    text = readFileSync(file, 'utf-8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    throw new Error(`${file} cannot be read: ${(err as Error).message}`);
+  }
+  try {
+    return baselineCostsOf(JSON.parse(text));
+  } catch (err) {
+    throw new Error(`${file} is not valid JSON: ${(err as Error).message}`);
   }
 }
 
@@ -675,7 +681,7 @@ export function lanePricesFrom(
 }
 
 /**
- * HEAVY, RETIRED WHERE IT IS MEASURED (W14). `heavy` was a hand judgement of a gate's resident memory ("at most one per shard", `--heavy-limit`); for a gate the baseline measures, the measurement decides instead. The line is the pool's own unmeasured-heavy assumption (pool.ts planAdmission budgets an unmeasured heavy gate at 4 GB): a gate measured at or above it is heavy, one below it is not. A gate the baseline does not measure keeps its declared flag.
+ * HEAVY, RETIRED WHERE IT IS MEASURED (W14). `heavy` was a hand judgement of a gate's resident memory ("at most one per shard", `--heavy-limit`); for a gate the baseline measures, the measurement is the truth the declaration is held to: `heavyOf` applies it, and `measuredHeavyFindings` fails the runner selftest when a declared flag disagrees, so the planners (which read the declared flag) never drift from it. The line is the pool's own unmeasured-heavy assumption (pool.ts planAdmission budgets an unmeasured heavy gate at 4 GB): a gate measured at or above it is heavy, one below it is not. A gate the baseline does not measure keeps its declared flag.
  */
 export const HEAVY_RSS_MB = 4096;
 

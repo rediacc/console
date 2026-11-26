@@ -4170,6 +4170,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
+      "scripts/ci-runner/__tests__/verify-changed.test.ts",
       "scripts/ci-runner/run.ts"
     ],
     "ci": {
