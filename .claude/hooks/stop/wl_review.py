@@ -3635,9 +3635,30 @@ def moved_successors(repo, anchored, base, fix):
     `git log --follow` sees a whole-file rename only, and `-C` a copy of at least half a file: neither sees a function extracted into a neighbour (0477d0c75 moved 246 lines of config.ts into config-reconcile.ts, which git reads as a 32% copy). The anchored file is never its own successor.
 
     Only a commit that touches a source can move lines out of it, so the log is limited to the sources: the MOVE_MAX_COMMITS cap then counts those commits, not every commit of a long range (bf0bded8.2: the onprem/ -> lab/ move sat beyond the newest 60 of 207 commits, and the fix in lab/testca.py was refused).
+
+    A move spread across commits (the code copied into its new home by one commit, the original removed by a later one, or the reverse) matches in no single commit, and the copying commit need not touch a source at all. After the per-commit rounds, one pass over the range's net diff (`git diff --no-renames base fix`) applies the same rule to the lines the sources lost overall and the lines each other file gained overall (#ee9de1f9).
     """
     sources = {anchored}
     found: set[str] = set()
+
+    def receivers(removed, added):
+        lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
+        if not lost:
+            return set()
+        out = set()
+        for path, lines in added.items():
+            if path in sources or path in found:
+                continue
+            pool = lost.copy()
+            hits = 0
+            for line in lines:
+                if pool[line] > 0:
+                    pool[line] -= 1
+                    hits += 1
+            if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
+                out.add(path)
+        return out
+
     for _ in range(MOVE_MAX_ROUNDS):
         rc, out = git(
             repo,
@@ -3655,25 +3676,19 @@ def moved_successors(repo, anchored, base, fix):
             rc2, text = git(repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", sha)
             if rc2 != 0:
                 continue
-            removed, added = _diff_lines(text)
-            lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
-            if not lost:
-                continue
-            for path, lines in added.items():
-                if path in sources or path in found:
-                    continue
-                pool = lost.copy()
-                hits = 0
-                for line in lines:
-                    if pool[line] > 0:
-                        pool[line] -= 1
-                        hits += 1
-                if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
-                    found.add(path)
-                    grew = True
+            new = receivers(*_diff_lines(text))
+            if new:
+                found |= new
+                grew = True
         if not grew:
             break
         sources = {anchored, *found}
+    sources = {anchored, *found}
+    rc, text = git(
+        repo, "diff", "--no-renames", "-U0", "--no-color", "--no-ext-diff", base, fix, "--"
+    )
+    if rc == 0:
+        found |= receivers(*_diff_lines(text))
     return found
 
 
@@ -3738,15 +3753,20 @@ def references_anchored_file(repo, fix, test_path, anchored):
     )
 
 
-def imports_anchored_module(repo, fix, test_path, anchored):
-    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+def imports_module_in_file(repo, fix, test_path, target):
+    """Whether any import-like line of `test_path` as it stands at `fix` imports `target` (`import { callTool } from '../call.js'` for `src/mcp-host/call.ts`), by the same token rule as `imports_anchored_module`.
+
+    Read over the whole file, not the fix's added lines, and asked only of a file the anchored code MOVED to (#ee9de1f9): a test that already imported the moved module before the fix extended it tests that module, though its name carries nothing of the old path. A file git cannot read at `fix` answers False."""
+    rc, text = git(repo, "show", "%s:%s" % (fix, test_path))
+    if rc != 0:
+        return False
+    return _import_lines_name(text.splitlines(), test_path, target)
+
+
+def _import_lines_name(lines, test_path, anchored):
+    """Whether one of `lines` (source lines, no diff prefix) is import-like and carries a token naming `anchored` (`_token_names_anchored`)."""
     stem = pathlib.PurePosixPath(anchored).stem.lower()
     if not stem:
-        return False
-    rc, text = git(
-        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
-    )
-    if rc != 0:
         return False
     variants = {stem, stem.replace("-", "_"), stem.replace("_", "-")}
     parent = pathlib.PurePosixPath(anchored).parent.name.lower()
@@ -3754,10 +3774,10 @@ def imports_anchored_module(repo, fix, test_path, anchored):
     anchored_low = anchored.lower()
     anchored_bare = str(pathlib.PurePosixPath(anchored_low).with_suffix(""))
     test_dir = pathlib.PurePosixPath(test_path.lower()).parent
-    for line in text.splitlines():
-        if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
+    for line in lines:
+        if not _IMPORT_LINE_RE.search(line):
             continue
-        body = line[1:].lower()
+        body = line.lower()
         for token in re.findall(r"[a-z0-9_.@~/-]+", body):
             if _token_names_anchored(
                 token,
@@ -3770,6 +3790,23 @@ def imports_anchored_module(repo, fix, test_path, anchored):
             ):
                 return True
     return False
+
+
+def imports_anchored_module(repo, fix, test_path, anchored):
+    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+    if not pathlib.PurePosixPath(anchored).stem:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    added = [
+        line[1:]
+        for line in text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    ]
+    return _import_lines_name(added, test_path, anchored)
 
 
 _MODULE_SUFFIXES = {"ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs"}
@@ -3945,12 +3982,26 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
         if not followed:
             # The anchored code may have moved between the reviewed commit and the fix: a fix of the file that received it, or of that file's test, is a fix of the anchor.
             moved_to = moved_successors(repo, finding.file, review.sha, fix)
-            followed = bool(moved_to & set(touched)) or (
-                (bool(test_path) or test_claim)
-                and any(
-                    related_test(t, m)
-                    for m in moved_to
-                    for t in ([test_path] if test_path else [x for x in touched if is_test_path(x)])
+            followed = (
+                bool(moved_to & set(touched))
+                or (
+                    (bool(test_path) or test_claim)
+                    and any(
+                        related_test(t, m)
+                        for m in moved_to
+                        for t in (
+                            [test_path] if test_path else [x for x in touched if is_test_path(x)]
+                        )
+                    )
+                )
+                # A test named by --test that imports or names a file the code moved to tests the moved code, whatever its own name (#ee9de1f9: relocate.test.ts imports '../call.js', the new home of workers/mcp/src/call.ts).
+                or bool(
+                    test_path
+                    and any(
+                        imports_module_in_file(repo, fix, test_path, m)
+                        or references_anchored_file(repo, fix, test_path, m)
+                        for m in sorted(moved_to)
+                    )
                 )
             )
         if not followed:

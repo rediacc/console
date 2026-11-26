@@ -787,3 +787,78 @@ def test_branch_copies_answers_an_ancestor_without_raising(tmp_path):
     repo = _repo(tmp_path)
     head = _git(repo, "rev-parse", "HEAD").strip()
     assert R.branch_copies(str(repo), head, None) == [head]
+
+
+# ---- #ee9de1f9: a move spread across commits, and a named test of the code's new home ----------
+
+TS_BODY = "".join(
+    "  const budget_%d = windowMs - (Date.now() - startedAt) + %d;\n" % (i, i) for i in range(12)
+)
+OLD_CALL = "workers/mcp/src/call.ts"
+NEW_CALL = "packages/shared/src/mcp-host/call.ts"
+RELOCATE = "packages/shared/src/mcp-host/__tests__/relocate.test.ts"
+
+
+def _write(repo, message, files=(), remove=()):
+    """One commit writing `files` ({repo-relative path: body}) and removing `remove`; paths are used verbatim (`__tests__` included)."""
+    for name, body in dict(files).items():
+        path = pathlib.Path(repo) / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        _git(repo, "add", "--", name)
+    for name in remove:
+        _git(repo, "rm", "-q", "--", name)
+    _git(repo, "commit", "-q", "-m", message)
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def _spread_world(tmp_path, spread=True):
+    """The reviewed commit adds call.ts; one commit copies its code into the shared package without touching the original, and a later one deletes the original, so no single commit holds both halves of the move. With `spread=False` one commit moves it (aaf114bc's shape: the original left as a stub, deleted by a later commit)."""
+    repo = _repo(tmp_path)
+    body = "export function callTool() {\n%s}\n" % TS_BODY
+    reviewed = _write(repo, "feat: call", {OLD_CALL: body})
+    first = {NEW_CALL: body, "packages/shared/src/mcp-host/executor.ts": "export const x = 1;\n"}
+    if not spread:
+        first[OLD_CALL] = "export { callTool } from '@rediacc/shared/mcp-host/call';\n"
+    _write(repo, "refactor: copy the handler into shared", first)
+    _write(repo, "refactor: drop the worker copy", remove=[OLD_CALL])
+    return repo, reviewed
+
+
+def test_a_move_spread_across_two_commits_is_followed(tmp_path):
+    """#ee9de1f9: the copy and the removal sit in two commits, so the per-commit match sees neither; the range's net diff does. CONTROL: executor.ts, added beside the copy with none of its lines, is no successor."""
+    repo, reviewed = _spread_world(tmp_path)
+    assert R.moved_successors(repo, OLD_CALL, reviewed, "HEAD") == {NEW_CALL}
+
+
+@pytest.mark.parametrize("spread", [True, False])
+def test_a_named_test_that_imports_the_moved_module_closes_the_finding(tmp_path, spread):
+    """#ee9de1f9: relocate.test.ts already imported '../call.js' before the fix added its case; its name carries nothing of the old path, yet it tests the module the code moved to. The one-commit move isolates the import relation from the spread-move search."""
+    repo, reviewed = _spread_world(tmp_path, spread)
+    head = "import { callTool } from '../call.js';\n"
+    _write(repo, "test: relocate", {RELOCATE: head + "it('a', () => callTool());\n"})
+    fid = _record(repo, reviewed, OLD_CALL, "The lookup budget ignores the start time.")
+    fix = _write(
+        repo,
+        "test: the budget after time has passed",
+        {RELOCATE: head + "it('a', () => callTool());\nit('b', () => callTool());\n"},
+    )
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", RELOCATE], ME)
+    assert (
+        "fixed %s" % fix
+        in R.read_review(R.review_path(repo, BRANCH, reviewed))[0].findings[0].resolution
+    )
+
+
+def test_control_a_named_test_of_another_module_beside_the_new_home_is_refused(tmp_path):
+    repo, reviewed = _spread_world(tmp_path)
+    head = "import { executor } from '../executor.js';\n"
+    _write(repo, "test: relocate", {RELOCATE: head + "it('a', () => executor);\n"})
+    fid = _record(repo, reviewed, OLD_CALL, "The lookup budget ignores the start time.")
+    fix = _write(
+        repo,
+        "test: executor",
+        {RELOCATE: head + "it('a', () => executor);\nit('b', () => executor);\n"},
+    )
+    with pytest.raises(ValueError, match=r"does not touch workers/mcp/src/call\.ts"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", RELOCATE], ME)
