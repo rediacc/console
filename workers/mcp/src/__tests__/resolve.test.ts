@@ -8,16 +8,16 @@ import {
   WK_MCP_EU_HOST,
 } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
-import { type CallDeps, callTool } from '../call.js';
+import { type CallDeps, callTool } from '../../../../packages/shared/src/mcp-host/call.js';
 import {
   createGrantResolver,
   GRANT_CACHE_TTL_MS,
   type GrantsBinding,
   type ResolvedGrantWire,
-} from '../resolve.js';
-import { handleRevoke } from '../revoke.js';
-import { createMcpTransport } from '../transport.js';
-import { bearerFor, SECRET_BYTES } from './helpers/grant.js';
+} from '../../../../packages/shared/src/mcp-host/resolve.js';
+import { handleRevoke } from '../../../../packages/shared/src/mcp-host/revoke.js';
+import { createMcpTransport } from '../../../../packages/shared/src/mcp-host/transport.js';
+import { bearerFor, SECRET_BYTES } from '../../../../packages/shared/src/mcp-host/__tests__/helpers/grant.js';
 
 const GRANT_ID = 'eu_grant_t3';
 const T0 = Date.UTC(2026, 10, 25, 12, 0, 0);

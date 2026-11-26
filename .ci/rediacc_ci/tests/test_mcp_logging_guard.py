@@ -64,7 +64,8 @@ def _copy_of_real_tree(tmp: str) -> pathlib.Path:
     rels = [
         rel
         for rel in gate.tracked(ROOT)
-        if rel.startswith(gate.MCP) and rel.endswith((".toml", *gate.SOURCE_SUFFIXES))
+        if rel.startswith((gate.MCP, gate.MCP_HOST))
+        and rel.endswith((".toml", *gate.SOURCE_SUFFIXES))
     ]
     rels.append("workers/proxy/wrangler.template.toml")
     for rel in rels:
@@ -95,9 +96,9 @@ PLANTS = {
         'pattern = "%s"' % MCP_US_HOST,
         'pattern = "%s/*?token=*"' % MCP_US_HOST,
     ),
-    "S1": ("workers/mcp/src/index.ts", "export default {", "void getUnredacted;\nexport default {"),
+    "S1": ("workers/mcp/src/index.ts", "export {", "void getUnredacted;\nexport {"),
     "S2": (
-        "workers/mcp/src/oauth/index.ts",
+        "packages/shared/src/mcp-host/oauth/index.ts",
         "url.searchParams.get('client_id')",
         "url.searchParams.get('access_token')",
     ),
@@ -120,3 +121,12 @@ def test_one_plant_per_rule_reds_on_the_real_files(rule: str) -> None:
     assert all(f.startswith(rule) for f in findings), (
         "a %s plant must not fire another rule: %s" % (rule, findings)
     )
+
+
+def test_getunredacted_in_the_shared_mcp_host_is_caught() -> None:
+    rel = "packages/shared/src/mcp-host/handler.ts"
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _copy_of_real_tree(tmp)
+        _edit(root, rel, "export ", "void getUnredacted;\nexport ")
+        findings = gate.run(root)[0]
+    assert [f for f in findings if f.startswith("S1 %s" % rel)], findings

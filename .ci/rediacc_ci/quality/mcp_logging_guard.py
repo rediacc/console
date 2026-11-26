@@ -17,16 +17,17 @@ THE RULES.
      platform default is on).
   W3 ROUTE PATTERN. No route pattern in a wrangler file under `workers/`
      carries a query string or names a credential.
-  S1 UNREDACTED. No tracked source under `workers/mcp/` names `getUnredacted`,
-     tests included, comments included: the name has no harmless use there.
-  S2 URL CREDENTIAL. No non-test source under `workers/mcp/` reads or writes a
+  S1 UNREDACTED. No tracked source under `workers/mcp/` or `packages/shared/src/mcp-host/`
+     (the handler the Worker runs) names `getUnredacted`, tests included, comments
+     included: the name has no harmless use there.
+  S2 URL CREDENTIAL. No non-test source under those two trees reads or writes a
      credential through a URL: a query parameter or path parameter whose name
      is a credential (`token`, `access_token`, `api_key`, `secret`, `S`, ...),
      or the agent bearer parsed out of a `pathname`. The query scan in
      `credential.ts` that REFUSES such a request iterates the parameters
      generically and never names one, so it is not a finding.
 
-ANTI-VACUITY. Zero wrangler files under `workers/`, zero under `workers/mcp/`, or zero non-test sources under `workers/mcp/` is a REFUSAL (the instrument lost the tree), and so is a wrangler file that does not parse: an unread file is an unchecked file, never a clean one. The success line prints every count.
+ANTI-VACUITY. Zero wrangler files under `workers/`, zero under `workers/mcp/`, or zero non-test sources under `workers/mcp/` or under `packages/shared/src/mcp-host/` is a REFUSAL (the instrument lost the tree), and so is a wrangler file that does not parse: an unread file is an unchecked file, never a clean one. The success line prints every count.
 
 Exit 1 on a finding or refusal, 2 on a failed control.
 
@@ -58,6 +59,8 @@ if TYPE_CHECKING:
 
 WORKERS = "workers/"
 MCP = "workers/mcp/"
+MCP_HOST = "packages/shared/src/mcp-host/"
+SOURCE_ROOTS = (MCP, MCP_HOST)
 SOURCE_SUFFIXES = (".ts", ".tsx", ".js", ".mjs", ".cjs")
 
 # W1: a key that declares a list of logged fields, compared after lowercasing and `-` -> `_`.
@@ -137,17 +140,23 @@ class RefusalError(Exception):
 
 
 def tracked(root: pathlib.Path) -> list[str]:
-    """Every tracked path under `workers/`, relative to `root`."""
+    """Every tracked path under `workers/` and the shared MCP host, relative to `root`."""
     out = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "-z", "--", WORKERS],
+        ["git", "-C", str(root), "ls-files", "-z", "--", WORKERS, MCP_HOST],
         capture_output=True,
         check=False,
     )
     files = [p for p in out.stdout.decode("utf-8", "replace").split("\0") if p]
     if out.returncode != 0:
         raise RefusalError(
-            "`git ls-files -- %s` failed (rc=%d) in %s: %s"
-            % (WORKERS, out.returncode, root, out.stderr.decode("utf-8", "replace").strip())
+            "`git ls-files -- %s %s` failed (rc=%d) in %s: %s"
+            % (
+                WORKERS,
+                MCP_HOST,
+                out.returncode,
+                root,
+                out.stderr.decode("utf-8", "replace").strip(),
+            )
         )
     return files
 
@@ -157,14 +166,18 @@ def is_test(rel: str) -> bool:
 
 
 def wrangler_files(files: list[str]) -> list[str]:
-    return sorted(f for f in files if f.endswith(".toml") and "/node_modules/" not in f)
+    return sorted(
+        f
+        for f in files
+        if f.startswith(WORKERS) and f.endswith(".toml") and "/node_modules/" not in f
+    )
 
 
 def source_files(files: list[str]) -> list[str]:
     return sorted(
         f
         for f in files
-        if f.startswith(MCP) and f.endswith(SOURCE_SUFFIXES) and "/node_modules/" not in f
+        if f.startswith(SOURCE_ROOTS) and f.endswith(SOURCE_SUFFIXES) and "/node_modules/" not in f
     )
 
 
@@ -315,7 +328,14 @@ def run(root=None):
     for count, what in (
         (len(wranglers), "wrangler file(s) under %s" % WORKERS),
         (len(mcp_wranglers), "wrangler file(s) under %s" % MCP),
-        (len(non_test), "non-test source file(s) under %s" % MCP),
+        (
+            len([f for f in non_test if f.startswith(MCP)]),
+            "non-test source file(s) under %s" % MCP,
+        ),
+        (
+            len([f for f in non_test if f.startswith(MCP_HOST)]),
+            "non-test source file(s) under %s" % MCP_HOST,
+        ),
     ):
         if count == 0:
             raise RefusalError(
@@ -361,7 +381,7 @@ def main(argv=None) -> int:
         return 1
     log.info(
         "  %d wrangler file(s) under %s (%d under %s, %d route pattern(s)); %d source file(s) "
-        "under %s, %d of them non-test"
+        "under %s and %s, %d of them non-test"
         % (
             stats["wranglers"],
             WORKERS,
@@ -370,6 +390,7 @@ def main(argv=None) -> int:
             stats["routes"],
             stats["sources"],
             MCP,
+            MCP_HOST,
             stats["non_test"],
         )
     )
@@ -435,6 +456,7 @@ def _fixture(tmp, files: Mapping[str, str | None] | None = None):
         "workers/mcp/wrangler.template.toml": _MCP_TOML,
         "workers/proxy/wrangler.template.toml": _PROXY_TOML,
         "workers/mcp/src/index.ts": _SOURCE,
+        "packages/shared/src/mcp-host/handler.ts": _SOURCE,
         "workers/mcp/src/__tests__/index.test.ts": "new URL('https://x/g/a?access_token=1');\n",
     }
     body.update(files or {})
@@ -547,6 +569,19 @@ def selftest() -> bool:
             ),
             "S1 workers/mcp/src/__tests__/tail.test.ts",
         ),
+    )
+    host = "packages/shared/src/mcp-host/handler.ts"
+    check(
+        "PLANT S1: getUnredacted in the shared MCP host reds",
+        _fires(_findings({host: "event.getUnredacted().headers;\n"}), "S1 " + host),
+    )
+    check(
+        "PLANT S2: a credential query parameter in the shared MCP host reds",
+        _fires(_findings({host: "url.searchParams.get('access_token');\n"}), "S2 " + host),
+    )
+    check(
+        "REFUSAL: no non-test source in the shared MCP host is refused, not passed",
+        _refused_without(host),
     )
     check(
         "PLANT S2: searchParams.get('access_token') in a handler reds",

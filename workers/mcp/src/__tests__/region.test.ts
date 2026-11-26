@@ -11,9 +11,9 @@ import {
   WK_MCP_US_HOST,
 } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { SqliteKvNamespace } from '../../../../packages/shared/src/mcp-host/sqlite-kv.js';
-import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
-import { grantRegionOf, hostOfRegion } from '../oauth/region.js';
-import { bearerFor, secretTextOf } from './helpers/grant.js';
+import { createOAuth, type OAuth, type OAuthEnv } from '../../../../packages/shared/src/mcp-host/oauth/index.js';
+import { grantRegionOf, hostOfRegion } from '../../../../packages/shared/src/mcp-host/oauth/region.js';
+import { bearerFor, secretTextOf } from '../../../../packages/shared/src/mcp-host/__tests__/helpers/grant.js';
 
 const ctx = {
   waitUntil() {},
