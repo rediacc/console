@@ -17,11 +17,11 @@ export function registerOpsDownCommand(ops: Command, _program: Command): void {
       try {
         outputService.info(t('commands.ops.down.starting'));
 
-        const flags: string[] = [];
-        if (options.debug) flags.push('--debug');
-
         const backend = options.backend ? (options.backend as OpsBackend) : undefined;
-        const exitCode = await opsExecutorService.runOpsStreaming('down', flags, { backend });
+        const exitCode = await opsExecutorService.runOpsStreaming('down', [], {
+          backend,
+          debug: options.debug,
+        });
 
         if (exitCode === 0) {
           outputService.success(t('commands.ops.down.completed'));

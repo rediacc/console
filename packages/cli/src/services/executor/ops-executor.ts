@@ -125,6 +125,8 @@ class OpsExecutorService {
       capture?: boolean;
       backend?: OpsBackend;
       timeout?: number;
+      // rdc-only: renet ops has no --debug flag, so it is consumed here (argv echo + REDIACC_DEBUG) and never forwarded.
+      debug?: boolean;
       // Grace between SIGTERM and SIGKILL on timeout. Exposed only so the regression test can drive the real kill path in ~1s instead of 10s.
       sigkillGraceMs?: number;
     } = {}
@@ -138,7 +140,9 @@ class OpsExecutorService {
     const env: Record<string, string> = {
       ...process.env,
       REDIACC_INFRA: backend,
+      ...(options.debug ? { REDIACC_DEBUG: '1' } : {}),
     };
+    if (options.debug) console.warn(`[DEBUG] ${renetPath} ${args.join(' ')}`);
 
     return new Promise<OpsCommandResult>((resolve, reject) => {
       const child = spawn(renetPath, args, {
@@ -265,11 +269,12 @@ class OpsExecutorService {
   async runOpsStreaming(
     subcommand: string,
     flags: string[] = [],
-    options: { backend?: OpsBackend } = {}
+    options: { backend?: OpsBackend; debug?: boolean } = {}
   ): Promise<number> {
     const result = await this.runOpsCommand(subcommand, flags, {
       capture: false,
       backend: options.backend,
+      debug: options.debug,
     });
     return result.exitCode;
   }

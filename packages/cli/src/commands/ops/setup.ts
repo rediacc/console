@@ -26,13 +26,14 @@ async function setupDarwin(): Promise<number> {
 }
 
 async function setupRenet(options: { debug?: boolean }, useSudo: boolean): Promise<number> {
-  const flags: string[] = [];
-  if (options.debug) flags.push('--debug');
-
   const renetPath = await opsExecutorService.getRenetPath();
+  // renet has no --debug flag: rdc consumes it and echoes the argv instead of forwarding it.
+  const args = ['ops', 'host', 'setup'];
+  if (options.debug)
+    console.warn(`[DEBUG] ${useSudo ? 'sudo ' : ''}${renetPath} ${args.join(' ')}`);
   const exitCode = useSudo
-    ? await spawnInteractive('sudo', [renetPath, 'ops', 'host', 'setup', ...flags])
-    : await spawnInteractive(renetPath, ['ops', 'host', 'setup', ...flags]);
+    ? await spawnInteractive('sudo', [renetPath, ...args])
+    : await spawnInteractive(renetPath, args);
 
   if (exitCode !== 0) {
     outputService.error(t('commands.ops.setup.failed'));

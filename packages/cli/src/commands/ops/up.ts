@@ -39,13 +39,15 @@ export function registerOpsUpCommand(ops: Command, _program: Command): void {
             [options.basic, '--basic'],
             [options.lite, '--lite'],
             [options.skipOrchestration, '--skip-orchestration'],
-            [options.debug, '--debug'],
           ];
           const flags = booleanFlags.filter(([v]) => v).map(([, f]) => f);
           if (options.os) flags.push('--os', options.os);
 
           const backend = options.backend ? (options.backend as OpsBackend) : undefined;
-          const exitCode = await opsExecutorService.runOpsStreaming('up', flags, { backend });
+          const exitCode = await opsExecutorService.runOpsStreaming('up', flags, {
+            backend,
+            debug: options.debug,
+          });
 
           if (exitCode === 0) {
             outputService.success(t('commands.ops.up.completed'));
