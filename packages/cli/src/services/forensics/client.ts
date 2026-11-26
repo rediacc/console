@@ -231,7 +231,7 @@ const PDF_TAIL_BYTES = 1024;
  * the PDF header and close with its end-of-file marker is refused instead, as is a missing or
  * non-string field.
  */
-export function decodeReportPdf(base64: unknown, reportId: string): Uint8Array {
+function decodeReportPdf(base64: unknown, reportId: string): Uint8Array {
   if (typeof base64 === 'string' && base64.length > 0 && STRICT_BASE64.test(base64)) {
     const bytes = Buffer.from(base64, 'base64');
     const canonical = bytes.toString('base64') === base64;
