@@ -72,8 +72,9 @@ interface CacheEntry {
 const PINNED_ORG_ENV = 'REDIACC_EXECUTOR_ORG_ID';
 
 /**
- * The org a container executor is pinned to. Container mode refuses to boot
- * without it, so an executor can never run unpinned; daemon mode has none.
+ * The org a container executor is pinned to by its environment. Container mode
+ * refuses to boot without it; a daemon learns its org from its own token
+ * instead (`resolveExecutorOrgId`).
  */
 export function resolvePinnedOrgId(
   mode: 'daemon' | 'container',
@@ -87,6 +88,50 @@ export function resolvePinnedOrgId(
     );
   }
   return orgId;
+}
+
+/**
+ * The org this executor serves, so that it can be pinned to it and open agent grant
+ * sessions (agent/plans/PLAN-rmcp-agent-grants.md Design 8). A container reads its pin from
+ * the environment. A daemon asks the account server whose its own token is (a `self`
+ * introspection): the account answers only for tokens of that one org, so the token's org is
+ * the org of the store the daemon enrolled in and the only org it can ever serve. A daemon
+ * whose own token the account server will not report refuses to boot, naming why.
+ */
+export async function resolveExecutorOrgId(
+  mode: 'daemon' | 'container',
+  env: NodeJS.ProcessEnv,
+  own: { accountUrl: string; executorToken: string; fetchImpl?: typeof fetch }
+): Promise<string> {
+  const pinned = resolvePinnedOrgId(mode, env);
+  if (pinned !== undefined) return pinned;
+  const fetchImpl = deadlineFetch(own.fetchImpl ?? globalThis.fetch);
+  const refuse = (why: string) =>
+    new ValidationError(`The daemon could not learn its organization: ${why}.`);
+  let body: IntrospectionResponse;
+  try {
+    const response = await fetchImpl(
+      `${own.accountUrl.replace(/\/+$/, '')}/account/api/v1/proxy/introspect`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${own.executorToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ token: own.executorToken, self: true }),
+      }
+    );
+    if (!response.ok) {
+      throw refuse(`the account server answered ${response.status} for its own token`);
+    }
+    body = (await response.json()) as IntrospectionResponse;
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    throw refuse(`the account server could not be asked (${describeFetchError(error)})`);
+  }
+  if (!body.active) throw refuse('its own token is not active');
+  if (!body.orgId) throw refuse('the account server named no organization for its own token');
+  return body.orgId;
 }
 
 export class AuthError extends Error {

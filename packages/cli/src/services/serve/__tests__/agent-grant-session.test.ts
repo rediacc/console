@@ -5,13 +5,14 @@
 
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { configLoading } from '../../../commands/serve.js';
 import { boundEffectivePolicy } from '../../config/policy-record.js';
 import {
   AgentGrantSessions,
   AgentSessionRefused,
   AgentSessionUnavailable,
 } from '../agent-grant-session.js';
-import { AuthError } from '../auth.js';
+import { AuthError, resolveExecutorOrgId } from '../auth.js';
 import { routeAgentPrincipals } from '../container-config.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
@@ -569,5 +570,106 @@ describe('daemon-mode revoke route (box AG-OP1)', () => {
     const { post } = await daemon();
     expect((await post({ grantId: 'a b' })).status).toBe(400);
     expect((await post({ grantId: 'g', extra: 1 })).status).toBe(400);
+  });
+});
+
+describe('a daemon builds grant sessions for the org of its own token (box AG-OP1, Design 8)', () => {
+  /** The account's answer to the daemon's `self` introspection, else the fake account's routes. */
+  function withSelfIntrospection(account: FakeAccount, answer: Response | Error) {
+    const seen: unknown[] = [];
+    const fetchImpl: typeof fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/proxy/introspect')) {
+        seen.push(JSON.parse(String(init?.body)));
+        return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer.clone());
+      }
+      return account.fetch(input, init);
+    };
+    return { fetchImpl, seen };
+  }
+
+  it('learns its org from its own token, opens a grant and drops it through the daemon revoke route', async () => {
+    const a = await makeGrant({ grantId: 'g_daemon', configId: 'cfg-a', machine: 'machine-a' });
+    const account = fakeAccount([a]);
+    const { fetchImpl, seen } = withSelfIntrospection(
+      account,
+      Response.json({ active: true, orgId: ORG_ID, scopes: ['proxy:exec'] })
+    );
+    const own = { accountUrl: 'https://account.test', executorToken: EXECUTOR_TOKEN, fetchImpl };
+    const orgId = await resolveExecutorOrgId('daemon', {}, own);
+    expect(orgId).toBe(ORG_ID);
+    expect(seen).toEqual([{ token: EXECUTOR_TOKEN, self: true }]);
+
+    const { agentGrants, loadConfig } = configLoading({
+      mode: 'daemon',
+      accountUrl: own.accountUrl,
+      executorToken: EXECUTOR_TOKEN,
+      sessions: new SessionStore(),
+      orgId,
+      fetchImpl,
+    });
+    expect(agentGrants.orgId).toBe(ORG_ID);
+    const handle = await agentGrants.acquire(a.grantId, a.secret);
+    expect(handle.principal.orgId).toBe(ORG_ID);
+    expect(machinesOf(await loadConfig(principalOf(a.grantId)))).toEqual(['machine-a']);
+
+    const app = createServeApp({
+      mode: 'daemon',
+      auth: {
+        verify: () =>
+          Promise.resolve({ orgId, teamId: null, userId: 'o', userEmail: 'o@x', orgRole: 'owner' }),
+      } as unknown as ServeDeps['auth'],
+      sessions: new SessionStore(),
+      crypto: serveCrypto,
+      agentGrants,
+    } as unknown as ServeDeps);
+    const revoked = await app.request(PROXY_ROUTES.mcpRevoke, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer push' },
+      body: JSON.stringify({ grantId: a.grantId }),
+    });
+    expect(revoked.status).toBe(200);
+    expect(await revoked.json()).toEqual({ dropped: true });
+    expect(agentGrants.has(a.grantId)).toBe(false);
+  });
+
+  it('refuses to boot when the account will not name the org of its own token', async () => {
+    const account = fakeAccount([]);
+    const answers: [Response | Error, RegExp][] = [
+      [Response.json({ active: false }), /not active/],
+      [Response.json({ active: true }), /named no organization/],
+      [new Response('no', { status: 401 }), /answered 401/],
+      [new TypeError('fetch failed'), /could not be asked/],
+    ];
+    for (const [answer, why] of answers) {
+      const { fetchImpl } = withSelfIntrospection(account, answer);
+      await expect(
+        resolveExecutorOrgId(
+          'daemon',
+          {},
+          {
+            accountUrl: 'https://account.test',
+            executorToken: EXECUTOR_TOKEN,
+            fetchImpl,
+          }
+        )
+      ).rejects.toThrow(why);
+    }
+  });
+
+  it('pins a container by its environment and asks the account nothing', async () => {
+    const fetchImpl = vi.fn();
+    const own = {
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    };
+    await expect(
+      resolveExecutorOrgId('container', { REDIACC_EXECUTOR_ORG_ID: 'org-c' }, own)
+    ).resolves.toBe('org-c');
+    await expect(resolveExecutorOrgId('container', {}, own)).rejects.toThrow(
+      /REDIACC_EXECUTOR_ORG_ID/
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

@@ -30,7 +30,7 @@ import { outputService } from '../services/core/output.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { AgentGrantSessions } from '../services/serve/agent-grant-session.js';
 import { createExecutorAudit } from '../services/serve/audit.js';
-import { AuthVerifier, resolvePinnedOrgId } from '../services/serve/auth.js';
+import { AuthVerifier, resolveExecutorOrgId } from '../services/serve/auth.js';
 import { resolveServeBind, serveListenOptions } from '../services/serve/bind.js';
 import {
   createContainerConfigLoader,
@@ -69,7 +69,7 @@ export function registerServeCommand(program: Command): void {
         .choices(['daemon', 'container'])
         .default('daemon')
     )
-    .action((options: ServeOptions) => {
+    .action(async (options: ServeOptions) => {
       try {
         // --mode is constrained by Commander's .choices(), so an invalid value never reaches here.
         const executorToken = process.env.REDIACC_TOKEN;
@@ -80,11 +80,15 @@ export function registerServeCommand(program: Command): void {
           );
         }
 
-        const pinnedOrgId = resolvePinnedOrgId(options.mode, process.env);
         // Refused here, before anything listens: a daemon off loopback without TLS would carry bearer tokens in the clear.
         const bind = resolveServeBind(options);
 
         const accountUrl = getSubscriptionServerUrl();
+        // A container is pinned by its environment, a daemon by the org of its own token; both open agent grant sessions for it.
+        const orgId = await resolveExecutorOrgId(options.mode, process.env, {
+          accountUrl,
+          executorToken,
+        });
 
         const sessions = new SessionStore();
 
@@ -94,17 +98,17 @@ export function registerServeCommand(program: Command): void {
           accountUrl,
           executorToken,
           sessions,
-          pinnedOrgId,
+          orgId,
         });
 
         const deps: ServeDeps = {
           mode: options.mode,
-          auth: new AuthVerifier({ accountUrl, executorToken, pinnedOrgId }),
+          auth: new AuthVerifier({ accountUrl, executorToken, pinnedOrgId: orgId }),
           sessions,
           executor: localExecutorService,
           crypto: serveCrypto,
           loadConfig,
-          ...(agentGrants ? { agentGrants } : {}),
+          agentGrants,
           // The container's config token is minted only under a grant the account server recorded (PLAN-backup-program S7).
           ...(options.mode === 'container'
             ? { recordGrant: createExecutorGrantRecorder({ accountUrl, executorToken }) }
@@ -165,24 +169,28 @@ export function registerServeCommand(program: Command): void {
  * The daemon reads its enrolled config off disk; the container has no disk and no enrollment, and opens the config it
  * pulled with the key the caller granted. An agent grant (Design 4 of PLAN-rmcp-agent-grants.md) has neither: its config
  * comes from its own grant session, opened by the secret each `/v1/mcp/call` carries, and the loader routes an agent
- * principal there, never to a user-keyed session. Grant sessions exist wherever the executor is pinned to an org.
+ * principal there, never to a user-keyed session. Both placements open grant sessions for the org they serve (Design 8):
+ * the container's pinned org, the daemon's own token's org.
  */
-function configLoading(input: {
+export function configLoading(input: {
   mode: 'daemon' | 'container';
   accountUrl: string;
   executorToken: string;
   sessions: SessionStore;
-  pinnedOrgId: string | undefined;
-}): { loadConfig: ServeDeps['loadConfig']; agentGrants: AgentGrantSessions | undefined } {
-  const { mode, accountUrl, executorToken, sessions, pinnedOrgId } = input;
+  orgId: string;
+  fetchImpl?: typeof fetch;
+}): { loadConfig: ServeDeps['loadConfig']; agentGrants: AgentGrantSessions } {
+  const { mode, accountUrl, executorToken, sessions, orgId, fetchImpl } = input;
   const baseLoader =
     mode === 'container'
       ? createContainerConfigLoader({ accountUrl, executorToken, sessions })
       : loadDaemonConfig;
-  const agentGrants =
-    pinnedOrgId === undefined
-      ? undefined
-      : new AgentGrantSessions({ accountUrl, executorToken, orgId: pinnedOrgId });
+  const agentGrants = new AgentGrantSessions({
+    accountUrl,
+    executorToken,
+    orgId,
+    ...(fetchImpl ? { fetchImpl } : {}),
+  });
   return { loadConfig: routeAgentPrincipals(baseLoader, agentGrants), agentGrants };
 }
 
