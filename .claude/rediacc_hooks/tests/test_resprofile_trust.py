@@ -552,3 +552,78 @@ def test_a_malformed_call_id_leaves_the_field_out(built_sup, tmp_path, bad):
 
 def test_an_absent_call_id_leaves_the_field_out(built_sup, tmp_path):
     assert "call" not in sup_row(built_sup, tmp_path, None)
+
+
+def run_tmpdir_shell(tmp, cwd, *, tmpdir=None, path=None):
+    """`bash -c 'printf %s "$TMPDIR"'` under BASH_ENV in `cwd`, with the profiler off so only the per-lease TMPDIR block acts."""
+    env = child_env(tmp, WORKLIST_PROFILE="off", BASH_ENV=str(PROFILE / "bash_env.sh"))
+    env["REDIACC_LEASE_TMP_BASE"] = str(tmp / "base")
+    env["CLAUDE_CODE_TMPDIR"] = str(tmp / "harness")
+    if tmpdir is None:
+        del env["TMPDIR"]
+    else:
+        env["TMPDIR"] = tmpdir
+    if path is not None:
+        env["PATH"] = path
+    bash = shutil.which("bash") or "bash"
+    return subprocess.run(
+        [bash, "-c", 'printf %s "${TMPDIR-unset}"'],
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+
+
+def lease_cwd(tmp):
+    cwd = tmp / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef" / "sub"
+    cwd.mkdir(parents=True)
+    (tmp / "base" / "01234567").mkdir(parents=True)
+    return cwd
+
+
+def test_lease_tmpdir_is_exported_in_a_lease_cwd(tmp_path):
+    out = run_tmpdir_shell(tmp_path, lease_cwd(tmp_path))
+    assert out.stdout == str(tmp_path / "base" / "01234567"), out.stderr
+
+
+def test_lease_tmpdir_replaces_the_harness_value(tmp_path):
+    out = run_tmpdir_shell(tmp_path, lease_cwd(tmp_path), tmpdir=str(tmp_path / "harness"))
+    assert out.stdout == str(tmp_path / "base" / "01234567"), out.stderr
+
+
+def test_lease_tmpdir_is_not_exported_in_the_main_checkout(tmp_path):
+    main = tmp_path / "console"
+    main.mkdir()
+    (tmp_path / "base" / "01234567").mkdir(parents=True)
+    out = run_tmpdir_shell(tmp_path, main)
+    assert out.stdout == "unset", out.stderr
+
+
+def test_lease_tmpdir_kept_when_a_run_narrowed_it(tmp_path):
+    narrowed = str(tmp_path / "pytest-of-x")
+    out = run_tmpdir_shell(tmp_path, lease_cwd(tmp_path), tmpdir=narrowed)
+    assert out.stdout == narrowed, out.stderr
+
+
+def test_lease_tmpdir_missing_directory_is_never_exported(tmp_path):
+    cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef"
+    cwd.mkdir(parents=True)
+    out = run_tmpdir_shell(tmp_path, cwd)
+    assert out.stdout == "unset", out.stderr
+
+
+def test_lease_tmpdir_steady_state_forks_nothing(tmp_path):
+    """The BASH_ENV cost contract: with every external command on PATH a logging stub, the block runs none."""
+    stubs = tmp_path / "stubs"
+    stubs.mkdir()
+    log = tmp_path / "forks.log"
+    for name in ("python3", "cp", "mv", "mkdir", "date", "cat", "sed", "id", "dirname", "basename"):
+        stub = stubs / name
+        stub.write_text('#!/bin/sh\necho "%s $*" >> "%s"\n' % (name, log), encoding="utf-8")
+        stub.chmod(0o755)
+    out = run_tmpdir_shell(tmp_path, lease_cwd(tmp_path), path=str(stubs))
+    assert out.stdout == str(tmp_path / "base" / "01234567"), out.stderr
+    assert not log.exists(), log.read_text(encoding="utf-8")

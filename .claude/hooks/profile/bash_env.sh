@@ -19,6 +19,20 @@
     [[ $- == *x* ]] && __bashcov_x=1
     set +x
 } 2>/dev/null
+# THE PER-LEASE TMPDIR (agent/plans/PLAN-host-temp-disposal.md D1), before anything that re-execs, so the export rides every shell and its children. Inside `*/.claude/worktrees/<id>`, TMPDIR becomes the lease's own directory `<base>/<first 8 characters of the id without "agent-">` (`make_lease` creates it; base is `$REDIACC_LEASE_TMP_BASE` or `/var/tmp/r<uid>`), but only while TMPDIR is unset or still the harness's `$CLAUDE_CODE_TMPDIR`: a TMPDIR that pytest, vitest or a gate narrowed is left alone, and a directory that is gone is never exported. COST: parameter expansions, one `-d` test, no fork, so the steady state stays free.
+case ${PWD:-} in
+*/.claude/worktrees/?*)
+    if [[ -z ${TMPDIR:-} || ${TMPDIR:-} == "${CLAUDE_CODE_TMPDIR:-}" ]]; then
+        __lt_id=${PWD#*/.claude/worktrees/}
+        __lt_id=${__lt_id%%/*}
+        __lt_id=${__lt_id#agent-}
+        __lt_dir=${REDIACC_LEASE_TMP_BASE:-/var/tmp/r$UID}/${__lt_id:0:8}
+        [[ -d $__lt_dir ]] && export TMPDIR=$__lt_dir
+        unset __lt_id __lt_dir
+    fi
+    ;;
+*) ;;
+esac
 # THE .pth LOADER (agent/plans/PLAN-tooling-speed.md D6), before the supervisor: a
 # `PYTHONPATH=...` command replaces the path exported below, and a .pth file in the
 # user site directory reaches python3 anyway. This writes one there, beside a copy

@@ -12,15 +12,18 @@ from __future__ import annotations
 import contextlib
 import datetime
 import fcntl
+import hashlib
 import importlib
 import json
 import os
 import pathlib
 import re
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from typing import NamedTuple
 
@@ -468,6 +471,41 @@ def _store_of(root, sub):
     return store if store.is_dir() and store != root / ".git" else None
 
 
+def lease_tmp_base():
+    """The directory holding every lease's own temp dir: `/var/tmp/r<uid>`, on disk and short enough for runtmp's DEEP_TMPDIR budget. `REDIACC_LEASE_TMP_BASE` replaces it (the tests; `bash_env.sh` reads the same variable)."""
+    return pathlib.Path(os.environ.get("REDIACC_LEASE_TMP_BASE") or "/var/tmp/r%d" % os.getuid())
+
+
+def lease_tmpdir(lease_id):
+    """The temp dir of a lease: the first 8 characters of its id without the `agent-` prefix, which is the name `bash_env.sh` derives from the cwd."""
+    return lease_tmp_base() / lease_id.removeprefix("agent-")[:8]
+
+
+def _make_tmpdir(lease_id):
+    """Create the lease's temp dir 0700 and return its path."""
+    path = lease_tmpdir(lease_id)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.mkdir(mode=0o700, exist_ok=True)
+    path.chmod(0o700)
+    return str(path)
+
+
+def _remove_satellites(record, path):
+    """Delete the temp a lease owns outside its tree: its temp dir, its typecheck cache dir and its gen-docs pre-commit scratch (PLAN-host-temp-disposal D9). `record` is the lease record and `path` the tree, both read before the tree went."""
+    doomed = []
+    if record.get("tmpdir"):
+        doomed.append(record["tmpdir"])
+    munged = str(path).lstrip("/").replace("/", "-")
+    doomed.append(os.path.join(os.path.expanduser("~"), ".cache", "rediacc-typecheck", munged))
+    git_dir = record.get("git_dir", "")
+    if git_dir:
+        key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+        bases = dict.fromkeys((tempfile.gettempdir(), "/tmp"))
+        doomed.extend(os.path.join(base, "gen-docs-precommit-%s" % key) for base in bases)
+    for entry in doomed:
+        shutil.rmtree(entry, ignore_errors=True)
+
+
 def make_lease(root, *, name="", owner="", agent="", tree=""):
     """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot. `tree` names where it is cut (TREES); "" means the tree `root` sits in."""
     origin = os.path.realpath(root)
@@ -524,6 +562,7 @@ def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree)
             _add_tree(repo.store(sub), path / sub, sha, lease_id)
         _run_seed(path, root, tip)
         _verify(path, root, tip, dict(held))
+        tmpdir = _make_tmpdir(lease_id)
         _write_record(
             root,
             {
@@ -533,12 +572,14 @@ def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree)
                 "agent": agent,
                 "base": {CONSOLE: tip, **dict(held)},
                 "tree": tree,
+                "tmpdir": tmpdir,
                 "cut_from": tree_branch(root, tree),
                 "created_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             },
         )
     except (OSError, RuntimeError, subprocess.SubprocessError, spike.InterruptedRunError) as exc:
         survived = _rollback(repo, path)
+        shutil.rmtree(lease_tmpdir(lease_id), ignore_errors=True)
         left = "; left behind: %s" % ", ".join(survived) if survived else ""
         message = "lease %s not made: %s%s" % (lease_id, exc, left)
         raise LeaseRefusedError(message) from exc
@@ -1795,7 +1836,9 @@ def _remove_row(world, row):
 def _remove_row_held(world, row):
     path = pathlib.Path(row.path)
     holder = world.root / spike.HOLDER
+    record = dict(world.records.get(row.lease_id) or {})
     if row.kind == "tree":
+        record["git_dir"] = spike.out(path, "rev-parse", "--absolute-git-dir").strip()
         _rollback(spike.Repo(world.root, row.subs), path)
     else:
         for key, rows in world.listed.items():
@@ -1816,6 +1859,7 @@ def _remove_row_held(world, row):
         survived += spike.out(store, "for-each-ref", "--format=%(refname)", ref).splitlines()
     if not survived:
         (world.root / ".git" / RECORD_DIR / ("%s.json" % row.lease_id)).unlink(missing_ok=True)
+        _remove_satellites(record, path)
     return survived
 
 

@@ -183,6 +183,7 @@ def _hermetic(patch: pytest.MonkeyPatch, tmp_path_factory) -> None:
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": "/dev/null",
         "HOME": str(tmp_path_factory.mktemp("home")),
+        "REDIACC_LEASE_TMP_BASE": str(tmp_path_factory.mktemp("lease-tmp")),
         "WORKLIST_SESSION_ID": "feedface99",
     }
     for key, value in identity.items():
@@ -3546,3 +3547,71 @@ def test_failed_seed_removes_the_partial_tree(repo, monkeypatch):
         lease.make_lease(repo.root, name="bad")
     assert not (repo.root / spike.HOLDER / "bad").exists()
     assert not (repo.root / ".git" / lease.RECORD_DIR / "bad.json").exists()
+
+
+def _satellites(repo, tree, name):
+    """Plant the temp a lease owns outside its tree and return the three paths: its recorded tmpdir, its typecheck cache dir and its gen-docs pre-commit scratch."""
+    record = json.loads(
+        (repo.root / ".git" / lease.RECORD_DIR / ("%s.json" % name)).read_text(encoding="utf-8")
+    )
+    tmpdir = pathlib.Path(record["tmpdir"])
+    assert tmpdir.is_dir(), "fixture control: the lease made no tmpdir"
+    munged = str(tree).lstrip("/").replace("/", "-")
+    cache = pathlib.Path(os.environ["HOME"]) / ".cache" / "rediacc-typecheck" / munged
+    git_dir = spike.must(tree, "rev-parse", "--absolute-git-dir")
+    key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+    scratch = pathlib.Path(gc_env(repo.root)["TMPDIR"]) / ("gen-docs-precommit-%s" % key)
+    for planted in (cache, scratch):
+        planted.mkdir(parents=True)
+        (planted / "leftover").write_text("x\n", encoding="utf-8")
+    (tmpdir / "leftover").write_text("x\n", encoding="utf-8")
+    return tmpdir, cache, scratch
+
+
+def test_gc_satellite_dirs_go_with_the_tree(repo):
+    plant_session(repo.root)
+    tree = make_tree(repo, "sat")
+    planted = _satellites(repo, tree, "sat")
+    done = run_gc(repo.root, "--write", "--id", "sat")
+    assert done.returncode == 0, done.stderr
+    assert not tree.exists()
+    assert [p.exists() for p in planted] == [False, False, False]
+
+
+def test_gc_satellite_dirs_of_a_kept_tree_stay(repo):
+    plant_session(repo.root)
+    tree = make_tree(repo, "keep")
+    planted = _satellites(repo, tree, "keep")
+    spike.write(tree / "dirty.txt", "edited\n")
+    done = run_gc(repo.root, "--write", "--id", "keep")
+    assert row_of(done.stdout, "keep").split()[0] == "KEEP", done.stdout
+    assert tree.exists()
+    assert [p.exists() for p in planted] == [True, True, True]
+
+
+def test_lease_tmpdir_is_made_private_and_recorded(repo):
+    tree = make_tree(repo, "agent-0123456789abcdef", fresh=True)
+    record = json.loads(
+        (repo.root / ".git" / lease.RECORD_DIR / "agent-0123456789abcdef.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    tmpdir = pathlib.Path(record["tmpdir"])
+    assert tmpdir == pathlib.Path(os.environ["REDIACC_LEASE_TMP_BASE"]) / "01234567"
+    assert tmpdir.is_dir()
+    assert tmpdir.stat().st_mode & 0o777 == 0o700
+    assert tree.is_dir()
+
+
+def test_lease_tmpdir_is_removed_when_the_lease_fails(repo, monkeypatch):
+    fake_free(monkeypatch, 10**12)
+    monkeypatch.setattr(lease, "_run_seed", lambda *_args: None)
+
+    def broken(*_args):
+        message = "tree unreadable"
+        raise RuntimeError(message)
+
+    monkeypatch.setattr(lease, "_verify", broken)
+    with pytest.raises(lease.LeaseRefusedError):
+        lease.make_lease(repo.root, name="failing")
+    assert not lease.lease_tmpdir("failing").exists()
