@@ -200,8 +200,9 @@ function namesEvent(ref: string | null, repo: string | null): boolean {
 /**
  * Join the executor's events onto the verdicts. Only an event whose machine is `machine` counts: an event naming no
  * machine cannot place the image on this one. An event carrying a GUID matches the image with that GUID; an event
- * carrying none (one recorded before the executor shipped the GUID) matches the orphan whose archived name is the
- * event's repo name. A matched orphan gets the executor reason with the event time. A protected image keeps its verdict
+ * carrying none (one recorded before the executor shipped the GUID) matches each orphan whose archived ref is the event's
+ * repo or whose name part (before the tag) is the event's repo: an event `alpha:v2` marks only `alpha:v2`, while an event
+ * `alpha` cannot tell the tags apart and marks every orphan `alpha:*` on the machine. A matched orphan gets the executor reason with the event time. A protected image keeps its verdict
  * and reason, and an unmatched orphan keeps its own reason: another cause produced it.
  */
 export function applyExecutorEvents(

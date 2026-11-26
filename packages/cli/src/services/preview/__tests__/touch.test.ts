@@ -20,10 +20,12 @@ describe('previewTouchOption', () => {
     expect(previewTouchOption('vm-1')).toEqual({ previewTouch: { machine: 'vm-1' } });
   });
 
-  it('refuses an unnamed machine or an invalid name while a preview is active', () => {
+  it('carries the refusal for an unnamed machine or an invalid name while a preview is active, and does not throw', () => {
     overlay.value = { name: 'pv-amber-river-stone' };
-    expect(() => previewTouchOption(undefined)).toThrow();
-    expect(() => previewTouchOption('Bad_Name')).toThrow();
-    expect(() => previewTouchOption('-vm')).toThrow();
+    for (const name of [undefined, 'Bad_Name', '-vm']) {
+      const option = previewTouchOption(name);
+      expect(option.previewTouch?.machine).toBeUndefined();
+      expect(option.previewTouch?.refusal).toBeInstanceOf(Error);
+    }
   });
 });

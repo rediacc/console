@@ -16,6 +16,19 @@ import {
 } from './slot.js';
 import { recordPreviewTouch } from './state.js';
 
+/** The machine to record under, or the refusal to raise if a replacement would have to be recorded for a machine that cannot be named. */
+export type PreviewTouch =
+  | { machine: string; refusal?: undefined }
+  | { machine?: undefined; refusal: Error };
+
+/** Whether replacing `running` with the local binary is a first replacement that is pinned and recorded. */
+export function isPreviewTouchReplacement(
+  running: { hash: string | null; version: string | null },
+  localHash: string
+): boolean {
+  return !!running.hash && running.hash !== localHash && !isPreviewVersion(running.version);
+}
+
 /**
  * Pin the slot of the renet the machine runs, then record its slot, version and hash under
  * `preview.touched`, both before anything is uploaded. The pin marker is written first, so a failed record write leaves the marker on the slot; it is inert (it only keeps the slot through later installs) and the next provision pins the same slot again. A machine
@@ -33,13 +46,7 @@ export async function pinAndRecordTouch(
   }
 ): Promise<void> {
   const { running } = replacement;
-  if (
-    !running.hash ||
-    running.hash === replacement.localHash ||
-    isPreviewVersion(running.version)
-  ) {
-    return;
-  }
+  if (!running.hash || !isPreviewTouchReplacement(running, replacement.localHash)) return;
   const slotDir = parsePinOutput(await sftp.exec(buildPinCommand(replacement.binaryPath, 'sudo')));
   await recordPreviewTouch(machine, {
     slot: slotDir,

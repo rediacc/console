@@ -19,8 +19,15 @@ vi.mock('../config/config-resources.js', () => ({
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     list: async () => [mocks.current, ...Object.keys(mocks.others)],
-    load: async (name: string) => mocks.others[name],
+    load: (name: string) => {
+      mocks.loaded.push(name);
+      return Promise.resolve(mocks.others[name]);
+    },
   },
+}));
+
+vi.mock('../core/request-context.js', () => ({
+  currentRequestContext: () => (mocks.inRequest ? {} : undefined),
 }));
 
 vi.mock('../core/output.js', () => ({
@@ -37,6 +44,8 @@ beforeEach(() => {
   mocks.currentRepos = [{ name: 'vmcheck-base', config: { repositoryGuid: KNOWN } }];
   mocks.archived = [];
   mocks.others = {};
+  mocks.inRequest = false;
+  mocks.loaded = [];
 });
 
 describe('analyzePrune', () => {
@@ -139,6 +148,38 @@ describe('archive records of other configs', () => {
     expect((await analyzePrune([ORPHAN], { force: true })).orphaned.map((o) => o.guid)).toEqual([
       ORPHAN,
     ]);
+  });
+});
+
+describe('inside an executor request (review 219d0972.4)', () => {
+  const otherConfig = {
+    rediacc: {
+      resources: {
+        repositories: { app: { tags: { latest: { repositoryGuid: ORPHAN } } } },
+        deletedRepositories: [{ repositoryGuid: ORPHAN, deletedAt: new Date().toISOString() }],
+      },
+    },
+  };
+
+  it('control: outside a request another config protects the GUID', async () => {
+    mocks.others = otherConfig;
+    expect((await analyzePrune([ORPHAN])).protected[0]?.reason).toContain('exists in rediacc');
+  });
+
+  it('never loads or judges against the other config files on disk', async () => {
+    mocks.inRequest = true;
+    mocks.others = otherConfig;
+    const result = await analyzePrune([ORPHAN]);
+    expect(result.orphaned).toEqual([{ guid: ORPHAN, reason: 'not in any config' }]);
+    expect(mocks.loaded).toEqual([]);
+  });
+
+  it('still scans the session config', async () => {
+    mocks.inRequest = true;
+    mocks.others = otherConfig;
+    const result = await analyzePrune([KNOWN, ORPHAN]);
+    expect(result.protected.map((p) => p.guid)).toEqual([KNOWN]);
+    expect(result.orphaned.map((o) => o.guid)).toEqual([ORPHAN]);
   });
 });
 

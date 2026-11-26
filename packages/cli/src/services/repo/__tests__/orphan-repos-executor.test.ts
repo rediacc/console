@@ -152,6 +152,30 @@ describe('tagged archived names (review 0ba0b83a.1)', () => {
   });
 });
 
+describe('two orphans sharing a name with different tags (review 4475304c.2)', () => {
+  const V1 = '3c5d7e9f-1111-4222-8333-444455556661';
+  const V2 = '3c5d7e9f-1111-4222-8333-444455556662';
+  const pair = [
+    row(V1, 'orphaned', OLD_REASON, 'alpha:v1'),
+    row(V2, 'orphaned', OLD_REASON, 'alpha:v2'),
+  ];
+  const base = { machine: 'm1', guid: null, at: '2026-11-20T10:00:00Z' };
+
+  it('an event naming the whole ref marks only that orphan', () => {
+    const events = parseExecutorEvents(line({ ...base, repo: 'alpha:v2' }));
+    const reasons = applyExecutorEvents(pair, events, 'm1').map((r) => r.reason);
+    expect(reasons[0]).toBe(OLD_REASON);
+    expect(reasons[1]).not.toBe(OLD_REASON);
+  });
+
+  it('an event naming only the name cannot pick a tag and marks every orphan of that name', () => {
+    const events = parseExecutorEvents(line({ ...base, repo: 'alpha' }));
+    const reasons = applyExecutorEvents(pair, events, 'm1').map((r) => r.reason);
+    expect(reasons[0]).not.toBe(OLD_REASON);
+    expect(reasons[1]).toBe(reasons[0]);
+  });
+});
+
 describe('archivedNames (review 0ba0b83a.2)', () => {
   it('keys archived records by lowercase GUID and composes name:tag', async () => {
     const { configService } = await import('../../config/config-resources.js');

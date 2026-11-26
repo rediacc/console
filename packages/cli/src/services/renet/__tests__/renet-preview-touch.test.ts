@@ -209,6 +209,42 @@ describe('the first replacement of a server while a preview is active', () => {
   });
 });
 
+describe('an unnamed machine during a preview', () => {
+  const preview = '2.5.0-preview.abc1234';
+  async function unnamed(running: RemoteRenet, local: Buffer) {
+    const { ValidationError } = await import('../../../utils/errors.js');
+    const refusal = new ValidationError('machine cannot be named');
+    state.version = preview;
+    const file = path.join(dir, 'renet');
+    fs.writeFileSync(file, local);
+    const mod = await import('../renet-provisioner.js');
+    mod.renetProvisioner.clearCache();
+    const sftp = remote(null, running);
+    const outcome = await mod.renetProvisioner
+      .provision(CONFIG, { localBinaryPath: file, previewTouch: { refusal } }, sftp as never)
+      .catch((caught: unknown) => caught);
+    return { outcome, sftp, refusal };
+  }
+
+  it('does not refuse a provision that replaces nothing', async () => {
+    const local = renetBytes(preview);
+    const hash = createHash('sha256').update(local).digest('hex');
+    const { outcome } = await unnamed({ hash, version: preview }, local);
+    expect(outcome).toMatchObject({ success: true });
+  });
+
+  it('refuses a first replacement before anything is pinned or staged', async () => {
+    const { outcome, sftp, refusal } = await unnamed(
+      { hash: 'oldhash', version: '2.4.0' },
+      renetBytes(preview)
+    );
+    expect(outcome).toBe(refusal);
+    expect(sftp.exec.mock.calls.some(([c]) => c.includes('echo "PREVIEW_PIN'))).toBe(false);
+    expect(stageMock).not.toHaveBeenCalled();
+    expect(touchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe('the upload guard against a pending pin', () => {
   const preview = '2.5.0-preview.abc1234';
 

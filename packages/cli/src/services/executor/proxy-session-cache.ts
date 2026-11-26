@@ -9,6 +9,12 @@
  * holds the session (a redeploy, an eviction), it answers 404
  * EXECUTOR_SESSION_UNKNOWN and the client re-grants once.
  *
+ * The key does not cover the config key (CEK): a reused session keeps the CEK it was granted with, and the
+ * run skips the CEK unwrap (which is a round trip to config storage). A CEK replaced inside the window
+ * reaches the executor on the next grant, after the 30-minute sliding TTL lapses or an
+ * EXECUTOR_SESSION_UNKNOWN re-grant; 'opens one session in total across two consecutive runs'
+ * (__tests__/proxy-regrant.test.ts) pins that the second run reads no CEK.
+ *
  * The file sits beside the config tokens (`<config dir>/.tokens/`, 0600) and
  * holds no secret: a session id is useless without the bearer that granted it,
  * and the entry is keyed by a hash of (executor URL, bearer), never the bearer.

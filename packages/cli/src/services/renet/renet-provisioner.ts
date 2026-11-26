@@ -13,6 +13,7 @@ import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
 import { busy, CliExitError } from '../../utils/cli-exit-error.js';
+import { ValidationError } from '../../utils/errors.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
@@ -21,7 +22,11 @@ import { outputService } from '../core/output.js';
 import { currentRequestContext } from '../core/request-context.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import type { SwitchBackOutcome } from '../preview/slot.js';
-import { pinAndRecordTouch, runSwitchBack } from '../preview/slot-ops.js';
+import {
+  isPreviewTouchReplacement,
+  pinAndRecordTouch,
+  runSwitchBack,
+} from '../preview/slot-ops.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
@@ -311,9 +316,13 @@ class RenetProvisionerService {
     current: { hash: string | null; version: string | null },
     context: ProvisionContext
   ): Promise<void> {
-    if (!options?.previewTouch) return;
-    await pinAndRecordTouch(sftp, options.previewTouch.machine, {
-      running: current.hash ? current : slot,
+    const touch = options?.previewTouch;
+    if (!touch) return;
+    const running = current.hash ? current : slot;
+    if (touch.refusal && isPreviewTouchReplacement(running, context.localHash)) throw touch.refusal;
+    if (touch.machine === undefined) return;
+    await pinAndRecordTouch(sftp, touch.machine, {
+      running,
       localHash: context.localHash,
       binaryPath: current.hash ? REMOTE_CURRENT_PATH : context.remoteInstallPath,
     });
@@ -350,7 +359,7 @@ class RenetProvisionerService {
       // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
       // Any CliExitError is a coded refusal (today BUSY on the remote install lock) and keeps its code, exit status and next action; an uncoded failure becomes a failed result.
-      if (error instanceof CliExitError) throw error;
+      if (error instanceof CliExitError || error instanceof ValidationError) throw error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
