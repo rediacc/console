@@ -240,3 +240,17 @@ function logged(verdict: ProbeVerdict, reason: string, placement: number): Probe
   console.warn(`proxy: org executor reachability probe ${verdict} (${reason}) at p${placement}`);
   return verdict;
 }
+
+/** The vantage instance's probe of `target` (OrgExecutor.probeFromVantage): refused without a connect when `vantageTarget` refuses this identity, hint or target, so a refusal never counts a report. */
+export function vantageProbe(
+  identity: ExecutorIdentity,
+  hint: string,
+  target: ProbeTarget
+): Promise<ProbeResult> {
+  const admitted = vantageTarget(identity, hint, target);
+  if ('refused' in admitted) {
+    console.warn(`proxy: org executor outside probe refused: ${admitted.refused}`);
+    return Promise.resolve({ verdict: 'target-unreachable', reason: 'error' });
+  }
+  return probeSshBanner(admitted);
+}

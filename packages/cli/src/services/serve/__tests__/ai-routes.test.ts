@@ -37,9 +37,9 @@ import { DEFAULT_MAX_OUTPUT_TOKENS, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '..
 import { createProviderModel, type ProviderModelOptions } from '../../ai/provider.js';
 import { AiTranscripts, createAiRecorder } from '../../ai/recorder.js';
 import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
+import { AI_APPROVAL_STEPUP_REQUIRED } from '../ai-approval.js';
+import { AI_GRANT_UNAVAILABLE } from '../ai-chat-tools.js';
 import {
-  AI_APPROVAL_STEPUP_REQUIRED,
-  AI_GRANT_UNAVAILABLE,
   AI_MODE_DISABLED,
   AI_PROFILE_UNRESOLVED,
   AI_ROUTES,
@@ -606,7 +606,8 @@ describe('POST /v1/ai/chat', () => {
       agentGrants: {
         acquire: (id: string) =>
           id === 'g1' ? Promise.resolve(handle) : Promise.reject(new AgentSessionRefused()),
-      } as ServeDeps['agentGrants'],
+        // A partial fake: the route calls acquire alone.
+      } as unknown as ServeDeps['agentGrants'],
       authorize: (args) => {
         seen.push(args);
         return authorize(args);

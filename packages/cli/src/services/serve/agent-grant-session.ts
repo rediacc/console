@@ -43,7 +43,6 @@
 
 import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
 import {
-  AGENT_GRANT_SECRET_BYTES,
   deriveAuthTag,
   ENVELOPE_VERSION,
   fromBase64,
@@ -66,6 +65,16 @@ import {
   parsePolicyRecordField,
 } from '../config/policy-record.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
+import {
+  type AgentSessionAnswer,
+  documentKey,
+  isWrappedPolicyKey,
+  overridesOf,
+  parseSecret,
+  pointerKey,
+  principalOf,
+  tokenLapsed,
+} from './agent-grant-wire.js';
 import type { AgentGrantOverrides } from './policy.js';
 import { SessionError, type SessionPrincipal } from './sessions.js';
 
@@ -73,9 +82,6 @@ const API = '/account/api/v1';
 
 /** How long a pushed revocation is remembered: the longest grant lifetime (D54, 30 days). */
 const REVOKED_MEMORY_MS = 30 * 24 * 60 * 60 * 1000;
-
-/** The 401 reasons a fresh open cures: the chain's token was spent, expired, or is unknown to the store. */
-const REMINT_REASONS = new Set(['token_exhausted', 'token_expired', 'invalid_token']);
 
 /** The grant's scope as the account answers it (`scope_json`): the read-only flag and the three allowlists. */
 export interface AgentGrantScopeAnswer {
@@ -85,38 +91,7 @@ export interface AgentGrantScopeAnswer {
   repos?: string[];
 }
 
-/** An override axis in the account's shape: exact names, every one, or nothing. */
-type OverrideAxis = '*' | string[] | null;
-
-/** One policy key wrapped for the grant: it opens the records of `policyConfigId` (team `policyTeamId`). */
-interface WrappedPolicyKey {
-  policyConfigId: string;
-  policyTeamId: string | null;
-  wrapped: string;
-}
-
 const ORG_ROLES = new Set<SessionPrincipal['orgRole']>(['owner', 'admin', 'member']);
-
-/** The `agent-session` answer (private/account/src/dto/agent-grant.dto.ts `agentSessionResponse`). */
-interface AgentSessionAnswer {
-  wrappedConfigKey: string;
-  configKeyVersion: number;
-  serverSecret: string;
-  cekGeneration: number;
-  storeId: string;
-  configId: string;
-  teamId: string | null;
-  configToken: string;
-  expiresAt: string;
-  overrides: { grandRepos: OverrideAxis; clusterOps: OverrideAxis };
-  scope: AgentGrantScopeAnswer;
-  /** The policy keys wrapped for the grant: its own config's and the org-level config's. */
-  policyKeys: WrappedPolicyKey[];
-  /** The grant user's org role, email and team slug, read live by the account. */
-  orgRole: SessionPrincipal['orgRole'];
-  userEmail: string;
-  teamSlug: string | null;
-}
 
 /** The account refused to open the grant (revoked, expired, wrong tag, or a membership that ended). Nothing says which. */
 export class AgentSessionRefused extends Error {
@@ -179,71 +154,6 @@ export interface AgentGrantSessionsOptions {
   now?: () => number;
   /** High-water marks of the policy records read; RAM for the container's life by default. */
   policyHighWater?: PolicyHighWater;
-}
-
-/** Strict base64url (no padding) of exactly 32 bytes, or null. Never echoes the input. */
-function parseSecret(text: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]+$/.test(text) || text.length % 4 === 1) return null;
-  const b64 = text.replaceAll('-', '+').replaceAll('_', '/');
-  const bytes = Uint8Array.from(
-    Buffer.from(b64 + '='.repeat((4 - (b64.length % 4)) % 4), 'base64')
-  );
-  if (bytes.byteLength !== AGENT_GRANT_SECRET_BYTES) return null;
-  const canonical = Buffer.from(bytes)
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replace(/=+$/, '');
-  return canonical === text ? bytes : null;
-}
-
-/** The overrides in the shape `authorize` reads (`AgentGrantOverrides`). */
-function overridesOf(answer: AgentSessionAnswer['overrides']): AgentGrantOverrides {
-  const grand = answer.grandRepos;
-  return {
-    allowGrandRepos: grand === '*' ? true : (grand ?? false),
-    allowClusterOps: answer.clusterOps === '*',
-  };
-}
-
-/** Whether a store answer says the chain's token was spent, expired or unknown, which a fresh open cures. */
-function tokenLapsed(answer: { status: number; body: Record<string, unknown> }): boolean {
-  const reason = typeof answer.body.code === 'string' ? answer.body.code : '';
-  return answer.status === 401 && REMINT_REASONS.has(reason);
-}
-
-/** `${grantId}\0${version}`: the cache key of one decrypted document. */
-const documentKey = (grantId: string, version: number): string => `${grantId}\u0000${version}`;
-
-/** `${configId}\0${teamId}`: the lookup key of one pointer's policy key within a session. */
-const pointerKey = (configId: string, teamId: string | null): string =>
-  `${configId}\u0000${teamId ?? ''}`;
-
-/**
- * The principal an agent grant runs as: the grant user's org role, email and team slug, as the account
- * read them for this open. The user id stays the grant's, so the audit names the grant that acted.
- */
-function principalOf(orgId: string, grantId: string, answer: AgentSessionAnswer): SessionPrincipal {
-  return {
-    orgId,
-    teamId: answer.teamId,
-    ...(answer.teamSlug ? { teamSlug: answer.teamSlug } : {}),
-    userId: `agent-grant:${grantId}`,
-    userEmail: answer.userEmail,
-    orgRole: answer.orgRole,
-    agentGrantId: grantId,
-  };
-}
-
-function isWrappedPolicyKey(entry: unknown): entry is WrappedPolicyKey {
-  const item = entry as Partial<WrappedPolicyKey> | null;
-  return (
-    item !== null &&
-    typeof item === 'object' &&
-    typeof item.policyConfigId === 'string' &&
-    (item.policyTeamId === null || typeof item.policyTeamId === 'string') &&
-    typeof item.wrapped === 'string'
-  );
 }
 
 /**

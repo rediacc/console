@@ -16,7 +16,7 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { REVOKE_GRANT_PATH } from '../org-executor';
+import { REVOKE_GRANT_PATH } from '../org-executor-mcp';
 import { flush, harness, ORG, openStream, T0 } from './helpers/org-executor-harness';
 
 beforeEach(() => {

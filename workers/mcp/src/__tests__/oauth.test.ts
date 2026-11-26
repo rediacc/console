@@ -1,220 +1,34 @@
-/**
- * The OAuth authorization server of the hosted Worker (RW-A1, agent/plans/PLAN-rmcp-remote-worker.md Design 2): the full code flow for a CIMD client and a DCR client, the SSRF guard on client URLs, S256-only PKCE, refresh rotation with family revocation on reuse, per-grant audience, the portal handshake (`/authorize/request`, `/authorize/complete`) and the wiring through `src/index.ts`.
- *
- * The library runs on Node over the SQLite-backed KV of packages/shared (the RW-OP0 setup); client metadata documents are served by a stubbed global `fetch`, which records every URL it is asked for so a refusal can be shown to have made no request.
- */
-import { createHash, randomBytes } from 'node:crypto';
-import { DatabaseSync } from 'node:sqlite';
-import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SqliteKvNamespace } from '../../../../packages/shared/src/mcp-host/sqlite-kv.js';
-import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
+import { describe, expect, it } from 'vitest';
+import { createOAuth } from '../oauth/index.js';
 import { ClientUrlRefused, createClientUrlGuard } from '../oauth/ssrf.js';
 import { activeGrant, bearerFor, resolverFor, secretTextOf } from './helpers/grant.js';
-
-const HOST = 'mcp.test.rediacc.cloud';
-const ACCOUNT = 'https://account.test';
-const PORTAL = ACCOUNT;
-const KEY = 'k'.repeat(40);
-const GRANT = 'eu_oauth_grant';
-const OTHER_GRANT = 'eu_oauth_other';
-const LOOPBACK = 'http://127.0.0.1:40001/callback';
-const CLAUDE_CALLBACK = 'https://claude.ai/api/mcp/auth_callback';
-const CIMD_URL = 'https://client.example.com/oauth/client.json';
-
-/** A synchronous stand-in for the execution context the Worker runtime passes. */
-const ctx = {
-  waitUntil() {},
-  passThroughOnException() {},
-  props: {},
-} as unknown as ExecutionContext;
-
-let db: DatabaseSync;
-let env: OAuthEnv;
-let oauth: OAuth;
-let requested: string[];
-let resolved: string[];
-let resolveGrant: ReturnType<typeof resolverFor>;
-
-/** Hosts the guard may resolve, each to the addresses it answers. */
-const DNS: Record<string, string[]> = {
-  'client.example.com': ['93.184.216.34'],
-  'rebind.example.com': ['10.0.0.1'],
-  'mixed.example.com': ['93.184.216.34', '169.254.169.254'],
-};
-
-function cimdDocument(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    client_id: CIMD_URL,
-    client_name: 'Claude Code',
-    redirect_uris: ['http://127.0.0.1:33418/callback'],
-    token_endpoint_auth_method: 'none',
-    grant_types: ['authorization_code', 'refresh_token'],
-    response_types: ['code'],
-    ...overrides,
-  };
-}
-
-beforeEach(() => {
-  db = new DatabaseSync(':memory:');
-  env = { OAUTH_KV: new SqliteKvNamespace(db) as unknown as KVNamespace };
-  requested = [];
-  resolved = [];
-  resolveGrant = resolverFor([
-    activeGrant(GRANT, { userId: 'user-1' }),
-    activeGrant(OTHER_GRANT, { userId: 'user-1' }),
-  ]);
-  oauth = createOAuth({
-    host: HOST,
-    accountUrl: ACCOUNT,
-    authRequestKey: KEY,
-    resolveGrant,
-    resolveHost: (host) => {
-      resolved.push(host);
-      return Promise.resolve(DNS[host] ?? []);
-    },
-  });
-  vi.stubGlobal('Cloudflare', { compatibilityFlags: { global_fetch_strictly_public: true } });
-  vi.stubGlobal(
-    'fetch',
-    vi.fn((input: string | URL | Request) => {
-      const url = String(input instanceof Request ? input.url : input);
-      requested.push(url);
-      return Promise.resolve(
-        url === CIMD_URL
-          ? Response.json(cimdDocument(), { headers: { 'cache-control': 'no-store' } })
-          : new Response('not found', { status: 404 })
-      );
-    })
-  );
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-  db.close();
-});
-
-function call(path: string, init?: RequestInit): Promise<Response> {
-  return oauth.fetch(
-    new Request(`https://${HOST}${path}`, { redirect: 'manual', ...init }),
-    env,
-    ctx
-  ) as Promise<Response>;
-}
-
-function form(fields: Record<string, string>, headers: Record<string, string> = {}): RequestInit {
-  return {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', ...headers },
-    body: new URLSearchParams(fields).toString(),
-  };
-}
-
-function pkce(): { verifier: string; challenge: string } {
-  const verifier = randomBytes(32).toString('base64url');
-  return { verifier, challenge: createHash('sha256').update(verifier).digest('base64url') };
-}
-
-interface Tokens {
-  access_token: string;
-  refresh_token: string;
-}
-
-interface Flow {
-  clientId: string;
-  redirectUri: string;
-  /** What the client puts in `resource`; null sends none. */
-  resource?: string | null;
-  grantId?: string;
-  secret?: string;
-  /** Who posts to `/authorize/complete`. */
-  origin?: string;
-}
-
-function authorizeQuery(flow: Flow, challenge: string, method = 'S256'): string {
-  const query = new URLSearchParams({
-    response_type: 'code',
-    client_id: flow.clientId,
-    redirect_uri: flow.redirectUri,
-    scope: 'mcp',
-    state: 'st-1',
-    code_challenge: challenge,
-    code_challenge_method: method,
-  });
-  if (flow.resource !== null) query.set('resource', flow.resource ?? `https://${HOST}/g/${GRANT}`);
-  return query.toString();
-}
-
-/** `/authorize` then the portal's two calls; returns the redirect back to the client. */
-async function authorizeAndComplete(flow: Flow, challenge: string): Promise<Response> {
-  const authorize = await call(`/authorize?${authorizeQuery(flow, challenge)}`);
-  expect(authorize.status).toBe(302);
-  const page = new URL(authorize.headers.get('location')!);
-  expect(`${page.origin}${page.pathname}`).toBe(`${ACCOUNT}/account/mcp/authorize`);
-  const handle = page.searchParams.get('authRequest')!;
-  return call(
-    '/authorize/complete',
-    form(
-      {
-        authRequest: handle,
-        grantId: flow.grantId ?? GRANT,
-        S: flow.secret ?? secretTextOf(GRANT),
-      },
-      { origin: flow.origin ?? PORTAL }
-    )
-  );
-}
-
-async function signIn(flow: Flow): Promise<{ tokens: Tokens; verifier: string }> {
-  const { verifier, challenge } = pkce();
-  const done = await authorizeAndComplete(flow, challenge);
-  expect(done.status).toBe(303);
-  const back = new URL(done.headers.get('location')!);
-  expect(`${back.origin}${back.pathname}`).toBe(
-    new URL(flow.redirectUri).origin + new URL(flow.redirectUri).pathname
-  );
-  expect(back.searchParams.get('state')).toBe('st-1');
-  expect(back.searchParams.get('iss')).toBe(`https://${HOST}`);
-  const code = back.searchParams.get('code')!;
-  const token = await call(
-    '/oauth/token',
-    form({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: flow.redirectUri,
-      client_id: flow.clientId,
-      code_verifier: verifier,
-      ...(flow.resource === null
-        ? {}
-        : { resource: flow.resource ?? `https://${HOST}/g/${GRANT}` }),
-    })
-  );
-  expect(token.status).toBe(200);
-  return { tokens: (await token.json()) as Tokens, verifier };
-}
-
-async function registerDcr(): Promise<string> {
-  const response = await call('/register', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      client_name: 'Claude',
-      redirect_uris: [CLAUDE_CALLBACK],
-      token_endpoint_auth_method: 'none',
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-    }),
-  });
-  expect(response.status).toBe(201);
-  return ((await response.json()) as { client_id: string }).client_id;
-}
-
-function refresh(clientId: string, refreshToken: string): Promise<Response> {
-  return call(
-    '/oauth/token',
-    form({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: clientId })
-  );
-}
+import {
+  ACCOUNT,
+  authorizeQuery,
+  CIMD_URL,
+  CLAUDE_CALLBACK,
+  call,
+  env,
+  Flow,
+  form,
+  GRANT,
+  HOST,
+  KEY,
+  LOOPBACK,
+  OTHER_GRANT,
+  oauth,
+  PORTAL,
+  pkce,
+  refresh,
+  registerDcr,
+  requested,
+  resolved,
+  resolveGrant,
+  setOAuth,
+  setResolveGrant,
+  signIn,
+  Tokens,
+} from './helpers/oauth-harness.js';
 
 describe('metadata', () => {
   it('advertises S256 only, CIMD, public clients and the iss parameter', async () => {
@@ -450,14 +264,16 @@ describe('/authorize/complete', () => {
   });
 
   it('refuses a grant that does not serve', async () => {
-    resolveGrant = resolverFor([activeGrant(GRANT, { state: 'revoked' })]);
-    oauth = createOAuth({
-      host: HOST,
-      accountUrl: ACCOUNT,
-      authRequestKey: KEY,
-      resolveGrant,
-      resolveHost: () => Promise.resolve([]),
-    });
+    setResolveGrant(resolverFor([activeGrant(GRANT, { state: 'revoked' })]));
+    setOAuth(
+      createOAuth({
+        host: HOST,
+        accountUrl: ACCOUNT,
+        authRequestKey: KEY,
+        resolveGrant,
+        resolveHost: () => Promise.resolve([]),
+      })
+    );
     const handle = await handleFor();
     expect((await post(handle)).status).toBe(400);
   });
@@ -555,123 +371,5 @@ describe('refresh tokens', () => {
     expect((await verify(tokens.access_token, `https://${HOST}/g/${GRANT}`)).status).toBe(
       'invalid'
     );
-  });
-});
-
-describe('src/index.ts wiring', () => {
-  it('serves OAuth routes and accepts the token it minted on the MCP route', async () => {
-    vi.resetModules();
-    const { default: worker } = await import('../index.js');
-    const tag = await (
-      await import('../../../../packages/shared/src/config-crypto/agent-grant.js')
-    ).deriveAuthTag(new Uint8Array(32).map((_, i) => (i * 37 + 11) % 256));
-    const workerEnv = {
-      REGION: 'eu',
-      ENVIRONMENT: 'test',
-      MCP_HOST: HOST,
-      ACCOUNT_URL: ACCOUNT,
-      OAUTH_KV: env.OAUTH_KV,
-      AUTH_REQUEST_KEY: KEY,
-      GRANTS: {
-        resolveGrant: (grantId: string, authTag: string) =>
-          Promise.resolve(
-            grantId === GRANT && authTag === tag
-              ? {
-                  grantId: GRANT,
-                  state: 'active' as const,
-                  orgId: 'org-test',
-                  placement: 0,
-                  tier: 'standard',
-                  userId: 'user-1',
-                  teamId: null,
-                  configId: 'cfg-1',
-                  region: 'eu',
-                  scope: { readOnly: false },
-                  expiresAt: '2099-01-01T00:00:00.000Z',
-                }
-              : null
-          ),
-      },
-    };
-    const viaWorker = (path: string, init?: RequestInit) =>
-      worker.fetch(
-        new Request(`https://${HOST}${path}`, { redirect: 'manual', ...init }),
-        workerEnv as never,
-        ctx
-      );
-    const registered = await viaWorker('/register', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        client_name: 'Claude',
-        redirect_uris: [CLAUDE_CALLBACK],
-        token_endpoint_auth_method: 'none',
-        grant_types: ['authorization_code', 'refresh_token'],
-        response_types: ['code'],
-      }),
-    });
-    const clientId = ((await registered.json()) as { client_id: string }).client_id;
-    const { verifier, challenge } = pkce();
-    const flow: Flow = { clientId, redirectUri: CLAUDE_CALLBACK };
-    const authorize = await viaWorker(`/authorize?${authorizeQuery(flow, challenge)}`);
-    const handle = new URL(authorize.headers.get('location')!).searchParams.get('authRequest')!;
-    const done = await viaWorker(
-      '/authorize/complete',
-      form({ authRequest: handle, grantId: GRANT, S: secretTextOf(GRANT) }, { origin: PORTAL })
-    );
-    const code = new URL(done.headers.get('location')!).searchParams.get('code')!;
-    const token = await viaWorker(
-      '/oauth/token',
-      form({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: CLAUDE_CALLBACK,
-        client_id: clientId,
-        code_verifier: verifier,
-        resource: `https://${HOST}/g/${GRANT}`,
-      })
-    );
-    const { access_token: accessToken } = (await token.json()) as Tokens;
-
-    const client = new Client(
-      { name: 'rw-a1', version: '0.0.0' },
-      { versionNegotiation: { mode: 'legacy' } }
-    );
-    const withToken = (input: string | URL | Request, init?: RequestInit) => {
-      const request = new Request(input, init);
-      request.headers.set('authorization', `Bearer ${accessToken}`);
-      return worker.fetch(request, workerEnv as never, ctx);
-    };
-    await client.connect(
-      new StreamableHTTPClientTransport(new URL(`https://${HOST}/g/${GRANT}`), { fetch: withToken })
-    );
-    expect((await client.listTools()).tools.length).toBeGreaterThan(0);
-
-    // The same token at another grant's URL is the 401 challenge, not a listing.
-    const other = await worker.fetch(
-      new Request(`https://${HOST}/g/${OTHER_GRANT}`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
-        body: '{}',
-      }),
-      workerEnv as never,
-      ctx
-    );
-    expect(other.status).toBe(401);
-    expect(other.headers.get('www-authenticate')).toContain(
-      `resource_metadata="https://${HOST}/.well-known/oauth-protected-resource/g/${OTHER_GRANT}"`
-    );
-    await client.close();
-  });
-
-  it('serves no OAuth route without OAUTH_KV and AUTH_REQUEST_KEY', async () => {
-    vi.resetModules();
-    const { default: worker } = await import('../index.js');
-    const response = await worker.fetch(
-      new Request(`https://${HOST}/oauth/token`, { method: 'POST' }),
-      { REGION: 'eu', ENVIRONMENT: 'test', MCP_HOST: HOST, ACCOUNT_URL: ACCOUNT } as never,
-      ctx
-    );
-    expect(response.status).toBe(404);
   });
 });

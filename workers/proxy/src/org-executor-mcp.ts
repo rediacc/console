@@ -70,3 +70,45 @@ export async function callMcp(
     return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
   }
 }
+
+/**
+ * The container route a pushed grant revocation reaches (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-S5): the container drops the grant's session and its cached config. Only `revokeGrant` reaches it; the public forward refuses it like the MCP call route.
+ */
+export const REVOKE_GRANT_PATH = '/v1/mcp/revoke';
+
+/** The answer of `revokeGrant`: `dropped` is false when no container ran, or when the container reported it held no session for the grant. */
+export type RevokeGrantAnswer =
+  | { ok: true; dropped: boolean }
+  | { ok: false; code: string; status: number };
+
+/** Whether `pathname` reaches the revoke route, decoded and slash-folded like the container's router; a pathname that does not decode fails closed. */
+export function isRevokeGrantPath(pathname: string): boolean {
+  try {
+    return (
+      decodeURIComponent(pathname)
+        .replace(/\/{2,}/g, '/')
+        .replace(/\/+$/, '') === REVOKE_GRANT_PATH
+    );
+  } catch {
+    return true;
+  }
+}
+
+/** POST the revocation to the container's revoke route through `send` (the Durable Object's forward). The container's own `dropped` is the answer; an answer that names none (an older container) counts as dropped, since the route was reached. */
+export async function callRevoke(
+  grantId: string,
+  send: (request: Request) => Promise<Response>
+): Promise<RevokeGrantAnswer> {
+  const response = await send(
+    new Request(`http://container${REVOKE_GRANT_PATH}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ grantId }),
+    })
+  );
+  if (!response.ok) return { ok: false, code: await answerCode(response), status: response.status };
+  const answer = (await response.json().catch(() => undefined)) as
+    | { dropped?: unknown }
+    | undefined;
+  return { ok: true, dropped: answer?.dropped !== false };
+}

@@ -41,7 +41,7 @@
  */
 
 import { type AiConfigs, isRediaccProfile, type Profile, resolveProfile } from '@rediacc/shared/ai';
-import { isPreviewRun, isStepUpMethod, STEP_UP_METHODS } from '@rediacc/shared/auth';
+import { STEP_UP_METHODS } from '@rediacc/shared/auth';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import {
   type AiApprovalCommand,
@@ -50,21 +50,13 @@ import {
   type StreamLine,
 } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
-import { listProxyTools } from '@rediacc/shared/mcp/registry';
-import {
-  type AiDisableableMode,
-  disabledAiModes,
-  type EffectivePolicy,
-  mergePolicies,
-  PolicyDocumentSchema,
-} from '@rediacc/shared/policy';
-import { jsonSchema, type LanguageModel, type ModelMessage, type ToolSet, tool } from 'ai';
+import { type LanguageModel } from 'ai';
 import type { Context, Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { z } from 'zod';
 import { auditApproval } from '../ai/approval-audit.js';
 import type { AiApprovals } from '../ai/approvals.js';
-import { autonomyHold, effectiveMode, isGrandTarget } from '../ai/autonomy.js';
+import { autonomyHold, effectiveMode } from '../ai/autonomy.js';
 import {
   buildJudgeInput,
   createJudgeTally,
@@ -81,29 +73,29 @@ import {
   ProviderProfileError,
 } from '../ai/provider.js';
 import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
-import { runSmoke, type SmokeResult } from '../ai/smoke.js';
+import { runSmoke } from '../ai/smoke.js';
+import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
+import { type AgentGrantHandle } from './agent-grant-session.js';
+import { BadAiRequest, disabledModesFor, judgeApproval } from './ai-approval.js';
 import {
-  type AiGateCall,
-  type AiToolContext,
-  type AiToolGate,
-  type AiToolResult,
-  requestOf,
-  runAiTool,
-} from '../ai/tools.js';
-import { fenceUntrusted } from '../ai/untrusted.js';
-import { boundEffectivePolicy } from '../config/policy-record.js';
-import {
-  type AgentGrantHandle,
-  AgentSessionRefused,
-  AgentSessionUnavailable,
-} from './agent-grant-session.js';
+  type BuiltModel,
+  type ChatSession,
+  type ChatToolHost,
+  chatTools,
+  judgeArgvOf,
+  messagesOf,
+  NO_GRANT_OVERRIDES,
+  type OpenedChat,
+  openGrant,
+  refusedSmoke,
+  type StartedJob,
+  type TurnRecord,
+  toolRequestId,
+  UNRECORDED,
+} from './ai-chat-tools.js';
 import { type BusyCounter, createBusyCounter } from './busy.js';
-import { prepareCommand } from './command-dispatch.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { cancelOnMachine, type JobRouteHelpers } from './job-routes.js';
-import { dispatcher, HandedBack } from './mcp-call-dispatch.js';
-import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
-import { clusterSubjectOf, resolveExecutorTarget } from './policy.js';
 import type { SessionPrincipal } from './sessions.js';
 
 /** The issue text when the schema names none. */
@@ -122,7 +114,6 @@ export type AiMode = (typeof AI_MODES)[number];
 
 /** Refusal codes these routes answer with. */
 export const AI_MODE_DISABLED = 'AI_MODE_DISABLED';
-export const AI_APPROVAL_STEPUP_REQUIRED = 'AI_APPROVAL_STEPUP_REQUIRED';
 
 const IdSchema = z
   .string()
@@ -154,6 +145,8 @@ const ApprovalRequestSchema = z.strictObject({
 });
 
 type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
+
+export type { ApprovalRequest };
 
 /** Where the loop keeps each conversation's mode (D4) and exact allow rules; the autonomy gate reads both. */
 export interface AiConversationModes {
@@ -225,73 +218,6 @@ export interface AiRouteDeps {
   chat?: AiChatDeps;
 }
 
-/** A request these routes refuse before any policy work. */
-class BadAiRequest extends Error {}
-
-/**
- * The effective policy the config carries: the policy records bound to a remote config, else the
- * `policy` field of a local-file config (the same sources serve/policy.ts authorizes against). A
- * malformed local document disables nothing here; authorize() refuses every command under it.
- */
-function effectivePolicyOf(config: RdcConfig): EffectivePolicy | null {
-  const bound = boundEffectivePolicy(config);
-  if (bound) return bound;
-  if (config.remote !== undefined || config.policy === undefined) return null;
-  const parsed = PolicyDocumentSchema.safeParse(config.policy);
-  return parsed.success ? mergePolicies(parsed.data) : null;
-}
-
-/** The modes the policy disables for this caller (D6), in `AI_DISABLEABLE_MODES` order. */
-function disabledModesFor(config: RdcConfig, principal: SessionPrincipal): AiDisableableMode[] {
-  const effective = effectivePolicyOf(config);
-  if (!effective) return [];
-  return disabledAiModes(effective, {
-    userEmail: principal.userEmail,
-    ...(principal.teamSlug ? { teamSlug: principal.teamSlug } : {}),
-  });
-}
-
-function stringOf(name: string | null, bag: Record<string, unknown>): string | undefined {
-  const value = name ? bag[name] : undefined;
-  return typeof value === 'string' ? value : undefined;
-}
-
-/**
- * What the executor itself makes of an approval: whether the command is destructive (and not a
- * preview) and whether its target is a grand repo, and the refusal of an approval of either that
- * names no step-up method.
- */
-async function judgeApproval(
-  body: ApprovalRequest,
-  config: RdcConfig | undefined
-): Promise<{ grand: boolean; destructive: boolean } | { refusal: Record<string, unknown> }> {
-  const { pathKey, params, positionals } = body.command;
-  const { entry } = prepareCommand(pathKey, params, positionals);
-  const target = await resolveExecutorTarget(
-    entry,
-    {
-      ref: stringOf(entry.repoOption, params) ?? stringOf(entry.repoPositional, positionals),
-      machine:
-        stringOf(entry.machineOption, params) ?? stringOf(entry.machinePositional, positionals),
-      subject: clusterSubjectOf(entry, positionals),
-    },
-    config
-  );
-  const grand = isGrandTarget(target);
-  const destructive = entry.severity === 'destructive' && !isPreviewRun(entry, params);
-  const needsStepUp = body.decision === 'approve' && (grand || destructive);
-  if (!needsStepUp || isStepUpMethod(body.stepUpMethod)) return { grand, destructive };
-  const why = grand ? `targets the grand repo "${target.repo?.name}"` : 'is destructive';
-  return {
-    refusal: {
-      error: `Approving "rdc ${pathKey}" needs a fresh re-authentication: the command ${why}.`,
-      code: AI_APPROVAL_STEPUP_REQUIRED,
-      grand,
-      destructive,
-    },
-  };
-}
-
 const MAX_MESSAGES = 200;
 const MAX_MESSAGE_CHARS = 100_000;
 const GRANT_ID = /^[A-Za-z0-9_-]{1,128}$/;
@@ -325,247 +251,6 @@ const TestRequestSchema = z.object({ profile: ProfileNameSchema.optional() });
 
 /** Refusal codes of the chat and test routes. */
 export const AI_PROFILE_UNRESOLVED = 'AI_PROFILE_UNRESOLVED';
-export const AI_GRANT_UNAVAILABLE = 'AI_GRANT_UNAVAILABLE';
-
-/** How long one tool call may run before its turn gives up on it (a started job is handed back sooner). */
-const TOOL_WINDOW_MS = 5 * 60 * 1000;
-
-const NO_GRANT_OVERRIDES = { allowGrandRepos: false, allowClusterOps: false } as const;
-
-/** One chat's verified session: who the tools run as, and the config and scope they run in. */
-interface ChatSession {
-  handle: AgentGrantHandle;
-  sources: AiConfigs;
-}
-
-/** The model a chat runs on, and the profile it came from (the judge reads the profile). */
-interface BuiltModel {
-  model: LanguageModel;
-  profile: Profile;
-}
-
-/** A session, or the refusal that answers the request instead. */
-type OpenedChat =
-  | { session: ChatSession }
-  | { refusal: { error: string; code: string }; status: 400 | 403 | 503 };
-
-/** A request id the job machinery accepts, from a conversation and a model-chosen tool call id. */
-function toolRequestId(conversationId: string, toolCallId: string): string {
-  return `${conversationId}:${toolCallId}`.replaceAll(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 200);
-}
-
-/** `work`, or a rejection when `signal` aborts first; the work itself keeps running to its own end. */
-function untilAborted<T>(work: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
-  if (!signal) return work;
-  return new Promise<T>((resolve, reject) => {
-    const abort = () => reject(new Error('The chat was cancelled.'));
-    if (signal.aborted) abort();
-    signal.addEventListener('abort', abort, { once: true });
-    work.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
-  });
-}
-
-/** How one turn is recorded: its opening messages before the model runs, its reply after; neither rejects. */
-interface TurnRecord {
-  opening: () => Promise<void>;
-  reply: (text: string, model: string | undefined) => Promise<void>;
-}
-
-/** The record of a turn that is not recorded. */
-const UNRECORDED: TurnRecord = {
-  opening: () => Promise.resolve(),
-  reply: () => Promise.resolve(),
-};
-
-/** A machine job a tool call started. */
-interface StartedJob {
-  jobId: string;
-  machine: string;
-}
-
-/**
- * The machine jobs of one tool call, cancelled when the chat aborts. Once the call settles without
- * an abort, a job it handed back is the user's to follow and is never cancelled; once the chat has
- * aborted, every job the still-running command announces is cancelled on arrival.
- */
-class ToolCallJobs {
-  private readonly jobs: StartedJob[] = [];
-  /** Empty while the call runs, then `aborted` or `settled`, whichever came first. */
-  private readonly phase = new Set<'aborted' | 'settled'>();
-
-  constructor(
-    signal: AbortSignal | undefined,
-    private readonly cancel: (job: StartedJob) => void
-  ) {
-    if (!signal) return;
-    const abort = () => {
-      if (this.phase.size > 0) return;
-      this.phase.add('aborted');
-      for (const job of this.jobs) this.cancel(job);
-    };
-    if (signal.aborted) abort();
-    else signal.addEventListener('abort', abort, { once: true });
-  }
-
-  started(jobId: string, machine: string | undefined): void {
-    if (this.phase.has('settled') || !machine) return;
-    const job = { jobId, machine };
-    this.jobs.push(job);
-    if (this.phase.has('aborted')) this.cancel(job);
-  }
-
-  /** The call answered; without an abort its jobs are no longer the turn's to cancel. */
-  settled(): void {
-    if (this.phase.size === 0) this.phase.add('settled');
-  }
-}
-
-interface ChatToolHost {
-  deps: ServeDeps;
-  busy: BusyCounter;
-  session: ChatSession;
-  conversationId: string;
-  forward: (line: StreamLine) => void;
-  gate: AiToolGate;
-  /** Cancel one job of an aborted chat: authorized and audited as `job cancel`; never rejects. */
-  cancelJob: (job: StartedJob) => void;
-}
-
-/** The argv the judge reads: the path, the positionals in order, then each option as `--name value`. */
-function judgeArgvOf(command: AiApprovalCommand): string[] {
-  const argv = [...command.pathKey.split(' ')];
-  for (const value of Object.values(command.positionals)) argv.push(String(value));
-  for (const [name, value] of Object.entries(command.params)) {
-    if (value === true) argv.push(`--${name}`);
-    else if (value !== false && value !== undefined) argv.push(`--${name}`, String(value));
-  }
-  return argv;
-}
-
-type RegistryTool = ReturnType<typeof listProxyTools>[number];
-
-/** One model-requested call: the grant's globs, then `runAiTool` (prepare, decide, dispatch with audit). */
-async function runChatTool(
-  host: ChatToolHost,
-  entry: RegistryTool,
-  input: Record<string, unknown>,
-  call: { toolCallId: string; abortSignal?: AbortSignal }
-): Promise<AiToolResult> {
-  const { handle } = host.session;
-  const command = getCommand(entry.command);
-  if (!command) return await runAiTool(unrunnable(host), entry, input, call);
-  const request = requestOf(entry, command, input);
-  const outside = await globRefusal(handle.scope, command, request, handle.config);
-  if (outside) return { status: 'refused', code: 'POLICY_DENIED', reason: outside };
-  const jobs = new ToolCallJobs(call.abortSignal, host.cancelJob);
-  const dispatch = dispatcher(
-    {
-      deps: host.deps,
-      busy: host.busy,
-      handle,
-      requestId: toolRequestId(host.conversationId, call.toolCallId),
-      windowMs: TOOL_WINDOW_MS,
-      onJobStarted: (jobId, machine) => jobs.started(jobId, machine),
-    },
-    request
-  );
-  try {
-    return await runAiTool(
-      {
-        ...unrunnable(host),
-        run: (run) => untilAborted(dispatch(run), call.abortSignal),
-      },
-      entry,
-      input,
-      call
-    );
-  } catch (error) {
-    if (!(error instanceof HandedBack)) throw error;
-    const where = error.machine ? ` on ${error.machine}` : '';
-    return {
-      status: 'ok',
-      exitCode: 0,
-      output: fenceUntrusted(
-        `The command started job ${error.jobId}${where} and keeps running; follow it with the job tools.`
-      ).text,
-    };
-  } finally {
-    jobs.settled();
-  }
-}
-
-/** The tool context minus a dispatcher: its `run` refuses, so a call that has none can never dispatch. */
-function unrunnable(host: ChatToolHost): AiToolContext {
-  const { handle } = host.session;
-  return {
-    principal: handle.principal,
-    config: handle.config,
-    // The agent principal: set here from the verified session, never from the request body.
-    agentGrant: handle.overrides,
-    authorize: host.deps.authorize,
-    run: () => Promise.reject(new Error('This tool call has no dispatcher.')),
-    onEvent: (toolCallId, event) => host.forward({ kind: 'event', event, toolCallId }),
-    gate: host.gate,
-  };
-}
-
-/** The AI SDK tool set of one chat: the proxy-surface registry tools the session's scope admits. */
-function chatTools(host: ChatToolHost): ToolSet {
-  const tools: ToolSet = {};
-  for (const entry of listProxyTools()) {
-    if (!scopeAdmitsTool(host.session.handle.scope, entry)) continue;
-    tools[entry.name] = tool({
-      description: entry.description,
-      inputSchema: jsonSchema<Record<string, unknown>>(entry.inputSchema),
-      execute: (input, options) =>
-        runChatTool(host, entry, input, {
-          toolCallId: options.toolCallId,
-          ...(options.abortSignal ? { abortSignal: options.abortSignal } : {}),
-        }),
-    });
-  }
-  return tools;
-}
-
-function messagesOf(body: ChatRequest): ModelMessage[] {
-  return body.messages.map((m) => ({ role: m.role, content: m.content }));
-}
-
-/** The smoke result of a profile the adapter refused to build, in the smoke's own shape. */
-function refusedSmoke(error: ProviderProfileError): SmokeResult {
-  return {
-    ok: false,
-    reason: 'profile-refused',
-    message: error.message,
-    latencyMs: 0,
-    observed: { tools: false, streaming: false },
-  };
-}
-
-/** The grant session of a grant-bound chat, or the refusal that answers it. */
-async function openGrant(
-  deps: ServeDeps,
-  grant: NonNullable<ChatRequest['grant']>
-): Promise<OpenedChat> {
-  if (!deps.agentGrants) {
-    return {
-      status: 400,
-      refusal: { error: 'This executor serves no agent grants.', code: AI_GRANT_UNAVAILABLE },
-    };
-  }
-  try {
-    const handle = await deps.agentGrants.acquire(grant.grantId, grant.secret);
-    return { session: { handle, sources: { team: handle.config.ai } } };
-  } catch (error) {
-    if (error instanceof AgentSessionRefused) {
-      return { status: 403, refusal: { error: error.message, code: AI_GRANT_UNAVAILABLE } };
-    }
-    if (error instanceof AgentSessionUnavailable) {
-      return { status: 503, refusal: { error: error.message, code: AI_GRANT_UNAVAILABLE } };
-    }
-    throw error;
-  }
-}
 
 export function registerAiRoutes(
   app: Hono,

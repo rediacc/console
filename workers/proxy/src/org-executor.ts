@@ -13,9 +13,12 @@ import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capaci
 import { drillProbeTarget } from './drill';
 import {
   callMcp,
+  callRevoke,
   isMcpCallPath,
+  isRevokeGrantPath,
   type McpCallAnswer,
   type McpCallForward,
+  type RevokeGrantAnswer,
 } from './org-executor-mcp';
 import {
   type ExecutorIdentity,
@@ -26,7 +29,7 @@ import {
   relocateOrg,
   reportAnswer,
   reportRefusal,
-  vantageTarget,
+  vantageProbe,
 } from './org-executor-relocate';
 import {
   acquireLease,
@@ -75,29 +78,6 @@ import {
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
-
-/**
- * The container route a pushed grant revocation reaches (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-S5): the container drops the grant's session and its cached config. Only `revokeGrant` reaches it; the public forward refuses it like the MCP call route.
- */
-export const REVOKE_GRANT_PATH = '/v1/mcp/revoke';
-
-/** The answer of `revokeGrant`: `dropped` is false when no container ran, or when the container reported it held no session for the grant. */
-export type RevokeGrantAnswer =
-  | { ok: true; dropped: boolean }
-  | { ok: false; code: string; status: number };
-
-/** Whether `pathname` reaches the revoke route, decoded and slash-folded like the container's router; a pathname that does not decode fails closed. */
-function isRevokeGrantPath(pathname: string): boolean {
-  try {
-    return (
-      decodeURIComponent(pathname)
-        .replace(/\/{2,}/g, '/')
-        .replace(/\/+$/, '') === REVOKE_GRANT_PATH
-    );
-  } catch {
-    return true;
-  }
-}
 
 /** The size named in the out-of-memory log line when the container never reported one. */
 const UNKNOWN_SIZE = 'unknown';
@@ -256,12 +236,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    * The outside reachability vantage (src/org-executor-relocate.ts module comment): probe `target`'s SSH banner from this instance, which must be the unpinned instance named `vantageName(hint)`, reached by `outsideProbe` with that location hint (the hint places the instance when the first call creates it). On any other instance, on a pinned one, or for a target `probeTarget` refuses, it answers `target-unreachable (error)` without a connect, so a refusal never counts a report.
    */
   probeFromVantage(hint: string, target: ProbeTarget): Promise<ProbeResult> {
-    const admitted = vantageTarget(this.identity(), hint, target);
-    if ('refused' in admitted) {
-      console.warn(`proxy: org executor outside probe refused: ${admitted.refused}`);
-      return Promise.resolve({ verdict: 'target-unreachable', reason: 'error' });
-    }
-    return probeSshBanner(admitted);
+    return vantageProbe(this.identity(), hint, target);
   }
 
   /** Retire this instance: kept in storage so a restart stays retired, then drain. The request whose report caused the move still ends with its result line before the container goes. */
@@ -342,24 +317,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   async revokeGrant(grantId: string): Promise<RevokeGrantAnswer> {
     await this.startupSettled();
     if (!this.ctx.container?.running || !this.record) return { ok: true, dropped: false };
-    const response = await this.forward(
-      new Request(`http://container${REVOKE_GRANT_PATH}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ grantId }),
-      })
-    );
-    if (!response.ok) {
-      const body = (await response.json().catch(() => undefined)) as { code?: unknown } | undefined;
-      const code =
-        typeof body?.code === 'string' && body.code !== '' ? body.code : 'EXECUTOR_FAILED';
-      return { ok: false, code, status: response.status };
-    }
-    // The container's own `dropped` is the answer; an answer that names none (an older container) counts as dropped, since the route was reached.
-    const answer = (await response.json().catch(() => undefined)) as
-      | { dropped?: unknown }
-      | undefined;
-    return { ok: true, dropped: answer?.dropped !== false };
+    return callRevoke(grantId, (request) => this.forward(request));
   }
 
   /** The forward behind `fetch` and `mcpCall`: wait out a start, check the instance can serve, then proxy with in-flight counting. */
