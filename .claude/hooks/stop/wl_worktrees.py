@@ -273,8 +273,8 @@ TAG_MIN_CHARS = 4
 
 
 def _tags_agree(owner, tag):
-    """Whether two session id prefixes name one session: both at least TAG_MIN_CHARS long and one a prefix of the other, so a one- or two-character tag never agrees with every owner that starts with it."""
-    if len(owner or "") < TAG_MIN_CHARS or len(tag or "") < TAG_MIN_CHARS:
+    """Whether a lease's `owner` and a writer's or item's `tag` name one session: the TAG is at least TAG_MIN_CHARS long and one is a prefix of the other, so a one- or two-character tag never agrees with every owner that starts with it. The owner is the lease record's own field (the session id "or its prefix"), so a short owner still agrees with its own full tag (review c9c88f05.1); an empty one agrees with nothing."""
+    if not owner or len(tag or "") < TAG_MIN_CHARS:
         return False
     return owner.startswith(tag) or tag.startswith(owner)
 

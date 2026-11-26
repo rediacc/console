@@ -24,7 +24,7 @@ import wl_core as C
 LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
 # The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f set once per hour; operator request 2026-11-26 halved it, "make writers-now 2x more aggressive"; a second request the same day asked for 1.5x more, "Increase the writers-now pushing 1.5 times more").
 WINDOW_MIN = 20
-# How long a round whose survey file does not exist yet still counts with no liveness witness: halved with the window (was 50 of 60), and a survey agent the hook sees running keeps its round counting up to SURVEY_LIVE_MAX_MIN.
+# How long a round whose survey file does not exist yet still counts with no liveness witness: 15 minutes at the 20-minute window (it was 50 at the hour window, 25 at the half-hour one, and shrank with each request, not by a fixed ratio), and a survey agent the hook sees running keeps its round counting up to SURVEY_LIVE_MAX_MIN.
 SURVEY_GRACE_MIN = 15
 # The most a liveness witness extends a missing survey: a surveyor measured at 21 to 48 minutes, so a task still naming the file after this long is a watcher or a reader, not the producer.
 SURVEY_LIVE_MAX_MIN = 180
@@ -161,13 +161,18 @@ def _prev_digest(root, row, prev) -> str | None:
     return survey_digest(survey_file(root, prev["survey"]))
 
 
+def _names_file(name, text) -> bool:
+    """True when `text` names the file `name` as a whole file name: not as the tail or head of a longer one (`s-r4.md` inside `s-r40.md`, or `my-s.md` for `s.md`). A task that merely reads the survey still matches, which SURVEY_LIVE_MAX_MIN bounds (review ec1021d6.4)."""
+    return re.search(r"(?<![\w.-])%s(?![\w-])" % re.escape(name), text) is not None
+
+
 def survey_live(row, prompts, items, live_worker_ids) -> bool:
     """True when something verifiably live is still producing `row`'s survey.
 
     Two witnesses, either enough: a live task whose first prompt (an agent) or description (a shell) names the survey file, matched on its basename so a relative and an absolute spelling both hit; or a `[>]` item leased to a live worker whose text, last note or lease note names the round id. `prompts` is {task_id: text} for the live tasks of this session, every agent type included (the survey agent is read-only by brief), `items` the worklist fold's records.
     """
     name = pathlib.Path(str(row.get("survey") or "")).name
-    if name and any(name in str(text or "") for text in (prompts or {}).values()):
+    if name and any(_names_file(name, str(text or "")) for text in (prompts or {}).values()):
         return True
     rid = str(row.get("round") or "")
     if not rid:
@@ -207,7 +212,7 @@ def new_round_id() -> str:
 
 
 def append_round(root, session, survey, now, round_id=None, **extra) -> dict:
-    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle (continued only after a short write), so two sessions starting rounds at once each keep their own line."""
+    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle, so two sessions starting rounds at once each keep their own line. Only a SHORT write (a disk filling mid-line) is continued with further writes, and a second session's append may land between those, so that one row can come out split across lines; `read_rounds` then skips both fragments, the same as any torn line (review 66ac6d0f.1)."""
     row = {
         "round": round_id or new_round_id(),
         "session": str(session),
@@ -279,14 +284,22 @@ def due(rows, session, now, open_boxes, loop=None, root=None, live=None) -> tupl
 
 
 def promoted_open(root) -> int:
-    """The open boxes of the Promoted entries of agent/plans/QUEUE.md, each plan counted once (wl_planqueue.promoted_progress). A plan whose counts cannot be read adds nothing; a QUEUE.md that cannot be read raises."""
+    """The open boxes of the Promoted entries of agent/plans/QUEUE.md, each plan counted once (wl_planqueue.promoted_progress). A QUEUE.md that cannot be read raises, and so does a Promoted plan whose counts cannot be read (ValueError naming each): a plan that adds 0 would let the cadence stay silent over open boxes, and the callers send a raise to the read-failure note (review bd9a688e.1)."""
     import wl_planqueue as PQ
 
     text = (pathlib.Path(root) / PQ.QUEUE_REL).read_text(encoding="utf-8")
     seen: dict[str, int] = {}
+    unreadable: dict[str, str] = {}
     for row in PQ.promoted_progress(root, text):
-        if not row.why:
+        if row.why:
+            unreadable.setdefault(row.rel, row.why)
+        else:
             seen.setdefault(row.rel, row.opened)
+    if unreadable:
+        raise ValueError(
+            "Promoted plan counts cannot be read: %s"
+            % "; ".join("%s (%s)" % (rel, why) for rel, why in sorted(unreadable.items()))
+        )
     return sum(seen.values())
 
 
@@ -319,7 +332,7 @@ def refresh_fields(facts, cap, why, me8) -> dict:
 
 # ---- the capacity refill -------------------------------------------------------
 #
-# WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once per window leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey. Operator request 2026-11-26 ("we still have hundreds of waiting tasks ... they're mostly independent already") raised the floor from 6 to 8, made the refill staff every free cluster rather than only up to the floor, and halved the refresh numbers.
+# WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once per window leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey. Operator request 2026-11-26 ("we still have hundreds of waiting tasks ... they're mostly independent already") raised the floor from 6 to 8, made the refill staff every free cluster rather than only up to the floor, and cut the refresh numbers from 15 boxes and 15 minutes to 8 and 8. The request of the same day asking for 1.5 times more pushing then moved the floor to 12 (CAPACITY_FLOOR), the refresh numbers to 5 boxes and 5 minutes (REFRESH_TICKS, REFRESH_GAP_MIN) and the window to 20 minutes.
 
 # The live-writer floor: below it, every unstaffed startable cluster of the current survey is named to start, clock or no clock. A trigger, not a ceiling: there is no writer limit (agent/plans/PLAN-unlimited-writers.md).
 CAPACITY_FLOOR = 12
@@ -439,6 +452,7 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
     named = named_sigs(items, session)
     facts["read"] = True
     facts["age"] = (now.timestamp() - mtime) / 60.0
+    # The survey's plan tables list the OPEN boxes of its round (the /writers-now survey sorts every open box), so a table sig ticked now was ticked after the survey was written, which is what WHY_TICKED and REFRESH_TICKS count (review 7d036d68.1).
     facts["ticked"] = len(table & done)
     for cl in clusters:
         left = [s for s in cl["sigs"] if s not in done]

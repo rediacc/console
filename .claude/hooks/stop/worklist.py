@@ -233,7 +233,7 @@ def _local_common_main(common):
 
 
 # The twin of wl_core's landing read: commit_policy validates, once per record version. Keep in lockstep.
-_LANDING_READS: dict[tuple[str, int, int], tuple[dict | None, str]] = {}
+_LANDING_READS: dict[tuple, tuple[dict | None, str]] = {}
 
 
 def _local_commit_policy():
@@ -264,7 +264,13 @@ def _local_read_landing_record(tree):
         return None, ""
     except OSError as exc:
         return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
-    key = (str(where), st.st_mtime_ns, st.st_size)
+    # The verdict also reads the tree named here (its `.git` and its git dir), so the tree path and its `.git` entry's version join the key: a tree re-pointed within one process is read again (review 1cd88702.4).
+    try:
+        dot = os.lstat(os.path.join(str(tree), ".git"))
+        dot_key = (dot.st_mtime_ns, dot.st_size)
+    except OSError:
+        dot_key = (0, 0)
+    key = (str(where), st.st_mtime_ns, st.st_size, str(tree), *dot_key)
     if key not in _LANDING_READS:
         try:
             policy = _local_commit_policy()

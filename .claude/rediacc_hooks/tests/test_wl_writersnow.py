@@ -6,9 +6,12 @@ The verb is driven through the real CLI against a `wlfix` sandbox and the ledger
 from __future__ import annotations
 
 import datetime
+import importlib.util
 import json
 import pathlib
 import re
+
+import pytest
 
 from rediacc_hooks.tests import wlfix
 
@@ -646,3 +649,212 @@ def test_stop_hook_a_live_subagent_naming_the_survey_keeps_a_round_past_the_grac
         [{"id": tid, "type": "subagent", "status": "running", "description": "unrelated words"}]
     )
     wl.check_quiet("WRITERS-NOW DUE", "a live subagent is still writing the survey")
+
+
+# ---- review findings of CL-W-HOOKS-STOP-4 -----------------------------------------------
+# Each case names its finding. A positive case has a control that differs by one planted fact.
+
+W = wlfix.import_wl("wl_worktrees")
+
+# ---- wl_worktrees: hold owner tags (c9c88f05.1) -----------------------------------------
+
+
+def test_a_short_lease_owner_agrees_with_its_own_full_tag_and_a_short_tag_agrees_with_no_one():
+    assert W._tags_agree("abc", "abc12345")
+    assert W._tags_agree("abc12345", "abc1")
+    # Controls: the TAG stays at least TAG_MIN_CHARS long, an empty owner agrees with nothing, a stranger never agrees.
+    assert not W._tags_agree("abc12345", "ab")
+    assert not W._tags_agree("abc12345", "")
+    assert not W._tags_agree("", "abc12345")
+    assert not W._tags_agree("abc12345", "abd12345")
+
+
+def test_owner_problem_honours_a_short_owner_hold_and_still_refuses_a_peer():
+    item = {"id": "ac6a4f6b", "owner": "abc12345"}
+    assert W.owner_problem("abc12345", item, "abc") == ""
+    assert "not the lease owner" in W.owner_problem("babe0000", item, "abc")
+
+
+# ---- wl_writersnow: the survey witness (ec1021d6.4) -------------------------------------
+
+
+def test_a_survey_witness_names_the_whole_file_not_the_tail_of_a_longer_one():
+    row = {"survey": "/tmp/writers-now/1121-1-20261126T1723Z-r4.md", "round": "r"}
+    mine = "write the survey to /tmp/writers-now/1121-1-20261126T1723Z-r4.md and return"
+    longer = "write the survey to /tmp/writers-now/1121-1-20261126T1723Z-r4-b.md and return"
+    tail = "write the survey to /tmp/writers-now/other-1121-1-20261126T1723Z-r4.md and return"
+    assert WN.survey_live(row, {"t1": mine}, (), ())
+    assert WN.survey_live(row, {"t1": "reads 1121-1-20261126T1723Z-r4.md."}, (), ())
+    assert not WN.survey_live(row, {"t1": longer}, (), ())
+    assert not WN.survey_live(row, {"t1": tail}, (), ())
+
+
+# ---- wl_writersnow: the ticked count and an exhausted survey (7d036d68.1 and .2) ----------
+
+
+def _cap(**over):
+    cap = {
+        "round": "r1",
+        "read": True,
+        "free": [],
+        "live": 3,
+        "floor": WN.CAPACITY_FLOOR,
+        "ticked": 0,
+        "age": WN.REFRESH_GAP_MIN + 1,
+    }
+    cap.update(over)
+    return cap
+
+
+OPEN = {"why": "", "open": 5}
+
+
+def test_an_exhausted_survey_names_a_new_round_at_any_roster_size_once_it_is_old_enough():
+    for live in (0, WN.CAPACITY_FLOOR, WN.CAPACITY_FLOOR + 8):
+        kind, why = WN.assess(False, OPEN, _cap(live=live))
+        assert kind == "due", live
+        assert why == WN.WHY_EXHAUSTED % "r1"
+    # Controls: a survey younger than the gap, and one that still holds a free cluster above the floor, stay silent.
+    assert WN.assess(False, OPEN, _cap(live=20, age=WN.REFRESH_GAP_MIN - 1)) == ("", "")
+    free = [{"id": "CL-A", "sigs": ["a" * 8], "head": "h"}]
+    assert WN.assess(False, OPEN, _cap(live=20, free=free)) == ("", "")
+
+
+def test_the_ticked_count_is_the_table_sigs_ticked_now_and_no_other_sig(tmp_path):
+    survey = tmp_path / "s.md"
+    survey.write_text(
+        "| aaaaaaaa | A | CODE | none | n |\n| bbbbbbbb | B | CODE | none | n |\n"
+        "## 4. CODE boxes clustered by shared files\n### Startable now\n"
+        "- **CL-X (1)**: P A aaaaaaaa + B bbbbbbbb Files: f\n",
+        encoding="utf-8",
+    )
+    rows = [
+        {"round": "r1", "session": "deadbeef", "at": "2026-11-26T17:00:00Z", "survey": str(survey)}
+    ]
+    got = WN.capacity(rows, "deadbeef", tmp_path, [], 2, lambda: {"aaaaaaaa", "cccccccc"}, NOW)
+    assert got["read"]
+    assert got["ticked"] == 1
+    got = WN.capacity(rows, "deadbeef", tmp_path, [], 2, lambda: {"cccccccc"}, NOW)
+    assert got["ticked"] == 0
+
+
+# ---- wl_writersnow: an unreadable Promoted plan (bd9a688e.1) ----------------------------
+
+
+def test_promoted_open_raises_for_an_unreadable_plan_instead_of_adding_nothing(wl):
+    plant_promoted(wl, "- [ ] B1 open\n")
+    assert WN.promoted_open(wl.proj) == 1
+    queue = wl.proj / "agent" / "plans" / "QUEUE.md"
+    queue.write_text(
+        queue.read_text(encoding="utf-8").replace(
+            "## Promoted\n", "## Promoted\n\n2. agent/plans/PLAN-wn-gone.md\n", 1
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"PLAN-wn-gone\.md"):
+        WN.promoted_open(wl.proj)
+
+
+# ---- worklist.py: the landing-record twin and the wl_cli bind (1cd88702.4, abf92494.1, 5a1c6e01.1) ----
+
+WLK = wlfix.import_wl("worklist")
+WCLI = wlfix.import_wl("wl_cli")
+WGIT = wlfix.import_wl("wl_git")
+
+
+class _Policy:
+    def __init__(self):
+        self.calls = []
+
+    def read_landing_record(self, tree):
+        self.calls.append(tree)
+        return {"path": tree, "branch": "1121-1"}, ""
+
+
+def _landing_world(monkeypatch, tmp_path, policy):
+    common = tmp_path / "common"
+    common.mkdir(exist_ok=True)
+    (common / WLK.LANDING_RECORD_NAME).write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(WLK, "_local_git_dirs", lambda _tree: (common / "wt", common))
+    monkeypatch.setattr(WLK, "_local_commit_policy", policy)
+    WLK._LANDING_READS.clear()
+    for name in ("t1", "t2"):
+        (tmp_path / name).mkdir(exist_ok=True)
+        (tmp_path / name / ".git").write_text("gitdir: x\n", encoding="utf-8")
+    return tmp_path / "t1", tmp_path / "t2"
+
+
+def test_the_landing_read_is_cached_per_tree_and_record_version(monkeypatch, tmp_path):
+    policy = _Policy()
+    t1, t2 = _landing_world(monkeypatch, tmp_path, lambda: policy)
+    assert WLK._local_read_landing_record(t1)[0]["branch"] == "1121-1"
+    WLK._local_read_landing_record(t1)
+    assert len(policy.calls) == 1, "the same tree and record are read once"
+    WLK._local_read_landing_record(t2)
+    assert len(policy.calls) == 2, "another tree over the same record is read again"
+    WLK._LANDING_READS.clear()
+
+
+def test_any_failure_loading_the_validator_is_a_problem_not_a_crash(monkeypatch, tmp_path):
+    def broken():
+        raise RuntimeError("boom")
+
+    t1, _t2 = _landing_world(monkeypatch, tmp_path, broken)
+    rec, why = WLK._local_read_landing_record(t1)
+    assert rec is None
+    assert "could not be loaded (RuntimeError: boom)" in why
+    # Control: a loadable validator gives the record and no problem.
+    _landing_world(monkeypatch, tmp_path, _Policy)
+    rec, why = WLK._local_read_landing_record(t1)
+    assert rec
+    assert not why
+    WLK._LANDING_READS.clear()
+
+
+def _load_worklist_copy(monkeypatch, bind):
+    monkeypatch.setattr(WCLI, "bind", bind)
+    spec = importlib.util.spec_from_file_location("_wl_bind_copy", wlfix.HOOK)
+    assert spec
+    assert spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_a_bind_that_fails_makes_wl_cli_a_broken_sibling_shim(monkeypatch):
+    def bad(_host):
+        raise KeyError("MISSING_GLOBAL")
+
+    mod = _load_worklist_copy(monkeypatch, bad)
+    assert mod._BROKEN["wl_cli"].startswith("bind: KeyError")
+    with pytest.raises(RuntimeError, match="sibling module wl_cli is unusable"):
+        _ = mod.CLI.anything
+    # Control: a bind that succeeds leaves wl_cli whole.
+    good = _load_worklist_copy(monkeypatch, lambda _host: None)
+    assert "wl_cli" not in good._BROKEN
+
+
+# ---- wl_cli: the tick's submodule probe (26dc7587.2) -------------------------------------
+
+
+def test_the_commit_ref_probe_skips_a_submodule_that_is_not_checked_out(monkeypatch, tmp_path):
+    root = tmp_path / "root"
+    (root / "private" / "out").mkdir(parents=True)
+    (root / "private" / "in" / ".git").mkdir(parents=True)
+    (root / ".gitmodules").write_text(
+        '[submodule "private/out"]\n\tpath = private/out\n\turl = x\n'
+        '[submodule "private/in"]\n\tpath = private/in\n\turl = x\n',
+        encoding="utf-8",
+    )
+    cwds = []
+
+    def probe(*_args, cwd, **_kw):
+        cwds.append(str(cwd))
+        return 1, "", ""
+
+    monkeypatch.setattr(WGIT, "run_git", probe)
+    got = WCLI.commit_ref_problem(str(root), "commit:0123456789abcdef", None)
+    assert got == ("unresolved", "0123456789abcdef")
+    assert str(root / "private" / "in") in cwds, "the checked-out submodule is probed"
+    assert str(root / "private" / "out") not in cwds, "a submodule with no .git is not"
+    assert str(root) in cwds
