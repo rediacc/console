@@ -102,7 +102,7 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
 }
 
 /**
- * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Six RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, its tier and its executor placement (`{ orgId, tier, placement }`, tier `high` for a BUSINESS or ENTERPRISE plan and `standard` otherwise), or answers `{ refused: <reason code> }` for a caller it does not accept, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), `relocate(orgId, fromPlacement)` moves the org's executor to the next placement by compare-and-set, at most once per 30 minutes (`{ ok: true, placement }`, or `{ ok: false, reason: 'stale' | 'budget' | 'unknown-org' }` with the current placement for the first two), `probe()` reports readiness and writes nothing, `resolveGrant(grantId, authTag)` answers an agent grant's state and scope for the MCP Worker's `GRANTS` binding, or null for an unknown grant, another region's grant or a wrong tag (PLAN-rmcp-remote-worker.md Design 4), and `verifyInternal(credential)` says whether a credential minted for the root-only occupancy read is authentic and unexpired (PLAN-rmcp-executor-hardening.md EH8). The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Five RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, its tier and its executor placement (`{ orgId, tier, placement }`, tier `high` for a BUSINESS or ENTERPRISE plan and `standard` otherwise), or answers `{ refused: <reason code> }` for a caller it does not accept, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), `relocate(orgId, fromPlacement)` moves the org's executor to the next placement by compare-and-set, at most once per 30 minutes (`{ ok: true, placement }`, or `{ ok: false, reason: 'stale' | 'budget' | 'unknown-org' }` with the current placement for the first two), `probe()` reports readiness and writes nothing and `verifyInternal(credential)` says whether a credential minted for the root-only occupancy read is authentic and unexpired (PLAN-rmcp-executor-hardening.md EH8). The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
  */
 export class ExecutorIssuer extends WorkerEntrypoint<Env> {
   route(
@@ -132,12 +132,18 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
     return accountApp.probeExecutorIssuer(fencedEnv(this.env));
   }
 
-  resolveGrant(grantId: string, authTag: string) {
-    return accountApp.resolveAgentGrant(fencedEnv(this.env), grantId, authTag);
-  }
-
   verifyInternal(credential: string): Promise<boolean> {
     return accountApp.verifyInternalOccupancyCredential(fencedEnv(this.env), credential);
+  }
+}
+
+/**
+ * The agent grant resolver, the MCP Worker's `GRANTS` binding (`entrypoint = "GrantResolver"` in workers/mcp/wrangler.<target>.toml). One RPC method and no `fetch`: `resolveGrant(grantId, authTag)` answers an agent grant's state and scope, or null for an unknown grant, another region's grant or a wrong tag (PLAN-rmcp-remote-worker.md Design 4).
+ * It is its own entrypoint so the MCP Worker holds no route, issue, relocate, probe or verifyInternal: ExecutorIssuer stays bound by workers/proxy alone (tests/integration/proxy-binding-wiring.test.ts).
+ */
+export class GrantResolver extends WorkerEntrypoint<Env> {
+  resolveGrant(grantId: string, authTag: string) {
+    return accountApp.resolveAgentGrant(fencedEnv(this.env), grantId, authTag);
   }
 }
 

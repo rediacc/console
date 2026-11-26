@@ -35,7 +35,7 @@ export interface ResolvedGrantWire {
   endedAt?: string;
 }
 
-/** The `GRANTS` service binding: the account Worker's `ExecutorIssuer` entrypoint. A null answer is an unknown grant, another region's grant or a wrong tag, which the account does not tell apart. */
+/** The `GRANTS` service binding: the account Worker's `GrantResolver` entrypoint. A null answer is an unknown grant, another region's grant or a wrong tag, which the account does not tell apart. */
 export interface GrantsBinding {
   resolveGrant(grantId: string, authTag: string): Promise<ResolvedGrantWire | null>;
 }

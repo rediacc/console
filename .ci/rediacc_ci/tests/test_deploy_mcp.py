@@ -127,7 +127,7 @@ def test_oauth_and_metrics_bindings_are_rendered() -> None:
     assert "id" not in doc["kv_namespaces"][0]
     assert doc["analytics_engine_datasets"] == [{"binding": "MCP_METRICS", "dataset": "mcp_eu"}]
     assert {s["binding"]: (s["service"], s["entrypoint"]) for s in doc["services"]} == {
-        "GRANTS": ("account-eu", "ExecutorIssuer"),
+        "GRANTS": ("account-eu", "GrantResolver"),
         "EXECUTOR": ("proxy-eu", "McpExecutor"),
     }
 

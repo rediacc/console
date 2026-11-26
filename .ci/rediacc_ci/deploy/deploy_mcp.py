@@ -9,7 +9,7 @@ agent/plans/PLAN-rmcp-remote-worker.md Design 1, 10 and 12, box RW-D2. The shape
 
 THE CONFIGS. `workers/mcp/wrangler.template.toml` and `regions.json` generate one file per target: `wrangler.<region>.toml` for the stable Worker of each region and `wrangler.bench-<region>.toml` for each bench. The names come from regions.json (`mcpWorkerName`, the region's `workerName` and `proxyWorkerName`, and the bench object's own names), so no name is spelled in this module. The rendered files are committed; `--check` refuses a hand edit, and `config_refusals` runs on the file before any credential is read.
 
-THE REGION BOUNDARY (Design 12). A config must bind only its own region: the `GRANTS` service is the region's account Worker (`ExecutorIssuer`), the `EXECUTOR` service is the region's proxy Worker (`McpExecutor`), the Analytics Engine dataset is `mcp_<region>` (`mcp_bench_<region>` on a bench, whose account may be the production account), and the route, `REGION`, `MCP_HOST`, `ACCOUNT_URL` and telemetry destinations name the region. A config naming another region's token in any non-comment line is refused, so a us file carrying an eu binding never reaches a credential.
+THE REGION BOUNDARY (Design 12). A config must bind only its own region: the `GRANTS` service is the region's account Worker (`GrantResolver`), the `EXECUTOR` service is the region's proxy Worker (`McpExecutor`), the Analytics Engine dataset is `mcp_<region>` (`mcp_bench_<region>` on a bench, whose account may be the production account), and the route, `REGION`, `MCP_HOST`, `ACCOUNT_URL` and telemetry destinations name the region. A config naming another region's token in any non-comment line is refused, so a us file carrying an eu binding never reaches a credential.
 
 THE BINDINGS THE OAUTH PROVIDER READS. `OAUTH_KV` is a `[[kv_namespaces]]` entry with no id: wrangler provisions the namespace on the first deploy and reuses it, so no namespace id is committed. `AUTH_REQUEST_KEY` (signs the `authRequest` handles) and `CONFIRM_KEY` (seals confirmation state) are Worker secrets. This module generates a random value for each name the Worker does not already list and pushes it as the JSON document on `wrangler secret bulk` stdin; a name already present is never overwritten, because a new value would invalidate every sealed handle in flight. No value is put in argv, printed, recorded or kept after the push. The names are in SECRET_NAMES and the Worker's `Env`, and a dry run reads and generates none.
 
@@ -59,7 +59,7 @@ SUPPORTED_TARGETS = (STABLE_TARGET, BENCH_TARGET)
 SECRET_NAMES = ("AUTH_REQUEST_KEY", "CONFIRM_KEY")
 SECRET_BYTES = 32
 
-GRANTS_BINDING = ("GRANTS", "ExecutorIssuer")
+GRANTS_BINDING = ("GRANTS", "GrantResolver")
 EXECUTOR_BINDING = ("EXECUTOR", "McpExecutor")
 KV_BINDING = "OAUTH_KV"
 RATE_BINDING = ("RATE", "GrantRateObject")

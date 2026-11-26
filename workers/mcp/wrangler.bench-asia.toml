@@ -19,12 +19,12 @@ MCP_HOST = "mcp.bench-asia.rediacc.cloud"
 # The region's account origin: a grant that stopped serving names its re-authorization page there (Design 5).
 ACCOUNT_URL = "https://bench-asia.rediacc.cloud"
 
-# The region's own Workers, never another region's (Design 1 and 12): the account Worker's ExecutorIssuer
+# The region's own Workers, never another region's (Design 1 and 12): the account Worker's GrantResolver
 # entrypoint answers a grant (`GRANTS`), the proxy Worker's McpExecutor entrypoint runs a tool call (`EXECUTOR`).
 [[services]]
 binding = "GRANTS"
 service = "account-bench-asia"
-entrypoint = "ExecutorIssuer"
+entrypoint = "GrantResolver"
 
 [[services]]
 binding = "EXECUTOR"

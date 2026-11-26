@@ -25,7 +25,7 @@ export interface Env {
   ACCOUNT_URL: string;
   /** The proxy Worker's `McpExecutor` entrypoint (Design 1); bound per region by the deploy (RW-D2). */
   EXECUTOR?: ExecutorBinding;
-  /** The account Worker's `ExecutorIssuer` entrypoint, whose `resolveGrant` answers a grant (Design 4). */
+  /** The account Worker's `GrantResolver` entrypoint, whose `resolveGrant` answers a grant (Design 4). */
   GRANTS?: GrantsBinding;
   /** The per-grant rate-limit Durable Object (Design 8); absent, limits hold per isolate only. */
   RATE?: RateNamespace;
