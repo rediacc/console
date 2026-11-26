@@ -3505,9 +3505,11 @@
         "descriptionShort": "Olayları listele veya birini süre sayaçlarıyla göster"
       },
       "export": {
-        "description": "Olayın penceresini bir dizine yazar: süre sayaçlarıyla olay kaydı, birleştirilmiş zaman çizelgesi, giden bayt toplamları, ham zincir bildirimi ve bildirimde listelenen ham dosyalar (bildirim anahtarlarıyla adlandırılır). Bildirimde bir denetim günlük dosyası veya adli başlık dosyası listelenmişse, denetim günlük dosyası zinciri ve imzalı adli parti zincirleri sunucunun sabitlediği makine anahtarlarıyla yol üzerinde doğrulanır ve rapor verification.json dosyasına yazılır. Kanıtlarda boşluk veya değişiklik görülürse 1 koduyla çıkar. Aynı dizinde denetimi yinelemek için komut: rdc forensics verify.",
+        "description": "Olayın penceresini bir dizine yazar: süre sayaçlarıyla olay kaydı, birleştirilmiş zaman çizelgesi, giden bayt toplamları, ham zincir bildirimi ve bildirimde listelenen ham dosyalar (bildirim anahtarlarıyla adlandırılır). Bildirimde bir denetim günlük dosyası veya adli başlık dosyası listelenmişse, denetim günlük dosyası zinciri ve imzalı adli parti zincirleri sunucunun sabitlediği makine anahtarlarıyla yol üzerinde doğrulanır ve rapor verification.json dosyasına yazılır. Kanıtlarda boşluk veya değişiklik görülürse 1 koduyla çıkar. Aynı dizinde denetimi yinelemek için komut: rdc forensics verify. Komut, --stage seçeneğiyle rapor kimliğiyle adlandırılmış imzalı bir olay raporu (PDF, JSON veya STIX dosyası) yazar.",
         "descriptionShort": "Bir olayın zaman çizelgesini ve kanıtlarını dışa aktar ve doğrula",
-        "outOption": "Yazılacak dizin (varsayılan: incident-<id>)"
+        "outOption": "Yazılacak dizin (varsayılan: incident-<id>)",
+        "stageOption": "Kanıt penceresi yerine imzalı bir rapor yaz: early-warning, notification veya final (nihai rapor bir bildirimin ardından gelir)",
+        "formatOption": "--stage ile rapor biçimi: json (varsayılan), stix veya pdf"
       },
       "declare": {
         "description": "Bir depo için olay bildirir. Önce hesaptaki kayıt girilir: pencereli olay, pencere üzerinde bir silme tutma kaydı ve erken uyarı, bildirim ve nihai rapor sayaçlarını başlatan R2 kilit kuralları. Ardından depo adli anlık görüntü olarak çatallanır (repo fork <ref> --tag incident-<id>) ve yakalama düzeyi full olarak değiştirilir; her adımın sonucu olaya kaydedilir. Başarısız bir adım kaydı ve tutma kaydını yerinde bırakır, 1 koduyla çıkar ve başarısız adımları yeniden çalıştıran --resume komutunu belirtir.",
@@ -3524,9 +3526,11 @@
       "description": "Bu iş istasyonunda adli kanıtları kanıtların dışından alınan makine anahtarlarıyla doğrular ve bir deponun yakalama düzeyini ayarlar.",
       "descriptionShort": "Adli kanıtları doğrula",
       "verify": {
-        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları yalnızca dizinin dışından gelen anahtarlarla doğrulanır: bir --machine-key girdisiyle ya da yoksa, rdc incident export dizininin adını verdiği olay için hesap sunucusunun sabitlediği anahtarla. Dizindeki raw-manifest.json dosyasına yazılmış bir anahtara hiçbir zaman güvenilmez, dış anahtarı olmayan makine ise doğrulamadan geçemez.",
+        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları yalnızca dizinin dışından gelen anahtarlarla doğrulanır: bir --machine-key girdisiyle ya da yoksa, rdc incident export dizininin adını verdiği olay için hesap sunucusunun sabitlediği anahtarla. Dizindeki raw-manifest.json dosyasına yazılmış bir anahtara hiçbir zaman güvenilmez, dış anahtarı olmayan makine ise doğrulamadan geçemez. --report ile bunun yerine imzalı bir olay raporu, kimliğinin herkese açık kaydına ve yayımlanan rapor anahtarına karşı doğrulanır; içerik veya imza uyuşmazsa çıkış kodu 1 olur.",
         "descriptionShort": "Bir kanıt dizininin denetim ve adli karma zincirlerini doğrula",
         "dirOption": "Doğrulanacak kanıt dizini",
+        "reportOption": "Bunun yerine imzalı bir olay raporunu doğrula (rdc incident export --stage seçeneğinin yazdığı <rapor kimliği>.json adlı bir JSON dosyası)",
+        "idOption": "Dosya adı rapor kimliğini taşımıyorsa rapor kimliği",
         "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; hesap sunucusunun sabitlediği anahtarın yerine kullanılır (tekrarlanabilir)",
         "sinceOption": "Pencerenin başlangıcı: ISO 8601 anı veya şimdiden geriye bir süre (90m, 24h veya 7d gibi) (varsayılan: dizindeki ilk gün)",
         "untilOption": "Pencerenin sonu, aynı biçimlerde (varsayılan: dizindeki son gün)"
@@ -4022,7 +4026,16 @@
     "levelFailed": "{{repository}} deposunun yakalama düzeyi ayarlanamadı.",
     "ticketRequired": "Yürütücüdeki adli okuma işlemleri, açık bir soruşturmanın verdiği tek kullanımlık okuma biletini gerektirir. Soruyu Soruştur sayfasından sorun ya da komutu yerelde çalıştırın.",
     "ticketRefused": "Adli okuma bileti reddedildi: {{reason}}",
-    "ticketOtherScope": "bilet başka bir depo ya da makine için verilmiş"
+    "ticketOtherScope": "bilet başka bir depo ya da makine için verilmiş",
+    "verifyNeedsOne": "--dir <kanıt dizini> ya da --report <dosya> seçeneklerinden tam olarak birini verin.",
+    "reportIdUnknown": "Rapor kimliği \"{{file}}\" dosya adından okunamıyor; --id <rapor kimliği> verin.",
+    "reportPdfNotCheckable": "\"{{file}}\" bir PDF olduğundan burada yeniden özetlenemez; üretildiği JSON raporu doğrulayın veya PDF'yi portalın doğrulama sayfasına bırakın.",
+    "noSuchReport": "\"{{id}}\" kimlikli bir rapor kayıtlı değil.",
+    "reportValid": "{{id}} raporu özgündür: {{stage}} aşaması, {{keyId}} anahtarıyla imzalı.",
+    "reportInvalid_unreadable": "{{id}} raporu doğrulanmıyor: dosya okunabilir bir JSON değil.",
+    "reportInvalid_hash": "{{id}} raporu doğrulanmıyor: içerik, imzalanan rapordan farklı.",
+    "reportInvalid_signature": "{{id}} raporu doğrulanmıyor: imza içerikle uyuşmuyor.",
+    "reportInvalid_key": "{{id}} raporu doğrulanmıyor: yayımlanan rapor anahtarından başka bir anahtarla imzalanmış."
   },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",
@@ -4099,7 +4112,13 @@
     "closed": "Olay {{id}} kapatıldı. Tutma kaydı ve kilit kuralları şu tarihte sona erer: {{at}}.",
     "resumeScope": "Olay {{id}} şu kapsamı içerir: {{scope}}; \"{{name}}\" deposunu içermez.",
     "resumeClosed": "Olay {{id}} kapalı; adımları yeniden çalıştırılmaz.",
-    "resumeWindow": "--resume, olayın bildirildiği pencereyi ve haberdar olma anını korur; --since, --until ve --aware-at kullanılmamalıdır."
+    "resumeWindow": "--resume, olayın bildirildiği pencereyi ve haberdar olma anını korur; --since, --until ve --aware-at kullanılmamalıdır.",
+    "badStage": "\"{{stage}}\" bir rapor aşaması değil; {{stages}} değerlerinden birini kullanın.",
+    "badFormat": "\"{{format}}\" bir rapor biçimi değil; {{formats}} değerlerinden birini kullanın.",
+    "formatNeedsStage": "--format bir rapor için geçerlidir: --stage early-warning, notification veya final ekleyin.",
+    "pdfNeedsPortal": "{{id}} olayının {{stage}} raporu PDF olarak yalnızca metin taşıyan hesap tüneli üzerinden geçemez. PDF'yi portalın Raporlar panelinden indirin veya --format json ya da stix ile dışa aktarın.",
+    "reportExported": "{{stage}} raporu {{format}} olarak {{file}} konumuna yazıldı.",
+    "reportVerifyHint": "Şununla doğrulayın: rdc forensics verify --report {{file}}"
   },
   "options": {
     "acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",

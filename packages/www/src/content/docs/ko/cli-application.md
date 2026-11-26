@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "115ae7bd37db2d33"
+sourceHash: "6873b5e2379a253f"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2665,6 +2665,8 @@ rdc incident export <id> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--out <dir>` | {{t:cli.commands.incident.export.outOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--stage <stage>` | {{t:cli.commands.incident.export.stageOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--format <format>` | {{t:cli.commands.incident.export.formatOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-incident-declare"></a>
@@ -2711,7 +2713,9 @@ rdc forensics verify [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--dir <path>` | {{t:cli.commands.forensics.verify.dirOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--dir <path>` | {{t:cli.commands.forensics.verify.dirOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--report <file>` | {{t:cli.commands.forensics.verify.reportOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--id <report-id>` | {{t:cli.commands.forensics.verify.idOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--since <when>` | {{t:cli.commands.forensics.verify.sinceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--until <when>` | {{t:cli.commands.forensics.verify.untilOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--machine-key <machine=hex>` | {{t:cli.commands.forensics.verify.machineKeyOption}} | {{t:cli.docs.optionLabels.no}} | - |

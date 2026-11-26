@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '187ce3e98f325238';
+export const CLI_CONTRACT_VERSION = '44babd8ce833386c';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "187ce3e98f325238",
+  "version": "44babd8ce833386c",
   "languages": [
     "ar",
     "de",
@@ -6805,7 +6805,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.forensics.verify.description",
-      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.",
+      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. With --report a signed incident report is checked instead, against the public record of its id and the published report key; it exits 1 when the content or signature does not match.",
       "summaryKey": "commands.forensics.verify.descriptionShort",
       "summary": "Verify audit and forensics hash chains of an evidence directory",
       "severity": "none",
@@ -6815,11 +6815,33 @@ export const CLI_CONTRACT: CliContract = {
           "long": "dir",
           "valueTaking": true,
           "variadic": false,
-          "mandatory": true,
+          "mandatory": false,
           "defaultValue": null,
-          "tier": "common",
+          "tier": "advanced",
           "descriptionKey": "commands.forensics.verify.dirOption",
           "label": "Evidence directory to verify"
+        },
+        {
+          "flags": "--report <file>",
+          "long": "report",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.reportOption",
+          "label": "Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)"
+        },
+        {
+          "flags": "--id <report-id>",
+          "long": "id",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.idOption",
+          "label": "Report id, when the file name does not carry it"
         },
         {
           "flags": "--since <when>",
@@ -7000,7 +7022,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.incident.export.description",
-      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.",
       "summaryKey": "commands.incident.export.descriptionShort",
       "summary": "Export and verify an incident's timeline and evidence",
       "severity": "none",
@@ -7015,6 +7037,28 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.incident.export.outOption",
           "label": "Directory to write (default: incident-<id>)"
+        },
+        {
+          "flags": "--stage <stage>",
+          "long": "stage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.stageOption",
+          "label": "Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)"
+        },
+        {
+          "flags": "--format <format>",
+          "long": "format",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.formatOption",
+          "label": "Report format with --stage: json (default), stix or pdf"
         }
       ],
       "positionals": [

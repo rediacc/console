@@ -18,8 +18,9 @@ import {
   withClocks,
 } from '../services/forensics/incident.js';
 import { childMachineSteps } from '../services/forensics/machine-steps.js';
+import { type ExportedReport, exportReport } from '../services/forensics/report.js';
 import { ERROR_CODES } from '../types/errors.js';
-import { CliExitError, notFound } from '../utils/cli-exit-error.js';
+import { CliExitError } from '../utils/cli-exit-error.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 export interface IncidentDeps {
@@ -46,15 +47,55 @@ export async function runIncidentStatus(
   else outputService.print(incidentDetailLines(view));
 }
 
+export interface ExportOptions {
+  out?: string;
+  stage?: string;
+  format?: string;
+}
+
+/**
+ * `rdc incident export <id> --stage <stage> [--format json|stix|pdf]`: one signed report written
+ * to the output directory under its report id, ready for `rdc forensics verify --report`.
+ */
+async function runReportExport(
+  id: string,
+  options: ExportOptions & { stage: string },
+  deps: IncidentDeps
+): Promise<ExportedReport> {
+  const incident = await deps.client.findIncident(id);
+  const result = await exportReport(deps.client, incident, options);
+  if (getOutputFormat() === 'json') {
+    outputService.print(result, 'json');
+  } else {
+    outputService.success(
+      t('incident.reportExported', {
+        stage: result.stage,
+        format: result.format,
+        file: result.file,
+      })
+    );
+    outputService.info(t('incident.reportVerifyHint', { file: result.file }));
+  }
+  return result;
+}
+
 /**
  * `rdc incident export <id> --out <dir>`: the incident's window written to a directory with its
  * raw files, verified on the way; exit 1 when the downloaded evidence shows a gap or an edit.
+ * With `--stage` it writes a signed report instead (see `runReportExport`).
  */
 export async function runIncidentExport(
   id: string,
-  options: { out?: string },
+  options: ExportOptions,
   deps: IncidentDeps = defaultDeps()
 ): Promise<void> {
+  if (options.stage !== undefined) {
+    await runReportExport(id, { ...options, stage: options.stage }, deps);
+    return;
+  }
+  if (options.format !== undefined) {
+    throw new CliExitError(ERROR_CODES.VALIDATION_ERROR, t('incident.formatNeedsStage'));
+  }
   const incident = await deps.client.findIncident(id);
   const result = await exportIncident(
     deps.client,
@@ -103,20 +144,11 @@ function printExport(result: ExportResult): void {
 }
 
 /** The repository GUID the account store keys evidence by, and the name its forks take. */
-async function configRepo(ref: string): Promise<DeclareRepo> {
-  // Config-local resolution, as repo-target's resolveRepoRefLocal does it, without that module's executor imports: incident never reaches a machine itself (its fork and level switch are child rdc processes).
-  const { parseRef } = await import('../services/addressing/ref-parser.js');
-  const { placementViewFromConfig, resolveRefLocal } = await import(
-    '../services/addressing/resolve-machine.js'
-  );
+export async function configRepo(ref: string): Promise<DeclareRepo> {
+  // Loaded here: repo-target's executor chain is heavy, and only the declare path needs it.
+  const { resolveRepoRefLocal } = await import('../utils/repo-target.js');
   const { configService } = await import('../services/config/config-resources.js');
-  const parsed = parseRef(ref);
-  const config = await configService.getCurrent();
-  if (!config) {
-    throw notFound(`repository "${parsed.name}" is not in this config.`);
-  }
-  const { name } = resolveRefLocal(ref, placementViewFromConfig(config));
-  const repoKey = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
+  const { name, repoKey } = await resolveRepoRefLocal(ref);
   const repo = await configService.getRepository(repoKey);
   if (!repo?.repositoryGuid) {
     throw new CliExitError(ERROR_CODES.NOT_FOUND, t('forensics.noRepoGuid', { name }));
@@ -236,7 +268,9 @@ export function registerIncidentCommand(program: Command): void {
     .description(t('commands.incident.export.description'))
     .argument('<id>', t('commands.incident.idArgument'))
     .option('--out <dir>', t('commands.incident.export.outOption'))
-    .action(async (id: string, options: { out?: string }) => {
+    .option('--stage <stage>', t('commands.incident.export.stageOption'))
+    .option('--format <format>', t('commands.incident.export.formatOption'))
+    .action(async (id: string, options: ExportOptions) => {
       try {
         await runIncidentExport(id, options);
       } catch (error) {

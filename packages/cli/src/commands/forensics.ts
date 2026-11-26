@@ -10,13 +10,16 @@ import {
   verifyEvidenceDir,
 } from '../services/forensics/evidence.js';
 import { pinnedMachineKeys } from '../services/forensics/incident.js';
+import { type ReportReason, verifyReportFile } from '../services/forensics/report.js';
 import { parseWindow } from '../services/forensics/window.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 export interface VerifyOptions {
-  dir: string;
+  dir?: string;
+  report?: string;
+  id?: string;
   since?: string;
   until?: string;
   machineKey?: string[];
@@ -45,7 +48,7 @@ function trustedKeys(options: VerifyOptions, deps: VerifyDeps): MachineKeySource
   let pinned: Promise<Map<string, string>> | undefined;
   const pinnedKeys = (): Promise<Map<string, string>> => {
     pinned ??= Promise.resolve().then(() => {
-      const incidentId = exportedIncidentId(options.dir);
+      const incidentId = options.dir === undefined ? undefined : exportedIncidentId(options.dir);
       return incidentId === undefined
         ? new Map<string, string>()
         : pinnedMachineKeys(deps.client(), incidentId);
@@ -59,17 +62,58 @@ function trustedKeys(options: VerifyOptions, deps: VerifyDeps): MachineKeySource
   };
 }
 
+function invalidReportLine(reason: ReportReason, id: string): string {
+  switch (reason) {
+    case 'unreadable':
+      return t('forensics.reportInvalid_unreadable', { id });
+    case 'hash':
+      return t('forensics.reportInvalid_hash', { id });
+    case 'signature':
+      return t('forensics.reportInvalid_signature', { id });
+    case 'key':
+      return t('forensics.reportInvalid_key', { id });
+  }
+}
+
+/** `rdc forensics verify --report <file>`: the file against the public record and the published key. */
+async function runReportVerify(
+  file: string,
+  options: VerifyOptions,
+  deps: VerifyDeps
+): Promise<void> {
+  const verdict = await verifyReportFile(deps.client(), file, options.id);
+  if (getOutputFormat() === 'json') {
+    outputService.print(verdict, 'json');
+  } else if (verdict.valid) {
+    outputService.print(
+      t('forensics.reportValid', { stage: verdict.stage, keyId: verdict.keyId, id: verdict.id })
+    );
+  } else {
+    outputService.print(invalidReportLine(verdict.reason, verdict.id));
+  }
+  if (!verdict.valid) setExitCode(1);
+}
+
 /**
  * `rdc forensics verify --dir <evidence>`: recompute both chains; exit 1 on any gap or edit. Batch
- * signatures verify under keys from outside the directory (see `trustedKeys`).
+ * signatures verify under keys from outside the directory (see `trustedKeys`). With `--report
+ * <file>` it checks one signed incident report instead.
  */
 export async function runForensicsVerify(
   options: VerifyOptions,
   deps: VerifyDeps = defaultVerifyDeps()
 ): Promise<void> {
+  if ((options.dir === undefined) === (options.report === undefined)) {
+    throw new CliExitError(ERROR_CODES.VALIDATION_ERROR, t('forensics.verifyNeedsOne'));
+  }
+  if (options.report !== undefined) {
+    await runReportVerify(options.report, options, deps);
+    return;
+  }
+  const dir = options.dir as string;
   const window =
     options.since === undefined && options.until === undefined ? undefined : parseWindow(options);
-  const report = await verifyEvidenceDir(options.dir, window, trustedKeys(options, deps));
+  const report = await verifyEvidenceDir(dir, window, trustedKeys(options, deps));
   if (getOutputFormat() === 'json') {
     outputService.print(report, 'json');
   } else {
@@ -137,7 +181,9 @@ export function registerForensicsCommand(program: Command): void {
     .command('verify')
     .summary(t('commands.forensics.verify.descriptionShort'))
     .description(t('commands.forensics.verify.description'))
-    .requiredOption('--dir <path>', t('commands.forensics.verify.dirOption'))
+    .option('--dir <path>', t('commands.forensics.verify.dirOption'))
+    .option('--report <file>', t('commands.forensics.verify.reportOption'))
+    .option('--id <report-id>', t('commands.forensics.verify.idOption'))
     .option('--since <when>', t('commands.forensics.verify.sinceOption'))
     .option('--until <when>', t('commands.forensics.verify.untilOption'))
     .option('--machine-key <machine=hex>', t('commands.forensics.verify.machineKeyOption'), collect)

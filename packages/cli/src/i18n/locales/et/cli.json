@@ -3505,9 +3505,11 @@
         "descriptionShort": "Loetle intsidendid või näita ühte koos tähtaja kelladega"
       },
       "export": {
-        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid, toorahela manifesti ja selles loetletud toorfailid manifesti võtmete all. Kui manifest loetleb auditi päevafaili või kohtuekspertiisi päisefaili, kontrollitakse auditi päevafailide ahelat ja allkirjastatud kohtuekspertiisi partiiahelaid samal ajal serveri kinnitatud masinavõtmetega ning aruanne kirjutatakse faili verification.json. Lõpeb koodiga 1, kui tõendites on lünk või muudatus. Sama kontrolli kataloogi kohta kordab käsk rdc forensics verify.",
+        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid, toorahela manifesti ja selles loetletud toorfailid manifesti võtmete all. Kui manifest loetleb auditi päevafaili või kohtuekspertiisi päisefaili, kontrollitakse auditi päevafailide ahelat ja allkirjastatud kohtuekspertiisi partiiahelaid samal ajal serveri kinnitatud masinavõtmetega ning aruanne kirjutatakse faili verification.json. Lõpeb koodiga 1, kui tõendites on lünk või muudatus. Sama kontrolli kataloogi kohta kordab käsk rdc forensics verify. Valikuga --stage kirjutab käsk ühe allkirjastatud intsidendiaruande (PDF-, JSON- või STIX-fail), mille nimi on aruande id.",
         "descriptionShort": "Ekspordi ja kontrolli intsidendi ajajoon ja tõendid",
-        "outOption": "Kataloog, kuhu kirjutada (vaikimisi: incident-<id>)"
+        "outOption": "Kataloog, kuhu kirjutada (vaikimisi: incident-<id>)",
+        "stageOption": "Kirjuta tõendiakna asemel allkirjastatud aruanne: early-warning, notification või final (lõpparuanne järgneb teavitusele)",
+        "formatOption": "Aruande vorming koos valikuga --stage: json (vaikimisi), stix või pdf"
       },
       "declare": {
         "description": "Deklareerib hoidla kohta intsidendi. Esmalt tekib konto kirje: intsident oma ajaaknaga, ajaakna hoidmine ja R2 lukustusreeglid, mis käivitavad varajase hoiatuse, teavituse ja lõpparuande kellad. Seejärel tehakse hoidlast kohtuekspertiisi hetktõmmisena fork (repo fork <ref> --tag incident-<id>), selle jäädvustustase lülitatakse tasemele full ja iga sammu tulemus märgitakse intsidendile. Ebaõnnestunud samm jätab kirje ja selle hoidmise paika, lõpeb koodiga 1 ja nimetab käsu --resume, mis käivitab ebaõnnestunud sammud uuesti.",
@@ -3524,9 +3526,11 @@
       "description": "Kontrollib kohtuekspertiisi tõendeid sellel tööjaamal, kasutades tõenditest väljastpoolt võetud masinavõtmeid, ning määrab hoidla jäädvustustaseme.",
       "descriptionShort": "Kontrolli kohtuekspertiisi tõendeid",
       "verify": {
-        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse ainult kataloogist väljaspool asuvate võtmetega: valiku --machine-key kirjega või muidu võtmega, mille kontoserver kinnitas intsidendi jaoks, mille nime kannab käsuga rdc incident export loodud kataloog. Kataloogi raw-manifest.json failis olevat võtit ei usaldata kunagi ja masin, millel pole välist võtit, ei läbi kontrolli.",
+        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse ainult kataloogist väljaspool asuvate võtmetega: valiku --machine-key kirjega või muidu võtmega, mille kontoserver kinnitas intsidendi jaoks, mille nime kannab käsuga rdc incident export loodud kataloog. Kataloogi raw-manifest.json failis olevat võtit ei usaldata kunagi ja masin, millel pole välist võtit, ei läbi kontrolli. Valikuga --report kontrollitakse selle asemel allkirjastatud intsidendiaruannet selle id avaliku kirje ja avaldatud aruandevõtme vastu; väljumiskood on 1, kui sisu või allkiri ei klapi.",
         "descriptionShort": "Kontrolli tõendite kataloogi auditi ja kohtuekspertiisi räsiahelaid",
         "dirOption": "Kontrollitav tõendite kataloog",
+        "reportOption": "Kontrolli selle asemel allkirjastatud intsidendiaruannet (JSON-fail nimega <aruande id>.json, nagu rdc incident export --stage selle kirjutab)",
+        "idOption": "Aruande id, kui failinimi seda ei sisalda",
         "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, kasutatakse kontoserveri kinnitatud võtme asemel (korratav)",
         "sinceOption": "Ajaakna algus: ISO 8601 ajahetk või ajavahemik praegusest tagasi, näiteks 90m, 24h või 7d (vaikimisi: kataloogi esimene päev)",
         "untilOption": "Ajaakna lõpp samades vormides (vaikimisi: kataloogi viimane päev)"
@@ -4022,7 +4026,16 @@
     "levelFailed": "Hoidla {{repository}} jäädvustustaset ei õnnestunud määrata.",
     "ticketRequired": "Kohtuekspertiisi päringud täituril vajavad ühekordset lugemispiletit, mille väljastab avatud uurimine. Küsi lehelt Uuri või käivita käsk kohalikult.",
     "ticketRefused": "Kohtuekspertiisi lugemispilet lükati tagasi: {{reason}}",
-    "ticketOtherScope": "pilet kehtib teise hoidla või masina kohta"
+    "ticketOtherScope": "pilet kehtib teise hoidla või masina kohta",
+    "verifyNeedsOne": "Anna täpselt üks valikutest --dir <tõendikaust> või --report <fail>.",
+    "reportIdUnknown": "Aruande id-d ei saa failinimest \"{{file}}\" lugeda; anna --id <aruande id>.",
+    "reportPdfNotCheckable": "\"{{file}}\" on PDF, mille räsi ei saa siin uuesti arvutada; kontrolli JSON-aruannet, millest see tehti, või lohista PDF portaali kontrolllehele.",
+    "noSuchReport": "Aruannet \"{{id}}\" pole registris.",
+    "reportValid": "Aruanne {{id}} on ehtne: etapp {{stage}}, allkirjastatud võtmega {{keyId}}.",
+    "reportInvalid_unreadable": "Aruanne {{id}} ei läbi kontrolli: fail pole loetav JSON.",
+    "reportInvalid_hash": "Aruanne {{id}} ei läbi kontrolli: sisu erineb allkirjastatud aruandest.",
+    "reportInvalid_signature": "Aruanne {{id}} ei läbi kontrolli: allkiri ei sobi sisuga.",
+    "reportInvalid_key": "Aruanne {{id}} ei läbi kontrolli: see on allkirjastatud muu kui avaldatud aruandevõtmega."
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",
@@ -4099,7 +4112,13 @@
     "closed": "Intsident {{id}} suletud. Hoidmine ja lukustusreeglid lõpevad ajal {{at}}.",
     "resumeScope": "Intsident {{id}} hõlmab ulatust {{scope}}, mitte hoidlat {{name}}.",
     "resumeClosed": "Intsident {{id}} on suletud; selle samme uuesti ei käivitata.",
-    "resumeWindow": "--resume säilitab ajaakna ja teadlikkuse hetke, millega intsident deklareeriti; --since, --until ja --aware-at jäetakse ära."
+    "resumeWindow": "--resume säilitab ajaakna ja teadlikkuse hetke, millega intsident deklareeriti; --since, --until ja --aware-at jäetakse ära.",
+    "badStage": "\"{{stage}}\" pole aruande etapp; kasuta ühte väärtustest {{stages}}.",
+    "badFormat": "\"{{format}}\" pole aruande vorming; kasuta ühte väärtustest {{formats}}.",
+    "formatNeedsStage": "--format kehtib aruande kohta: lisa --stage early-warning, notification või final.",
+    "pdfNeedsPortal": "Intsidendi {{id}} etapi {{stage}} aruanne ei saa PDF-ina läbida konto tunnelit, mis edastab ainult teksti. Laadi PDF alla portaali paneelilt Aruanded või ekspordi valikuga --format json või stix.",
+    "reportExported": "Etapi {{stage}} aruanne kirjutati vormingus {{format}} faili {{file}}.",
+    "reportVerifyHint": "Kontrolli käsuga: rdc forensics verify --report {{file}}"
   },
   "options": {
     "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",

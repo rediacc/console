@@ -2320,21 +2320,25 @@ Close an incident. Nothing is released at once: the eviction hold and the R2 loc
 
 ### rdc incident export <id>
 
-Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.
 
 **Options:**
 
 - `--out <dir>`: Directory to write (default: incident-<id>)
+- `--stage <stage>`: Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)
+- `--format <format>`: Report format with --stage: json (default), stix or pdf
 
 > MCP tool
 
 ### rdc forensics verify
 
-Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.
+Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. With --report a signed incident report is checked instead, against the public record of its id and the published report key; it exits 1 when the content or signature does not match.
 
 **Options:**
 
 - `--dir <path>`: Evidence directory to verify
+- `--report <file>`: Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)
+- `--id <report-id>`: Report id, when the file name does not carry it
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)
 - `--until <when>`: End of the window, in the same forms (default: the last day in the directory)
 - `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)

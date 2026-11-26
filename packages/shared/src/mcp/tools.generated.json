@@ -1276,6 +1276,14 @@
             "type": "string",
             "description": "Evidence directory to verify"
           },
+          "report": {
+            "type": "string",
+            "description": "Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)"
+          },
+          "id": {
+            "type": "string",
+            "description": "Report id, when the file name does not carry it"
+          },
           "since": {
             "type": "string",
             "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)"
@@ -1289,7 +1297,6 @@
             "description": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
           }
         },
-        "required": ["dir"],
         "additionalProperties": false
       },
       "annotations": {
@@ -1307,7 +1314,7 @@
     {
       "name": "incident_export",
       "command": "incident export",
-      "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+      "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1318,6 +1325,14 @@
           "out": {
             "type": "string",
             "description": "Directory to write (default: incident-<id>)"
+          },
+          "stage": {
+            "type": "string",
+            "description": "Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)"
+          },
+          "format": {
+            "type": "string",
+            "description": "Report format with --stage: json (default), stix or pdf"
           }
         },
         "required": ["id"],

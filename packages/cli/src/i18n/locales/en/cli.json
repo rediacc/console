@@ -3491,9 +3491,11 @@
         "descriptionShort": "List incidents or show one with its deadline clocks"
       },
       "export": {
-        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.",
         "descriptionShort": "Export and verify an incident's timeline and evidence",
-        "outOption": "Directory to write (default: incident-<id>)"
+        "outOption": "Directory to write (default: incident-<id>)",
+        "stageOption": "Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)",
+        "formatOption": "Report format with --stage: json (default), stix or pdf"
       },
       "declare": {
         "description": "Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.",
@@ -3510,9 +3512,11 @@
       "description": "Verify forensic evidence on this workstation, under machine keys taken from outside the evidence, and set the capture level of a repository.",
       "descriptionShort": "Verify forensic evidence",
       "verify": {
-        "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.",
+        "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. With --report a signed incident report is checked instead, against the public record of its id and the published report key; it exits 1 when the content or signature does not match.",
         "descriptionShort": "Verify audit and forensics hash chains of an evidence directory",
         "dirOption": "Evidence directory to verify",
+        "reportOption": "Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)",
+        "idOption": "Report id, when the file name does not carry it",
         "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)",
         "sinceOption": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)",
         "untilOption": "End of the window, in the same forms (default: the last day in the directory)"
@@ -3997,7 +4001,16 @@
     "levelFailed": "Could not set the capture level of {{repository}}.",
     "ticketRequired": "Forensics reads on the executor need the single-use read ticket an open investigation mints. Ask from the Investigate page, or run the command locally.",
     "ticketRefused": "The forensics read ticket was refused: {{reason}}",
-    "ticketOtherScope": "the ticket covers another repository or machine"
+    "ticketOtherScope": "the ticket covers another repository or machine",
+    "verifyNeedsOne": "Give exactly one of --dir <evidence directory> or --report <file>.",
+    "reportIdUnknown": "The report id cannot be read from the file name \"{{file}}\"; pass --id <report id>.",
+    "reportPdfNotCheckable": "\"{{file}}\" is a PDF, which cannot be re-hashed here; verify the JSON report it was made from, or drop the PDF into the portal verify page.",
+    "noSuchReport": "No report \"{{id}}\" is on record.",
+    "reportValid": "Report {{id}} is genuine: stage {{stage}}, signed under key {{keyId}}.",
+    "reportInvalid_unreadable": "Report {{id}} does not verify: the file is not readable JSON.",
+    "reportInvalid_hash": "Report {{id}} does not verify: the content differs from the report that was signed.",
+    "reportInvalid_signature": "Report {{id}} does not verify: the signature does not match the content.",
+    "reportInvalid_key": "Report {{id}} does not verify: it was signed under a key other than the published report key."
   },
   "incident": {
     "none": "No incidents.",
@@ -4024,7 +4037,13 @@
     "closed": "Incident {{id}} closed. The hold and the lock rules end at {{at}}.",
     "resumeScope": "Incident {{id}} covers {{scope}}, not the repository {{name}}.",
     "resumeClosed": "Incident {{id}} is closed; its steps do not run again.",
-    "resumeWindow": "--resume keeps the window and awareness the incident was declared with; drop --since, --until and --aware-at."
+    "resumeWindow": "--resume keeps the window and awareness the incident was declared with; drop --since, --until and --aware-at.",
+    "badStage": "\"{{stage}}\" is not a report stage; use one of {{stages}}.",
+    "badFormat": "\"{{format}}\" is not a report format; use one of {{formats}}.",
+    "formatNeedsStage": "--format applies to a report: add --stage early-warning, notification or final.",
+    "pdfNeedsPortal": "The {{stage}} report of incident {{id}} as a PDF cannot come through the account tunnel, which carries text only. Download the PDF from the Reports panel of the portal, or export --format json or stix.",
+    "reportExported": "The {{stage}} report was written as {{format}} to {{file}}.",
+    "reportVerifyHint": "Check it with: rdc forensics verify --report {{file}}"
   },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",

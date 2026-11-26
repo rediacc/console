@@ -6023,6 +6023,18 @@
               "descriptionKey": "commands.incident.export.outOption",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--stage <stage>",
+              "descriptionKey": "commands.incident.export.stageOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--format <format>",
+              "descriptionKey": "commands.incident.export.formatOption",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -6050,7 +6062,19 @@
             {
               "flags": "--dir <path>",
               "descriptionKey": "commands.forensics.verify.dirOption",
-              "mandatory": true,
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--report <file>",
+              "descriptionKey": "commands.forensics.verify.reportOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--id <report-id>",
+              "descriptionKey": "commands.forensics.verify.idOption",
+              "mandatory": false,
               "defaultValue": null
             },
             {

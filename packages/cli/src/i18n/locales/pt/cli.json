@@ -3505,9 +3505,11 @@
         "descriptionShort": "Listar incidentes ou mostrar um com os seus relógios de prazo"
       },
       "export": {
-        "description": "Escreve a janela do incidente num diretório: o registo do incidente com os seus relógios, a cronologia combinada, os agregados de bytes de saída, o manifesto da cadeia bruta e os ficheiros brutos que ele lista, sob as chaves do manifesto. Quando o manifesto lista um ficheiro diário de auditoria ou um ficheiro de cabeçalhos forenses, a cadeia de ficheiros diários de auditoria e as cadeias assinadas de lotes forenses são verificadas pelo caminho, com as chaves de máquina fixadas pelo servidor, e o relatório é escrito em verification.json. Termina com código 1 quando as evidências mostram uma lacuna ou uma edição. A mesma verificação sobre o diretório pode ser repetida com rdc forensics verify.",
+        "description": "Escreve a janela do incidente num diretório: o registo do incidente com os seus relógios, a cronologia combinada, os agregados de bytes de saída, o manifesto da cadeia bruta e os ficheiros brutos que ele lista, sob as chaves do manifesto. Quando o manifesto lista um ficheiro diário de auditoria ou um ficheiro de cabeçalhos forenses, a cadeia de ficheiros diários de auditoria e as cadeias assinadas de lotes forenses são verificadas pelo caminho, com as chaves de máquina fixadas pelo servidor, e o relatório é escrito em verification.json. Termina com código 1 quando as evidências mostram uma lacuna ou uma edição. A mesma verificação sobre o diretório pode ser repetida com rdc forensics verify. Com --stage, o comando grava um relatório de incidente assinado (um arquivo PDF, JSON ou STIX) com o nome do seu id de relatório.",
         "descriptionShort": "Exportar e verificar a cronologia e as evidências de um incidente",
-        "outOption": "Diretório onde escrever (predefinição: incident-<id>)"
+        "outOption": "Diretório onde escrever (predefinição: incident-<id>)",
+        "stageOption": "Escrever um relatório assinado em vez da janela de evidências: early-warning, notification ou final (o relatório final segue uma notificação)",
+        "formatOption": "Formato do relatório com --stage: json (padrão), stix ou pdf"
       },
       "declare": {
         "description": "Declara um incidente num repositório. Primeiro entra o registo na conta: o incidente com a sua janela, uma retenção de remoção sobre a janela e as regras de bloqueio do R2, que iniciam os relógios do alerta precoce, da notificação e do relatório final. Depois o repositório é bifurcado como instantâneo forense (repo fork <ref> --tag incident-<id>) e o seu nível de captura passa para full, e o resultado de cada passo fica registado no incidente. Um passo com falha mantém o registo e a retenção, termina com código 1 e indica o comando --resume que volta a executar os passos falhados.",
@@ -3524,9 +3526,11 @@
       "description": "Verifica evidências forenses nesta estação de trabalho, com chaves de máquina obtidas fora das evidências, e define o nível de captura de um repositório.",
       "descriptionShort": "Verificar evidências forenses",
       "verify": {
-        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes só são verificadas com chaves externas ao diretório: uma entrada --machine-key ou, na falta dela, a chave que o servidor de contas fixou para o incidente que um diretório de rdc incident export indica. Uma chave escrita no raw-manifest.json do diretório nunca é considerada de confiança, e uma máquina sem chave externa falha.",
+        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes só são verificadas com chaves externas ao diretório: uma entrada --machine-key ou, na falta dela, a chave que o servidor de contas fixou para o incidente que um diretório de rdc incident export indica. Uma chave escrita no raw-manifest.json do diretório nunca é considerada de confiança, e uma máquina sem chave externa falha. Com --report, um relatório de incidente assinado é verificado em vez disso, contra o registro público do seu id e a chave de relatórios publicada; o código de saída é 1 quando o conteúdo ou a assinatura não corresponde.",
         "descriptionShort": "Verificar as cadeias de hashes de auditoria e forenses de um diretório de evidências",
         "dirOption": "Diretório de evidências a verificar",
+        "reportOption": "Verificar em vez disso um relatório de incidente assinado (um arquivo JSON chamado <id do relatório>.json, como o rdc incident export --stage o grava)",
+        "idOption": "Id do relatório, quando o nome do arquivo não o contém",
         "machineKeyOption": "Chave pública do spool da máquina como <machine>=<64 hex characters>, usada em vez da chave fixada pelo servidor de contas (repetível)",
         "sinceOption": "Início da janela: um instante ISO 8601 ou um intervalo recuado a partir de agora, como 90m, 24h ou 7d (predefinição: o primeiro dia do diretório)",
         "untilOption": "Fim da janela, nas mesmas formas (predefinição: o último dia do diretório)"
@@ -4022,7 +4026,16 @@
     "levelFailed": "Não foi possível definir o nível de captura de {{repository}}.",
     "ticketRequired": "As leituras forenses no executor exigem o ticket de leitura de uso único emitido por uma investigação aberta. Pergunte pela página Investigar ou execute o comando localmente.",
     "ticketRefused": "O ticket de leitura forense foi recusado: {{reason}}",
-    "ticketOtherScope": "o ticket cobre outro repositório ou outra máquina"
+    "ticketOtherScope": "o ticket cobre outro repositório ou outra máquina",
+    "verifyNeedsOne": "Informe exatamente um entre --dir <diretório de evidências> e --report <arquivo>.",
+    "reportIdUnknown": "O id do relatório não pode ser lido no nome de arquivo \"{{file}}\"; passe --id <id do relatório>.",
+    "reportPdfNotCheckable": "\"{{file}}\" é um PDF, que não pode ser re-hasheado aqui; verifique o relatório JSON de que ele foi gerado, ou solte o PDF na página de verificação do portal.",
+    "noSuchReport": "Não há nenhum relatório \"{{id}}\" registrado.",
+    "reportValid": "O relatório {{id}} é autêntico: etapa {{stage}}, assinado com a chave {{keyId}}.",
+    "reportInvalid_unreadable": "O relatório {{id}} não passa na verificação: o arquivo não é um JSON legível.",
+    "reportInvalid_hash": "O relatório {{id}} não passa na verificação: o conteúdo difere do relatório que foi assinado.",
+    "reportInvalid_signature": "O relatório {{id}} não passa na verificação: a assinatura não corresponde ao conteúdo.",
+    "reportInvalid_key": "O relatório {{id}} não passa na verificação: foi assinado com uma chave diferente da chave de relatórios publicada."
   },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Uma ref de repositório (repo[:tag]) deriva a sua própria máquina, pelo que -m não é necessário\n    • A saída JSON é automática: todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo, nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n\n",
@@ -4099,7 +4112,13 @@
     "closed": "Incidente {{id}} encerrado. A retenção e as regras de bloqueio terminam em {{at}}.",
     "resumeScope": "O incidente {{id}} abrange {{scope}}, não o repositório {{name}}.",
     "resumeClosed": "O incidente {{id}} está encerrado; os seus passos não voltam a ser executados.",
-    "resumeWindow": "--resume mantém a janela e o momento de conhecimento com que o incidente foi declarado; --since, --until e --aware-at devem ser omitidos."
+    "resumeWindow": "--resume mantém a janela e o momento de conhecimento com que o incidente foi declarado; --since, --until e --aware-at devem ser omitidos.",
+    "badStage": "\"{{stage}}\" não é uma etapa de relatório; use uma entre {{stages}}.",
+    "badFormat": "\"{{format}}\" não é um formato de relatório; use um entre {{formats}}.",
+    "formatNeedsStage": "--format vale para um relatório: acrescente --stage early-warning, notification ou final.",
+    "pdfNeedsPortal": "O relatório {{stage}} do incidente {{id}} em PDF não pode passar pelo túnel da conta, que só transporta texto. Baixe o PDF no painel Relatórios do portal, ou exporte com --format json ou stix.",
+    "reportExported": "O relatório {{stage}} foi gravado como {{format}} em {{file}}.",
+    "reportVerifyHint": "Verifique com: rdc forensics verify --report {{file}}"
   },
   "options": {
     "acceptTerms": "Aceitar os Termos de Serviço para uma licença gratuita sem perguntar (ou definir RDC_ACCEPT_TERMS=1)",

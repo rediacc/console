@@ -3505,9 +3505,11 @@
         "descriptionShort": "Elenca gli incidenti o ne mostra uno con i suoi timer delle scadenze"
       },
       "export": {
-        "description": "Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi timer, la timeline unificata, gli aggregati dei byte in uscita, il manifest della catena grezza e i file grezzi che elenca, sotto le loro chiavi del manifest. Quando il manifest elenca un file giornaliero di audit o un file di header forensi, la catena dei file giornalieri di audit e le catene firmate dei batch forensi vengono verificate lungo il percorso con le chiavi delle macchine fissate dal server, e il report viene scritto in verification.json. Termina con codice 1 se le evidenze mostrano un vuoto o una modifica. Lo stesso controllo sulla directory si ripete con rdc forensics verify.",
+        "description": "Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi timer, la timeline unificata, gli aggregati dei byte in uscita, il manifest della catena grezza e i file grezzi che elenca, sotto le loro chiavi del manifest. Quando il manifest elenca un file giornaliero di audit o un file di header forensi, la catena dei file giornalieri di audit e le catene firmate dei batch forensi vengono verificate lungo il percorso con le chiavi delle macchine fissate dal server, e il report viene scritto in verification.json. Termina con codice 1 se le evidenze mostrano un vuoto o una modifica. Lo stesso controllo sulla directory si ripete con rdc forensics verify. Con --stage il comando scrive un rapporto d'incidente firmato (un file PDF, JSON o STIX) chiamato come il suo id di rapporto.",
         "descriptionShort": "Esportare e verificare la timeline e le evidenze di un incidente",
-        "outOption": "Directory in cui scrivere (predefinito: incident-<id>)"
+        "outOption": "Directory in cui scrivere (predefinito: incident-<id>)",
+        "stageOption": "Scrivere un rapporto firmato invece della finestra di prove: early-warning, notification o final (il rapporto finale segue una notifica)",
+        "formatOption": "Formato del rapporto con --stage: json (predefinito), stix o pdf"
       },
       "declare": {
         "description": "Dichiara un incidente su un repository. Il record dell'account viene creato per primo: l'incidente con la sua finestra, un blocco di conservazione sulla finestra e le regole di blocco R2, che avviano i timer di preallarme, notifica e rapporto finale. Poi il repository viene clonato come snapshot forense (repo fork <ref> --tag incident-<id>) e il suo livello di cattura passa a full, quindi l'esito di ogni passaggio viene registrato sull'incidente. Un passaggio fallito lascia in vigore il record e il relativo blocco, termina con codice 1 e indica il comando --resume che riesegue i passaggi falliti.",
@@ -3524,9 +3526,11 @@
       "description": "Controlla le evidenze forensi su questa workstation, con chiavi delle macchine prese da fuori delle evidenze, e imposta il livello di cattura di un repository.",
       "descriptionShort": "Verificare le evidenze forensi",
       "verify": {
-        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano solo con chiavi esterne alla directory: una voce --machine-key oppure, in sua assenza, la chiave fissata dal server degli account per l'incidente indicato da una directory di rdc incident export. Una chiave scritta nel raw-manifest.json della directory non è mai considerata attendibile, e una macchina senza chiave esterna fallisce.",
+        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano solo con chiavi esterne alla directory: una voce --machine-key oppure, in sua assenza, la chiave fissata dal server degli account per l'incidente indicato da una directory di rdc incident export. Una chiave scritta nel raw-manifest.json della directory non è mai considerata attendibile, e una macchina senza chiave esterna fallisce. Con --report si verifica invece un rapporto d'incidente firmato, confrontandolo con il record pubblico del suo id e con la chiave pubblicata per i rapporti; il codice di uscita è 1 quando contenuto o firma non corrispondono.",
         "descriptionShort": "Verificare le catene di hash di audit e forensi di una directory di evidenze",
         "dirOption": "Directory di evidenze da verificare",
+        "reportOption": "Verificare invece un rapporto d'incidente firmato (un file JSON chiamato <id del rapporto>.json, come lo scrive rdc incident export --stage)",
+        "idOption": "Id del rapporto, quando il nome del file non lo contiene",
         "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters>, usata al posto della chiave fissata dal server degli account (ripetibile)",
         "sinceOption": "Inizio della finestra: un istante ISO 8601 o un intervallo a ritroso da adesso come 90m, 24h o 7d (predefinito: il primo giorno nella directory)",
         "untilOption": "Fine della finestra, nelle stesse forme (predefinito: l'ultimo giorno nella directory)"
@@ -4022,7 +4026,16 @@
     "levelFailed": "Impossibile impostare il livello di cattura di {{repository}}.",
     "ticketRequired": "Le letture forensi sull'executor richiedono il ticket di lettura monouso emesso da un'indagine aperta. Fai la domanda dalla pagina Indaga oppure esegui il comando in locale.",
     "ticketRefused": "Il ticket di lettura forense è stato rifiutato: {{reason}}",
-    "ticketOtherScope": "il ticket riguarda un altro repository o un'altra macchina"
+    "ticketOtherScope": "il ticket riguarda un altro repository o un'altra macchina",
+    "verifyNeedsOne": "Indicare esattamente uno tra --dir <cartella delle prove> e --report <file>.",
+    "reportIdUnknown": "L'id del rapporto non si ricava dal nome del file \"{{file}}\"; passare --id <id del rapporto>.",
+    "reportPdfNotCheckable": "\"{{file}}\" è un PDF e qui non si può ricalcolare l'hash; verificare il rapporto JSON da cui deriva, oppure trascinare il PDF nella pagina di verifica del portale.",
+    "noSuchReport": "Nessun rapporto \"{{id}}\" è registrato.",
+    "reportValid": "Il rapporto {{id}} è autentico: fase {{stage}}, firmato con la chiave {{keyId}}.",
+    "reportInvalid_unreadable": "Il rapporto {{id}} non supera la verifica: il file non è JSON leggibile.",
+    "reportInvalid_hash": "Il rapporto {{id}} non supera la verifica: il contenuto differisce dal rapporto firmato.",
+    "reportInvalid_signature": "Il rapporto {{id}} non supera la verifica: la firma non corrisponde al contenuto.",
+    "reportInvalid_key": "Il rapporto {{id}} non supera la verifica: è firmato con una chiave diversa da quella pubblicata per i rapporti."
   },
   "help": {
     "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Un riferimento di repository (repo[:tag]) determina da sé la propria macchina, quindi -m non è necessario\n    • L'output JSON è automatico: tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo, non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n\n",
@@ -4099,7 +4112,13 @@
     "closed": "Incidente {{id}} chiuso. Il blocco e le regole di blocco terminano il {{at}}.",
     "resumeScope": "L'incidente {{id}} riguarda {{scope}}, non il repository {{name}}.",
     "resumeClosed": "L'incidente {{id}} è chiuso; i suoi passaggi non vengono più eseguiti.",
-    "resumeWindow": "--resume mantiene la finestra e la data di conoscenza con cui l'incidente è stato dichiarato; --since, --until e --aware-at vanno omessi."
+    "resumeWindow": "--resume mantiene la finestra e la data di conoscenza con cui l'incidente è stato dichiarato; --since, --until e --aware-at vanno omessi.",
+    "badStage": "\"{{stage}}\" non è una fase del rapporto; usare una tra {{stages}}.",
+    "badFormat": "\"{{format}}\" non è un formato di rapporto; usare uno tra {{formats}}.",
+    "formatNeedsStage": "--format vale per un rapporto: aggiungere --stage early-warning, notification o final.",
+    "pdfNeedsPortal": "Il rapporto {{stage}} dell'incidente {{id}} in PDF non può passare dal tunnel dell'account, che trasporta solo testo. Scaricare il PDF dal pannello Rapporti del portale, oppure esportare con --format json o stix.",
+    "reportExported": "Il rapporto {{stage}} è stato scritto come {{format}} in {{file}}.",
+    "reportVerifyHint": "Verificarlo con: rdc forensics verify --report {{file}}"
   },
   "options": {
     "acceptTerms": "Accetta i Termini di servizio per una licenza gratuita senza chiedere (oppure imposta RDC_ACCEPT_TERMS=1)",

@@ -23,6 +23,8 @@ export type ForensicsFetch = <T>(
 ) => Promise<T>;
 
 const BASE = '/account/api/v1/console';
+/** The public report routes: no session, an IP rate limit only. */
+const PUBLIC_REPORTS = '/account/api/v1/reports';
 const PAGE_LIMIT = 500;
 /** A timeline that never ends is a server fault: stop after this many pages. */
 const MAX_PAGES = 200;
@@ -88,6 +90,34 @@ export interface StepReport {
   detail?: string;
   /** The fork the step made, sent with a successful `fork` step. */
   forkRef?: string;
+}
+
+/** One report of an incident as the account lists it: the hash and key id, never the content. */
+export interface ReportRow {
+  id: string;
+  incidentId: string;
+  stage: 'early-warning' | 'notification' | 'final';
+  sha256: string;
+  keyId: string;
+  generatedAt: string;
+  generatedBy: string;
+}
+
+/** GET /reports/verify/:id: the public record of one signed report. */
+export interface ReportRecord {
+  id: string;
+  stage: string;
+  generatedAt: string;
+  sha256: string;
+  signature: string;
+  keyId: string;
+}
+
+/** GET /reports/keys: the published report key, base64 SPKI. */
+export interface ReportKey {
+  algorithm: 'Ed25519';
+  publicKey: string;
+  keyId: string;
 }
 
 export interface Aggregates {
@@ -264,6 +294,46 @@ export class ForensicsClient {
     return this.call<IncidentRecord>(`/incidents/${encodeURIComponent(id)}/close`, {
       method: 'POST',
     });
+  }
+
+  /** Generate one stage's signed report (owner or admin); the final one follows a notification. */
+  generateReport(id: string, stage: string): Promise<ReportRow> {
+    return this.call<ReportRow>(`/incidents/${encodeURIComponent(id)}/reports`, {
+      method: 'POST',
+      body: { stage },
+    });
+  }
+
+  /**
+   * One stored file of a report as parsed JSON (`json` or `stix`): the account tunnel carries
+   * text, so a PDF cannot be read through it.
+   */
+  downloadReport(id: string, reportId: string, format: 'json' | 'stix'): Promise<unknown> {
+    return this.call<unknown>(
+      `/incidents/${encodeURIComponent(id)}/reports/${encodeURIComponent(reportId)}/${format}`
+    );
+  }
+
+  /** The public record of a report; a 404 is an unknown or malformed id alike. */
+  async reportRecord(reportId: string): Promise<ReportRecord> {
+    try {
+      return await this.fetchFn<ReportRecord>(
+        `${PUBLIC_REPORTS}/verify/${encodeURIComponent(reportId)}`
+      );
+    } catch (error) {
+      if ((error as Partial<AccountFetchError> | null)?.status === 404) {
+        throw new CliExitError(
+          ERROR_CODES.NOT_FOUND,
+          t('forensics.noSuchReport', { id: reportId })
+        );
+      }
+      throw error;
+    }
+  }
+
+  /** The published report public key a downloaded report is checked against. */
+  reportKey(): Promise<ReportKey> {
+    return this.fetchFn<ReportKey>(`${PUBLIC_REPORTS}/keys`);
   }
 
   async openInvestigation(scope: Scope): Promise<string> {
