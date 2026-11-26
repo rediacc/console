@@ -52,6 +52,17 @@ describe('buildHostKeyMismatchMessage', () => {
     expect(msg).not.toContain(`scan-keys ${host}`);
   });
 
+  it('treats an empty machine name as unknown in the title and the remedy', () => {
+    const msg = buildHostKeyMismatchMessage({
+      machineName: '',
+      host,
+      knownHosts: `${host} ssh-ed25519 ${OLD_ED25519}`,
+      offeredKey: NEW_ED25519,
+    });
+    expect(msg).toContain('rdc machine scan-keys <machine-name>');
+    expect(msg).toContain(`Host key mismatch for ${host}`);
+  });
+
   it('carries the machine name from a machine config into the SFTP config', () => {
     const cfg = sftpConfigForMachine({ ip: host, user: 'u' } as MachineConfig, 'key', 'hostinger');
     expect(cfg.machineName).toBe('hostinger');

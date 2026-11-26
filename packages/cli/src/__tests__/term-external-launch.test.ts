@@ -7,7 +7,7 @@
  * refusal when `--external` was passed. Spawn is a recording fake.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface Spawned {
   file: string;
@@ -74,12 +74,15 @@ describe('external terminal launch for a repo target', () => {
 describe('external terminal launch failure', () => {
   const failure = new Error('Failed to launch terminal: spawn wt.exe ENOENT');
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('warns with the reason and returns, so the session goes inline, without --external', () => {
     const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
     expect(() => reportExternalLaunchFailure(failure, false)).not.toThrow();
     expect(warn).toHaveBeenCalledOnce();
     expect(String(warn.mock.calls[0][0])).toContain('spawn wt.exe ENOENT');
-    warn.mockRestore();
   });
 
   it('refuses with the reason when --external was passed', () => {
@@ -88,6 +91,5 @@ describe('external terminal launch failure', () => {
       /--external.*spawn wt\.exe ENOENT/s
     );
     expect(warn).not.toHaveBeenCalled();
-    warn.mockRestore();
   });
 });

@@ -252,6 +252,20 @@ describe('installRsync', () => {
     expect(await readFile(fstab, 'utf8')).toBe('custom\n');
   });
 
+  it('adds nsswitch.conf to an existing tree without one and keeps an edited one', async () => {
+    const toolsDir = await tempDir();
+    const { pin, download } = fixture();
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    const nsswitch = join(rsyncInstallDir({ pin, toolsDir }), 'etc', 'nsswitch.conf');
+    await rm(nsswitch);
+    const again = await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(again.alreadyInstalled).toBe(true);
+    expect(await readFile(nsswitch, 'utf8')).toBe(MSYS2_NSSWITCH);
+    await writeFile(nsswitch, 'custom\n');
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(await readFile(nsswitch, 'utf8')).toBe('custom\n');
+  });
+
   it('refuses anywhere but Windows, naming the system package manager, and downloads nothing', async () => {
     const toolsDir = await tempDir();
     const { pin, download, fetched } = fixture();

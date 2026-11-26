@@ -69,7 +69,7 @@ function rsyncInstallPath(options: { pin?: Msys2RsyncPin; toolsDir?: string } = 
   return join(rsyncInstallDir(options), 'usr', 'bin', RSYNC_EXE);
 }
 
-/** Create the MSYS2 root directories (etc, tmp, dev) under an installed tree; idempotent, so a tree installed before they were created is repaired too. */
+/** Create the MSYS2 root directories (etc, tmp, dev) and write etc/fstab and etc/nsswitch.conf when absent; idempotent, so a tree installed before they existed is repaired too. */
 async function ensureMsys2RootDirs(root: string): Promise<void> {
   for (const dir of MSYS2_ROOT_DIRS) await fs.mkdir(join(root, dir), { recursive: true });
   // Only the rdc tool root is written, and a file already there is left as is.

@@ -85,6 +85,6 @@ export function buildHostKeyMismatchMessage(params: {
     'local config, and so will a man-in-the-middle. Confirm the fingerprint out',
     'of band before trusting it.',
     '',
-    `If the change is expected: rdc machine scan-keys ${machineName ?? '<machine-name>'}`,
+    `If the change is expected: rdc machine scan-keys ${machineName ? machineName : '<machine-name>'}`,
   ].join('\n');
 }
