@@ -6950,8 +6950,8 @@
   {
     "id": "search-22192",
     "content": "23.1 install",
-    "body": "下载此 CLI 中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。 rdc tools install <tool> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 即使固定版本已存在也重新安装 | 否 | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "下载此 CLI 中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。 rdc tools install <tool> [options] |...",
+    "body": "下载此 CLI 中固定版本的工具，校验其 SHA-256 校验和，然后安装到 rdc 的工具目录。tofu 可在任何平台上安装 OpenTofu。rsync 仅在 Windows 上安装 MSYS2 版 rsync 及其加载的运行时库；在其他系统上，rsync 由系统包管理器提供。校验和不匹配时会删除下载内容，不安装任何东西。rdc 从不安装 Terraform；如果 PATH 中已有，则直接使用。 rdc tools install <tool> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 即使固定版本已存在也重新安装 | 否 | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "下载此 CLI 中固定版本的工具，校验其 SHA-256 校验和，然后安装到 rdc 的工具目录。tofu 可在任何平台上安装 OpenTofu。rsync 仅在 Windows 上安装 MSYS2 版 rsync 及其加载的运行时库；在其他系统上，rsync 由系统包管理器提供。校验和不匹配时会删...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "231-install",

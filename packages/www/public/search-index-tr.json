@@ -6950,8 +6950,8 @@
   {
     "id": "search-20540",
     "content": "23.1 install",
-    "body": "Bu CLI'de sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır. rdc tools install <tool> [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --force | Sabitlenmiş sürüm zaten varsa bile yeniden kur | Hayır | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Bu CLI'de sabitlenmiş OpenTofu sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. Sağlama toplamı tutmazsa indirilen...",
+    "body": "Bu CLI'de sabitlenmiş bir araç sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. tofu, OpenTofu'yu her platforma kurar. rsync ise MSYS2 rsync'i ve yüklediği çalışma zamanı kitaplıklarını yalnızca Windows'a kurar; diğer sistemlerde rsync, sistemin paket yöneticisinden gelir. Sağlama toplamı tutmazsa indirilen dosya silinir ve hiçbir şey kurulmaz. Terraform asla kurulmaz; PATH'te zaten varsa olduğu gibi kullanılır. rdc tools install <tool> [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --force | Sabitlenmiş sürüm zaten varsa bile yeniden kur | Hayır | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Bu CLI'de sabitlenmiş bir araç sürümünü indirir, SHA-256 sağlama toplamını doğrular ve rdc'nin araç dizinine kurar. tofu, OpenTofu'yu her platforma ku...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "fragment": "231-install",

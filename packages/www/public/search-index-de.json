@@ -6950,8 +6950,8 @@
   {
     "id": "search-4020",
     "content": "23.1 install",
-    "body": "Lädt das in dieser CLI fest hinterlegte OpenTofu-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist. rdc tools install <tool> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --force | Neu installieren, auch wenn die hinterlegte Version schon vorhanden ist | Nein | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Lädt das in dieser CLI fest hinterlegte OpenTofu-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. St...",
+    "body": "Lädt ein in dieser CLI fest hinterlegtes Werkzeug-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. tofu installiert OpenTofu auf jeder Plattform. rsync installiert das MSYS2-rsync samt den Laufzeitbibliotheken, die es lädt, und zwar nur unter Windows; anderswo stammt rsync aus dem Paketmanager des Systems. Stimmt die Prüfsumme nicht, wird der Download gelöscht und nichts installiert. Terraform wird nie installiert; ein bereits im PATH vorhandenes wird so verwendet, wie es ist. rdc tools install <tool> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --force | Neu installieren, auch wenn die hinterlegte Version schon vorhanden ist | Nein | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Lädt ein in dieser CLI fest hinterlegtes Werkzeug-Release herunter, prüft seine SHA-256-Prüfsumme und installiert es im Werkzeugverzeichnis von rdc. t...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
     "fragment": "231-install",

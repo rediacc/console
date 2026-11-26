@@ -6950,8 +6950,8 @@
   {
     "id": "search-10628",
     "content": "23.1 install",
-    "body": "Télécharge la version d'OpenTofu épinglée dans cette CLI, vérifie son empreinte SHA-256 et l'installe dans le répertoire d'outils de rdc. En cas d'empreinte différente, le téléchargement est supprimé et rien n'est installé. Terraform n'est jamais installé ; s'il est déjà dans le PATH, il est utilisé tel quel. rdc tools install <tool> [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --force | Réinstaller même si la version épinglée est déjà présente | Non | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Télécharge la version d'OpenTofu épinglée dans cette CLI, vérifie son empreinte SHA-256 et l'installe dans le répertoire d'outils de rdc. En cas d'emp...",
+    "body": "Télécharge une version d'outil épinglée dans cette CLI, vérifie sa somme de contrôle SHA-256 et l'installe dans le répertoire d'outils de rdc. tofu installe OpenTofu sur toutes les plateformes. rsync installe le rsync de MSYS2 et les bibliothèques d'exécution qu'il charge, uniquement sous Windows ; ailleurs, rsync s'obtient via le gestionnaire de paquets du système. En cas de somme de contrôle incorrecte, le téléchargement est supprimé et rien n'est installé. Terraform n'est jamais installé ; s'il est déjà dans le PATH, il est utilisé tel quel. rdc tools install <tool> [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --force | Réinstaller même si la version épinglée est déjà présente | Non | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Télécharge une version d'outil épinglée dans cette CLI, vérifie sa somme de contrôle SHA-256 et l'installe dans le répertoire d'outils de rdc. tofu in...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
     "fragment": "231-install",

@@ -7105,8 +7105,8 @@
   {
     "id": "search-5672",
     "content": "23.1 install",
-    "body": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found. rdc tools install <tool> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --force | Reinstall even when the pinned version is already present | No | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes...",
+    "body": "Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. tofu installs OpenTofu on any platform. rsync installs the MSYS2 rsync and the runtime libraries it loads, on Windows only; elsewhere rsync comes from the system package manager. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found. rdc tools install <tool> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --force | Reinstall even when the pinned version is already present | No | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. tofu installs OpenTofu on any plat...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "231-install",

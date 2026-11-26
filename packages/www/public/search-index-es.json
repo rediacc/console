@@ -6950,8 +6950,8 @@
   {
     "id": "search-7324",
     "content": "23.1 install",
-    "body": "Descarga la versión de OpenTofu fijada en esta CLI, verifica su suma SHA-256 y la instala en el directorio de herramientas de rdc. Si la suma no coincide, se borra la descarga y no se instala nada. Terraform nunca se instala; si ya hay uno en el PATH, se usa tal cual. rdc tools install <tool> [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --force | Reinstalar aunque la versión fijada ya esté presente | No | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Descarga la versión de OpenTofu fijada en esta CLI, verifica su suma SHA-256 y la instala en el directorio de herramientas de rdc. Si la suma no coinc...",
+    "body": "Descarga una versión de una herramienta fijada en esta CLI, verifica su suma de comprobación SHA-256 y la instala en el directorio de herramientas de rdc. tofu instala OpenTofu en cualquier plataforma. rsync instala el rsync de MSYS2 y las bibliotecas de ejecución que carga, solo en Windows; en otros sistemas, rsync se obtiene del gestor de paquetes del sistema. Si la suma de comprobación no coincide, se borra la descarga y no se instala nada. Terraform nunca se instala; si ya está en el PATH, se usa tal cual. rdc tools install <tool> [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --force | Reinstalar aunque la versión fijada ya esté presente | No | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Descarga una versión de una herramienta fijada en esta CLI, verifica su suma de comprobación SHA-256 y la instala en el directorio de herramientas de...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
     "fragment": "231-install",

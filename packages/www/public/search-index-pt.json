@@ -6950,8 +6950,8 @@
   {
     "id": "search-17236",
     "content": "23.1 install",
-    "body": "Baixa a versão do OpenTofu fixada nesta CLI, verifica o checksum SHA-256 e a instala no diretório de ferramentas do rdc. Se o checksum não bater, o download é apagado e nada é instalado. O Terraform nunca é instalado; se já houver um no PATH, ele é usado como está. rdc tools install <tool> [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --force | Reinstalar mesmo que a versão fixada já esteja presente | Não | - | <a id=\"cli-local-tools-list\"></a>",
-    "excerpt": "Baixa a versão do OpenTofu fixada nesta CLI, verifica o checksum SHA-256 e a instala no diretório de ferramentas do rdc. Se o checksum não bater, o do...",
+    "body": "Baixa uma versão de ferramenta fixada nesta CLI, verifica a soma de verificação SHA-256 e a instala no diretório de ferramentas do rdc. tofu instala o OpenTofu em qualquer plataforma. rsync instala o rsync do MSYS2 e as bibliotecas de execução que ele carrega, apenas no Windows; nos outros sistemas, o rsync vem do gerenciador de pacotes do sistema. Se a soma de verificação não bater, o download é apagado e nada é instalado. O Terraform nunca é instalado; se já estiver no PATH, é usado como está. rdc tools install <tool> [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --force | Reinstalar mesmo que a versão fixada já esteja presente | Não | - | <a id=\"cli-local-tools-list\"></a>",
+    "excerpt": "Baixa uma versão de ferramenta fixada nesta CLI, verifica a soma de verificação SHA-256 e a instala no diretório de ferramentas do rdc. tofu instala o...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
     "fragment": "231-install",
