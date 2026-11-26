@@ -808,10 +808,22 @@ def stop1_review_cases(check):
         os.utime(record, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
         wl_core_mod.read_landing_record(repo)
         check("memo: a same-size rewrite with the old mtime is read again", len(calls), 2)
+        # 76143e8e.1: each remaining key component alone moves the key. A chmod changes only ctime (same inode, size and mtime); a new file in `.git` changes only the `.git` entry's mtime.
+        os.chmod(record, 0o600 if (record.stat().st_mode & 0o777) != 0o600 else 0o640)
+        wl_core_mod.read_landing_record(repo)
+        check("memo: a ctime-only change is read again", len(calls), 3)
+        wl_core_mod.read_landing_record(repo)
+        check("memo: CONTROL, with nothing moved the record is not read again", len(calls), 3)
+        dot_git = repo / ".git"
+        dot_before = dot_git.stat()
+        (dot_git / "probe-file").write_text("x", encoding="utf-8")
+        os.utime(dot_git, ns=(dot_before.st_atime_ns, dot_before.st_mtime_ns + 5_000_000_000))
+        wl_core_mod.read_landing_record(repo)
+        check("memo: a changed `.git` entry is read again", len(calls), 4)
         sub = s1_scratch / "link-to-repo"
         sub.symlink_to(repo)
         wl_core_mod.read_landing_record(sub)
-        check("memo: another tree string over the same git dir is its own entry", len(calls), 3)
+        check("memo: another tree string over the same git dir is its own entry", len(calls), 5)
 
         def broken():
             raise RuntimeError("policy exploded")

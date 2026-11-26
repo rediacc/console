@@ -507,3 +507,10 @@ def test_the_real_seeds_load_and_their_pointers_are_live() -> None:
     for trap_id in loaded:
         assert mod.pointer_problem(real, "shape:%s" % trap_id) == "", trap_id
     assert real.shapes_path == mod.SHAPES_DEFAULT
+
+
+def test_a_module_outside_ci_resolves_by_its_top_level_name_only(tmp_path: pathlib.Path) -> None:
+    """747c7fe6.3: a `-m` module outside .ci is judged by its top-level name (`json`), so a missing submodule still resolves; the importability asked is the running interpreter's. CONTROL: a top-level name nothing can import does not resolve."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    assert reg.run_resolves("python3 -m json.nosuch")
+    assert not reg.run_resolves("python3 -m ctl_no_such_top_level")

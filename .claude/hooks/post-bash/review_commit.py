@@ -232,7 +232,8 @@ def commit_landed_lines(cmd, cwd, root, session):
 # A writer fixes a per-commit review finding in its lease and names it with a `Fixes-Review: <finding id>` trailer. `./run.sh worktree land <id> --run --me <prefix>` marks those, but the lead usually runs the printed `git cherry-pick -x` lines itself, and 186 landed fixes stayed unmarked on 1121-1 (2026-11-26). So after a command-position `git commit`, `cherry-pick` or `am` outside a lease, each commit between the HEAD recorded after the session's previous Bash call and the new HEAD (a fast-forward only, at most FIXES_SCAN_MAX commits) is read for those trailers, and each finding still open is marked `fixed <that commit>` through the `--review-mark` verb itself, so its descent and file checks hold. A refusal is printed with its reason and the manual command. Inside a lease nothing is marked (the sha is not the landed one): the trailers are named back to the writer for its report. A trailer only ever claims `fixed`; a `not-a-bug` verdict stays a human or lead decision.
 
 FIXES_SUBS = frozenset({"commit", "cherry-pick", "am"})
-FIXES_REVIEW_RE = re.compile(r"^Fixes-Review:\s*(\S+)\s*$", re.MULTILINE)
+# Horizontal space only: `\s*` would cross a newline, so an empty `Fixes-Review:` line followed by `Plan-Box: ...` would name `Plan-Box:` a finding id (f8f8c82a.2).
+FIXES_REVIEW_RE = re.compile(r"^Fixes-Review:[ \t]*(\S+)[ \t]*$", re.MULTILINE)
 # A landing batch is a handful of picks; a longer range after one command is a pull or a reset, not a landing.
 FIXES_SCAN_MAX = 50
 
@@ -255,13 +256,26 @@ def _fixes_tops(cmd, base, root):
 
 
 def _new_commits(repo, before, after):
-    """The commits `before..after`, oldest first, when `after` fast-forwards `before` by at most FIXES_SCAN_MAX; else []."""
+    """The commits `before..after`, oldest first, when `after` fast-forwards `before`; `[]` when it does not (a rebase, reset or amend lands nothing). More than FIXES_SCAN_MAX commits is a pull or a reset, not a landing: those are not returned either, and `_over_cap` says so."""
     if not before or not after or before == after:
         return []
     if R.git(repo, "merge-base", "--is-ancestor", before, after)[0] != 0:
         return []
     shas = R.git_out(repo, "rev-list", "--reverse", "%s..%s" % (before, after)).split()
     return shas if len(shas) <= FIXES_SCAN_MAX else []
+
+
+def _over_cap(repo, before, after):
+    """The `Fixes-Review:` ids named in a fast-forwarded range longer than FIXES_SCAN_MAX commits (which `_new_commits` leaves unscanned), else []; the caller names them so the skip is never silent."""
+    if not before or not after or before == after:
+        return []
+    if R.git(repo, "merge-base", "--is-ancestor", before, after)[0] != 0:
+        return []
+    count = R.git_out(repo, "rev-list", "--count", "%s..%s" % (before, after)).strip()
+    if not count.isdigit() or int(count) <= FIXES_SCAN_MAX:
+        return []
+    body = R.git_out(repo, "log", "--format=%B", "%s..%s" % (before, after))
+    return list(dict.fromkeys(FIXES_REVIEW_RE.findall(body)))
 
 
 def _finding_open(review_root, branch, finding_id):
@@ -289,6 +303,12 @@ def fixes_review_lines(cmd, cwd, root, session, verb=None):
         lease = commit_policy.lease_root(top)
         review_root = R.review_root(root)
         branch = R.current_branch(review_root)
+        skipped = [] if lease else _over_cap(repo, before, after)
+        if skipped:
+            lines.append(
+                "Fixes-Review %s not marked: the range holds more than %d commits, so no trailer was read; mark each by hand: worklist.py --review-mark %s <id> fixed <sha>"
+                % (", ".join(skipped[:8]), FIXES_SCAN_MAX, me)
+            )
         for sha in _new_commits(repo, before, after):
             body = R.git_out(repo, "log", "-1", "--format=%B", sha)
             for fid in dict.fromkeys(FIXES_REVIEW_RE.findall(body)):

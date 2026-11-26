@@ -507,7 +507,7 @@ class Registry:
         return '"%s":' % run.split()[2] in read_text(self.package_json)
 
     def run_resolves(self, run: str) -> bool:
-        """A direct run can start: every path-form script it names is a file, and every `-m` module is `.ci/a/b.py`, the package `.ci/a/b/__init__.py`, or a module outside `.ci` that the interpreter can import (`-m pytest`), judged by its top-level name (17f9d3d7.1)."""
+        """A direct run can start: every path-form script it names is a file, and every `-m` module is `.ci/a/b.py`, the package `.ci/a/b/__init__.py`, or a module outside `.ci` that the interpreter can import (`-m pytest`), judged by its top-level name (17f9d3d7.1), so `-m json.nosuch` resolves. That importability is asked of the interpreter running THIS check (the gate's, or the hook's when a hook calls it), not of the one the run names (747c7fe6.3)."""
         if not all((self.file_root / rel).is_file() for rel in self.path_tokens(run)):
             return False
         for module in self.direct_run_modules(run):

@@ -422,16 +422,14 @@ def test_a_heading_for_the_lead_carries_the_bullets_under_it() -> None:
 
 
 def test_a_bullet_that_is_a_seed_under_a_heading_keeps_its_own_seed() -> None:
-    """c08df3b0.1: a bullet carrying `owed=` under a heading for the lead is its own seed, not text folded into the heading's and clipped; the plain bullets before it still ride the heading."""
-    body = (
-        "### Notes for the lead\n- plain defect one\n- TICK x partial owed=C2:live\n- plain two\n"
-    )
+    """c08df3b0.1: a bullet carrying `owed=` under a heading for the lead is its own seed, not text folded into the heading's and clipped; the plain bullets before it still ride the heading, every one of them (747c7fe6.4). A plain bullet after the seed bullet is no longer under the heading and, matching no seed pattern, is read as ordinary report text like any other unmatched line."""
+    body = "### Notes for the lead\n- plain defect one\n- plain defect two\n- TICK x partial owed=C2:live\n- plain after\n"
     got = WN.report_seeds([report(body)], ME8, SINCE)
     texts = [s["text"] for s in got]
-    assert len(got) == 2, got
-    assert "plain defect one" in texts[0], got
-    assert "owed=" not in texts[0], got
-    assert "owed=C2:live" in texts[1], got
+    assert texts == [
+        "### Notes for the lead - plain defect one - plain defect two",
+        "- TICK x partial owed=C2:live",
+    ], got
 
 
 def test_last_round_keeps_a_pre_compaction_row_of_the_same_session(monkeypatch, tmp_path) -> None:

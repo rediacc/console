@@ -1096,14 +1096,25 @@ def _guard(value: object) -> str:
 
 
 def _substitution(code: str, i: int) -> tuple[str, int]:
-    """(body, index after it) of the command substitution opening at `code[i]` (a backtick, or `$(` with its matching parenthesis); an unclosed one runs to the end of the line."""
+    """(body, index after it) of the command substitution opening at `code[i]` (a backtick, or `$(` with its matching parenthesis, one inside a quoted string or after a backslash not counting, 747c7fe6.1); an unclosed one runs to the end of the line."""
     if code[i] == "`":
         end = code.find("`", i + 1)
         return (code[i + 1 :], len(code)) if end < 0 else (code[i + 1 : end], end + 1)
     depth = 1
     j = i + 2
+    quote = ""
     while j < len(code) and depth:
-        depth += {"(": 1, ")": -1}.get(code[j], 0)
+        ch = code[j]
+        if quote == "'":
+            quote = "" if ch == "'" else quote
+        elif ch == "\\":
+            j += 1
+        elif quote == '"':
+            quote = "" if ch == '"' else quote
+        elif ch in "'\"":
+            quote = ch
+        else:
+            depth += {"(": 1, ")": -1}.get(ch, 0)
         j += 1
     return (code[i + 2 : j - 1], j) if depth == 0 else (code[i + 2 :], len(code))
 

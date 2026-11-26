@@ -96,3 +96,14 @@ def test_a_backslash_outside_quotes_escapes_the_next_character() -> None:
     assert inv._after_echo(f'echo "a \\" && {g}"') == ""
     assert inv._after_echo(f"echo 'a\\' && {g}") == g
     assert inv._after_echo(f'echo "a" && echo \\"b && {g}') == g
+
+
+def test_a_quoted_parenthesis_inside_a_substitution_does_not_close_it() -> None:
+    """747c7fe6.1: the depth of a dollar-paren substitution counts parentheses outside quotes only, so a `)` inside quotes or after a backslash leaves the gate after it inside the body. Controls: a plain body is unchanged, a quoted `(` opens nothing, and an unclosed substitution runs to the end."""
+    gate = "npm run check:ci-ops-health"
+    assert gate in inv._after_echo(f"echo \"$(printf ')' ; {gate})\"")
+    assert gate in inv._after_echo(f'echo "$(printf ")" ; {gate})"')
+    assert gate in inv._after_echo(f'echo "$(printf \\) ; {gate})"')
+    assert gate in inv._after_echo(f"echo \"$(printf '(' ; {gate})\"")
+    assert inv._after_echo('echo "$(date)"') == "date"
+    assert gate in inv._after_echo(f'echo "$({gate}')

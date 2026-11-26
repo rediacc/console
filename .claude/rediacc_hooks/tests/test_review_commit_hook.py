@@ -871,6 +871,57 @@ def test_a_trailer_the_mark_refuses_is_named_with_the_manual_command(world):
     assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
 
 
+def test_an_empty_fixes_review_line_does_not_capture_the_next_trailer(world):
+    """f8f8c82a.2: `Fixes-Review:` with no id, followed by a one-word trailer line (`PR-TASK:`), names no finding; the pattern blank must not cross the newline and send `PR-TASK:` to --review-mark. CONTROL: the same commit with an id still marks it."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review:\nPR-TASK:")
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "PR-TASK" not in text, text
+    assert "Fixes-Review" not in text, text
+    world.commit(
+        "f.py",
+        body="a = 1\nb = 2\nc = 5\n",
+        msg="fix(x): z\n\nFixes-Review: %s\nPlan-Box: none -- x" % fid,
+    )
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    assert "Fixes-Review %s marked fixed" % fid in _context(out), _context(out)
+
+
+def test_a_range_over_the_scan_cap_is_named_not_silently_skipped(world):
+    """f8f8c82a.1: more than FIXES_SCAN_MAX commits after one command is a pull or a reset, so no trailer is marked, and the skip is said with the ids and the manual command. CONTROL: a range inside the cap marks the same trailer."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i)
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "Fixes-Review %s not marked: the range holds more than 50 commits" % fid in text, text
+    assert "worklist.py --review-mark deadbeef" in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+def test_a_head_that_is_not_a_fast_forward_marks_nothing(world):
+    """f8f8c82a.1: a reset followed by a new commit (a HEAD that does not descend from the recorded one) is not a landing, so its trailer is neither marked nor reported."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    tip = world.commit("g.py", body="x = 1\n", msg="feat(x): g")
+    world.hook("git status")
+    world.git("reset", "-q", "--hard", sha)
+    assert world.git("merge-base", "--is-ancestor", tip, "HEAD", check=False).returncode != 0
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    assert "Fixes-Review" not in _context(out), _context(out)
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
 @pytest.mark.parametrize(
     "project_dir",
     [lambda repo, _lease: repo, lambda _repo, lease: lease],
