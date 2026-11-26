@@ -696,6 +696,8 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
     monkeypatch.setattr(account_e2e.subprocess, "Popen", fake_popen)
     monkeypatch.setenv("ACCOUNT_X25519_PRIVATE_KEY", "xpriv")
     monkeypatch.setenv("ACCOUNT_X25519_PUBLIC_KEY", "xpub")
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "rpriv")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "rpub")
     monkeypatch.setenv("TERMS_GATE", "true")
     run = account_e2e.Run.__new__(account_e2e.Run)
     run.api_port = "3001"
@@ -705,3 +707,34 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
         run.start_backend()
     assert seen["TEST_MODE"] == "true"
     assert seen["TERMS_GATE"] == "false"
+    assert (seen["REPORT_ED25519_PRIVATE_KEY"], seen["REPORT_ED25519_PUBLIC_KEY"]) == (
+        "rpriv",
+        "rpub",
+    )
+
+
+def test_backend_env_carries_a_report_signing_pair_that_verifies(monkeypatch) -> None:
+    """TEST_MODE report generation stopped at REPORT_KEY_NOT_CONFIGURED: both REPORT_ED25519_* names reach the backend as PKCS8/SPKI base64, minted per start-up, and a signature by the private half verifies under the public one."""
+    monkeypatch.delenv("REPORT_ED25519_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("REPORT_ED25519_PUBLIC_KEY", raising=False)
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    priv, pub = run.report_pair()
+    assert (priv, pub) != run.report_pair()
+    program = (
+        "const c=require('crypto');"
+        "const k=c.createPrivateKey({key:Buffer.from(process.env.P,'base64'),format:'der',type:'pkcs8'});"
+        "const u=c.createPublicKey({key:Buffer.from(process.env.U,'base64'),format:'der',type:'spki'});"
+        "const m=Buffer.from('report');const s=c.sign(null,m,k);"
+        "process.exit(c.verify(null,m,u,s)?0:1)"
+    )
+    done = subprocess.run(
+        ["node", "-e", program],
+        env={**os.environ, "P": priv, "U": pub},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "rpriv")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "rpub")
+    assert run.report_pair() == ("rpriv", "rpub")

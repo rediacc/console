@@ -41,6 +41,14 @@ REQUIRED_SECRETS = (
     "ACCOUNT_JWT_SECRET",
     "ROOT_EMAIL",
 )
+ED25519_PROGRAM = """
+const crypto = require('crypto');
+const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+console.log(JSON.stringify({
+    private: privateKey.export({type:'pkcs8',format:'der'}).toString('base64'),
+    public: publicKey.export({type:'spki',format:'der'}).toString('base64')
+}));
+"""
 X25519_PROGRAM = """
 const crypto = require('crypto');
 const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
@@ -363,8 +371,29 @@ class Run:
         pair = json.loads(done.stdout)
         return pair["private"], pair["public"]
 
+    def report_pair(self) -> tuple[str, str]:
+        """The incident-report signing pair (`REPORT_ED25519_*`, PKCS8 and SPKI base64): the caller's when both names are set, else a throwaway minted per start-up, so TEST_MODE report generation does not stop at REPORT_KEY_NOT_CONFIGURED. The private half goes to the backend's environment only."""
+        private = os.environ.get("REPORT_ED25519_PRIVATE_KEY") or ""
+        public = os.environ.get("REPORT_ED25519_PUBLIC_KEY") or ""
+        if private and public:
+            return private, public
+        done = subprocess.run(
+            ["node", "-e", ED25519_PROGRAM],
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
+        )
+        if done.returncode != 0:
+            raise RefusedError(
+                f"node could not generate the report signing keys: {done.stderr.strip()}"
+            )
+        pair = json.loads(done.stdout)
+        return pair["private"], pair["public"]
+
     def start_backend(self) -> None:
         x_private, x_public = self.x25519_pair()
+        report_private, report_public = self.report_pair()
         log.step(f"Starting backend API on port {self.api_port}...")
         env = {
             **os.environ,
@@ -372,6 +401,8 @@ class Run:
             "ACCOUNT_ED25519_PUBLIC_KEY": os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""),
             "ACCOUNT_X25519_PRIVATE_KEY": x_private,
             "ACCOUNT_X25519_PUBLIC_KEY": x_public,
+            "REPORT_ED25519_PRIVATE_KEY": report_private,
+            "REPORT_ED25519_PUBLIC_KEY": report_public,
             "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY", ""),
             "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
             "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),

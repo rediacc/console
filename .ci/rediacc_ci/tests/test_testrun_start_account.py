@@ -546,7 +546,14 @@ def test_advertise_host_names_the_published_url(
     assert gh_out.read_text() == "server-url=http://192.168.111.254:4911\n"
 
 
-FAKE_KEYS = {"edPriv": "GEN-PRIV", "edPub": "GEN-PUB", "xPriv": "GEN-XPRIV", "xPub": "GEN-XPUB"}
+FAKE_KEYS = {
+    "edPriv": "GEN-PRIV",
+    "edPub": "GEN-PUB",
+    "xPriv": "GEN-XPRIV",
+    "xPub": "GEN-XPUB",
+    "reportPriv": "GEN-RPRIV",
+    "reportPub": "GEN-RPUB",
+}
 
 
 def drive_run(
@@ -928,3 +935,39 @@ def test_ensure_two_factor_does_nothing_when_already_enabled() -> None:
     api = ScriptApi({"/auth/2fa/status": (200, json.dumps({"enabled": True}))})
     sa.ensure_two_factor(api, "owner@example.test")
     assert api.paths == ["/auth/2fa/status"]
+
+
+def test_the_server_holds_a_report_signing_pair_that_verifies(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """TEST_MODE report generation stopped at REPORT_KEY_NOT_CONFIGURED: the server needs both REPORT_ED25519_* names, PKCS8/SPKI base64, and a signature by the private half must verify under the public one."""
+    for name in (
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    keys = sa.server_keys()
+    seen: dict[str, str] = {}
+    with monkeypatch.context() as patch:
+        patch.setattr(sa.subprocess, "Popen", lambda _a, **kw: seen.update(kw["env"]))
+        sa.start_server(sa.Options(), tmp_path, tmp_path / "log", tmp_path / "db.sqlite", keys)
+    priv, pub = seen["REPORT_ED25519_PRIVATE_KEY"], seen["REPORT_ED25519_PUBLIC_KEY"]
+    assert priv != seen["ACCOUNT_ED25519_PRIVATE_KEY"]
+    program = (
+        'const c=require("crypto");'
+        'const k=c.createPrivateKey({key:Buffer.from(process.env.P,"base64"),format:"der",type:"pkcs8"});'
+        'const u=c.createPublicKey({key:Buffer.from(process.env.U,"base64"),format:"der",type:"spki"});'
+        'const m=Buffer.from("report");const s=c.sign(null,m,k);'
+        "process.exit(c.verify(null,m,u,s)?0:1)"
+    )
+    done = subprocess.run(
+        ["node", "-e", program],
+        env={**os.environ, "P": priv, "U": pub},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert sa.server_keys()["reportPriv"] != keys["reportPriv"]

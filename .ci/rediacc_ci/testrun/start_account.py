@@ -40,12 +40,15 @@ KEYGEN_PROGRAM = """
 const crypto = require("crypto");
 const ed = crypto.generateKeyPairSync("ed25519");
 const x = crypto.generateKeyPairSync("x25519");
+const report = crypto.generateKeyPairSync("ed25519");
 const der = (k, t) => k.export({ type: t, format: "der" }).toString("base64");
 console.log(JSON.stringify({
   edPriv: der(ed.privateKey, "pkcs8"),
   edPub: der(ed.publicKey, "spki"),
   xPriv: der(x.privateKey, "pkcs8"),
   xPub: der(x.publicKey, "spki"),
+  reportPriv: der(report.privateKey, "pkcs8"),
+  reportPub: der(report.publicKey, "spki"),
 }));
 """
 DERIVE_PUBLIC_PROGRAM = """
@@ -142,6 +145,10 @@ def server_keys() -> dict[str, str]:
             )
         log.info("signing with the ACCOUNT_ED25519_* pair from the environment")
         keys = {**keys, "edPriv": private, "edPub": public}
+    report_private = os.environ.get("REPORT_ED25519_PRIVATE_KEY", "").strip()
+    report_public = os.environ.get("REPORT_ED25519_PUBLIC_KEY", "").strip()
+    if report_private and report_public:
+        keys = {**keys, "reportPriv": report_private, "reportPub": report_public}
     return keys
 
 
@@ -270,6 +277,9 @@ def start_server(
         # Delta 10: the node entry refuses to boot with CONFIG_R2_* set and no ACCOUNT_CONFIG_SERVER_KEY (private/account/src/entry/node.ts), and `start_backup_plane` starts RustFS, which exports CONFIG_R2_*, before this server. A throwaway per-run key (or the caller's) keeps that refusal intact and gives the config routes a key.
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY")
         or secrets.token_hex(32),
+        # The incident-report signer (ReportSigningService) wants its own PKCS8/SPKI base64 pair, apart from the licence signer; without it TEST_MODE report generation stops at REPORT_KEY_NOT_CONFIGURED. Minted per start-up with the other throwaway keys, or the caller's when both names are set; the private half never leaves this environment.
+        "REPORT_ED25519_PRIVATE_KEY": keys["reportPriv"],
+        "REPORT_ED25519_PUBLIC_KEY": keys["reportPub"],
         "ROOT_EMAIL": "root@rediacc.invalid",
         "DATABASE_PATH": str(db_path),
         "PORT": opts.port,
