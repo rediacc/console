@@ -325,8 +325,9 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 
 ### Phase 3: rehearsal
 - [ ] R1 [live] Region-loss across regions: companies placed on bench-us and bench-asia, then the four cuts of *Rehearsal use* on us with asia and eu as observers; record detect and restore times and every unnamed error. Accept: `./run.sh enterprise proof region-loss --bench` rc 0 with the two-region form and no `cross-region placement` gap note
-- [ ] R2 [live] Run the unblocked boxes on bench: 357547f9 (placement), V1 532e82c9, V2 cdf29e6f, LP-bench 89d70106, and the bench rehearsal of six-targets L2 8ec6bd76. Accept: each box ticked in its own plan with this plan's receipt ids
+- [x] R2 [live] Run the unblocked boxes on bench: 357547f9 (placement), V1 532e82c9, V2 cdf29e6f, LP-bench 89d70106, and the bench rehearsal of six-targets L2 8ec6bd76. Accept: each box ticked in its own plan with this plan's receipt ids
     (corrected 2026-11-24, ace763dd) the multi-org and executor-policy bench rehearsals left this box (the sig window ends inside the closing words, so the box keeps its signature): those two plans are finished and their done state is recorded in their own plans.
+    (ticked) 2026-11-26T12:36:41Z by d778be9d: commit:71054b2eb6 deploy record fix, deploy_proxy --target bench --region asia rc=0 version eaf6dba8, E1 27-90 27-91 rc=0 on bench-us and bench-asia (us runs 8b67bdf1 372abe24 af1eb74b, asia 8a96a216 bdf5b5a0 6fd4609f f74e5e0d cbfc297d df7b3043); the five boxes 357547f9 8ec6bd76 532e82c9 cdf29e6f 89d70106 are each [x] in their own plans; operator ruling ASKED:2026-11-26T10:24Z (hostinger for every bench check). DEPS-WAIVED: R2 runs only the us and asia bench boxes, none touches the eu D1 jurisdiction that PLAN-d1-eu-jurisdiction.md changes
 
 ### Phase 4: cost check and close
 - [x] D2 [writer] cf-spend-guard.json `report` gains a per-bench-proxy-application ceiling of 10 USD a month. Accept: pytest `-k cf_usage_report` rc 0

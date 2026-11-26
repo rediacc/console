@@ -537,7 +537,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 76 | 9 | 1 | 14042 |
-| `agent/plans/PLAN-first-release-checks.md` | approved | 170 | 30 | 0 | 19740 |
+| `agent/plans/PLAN-first-release-checks.md` | approved | 171 | 29 | 1 | 20464 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
@@ -571,7 +571,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 340 | 7 | 16 | 57510 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 341 | 6 | 17 | 58103 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
 | `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 47 | 2 | 7 | 10020 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
@@ -588,7 +588,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 227 | 3 | 25 | 45968 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
-| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 417 | 3 | 28 | 70182 |
+| `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 418 | 2 | 29 | 70833 |
 | `agent/plans/PLAN-push-decoupling.md` | approved | 258 | 3 | 20 | 36489 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |

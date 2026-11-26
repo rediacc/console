@@ -1840,8 +1840,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 30,
-      "done": 0,
+      "open": 29,
+      "done": 1,
       "open_sigs": [
         "03025314",
         "05a9a216",
@@ -1850,7 +1850,6 @@
         "24f82950",
         "2ee0d095",
         "32036b55",
-        "357547f9",
         "4e997389",
         "54ed65e4",
         "5c6a8dc7",
@@ -1874,7 +1873,9 @@
         "f412766e",
         "f45499e6"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "357547f9"
+      ]
     },
     "agent/plans/PLAN-fix-ci-contention-aware-timeouts.md": {
       "status": "compacted",
@@ -2595,10 +2596,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 16,
+      "open": 6,
+      "done": 17,
       "open_sigs": [
-        "0e4aa275",
         "3f19e559",
         "4265bd6d",
         "93dc39be",
@@ -2607,6 +2607,7 @@
         "f1efbccd"
       ],
       "done_sigs": [
+        "0e4aa275",
         "17c5e0bc",
         "3ddb7a48",
         "3f42fea0",
@@ -3016,10 +3017,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 28,
+      "open": 2,
+      "done": 29,
       "open_sigs": [
-        "8ec6bd76",
         "abe9b4eb",
         "e098f28f"
       ],
@@ -3037,6 +3037,7 @@
         "77b26aea",
         "7834ea96",
         "88006538",
+        "8ec6bd76",
         "9a3891f2",
         "aa94f54f",
         "b00bc9df",

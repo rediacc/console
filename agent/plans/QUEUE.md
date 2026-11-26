@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1522 of 1891 boxes done (80%).
+Promoted: 11 of 100 plans done, 1524 of 1891 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Promoted: 11 of 100 plans done, 1522 of 1891 boxes done (80%).
 | 3 | PLAN-cloudflare-proxy.md | 29/29 | done |
 | 4 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
 | 5 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
-| 6 | PLAN-proxy-cd-six-targets.md | 28/31 | 3 open |
+| 6 | PLAN-proxy-cd-six-targets.md | 29/31 | 2 open |
 | 7 | PLAN-tested-on-bench.md | 16/20 | 4 open |
 | 8 | PLAN-backup-restore-path.md | 8/10 | 2 open |
 | 9 | PLAN-production-key-only.md | 15/17 | 2 open |
@@ -106,7 +106,7 @@ Promoted: 11 of 100 plans done, 1522 of 1891 boxes done (80%).
 | 44 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 45 | PLAN-d1-eu-jurisdiction.md | 5/22 | 17 open |
 | 46 | PLAN-hostinger-to-bench.md | 15/22 | 7 open |
-| 47 | PLAN-multi-region-bench.md | 16/23 | 7 open |
+| 47 | PLAN-multi-region-bench.md | 17/23 | 6 open |
 | 48 | PLAN-root-api-token.md | 13/15 | 2 open |
 | 49 | PLAN-site-entry-points.md | 8/11 | 3 open |
 | 50 | PLAN-root-grants.md | 11/19 | 8 open |
@@ -276,20 +276,20 @@ Promoted: 11 of 100 plans done, 1522 of 1891 boxes done (80%).
 8. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, in progress (1 of 16 boxes ticked)
 9. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, in progress (1 of 12 boxes ticked)
 10. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, in progress (1 of 13 boxes ticked)
-11. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, in progress (1 of 8 boxes ticked)
-12. agent/plans/PLAN-stop-hook-retro-20261125.md -- P2, ready, in progress (4 of 6 boxes ticked)
-13. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
-14. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, in progress (1 of 19 boxes ticked), dep-blocked
-15. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, in progress (1 of 10 boxes ticked), dep-blocked
-16. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, in progress (1 of 16 boxes ticked)
-17. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, in progress (1 of 9 boxes ticked)
-18. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, in progress (1 of 9 boxes ticked), dep-blocked
-19. agent/plans/PLAN-cf-token-hardening.md -- P1, draft, not started
-20. agent/plans/PLAN-console-private.md -- P1, proposed, not started
-21. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-22. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
-23. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-24. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+11. agent/plans/PLAN-first-release-checks.md -- P2, approved, in progress (1 of 30 boxes ticked)
+12. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, in progress (1 of 8 boxes ticked)
+13. agent/plans/PLAN-stop-hook-retro-20261125.md -- P2, ready, in progress (4 of 6 boxes ticked)
+14. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
+15. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, in progress (1 of 19 boxes ticked), dep-blocked
+16. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, in progress (1 of 10 boxes ticked), dep-blocked
+17. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, in progress (1 of 16 boxes ticked)
+18. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, in progress (1 of 9 boxes ticked)
+19. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, in progress (1 of 9 boxes ticked), dep-blocked
+20. agent/plans/PLAN-cf-token-hardening.md -- P1, draft, not started
+21. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+22. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+23. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
+24. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
 25. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
 26. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
 27. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
