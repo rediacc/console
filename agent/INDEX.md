@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 155 | 5 | 12 | 32182 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 156 | 4 | 13 | 32412 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 134 | 5 | 10 | 24928 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 99 | 2 | 7 | 16818 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 99 | 3 | 7 | 16669 |
@@ -566,7 +566,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md` | proposed | 57 | 7 | 1 | 11467 |
-| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 69 | 10 | 0 | 10314 |
+| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 71 | 8 | 2 | 10590 |
 | `agent/plans/PLAN-licence-expiry-notices.md` | approved | 69 | 0 | 7 | 16665 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |

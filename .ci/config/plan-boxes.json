@@ -1024,13 +1024,12 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 12,
+      "open": 4,
+      "done": 13,
       "open_sigs": [
         "4a23af14",
         "62309d70",
         "ab8e1842",
-        "c9e75130",
         "e85200b3"
       ],
       "done_sigs": [
@@ -1045,6 +1044,7 @@
         "b6d1d9ec",
         "c28073e0",
         "c308f2d8",
+        "c9e75130",
         "ce5d6b97"
       ]
     },
@@ -2533,6 +2533,28 @@
       ],
       "done_sigs": [
         "677924f9"
+      ]
+    },
+    "agent/plans/PLAN-legal-wording-consistency.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 2,
+      "open_sigs": [
+        "2acb7e0a",
+        "30253a2d",
+        "3a995401",
+        "4c59d9a7",
+        "53dd0035",
+        "6b1e40da",
+        "8a2435a7",
+        "ff98bf33"
+      ],
+      "done_sigs": [
+        "57d7c6f4",
+        "8da5908f"
       ]
     },
     "agent/plans/PLAN-licence-expiry-notices.md": {

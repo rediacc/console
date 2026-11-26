@@ -4989,8 +4989,9 @@ def _stop_roster(ns):
     # A stuck waiter whose shell does real work, or that an in-flight item holds a fresh lease on, is owned work: reported once, age-free, never a TaskStop order (the wl_bgsweep live-work rule). A shell that only waits blocks unless a fresh lease names it; an expired lease exempts nothing.
     wl_stuckshell.stop_check(
         _stuck,
-        advise=lambda key, body: outq_add(
-            worklist, session_id, state_doc, key, body, 1, refresh_min=24 * 60
+        # The key is spelled as a literal here, not passed through: wl_effort.produced_keys reads the Stop hook's keys from literal outq_add/vadd arguments, and a forwarded key would leave `stuck-shell-live` in effort.json with no producer it can see.
+        advise=lambda _key, body: outq_add(
+            worklist, session_id, state_doc, "stuck-shell-live", body, 1, refresh_min=24 * 60
         ),
         block=lambda rows: vadd(
             "stuck-shell",

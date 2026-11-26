@@ -111,10 +111,11 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Depends on: AI6, PLAN-console-animations.md#AN3.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/simple)` rc 0, including a test that "Show details" reveals the exact command line of the underlying run.
     (ticked) 2026-11-25T19:36:36Z by d778be9d: AI9 simple mode view, action card and per-user switch, 13 locales; simple tests 7 passed, check:i18n rc 0; landed e978e323f9. DEPS-WAIVED: used prerequisites landed
-- [ ] AI10 [writer] Microphone engines: the selectable engine list in the C38 fallback order, Web Speech, the lazy hash-checked Whisper-base worker shown with its size before download, and executor transcription for OpenAI-compatible profiles; the transcript lands editable in the composer, with English strings in `aiSpeech.json`.
+- [x] AI10 [writer] Microphone engines: the selectable engine list in the C38 fallback order, Web Speech, the lazy hash-checked Whisper-base worker shown with its size before download, and executor transcription for OpenAI-compatible profiles; the transcript lands editable in the composer, with English strings in `aiSpeech.json`.
   Owns: private/account/web/src/lib/ai/speech/**, private/account/web/src/components/ai/speech/**, packages/cli/src/services/ai/transcribe.ts, packages/cli/src/services/ai/__tests__/transcribe.test.ts, packages/cli/src/services/serve/ai-routes.ts (the transcription route only), private/account/web/src/i18n/locales/en/aiSpeech.json
   Depends on: AI1, AI5, AI6.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/speech)` and `(cd packages/cli && npx vitest run src/services/ai/__tests__/transcribe.test.ts)` rc 0; a test proves the model is not fetched before the user confirms, and a hash mismatch refuses the model.
+    (ticked) 2026-11-26T15:42:59Z by d778be9d: AI10: code landed 57061f6e26, the 8 pinned model files served from media.rediacc.com with matching sha256 (private/account/web/src/lib/ai/speech/whisper-model.ts:3) commit:57061f6e26
 - [ ] AI11 [writer] Translate `aiTimeline`, `aiChat`, `aiSimple` and `aiSpeech` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiTimeline.json, private/account/web/src/i18n/locales/*/aiChat.json, private/account/web/src/i18n/locales/*/aiSimple.json, private/account/web/src/i18n/locales/*/aiSpeech.json
   Depends on: AI7, AI8, AI9, AI10.
