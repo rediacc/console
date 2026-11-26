@@ -1883,6 +1883,10 @@
       ".ci/rediacc_ci/deploy/deploy_account.py": [
         "CLOUDFLARE_API_TOKEN"
       ],
+      ".ci/rediacc_ci/deploy/deploy_mcp.py": [
+        "CLOUDFLARE_API_TOKEN",
+        "REDIACC_BWS_PROFILES"
+      ],
       ".ci/rediacc_ci/deploy/deploy_proxy.py": [
         "ACCOUNT_ED25519_PUBLIC_KEY",
         "CLOUDFLARE_API_TOKEN",

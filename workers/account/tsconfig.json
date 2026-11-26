@@ -15,5 +15,10 @@
   // The ambient declarations come along because this project compiles account
   // sources through the entry import; private/account/tsconfig.json picks them
   // up via its own include, which does not apply here.
-  "include": ["src", "../../private/account/src/types/*.d.ts"]
+  // The detector's `*.wasm` module declaration sits beside its import (detect-wasm-worker.ts), outside types/.
+  "include": [
+    "src",
+    "../../private/account/src/types/*.d.ts",
+    "../../private/account/src/services/forensics-detect/wasm.d.ts"
+  ]
 }
