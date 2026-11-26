@@ -119,19 +119,21 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Owns: private/account/web/src/i18n/locales/*/aiTimeline.json, private/account/web/src/i18n/locales/*/aiChat.json, private/account/web/src/i18n/locales/*/aiSimple.json, private/account/web/src/i18n/locales/*/aiSpeech.json
   Depends on: AI7, AI8, AI9, AI10.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
-- [ ] AI12 [writer] Audit every AI approval, rejection, judge verdict and refusal as plan 3's `console.ai.approval` with `actor.kind: 'agent'` and the approving human, and each mode change as a new `console.ai.mode` type (who, command, target, verification method), never recording a secret parameter.
+- [x] AI12 [writer] Audit every AI approval, rejection, judge verdict and refusal as plan 3's `console.ai.approval` with `actor.kind: 'agent'` and the approving human, and each mode change as a new `console.ai.mode` type (who, command, target, verification method), never recording a secret parameter.
   Owns: packages/cli/src/services/ai/approval-audit.ts, packages/cli/src/services/ai/__tests__/approval-audit.test.ts, packages/shared/src/audit/console-events.ts (the console.ai.mode type only)
   Depends on: AI3, AI4, PLAN-console-audit-r2.md#AU1, PLAN-console-audit-r2.md#AU5.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/approval-audit.test.ts)` rc 0, with a sensitive option value absent from every emitted event; `npm run check:ci-audit-coverage` rc 0.
+    (ticked) 2026-11-26T12:22:07Z by d778be9d: AI12 approval, judge, refusal and mode events emitted by approval-audit.ts and mapped to console.ai.* (approval-audit 6 passed, check:ci-audit-coverage rc 0); judge join now asserts the held tool call id, ai-routes+approval-audit 44 passed on the merged tree commit:50195438d5 plan:agent/plans/PLAN-console-ai-assistant.md
 - [ ] AI13 [writer] Playwright keyboard and IME contract specs: Enter, Shift+Enter, Esc stop, a CDP composition that does not send, the approval card keyboard flow, jump-to-latest focus, and the simple-view switch.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-1*-ai-*.test.ts
   Depends on: AI7, AI8, AI9, AI15.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-10-ai-keyboard.test.ts --project=chromium)` rc 0.
-- [ ] AI14 [writer] The credits chip for enterprise orgs on Rediacc-provided AI, reading plan 10's ledger balance beside the token chip.
+- [x] AI14 [writer] The credits chip for enterprise orgs on Rediacc-provided AI, reading plan 10's ledger balance beside the token chip.
   Owns: private/account/web/src/components/ai/chat/CreditsChip.tsx, private/account/web/src/components/ai/chat/__tests__/credits-chip.test.tsx
   Depends on: AI8, PLAN-console-ai-credits.md#AC10.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/chat/__tests__/credits-chip.test.tsx)` rc 0.
+    (ticked) 2026-11-26T12:22:10Z by d778be9d: AI14 CreditsChip mounted in AiChat.tsx and asserted by ai-chat-page.test.tsx (16 passed), credits-chip test 5 passed, strings in all 13 locales, web tsc rc 0 commit:7b4a2808 commit:99967fcb
 - [x] AI15 [writer] Mount the assistant on one console page: add `pages/console/AiChat.tsx` at the route `ai` (beside `ai-providers`, inside ConsoleGate), which runs `useAiConversation` and `useAiPreferences` and renders `SimpleView` with `SimpleViewSwitch` when the simple-view preference is on, otherwise `ChatShell` with `Timeline` for the run, plan and approval items; the page reads an optional `AiPageSeed` from router state so the `AskBar` `onAsk` of PLAN-console-ai-in-pages.md AX5 can open it with its resource chip, and starts no command on mount.
   Owns: private/account/web/src/pages/console/AiChat.tsx, private/account/web/src/pages/console/__tests__/ai-chat-page.test.tsx, private/account/web/src/router.tsx (the one `ai` route line only)
   Depends on: AI7, AI8, AI9, PLAN-console-ai-in-pages.md AX2 (both edit router.tsx).
