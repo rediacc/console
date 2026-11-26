@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 99 plans done, 1481 of 1872 boxes done (79%).
+Promoted: 11 of 99 plans done, 1484 of 1872 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Promoted: 11 of 99 plans done, 1481 of 1872 boxes done (79%).
 | 73 | PLAN-rmcp-decide.md | 5/9 | 4 open |
 | 74 | PLAN-rmcp-writeback.md | 13/17 | 4 open |
 | 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
-| 76 | PLAN-rmcp-agent-grants.md | 14/19 | 5 open |
+| 76 | PLAN-rmcp-agent-grants.md | 15/19 | 4 open |
 | 77 | PLAN-console-ai-providers.md | 13/15 | 2 open |
 | 78 | PLAN-console-ai-assistant.md | 9/17 | 8 open |
 | 79 | PLAN-console-ai-credits.md | 10/15 | 5 open |
@@ -149,8 +149,8 @@ Promoted: 11 of 99 plans done, 1481 of 1872 boxes done (79%).
 | 87 | PLAN-stripe-disable.md | 6/8 | 2 open |
 | 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
 | 89 | PLAN-forensics-shipping.md | 10/16 | 6 open |
-| 90 | PLAN-forensics-detection.md | 9/15 | 6 open |
-| 91 | PLAN-forensics-investigation.md | 11/17 | 6 open |
+| 90 | PLAN-forensics-detection.md | 10/15 | 5 open |
+| 91 | PLAN-forensics-investigation.md | 12/17 | 5 open |
 | 92 | PLAN-forensics-alerts-notices.md | 9/15 | 6 open |
 | 93 | PLAN-forensics-reports.md | 9/14 | 5 open |
 | 94 | PLAN-forensics-docs-legal.md | 7/13 | 6 open |

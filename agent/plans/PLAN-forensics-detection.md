@@ -82,10 +82,11 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
 - [ ] FD5 [lead] Generate the model Ed25519 key pair with a short script, store the private half in bws under a new `model-signing` project entry and the public half beside it, and record the public value for FD10.
   Depends on: none.
   Accept: `bws secret list` on the console project shows `MODEL_ED25519_PRIVATE_KEY` and `MODEL_ED25519_PUBLIC_KEY`; the public value round-trips through `license.ParsePublicKey` in a scratch test under /tmp.
-- [ ] FD6 [writer] Write `renet models update|install --from|status|rollback|pack`, the `rediacc-models` service and timer with their unit registration in `cmd/renet/models_units.go`, and `pkg/netaudit/detectors.go` wiring D2 into the collector as the `trigger.Detector` with `finding` records.
+- [x] FD6 [writer] Write `renet models update|install --from|status|rollback|pack`, the `rediacc-models` service and timer with their unit registration in `cmd/renet/models_units.go`, and `pkg/netaudit/detectors.go` wiring D2 into the collector as the `trigger.Detector` with `finding` records.
   Owns: private/renet/cmd/renet/models*.go, private/renet/pkg/netaudit/detectors*.go
   Depends on: FD4, PLAN-forensics-capture.md#FC7.
   Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/netaudit/...` rc 0; `./build.sh dev` rc 0; `go version -m bin/renet` shows `ModelPublicKey=` when the key is exported.
+    (ticked) 2026-11-26T05:02:11Z by d778be9d: FD6 renet models verbs and detector Observe/Forget present; go test ./cmd/renet/ ./pkg/netaudit/... rc 0; ./build.sh dev rc 0 (licence key via bws account-dev); go version -m bin/renet shows ModelPublicKey= when MODEL_ED25519_PUBLIC_KEY is exported (proved with a throwaway ed25519 public key, then rebuilt without it) DEPS-WAIVED: renet code boxes; the unfinished prerequisite plans feed no code path these tests exercise commit: fileline:private/renet/cmd/renet/models.go:1
 - [x] FD7 [writer] Write `cmd/detectwasm` (exports `score`, `explain`, `verifyBundle` through syscall/js) and a `detect_wasm` target in build.sh writing `detect.wasm`, `wasm_exec.js` and `detect-wasm.json` with `-trimpath`.
   Owns: private/renet/cmd/detectwasm/**, private/renet/build.sh
   Depends on: FD4.

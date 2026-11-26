@@ -544,9 +544,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 134 | 6 | 9 | 29766 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
-| `agent/plans/PLAN-forensics-detection.md` | approved | 132 | 6 | 9 | 24596 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 133 | 5 | 10 | 25119 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
-| `agent/plans/PLAN-forensics-investigation.md` | approved | 142 | 6 | 11 | 32735 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 143 | 5 | 12 | 33174 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 121 | 5 | 9 | 23778 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 136 | 5 | 14 | 31711 |
+| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 137 | 4 | 15 | 32159 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 93 | 4 | 5 | 15852 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 107 | 11 | 9 | 25262 |

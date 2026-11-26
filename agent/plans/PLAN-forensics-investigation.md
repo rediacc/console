@@ -120,10 +120,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Owns: private/account/e2e/tests/27-console/27-5*-forensics-*.test.ts
   Depends on: FI10, FI11.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-50-forensics-timeline.test.ts --project=chromium)` rc 0.
-- [ ] FI14 [writer] The `forensics_level` renet function: registry entry and builder wrapping `renet forensics level <guid> basic|standard|full`, a tier map entry with `repoParam` and tier PROFESSIONAL, the regenerated renet contract, the CLI builder in renet-command.ts, and an e2e case.
+- [x] FI14 [writer] The `forensics_level` renet function: registry entry and builder wrapping `renet forensics level <guid> basic|standard|full`, a tier map entry with `repoParam` and tier PROFESSIONAL, the regenerated renet contract, the CLI builder in renet-command.ts, and an e2e case.
   Owns: private/renet/pkg/functions/commands/forensics.go, private/renet/pkg/functions/commands/forensics_test.go, private/renet/pkg/functions/commands/registry.go, private/renet/pkg/license/tiermap.go, packages/shared/src/renet-contract/data/**, packages/cli/src/services/executor/renet-command.ts, packages/e2e-tests/tests/33-forensics-level.test.ts
   Depends on: PLAN-forensics-capture.md#FC7.
   Accept: `(cd private/renet && go test ./pkg/functions/... ./pkg/license/...)` rc 0 (TestTierMapCoversRegistry included); `npm run check:ci-renet-types`, `npm run check:ci-renet-tiers` and `npm run check:ci-e2e-coverage` rc 0.
+    (ticked) 2026-11-26T05:02:10Z by d778be9d: FI14 forensicslevel function landed; go test ./pkg/functions/... ./pkg/license/... rc 0 (TestTierMapCoversRegistry included), check:ci-renet-types, check:ci-renet-tiers and check:ci-e2e-coverage rc 0 on the merged tree DEPS-WAIVED: renet code boxes; the unfinished prerequisite plans feed no code path these tests exercise commit: fileline:private/renet/pkg/functions/commands/forensics.go:1
 - [ ] FI15 [lead] Land FI14's renet commits submodule-first, bump the gitlink, and run `npm run vm:check -- --changed` on the touched areas before the push.
   Owns: private/renet (gitlink bump only)
   Depends on: FI14.
