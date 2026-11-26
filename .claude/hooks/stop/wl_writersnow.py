@@ -212,7 +212,7 @@ def new_round_id() -> str:
 
 
 def append_round(root, session, survey, now, round_id=None, **extra) -> dict:
-    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle, so two sessions starting rounds at once each keep their own line. Only a SHORT write (a disk filling mid-line) is continued with further writes, and a second session's append may land between those, so that one row can come out split across lines; `read_rounds` then skips both fragments, the same as any torn line (review 66ac6d0f.1)."""
+    """Append one round row and return it. One `os.write` of one line onto an O_APPEND handle, so two sessions starting rounds at once each keep their own line whenever the write goes down whole. Only a SHORT write (a disk filling mid-line) is continued with further writes, and a second session's append may land between those, so that one row can come out split across lines; `read_rounds` then skips both fragments, the same as any torn line (review 66ac6d0f.1)."""
     row = {
         "round": round_id or new_round_id(),
         "session": str(session),
@@ -399,8 +399,8 @@ def _ident(text) -> str:
     return re.sub(r"[^A-Za-z0-9]", "", str(text or "")).upper()
 
 
-def review_staffed(items, session, since) -> str:
-    """The joined identities of this session's items of any state first written at or after `since` (the round's start): a review cluster an item of the round names is staffed or done, never free."""
+def review_staffed(items, session, since) -> list[str]:
+    """The identities, one per item, of this session's items of any state first written at or after `since` (the round's start): a review cluster an item of the round names is staffed or done, never free."""
     out = []
     for rec in items or ():
         if not C.owned_by_me(rec.get("owner"), session):
@@ -411,7 +411,13 @@ def review_staffed(items, session, since) -> str:
         out.append(
             _ident(" ".join(str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note")))
         )
-    return "|".join(out)
+    return out
+
+
+def _names_cluster(idents, own, all_review) -> bool:
+    """Whether one of `idents` (a per-item identity) names the review cluster identity `own`. An item naming a LONGER review cluster that contains `own` as a prefix of it (`CL-W-CI-PY-1` beside `CL-W-CI`) names only that longer one (review f6904b91.1: a substring test on the joined identities treated `CL-W-CI` as staffed)."""
+    longer = [o for o in all_review if o != own and own in o]
+    return any(own in ident and not any(o in ident for o in longer) for ident in idents)
 
 
 def _clip_to(text, limit=CLUSTER_HEAD_MAX) -> str:
@@ -483,9 +489,10 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
     # The survey's plan tables list the OPEN boxes of its round (the /writers-now survey sorts every open box), so a table sig ticked now was ticked after the survey was written, which is what WHY_TICKED and REFRESH_TICKS count (review 7d036d68.1).
     facts["ticked"] = len(table & done)
     staffed = review_staffed(items, session, C.parse_stamp(last["at"]))
+    review_ids = [_ident(c["id"]) for c in clusters if c.get("review")]
     for cl in clusters:
         if cl.get("review"):
-            if _ident(cl["id"]) not in staffed:
+            if not _names_cluster(staffed, _ident(cl["id"]), review_ids):
                 facts["free"].append(cl)
             continue
         left = [s for s in cl["sigs"] if s not in done]

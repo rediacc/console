@@ -45,6 +45,7 @@ import time
 from typing import Any
 
 import wl_core as C
+import wl_store as S
 
 # One index line must fit in a single atomic append. 4096 is PIPE_BUF on Linux;
 # 1024 leaves headroom for every platform's weaker guarantee and is still ~5x a typical line.
@@ -345,7 +346,7 @@ def _foreign_and_stale(entry, reader):
     age = C.stamp_age_min(entry.get("at"))
     if age is None:
         return False
-    return age >= float(os.environ.get("WORKLIST_DEAD_HOURS", "24")) * 60
+    return age >= S.dead_hours() * 60
 
 
 def _foreign_and_live(entry, reader, peer_live):

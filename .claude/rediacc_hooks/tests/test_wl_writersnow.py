@@ -667,6 +667,9 @@ def test_a_short_lease_owner_agrees_with_its_own_full_tag_and_a_short_tag_agrees
     assert not W._tags_agree("abc12345", "")
     assert not W._tags_agree("", "abc12345")
     assert not W._tags_agree("abc12345", "abd12345")
+    # d798c543.1: a short owner (the lease record's own field) agrees only with tags it prefixes, never a stranger's.
+    assert not W._tags_agree("abc", "abd12345")
+    assert not W._tags_agree("a", "bcde1234")
 
 
 def test_owner_problem_honours_a_short_owner_hold_and_still_refuses_a_peer():

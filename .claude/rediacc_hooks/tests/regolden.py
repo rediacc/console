@@ -3,7 +3,7 @@
 
     regolden.py <stem|guards|shellscan|post-bash|all> --reason "<why>" [--out-dir <dir>]
 
-`--allow-shrink` is the one way a recording may lose case ids the committed golden holds (cases that no longer exist); without it the run exits 1 naming the lost ids and writes nothing for that target (finding #569a06ac). Targets run in order, so under `all` the ones before a refusal are already written.
+`--allow-shrink` is the one way a recording over a committed golden may lose case ids it holds (cases that no longer exist); without it the run exits 1 naming the lost ids and writes nothing for that target (finding #569a06ac). Under `--out-dir` no flag is needed, see below. Targets run in order, so under `all` the ones before a refusal are already written.
 
 `--out-dir` writes each golden into that directory instead of over the committed one (still diffing against the committed one), so a recording can be compared without touching the tree; a lost case id is named on stderr there rather than refused, since nothing committed is written.
 

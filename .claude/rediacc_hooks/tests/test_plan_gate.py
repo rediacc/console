@@ -1010,3 +1010,14 @@ def test_merged_plan_prs_asks_once_below_the_limit(tmp_path, monkeypatch):
     assert got is not None
     assert len(got) == 5
     assert log.read_text(encoding="utf-8").split() == ["8"]
+
+
+def test_merged_plan_prs_refuses_at_the_ceiling_instead_of_widening_for_ever(tmp_path, monkeypatch):
+    """b9b00cb1.3: a list still full at the ceiling is refused with a stated limit, and the last ask is the ceiling itself."""
+    monkeypatch.setattr(plan_gate, "MERGED_PR_LIMIT", 2)
+    monkeypatch.setattr(plan_gate, "MERGED_PR_CEILING", 5)
+    log = _limit_stub(tmp_path, monkeypatch, total=50)
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None
+    assert "limit of 5" in err, err
+    assert log.read_text(encoding="utf-8").split() == ["2", "5"]

@@ -275,3 +275,12 @@ def test_planenforce_control_a_readable_plan_still_blocks():
 @pytest.mark.parametrize("scope", [(), None])
 def test_planenforce_control_empty_scope_is_silent(scope):
     assert wl_planenforce.evaluate("/nowhere", scope, "sess1234", read_text=_read)[0] == "silent"
+
+
+def test_adopt_hint_a_mistyped_dead_hours_uses_the_default(monkeypatch):
+    """wl_store.dead_hours is the one reader: a typo means 24h, it never raises on the stop."""
+    monkeypatch.setenv("WORKLIST_DEAD_HOURS", "abc")
+    monkeypatch.setattr(wl_checklist.S, "owner_age_hours", lambda *_a: 1.0)
+    assert wl_checklist._adopt_hint("deadbeef", "/nowhere", "agent/x.md") == ""
+    monkeypatch.setattr(wl_checklist.S, "owner_age_hours", lambda *_a: 99.0)
+    assert "adopt it" in wl_checklist._adopt_hint("deadbeef", "/nowhere", "agent/x.md")

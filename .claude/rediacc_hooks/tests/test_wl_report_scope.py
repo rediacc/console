@@ -81,3 +81,13 @@ def test_rs3_the_horizon_is_the_registered_dead_hours_knob(tmp_path, monkeypatch
     assert _ids(store, ME) == ["peer-3h"], (
         "CONTROL: the same report inside a 24h horizon must count"
     )
+
+
+def test_rs4_a_mistyped_dead_hours_falls_back_to_the_default_instead_of_raising(
+    tmp_path, monkeypatch
+):
+    """wl_store.dead_hours is the one reader: `abc` and `0` mean 24h, so a 30-day-old foreign report stays out and a 3h-old one stays in."""
+    store = _store(tmp_path, [("peer-3h", PEER, 3), ("old-peer", PEER, 24 * 30)])
+    for bad in ("abc", "0", "-5"):
+        monkeypatch.setenv("WORKLIST_DEAD_HOURS", bad)
+        assert _ids(store, ME) == ["peer-3h"], bad

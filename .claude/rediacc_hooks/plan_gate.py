@@ -320,6 +320,8 @@ def writer_startable(text: str) -> bool:
 
 MERGED_PR_LIMIT = 1000
 MERGED_PR_WIDEN = 4
+# The widening stops here: a list that still fills this limit refuses with a stated reason rather than asking gh for ever more rows (b9b00cb1.3).
+MERGED_PR_CEILING = 64000
 
 
 def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]:
@@ -380,7 +382,12 @@ def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]
             return None, why
         if len(rows) < limit:
             break
-        limit *= MERGED_PR_WIDEN
+        if limit >= MERGED_PR_CEILING:
+            return (
+                None,
+                "gh still filled its limit of %d merged PRs, so the list may be cut off" % limit,
+            )
+        limit = min(limit * MERGED_PR_WIDEN, MERGED_PR_CEILING)
     return [
         (int(row.get("number") or 0), body_plans(row["body"]))
         for row in rows

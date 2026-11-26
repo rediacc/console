@@ -209,3 +209,25 @@ def test_wk10_the_idle_sleep_is_capped_at_the_next_round_only_where_the_check_as
     assert wake._writers_now_due_in("cafebabe", tmp_path) == 1.0
     _queue_at(tmp_path, "low")
     assert wake._writers_now_due_in(ME, tmp_path) == float(wake.WAKE_DEFAULT_MIN)
+
+
+def test_wk11_main_caps_the_default_sleep_at_the_due_time_and_keeps_an_explicit_minutes(
+    monkeypatch, tmp_path
+):
+    """review d09c81b0.2: `main` arms min(default, due-in) when no --minutes is given, and exactly --minutes when it is."""
+    wake = _wake(monkeypatch, tmp_path)
+    armed: list[float] = []
+
+    def fake_acquire(_me, minutes):
+        armed.append(minutes)
+        return False, {"pid": 1, "until": 0}
+
+    monkeypatch.setattr(wake, "acquire", fake_acquire)
+    monkeypatch.setattr(wake, "_writers_now_due_in", lambda _me, _root=None: 3.0)
+    assert wake.main(["wl_wake.py", ME]) == 0
+    assert wake.main(["wl_wake.py", ME, "--minutes", "10"]) == 0
+    assert armed == [3.0, 10.0]
+    # CONTROL: a round far off leaves the plain default.
+    monkeypatch.setattr(wake, "_writers_now_due_in", lambda _me, _root=None: 999.0)
+    assert wake.main(["wl_wake.py", ME]) == 0
+    assert armed[-1] == float(wake.WAKE_DEFAULT_MIN)

@@ -666,3 +666,24 @@ def test_a_case_hash_seed_is_honoured_as_a_fresh_interpreter_would(tmp_path):
     rc, out, err = wlfix._ForkParent.run([hook], "", env)
     assert rc == 0, err
     assert out == want
+
+
+def test_a_case_omitting_the_hash_seed_stays_on_the_fork_path_when_the_parent_holds_one(
+    tmp_path, monkeypatch
+):
+    """5fb22d3c.1: a pytest process with PYTHONHASHSEED set must not push every case that omits it onto a fresh interpreter (which has no fork-child flush report)."""
+    monkeypatch.setitem(wlfix._PARENT_ENV, "PYTHONHASHSEED", "7")
+    hook = _hook(
+        tmp_path,
+        "import sys\n"
+        "class Broken:\n"
+        "    def write(self, s):\n"
+        "        return len(s)\n"
+        "    def flush(self):\n"
+        "        raise OSError(28, 'No space left on device')\n"
+        "sys.stdout = Broken()\n",
+    )
+    assert "PYTHONHASHSEED" not in _case_env()
+    rc, _out, err = wlfix._ForkParent.run([hook], "", _case_env())
+    assert rc == 1, (rc, err)
+    assert "flushing stdout failed (OSError" in err, err

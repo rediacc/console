@@ -267,7 +267,7 @@ shutil.rmtree(SCRATCH, ignore_errors=True)
 # THE PARENT'S OWN ENVIRONMENT IS THE PYTEST PROCESS'S AS IMPORTED, never the case's that happens to start it. A case that monkeypatches the fixture's env into os.environ (test_wl_stop_speed_reads.py's `memo`, TMPDIR among it) and is the first to call a hook started the parent with that TMPDIR, so SCRATCH lived inside that case's fixture directory; once the directory went, the next case's request died writing `in` and read as "the wlfix fork parent died". Each child still gets its case's environment from the request.
 _PARENT_ENV = dict(os.environ)
 
-# THE KNOBS AN INTERPRETER READS ONLY AT START. A forked child keeps the parent's: its hash secret is fixed before any request arrives (c0cc1b2d.2). A case that sets one to a value the parent does not hold runs as a fresh `python3 <hook>` instead, so it gets what a fresh interpreter gives. `random` and `tempfile` need no such route: `random` reseeds in a forked child (os.register_at_fork) and tempfile's name sequence rebuilds its generator when the pid changes.
+# THE KNOBS AN INTERPRETER READS ONLY AT START. A forked child keeps the parent's: its hash secret is fixed before any request arrives (c0cc1b2d.2). A case that sets one to a value the parent does not hold (a case omitting it keeps the parent's, whatever the pytest process holds, 5fb22d3c.1) runs as a fresh `python3 <hook>` instead, so it gets what a fresh interpreter gives. `random` and `tempfile` need no such route: `random` reseeds in a forked child (os.register_at_fork) and tempfile's name sequence rebuilds its generator when the pid changes.
 START_ONLY_KNOBS = ("PYTHONHASHSEED",)
 
 
@@ -279,7 +279,7 @@ class _ForkParent:
 
     @classmethod
     def run(cls, argv: list[str], stdin: str, env: dict[str, str]) -> tuple[int, str, str]:
-        if any(env.get(k) != _PARENT_ENV.get(k) for k in START_ONLY_KNOBS):
+        if any(k in env and env[k] != _PARENT_ENV.get(k) for k in START_ONLY_KNOBS):
             fresh = subprocess.run(
                 [sys.executable, *argv],
                 input=stdin,

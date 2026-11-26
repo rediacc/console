@@ -390,9 +390,34 @@ def review_cases(tmp):
     )
 
 
+PREFIX_SURVEY = REVIEW_SURVEY.replace(
+    "- **CL-W-ROOT**",
+    "- **CL-W-CI**: 2 findings, box none, console. Findings: aaaa1111.1. Files: y.py.\n- **CL-W-ROOT**",
+)
+
+
+def prefix_cases(tmp):
+    """f6904b91.1/.2: a review cluster whose id is a prefix of another named id (`CL-W-CI` beside `CL-W-CI-PY-1`) is not staffed by the longer one's item."""
+    longer = {"id": "5", "state": ">", "owner": ME, "text": "writer CL-W-CI-PY-1", "first": at(1)}
+    facts = cap(tmp, items=(LEASED_B, longer), text=PREFIX_SURVEY)
+    check("the shorter prefix id stays free", "CL-W-CI" in free_ids(facts), True)
+    check("the longer id is staffed", "CL-W-CI-PY-1" in free_ids(facts), False)
+    shorter = {"id": "6", "state": ">", "owner": ME, "text": "writer CL W CI", "first": at(1)}
+    facts = cap(tmp, items=(LEASED_B, longer, shorter), text=PREFIX_SURVEY)
+    check("control: an item naming the shorter id staffs it", "CL-W-CI" in free_ids(facts), False)
+    check("control: and the longer one stays staffed", "CL-W-CI-PY-1" in free_ids(facts), False)
+
+
 def main():
     parse_cases()
-    for group in (refill_cases, refresh_cases, clock_cases, segment_cases, review_cases):
+    for group in (
+        refill_cases,
+        refresh_cases,
+        clock_cases,
+        segment_cases,
+        review_cases,
+        prefix_cases,
+    ):
         with tempfile.TemporaryDirectory() as tmp:
             group(tmp)
     if FAILURES:
