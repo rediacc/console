@@ -994,7 +994,7 @@
         "offlineCacheWarning": "Il server di configurazione {{server}} non è raggiungibile; la configurazione \"{{config}}\" viene servita dalla cache offline (versione server {{version}}, salvata in cache {{age}} fa). Le modifiche non possono essere salvate finché il server non è raggiungibile.",
         "offlineNoCache": "Il server di configurazione {{server}} non è raggiungibile e la configurazione \"{{config}}\" non ha ancora una cache offline. Esegui \"{{cmd}}\" quando il server sarà raggiungibile per popolare la cache.",
         "passkeySecretMissing": "Questo dispositivo non possiede più la sua chiave per l'archivio di configurazione (su Linux il keyring del kernel viene svuotato a ogni riavvio). Iscrivi di nuovo questo dispositivo con: {{cmd}}",
-        "passkeySecretNotEnrolled": "Questo dispositivo non è iscritto a questa configurazione. Iscrivilo con: {{cmd}}",
+        "passkeySecretNotEnrolled": "Questa configurazione non è iscritta su questo dispositivo per l'archivio delle configurazioni. Iscrivi il dispositivo con: {{cmd}}",
         "refresh": {
           "descriptionShort": "Forza il recupero della configurazione dallo storage remoto",
           "description": "Forza il recupero della configurazione dallo storage remoto",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Registrare un server esistente tramite il suo indirizzo e installarvi.",
           "configured": "Installare su una macchina configurata senza alcuna richiesta.",
-          "lan": "Installare su una macchina della LAN con un certificato esistente, con il livello gratuito."
+          "lan": "Installare su una macchina della LAN con il proprio certificato TLS e un file di certificato di licenza."
         },
         "optionBundle": "Directory del bundle offline scritta da 'rdc server bundle'",
         "optionSigner": "Impronta stampata da 'rdc server bundle'; il bundle deve essere firmato con quella chiave",

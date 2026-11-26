@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '568ec0711769fbe8';
+export const CLI_CONTRACT_VERSION = '7009c1b0b7253bca';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "568ec0711769fbe8",
+  "version": "7009c1b0b7253bca",
   "languages": [
     "ar",
     "de",
@@ -17328,7 +17328,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Install on a configured machine without any prompt."
         },
         {
-          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes",
+          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --cert licence.cert --no-dns-wait --yes",
           "values": {
             "machine": "lab",
             "domain": "lab.example.internal",
@@ -17336,12 +17336,12 @@ export const CLI_CONTRACT: CliContract = {
             "tls-cert": "host.crt",
             "tls-key": "host.key",
             "tls-ca": "ca.crt",
-            "licence": "free",
+            "cert": "licence.cert",
             "no-dns-wait": "true",
             "yes": "true"
           },
           "descriptionKey": "commands.server.install.examples.lan",
-          "label": "Install on a LAN machine with an existing certificate, on the free tier."
+          "label": "Install on a LAN machine with its own TLS certificate and a licence certificate file."
         }
       ],
       "keywords": [

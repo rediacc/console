@@ -994,7 +994,7 @@
         "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
         "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"{{cmd}}\" 以生成缓存。",
         "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：{{cmd}}",
-        "passkeySecretNotEnrolled": "此设备尚未注册该配置。请使用以下命令注册此设备：{{cmd}}",
+        "passkeySecretNotEnrolled": "此配置尚未在此设备上注册配置存储。请使用以下命令注册此设备：{{cmd}}",
         "refresh": {
           "descriptionShort": "强制从远程存储重新获取配置",
           "description": "强制从远程存储重新获取配置",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "按地址注册现有服务器并在其上安装。",
           "configured": "在已配置的机器上无提示安装。",
-          "lan": "使用现有证书，在 LAN 机器上以免费版安装。"
+          "lan": "使用自带的 TLS 证书和许可证书文件，在 LAN 机器上安装。"
         },
         "optionBundle": "由 'rdc server bundle' 生成的离线安装包目录",
         "optionSigner": "'rdc server bundle' 输出的指纹；离线包必须由该密钥签名",

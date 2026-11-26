@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 3323,
-    "sourceCommit": "34e306abda2f90b2c7a44ee309794abe5f5831f4"
+    "sourceCommit": "50cc96f0b6f3be846144151aa1fc788f9b20c920"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -795,7 +795,7 @@
     "commands.config.remote.offlineCacheWarning": "fccdc64f",
     "commands.config.remote.offlineNoCache": "266d5318",
     "commands.config.remote.passkeySecretMissing": "444ed69d",
-    "commands.config.remote.passkeySecretNotEnrolled": "af3f4cb8",
+    "commands.config.remote.passkeySecretNotEnrolled": "8f975fd6",
     "commands.config.remote.preconditionFailed": "9abb98f0",
     "commands.config.remote.pushVisibility": "f1556e44",
     "commands.config.remote.refresh.description": "1461f3c2",
@@ -2276,7 +2276,7 @@
     "commands.server.install.done": "677eee52",
     "commands.server.install.examples.brought": "608e6163",
     "commands.server.install.examples.configured": "935c420d",
-    "commands.server.install.examples.lan": "912b70e6",
+    "commands.server.install.examples.lan": "8b8d050f",
     "commands.server.install.help": "6a532a7a",
     "commands.server.install.helpOffline": "4237fbd0",
     "commands.server.install.machineArgument": "5b170da1",

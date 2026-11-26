@@ -994,7 +994,7 @@
         "offlineCacheWarning": "Le serveur de configuration {{server}} est injoignable ; la configuration \"{{config}}\" est servie depuis le cache hors ligne (version serveur {{version}}, mise en cache il y a {{age}}). Les modifications ne peuvent pas être enregistrées tant que le serveur n'est pas joignable.",
         "offlineNoCache": "Le serveur de configuration {{server}} est injoignable et la configuration \"{{config}}\" n'a pas encore de cache hors ligne. Exécutez \"{{cmd}}\" une fois le serveur joignable pour alimenter le cache.",
         "passkeySecretMissing": "Cet appareil ne détient plus sa clé du stockage de configuration (sous Linux, le trousseau du noyau est vidé à chaque redémarrage). Réinscrivez cet appareil avec : {{cmd}}",
-        "passkeySecretNotEnrolled": "Cet appareil n'est pas inscrit pour cette configuration. Inscrivez-le avec : {{cmd}}",
+        "passkeySecretNotEnrolled": "Cette configuration n'est pas inscrite sur cet appareil pour le stockage de configuration. Inscrivez l'appareil avec : {{cmd}}",
         "refresh": {
           "descriptionShort": "Forcer la récupération de la configuration depuis le stockage distant",
           "description": "Forcer la récupération de la configuration depuis le stockage distant",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Enregistrer un serveur existant par son adresse et y installer.",
           "configured": "Installer sur une machine configurée sans aucune invite.",
-          "lan": "Installer sur une machine du LAN avec un certificat existant, au niveau gratuit."
+          "lan": "Installer sur une machine du LAN avec son propre certificat TLS et un fichier de certificat de licence."
         },
         "optionBundle": "Répertoire du bundle hors ligne créé par 'rdc server bundle'",
         "optionSigner": "Empreinte affichée par 'rdc server bundle' ; le bundle doit être signé par cette clé",

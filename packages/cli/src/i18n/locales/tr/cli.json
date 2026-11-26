@@ -994,7 +994,7 @@
         "offlineCacheWarning": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor; \"{{config}}\" yapılandırması çevrimdışı önbellekten sunuluyor (sunucu sürümü {{version}}, {{age}} önce önbelleklendi). Sunucuya ulaşılabilir olana kadar değişiklikler kaydedilemez.",
         "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"{{cmd}}\" komutunu çalıştırın.",
         "passkeySecretMissing": "Bu cihaz, yapılandırma depolaması için anahtarını artık tutmuyor (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşalır). Bu cihazı şununla yeniden kaydedin: {{cmd}}",
-        "passkeySecretNotEnrolled": "Bu cihaz bu yapılandırma için kaydedilmemiş. Bu cihazı şununla kaydedin: {{cmd}}",
+        "passkeySecretNotEnrolled": "Bu yapılandırma bu cihazda yapılandırma depolaması için kaydedilmemiş. Bu cihazı şununla kaydedin: {{cmd}}",
         "refresh": {
           "descriptionShort": "Yapılandırmayı uzak depolamadan zorla yeniden getirir",
           "description": "Yapılandırmayı uzak depolamadan zorla yeniden al",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Mevcut bir sunucuyu adresiyle kaydedip üzerine kurulum yap.",
           "configured": "Yapılandırılmış bir makineye hiçbir soru sormadan kurulum yap.",
-          "lan": "Bir LAN makinesine mevcut sertifikayla, ücretsiz katmanda kurulum yap."
+          "lan": "Bir LAN makinesine kendi TLS sertifikası ve bir lisans sertifikası dosyasıyla kurulum yap."
         },
         "optionBundle": "'rdc server bundle' ile oluşturulan çevrimdışı paket dizini",
         "optionSigner": "'rdc server bundle' komutunun yazdırdığı parmak izi; paket bu anahtarla imzalanmış olmalı",

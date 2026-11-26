@@ -994,7 +994,7 @@
         "offlineCacheWarning": "Konfiguratsiooniserver {{server}} pole kättesaadav; konfiguratsiooni \"{{config}}\" pakutakse võrguühenduseta vahemälust (serveri versioon {{version}}, vahemällu salvestatud {{age}} tagasi). Muudatusi ei saa salvestada enne, kui server on jälle kättesaadav.",
         "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"{{cmd}}\", kui server on kättesaadav, et vahemälu täita.",
         "passkeySecretMissing": "Sellel seadmel ei ole enam konfiguratsioonihoidla võtit (Linuxis tühjendatakse kerneli võtmerõngas igal taaskäivitusel). Registreeri seade uuesti käsuga: {{cmd}}",
-        "passkeySecretNotEnrolled": "See seade ei ole selle konfiguratsiooni jaoks registreeritud. Registreeri seade käsuga: {{cmd}}",
+        "passkeySecretNotEnrolled": "See konfiguratsioon pole sellel seadmel konfiguratsioonisalvestuse jaoks registreeritud. Registreeri seade käsuga: {{cmd}}",
         "refresh": {
           "descriptionShort": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Registreeri olemasolev server aadressi järgi ja paigalda sellele.",
           "configured": "Paigalda seadistatud masinale ilma ühegi küsimuseta.",
-          "lan": "Paigalda LAN-masinale olemasoleva sertifikaadiga tasuta tasemel."
+          "lan": "Paigalda LAN-masinale oma TLS-sertifikaadi ja litsentsisertifikaadi failiga."
         },
         "optionBundle": "Võrguta komplekti kaust, mille kirjutas 'rdc server bundle'",
         "optionSigner": "Sõrmejälg, mille 'rdc server bundle' välja trükkis; pakett peab olema selle võtmega allkirjastatud",

@@ -994,7 +994,7 @@
         "offlineCacheWarning": "Config-Server {{server}} ist nicht erreichbar; Konfiguration \"{{config}}\" wird aus dem Offline-Cache bereitgestellt (Serverversion {{version}}, zwischengespeichert vor {{age}}). Änderungen können erst gespeichert werden, wenn der Server wieder erreichbar ist.",
         "offlineNoCache": "Config-Server {{server}} ist nicht erreichbar, und für Konfiguration \"{{config}}\" existiert noch kein Offline-Cache. Führen Sie \"{{cmd}}\" aus, sobald der Server erreichbar ist, um den Cache zu befüllen.",
         "passkeySecretMissing": "Dieses Gerät hält seinen Schlüssel für den Konfigurationsspeicher nicht mehr (unter Linux wird der Kernel-Schlüsselbund bei jedem Neustart geleert). Gerät erneut registrieren mit: {{cmd}}",
-        "passkeySecretNotEnrolled": "Dieses Gerät ist für diese Konfiguration nicht im Konfigurationsspeicher registriert. Gerät registrieren mit: {{cmd}}",
+        "passkeySecretNotEnrolled": "Diese Konfiguration ist auf diesem Gerät nicht für den Konfigurationsspeicher registriert. Gerät registrieren mit: {{cmd}}",
         "refresh": {
           "descriptionShort": "Konfiguration erneut vom Remote-Speicher abrufen",
           "description": "Konfiguration erneut vom Remote-Speicher abrufen",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Einen vorhandenen Server über seine Adresse registrieren und darauf installieren.",
           "configured": "Ohne Rückfragen auf einer konfigurierten Maschine installieren.",
-          "lan": "Auf einer LAN-Maschine mit vorhandenem Zertifikat auf der kostenlosen Stufe installieren."
+          "lan": "Auf einer LAN-Maschine mit eigenem TLS-Zertifikat und einer Lizenzzertifikat-Datei installieren."
         },
         "optionBundle": "Offline-Bundle-Verzeichnis, das 'rdc server bundle' geschrieben hat",
         "optionSigner": "Fingerabdruck, den 'rdc server bundle' ausgegeben hat; das Bundle muss mit diesem Schlüssel signiert sein",

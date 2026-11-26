@@ -994,7 +994,7 @@
         "offlineCacheWarning": "El servidor de configuración {{server}} no está disponible; sirviendo la configuración \"{{config}}\" desde la caché sin conexión (versión del servidor {{version}}, guardada en caché hace {{age}}). Los cambios no se pueden guardar hasta que el servidor esté disponible.",
         "offlineNoCache": "El servidor de configuración {{server}} no está disponible y la configuración \"{{config}}\" todavía no tiene caché sin conexión. Ejecuta \"{{cmd}}\" cuando el servidor esté disponible para generar la caché.",
         "passkeySecretMissing": "Este dispositivo ya no conserva su clave del almacenamiento de configuración (en Linux, el llavero del kernel se vacía en cada reinicio). Vuelve a inscribir este dispositivo con: {{cmd}}",
-        "passkeySecretNotEnrolled": "Este dispositivo no se ha inscrito para esta configuración. Inscríbelo con: {{cmd}}",
+        "passkeySecretNotEnrolled": "Esta configuración no está inscrita en este dispositivo para el almacenamiento de configuración. Inscribe el dispositivo con: {{cmd}}",
         "refresh": {
           "descriptionShort": "Forzar recarga de configuración desde almacenamiento remoto",
           "description": "Forzar recarga de configuración desde almacenamiento remoto",
@@ -2795,7 +2795,7 @@
         "examples": {
           "brought": "Registrar un servidor existente por su dirección e instalar en él.",
           "configured": "Instalar en una máquina configurada sin ninguna pregunta.",
-          "lan": "Instalar en una máquina de la LAN con un certificado existente, en el nivel gratuito."
+          "lan": "Instalar en una máquina de la LAN con su propio certificado TLS y un archivo de certificado de licencia."
         },
         "optionBundle": "Directorio del paquete sin conexión escrito por 'rdc server bundle'",
         "optionSigner": "Huella que imprimió 'rdc server bundle'; el bundle debe estar firmado con esa clave",
