@@ -140,8 +140,8 @@ PLANTS = [
     (
         "account-forensics-bucket-var",
         "workers/account/wrangler.bench-eu.toml",
-        'WEBAUTHN_ORIGIN = "https://bench-eu.rediacc.cloud"',
-        'WEBAUTHN_ORIGIN = "https://bench-eu.rediacc.cloud"\nACCOUNT_FORENSICS_S3_BUCKET = "forensics-bench"',
+        f'WEBAUTHN_ORIGIN = "{BENCH_ORIGIN}"',
+        f'WEBAUTHN_ORIGIN = "{BENCH_ORIGIN}"\nACCOUNT_FORENSICS_S3_BUCKET = "forensics-bench"',
         "bench-eu    account",
     ),
     (
