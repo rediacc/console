@@ -592,6 +592,13 @@ def controls(ws: Any, cp) -> list[str]:
             merged,
         )
         control("NOTIFY: an unknown event is silent", ws.notify_line(landing, "other") == "")
+        control(
+            "WHY: a bare exception names its type and says it carried no message",
+            ws._why(KeyError()) == "KeyError (no message)"
+            and ws._why(StopIteration()) == "StopIteration (no message)",
+            ws._why(KeyError()),
+        )
+        control("WHY: a message is kept", ws._why(ValueError("boom")) == "ValueError: boom")
     if ran[0] < 40:
         fails.append("only %d controls ran" % ran[0])
     return fails

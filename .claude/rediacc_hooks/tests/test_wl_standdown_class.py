@@ -114,6 +114,15 @@ def test_writers_now_due_is_a_build_duty_parked_in_the_landing_tree() -> None:
     assert not K.stand_down_keeps(STD.LANDING_TREE, KEY, False, False)
 
 
+def test_plan_box_owed_is_a_development_duty_parked_in_the_landing_tree() -> None:
+    """e8e49cc0.2: the owed tick is kept by the PR loop (the development tree builds the plan) and parked in the landing tree on purpose, which the comment above _BUILD_ONLY gives the reason for."""
+    assert K.stand_down_keeps(STD.PR_LOOP, "plan-box-owed", False, False)
+    assert not K.stand_down_keeps(STD.LANDING_TREE, "plan-box-owed", False, False)
+    assert "plan-box-owed" not in STD.PARKED_BY_DESIGN
+    source = (wlfix.STOP_DIR / "wl_standdown.py").read_text(encoding="utf-8")
+    assert "parked in the landing tree on purpose" in source
+
+
 def test_the_block_message_names_writers_now_as_the_action_to_run_now() -> None:
     text = M.V_WRITERS_NOW_DUE % {"window": 60, "last": "x", "open": 3, "who": "deadbeef"}
     assert text.startswith(NEEDLE + ": run /writers-now now."), text

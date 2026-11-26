@@ -226,3 +226,13 @@ def test_several_live_items_are_all_listed_and_none_is_named_in_the_update_line(
     assert "live [>] item(s) of this session: %s" % ", ".join(ids) in block, block
     assert "worklist.py --update <me> <its [>] item> '%s ...'" % FID in block, block
     assert ids[0] not in block.split("live [>] item(s)")[0], block
+
+
+def test_a_repeated_holder_id_is_listed_once_and_still_names_the_single_item(tmp_path):
+    """9283c3bd.1: the docstring says each holder id once; two copies of one id are one live item."""
+    st = _state(tmp_path, "open", "high", items={})
+    block, _malformed, _note = R.stop_texts(st, holders=[HOLDER, HOLDER, ""])
+    assert "live [>] item(s) of this session: %s\n" % HOLDER in block + "\n", block
+    assert block.count(HOLDER) >= 1
+    assert "%s, %s" % (HOLDER, HOLDER) not in block, block
+    assert "worklist.py --update <me> %s '%s ...'" % (HOLDER, FID) in block, block

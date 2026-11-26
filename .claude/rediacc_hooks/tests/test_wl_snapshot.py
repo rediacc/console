@@ -212,3 +212,32 @@ def test_housekeeping_fold_writes_nothing_to_stdout(store, capsys):
     cap = capsys.readouterr()
     assert cap.out == "", "a Stop's stdout is the hook's JSON answer"
     assert "compacted 1 file(s)" in cap.err
+
+
+def test_housekeeping_rotate_writes_nothing_to_stdout(store, capsys):
+    def noisy():
+        print("rotated 3 ledgers")
+
+    hk(store, store.tmp / "stamp", 1000.0, noisy)
+    cap = capsys.readouterr()
+    assert cap.out == "", "a print inside the rotate step reached the hook's stdout JSON"
+    assert "rotated 3 ledgers" in cap.err
+
+
+def test_an_unwritable_stamp_is_named_on_every_stop(store):
+    stamp = store.tmp / "no-such-dir" / "stamp"
+    assert set(hk(store, stamp, 1000.0)) == {"snapshot-stamp"}
+    assert set(hk(store, stamp, 1001.0)) == {"snapshot-stamp"}
+
+
+@pytest.mark.parametrize("value", ["soon", "", "0", "-5"])
+def test_a_bad_dead_hours_value_falls_back_to_a_day(store, monkeypatch, value):
+    monkeypatch.setenv("WORKLIST_DEAD_HOURS", value)
+    assert S.dead_hours() == 24.0
+    found = W.finished_logs(store.wl, store.root, "cafe0003", store.tmp / "no-transcripts")
+    assert {pathlib.Path(p).name for p, _n, _v in found} == {"dead0001.jsonl"}
+
+
+def test_a_good_dead_hours_value_is_read(monkeypatch):
+    monkeypatch.setenv("WORKLIST_DEAD_HOURS", "6.5")
+    assert S.dead_hours() == 6.5

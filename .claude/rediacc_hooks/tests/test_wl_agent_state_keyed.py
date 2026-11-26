@@ -109,3 +109,14 @@ def test_control_an_unmoved_signature_with_no_ids_is_ok(tmp_path):
 def test_ids_named_in_both_sections_are_listed_once_in_order():
     body = _body(next_ids=[DELEGATED[1], DELEGATED[0]], delegated=DELEGATED[:3])
     assert S.next_action_ids(body) == [DELEGATED[1], DELEGATED[0], DELEGATED[2]]
+
+
+def test_next_action_ids_lists_next_action_first_then_delegated_whatever_the_document_order() -> (
+    None
+):
+    """5be6080d.1: the ids come in heading-tuple order, not document order, once each."""
+    body = "## Delegated\n- #aaaaaaaa one\n- #bbbbbbbb two\n\n## Next action\n- #cccccccc three\n- #aaaaaaaa again\n"
+    assert S.next_action_ids(body) == ["cccccccc", "aaaaaaaa", "bbbbbbbb"]
+    # control: the document order with Next action first gives the same list
+    swapped = "## Next action\n- #cccccccc three\n- #aaaaaaaa again\n\n## Delegated\n- #aaaaaaaa one\n- #bbbbbbbb two\n"
+    assert S.next_action_ids(swapped) == ["cccccccc", "aaaaaaaa", "bbbbbbbb"]

@@ -1,6 +1,6 @@
 """wl_uncommitted: the commit reminder's engine (agent/plans/PLAN-fast-loop.md, Part 2).
 
-WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `wl_checks.COMMIT_REMIND_MIN` minutes without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
+WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `COMMIT_REMIND_MIN` minutes (below, shared with wl_checks) without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
 
 WHY THE TRANSCRIPT. The worktree is shared, so `git status` alone cannot say whose a dirty file is: a peer session's edit looks the same. The session's own transcript names every file its own Edit, Write, MultiEdit and NotebookEdit calls touched, so the dirty set is intersected with that list and a peer's path never counts.
 

@@ -197,12 +197,17 @@ def session_subagents_dir(cwd, session_id):
     return hits[0] / "subagents"
 
 
-# {meta path: ((st_mtime_ns, st_size), (agent id, entry) or None)}: one parse per meta file per process. A stop called load_metas seven times over 4,334 metas, about 1 s of reads and JSON (agent/plans/PLAN-tooling-speed.md SP8, measured 2026-11-24); a file whose mtime or size moved is read again, so a rewritten meta (a resume, a finish) is never served stale.
+# {meta path: ((st_mtime_ns, st_size), (agent id, entry) or None)}: one parse per meta file per process. A stop called load_metas seven times over 4,334 metas, about 1 s of reads and JSON (agent/plans/PLAN-tooling-speed.md SP8, measured 2026-11-24); a file whose mtime, size, inode or ctime moved is read again, so a rewritten meta (a resume, a finish) is not served stale. The ctime is the part a same-size rewrite cannot hide: it moves on every write and no utime call can set it back, where mtime and size alone miss a same-size rewrite on a coarse-timestamp filesystem (review 6d74ad12.1).
 _META_MEMO: dict[str, Any] = {}
 
 
+def _pingable_workers(covered):
+    """The workers of `covered` ((item, worker, coverer) rows) a status ping can reach: a coverer-less row (None or "") and an armed-action coverer (`ARMED_COVERER`) are skipped, the same test the supervised and verified sets apply (review 11e2a380.1)."""
+    return {w for _i, w, c in covered if c and not c.startswith(ARMED_COVERER)}
+
+
 def load_metas(sub_dir):
-    """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop.
+    """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop and again only when the file's (mtime, size, inode, ctime) moved.
 
     Each meta carries `type`, `parent` (the `parentAgentId`, or ""), `depth`, `desc`, `name`, the `jsonl` path and `spawned`: the meta file's mtime, which is the agent's last (re)START rather than its first spawn. Measured 2026-09-24: an agent listed in a 07:16Z Stop event carried a meta mtime of 08:05Z, because the harness rewrites the meta when an agent is resumed. That is the right clock for both
     consumers -- the newest (re)started writer is the last row the roster lists, and an agent (re)started after the last Stop event is exactly one that event cannot list.
@@ -222,7 +227,7 @@ def load_metas(sub_dir):
             st = meta.stat()
         except OSError:
             continue
-        sig = (st.st_mtime_ns, st.st_size)
+        sig = (st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
         hit = _META_MEMO.get(str(meta))
         if hit is not None and hit[0] == sig:
             if hit[1] is not None:
@@ -564,10 +569,11 @@ def _finished_verdict(jsonl, now, name="", cwd="", session_id=""):
     if mtime is None:
         return False, False
     rec = last_record(jsonl)
-    if L._record_is_idle(rec) or interrupted(rec):
-        return now - mtime >= FINISHED_QUIET_S, True
+    # ONE durable predicate, the cache re-check's own (`_durable_finished`), so the full proof and the re-check cannot disagree. An idle or interrupted last record is durable whichever way it answers.
     if _durable_finished(rec, mtime, now):
         return True, True
+    if L._record_is_idle(rec) or interrupted(rec):
+        return False, True
     if name:
         edge = L.idle_edge(cwd, session_id, name)
         if edge is not None and mtime <= edge + FINISHED_QUIET_S:
@@ -1076,11 +1082,7 @@ def roster(
     status_due, status_rows = [], {}
     # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while a live plan holds it, so its own lease expiry bounds it.
     # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
-    for w in sorted(
-        {w for _i, w, c in covered if not (c or "").startswith(ARMED_COVERER)}
-        - {QUEUE_WORKER, LH.LEAD_WORKER}
-        - set(workflows)
-    ):
+    for w in sorted(_pingable_workers(covered) - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
         at, src = status_at(w)
         age = None if at is None else max(0.0, (now - at) / 60.0)
         status_rows[w] = (age, src)

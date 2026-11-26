@@ -482,3 +482,36 @@ def test_transcript_waiting_for_a_missing_transcript_is_empty_without_reading(
     reads = _spy_tail(monkeypatch)
     assert wl_roster.transcript_waiting(tmp_path / "agent-gone.jsonl", time.time()) == ""
     assert reads == []
+
+
+# ---- the full proof and the cache re-check share one durable predicate (review 6c13743a.1) -----
+
+
+def test_the_full_proof_takes_its_idle_answer_from_the_shared_durable_predicate(
+    tmp_path, monkeypatch
+):
+    jsonl = tmp_path / "agent-s.jsonl"
+    _write(jsonl, [idle()])
+    _age(jsonl, 60)
+    now = time.time()
+    # Control: the real predicate agrees with the verdict both ways.
+    assert wl_roster._finished_verdict(jsonl, now) == (True, True)
+    assert wl_roster._finished_verdict(jsonl, now - 3600) == (False, True)
+    # Drift check: an idle record's answer is whatever `_durable_finished` says, so an edit to one cannot leave the other behind.
+    monkeypatch.setattr(wl_roster, "_durable_finished", lambda *_a: False)
+    assert wl_roster._finished_verdict(jsonl, now) == (False, True)
+    monkeypatch.setattr(wl_roster, "_durable_finished", lambda *_a: True)
+    assert wl_roster._finished_verdict(jsonl, now - 3600) == (True, True)
+
+
+# ---- a coverer-less lease row is never status-pinged (review 11e2a380.1) -----------------------
+
+
+def test_a_coverer_less_or_armed_row_is_not_pingable():
+    rows = [
+        ("i1", "w-live", "w-live"),
+        ("i2", "w-none", None),
+        ("i3", "w-blank", ""),
+        ("i4", "w-armed", wl_roster.ARMED_COVERER + "x"),
+    ]
+    assert wl_roster._pingable_workers(rows) == {"w-live"}

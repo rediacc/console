@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import subprocess
 
 import pytest
@@ -979,3 +980,152 @@ def test_control_the_definition_rule_needs_a_named_test(tmp_path):
     fix = _definer_fix(repo)
     with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+
+
+def _net_pass_world(tmp_path, extra):
+    """The spread-move world plus one more file added after the move, so only the range's net-diff pass can see it (review d35b9b33.2)."""
+    repo, reviewed = _spread_world(tmp_path)
+    _write(repo, "feat: an unrelated file", {"packages/other/gen.ts": extra})
+    return repo, reviewed
+
+
+def test_net_pass_a_file_sharing_fewer_than_the_minimum_lines_is_no_successor(tmp_path):
+    shared = TS_BODY.splitlines(keepends=True)[: R.MOVE_MIN_LINES - 1]
+    repo, reviewed = _net_pass_world(tmp_path, "".join(shared))
+    assert R.moved_successors(repo, OLD_CALL, reviewed, "HEAD") == {NEW_CALL}
+
+
+def test_net_pass_a_file_sharing_less_than_half_its_lines_is_no_successor(tmp_path):
+    shared = TS_BODY.splitlines(keepends=True)[: R.MOVE_MIN_LINES]
+    own = "".join("  const unrelated_%d = other(%d) + another(%d);\n" % (i, i, i) for i in range(9))
+    repo, reviewed = _net_pass_world(tmp_path, "".join(shared) + own)
+    assert R.moved_successors(repo, OLD_CALL, reviewed, "HEAD") == {NEW_CALL}
+
+
+def test_net_pass_control_a_file_made_of_the_lost_lines_is_a_successor(tmp_path):
+    """The positive on the same harness: the two negatives above differ from it only by the share."""
+    shared = TS_BODY.splitlines(keepends=True)[: R.MOVE_MIN_LINES + 1]
+    repo, reviewed = _net_pass_world(tmp_path, "".join(shared))
+    assert R.moved_successors(repo, OLD_CALL, reviewed, "HEAD") == {
+        NEW_CALL,
+        "packages/other/gen.ts",
+    }
+
+
+# ---- d35b9b33.1: a named test the fix did not touch closes nothing, however it imports the moved module
+
+
+def test_a_named_test_the_fix_did_not_touch_is_refused_even_when_it_imports_the_new_home(tmp_path):
+    repo, reviewed = _spread_world(tmp_path)
+    head = "import { callTool } from '../call.js';\n"
+    _write(repo, "test: relocate", {RELOCATE: head + "it('a', () => callTool());\n"})
+    fid = _record(repo, reviewed, OLD_CALL, "The lookup budget ignores the start time.")
+    fix = _write(repo, "chore: unrelated", {"packages/shared/README.md": "x\n"})
+    with pytest.raises(ValueError, match="does not touch the named test"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", RELOCATE], ME)
+
+
+# ---- e386cc46: the definition rule reads the anchor's own dependency, whole lines, and a successful read only
+
+OTHER_DEF = "packages/cli/src/services/other/defs.ts"
+
+
+def test_control_an_unrelated_file_defining_the_same_name_closes_nothing(tmp_path):
+    """e386cc46.1: the anchor never imports defs.ts and it sits in another directory, so its `const previewTouchOption` is not the anchor's symbol."""
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(
+        repo, reviewed, CALLER, "previewTouchOption throws whenever machineName is unset."
+    )
+    fix = _definer_fix(
+        repo, module=OTHER_DEF, body="export const previewTouchOption = (m?: string) => m;\n"
+    )
+    with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+
+
+def test_a_definition_in_the_anchors_own_directory_needs_no_import(tmp_path):
+    """A Go package or a sourced shell file defines its symbols beside the caller with no import line."""
+    repo = _repo(tmp_path)
+    caller, sibling = "pkg/run/main.go", "pkg/run/helper.go"
+    reviewed = _write(
+        repo,
+        "feat: run",
+        {
+            caller: "package run\n\nfunc Run() { pinDeviceTimeout() }\n",
+            sibling: "package run\n\nfunc pinDeviceTimeout() {}\n",
+            "pkg/run/helper_test.go": "package run\n",
+        },
+    )
+    fid = _record(repo, reviewed, caller, "`pinDeviceTimeout` is called with no deadline.")
+    fix = _write(
+        repo,
+        "fix: deadline",
+        {
+            sibling: "package run\n\nfunc pinDeviceTimeout() { _ = 1 }\n",
+            "pkg/run/helper_test.go": "package run\n// t\n",
+        },
+    )
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", "pkg/run/helper_test.go"], ME)
+    assert _closed(repo, reviewed, fix)
+
+
+def test_an_absent_anchor_adds_its_git_error_to_no_source_text(tmp_path):
+    """e386cc46.2: the anchored file does not exist at either commit; the stderr of the failed `git show` names the claimed symbol's path and must not make it read as used."""
+    repo = _repo(tmp_path)
+    reviewed = _write(repo, "feat: x", {"a.ts": "export const one = 1;\n"})
+    fix = _write(repo, "fix: y", {"b.ts": "export const previewTouchOption = 1;\n"})
+    assert not R.defines_claimed_symbol(
+        repo,
+        fix,
+        ["b.ts"],
+        "previewTouchOption is wrong",
+        "missing/previewTouchOption.ts",
+        reviewed,
+    )
+
+
+def test_a_keyword_ending_one_line_is_not_a_definition_of_the_name_on_the_next():
+    """e386cc46.3: `\\s+` spanned the newline; the keyword and the name now sit on one line. Control: the one-line forms still define."""
+    pattern = R._DEFINITION_RE % {"n": "previewTouchOption"}
+    assert re.search(pattern, "// see the type\npreviewTouchOption(machine);\n") is None
+    assert re.search(pattern, "let\n  previewTouchOption(machine);\n") is None
+    assert re.search(pattern, "export type previewTouchOption = string;\n")
+    assert re.search(pattern, "func (r *T) previewTouchOption() {}\n")
+    assert re.search(pattern, "def\tpreviewTouchOption(m):\n")
+
+
+# ---- 4def5b84.1: a failed `git log --grep` or `git rev-list` is a failed read, never "no copy"
+
+
+def _failing(monkeypatch, verb):
+    real = R.git
+
+    def git(repo, *args, **kw):
+        if args and args[0] == verb:
+            return 128, ""
+        return real(repo, *args, **kw)
+
+    monkeypatch.setattr(R, "git", git)
+
+
+@pytest.mark.usefixtures("_branch_wide_search")
+def test_branch_copies_raises_when_the_cherry_pick_grep_fails(tmp_path, monkeypatch):
+    repo, reviewed, pid = _dropped_world(tmp_path)
+    assert (
+        R.branch_copies(str(repo), reviewed, pid) == []
+    )  # control: the real read answers "no copy"
+    _failing(monkeypatch, "log")
+    with pytest.raises(ValueError, match=r"git log --grep .* failed .*exit 128"):
+        R.branch_copies(str(repo), reviewed, pid)
+
+
+@pytest.mark.usefixtures("_branch_wide_search")
+def test_branch_copies_raises_when_the_rev_list_fallback_fails(tmp_path, monkeypatch):
+    repo, reviewed, pid = _dropped_world(tmp_path)
+    monkeypatch.setattr(R, "_range_patch_ids", lambda _repo, _rng: None)
+    assert (
+        R.branch_copies(str(repo), reviewed, pid) == []
+    )  # control: the fallback answers "no copy"
+    _failing(monkeypatch, "rev-list")
+    with pytest.raises(ValueError, match=r"git rev-list .* failed .*exit 128"):
+        R.branch_copies(str(repo), reviewed, pid)

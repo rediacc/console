@@ -55,6 +55,12 @@ class StackReadError(RuntimeError):
     """A git, gh or landing-record read `stack_state` rests on failed: the stack's state is unknown, which is not `none`."""
 
 
+def _why(exc: BaseException) -> str:
+    """`Type: message` for a named failure, and the bare `Type (no message)` for an exception raised with none (a bare KeyError() or StopIteration()), so a note never ends in `(KeyError: )` with no detail."""
+    text = str(exc)
+    return "%s: %s" % (type(exc).__name__, text) if text else "%s (no message)" % type(exc).__name__
+
+
 class Verdict(tuple):
     """`(block, advisory)` of `stack_verdict`: at most one of the two is non-empty."""
 
@@ -110,7 +116,7 @@ def _git_full(cwd, *args) -> tuple[int, str, str]:
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
-        return 1, "", "%s: %s" % (type(exc).__name__, exc)
+        return 1, "", _why(exc)
     return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 
@@ -181,8 +187,7 @@ def gh_pr_merged(root, branch: str) -> bool:
         )
     except Exception as exc:
         raise StackReadError(
-            "gh could not say whether a merged PR is headed by %s (%s: %s)"
-            % (branch, type(exc).__name__, exc)
+            "gh could not say whether a merged PR is headed by %s (%s)" % (branch, _why(exc))
         ) from exc
     if rows is None:
         raise StackReadError(
@@ -373,7 +378,7 @@ def _promote_dirt(root, landing_path: str) -> tuple[list[str], str]:
             rows.extend(str(tree / lp._porcelain_path(line)) for line in lp._dirty(tree))
         return rows, ""
     except Exception as exc:
-        return [], "%s: %s" % (type(exc).__name__, exc)
+        return [], _why(exc)
 
 
 def _norm(path) -> str:
@@ -416,10 +421,9 @@ def main_checkout_tasks(root, live_bg, metas) -> list[str]:
 def _unread_text(exc: BaseException) -> str:
     return (
         "LANDING STACK UNREAD: where the development branch stands against the landing branch could not be read "
-        "(%s: %s), so whether promotion is due is unknown. The stop does not block on an unread state; the next "
+        "(%s), so whether promotion is due is unknown. The stop does not block on an unread state; the next "
         "stop reads it again.\n"
-        "(.claude/hooks/stop/wl_stack.py, PLAN-two-track-merge-dev LT19)"
-        % (type(exc).__name__, exc)
+        "(.claude/hooks/stop/wl_stack.py, PLAN-two-track-merge-dev LT19)" % _why(exc)
     )
 
 
@@ -487,8 +491,8 @@ def stack_verdict(root, released=True, own_paths=None, live_main_bg=None, **kw) 
         except Exception as exc:
             plans = []
             notes.append(
-                "The open [writer] box read failed (%s: %s), so whether promote would proceed is unknown."
-                % (type(exc).__name__, exc)
+                "The open [writer] box read failed (%s), so whether promote would proceed is unknown."
+                % _why(exc)
             )
         if plans:
             return Verdict(advisory=_code_complete_text(st, plans))
@@ -555,14 +559,13 @@ def _record(root) -> tuple[dict | None, str]:
     try:
         cp = _hooks_pkg()
     except (ImportError, OSError, SyntaxError) as exc:
-        return None, "commit_policy, the landing record's reader, could not be loaded (%s: %s)" % (
-            type(exc).__name__,
-            exc,
+        return None, "commit_policy, the landing record's reader, could not be loaded (%s)" % _why(
+            exc
         )
     try:
         record, problem = cp.read_landing_record(str(root))
     except Exception as exc:  # a reader that raises binds nothing, and the reason is named
-        return None, "the landing record's reader failed (%s: %s)" % (type(exc).__name__, exc)
+        return None, "the landing record's reader failed (%s)" % _why(exc)
     return record, ("the landing record binds nothing: %s" % problem if problem else "")
 
 

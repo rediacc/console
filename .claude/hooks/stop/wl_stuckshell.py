@@ -4,12 +4,12 @@ THE SHAPE (2026-11-23). Writer a7f511c739e4aa739 (stripe-disable) launched its o
 
 STUCK means the agent waits on a shell (the `wl_roster.armed_waiters` shape: not listed running, its transcript armed a shell the event still lists) AND either
 
-  (a) its final report is captured: a `wl_report` index row for the agent, captured at or after the shell's launch, that names a box through a TICK line (`boxes`) or is a closing summary (not silent, not a relay, no interim shell, and at least `wl_report.RELAY_FLOOR` bytes, the calibrated gap between turn-end status lines and real reports); or
+  (a) its final report is captured: a `wl_report` index row for the agent, captured at or after the shell's launch, that names a box through a TICK line (`boxes`) or is a closing summary (not silent, not a relay, no interim shell, and at least `wl_report.RELAY_FLOOR` bytes, the calibrated gap between turn-end status lines and real reports). A summary written while a shell or Monitor was still armed is never final (a long mid-wait message is not a closing report), so an agent that closes with one still armed is caught by (b) once its shell passes the bound, not by (a); or
   (b) the shell has run longer than STUCK_SHELL_MIN minutes, measured from the timestamp of the transcript record that launched it.
 
 A stuck agent is not live: `wl_roster.shell_waiters` drops it, so the roster, `wl_liveness.live_worker_ids` and the writer estimate stop counting it, and the `stuck-shell` check names the agent, the shell and the two moves.
 
-LIVE WORK IS NEVER A TaskStop ORDER (2026-11-26), the wl_bgsweep rule (ca5331e3e4) applied here. Shell bxhnqm2th ran `cf_retire archive rediacc-www-media --to-bucket media`, a 3-hour sha256 verify of 8,422 objects, past the bound, and this check ordered `TaskStop bxhnqm2th` on every stop although the lead's item was leased to that very shell (`worker:bxhnqm2th`). Each stuck row now carries `live` (the command of the first descendant of the shell doing real work, per `wl_bgsweep.live_command`: not a sleep, a poll probe, a shell layer or the wake timer) and `leased` (the id of an in-flight item whose lease names `worker:<shell>`).
+LIVE WORK IS NEVER A TaskStop ORDER (2026-11-26), the wl_bgsweep rule (ca5331e3e4) applied here. Shell bxhnqm2th ran `cf_retire archive rediacc-www-media --to-bucket media`, a 3-hour sha256 verify of 8,422 objects, past the bound, and this check ordered `TaskStop bxhnqm2th` on every stop although the lead's item was leased to that very shell (`worker:bxhnqm2th`). Each stuck row now carries `live` (the command of the first descendant of the shell doing real work, per `wl_bgsweep.live_command`: not a sleep, a poll probe, a shell layer or the wake timer) and `leased` (the id of an in-flight item whose FRESH lease names `worker:<shell>`: `leased_shells` drops a lease past its `until:`, with none, or beyond the cap).
 A row with either is OWNED work: `blocking` drops it, and `render_live` reports it once, age-free, under the `stuck-shell-live` advisory with no TaskStop. A shell that only waits blocks unless a FRESH lease names it: a lease past its `until:` (or with none, or one beyond the 120-minute cap) exempts nothing, so a lease a dead worker never released stops covering its shell once it expires. The roster's liveness is unchanged: a stuck agent stays not-live, since the work belongs to the shell, which the event lists running.
 
 A launch record with no readable timestamp answers nothing for (a) or (b), since a report captured before the launch belongs to an earlier turn, and a report store that cannot be read answers nothing for (a); neither makes an agent stuck. Like wl_roster this module reads no environment variable: every threshold is a literal, so no knob can keep a stuck agent live.
@@ -217,9 +217,9 @@ def blocking(rows):
 
 
 def stop_check(rows, advise, block):
-    """The `stuck-shell` check's two outputs for one stop's `rows` (`stop_rows`): `advise("stuck-shell-live", body)` once when any row is owned, and `block(rows)` with the rows that still order a TaskStop when any remain. Returns those blocking rows.
+    """The `stuck-shell` check's two outputs for one stop's `rows` (`stop_rows`): `advise("stuck-shell-live", body)` when any row is owned, and `block(rows)` with the rows that still order a TaskStop when any remain. Returns those blocking rows.
 
-    wl_checks binds `advise` to its once-only advisory queue and `block` to its `vadd`, so the advisory path is driven by a test rather than only by the absence of the blocking text (review f4b82bed.3)."""
+    `advise` is called on EVERY stop that has an owned row; the once-only behaviour is wl_checks' binding of `advise` to its once-only advisory queue (`outq_add`), not this function's. `block` is bound to its `vadd`. The advisory path is driven by a test rather than only by the absence of the blocking text (review f4b82bed.3)."""
     live = render_live(rows)
     if live:
         advise("stuck-shell-live", live)

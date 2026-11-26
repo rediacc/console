@@ -3027,7 +3027,8 @@ def stop_texts(st, limit=5, holders=()):
 
     `holders` are the ids of this session's `[>]` items whose worker is verified live: the open-finding block lists every one of them once, and names the item in the in-flight line only when exactly one is live, since with several the finding belongs to whichever writer is fixing it.
     """
-    holders = [h for h in holders or () if h]
+    # Each id once, in the order given: a repeated holder id is one live item, and counting it twice would hide the single-item case.
+    holders = list(dict.fromkeys(h for h in holders or () if h))
     block = malformed = ""
     if st["malformed"]:
         malformed = (
@@ -3724,9 +3725,10 @@ def claim_exercised_by_test(repo, fix, test_path, claim):
 
 CLAIM_QUOTED_RE = re.compile(r"`([A-Za-z_$][A-Za-z0-9_$.]*)(?:\(\))?`")
 _IDENT_SHAPE_RE = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
+# The keyword and the name sit on ONE line (`[ \t]`, never `\s`): a keyword ending one line must not pair with an identifier opening the next (review e386cc46.3).
 # A definition of NAME across the languages here: a TS/JS function, class, interface, type, enum or binding; a Python def or class; a Go func (method receiver allowed), type, var or const; a shell function; a module-level assignment at column 0 (a Python constant).
 _DEFINITION_RE = (
-    r"(?m)(?:\b(?:function\*?|class|interface|type|enum|const|let|var|def|func)\s+(?:\([^)]*\)\s*)?%(n)s(?![A-Za-z0-9_$])"
+    r"(?m)(?:\b(?:function\*?|class|interface|type|enum|const|let|var|def|func)[ \t]+(?:\([^)]*\)[ \t]*)?%(n)s(?![A-Za-z0-9_$])"
     r"|^\s*%(n)s\s*\(\)\s*\{"
     r"|^%(n)s\s*(?::[^=\n]*)?=(?!=))"
 )
@@ -3745,13 +3747,13 @@ def claim_symbols(claim):
 def defines_claimed_symbol(repo, fix, touched, claim, anchored, reviewed):
     """Whether a non-test file the fix touched DEFINES, in the fix's tree, a symbol the claim names that the anchored file uses (#eff552fc: the claim names `previewTouchOption`, the finding is anchored on its caller renet-execution.ts, and the fix changed its defining module touch.ts).
 
-    The anchored file must name the symbol (at the reviewed commit or at the fix), so the definition is of something the anchor calls; a module that only calls the symbol is no definition. The caller pairs this with a `--test` the fix touched."""
+    The anchored file must name the symbol (at the reviewed commit or at the fix), so the definition is of something the anchor calls; a module that only calls the symbol is no definition. The defining file must also be the anchor's own dependency: an import-like line of the anchored file names it (`_import_lines_name`), or it sits in the anchored file's directory (a Go package or a sourced shell file needs no import). A same-named definition in an unrelated file the fix happened to touch answers nothing (review e386cc46.1). The caller pairs this with a `--test` the fix touched."""
     names = claim_symbols(claim)
     if not names:
         return False
-    anchor_text = "\n".join(
-        git(repo, "show", "%s:%s" % (at, anchored))[1] for at in (reviewed, fix)
-    )
+    # Only a successful read counts: the stderr of a failed `git show` (the anchored file absent at that commit) names paths and is no source text (review e386cc46.2).
+    reads = [git(repo, "show", "%s:%s" % (at, anchored)) for at in (reviewed, fix)]
+    anchor_text = "\n".join(text for rc, text in reads if rc == 0)
     names = {
         n
         for n in names
@@ -3759,8 +3761,14 @@ def defines_claimed_symbol(repo, fix, touched, claim, anchored, reviewed):
     }
     if not names:
         return False
+    anchor_dir = pathlib.PurePosixPath(anchored).parent
+    anchor_lines = anchor_text.splitlines()
     for path in touched:
         if path == anchored or is_test_path(path):
+            continue
+        if pathlib.PurePosixPath(path).parent != anchor_dir and not _import_lines_name(
+            anchor_lines, anchored, path
+        ):
             continue
         rc, text = git(repo, "show", "%s:%s" % (fix, path))
         if rc != 0:

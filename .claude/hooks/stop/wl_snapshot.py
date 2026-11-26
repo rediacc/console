@@ -33,7 +33,7 @@ def finished_logs(worklist, root=None, me=None, projects_dir=None):
         root = C.project_root(C.project_start())
     me8 = S.agent_session_slug((me or C.resolve_session_id() or "compact")[:8])
     events = S._read_events(worklist, root)
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = S.dead_hours()
     out = []
     for f in sorted(S.store_dir(root).glob("*.jsonl")):
         writer = f.stem
@@ -61,16 +61,21 @@ def fold(worklist, root=None, me=None, projects_dir=None):
     return found
 
 
-def _fold_quiet(worklist, root, me, projects_dir):
-    """fold with compact_store's report lines sent to stderr: a Stop's stdout is the hook's JSON answer, and a line printed there makes it unparseable."""
+def _quiet(fn, *args):
+    """fn(*args) with its printed lines sent to stderr: a Stop's stdout is the hook's JSON answer, and a line printed there makes it unparseable."""
     with contextlib.redirect_stdout(sys.stderr):
-        return fold(worklist, root, me, projects_dir)
+        return fn(*args)
+
+
+def _fold_quiet(worklist, root, me, projects_dir):
+    """fold with compact_store's report lines sent to stderr."""
+    return _quiet(fold, worklist, root, me, projects_dir)
 
 
 def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=None, rotate=None):
     """The Stop hook's once-per-24-hours run (`_stop_store_fold`): the snapshot fold, then the hook-ledger rotation.
 
-    Returns {site: exception} for each step that failed, {} for a clean run or a fresh stamp. A normal stop pays one stat. The stamp is touched BEFORE the work, so a failing step is named once per day by the caller and never retried on every stop; a step's failure does not stop the other step, and nothing here raises."""
+    Returns {site: exception} for each step that failed, {} for a clean run or a fresh stamp. A normal stop pays one stat. The stamp is touched BEFORE the work, so a failing step is named once per day by the caller and never retried on every stop; a step's failure does not stop the other step, and nothing here raises. The one exception is the stamp itself: while it cannot be read or written, neither step runs and `snapshot-stamp` is returned on EVERY stop, since without a stamp there is no once-a-day guard to name it once."""
     stamp = pathlib.Path(stamp)
     now = time.time() if now is None else now
     try:
@@ -91,7 +96,7 @@ def housekeeping(worklist, stamp, root=None, me=None, projects_dir=None, now=Non
         return failures
     steps = (
         ("snapshot-fold", lambda: _fold_quiet(worklist, root, me, projects_dir)),
-        ("hook-ledger-rotate", rotate or wl_hookreport.rotate),
+        ("hook-ledger-rotate", lambda: _quiet(rotate or wl_hookreport.rotate)),
     )
     for site, step in steps:
         try:

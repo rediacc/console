@@ -488,3 +488,23 @@ def test_an_unreadable_landing_record_is_said_on_stderr(tmp_path, monkeypatch, c
     monkeypatch.setattr(R, "_policy", lambda: Broken)
     assert R.mark_target(main, DEV, "deadbeef.1") == (main, DEV)
     assert "the landing record could not be read (RuntimeError: boom)" in capsys.readouterr().err
+
+
+def test_an_unloadable_commit_policy_is_said_on_stderr_once(monkeypatch, capsys):
+    """de5378f8.2: `_policy` caches None when commit_policy cannot load, and says so instead of silently answering the main checkout."""
+
+    def broken(_root):
+        raise RuntimeError("no policy")
+
+    saved = list(R._POLICY)
+    R._POLICY.clear()
+    monkeypatch.setattr(R, "_load_commit_policy", broken)
+    try:
+        assert R._policy() is None
+        assert R._policy() is None
+        err = capsys.readouterr().err
+        assert err.count("commit_policy could not be loaded (RuntimeError: no policy)") == 1, err
+        assert "review verbs act on the main checkout" in err
+    finally:
+        R._POLICY.clear()
+        R._POLICY.extend(saved)

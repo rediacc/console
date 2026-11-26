@@ -22,6 +22,10 @@ from rediacc_hooks.tests.test_wl_roster import (
     verdict,
 )
 
+RPT = wlfix.import_wl("wl_report")
+R = wlfix.import_wl("wl_roster")
+SS = wlfix.import_wl("wl_stuckshell")
+
 STUCK_SNIPPET = r"""
 import json, sys
 sys.path.insert(0, sys.argv[1])
@@ -469,3 +473,29 @@ def test_live_worker_ids_and_live_estimate_drop_a_report_captured_waiter(wl):
     got = live_paths(wl)
     assert W4 not in got["ids"], got
     assert W4 not in got["est"], got
+
+
+def test_a_closing_summary_written_with_a_shell_armed_falls_to_the_runtime_bound(tmp_path) -> None:
+    """A long summary captured while the shell was armed is not final (rule (a)); the agent is still caught by the 45-minute bound (rule (b)).
+
+    Control: the same agent inside the bound stays live, and the same summary captured with nothing armed is final at once.
+    """
+    aid = "ae1f51c5c5b30755f"
+    launch_at = "2026-11-26T10:00:00Z"
+    jsonl = tmp_path / "t.jsonl"
+    jsonl.write_text(
+        json.dumps({"timestamp": launch_at, "backgroundTaskId": "bshell01"}, separators=(",", ":"))
+        + "\n",
+        encoding="utf-8",
+    )
+    start = R._epoch(launch_at)
+    n = RPT.RELAY_FLOOR + 400
+    row = {"id": RPT.short_id(aid), "at": "2026-11-26T10:05:00Z", "bytes": n, "armed": "bshell01"}
+    metas = {aid: {"jsonl": str(jsonl)}}
+    waiters = {aid: "bshell01"}
+    assert SS.classify(waiters, metas, [row], now=start + 10 * 60) == {}
+    got = SS.classify(waiters, metas, [row], now=start + 46 * 60)
+    assert got[aid]["reason"] == "runtime"
+    final = dict(row)
+    del final["armed"]
+    assert SS.classify(waiters, metas, [final], now=start + 10 * 60)[aid]["reason"] == "report"

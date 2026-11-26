@@ -792,6 +792,15 @@ def _append_lines(path, lock_path, payloads):
 STORE_DIR_NAME = "worklist"
 
 
+def dead_hours():
+    """WORKLIST_DEAD_HOURS as a positive number of hours, 24 when unset, not a number, or zero or below: a typo in the variable must not raise on every Stop, and a value of 0 would make every idle, remote or unknown writer qualify as finished at once."""
+    try:
+        hours = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    except ValueError:
+        return 24.0
+    return hours if hours > 0 else 24.0
+
+
 def store_dir(root=None):
     """The tracked event-log directory. $WORKLIST_STORE_DIR overrides it, which is what lets a test fixture point the store somewhere disposable."""
     override = os.environ.get("WORKLIST_STORE_DIR")
@@ -2193,7 +2202,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     me8 = agent_session_slug((me or C.resolve_session_id() or "compact")[:8])
     fold = load(worklist, sync=False)
     events = _read_events(worklist, root)
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = dead_hours()
     keep, clear = [], []
     for f in files:
         writer = f.stem
@@ -2672,7 +2681,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
     A plan's `Ruling:` and `dropped by ruling #<id>` lines resolve against the store with tombstones dropped (`wl_planfile.store_item_states`), so archiving a closed ruling item turned every box it released back into a binding: the 2026-11-26 archive of 725 dead-session items dropped `#d969cb29`, which `PLAN-ci-quick-cpu-scheduling.md` and `PLAN-stop-hook-refactor-enforcement.md` cite, and check:ci-plan-bindings went red until the ruling was re-recorded under a new id.
     A cited item is left in place, neither archived nor reported as orphaned.
     The plan scan runs once, at the first item whose dead owner is past WORKLIST_DEAD_HOURS (an archive or an orphan candidate alike, since a cited item is spared from both), so a stop with no such item reads no plan. A scan that fails (root resolution, the plan listing) fails closed: every item counts as cited and the stop archives and orphans nothing, since an empty citation set would tombstone every ruling item a plan names."""
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = dead_hours()
     archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
     archived, orphaned, changed = [], [], False
     ages = {}
@@ -3182,7 +3191,7 @@ def agent_state_dead(sections, session_id, projects_dir, now=None):
     The caller's own section is NEVER reaped, at any age: a session's own stale section is a nag, not garbage.
     """
     now = time.time() if now is None else now
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = dead_hours()
     kept, reaped = [], []
     for s in sections:
         if C.same_session(s["owner"], session_id):
@@ -3202,7 +3211,9 @@ _KEYED_HEADINGS = ("## Next action", "## Delegated")
 
 
 def next_action_ids(body):
-    """The `#<id>` item ids named under `## Next action` and `## Delegated` in one section body, in order, each once.
+    """The `#<id>` item ids named under `## Next action` and `## Delegated` in one section body, each once: the `## Next action` ids first, then the `## Delegated` ids (the order of `_KEYED_HEADINGS`, whichever heading comes first in the document), each group in document order.
+
+    An id that stays open keeps the document "ok" in `agent_state_state` (the documented rule: stale exactly when every named id has left the open states). That is bounded by the item, not by the document: an item whose writer died climbs the 45/90/120 minute liveness ladder and is resolved, which closes it (review 5be6080d.2).
 
     `## Delegated` counts because the work a writer holds is the next step as surely as the lead's own: a document naming 8 delegated ids, none closed, was re-demanded on every owned-item change because only `## Next action` was read (agent/plans/PLAN-stop-hook-retro-20261125.md friction 2, the 14:09Z rewrite).
     """

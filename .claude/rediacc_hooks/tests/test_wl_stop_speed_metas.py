@@ -59,3 +59,17 @@ def test_control_a_caller_edit_does_not_leak_into_the_next_answer(tmp_path):
     _meta(tmp_path, "c0")
     RO.load_metas(tmp_path)["c0"]["desc"] = "edited"
     assert RO.load_metas(tmp_path)["c0"]["desc"] == "c0"
+
+
+def test_a_same_size_rewrite_with_the_old_mtime_is_read_again(tmp_path, monkeypatch):
+    """6d74ad12.1: a rewrite that keeps the size and puts the mtime back is still seen, through the ctime."""
+    p = _meta(tmp_path, "d0", name="aaaa")
+    assert RO.load_metas(tmp_path)["d0"]["name"] == "aaaa"
+    before = p.stat()
+    _meta(tmp_path, "d0", name="bbbb")
+    os.utime(p, ns=(before.st_atime_ns, before.st_mtime_ns))
+    after = p.stat()
+    assert (after.st_mtime_ns, after.st_size) == (before.st_mtime_ns, before.st_size)
+    seen = _reads(monkeypatch)
+    assert RO.load_metas(tmp_path)["d0"]["name"] == "bbbb"
+    assert seen == ["agent-d0.meta.json"]

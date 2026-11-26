@@ -140,7 +140,7 @@ _BUILD_ONLY = frozenset(
         "writers-now-due",
         # An armed action of this session fired, expired or went void (agent/plans/PLAN-armed-actions.md Design 10): it starts held development work the moment its trigger fires; the landing tree finishes and does not start (ruling B2), and it owns no development arms.
         "armed-action-due",
-        # A commit landed on the live branch names a still-open box with no investigation row (wl_boxaudit): the tick duty of the plan the branch builds.
+        # A commit landed on the live branch names a still-open box with no investigation row (wl_boxaudit): the tick duty of the plan the branch builds. Kept by the development tree, which builds the plans and commits each verified unit with its box ticked; parked in the landing tree on purpose, whose role is to babysit the PR to green and merge it ("finish, don't start"), so a tick owed there is carried by the development tree's next commit rather than started from the landing tree (e8e49cc0.2).
         "plan-box-owed",
         # Box ticks finished writers reported, their commits landed (wl_planbox's pending-tick queue): the same tick duty as plan-box-owed, applied with `worklist.py --apply-ticks`.
         "ready-ticks",
