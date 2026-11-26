@@ -6074,8 +6074,8 @@
   {
     "id": "search-8747",
     "content": "9. Kohtuekspertiisi tõendid",
-    "body": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb. <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb. <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb, kasutades tõenditest väljaspool asuvaid masinavõtmeid. <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb, kasutades tõenditest väljaspool asuvaid masinavõtmeid....",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6086,7 +6086,7 @@
   {
     "id": "search-8748",
     "content": "9.1 verify",
-    "body": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse masinavõtmetega, mida kataloogi raw-manifest.json loetleb, nii nagu käsk rdc incident export selle kirjutab; valik --machine-key lisab võtme või asendab loetletud võtme. rdc forensics verify [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --dir <path> | Kontrollitav tõendite kataloog | Jah | - | | --since <when> | Ajaakna algus: ISO 8601 ajahetk või ajavahemik praegusest tagasi, näiteks 90m, 24h või 7d (vaikimisi: 24h) | Ei | - | | --until <when> | Ajaakna lõpp, samades vormingutes (vaikimisi: praegu) | Ei | - | | --machine-key <machine=hex> | Masina spuuli avalik võti kujul <machine>=<64 hex characters>, asendab failis raw-manifest.json loetletud võtme (korratav) | Ei | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse ainult kataloogist väljaspool asuvate võtmetega: valiku --machine-key kirjega või muidu võtmega, mille kontoserver kinnitas intsidendi jaoks, mille nime kannab käsuga rdc incident export loodud kataloog. Kataloogi raw-manifest.json failis olevat võtit ei usaldata kunagi ja masin, millel pole välist võtit, ei läbi kontrolli. rdc forensics verify [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --dir <path> | Kontrollitav tõendite kataloog | Jah | - | | --since <when> | Ajaakna algus: ISO 8601 ajahetk või ajavahemik praegusest tagasi, näiteks 90m, 24h või 7d (vaikimisi: 24h) | Ei | - | | --until <when> | Ajaakna lõpp, samades vormingutes (vaikimisi: praegu) | Ei | - | | --machine-key <machine=hex> | Masina spuuli avalik võti kujul <machine>=<64 hex characters>, kasutatakse kontoserveri kinnitatud võtme asemel (korratav) | Ei | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muud...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

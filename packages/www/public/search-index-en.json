@@ -6229,8 +6229,8 @@
   {
     "id": "search-5521",
     "content": "9. Forensic Evidence",
-    "body": "Check forensic evidence on this workstation with the same verification the web console runs. <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "Check forensic evidence on this workstation with the same verification the web console runs. <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "Check forensic evidence on this workstation with the same verification the web console runs, under machine keys taken from outside the evidence. <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "Check forensic evidence on this workstation with the same verification the web console runs, under machine keys taken from outside the evidence. <a id...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6241,7 +6241,7 @@
   {
     "id": "search-5522",
     "content": "9.1 verify",
-    "body": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one. rdc forensics verify [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --dir <path> | Evidence directory to verify | Yes | - | | --since <when> | Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h) | No | - | | --until <when> | End of the window, in the same forms (default: now) | No | - | | --machine-key <machine=hex> | Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable) | No | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. rdc forensics verify [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --dir <path> | Evidence directory to verify | Yes | - | | --since <when> | Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h) | No | - | | --until <when> | End of the window, in the same forms (default: now) | No | - | | --machine-key <machine=hex> | Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable) | No | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The direct...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",

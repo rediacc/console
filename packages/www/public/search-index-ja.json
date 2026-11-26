@@ -6074,8 +6074,8 @@
   {
     "id": "search-13586",
     "content": "9. フォレンジック証拠",
-    "body": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。 <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。 <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。マシンキーは証拠の外から取得したものを使います。 <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。マシンキーは証拠の外から取得したものを使います。 <a id=\"cli-local-forensics-verify\"></a>",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6086,7 +6086,7 @@
   {
     "id": "search-13587",
     "content": "9.1 verify",
-    "body": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名は、rdc incident export が書き出すディレクトリ内の raw-manifest.json に載っているマシンキーで検証されます。--machine-key を使うと、キーを追加するか、載っているキーを置き換えられます。 rdc forensics verify [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --dir <path> | 検証する証拠ディレクトリ | はい | - | | --since <when> | 期間の開始: ISO 8601 形式の日時、または現在からさかのぼる期間（90m、24h、7d など）（デフォルト: 24h） | いいえ | - | | --until <when> | 期間の終了: 同じ形式で指定（デフォルト: 現在） | いいえ | - | | --machine-key <machine=hex> | マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定し、raw-manifest.json に載っているキーを置き換えます（複数回指定可） | いいえ | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名は、ディレクトリの外にあるキーでのみ検証されます。--machine-key の指定があればそれを使い、なければ rdc incident export が書き出したディレクトリが示すインシデントについて、アカウントサーバーが固定したキーを使います。ディレクトリ内の raw-manifest.json に書かれたキーは信頼されず、外部のキーがないマシンは検証に失敗します。 rdc forensics verify [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --dir <path> | 検証する証拠ディレクトリ | はい | - | | --since <when> | 期間の開始: ISO 8601 形式の日時、または現在からさかのぼる期間（90m、24h、7d など）（デフォルト: 24h） | いいえ | - | | --until <when> | 期間の終了: 同じ形式で指定（デフォルト: 現在） | いいえ | - | | --machine-key <machine=hex> | マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定します。アカウントサーバーが固定したキーの代わりに使われます（複数回指定可） | いいえ | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subs...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

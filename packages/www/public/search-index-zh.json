@@ -6074,8 +6074,8 @@
   {
     "id": "search-21651",
     "content": "9. 取证证据",
-    "body": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式。 <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式。 <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式，并采用取自证据之外的机器密钥。 <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式，并采用取自证据之外的机器密钥。 <a id=\"cli-local-forensics-verify\"></a>",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6086,7 +6086,7 @@
   {
     "id": "search-21652",
     "content": "9.1 verify",
-    "body": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。批次签名使用目录中 raw-manifest.json 列出的机器公钥校验（该文件由 rdc incident export 写入）；--machine-key 可添加密钥，或替换已列出的密钥。 rdc forensics verify [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dir <path> | 要校验的证据目录 | 是 | - | | --since <when> | 窗口起点：ISO 8601 时间点，或从现在往前推的时长，如 90m、24h、7d（默认：24h） | 否 | - | | --until <when> | 窗口终点，格式同上（默认：现在） | 否 | - | | --machine-key <machine=hex> | 机器 spool 公钥，格式为 <machine>=<64 hex characters>，替换 raw-manifest.json 中列出的密钥（可重复指定） | 否 | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。批次签名只用目录之外的密钥校验：优先用 --machine-key 条目，否则用账户服务器为该事件固定的密钥，该事件由 rdc incident export 导出的目录指明。目录中 raw-manifest.json 写入的密钥永远不被信任，没有外部密钥的机器会校验失败。 rdc forensics verify [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dir <path> | 要校验的证据目录 | 是 | - | | --since <when> | 窗口起点：ISO 8601 时间点，或从现在往前推的时长，如 90m、24h、7d（默认：24h） | 否 | - | | --until <when> | 窗口终点，格式同上（默认：现在） | 否 | - | | --machine-key <machine=hex> | 机器 spool 公钥，格式为 <machine>=<64 hex characters>，用于替代账户服务器固定的密钥（可重复指定） | 否 | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

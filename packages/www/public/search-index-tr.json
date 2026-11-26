@@ -6074,8 +6074,8 @@
   {
     "id": "search-20038",
     "content": "9. Adli kanıtlar",
-    "body": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla denetler. <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla denetler. <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla, kanıtların dışından alınan makine anahtarlarıyla denetler. <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla, kanıtların dışından alınan makine anahtarlarıyla denetler. <a id=\"cli-lo...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6086,7 +6086,7 @@
   {
     "id": "search-20039",
     "content": "9.1 verify",
-    "body": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları, dizindeki raw-manifest.json dosyasının listelediği makine anahtarlarıyla doğrulanır (dosyayı rdc incident export yazar); --machine-key bir anahtar ekler ya da listelenen anahtarın yerine geçer. rdc forensics verify [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --dir <path> | Doğrulanacak kanıt dizini | Evet | - | | --since <when> | Pencerenin başlangıcı: ISO 8601 biçiminde bir an ya da şu andan geriye doğru 90m, 24h veya 7d gibi bir süre (varsayılan: 24h) | Hayır | - | | --until <when> | Pencerenin sonu, aynı biçimlerde (varsayılan: şimdi) | Hayır | - | | --machine-key <machine=hex> | Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; raw-manifest.json içinde listelenen anahtarın yerine geçer (tekrarlanabilir) | Hayır | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları yalnızca dizinin dışından gelen anahtarlarla doğrulanır: bir --machine-key girdisiyle ya da yoksa, rdc incident export dizininin adını verdiği olay için hesap sunucusunun sabitlediği anahtarla. Dizindeki raw-manifest.json dosyasına yazılmış bir anahtara hiçbir zaman güvenilmez, dış anahtarı olmayan makine ise doğrulamadan geçemez. rdc forensics verify [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --dir <path> | Doğrulanacak kanıt dizini | Evet | - | | --since <when> | Pencerenin başlangıcı: ISO 8601 biçiminde bir an ya da şu andan geriye doğru 90m, 24h veya 7d gibi bir süre (varsayılan: 24h) | Hayır | - | | --until <when> | Pencerenin sonu, aynı biçimlerde (varsayılan: şimdi) | Hayır | - | | --machine-key <machine=hex> | Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; hesap sunucusunun sabitlediği anahtarın yerine kullanılır (tekrarlanabilir) | Hayır | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikli...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",

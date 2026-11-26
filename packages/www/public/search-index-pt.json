@@ -6074,8 +6074,8 @@
   {
     "id": "search-16812",
     "content": "9. Evidências forenses",
-    "body": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa. <a id=\"cli-local-forensics-verify\"></a>",
-    "excerpt": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa. <a id=\"cli-local-forensics-verify\"></a>",
+    "body": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa, usando chaves de máquina vindas de fora das evidências. <a id=\"cli-local-forensics-verify\"></a>",
+    "excerpt": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa, usando chaves de máquina vindas de fora d...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
     "fragment": "9-forensic-evidence",
@@ -6086,7 +6086,7 @@
   {
     "id": "search-16813",
     "content": "9.1 verify",
-    "body": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes são verificadas com as chaves de máquina que o raw-manifest.json do diretório lista, tal como o rdc incident export o escreve; --machine-key acrescenta uma chave ou substitui a listada. rdc forensics verify [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --dir <path> | Diretório de evidências a verificar | Sim | - | | --since <when> | Início da janela: um instante ISO 8601 ou um intervalo retroativo a partir de agora, como 90m, 24h ou 7d (predefinição: 24h) | Não | - | | --until <when> | Fim da janela, nos mesmos formatos (predefinição: agora) | Não | - | | --machine-key <machine=hex> | Chave pública do spool da máquina como <machine>=<64 hex characters>, substitui a chave listada em raw-manifest.json (repetível) | Não | - | --- <a id=\"cli-local-group-backup\"></a>",
+    "body": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes só são verificadas com chaves externas ao diretório: uma entrada --machine-key ou, na falta dela, a chave que o servidor de contas fixou para o incidente que um diretório de rdc incident export indica. Uma chave escrita no raw-manifest.json do diretório nunca é considerada de confiança, e uma máquina sem chave externa falha. rdc forensics verify [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --dir <path> | Diretório de evidências a verificar | Sim | - | | --since <when> | Início da janela: um instante ISO 8601 ou um intervalo retroativo a partir de agora, como 90m, 24h ou 7d (predefinição: 24h) | Não | - | | --until <when> | Fim da janela, nos mesmos formatos (predefinição: agora) | Não | - | | --machine-key <machine=hex> | Chave pública do spool da máquina como <machine>=<64 hex characters>, usada em vez da chave fixada pelo servidor de contas (repetível) | Não | - | --- <a id=\"cli-local-group-backup\"></a>",
     "excerpt": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
