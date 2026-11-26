@@ -7882,3 +7882,4 @@
 {"ev":"lease","id":"b33e1f25","at":"2026-11-26T12:23:41Z","by":"d778be9d","until":"2026-11-26T14:23Z","worker":"a4f6ca269dca83c8c","note":"","worker_verified":false,"h":"02f93d58","br":"1121-1","ns":1795695821515059822}
 {"ev":"state","id":"f9c7d927","at":"2026-11-26T12:24:25Z","by":"d778be9d","s":"x","note":"temp_probe allowlists node-compile-cache and tsx-<uid> and counts only entries the probed tree created; npx tsx -e 0 rc 0; HT7 and HT8a ticked commit:855b58fe98","h":"02f93d58","br":"1121-1","ns":1795695865118383473}
 {"ev":"state","id":"56ef0914","at":"2026-11-26T12:25:28Z","by":"d778be9d","s":"x","note":"HT8b done, renet lint fixed commit:a939824d84","h":"02f93d58","br":"1121-1","ns":1795695928262931050}
+{"ev":"state","id":"dbab0739","at":"2026-11-26T12:26:15Z","by":"d778be9d","s":"x","note":"AF8 5/5 and the card mount landed commit:3f2966f5be","h":"02f93d58","br":"1121-1","ns":1795695975938650048}

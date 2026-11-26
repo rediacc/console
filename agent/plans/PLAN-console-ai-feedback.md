@@ -83,11 +83,12 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF5, AF6.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T20:29:23Z by d778be9d: AF7 7 keys into 12 locales (84 values), hashes locked; check:i18n rc 0 on the merged tree; landed b92a65e3a8. DEPS-WAIVED: prerequisites landed
-- [ ] AF8 [writer] Playwright spec: a Rediacc-origin failure shows the card and Send files a report, a user-origin failure shows none, Don't send records a decline, the owner override hides the card, and the card is operable by keyboard alone.
+- [x] AF8 [writer] Playwright spec: a Rediacc-origin failure shows the card and Send files a report, a user-origin failure shows none, Don't send records a decline, the owner override hides the card, and the card is operable by keyboard alone.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-3*-ai-feedback.test.ts
   Depends on: AF3, AF4, AF5.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-30-ai-feedback.test.ts --project=chromium)` rc 0.
+    (ticked) 2026-11-26T12:26:14Z by d778be9d: AF8 spec 27-30-ai-feedback passes 5/5 live against a local TEST_MODE account server (chromium rc 0) after the FeedbackPreviewCard is mounted from feedback_offer timeline items (AF5's claimed mount was missing); web ai vitest 80 passed, tsc rc 0 commit:3f2966f5be plan:agent/plans/PLAN-console-ai-feedback.md
 - [ ] LP-bench [live] Deploy the branch's account and proxy Workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), provoke one Rediacc-origin failure in an AI chat on the BWS Anthropic key (C41), send the drafted report, and find it in the bench admin feedback list with `source: console` and a `console.feedback.sent` audit object; proxy-ready runs as additional verification.
   Accept: live-proof bench account-smoke
 
