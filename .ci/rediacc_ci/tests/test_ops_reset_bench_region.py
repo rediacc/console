@@ -129,6 +129,9 @@ def test_an_unknown_or_missing_region_exits_2_before_anything(monkeypatch, argv)
 def test_a_missing_wipe_pair_refuses_before_any_wipe(monkeypatch):
     asked: list[tuple] = []
     _world(monkeypatch, [], asked)
+    # Review 7b8d4333.2: the base is the class imported at module load (line 10), never the Creds fake `_world` just patched in, so Unbound runs the real constructor.
+    assert RealR2Credentials is not reset_bench.R2Credentials
+    assert RealR2Credentials.__module__ == reset_bench.__name__
 
     class Unbound(RealR2Credentials):
         def __init__(self, region: str = "eu") -> None:

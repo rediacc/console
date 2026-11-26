@@ -289,7 +289,12 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
     monkeypatch.setattr(runtmp.tempfile, "tempdir", str(deep))
     d = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
     try:
+        # Review 153d0c38.3: the root is checked against facts that do not go through shallow_root(): it exists, it is short enough not to be deep itself, it is outside the deep TMPDIR, and it is one of the two bases the seams use (/tmp, or /var/tmp beside a tmpfs /tmp).
         assert d.parent == pathlib.Path(str(runtmp.shallow_root()))
+        assert d.parent.is_dir()
+        assert len(str(d.parent)) <= runtmp.DEEP_TMPDIR
+        assert deep not in d.parents
+        assert str(d.parent) in ("/tmp", "/var/tmp"), d.parent
     finally:
         runtmp.remove_tree(str(d))
     shallow = pathlib.Path(str(runtmp.shallow_root()))
@@ -385,7 +390,8 @@ def _sweep_removes_a_killed_typescript_dir(tmp_path: pathlib.Path) -> None:
     dead = _ts_run_dir(child)
     _end(child, signal.SIGKILL)
     assert dead.is_dir(), "SIGKILL left nothing, so the sweep is not what removes it"
-    assert runtmp.sweep_dead("runtmp-ts-", str(tmp_path)) == [str(dead)]
+    swept = runtmp.sweep_dead("runtmp-ts-", str(tmp_path))
+    assert swept == [str(dead)], "the sweep did not remove the dead dir: swept %r" % (swept,)
     assert not dead.exists()
 
 
@@ -418,7 +424,8 @@ def test_planted_defect_a_disabled_sweep_fails_the_sweep_check(
 ) -> None:
     """Review 1380b03b.1: the same check, with the sweep disabled, must fail, and the SIGKILLed dir must stay behind."""
     monkeypatch.setattr(runtmp, "sweep_dead", lambda *_a, **_k: [])
-    with pytest.raises(AssertionError):
+    # Review 497fd9e8.3: the failure must be the sweep check's own message, so an unrelated assertion (the 'SIGKILL left nothing' precondition) cannot satisfy it.
+    with pytest.raises(AssertionError, match="the sweep did not remove the dead dir"):
         _sweep_removes_a_killed_typescript_dir(tmp_path)
     assert [p for p in tmp_path.iterdir() if p.name.startswith("runtmp-ts-")]
 

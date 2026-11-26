@@ -943,7 +943,30 @@ def test_the_payload_binds_no_stripe_secret(monkeypatch):
     assert not [name for name in deploy_bench.secrets_payload() if name.startswith("STRIPE")]
 
 
-def test_the_d1_reader_prefers_the_bearer_token_(monkeypatch):
+def test_the_rotation_check_env_refuses_an_unreadable_token_file_as_a_deploy_error(
+    monkeypatch, tmp_path
+):
+    """Review 851b6d63.3: a token file group or other can read is a RefusalError in bws_env and a DeployError here; the child never starts."""
+    token_file = tmp_path / "bws-access-token"
+    token_file.write_text("0.client.secret:key\n", encoding="utf-8")
+    token_file.chmod(0o644)
+    tmp_path.chmod(0o700)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("BWS_ACCESS_TOKEN_FILE", str(token_file))
+    with pytest.raises(deploy_bench.bws_env.RefusalError):
+        deploy_bench.bws_env.read_token()
+    with pytest.raises(deploy_bench.DeployError):
+        deploy_bench._rotation_check_env()
+
+    def no_child(*_a, **_kw):
+        raise AssertionError("the rotation check started despite the refused token")
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", no_child)
+    with pytest.raises(deploy_bench.DeployError):
+        deploy_bench._rotation_check(tmp_path)
+
+
+def test_the_d1_reader_prefers_the_bearer_token_over_the_key_pair(monkeypatch):
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
     monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
     monkeypatch.setenv("CF_EMAIL", "e@example.invalid")

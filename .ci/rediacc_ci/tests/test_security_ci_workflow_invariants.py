@@ -2940,10 +2940,18 @@ def test_the_image_lane_keys_on_node_npm_and_the_image_digest(tmp_path: pathlib.
 
 
 def test_a_rebuilt_image_with_the_same_node_patch_gets_a_new_key(tmp_path: pathlib.Path) -> None:
-    _done, first = _run_node_step(tmp_path)
+    # Review 7536188b.1: each run has its own directory and output file, and both must succeed and print a key, so a refused second run (empty output) cannot satisfy the inequality.
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    done_first, first = _run_node_step(tmp_path / "a")
     other = "ghcr.io/example/runner@sha256:" + "cd" * 32
-    _done, second = _run_node_step(tmp_path, CI_RUNNER_IMAGE=other)
+    done_second, second = _run_node_step(tmp_path / "b", CI_RUNNER_IMAGE=other)
+    assert done_first.returncode == 0, done_first.stderr
+    assert done_second.returncode == 0, done_second.stderr
+    assert first.startswith("key=img-node"), first
+    assert second.startswith("key=img-node"), second
     assert first != second
+    assert second.endswith("-%s\n" % ("cd" * 6)), second
 
 
 @pytest.mark.parametrize("image", ["", "ghcr.io/example/runner:latest", "x@sha256:abc"])

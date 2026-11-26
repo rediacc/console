@@ -342,11 +342,12 @@ def test_prefix_registry_covers_every_run_dir_prefix_in_the_tree():
     found = set()
     shape = re.compile(r"""(?:run_dir|shared)\(\s*["']([a-z0-9-]+-)["']""")
     for path in pathlib.Path(runtmp.__file__).parent.rglob("*.py"):
-        if path.name == pathlib.Path(__file__).name:
+        # test_temp_probe.py plants `run_dir('elite-')` source text in its fixture repositories; skipping that one file (not the prefix) keeps a production `run_dir('elite-')` compared with PREFIXES.
+        if path.name in (pathlib.Path(__file__).name, "test_temp_probe.py"):
             continue
         found.update(shape.findall(path.read_text(encoding="utf-8", errors="replace")))
-    # Prefixes the runtmp unit tests make for themselves, never in a shared base, and the `run_dir('elite-')` source text test_temp_probe.py plants in its fixture repositories.
-    found -= {"runtmp-ctl-", "runtmp-other-", "x-", "elite-"}
+    # Prefixes the runtmp unit tests make for themselves, never in a shared base.
+    found -= {"runtmp-ctl-", "runtmp-other-", "x-"}
     assert sorted(found - set(ht.PREFIXES)) == []
 
 

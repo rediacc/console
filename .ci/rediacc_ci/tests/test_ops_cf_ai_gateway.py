@@ -200,3 +200,34 @@ def test_config_without_gateways_is_refused(tmp_path):
     bad.write_text('{"settings_defaults": {}, "gateways": {}}')
     with pytest.raises(cf_ai_gateway.GatewayError):
         cf_ai_gateway.load_config(bad)
+
+
+def _recording_curl(monkeypatch, body: str = '{"success": true, "result": []}') -> list[dict]:
+    """Replace subprocess.run under the real cf_auth.curl_json; keep the argv and stdin of each curl."""
+    seen: list[dict] = []
+
+    def fake_run(argv, **kw):
+        seen.append({"argv": list(argv), "stdin": kw.get("input")})
+        return type("P", (), {"stdout": body, "returncode": 0})()
+
+    monkeypatch.setattr(cf_auth.subprocess, "run", fake_run)
+    return seen
+
+
+def test_the_token_reaches_curl_on_stdin_and_never_on_argv(monkeypatch):
+    """Review 502a1020.1: the module's 'never argv' claim, through the real curl_json and the real Api."""
+    seen = _recording_curl(monkeypatch)
+    api = cf_ai_gateway.Api(cf_auth.Auth(token="SECRET-TOKEN-VALUE"), ACCT)
+    api.list()
+    assert len(seen) == 1
+    assert not any("SECRET-TOKEN-VALUE" in arg for arg in seen[0]["argv"]), seen[0]["argv"]
+    assert "SECRET-TOKEN-VALUE" in (seen[0]["stdin"] or "")
+
+
+def test_control_a_token_left_on_argv_is_seen_by_the_pin(monkeypatch):
+    """CONTROL: with the stdin hop disabled the argv check sees the token, so the pin above can fail."""
+    seen = _recording_curl(monkeypatch)
+    monkeypatch.setattr(cf_auth.curl_stdin, "stdin_headers", lambda argv: (argv, None))
+    api = cf_ai_gateway.Api(cf_auth.Auth(token="SECRET-TOKEN-VALUE"), ACCT)
+    api.list()
+    assert any("SECRET-TOKEN-VALUE" in arg for arg in seen[0]["argv"])

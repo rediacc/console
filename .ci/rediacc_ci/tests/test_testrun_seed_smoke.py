@@ -140,6 +140,17 @@ def test_delta_terms_acceptance_row_names_the_version_in_force() -> None:
     assert in_force["sha256"] in sql
     # Before the second version took effect, the first one is the one in force.
     assert seed_smoke.terms_in_force("2026-06-01")["version"] == "2026-03-15"
+    # Review b2d6daab.1: the expectation above reads the lookup under test, so the in-force version is also pinned to literals. A published version's archive is immutable (legal-documents.json `$comment`), so its hash never changes; a Terms bump adds a version and moves only a later date.
+    assert seed_smoke.terms_in_force("2026-03-14")["version"] == "2026-03-15"
+    assert seed_smoke.terms_in_force("2026-11-10")["version"] == "2026-03-15"
+    on_the_day = seed_smoke.terms_in_force("2026-11-11")
+    assert on_the_day["version"] == "2026-11-11"
+    assert (
+        on_the_day["sha256"] == "f4e7d87cb789c0b60443f2f96a5b1170b542cd8c6a57b0c1b6446c845e3a7502"
+    )
+    assert in_force == on_the_day
+    assert "'2026-11-11'" in sql
+    assert on_the_day["sha256"] in sql
 
 
 def test_delta_port_seeds_terms_after_the_twins_batch(tmp_path: pathlib.Path) -> None:

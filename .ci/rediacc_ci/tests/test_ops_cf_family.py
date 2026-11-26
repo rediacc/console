@@ -938,6 +938,19 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert secrets["ACCOUNT_AE_READ_TOKEN"] == "fake-ae-read-token-for-tests"
     # The port-only set is compared away above, so every name must be present in the port's push first.
     assert all(name in secrets for name in PORT_ONLY_SECRETS), sorted(secrets)
+    # Review 8ec26e74.1: the bucket and region are compared away with the port-only set, so each is pinned to its literal here. The bucket is the forensicsR2 name of regions.json's bench row; a wrong value would otherwise fail nowhere.
+    assert secrets["ACCOUNT_FORENSICS_S3_BUCKET"] == "forensics-bench"
+    assert secrets["ACCOUNT_FORENSICS_S3_REGION"] == "auto"
+    # Review df62ac3c.1: `_deploy_shape` maps the port's rotation call back to the bash's `run.sh rotation check`, so the profile and cwd the port changed are pinned on the raw port calls: the TypeScript check runs from private/account and nothing goes through run.sh (which would bind the `rotation` bws profile).
+    rotation = [
+        c
+        for c in port_calls
+        if c["tool"] == "npx" and c["argv"][2:4] == ["scripts/rotation/index.ts", "check"]
+    ]
+    assert len(rotation) == 1, rotation
+    assert rotation[0]["argv"] == [*deploy_bench.ROTATION_CHECK_ARGV[1:]]
+    assert rotation[0]["cwd"] == "private/account"
+    assert not [c for c in port_calls if c["tool"] == "run.sh"], "the port went through run.sh"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
     bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])

@@ -2,7 +2,7 @@
 
 CI runs on every push, so a real provider key in a test job spends money on each run; every CI test answers from the scripted provider in packages/shared/src/ai/scripted/ instead.
 
-A job receives a secret through a `secrets.<NAME>` expression, a name in the `secrets:` input of the bws-secrets action, an env key, or a `bws_env exec --profile <p>` whose consumer in .ci/config/secret-supply.json names it. A job receiving an AI provider secret is refused unless it is an operational job: in an `ops-*` or `cd-*` workflow and running no test command. The PR review and the watchdog classifier call a model because calling one is their job, not to test anything; a `cd-*` deploy job only pushes a secret to a Worker (the read-only AI_GATEWAY_LOGS_TOKEN of the nightly credit reconcile), which spends nothing per run (operator ruling ASKED:2026-11-26T07:34Z).
+A job receives a secret through a `secrets.<NAME>` expression, a name in the `secrets:` input of the bws-secrets action, an env key, or a `bws_env exec --profile <p>` whose consumer in .ci/config/secret-supply.json names it. A job receiving an AI provider secret is refused unless it is one of the named OPERATIONAL jobs (workflow file and job id) and runs no test command. The PR review and the watchdog classifier call a model because calling one is their job, not to test anything; a `cd-*` deploy job only pushes a secret to a Worker (the read-only AI_GATEWAY_LOGS_TOKEN of the nightly credit reconcile), which spends nothing per run (operator ruling ASKED:2026-11-26T07:34Z).
 """
 
 from __future__ import annotations
@@ -24,7 +24,17 @@ SECRET_SUPPLY = paths.from_root(".ci", "config", "secret-supply.json")
 #: A secret or env name that carries an AI provider credential, matched as whole underscore-separated words.
 AI_SECRET = re.compile(
     r"(?:^|_)(?:ANTHROPIC|OPENAI|AI_GATEWAY|CLAUDE_CODE_OAUTH|GEMINI|GOOGLE_GENERATIVE_AI|MISTRAL"
-    r"|DEEPSEEK|OPENROUTER|VERCEL_AI|LITELLM|PORTKEY|CF_AIG|GROQ|XAI)(?:_|$)"
+    r"|DEEPSEEK|OPENROUTER|VERCEL_AI|LITELLM|PORTKEY|CF_AIG|GROQ|XAI)(?:_|$)",
+    re.IGNORECASE,
+)
+
+#: The jobs that may receive an AI provider secret, by (workflow file, job id): a new one is a decision, so it is named here rather than admitted by a filename prefix.
+OPERATIONAL = frozenset(
+    {
+        ("cd-deploy-account.yml", "deploy"),
+        ("ops-claude-review.yml", "review"),
+        ("ops-watchdog-monitor.yml", "monitor"),
+    }
 )
 
 #: A run line that executes a test suite or the gate set.
@@ -32,7 +42,8 @@ TEST_COMMAND = re.compile(
     r"\b(?:vitest|pytest|playwright|npm (?:run )?test|npm run ci\b|ci:quick|run-account-e2e|go test)"
 )
 
-SECRETS_EXPR = re.compile(r"secrets\.([A-Za-z0-9_]+)")
+#: `secrets.NAME` and the bracket forms `secrets['NAME']` and `secrets["NAME"]` (a JSON-dumped job escapes the double quote, hence the optional backslash).
+SECRETS_EXPR = re.compile(r"""secrets(?:\.|\[\s*\\?['"])([A-Za-z0-9_]+)""")
 PROFILE_ARG = re.compile(r"--profile[ =]+([A-Za-z0-9_.-]+)")
 
 
@@ -80,7 +91,7 @@ def violations(name: str, workflow: dict, consumers: dict[str, set[str]]) -> lis
         ai = sorted(n for n in received_secrets(workflow, job, consumers) if AI_SECRET.search(n))
         if not ai:
             continue
-        operational = name.startswith(("ops-", "cd-")) and not runs_tests(job)
+        operational = (name, job_id) in OPERATIONAL and not runs_tests(job)
         if not operational:
             found.append("%s job %s receives %s" % (name, job_id, ", ".join(ai)))
     return found
@@ -144,23 +155,41 @@ jobs:
     ]
 
 
-def test_an_ops_job_that_runs_tests_is_not_operational() -> None:
+def test_an_operational_job_that_runs_tests_is_not_operational() -> None:
     workflow = yaml.safe_load(CONTROL)
-    assert violations("ops-control.yml", workflow, {}) == [
-        "ops-control.yml job unit receives ANTHROPIC_API_KEY"
+    workflow["jobs"]["review"] = workflow["jobs"].pop("unit")
+    assert violations("ops-claude-review.yml", workflow, {}) == [
+        "ops-claude-review.yml job review receives ANTHROPIC_API_KEY"
     ]
-    workflow["jobs"]["unit"]["steps"][0]["run"] = "node classify.js"
-    assert violations("ops-control.yml", workflow, {}) == []
+    workflow["jobs"]["review"]["steps"][0]["run"] = "node classify.js"
+    assert violations("ops-claude-review.yml", workflow, {}) == []
 
 
-def test_a_cd_deploy_job_is_operational_only_while_it_runs_no_tests() -> None:
+def test_a_new_ops_or_cd_job_with_an_ai_key_and_no_tests_is_refused() -> None:
+    """Review c4748a9f.3: the exemption names its jobs; an ops-* or cd-* filename prefix alone admits nothing."""
     workflow = yaml.safe_load(CONTROL)
     workflow["jobs"]["unit"]["steps"][0]["run"] = "node push-secrets.js"
-    assert violations("cd-control.yml", workflow, {}) == []
-    workflow["jobs"]["unit"]["steps"][0]["run"] = "npx vitest run"
-    assert violations("cd-control.yml", workflow, {}) == [
-        "cd-control.yml job unit receives ANTHROPIC_API_KEY"
-    ]
+    for name in ("ops-new-thing.yml", "cd-new-thing.yml", "cd-deploy-account.yml"):
+        assert violations(name, workflow, {}) == [f"{name} job unit receives ANTHROPIC_API_KEY"]
+    workflow["jobs"]["deploy"] = workflow["jobs"].pop("unit")
+    assert violations("cd-deploy-account.yml", workflow, {}) == []
+
+
+def test_control_bracket_syntax_and_lowercase_names_are_seen() -> None:
+    """Review c4748a9f.1 and c4748a9f.2: a secret named through `secrets['X']` or in lowercase is still a received AI secret."""
+    for expr in (
+        "${{ secrets['ANTHROPIC_API_KEY'] }}",
+        '${{ secrets["ANTHROPIC_API_KEY"] }}',
+        "${{ secrets[ 'ANTHROPIC_API_KEY' ] }}",
+        "${{ secrets.ANTHROPIC_API_KEY }}",
+    ):
+        workflow = {"jobs": {"unit": {"steps": [{"run": "npx vitest run", "with": {"k": expr}}]}}}
+        assert violations("ci-x.yml", workflow, {}) == [
+            "ci-x.yml job unit receives ANTHROPIC_API_KEY"
+        ], expr
+    lower = {"jobs": {"unit": {"steps": [{"run": "npx vitest run", "env": {"openai_key": "x"}}]}}}
+    assert violations("ci-x.yml", lower, {}) == ["ci-x.yml job unit receives openai_key"]
+    assert AI_SECRET.search("anthropic_api_key")
 
 
 def test_names_that_only_resemble_a_provider_pass() -> None:

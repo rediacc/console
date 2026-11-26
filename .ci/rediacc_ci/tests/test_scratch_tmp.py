@@ -38,12 +38,23 @@ def _umask_back():
 
 
 @pytest.mark.usefixtures("umask_back")
-def test_install_clears_group_write_and_teardown_restores_the_umask() -> None:
+def test_install_clears_group_write_and_teardown_restores_the_umask(monkeypatch) -> None:
+    # Review ee688bc8.1: TMPDIR and tempfile.tempdir go through monkeypatch, so the real values come back even when an assertion fails before teardown, and the scratch directory install made is asserted gone (and removed in a finally) on every host.
+    original = os.environ.get("TMPDIR", tempfile.gettempdir())
+    monkeypatch.setenv("TMPDIR", original)
+    monkeypatch.setattr(tempfile, "tempdir", None)
     config = _Config()
     scratch_tmp.install(config)
+    scratch = os.environ["TMPDIR"]
     cleared = os.umask(0o000)
     os.umask(cleared)
-    config.teardown()
+    try:
+        config.teardown()
+        assert os.environ["TMPDIR"] == original, "TMPDIR must be put back at teardown"
+        assert not os.path.exists(scratch) or scratch == original, scratch
+    finally:
+        if scratch != original:
+            shutil.rmtree(scratch, ignore_errors=True)
     restored = os.umask(0o000)
     os.umask(restored)
     assert cleared & 0o022 == 0o022, "group and other write must be cleared for the run"
