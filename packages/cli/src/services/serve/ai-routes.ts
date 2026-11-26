@@ -75,6 +75,7 @@ import {
 import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke } from '../ai/smoke.js';
 import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
+import { ForensicsTicket } from '../forensics/client.js';
 import { type AgentGrantHandle } from './agent-grant-session.js';
 import {
   BadAiRequest,
@@ -249,6 +250,8 @@ const ChatRequestSchema = z.object({
   grant: z
     .strictObject({ grantId: z.string().regex(GRANT_ID), secret: z.string().min(1).max(256) })
     .optional(),
+  /** The single-use forensics read ticket the Investigate page minted for this turn (D8). */
+  forensicsTicket: z.string().min(1).max(2048).optional(),
 });
 
 type ChatRequest = z.infer<typeof ChatRequestSchema>;
@@ -496,8 +499,10 @@ export function registerAiRoutes(
     session: ChatSession,
     conversationId: string,
     forward: ChatToolHost['forward'],
-    gate: AiToolGate
+    gate: AiToolGate,
+    forensicsTicket?: string
   ): ChatToolHost => ({
+    ...(forensicsTicket ? { forensicsTicket: new ForensicsTicket(forensicsTicket) } : {}),
     deps,
     busy: ai.chat?.busy ?? chatBusy,
     session,
@@ -544,7 +549,9 @@ export function registerAiRoutes(
       const gate = chatGate(session, profile, body);
       await runAiTurn({
         model,
-        tools: chatTools(chatHost(session, body.conversationId, forward, gate)),
+        tools: chatTools(
+          chatHost(session, body.conversationId, forward, gate, body.forensicsTicket)
+        ),
         messages: messagesOf(body),
         ...(maxOutputTokens ? { maxOutputTokens } : {}),
         abortSignal: abort.signal,

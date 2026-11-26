@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" はキャプチャレベルではありません。指定できる値: {{levels}}",
     "levelStarting": "{{machine}} 上で {{repository}} のキャプチャレベルを {{level}} に設定しています...",
     "levelCompleted": "{{repository}} のキャプチャレベルを {{level}} に設定しました。",
-    "levelFailed": "{{repository}} のキャプチャレベルを設定できませんでした。"
+    "levelFailed": "{{repository}} のキャプチャレベルを設定できませんでした。",
+    "ticketRequired": "エグゼキューター上でフォレンジックデータを読むには、開いている調査が発行する使い捨ての読み取りチケットが必要です。調査ページから質問するか、コマンドをローカルで実行してください。",
+    "ticketRefused": "フォレンジック読み取りチケットが拒否されました: {{reason}}",
+    "ticketOtherScope": "このチケットは別のリポジトリまたはマシンを対象としています"
   },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",

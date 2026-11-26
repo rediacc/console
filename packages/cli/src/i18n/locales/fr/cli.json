@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" n'est pas un niveau de capture ; valeurs possibles : {{levels}}.",
     "levelStarting": "Définition du niveau de capture de {{repository}} sur {{level}} sur {{machine}}...",
     "levelCompleted": "Niveau de capture de {{repository}} défini sur {{level}}.",
-    "levelFailed": "Impossible de définir le niveau de capture de {{repository}}."
+    "levelFailed": "Impossible de définir le niveau de capture de {{repository}}.",
+    "ticketRequired": "Les lectures forensiques sur l'exécuteur exigent le ticket de lecture à usage unique qu'émet une enquête ouverte. Posez la question depuis la page Enquêter, ou lancez la commande en local.",
+    "ticketRefused": "Le ticket de lecture forensique a été refusé : {{reason}}",
+    "ticketOtherScope": "le ticket couvre un autre dépôt ou une autre machine"
   },
   "help": {
     "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Une réf de dépôt (repo[:tag]) dérive sa propre machine, -m n'est donc pas nécessaire\n    • La sortie JSON est automatique : toutes les commandes renvoient { success, data, errors, metrics }\n    • Analysez toujours le JSON complet, n'utilisez jamais tail/head/grep sur une sortie JSON\n    • Utilisez les options de filtre (ex : --repositories, --containers) pour réduire la taille de la réponse\n\n",

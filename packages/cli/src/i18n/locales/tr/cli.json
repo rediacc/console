@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" bir yakalama düzeyi değil; şunlardan biri kullanılmalı: {{levels}}.",
     "levelStarting": "{{repository}} deposunun yakalama düzeyi {{machine}} makinesinde {{level}} olarak ayarlanıyor...",
     "levelCompleted": "{{repository}} deposunun yakalama düzeyi {{level}} olarak ayarlandı.",
-    "levelFailed": "{{repository}} deposunun yakalama düzeyi ayarlanamadı."
+    "levelFailed": "{{repository}} deposunun yakalama düzeyi ayarlanamadı.",
+    "ticketRequired": "Yürütücüdeki adli okuma işlemleri, açık bir soruşturmanın verdiği tek kullanımlık okuma biletini gerektirir. Soruyu Soruştur sayfasından sorun ya da komutu yerelde çalıştırın.",
+    "ticketRefused": "Adli okuma bileti reddedildi: {{reason}}",
+    "ticketOtherScope": "bilet başka bir depo ya da makine için verilmiş"
   },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",

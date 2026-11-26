@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" non è un livello di cattura; valori ammessi: {{levels}}.",
     "levelStarting": "Impostazione del livello di cattura di {{repository}} su {{level}} su {{machine}}...",
     "levelCompleted": "Livello di cattura di {{repository}} impostato su {{level}}.",
-    "levelFailed": "Impossibile impostare il livello di cattura di {{repository}}."
+    "levelFailed": "Impossibile impostare il livello di cattura di {{repository}}.",
+    "ticketRequired": "Le letture forensi sull'executor richiedono il ticket di lettura monouso emesso da un'indagine aperta. Fai la domanda dalla pagina Indaga oppure esegui il comando in locale.",
+    "ticketRefused": "Il ticket di lettura forense è stato rifiutato: {{reason}}",
+    "ticketOtherScope": "il ticket riguarda un altro repository o un'altra macchina"
   },
   "help": {
     "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Un riferimento di repository (repo[:tag]) determina da sé la propria macchina, quindi -m non è necessario\n    • L'output JSON è automatico: tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo, non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n\n",

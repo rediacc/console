@@ -9,6 +9,7 @@
  */
 
 import type { AiToolRun, requestOf } from '../ai/tools.js';
+import type { ForensicsTicket } from '../forensics/client.js';
 import type { AgentGrantHandle } from './agent-grant-session.js';
 import { AuditUnavailableError } from './audit.js';
 import type { BusyCounter } from './busy.js';
@@ -39,6 +40,8 @@ export interface DispatchCall {
   windowMs: number;
   /** Told of every machine job the dispatch starts, also after the call answered (an AI chat cancels them on abort). */
   onJobStarted?: (jobId: string, machine: string | undefined) => void;
+  /** The request's single-use forensics read ticket, handed to the dispatch (PLAN-forensics-investigation D8). */
+  forensicsTicket?: ForensicsTicket;
 }
 
 /** `{[key]: value}` when `value` is present, else nothing: keeps the optional audit fields out of the branch count. */
@@ -137,6 +140,7 @@ export function dispatcher(call: DispatchCall, request: ReturnType<typeof reques
           userEmail: principal.userEmail,
         },
         requestId,
+        ...(call.forensicsTicket ? { forensicsTicket: call.forensicsTicket } : {}),
         ...(run.background ? { background: true } : {}),
         onJobStarted: (jobId, machine) => {
           job = { jobId, machine };

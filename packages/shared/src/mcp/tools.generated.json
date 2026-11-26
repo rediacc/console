@@ -1332,6 +1332,32 @@
       "attachWindow": false
     },
     {
+      "name": "incident_status",
+      "command": "incident status",
+      "description": "List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident id, or a prefix of it that no other incident shares"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
       "name": "job_cancel",
       "command": "job cancel",
       "description": "Cancel a running detached job",
@@ -2796,6 +2822,41 @@
       "attachWindow": true
     },
     {
+      "name": "repo_flows",
+      "command": "repo flows",
+      "description": "List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: now)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
       "name": "repo_fork",
       "command": "repo fork",
       "description": "Create a near-instant CoW fork of a repository with a NEW GUID and networkId (fully independent copy). FORK IS CONSTANT-TIME regardless of repo size: BTRFS reflink clones the image so 100 GB and 1 GB repos fork in the same ~seconds, never proportional to repo size. Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up. Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
@@ -3137,6 +3198,41 @@
       "localReason": null,
       "timeoutClass": "write",
       "attachWindow": true
+    },
+    {
+      "name": "repo_opens",
+      "command": "repo opens",
+      "description": "List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: now)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
     },
     {
       "name": "repo_pull",

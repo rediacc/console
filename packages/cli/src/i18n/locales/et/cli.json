@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" ei ole jäädvustustase; lubatud on {{levels}}.",
     "levelStarting": "Hoidla {{repository}} jäädvustustaset määratakse tasemele {{level}} masinas {{machine}}...",
     "levelCompleted": "Hoidla {{repository}} jäädvustustase määrati tasemele {{level}}.",
-    "levelFailed": "Hoidla {{repository}} jäädvustustaset ei õnnestunud määrata."
+    "levelFailed": "Hoidla {{repository}} jäädvustustaset ei õnnestunud määrata.",
+    "ticketRequired": "Kohtuekspertiisi päringud täituril vajavad ühekordset lugemispiletit, mille väljastab avatud uurimine. Küsi lehelt Uuri või käivita käsk kohalikult.",
+    "ticketRefused": "Kohtuekspertiisi lugemispilet lükati tagasi: {{reason}}",
+    "ticketOtherScope": "pilet kehtib teise hoidla või masina kohta"
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",

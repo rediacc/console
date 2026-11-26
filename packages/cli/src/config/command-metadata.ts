@@ -770,10 +770,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
-  // Forensics (PLAN-forensics-investigation D7): the two reads of the caller's disk are local tools, the account reads wait for FI11's ticket, the three writes stay out.
+  // Forensics (PLAN-forensics-investigation D7, D8): the two reads of the caller's disk are local tools, the three account reads run on the executor with the single-use read ticket an open investigation mints (FI11) and refuse without one, the three writes stay out.
   'incident status': {
-    mcpExcludeReason:
-      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'incident export': {
     mcpSurface: {
@@ -798,12 +798,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo flows': {
-    mcpExcludeReason:
-      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'repo opens': {
-    mcpExcludeReason:
-      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'incident declare': {
     mcpExcludeReason:

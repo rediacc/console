@@ -133,9 +133,9 @@ describe('CLI contract', () => {
     for (const cmd of CLI_CONTRACT.commands) {
       if (cmd.proxyCapable) expect(cmd.interactive, cmd.pathKey).toBe(false);
     }
-    // PLAN-rmcp-local-mcp LM10 (D57): the 29 config and `other` plane commands of the surface table run on the executor against the session config. A command joins this set only through the EXECUTOR_SERVED table of the generator, so the count is a drift alarm, and none of them is a machine job.
+    // PLAN-rmcp-local-mcp LM10 (D57): the 29 config and `other` plane commands of the surface table run on the executor against the session config. A command joins this set only through the EXECUTOR_SERVED table of the generator, so the count is a drift alarm, and none of them is a machine job. 29 -> 32: PLAN-forensics-investigation FI11 serves `incident status`, `repo flows` and `repo opens` with the single-use read ticket.
     const offMachine = CLI_CONTRACT.commands.filter((c) => c.proxyCapable && c.plane !== 'machine');
-    expect(offMachine).toHaveLength(29);
+    expect(offMachine).toHaveLength(32);
     expect(offMachine.map((c) => c.pathKey).sort(byCodePoint)).toEqual(
       [...EXECUTOR_SERVED_COMMANDS].sort(byCodePoint)
     );
@@ -179,7 +179,8 @@ describe('CLI contract', () => {
     //
     // 96 -> 132: PLAN-rmcp-local-mcp LM10 (D57). Seven machine-plane commands left PROXY_EXCLUSIONS (`backup check`, `backup repair`, `backup toc-key sync`, `machine converge`, `machine prune`, `machine scan-keys`, `config reconcile`), because the executor holds the session config their reason named as the caller's, and 29 config and `other` plane commands joined through EXECUTOR_SERVED.
     // 132 -> 133: `forensics level` (PLAN-forensics-investigation FI8) joined the machine plane as one forensics_level job.
-    expect(proxyCapableCommands().length).toBe(133);
+    // 133 -> 136: FI11 serves `incident status`, `repo flows` and `repo opens` through EXECUTOR_SERVED with the single-use forensics read ticket.
+    expect(proxyCapableCommands().length).toBe(136);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3298,
-    "sourceCommit": "504925af13712be329813824338192f58efb3e08"
+    "keyCount": 3301,
+    "sourceCommit": "769b0a28251f47952f81dce4b50c98f456b8a601"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -3120,6 +3120,9 @@
     "forensics.sensitive": "92d79449",
     "forensics.severalOrgs": "ee5009c7",
     "forensics.sinceAfterUntil": "e9625d40",
+    "forensics.ticketOtherScope": "cd5595f8",
+    "forensics.ticketRefused": "fc2288b6",
+    "forensics.ticketRequired": "5554d145",
     "forensics.timelineNeverEnds": "86d0328f",
     "forensics.trustedKeysUnavailable": "954b1d0a",
     "forensics.unreadable": "af77fda2",

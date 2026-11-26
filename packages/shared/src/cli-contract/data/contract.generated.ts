@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '6b7b7c840168d9bf';
+export const CLI_CONTRACT_VERSION = 'af98463bc6ecebec';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "6b7b7c840168d9bf",
+  "version": "af98463bc6ecebec",
   "languages": [
     "ar",
     "de",
@@ -7068,12 +7068,14 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -12852,12 +12854,14 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -13898,12 +13902,14 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
-      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,

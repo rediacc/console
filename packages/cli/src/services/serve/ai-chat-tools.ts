@@ -17,6 +17,7 @@ import {
   runAiTool,
 } from '../ai/tools.js';
 import { fenceUntrusted } from '../ai/untrusted.js';
+import type { ForensicsTicket } from '../forensics/client.js';
 import {
   type AgentGrantHandle,
   AgentSessionRefused,
@@ -132,6 +133,8 @@ export interface ChatToolHost {
   gate: AiToolGate;
   /** Cancel one job of an aborted chat: authorized and audited as `job cancel`; never rejects. */
   cancelJob: (job: StartedJob) => void;
+  /** The turn's single-use forensics read ticket, shared by every tool call of the turn (D8). */
+  forensicsTicket?: ForensicsTicket;
 }
 
 /** The argv the judge reads: the path, the positionals in order, then each option as `--name value`. */
@@ -169,6 +172,7 @@ async function runChatTool(
       requestId: toolRequestId(host.conversationId, call.toolCallId),
       windowMs: TOOL_WINDOW_MS,
       onJobStarted: (jobId, machine) => jobs.started(jobId, machine),
+      ...(host.forensicsTicket ? { forensicsTicket: host.forensicsTicket } : {}),
     },
     request
   );

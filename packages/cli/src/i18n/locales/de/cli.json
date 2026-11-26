@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" ist keine Erfassungsstufe; erlaubt sind {{levels}}.",
     "levelStarting": "Erfassungsstufe von {{repository}} wird auf {{level}} gesetzt auf {{machine}}...",
     "levelCompleted": "Erfassungsstufe von {{repository}} auf {{level}} gesetzt.",
-    "levelFailed": "Die Erfassungsstufe von {{repository}} konnte nicht gesetzt werden."
+    "levelFailed": "Die Erfassungsstufe von {{repository}} konnte nicht gesetzt werden.",
+    "ticketRequired": "Forensik-Abfragen auf dem Executor brauchen das einmalige Leseticket, das eine offene Untersuchung ausstellt. Stellen Sie die Frage auf der Seite „Untersuchen“ oder führen Sie den Befehl lokal aus.",
+    "ticketRefused": "Das Forensik-Leseticket wurde abgelehnt: {{reason}}",
+    "ticketOtherScope": "das Ticket gilt für ein anderes Repository oder eine andere Maschine"
   },
   "help": {
     "agentMode": "\n  Agenten-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Eine Repository-Referenz (repo[:tag]) leitet ihre eigene Maschine ab, -m ist daher nicht nötig\n    • JSON-Ausgabe erfolgt automatisch: Alle Befehle liefern { success, data, errors, metrics }\n    • Parsen Sie immer das vollständige JSON, verwenden Sie niemals tail/head/grep auf JSON-Ausgaben\n    • Verwenden Sie Filter-Flags (z.B. --repositories, --containers), um die Antwortgröße zu reduzieren\n\n",

@@ -4,7 +4,13 @@
  * step-up) and every read carries its id; `/console/incidents` holds the incident records.
  * The calls ride the tunnel with the stored token, which carries `forensics:read` after an
  * elevated browser approval.
+ *
+ * On the executor (D8) the token carries no `forensics:read`: a served dispatch hands the reads
+ * the single-use ticket the asking owner's open investigation minted. The first read redeems it
+ * once for an agent read token, which every later read of the same dispatch reuses as its
+ * investigation id. A served dispatch without a ticket refuses before any call.
  */
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { t } from '../../i18n/index.js';
 import { ERROR_CODES } from '../../types/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
@@ -116,6 +122,45 @@ export interface TimelineRead {
   unreadable: number;
 }
 
+/** The redeemed agent investigation: the signed read token and the scope and window it binds. */
+interface AgentInvestigation {
+  id: string;
+  scopeKind: ScopeKind;
+  scopeRef: string;
+  from: string;
+  to: string;
+}
+
+/**
+ * One single-use read ticket, shared by every read a served request runs (an AI turn may call
+ * several read tools): the first read redeems it, the rest reuse the answer.
+ */
+export class ForensicsTicket {
+  private redeemed: Promise<AgentInvestigation> | undefined;
+
+  constructor(readonly ticket: string) {}
+
+  /** Redeem once; a refused redemption leaves the ticket for the next read to try. */
+  redeem(redeemFn: () => Promise<AgentInvestigation>): Promise<AgentInvestigation> {
+    this.redeemed ??= redeemFn().catch((error: unknown) => {
+      this.redeemed = undefined;
+      throw error;
+    });
+    return this.redeemed;
+  }
+}
+
+/**
+ * The ticket of the served dispatch in flight: undefined on a laptop, null for a served dispatch
+ * that carries none.
+ */
+const ticketStore = new AsyncLocalStorage<ForensicsTicket | null>();
+
+/** Run a served dispatch with its ticket, or with none (null), so a read without one refuses. */
+export function withForensicsTicket<T>(ticket: ForensicsTicket | null, fn: () => T): T {
+  return ticketStore.run(ticket, fn);
+}
+
 function windowQuery(window: ForensicsWindow): string {
   return `from=${encodeURIComponent(window.from)}&to=${encodeURIComponent(window.to)}`;
 }
@@ -128,6 +173,12 @@ function explain(error: unknown): unknown {
   }
   if (failure?.status === 403 && failure.code === 'FORENSICS_NOT_ENTITLED') {
     return new CliExitError(ERROR_CODES.PERMISSION_DENIED, t('forensics.notEntitled'));
+  }
+  if (failure?.status === 403 && failure.code === 'FORENSICS_TICKET_REFUSED') {
+    return new CliExitError(
+      ERROR_CODES.PERMISSION_DENIED,
+      t('forensics.ticketRefused', { reason: (error as Error).message })
+    );
   }
   return error;
 }
@@ -143,8 +194,40 @@ export class ForensicsClient {
     }
   }
 
-  listIncidents(): Promise<IncidentRecord[]> {
-    return this.call<{ incidents: IncidentRecord[] }>('/incidents').then((r) => r.incidents);
+  /**
+   * The served dispatch's agent investigation, redeemed on first use; undefined on a laptop. A
+   * served dispatch without a ticket, or a scope the ticket does not cover, refuses here.
+   */
+  private async agentInvestigation(scope?: Scope): Promise<AgentInvestigation | undefined> {
+    const ticket = ticketStore.getStore();
+    if (ticket === undefined) return undefined;
+    if (ticket === null) {
+      throw new CliExitError(ERROR_CODES.PERMISSION_DENIED, t('forensics.ticketRequired'));
+    }
+    const agent = await ticket.redeem(() =>
+      this.call<AgentInvestigation>('/forensics/agent-investigations', {
+        method: 'POST',
+        body: {
+          ticket: ticket.ticket,
+          ...(scope ? { scopeKind: scope.kind, scopeRef: scope.ref } : {}),
+        },
+      })
+    );
+    if (scope && (agent.scopeKind !== scope.kind || agent.scopeRef !== scope.ref)) {
+      throw new CliExitError(
+        ERROR_CODES.PERMISSION_DENIED,
+        t('forensics.ticketRefused', { reason: t('forensics.ticketOtherScope') })
+      );
+    }
+    return agent;
+  }
+
+  async listIncidents(): Promise<IncidentRecord[]> {
+    const agent = await this.agentInvestigation();
+    const path = agent
+      ? `/forensics/investigations/${encodeURIComponent(agent.id)}/incidents`
+      : '/incidents';
+    return this.call<{ incidents: IncidentRecord[] }>(path).then((r) => r.incidents);
   }
 
   /** One incident by its id or by a prefix of it that no other incident shares. */
@@ -184,6 +267,8 @@ export class ForensicsClient {
   }
 
   async openInvestigation(scope: Scope): Promise<string> {
+    const agent = await this.agentInvestigation(scope);
+    if (agent) return agent.id;
     const opened = await this.call<{ id: string }>('/forensics/investigations', {
       method: 'POST',
       body: { scopeKind: scope.kind, scopeRef: scope.ref },

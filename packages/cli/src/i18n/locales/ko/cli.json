@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" 값은 캡처 수준이 아닙니다. 사용 가능한 값: {{levels}}.",
     "levelStarting": "캡처 수준 설정 중: 저장소 {{repository}}, 수준 {{level}}, 머신 {{machine}}...",
     "levelCompleted": "캡처 수준 설정 완료: 저장소 {{repository}}, 수준 {{level}}.",
-    "levelFailed": "캡처 수준을 설정하지 못했습니다: 저장소 {{repository}}."
+    "levelFailed": "캡처 수준을 설정하지 못했습니다: 저장소 {{repository}}.",
+    "ticketRequired": "실행기에서 포렌식 데이터를 읽으려면 열린 조사에서 발급하는 일회용 읽기 티켓이 필요합니다. 조사 페이지에서 질문하거나 명령을 로컬에서 실행하세요.",
+    "ticketRefused": "포렌식 읽기 티켓이 거부되었습니다: {{reason}}",
+    "ticketOtherScope": "이 티켓은 다른 저장소나 머신을 대상으로 합니다"
   },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨: 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱하고, JSON 출력에는 tail/head/grep을 사용하지 마세요\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",

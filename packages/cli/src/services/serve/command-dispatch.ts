@@ -50,6 +50,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import { type ForensicsTicket, withForensicsTicket } from '../forensics/client.js';
 import { RequestIdMinter, withInvocationMinter } from '../jobs/attach.js';
 import {
   currentRequestTelemetry,
@@ -113,6 +114,12 @@ export interface DispatchArgs {
    * the command's spans to this and not to the executor's own token.
    */
   caller?: TelemetryCaller;
+  /**
+   * The single-use forensics read ticket of the request (PLAN-forensics-investigation D8): the
+   * forensics reads redeem it once and read as the approving owner's agent. Absent, those reads
+   * refuse, since the executor's own token carries no `forensics:read`.
+   */
+  forensicsTicket?: ForensicsTicket;
 }
 
 export interface DispatchOutcome {
@@ -443,21 +450,23 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
+  const parse = async () => {
+    const program = createCli();
+    harden(program, context.stderr);
+    try {
+      await program.parseAsync(argv, { from: 'user' });
+      return { failed: false as const };
+    } catch (error) {
+      endFailedCommandSpan(error, Date.now() - started);
+      return { failed: true as const, error };
+    }
+  };
+  // The forensics reads of this dispatch see its ticket, or null so that they refuse.
   const outcome = await runWithRequestTelemetry(
     args.caller,
     () =>
       withInvocationMinter(minter, () =>
-        runInRequestContext(context, async () => {
-          const program = createCli();
-          harden(program, context.stderr);
-          try {
-            await program.parseAsync(argv, { from: 'user' });
-            return { failed: false as const };
-          } catch (error) {
-            endFailedCommandSpan(error, Date.now() - started);
-            return { failed: true as const, error };
-          }
-        })
+        withForensicsTicket(args.forensicsTicket ?? null, () => runInRequestContext(context, parse))
       ),
     'command'
   );

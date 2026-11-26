@@ -108,6 +108,8 @@ export const EXECUTOR_SERVED: Record<string, string> = {
     'Calls the account server with the session token the executor holds for the grant.',
   'feedback show':
     'Calls the account server with the session token the executor holds for the grant.',
+  'incident status':
+    'Calls the account server with the single-use forensics read ticket the dispatch carries (PLAN-forensics-investigation D8); without one it refuses.',
   legal:
     'Prints the bundled legal documents and reads the accepted terms from the account server with the session token.',
   'machine access show':
@@ -126,6 +128,10 @@ export const EXECUTOR_SERVED: Record<string, string> = {
     'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
   'machine remove':
     'Writes the session config through the request-scoped remote state, which pushes the change back to the store.',
+  'repo flows':
+    'Calls the account server with the single-use forensics read ticket the dispatch carries (PLAN-forensics-investigation D8); without one it refuses.',
+  'repo opens':
+    'Calls the account server with the single-use forensics read ticket the dispatch carries (PLAN-forensics-investigation D8); without one it refuses.',
   'repo replicate status':
     'Reads the session config held by the request scope, never another config on the executor.',
   'repo secret get':

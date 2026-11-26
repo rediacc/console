@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" não é um nível de captura; os valores possíveis são {{levels}}.",
     "levelStarting": "A definir o nível de captura de {{repository}} para {{level}} em {{machine}}...",
     "levelCompleted": "Nível de captura de {{repository}} definido para {{level}}.",
-    "levelFailed": "Não foi possível definir o nível de captura de {{repository}}."
+    "levelFailed": "Não foi possível definir o nível de captura de {{repository}}.",
+    "ticketRequired": "As leituras forenses no executor exigem o ticket de leitura de uso único emitido por uma investigação aberta. Pergunte pela página Investigar ou execute o comando localmente.",
+    "ticketRefused": "O ticket de leitura forense foi recusado: {{reason}}",
+    "ticketOtherScope": "o ticket cobre outro repositório ou outra máquina"
   },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Uma ref de repositório (repo[:tag]) deriva a sua própria máquina, pelo que -m não é necessário\n    • A saída JSON é automática: todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo, nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n\n",

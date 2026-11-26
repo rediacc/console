@@ -4019,7 +4019,10 @@
     "badLevel": "\"{{level}}\" ليس مستوى التقاط؛ المستويات المتاحة: {{levels}}.",
     "levelStarting": "جارٍ ضبط مستوى التقاط {{repository}} على {{level}} في {{machine}}...",
     "levelCompleted": "تم ضبط مستوى التقاط {{repository}} على {{level}}.",
-    "levelFailed": "تعذر ضبط مستوى التقاط {{repository}}."
+    "levelFailed": "تعذر ضبط مستوى التقاط {{repository}}.",
+    "ticketRequired": "تحتاج قراءات التحليل الجنائي على المنفّذ إلى تذكرة القراءة أحادية الاستخدام التي يصدرها تحقيق مفتوح. اطرح سؤالك من صفحة التحقيق، أو شغّل الأمر محليًا.",
+    "ticketRefused": "رُفضت تذكرة قراءة التحليل الجنائي: {{reason}}",
+    "ticketOtherScope": "التذكرة تخص مستودعًا آخر أو جهازًا آخر"
   },
   "help": {
     "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • مرجع المستودع (repo[:tag]) يشتق جهازه الخاص، لذا لا حاجة إلى -m\n    • ناتج JSON تلقائي: جميع الأوامر تُعيد { success, data, errors, metrics }\n    • حلّل دائمًا JSON الكامل، ولا تستخدم tail/head/grep على ناتج JSON مطلقًا\n    • استخدم أعلام التصفية (مثل --repositories، --containers) لتقليل حجم الاستجابة\n\n",

@@ -3994,7 +3994,10 @@
     "badLevel": "\"{{level}}\" is not a capture level; use one of {{levels}}.",
     "levelStarting": "Setting the capture level of {{repository}} to {{level}} on {{machine}}...",
     "levelCompleted": "Capture level of {{repository}} set to {{level}}.",
-    "levelFailed": "Could not set the capture level of {{repository}}."
+    "levelFailed": "Could not set the capture level of {{repository}}.",
+    "ticketRequired": "Forensics reads on the executor need the single-use read ticket an open investigation mints. Ask from the Investigate page, or run the command locally.",
+    "ticketRefused": "The forensics read ticket was refused: {{reason}}",
+    "ticketOtherScope": "the ticket covers another repository or machine"
   },
   "incident": {
     "none": "No incidents.",

@@ -1306,7 +1306,7 @@ List the network flows recorded for a repository in a time window: time, process
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
 
-> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
+> MCP tool
 
 ### rdc repo opens <ref>
 
@@ -1317,7 +1317,7 @@ List the file opens recorded for a repository in a time window: time, process an
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
 
-> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
+> MCP tool
 
 ### rdc repo commit <ref>
 
@@ -2297,7 +2297,7 @@ Show one feedback report by its id (or a unique prefix of it), with its status, 
 
 List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.
 
-> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
+> MCP tool
 
 ### rdc incident declare <ref>
 
