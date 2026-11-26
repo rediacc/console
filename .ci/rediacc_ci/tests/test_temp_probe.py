@@ -238,3 +238,44 @@ def test_control_a_read_only_child_still_gets_its_parent_made_writable(tmp_path,
     temp_probe._remove_fresh(str(fresh))
     assert not fresh.exists()
     assert capsys.readouterr().err == ""
+
+
+def test_tool_caches_in_tmpdir_do_not_fail_the_probe(tmp_path):
+    root, base = _dirs(tmp_path)
+    code = (
+        "import os;t=os.environ['TMPDIR'];"
+        "os.mkdir(os.path.join(t,'node-compile-cache'));"
+        "os.mkdir(os.path.join(t,'tsx-%d'%os.getuid()))"
+    )
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 0
+    assert any(temp_probe.TOOL_CACHE in line and "node-compile-cache" in line for line in lines)
+
+
+def test_control_a_real_leak_beside_tool_caches_still_fails(tmp_path):
+    root, base = _dirs(tmp_path)
+    code = (
+        "import os;t=os.environ['TMPDIR'];"
+        "os.mkdir(os.path.join(t,'node-compile-cache'));"
+        "open(os.path.join(t,'leaky-2'),'w').close()"
+    )
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 1
+    assert any("leaked in TMPDIR" in line and "leaky-2" in line for line in lines)
+
+
+def test_foreign_entry_outside_tmpdir_is_reported_without_failing(tmp_path):
+    root, base = _dirs(tmp_path)
+    foreign = root / "other-session-1"
+    code = f"import os;p={str(foreign)!r};open(p,'w').close();os.utime(p,ns=(1,1))"
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 0
+    assert any(temp_probe.NOT_OURS in line and "other-session-1" in line for line in lines)
+
+
+def test_tool_cache_outside_tmpdir_is_ignored(tmp_path):
+    root, base = _dirs(tmp_path)
+    code = f"import os;os.mkdir({str(root / 'tsx-')!r}+str(os.getuid()))"
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 0
+    assert any(temp_probe.TOOL_CACHE in line for line in lines)

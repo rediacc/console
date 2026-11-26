@@ -7,7 +7,9 @@ PROBE. `<cmd>` runs with TMPDIR set to a fresh 0700 directory. Before and after,
 
 A command that fails by itself and leaks nothing returns its own non-zero status, never a masked 0.
 
-CAVEAT. A second process of the same uid that writes to a shared root while the command runs shows up as a new entry, so the probe is read on a quiet root. The fresh directory is the probe's own and is removed after the report, read-only subdirectories the command left included; a directory that still cannot be removed is named on stderr. Nothing else is ever deleted.
+OWNER FILTER. A new entry in a shared root fails the probe only when the command's process tree named it (command line), held it as cwd or held a file under it open while sampled (every 20ms), and it is newer than the probe start. Other sessions' entries, backdated entries and the `TOOL_CACHES` node and tsx keep on purpose are listed as ignored and never fail the probe. A write too short-lived to be sampled and absent from the command line is missed; entries inside the fresh TMPDIR need no attribution.
+
+CAVEAT. The fresh directory is the probe's own and is removed after the report, read-only subdirectories the command left included; a directory that still cannot be removed is named on stderr. Nothing else is ever deleted.
 
 CENSUS. Groups the entries of the roots by name prefix with count, size and inodes, and maps each prefix to the files naming it with `git grep`. By default only entries modified today are counted; `--all` counts every entry. Read-only.
 """
@@ -23,10 +25,30 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 
 __all__ = ["census", "main", "prefix_of", "probe", "roots", "snapshot"]
 
 IGNORED = "ignored TMPDIR"
+NOT_OURS = "ignored (not created by the command)"
+TOOL_CACHE = "ignored (tool cache)"
+
+# Caches that node and tsx keep on purpose under TMPDIR. A name matches when it equals an entry or is `<entry>-<anything>`; `{uid}` is this uid.
+TOOL_CACHES = {
+    "node-compile-cache": "node writes its V8 compile cache to os.tmpdir() and reuses it across runs by design",
+    "tsx-{uid}": "tsx keeps its transform cache and IPC sockets in tsx-<uid> by design",
+}
+
+
+def is_tool_cache(name):
+    """True when `name` is one of the `TOOL_CACHES` kept on purpose."""
+    uid = os.getuid()
+    for entry in TOOL_CACHES:
+        base = entry.format(uid=uid)
+        if name == base or name.startswith(base + "-"):
+            return True
+    return False
 
 
 def roots(environ=None):
@@ -66,6 +88,67 @@ def snapshot(watched, skip=()):
     return found
 
 
+def _children():
+    """`{pid: [child pids]}` from /proc."""
+    kids = {}
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open(f"/proc/{entry}/stat") as handle:
+                stat_line = handle.read()
+        except OSError:
+            continue
+        ppid = int(stat_line.rsplit(")", 1)[1].split()[1])
+        kids.setdefault(ppid, []).append(int(entry))
+    return kids
+
+
+def _tree_strings(root_pid):
+    """Command lines, cwds and open-file targets of every descendant of `root_pid` right now."""
+    kids = _children()
+    todo = list(kids.get(root_pid, []))
+    seen = set()
+    while todo:
+        pid = todo.pop()
+        todo.extend(kids.get(pid, []))
+        base = f"/proc/{pid}"
+        try:
+            raw = pathlib.Path(f"{base}/cmdline").read_bytes()
+            seen.update(os.fsdecode(arg) for arg in raw.split(b"\0"))
+            seen.add(os.readlink(f"{base}/cwd"))
+            for fd in os.listdir(f"{base}/fd"):
+                seen.add(os.readlink(f"{base}/fd/{fd}"))
+        except OSError:
+            continue
+    return seen
+
+
+class _TreeWatch(threading.Thread):
+    """Samples what the probed command's process tree names or holds open, so an entry in a shared root can be attributed to it (OWNER FILTER)."""
+
+    def __init__(self, argv=()):
+        super().__init__(daemon=True)
+        self.seen = {str(arg) for arg in argv}
+        self._stop_event = threading.Event()
+
+    def run(self):
+        while not self._stop_event.is_set():
+            self.seen |= _tree_strings(os.getpid())
+            self._stop_event.wait(0.02)
+
+    def finish(self):
+        self._stop_event.set()
+        self.join()
+        self.seen |= _tree_strings(os.getpid())
+
+    def owns(self, path):
+        """True when a sampled string is `path`, sits under it, or names it."""
+        return any(
+            text == path or text.startswith(path + "/") or path in text for text in self.seen
+        )
+
+
 def probe(argv, watched=None, base=None, environ=None):
     """Run `argv` under a fresh TMPDIR. Returns `(rc, lines)`; rc is 1 on a leak, else the command's status."""
     watched = roots(environ) if watched is None else watched
@@ -75,18 +158,33 @@ def probe(argv, watched=None, base=None, environ=None):
         before = snapshot(watched, skip=[fresh])
         env = dict(os.environ if environ is None else environ)
         env["TMPDIR"] = fresh
+        started = time.time_ns()
+        watch = _TreeWatch(argv)
+        watch.start()
         try:
             status = subprocess.run(argv, env=env, check=False).returncode
         except OSError as err:
             return 127, [f"temp_probe: cannot run {argv[0]}: {err}"]
+        finally:
+            watch.finish()
         after = snapshot(watched, skip=[fresh])
         survivors = sorted(os.listdir(fresh))
-        added = sorted(path for path in after if path not in before)
-        lines = [f"leaked in TMPDIR: {fresh}/{name}" for name in survivors]
-        lines += [f"{IGNORED}: {path}" for path in added]
-        if lines:
+        lines = [
+            f"leaked in TMPDIR: {fresh}/{name}" for name in survivors if not is_tool_cache(name)
+        ]
+        lines += [f"{TOOL_CACHE}: {fresh}/{name}" for name in survivors if is_tool_cache(name)]
+        failing = bool(lines) and any(line.startswith("leaked") for line in lines)
+        for path in sorted(p for p in after if p not in before):
+            if is_tool_cache(os.path.basename(path)):
+                lines.append(f"{TOOL_CACHE}: {path}")
+            elif after[path] < started or not watch.owns(path):
+                lines.append(f"{NOT_OURS}: {path}")
+            else:
+                lines.append(f"{IGNORED}: {path}")
+                failing = True
+        if failing:
             return 1, lines
-        return status, [f"temp_probe: clean (command rc {status})"]
+        return status, [f"temp_probe: clean (command rc {status})", *lines]
     finally:
         _remove_fresh(fresh)
 
