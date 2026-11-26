@@ -16,7 +16,7 @@ vi.mock('../remote/terminal/index.js', () => ({
 }));
 vi.mock('../remote/utils/platform.js', () => ({ getPlatform: () => 'windows' }));
 
-import { launchExternalTerminal } from '../commands/term.js';
+import { launchExternalTerminal } from '../commands/term-external.js';
 import { SSHConnection } from '../remote/ssh/connection.js';
 
 const details = { environment: {}, workingDirectory: undefined } as never;

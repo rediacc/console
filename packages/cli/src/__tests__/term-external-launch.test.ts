@@ -33,7 +33,7 @@ vi.mock('../remote/utils/platform.js', async (importOriginal) => ({
   isWSL: () => false,
 }));
 
-import { launchExternalTerminal, reportExternalLaunchFailure } from '../commands/term.js';
+import { launchExternalTerminal, reportExternalLaunchFailure } from '../commands/term-external.js';
 import { SSHConnection } from '../remote/ssh/connection.js';
 import { outputService } from '../services/core/output.js';
 
