@@ -14,12 +14,14 @@
 
 import { describe, expect, it } from 'vitest';
 import { WK_SITE_ORIGIN } from '../../config/well-known.generated.js';
-import { PolicyDocumentSchema } from '../../policy/index.js';
+import { generateAesKey } from '../../config-crypto/aes.js';
+import { decryptPolicyRecord, encryptPolicyRecord } from '../../config-crypto/policy-record.js';
+import { evaluatePolicy, PolicyDocumentSchema } from '../../policy/index.js';
+import { omitKey } from '../../utils/omit-key.js';
 import { LOCAL_ONLY_EXCLUSIONS } from '../coverage.js';
 import { parseConfig, type RdcConfig, RdcConfigSchema } from '../schemas.js';
 import { listSensitivityTemplates } from '../sensitivity.js';
 import { pathsToCommit } from '../walker.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 const POLICY = {
   version: 1 as const,
@@ -73,6 +75,26 @@ describe('policy document in the config', () => {
     expect(listSensitivityTemplates()).not.toContain('/policy');
     expect(LOCAL_ONLY_EXCLUSIONS).toContain('/policy');
     expect(pathsToCommit(localConfig()).filter((p) => p.startsWith('/policy'))).toEqual([]);
+  });
+
+  it('a remote config reads its policy back from the separate record, and the decision survives the round trip', async () => {
+    const cek = await generateAesKey();
+    const pointer = { storeId: REMOTE.storeId, configId: REMOTE.configId, teamId: 'platform' };
+    const record = await encryptPolicyRecord(POLICY, cek, {
+      ...pointer,
+      version: 1,
+      cekGeneration: 0,
+    });
+    const pulled = PolicyDocumentSchema.parse(await decryptPolicyRecord(record, cek, pointer));
+    expect(pulled).toEqual(POLICY);
+    const ctx = { userEmail: 'dev@example.com', orgRole: 'member', teamSlug: 'platform' } as const;
+    for (const commandPath of ['repo up', 'repo delete', 'machine query']) {
+      expect(evaluatePolicy(pulled, { ...ctx, commandPath })).toEqual(
+        evaluatePolicy(POLICY, { ...ctx, commandPath })
+      );
+    }
+    expect(evaluatePolicy(pulled, { ...ctx, commandPath: 'repo up' }).allowed).toBe(true);
+    expect(evaluatePolicy(pulled, { ...ctx, commandPath: 'repo delete' }).allowed).toBe(false);
   });
 
   it('the schema accepts exactly what the policy engine validates', () => {
