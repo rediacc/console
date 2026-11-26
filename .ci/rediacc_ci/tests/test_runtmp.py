@@ -334,3 +334,82 @@ def test_the_deepest_kept_base_leaves_a_tsx_socket_path_under_the_kernel_limit(m
     finally:
         base.rmdir()
         longer.rmdir()
+
+
+# --- the TypeScript twin, scripts/lib/runtmp.ts: one stamp, so either sweep removes the other's dead dirs ---
+
+REPO_ROOT = CI_DIR.parent
+_TS_CHILD = r"""
+import { runDir, installSignalCleanup } from %(lib)r;
+import fs from 'node:fs';
+const hooked = process.argv[2] === 'hooked';
+const dir = runDir('runtmp-ts-', process.argv[3]);
+fs.writeFileSync(dir + '/f', 'x');
+if (hooked) installSignalCleanup();
+process.stdout.write(dir + '\n');
+setInterval(() => undefined, 1000);
+"""
+
+
+def _ts_child(tmp_path: pathlib.Path, base: pathlib.Path, mode: str) -> subprocess.Popen:
+    script = tmp_path / ("ts-child-%s.mts" % mode)
+    script.write_text(_TS_CHILD % {"lib": str(REPO_ROOT / "scripts/lib/runtmp.ts")})
+    return subprocess.Popen(
+        ["npx", "tsx", str(script), mode, str(base)],
+        stdout=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        cwd=str(REPO_ROOT),
+        start_new_session=True,
+    )
+
+
+def _ts_run_dir(child: subprocess.Popen) -> pathlib.Path:
+    assert child.stdout is not None
+    line = child.stdout.readline().strip()
+    assert line, "the TypeScript child never reported its run dir"
+    return pathlib.Path(line)
+
+
+def _end(child: subprocess.Popen, sig: int) -> None:
+    # npx runs tsx which runs node: signal the whole session so the node process itself receives it.
+    os.killpg(child.pid, sig)
+    child.wait(timeout=30)
+    assert child.stdout is not None
+    child.stdout.close()
+
+
+def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
+    child = _ts_child(tmp_path, tmp_path, "unhooked")
+    dead = _ts_run_dir(child)
+    _end(child, signal.SIGKILL)
+    assert dead.is_dir(), "SIGKILL left nothing, so the sweep is not what removes it"
+    assert runtmp.sweep_dead("runtmp-ts-", str(tmp_path)) == [str(dead)]
+    assert not dead.exists()
+
+
+def test_planted_defect_a_disabled_sweep_leaves_the_typescript_dir(tmp_path: pathlib.Path) -> None:
+    child = _ts_child(tmp_path, tmp_path, "unhooked")
+    dead = _ts_run_dir(child)
+    _end(child, signal.SIGKILL)
+    assert dead.is_dir()  # nothing swept it: the control above could fail
+
+
+def test_a_sigterm_typescript_child_with_the_hook_leaves_nothing(tmp_path: pathlib.Path) -> None:
+    child = _ts_child(tmp_path, tmp_path, "hooked")
+    made = _ts_run_dir(child)
+    assert made.is_dir()
+    _end(child, signal.SIGTERM)
+    assert not made.exists(), "SIGTERM with installSignalCleanup left the run dir"
+
+
+def test_a_sigterm_typescript_child_without_the_hook_leaves_its_dir_for_the_sweep(
+    tmp_path: pathlib.Path,
+) -> None:
+    child = _ts_child(tmp_path, tmp_path, "unhooked")
+    made = _ts_run_dir(child)
+    _end(child, signal.SIGTERM)
+    assert made.is_dir(), (
+        "the unhooked control no longer leaves a dir, so the hooked case proves nothing"
+    )
+    assert runtmp.sweep_dead("runtmp-ts-", str(tmp_path)) == [str(made)]
