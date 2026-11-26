@@ -154,7 +154,7 @@ const aiApproval = z.strictObject({
   }),
 });
 
-// One mode change of an AI conversation: who (the actor), the command that forced it when the judge did (`pathKey`), the target, and the verification method of the person's step-up.
+// One mode change of an AI conversation: who (the actor), the command that forced it when the judge did (`pathKey`), the mode and the one before it, and the verification method of the person's step-up.
 const aiMode = z.strictObject({
   ...envelope,
   type: z.literal('console.ai.mode'),
@@ -215,13 +215,17 @@ const forensicsOpen = z.strictObject({
 const forensicsView = z.strictObject({
   ...envelope,
   type: z.literal('console.forensics.view'),
-  data: z.strictObject({
-    investigationId: z.string().min(1).max(100).nullable(),
-    grantId: z.string().min(1).max(100).optional(),
-    scopeKind,
-    ...isoWindow,
-    kinds: z.array(rowKind).max(7),
-  }),
+  data: z
+    .strictObject({
+      investigationId: z.string().min(1).max(100).nullable(),
+      grantId: z.string().min(1).max(100).optional(),
+      scopeKind,
+      ...isoWindow,
+      kinds: z.array(rowKind).max(7),
+    })
+    .refine((d) => d.investigationId !== null || d.grantId !== undefined, {
+      message: 'a forensics read names an investigation or a support grant',
+    }),
 });
 
 const forensicsGrant = z.strictObject({

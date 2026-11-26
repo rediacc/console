@@ -185,6 +185,15 @@ describe('ConsoleAuditEventSchema', () => {
     );
   });
 
+  it('refuses a forensics read that names neither an investigation nor a grant', () => {
+    const view = DATA['console.forensics.view'];
+    const parse = (data: Record<string, unknown>) =>
+      ConsoleAuditEventSchema.safeParse(event('console.forensics.view', data)).success;
+    expect(parse({ ...view, investigationId: null })).toBe(false);
+    expect(parse({ ...view, investigationId: null, grantId: 'g-1' })).toBe(true);
+    expect(parse(view)).toBe(true);
+  });
+
   it('accepts a null team for an org-level event', () => {
     const run = event('console.stepup', DATA['console.stepup']) as Record<string, unknown>;
     expect(ConsoleAuditEventSchema.safeParse({ ...run, teamId: null }).success).toBe(true);
