@@ -43,7 +43,7 @@ TAIL = [
     "Write the deploy record",
     "Upload the deploy record",
 ]
-ENABLE_IF = "steps.proxy_smoke.outcome == 'success'"
+ENABLE_IF = "steps.proxy_smoke.outcome == 'success' && steps.mcp_deploy.outcome == 'success'"
 
 
 def load(path):
