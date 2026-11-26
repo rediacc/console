@@ -6,6 +6,7 @@
 
 import type { Profile } from '@rediacc/shared/ai';
 import { AiEventSchema } from '@rediacc/shared/cli-contract/wire';
+import { WK_ANTHROPIC_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -25,7 +26,7 @@ const USAGE = {
 
 const PROFILE: Profile = {
   format: 'anthropic-messages',
-  baseURL: 'https://api.anthropic.com/v1',
+  baseURL: WK_ANTHROPIC_API_BASE,
   key: 'sk-test',
   authScheme: 'x-api-key',
   model: 'claude-main',

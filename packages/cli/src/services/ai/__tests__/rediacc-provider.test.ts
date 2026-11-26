@@ -1,4 +1,5 @@
 import { buildRediaccProfile, CREDIT_REFUSAL_MESSAGES } from '@rediacc/shared/ai';
+import { WK_OPENAI_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import { streamText } from 'ai';
 import { describe, expect, it } from 'vitest';
 import { createProviderModel, ProviderProfileError } from '../provider.js';
@@ -74,7 +75,7 @@ describe('rediacc tier model', () => {
   it('refuses a request outside the intercept base URL', async () => {
     const { fetch } = recordingFetch(sseAnswer);
     const guarded = rediaccFetch({ ...IDS, fetch });
-    await expect(guarded('https://api.openai.com/v1/chat/completions', {})).rejects.toThrow(
+    await expect(guarded(`${WK_OPENAI_API_BASE}/chat/completions`, {})).rejects.toThrow(
       /only reaches/
     );
     await expect(guarded('http://ai.internal.evil.example/compat/x', {})).rejects.toThrow(

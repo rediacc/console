@@ -6,6 +6,7 @@
 
 import type { Profile } from '@rediacc/shared/ai';
 import { ProfileSchema } from '@rediacc/shared/ai';
+import { WK_ANTHROPIC_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import type { ModelMessage } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, expectTypeOf, it } from 'vitest';
@@ -51,7 +52,7 @@ function answering(...texts: string[]) {
 
 const PROFILE: Profile = {
   format: 'anthropic-messages',
-  baseURL: 'https://api.anthropic.com/v1',
+  baseURL: WK_ANTHROPIC_API_BASE,
   key: 'sk-test',
   authScheme: 'x-api-key',
   model: 'claude-main',

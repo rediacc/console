@@ -2,8 +2,9 @@
 
 import { EXECUTOR_TOKEN_PLACEHOLDER } from '../../egress';
 import type { ExecutorIssuerRpc } from '../../issued-token';
+import { ACCOUNT_EGRESS_HOST } from '../../org-executor-support';
 
-export const API = 'http://account.internal/account/api/v1';
+export const API = `http://${ACCOUNT_EGRESS_HOST}/account/api/v1`;
 
 /** `idFromName(name).toString()` is `id:<name>`, which is what OrgExecutor passes as `containerId` for that instance (`this.ctx.id.toString()`). */
 export const NAMES = {

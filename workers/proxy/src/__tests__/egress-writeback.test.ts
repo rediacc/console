@@ -4,6 +4,7 @@
 
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ACCOUNT_EGRESS_HOST } from '../org-executor-support';
 
 vi.mock('cloudflare:workers', () => ({
   WorkerEntrypoint: class {
@@ -136,7 +137,7 @@ describe('config write-back routes (PLAN-rmcp-writeback.md WB5)', () => {
 
 describe('executor write-back requests against the real allowlist', () => {
   const send = (path: string, init: RequestInit = {}) =>
-    new Request(`http://account.internal${path}`, {
+    new Request(`http://${ACCOUNT_EGRESS_HOST}${path}`, {
       headers: { 'x-config-token': 'ct-1' },
       ...init,
     });

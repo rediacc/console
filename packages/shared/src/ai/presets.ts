@@ -7,8 +7,8 @@
  * a self-hosted host name); each declares the pattern its value must match, so a
  * substituted value can never add path, query or credential text.
  */
+import { WK_ANTHROPIC_API_BASE, WK_OPENAI_API_BASE } from '../config/well-known.generated.js';
 import type { AuthScheme, Capabilities, Profile, ProfileFormat } from './profile.js';
-import { WK_OPENAI_API_BASE } from '../config/well-known.generated.js';
 import { type ProfileIssue, validateProfile } from './profile.js';
 
 export interface PresetPlaceholder {
@@ -44,7 +44,7 @@ export const PRESETS: readonly Preset[] = [
     label: 'Anthropic',
     format: 'anthropic-messages',
     authScheme: 'x-api-key',
-    baseURLTemplate: 'https://api.anthropic.com/v1',
+    baseURLTemplate: WK_ANTHROPIC_API_BASE,
     placeholders: [],
     suggestedModel: 'claude-sonnet-5-5',
     capabilities: ALL,

@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
+import { WK_OPENAI_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import {
   cekHandoffEncrypt,
   ENVELOPE_VERSION,
@@ -963,7 +964,7 @@ describe('teamOverSharedAiConfigs', () => {
     providers: {
       main: {
         format: 'openai-chat' as const,
-        baseURL: 'https://api.openai.com/v1',
+        baseURL: WK_OPENAI_API_BASE,
         key: 'sk-test',
         authScheme: 'bearer' as const,
         model,

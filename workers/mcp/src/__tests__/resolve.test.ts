@@ -1,7 +1,12 @@
 /**
  * Grant resolution on the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md RW-T3, Design 4): the cache around the account's `resolveGrant`, its TTL, the purge a pushed revocation makes, and the `/internal/revoke` route that carries it.
  */
+
 import { describe, expect, it, vi } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
 import { type CallDeps, callTool } from '../call.js';
 import {
@@ -257,14 +262,14 @@ describe('POST /internal/revoke', () => {
 describe('a failing grant lookup', () => {
   it('answers 503 with Retry-After, not the 401 that sends a client to sign in again', async () => {
     const worker = createMcpTransport({
-      host: 'mcp.eu.rediacc.cloud',
+      host: WK_MCP_EU_HOST,
       serverVersion: '0.0.0-test',
-      accountUrl: 'https://eu.rediacc.cloud',
+      accountUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
       resolveGrant: () => Promise.reject(new Error('account unreachable')),
       executor: undefined,
     });
     const response = await worker.fetch(
-      new Request(`https://mcp.eu.rediacc.cloud/g/${GRANT_ID}`, {
+      new Request(`https://${WK_MCP_EU_HOST}/g/${GRANT_ID}`, {
         method: 'POST',
         headers: {
           authorization: `Bearer ${bearerFor(GRANT_ID)}`,

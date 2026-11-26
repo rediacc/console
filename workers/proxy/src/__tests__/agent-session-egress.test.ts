@@ -5,15 +5,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { forwardAccountEgress as forward } from '../egress';
 import type { Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
+import { ACCOUNT_EGRESS_HOST } from '../org-executor-support';
 
 const ACCOUNT_URL = 'https://account.test';
 const ISSUED = 'rdt_issued_executor_token';
 const PLACEHOLDER = 'rediacc-executor-placeholder';
-const API = 'http://account.internal/account/api/v1';
+const API = `http://${ACCOUNT_EGRESS_HOST}/account/api/v1`;
 const ORG = 'org-1';
 
 function setup() {

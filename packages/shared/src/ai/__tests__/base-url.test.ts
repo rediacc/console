@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { WK_ACCOUNT_EGRESS_HOST, WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
+import {
+  WK_ACCOUNT_EGRESS_HOST,
+  WK_ANTHROPIC_API_BASE,
+  WK_OPENAI_API_BASE,
+} from '../../config/well-known.generated.js';
 import { validateBaseUrl } from '../base-url.js';
 
 const refused = (url: string): string | null => {
@@ -9,7 +13,7 @@ const refused = (url: string): string | null => {
 
 describe('validateBaseUrl', () => {
   it.each([
-    'https://api.anthropic.com/v1',
+    WK_ANTHROPIC_API_BASE,
     'https://gateway.ai.cloudflare.com/v1/acc/gw/compat',
     'https://litellm.example.org:8443/v1',
     'https://8.8.8.8/v1',

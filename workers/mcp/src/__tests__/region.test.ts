@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_MCP_EU_HOST,
+  WK_MCP_US_HOST,
 } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { SqliteKvNamespace } from '../../../../packages/shared/src/mcp-host/sqlite-kv.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
@@ -78,9 +79,9 @@ function mcpPost(host: string, grantId: string): Request {
 
 describe('a grant presented to the wrong region', () => {
   it('is refused with the right region URL, before any lookup or upstream call', async () => {
-    const us = await workerOf('us', 'mcp.us.rediacc.cloud');
+    const us = await workerOf('us', WK_MCP_US_HOST);
     const answer = await us.worker.fetch(
-      mcpPost('mcp.us.rediacc.cloud', 'eu_grant_1') as never,
+      mcpPost(WK_MCP_US_HOST, 'eu_grant_1') as never,
       us.env as never,
       ctx
     );
@@ -134,7 +135,7 @@ describe('a grant presented to the wrong region', () => {
     expect(grantRegionOf('mars_abc')).toBeNull();
     expect(grantRegionOf('eu_')).toBeNull();
     expect(grantRegionOf('_eu')).toBeNull();
-    expect(hostOfRegion(WK_MCP_EU_HOST, 'eu', 'us')).toBe('mcp.us.rediacc.cloud');
+    expect(hostOfRegion(WK_MCP_EU_HOST, 'eu', 'us')).toBe(WK_MCP_US_HOST);
     expect(hostOfRegion('localhost', 'eu', 'us')).toBeNull();
   });
 });

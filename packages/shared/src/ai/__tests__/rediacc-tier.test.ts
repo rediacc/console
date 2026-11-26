@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findPriceRow } from '../../ai-credits/price-table.js';
+import { WK_OPENAI_API_BASE } from '../../config/well-known.generated.js';
 import { validateProfile } from '../profile.js';
 import {
   asCreditRefusalCode,
@@ -25,7 +26,7 @@ describe('rediacc tier', () => {
     expect(profile).toMatchObject({ baseURL: 'http://ai.internal/compat', byokOnly: true });
     expect(profile.key).toBeUndefined();
     expect(isRediaccProfile(profile)).toBe(true);
-    expect(isRediaccProfile({ ...profile, baseURL: 'https://api.openai.com/v1' })).toBe(false);
+    expect(isRediaccProfile({ ...profile, baseURL: WK_OPENAI_API_BASE })).toBe(false);
   });
 
   it('the customer guard still refuses the intercept host, so the tier is never read from a config', () => {
