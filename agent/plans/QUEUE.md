@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1513 of 1891 boxes done (80%).
+Promoted: 11 of 100 plans done, 1514 of 1891 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -118,7 +118,7 @@ Promoted: 11 of 100 plans done, 1513 of 1891 boxes done (80%).
 | 56 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
 | 57 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
 | 58 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
-| 59 | PLAN-preview-signer.md | 23/37 | 14 open |
+| 59 | PLAN-preview-signer.md | 24/37 | 13 open |
 | 60 | PLAN-weekly-lessons.md | 6/8 | 2 open |
 | 61 | PLAN-tooling-speed.md | 6/8 | 2 open |
 | 62 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |

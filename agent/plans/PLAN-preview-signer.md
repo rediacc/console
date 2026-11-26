@@ -184,10 +184,11 @@ A fork preview never gets a signer. `deploy-preview` gains `github.event.pull_re
   Owns: agent/plans/PLAN-preview-signer.md (runs only, on an ops VM 192.168.111.*).
   Depends on: A1.
   Accept: the table with every command and its rc, and `curl -fsS <app url>` rc 0 after expiry quoted in the tick.
-- [ ] N0 [lead] Mint `PREVIEW_NAME_KEY` (32 random bytes, base64) into Bitwarden and the CI secret supply profile the deploy and cleanup jobs read.
+- [x] N0 [lead] Mint `PREVIEW_NAME_KEY` (32 random bytes, base64) into Bitwarden and the CI secret supply profile the deploy and cleanup jobs read.
   Owns: none -- a Bitwarden step; the profile entry rides N2.
   Depends on: none.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-www -- python3 -c 'import os,base64; assert len(base64.b64decode(os.environ["PREVIEW_NAME_KEY"]))==32'` rc 0.
+    (ticked) 2026-11-26T11:31:07Z by d778be9d: N0 PREVIEW_NAME_KEY present: .ci/config/bws-secret-map.json:490 and .ci/config/env-manifest.json:287, bound in the ci and preview-cleanup workflows; the store value is 32 bytes base64; check:ci-secret-supply rc 0 fileline:.ci/config/bws-secret-map.json:490 commit:c4771b9f8058
 - [x] N1 [writer] `rediacc_ci.deploy.preview_name`: the HMAC word derivation of D5 over `.ci/config/preview-words.txt` (2048 lowercase ASCII words, unique, no word a prefix of another), a `--pr <n>` entry printing the name, and a `--match <worker>` entry the sweep uses. Refuses to run without `PREVIEW_NAME_KEY`.
   Owns: .ci/rediacc_ci/deploy/preview_name.py, .ci/config/preview-words.txt, .ci/rediacc_ci/tests/test_deploy_preview_name.py.
   Depends on: none.
