@@ -31,6 +31,7 @@
  */
 
 import { z } from 'zod';
+import { FEEDBACK_LIMITS } from '../feedback/schema.js';
 
 /** Header carrying the CLI version, so an executor can reject an incompatible client. */
 export const CLI_VERSION_HEADER = 'x-rdc-cli-version';
@@ -211,6 +212,24 @@ export const AiEventSchema = z.discriminatedUnion('type', [
     type: z.literal('usage'),
     inputTokens: z.number().int().nonnegative(),
     outputTokens: z.number().int().nonnegative(),
+  }),
+  /**
+   * A drafted bug report the page previews and the user sends, edits or declines
+   * (agent/plans/PLAN-console-ai-feedback.md D1, D2). The draft is already scrubbed; the account
+   * worker rebuilds the exact body from the run row on preview and send.
+   */
+  z.object({
+    type: z.literal('feedback_offer'),
+    runId: z.string().min(1),
+    draft: z.object({
+      message: z.string().max(FEEDBACK_LIMITS.message).optional(),
+      stderrTail: z.string().max(FEEDBACK_LIMITS.stderrTail).optional(),
+      env: z.object({
+        cliVersion: z.string().max(FEEDBACK_LIMITS.cliVersion),
+        os: z.string().max(FEEDBACK_LIMITS.os),
+        arch: z.string().max(FEEDBACK_LIMITS.arch),
+      }),
+    }),
   }),
   z.object({ type: z.literal('finish'), reason: z.string() }),
   z.object({ type: z.literal('error'), message: z.string(), code: z.string().optional() }),
