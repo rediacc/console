@@ -652,7 +652,7 @@
         "title": "Sorularınız mı var?"
       },
       "hero": {
-        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "effectiveDate": "Yürürlük Tarihi: 26 Kasım 2026",
         "title": "Veri İşleme Sözleşmesi"
       },
       "meta": {
@@ -750,7 +750,7 @@
           "content": [
             "Bu Veri İşleme Sözleşmesi (\"DPA\"), Müşterinin Hizmetleri bir işletme olarak kullandığı ve Rediacc'ın Müşteri Kişisel Verilerini Müşteri adına işlediği durumlarda, {{legalName}} (\"Rediacc\", \"İşleyen\") ile Müşteri arasındaki <a href=\"terms-of-service\">Hizmet Koşullarının</a> parçasıdır. Hizmet Koşullarında tanımlanan terimler burada da aynı anlama gelir. Bu sayfa İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur; bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir.",
             "Müşteri Kişisel Verileri bakımından Müşteri veri sorumlusudur (veya kendi veri sorumlusu adına hareket eden bir işleyendir), Rediacc ise işleyendir (veya alt işleyendir). Hesap, faturalandırma ve kabul kayıtları ile Telemetri Verileri bakımından Rediacc, <a href=\"privacy-policy\">Gizlilik Politikasında</a> açıklandığı şekilde bağımsız bir veri sorumlusudur ve bu DPA söz konusu işlemeye uygulanmaz.",
-            "Müşterinin Makinelerindeki Müşteri Verileri Rediacc tarafından işlenmez. Şifreli yapılandırma depolama ve barındırılan yedekler Rediacc'ın sahip olmadığı anahtarlarla şifrelenir; bu nedenle Rediacc bu veri bloklarını saklar ancak içeriklerini okuyamaz."
+            "Rediacc'ın yalnızca Müşterinin adli bilişimi etkinleştirdiği bir depo için aldığı, Bölüm 4'te açıklanan ağ adli bilişim kanıtları dışında, Rediacc Müşterinin Makinelerindeki Müşteri Verilerini işlemez. Şifreli yapılandırma depolama ve barındırılan yedekler Rediacc'ın sahip olmadığı anahtarlarla şifrelenir; bu nedenle Rediacc bu veri bloklarını saklar ancak içeriklerini okuyamaz."
           ],
           "id": "scope",
           "title": "1. Kapsam ve Roller"
@@ -2456,7 +2456,7 @@
         "title": "Sorularınız mı var?"
       },
       "hero": {
-        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "effectiveDate": "Yürürlük Tarihi: 26 Kasım 2026",
         "title": "Gizlilik Taahhüdümüz"
       },
       "meta": {
@@ -2505,9 +2505,9 @@
           "items": [
             "Platformumuzu barındıran ve işleten, e-posta gönderen ve ödemeleri işleyen, verilerinizi korumaya yönelik sözleşmesel yükümlülüklerle bağlı <strong>hizmet sağlayıcılar (alt işleyiciler)</strong>. Her sağlayıcının rolünü ve konumunu içeren güncel liste <a href=\"data-processing-agreement\">Veri İşleme Sözleşmemizde</a> yer alır",
             "Çerezsiz anonim web analitiği için <strong>Plausible Analytics</strong>",
-            "<strong>Telemetri işleme</strong> — anonimleştirilmiş ürün kullanım verileri, toplama ve analiz için AB içindeki kendi telemetri uç noktamıza iletilir. Telemetri verileri üçüncü taraflarla paylaşılmaz (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
+            "<strong>Telemetri işleme</strong>, anonimleştirilmiş ürün kullanım verileri için; bu veriler toplama ve analiz amacıyla Avrupa Birliği'ndeki kendi telemetri uç noktamıza gönderilir. Uç nokta, Hostinger tarafından sağlanan sanal sunucularda çalışır; Hostinger verileri bizim işleyenimiz olarak bizim adımıza barındırır, <a href=\"data-processing-agreement\">Veri İşleme Sözleşmemizde</a> listelenmiştir ve verileri kendi amaçları için kullanmaz. Telemetri verilerini satmayız ve başka kimseyle paylaşmayız (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
             "Kanun gerektirdiğinde <strong>kolluk kuvvetleri</strong>",
-            "<strong>Kullanıcının bağladığı model sağlayıcı</strong>, bir yapay zekâ ajanı uzak MCP üzerinden kullanıldığında: ajana dönen araç çıktısı bu sağlayıcı tarafından kendi koşullarına göre işlenir. Rediacc bu sağlayıcıyı seçmez; Claude API MCP bağlayıcısı gibi bazı bağlayıcılar sıfır veri saklama için uygun değildir"
+            "<strong>Kullanıcının bağladığı model sağlayıcı</strong>, kullanıcının yönlendirmesiyle, bir yapay zekâ ajanı uzak MCP üzerinden kullanıldığında: ajana dönen araç çıktısı bu sağlayıcıya gider ve sağlayıcı bunu kullanıcının kendisiyle yaptığı kendi sözleşmesi uyarınca işler. Bu sağlayıcı bizim işleyenimiz veya alt işleyenimiz değildir, çünkü Rediacc onu ne seçer ne de ona talimat verir. Claude API MCP bağlayıcısı gibi bazı bağlayıcılar sıfır veri saklama için uygun değildir"
           ],
           "title": "4. Veri Paylaşımı ve Üçüncü Taraflar"
         },
@@ -9830,7 +9830,7 @@
         "title": "Sorularınız mı var?"
       },
       "hero": {
-        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
+        "effectiveDate": "Yürürlük Tarihi: 26 Kasım 2026",
         "title": "Telemetri Uygulamalarımız"
       },
       "meta": {
@@ -9931,7 +9931,7 @@
             "<strong>Şifreleme:</strong> Tüm veriler TLS kullanılarak iletim sırasında şifrelenir. Renet Ajanı ayrıca gzip sıkıştırma kullanır.",
             "<strong>Saklama:</strong> Ham telemetri izleri, hata ayıklama ve olay araştırması için 90 güne kadar saklanır. Toplu metrikler 12 aya kadar saklanır ve ardından silinir.",
             "<strong>Erişim:</strong> Telemetri verilerine yalnızca Rediacc mühendislik ve operasyon personeli, bilmesi gereken bazında erişebilir.",
-            "<strong>Üçüncü taraflarla paylaşım yok:</strong> Telemetri verileri herhangi bir üçüncü tarafla paylaşılmaz, satılmaz veya erişilemez.",
+            "<strong>Üçüncü taraflarla paylaşım yok:</strong> Telemetri verileri satılmaz ve kimseyle kendi kullanımı için paylaşılmaz. Veriler, Avrupa Birliği'ndeki Hostinger tarafından sağlanan sanal sunucularda saklanır; Hostinger bunları bizim işleyenimiz olarak bizim adımıza barındırır (bkz. <a href=\"data-processing-agreement\">Veri İşleme Sözleşmemiz</a>).",
             "<strong>Altyapı:</strong> Tüm telemetri verileri, Avrupa Birliği içinde bulunan altyapıda işlenir ve saklanır."
           ],
           "title": "6. Veri İşleme ve Depolama"
