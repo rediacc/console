@@ -3947,6 +3947,7 @@
       "noBinary": "{{name}} önizlemesinin {{platform}} için CLI derlemesi yok.",
       "versionMismatch": "{{name}} önizlemesi: sürüm bildirimi v{{manifest}}, önizleme sunucusu v{{server}} diyor. Hiçbir şey kurulmadı.",
       "hashMismatch": "{{name}} önizlemesi: sürüm bildirimindeki {{platform}} sağlama toplamı, önizleme sunucusununkinden farklı. Hiçbir şey kurulmadı.",
+      "noChannel": "Önizleme {{name}} derlemelerini {{url}} adresinde yayımlıyor, bu adres sürüm kaynağına ait değil. Hiçbir şey kurulmadı.",
       "notSea": "Bir önizleme kurulu rdc ikili dosyasının yerini alır, bu yüzden paketlenmiş rdc gerekir (npm veya kaynak koddan çalıştırma olmaz).",
       "unsupportedPlatform": "Bu platformun önizleme derlemesi yok.",
       "formatChangeDeclined": "{{name}} önizlemesine geçilmedi: diskteki biçim değişikliği kabul edilmedi.",

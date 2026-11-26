@@ -3947,6 +3947,7 @@
       "noBinary": "프리뷰 {{name}}에는 {{platform}}용 CLI 빌드가 없습니다.",
       "versionMismatch": "프리뷰 {{name}}: 릴리스 매니페스트는 v{{manifest}}, 프리뷰 서버는 v{{server}}라고 합니다. 아무것도 설치하지 않았습니다.",
       "hashMismatch": "프리뷰 {{name}}: 릴리스 매니페스트의 {{platform}} 체크섬이 프리뷰 서버의 체크섬과 다릅니다. 아무것도 설치하지 않았습니다.",
+      "noChannel": "미리보기 {{name}}의 빌드 게시 위치 {{url}}은(는) 릴리스 출처에 속하지 않습니다. 아무것도 설치되지 않았습니다.",
       "notSea": "프리뷰는 설치된 rdc 바이너리를 교체하므로 패키지된 rdc가 필요합니다(npm이나 소스에서 실행한 경우는 불가).",
       "unsupportedPlatform": "이 플랫폼에는 프리뷰 빌드가 없습니다.",
       "formatChangeDeclined": "프리뷰 {{name}}(으)로 전환하지 않았습니다: 디스크 형식 변경이 수락되지 않았습니다.",

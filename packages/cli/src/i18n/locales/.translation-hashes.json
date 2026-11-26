@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3319,
-    "sourceCommit": "2c52ec33db93d838f3742a4b8d7189791236de9f"
+    "keyCount": 3320,
+    "sourceCommit": "4606b6bbce5a34c3994cc357e6c72d82d39ffce9"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2978,6 +2978,7 @@
     "errors.preview.machineUnnamed": "0a4dfbdd",
     "errors.preview.noBinary": "fd312457",
     "errors.preview.noBuild": "e7bc68f6",
+    "errors.preview.noChannel": "d59f7790",
     "errors.preview.notSea": "55f303fa",
     "errors.preview.serversPending": "d64a216a",
     "errors.preview.unsupportedPlatform": "c6f10da9",

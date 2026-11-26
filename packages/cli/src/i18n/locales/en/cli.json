@@ -3922,6 +3922,7 @@
       "noBinary": "Preview {{name}} has no CLI build for {{platform}}.",
       "versionMismatch": "Preview {{name}}: the release manifest says v{{manifest}} and the preview server says v{{server}}. Nothing was installed.",
       "hashMismatch": "Preview {{name}}: the {{platform}} checksum in the release manifest differs from the preview server's. Nothing was installed.",
+      "noChannel": "Preview {{name}} publishes its builds at {{url}}, which is not under the release origin. Nothing was installed.",
       "notSea": "A preview replaces the installed rdc binary, so it needs the packaged rdc (not an npm or source run).",
       "unsupportedPlatform": "This platform has no preview build.",
       "formatChangeDeclined": "Preview {{name}} was not switched to: its on-disk format change was not accepted.",

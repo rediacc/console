@@ -3947,6 +3947,7 @@
       "noBinary": "Vorschau {{name}} hat keinen CLI-Build für {{platform}}.",
       "versionMismatch": "Vorschau {{name}}: Das Release-Manifest nennt v{{manifest}}, der Vorschau-Server v{{server}}. Es wurde nichts installiert.",
       "hashMismatch": "Vorschau {{name}}: Die Prüfsumme für {{platform}} im Release-Manifest weicht von der des Vorschau-Servers ab. Es wurde nichts installiert.",
+      "noChannel": "Vorschau {{name}} veröffentlicht ihre Builds unter {{url}}, was nicht zum Release-Ursprung gehört. Es wurde nichts installiert.",
       "notSea": "Eine Vorschau ersetzt die installierte rdc-Binärdatei und braucht daher das gepackte rdc (kein npm- oder Quellcode-Lauf).",
       "unsupportedPlatform": "Für diese Plattform gibt es keinen Vorschau-Build.",
       "formatChangeDeclined": "Nicht zu Vorschau {{name}} gewechselt: Die Änderung des Formats auf dem Datenträger wurde nicht akzeptiert.",

@@ -3947,6 +3947,7 @@
       "noBinary": "A pré-visualização {{name}} não tem compilação da CLI para {{platform}}.",
       "versionMismatch": "Pré-visualização {{name}}: o manifesto da versão indica v{{manifest}} e o servidor da pré-visualização indica v{{server}}. Nada foi instalado.",
       "hashMismatch": "Pré-visualização {{name}}: a soma de verificação de {{platform}} no manifesto da versão difere da do servidor da pré-visualização. Nada foi instalado.",
+      "noChannel": "A pré-visualização {{name}} publica as suas compilações em {{url}}, que não pertence à origem das versões. Nada foi instalado.",
       "notSea": "Uma pré-visualização substitui o binário rdc instalado, por isso precisa do rdc empacotado (não de uma execução via npm ou a partir do código-fonte).",
       "unsupportedPlatform": "Esta plataforma não tem compilação de pré-visualização.",
       "formatChangeDeclined": "Não se mudou para a pré-visualização {{name}}: a alteração do formato em disco não foi aceite.",

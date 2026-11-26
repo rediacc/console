@@ -63,3 +63,30 @@ export function selectPreviewBinary(
   }
   return { version: build.version, sha256: expected, url: entry.url };
 }
+
+/**
+ * The R2 manifest URL of the channel a preview's binaries are staged under. A pull-request run stages its
+ * builds to the non-secret `pr-<n>` channel, never to the word name (PLAN-preview-signer N2), so the name
+ * cannot be turned into a channel. The preview host serves the staged manifest at `/cli/manifest.json`,
+ * whose binary URLs name that channel; the route is the directory those URLs share. The result is read
+ * from R2 again, so D6's second origin (the R2 manifest against `previewBuild`) stays a different origin
+ * from the preview server. A URL outside the release origin, or binaries spread over two directories, is
+ * refused before anything is fetched.
+ */
+export function previewChannelManifestUrl(
+  hostManifest: UpdateManifest,
+  releasesOrigin: string,
+  name: string
+): string {
+  const dirs = new Set<string>();
+  for (const entry of Object.values(hostManifest.binaries)) {
+    if (!entry) continue;
+    const slash = entry.url.lastIndexOf('/');
+    dirs.add(slash < 0 ? entry.url : entry.url.slice(0, slash));
+  }
+  const [dir] = [...dirs];
+  if (dirs.size !== 1 || dir === undefined || !dir.startsWith(`${releasesOrigin}/cli/`)) {
+    throw new ValidationError(t('errors.preview.noChannel', { name, url: dir ?? '' }));
+  }
+  return `${dir}/manifest.json`;
+}

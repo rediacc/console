@@ -3947,6 +3947,7 @@
       "noBinary": "L'anteprima {{name}} non ha una build della CLI per {{platform}}.",
       "versionMismatch": "Anteprima {{name}}: il manifest della release indica v{{manifest}} e il server dell'anteprima indica v{{server}}. Non è stato installato nulla.",
       "hashMismatch": "Anteprima {{name}}: il checksum {{platform}} nel manifest della release differisce da quello del server dell'anteprima. Non è stato installato nulla.",
+      "noChannel": "L'anteprima {{name}} pubblica le sue build all'indirizzo {{url}}, che non appartiene all'origine delle release. Non è stato installato nulla.",
       "notSea": "Un'anteprima sostituisce il binario rdc installato, quindi serve il rdc in pacchetto (non un'esecuzione da npm o dai sorgenti).",
       "unsupportedPlatform": "Questa piattaforma non ha una build di anteprima.",
       "formatChangeDeclined": "Non si è passati all'anteprima {{name}}: la modifica del formato su disco non è stata accettata.",

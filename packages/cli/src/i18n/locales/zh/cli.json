@@ -3947,6 +3947,7 @@
       "noBinary": "预览 {{name}} 没有适用于 {{platform}} 的 CLI 构建。",
       "versionMismatch": "预览 {{name}}：发布清单显示为 v{{manifest}}，而预览服务器显示为 v{{server}}。未安装任何内容。",
       "hashMismatch": "预览 {{name}}：发布清单中 {{platform}} 的校验和与预览服务器的不一致。未安装任何内容。",
+      "noChannel": "预览 {{name}} 的构建发布在 {{url}}，该地址不属于发布源。未安装任何内容。",
       "notSea": "预览会替换已安装的 rdc 二进制文件，因此需要打包版 rdc（不能通过 npm 或源码运行）。",
       "unsupportedPlatform": "此平台没有预览构建。",
       "formatChangeDeclined": "未切换到预览 {{name}}：未接受磁盘数据格式的变更。",

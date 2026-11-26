@@ -21,10 +21,16 @@ import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine
 import { readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_RENET_PATH, renetProvisioner } from '../renet/renet-provisioner.js';
 import { getRemoteHashAndVersion } from '../renet/renet-remote-probe.js';
+import { previewChannelManifestUrl } from './build.js';
 import { installBinaryAtPath, keepCurrentBinary, restoreKeptBinary } from './install-binary.js';
 import { type LicenceDeps, licenceReportLines, releaseLicencesOnLeave } from './licences.js';
 import type { SwitchBackOutcome } from './slot.js';
-import { readPreviewOverlay, readRealAccountServer, readRealReleasesBase } from './state.js';
+import {
+  previewHostFor,
+  readPreviewOverlay,
+  readRealAccountServer,
+  readRealReleasesBase,
+} from './state.js';
 import {
   type PreviewLeaveDeps,
   type PreviewUseDeps,
@@ -51,7 +57,14 @@ function onProgress(downloaded: number, total: number): void {
 export function realPreviewUseDeps(): PreviewUseDeps {
   return {
     fetchServerInfo: (host) => fetchServerInfo(host) as Promise<{ previewBuild?: unknown }>,
-    fetchManifest: (name) => fetchManifestAt(`${WK_RELEASES_ORIGIN}/cli/${name}/manifest.json`),
+    fetchManifest: async (name) =>
+      fetchManifestAt(
+        previewChannelManifestUrl(
+          await fetchManifestAt(`${previewHostFor(name)}/cli/manifest.json`),
+          WK_RELEASES_ORIGIN,
+          name
+        )
+      ),
     platformKey: getPlatformKey,
     canReplaceBinary: () => getInstallMethod() === 'sea',
     keepCurrentBinary: (dest) => keepCurrentBinary(dest),

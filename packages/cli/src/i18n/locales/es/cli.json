@@ -3947,6 +3947,7 @@
       "noBinary": "La vista previa {{name}} no tiene compilación de la CLI para {{platform}}.",
       "versionMismatch": "Vista previa {{name}}: el manifiesto de la versión indica v{{manifest}} y el servidor de la vista previa indica v{{server}}. No se instaló nada.",
       "hashMismatch": "Vista previa {{name}}: la suma de comprobación de {{platform}} del manifiesto de la versión difiere de la del servidor de la vista previa. No se instaló nada.",
+      "noChannel": "La vista previa {{name}} publica sus compilaciones en {{url}}, que no pertenece al origen de las versiones. No se instaló nada.",
       "notSea": "Una vista previa reemplaza el binario de rdc instalado, así que necesita el rdc empaquetado (no una ejecución desde npm o desde el código fuente).",
       "unsupportedPlatform": "Esta plataforma no tiene compilación de vista previa.",
       "formatChangeDeclined": "No se cambió a la vista previa {{name}}: no se aceptó el cambio de formato en disco.",
