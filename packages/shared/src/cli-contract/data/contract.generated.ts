@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'af98463bc6ecebec';
+export const CLI_CONTRACT_VERSION = '187ce3e98f325238';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "af98463bc6ecebec",
+  "version": "187ce3e98f325238",
   "languages": [
     "ar",
     "de",
@@ -18842,6 +18842,10 @@ export const CLI_CONTRACT: CliContract = {
     {
       "code": "BUSY",
       "origin": "environment"
+    },
+    {
+      "code": "CONFIRMATION_REQUIRED",
+      "origin": "user"
     },
     {
       "code": "DETACHED",

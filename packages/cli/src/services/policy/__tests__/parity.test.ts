@@ -289,6 +289,11 @@ async function viaMcp(row: FixtureRow): Promise<Expectation> {
     name: pathKey.replaceAll(' ', '_'),
     arguments: { ref: row.target.repo?.name ?? '', ...EXTRA_ARGS[pathKey]?.tool },
   });
+  // A policy refusal arrives as `structuredContent.code` beside the child's message (executor.ts refusalResult, LM4); any other result carries the rdc envelope as its text.
+  const structured = result.structuredContent as { code?: string } | undefined;
+  if (structured?.code && (DECISION_CODES as readonly string[]).includes(structured.code)) {
+    return { verdict: verdictOfCode(structured.code), code: structured.code };
+  }
   const text = (result.content as { type: string; text: string }[])[0]?.text ?? '';
   const code = codeOfEnvelope(JSON.parse(text) as Envelope);
   return { verdict: verdictOfCode(code), code };

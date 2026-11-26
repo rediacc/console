@@ -65,6 +65,8 @@ export const NAMED_ERROR_ORIGINS: Record<string, ErrorOrigin> = {
   TIMEOUT: 'environment',
   EXECUTION_ERROR: 'environment',
   POLICY_DENIED: 'user',
+  // The policy decision a grand-guarded destructive call gets until the caller confirms it (LM4: elicitation or the `confirm` argument).
+  CONFIRMATION_REQUIRED: 'user',
   EXECUTOR_FAILED: 'environment',
 };
 

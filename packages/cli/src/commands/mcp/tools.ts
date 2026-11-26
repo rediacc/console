@@ -115,7 +115,7 @@ async function executeTool(
     executeRdcCommand(argv, {
       ...options,
       timeoutMs,
-      ...(confirm !== undefined ? { confirm } : {}),
+      ...(confirm === undefined ? {} : { confirm }),
       ...(tool.attachWindowMs !== undefined && args.background === true
         ? { background: true }
         : {}),

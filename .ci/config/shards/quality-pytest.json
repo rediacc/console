@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T04:25:28.292Z",
+  "generatedAt": "2026-11-26T06:27:37.559Z",
   "legs": [
     {
       "index": 1,
@@ -675,6 +675,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py",
         "pytest:.ci/rediacc_ci/tests/test_release_rings_run.py",
         "pytest:.ci/rediacc_ci/tests/test_release_update_homebrew_tap.py",
+        "pytest:.ci/rediacc_ci/tests/test_renet_build_model_key.py",
         "pytest:.ci/rediacc_ci/tests/test_renet_test_map_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_root_login.py",
         "pytest:.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py",

@@ -1,5 +1,5 @@
 {
-  "version": "af98463bc6ecebec",
+  "version": "187ce3e98f325238",
   "languages": [
     "ar",
     "de",
@@ -18834,6 +18834,10 @@
     {
       "code": "BUSY",
       "origin": "environment"
+    },
+    {
+      "code": "CONFIRMATION_REQUIRED",
+      "origin": "user"
     },
     {
       "code": "DETACHED",

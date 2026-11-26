@@ -100,6 +100,12 @@ import {
   toolRequestId,
   UNRECORDED,
 } from './ai-chat-tools.js';
+import {
+  type ChatRequest,
+  ChatRequestSchema,
+  IdSchema,
+  TestRequestSchema,
+} from './ai-request-schemas.js';
 import { type BusyCounter, createBusyCounter } from './busy.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { cancelOnMachine, type JobRouteHelpers } from './job-routes.js';
@@ -121,12 +127,6 @@ export type AiMode = (typeof AI_MODES)[number];
 
 /** Refusal codes these routes answer with. */
 export const AI_MODE_DISABLED = 'AI_MODE_DISABLED';
-
-const IdSchema = z
-  .string()
-  .min(1)
-  .max(128)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
 
 const ModeRequestSchema = z.strictObject({
   conversationId: IdSchema,
@@ -224,39 +224,6 @@ export interface AiRouteDeps {
   approvals: AiApprovals;
   chat?: AiChatDeps;
 }
-
-const MAX_MESSAGES = 200;
-const MAX_MESSAGE_CHARS = 100_000;
-const GRANT_ID = /^[A-Za-z0-9_-]{1,128}$/;
-const ProfileNameSchema = z.string().min(1).max(128);
-
-/**
- * What the browser sends. Not strict on purpose: a field this schema does not name (a `kind`, a
- * `principal`, an `agentGrant`) is dropped before anything reads the body, so none of them can
- * reach the principal the tools run as.
- */
-const ChatRequestSchema = z.object({
-  conversationId: IdSchema,
-  messages: z
-    .array(
-      z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(MAX_MESSAGE_CHARS) })
-    )
-    .min(1)
-    .max(MAX_MESSAGES)
-    .refine((messages) => messages.at(-1)?.role === 'user', {
-      message: "the last message must be the user's",
-    }),
-  profile: ProfileNameSchema.optional(),
-  grant: z
-    .strictObject({ grantId: z.string().regex(GRANT_ID), secret: z.string().min(1).max(256) })
-    .optional(),
-  /** The single-use forensics read ticket the Investigate page minted for this turn (D8). */
-  forensicsTicket: z.string().min(1).max(2048).optional(),
-});
-
-type ChatRequest = z.infer<typeof ChatRequestSchema>;
-
-const TestRequestSchema = z.object({ profile: ProfileNameSchema.optional() });
 
 /** Refusal codes of the chat and test routes. */
 export const AI_PROFILE_UNRESOLVED = 'AI_PROFILE_UNRESOLVED';

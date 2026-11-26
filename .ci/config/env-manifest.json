@@ -2339,6 +2339,7 @@
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_X25519_PRIVATE_KEY",
         "ACCOUNT_X25519_PUBLIC_KEY",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ALERTS_FROM_EMAIL",
         "ALERTS_NOTIFY_EMAIL",
         "AWS_SES_ACCESS_KEY_ID",
@@ -3160,6 +3161,7 @@
       ".ci/rediacc_ci/testrun/seed_smoke.py": [
         "ACCOUNT_JWT_SECRET",
         "GITHUB_OUTPUT",
+        "PREVIEW_NAME",
         "PR_NUMBER"
       ],
       ".ci/rediacc_ci/testrun/start_account.py": [

@@ -170,6 +170,7 @@ describe('the mcp serve stdio server, driven by the SDK v2 client', () => {
     const result = await client.callTool({ name: 'repo_up', arguments: { ref: 'shop' } });
     expect(result.isError).toBe(true);
     // The child's refusal is lifted to structuredContent (executor.ts runUnderPolicy).
-    expect(result.structuredContent?.code, JSON.stringify(result)).toBe('AGENT_OPT_IN_MISSING');
+    const structured = result.structuredContent as { code?: string } | undefined;
+    expect(structured?.code, JSON.stringify(result)).toBe('AGENT_OPT_IN_MISSING');
   }, 120_000);
 });

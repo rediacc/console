@@ -38,7 +38,7 @@ export interface ExecutorOptions {
  * `[code, reason, next]`: `next` is the command past a `deny` (`rdc repo fork ...`), or
  * `--confirm-grand <value>` for a `needs_confirmation`.
  */
-export interface PolicyRefusal {
+interface PolicyRefusal {
   verdict: 'deny' | 'needs_confirmation';
   code: Exclude<DecisionCode, 'ALLOWED'>;
   /** decide()'s English justification. */

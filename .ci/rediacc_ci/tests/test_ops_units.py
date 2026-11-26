@@ -77,6 +77,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",
@@ -92,8 +93,8 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
-    # 33 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench, plus the PLAN-forensics-shipping FS12 forensics store triple (464878dffc), empty here.
-    assert len(payload) == 40
+    # 33 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench, plus the PLAN-forensics-shipping FS12 forensics store triple (464878dffc), empty here, plus AI_GATEWAY_LOGS_TOKEN (ab89774522).
+    assert len(payload) == 41
     for name in (
         "CONTACT_FROM_EMAIL",
         "ALERTS_FROM_EMAIL",
@@ -123,6 +124,7 @@ def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",

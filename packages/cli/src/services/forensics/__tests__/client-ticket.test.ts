@@ -94,9 +94,10 @@ describe('ForensicsClient with a read ticket', () => {
   });
 
   it('leaves a refused redemption retryable', async () => {
-    let refuse = true;
+    // The first redemption is refused; the retry with the same ticket goes through.
+    let redemptions = 0;
     const { calls, fetchFn } = recorder((call) => {
-      if (refuse && call.path.endsWith('/agent-investigations')) {
+      if (call.path.endsWith('/agent-investigations') && redemptions++ === 0) {
         throw Object.assign(new Error('The ticket covers another scope'), {
           status: 403,
           code: 'FORENSICS_TICKET_REFUSED',
@@ -110,7 +111,6 @@ describe('ForensicsClient with a read ticket', () => {
     await expect(
       withForensicsTicket(ticket, () => client.openInvestigation(scope))
     ).rejects.toBeInstanceOf(CliExitError);
-    refuse = false;
     await expect(withForensicsTicket(ticket, () => client.openInvestigation(scope))).resolves.toBe(
       AGENT_ID
     );

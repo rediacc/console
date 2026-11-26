@@ -787,6 +787,8 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["ACCOUNT_FORENSICS_S3_ENDPOINT"] = "https://forensics.example.invalid"
     bound["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] = "fake-forensics-key-id"
     bound["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] = "fake-forensics-secret"
+    # ab89774522: the port pushes the AI Gateway logs-read token and refuses without it; the retired bash never held it. A fake value.
+    bound["AI_GATEWAY_LOGS_TOKEN"] = "fake-ai-gateway-logs-token"
     return bound
 
 
@@ -808,6 +810,8 @@ PORT_ONLY_SECRETS = (
     "ACCOUNT_FORENSICS_S3_ENDPOINT",
     "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
     "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+    # ab89774522: the AI Gateway logs-read token of the nightly credit reconcile.
+    "AI_GATEWAY_LOGS_TOKEN",
 )
 
 # DECLARED DELTA (Stripe removal): the account Worker takes no Stripe secret, so the port pushes none; the retired bash golden still records these two blank live names, dropped from its side of the comparison.
@@ -1188,6 +1192,7 @@ PAYLOAD_ENV = (
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+    "AI_GATEWAY_LOGS_TOKEN",
 )
 
 
