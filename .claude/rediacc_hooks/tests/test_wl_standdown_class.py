@@ -57,17 +57,24 @@ def blocking_at_high() -> dict[str, str]:
     return out
 
 
-def kept_by_pr_loop(key: str) -> bool:
-    """The stop's own predicate (wl_checks.stand_down_keeps). A key produced only per subject (`agent-pushback:<id>`) is kept when its `<key>:` form is."""
-    return K.stand_down_keeps(STD.PR_LOOP, key, False, False) or K.stand_down_keeps(
-        STD.PR_LOOP, key + ":subject", False, False
+def kept_by_pr_loop(key: str, profile=None) -> bool:
+    """The stop's own predicate (wl_checks.stand_down_keeps) over `profile` (PR_LOOP by default). A key produced only per subject (`agent-pushback:<id>`) is kept when its `<key>:` form is."""
+    profile = STD.PR_LOOP if profile is None else profile
+    return K.stand_down_keeps(profile, key, False, False) or K.stand_down_keeps(
+        profile, key + ":subject", False, False
+    )
+
+
+def silent_keys(profile=None, parked=None) -> list[str]:
+    """The class guard's verdict: every key blocking at `high` that `profile` stands down and `parked` does not name."""
+    parked = STD.PARKED_BY_DESIGN if parked is None else parked
+    return sorted(
+        k for k in blocking_at_high() if not kept_by_pr_loop(k, profile) and k not in parked
     )
 
 
 def test_class_every_key_blocking_at_high_is_kept_by_pr_loop_or_parked_by_design() -> None:
-    silent = sorted(
-        k for k in blocking_at_high() if not kept_by_pr_loop(k) and k not in STD.PARKED_BY_DESIGN
-    )
+    silent = silent_keys()
     assert not silent, (
         "these keys block at effort high but PR_LOOP stands them down with no reason: %s. "
         "Keep each in a wl_standdown set the development tree acts on, or name it in "
@@ -91,6 +98,13 @@ def test_class_guard_catches_the_old_keep_lists() -> None:
     assert KEY in blocking_at_high()
     assert not K.stand_down_keeps(old, KEY, False, False)
     assert KEY not in STD.PARKED_BY_DESIGN
+    # e8e49cc0.3: the guard itself, run on the old keep list, names the key; on the live list it names nothing.
+    assert KEY in silent_keys(old)
+    assert silent_keys() == []
+    # And a key the old list drops but PARKED_BY_DESIGN names is no finding: parking is the guard's other door.
+    parked = dict(STD.PARKED_BY_DESIGN)
+    parked[KEY] = "a planted reason of enough length"
+    assert KEY not in silent_keys(old, parked)
 
 
 def test_writers_now_due_is_a_build_duty_parked_in_the_landing_tree() -> None:

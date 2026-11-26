@@ -166,6 +166,8 @@ def test_an_unreadable_worklist_makes_tracked_unknown_not_untracked(monkeypatch,
     assert (
         "the worklist could not be read (RuntimeError: sf5-injected), so tracked is unknown" in line
     )
+    # b9c7fd2d.2: the unread worklist never renders the false "untracked" verdict.
+    assert "untracked" not in line, line
 
 
 def test_a_readable_worklist_does_not_mention_it(monkeypatch, tmp_path):
@@ -176,6 +178,8 @@ def test_a_readable_worklist_does_not_mention_it(monkeypatch, tmp_path):
     line = wl_schedred._red_session_start_line(tmp_path / "wl.md")
     assert line
     assert "could not be read" not in line
+    # Control for the "untracked" assertion above: a readable worklist with no item tracking the red says so.
+    assert "untracked" in line, line
 
 
 # ---- wl_histfirst ---------------------------------------------------------------

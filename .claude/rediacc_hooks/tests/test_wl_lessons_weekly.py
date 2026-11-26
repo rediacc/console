@@ -146,17 +146,26 @@ def test_state_an_eight_day_plan_with_every_box_ticked_asks_for_a_new_one(tmp_pa
     assert h.weekly_state(str(tmp_path), TODAY)[0] == "none"
 
 
-def test_state_an_unreadable_plan_is_an_error_not_an_empty_plan(tmp_path):
+def test_state_an_unreadable_plan_is_an_error_not_an_empty_plan(tmp_path, monkeypatch):
     h = _h()
     _plant(tmp_path, _rows())
     path = _plan(tmp_path, "20261115", _rows())
     path.write_bytes(b"\xff\xfe")
     path.chmod(0)
     try:
-        if path.read_bytes() is not None:  # running as root: chmod does not bite
-            return
+        path.read_bytes()
     except OSError:
         pass
+    else:
+        # Running as root, chmod does not bite (3e7c3477.2): the read of this one path is refused the way the mode refuses it for any other uid, so the assertion below still runs.
+        real_read_text = pathlib.Path.read_text
+
+        def refusing_read_text(self, *a, **k):
+            if self == path:
+                raise PermissionError(13, "Permission denied", str(path))
+            return real_read_text(self, *a, **k)
+
+        monkeypatch.setattr(pathlib.Path, "read_text", refusing_read_text)
     try:
         h.weekly_state(str(tmp_path), TODAY)
     except OSError:

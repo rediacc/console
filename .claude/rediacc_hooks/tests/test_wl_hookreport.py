@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime
 import json
 import os
+import pathlib
 import types
 
 import pytest
@@ -166,7 +167,10 @@ def test_the_snapshot_check_refuses_age_drift_and_emptiness(tree):
     root, rows, _trap = tree
     inv = H.inventory(root)
     doc = H.snapshot(rows, inv, now=NOW - datetime.timedelta(days=15))
-    assert [k for k, _t in H.check_snapshot(doc, inv, now=NOW)] == ["hook-ledger:stale"]
+    stale = H.check_snapshot(doc, inv, now=NOW)
+    assert [k for k, _t in stale] == ["hook-ledger:stale"]
+    # 0906c47c.2: the finding's text still says why it is stale.
+    assert "is more than 14 days old" in stale[0][1], stale
     doc = H.snapshot(rows, inv, now=NOW)
     inv2 = dict(inv, block_new={"chain": "pre-bash", "lines": 3})
     assert [k for k, _t in H.check_snapshot(doc, inv2, now=NOW)] == [
@@ -311,14 +315,28 @@ def test_rotation_refuses_to_overwrite_an_archive(tree):
     assert live.exists()
 
 
-def test_rotation_never_overwrites_an_archive_that_appears_after_the_exists_check(tree):
-    """The archive is claimed atomically: an archive of the same second keeps its own bytes."""
+def test_rotation_never_overwrites_an_archive_that_appears_after_the_exists_check(
+    tree, monkeypatch
+):
+    """The archive is claimed atomically: an archive of the same second keeps its own bytes.
+
+    THE RACE, PLANTED (19df54c9.2). Every existence check of the archive answers "absent" while the file is there, which is what a second rotation sees when it writes the archive between this one's check and its claim. An exists()-then-rename claim overwrites the archive here; the atomic link refuses it.
+    """
     root, _rows, _trap = tree
     live = root.joinpath(*H.LEDGER_REL)
     taken = live.with_name("chains-%s.jsonl" % NOW.strftime("%Y%m%dT%H%M%SZ"))
     taken.write_text("first archive\n", encoding="utf-8")
-    with pytest.raises(H.ReportError):
-        H.rotate(root, max_bytes=10, now=NOW)
+    real_exists = pathlib.Path.exists
+    real_path_exists = os.path.exists
+    with monkeypatch.context() as m:
+        m.setattr(
+            pathlib.Path,
+            "exists",
+            lambda self, *a, **k: self != taken and real_exists(self, *a, **k),
+        )
+        m.setattr(os.path, "exists", lambda p: pathlib.Path(p) != taken and real_path_exists(p))
+        with pytest.raises(H.ReportError):
+            H.rotate(root, max_bytes=10, now=NOW)
     assert taken.read_text(encoding="utf-8") == "first archive\n"
     taken.unlink()  # control: with the name free the roll goes through
     archive, _deleted = H.rotate(root, max_bytes=10, now=NOW)

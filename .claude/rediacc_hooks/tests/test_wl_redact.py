@@ -98,6 +98,31 @@ def test_the_body_of_a_private_key_is_redacted_not_only_its_header(store):
     assert PEM_BODY[:16] not in text
 
 
+PEM_TAIL = "Zm9vYmFy0Q=="  # a final base64 line under 16 characters
+
+
+@pytest.mark.parametrize("newline", ["\n", "\\n"], ids=["real", "escaped"])
+def test_a_short_final_line_of_a_private_key_is_redacted(store, newline):
+    """6568fea4.3: the last body line of a real key is usually short; a PEM whose final line is under 16 characters loses it too, across real and escaped newlines."""
+    pem = newline.join(
+        ["-----BEGIN RSA PRIVATE KEY-----", PEM_BODY, PEM_TAIL, "-----END RSA PRIVATE KEY-----"]
+    )
+    S.add_item(worklist(), ME, "(%s) key: %s" % (ME, pem))
+    text = stored(store)
+    assert PEM_TAIL not in text, text
+    assert "PRIVATE KEY" not in text, text
+    assert "[redacted:private-key]" in text
+
+
+def test_control_a_short_base64_word_without_an_end_line_stays(store):
+    """6568fea4.3 control: the short-line rule needs the END line after it, so a short base64-looking word in prose after a key is kept."""
+    pem = "-----BEGIN RSA PRIVATE KEY-----\n%s\n-----END RSA PRIVATE KEY-----" % PEM_BODY
+    S.add_item(worklist(), ME, "(%s) key: %s then %s in prose" % (ME, pem, PEM_TAIL))
+    text = stored(store)
+    assert PEM_TAIL in text, text
+    assert PEM_BODY[:16] not in text
+
+
 def test_control_a_sha_a_sig8_and_an_item_id_stay_byte_identical(store):
     rid = S.add_item(worklist(), ME, CONTROL)
     S.update_item(worklist(), ME, rid, CONTROL)

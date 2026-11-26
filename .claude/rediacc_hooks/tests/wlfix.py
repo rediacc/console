@@ -142,7 +142,7 @@ def import_wl(name: str):
 
 
 # ONE PRE-IMPORTED PARENT PER PYTEST PROCESS, AND A FORK PER CASE (PLAN-ciquick-cpu.md W18). Every hook call used to be a fresh `python3 worklist.py`: an interpreter start plus about 800 ms of imports under load, of which about 310 ms is the standard library (measured 2026-11-23 with `-X importtime`), paid again by each of the suite's thousands of calls. The parent
-# below imports that standard-library set ONCE and forks a child per call; the child applies the call's environment, cwd, argv, stdin and `sys.path` exactly as a fresh interpreter would, then runs the hook as `__main__`.
+# below imports that standard-library set ONCE and forks a child per call; the child applies the call's environment, cwd, argv, stdin and `sys.path` as a fresh interpreter would (the parent's own `-c` entry, '', is left out of BASE_PATH, so the caller's cwd is never on the path), then runs the hook as `__main__`. What only an interpreter start can set (START_ONLY_KNOBS, the hash seed) is the parent's, so a case that asks for another value runs fresh.
 #
 # THE HOOK'S OWN MODULES ARE NEVER PRE-IMPORTED, and that is the line that keeps this honest. 31 `wl_*` modules read a WORKLIST_* knob into a module constant at import (`BGSWEEP_AGE_MIN = int(os.environ.get(...))` and the like), and several register atexit or signal work at import. Imported in the parent, they would freeze the parent's environment into every child. So the
 # child imports `worklist.py` and everything under `.claude` and `.ci` fresh, with the case's environment already in place; only modules from the interpreter's own library, which read no WORKLIST_* knob, come from the parent.
@@ -218,11 +218,13 @@ def child(req, out_path, err_path, in_path):
         threading._shutdown()
         atexit._run_exitfuncs()
     finally:
-        for stream in (sys.stdout, sys.stderr):
+        # A flush that fails is said on fd 2 and turns a clean exit into 1 (c0cc1b2d.4): a truncated output file must not read back under the hook's own exit code.
+        for label, stream in (("stdout", sys.stdout), ("stderr", sys.stderr)):
             try:
                 stream.flush()
-            except Exception:
-                pass
+            except Exception as exc:
+                os.write(2, ("wlfix fork child: flushing %%s failed (%%s: %%s)\n" %% (label, type(exc).__name__, exc)).encode("utf-8", "replace"))
+                code = code or 1
         os._exit(code & 0xFF)
 
 
@@ -239,6 +241,14 @@ for line in sys.stdin:
     if pid == 0:
         try:
             child(req, out_path, err_path, in_path)
+        except BaseException:
+            # A failure before the hook runs (chdir, the environment, the fd setup) lands in the case's stderr file with its traceback, never as a bare rc 70 (c0cc1b2d.3).
+            try:
+                with open(err_path, "a", encoding="utf-8") as handle:
+                    handle.write("wlfix fork child failed before the hook ran:\n")
+                    traceback.print_exc(file=handle)
+            finally:
+                os._exit(70)
         finally:
             os._exit(70)
     _, status = os.waitpid(pid, 0)
@@ -257,6 +267,9 @@ shutil.rmtree(SCRATCH, ignore_errors=True)
 # THE PARENT'S OWN ENVIRONMENT IS THE PYTEST PROCESS'S AS IMPORTED, never the case's that happens to start it. A case that monkeypatches the fixture's env into os.environ (test_wl_stop_speed_reads.py's `memo`, TMPDIR among it) and is the first to call a hook started the parent with that TMPDIR, so SCRATCH lived inside that case's fixture directory; once the directory went, the next case's request died writing `in` and read as "the wlfix fork parent died". Each child still gets its case's environment from the request.
 _PARENT_ENV = dict(os.environ)
 
+# THE KNOBS AN INTERPRETER READS ONLY AT START. A forked child keeps the parent's: its hash secret is fixed before any request arrives (c0cc1b2d.2). A case that sets one to a value the parent does not hold runs as a fresh `python3 <hook>` instead, so it gets what a fresh interpreter gives. `random` and `tempfile` need no such route: `random` reseeds in a forked child (os.register_at_fork) and tempfile's name sequence rebuilds its generator when the pid changes.
+START_ONLY_KNOBS = ("PYTHONHASHSEED",)
+
 
 class _ForkParent:
     """The pre-imported parent of this pytest process, started on first use and stopped at exit."""
@@ -266,6 +279,19 @@ class _ForkParent:
 
     @classmethod
     def run(cls, argv: list[str], stdin: str, env: dict[str, str]) -> tuple[int, str, str]:
+        if any(env.get(k) != _PARENT_ENV.get(k) for k in START_ONLY_KNOBS):
+            fresh = subprocess.run(
+                [sys.executable, *argv],
+                input=stdin,
+                env=env,
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="surrogateescape",
+                check=False,
+            )
+            return fresh.returncode, fresh.stdout, fresh.stderr
         if cls.proc is None or cls.proc.poll() is not None:
             cls.proc = subprocess.Popen(
                 [sys.executable, "-c", _FORK_SERVER],

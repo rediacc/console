@@ -5,6 +5,7 @@ EVERY TRIGGER CASE HAS ITS INVERSE, differing by one planted fact: a commit olde
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import io
 import json
@@ -369,8 +370,16 @@ def test_evaluation_leaves_the_worktree_and_index_byte_identical(tmp_path):
 
 
 def test_the_keys_are_advisories_and_not_core():
+    checks = json.loads(
+        (STOP_DIR.parents[1] / "config" / "effort.json").read_text(encoding="utf-8")
+    )["checks"]
     for key in ("commit-remind", "receipt-behind", "ci-hold"):
         assert key not in wl_standdown.CORE, "%s must not be a blocking core key" % key
+        # 09af23fb.3: each is declared an advisory in the effort table, with an advise level and no block level.
+        entry = checks.get(key)
+        assert isinstance(entry, dict), "%s has no effort.json entry" % key
+        assert "advise" in entry, entry
+        assert "block" not in entry, entry
 
 
 def test_the_stop_wiring_uses_the_allow_queue_and_never_vadd():
@@ -526,5 +535,38 @@ def test_remind_min_does_not_import_the_stop_battery():
     """196fda72.1: the post-tool member's read stays cheap, so wl_uncommitted holds the constant and never imports wl_checks; wl_checks takes its value from it."""
     source = (STOP_DIR / "wl_uncommitted.py").read_text(encoding="utf-8")
     assert "import wl_checks" not in source
+    assert _imports_of(source, "wl_checks") == []
     checks = importlib.import_module("wl_checks")
     assert checks.COMMIT_REMIND_MIN == U.COMMIT_REMIND_MIN == 15
+
+
+def _imports_of(source: str, module: str) -> list[str]:
+    """Every spelling in `source` that loads `module`: `import m`, `from m import x`, `importlib.import_module("m")` and `__import__("m")` (964fbdbe.2: a substring check saw only the first)."""
+    hits = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            hits += [a.name for a in node.names if a.name.split(".")[0] == module]
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == module:
+            hits.append("from %s" % node.module)
+        elif isinstance(node, ast.Call) and ast.unparse(node.func).endswith(
+            ("import_module", "__import__")
+        ):
+            first = node.args[0] if node.args else None
+            if isinstance(first, ast.Constant) and str(first.value).split(".")[0] == module:
+                hits.append(ast.unparse(node))
+    return hits
+
+
+@pytest.mark.parametrize(
+    "planted",
+    [
+        "import wl_checks\n",
+        "from wl_checks import COMMIT_REMIND_MIN\n",
+        "import importlib\nm = importlib.import_module('wl_checks')\n",
+        "m = __import__('wl_checks')\n",
+    ],
+)
+def test_control_every_spelling_of_the_battery_import_is_seen(planted):
+    """964fbdbe.2 control: each way of reintroducing the import is caught, and an unrelated import is not."""
+    assert _imports_of(planted, "wl_checks")
+    assert _imports_of("import wl_core\nfrom wl_store import x\n", "wl_checks") == []

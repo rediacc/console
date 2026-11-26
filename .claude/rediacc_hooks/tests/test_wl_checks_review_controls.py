@@ -5,9 +5,11 @@ The segments of `run_stop` take their locals as a dict (`ns`), so a test hands o
 
 from __future__ import annotations
 
+import ast
 import inspect
 import json
 import re
+import textwrap
 import types
 
 import pytest
@@ -359,6 +361,53 @@ def test_the_judge_segment_names_failures_after_the_judge_readers_ran():
     naming = body.index("name_read_failures(", facts)
     assert naming > facts
     assert body.index("if err is not None:", facts) > naming
+
+
+def _judge_naming_siblings(source: str) -> list[str]:
+    """Each statement list in `source` that holds an `if err is not None:`, rendered as the kinds of its statements: "naming" for an `if READ_FAILURES:` whose body is only the `name_read_failures(...)` call, "err" for the verdict branch, "-" otherwise."""
+    tree = ast.parse(textwrap.dedent(source))
+    out = []
+    for node in ast.walk(tree):
+        for field in ("body", "orelse", "finalbody"):
+            stmts = getattr(node, field, None)
+            if not isinstance(stmts, list):
+                continue
+            kinds = []
+            for stmt in stmts:
+                text = ast.unparse(stmt) if isinstance(stmt, ast.If) else ""
+                if text.startswith("if READ_FAILURES:") and len(stmt.body) == 1 and not stmt.orelse:
+                    call = stmt.body[0]
+                    is_call = isinstance(call, ast.Expr) and isinstance(call.value, ast.Call)
+                    name = ast.unparse(call.value.func) if is_call else ""
+                    kinds.append("naming" if name == "name_read_failures" else "-")
+                elif text.startswith("if err is not None:"):
+                    kinds.append("err")
+                else:
+                    kinds.append("-")
+            if "err" in kinds:
+                out.append(" ".join(kinds))
+    return out
+
+
+def test_the_judge_naming_is_the_statement_right_before_the_verdict_branch():
+    """d2f0573c.1: the naming call is its own `if READ_FAILURES:` statement, the sibling directly ahead of `if err is not None:` in the same block, so it runs on every judge answer; a call moved into an unrelated or unreached branch is no such sibling."""
+    rows = _judge_naming_siblings(inspect.getsource(wl_checks._stop_judge))
+    assert any("naming err" in row for row in rows), rows
+
+
+def test_control_a_naming_call_nested_away_from_the_verdict_is_not_the_sibling():
+    """d2f0573c.1 control: the same call buried in a branch that never runs is refused by the check above."""
+    planted = (
+        "def f():\n"
+        "    if False:\n"
+        "        if READ_FAILURES:\n"
+        "            name_read_failures(a, b, c)\n"
+        "    if err is not None:\n"
+        "        pass\n"
+    )
+    rows = _judge_naming_siblings(planted)
+    assert rows == ["- err"], rows
+    assert not any("naming err" in row for row in rows)
 
 
 # ---- e31b42fa.1: the ready-ticks comment says what the filter counts ------------

@@ -5,8 +5,9 @@ The control row is the one that holds (green receipt, HEAD unpushed); every othe
 
 from __future__ import annotations
 
+import datetime
 import json
-import os
+import pathlib
 import subprocess
 import types
 
@@ -208,12 +209,28 @@ def test_a_running_vm_check_still_holds_the_lease(repo, monkeypatch):
 
 
 def test_a_running_ci_quick_no_longer_holds_the_lease(repo, tmp_path, monkeypatch):
-    """A live ci:quick lock (this process as owner) changes nothing: the lease still blocks."""
-    monkeypatch.setenv("CI_QUICK_CLONE_DIR", str(tmp_path / "ciq-clone"))
-    (tmp_path / "ciq-clone.lock").write_text(
-        json.dumps({"pid": os.getpid(), "at": "2999-01-01T00:00:00.000Z"}), encoding="utf-8"
-    )
-    queued, blocked = _worktree_check(monkeypatch, repo)
+    """A live ci:quick lock changes nothing: the lease still blocks.
+
+    THE OWNER IS A REAL ci:quick SHAPE (aff2b777.2): an interpreter running `scripts/ci-runner/quick-clone.ts` from this checkout with a fresh `at`, the very process the removed reader (`ci_quick_running`, dropped by 65f35528be) held the lease for. A lock owned by the pytest process could not tell a reintroduced reader from none.
+    """
+    script = repo / "scripts" / "ci-runner" / "quick-clone.ts"
+    script.parent.mkdir(parents=True, exist_ok=True)
+    script.write_text("import time\ntime.sleep(120)\n", encoding="utf-8")
+    proc = subprocess.Popen(["python3", "scripts/ci-runner/quick-clone.ts"], cwd=repo)
+    try:
+        raw = pathlib.Path("/proc/%d/cmdline" % proc.pid).read_bytes()
+        words = [w.decode() for w in raw.split(b"\0") if w]
+        # Control: the hook's own argv reader takes the planted owner for a ci:quick run.
+        assert CK.argv_runs(words, ("scripts/ci-runner/quick-clone.ts",)), words
+        monkeypatch.setenv("CI_QUICK_CLONE_DIR", str(tmp_path / "ciq-clone"))
+        now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        (tmp_path / "ciq-clone.lock").write_text(
+            json.dumps({"pid": proc.pid, "at": now}), encoding="utf-8"
+        )
+        queued, blocked = _worktree_check(monkeypatch, repo)
+    finally:
+        proc.kill()
+        proc.wait()
     assert [b[0] for b in blocked] == ["worktree-unlanded"]
     assert not any("ci:quick" in text for text in queued)
 

@@ -301,8 +301,17 @@ def test_the_newest_report_decides_not_an_older_final_looking_one() -> None:
 
 def test_stuck_shell_survives_standdown_in_every_profile_set() -> None:
     std = wlfix.import_wl("wl_standdown")
+    checks = wlfix.import_wl("wl_checks")
     assert "stuck-shell" in std.CORE
-    assert "stuck-shell-not-a-key" not in std.CORE
+    # 31a95127.3: every stand-down profile the stop can pick keeps the key, read through the stop's own predicate.
+    assert len(std.PROFILES) >= 3
+    for profile in std.PROFILES:
+        assert checks.stand_down_keeps(profile, "stuck-shell", False, False), profile
+    # Control: a key named in no set is stood down by some profile, so the loop above can fail.
+    assert not all(
+        checks.stand_down_keeps(profile, "stuck-shell-not-a-key", False, False)
+        for profile in std.PROFILES
+    )
 
 
 # ---- live work past the bound is owned, never a TaskStop order (2026-11-26) ----------------------

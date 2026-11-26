@@ -327,6 +327,47 @@ def test_apply_ticks_refuses_a_done_row_over_a_partial_investigation(wl):
     assert "records partial, owed code" in got.out, got.out
     assert "- [ ] O1" in (wl.proj / "agent" / "plans" / "PLAN-fx.md").read_text(encoding="utf-8")
     assert len(PB.pending_rows(wl.proj, ME)) == 1
+    # b15f6cb6.1: once the owed work is in and the lead re-investigates the box as present, the same kept row applies.
+    again = _investigate(
+        wl, sig, head, "present", "the owed timing clause is met on the landed tree"
+    )
+    assert again.rc == 0, (again.out, again.err)
+    got = wl.cli("--apply-ticks", ME, "--write")
+    assert got.rc == 0, (got.rc, got.out, got.err)
+    assert "1 ticked" in got.out, got.out
+    assert "- [x] O1" in (wl.proj / "agent" / "plans" / "PLAN-fx.md").read_text(encoding="utf-8")
+    assert PB.pending_rows(wl.proj, ME) == []
+
+
+def _investigate(wl, sig, head, verdict, why):
+    return wl.cli(
+        "--plan-investigate",
+        ME,
+        "agent/plans/PLAN-fx.md",
+        sig,
+        verdict,
+        "commit:" + head[:10],
+        "fileline:base.txt:1",
+        "--write",
+        "--",
+        why,
+    )
+
+
+def test_apply_ticks_over_an_absent_investigation(wl):
+    """b15f6cb6.1: a done row over a recorded absent verdict, the case the partial test leaves out."""
+    sig = seed_wl(wl)
+    head = wl.git("rev-parse", "HEAD").stdout.strip()
+    inv = _investigate(wl, sig, head, "absent", "nothing of the box is on the landed tree yet")
+    assert inv.rc == 0, (inv.out, inv.err)
+    PB.queue_ticks(
+        wl.proj, ME, "a00000000000000b5", tick_rows(sig, "done", close="see base.txt:1"), "x"
+    )
+    got = wl.cli("--apply-ticks", ME, "--write")
+    assert got.rc == 1, (got.rc, got.out, got.err)
+    assert "records absent; re-investigate" in got.out, got.out
+    assert "- [ ] O1" in (wl.proj / "agent" / "plans" / "PLAN-fx.md").read_text(encoding="utf-8")
+    assert len(PB.pending_rows(wl.proj, ME)) == 1
 
 
 def test_apply_ticks_unknown_flag_is_refused(wl):
@@ -548,3 +589,64 @@ def test_control_the_fork_parent_environment_is_the_pytest_process_as_imported(m
     env = _env_the_fork_parent_starts_with(monkeypatch)
     assert env.get("PATH") == wlfix._PARENT_ENV.get("PATH")
     assert env.get("PATH")
+
+
+def _hook(tmp_path, body: str) -> str:
+    path = tmp_path / "probe_hook.py"
+    path.write_text(body, encoding="utf-8")
+    return str(path)
+
+
+def _case_env() -> dict[str, str]:
+    return {k: v for k, v in wlfix._PARENT_ENV.items() if k in ("PATH", "HOME", "LANG")}
+
+
+def test_control_a_forked_hook_answers_its_output_and_code(tmp_path):
+    """c0cc1b2d.3/.4 control: a plain hook comes back with its own stdout, stderr and exit code."""
+    hook = _hook(
+        tmp_path, "import sys\nprint('out-line')\nprint('err-line', file=sys.stderr)\nsys.exit(3)\n"
+    )
+    rc, out, err = wlfix._ForkParent.run([hook], "", _case_env())
+    assert (rc, out, err) == (3, "out-line\n", "err-line\n")
+
+
+def test_a_failure_before_the_hook_runs_carries_its_traceback(tmp_path):
+    """c0cc1b2d.3: an environment the child cannot apply (a non-string value) fails before the hook, and the case reads the traceback, not a bare rc 70 with an empty stderr."""
+    hook = _hook(tmp_path, "print('never')\n")
+    env: dict = dict(_case_env())
+    env["WLFIX_BAD_VALUE"] = 7
+    rc, out, err = wlfix._ForkParent.run([hook], "", env)
+    assert rc == 70, (rc, out, err)
+    assert "never" not in out
+    assert "failed before the hook ran" in err, err
+    assert "TypeError" in err, err
+
+
+def test_a_failed_flush_is_said_and_is_not_a_clean_exit(tmp_path):
+    """c0cc1b2d.4: a stdout whose flush raises turns rc 0 into 1 and names the stream on stderr."""
+    hook = _hook(
+        tmp_path,
+        "import sys\n"
+        "class Broken:\n"
+        "    def write(self, s):\n"
+        "        return len(s)\n"
+        "    def flush(self):\n"
+        "        raise OSError(28, 'No space left on device')\n"
+        "sys.stdout = Broken()\n",
+    )
+    rc, _out, err = wlfix._ForkParent.run([hook], "", _case_env())
+    assert rc == 1, (rc, err)
+    assert "flushing stdout failed (OSError" in err, err
+
+
+def test_a_case_hash_seed_is_honoured_as_a_fresh_interpreter_would(tmp_path):
+    """c0cc1b2d.2: a forked child keeps the parent's hash secret, so a case setting PYTHONHASHSEED runs fresh and hashes as `python3` with that seed does."""
+    hook = _hook(tmp_path, "print(hash('wlfix-seed-probe'))\n")
+    seed = "424242" if wlfix._PARENT_ENV.get("PYTHONHASHSEED") != "424242" else "424243"
+    env = dict(_case_env(), PYTHONHASHSEED=seed)
+    want = subprocess.run(
+        [sys.executable, hook], env=env, capture_output=True, text=True, check=True
+    ).stdout
+    rc, out, err = wlfix._ForkParent.run([hook], "", env)
+    assert rc == 0, err
+    assert out == want

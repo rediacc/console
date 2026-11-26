@@ -303,6 +303,53 @@ def test_main_checkout_tasks_failure_is_named_in_the_landing_text():
     assert 'note_read_failure("landing-stack-tasks", exc)' in SOURCE
     assert "_ls_block = _ls_block" in SOURCE
     assert "_ls_held = _ls_held" in SOURCE
+    assert _note_reaches_render(SOURCE) == {"_ls_block": "vadd", "_ls_held": "outq_add"}
+
+
+def _note_reaches_render(source: str) -> dict[str, str]:
+    """For each of `_ls_block` / `_ls_held`: the call that renders it (`vadd` or `outq_add`, with the variable as an argument) in a statement AFTER the one appending `_ls_tasks_note` to it, in the same block. A variable whose note is appended but never rendered afterwards is absent (cc68eafa.2)."""
+    found: dict[str, str] = {}
+    for node in ast.walk(ast.parse(source)):
+        stmts = getattr(node, "body", None)
+        if not isinstance(stmts, list):
+            continue
+        for i, stmt in enumerate(stmts):
+            if not isinstance(stmt, ast.If) or "_ls_tasks_note" not in ast.unparse(stmt.test):
+                continue
+            targets = {
+                t.id
+                for s in stmt.body
+                if isinstance(s, ast.Assign)
+                for t in s.targets
+                if isinstance(t, ast.Name)
+            }
+            for var in targets & {"_ls_block", "_ls_held"}:
+                for later in stmts[i + 1 :]:
+                    for call in ast.walk(later):
+                        if not isinstance(call, ast.Call):
+                            continue
+                        name = ast.unparse(call.func)
+                        if name in ("vadd", "outq_add") and any(
+                            isinstance(a, ast.Name) and a.id == var for a in call.args
+                        ):
+                            found.setdefault(var, name)
+    return found
+
+
+def test_control_a_note_appended_after_the_render_is_not_rendered():
+    """cc68eafa.2 control: the note appended after the render calls reaches neither; the check above would fail on it."""
+    planted = (
+        "def f():\n"
+        "    if _ls_block:\n"
+        "        vadd('landing-stack', False, _ls_block)\n"
+        "    if _ls_held:\n"
+        "        outq_add(w, s, d, 'landing-stack', _ls_held, 1)\n"
+        "    if _ls_block and _ls_tasks_note:\n"
+        "        _ls_block = _ls_block + _ls_tasks_note\n"
+        "    if _ls_held and _ls_tasks_note:\n"
+        "        _ls_held = _ls_held + _ls_tasks_note\n"
+    )
+    assert _note_reaches_render(planted) == {}
 
 
 def test_the_advisory_is_not_a_violation():

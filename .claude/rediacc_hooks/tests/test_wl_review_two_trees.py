@@ -434,7 +434,9 @@ def test_prreview_answer_control_stays_in_the_main_checkout_when_typed_there(tmp
     assert _answer_root(tmp_path, monkeypatch, main, landing) == main
 
 
-def test_load_config_never_raises_on_a_damaged_config_so_no_review_skip_needs_no_handler(tmp_path):
+def test_load_config_never_raises_on_a_damaged_config_so_no_review_skip_needs_no_handler(
+    tmp_path, monkeypatch
+):
     """b9c7fd2d.4: `_no_review_skip` calls load_config without a handler on the premise it falls back to the defaults. Controls: an unreadable and a non-object config both answer the defaults, and the skip itself still answers a bool."""
     policy = R._load_commit_policy(R.CONSOLE_ROOT)
     cfg_path = policy.config_path(tmp_path)
@@ -446,6 +448,18 @@ def test_load_config_never_raises_on_a_damaged_config_so_no_review_skip_needs_no
     cfg_path.mkdir()  # a directory where the file belongs: OSError, not a crash
     assert policy.load_config(str(tmp_path)) == policy.DEFAULTS
     assert R._no_review_skip(R.CONSOLE_ROOT, "docs: x", ["README.md"]) is False
+    # 11e2a380.2: the skip itself reads the DAMAGED config at tmp_path (the policy module is the console's, the root is the scratch one), with a `[no-review]` subject so the config read is reached; every damage answers what no config at all answers.
+    monkeypatch.setattr(R, "_load_commit_policy", lambda _root: policy)
+    subject, paths = "docs: x [no-review]", ["README.md"]
+    cfg_path.rmdir()
+    baseline = R._no_review_skip(str(tmp_path), subject, paths)
+    assert isinstance(baseline, bool)
+    for body in ("{ not json", "[1, 2]", ""):
+        cfg_path.write_text(body, encoding="utf-8")
+        assert R._no_review_skip(str(tmp_path), subject, paths) is baseline, body
+    cfg_path.unlink()
+    cfg_path.mkdir()
+    assert R._no_review_skip(str(tmp_path), subject, paths) is baseline
 
 
 def test_a_refused_landing_mark_says_nothing_was_written(tmp_path):

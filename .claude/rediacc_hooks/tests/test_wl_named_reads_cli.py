@@ -134,53 +134,72 @@ def test_a_clean_state_write_says_nothing(wl):
     assert "could not be refreshed" not in got.err
 
 
-def test_the_cli_and_hook_hold_no_unnamed_broad_handler():
-    """The Context 6 rule over these two files: no `except Exception` that ends in an empty value without using or re-raising the exception."""
+def _silent_handlers(source: str, name: str) -> list[str]:
+    """`<name>:<line>` for each `except Exception` (or bare, or BaseException) in `source` that ends in an empty value without using or re-raising the exception, unless the line above carries `swallowed-failure-ok`."""
 
     def empty(v):
         return v is None or (isinstance(v, ast.Constant) and v.value in (None, "", 0, False))
 
     bad = []
+    lines = source.split("\n")
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.ExceptHandler):
+            continue
+        names = (
+            []
+            if node.type is None
+            else [node.type]
+            if not isinstance(node.type, ast.Tuple)
+            else list(node.type.elts)
+        )
+        if node.type is not None and not any(
+            isinstance(n, ast.Name) and n.id in ("Exception", "BaseException") for n in names
+        ):
+            continue
+        body = list(node.body)
+        walked = [n for st in body for n in ast.walk(st)]
+        if any(isinstance(n, ast.Raise) for n in walked):
+            continue
+        if node.name and any(isinstance(n, ast.Name) and n.id == node.name for n in walked):
+            continue
+        last = body[-1]
+        silent = (
+            (isinstance(last, ast.Return) and empty(last.value))
+            or isinstance(last, (ast.Pass, ast.Continue))
+            or (isinstance(last, ast.Assign) and empty(last.value))
+        )
+        waived = node.lineno >= 2 and "swallowed-failure-ok" in lines[node.lineno - 2]
+        if silent and not waived:
+            bad.append("%s:%d" % (name, node.lineno))
+    return bad
+
+
+def test_the_cli_and_hook_hold_no_unnamed_broad_handler():
+    """The Context 6 rule over these two files: no `except Exception` that ends in an empty value without using or re-raising the exception."""
+    bad = []
     for path in (wlfix.STOP_DIR / "worklist.py", wlfix.STOP_DIR / "wl_cli.py"):
-        lines = path.read_text(encoding="utf-8").split("\n")
-        for node in ast.walk(ast.parse("\n".join(lines))):
-            if not isinstance(node, ast.ExceptHandler):
-                continue
-            names = (
-                []
-                if node.type is None
-                else [node.type]
-                if not isinstance(node.type, ast.Tuple)
-                else list(node.type.elts)
-            )
-            if node.type is not None and not any(
-                isinstance(n, ast.Name) and n.id in ("Exception", "BaseException") for n in names
-            ):
-                continue
-            body = list(node.body)
-            walked = [n for st in body for n in ast.walk(st)]
-            if any(isinstance(n, ast.Raise) for n in walked):
-                continue
-            if node.name and any(isinstance(n, ast.Name) and n.id == node.name for n in walked):
-                continue
-            last = body[-1]
-            silent = (
-                (isinstance(last, ast.Return) and empty(last.value))
-                or isinstance(last, (ast.Pass, ast.Continue))
-                or (isinstance(last, ast.Assign) and empty(last.value))
-            )
-            waived = "swallowed-failure-ok" in lines[node.lineno - 2]
-            if silent and not waived:
-                bad.append("%s:%d" % (path.name, node.lineno))
+        bad += _silent_handlers(path.read_text(encoding="utf-8"), path.name)
     assert bad == []
 
 
-def test_control_the_scan_sees_a_planted_silent_handler():
-    """The scan in the test above can fail: the same rule over a planted source flags it."""
-    tree = ast.parse("try:\n    x()\nexcept Exception:\n    pass\n")
-    handler = next(n for n in ast.walk(tree) if isinstance(n, ast.ExceptHandler))
-    assert isinstance(handler.body[-1], ast.Pass)
-    assert handler.name is None
+@pytest.mark.parametrize(
+    ("source", "want"),
+    [
+        ("try:\n    x()\nexcept Exception:\n    pass\n", ["p.py:3"]),
+        ("try:\n    x()\nexcept (OSError, Exception):\n    y = None\n", ["p.py:3"]),
+        (
+            "def f():\n    try:\n        x()\n    except BaseException:\n        return ''\n",
+            ["p.py:4"],
+        ),
+        ("try:\n    x()\nexcept Exception as exc:\n    log(exc)\n", []),
+        ("try:\n    x()\nexcept Exception:\n    raise\n", []),
+        ("try:\n    x()\nexcept OSError:\n    pass\n", []),
+        ("try:\n    x()\n# swallowed-failure-ok: a probe\nexcept Exception:\n    pass\n", []),
+    ],
+)
+def test_control_the_scan_sees_a_planted_silent_handler(source, want):
+    """daf9c7a5.1: the SAME scan the test above runs, over planted sources: a silent broad handler is flagged, a named, re-raised, narrow or waived one is not."""
+    assert _silent_handlers(source, "p.py") == want
 
 
 @pytest.fixture(autouse=True)

@@ -167,16 +167,33 @@ def _land_record():
     }
 
 
-def test_handover_names_an_unreadable_lease(tmp_path, monkeypatch):
-    monkeypatch.setattr(wl_worktrees, "read_world", _raise)
-    found = wl_handover.stop_findings(
+def _unreadable_lease_findings(tmp_path, m):
+    """The land findings with `read_world` raising, on a private UNREADABLE map (cbafdaaf.2: the module-level one outlived the test)."""
+    m.setattr(wl_handover, "UNREADABLE", {})
+    m.setattr(wl_worktrees, "read_world", _raise)
+    return wl_handover.stop_findings(
         {"h1": _land_record()},
         wl_handover.ROLE_LANDING,
         landed=lambda lid: wl_handover.lease_landed(tmp_path, lid),
     )
+
+
+def test_handover_names_an_unreadable_lease(tmp_path, monkeypatch):
+    found = _unreadable_lease_findings(tmp_path, monkeypatch)
     assert len(found) == 1
     assert found[0][1] is True
     assert BOOM in found[0][2]
+
+
+def test_handover_an_unreadable_lease_leaves_no_reason_behind(tmp_path, monkeypatch):
+    """cbafdaaf.2: once the test's seams are undone, a later None state for the same lease is not handed a stale reason."""
+    with monkeypatch.context() as m:
+        assert BOOM in _unreadable_lease_findings(tmp_path, m)[0][2]
+    assert "lease-1" not in wl_handover.UNREADABLE
+    found = wl_handover.stop_findings(
+        {"h1": _land_record()}, wl_handover.ROLE_LANDING, landed=lambda _lid: None
+    )
+    assert "could not be read" not in found[0][2]
 
 
 def test_handover_control_a_landed_lease_is_not_a_finding():

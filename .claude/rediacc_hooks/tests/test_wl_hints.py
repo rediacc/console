@@ -569,7 +569,7 @@ def test_source_family_merges_judge_spellings_and_leaves_others_apart():
     assert h.source_family("brand-new-key") == "brand-new-key"
 
 
-def test_cluster_counts_fold_spellings_into_one_cluster_with_a_threshold():
+def test_cluster_counts_fold_spellings_into_one_cluster_with_a_threshold(monkeypatch):
     h = _hints()
     rows = [
         {"id": "a1", "source": "judge"},
@@ -582,8 +582,13 @@ def test_cluster_counts_fold_spellings_into_one_cluster_with_a_threshold():
     assert h.cluster_counts(rows)["judge"] == ["a1", "a2", "a3"]
     # fixture: the three spellings reach the threshold of 3 only once folded
     assert h.clusters(rows) == [("judge", ["a1", "a2", "a3"])]
-    # control: with no folding table entry, split spellings would each stay under 3
-    assert all(len(ids) < 3 for k, ids in h.cluster_counts(rows).items() if k != "judge")
+    # control (4a8a3956.1): with no folding table, the three judge spellings are three families of one each, so no cluster reaches the threshold
+    monkeypatch.setattr(h, "SOURCE_FAMILIES", {})
+    unfolded = h.cluster_counts(rows)
+    assert unfolded["judge"] == ["a1"]
+    assert unfolded["stop-judge"] == ["a2"]
+    assert unfolded["stop-gate-judge"] == ["a3"]
+    assert h.clusters(rows) == []
 
 
 def test_every_family_target_is_a_stable_fixed_point():

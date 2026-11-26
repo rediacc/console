@@ -586,9 +586,9 @@ def test_the_cut_short_note_counts_the_commits_of_a_found_successor(tmp_path, mo
 
 
 @pytest.fixture
-def _shallow_walk(monkeypatch):
-    # The old lookup walked a fixed depth below the fix. A depth of 2 puts every copy below past it, so a pass here is the branch-wide search and not the walk.
-    monkeypatch.setattr(R, "REBASED_COPY_DEPTH", 2, raising=False)
+def _branch_wide_search():
+    # The old lookup walked a fixed depth below the fix (`REBASED_COPY_DEPTH`); it is gone, so there is no depth left to shrink (cd54ad27.2). The fixture states that, and clears the patch-id cache so each test computes its own copies.
+    assert not hasattr(R, "REBASED_COPY_DEPTH"), "a fixed-depth walk is back in wl_review"
     R.__dict__.get("_COPY_PATCH_IDS", {}).clear()
 
 
@@ -655,7 +655,7 @@ def _rebased_world(tmp_path):
     return repo, reviewed, pid, copy, moved
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_a_fix_far_above_a_rebased_copy_is_admitted_by_patch_id(tmp_path):
     repo, reviewed, pid, _copy, _moved = _rebased_world(tmp_path)
     fid = _copy_record(repo, reviewed, pid)
@@ -665,7 +665,7 @@ def test_a_fix_far_above_a_rebased_copy_is_admitted_by_patch_id(tmp_path):
     assert _copy_resolution(repo, reviewed).startswith("fixed %s | %s " % (fix, ME))
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_control_a_fix_that_does_not_descend_from_the_copy_is_refused(tmp_path):
     repo, reviewed, pid, copy, moved = _rebased_world(tmp_path)
     fid = _copy_record(repo, reviewed, pid)
@@ -695,7 +695,7 @@ def _cherry_world(tmp_path, with_line):
     return repo, reviewed, pid, copy
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_a_cherry_picked_copy_is_found_by_its_x_line(tmp_path):
     repo, reviewed, pid, _copy = _cherry_world(tmp_path, with_line=True)
     fid = _copy_record(repo, reviewed, pid)
@@ -705,7 +705,7 @@ def test_a_cherry_picked_copy_is_found_by_its_x_line(tmp_path):
     assert _copy_resolution(repo, reviewed).startswith("fixed %s" % fix)
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_control_without_the_x_line_the_commit_is_not_on_the_branch(tmp_path):
     repo, reviewed, pid, _copy = _cherry_world(tmp_path, with_line=False)
     fid = _copy_record(repo, reviewed, pid)
@@ -714,7 +714,7 @@ def test_control_without_the_x_line_the_commit_is_not_on_the_branch(tmp_path):
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_a_submodule_record_finds_the_copy_in_the_submodule(tmp_path):
     sub_src = tmp_path / "sub_src"
     _copy_init(sub_src)
@@ -752,7 +752,7 @@ def _dropped_world(tmp_path):
     return repo, reviewed, pid
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_a_dropped_commit_closes_as_not_a_bug_with_a_computed_verdict(tmp_path):
     repo, reviewed, pid = _dropped_world(tmp_path)
     fid = _copy_record(repo, reviewed, pid)
@@ -767,7 +767,7 @@ def test_a_dropped_commit_closes_as_not_a_bug_with_a_computed_verdict(tmp_path):
     assert R.RESOLUTION_BY_KIND["not-a-bug"].match(resolution)
 
 
-@pytest.mark.usefixtures("_shallow_walk")
+@pytest.mark.usefixtures("_branch_wide_search")
 def test_control_a_commit_on_the_branch_still_needs_not_a_bug_evidence(tmp_path):
     repo, reviewed, pid, _copy, _moved = _rebased_world(tmp_path)
     fid = _copy_record(repo, reviewed, pid)
