@@ -238,8 +238,15 @@ function buildSandbox(): void {
   rmSync(SANDBOX, { recursive: true, force: true });
   mkdirSync(SANDBOX, { recursive: true });
   cpSync(join(PKG, 'src'), join(SANDBOX, 'src'), { recursive: true });
-  for (const f of ['vitest.config.ts', 'package.json']) {
-    if (existsSync(join(PKG, f))) cpSync(join(PKG, f), join(SANDBOX, f));
+  if (existsSync(join(PKG, 'package.json'))) {
+    cpSync(join(PKG, 'package.json'), join(SANDBOX, 'package.json'));
+  }
+  // The config is RE-EXPORTED, never copied: it resolves its globalSetup and module cache by URLs relative to its own file (`../../scripts/lib/vitest-run-tmp.ts`), so a copy one directory deeper points them at a path that does not exist and the control fails with ERR_LOAD_URL. `--root SANDBOX` still roots `include` and `setupFiles` in the sandbox.
+  if (existsSync(join(PKG, 'vitest.config.ts'))) {
+    writeFileSync(
+      join(SANDBOX, 'vitest.config.ts'),
+      "export { default } from '../vitest.config.ts';\n"
+    );
   }
   pristine.clear();
   for (const m of [...MUTANTS, NO_OP_MUTANT]) {

@@ -98,6 +98,8 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.housekeeping.cleanup_versions", "aws"),
     ("rediacc_ci.deploy.sync_media_to_r2", "aws"),
     ("rediacc_ci.deploy.sync_media_from_r2", "aws"),
+    # The AI10 model publisher (5dc50111a5): it uploads the pinned Whisper files to the media bucket through `aws s3`.
+    ("rediacc_ci.ops.publish_models", "aws"),
     ("rediacc_ci.deploy.upload_to_r2", "aws"),
     ("rediacc_ci.ops.scrub_sentinel", "aws"),
     # PLAN-cd-errors-in-ci W4: ci.yml and cd-v2.yml run it as a module, and it lists R2 through `aws s3api` (cd_preflight.py:286).
