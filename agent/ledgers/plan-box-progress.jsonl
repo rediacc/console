@@ -109,3 +109,5 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-forensics-reports.md","sig":"28cde5ec","clause":"all","state":"live-owed","ref":"released #a3e53611","at":"2026-11-26T06:19:08Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"457c03cd","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #52aacbd1","at":"2026-11-26T07:18:44Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-ciquick-cpu.md","sig":"64e50145","clause":"all","state":"live-owed","ref":"released #f5f6a1df","at":"2026-11-26T09:17:47Z"}

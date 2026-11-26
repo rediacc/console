@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 152 | 8 | 9 | 31280 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 153 | 7 | 10 | 31472 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 134 | 5 | 10 | 24928 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 98 | 3 | 6 | 16463 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 99 | 3 | 7 | 16669 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-detection.md` | approved | 133 | 5 | 10 | 25119 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 144 | 4 | 13 | 33674 |
-| `agent/plans/PLAN-forensics-reports.md` | approved | 122 | 4 | 10 | 24285 |
+| `agent/plans/PLAN-forensics-reports.md` | approved | 123 | 3 | 11 | 24577 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
@@ -560,7 +560,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 713 | 15 | 66 | 132657 |
-| `agent/plans/PLAN-host-temp-disposal.md` | approved | 119 | 19 | 0 | 30201 |
+| `agent/plans/PLAN-host-temp-disposal.md` | approved | 122 | 16 | 3 | 30983 |
 | `agent/plans/PLAN-hostinger-to-bench.md` | approved | 113 | 7 | 15 | 25093 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |

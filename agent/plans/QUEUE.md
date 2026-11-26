@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1491 of 1891 boxes done (78%).
+Promoted: 11 of 100 plans done, 1496 of 1891 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -137,7 +137,7 @@ Promoted: 11 of 100 plans done, 1491 of 1891 boxes done (78%).
 | 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
 | 76 | PLAN-rmcp-agent-grants.md | 15/19 | 4 open |
 | 77 | PLAN-console-ai-providers.md | 13/15 | 2 open |
-| 78 | PLAN-console-ai-assistant.md | 9/17 | 8 open |
+| 78 | PLAN-console-ai-assistant.md | 10/17 | 7 open |
 | 79 | PLAN-console-ai-credits.md | 10/15 | 5 open |
 | 80 | PLAN-console-ai-feedback.md | 6/9 | 3 open |
 | 81 | PLAN-console-ai-in-pages.md | 7/10 | 3 open |
@@ -152,14 +152,14 @@ Promoted: 11 of 100 plans done, 1491 of 1891 boxes done (78%).
 | 90 | PLAN-forensics-detection.md | 10/15 | 5 open |
 | 91 | PLAN-forensics-investigation.md | 13/17 | 4 open |
 | 92 | PLAN-forensics-alerts-notices.md | 9/15 | 6 open |
-| 93 | PLAN-forensics-reports.md | 10/14 | 4 open |
+| 93 | PLAN-forensics-reports.md | 11/14 | 3 open |
 | 94 | PLAN-forensics-docs-legal.md | 7/13 | 6 open |
 | 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 96 | PLAN-writers-now-cadence.md | 5/5 | done |
 | 97 | PLAN-armed-actions.md | 6/6 | done |
 | 98 | PLAN-drain-throughput.md | 6/15 | 9 open |
 | 99 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
-| 100 | PLAN-host-temp-disposal.md | 0/19 | 19 open |
+| 100 | PLAN-host-temp-disposal.md | 3/19 | 16 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
