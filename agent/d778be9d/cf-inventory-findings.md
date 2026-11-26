@@ -21,3 +21,7 @@ Existing tooling: housekeeping/cf_leftovers.py (nightly 03:00 report only, name-
 - edge-rediacc-configs-eu (54 objects, last write 10-28): edge-tenant blobs for the 9 edge users whose D1 is being archived (rename plan L11): archive, then delete.
 - rediacc-www-media (8,422 objects): fully covered by media (0 keys only in www-media); a cf_retire delete on 11-13 stopped on an HTTP 429: delete (re-run cf_retire with backoff).
 - rediacc-backups-eu (450.7 GB, hostinger only, last write 11-11): holds pre-11-10 restore points; keep until rename plan L10 (verify, restore test, nightly on backups-eu) is ticked, then delete (L11).
+
+## Pages (missed in the first pass, found 2026-11-26T10:35Z)
+
+The first inventory listed no Pages projects. A read-only `GET /accounts/<id>/pages/projects` returns one: `rediacc` (`rediacc.pages.dev`), created 2026-02-01, no latest deployment, no git source, no custom domain. Nothing in the tracked tree outside `agent/` names `rediacc.pages.dev`, `pages/projects/rediacc` or `--project-name rediacc`. It is a leftover: retire it through `cf_retire` (dry run first), and the cf-inventory plan lists Pages projects as a resource kind with the same deadline rule.
