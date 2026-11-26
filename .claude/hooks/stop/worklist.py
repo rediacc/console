@@ -270,7 +270,7 @@ def _local_read_landing_record(tree):
         dot_key = (dot.st_mtime_ns, dot.st_size)
     except OSError:
         dot_key = (0, 0)
-    key = (str(where), st.st_mtime_ns, st.st_size, str(tree), *dot_key)
+    key = (str(tree), str(where), st.st_mtime_ns, st.st_ctime_ns, st.st_ino, st.st_size, *dot_key)
     if key not in _LANDING_READS:
         try:
             policy = _local_commit_policy()

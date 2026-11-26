@@ -398,7 +398,7 @@ def _common_main(common):
 
 
 # One validation per record version per process: commit_policy's reader asks git (the common dir, the linked-tree check), and project_root is a hot path, so its answer is kept keyed on the record file's (path, mtime_ns, size). A rewrite of the record changes the key.
-_LANDING_READS: dict[tuple[str, str, int, int, int, int], tuple[dict | None, str]] = {}
+_LANDING_READS: dict[tuple[str, str, int, int, int, int, int, int], tuple[dict | None, str]] = {}
 
 
 def _commit_policy():
@@ -432,8 +432,13 @@ def read_landing_record(tree):
         return None, ""
     except OSError as exc:
         return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
-    # The tree is part of the key (read_landing_record validates against it) and so are the inode and ctime: a same-size rewrite inside the mtime granularity replaces the inode or moves ctime.
-    key = (str(tree), str(where), st.st_mtime_ns, st.st_ctime_ns, st.st_ino, st.st_size)
+    # The tree is part of the key (read_landing_record validates against it) and so are the inode and ctime: a same-size rewrite inside the mtime granularity replaces the inode or moves ctime. The verdict also reads the tree's `.git` entry, whose version joins the key, so a tree re-pointed within one process is read again (review 1cd88702.4).
+    try:
+        dot = os.lstat(os.path.join(str(tree), ".git"))
+        dot_key = (dot.st_mtime_ns, dot.st_size)
+    except OSError:
+        dot_key = (0, 0)
+    key = (str(tree), str(where), st.st_mtime_ns, st.st_ctime_ns, st.st_ino, st.st_size, *dot_key)
     if key not in _LANDING_READS:
         try:
             policy = _commit_policy()

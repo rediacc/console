@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import datetime
 import json
-import pathlib
 import subprocess
 import types
 
 import pytest
 
+from rediacc_hooks import proc as hook_proc
 from rediacc_hooks.tests import wlfix
 
 CK = wlfix.import_wl("wl_checks")
@@ -218,8 +218,8 @@ def test_a_running_ci_quick_no_longer_holds_the_lease(repo, tmp_path, monkeypatc
     script.write_text("import time\ntime.sleep(120)\n", encoding="utf-8")
     proc = subprocess.Popen(["python3", "scripts/ci-runner/quick-clone.ts"], cwd=repo)
     try:
-        raw = pathlib.Path("/proc/%d/cmdline" % proc.pid).read_bytes()
-        words = [w.decode() for w in raw.split(b"\0") if w]
+        words = hook_proc.argv(proc.pid)
+        assert words, "the planted owner has no readable argv"
         # Control: the hook's own argv reader takes the planted owner for a ci:quick run.
         assert CK.argv_runs(words, ("scripts/ci-runner/quick-clone.ts",)), words
         monkeypatch.setenv("CI_QUICK_CLONE_DIR", str(tmp_path / "ciq-clone"))
