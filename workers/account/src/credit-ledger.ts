@@ -1,12 +1,12 @@
 import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import {
+  type AiPriceTier,
   actualCredits,
+  clampMaxTokens,
   estimateInputTokens,
   findPriceRow,
-  clampMaxTokens,
   PRICE_TABLE_VERSION,
   worstCaseCredits,
-  type AiPriceTier,
 } from '../../../packages/shared/src/ai-credits/index.js';
 
 /**
@@ -29,6 +29,10 @@ const DEFAULT_LOOP_DEPTH = 40;
 const DEFAULT_DAILY_CREDIT_CAP = 20_000;
 /** A reservation uncommitted after this long is committed in full by the alarm (D6). */
 export const RESERVATION_TTL_MS = 10 * 60 * 1000;
+/** How long after a failed history write the alarm retries the rows still waiting (the outbox). */
+export const HISTORY_RETRY_MS = 60 * 1000;
+/** Outbox rows retried per flush, so one flush stays inside an invocation's subrequest budget. */
+const HISTORY_FLUSH_BATCH = 25;
 /** How long a read of the global pause (D10) is trusted. */
 const PAUSE_CACHE_MS = 30 * 1000;
 
@@ -113,7 +117,18 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, credits INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, tokens INTEGER NOT NULL, calls INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS history_outbox (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, row_json TEXT NOT NULL)`,
 ] as const;
+
+function validUsage(usage: TokenCounts | undefined): usage is TokenCounts {
+  return (
+    usage !== undefined &&
+    Number.isInteger(usage.promptTokens) &&
+    Number.isInteger(usage.completionTokens) &&
+    usage.promptTokens >= 0 &&
+    usage.completionTokens >= 0
+  );
+}
 
 function num(value: unknown): number {
   return typeof value === 'number' ? value : Number(value ?? 0);
@@ -173,12 +188,17 @@ export class CreditLedgerCore {
         `a lot grants a whole number of credits of at least 1, got ${lot.credits}`
       );
     }
+    // Expiry is compared as a string against toISOString() output, so it is stored in that one form: '...:00Z' without milliseconds would sort after the same-second now.
+    const expires = new Date(lot.expiresAt);
+    if (Number.isNaN(expires.getTime())) {
+      throw new RangeError(`a lot expires at a valid timestamp, got ${lot.expiresAt}`);
+    }
     this.sql.exec(
       'INSERT OR IGNORE INTO lots (id, credits_granted, credits_remaining, expires_at, payment_reference) VALUES (?, ?, ?, ?, ?)',
       lot.id,
       lot.credits,
       lot.credits,
-      lot.expiresAt,
+      expires.toISOString(),
       lot.paymentReference
     );
   }
@@ -317,7 +337,9 @@ export class CreditLedgerCore {
     const model = String(res.model);
     const row = findPriceRow(model);
     const reserved = num(res.credits);
-    const want = usage && row ? actualCredits(row, usage) : reserved;
+    // Usage the stream reported is trusted only as whole non-negative counts: a negative or fractional count would charge a negative amount and credit the daily counter back, so such a report is charged as no report, in full.
+    const reported = validUsage(usage) ? usage : undefined;
+    const want = reported && row ? actualCredits(row, reported) : reserved;
     this.sql.exec('DELETE FROM reservations WHERE id = ?', reservationId);
 
     let left = Math.min(want, this.lotCredits(nowIso));
@@ -341,9 +363,9 @@ export class CreditLedgerCore {
       left -= take;
     }
 
-    const inputTokens = usage?.promptTokens ?? 0;
-    const outputTokens = usage?.completionTokens ?? 0;
-    const convTokens = usage ? inputTokens + outputTokens : num(res.est_tokens);
+    const inputTokens = reported?.promptTokens ?? 0;
+    const outputTokens = reported?.completionTokens ?? 0;
+    const convTokens = reported ? inputTokens + outputTokens : num(res.est_tokens);
     this.sql.exec(
       'INSERT INTO daily (day, credits) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET credits = credits + ?',
       nowIso.slice(0, 10),
@@ -389,6 +411,36 @@ export class CreditLedgerCore {
     return rows;
   }
 
+  /** Keeps a history row whose D1 write failed, under the id it will be written with, until a retry lands it. */
+  queueHistory(id: string, orgId: string, row: HistoryRow): void {
+    this.sql.exec(
+      'INSERT OR REPLACE INTO history_outbox (id, org_id, row_json) VALUES (?, ?, ?)',
+      id,
+      orgId,
+      JSON.stringify(row)
+    );
+  }
+
+  /** The oldest rows still waiting for their D1 write. */
+  pendingHistory(limit: number): { id: string; orgId: string; row: HistoryRow }[] {
+    return this.sql
+      .exec('SELECT id, org_id, row_json FROM history_outbox ORDER BY rowid ASC LIMIT ?', limit)
+      .toArray()
+      .map((r) => ({
+        id: String(r.id),
+        orgId: String(r.org_id),
+        row: JSON.parse(String(r.row_json)) as HistoryRow,
+      }));
+  }
+
+  hasPendingHistory(): boolean {
+    return this.one('SELECT 1 AS x FROM history_outbox LIMIT 1') !== undefined;
+  }
+
+  dropHistory(id: string): void {
+    this.sql.exec('DELETE FROM history_outbox WHERE id = ?', id);
+  }
+
   /** When the alarm should next fire: the oldest open reservation's expiry, or null with none open. */
   nextExpiryMs(): number | null {
     const oldest = this.one('SELECT MIN(created_ms) AS m FROM reservations')?.m;
@@ -431,34 +483,57 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
     return paused;
   }
 
-  private async record(orgId: string, rows: HistoryRow[]): Promise<void> {
-    for (const row of rows) {
-      try {
-        await this.env.DB.prepare(
-          'INSERT INTO ai_credit_ledger (id, org_id, kind, credits, lot_id, reservation_id, user_id, conversation_id, model, tier, input_tokens, output_tokens, price_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  /** One history row into D1; false when the write failed. The id is the row's own, and an id already there is left alone, so a retry after an unseen success never doubles. */
+  private async insertHistory(id: string, orgId: string, row: HistoryRow): Promise<boolean> {
+    try {
+      await this.env.DB.prepare(
+        'INSERT OR IGNORE INTO ai_credit_ledger (id, org_id, kind, credits, lot_id, reservation_id, user_id, conversation_id, model, tier, input_tokens, output_tokens, price_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      )
+        .bind(
+          id,
+          orgId,
+          row.kind,
+          row.credits,
+          row.lotId,
+          row.reservationId,
+          row.userId,
+          row.conversationId,
+          row.model,
+          row.tier,
+          row.inputTokens,
+          row.outputTokens,
+          row.priceVersion,
+          row.createdAt
         )
-          .bind(
-            crypto.randomUUID(),
-            orgId,
-            row.kind,
-            row.credits,
-            row.lotId,
-            row.reservationId,
-            row.userId,
-            row.conversationId,
-            row.model,
-            row.tier,
-            row.inputTokens,
-            row.outputTokens,
-            row.priceVersion,
-            row.createdAt
-          )
-          .run();
-      } catch (error) {
-        console.error(
-          `[credit-ledger] history row for ${row.reservationId} not written: ${String(error)}`
-        );
-      }
+        .run();
+      return true;
+    } catch (error) {
+      console.error(
+        `[credit-ledger] history row for ${row.reservationId} not written, kept for retry: ${String(error)}`
+      );
+      return false;
+    }
+  }
+
+  /** Retries the rows a failed write left in the outbox, oldest first, stopping at the first failure. */
+  private async flushHistory(): Promise<void> {
+    for (const { id, orgId, row } of this.core.pendingHistory(HISTORY_FLUSH_BATCH)) {
+      if (!(await this.insertHistory(id, orgId, row))) return;
+      this.core.dropHistory(id);
+    }
+  }
+
+  /** A charge is already applied when its row is written, so a failed write is kept in the outbox and the alarm retries it. */
+  private async record(orgId: string, rows: HistoryRow[]): Promise<void> {
+    await this.flushHistory();
+    for (const row of rows) {
+      const id = crypto.randomUUID();
+      if (!(await this.insertHistory(id, orgId, row))) this.core.queueHistory(id, orgId, row);
+    }
+    if (this.core.hasPendingHistory()) {
+      const at = Date.now() + HISTORY_RETRY_MS;
+      const armed = await this.ctx.storage.getAlarm();
+      if (armed === null || armed > at) await this.ctx.storage.setAlarm(at);
     }
   }
 
@@ -515,7 +590,10 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
     const orgId = this.ctx.id.name;
     const rows = this.core.expireReservations(Date.now());
     if (orgId) await this.record(orgId, rows);
-    const next = this.core.nextExpiryMs();
+    else await this.flushHistory();
+    const expiry = this.core.nextExpiryMs();
+    const retry = this.core.hasPendingHistory() ? Date.now() + HISTORY_RETRY_MS : null;
+    const next = expiry !== null && retry !== null ? Math.min(expiry, retry) : (expiry ?? retry);
     if (next !== null) await this.ctx.storage.setAlarm(next);
   }
 }

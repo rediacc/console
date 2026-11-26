@@ -17,9 +17,8 @@ vi.mock('cloudflare:workers', () => ({
   },
 }));
 
-const { CreditLedgerCore, DEFAULT_LIMITS, RESERVATION_TTL_MS } = await import(
-  '../credit-ledger.js'
-);
+const { CreditLedger, CreditLedgerCore, DEFAULT_LIMITS, HISTORY_RETRY_MS, RESERVATION_TTL_MS } =
+  await import('../credit-ledger.js');
 
 /**
  * The ledger decisions of agent/plans/PLAN-console-ai-credits.md D4 to D6 and D9, run over a real
@@ -222,8 +221,8 @@ describe('the 10-minute alarm', () => {
   });
 });
 
-describe('concurrent reservations', () => {
-  it('never overdraw the balance', () => {
+describe('reservations decided one after another', () => {
+  it('never overdraw the balance when many are asked for in a row', () => {
     const core = funded(100, { ...DEFAULT_LIMITS, maxStreams: 100 });
     const one = core.reserve(request('probe'), NOW, false);
     expect(one.ok).toBe(true);
@@ -286,5 +285,189 @@ describe('reconcile adjustments', () => {
     expect(core.lapseLot('lot1', nowIso)).toBe(0);
     expect(core.lapseLot('nope', AFTER_EXPIRY)).toBe(0);
     expect(core.balance(nowIso)).toBe(1_000);
+  });
+});
+
+describe('grant', () => {
+  it('a repeated id changes nothing, so a retried grant never doubles', () => {
+    const core = funded(1_000);
+    core.grant({ id: 'lot1', credits: 1_000, expiresAt: FUTURE, paymentReference: 'pay1' });
+    expect(core.balance(new Date(NOW).toISOString())).toBe(1_000);
+  });
+
+  it('refuses a credit count that is not a whole number of at least 1', () => {
+    const core = ledger();
+    for (const credits of [0, -5, 1.5, Number.NaN]) {
+      expect(() =>
+        core.grant({ id: 'bad', credits, expiresAt: FUTURE, paymentReference: 'p' })
+      ).toThrow(RangeError);
+    }
+    expect(core.balance(new Date(NOW).toISOString())).toBe(0);
+  });
+
+  it('stores the expiry in toISOString form, so a value without milliseconds is not read as unexpired', () => {
+    const core = ledger();
+    // 09:59:59.500 + a same-second expiry '10:00:00Z' sorts AFTER now (10:00:00.000Z) as a raw string, though it is not later.
+    core.grant({
+      id: 'edge',
+      credits: 500,
+      expiresAt: '2026-11-25T10:00:00Z',
+      paymentReference: 'p',
+    });
+    expect(core.balance(new Date(NOW).toISOString())).toBe(0);
+    expect(core.balance(new Date(NOW - 1000).toISOString())).toBe(500);
+  });
+
+  it('refuses an expiry that is not a timestamp', () => {
+    expect(() =>
+      ledger().grant({ id: 'x', credits: 5, expiresAt: 'soon', paymentReference: 'p' })
+    ).toThrow(RangeError);
+  });
+});
+
+describe('commit with reported usage that is not whole and non-negative', () => {
+  it('charges the whole reservation instead of a negative amount', () => {
+    const core = funded(10_000);
+    const reserved = core.reserve(request('r1'), NOW, false);
+    const done = core.commit('r1', { promptTokens: -1_000_000, completionTokens: 5 }, NOW);
+    expect(reserved.ok && done.ok && done.charged).toBe(reserved.ok ? reserved.credits : -1);
+    expect(done.ok && done.history.credits).toBeLessThan(0);
+    expect(core.balance(new Date(NOW).toISOString())).toBe(
+      10_000 - (reserved.ok ? reserved.credits : 0)
+    );
+  });
+
+  it('control: honest usage is still charged by what was used', () => {
+    const core = funded(10_000);
+    core.reserve(request('r1'), NOW, false);
+    const done = core.commit('r1', { promptTokens: 10, completionTokens: 10 }, NOW);
+    expect(done.ok && done.history.inputTokens).toBe(10);
+  });
+});
+
+/** The Durable Object class over real SQLite storage and a scripted D1, as the Worker runs it. */
+function durableObject(db: { first: () => unknown; run: () => unknown }) {
+  const sqlite = new DatabaseSync(':memory:');
+  let alarm: number | null = null;
+  const ctx = {
+    id: { name: 'org1' },
+    storage: {
+      sql: {
+        exec: (query: string, ...bindings: unknown[]) => {
+          const rows = sqlite.prepare(query).all(...bindings);
+          return { toArray: () => rows };
+        },
+      },
+      getAlarm: () => Promise.resolve(alarm),
+      setAlarm: (at: number) => {
+        alarm = at;
+        return Promise.resolve();
+      },
+    },
+  };
+  const inserted: unknown[][] = [];
+  const env = {
+    DB: {
+      prepare: () => ({
+        first: () => Promise.resolve(db.first()),
+        bind: (...args: unknown[]) => ({
+          run: () => {
+            inserted.push(args);
+            db.run();
+            return Promise.resolve();
+          },
+        }),
+      }),
+    },
+  };
+  const object = new CreditLedger(ctx as never, env as never);
+  object.setEntitled(true);
+  object.grant({ id: 'lot1', credits: 100_000, expiresAt: FUTURE, paymentReference: 'pay1' });
+  return { object, inserted, alarm: () => alarm };
+}
+
+describe('the pause read fails closed', () => {
+  it('refuses every reserve with GLOBAL_PAUSED when the D1 read fails', async () => {
+    const { object } = durableObject({
+      first: () => {
+        throw new Error('D1 is down');
+      },
+      run: () => undefined,
+    });
+    expect(await object.reserve(request('r1'))).toEqual({ ok: false, code: 'GLOBAL_PAUSED' });
+  });
+
+  it('control: an unpaused control row lets the reserve through', async () => {
+    const { object } = durableObject({ first: () => ({ p: null }), run: () => undefined });
+    expect((await object.reserve(request('r1'))).ok).toBe(true);
+  });
+});
+
+describe('reservations that interleave at the Durable Object boundary', () => {
+  it('never overdraw when many reserve calls are in flight at once', async () => {
+    const { object } = durableObject({ first: () => ({ p: null }), run: () => undefined });
+    const one = await object.reserve(request('probe'));
+    if (!one.ok) throw new Error('probe refused');
+    object.release('probe');
+    // Fund for exactly two reservations, then ask for ten at once (stream limit 3 is above two).
+    const fresh = durableObject({ first: () => ({ p: null }), run: () => undefined });
+    const small = fresh.object;
+    small.refundLot('lot1');
+    small.grant({
+      id: 'lot2',
+      credits: one.credits * 2 + 1,
+      expiresAt: FUTURE,
+      paymentReference: 'p2',
+    });
+    const answers = await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        small.reserve(request(`r${i}`, { conversationId: `c${i}` }))
+      )
+    );
+    expect(answers.filter((a) => a.ok)).toHaveLength(2);
+    expect(small.balance()).toBe(1);
+  });
+});
+
+describe('the history row of a charge', () => {
+  it('survives a failed D1 write and is written once by the retry', async () => {
+    const d1 = { failing: true as boolean };
+    const { object, inserted, alarm } = durableObject({
+      first: () => ({ p: null }),
+      run: () => {
+        if (d1.failing) throw new Error('D1 write failed');
+      },
+    });
+    const first = await object.reserve(request('r1'));
+    expect(first.ok).toBe(true);
+    const done = await object.commit('org1', 'r1');
+    // The charge stands and the answer is ok; the failed row is kept and a retry is armed.
+    expect(done.ok).toBe(true);
+    expect(inserted).toHaveLength(1);
+    expect(alarm()).not.toBeNull();
+    expect((alarm() ?? 0) - Date.now()).toBeLessThanOrEqual(HISTORY_RETRY_MS);
+
+    d1.failing = false;
+    await object.alarm();
+    expect(inserted).toHaveLength(2);
+    // The retry carries the id of the first attempt, so a write that had landed unseen is not doubled.
+    expect(inserted[1]?.[0]).toBe(inserted[0]?.[0]);
+    // Nothing is left to retry.
+    await object.alarm();
+    expect(inserted).toHaveLength(2);
+  });
+
+  it('control: a write that succeeds leaves nothing queued and no retry armed', async () => {
+    const { object, inserted, alarm } = durableObject({
+      first: () => ({ p: null }),
+      run: () => undefined,
+    });
+    await object.reserve(request('r1'));
+    await object.commit('org1', 'r1');
+    expect(inserted).toHaveLength(1);
+    await object.alarm();
+    expect(inserted).toHaveLength(1);
+    // Only the reservation's own 10-minute alarm stands, not a retry.
+    expect((alarm() ?? 0) - Date.now()).toBeGreaterThan(HISTORY_RETRY_MS);
   });
 });

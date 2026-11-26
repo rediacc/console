@@ -1,17 +1,15 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
-import { WK_MEDIA_ORIGIN } from '../../../packages/shared/src/config/well-known.generated.js';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
 import { WRITES_FROZEN_QUEUE_DELAY_SECONDS } from '../../../private/account/src/errors.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
 import { BackupReplicator, replicatorStub } from './backup-replicator.js';
 import { CreditLedger, CreditLedgerGate } from './credit-ledger.js';
 import { fence, fencedEnv } from './d1-fence.js';
+import { SECURITY_HEADERS } from './security-headers.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
-export { BackupReplicator };
-
 // The per-org AI credit ledger (Durable Object, wrangler.*.toml binds it as CREDIT_LEDGER) and the entrypoint the proxy's CREDITS service binding names.
-export { CreditLedger, CreditLedgerGate };
+export { BackupReplicator, CreditLedger, CreditLedgerGate };
 
 interface Env {
   ASSETS: Fetcher;
@@ -27,35 +25,6 @@ interface Env {
   ALLOW_IPS?: string;
   [key: string]: unknown;
 }
-
-// Mirrors packages/www/public/_headers. Applied to every response served from this worker (SPA HTML, static assets, API JSON, redirects, 404). Responses that already declare a Content-Security-Policy (the invoice PDF routes —
-// private/account/src/routes/{root,portal}-invoices.ts) keep their stricter
-// per-route policy untouched.
-const SECURITY_HEADERS: Record<string, string> = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser calls fail under future Cloudflare-edge tightening. Stripe redirects via window.location.assign which is a top-level navigation not gated by Permissions-Policy. The microphone is open to this origin for the AI assistant's speech input (agent/plans/PLAN-console-ai-assistant.md D12).
-  'Permissions-Policy':
-    'camera=(), microphone=(self), geolocation=(), payment=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)',
-  'Content-Security-Policy': [
-    "default-src 'self'",
-    // 'wasm-unsafe-eval' admits WebAssembly compilation only (the local Whisper speech model), not eval().
-    "script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
-    "font-src 'self'",
-    // media.rediacc.com serves the local speech model files, which exceed the Workers static-asset limit.
-    `connect-src 'self' https://challenges.cloudflare.com ${WK_MEDIA_ORIGIN}`,
-    "frame-src 'self' https://challenges.cloudflare.com",
-    "form-action 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    'upgrade-insecure-requests',
-  ].join('; '),
-};
 
 function withSecurityHeaders(response: Response): Response {
   if (response.headers.has('content-security-policy')) {
