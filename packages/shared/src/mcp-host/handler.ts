@@ -10,7 +10,7 @@ import type { HostExecutionContext, HostKvNamespace } from './host-types.js';
 import { type MetricsDataset, messageOf, outcomeOf, recordCall, toolOf } from './metrics.js';
 import { createOAuth, type OAuth } from './oauth/index.js';
 import { wrongRegionResponse } from './oauth/region.js';
-import { doRateLimiter, MemoryRateLimiter, type RateNamespace } from './rate.js';
+import { doRateLimiter, MemoryRateLimiter, type RateLimiter, type RateNamespace } from './rate.js';
 import { createGrantResolver, type GrantResolver, type GrantsBinding } from './resolve.js';
 import { handleRevoke, REVOKE_PATH } from './revoke.js';
 import { createMcpTransport, type McpTransport } from './transport.js';
@@ -29,6 +29,8 @@ export interface Env {
   GRANTS?: GrantsBinding;
   /** The per-grant rate-limit Durable Object (Design 8); absent, limits hold per isolate only. */
   RATE?: RateNamespace;
+  /** A limiter object for a host with no Durable Object: the Node host passes its account-database limiter (RW-OP3). Wins over `RATE`. */
+  RATE_LIMITER?: RateLimiter;
   /** Worker secret sealing confirmation state (Design 6); absent, every client confirms through the `confirm` argument. */
   CONFIRM_KEY?: string;
   /** The OAuth provider's store, one namespace per region (Design 12); absent, no OAuth route is served. */
@@ -43,47 +45,6 @@ export interface Env {
 
 /** Placeholder until the deploy injects the release version (RW-D2). */
 const SERVER_VERSION = '0.0.0-dev';
-
-let transport: McpTransport | undefined;
-let resolver: GrantResolver | undefined;
-let oauth: OAuth | undefined;
-
-function resolverFor(env: Env): GrantResolver {
-  const grants = env.GRANTS;
-  resolver ??= createGrantResolver(grants ?? { resolveGrant: async () => null });
-  return resolver;
-}
-
-/** The authorization server of this isolate, or undefined while `OAUTH_KV` or `AUTH_REQUEST_KEY` is not bound. */
-function oauthFor(env: Env): OAuth | undefined {
-  if (!env.OAUTH_KV || !env.AUTH_REQUEST_KEY) return undefined;
-  oauth ??= createOAuth({
-    host: env.MCP_HOST,
-    region: env.REGION,
-    accountUrl: env.ACCOUNT_URL,
-    authRequestKey: env.AUTH_REQUEST_KEY,
-    resolveGrant: resolverFor(env).fresh,
-  });
-  return oauth;
-}
-
-function transportFor(env: Env): McpTransport {
-  const grants = resolverFor(env);
-  const auth = oauthFor(env);
-  transport ??= createMcpTransport({
-    host: env.MCP_HOST,
-    serverVersion: SERVER_VERSION,
-    accountUrl: env.ACCOUNT_URL,
-    resolveGrant: grants,
-    refreshGrant: grants.fresh,
-    verifyAccessToken:
-      auth && env.OAUTH_KV ? auth.verifyAccessToken({ OAUTH_KV: env.OAUTH_KV }) : undefined,
-    executor: env.EXECUTOR,
-    rate: env.RATE ? doRateLimiter(env.RATE) : new MemoryRateLimiter(),
-    confirm: env.CONFIRM_KEY ? createConfirmation({ key: env.CONFIRM_KEY }) : undefined,
-  });
-  return transport;
-}
 
 const GRANT_PATH = /^\/g\/([A-Za-z0-9_-]{1,64})$/;
 
@@ -114,33 +75,87 @@ async function observeCall(
   }
 }
 
-export default {
-  async fetch(request: Request, env: Env, ctx: HostExecutionContext): Promise<Response> {
-    if (new URL(request.url).pathname === REVOKE_PATH) {
-      return handleRevoke(request, {
-        token: env.INTERNAL_REVOKE_TOKEN,
-        resolver: resolverFor(env),
-      });
-    }
-    // A grant of another region is refused before any lookup, OAuth state or executor call (Design 12).
-    const elsewhere = wrongRegionResponse(request, { host: env.MCP_HOST, region: env.REGION });
-    if (elsewhere) return elsewhere;
+function rateFor(env: Env): RateLimiter {
+  if (env.RATE_LIMITER) return env.RATE_LIMITER;
+  return env.RATE ? doRateLimiter(env.RATE) : new MemoryRateLimiter();
+}
+
+/**
+ * One handler with its own isolate state (transport, grant resolver, OAuth server). The Cloudflare Worker exports a single instance; the Node host (RW-OP3) builds its own, so two hosts in one process never share a cache.
+ */
+export function createMcpHandler() {
+  let transport: McpTransport | undefined;
+  let resolver: GrantResolver | undefined;
+  let oauth: OAuth | undefined;
+
+  function resolverFor(env: Env): GrantResolver {
+    const grants = env.GRANTS;
+    resolver ??= createGrantResolver(grants ?? { resolveGrant: async () => null });
+    return resolver;
+  }
+
+  /** The authorization server of this host, or undefined while `OAUTH_KV` or `AUTH_REQUEST_KEY` is not bound. */
+  function oauthFor(env: Env): OAuth | undefined {
+    if (!env.OAUTH_KV || !env.AUTH_REQUEST_KEY) return undefined;
+    oauth ??= createOAuth({
+      host: env.MCP_HOST,
+      region: env.REGION,
+      accountUrl: env.ACCOUNT_URL,
+      authRequestKey: env.AUTH_REQUEST_KEY,
+      resolveGrant: resolverFor(env).fresh,
+    });
+    return oauth;
+  }
+
+  function transportFor(env: Env): McpTransport {
+    const grants = resolverFor(env);
     const auth = oauthFor(env);
-    if (auth && env.OAUTH_KV) {
-      const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);
-      if (answered) return answered;
-    }
-    const grantId = GRANT_PATH.exec(new URL(request.url).pathname)?.[1];
-    if (!env.MCP_METRICS || grantId === undefined || request.method !== 'POST') {
-      return transportFor(env).fetch(request);
-    }
-    const startedAt = Date.now();
-    const seen = request.clone();
-    const response = await transportFor(env).fetch(request);
-    const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
-    // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
-    if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
-    else await observed;
-    return response;
-  },
-};
+    transport ??= createMcpTransport({
+      host: env.MCP_HOST,
+      serverVersion: SERVER_VERSION,
+      accountUrl: env.ACCOUNT_URL,
+      resolveGrant: grants,
+      refreshGrant: grants.fresh,
+      verifyAccessToken:
+        auth && env.OAUTH_KV ? auth.verifyAccessToken({ OAUTH_KV: env.OAUTH_KV }) : undefined,
+      executor: env.EXECUTOR,
+      rate: rateFor(env),
+      confirm: env.CONFIRM_KEY ? createConfirmation({ key: env.CONFIRM_KEY }) : undefined,
+    });
+    return transport;
+  }
+
+  return {
+    async fetch(request: Request, env: Env, ctx: HostExecutionContext): Promise<Response> {
+      if (new URL(request.url).pathname === REVOKE_PATH) {
+        return handleRevoke(request, {
+          token: env.INTERNAL_REVOKE_TOKEN,
+          resolver: resolverFor(env),
+        });
+      }
+      // A grant of another region is refused before any lookup, OAuth state or executor call (Design 12).
+      const elsewhere = wrongRegionResponse(request, { host: env.MCP_HOST, region: env.REGION });
+      if (elsewhere) return elsewhere;
+      const auth = oauthFor(env);
+      if (auth && env.OAUTH_KV) {
+        const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);
+        if (answered) return answered;
+      }
+      const grantId = GRANT_PATH.exec(new URL(request.url).pathname)?.[1];
+      if (!env.MCP_METRICS || grantId === undefined || request.method !== 'POST') {
+        return transportFor(env).fetch(request);
+      }
+      const startedAt = Date.now();
+      const seen = request.clone();
+      const response = await transportFor(env).fetch(request);
+      const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
+      // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
+      if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
+      else await observed;
+      return response;
+    },
+  };
+}
+
+/** The handler of the Cloudflare Worker: one instance per isolate. */
+export default createMcpHandler();
