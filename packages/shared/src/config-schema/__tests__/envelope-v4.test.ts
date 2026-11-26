@@ -30,6 +30,7 @@ import {
   sdkDerive,
   unwrapEnvelopeConfigKey,
 } from '../../config-crypto/index.js';
+import { omitKey } from '../../utils/omit-key.js';
 import {
   buildCommitEntries,
   buildConfigPushPayload,
@@ -40,7 +41,6 @@ import {
   toFullConfig,
 } from '../payload.js';
 import type { RdcConfig } from '../schemas.js';
-import { omitKey } from '../../utils/omit-key.js';
 
 const STORE = 'store-a';
 const CONFIG = '00000000-0000-0000-0000-00000000c0f1';
