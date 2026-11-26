@@ -21,6 +21,7 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -201,8 +202,8 @@ def _add_exclude_lines(git_dir):
 
 
 def _free_bytes(path):
-    stat = os.statvfs(path)
-    return stat.f_bavail * stat.f_frsize
+    vfs = os.statvfs(path)
+    return vfs.f_bavail * vfs.f_frsize
 
 
 DU_TIMEOUT = 20
@@ -481,19 +482,49 @@ def lease_tmpdir(lease_id):
     return lease_tmp_base() / lease_id.removeprefix("agent-")[:8]
 
 
+def _private_dir(path):
+    """Create `path` 0700 unless it exists, then refuse it unless it is a real directory owned by this uid with no group or other bits. Returns True when this call created it. `/var/tmp` is world-writable and sticky, so another local user can plant the name first, as a symlink or as a directory of theirs; `lstat` never follows the link and no chmod ever runs on what was found."""
+    try:
+        os.mkdir(path, 0o700)
+        created = True
+    except FileExistsError:
+        created = False
+    info = os.lstat(path)
+    if stat.S_ISLNK(info.st_mode):
+        problem = "is a symlink"
+    elif not stat.S_ISDIR(info.st_mode):
+        problem = "is not a directory"
+    elif info.st_uid != os.getuid():
+        problem = "is owned by uid %d, not %d" % (info.st_uid, os.getuid())
+    elif info.st_mode & 0o077:
+        problem = "has mode %o, which lets group or other in" % stat.S_IMODE(info.st_mode)
+    else:
+        return created
+    message = "lease temp dir %s %s, so it is refused" % (path, problem)
+    raise LeaseRefusedError(message)
+
+
 def _make_tmpdir(lease_id):
-    """Create the lease's temp dir 0700 and return its path."""
+    """Create the lease's temp dir and its base 0700, each refused by `_private_dir` when it is not this uid's own, and return `(path, created)`: `created` is False when the dir was there already (a lease whose id shares its first 8 characters), so a rollback leaves it alone."""
     path = lease_tmpdir(lease_id)
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    path.mkdir(mode=0o700, exist_ok=True)
-    path.chmod(0o700)
-    return str(path)
+    path.parent.parent.mkdir(parents=True, exist_ok=True)
+    _private_dir(path.parent)
+    return str(path), _private_dir(path)
 
 
-def _remove_satellites(record, path):
-    """Delete the temp a lease owns outside its tree: its temp dir, its typecheck cache dir and its gen-docs pre-commit scratch (PLAN-host-temp-disposal D9). `record` is the lease record and `path` the tree, both read before the tree went."""
+def _tmpdir_shared(root, tmpdir, lease_id):
+    """True when a record other than `lease_id`'s names `tmpdir`: two ids sharing their first 8 characters (every `<owner>-<n>` lease of one session) share one temp dir, which goes only with the last of them."""
+    return any(
+        record is None or record.get("tmpdir") == tmpdir
+        for stem, record in _read_records(root).items()
+        if stem != lease_id
+    )
+
+
+def _remove_satellites(root, record, path):
+    """Delete the temp a lease owns outside its tree: its temp dir unless another lease's record names it too, its typecheck cache dir and its gen-docs pre-commit scratch (PLAN-host-temp-disposal D9). `record` is the lease record and `path` the tree, both read before the tree went."""
     doomed = []
-    if record.get("tmpdir"):
+    if record.get("tmpdir") and not _tmpdir_shared(root, record["tmpdir"], record.get("id", "")):
         doomed.append(record["tmpdir"])
     munged = str(path).lstrip("/").replace("/", "-")
     doomed.append(os.path.join(os.path.expanduser("~"), ".cache", "rediacc-typecheck", munged))
@@ -556,13 +587,14 @@ def _restore_signal_handlers(before):
 
 
 def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree):
+    tmpdir, made_tmpdir = "", False
     try:
         _add_tree(root, path, tip, lease_id)
         for sub, sha in held:
             _add_tree(repo.store(sub), path / sub, sha, lease_id)
         _run_seed(path, root, tip)
         _verify(path, root, tip, dict(held))
-        tmpdir = _make_tmpdir(lease_id)
+        tmpdir, made_tmpdir = _make_tmpdir(lease_id)
         _write_record(
             root,
             {
@@ -579,7 +611,8 @@ def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree)
         )
     except (OSError, RuntimeError, subprocess.SubprocessError, spike.InterruptedRunError) as exc:
         survived = _rollback(repo, path)
-        shutil.rmtree(lease_tmpdir(lease_id), ignore_errors=True)
+        if made_tmpdir:
+            shutil.rmtree(tmpdir, ignore_errors=True)
         left = "; left behind: %s" % ", ".join(survived) if survived else ""
         message = "lease %s not made: %s%s" % (lease_id, exc, left)
         raise LeaseRefusedError(message) from exc
@@ -1859,7 +1892,7 @@ def _remove_row_held(world, row):
         survived += spike.out(store, "for-each-ref", "--format=%(refname)", ref).splitlines()
     if not survived:
         (world.root / ".git" / RECORD_DIR / ("%s.json" % row.lease_id)).unlink(missing_ok=True)
-        _remove_satellites(record, path)
+        _remove_satellites(world.root, record, path)
     return survived
 
 

@@ -554,10 +554,10 @@ def test_an_absent_call_id_leaves_the_field_out(built_sup, tmp_path):
     assert "call" not in sup_row(built_sup, tmp_path, None)
 
 
-def run_tmpdir_shell(tmp, cwd, *, tmpdir=None, path=None):
+def run_tmpdir_shell(tmp, cwd, *, tmpdir=None, path=None, base=None):
     """`bash -c 'printf %s "$TMPDIR"'` under BASH_ENV in `cwd`, with the profiler off so only the per-lease TMPDIR block acts."""
     env = child_env(tmp, WORKLIST_PROFILE="off", BASH_ENV=str(PROFILE / "bash_env.sh"))
-    env["REDIACC_LEASE_TMP_BASE"] = str(tmp / "base")
+    env["REDIACC_LEASE_TMP_BASE"] = str(tmp / "base") if base is None else base
     env["CLAUDE_CODE_TMPDIR"] = str(tmp / "harness")
     if tmpdir is None:
         del env["TMPDIR"]
@@ -612,6 +612,41 @@ def test_lease_tmpdir_missing_directory_is_never_exported(tmp_path):
     cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef"
     cwd.mkdir(parents=True)
     out = run_tmpdir_shell(tmp_path, cwd)
+    assert out.stdout == "unset", out.stderr
+
+
+def test_lease_tmpdir_symlinked_lease_dir_is_never_exported(tmp_path):
+    """Review 6d1a26a3.1: a lease dir planted as a symlink (to a directory another user chose) is refused; `test_lease_tmpdir_is_exported_in_a_lease_cwd` is the control."""
+    cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef"
+    cwd.mkdir(parents=True)
+    theirs = tmp_path / "theirs"
+    theirs.mkdir()
+    (tmp_path / "base").mkdir()
+    (tmp_path / "base" / "01234567").symlink_to(theirs)
+    out = run_tmpdir_shell(tmp_path, cwd)
+    assert out.stdout == "unset", out.stderr
+
+
+def test_lease_tmpdir_symlinked_base_is_never_exported(tmp_path):
+    """The same refusal one level up: a base that is a symlink is refused even when the lease dir under it is a real directory."""
+    cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef"
+    cwd.mkdir(parents=True)
+    theirs = tmp_path / "theirs"
+    (theirs / "01234567").mkdir(parents=True)
+    (tmp_path / "base").symlink_to(theirs)
+    out = run_tmpdir_shell(tmp_path, cwd)
+    assert out.stdout == "unset", out.stderr
+
+
+def test_lease_tmpdir_owned_by_another_uid_is_never_exported(tmp_path):
+    """The owner check without a chown: base `/` and lease id `usr` name `/usr`, a real directory root owns."""
+    if os.getuid() == 0:
+        pytest.skip("root owns /usr, so the owner check cannot refuse it")
+    cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-usr"
+    cwd.mkdir(parents=True)
+    assert os.path.isdir("/usr"), "fixture control: /usr is no directory"
+    assert not os.path.islink("/usr"), "fixture control: /usr is a symlink"
+    out = run_tmpdir_shell(tmp_path, cwd, base="/")
     assert out.stdout == "unset", out.stderr
 
 

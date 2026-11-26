@@ -3578,6 +3578,26 @@ def test_gc_satellite_dirs_go_with_the_tree(repo):
     assert [p.exists() for p in planted] == [False, False, False]
 
 
+def test_gc_removes_the_gen_docs_scratch_under_slash_tmp(repo):
+    """Review 6d1a26a3.4: the second base, /tmp itself, is removed too when TMPDIR names another directory."""
+    plant_session(repo.root)
+    tree = make_tree(repo, "slashtmp")
+    git_dir = spike.must(tree, "rev-parse", "--absolute-git-dir")
+    key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+    scratch = pathlib.Path("/tmp") / ("gen-docs-precommit-%s" % key)
+    assert gc_env(repo.root)["TMPDIR"] != "/tmp", (
+        "fixture control: TMPDIR is /tmp, so the first base covers it"
+    )
+    scratch.mkdir()
+    try:
+        (scratch / "leftover").write_text("x\n", encoding="utf-8")
+        done = run_gc(repo.root, "--write", "--id", "slashtmp")
+        assert done.returncode == 0, done.stderr
+        assert not scratch.exists()
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
 def test_gc_satellite_dirs_of_a_kept_tree_stay(repo):
     plant_session(repo.root)
     tree = make_tree(repo, "keep")
@@ -3603,15 +3623,118 @@ def test_lease_tmpdir_is_made_private_and_recorded(repo):
     assert tree.is_dir()
 
 
-def test_lease_tmpdir_is_removed_when_the_lease_fails(repo, monkeypatch):
+def _fail_after_tmpdir(monkeypatch):
+    """Fail the lease at `_write_record`, the step after `_make_tmpdir`, so the rollback has a tmpdir to judge (review 6d1a26a3.3: a failure at `_verify` ran before any tmpdir existed)."""
     fake_free(monkeypatch, 10**12)
     monkeypatch.setattr(lease, "_run_seed", lambda *_args: None)
+    monkeypatch.setattr(lease, "_verify", lambda *_args: None)
 
     def broken(*_args):
-        message = "tree unreadable"
-        raise RuntimeError(message)
+        message = "record unwritable"
+        raise OSError(message)
 
-    monkeypatch.setattr(lease, "_verify", broken)
-    with pytest.raises(lease.LeaseRefusedError):
+    monkeypatch.setattr(lease, "_write_record", broken)
+
+
+def test_lease_tmpdir_is_removed_when_the_lease_fails(repo, monkeypatch):
+    made = []
+    real = lease._make_tmpdir
+    monkeypatch.setattr(
+        lease, "_make_tmpdir", lambda lease_id: made.append(real(lease_id)) or made[-1]
+    )
+    _fail_after_tmpdir(monkeypatch)
+    with pytest.raises(lease.LeaseRefusedError, match="record unwritable"):
         lease.make_lease(repo.root, name="failing")
+    assert made == [(str(lease.lease_tmpdir("failing")), True)], (
+        "fixture control: no tmpdir was made"
+    )
     assert not lease.lease_tmpdir("failing").exists()
+
+
+def test_lease_tmpdir_found_there_survives_the_failed_lease(repo, monkeypatch):
+    """Control for the test above: a tmpdir this lease did not create (a sibling id with the same first 8 characters) is not the rollback's to remove."""
+    found = lease.lease_tmpdir("sharedid-2")
+    found.mkdir(mode=0o700)
+    (found / "sibling-file").write_text("x\n", encoding="utf-8")
+    _fail_after_tmpdir(monkeypatch)
+    with pytest.raises(lease.LeaseRefusedError, match="record unwritable"):
+        lease.make_lease(repo.root, name="sharedid-2")
+    assert (found / "sibling-file").exists()
+
+
+def test_private_dir_creates_0700_and_accepts_its_own(tmp_path):
+    """Control for the refusals below: a fresh name is made 0700, and this uid's own 0700 dir is accepted as found."""
+    target = tmp_path / "own"
+    assert lease._private_dir(target) is True
+    assert target.stat().st_mode & 0o777 == 0o700
+    assert lease._private_dir(target) is False
+
+
+@pytest.mark.parametrize(
+    ("plant", "problem"),
+    [
+        ("symlink", "is a symlink"),
+        ("file", "is not a directory"),
+        ("loose", "lets group or other in"),
+    ],
+)
+def test_private_dir_refuses_a_planted_name(tmp_path, plant, problem):
+    """Review 6d1a26a3.1: a name another user planted in the sticky /var/tmp is refused, never followed or chmodded."""
+    target = tmp_path / "planted"
+    elsewhere = tmp_path / "theirs"
+    elsewhere.mkdir(mode=0o755)
+    elsewhere.chmod(0o755)
+    if plant == "symlink":
+        target.symlink_to(elsewhere)
+    elif plant == "file":
+        target.write_text("x\n", encoding="utf-8")
+    else:
+        target.mkdir()
+        target.chmod(0o755)
+    with pytest.raises(lease.LeaseRefusedError, match=problem):
+        lease._private_dir(target)
+    assert elsewhere.stat().st_mode & 0o777 == 0o755
+
+
+def test_private_dir_refuses_another_owner(tmp_path, monkeypatch):
+    """The owner check, with this uid made to look like another one, since no test here can chown."""
+    target = tmp_path / "owned"
+    target.mkdir(mode=0o700)
+    real = os.getuid()
+    monkeypatch.setattr(lease.os, "getuid", lambda: real + 1)
+    with pytest.raises(lease.LeaseRefusedError, match="is owned by uid"):
+        lease._private_dir(target)
+
+
+def test_lease_refuses_a_symlinked_tmp_base(repo, monkeypatch, tmp_path):
+    """End to end: a base planted as a symlink refuses the lease, leaves no tree, and nothing lands in the symlink's target."""
+    theirs = tmp_path / "theirs"
+    theirs.mkdir(mode=0o755)
+    base = tmp_path / "base"
+    base.symlink_to(theirs)
+    monkeypatch.setenv("REDIACC_LEASE_TMP_BASE", str(base))
+    fake_free(monkeypatch, 10**12)
+    monkeypatch.setattr(lease, "_run_seed", lambda *_args: None)
+    monkeypatch.setattr(lease, "_verify", lambda *_args: None)
+    with pytest.raises(lease.LeaseRefusedError, match="is a symlink"):
+        lease.make_lease(repo.root, name="planted")
+    assert list(theirs.iterdir()) == []
+    assert not (repo.root / spike.HOLDER / "planted").exists()
+
+
+def test_gc_keeps_a_tmpdir_another_lease_shares(repo):
+    """Review 6d1a26a3.2: `<owner>-<n>` ids share their first 8 characters and so one tmpdir; gc of one lease leaves it for the other, and gc of the last removes it."""
+    plant_session(repo.root)
+    first = make_tree(repo, "abcdefgh-1")
+    make_tree(repo, "abcdefgh-2")
+    shared = lease.lease_tmpdir("abcdefgh-1")
+    assert shared == lease.lease_tmpdir("abcdefgh-2"), (
+        "fixture control: the ids do not share a tmpdir"
+    )
+    done = run_gc(repo.root, "--write", "--id", "abcdefgh-1")
+    assert done.returncode == 0, done.stderr
+    assert not first.exists()
+    assert shared.is_dir()
+    done = run_gc(repo.root, "--write", "--id", "abcdefgh-2")
+    assert done.returncode == 0, done.stderr
+    assert not shared.exists()
