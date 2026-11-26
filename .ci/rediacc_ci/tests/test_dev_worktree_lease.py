@@ -1201,6 +1201,20 @@ def test_land_ticks_printed_investigate_line_is_one_shell_word_per_argument(tick
     assert note.startswith("post-landing: ")
     assert ";" in note
     assert argv[-1] == "--write"
+    # 438bb998.2: every argument is one word, not just the note and the final flag.
+    sig = FX_BARE
+    assert argv[:-1] == [
+        "worklist.py",
+        "--plan-investigate",
+        "feedface",
+        "agent/plans/%s" % FX_PLAN,
+        sig,
+        "present",
+        "commit:%s" % ticked.landed[FX_BARE][:12],
+        "fileline:bare.txt:1",
+        "--",
+        note,
+    ]
 
 
 def test_land_ticks_run_writes_progress_runs_the_printed_tick_and_no_investigation_row(ticked):
@@ -3531,6 +3545,23 @@ def test_lease_refuses_one_block_below_the_floor(repo, monkeypatch):
     fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES - 4096)
     with pytest.raises(lease.LeaseRefusedError, match=r"the 10\.0 GB floor"):
         lease.make_lease(repo.root, name="edge")
+
+
+def test_the_disk_floor_admits_exactly_the_needed_bytes_and_refuses_one_less(repo, monkeypatch):
+    """13bfe1f8.1: fake_free rounds up to 4096-byte blocks, so only an exact byte count tells `<` from `<=` at the gate."""
+    needed = lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES
+    monkeypatch.setattr(lease, "_free_bytes", lambda _root: needed)
+    lease._check_disk(repo.root)
+    monkeypatch.setattr(lease, "_free_bytes", lambda _root: needed - 1)
+    with pytest.raises(lease.LeaseRefusedError):
+        lease._check_disk(repo.root, sources=lambda _root: [])
+
+
+@pytest.mark.parametrize("flag", ["--run", "--ticks", "-x"])
+def test_land_me_refuses_a_following_flag_as_the_prefix(flag, capsys):
+    """6f2bf605.5: `land <id> --me --run` took `--run` as the session prefix."""
+    assert lease.cmd_land(["abc", "--me", flag]) == 1
+    assert "--me takes a session id prefix" in capsys.readouterr().err
 
 
 def test_failed_seed_removes_the_partial_tree(repo, monkeypatch):

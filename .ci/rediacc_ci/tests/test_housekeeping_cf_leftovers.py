@@ -903,3 +903,25 @@ def test_cursor_info_with_per_page_and_a_token_key_is_still_cursor_pagination():
     assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2]
     assert cfl._is_cursor_info({"per_page": 1, "next_page_token": "t1"})
     assert not cfl._is_cursor_info({"per_page": 20})
+
+
+@pytest.mark.parametrize("info", [{"total_pages": False}, {"total_count": False, "per_page": 10}])
+def test_a_false_count_is_malformed_not_an_empty_listing(info):
+    """db740ebd.1: `False == 0` in Python made `total_pages: false` read as an empty listing."""
+    with pytest.raises(cfl.CfError, match="no usable total_pages"):
+        cfl._total_pages({"result": [], "result_info": info})
+    assert cfl._total_pages({"result": [], "result_info": {"total_pages": 0}}) == 1
+
+
+@pytest.mark.parametrize(
+    "info", [{"next_cursor": None}, {"next_page": 2}, {"next": "x"}, {"per_page": 5, "next": None}]
+)
+def test_a_continuation_key_the_cursor_loop_does_not_read_is_refused_not_followed(info):
+    """90f629d7.1: only `next_page_token` is followed, so a listing that names another continuation key would be cut short silently; `followed` refuses it."""
+    assert not cfl._is_cursor_info(info)
+
+    def get(_path, _token):
+        return {"success": True, "result": [{"id": 1}], "result_info": info}
+
+    with pytest.raises(cfl.CfError, match="no usable total_pages"):
+        cfl.followed("/c", TOKEN, get)

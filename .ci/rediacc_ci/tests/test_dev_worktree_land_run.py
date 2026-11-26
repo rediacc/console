@@ -449,3 +449,178 @@ def test_control_a_real_conflict_is_never_retried_as_a_lock(repo, monkeypatch):
     assert waits == []
     assert any(line.startswith("stop: conflict in doc.md") for line in lines), lines
     assert not any("index lock" in line for line in lines), lines
+
+
+# ---- review findings 5c58a1f0.2 .3 .4, a3b06213.1 .2 .3 .4, 6f2bf605.6 ----
+
+
+def lock_failure(cwd, args):
+    stderr = "fatal: Unable to create '%s': File exists.\n" % index_lock(pathlib.Path(cwd))
+    return subprocess.CompletedProcess(["git", *args], 128, "", stderr)
+
+
+def lock_first_call(monkeypatch, *prefix):
+    """The first git call whose argv starts with `prefix` fails on a held lock without running; later calls run for real. Returns the list of matching calls."""
+    real = run.git
+    calls: list[tuple] = []
+
+    def flaky(cwd, *args, env=None):
+        if args[: len(prefix)] == prefix:
+            calls.append(args)
+            if len(calls) == 1:
+                return lock_failure(cwd, args)
+        return real(cwd, *args, env=env)
+
+    monkeypatch.setattr(run, "git", flaky)
+    monkeypatch.setattr(run, "SLEEP", lambda _s: None)
+    return calls
+
+
+def make_sub(parent, name="sub"):
+    sub = parent / name
+    sub.mkdir()
+    sh(sub, "init", "-q", "-b", "live")
+    sh(sub, "config", "user.email", "t@example.invalid")
+    sh(sub, "config", "user.name", "t")
+    (sub / "s.txt").write_text("a\n")
+    sh(sub, "add", "--", "s.txt")
+    sh(sub, "commit", "-q", "-m", "base", "--", "s.txt")
+    return sub
+
+
+def test_the_usage_line_names_run():
+    """6f2bf605.6: the old isinstance(Path(...), Path) check could not fail; the usage text itself is asserted."""
+    assert "worktree land" in lease.LAND_HELP
+    assert "--run" in lease.LAND_HELP.splitlines()[0]
+
+
+def test_a_refused_lane_with_a_green_gate_still_fails_the_run(tmp_path):
+    """5c58a1f0.2: the gate exits 0 yet prints a lane only the lead can place; the stop line must come with rc 1."""
+    script = tmp_path / "gate.py"
+    script.write_text("print(%r)\n" % REBALANCE_LINE, encoding="utf-8")
+    lines: list[str] = []
+    gate = (sys.executable, str(script))
+    assert run.after_picks(tmp_path, "", emit=lines.append, shard_check=gate) == 1
+    assert "step shard-coverage rc=1 lane %s is not placed by --run" % LANE in lines
+    assert any(line.startswith("stop: coverage gate line") for line in lines)
+
+
+def test_a_modify_delete_conflict_stops_instead_of_raising(repo):
+    """5c58a1f0.3: a conflicted path missing from the work tree reads as None and falls through to the normal stop."""
+    sh(repo, "switch", "-q", "-c", "lease-del", "live")
+    sh(repo, "rm", "-q", "--", "code.txt")
+    sh(repo, "commit", "-q", "-m", "feat: drop code", "--", "code.txt")
+    sha = sh(repo, "rev-parse", "HEAD")
+    sh(repo, "switch", "-q", "live")
+    live_commit(repo, {"code.txt": "changed\n"}, "chore: code head")
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 1
+    assert any(line.startswith("stop: conflict in code.txt") for line in lines), lines
+    assert (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+    assert run._read(repo / "gone.txt") is None
+
+
+def test_a_landed_count_that_differs_from_the_picked_count_is_a_failed_step(
+    repo, tmp_path, monkeypatch
+):
+    """5c58a1f0.4: the lease-to-landed pairs were dropped silently when the counts differed."""
+    sub = make_sub(tmp_path)
+    sha = lease_commit(sub, {"s.txt": "b\n"}, "feat: s")
+    real = run.git
+
+    def fewer(cwd, *args, env=None):
+        if args[:2] == ("rev-list", "--reverse"):
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        return real(cwd, *args, env=env)
+
+    monkeypatch.setattr(run, "git", fewer)
+    monkeypatch.setattr(run, "_land_gitlink", lambda *_a: True)
+    lines: list[str] = []
+    plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {sha: "Fixes-Review: x.1"})
+    assert run.execute(plan, emit=lines.append, me="") == 1
+    assert [line for line in lines if line.startswith("step landed-count sub rc=1")], lines
+
+
+def test_a_held_lock_on_the_submodule_branch_switch_is_retried(repo, tmp_path, monkeypatch):
+    """a3b06213.1: the `switch -c` of a detached submodule rides retry_lock."""
+    sub = make_sub(tmp_path)
+    sha = lease_commit(sub, {"s.txt": "b\n"}, "feat: s")
+    sh(sub, "switch", "-q", "--detach", "live")
+    sh(sub, "branch", "-q", "-D", "live")
+    calls = lock_first_call(monkeypatch, "switch", "-c")
+    monkeypatch.setattr(run, "_land_gitlink", lambda *_a: True)
+    lines: list[str] = []
+    plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {})
+    assert run.execute(plan, emit=lines.append) == 0, lines
+    assert len(calls) == 2
+    assert sh(sub, "symbolic-ref", "--short", "HEAD") == "live"
+
+
+@pytest.mark.parametrize("verb", ["add", "commit"])
+def test_a_held_lock_on_the_gitlink_step_is_retried(repo, monkeypatch, verb):
+    """a3b06213.1: the gitlink add and commit each ride retry_lock."""
+    sub = make_sub(repo)
+    sha = lease_commit(sub, {"s.txt": "b\n"}, "feat: s")
+    calls = lock_first_call(monkeypatch, verb)
+    lines: list[str] = []
+    plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {})
+    assert run.execute(plan, emit=lines.append) == 0, lines
+    assert len([c for c in calls if c[0] == verb]) >= 2
+    assert "step gitlink sub rc=0" in lines
+    assert sh(repo, "log", "-1", "--format=%s").startswith("chore(sub): land lease lease1")
+
+
+@pytest.mark.parametrize("prefix", [("add", "--"), ("cherry-pick", "--continue")])
+def test_a_held_lock_in_the_generated_resolve_is_retried(repo, monkeypatch, prefix):
+    """a3b06213.1: the generated-region add and the continue each ride retry_lock."""
+    sha = lease_commit(repo, {"doc.md": "intro\n" + REGION % "from-lease"}, "feat: doc")
+    live_commit(repo, {"doc.md": "intro\n" + REGION % "from-head"}, "chore: doc head")
+    calls = lock_first_call(monkeypatch, *prefix)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 0, lines
+    assert len(calls) >= 2
+    assert not (repo / ".git" / "CHERRY_PICK_HEAD").exists()
+
+
+def test_a_conflict_is_named_even_when_the_lock_is_also_held(repo, monkeypatch):
+    """a3b06213.2: a pick with conflicted paths reports the paths, not the lock the failed retry saw."""
+    sha = lease_commit(repo, {"doc.md": "lease-intro\n" + REGION % "old"}, "feat: intro")
+    live_commit(repo, {"doc.md": "head-intro\n" + REGION % "old"}, "chore: intro head")
+    real = run.git
+
+    def conflicted(cwd, *args, env=None):
+        done = real(cwd, *args, env=env)
+        if args[:2] == ("cherry-pick", "-x"):
+            return subprocess.CompletedProcess(
+                done.args, 128, done.stdout, lock_failure(cwd, args).stderr
+            )
+        return done
+
+    monkeypatch.setattr(run, "git", conflicted)
+    monkeypatch.setattr(run, "SLEEP", lambda _s: None)
+    lines: list[str] = []
+    assert run.execute(plan_for(repo, [sha]), emit=lines.append, gen_cmd=GEN_CMD) == 1
+    stops = [line for line in lines if line.startswith("stop:")]
+    assert stops == ["stop: conflict in doc.md; the cherry-pick is left in progress"], lines
+
+
+def test_the_continue_environment_is_read_at_call_time(monkeypatch):
+    """a3b06213.3: an env change made after import is seen, and GIT_EDITOR stays pinned to true."""
+    monkeypatch.setenv("REDIACC_LAND_RUN_PROBE", "later")
+    monkeypatch.setenv("GIT_EDITOR", "vim")
+    env = run.continue_env()
+    assert env["REDIACC_LAND_RUN_PROBE"] == "later"
+    assert env["GIT_EDITOR"] == "true"
+
+
+def test_a_failed_submodule_pick_step_carries_gits_stderr_tail(repo, tmp_path):
+    """a3b06213.4: the step line of a failed submodule pick keeps git's own words."""
+    sub = make_sub(tmp_path)
+    sha = lease_commit(sub, {"s.txt": "lease\n"}, "feat: s lease")
+    live_commit(sub, {"s.txt": "head\n"}, "chore: s head")
+    lines: list[str] = []
+    plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {})
+    assert run.execute(plan, emit=lines.append) == 1
+    step = [line for line in lines if line.startswith("step pick sub rc=1")]
+    assert step, lines
+    assert len(step[0]) > len("step pick sub rc=1"), lines

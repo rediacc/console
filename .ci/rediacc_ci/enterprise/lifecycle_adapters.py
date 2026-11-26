@@ -160,7 +160,7 @@ def _object_path(bucket: str, key: str) -> str:
 def _bucket_s3(
     shared: S3, company_s3: Callable[[Target, str], S3] | None, company: Target, bucket: str
 ) -> S3:
-    """The transport for one bucket: each of the company's three buckets (configs, backups, audit) is reached with the company's own key for that bucket, because the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8 and answers 403 for any of them; only a bucket that is not the company's goes to the shared pair."""
+    """The transport for one bucket: each of the company's three buckets (configs, backups, audit) is reached with the company's own key for that bucket, because the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8 and answers 403 for any of them; only a bucket that is not the company's goes to the shared pair. With no `company_s3` factory (an exporter built without per-company keys) every bucket goes to the shared pair, and the three company buckets then answer 403 naming the bucket."""
     if company_s3 is not None and bucket in company.buckets:
         return company_s3(company, bucket)
     return shared

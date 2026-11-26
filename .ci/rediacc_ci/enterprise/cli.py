@@ -253,7 +253,7 @@ KEY_VERBS = {secrets.CONFIGS_ENTRY: "configs-key", secrets.AUDIT_ENTRY: "audit-k
 def _company_s3(
     error: type[Exception], store: Any, endpoint: str, seams: LiveSeams
 ) -> Callable[[Any, str], Any]:
-    """The transport for one of a company's three buckets, signed with the company's own key for that bucket, read from the enterprise store when first needed: the backups bucket with `ACCOUNT_BACKUP_S3_KEYPAIR`, the configs bucket with `COMPANY_CONFIGS_S3_KEYPAIR` and the audit bucket with `COMPANY_AUDIT_S3_KEYPAIR` (each a key over that bucket only; `enterprise configs-key` and `enterprise audit-key` mint them for a company onboarded before they existed). A missing key refuses naming its mint command; nothing falls back to the shared pair, which reaches none of these buckets."""
+    """The transport for one of a company's three buckets, signed with the company's own key for that bucket, read from the enterprise store when first needed: the backups bucket with `ACCOUNT_BACKUP_S3_KEYPAIR`, the configs bucket with `COMPANY_CONFIGS_S3_KEYPAIR` and the audit bucket with `COMPANY_AUDIT_S3_KEYPAIR` (each a key over that bucket only; `enterprise configs-key` and `enterprise audit-key` mint them for a company onboarded before they existed). A missing key refuses naming its mint command (the configs and audit keys have a verb; the backups key is minted by `enterprise add`); nothing falls back to the shared pair, which reaches none of these buckets."""
 
     def for_company(company: Any, bucket: str) -> Any:
         entries = {
@@ -263,7 +263,7 @@ def _company_s3(
         }
         entry = entries.get(bucket)
         if entry is None:
-            raise error("company %s: %s is not one of its buckets" % (company.id, bucket))
+            raise error("company %s: the requested bucket is not one of its buckets" % company.id)
         verb = KEY_VERBS.get(entry)
         hint = (
             "run `./run.sh enterprise %s %s --bws-project <id>` (with --bench for a bench company) to mint it"

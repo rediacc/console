@@ -269,6 +269,11 @@ def test_company_s3_refuses_a_bucket_that_is_not_the_companys():
     for_company = cli._company_s3(RuntimeError, FakeStore(), "https://r2", cli.LiveSeams())
     with pytest.raises(RuntimeError, match="not one of its buckets"):
         for_company(target, "releases")
+    # be6b372b.2: another company's label is never echoed into the refusal.
+    with pytest.raises(RuntimeError) as raised:
+        for_company(target, "audit-globex")
+    assert "globex" not in str(raised.value)
+    assert ACME in str(raised.value)
 
 
 def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys, monkeypatch):

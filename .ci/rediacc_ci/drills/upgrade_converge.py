@@ -901,9 +901,12 @@ def seed_throwaway_config(
     # A fresh identity so the two configs are distinct universes on disk; the schema requires a valid UUID here, so set one rather than drop the field.
     doc["id"] = str(uuid.uuid4())
     target_json = config_dir / ("%s.json" % target)
-    _write_private(target_json, json.dumps(doc, indent=2) + "\n")
-    if carry_token:
-        _write_private(config_files(target_json, target)[1], token_text)
+    try:
+        _write_private(target_json, json.dumps(doc, indent=2) + "\n")
+        if carry_token:
+            _write_private(config_files(target_json, target)[1], token_text)
+    except OSError as exc:
+        return "the throwaway config %s was not written: %s" % (target_json, exc)
     return ""
 
 

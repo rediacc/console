@@ -1378,6 +1378,37 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
     assert order == list(names)
 
 
+def test_a_failed_branch_renet_restore_stops_before_k1_7_and_cleanup_resumes_reconcile(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """f936d4f4.1 and .2: `run` returns before K1.8 and K1.7 when the restore fails, and the timer the run paused is started again by the cleanup in its `finally`."""
+    worker = FakeWorker()
+    live, _ctx = _ready(tmp_path, worker)
+    order: list[str] = []
+    for name in (
+        "k1_0_bring_up",
+        "k1_1_unit_order",
+        "k1_2_raw_restart",
+        "k1_3_unit_rewrite",
+        "k1_4_stop_side_drift",
+        "k1_5_converge",
+        "k1_9_skewed_restart",
+        "k1_10_mount_restart",
+        "k1_6_rollout",
+        "k1_8_job_timeout",
+        "k1_7_reboot",
+    ):
+        monkeypatch.setattr(live, name, lambda n=name: _mark(order, n, True))
+    monkeypatch.setattr(live, "restore_branch_renet", lambda: _mark(order, "restore", False))
+    assert live.pause_reconcile()
+    assert not worker.timer_on
+    live.execute()
+    assert order[-1] == "restore"
+    assert "k1_7_reboot" not in order
+    assert "k1_8_job_timeout" not in order
+    assert worker.timer_on
+
+
 def test_pause_reconcile_stops_the_timer_and_cleanup_starts_it(tmp_path: pathlib.Path) -> None:
     worker = FakeWorker()
     live, ctx = _ready(tmp_path, worker)

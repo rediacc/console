@@ -20,6 +20,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import types
 
 import pytest
 
@@ -177,7 +178,7 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
 
 
 def _install_fixture(monkeypatch, tmp_path):
-    """Run build_and_install past the build steps into a tmp install tree; returns (plan, logged steps)."""
+    """Run build_and_install past the build steps into a tmp install tree; returns (plan, calls, logged steps, dest)."""
     calls = []
     steps: list[str] = []
 
@@ -223,3 +224,31 @@ def test_the_backup_clause_prints_only_when_a_backup_was_written(monkeypatch, tm
     native.build_and_install(tmp_path, plan)
     assert "backup at %s" % plan.backup in steps[-1]
     assert pathlib.Path(plan.backup).read_bytes() == b"old"
+
+
+def test_a_missing_renet_licence_key_is_a_native_error_naming_the_exit(monkeypatch, tmp_path):
+    """6b050dc6.1: `resolve_renet_account_key` raising LocalCommonError becomes a NativeError that carries its exit code."""
+
+    class LocalCommonError(Exception):
+        def __init__(self, code):
+            super().__init__(code)
+            self.code = code
+
+    def resolve(_dir, _env):
+        raise LocalCommonError(7)
+
+    fake = types.SimpleNamespace(
+        LocalCommonError=LocalCommonError, resolve_renet_account_key=resolve
+    )
+    monkeypatch.setattr(native.importlib, "import_module", lambda _name: fake)
+    with pytest.raises(native.NativeError, match=r"no renet licence key \(exit 7\)"):
+        native._renet_account_key(tmp_path)
+
+
+def test_an_install_directory_blocked_by_a_file_is_a_native_error(monkeypatch, tmp_path):
+    """6b050dc6.2: a regular file where the install directory goes raised FileExistsError as a traceback."""
+    plan, _calls, _steps, dest = _install_fixture(monkeypatch, tmp_path)
+    dest.parent.parent.mkdir(parents=True)
+    dest.parent.write_text("not a directory")
+    with pytest.raises(native.NativeError, match="cannot create the install directory"):
+        native.build_and_install(tmp_path, plan)

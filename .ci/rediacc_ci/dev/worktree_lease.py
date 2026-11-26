@@ -51,7 +51,7 @@ SHOWN_ESCAPES = 5
 GB = 10**9
 # Measured 2026-11-23 on the live seeded trees: `du -sk` of a second lease after a first one (hard links counted once) is 4271856 KiB, the disk one more lease adds. Rounded up.
 LEASE_ESTIMATE_BYTES = 4_400_000_000
-# What stays free after the new lease, besides room for one more: the 12 spawns of 2026-11-23 filled the disk and every seed failed with ENOSPC (#24f87180).
+# What stays free after the new lease, besides room for one more: the 12 spawns of 2026-11-23 filled the disk and every seed failed with ENOSPC (#24f87180). Ten decimal GB: bef569ed lowered this from 10 GiB (10.74 GB) so the printed floor equals the enforced one; the lowering is deliberate, and the 4.4 GB estimate is itself rounded up.
 FREE_FLOOR_BYTES = 10 * GB
 # The two trees a lease is cut from (PLAN-two-track-merge-dev LT16), spelled as commit_policy's ROLE_DEVELOPMENT and ROLE_LANDING: the main checkout's live branch, or the branch the landing record binds.
 TREE_DEVELOPMENT = "development"
@@ -1048,12 +1048,21 @@ def tick_report(root, lease_id, me):
         inv = rec.investigation_for(root, rel, box.sig)
         if inv is None:
             pointers = " ".join(
-                x for x in ("commit:%s" % last[:12], _first_path(root, box.picks[-1][0], last)) if x
+                shlex.quote(x)
+                for x in ("commit:%s" % last[:12], _first_path(root, box.picks[-1][0], last))
+                if x
             )
             note = TICKS_NOTE % (box.plan, box.sig, last[:12], lease_id, named)
             lines.append(
                 "  worklist.py --plan-investigate %s %s %s %s %s -- %s --write"
-                % (me, rel, box.sig, "present" if done else "partial", pointers, shlex.quote(note))
+                % (
+                    shlex.quote(me),
+                    shlex.quote(rel),
+                    box.sig,
+                    "present" if done else "partial",
+                    pointers,
+                    shlex.quote(note),
+                )
             )
             if not done:
                 lines.append(_owed_line(ids, covered))
@@ -1180,7 +1189,7 @@ def cmd_land(args):
         at = args.index("--me")
         me = args[at + 1] if at + 1 < len(args) else ""
         args = args[:at] + args[at + 2 :]
-        if not me:
+        if not me or me.startswith("-"):
             log.error("--me takes a session id prefix")
             return 1
     ids = [a for a in args if not a.startswith("-")]

@@ -200,7 +200,12 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
 
     # 3. Back up the existing user binary and replace it. The install directory is created when missing: a fresh native host has none yet.
     dest = pathlib.Path(built_plan.dest)
-    dest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise NativeError(
+            "cannot create the install directory %s: %s" % (dest.parent, exc)
+        ) from exc
     backed_up = dest.is_file()
     if backed_up:
         _copy(dest, pathlib.Path(built_plan.backup))

@@ -299,14 +299,20 @@ _CURSOR_KEYS = frozenset({"next_page_token", "page_token", "cursor"})
 _CONTINUATION_KEYS = _CURSOR_KEYS | {"next_cursor", "next", "next_page"}
 
 
+def _is_zero(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value == 0
+
+
 def _total_pages(body: dict, path: str = "listing") -> int:
     """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`. A body with no `result_info` is the whole listing on one page (1); a `result_info` that names no usable count raises."""
     info = body.get("result_info")
     if info is None:
         return 1
     total = info.get("total_pages") if isinstance(info, dict) else None
-    # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it.
-    if total == 0 or (isinstance(info, dict) and total is None and info.get("total_count") == 0):
+    # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it. A JSON `false` equals 0 in Python and is a malformed count, not an empty listing.
+    if _is_zero(total) or (
+        isinstance(info, dict) and total is None and _is_zero(info.get("total_count"))
+    ):
         return 1
     # An unpaginated endpoint (no per_page, no page count, no continuation field) whose every stated item count (`count`, `total_count`) equals the number of items returned is a complete list.
     if (

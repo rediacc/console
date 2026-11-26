@@ -35,6 +35,7 @@ from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, DATASTORE_PATH
 
 if TYPE_CHECKING:
     import types
+    from collections.abc import Callable
 
 TREE = "a" * 40
 HEAD = "e" * 40
@@ -5496,11 +5497,14 @@ def test_plan_disk_need_arithmetic_for_basic_other_bridges_and_overrides() -> No
 
 def _pinned_run(
     tmp_path: pathlib.Path,
+    before: Callable[[pathlib.Path], None] | None = None,
 ) -> tuple[int, str, World, pathlib.Path, pathlib.Path]:
     live = tmp_path / "live"
     clone = tmp_path / "clone"
     live.mkdir()
     clone.mkdir()
+    if before is not None:
+        before(live)
     (live / ".account-state").write_text("gateway_port=4111\n")
     world = World(clone)
     out = io.StringIO()
@@ -5552,6 +5556,44 @@ def test_a_pinned_run_builds_and_reads_only_clone_paths_and_files_the_receipt_un
     # The main checkout's gateway record and state are untouched.
     assert not (live / receipt_mod.CACHE_DIR / vm_check.GATEWAY_RECORD).exists()
     assert (live / ".account-state").read_text() == "gateway_port=4111\n"
+
+
+def test_a_pinned_receipt_that_cannot_be_filed_ends_the_run_not_verified(
+    tmp_path: pathlib.Path,
+) -> None:
+    """9387f6ba.1: a failed copy into the main checkout left VERIFIED and EXIT_VERIFIED with no archive for the push guard. A plain file where the receipt folder's first component goes makes the copy raise OSError."""
+
+    def block(live: pathlib.Path) -> None:
+        (live / pathlib.PurePath(receipt_mod.CACHE_DIR).parts[0]).write_text("not a folder")
+
+    rc, out, _world, live, _clone = _pinned_run(tmp_path, before=block)
+    assert "could not be filed" in out, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "vm:check VERIFIED" not in out, out
+    assert not (live / receipt_mod.CACHE_DIR / ("%s.json" % TREE)).exists()
+
+
+def test_a_pinned_only_merge_files_the_receipt_in_the_main_checkout(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """9387f6ba.2: the merge path of an `--only` run calls `_publish_pinned` after writing the merged receipt, and a failed filing downgrades its VERIFIED."""
+    calls: list[str] = []
+    answers = iter([True, False])
+
+    def publish(_self: Any) -> bool:
+        calls.append("publish")
+        return next(answers)
+
+    monkeypatch.setattr(vm_check.VmCheck, "_publish_pinned", publish)
+    rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    assert rc == vm_check.EXIT_FAILED, out
+    calls.clear()
+    rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", "V1.2")
+    assert calls == ["publish"], calls
+    # The second answer is False, so the merge's VERIFIED is downgraded.
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert vm_check.VmCheck._unfiled(receipt_mod.VERIFIED, None)[0] == receipt_mod.NOT_VERIFIED
+    assert vm_check.VmCheck._unfiled(receipt_mod.FAILED, None) == (receipt_mod.FAILED, None)
 
 
 def test_a_pin_that_cannot_run_is_refused_before_the_lock_or_the_fleet(

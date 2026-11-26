@@ -3449,10 +3449,10 @@ class VmCheck:
         self.host.kill_suites()
         thread.join(timeout=30)
 
-    def _publish_pinned(self) -> None:
-        """Copy the clone's `<tree>.json` archive, and only that, into the main checkout's receipt folder, so the push guard finds it there while a newer tree's `receipt.json` stays untouched."""
+    def _publish_pinned(self) -> bool:
+        """Copy the clone's `<tree>.json` archive, and only that, into the main checkout's receipt folder, so the push guard finds it there while a newer tree's `receipt.json` stays untouched. False when the copy failed: the push guard then finds no archive, so the caller must not end the run VERIFIED."""
         if self.publish_root is None or not self.tree:
-            return
+            return True
         name = "%s.json" % self.tree
         source = receipt_mod.receipt_dir(self.root) / name
         target = receipt_mod.receipt_dir(self.publish_root) / name
@@ -3463,8 +3463,19 @@ class VmCheck:
             os.replace(partial, target)
         except OSError as exc:
             self.say("vm:check: the pinned receipt could not be filed at %s: %s" % (target, exc))
-            return
+            return False
         self.say("vm:check: pinned receipt filed at %s" % target)
+        return True
+
+    @staticmethod
+    def _unfiled(status: str, reason: dict[str, str] | None) -> tuple[str, dict[str, str] | None]:
+        """A VERIFIED verdict whose pinned receipt could not be filed is NOT_VERIFIED: nothing the push guard reads backs it."""
+        if status != receipt_mod.VERIFIED:
+            return status, reason
+        return receipt_mod.NOT_VERIFIED, {
+            "class": "pinned-receipt-not-filed",
+            "detail": "the pinned receipt could not be filed in the main checkout, so the push guard would find no archive",
+        }
 
     def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
         folder = receipt_mod.receipt_dir(self.root)
@@ -4307,7 +4318,8 @@ class VmCheck:
             path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
             path = receipt_mod.write(self.root, self._receipt(status, reason))
-            self._publish_pinned()
+            if not self._publish_pinned():
+                status, reason = self._unfiled(status, reason)
         else:
             log.error("HEAD^{tree} or the inputs digest is unreadable, so no receipt was written")
             if status == receipt_mod.VERIFIED:
@@ -4399,7 +4411,8 @@ class VmCheck:
             "merged": [*(base.get("merged") or []), receipt_mod.merge_entry(run)],
         }
         path = receipt_mod.write(self.root, merged)
-        self._publish_pinned()
+        if not self._publish_pinned():
+            status, reason = self._unfiled(status, reason)
         self.say(
             "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
             % (

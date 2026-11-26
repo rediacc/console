@@ -1524,7 +1524,7 @@ def owner_session(
     if answer.json().get("requiresTwoFactor"):
         raise proof.LabError("company %s: the owner sign-in asks for a second factor" % company)
     if answer.json().get("requiresStepUp"):
-        # A server-minted link carries no browser binding, so the verify always steps up (private/account/src/services/auth.service.ts). The owner is passwordless without a factor, so the one answerable step is the confirmation; any other method is refused rather than answered, since the lab holds no password, code or passkey for the owner.
+        # A server-minted link carries no browser binding, so the verify answers `requiresStepUp` for it (private/account/src/services/auth.service.ts); a verify that answers none is taken as signed in. The owner is passwordless without a factor, so the one answerable step is the confirmation; any other method is refused rather than answered, since the lab holds no password, code or passkey for the owner.
         answer = _confirm_step_up(company, host, answer.json(), call)
     for cookie in answer.header_values("Set-Cookie"):
         got = ACCESS_COOKIE.search(cookie)

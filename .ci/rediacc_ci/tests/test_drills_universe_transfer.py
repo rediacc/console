@@ -450,3 +450,8 @@ def test_seed_log_line_never_carries_the_machine_secret() -> None:
     assert "ms1" in line
     assert transfer._without_secret('{"error": "no store"}') == '{"error": "no store"}'
     assert "unparseable" in transfer._without_secret("not json")
+    # 9ce9652d.1: a body that is not an object is never echoed, whatever it holds.
+    for body in ('["%s"]' % secret, '"%s"' % secret):
+        out = transfer._without_secret(body)
+        assert secret not in out
+        assert "not a JSON object" in out

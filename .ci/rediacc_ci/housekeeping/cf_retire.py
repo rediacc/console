@@ -565,7 +565,7 @@ def superset_problems(src: list, dst: list) -> tuple[list[str], int]:
 
 
 def archive_r2_bucket(name: str, jur: str | None, dst: str) -> dict:
-    """Copy the source delta into `dst`, then require every SOURCE key in `dst` with the same size, ETag and sha256. Destination-only keys are counted, never a difference: `dst` is a superset replacement."""
+    """Copy the source delta into `dst`, then require every SOURCE key in `dst` with the same size, the same ETag where both are single-part (a multipart ETag depends on the part size, so it is not comparable across buckets), and the same sha256 of its bytes. Destination-only keys are counted, never a difference: `dst` is a superset replacement."""
     endpoint = rbc.endpoint_for(rbc.default_endpoint(), jur)
     if name == dst:
         raise RetireError("source and destination are the same bucket: %s" % name)

@@ -39,7 +39,9 @@ def _without_secret(raw: str) -> str:
         body = json.loads(raw or "{}")
     except ValueError:
         return "<unparseable seed response, %d bytes>" % len(raw or "")
-    if isinstance(body, dict) and "machineSecret" in body:
+    if not isinstance(body, dict):
+        return "<seed response is not a JSON object, %d bytes>" % len(raw or "")
+    if "machineSecret" in body:
         body["machineSecret"] = "<redacted>"
     return json.dumps(body)
 

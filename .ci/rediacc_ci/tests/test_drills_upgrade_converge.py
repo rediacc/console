@@ -825,6 +825,14 @@ def test_seed_refuses_a_config_that_is_not_an_object(tmp_path: pathlib.Path) -> 
     assert "not a JSON object" in failed
 
 
+def test_seed_returns_a_failure_when_the_target_cannot_be_written(tmp_path: pathlib.Path) -> None:
+    """f936d4f4.3: an OSError from the private write is a returned failure (a FAIL row), not a traceback."""
+    base = _seed_dir(tmp_path)
+    failed = u.seed_throwaway_config(base, "rediacc", "no-dir/u1-x", "/s/renet", carry_token=True)
+    assert "was not written" in failed
+    assert "u1-x.json" in failed
+
+
 def _u1_home(tmp_path: pathlib.Path, live: u._LiveU1) -> pathlib.Path:
     live.tmp.mkdir(parents=True)
     base = tmp_path / "home" / ".config" / "rediacc"

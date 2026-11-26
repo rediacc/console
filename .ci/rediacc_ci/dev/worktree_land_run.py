@@ -33,7 +33,11 @@ TAIL = 300
 LOCK_RE = re.compile(r"Unable to create '([^'\n]+\.lock)': File exists")
 LOCK_WAITS = (0.5, 1.0, 2.0, 4.0)
 SLEEP = time.sleep
-CONTINUE_ENV = {**os.environ, "GIT_EDITOR": "true"}
+
+
+def continue_env():
+    """The environment of a `cherry-pick --continue`, read at call time so an editor setting changed after import is seen."""
+    return {**os.environ, "GIT_EDITOR": "true"}
 
 
 class LandPlan(NamedTuple):
@@ -109,7 +113,7 @@ def retry_lock(cwd, *args, env=None):
         if args[0] == "cherry-pick" and _picking(cwd):
             if _unmerged(cwd):
                 return done
-            done = git(cwd, "cherry-pick", "--continue", env=CONTINUE_ENV)
+            done = git(cwd, "cherry-pick", "--continue", env=continue_env())
         elif args[0] == "cherry-pick" and _sequencing(cwd):
             return done
         else:
@@ -128,8 +132,9 @@ def _failed_pick_stop(cwd, done, what, prefix=""):
         if _picking(cwd) or _sequencing(cwd)
         else "the pick of %s did not run" % what
     )
+    paths = [prefix + p for p in _unmerged(cwd)]
     lock = held_lock(cwd, done)
-    if lock:
+    if lock and not paths:
         kind = "index lock" if lock.endswith("index.lock") else "git lock"
         return "stop: %s %s is still held by another git process after %d retries; %s" % (
             kind,
@@ -137,7 +142,6 @@ def _failed_pick_stop(cwd, done, what, prefix=""):
             len(LOCK_WAITS),
             left,
         )
-    paths = [prefix + p for p in _unmerged(cwd)]
     if paths:
         return "stop: conflict in %s; the cherry-pick is left in progress" % " ".join(paths)
     return "stop: the pick of %s failed without a conflicted path: %s; %s" % (
@@ -227,7 +231,7 @@ def _read(path):
 def _resolve_generated(plan, run, gen_cmd, sha, emit):
     """Resolve the pick in progress when every conflicted path is a `gen-docs` region.
 
-    None: not applicable (a conflict outside the regions, a modify/delete or binary conflict); nothing was touched. True: resolved and continued. False: a step failed after the first file was rewritten; the stop line naming the paths has been emitted and the pick is left in progress.
+    None: not applicable (a conflict outside the regions, a modify/delete or binary conflict); nothing was touched. True: resolved and continued. False: a step failed (a take-head rewrite, gen-docs, the add or the continue), possibly before any file was rewritten; the stop line naming the paths has been emitted and the pick is left in progress.
     """
     paths = _unmerged(plan.live)
     if not paths:
@@ -259,7 +263,7 @@ def _resolve_generated(plan, run, gen_cmd, sha, emit):
         return stop("gen-docs")
     if run.step("add generated", retry_lock(plan.live, "add", "--", *paths).returncode):
         return stop("add generated")
-    cont = retry_lock(plan.live, "cherry-pick", "--continue", env=CONTINUE_ENV)
+    cont = retry_lock(plan.live, "cherry-pick", "--continue", env=continue_env())
     if run.step(
         "continue %s" % sha[:12],
         cont.returncode,
@@ -280,12 +284,20 @@ def _land_sub(plan, run, key, sub, shas, branch):
         return False
     before = git(sub, "rev-parse", "HEAD").stdout.strip()
     pick = retry_lock(sub, "cherry-pick", "-x", *shas)
-    if run.step("pick %s" % key, pick.returncode):
+    tail = (pick.stderr or pick.stdout).strip()[-TAIL:] if pick.returncode else ""
+    if run.step("pick %s" % key, pick.returncode, tail):
         run.emit(_failed_pick_stop(sub, pick, key, key.rstrip("/") + "/"))
         return False
     landed = git(sub, "rev-list", "--reverse", "%s..HEAD" % before).stdout.split()
     if len(landed) == len(shas):
         run.landed.extend(zip(shas, landed, strict=True))
+    else:
+        run.step(
+            "landed-count %s" % key,
+            1,
+            "picked %d commit(s) but %d landed; their Fixes-Review trailers are not marked"
+            % (len(shas), len(landed)),
+        )
     return _land_gitlink(plan, run, key, landed, shas)
 
 
@@ -384,7 +396,7 @@ def after_picks(live, me, *, emit=print, shard_check=SHARD_CHECK) -> int:
     for line in dict.fromkeys(refused):
         found = REBALANCE_LANE_RE.search(line)
         lane = found.group(1) if found else "(see the gate line)"
-        run.step("shard-coverage", code, "lane %s is not placed by --run" % lane)
+        run.step("shard-coverage", code or 1, "lane %s is not placed by --run" % lane)
         emit("stop: coverage gate line for the lead: %s" % line)
     if code and lanes:
         again, _text = _coverage(live, shard_check)

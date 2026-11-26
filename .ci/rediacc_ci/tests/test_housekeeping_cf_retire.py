@@ -557,3 +557,22 @@ def test_archive_r2_bucket_fails_on_missing_or_mismatched_source_keys(monkeypatc
     assert res["verified"] is False
     res, _ = _bucket(monkeypatch, [], [_Obj("a", 1)])
     assert res["verified"] is False
+
+
+def test_archive_r2_bucket_refuses_the_same_bucket_as_source_and_destination(monkeypatch):
+    """d8b4646d.1: copying a bucket onto itself would verify trivially."""
+    monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
+    with pytest.raises(cr.RetireError, match="same bucket: b"):
+        cr.archive_r2_bucket("b", None, "b")
+
+
+def test_superset_problems_compares_etags_only_when_both_are_single_part():
+    """d8b4646d.3: a multipart ETag on either side skips the ETag comparison (the sha256 pass judges those keys); two single-part ETags that differ are named."""
+    src = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "abc-2")]
+    same_size = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "def-3")]
+    assert cr.superset_problems(src, same_size) == ([], 0)
+    one_sided = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "y" * 32)]
+    assert cr.superset_problems(src, one_sided) == ([], 0)
+    problems, _extras = cr.superset_problems(src, [_Obj("a", 1, "q" * 32), _Obj("b", 1, "abc-2")])
+    assert len(problems) == 1
+    assert problems[0].startswith("etag differs: a")
