@@ -298,11 +298,12 @@ Promoted: 10 of 99 plans done, 1535 of 1888 boxes done (81%).
 32. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
 33. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
 34. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-35. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-36. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-37. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-38. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-39. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-40. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
-41. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+35. agent/plans/PLAN-windows-lane.md -- P2, draft, not started
+36. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+37. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+38. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+39. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+40. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+41. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+42. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
