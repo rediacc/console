@@ -587,7 +587,7 @@ function requestScopedConfig(deps: ServeDeps, config: RdcConfig): RdcConfig | un
  * the config store wrapped the session's config under. A config the store named no generation for
  * (the daemon's enrolled file) cannot be sealed for the store, and the turn goes unrecorded.
  */
-function chatRecording(deps: ServeDeps, recorder: NonNullable<ServeDeps['aiRecorder']>) {
+export function chatRecording(deps: ServeDeps, recorder: NonNullable<ServeDeps['aiRecorder']>) {
   const recording: AiChatRecording = {
     transcripts: new AiTranscripts(recorder),
     keyOf: (principal, config, configSessionId) => {

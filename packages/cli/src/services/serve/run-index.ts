@@ -194,6 +194,8 @@ class Run implements RunHandle {
   }
 
   private flushProgress(): void {
+    // A step that flushes overdue progress while its timer is still pending must cancel that timer, or it later posts a second progress event inside the interval.
+    if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
     if (this.phase === 'ended' || this.pendingStep === undefined) return;
     this.lastStepSent = this.pendingStep;

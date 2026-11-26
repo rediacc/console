@@ -243,13 +243,27 @@ export function createExecutorAudit(
     }
   };
 
-  return async (event: ExecutorAuditEvent): Promise<void> => {
-    const body = JSON.stringify({ events: [buildExecutorAuditEvent(event)] });
+  /** Build and deliver one event: undefined when accepted, else why not. An event that cannot be built is undelivered like any other, so the caller refuses or warns instead of the raw error ending its stream. */
+  const ship = async (
+    event: ExecutorAuditEvent
+  ): Promise<{ reason: string; retry: boolean } | undefined> => {
+    let body: string;
+    try {
+      body = JSON.stringify({ events: [buildExecutorAuditEvent(event)] });
+    } catch (error) {
+      const why = error instanceof Error ? error.message : String(error);
+      return { reason: `the audit event could not be built (${why})`, retry: false };
+    }
     let failed: { reason: string; retry: boolean } | undefined;
     for (let attempt = 1; attempt <= AUDIT_DELIVERY_ATTEMPTS; attempt++) {
       failed = await deliver(body);
       if (!failed?.retry) break;
     }
+    return failed;
+  };
+
+  return async (event: ExecutorAuditEvent): Promise<void> => {
+    const failed = await ship(event);
     if (!failed) return;
     const failure = new AuditUnavailableError(failed.reason);
     options.onFailure?.(failure, event);

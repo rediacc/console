@@ -113,8 +113,9 @@ export interface ServeDeps {
    */
   runIndex?: RunIndex;
   /**
-   * The agent-grant sessions behind `POST /v1/mcp/call` (agent-grant-session.ts). Set by the container
-   * tier; without it the route is not registered.
+   * The agent-grant sessions behind `POST /v1/mcp/call` (agent-grant-session.ts). Set by `rdc serve`
+   * in both modes (commands/serve.ts configLoading), always pinned to the executor's org; without it
+   * the route is not registered.
    */
   agentGrants?: AgentGrantSessions;
   /**

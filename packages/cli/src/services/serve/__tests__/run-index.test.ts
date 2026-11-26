@@ -102,6 +102,36 @@ describe('run recorder', () => {
     expect(posted.map((event) => event.seq)).toEqual([0, 1, 2]);
   });
 
+  it('a step that flushes overdue progress cancels the pending timer (review b70d6146.2)', async () => {
+    vi.useFakeTimers();
+    let clock = 0;
+    const { posted, fetchImpl } = capture();
+    const index = createRunIndex({
+      accountUrl: 'https://account.test',
+      executorToken: 't',
+      fetchImpl,
+      now: () => clock,
+    });
+    const run = index.begin({ principal: PRINCIPAL, runId: 'run-timer', pathKey: 'repo up' });
+    run.step('a');
+    // The run clock passes the interval while the timer set for step a is still pending.
+    await vi.advanceTimersByTimeAsync(5000);
+    clock = PROGRESS_INTERVAL_MS;
+    run.step('b');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(posted.filter((event) => event.lastStep).map((event) => event.lastStep)).toEqual(['b']);
+    run.step('c');
+    // The first timer's deadline passes: step c is still inside the interval after b.
+    await vi.advanceTimersByTimeAsync(PROGRESS_INTERVAL_MS - 5000);
+    expect(posted.filter((event) => event.lastStep).map((event) => event.lastStep)).toEqual(['b']);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(posted.filter((event) => event.lastStep).map((event) => event.lastStep)).toEqual([
+      'b',
+      'c',
+    ]);
+    await run.end({ state: 'succeeded', exitCode: 0 });
+  });
+
   it('announces the job and leaves a detached run for the terminal poll to end', async () => {
     const { posted, fetchImpl } = capture();
     const index = createRunIndex({

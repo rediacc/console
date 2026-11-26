@@ -32,7 +32,12 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
-import { AUDIT_DELIVERY_ATTEMPTS, AUDIT_UNAVAILABLE, createExecutorAudit } from '../audit.js';
+import {
+  AUDIT_DELIVERY_ATTEMPTS,
+  AUDIT_UNAVAILABLE,
+  AuditUnavailableError,
+  createExecutorAudit,
+} from '../audit.js';
 import {
   bootContainerExecutor,
   type ContainerExecutor,
@@ -157,6 +162,55 @@ describe('WB8: audit fails closed for mutating commands', () => {
     expect(result.stderr).toMatch(
       /audit_failed: "rdc repo delete" ran, but its audit record could not be delivered: .*ECONNREFUSED/
     );
+  });
+
+  it('an event the shipper cannot build is an undelivered record, not a raw error (review b32c1cdd.4)', async () => {
+    const attempts: unknown[] = [];
+    const failures: unknown[] = [];
+    const ship = createExecutorAudit({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      fetchImpl: ((_url: string | URL, init?: RequestInit) => {
+        attempts.push(init?.body);
+        return Promise.resolve(new Response('{}'));
+      }) as typeof fetch,
+      onFailure: (error) => failures.push(error),
+    });
+    // No principal: reading its token id throws while the wire event is built.
+    const unbuildable = { commandPath: 'repo delete' } as unknown as Parameters<typeof ship>[0];
+
+    const thrown = await ship(unbuildable).then(
+      () => undefined,
+      (error: unknown) => error
+    );
+
+    expect(thrown).toBeInstanceOf(AuditUnavailableError);
+    expect((thrown as AuditUnavailableError).code).toBe(AUDIT_UNAVAILABLE);
+    expect((thrown as Error).message).toContain('could not be built');
+    expect(failures).toHaveLength(1);
+    expect(attempts).toEqual([]);
+  });
+
+  it('control: a buildable event is shipped and does not throw', async () => {
+    const attempts: unknown[] = [];
+    const ship = createExecutorAudit({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      fetchImpl: ((_url: string | URL, init?: RequestInit) => {
+        attempts.push(init?.body);
+        return Promise.resolve(new Response('{}'));
+      }) as typeof fetch,
+    });
+    await ship({
+      principal: { userId: 'u', orgId: 'o', teamId: null, userEmail: 'u@example.com' } as never,
+      commandPath: 'repo delete',
+      success: true,
+      exitCode: 0,
+      durationMs: 1,
+      destructive: true,
+      params: {},
+    });
+    expect(attempts).toHaveLength(1);
   });
 
   it('control: a read whose outcome record is delivered carries no audit notice', async () => {

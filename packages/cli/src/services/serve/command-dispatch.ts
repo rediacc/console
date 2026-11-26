@@ -406,7 +406,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
-      // An image-making call (create, fork) is what the audit event traces an orphaned image back to, so a later call of the same command (fork then up) does not displace it.
+      // An image-making call (create, fork) is what the audit event traces an orphaned image back to, so a later call of the same command (fork then up) does not displace it. The event's success and exit code stay the command's own (a failing `up` after a good fork is a failed `repo fork`), and its `commandPath` names the command, so the function here says which image was made, not which call failed.
       const makesImage = IMAGE_MAKING_FUNCTIONS.has(options.functionName);
       if (makesImage || !madeImage) {
         functionName = options.functionName;

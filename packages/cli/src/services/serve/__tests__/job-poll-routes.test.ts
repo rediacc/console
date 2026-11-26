@@ -81,6 +81,7 @@ function trailer(extra: Record<string, unknown> = {}): string {
 }
 
 describe('job poll and cancel routes', () => {
+  let ended: { jobId: string; state: string; exitCode?: number }[];
   let audited: { commandPath: string; destructive: boolean; success: boolean }[];
   let app: ReturnType<typeof createServeApp>;
   /** How many of the next audit deliveries fail, as an unreachable account server would. */
@@ -88,6 +89,7 @@ describe('job poll and cancel routes', () => {
 
   function boot(policy?: unknown) {
     audited = [];
+    ended = [];
     const deps: ServeDeps = {
       mode: 'daemon',
       auth: new AuthVerifier({
@@ -119,6 +121,15 @@ describe('job poll and cancel routes', () => {
         return Promise.resolve();
       },
       executor: { execute: () => Promise.reject(new Error('no command runs here')) },
+      runIndex: {
+        begin: () => {
+          throw new Error('no run begins here');
+        },
+        endJob: (jobId, outcome) => {
+          ended.push({ jobId, ...outcome });
+          return Promise.resolve();
+        },
+      },
     };
     app = createServeApp(deps);
   }
@@ -198,6 +209,14 @@ describe('job poll and cancel routes', () => {
       await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
     }
     expect(observed).toEqual(Array(3).fill({ jobId: ID, state: 'succeeded', exitCode: 0 }));
+  });
+
+  it('a terminal poll ends the run index row of the job, and a running one does not (review b70d6146.1)', async () => {
+    await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
+    expect(ended).toEqual([]);
+    spool.stdout = `${trailer({ state: 'succeeded', exit_code: 0, finished_at: '2026-11-04T00:00:00Z' })}\n`;
+    await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
+    expect(ended).toEqual([{ jobId: ID, state: 'succeeded', exitCode: 0 }]);
   });
 
   it('writes no terminal audit while the job still runs', async () => {
