@@ -68,8 +68,9 @@ export const NAMED_ERROR_ORIGINS: Record<string, ErrorOrigin> = {
   // The policy decision a grand-guarded destructive call gets until the caller confirms it (LM4: elicitation or the `confirm` argument).
   CONFIRMATION_REQUIRED: 'user',
   EXECUTOR_FAILED: 'environment',
-  // Background AI tasks (services/ai/background-task.ts): a second start of one conversation, and a task whose turn failed.
+  // Background AI tasks (services/ai/background-task.ts): a reused task id, the per-user cap, and a step that ended in a model or session failure.
   AI_TASK_EXISTS: 'user',
+  AI_TASK_LIMIT: 'user',
   AI_TASK_FAILED: 'environment',
 };
 

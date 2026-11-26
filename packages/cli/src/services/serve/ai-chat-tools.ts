@@ -85,7 +85,7 @@ export interface TurnRecord {
 }
 
 /** The record of a turn that is not recorded. */
-export const UNRECORDED: TurnRecord = {
+const UNRECORDED: TurnRecord = {
   opening: () => Promise.resolve(),
   reply: () => Promise.resolve(),
 };

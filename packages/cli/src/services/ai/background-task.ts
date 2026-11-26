@@ -30,7 +30,7 @@ export const AI_TASK_LIMIT = 'AI_TASK_LIMIT';
 export const SESSION_EXPIRED_REASON = 'The session key expired, so the task ended.';
 
 /** What a task is doing: `needs_approval` is a task paused on a held command. */
-export type TaskState = 'running' | 'needs_approval' | 'succeeded' | 'failed' | 'cancelled';
+type TaskState = 'running' | 'needs_approval' | 'succeeded' | 'failed' | 'cancelled';
 
 /** The end of a task's plan-4 run. */
 export interface TaskEnd {
@@ -97,7 +97,7 @@ interface Task extends TaskStart {
   settled: Promise<void>;
 }
 
-const LIVE: readonly TaskState[] = ['running', 'needs_approval'];
+const LIVE: ReadonlySet<TaskState> = new Set<TaskState>(['running', 'needs_approval']);
 
 export type StartResult =
   | { ok: true; task: TaskView }
@@ -171,7 +171,7 @@ export class BackgroundTasks {
   /** Stop a live task now. */
   async cancel(owner: string, taskId: string): Promise<boolean> {
     const task = this.owned(owner, taskId);
-    if (!task || !LIVE.includes(task.state)) return false;
+    if (!task || !LIVE.has(task.state)) return false;
     task.abort.abort();
     await this.finish(task, 'cancelled');
     return true;
@@ -185,7 +185,7 @@ export class BackgroundTasks {
   /** End every live task whose session key is gone. */
   sweep(): void {
     for (const task of this.tasks.values()) {
-      if (LIVE.includes(task.state) && !task.sessionAlive()) {
+      if (LIVE.has(task.state) && !task.sessionAlive()) {
         task.abort.abort();
         task.reason = SESSION_EXPIRED_REASON;
         this.finish(task, 'failed', SESSION_EXPIRED_REASON).catch(() => undefined);
@@ -216,7 +216,7 @@ export class BackgroundTasks {
   private liveOf(owner: string): number {
     let live = 0;
     for (const task of this.tasks.values()) {
-      if (task.owner === owner && LIVE.includes(task.state)) live += 1;
+      if (task.owner === owner && LIVE.has(task.state)) live += 1;
     }
     return live;
   }
@@ -257,7 +257,7 @@ export class BackgroundTasks {
   }
 
   private async finish(task: Task, state: TaskEnd['state'], reason?: string): Promise<void> {
-    if (!LIVE.includes(task.state)) return;
+    if (!LIVE.has(task.state)) return;
     task.state = state;
     if (reason) task.reason = reason;
     await task.run

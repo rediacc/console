@@ -1201,7 +1201,7 @@ describe('the approval token, end to end', () => {
         },
       });
       store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
-      const turn = chat(hono).then((response) => lines(response));
+      const turn = Promise.resolve(chat(hono)).then((response) => lines(response));
       for (let i = 0; i < 40; i += 1) await vi.advanceTimersByTimeAsync(10_000);
       const events = aiEvents(await turn);
       expect(events.find((e) => e.type === 'tool_result')).toMatchObject({

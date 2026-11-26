@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '4d9d8e75fbea7e5f';
+export const CLI_CONTRACT_VERSION = 'b8b97d7e3bdd53e6';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "4d9d8e75fbea7e5f",
+  "version": "b8b97d7e3bdd53e6",
   "languages": [
     "ar",
     "de",
@@ -18882,6 +18882,10 @@ export const CLI_CONTRACT: CliContract = {
     {
       "code": "AI_TASK_FAILED",
       "origin": "environment"
+    },
+    {
+      "code": "AI_TASK_LIMIT",
+      "origin": "user"
     },
     {
       "code": "AMBIGUOUS",
