@@ -1583,7 +1583,7 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write: a heredoc writing a review file through Path",
     ),
-    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_review_file_edit.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in _review_file_suite.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
     case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json("python3 .claude/rediacc_hooks/tests/test_wl_loopspeed.py"),

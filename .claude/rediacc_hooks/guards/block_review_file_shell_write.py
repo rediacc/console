@@ -1,6 +1,6 @@
 """Refuse a Bash command that writes a per-commit review record under `agent/reviews/` by hand.
 
-WHY. The pre-bash half of `block_review_file_edit` (agent/plans/PLAN-per-commit-review.md section 6): the Edit/Write tools are refused there, so the same hand edit through the shell is refused here. The shapes are the ones a session reaches for: an output redirection (`>`, `>>`, `>|`), `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`install`/`rsync`/`ln` onto the directory, `truncate`, `dd of=`, and an
+WHY. The pre-bash half of the review record row of `block_guarded_path_edit` (agent/plans/PLAN-per-commit-review.md section 6): the Edit/Write tools are refused there, so the same hand edit through the shell is refused here. The shapes are the ones a session reaches for: an output redirection (`>`, `>>`, `>|`), `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`install`/`rsync`/`ln` onto the directory, `truncate`, `dd of=`, and an
 interpreter one-liner or heredoc (`python3 -c`, `python3 - <<EOF`, `node -e`) whose code names the directory and opens something for writing. A tool's own output option is a write too (`sort -o`, `git diff --output=`, `find -fprint`), and so is any word of a command `shellscan.output_landings` does not list as a reader (`curl -o`, `tar -cf`, `touch`): that reading is a table of non-writers, so a tool
 nobody listed is refused when it names a review path rather than allowed.
 

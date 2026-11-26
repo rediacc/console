@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Control harness for block_live_proof_ledger_write and block_live_proof_ledger_shell_write, the two halves of "the live-proof ledger is written only by the recorder" (agent/plans/PLAN-tested-on-bench.md box V10).
+"""The cases of both halves of "the live-proof ledger is written only by the recorder" (agent/plans/PLAN-tested-on-bench.md box V10), their scratch world, and the runner they share.
 
-This file holds the cases of both halves and the runner, and runs the Edit half; `test-block_live_proof_ledger_shell_write.py` beside it runs the shell half through the same code, so each guard has the dedicated `test-<stem>.py` the hook-integrity gate credits. Both directions for each half, because a one-sided control is satisfiable by a broken hook: one that always refuses passes the refusal cases, one that never refuses passes the allowed ones. Then each guard's
-declared DEFECT is planted in-process and the run MUST fail, which is the proof the cases can.
+The Edit cases are run by `test-block_guarded_path_edit.py` (the ledger row of block_guarded_path_edit, which merged the three path-judged edit halves under CR5), and the shell cases by `test-block_live_proof_ledger_shell_write.py`, each through dispatch.py in both directions, because a one-sided control is satisfiable by a broken hook: one that always refuses passes the refusal cases, one that never refuses passes the allowed ones. Each suite then plants its guard's
+declared plant in-process and the run MUST fail, which is the proof the cases can.
 
 THE WORLD is a scratch checkout under the system temp directory holding a real `agent/ledgers/live-proof.jsonl` with one recorder-shaped row, a symlink to it, and a directory link to `agent/ledgers`, so the on-disk readings (a glob, a link, a `cd`) are exercised against files that exist. Every payload runs with that directory as its `cwd`.
 
-    test-block_live_proof_ledger_write.py        every Edit case through dispatch.py, then the DEFECT run
+Not a suite itself: the leading underscore keeps it out of the guard glob and out of the per-guard `test-<stem>.py` credit.
 """
 
 import atexit
@@ -15,7 +15,6 @@ import importlib.util
 import json
 import pathlib
 import shutil
-import sys
 import tempfile
 
 import _hookpath
@@ -34,7 +33,7 @@ _SYSPATH.loader.exec_module(_syspath)
 
 # The ledger path is the guard's own constant, read rather than retyped. That is also why this script can build its scratch world while untracked: the shell half reads an untracked script by path, and a string constant naming the ledger at a write target would be refused, which is the guard working; a value read from a module is not a constant it can see (a residue the guard's docstring names).
 _syspath.on_sys_path(str(HERE.parents[2]))
-L = importlib.import_module("rediacc_hooks.guards.block_live_proof_ledger_write").LEDGER_REL
+L = importlib.import_module("rediacc_hooks.guards.block_guarded_path_edit").LEDGER_REL
 NEEDLE = "live_proof record"
 WORLD = pathlib.Path(tempfile.mkdtemp(prefix="test-live-proof-ledger-"))
 atexit.register(shutil.rmtree, str(WORLD), True)
@@ -110,15 +109,8 @@ def suites():
         (n, {"tool_name": "Bash", "tool_input": {"command": c}, "cwd": CWD}, r)
         for n, c, r in SHELL_CASES
     ]
-    return {
-        "block_live_proof_ledger_write": EDIT_CASES,
-        "block_live_proof_ledger_shell_write": shell,
-    }
+    return {"block_live_proof_ledger_shell_write": shell}
 
 
-def main(stems=("block_live_proof_ledger_write",)):
+def main(stems=("block_live_proof_ledger_shell_write",)):
     return _edit_suite.finish(sum(_edit_suite.judge(stem, suites()[stem], STYLE) for stem in stems))
-
-
-if __name__ == "__main__":
-    sys.exit(main())

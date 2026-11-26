@@ -179,6 +179,12 @@
       "slow_runs": 122,
       "slow_p50_ms": 28.7
     },
+    "block_guarded_path_edit": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
     "block_host_toolchain_run": {
       "chain": "pre-bash",
       "fires": 0,
@@ -214,12 +220,6 @@
       "fires": 0,
       "slow_runs": 3,
       "slow_p50_ms": 61.0
-    },
-    "block_live_proof_ledger_write": {
-      "chain": "pre-edit",
-      "fires": 0,
-      "slow_runs": 0,
-      "slow_p50_ms": null
     },
     "block_long_sleep": {
       "chain": "pre-bash",
@@ -365,12 +365,6 @@
       "slow_runs": 0,
       "slow_p50_ms": null
     },
-    "block_review_file_edit": {
-      "chain": "pre-edit",
-      "fires": 0,
-      "slow_runs": 0,
-      "slow_p50_ms": null
-    },
     "block_review_file_shell_write": {
       "chain": "pre-bash",
       "fires": 1,
@@ -382,12 +376,6 @@
       "fires": 1,
       "slow_runs": 2,
       "slow_p50_ms": 23.6
-    },
-    "block_roundlog_write": {
-      "chain": "pre-edit",
-      "fires": 0,
-      "slow_runs": 0,
-      "slow_p50_ms": null
     },
     "block_second_branch": {
       "chain": "pre-bash",

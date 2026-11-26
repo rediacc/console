@@ -1,6 +1,6 @@
 """Refuse a Bash command that writes the live-proof ledger, `agent/ledgers/live-proof.jsonl`, by any route but the recorder.
 
-WHY. The pre-bash half of `block_live_proof_ledger_write` (agent/plans/PLAN-tested-on-bench.md box V10): the Edit/Write tools are refused there, so the same hand write through the shell is refused here. The one sanctioned writer is `python3 -m rediacc_ci.ops.live_proof record --write`, a module run whose words name no ledger path, so it passes without an exception list; a redirect
+WHY. The pre-bash half of the ledger row of `block_guarded_path_edit` (agent/plans/PLAN-tested-on-bench.md box V10): the Edit/Write tools are refused there, so the same hand write through the shell is refused here. The one sanctioned writer is `python3 -m rediacc_ci.ops.live_proof record --write`, a module run whose words name no ledger path, so it passes without an exception list; a redirect
 added to that same command is still refused.
 
 WHAT COUNTS AS A WRITE, read by the lexer (`shellscan`) and never by a regex over the raw text, so `cat`, `jq`, `grep`, `git diff`, `git add` and a commit message naming the ledger all pass:

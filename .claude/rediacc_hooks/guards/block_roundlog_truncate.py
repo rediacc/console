@@ -67,7 +67,7 @@ TRUNCATING = frozenset(("redirect", "tee", "in-place", "truncate"))
 RL = r"pr-babysit-[A-Za-z0-9._-]+\.md"
 BRIEFING = r"pr-babysit-[A-Za-z0-9._-]+-briefing\.md"
 
-# The refusal is the shell slot of the round-log row in `_write_rules.ROWS`, shared with block_roundlog_write; the walk below reads round logs by basename (RL, BRIEFING), since a truncation names its target in shapes a landing test never sees.
+# The refusal is the shell slot of the round-log row in `_write_rules.ROWS`, shared with block_guarded_path_edit; the walk below reads round logs by basename (RL, BRIEFING), since a truncation names its target in shapes a landing test never sees.
 MESSAGE = _write_rules.ROWS["roundlog"].message[1]
 
 

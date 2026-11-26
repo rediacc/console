@@ -25,6 +25,7 @@ import hashlib
 import json
 import re
 
+from rediacc_hooks.guards import RENAMED
 from rediacc_hooks.tests import corpus
 
 SUITE = corpus.SUITE
@@ -180,6 +181,10 @@ def harvest_cases():
         if "\x1e" in payload or "\x1f" in payload:
             continue
         line = src.count("\n", 0, m.start()) + 1
+        # The recording is frozen bytes, so a case naming a retired guard keeps its old key there; it is the case of the guard that carries the policy now (`guards.RENAMED`), whose golden holds it under the same label.
+        renamed = re.fullmatch(r"guards/(\w+)\.py", guard_word)
+        if renamed and renamed.group(1) in RENAMED:
+            guard_word = "guards/%s.py" % RENAMED[renamed.group(1)]
         cases.append((guard_word, payload, "%s@%d" % (m.group(1), line), rc_word))
     stats = {
         "call_sites": sites,

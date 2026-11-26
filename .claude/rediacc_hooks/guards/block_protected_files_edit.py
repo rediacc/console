@@ -23,7 +23,7 @@ __getattr__ = tables("block_protected_files_edit", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
-ORDER = 16
+ORDER = 15
 
 # The path test is the whole guard: with it gone no protected file is recognised, so an empty Write over `.claude/settings.json` passes.
 DEFECT = ("if not PF._is_protected(absolute):", "if True:")

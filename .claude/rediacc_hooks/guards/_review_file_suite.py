@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Control harness for block_review_file_edit and block_review_file_shell_write, the two halves of "a review record is never edited by hand".
+"""The cases of both halves of "a review record is never edited by hand", and the runner they share.
 
-This file runs the Edit half; `test-block_review_file_shell_write.py` beside it runs the shell half through the same code, so each guard has the dedicated `test-<stem>.py` check-hook-integrity credits. Both directions for each half, because a one-sided control is satisfiable by a broken hook: one that always refuses passes the refusal cases, one that never refuses passes the allowed ones. Then each guard's declared DEFECT is planted in-process and the run MUST fail, which is the proof the cases can.
+The Edit cases are run by `test-block_guarded_path_edit.py` (the review record row of block_guarded_path_edit, which merged the three path-judged edit halves under CR5), and the shell cases by `test-block_review_file_shell_write.py`, each through dispatch.py in both directions, because a one-sided control is satisfiable by a broken hook: one that always refuses passes the refusal cases, one that never refuses passes the allowed ones. Each suite then plants its guard's declared plant in-process and the run MUST fail, which is the proof the cases can.
 
-    test-block_review_file_edit.py        run every Edit case through dispatch.py, then the DEFECT run
+Not a suite itself: the leading underscore keeps it out of the guard glob and out of the per-guard `test-<stem>.py` credit.
 """
 
 import atexit
 import pathlib
 import shutil
 import subprocess
-import sys
 import tempfile
 
 import _hookpath
@@ -65,9 +64,9 @@ PADDED.write_text("#" * (2 << 20) + "\n" + WRITER.read_text(), encoding="utf-8")
 HUGE = _SCRIPTS / "huge-agent-reviews.py"
 HUGE.write_text("#" * (17 << 20) + "\n", encoding="utf-8")
 
-# The rows that are data (CR5) are `(name, payload or command, refused?)` rows in tests/fixtures/guards/block_review_file_edit.json (EDIT_CASES) and block_review_file_shell_write.json (SHELL_CASES), read by that directory's one loader. The rows below them stay code: each names a path this file builds at import, a script, a link or a repository under `_SCRIPTS`.
+# The rows that are data (CR5) are `(name, payload or command, refused?)` rows in tests/fixtures/guards/block_guarded_path_edit.json (REVIEW_FILE_EDIT_CASES) and block_review_file_shell_write.json (SHELL_CASES), read by that directory's one loader. The rows below them stay code: each names a path this file builds at import, a script, a link or a repository under `_SCRIPTS`.
 EDIT_CASES = [
-    *load_table("block_review_file_edit", "EDIT_CASES"),
+    *load_table("block_guarded_path_edit", "REVIEW_FILE_EDIT_CASES"),
     # Judged where the write LANDS (review 3f53e99e.1 sweep): each refusal was allowed (rc 0) before, and the control was refused.
     (
         "a symlink into the directory",
@@ -194,11 +193,7 @@ def run_cases(stem, cases, runner, quiet=False):
     return _edit_suite.run_cases(stem, cases, runner, STYLE, quiet)
 
 
-def main(stems=("block_review_file_edit",)):
+def main(stems=("block_review_file_shell_write",)):
     shell = [(n, {"tool_name": "Bash", "tool_input": {"command": c}}, r) for n, c, r in SHELL_CASES]
-    suites = {"block_review_file_edit": EDIT_CASES, "block_review_file_shell_write": shell}
+    suites = {"block_review_file_shell_write": shell}
     return _edit_suite.finish(sum(_edit_suite.judge(stem, suites[stem], STYLE) for stem in stems))
-
-
-if __name__ == "__main__":
-    sys.exit(main())

@@ -2,7 +2,7 @@
 
 THE DEFECT. block_review_file_shell_write read redirects, `tee`, in-place editors, copiers, `truncate`, `dd of=` and interpreter programs, so `sort -o <file>`, `curl -o <file>`, `git diff --output=<file>`, `find -fprint <file>`, `sed 'w <file>'`, `uniq <in> <file>` and `touch <file>` each wrote a review record and were allowed (rc 0, 2026-10-13). The reading is a table of NON-writers: a listed command writes only through the spellings its row names, and an unlisted one is read as writing any word it names.
 
-Each rule below is pinned in both directions: the pair it must yield, and a control beside it that must yield nothing (a plain reader, the same option naming another file, a fed word that is only read). The guard's verdicts over the same shapes are rows of `test-block_review_file_edit.py` and `hookcases.py`.
+Each rule below is pinned in both directions: the pair it must yield, and a control beside it that must yield nothing (a plain reader, the same option naming another file, a fed word that is only read). The guard's verdicts over the same shapes are rows of `_review_file_suite.py` and `hookcases.py`.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ OPTION_FORMS = [
         "awk",
         [("tee %s" % R, "option"), ("tee", "option"), (R, "option"), A],
     ),
-    # Review fd4eda1a.1: a program that redirects into a literal elsewhere still lands on the operand it reads, since the rule does not follow where a print goes. The guard refuses it over a review file and allows it over any other (rows of test-block_review_file_edit.py).
+    # Review fd4eda1a.1: a program that redirects into a literal elsewhere still lands on the operand it reads, since the rule does not follow where a print goes. The guard refuses it over a review file and allows it over any other (rows of _review_file_suite.py).
     (
         "an awk redirect elsewhere, reading a record",
         "awk '{print > \"x\"}' %s" % R,

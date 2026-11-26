@@ -1,11 +1,14 @@
-"""The test tables of `block_roundlog_write`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
+"""The test tables of `block_guarded_path_edit`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`.
+
+The guard merged the three path-judged edit halves (block_review_file_edit, block_live_proof_ledger_write, block_roundlog_write), so its EDGE_CASES hold the rows of all three; only the round log row needs a world on disk.
+"""
 
 import os
 
 from rediacc_hooks import hookio
 from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
-# A fixed location, named by both the builder and the edge cases below. See the port note in the module docstring for why it cannot be the harness's own per-session temporary directory.
+# A fixed location, named by both the builder and the edge cases below. See THE ROUND LOG FIXTURE in the guard's docstring for why it cannot be the harness's own per-session temporary directory.
 WORLD = hookio.golden_world("rediacc-guard-roundlog")
 
 
@@ -42,4 +45,4 @@ FIXTURES = {"roundlog-world": _round_log_world}
 ENVS: list = [("roundlog", {"REDIACC_ROUNDLOG_WORLD": "{FIXTURE:roundlog-world}"}, {})]
 
 
-EDGE_CASES = load_table("block_roundlog_write", "EDGE_CASES")
+EDGE_CASES = load_table("block_guarded_path_edit", "EDGE_CASES")

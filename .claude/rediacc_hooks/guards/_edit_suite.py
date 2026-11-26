@@ -1,6 +1,6 @@
 """The runner the edit/shell twin suites share (PLAN-tooling-code-reduction CR5, D5).
 
-WHY ONE RUNNER. Four edit-half suites (`test-block_review_file_edit.py`, `test-block_user_only_command.py`, `test-block_live_proof_ledger_write.py`, `test-block_protected_files_edit.py`) each carried the same machinery: drive a case through dispatch.py, plant the guard's DEFECT into an in-process copy, run every case against both, print one line per case and hold a floor of four cases each way. The copies differed only in what a refusal must say, the column width and how much of a failure is shown. Those are the arguments here; the cases and their worlds stay in each guard's own suite, which is what the mutation gate runs.
+WHY ONE RUNNER. Four edit-half suites (the review record cases now in `_review_file_suite.py`, `test-block_user_only_command.py`, the ledger cases now in `_live_proof_ledger_suite.py`, `test-block_protected_files_edit.py`) each carried the same machinery: drive a case through dispatch.py, plant the guard's DEFECT into an in-process copy, run every case against both, print one line per case and hold a floor of four cases each way. The copies differed only in what a refusal must say, the column width and how much of a failure is shown. Those are the arguments here; the cases and their worlds stay in each guard's own suite, which is what the mutation gate runs.
 
 A CASE is `(name, payload, refused)`. A refused case passes only when the guard refuses it AND its text satisfies `says` (the guard's door, so a refusal for some other reason does not count); an allowed case passes only when the guard allows it.
 
@@ -93,15 +93,19 @@ def _scratch():
     return _SCRATCH[0]
 
 
-def defect_runner(stem):
-    """A runner `(stem, payload) -> (rc, text)` over the guard with its declared DEFECT planted, imported in-process from a copy under a scratch directory."""
+def defect_runner(stem, mutant=None):
+    """A runner `(stem, payload) -> (rc, text)` over the guard with its declared DEFECT planted, or its `MUTANTS[mutant]` when one is named, imported in-process from a copy under a scratch directory."""
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards.%s" % stem)
-    old, new = good.DEFECT
+    old, new = good.DEFECT if mutant is None else good.MUTANTS[mutant]
+    label = "DEFECT" if mutant is None else "MUTANTS[%r]" % mutant
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in outside_defect(src):
-        raise SystemExit("the DEFECT no longer applies to %s outside its own declaration" % stem)
-    planted = _scratch() / ("broken_%s.py" % stem)
+    outside = outside_defect(src, "DEFECT", "MUTANTS")
+    if old not in outside or (mutant is not None and outside.count(old) != 1):
+        raise SystemExit(
+            "the %s no longer names one site of %s outside its declaration" % (label, stem)
+        )
+    planted = _scratch() / ("broken_%s_%s.py" % (stem, mutant or "defect"))
     planted.write_text(src.replace(old, new), encoding="utf-8")
     spec = importlib.util.spec_from_file_location("broken_" + stem, planted)
     if spec is None or spec.loader is None:

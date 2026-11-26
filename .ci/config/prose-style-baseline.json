@@ -15,8 +15,8 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2575,
- "files": 630,
+ "count": 2574,
+ "files": 629,
  "by_rule": {
   "R1": 1391,
   "R11": 135,
@@ -24,7 +24,7 @@
   "R18": 11,
   "R19": 55,
   "R2": 578,
-  "R7": 404
+  "R7": 403
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -1561,11 +1561,6 @@
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
    "R2": [
     "eddf70e3284c1f98"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_roundlog_write.py": {
-   "R7": [
-    "5ad565b8468c751a"
    ]
   },
   ".claude/rediacc_hooks/guards/block_self_matching_pgrep.py": {

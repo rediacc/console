@@ -184,7 +184,7 @@ const NO_OP_MUTANT: Mutant = {
 };
 
 /** The hook guard the selftest's live controls drive: chosen for a suite that runs in about a second. */
-const HOOK_CONTROL_STEM = 'block_live_proof_ledger_write';
+const HOOK_CONTROL_STEM = 'block_guarded_path_edit';
 /** A second, real guard module the HOOK_CONTROL_STEM suite never loads: the UNREACHED control points the redirect at it. */
 const HOOK_UNLOADED_STEM = 'block_long_sleep';
 

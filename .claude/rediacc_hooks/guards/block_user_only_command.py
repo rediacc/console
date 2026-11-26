@@ -26,7 +26,7 @@ __getattr__ = tables("block_user_only_command", "EDGE_CASES", "_C", "_FM")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
-ORDER = 15
+ORDER = 14
 # Read by check:ci-guard-mention-anchoring: this guard judges the RESULTING command file's frontmatter, so a sentence appended to a valid command file passes; only a frontmatter key line is refused.
 ANCHORING = "structure: refuses a command or skill file whose resulting frontmatter declares disable-model-invocation, never a sentence naming it"
 

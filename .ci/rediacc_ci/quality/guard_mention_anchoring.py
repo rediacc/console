@@ -1055,9 +1055,15 @@ def controls() -> None:
             )
         # CHAIN PLUMBING, proven with a REAL trigger against a REAL guard, one per non-pre-bash chain. This is what stands in for per-guard reachability, which was tried and discarded: most extracted fragments are one clause of a multi-part trigger (file_path AND tool_name AND content, all at once), so no single instantiated substring fires most guards alone. Proving the PAYLOAD
         # SHAPE once per chain is the part that is actually load-bearing.
-        edit_guard = GUARDS / "block_roundlog_write.py"
-        if edit_guard.exists():
-            # `[ -e "$FILE" ]` gates this guard before anything else -- a nonexistent path is silently allowed by design (creating a log is not truncating one), so the fixture must actually exist on disk.
+        # A plumbing guard that is gone is a failure, never a skipped check: the old `if exists()` let the rename of block_roundlog_write (merged into block_guarded_path_edit, CR5) turn this control off without a word.
+        edit_guard = GUARDS / "block_guarded_path_edit.py"
+        if not edit_guard.exists():
+            fail(
+                "pre-edit payload plumbing: %s is gone, so the edit payload shape is unproven"
+                % edit_guard.name
+            )
+        else:
+            # The round log row's existence test gates it before anything else -- a nonexistent path is silently allowed by design (creating a log is not truncating one), so the fixture must actually exist on disk.
             # Under `td`, not a fresh `mkdtemp()`: that one was never removed, so every run of this gate left a directory in /tmp.
             rlog_dir = Path(td) / "rlog" / "reports"
             rlog_dir.mkdir(parents=True)
@@ -1072,7 +1078,7 @@ def controls() -> None:
             )
             if edit_result.returncode != 2:
                 fail(
-                    "pre-edit payload plumbing: block_roundlog_write.py did not fire on a "
+                    "pre-edit payload plumbing: block_guarded_path_edit.py did not fire on a "
                     "REAL round-log write -- the edit payload shape cannot be trusted"
                 )
 
@@ -1080,7 +1086,12 @@ def controls() -> None:
         # DISPATCHED, not run as a bare bash file: this was pointed at the retired oracle directly (`["bash", str(ask_guard)]`, bypassing `guard_argv`) even before A2, a residue of the guard's chain-plumbing check never having been updated when the guard's LIVE half moved to Python at the P7 cutover. Fixed here as a small, in-scope finding rather than carried forward: the
         # plumbing check exists to prove the live payload shape, and the retired file cannot answer for that any more than the retired oracle tree can.
         ask_guard = GUARDS / "block_settled_questions.py"
-        if ask_guard.exists():
+        if not ask_guard.exists():
+            fail(
+                "pre-ask payload plumbing: %s is gone, so the ask payload shape is unproven"
+                % ask_guard.name
+            )
+        else:
             ask_result = ci_proc.run(
                 guard_argv(ask_guard),
                 input_text=ask_payload,

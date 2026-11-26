@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_review_file_shell_write: the shell half of "a review record is never edited by hand".
 
-The cases and the runner live in `test-block_review_file_edit.py` beside this file, so the two halves are judged by one set of rules; this file runs the shell cases through dispatch.py in both directions, then plants the guard's DEFECT and requires the run to fail.
+The cases and the runner live in `_review_file_suite.py` beside this file, so the two halves are judged by one set of rules; this file runs the shell cases through dispatch.py in both directions, then plants the guard's DEFECT and requires the run to fail.
 
 The cases below are this guard's own, added to the shared shell cases: the operand arms read the words as bash expands them (#f6334e52), the glob pre-filter reads only a glob that can spell the review directory as one (#a1852a9e), a redirect target and an in-place option are read as bash expands them (#4deea064), a copied script carries its source (#3ff3bb16), and a word the walk cannot expand is read by where its value comes from (#b53f586d). Each MUTANT plants the defect one of them fixed and must turn at least one row, so neither fix is pinned by a harness that cannot see it.
 
@@ -18,7 +18,7 @@ import sys
 import tempfile
 import typing
 
-SHARED = pathlib.Path(__file__).resolve().with_name("test-block_review_file_edit.py")
+SHARED = pathlib.Path(__file__).resolve().with_name("_review_file_suite.py")
 STEM = "block_review_file_shell_write"
 # A line that writes a Python program opening a review file for writing (#3ff3bb16 rows).
 _REVIEW_WRITER = "printf \"open('agent/reviews/x/y.md','w')\\n\" > /tmp/r87s.py"

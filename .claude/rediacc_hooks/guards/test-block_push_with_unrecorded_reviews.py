@@ -2,7 +2,7 @@
 """Control harness for block_push_with_unrecorded_reviews.
 
 Each case is a REAL repository with an `origin/main` and a branch, in a state the guard has to judge: an unreviewed commit, a review that is not committed, an open high finding, a hand-edited record, a reviewer in flight, a review that failed once and twice, and the clean branch the guard must let through. The guard runs through dispatch.py exactly as settings.json runs it. The model is never called: review files are written by `wl_review.run_review` with
-an in-process fake reviewer, and the hand edit is a byte change of the kind `block_review_file_edit` exists to refuse.
+an in-process fake reviewer, and the hand edit is a byte change of the kind `block_guarded_path_edit` exists to refuse.
 
 Then the guard's DEFECT is planted in-process and the refusal cases MUST fail, which is the proof they can.
 

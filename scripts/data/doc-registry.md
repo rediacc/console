@@ -613,9 +613,11 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/_edit_suite.py | (none) | via .claude/rediacc_hooks/guards/test-block_backup_unverified_push.py | py |
 | .claude/rediacc_hooks/guards/_harness.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/guards/_hookpath.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
+| .claude/rediacc_hooks/guards/_live_proof_ledger_suite.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
 | .claude/rediacc_hooks/guards/_push_receipts.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
 | .claude/rediacc_hooks/guards/_repo_scope.py | (none) | via .claude/rediacc_hooks/guards/block_blanket_git_add.py | py |
-| .claude/rediacc_hooks/guards/_write_rules.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | py |
+| .claude/rediacc_hooks/guards/_review_file_suite.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
+| .claude/rediacc_hooks/guards/_write_rules.py | (none) | via .claude/rediacc_hooks/guards/block_guarded_path_edit.py | py |
 | .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_admin_merge.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_agent_browser_repo_output.py | (none) | via dispatch.py (glob) | py |
@@ -639,13 +641,13 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_git_empty_commit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_git_force_push.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_git_hook_bypass.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_guarded_path_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_host_toolchain_run.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_inline_python.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_inline_workflow_run.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_landing_one_way.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_lease_boundary.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py | (none) | via dispatch.py (glob) | py |
-| .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_long_sleep.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_missing_npm_script.py | (none) | via dispatch.py (glob) | py |
@@ -670,10 +672,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_raw_pr_body_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_renet_untested_push.py | (none) | via dispatch.py (glob) | py |
-| .claude/rediacc_hooks/guards/block_review_file_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_review_file_shell_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_roundlog_truncate.py | (none) | via dispatch.py (glob) | py |
-| .claude/rediacc_hooks/guards/block_roundlog_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_second_branch.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_second_open_pr.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_self_matching_pgrep.py | (none) | via dispatch.py (glob) | py |
@@ -709,11 +709,11 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_destructive_git_restore.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_git_amend.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_git_hook_bypass.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_guarded_path_edit.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_landing_one_way.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_lease_boundary.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_live_proof_ledger_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
-| .claude/rediacc_hooks/guards/test-block_live_proof_ledger_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_long_sleep.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_merge_with_unpushed.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_missing_npm_script.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -731,7 +731,6 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_raw_ci_read.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_rebase_over_foreign_dirt.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_renet_untested_push.py | (none) | via test_hooks_delegates.py (glob) | py |
-| .claude/rediacc_hooks/guards/test-block_review_file_edit.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_review_file_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_roundlog_truncate.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_second_branch.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -804,13 +803,13 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_git_empty_commit.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_git_force_push.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_git_hook_bypass.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_guarded_path_edit.py | (none) | via .claude/rediacc_hooks/guards/__init__.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_host_toolchain_run.py | (none) | via .claude/rediacc_hooks/guards/block_host_toolchain_run.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_inline_python.py | (none) | via .claude/rediacc_hooks/guards/block_inline_python.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_inline_workflow_run.py | (none) | via .claude/rediacc_hooks/guards/block_inline_workflow_run.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_landing_one_way.py | (none) | via .claude/hooks/stop/wl_stack.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_lease_boundary.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_write.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_live_proof_ledger_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_live_proof_ledger_suite.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_long_sleep.py | (none) | via .claude/hooks/lib/sanctioned.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_merge_with_unpushed.py | (none) | via .claude/rediacc_hooks/guards/block_merge_with_unpushed.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_missing_npm_script.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
@@ -835,10 +834,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_raw_pr_body_edit.py | (none) | via .claude/rediacc_hooks/guards/block_admin_merge.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_rebase_over_foreign_dirt.py | (none) | via .claude/hooks/stop/wl_git.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_renet_untested_push.py | (none) | via .claude/hooks/stop/wl_renettests.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_review_file_edit.py | (none) | via .claude/rediacc_hooks/guards/_edit_suite.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_review_file_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_live_proof_ledger_write.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_roundlog_truncate.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_truncate.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_roundlog_write.py | (none) | via .claude/rediacc_hooks/guards/block_roundlog_truncate.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_review_file_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_review_file_suite.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_roundlog_truncate.py | (none) | via .claude/rediacc_hooks/guards/block_guarded_path_edit.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_second_branch.py | (none) | via .claude/hooks/stop/wl_prscope.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_second_open_pr.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_self_matching_pgrep.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |
@@ -904,6 +901,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_guard_chained_state.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_event_cwd.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_guarded_path_edit.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guards_differential.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_guards_process_table.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hookio_world_symlink.py | (none) | via pytest (testpaths) | py |
@@ -1088,7 +1086,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | run.sh | WorktreeCreate, WorktreeRemove | settings.json | sh |
 
-648 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+646 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

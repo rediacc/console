@@ -34,7 +34,7 @@ REPO_ROOT = next(
 )
 
 
-# THE FIXED FIXTURE WORLDS, folded onto one spelling (queued item #c2a39bea). Several guards (`block_roundlog_write`, `block_plan_without_tasks`, and every other `WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-...")`) build a deterministic world under the system temp dir, because their payload names a real file literally and must know the path at import time.
+# THE FIXED FIXTURE WORLDS, folded onto one spelling (queued item #c2a39bea). Several guards (`block_guarded_path_edit` for its round log row, `block_plan_without_tasks`, and every other `WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-...")`) build a deterministic world under the system temp dir, because their payload names a real file literally and must know the path at import time.
 # `tempfile.gettempdir()` follows TMPDIR, so with TMPDIR set elsewhere the payload text changed, every case key hashed from it moved, and `regolden.py` rewrote 28 lines across 5 goldens while reporting "0 changed" (a moved key is new, not changed). Folding the world prefix onto `/tmp/rediacc-guard-` in both the key and the recorded answer makes the golden independent of TMPDIR; under the default TMPDIR it is the identity, so no committed golden moves.
 WORLD_PREFIX = "rediacc-guard-"
 CANONICAL_WORLD_ROOT = "/tmp/" + WORLD_PREFIX

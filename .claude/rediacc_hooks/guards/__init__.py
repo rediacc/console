@@ -54,6 +54,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 # The chains, in the order `.claude/settings.json` declares them. `post-bash` is here because `check-hook-integrity.sh` added it on 2026-08-28 after finding a whole registered chain outside its inventory: "that was a filename prefix escaping the net, this was a whole chain".
 CHAINS = ("pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash")
 
+# Retired guard stems and the guard that now carries their policy. The CR7 fire ledger (`.ci/cache/hook-ledger/chains.jsonl`) keys a refusal by the refusing guard's stem, so a row written before a merge names a stem that is no longer on disk; a reader folding fires per guard counts such a row under the stem this maps it to rather than dropping it. Each source must be gone and each target present (test_guard_cases.py).
+RENAMED = {
+    # PLAN-tooling-code-reduction CR5: the three path-judged edit halves are one guard per chain.
+    "block_review_file_edit": "block_guarded_path_edit",
+    "block_live_proof_ledger_write": "block_guarded_path_edit",
+    "block_roundlog_write": "block_guarded_path_edit",
+}
+
 
 def stems():
     """Every guard module name in this package, sorted.
