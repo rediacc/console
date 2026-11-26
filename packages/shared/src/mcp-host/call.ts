@@ -25,7 +25,7 @@ export const ATTACH_WINDOW_MS = 50_000;
 /** When the container is asked to answer: early enough that its answer crosses back inside ATTACH_WINDOW_MS. */
 export const EXECUTOR_ATTACH_MS = 45_000;
 
-/** The result size a pageable tool announces: a page (100,000 characters) and its paging block fit under it, and it stays under claude.ai's 150,000-character cap. */
+/** The result size a pageable tool announces: a page (100,000 characters) and its paging block fit under it, and it equals claude.ai's 150,000-character cap. */
 export const MAX_RESULT_SIZE_CHARS = 150_000;
 
 const MAX_RESULT_META = 'anthropic/maxResultSizeChars';
@@ -33,7 +33,7 @@ const MAX_RESULT_META = 'anthropic/maxResultSizeChars';
 /** The seconds a capacity refusal asks a client to wait, as the proxy's `Retry-After` does. */
 const CAPACITY_RETRY_SECONDS = 30;
 
-/** The seconds a call that met a second relocation asks a client to wait. */
+/** The seconds a call whose executor answered `EXECUTOR_RELOCATED` asks a client to wait before retrying. */
 const RELOCATED_RETRY_SECONDS = 5;
 
 /** A resolved grant and the agent secret that opened it (base64url of `S`), held for the one request only. */

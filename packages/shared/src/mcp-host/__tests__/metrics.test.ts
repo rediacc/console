@@ -1,5 +1,5 @@
 /**
- * Monitoring of the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 10, RW-D3): the counters src/index.ts writes through a real request, and the alert rule over them. A burst of `REDIACC_GRANT_*` refusals from one grant raises the alert and a quiet grant does not.
+ * Monitoring of the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 10, RW-D3): the counters handler.ts writes through a real request, and the alert rule over them. A burst of `REDIACC_GRANT_*` refusals from one grant raises the alert and a quiet grant does not.
  */
 import './helpers/workers-shim.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
