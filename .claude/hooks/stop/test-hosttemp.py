@@ -9,6 +9,7 @@ Every case works in its own temporary fixture repository and never touches a rea
 
 import contextlib
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -30,9 +31,7 @@ def _check(cond):
 
 
 def _mod(name):
-    """A hook module by name, with this directory on the path (the hooks import each other flat)."""
-    if str(HERE) not in sys.path:
-        sys.path.insert(0, str(HERE))
+    """A hook module by name. The hooks import each other flat, and both routes in the module docstring already put this directory on sys.path: a by-path run as sys.path[0], the pytest form through PYTHONPATH."""
     return importlib.import_module(name)
 
 
@@ -374,8 +373,15 @@ def test_hosttemp_a_new_session_skips_rows_older_than_its_window():
 
 def test_hosttemp_lock_agrees_with_the_sweeper_module():
     """The hook and rediacc_ci.dev.host_temp share one lock file and one record shape."""
-    if str(REPO / ".ci") not in sys.path:
-        sys.path.insert(0, str(REPO / ".ci"))
+    # The canonical `.ci` hop: `paths.on_sys_path`, loaded by file because nothing under `.ci` is importable yet (as test-wl_worktrees.py does).
+    spec = importlib.util.spec_from_file_location(
+        "_ci_paths", REPO / ".ci" / "rediacc_ci" / "paths.py"
+    )
+    if spec is None or spec.loader is None:
+        raise AssertionError(".ci/rediacc_ci/paths.py is missing")
+    paths = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(paths)
+    paths.on_sys_path(REPO / ".ci")
     host_temp = importlib.import_module("rediacc_ci.dev.host_temp")
     with tempfile.TemporaryDirectory() as tmp:
         ht, root, records = _ht_fixture(tmp)
