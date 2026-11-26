@@ -29,7 +29,7 @@ An attacker holding a bearer acts as the grant's user on the grant's one config 
 - Lifetime is 7 days by default and 30 at most, one config per URL, one region per URL (D54, D55, D58): PLAN-rmcp-agent-grants.md#AG-LIFE, PLAN-rmcp-agent-grants.md#AG-REG, PLAN-rmcp-remote-worker.md#RW-SCOPE, PLAN-rmcp-remote-worker.md#RW-REG.
 - The grant unwraps only its config's subkey, so no other config of the org is exposed (D56): PLAN-rmcp-policy-record.md#SK1, PLAN-rmcp-policy-record.md#SK2.
 - The key material is split: the authentication tag and the wrapping key derive from `S`, and the slot key needs the server secret as well, so neither a database copy nor `S` alone opens the CEK: PLAN-rmcp-agent-grants.md#AG-C.
-- Secrets never appear in a URL path or query, and a gate keeps request logging clean of them (D14): PLAN-rmcp-remote-worker.md#RW-T4, PLAN-rmcp-remote-worker.md#RW-D1.
+- The bearer travels in a header only, never in a URL path or query (the path names the grant and never authenticates it, `packages/shared/src/mcp-host/credential.ts`), and a gate keeps request logging clean of it (D14): PLAN-rmcp-remote-worker.md#RW-T4, PLAN-rmcp-remote-worker.md#RW-D1.
 - Revocation is pushed to the executor, and member removal, 2FA disablement, team archival, entitlement lapse and CEK rotation each end the affected grants: PLAN-rmcp-agent-grants.md#AG-S4, PLAN-rmcp-agent-grants.md#AG-S5.
 - Creation needs 2FA and an elevated session, and sends an email: PLAN-rmcp-agent-grants.md#AG-S2.
 - Unknown grants and wrong tags answer identically, and a burst of refusals from one grant raises an alert: PLAN-rmcp-remote-worker.md#RW-T4, PLAN-rmcp-remote-worker.md#RW-D3.
@@ -86,7 +86,7 @@ An attacker with write access to storage replays an older, more permissive polic
 
 ### Stolen database copy or login token
 
-- Slot secrets and the recovery kit are absent from any database dump, and password slots no longer exist, so nothing user-chosen remains to guess offline: PLAN-rmcp-policy-record.md#K1, PLAN-rmcp-policy-record.md#K2, PLAN-rmcp-policy-record.md#K5.
+- Slot secrets and the recovery kit are absent from any database dump, and password slots no longer exist, so no key slot holds a user-chosen secret to guess offline (account login passwords are the exception, see Accepted risks): PLAN-rmcp-policy-record.md#K1, PLAN-rmcp-policy-record.md#K2, PLAN-rmcp-policy-record.md#K5.
 - Login tokens expire when idle and absolutely, device-code tokens are stored sealed, and strict rate limits are shared across instances: PLAN-rmcp-executor-hardening.md#EH10, PLAN-rmcp-executor-hardening.md#EH11, PLAN-rmcp-executor-hardening.md#EH12.
 
 ## Accepted risks

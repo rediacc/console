@@ -162,7 +162,7 @@ Each config entry's authorization policy is a separate record sealed under a key
 | Token file stolen | storageKeyId + serverToken | passkey_secret (in secure storage) | Reference only, no secrets |
 | Passkey compromised alone | passkey_secret | server_secret (requires valid token) | Can't derive CEK |
 | Rogue server code | clientEnc(sdkEnc(values)) at most | CEK (never on server) | Still encrypted |
-| Leaked agent bearer | One config's content key and two policy keys while the executor holds the bearer and the server's answer | Nothing outside that config, and no CEK; expires within 30 days |
+| Leaked agent bearer | One config's content key and two policy keys while the executor holds the bearer and the server's answer | Nothing beyond that config and the two policy records, and no CEK; expires within 30 days | Bounded to one config |
 | Former employee with CEK | Can remove CEK layer | sdk_derived (server refuses) | Blocked within 30 seconds |
 
 ## Platform-Specific Security

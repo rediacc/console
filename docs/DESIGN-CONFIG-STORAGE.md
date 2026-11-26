@@ -109,7 +109,7 @@ The slot key wraps three things with AES-GCM: the config's own content key, the 
 
 An agent therefore reads exactly what its person reads: its own config, and the policy records of its own team and of the org. Agent grants and machine secrets do not count as key holders for the safety net.
 
-Residual risk: an executor that holds `S` and the account server's `agent-session` answer can open the grant's one config and its two policy records, and nothing more. The CEK is reachable unattended only through the executor's RAM for the grant's lifetime, and a leaked bearer acts as its user on that one config until it expires or is revoked.
+Residual risk: an executor that holds `S` and the account server's `agent-session` answer can open the grant's one config and its two policy records, and nothing more. The CEK is never derivable from these keys, and what they open sits in the executor's RAM for the grant's lifetime; a leaked bearer acts as its user on that one config until it expires or is revoked.
 
 ### Policy record
 
@@ -990,7 +990,7 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 Shipped under `rdc config remote`:
 - `rdc config remote enable`: link this config to the store (`--machine-secret <id>` enrolls a headless box against a machine secret minted in the portal: the secret comes from `REDIACC_MACHINE_SECRET` or stdin, the API token carries the `config:enroll` scope, and no browser is involved; without it the command opens the portal handoff). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
 - `rdc config remote disable`: disconnect and write the config back to disk. Server-only: it pulls the newest server copy first, so a disable from a stale cache cannot lose another device's writes.
-- `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy or when a master-password cache cannot be opened. `disable` and `enable` name it only from the states where the server path cannot work.
+- `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy. `disable` and `enable` name it only from the states where the server path cannot work.
 - `rdc config remote refresh`: download and decrypt the latest config
 - `rdc config remote status`: show store info
 - `rdc config rotate-cek`: rotate the client-controlled encryption key
