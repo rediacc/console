@@ -186,7 +186,7 @@ function violations(run: Sync): string[] {
       return {};
     }
   })();
-  if (parsed.alpha?.mid !== 'MID' || parsed.newTop !== 'NEW' || parsed.alpha?.tags?.[2] !== 'c')
+  if (parsed.alpha?.mid !== 'MID' || parsed.newTop !== 'NEW' || parsed.alpha.tags?.[2] !== 'c')
     bad.push('delta: flat/de.json lacks the added keys or the appended array item');
   // Unsorted file: newTop follows its English predecessor `alpha`, before `greeting`.
   const order = Object.keys(parsed as object);

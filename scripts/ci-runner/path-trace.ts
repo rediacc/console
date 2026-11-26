@@ -319,7 +319,7 @@ export function straceParser(
     if (FORKS.test(name)) {
       const flags = /flags=([A-Za-z0-9_|]+)/.exec(rest)?.[1];
       st.cloneFlags = flags;
-      if (ok && retMatch !== null) forked(st, Number(retMatch[1]), flags);
+      if (ok) forked(st, Number(retMatch[1]), flags);
       return;
     }
     if (name.startsWith('getdents')) {
@@ -3483,7 +3483,7 @@ async function selftest(): Promise<number> {
   );
   check(
     shared.gitReaders?.has('/g/sharedindex.abc') === true &&
-      shared.gitReaders?.has('/g/notes.abc') !== true,
+      shared.gitReaders.has('/g/notes.abc') !== true,
     'a sharedindex.* file is a repository read; CONTROL: an ordinary file beside it is not'
   );
   const idx3 = mk(['a/one.txt']);
@@ -4593,7 +4593,7 @@ async function selftest(): Promise<number> {
     check(
       net.exit === 0 &&
         net.access.network?.has('192.0.2.1:9') === true &&
-        ![...(net.access.network ?? [])].some((x) => x.startsWith('127.')),
+        ![...net.access.network].some((x) => x.startsWith('127.')),
       `a real strace connect to a routable peer is network and loopback is not (got ${JSON.stringify([...(net.access.network ?? [])])})`
     );
     fs.rmSync(dir, { recursive: true, force: true });

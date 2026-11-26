@@ -3199,7 +3199,7 @@ async function selftest(): Promise<number> {
   require_(cannot[0]?.status === 'blocked', `exit 77 must stay blocked, got ${cannot[0]?.status}`);
   require_(
     cannot[0]?.startAt !== undefined &&
-      cannot[0]?.endAt !== undefined &&
+      cannot[0].endAt !== undefined &&
       cannot[0].endAt >= cannot[0].startAt,
     'the pool must stamp startAt/endAt on a result'
   );
@@ -3216,7 +3216,7 @@ async function selftest(): Promise<number> {
   fs.rmSync(cpuDir, { recursive: true, force: true });
   const kept = cpuRecords.get('selftest:cpu-a');
   require_(
-    kept?.cpu?.[0] === 1500 && kept?.rssMb?.[0] === 120,
+    kept?.cpu?.[0] === 1500 && kept.rssMb?.[0] === 120,
     `cpu/rssMb must survive a cache round trip, got ${JSON.stringify(kept)}`
   );
   require_(
@@ -3248,7 +3248,7 @@ async function selftest(): Promise<number> {
   fs.rmSync(failDir, { recursive: true, force: true });
   const only = failCosts.get('selftest:only-failed');
   require_(
-    only?.cpuMs === 9_000_000 && only?.wallMs === 1_000_000 && only?.perCore === 0.9,
+    only?.cpuMs === 9_000_000 && only.wallMs === 1_000_000 && only.perCore === 0.9,
     `a gate that has only failed must be costed from its failed run, got ${JSON.stringify(only)}`
   );
   require_(

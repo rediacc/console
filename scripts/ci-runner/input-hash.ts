@@ -539,7 +539,7 @@ export function planCarry(
   for (const p of usable) if (!byTree.has(p.headTree)) byTree.set(p.headTree, p);
   /** The guard's origin check (`_carried_refusal`), run before carrying: the receipt `carriedFrom` names must be held, and agree on inputHash, verdict and findings. */
   const originHolds = (id: string, pg: PriorGate): boolean => {
-    if (pg.carriedFrom === null || pg.carriedFrom === undefined) return true;
+    if (!pg.carriedFrom) return true;
     const was = byTree.get(pg.carriedFrom.headTree)?.gates[id];
     return (
       was !== undefined &&

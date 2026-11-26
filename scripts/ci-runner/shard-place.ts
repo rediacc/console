@@ -494,7 +494,7 @@ async function selftest(): Promise<number> {
     const r = placeUnits(base, units, pricing(costs), NOW);
     add(
       'MUTEX: a new member of group G joins G on leg 1, the HEAVIEST leg, not the lightest',
-      r.placed[0]?.leg === 1 && r.placed[0]?.why.includes('group'),
+      r.placed[0]?.leg === 1 && r.placed[0].why.includes('group'),
       JSON.stringify(r.placed)
     );
   }

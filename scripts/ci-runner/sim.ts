@@ -565,8 +565,8 @@ export function predictMakespan(
         est: { estMs: plan.durations.get(spec.id), wallMs: cost?.wallMs },
       };
     }
-    const cpuMs = cost?.cpuMs ?? 0;
-    const wallMs = cost?.wallMs ?? estMs;
+    const cpuMs = cost.cpuMs ?? 0;
+    const wallMs = cost.wallMs ?? estMs;
     const c = Math.max(1, plan.budget?.cores ?? plan.jobs);
     return {
       ...base,
@@ -576,8 +576,8 @@ export function predictMakespan(
           ? cpuMs / Math.max(1, estMs)
           : Math.min(Math.max(cpuMs / wallMs, 0.25), c),
       wallMs: estMs,
-      perCore: spec.cores !== undefined ? (cost?.perCore ?? 1) : undefined,
-      est: { estMs, wallMs, cpuMs, perCore: cost?.perCore },
+      perCore: spec.cores !== undefined ? (cost.perCore ?? 1) : undefined,
+      est: { estMs, wallMs, cpuMs, perCore: cost.perCore },
     };
   });
   const r = simulate(gates, {
@@ -1432,7 +1432,7 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     0
   ).launch[0];
   check(
-    borrowedLaunch?.cores === 0 && borrowedLaunch?.grant === 3 && borrowedLaunch?.borrowed === 3,
+    borrowedLaunch?.cores === 0 && borrowedLaunch.grant === 3 && borrowedLaunch.borrowed === 3,
     `a borrow holds no budget and its process is told its real width: ${JSON.stringify(borrowedLaunch)}`
   );
 

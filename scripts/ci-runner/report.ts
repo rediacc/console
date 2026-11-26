@@ -766,7 +766,7 @@ export function streamSelftest(): { failures: string[]; assertions: number } {
   );
   const stopPre = run('preflight', []);
   check(
-    stopPre.stops[1]?.stage === 'preflight' && stopPre.stops[1]?.reds.join() === 'fx:p2',
+    stopPre.stops[1]?.stage === 'preflight' && stopPre.stops[1].reds.join() === 'fx:p2',
     `--stop-on-stage-red=preflight must stop when preflight settles red, got ${JSON.stringify(stopPre.stops)}`
   );
   const stop1 = run('1', []);

@@ -1538,7 +1538,7 @@ function selftest(endToEnd = false): number {
   const b = bind('.ci/scripts/quality/check_a_b.py', py);
   ck(
     'id and run derive from the path',
-    b?.id === 'check:ci-a-b' && b?.run === '.ci/scripts/quality/check_a_b.py',
+    b?.id === 'check:ci-a-b' && b.run === '.ci/scripts/quality/check_a_b.py',
     b
   );
   // HEADER-DECLARED GATES (agent/plans/PLAN-tooling-code-reduction.md D2): a module under .ci/rediacc_ci runs itself with no shim, its step runs `run` with no npm key to hop through, and its registration is the lock's direct run.
@@ -1749,7 +1749,7 @@ function selftest(endToEnd = false): number {
       );
       if (typeof next !== 'string') return false;
       const b2 = bind('.ci/scripts/quality/check_a_b.py', next);
-      return b2?.id === 'check:ci-a-b' && b2?.step === 'A B';
+      return b2?.id === 'check:ci-a-b' && b2.step === 'A B';
     })()
   );
   ck(
@@ -2376,7 +2376,7 @@ function selftest(endToEnd = false): number {
       return (
         f.length === 1 &&
         f[0]?.includes('no shard-strategy region') &&
-        f[0]?.includes('shard: [1, 2, 3, 4]')
+        f[0].includes('shard: [1, 2, 3, 4]')
       );
     })()
   );
@@ -2395,7 +2395,7 @@ function selftest(endToEnd = false): number {
     (() => {
       const f = rewriteStrategyRegions(ssJobWithRegion('1, 2'), { 'quality-code': 4 });
       return (
-        f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0]?.includes('expected [1, 2, 3, 4]')
+        f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0].includes('expected [1, 2, 3, 4]')
       );
     })()
   );

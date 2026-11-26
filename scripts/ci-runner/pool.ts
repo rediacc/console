@@ -1067,7 +1067,7 @@ export function planAdmission(
     return {
       min: Math.max(1, spec.cores.min),
       max: spec.cores.max === 'all' ? Number.POSITIVE_INFINITY : spec.cores.max,
-      workMs: measured ? (cost?.cpuMs ?? 0) : effWidth(spec) * estMs,
+      workMs: measured ? (cost.cpuMs ?? 0) : effWidth(spec) * estMs,
       // A per-core share above 1 is a tool that oversubscribes its grant, below 0.05 a measurement of nothing; either would steer the area term on noise.
       perCore: Math.min(1.5, Math.max(0.05, cost?.perCore ?? 1)),
       measured,

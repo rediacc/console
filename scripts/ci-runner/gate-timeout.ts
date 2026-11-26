@@ -27,6 +27,10 @@ export const GATE_TIMEOUT_MIN_BY_ID: Readonly<Record<string, number>> = {
   'check:ci-plan-citations': 900_000,
   // The CI step p90 is 12.0 s (lane-durations.json: CI runs only the guards a change touches), so the derived timer is the 300 s floor, while the full local run takes 440.6 s for the hook arm alone (2026-11-22) and 557 s (2026-11-21); killed at 300 s in every narrow and ci:quick run.
   'check:ci-guard-mutations': 1_200_000,
+  // `cores: { min: 1 }` lets the pool run it one-wide, and one vitest worker takes 186.9 s on an idle machine (28.6 s wide, 2026-11-26); its derived timer is 4 x the 77.1 s CI p90, 308 s, which killed it in two consecutive narrow runs that day.
+  'check:ci-test-account-web': 900_000,
+  // 131.9 s measured unloaded, 277.0 s under a narrow run, and killed at its 300 s floor in the next narrow run (2026-11-26).
+  'build:www': 900_000,
 };
 /** A gate declared `slow` with no measurement anywhere. */
 export const GATE_TIMEOUT_UNMEASURED_SLOW_MS = 1_800_000;

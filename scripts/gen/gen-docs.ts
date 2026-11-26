@@ -1201,7 +1201,9 @@ function selftest(): number {
       const seen = targets(repo);
       ck(
         'planted: an untracked marker file is discovered as a target, a tracked one still is, a gitignored one is not',
-        seen.includes('untracked.md') && seen.includes('tracked.md') && !seen.includes('ignored.md'),
+        seen.includes('untracked.md') &&
+          seen.includes('tracked.md') &&
+          !seen.includes('ignored.md'),
         seen
       );
     } finally {

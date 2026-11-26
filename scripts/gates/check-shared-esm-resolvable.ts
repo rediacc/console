@@ -63,6 +63,25 @@ interface ImportResult {
 const SENTINEL = '__ESM_RESOLVABLE_DONE__';
 
 /**
+ * Built modules that load only where `cloudflare:workers` resolves: on Workers (wrangler supplies the built-in) or on Node after
+ * `installCloudflareWorkersShim()` from dist/mcp-host/node-workers-shim.js. Each is still IMPORTED, in a second child with that
+ * shim installed, so a missing extension or import attribute behind it stays red. A module that needs the scheme and is not
+ * named here is red, and a named one that loads without the shim is a dead entry and red too. Printed on every run.
+ */
+const WORKERS_RUNTIME: Record<string, string> = {
+  'mcp-host/handler.js':
+    'BLOCKER: imports oauth/index.js, so it carries the same `cloudflare:workers` edge (PLAN RW-OP1 moved the handler into @rediacc/shared; the Node host installs the shim before importing it).',
+  'mcp-host/oauth/index.js':
+    'BLOCKER: imports @cloudflare/workers-oauth-provider, whose published dist imports `WorkerEntrypoint` from `cloudflare:workers`; Node loads it only behind installCloudflareWorkersShim().',
+};
+const SHIM_MODULE = 'mcp-host/node-workers-shim.js';
+
+/** A raw-Node failure that is exactly the `cloudflare:` scheme refusal, and nothing else. */
+function isWorkersSchemeRefusal(f: Pick<Failure, 'code' | 'message'>): boolean {
+  return f.code === 'ERR_UNSUPPORTED_ESM_URL_SCHEME' && f.message.includes("'cloudflare:'");
+}
+
+/**
  * Import every module in a child process.
  *
  * The child is NOT stylistic. In-process, one dist module calling
@@ -71,8 +90,12 @@ const SENTINEL = '__ESM_RESOLVABLE_DONE__';
  * completion sentinel AND attempted === expected: a child that exits 0 without
  * finishing is a failure, not a success.
  */
-function importAll(dir: string, modules: string[]): ImportResult {
+function importAll(dir: string, modules: string[], shimUrl?: string): ImportResult {
+  const prelude = shimUrl
+    ? `const shim = await import(${JSON.stringify(shimUrl)}); shim.installCloudflareWorkersShim();`
+    : '';
   const script = `
+    ${prelude}
     const failures = [];
     let attempted = 0;
     for (const m of ${JSON.stringify(modules)}) {
@@ -168,6 +191,32 @@ function runControls(): string | null {
     if (good.failures.length !== 0) {
       return `the good arm FAILED (${good.failures[0]?.code}): the detector reports everything, so a green run on the real package would prove nothing.`;
     }
+
+    const shimSource = [
+      "import { registerHooks } from 'node:module';",
+      "const url = 'data:text/javascript,' + encodeURIComponent('export class WorkerEntrypoint {}');",
+      'export function installCloudflareWorkersShim() {',
+      "  registerHooks({ resolve: (s, c, next) => (s === 'cloudflare:workers' ? { url, format: 'module', shortCircuit: true } : next(s, c)) });",
+      '}',
+    ].join('\n');
+    const workersFiles = {
+      'index.js':
+        "import { WorkerEntrypoint } from 'cloudflare:workers';\nexport const ok = typeof WorkerEntrypoint;\n",
+      'shim.js': shimSource,
+    };
+    const workersRaw = arm('workers-raw', workersFiles);
+    if (!(workersRaw.failures.length === 1 && isWorkersSchemeRefusal(workersRaw.failures[0]))) {
+      return `the workers arm did not fail raw with the cloudflare: scheme refusal (${workersRaw.failures[0]?.code ?? 'it loaded'}): the WORKERS_RUNTIME split cannot tell a Workers-only module from a clean one.`;
+    }
+    const workersDir = join(tmp, 'workers-raw');
+    const workersShimmed = importAll(
+      workersDir,
+      [pathToFileURL(join(workersDir, 'index.js')).href],
+      pathToFileURL(join(workersDir, 'shim.js')).href
+    );
+    if (workersShimmed.failures.length !== 0 || workersShimmed.attempted !== 1) {
+      return `the workers arm FAILED behind the shim (${workersShimmed.failures[0]?.code}): the shimmed import cannot prove a WORKERS_RUNTIME module loads.`;
+    }
     return null;
   } finally {
     rmSync(tmp, { recursive: true, force: true });
@@ -240,6 +289,43 @@ if (result.attempted !== urls.length) {
   process.exit(1);
 }
 
+const rel = (url: string) => url.replace(`${pathToFileURL(DIST).href}/`, '');
+const needsShim = result.failures.filter(
+  (f) => isWorkersSchemeRefusal(f) && rel(f.module) in WORKERS_RUNTIME
+);
+const otherFailures = result.failures.filter((f) => !needsShim.includes(f));
+const deadEntries = Object.keys(WORKERS_RUNTIME).filter(
+  (m) => !needsShim.some((f) => rel(f.module) === m)
+);
+if (deadEntries.length > 0) {
+  console.error(
+    `✗ WORKERS_RUNTIME names ${deadEntries.length} module(s) that did not fail raw on the cloudflare: scheme:\n` +
+      deadEntries.map((m) => `    dist/${m}`).join('\n') +
+      '\n\n  Either the build no longer emits it or it now loads on plain Node. Remove the entry from\n' +
+      '  scripts/gates/check-shared-esm-resolvable.ts: an entry that excuses nothing is how an allowlist becomes a way to pass.'
+  );
+  process.exit(1);
+}
+const shimmed = importAll(
+  ROOT,
+  needsShim.map((f) => f.module),
+  pathToFileURL(join(DIST, SHIM_MODULE)).href
+);
+if (shimmed.attempted !== needsShim.length || shimmed.failures.length > 0) {
+  otherFailures.push(
+    ...(shimmed.failures.length > 0
+      ? shimmed.failures
+      : [
+          {
+            module: '(shimmed child)',
+            code: 'CHILD_DIED',
+            message: `attempted ${shimmed.attempted} of ${needsShim.length}`,
+          },
+        ])
+  );
+}
+result.failures = otherFailures;
+
 if (result.failures.length > 0) {
   const rows = result.failures.map(
     (f) =>
@@ -254,7 +340,8 @@ if (result.failures.length > 0) {
       '  exactly as it advertises itself. Every consumer bundles today, which is why\n' +
       '  nothing else catches it. The err.url above names the unresolvable specifier.\n' +
       '  Usual cause: a relative import without its .js extension, or a .json import\n' +
-      "  without `with { type: 'json' }`."
+      "  without `with { type: 'json' }`. A Workers-only module (the cloudflare: scheme) belongs in\n" +
+      '  WORKERS_RUNTIME with a BLOCKER reason, where it is still imported behind the Node shim.'
   );
   process.exit(1);
 }
@@ -262,5 +349,9 @@ if (result.failures.length > 0) {
 console.log(
   `✓ shared is importable as declared ` +
     `(${result.attempted} built modules imported by Node, ` +
-    `${concreteTargets.length} concrete export targets present; 3-arm control fired)`
+    `${concreteTargets.length} concrete export targets present; 5-arm control fired)\n` +
+    `  ${needsShim.length} Workers-only module(s) imported behind ${SHIM_MODULE}:\n` +
+    Object.entries(WORKERS_RUNTIME)
+      .map(([m, why]) => `    dist/${m}: ${why.replace(/^BLOCKER: /, '')}`)
+      .join('\n')
 );
