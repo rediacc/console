@@ -50,7 +50,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import resource_lock, wrangler
+from rediacc_ci.core import bws_env, resource_lock, wrangler
 from rediacc_ci.deploy import (
     deploy_account,
     deploy_record,
@@ -220,8 +220,16 @@ FORENSICS_NAMES = (
 )
 
 
+def _forensics_bucket(region: str) -> str:
+    """The region's bench forensics bucket, from the `forensicsR2` name in the bench row of the region registry. It travels as a secret beside the triple and never as a `[vars]` entry, so a bench config cannot carry the bucket without the endpoint and keys."""
+    try:
+        return str(bench_preflight.bench_object(region)["forensicsR2"]["name"])
+    except (OSError, ValueError, LookupError, TypeError) as exc:
+        raise DeployError("no forensicsR2 bucket for the %s bench: %s" % (region, exc)) from None
+
+
 def _forensics_values() -> tuple[str, str, str]:
-    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
+    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them, and the bucket and region are then pushed empty too, so the Worker sees none of the four. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
     values = (
         os.environ.get("ACCOUNT_FORENSICS_S3_ENDPOINT") or "",
         os.environ.get("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID") or "",
@@ -347,6 +355,8 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "ACCOUNT_BACKUP_S3_BUCKET": backup_bucket,
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
+        "ACCOUNT_FORENSICS_S3_BUCKET": _forensics_bucket(region) if forensics_endpoint else "",
+        "ACCOUNT_FORENSICS_S3_REGION": "auto" if forensics_endpoint else "",
         "ACCOUNT_FORENSICS_S3_ENDPOINT": forensics_endpoint,
         "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID": forensics_key,
         "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY": forensics_secret,
@@ -577,6 +587,19 @@ def _could_not_check_lines(stderr: str) -> list[str]:
     return lines
 
 
+def _rotation_check_env() -> dict[str, str]:
+    """The deploy environment plus the bootstrap token, read the way `bws_env` reads it (the environment, else the token file). The check reads the OTLP store through `bws`, and no deploy-bench profile passes the token on, so a region run from a shell without BWS_ACCESS_TOKEN exported failed there. The value is only handed to the child, never printed."""
+    env = dict(os.environ)
+    if not env.get(bws_env.ACCESS_ENV):
+        try:
+            token = bws_env.read_token(env)
+        except bws_env.RefusalError as exc:
+            raise DeployError(str(exc)) from None
+        if token:
+            env[bws_env.ACCESS_ENV] = token
+    return env
+
+
 def _rotation_check(root) -> None:
     """Refuse the secrets push unless the check read every credential and found it in sync. Drift (exit 1) and a check that could not read a credential (exit 2) both refuse, and are worded apart: an unread value is not drift, and rotating does not fix it."""
     log.step("Rotation preflight: ./run.sh rotation check --for=bench")
@@ -585,6 +608,7 @@ def _rotation_check(root) -> None:
     with subprocess.Popen(
         ROTATION_CHECK_ARGV,
         cwd=str(root / "private" / "account"),
+        env=_rotation_check_env(),
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",

@@ -799,6 +799,27 @@ def test_the_payload_carries_the_forensics_triple(monkeypatch):
     _bench_env(monkeypatch, **FORENSICS_BENCH)
     payload = deploy_bench.secrets_payload()
     assert {name: payload[name] for name in FORENSICS_BENCH} == FORENSICS_BENCH
+    assert payload["ACCOUNT_FORENSICS_S3_BUCKET"] == "forensics-bench"
+    assert payload["ACCOUNT_FORENSICS_S3_REGION"] == "auto"
+
+
+def test_an_unbound_forensics_triple_blanks_the_bucket_and_region_too(monkeypatch):
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
+    _bench_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["ACCOUNT_FORENSICS_S3_BUCKET"] == ""
+    assert payload["ACCOUNT_FORENSICS_S3_REGION"] == ""
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_no_bench_config_carries_a_forensics_var(region):
+    """A bucket or region var without the secret triple made forensicsStoreFromEnv throw on every request."""
+    path = (
+        deploy_bench.paths.repo_root() / "workers" / "account" / ("wrangler.bench-%s.toml" % region)
+    )
+    doc = deploy_bench.tomllib.loads(path.read_text(encoding="utf-8"))
+    assert [k for k in doc["vars"] if k.startswith("ACCOUNT_FORENSICS_")] == []
 
 
 @pytest.mark.parametrize("missing", sorted(FORENSICS_BENCH))
@@ -847,6 +868,18 @@ def test_the_rotation_check_runs_directly_off_the_rotation_profile(monkeypatch, 
         "--for=bench",
     ]
     assert seen["cwd"] == str(tmp_path / "private" / "account")
+
+
+def test_the_rotation_check_gets_the_token_from_the_file_when_not_exported(monkeypatch, tmp_path):
+    token_file = tmp_path / "bws-access-token"
+    token_file.write_text("0.client.secret:key\n", encoding="utf-8")
+    token_file.chmod(0o600)
+    tmp_path.chmod(0o700)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("BWS_ACCESS_TOKEN_FILE", str(token_file))
+    assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "0.client.secret:key"
+    monkeypatch.setenv("BWS_ACCESS_TOKEN", "exported")
+    assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "exported"
 
 
 def test_the_d1_reader_prefers_the_bearer_token_(monkeypatch):

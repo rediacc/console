@@ -93,8 +93,8 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
-    # 33 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench, plus the PLAN-forensics-shipping FS12 forensics store triple (464878dffc), empty here, plus AI_GATEWAY_LOGS_TOKEN (ab89774522).
-    assert len(payload) == 41
+    # 33 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench, plus the PLAN-forensics-shipping FS12 forensics store triple (464878dffc), empty here, plus AI_GATEWAY_LOGS_TOKEN (ab89774522), plus the forensics bucket and region (pushed as secrets, blank with the triple).
+    assert len(payload) == 43
     for name in (
         "CONTACT_FROM_EMAIL",
         "ALERTS_FROM_EMAIL",

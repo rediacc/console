@@ -573,10 +573,12 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
         "REGION": t.serves or t.region,
         "WEBAUTHN_RP_ID": t.domain,
         "WEBAUTHN_ORIGIN": "https://" + t.domain,
-        "ACCOUNT_FORENSICS_S3_BUCKET": t.forensics_bucket,
-        "ACCOUNT_FORENSICS_S3_REGION": "auto",
         **CHANNEL_VARS[t.channel],
     }
+    if t.channel != BENCH:
+        # Bench binds the forensics endpoint and keys only when a bench credential exists (deploy_bench), and the Worker throws on a partly set store, so a bench config never carries the bucket or region vars alone.
+        want_vars["ACCOUNT_FORENSICS_S3_BUCKET"] = t.forensics_bucket
+        want_vars["ACCOUNT_FORENSICS_S3_REGION"] = "auto"
     got_vars = doc.get("vars", {})
     if sorted(got_vars) != sorted(want_vars):
         bad(
@@ -595,6 +597,9 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
         if actual != ref[field] and not exempt:
             bad("%s is %r where the reference target has %r" % (field, actual, ref[field]))
     return f
+
+
+BENCH_FORENSICS_SECRETS = frozenset({"ACCOUNT_FORENSICS_S3_BUCKET", "ACCOUNT_FORENSICS_S3_REGION"})
 
 
 def check_proxy(t: Target, doc: dict) -> list[Finding]:
@@ -807,7 +812,8 @@ def check_profiles(
         for n in sorted(union - s)
     )
     pushed = {k for k, _var, _src in pusher.KEYS}
-    payload = set(bench_payload)
+    # Bench has no [vars] for the forensics store (a partly set store throws), so deploy_bench pushes its bucket and region as secrets beside the triple.
+    payload = set(bench_payload) - BENCH_FORENSICS_SECRETS
     if len(bench_payload) < len(pushed) // 2:
         raise NoVerdictError(
             "read %d key(s) from deploy_bench.secrets_payload(); the extractor lost the payload"
