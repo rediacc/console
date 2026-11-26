@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "Statut de l'abonnement",
   "commands.doctor.checks.subscriptionToken": "Jeton d'accès",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "Diagnostiquer l'environnement CLI et l'intégration renet",
   "commands.doctor.descriptionShort": "Diagnostiquer l'environnement CLI et l'intégration renet",
   "commands.doctor.hasErrors": "{{count}} erreur(s)",

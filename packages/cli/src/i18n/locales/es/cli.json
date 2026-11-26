@@ -1259,7 +1259,7 @@
         "subscriptionToken": "Token de acceso",
         "tofu": "OpenTofu",
         "rsync": "rsync",
-        "vscode": "VS Code",
+        "vscode": "Visual Studio Code",
         "remoteSsh": "Extensión Remote-SSH",
         "opensshClient": "Cliente OpenSSH"
       },

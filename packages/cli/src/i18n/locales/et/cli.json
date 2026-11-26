@@ -1259,7 +1259,7 @@
         "subscriptionToken": "Token",
         "tofu": "OpenTofu",
         "rsync": "rsync",
-        "vscode": "VS Code",
+        "vscode": "Visual Studio Code",
         "remoteSsh": "Remote-SSH-laiendus",
         "opensshClient": "OpenSSH-klient"
       },
@@ -1286,7 +1286,7 @@
       "installedValue": "paigaldatud",
       "notDetectedValue": "tuvastamata",
       "rsyncInstallHintWin32": "Käivita: rdc tools install rsync (või MSYS2-s: pacman -S rsync)",
-      "vscodeInstallHint": "rdc vscode kasutamiseks paigalda VS Code aadressilt https://code.visualstudio.com/",
+      "vscodeInstallHint": "Paigalda VS Code aadressilt https://code.visualstudio.com/, et kasutada käsku rdc vscode",
       "remoteSshInstallHint": "Paigalda käsuga: code --install-extension ms-vscode-remote.remote-ssh",
       "sshClientMissingHint": "Lisa OpenSSH-klient Windowsi sätetes valikulistest funktsioonidest"
     },

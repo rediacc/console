@@ -1259,7 +1259,7 @@
         "subscriptionToken": "الرمز المميز",
         "tofu": "OpenTofu",
         "rsync": "rsync",
-        "vscode": "VS Code",
+        "vscode": "Visual Studio Code",
         "remoteSsh": "إضافة Remote-SSH",
         "opensshClient": "عميل OpenSSH"
       },

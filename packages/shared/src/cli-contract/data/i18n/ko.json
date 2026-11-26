@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "상태",
   "commands.doctor.checks.subscriptionToken": "토큰",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "CLI 환경에 대한 진단 검사를 실행합니다: Node.js 버전, renet 바이너리 가용성, 설정 파일 유효성, SSH 키 상태, 네트워크 연결. 통과/실패 지표와 함께 구조화된 상태 보고서를 출력합니다.",
   "commands.doctor.descriptionShort": "CLI 환경 및 renet 통합을 진단합니다",
   "commands.doctor.hasErrors": "오류 {{count}}개",

@@ -1259,7 +1259,7 @@
         "subscriptionToken": "访问令牌",
         "tofu": "OpenTofu",
         "rsync": "rsync",
-        "vscode": "VS Code",
+        "vscode": "Visual Studio Code",
         "remoteSsh": "Remote-SSH 扩展",
         "opensshClient": "OpenSSH 客户端"
       },

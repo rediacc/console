@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "Статус",
   "commands.doctor.checks.subscriptionToken": "Токен",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "Диагностика среды CLI и интеграции renet",
   "commands.doctor.descriptionShort": "Диагностика среды CLI и интеграции renet",
   "commands.doctor.hasErrors": "{{count}} ошибка(ок)",

@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "Estado",
   "commands.doctor.checks.subscriptionToken": "Token",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "Executar verificações de diagnóstico ao ambiente do CLI: versão do Node.js, disponibilidade do binário renet, validade do ficheiro de configuração, estado das chaves SSH e conectividade de rede. Produz um relatório de saúde estruturado com indicadores de aprovação/falha.",
   "commands.doctor.descriptionShort": "Diagnosticar o ambiente do CLI e a integração do renet",
   "commands.doctor.hasErrors": "{{count}} erro(s)",

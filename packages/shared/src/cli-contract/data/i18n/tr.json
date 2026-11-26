@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "Durum",
   "commands.doctor.checks.subscriptionToken": "Erişim jetonu",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "CLI ortamını ve renet entegrasyonunu tanıla",
   "commands.doctor.descriptionShort": "CLI ortamını ve renet entegrasyonunu tanıla",
   "commands.doctor.hasErrors": "{{count}} hata",

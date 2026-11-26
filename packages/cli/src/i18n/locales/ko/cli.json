@@ -1259,7 +1259,7 @@
         "subscriptionToken": "토큰",
         "tofu": "OpenTofu",
         "rsync": "rsync",
-        "vscode": "VS Code",
+        "vscode": "Visual Studio Code",
         "remoteSsh": "Remote-SSH 확장",
         "opensshClient": "OpenSSH 클라이언트"
       },

@@ -979,7 +979,7 @@
   "commands.doctor.checks.subscriptionStatus": "状态",
   "commands.doctor.checks.subscriptionToken": "访问令牌",
   "commands.doctor.checks.tofu": "OpenTofu",
-  "commands.doctor.checks.vscode": "VS Code",
+  "commands.doctor.checks.vscode": "Visual Studio Code",
   "commands.doctor.description": "诊断CLI环境和renet集成",
   "commands.doctor.descriptionShort": "诊断CLI环境和renet集成",
   "commands.doctor.hasErrors": "{{count}}个错误",
