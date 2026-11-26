@@ -780,8 +780,8 @@ _EXPORTABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 # Names bash holds readonly (an `export` of one prints "readonly variable" and changes nothing), and `_`, which bash rewrites after every command.
 _BASH_READONLY = frozenset({"BASHOPTS", "BASH_VERSINFO", "EUID", "PPID", "SHELLOPTS", "UID", "_"})
 
-# The child's first act: source the environment file named by $1, remove it whatever the source did, and drop it from the positional parameters, so `command` runs with none.
-_SOURCE_AND_REMOVE = '. "$1"; rm -f -- "$1"; shift\n'
+# The child's first act: source the environment file named by $1, remove it whatever the source did, and drop it from the positional parameters, so `command` runs with none. A source that fails stops the child (126) before `command`, which must not run without its environment.
+_SOURCE_AND_REMOVE = '. "$1" || { rm -f -- "$1"; exit 126; }; rm -f -- "$1"; shift\n'
 
 
 def _environment_file(carried: dict[str, str], user: str) -> str:

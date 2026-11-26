@@ -9,6 +9,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import types
 
 import pytest
 
@@ -72,7 +73,7 @@ def test_sg_absent_uses_sudo_with_path_and_home(tmp_path: pathlib.Path) -> None:
         "HOME=/h",
         "bash",
         "-c",
-        '. "$1"; rm -f -- "$1"; shift\nrun it',
+        '. "$1" || { rm -f -- "$1"; exit 126; }; rm -f -- "$1"; shift\nrun it',
         "bash",
     ]
     assert _env_file(argv).read_text() == "export G=1\n"
@@ -239,3 +240,59 @@ def test_no_route_returns(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatc
     )
     monkeypatch.setattr(local_common, "_docker_group_members", lambda: "alice")
     assert local_common.reexec_with_docker_group(["x"]) is True
+
+
+def test_an_unreadable_environment_file_stops_the_command(tmp_path: pathlib.Path) -> None:
+    """Review bf87bfa2.1: when sourcing the file fails the command must not run without its environment; the child exits 126 and the file is gone."""
+    marker = tmp_path / "ran"
+    env = {"PATH": _bin(tmp_path, "sudo") + os.pathsep + os.environ["PATH"], "HOME": "/h"}
+    argv = dockerx.group_command("touch %s" % marker, user="u", env=env, extra_env={"G": "1"})
+    assert argv is not None
+    child = argv[argv.index("bash") :]
+    # Control: with the file readable the same child runs the command.
+    ok = subprocess.run(child, env={"PATH": env["PATH"]}, capture_output=True, check=False)
+    assert ok.returncode == 0
+    assert marker.exists()
+    marker.unlink()
+    again = dockerx.group_command("touch %s" % marker, user="u", env=env, extra_env={"G": "1"})
+    assert again is not None
+    carried = _env_file(again)
+    carried.unlink()  # the source of a missing file fails
+    done = subprocess.run(
+        again[again.index("bash") :], env={"PATH": env["PATH"]}, capture_output=True, check=False
+    )
+    assert done.returncode == 126
+    assert not marker.exists()
+    assert not carried.exists()
+
+
+def test_a_root_caller_hands_the_environment_file_to_the_target_user(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review bf87bfa2.3: a root caller chowns the file to the target user's uid and gid; a non-root caller and an unknown user leave it alone."""
+    chowned: list[tuple[str, int, int]] = []
+
+    def chown(path: str, uid: int, gid: int) -> None:
+        chowned.append((path, uid, gid))
+
+    entry = types.SimpleNamespace(pw_uid=4242, pw_gid=4343)
+    monkeypatch.setattr(os, "chown", chown)
+    monkeypatch.setattr(dockerx.pwd, "getpwnam", lambda _user: entry)
+
+    monkeypatch.setattr(os, "geteuid", lambda: 1000)
+    plain = dockerx._environment_file({"G": "1"}, "u")
+    assert chowned == []
+
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    rooted = dockerx._environment_file({"G": "1"}, "u")
+    assert chowned == [(rooted, 4242, 4343)]
+
+    def missing(_user: str) -> object:
+        raise KeyError(_user)
+
+    chowned.clear()
+    monkeypatch.setattr(dockerx.pwd, "getpwnam", missing)
+    unknown = dockerx._environment_file({"G": "1"}, "nobody-here")
+    assert chowned == []
+    for path in (plain, rooted, unknown):
+        assert pathlib.Path(path).read_text() == "export G=1\n"
