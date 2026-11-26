@@ -110,7 +110,7 @@ const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf
 /**
  * Tracked subjects that are ACTUALLY PRESENT, plus the ones that are not.
  *
- * `git ls-files` reports the INDEX, and this gate then reads the WORKTREE. In a shared
+ * The listing is the INDEX plus untracked, unignored files (`--cached --others --exclude-standard`), and this gate then reads the WORKTREE. In a shared
  * checkout those disagree the moment another session deletes a tracked file: on
  * 2026-09-06 a peer ran this mid-way through a batch that removed docker-compose.yml,
  * Rediaccfile and others, and readFileSync threw ENOENT out of node:fs. A stack trace is
@@ -1434,8 +1434,8 @@ export function insertHeader(
  * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then an optional `python3 .ci/rediacc_ci/core_lease.py heavy-lock --` wrapper, then `npm run <script>` and plain arguments. No shell operator, command substitution, backtick, backslash or newline is admitted anywhere (review 1e7d515b.3). An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
  */
 export function isNpmHop(run: string): boolean {
-  // A value expands at most a plain `$NAME` or `${NAME}`: `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
-  const v = '\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?';
+  // A value expands at most a plain `$NAME` or a balanced `${NAME}` (an unbalanced `${NAME` is refused): `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
+  const v = '\\$(?:\\{[A-Za-z_][A-Za-z0-9_]*\\}|[A-Za-z_][A-Za-z0-9_]*)';
   const value = `(?:"(?:[^"\`$\\\\\\n]|${v})*"|'[^'\\n]*'|(?:[^\\s;&|()<>\`'"$\\\\]|${v})*)`;
   const word = '[^\\s;&|()<>`$\\\\]+';
   // The heavy-lock wrapper (`.ci/rediacc_ci/core_lease.py heavy-lock --`) only serialises the hop behind a lease; the script that runs is still the npm one. Exactly that argv is admitted, so a wrapper around any other program or subcommand stays a direct run.
@@ -1621,6 +1621,8 @@ function selftest(endToEnd = false): number {
       !isNpmHop('X=$(tsx evil.ts) npm run check:ci-a') &&
       !isNpmHop('tsx evil.ts\nnpm run check:ci-a') &&
       !isNpmHop('X=1\nnpm run check:ci-a') &&
+      !isNpmHop('X="${CI_RUNNER_CORES npm run check:ci-a') &&
+      !isNpmHop('X=${CI_RUNNER_CORES npm run check:ci-a') &&
       isNpmHop('X="${CI_RUNNER_CORES}" npm run check:ci-a') &&
       isNpmHop("X='$(literal)' npm run check:ci-a")
   );
