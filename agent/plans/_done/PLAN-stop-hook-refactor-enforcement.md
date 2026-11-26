@@ -1,7 +1,7 @@
 # PLAN: stop-hook code-maintenance pressure -- a second, wider duplication corpus that only the Stop hook reads
 Status: superseded -- open boxes carried by PLAN-ciquick-cpu W13/W14 and PLAN-tooling-code-reduction CR5 (operator /ask 2026-11-22)
 First-Seen: 2026-10-31
-Ruling: #d969cb29
+Ruling: #f8f70a05
 Depends-On: no-dep -- cites only finished plans: PLAN-extension-shaped-matchers.md, PLAN-fix-stop-hook-completion-evidence-refire.md
 Owner: d778be9d
 Updated: 2026-09-24
@@ -294,7 +294,7 @@ TRIAGE RESULT, 2026-09-24, which corrects this section's prediction. The anchor 
 - [x] Triage the 19-copy span at `.ci/rediacc_ci/tests/gates/test_gate_ci_parity.py:157` and its siblings -- the gate's own note predicts these are one shared scaffold to extract, not 90 defects. Extracting it is what takes the widening from 90 to roughly a dozen and is the precondition `PLAN-extension-shaped-matchers.md` commit 3 has been waiting on.
     (ticked) 2026-09-24T04:27:35Z by d778be9d: triaged 2026-09-24: fingerprint:b9a361994cf8 (20 sites) and fingerprint:984aea773b55 (10 sites) accepted as harness assertion vocabulary in scripts/data/shape-duplication-seed-advisory.json:2, fingerprint:6ae372a04efb routed to worklist #d4c5a7d8 as a harness fix; advisory backlog 96 to 94
 - [ ] When the backlog is under 10, execute the graduation from Part 1.4.
-    carried by PLAN-tooling-code-reduction.md CR5 547ffb5a (ruling #d969cb29)
+    carried by PLAN-tooling-code-reduction.md CR5 547ffb5a (ruling #f8f70a05)
 
 ## Part 3 -- Risks
 

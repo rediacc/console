@@ -1,7 +1,7 @@
 # PLAN: a per-PR deletion budget (deletions >= 0.33 x additions over all tracked lines), per-PR coverage, and a mutation-judged prune of the pytest corpus, bash-twin parity tests and duplicate tests and gates
 Status: removed -- operator /ask 2026-10-04, three rounds plus the coverage addition, all binding; round two overrides round one wherever they conflict; postponed by the operator the same day
 Removed-Why: archived on the operator's keep-or-archive answer ASKED:2026-11-22T17:49Z (Status was draft)
-Ruling: #936e6c58 -- operator /ask 2026-11-22 retired this plan; DB15 and DB16 moved to PLAN-tooling-code-reduction.md CR1, DB19 and DB20 to CR4, every other box is dropped
+Ruling: #eee72ec4 -- operator /ask 2026-11-22 retired this plan; DB15 and DB16 moved to PLAN-tooling-code-reduction.md CR1, DB19 and DB20 to CR4, every other box is dropped
 Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Owner: d778be9d
 First-Seen: 2026-10-04
@@ -291,7 +291,7 @@ DB29 waits for the operator.
 ## Tasks
 
 - [ ] DB1 The engine and its config: .ci/config/deletion-budget.json (new; `"ratio": "0.33"`, `"submodules"`) and .claude/rediacc_hooks/deletion_budget.py (new; `measure`, `added_lines`, `rows_from_numstat`, `rows_from_compare`, `judge`, `refusal`), per D1, D2 and D5. Proof: `python3 -m pytest .claude/rediacc_hooks/tests/test_deletion_budget.py -q`. The cases build a temp repo and cover:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - (100,33) passes; (100,32) fails needing 1; (3,1) passes; (4,1) fails; (0,0) passes;
   - a lockfile edit counts;
   - a pure rename is 0/0, and an edited rename counts only its edits;
@@ -302,13 +302,13 @@ DB29 waits for the operator.
   
   Control: a config copy with `"ratio": "0.40"` flips (100,33) to fail.
 - [ ] DB2 The rule gate check-ci-deletion-budget: .ci/scripts/quality/check_deletion_budget.py (new; header `step: Deletion budget`, `lane: quality-branch`; the body via the `.ci/scripts/quality/check_plan_implementation.py:179` shape; submodules via gh compare; INFO on admission; NOT JUDGED without an event). Proof: `.ci/scripts/quality/check_deletion_budget.py --selftest && PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_deletion_budget.py`. Cases: a short event is rc 1 with the numbers; with `Operational-Reason:` it is rc 0 with INFO; a compare response at the cap is rc 1 "unmeasurable". Control: an always-pass engine stub reds the selftest.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB3 The merge gate: `.claude/rediacc_hooks/plan_gate.py:458` (after the open-box loop, `deletion_budget.refusal(root, rev or "HEAD", pr_body)`) and `.claude/rediacc_hooks/guards/block_admin_merge.py:301` (the submodule arm). Proof: `python3 -m pytest .claude/rediacc_hooks/tests/test_plan_gate.py -q && python3 .claude/rediacc_hooks/guards/test-block_admin_merge.py`. Cases: a ticked plan on a short repo is refused with the numbers; with `Operational-Reason:` it is admitted; an unmeasurable head is refused; a short submodule merge admitted by the console PR body passes. Control: `refusal` returning "" reds the short case.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB4 The push guard's agreement line: `.claude/rediacc_hooks/guards/block_unverified_push.py:810` (one WARN line from `deletion_budget.measure(root, "HEAD")` on an allowed MMDD-N push, never a deny). Proof: `python3 .claude/rediacc_hooks/guards/test-block_unverified_push.py` with short and passing worlds, plus the golden re-recorded in `.claude/rediacc_hooks/tests/goldens/block_unverified_push.jsonl`. Control: a guard that denies on short flips the short world and reds.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB5 The Stop hook:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - `.claude/hooks/stop/wl_prscope.py:46` (a `deletion` field on `LoopState`, filled in `done(LIVE, ...)` at :174, cached per head and base sha);
   - `.claude/hooks/stop/wl_checks.py:2534` (`pr_scope_line` advisory);
   - `.claude/hooks/stop/wl_checks.py:2623` (`V_LOOP_NEXT_DELETION_SHORT` in place of `V_LOOP_NEXT_MERGE` when ticked, short and unadmitted);
@@ -316,11 +316,11 @@ DB29 waits for the operator.
   
   Proof: `python3 -m pytest .claude/rediacc_hooks/tests/test_wl_prscope.py .claude/rediacc_hooks/tests/test_wl_loop_next.py .claude/rediacc_hooks/tests/test_wl_message_catalogue.py -q`. Cases: open plus short is advisory only; ticked plus short blocks; ticked plus short plus `Operational-Reason:` gives the merge offer. Control: dropping the LIVE-arm check restores the merge offer in the second case.
 - [ ] DB6 The reggate payment line: `.claude/hooks/stop/wl_reggate.py:812` (`R_REGGATE_PAY_FOR` appended on a short branch with three DELETE-CANDIDATEs and the parametrize-first hint; `REGGATE_PROMPT` untouched). Proof: `python3 -m pytest .claude/rediacc_hooks/tests/test_wl_message_catalogue.py -q && python3 .claude/hooks/stop/test-reggate-ledger.py && npm run check:ci-rubric-calibration`. Control: a passing measurement prints no payment line.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB7 The static signals and the protected list: .ci/rediacc_ci/quality/test_value.py (new; S1-S4 and S7, `body_hash(node, literals=True|False)`, target resolution from imports) and .ci/config/test-value.json (new; `protected`, `control_first`, `min_observable`, the operator priority). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_value.py`. Cases: local renames hash equal; a literal difference hashes equal only when abstracted; `mod._x` sets S1; a `fix(...)` def sets S7; every protected glob matches a real test. Control: emptying `protected` reds the non-vacuity case.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB8 The line map, shared by D6 and D12: .ci/rediacc_ci/quality/test_line_map.py (new; `sys.monitoring` LINE events with `DISABLE` and per-test `restart_events`; per-xdist-worker files; the `.pth` child hook with env-var and parent-pid-chain test-id lookup; the `unattributed` bucket; `merge(paths)`). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_line_map.py` over `fixtures/test_line_map/`. Cases:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - an in-process test and a `python3 -m` subprocess test both map to the target's executed lines;
   - a subprocess launched with an emptied env still maps, through the pid chain;
   - a child with no resolvable test lands in `unattributed`;
@@ -329,11 +329,11 @@ DB29 waits for the operator.
   
   Control: with the `.pth` hook absent, the subprocess case maps to none and reds.
 - [ ] DB9 The mutation runner: .ci/rediacc_ci/quality/test_mutation.py (new; the six operators in priority order; trampolines in a sandbox copy; `TESTVALUE_MUTANT`; a double green baseline; protected-first, then redundant, then fastest; stop at the second kill; 5x timeout as a kill; `--shard i/N`; the resumable cache). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_mutation.py` over `fixtures/test_mutation/`. Cases: an asserting test kills and an assertion-free one does not; a string-literal mutant lets an output test kill; a run stops after two kills; the live fixture bytes are unchanged; an unchanged-sha re-run runs zero mutants. Control: a red-baseline fixture is skipped and listed, never scored.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB10 Failure history: .ci/rediacc_ci/quality/test_failure_history.py (new; failures from the junit artifacts; W measured from the oldest artifact present; age from `git blame`; real failure = red then green across a code change). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_failure_history.py`. Cases: a test younger than W yields `history: none`; an older red-then-green yields `failed: <run>`; a same-head flake yields nothing; with no artifacts W is 0, recorded rather than defaulted to 90. Control: forcing W to 90 days with 3 days of artifacts reds the "measured, not assumed" case.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB11 The keep-bar solver: .ci/rediacc_ci/quality/test_keep_bar.py (new; the D6 greedy, slowest first, S10 ahead at equal speed, S7 and S9 at the back, UNJUDGEABLE and flaky kept, unique kills recorded). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_keep_bar.py` over `fixtures/test_keep_bar/`:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - two sharers of an only kill: exactly one deleted;
   - kills shared with a protected test: deleted;
   - only surviving mutants on its lines: UNJUDGEABLE, kept;
@@ -341,9 +341,9 @@ DB29 waits for the operator.
   
   Control: a solver that skips the surviving-set update deletes both sharers and reds.
 - [ ] DB12 The ledger and check-ci-test-deletion-provenance: .ci/config/test-prune-ledger.json (new) and .ci/scripts/quality/check_test_deletion_provenance.py + .ci/rediacc_ci/quality/test_deletion_provenance.py (new; `lane: quality-branch`; the D10 classes). Proof: `--selftest && <check>` rc 0, plus `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_test_deletion_provenance.py`. Controls: an unledgered deletion reds; a move stays green; a parametrize under its own case id stays green; a ledgered `test_deploy_*` deletion still reds.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB13 Registration of the rule and provenance gates, by hand where `quality-branch` requires it (`.github/workflows/ci-quality.yml:596`):
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - `package.json:191`;
   - `scripts/ci-runner/manifest.ts` and `scripts/ci-runner/gates.lock.json:2086`;
   - `.github/workflows/ci-quality.yml:590` (two steps after "Plan implementation clock", with the gh token for compare);
@@ -353,30 +353,30 @@ DB29 waits for the operator.
   
   Proof: `npm run check:ci-gate-bind && npm run check:ci-parity && npm run check:ci-gate-reachability-coverage && npm run check:ci-shard-manifest-coverage && npm run check:ci-python-env-registry && npm run ci -- --quick --list`, with the new gates absent from the quick plan. Control: dropping one manifest entry reds `check:ci-gate-bind`. Pushed together with DB16.
 - [ ] DB14 The pilot, the full run and the report: agent/reports/test-value-2026-10.json and its .md twin (new; generated by `PYTHONPATH=.ci python3 -m rediacc_ci.quality.test_keep_bar --report`). The pilot over three modules is recorded first with its per-mutant cost and the projected total. Its report holds:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - per-class counts, and mutants generated, killed and discarded;
   - CPU-hours, and the measured W;
   - the S10 redundancy count.
   
   Proof: the command rc 0, and a `python3 -c` over the json asserting every DELETE-CANDIDATE carries a solver trace. Control: the report refuses to write while any judgeable test's target lacks a kill file.
 - [ ] DB15 The twin inventory: .ci/rediacc_ci/quality/twin_inventory.py (new; the D7 classifier; release twins forced out of scope) and agent/reports/twin-inventory-2026-10.json (new). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_twin_inventory.py`. Cases: an existing twin is twin-live; an absent one is twin-retired; prose only is comment-only; a release twin is out of scope even when absent. Control: classifying by the word alone puts the prose fixture in twin-retired and reds.
-  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR1, per ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR1, per ruling #eee72ec4.
 - [ ] DB16 Twin retirement, one commit per twin family, per D7 (salvage, control cases kept, goldens and `.ci/shadow/**` deleted with the test, docstrings re-pointed, `twin-retired` ledger rows, shards regenerated). Proof per commit: `npm run check:ci-pytest && npm run check-ci-test-deletion-provenance && npm run check:ci-shard-manifest-coverage && npm run check-ci-stale-plan-citations`, plus `git grep -n` over the deleted golden and shadow paths returning nothing. Control: restoring one deleted path in a docstring reds the citation check.
-  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR1, per ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR1, per ruling #eee72ec4.
 - [ ] DB17 Clone families: `.ci/rediacc_ci/quality/clone_families.py` (new; test groups from DB7's literal-abstracted hash, gate families from the shape-index windows, each member marked pattern-only or not) and `agent/reports/clone-families-2026-10.json` (new). Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_clone_families.py`. Cases: three tests differing in one literal form one group; two gates differing in a regex and a message form one pattern-only family; a third with different control flow is listed but not pattern-only. Control: a literals-kept hash forms no group and reds.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB18 Test parametrize merges, one commit per suite area, per D8 (case ids carry the old names; protected and control groups keep every case; `clone-merged` rows; shards regenerated). Proof per commit: `npm run check:ci-pytest && npm run check-ci-test-deletion-provenance && npm run check:ci-shard-manifest-coverage`, with the collected count unchanged for the merged groups. Control: dropping one case id reds provenance.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB19 The i18n gate family merged, per D8, over the pattern-only members among `scripts/gates/check-{i18n,locale,translation}-*.ts`, `check-dead-translation-keys.ts` and `check-cli-i18n-key-usage.ts`, plus their `.ci/rediacc_ci/tests/gates/test_gate_*.py` and the registration files. Proof: `npm run check:ci-gate-bind && npm run check:ci-parity && npm run check:ci-gate-reachability-coverage && npm run check:ci-<merged-id>`, plus the before and after `CONTROL` counts printed equal and `git grep -n` over the retired ids returning nothing. Control: deleting one arm's control reds the count check.
-  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR4, per ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR4, per ruling #eee72ec4.
 - [ ] DB20 The docs gate family merged, by the DB19 procedure, over the pattern-only members among `scripts/gates/check-docs-*.ts`, `check-doc-region-parity.ts` and `check-cli-docs.ts`. Proof and control as in DB19.
-  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR4, per ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: taken over by PLAN-tooling-code-reduction.md CR4, per ruling #eee72ec4.
 - [ ] DB21 Keep-bar batch 1, in this PR: DB14's DELETE-CANDIDATEs after an incremental re-run over the modules DB16 and DB18 changed, using CI's combined line map for the head once DB25 is green. At most 400 tests per commit, slowest first, `keep-bar` rows, a clean per-commit review, shards regenerated. Proof per commit: `npm run check:ci-pytest && npm run check-ci-test-deletion-provenance && npm run check:ci-shard-manifest-coverage && npm run check:ci-lane-budget && npm run check-ci-deletion-budget` (the last against a local event fixture with this PR's body). Control: deleting one KEEP test with a recorded unique kill, without a row, reds provenance.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB22 Floor 1 re-sized: `.ci/rediacc_ci/check_pytest.py:69` (`MIN_TESTS` to two thirds of the post-DB21 corpus, rounded down to a multiple of 50; docstring :23 updated). Proof: `.ci/rediacc_ci/check_pytest.py --selftest && npm run check:ci-pytest`. Control: the case at :526 holds, and a half-size fixture corpus reds floor 1.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
 - [ ] DB23 The follow-up plan: `the follow-up plan PLAN-test-prune-batches (new)` (new). It holds:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - the remaining keep-bar batches and the UNJUDGEABLE list;
   - coverage and mutation for the vitest, account and renet suites;
   - D12's TS, Go and bash scope;
@@ -385,10 +385,10 @@ DB29 waits for the operator.
   
   Queued via `npm run check:ci-plan-record -- --update`. Proof: `npm run check:ci-plan-record` rc 0. Control: with the plan file absent, the gate reports the entry as dangling.
 - [ ] DB24 Overhead and cost refresh after the first green CI run with `--line-map` on the DB21 head. It records each leg's minutes with and without the map (from the `unit-durations` artifacts of that run and the preceding green run) in the D12 section of `docs/agent-reference/ci-gates.md`. It then refreshes `.ci/config/lane-durations.json` and `.ci/config/gate-costs.json` via `PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --refresh`, and runs `--rebalance quality-pytest --write`. Only if a leg still exceeds 15 minutes does it grow to four legs (`.ci/config/shards/quality-pytest.json` `"of": 4`, `.github/workflows/ci-quality.yml:2363` `shard: [1, 2, 3, 4]`). Proof: `PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --check && npm run check:ci-lane-budget && npm run check:ci-shard-manifest-coverage` rc 0. Control: a hand-added stale unit id reds `check:ci-lane-budget`.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   (corrected 2026-11-11, R2) GitHub-only: CI parity -- the minutes with and without --line-map come from the unit-durations artifacts of a green GitHub CI run on the DB21 head.
 - [ ] DB25 Coverage wiring on every PR, per D12:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - `.ci/rediacc_ci/check_pytest.py:1043` (`--line-map <dir>` beside `parse_shard_args`, loading DB8's plugin and installing the `.pth` hook);
   - `.github/workflows/ci-quality.yml:2363` (the legs pass `--line-map reports/line-map/` and upload `line-map-quality-pytest-s<N>-<sha>`);
   - a new `coverage-combine` job after `quality-pytest` (`pull-requests: write`, `fetch-depth: 0`, steps "Coverage summary" and "Uncovered lines");
@@ -397,7 +397,7 @@ DB29 waits for the operator.
   
   Proof: `.ci/rediacc_ci/check_pytest.py --selftest && npm run check:ci-gate-bind && npm run check:ci-parity && npm run check:ci-gate-reachability-coverage`, plus one CI run on the branch showing the three map artifacts, the combined map and the summary comment at the head sha (read with `.ci/scripts/ci/ci-trace.py`). Control: a leg run with `--line-map` withheld leaves one artifact missing, and the combine job goes red "coverage incomplete" rather than green.
 - [ ] DB26 Combine and summary: `.ci/rediacc_ci/quality/coverage_combine.py` (new; merge, missing-leg refusal, the redundancy, hotspot and uncovered-changed computations) and `.ci/rediacc_ci/review/coverage_summary.py` (new; the upserted `<!-- coverage-summary: <head40> -->` comment, 30-row caps, advisory exit 0 on a posting failure, a `--render-only` local mode). It also adds `COVERAGE_PREFIX` beside `TABLE_PREFIX` at `.claude/hooks/stop/wl_prsignals.py:30`, and its pin in `.ci/rediacc_ci/tests/test_prsignals_pins.py`. Proof: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_coverage_combine.py .ci/rediacc_ci/tests/test_review_coverage_summary.py .ci/rediacc_ci/tests/test_prsignals_pins.py` over `fixtures/coverage/`. Cases:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - a test whose every line is also run by another is listed redundant, and one with a sole line is not;
   - a line run by five tests heads the hotspot list;
   - an added executable line absent from the map is listed uncovered;
@@ -405,7 +405,7 @@ DB29 waits for the operator.
   
   Control: changing the marker in one copy only reds the pin test.
 - [ ] DB27 The shrink-only gate `check-ci-uncovered-lines`: `.ci/scripts/quality/check_uncovered_lines.py` + `.ci/rediacc_ci/quality/uncovered_lines.py` (new; scope, executable lines from `co_lines()`, content-hash ids, `unattributed` counted as run, `Operational-Reason:` through plan_gate's parser, `--drain` and `--write-baseline` through `shrink_only.write_verdict` at `.ci/rediacc_ci/quality/shrink_only.py:31`), and `.ci/config/uncovered-lines-baseline.json` (new; seeded, one line per file). Proof: `.ci/scripts/quality/check_uncovered_lines.py --selftest && PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_quality_uncovered_lines.py`. Cases:
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.
   - a new uncovered added line reds;
   - the same with `Operational-Reason:` passes with INFO;
   - an added comment or docstring line never reds;
@@ -415,4 +415,4 @@ DB29 waits for the operator.
   
   Control: removing the baseline file makes `--write-baseline` refuse rather than reseed (the `write_verdict` missing-baseline arm).
 - [ ] DB29 The operator's coverage addition (/ask 2026-10-04): three parts on top of D12, each on every PR. (a) TypeScript, Go and bash coverage: c8 through vitest for `packages/{cli,shared,www}` and the account suites, `go test -coverprofile` for `private/renet`, and a bash line tracer (`BASH_XTRACEFD` with `PS4` carrying file and line) for the scripts the CI legs run, each mapped to the same `test -> file -> lines` shape and merged by `coverage_combine`, with D12's summary and the uncovered-lines gate widened to those languages. (b) A coverage floor per protected area (licensing, payments, config crypto, release): a per-area minimum line coverage recorded in `.ci/config/test-value.json`, checked on every PR, so the keep-bar prune can never thin those paths below it. (c) The coverage change fed into the Claude PR review: the review prompt (`.ci/rediacc_ci/review/prompts/{initial,followup}.md`) receives the changed-uncovered lines and the redundant-test list, so the review comments on them inline. Proof: one PR run whose summary lists a TS, a Go and a bash uncovered changed line; a protected-area fixture below its floor reds the gate; a review run on a fixture PR carries an inline comment on an uncovered changed line. Control: dropping one language's map makes the combine job red "coverage incomplete" rather than green.
-  (superseded) 2026-11-22 by fee07197: dropped by ruling #936e6c58.
+  (superseded) 2026-11-22 by fee07197: dropped by ruling #eee72ec4.

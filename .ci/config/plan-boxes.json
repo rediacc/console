@@ -2378,6 +2378,36 @@
         "f895ccf3"
       ]
     },
+    "agent/plans/PLAN-host-temp-disposal.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 19,
+      "done": 0,
+      "open_sigs": [
+        "02bd8ddf",
+        "047b15bb",
+        "095996c0",
+        "141aa55b",
+        "1b9b8191",
+        "3a59702b",
+        "5a843445",
+        "6d8212ea",
+        "70c35be7",
+        "714a9aba",
+        "76ab309a",
+        "7beffdd0",
+        "82726446",
+        "a7c45a52",
+        "ac42fa87",
+        "af353057",
+        "dbed164d",
+        "dee9542d",
+        "f01d3a26"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-hostinger-to-bench.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -5069,7 +5099,7 @@
         "8db61653",
         "b9881aa7"
       ],
-      "ruling": "#d969cb29"
+      "ruling": "#f8f70a05"
     },
     "agent/plans/_done/PLAN-ci-watch-enforcement.md": {
       "status": "superseded",
@@ -6467,7 +6497,7 @@
         "bba54c8b",
         "d54e3a5b"
       ],
-      "ruling": "#d969cb29"
+      "ruling": "#f8f70a05"
     },
     "agent/plans/_done/PLAN-stop-hook-retro-20260924.md": {
       "status": "done",
@@ -7000,7 +7030,7 @@
         "fb8eee9b"
       ],
       "done_sigs": [],
-      "ruling": "#936e6c58 -- operator /ask 2026-11-22 retired this plan; DB15 and DB16 moved to PLAN-tooling-code-reduction.md CR1, DB19 and DB20 to CR4, every other box is dropped"
+      "ruling": "#eee72ec4 -- operator /ask 2026-11-22 retired this plan; DB15 and DB16 moved to PLAN-tooling-code-reduction.md CR1, DB19 and DB20 to CR4, every other box is dropped"
     }
   }
 }
