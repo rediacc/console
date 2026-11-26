@@ -144,6 +144,32 @@ describe('keep-awake until the dispatch ends', () => {
     expect(h.container.destroys).toEqual(['idle']);
   });
 
+  it('a new request resets an old hold start, so its running dispatch is held (review 530c463a.1)', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.app = (request) =>
+      new URL(request.url).pathname === BUSY_PATH
+        ? Response.json({ busy: 1 })
+        : openStream().response;
+    await h.executor.pin(ORG, 0, 'light');
+    await (await h.executor.fetch(new Request('https://proxy/v1/command'))).body?.cancel();
+    await flush();
+    const firstHold = T0 + IDLE_MS;
+    vi.setSystemTime(firstHold);
+    await h.executor.alarm();
+    expect(h.container.destroys).toEqual([]);
+
+    // A new dispatch arrives just inside the cap and its client leaves too.
+    const second = firstHold + MAX_DISPATCH_HOLD_MS - 1000;
+    vi.setSystemTime(second);
+    await (await h.executor.fetch(new Request('https://proxy/v1/command'))).body?.cancel();
+    await flush();
+
+    vi.setSystemTime(second + IDLE_MS);
+    await h.executor.alarm();
+    expect(h.container.destroys).toEqual([]);
+  });
+
   it('an outside /v1/busy is refused and never reaches the container', async () => {
     const h = await clientGone({ running: 3 });
     const before = h.container.portUrls.length;

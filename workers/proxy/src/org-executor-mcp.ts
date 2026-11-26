@@ -94,7 +94,7 @@ export function isRevokeGrantPath(pathname: string): boolean {
   }
 }
 
-/** POST the revocation to the container's revoke route through `send` (the Durable Object's forward). The container's own `dropped` is the answer; a JSON answer that names none (an older container) counts as dropped, since the route was reached, and an answer that is not JSON is a 502 `EXECUTOR_FAILED` like `callMcp`'s. */
+/** POST the revocation to the container's revoke route through `send` (the Durable Object's forward). The container's own `dropped` is the answer; a JSON answer that names none (an older container) counts as dropped, since the route was reached, and an answer that is not JSON, an empty 200 body included (the container always answers JSON, so an empty one is not its answer), is a 502 `EXECUTOR_FAILED` like `callMcp`'s. */
 export async function callRevoke(
   grantId: string,
   send: (request: Request) => Promise<Response>

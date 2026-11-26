@@ -422,6 +422,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Record activity and arm the idle alarm at `lastActivity + sleepAfter`. */
   private async touch(): Promise<void> {
     this.lastActivity = Date.now();
+    // A request is a new dispatch: an earlier hold's start must not age it past MAX_DISPATCH_HOLD_MS (review 530c463a.1).
+    this.busyHoldSince = undefined;
     await this.ctx.storage.setAlarm(this.lastActivity + durationMs(this.sleepAfter));
   }
 

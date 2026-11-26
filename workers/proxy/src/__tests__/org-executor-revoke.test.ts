@@ -72,6 +72,18 @@ describe('OrgExecutor.revokeGrant', () => {
     });
   });
 
+  it('answers 502 EXECUTOR_FAILED for a 200 with an empty body, not dropped:true (review 530c463a.2)', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.app = () => new Response('', { status: 200 });
+    await h.executor.pin(ORG, 0, 'light');
+    expect(await h.executor.revokeGrant('eu_grant1')).toEqual({
+      ok: false,
+      code: 'EXECUTOR_FAILED',
+      status: 502,
+    });
+  });
+
   it('starts nothing when no container runs: there is no session to drop', async () => {
     const h = harness();
     await h.ready;
