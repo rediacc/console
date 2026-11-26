@@ -143,7 +143,7 @@ def wake_report(me: str, minutes: float, root: pathlib.Path) -> str:
 
 
 def _writers_now_due_in(me: str) -> float:
-    """Minutes until this session's next /writers-now round is due (at least 1), or WAKE_DEFAULT_MIN when the round ledger cannot be read. A timer armed without --minutes wakes no later than that, so an idle wait does not overshoot the hourly round by up to a whole sleep (operator report 2026-11-25: rounds 63 to 107 min apart)."""
+    """Minutes until this session's next /writers-now round is due (at least 1), or WAKE_DEFAULT_MIN when the round ledger cannot be read. A timer armed without --minutes wakes no later than that, so an idle wait does not overshoot the round's WINDOW_MIN cadence (30 minutes since 2026-11-26) by up to a whole sleep (operator report 2026-11-25: rounds 63 to 107 min apart)."""
     try:
         import wl_core as C
         import wl_writersnow

@@ -115,9 +115,9 @@ def test_hand_spawned_writers_are_not_a_round(tmp_path) -> None:
     fires, facts = WN.due([], "ace763dd", now, 588, dev, root=tmp_path)
     assert fires
     assert facts["last"] is None
-    # Control: one round row of this session inside the hour silences it. The round needs a survey written after its start (wl_writersnow.judge_round, 913af37d87): a row naming a survey that was never written stops counting SURVEY_GRACE_MIN minutes after the start.
+    # Control: one round row of this session inside the window silences it. The round needs a survey written after its start (wl_writersnow.judge_round, 913af37d87): a row naming a survey that was never written stops counting SURVEY_GRACE_MIN minutes after the start.
     # Past the missing-survey grace and still inside the window, so the two assertions below differ only by the survey; derived from the module's own numbers so a change to either keeps that true.
-    back = WN.SURVEY_GRACE_MIN + 5
+    back = WN.SURVEY_GRACE_MIN + 3
     assert back < WN.WINDOW_MIN
     start = now - datetime.timedelta(minutes=back)
     survey = write_survey(tmp_path / "survey.md", start + datetime.timedelta(minutes=5))
@@ -192,10 +192,10 @@ def stood_down_line(got) -> str:
     return next((ln for ln in reason(got).splitlines() if PR_SCOPE in ln), "")
 
 
-def test_pr_loop_a_61_minute_old_round_blocks_and_is_not_stood_down(wl) -> None:
+def test_pr_loop_a_31_minute_old_round_blocks_and_is_not_stood_down(wl) -> None:
     own = loop_world(wl)
     other_check_outstanding(wl, own)
-    round_minutes_ago(wl, 61)
+    round_minutes_ago(wl, WN.WINDOW_MIN + 1)
     got = F.stop(wl)
     keys = keys_of(wl, got)
     assert KEY in keys, reason(got)[:1500]
@@ -205,10 +205,10 @@ def test_pr_loop_a_61_minute_old_round_blocks_and_is_not_stood_down(wl) -> None:
     assert KEY not in line, line
 
 
-def test_pr_loop_control_a_59_minute_old_round_is_silent(wl) -> None:
+def test_pr_loop_control_a_29_minute_old_round_is_silent(wl) -> None:
     own = loop_world(wl)
     other_check_outstanding(wl, own)
-    round_minutes_ago(wl, 59)
+    round_minutes_ago(wl, WN.WINDOW_MIN - 1)
     got = F.stop(wl)
     keys = keys_of(wl, got)
     assert "open-items" in keys, reason(got)[:1500]
@@ -219,7 +219,7 @@ def test_pr_loop_control_a_59_minute_old_round_is_silent(wl) -> None:
 def test_pr_loop_control_the_merge_phase_is_silent(wl) -> None:
     own = loop_world(wl)
     F.merged_nodes(wl, [pr_node("MERGED", "Plan: %s\n\nsummary" % own)])
-    round_minutes_ago(wl, 61)
+    round_minutes_ago(wl, WN.WINDOW_MIN + 1)
     got = F.stop(wl)
     assert KEY not in keys_of(wl, got), reason(got)[:1500]
     assert NEEDLE not in got.out
@@ -229,7 +229,7 @@ def test_pr_loop_m_without_the_keep_line_the_cadence_stands_down_again(wl) -> No
     """The old code: writers-now-due named in no PR_LOOP set. The same world stands it down and names it in the Stood down phrase."""
     own = loop_world(wl)
     other_check_outstanding(wl, own)
-    round_minutes_ago(wl, 61)
+    round_minutes_ago(wl, WN.WINDOW_MIN + 1)
     mutated_hook(wl, "wl_standdown.py", '        "writers-now-due",\n', "")
     got = F.stop(wl)
     assert KEY not in keys_of(wl, got), reason(got)[:1500]

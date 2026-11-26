@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""writers_now_note: a due round at effort high is named once inside the turn, then held for NOTE_EVERY_MIN; a round inside the window, effort below high, and a short session id stay silent. The capacity refill rides the same note and throttle: a free survey cluster below the target is named, live writers at the target stay silent, and an exhausted survey names the next round."""
+"""writers_now_note: a due round at effort high is named once inside the turn, then held for NOTE_EVERY_MIN; a round inside the window, effort below high, and a short session id stay silent. The capacity refill rides the same note and throttle: every free survey cluster below the floor of 8 is named with the free slots, live writers at the floor stay silent, a clock-due note below the floor carries the free clusters, and an exhausted survey names the next round."""
 
 import datetime
 import importlib
@@ -95,16 +95,39 @@ def refill_cases():
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 10)
         got = run(20, stamp_dir=tmp, survey=survey, items=[LEASED_B])
-        want = "WRITERS-NOW REFILL (2 live writer(s) of 6, effort high): start 1 writer(s)"
-        check("a free cluster below the target is named", got.startswith(want), True)
+        want = "WRITERS-NOW REFILL (2 live writer(s) against a floor of 8, 6 slot(s) free, effort high): start 1 writer(s)"
+        check("a free cluster below the floor is named", got.startswith(want), True)
         check("the refill names the free cluster", "CL-A a1a1a1a1" in got, True)
         check("the refill is held by the same throttle", run(20, stamp_dir=tmp, survey=survey), "")
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 10)
         check(
-            "live writers at the target stay silent",
-            run(20, stamp_dir=tmp, survey=survey, live=6),
+            "live writers at the floor stay silent",
+            run(20, stamp_dir=tmp, survey=survey, live=8),
             "",
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 10)
+        got = run(20, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=7)
+        check("seven live writers, one below the floor, refill", "1 slot(s) free" in got, True)
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 40)
+        got = run(45, stamp_dir=tmp, survey=survey, items=[LEASED_B])
+        check(
+            "a clock-due note names the round",
+            got.startswith("WRITERS-NOW DUE (last round 45 min ago"),
+            True,
+        )
+        check(
+            "a clock-due note below the floor carries the free cluster",
+            "6 slot(s) are free below the floor of 8" in got and "CL-A a1a1a1a1" in got,
+            True,
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 40)
+        got = run(45, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=8)
+        check(
+            "control: at the floor the clock-due note carries no shortfall", "slot(s)" in got, False
         )
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 16)
@@ -121,6 +144,13 @@ def main():
         check("the next call within NOTE_EVERY_MIN is held", run(76, stamp_dir=tmp), "")
     with tempfile.TemporaryDirectory() as tmp:
         check("a round 20 min old is silent", run(20, stamp_dir=tmp), "")
+    with tempfile.TemporaryDirectory() as tmp:
+        got = run(31, stamp_dir=tmp)
+        check(
+            "a round 31 min old is named (the 30-minute window)",
+            got.startswith("WRITERS-NOW DUE (last round 31 min ago"),
+            True,
+        )
     with tempfile.TemporaryDirectory() as tmp:
         check("effort smart is silent", run(75, effort="smart", stamp_dir=tmp), "")
     with tempfile.TemporaryDirectory() as tmp:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wl_writersnow capacity refill: the newest survey's unstaffed startable clusters are named while live writers sit below REFILL_TARGET, the survey is re-run once it has none left or REFRESH_TICKS of its boxes were ticked, and the hourly clock still fires on its own. Each branch has a silent control beside it, and the Stop segment renders both messages under the one `writers-now-due` key."""
+"""wl_writersnow capacity refill: every unstaffed startable cluster of the newest survey is named while live writers sit below CAPACITY_FLOOR, inside the clock's window or not; the survey is re-run once it has none left or REFRESH_TICKS of its boxes were ticked; and the half-hourly clock still fires on its own, carrying the shortfall when the roster is below the floor. Each branch has a silent control beside it, and the Stop segment renders every message under the one `writers-now-due` key."""
 
 import datetime
 import importlib
@@ -83,12 +83,13 @@ def at(minutes_ago):
     return (NOW - datetime.timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def plant(tmp, text=SURVEY, survey_age_min=30):
+def plant(tmp, text=SURVEY, survey_age_min=20):
+    """One round of this session started two minutes before its survey was written, so the round counts and the clock stays quiet while the survey is younger than WINDOW_MIN minus two."""
     path = pathlib.Path(tmp) / "survey.md"
     path.write_text(text, encoding="utf-8")
     stamp = NOW.timestamp() - survey_age_min * 60
     os.utime(path, (stamp, stamp))
-    return [{"round": "feedf00d", "session": ME, "at": at(40), "survey": str(path)}]
+    return [{"round": "feedf00d", "session": ME, "at": at(survey_age_min + 2), "survey": str(path)}]
 
 
 def cap(tmp, items=(LEASED_B,), live=2, done=("c1c1c1c1",), **kw):
@@ -124,10 +125,23 @@ def refill_cases(tmp):
         True,
     )
     check("the refill names one free cluster", fields["n"], 1)
-    roomy = cap(tmp, items=(), done=(), live=W.REFILL_TARGET - 2)
-    check("the refill names target minus live at most", len(W.refill_shown(roomy)), 2)
-    at_target = cap(tmp, live=W.REFILL_TARGET)
-    check("live writers at the target refill nothing", W.assess(False, OPEN, at_target), ("", ""))
+    roomy = cap(tmp, items=(), done=(), live=W.CAPACITY_FLOOR - 1)
+    check("the floor triggers the refill and never caps it", len(W.refill_shown(roomy)), 3)
+    roomy_fields = W.refill_fields(roomy, ME[:8])
+    check("one slot free below the floor", (roomy_fields["slots"], roomy_fields["n"]), (1, 3))
+    at_floor = cap(tmp, live=W.CAPACITY_FLOOR)
+    check("live writers at the floor refill nothing", W.assess(False, OPEN, at_floor), ("", ""))
+    check("the floor is 8", W.CAPACITY_FLOOR, 8)
+    # Control (operator request 2026-11-26): no open CODE box, so no capacity trigger even with no writer alive. Every startable cluster ticked, the survey younger than the refresh gap.
+    no_code = cap(
+        tmp,
+        items=(),
+        done=("a1a1a1a1", "a2a2a2a2", "b1b1b1b1", "c1c1c1c1"),
+        live=0,
+        survey_age_min=W.REFRESH_GAP_MIN - 3,
+    )
+    check("no open CODE cluster: not short", W.short(no_code), False)
+    check("no open CODE cluster: no trigger", W.assess(False, OPEN, no_code), ("", ""))
     check(
         "an uncountable roster refills nothing",
         W.assess(False, OPEN, cap(tmp, live=None)),
@@ -176,6 +190,7 @@ def refresh_cases(tmp):
     )
     fewer = cap(tmp, text=text, done=tuple(many[1:]))
     check("one tick fewer refills instead", W.assess(False, OPEN, fewer), ("refill", ""))
+    check("the refresh numbers are halved", (W.REFRESH_TICKS, W.REFRESH_GAP_MIN), (8, 8))
 
 
 def clock_cases(tmp):
@@ -189,16 +204,43 @@ def clock_cases(tmp):
     ]
     fires, facts = W.due(rows, ME, NOW, 40, None, root=tmp)
     check(
-        "the clock still fires after 60 minutes",
+        "the clock still fires after 30 minutes",
         (fires, W.assess(fires, facts, cap(tmp))),
         (True, ("due", W.WHY_CLOCK)),
     )
+    check("the window is 30 minutes", (W.WINDOW_MIN, W.SURVEY_GRACE_MIN), (30, 25))
+    fresh = [dict(rows[0], at=at(25))]
+    check(
+        "a round 25 minutes old keeps the clock quiet",
+        W.due(fresh, ME, NOW, 40, None, root=tmp)[0],
+        False,
+    )
     fired = run_segment(tmp, [LEASED_B], rows=rows)
-    clock = "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last 60"
+    clock = "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last 30"
     check(
         "the segment renders the clock message",
         [(k, t.startswith(clock)) for k, t in fired],
         [("writers-now-due", True)],
+    )
+    # Below the floor with a free cluster, the clock message names the slots and the cluster to start while the new survey runs.
+    check(
+        "the clock message carries the shortfall below the floor",
+        [
+            (
+                "Meanwhile the roster counts 1 live writer(s) against a floor of 8 (7 slot(s) free)"
+                in t
+                and "  - CL-A a1a1a1a1 a2a2a2a2" in t
+            )
+            for _k, t in fired
+        ],
+        [True],
+    )
+    writers = ["w%d" % i for i in range(W.CAPACITY_FLOOR)]
+    full = run_segment(tmp, [LEASED_B], writers, rows=rows)
+    check(
+        "control: at the floor the clock message carries no shortfall",
+        [(t.startswith(clock), "Meanwhile" in t) for _k, t in full],
+        [(True, False)],
     )
 
 
@@ -262,15 +304,27 @@ def segment_cases(tmp):
         [(k, t.startswith(refill)) for k, t in fired],
         [("writers-now-due", True)],
     )
-    due = "WRITERS-NOW DUE: run /writers-now now. A new round is due before the hour: the survey"
+    check(
+        "the refill names the free slots",
+        "against a floor of 8 (7 slot(s) free)" in fired[0][1]
+        and "presumed independent" in fired[0][1],
+        True,
+    )
+    due = "WRITERS-NOW DUE: run /writers-now now. A new round is due before the window closes: the survey"
     fired = run_segment(tmp, [LEASED_B, OPEN_A2])
     check(
         "the segment renders an exhausted survey",
         [(k, t.startswith(due)) for k, t in fired],
         [("writers-now-due", True)],
     )
-    writers = ["w%d" % i for i in range(W.REFILL_TARGET)]
-    check("the segment stays silent at the target", run_segment(tmp, [LEASED_B], writers), [])
+    writers = ["w%d" % i for i in range(W.CAPACITY_FLOOR)]
+    check("the segment stays silent at the floor", run_segment(tmp, [LEASED_B], writers), [])
+    seven = ["w%d" % i for i in range(W.CAPACITY_FLOOR - 1)]
+    check(
+        "seven live writers, one below the floor, still refill",
+        [k for k, _t in run_segment(tmp, [LEASED_B], seven)],
+        ["writers-now-due"],
+    )
     check("no read failure is noted", "writers-now-due" in wl_checks.READ_FAILURES, False)
 
 

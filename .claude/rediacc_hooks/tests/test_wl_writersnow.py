@@ -279,17 +279,18 @@ def rounds_at(tmp_path, *minutes_ago, session=ME8):
     return WN.read_rounds(tmp_path)
 
 
-def test_due_fires_with_no_round_and_with_a_61_minute_old_round(tmp_path) -> None:
+def test_due_fires_with_no_round_and_with_a_31_minute_old_round(tmp_path) -> None:
     fires, facts = WN.due([], ME8, NOW, 4, DEV)
     assert fires
     assert facts["last"] is None
-    fires, facts = WN.due(rounds_at(tmp_path, 61), ME8, NOW, 4, DEV)
+    assert WN.WINDOW_MIN == 30
+    fires, facts = WN.due(rounds_at(tmp_path, 31), ME8, NOW, 4, DEV)
     assert fires
-    assert int(facts["age"]) == 61
+    assert int(facts["age"]) == 31
 
 
 def test_due_is_silent_inside_the_window_and_for_a_peer_round_it_still_fires(tmp_path) -> None:
-    assert WN.due(rounds_at(tmp_path, 59), ME8, NOW, 4, DEV)[0] is False
+    assert WN.due(rounds_at(tmp_path, 29), ME8, NOW, 4, DEV)[0] is False
     peer = tmp_path / "peer"
     assert WN.due(rounds_at(peer, 5, session="bbbb2222"), ME8, NOW, 4, DEV)[0] is True
 
@@ -364,7 +365,7 @@ def test_stop_hook_control_a_round_ten_minutes_ago_is_silent(wl) -> None:
     # A survey still being written (no file yet, 10 minutes in) counts as in progress.
     survey = wl.base / "wn" / "in-progress.md"
     WN.append_round(wl.proj, wlfix.ME, str(survey), WN.C.utcnow() - datetime.timedelta(minutes=10))
-    wl.check_quiet("WRITERS-NOW DUE", "a round inside the hour")
+    wl.check_quiet("WRITERS-NOW DUE", "a round inside the window")
 
 
 def test_stop_hook_control_no_promoted_box_is_silent(wl) -> None:
@@ -428,9 +429,9 @@ def write_survey(path, text, at):
 
 
 def two_rounds(tmp_path, second_text, second_written, second_ago=20):
-    """A real round 70 minutes ago, then a round `second_ago` minutes ago whose survey holds `second_text` written `second_written` minutes ago (None: never written)."""
+    """A real round 35 minutes ago (outside the window), then a round `second_ago` minutes ago whose survey holds `second_text` written `second_written` minutes ago (None: never written)."""
     first = tmp_path / "wn" / "r1.md"
-    t1 = NOW - datetime.timedelta(minutes=70)
+    t1 = NOW - datetime.timedelta(minutes=35)
     WN.append_round(tmp_path, ME8, str(first), t1)
     write_survey(first, SURVEY_TEXT, t1 + datetime.timedelta(minutes=5))
     second = tmp_path / "wn" / "r2.md"
@@ -462,11 +463,11 @@ def test_control_a_real_survey_written_after_the_start_counts(tmp_path) -> None:
     assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
 
 
-def test_a_missing_survey_counts_for_50_minutes_then_stops(tmp_path) -> None:
-    rows = two_rounds(tmp_path, "", second_written=None, second_ago=40)
+def test_a_missing_survey_counts_for_25_minutes_then_stops(tmp_path) -> None:
+    rows = two_rounds(tmp_path, "", second_written=None, second_ago=20)
     assert WN.due(rows, ME8, NOW, 4, DEV, root=tmp_path)[0] is False
     later = tmp_path / "later"
-    rows = two_rounds(later, "", second_written=None, second_ago=55)
+    rows = two_rounds(later, "", second_written=None, second_ago=27)
     fires, facts = WN.due(rows, ME8, NOW, 4, DEV, root=later)
     assert fires
     assert "survey never written" in WN.due_fields(facts, ME8)["last"]
@@ -474,12 +475,12 @@ def test_a_missing_survey_counts_for_50_minutes_then_stops(tmp_path) -> None:
 
 def test_the_message_names_an_old_round_as_older_than_the_window(tmp_path) -> None:
     first = tmp_path / "wn" / "r1.md"
-    t1 = NOW - datetime.timedelta(minutes=70)
+    t1 = NOW - datetime.timedelta(minutes=35)
     WN.append_round(tmp_path, ME8, str(first), t1)
     write_survey(first, SURVEY_TEXT, t1 + datetime.timedelta(minutes=5))
     fires, facts = WN.due(WN.read_rounds(tmp_path), ME8, NOW, 4, DEV, root=tmp_path)
     assert fires
-    assert "older than 60 min" in WN.due_fields(facts, ME8)["last"]
+    assert "older than 30 min" in WN.due_fields(facts, ME8)["last"]
 
 
 def test_start_refuses_an_existing_survey_identical_to_the_previous_rounds(wl) -> None:
@@ -522,8 +523,8 @@ def bound_live(prompts, items=(), live_ids=()):
     return lambda row: WN.survey_live(row, prompts, list(items), set(live_ids))
 
 
-def test_a_55_minute_round_with_a_live_survey_agent_counts(tmp_path) -> None:
-    row = missing_round(tmp_path, 55)
+def test_a_27_minute_round_with_a_live_survey_agent_counts(tmp_path) -> None:
+    row = missing_round(tmp_path, 27)
     prompts = {"a7795c6b": "Survey the Promoted plans and write /tmp/writers-now/%s" % SURVEY_NAME}
     live = WN.survey_live(row, prompts, [], set())
     assert live is True
@@ -532,7 +533,7 @@ def test_a_55_minute_round_with_a_live_survey_agent_counts(tmp_path) -> None:
 
 
 def test_the_same_round_with_no_live_agent_is_never_written(tmp_path) -> None:
-    row = missing_round(tmp_path, 55)
+    row = missing_round(tmp_path, 27)
     prompts = {"x1": "an unrelated writer brief"}
     live = WN.survey_live(row, prompts, [], set())
     assert live is False
@@ -542,14 +543,14 @@ def test_the_same_round_with_no_live_agent_is_never_written(tmp_path) -> None:
     assert facts["not_counted"] == WN.WHY_NEVER_WRITTEN
 
 
-def test_a_35_minute_round_with_no_agent_still_counts_on_the_timer(tmp_path) -> None:
-    row = missing_round(tmp_path, 35)
+def test_a_20_minute_round_with_no_agent_still_counts_on_the_timer(tmp_path) -> None:
+    row = missing_round(tmp_path, 20)
     assert WN.judge_round(tmp_path, row, None, NOW, False) == ""
     assert WN.due([row], ME8, NOW, 4, DEV, root=tmp_path, live=bound_live({}))[0] is False
 
 
 def test_a_live_leased_item_naming_the_round_is_a_witness_and_a_dead_lease_is_not(tmp_path) -> None:
-    row = missing_round(tmp_path, 55)
+    row = missing_round(tmp_path, 27)
     held = {"id": "c0ffee01", "state": ">", "worker": "w-live", "text": "survey", "lease_note": ""}
     held["lease_note"] = "writers-now round 315bd55a survey"
     assert WN.survey_live(row, {}, [held], {"w-live"}) is True
@@ -574,10 +575,10 @@ def _stale_round(wl):
     wl.hand_now()
     plant_promoted(wl)
     survey = wl.base / "wn" / SURVEY_NAME
-    WN.append_round(wl.proj, wlfix.ME, str(survey), WN.C.utcnow() - datetime.timedelta(minutes=55))
+    WN.append_round(wl.proj, wlfix.ME, str(survey), WN.C.utcnow() - datetime.timedelta(minutes=27))
 
 
-def test_stop_hook_a_live_task_naming_the_survey_keeps_a_55_minute_round_counting(wl) -> None:
+def test_stop_hook_a_live_task_naming_the_survey_keeps_a_27_minute_round_counting(wl) -> None:
     _stale_round(wl)
     wl.bg = json.dumps(
         [
@@ -610,7 +611,7 @@ def test_a_live_witness_stops_counting_after_the_liveness_cap(tmp_path) -> None:
     assert WN.judge_round(tmp_path, past, None, NOW, True) == WN.WHY_NEVER_WRITTEN
 
 
-def test_stop_hook_a_live_subagent_naming_the_survey_keeps_a_55_minute_round_counting(wl) -> None:
+def test_stop_hook_a_live_subagent_naming_the_survey_keeps_a_27_minute_round_counting(wl) -> None:
     """Finding ec1021d6.3: the agent-type branch (meta plus first prompt) through the Stop segment."""
     _stale_round(wl)
     wl.env["CLAUDE_CONFIG_DIR"] = str(wl.base / "claude")

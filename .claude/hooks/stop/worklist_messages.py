@@ -3186,7 +3186,7 @@ V_WISDOM_DUE = (
     "check. It fires here and not in the late band because the late band leaves about %(late)s "
     "tokens, too few for the briefs."
 )
-# `writers-now-due` (wl_writersnow.due, agent/plans/PLAN-writers-now-cadence.md WN2): no /writers-now round of this session in the last hour while Promoted boxes are open. Fields from wl_writersnow.due_fields: last, open, window, who (the session prefix). The first sentence names the whole remedy.
+# `writers-now-due` (wl_writersnow.due, agent/plans/PLAN-writers-now-cadence.md WN2): no /writers-now round of this session in the last WINDOW_MIN (30) minutes while Promoted boxes are open. Fields from wl_writersnow.due_fields: last, open, window, who (the session prefix). The first sentence names the whole remedy.
 V_WRITERS_NOW_DUE = (
     "WRITERS-NOW DUE: run /writers-now now. This session started no round in the last "
     "%(window)d minutes (last: %(last)s) and the Promoted queue holds %(open)d open box(es). "
@@ -3196,20 +3196,29 @@ V_WRITERS_NOW_DUE = (
 )
 # The same key when the clock is quiet but the newest survey is spent (wl_writersnow.assess kind "due" with a survey-rule reason): its startable clusters are all staffed or ticked, or REFRESH_TICKS of its boxes were ticked, and it is at least REFRESH_GAP_MIN minutes old. Fields from wl_writersnow.refresh_fields: reason, last, open, who.
 V_WRITERS_NOW_REFRESH = (
-    "WRITERS-NOW DUE: run /writers-now now. A new round is due before the hour: %(reason)s "
+    "WRITERS-NOW DUE: run /writers-now now. A new round is due before the window closes: %(reason)s "
     "(last: %(last)s), and the Promoted queue holds %(open)d open box(es). Step 0 of the round "
     "records it (`worklist.py --writers-now-start %(who)s <survey path>`); the new survey "
     "replaces the spent one as the source of refill clusters."
 )
-# The capacity refill under the same `writers-now-due` key (wl_writersnow.assess kind "refill"): fewer live writers than the target while the newest survey still holds startable clusters no open item names and no tick closed. Fields from wl_writersnow.refill_fields: n, live, target, round, survey, free, rows (one `  - CL-<id> <sigs>: <head>` line per cluster), who.
+# The capacity refill under the same `writers-now-due` key (wl_writersnow.assess kind "refill"): fewer live writers than CAPACITY_FLOOR while the newest survey still holds startable clusters no open item names and no tick closed, inside the clock's window or not. Fields from wl_writersnow.refill_fields: n, live, floor, slots, round, survey, free, rows (one `  - CL-<id> <sigs>: <head>` line per cluster), who.
 V_WRITERS_NOW_REFILL = (
     "WRITERS-NOW REFILL: start %(n)d writer(s) now from the current survey, no new survey. "
-    "The roster counts %(live)d live writer(s) against a target of %(target)d, and round "
-    "%(round)s's survey %(survey)s still holds %(free)d startable cluster(s) no open item names "
-    "and no tick closed:\n%(rows)s\n"
+    "The roster counts %(live)d live writer(s) against a floor of %(floor)d (%(slots)d slot(s) "
+    "free), and round %(round)s's survey %(survey)s still holds %(free)d startable cluster(s) "
+    "not yet staffed (no open item names them and no tick closed them):\n%(rows)s\n"
+    "Staff every one of them in one message: the clusters are presumed independent unless "
+    "their section 4 file lists overlap, and the floor triggers the refill without capping it. "
     "Each writer takes one cluster in a lease, with the files and the model its section 4 line "
     "names; `worklist.py --add %(who)s` and `--lease` to the real agent id, with the cluster's "
     "sigs in the item text, so the next stop counts the cluster as staffed."
+)
+# Appended to V_WRITERS_NOW_DUE when the clock fires below the floor and the current survey still holds free clusters (wl_writersnow.short): the old survey staffs writers while the new one runs. Fields from wl_writersnow.refill_fields.
+V_WRITERS_NOW_SHORT = (
+    "\nMeanwhile the roster counts %(live)d live writer(s) against a floor of %(floor)d "
+    "(%(slots)d slot(s) free), and round %(round)s's survey %(survey)s still holds %(free)d "
+    "startable cluster(s) not yet staffed; start a writer on each now, without waiting for the "
+    "new survey:\n%(rows)s"
 )
 
 # Appended to a STATE.md demand the concurrency-saturated wait KEPT because compaction is imminent.

@@ -1,10 +1,10 @@
-"""wl_writersnow: the /writers-now round record, its hourly cadence check and the self-review seeds a repeat round hands its survey (agent/plans/PLAN-writers-now-cadence.md WN1-WN3, operator ruling #ac2de21f).
+"""wl_writersnow: the /writers-now round record, its half-hourly cadence check and the self-review seeds a repeat round hands its survey (agent/plans/PLAN-writers-now-cadence.md WN1-WN3, operator ruling #ac2de21f).
 
 THE ROUND RECORD (WN1). `worklist.py --writers-now-start <me> <survey>` appends one JSON line to `agent/ledgers/writers-now-rounds.jsonl` at the start of every round: the round id, the session, the UTC start, the survey path, the seeds path and the seed count. Nothing else writes the ledger, and nothing rewrites a line.
 
 THE CADENCE (WN2). `writers-now-due` (effort.json: blocks at `high`, advises at `smart`) fires when this session has no COUNTING round younger than WINDOW_MIN minutes while the Promoted queue holds an open box. A row alone is not a round (operator report 2026-11-24: five hourly rows each copied the first round's survey with `cp` and ran none): a round counts once its survey file exists, was last written after the round's start, and differs from the previous round's survey, and a round whose survey is still missing counts as in progress for SURVEY_GRACE_MIN minutes, then stops counting (`judge_round`). `--writers-now-start` refuses a survey path that already holds the previous round's survey bytes, so the copy fails at the source. It stands down in the landing tree, whose babysit and merge phases work the one open PR and read no queue, in the merge phase of the development tree (the loop state `merged`, where the hook names the next branch first), and inside the window.
 
-THE CAPACITY REFILL (operator ask 2026-11-25). The clock alone left writer capacity idle for most of each hour. `capacity` reads the newest round's survey (its section 4 `### Startable now` clusters), drops the clusters a box tick or an open, deferred or leased item of this session already covers, and `assess` turns that into one of two messages under the same `writers-now-due` key: REFILL (start writers from the existing survey, no new survey) while the roster counts fewer than REFILL_TARGET live writers and a free cluster remains; and a new round due, by the clock above, or once a survey at least REFRESH_GAP_MIN minutes old has no free cluster left or REFRESH_TICKS of its boxes were ticked.
+THE CAPACITY REFILL (operator asks 2026-11-25 and 2026-11-26). The clock alone left writer capacity idle for most of each window. `capacity` reads the newest round's survey (its section 4 `### Startable now` clusters, the CODE work presumed independent unless their file lists overlap), drops the clusters a box tick or an open, deferred or leased item of this session already covers, and `assess` turns that into one of two messages under the same `writers-now-due` key: REFILL (start a writer on EVERY free cluster from the existing survey, no new survey) while the roster counts fewer than CAPACITY_FLOOR live writers and a free cluster remains, whatever the clock says; and a new round due, by the clock above, or once a survey at least REFRESH_GAP_MIN minutes old has no free cluster left or REFRESH_TICKS of its boxes were ticked. A clock-due round below the floor also names the free slots and the current survey's unstaffed clusters (`short`), so writers start from the old survey while the new one runs.
 
 THE SEEDS (WN3). A repeat round re-surveys the same plan text, so work that surfaced only in this session's own records stays invisible to it. `collect_seeds` lists, since the previous round of this session (or LOOKBACK_H hours without one): the open items this session added or updated (not the ones a worker holds), the `BLOCKED_BY:` items whose every blocker is now closed (at any age), the per-commit review findings still open that were reviewed in the window, and the "owed", "outside Owns" and "for the lead" lines of the sub-agent reports `wl_report` captured for this session in the window. `--writers-now-start` writes them to `<survey stem>-seeds.md`, and the skill hands that file to the survey agent, which classifies every seed.
 """
@@ -22,10 +22,10 @@ import secrets
 import wl_core as C
 
 LEDGER_REL = "agent/ledgers/writers-now-rounds.jsonl"
-# The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f: at least once per hour).
-WINDOW_MIN = 60
-# How long a round whose survey file does not exist yet still counts: the survey agent is running.
-SURVEY_GRACE_MIN = 50
+# The cadence: a round at least this often while Promoted boxes are open (operator ruling #ac2de21f set once per hour; operator request 2026-11-26 halved it, "make writers-now 2x more aggressive").
+WINDOW_MIN = 30
+# How long a round whose survey file does not exist yet still counts with no liveness witness: halved with the window (was 50 of 60), and a survey agent the hook sees running keeps its round counting up to SURVEY_LIVE_MAX_MIN.
+SURVEY_GRACE_MIN = 25
 # The most a liveness witness extends a missing survey: a surveyor measured at 21 to 48 minutes, so a task still naming the file after this long is a watcher or a reader, not the producer.
 SURVEY_LIVE_MAX_MIN = 180
 # Why a round does not count toward the cadence (judge_round), shown in the writers-now-due message.
@@ -319,14 +319,16 @@ def refresh_fields(facts, cap, why, me8) -> dict:
 
 # ---- the capacity refill -------------------------------------------------------
 #
-# WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once an hour leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey.
+# WHY (operator ask 2026-11-25: many writers started in the last round, and almost all had already finished). Writers finish in 5 to 25 minutes, so a clock that asks for a round only once per window leaves capacity idle for most of it. The survey a round already wrote still names startable clusters nobody took; `capacity` reads them, and the check asks for writers from that survey (REFILL) before it asks for a new survey. Operator request 2026-11-26 ("we still have hundreds of waiting tasks ... they're mostly independent already") raised the floor from 6 to 8, made the refill staff every free cluster rather than only up to the floor, and halved the refresh numbers.
 
-# The live writers the refill aims for: below this, an unstaffed startable cluster of the current survey is named to start.
-REFILL_TARGET = 6
-# Boxes ticked in the Promoted plans since the newest survey was written that make it stale enough to re-survey before the hour.
-REFRESH_TICKS = 15
-# How long a survey stands before its exhaustion or its tick count asks for the next one: without the floor, a survey whose every startable cluster is already staffed or blocked would ask for a new survey at every stop.
-REFRESH_GAP_MIN = 15
+# The live-writer floor: below it, every unstaffed startable cluster of the current survey is named to start, clock or no clock. A trigger, not a ceiling: there is no writer limit (agent/plans/PLAN-unlimited-writers.md).
+CAPACITY_FLOOR = 8
+# Boxes ticked in the Promoted plans since the newest survey was written that make it stale enough to re-survey before the window closes (was 15).
+REFRESH_TICKS = 8
+# How long a survey stands before its exhaustion or its tick count asks for the next one (was 15): without the floor, a survey whose every startable cluster is already staffed or blocked would ask for a new survey at every stop.
+REFRESH_GAP_MIN = 8
+# How many free clusters one message lists before it says how many more the survey holds.
+REFILL_LIST_MAX = 16
 # The survey's cluster section and the bullets of its startable run (`- **CL-<id> (...)**: <plan> <BOX> <sig8> + ... Files: ...`).
 CLUSTERS_HEAD_RE = re.compile(r"^## 4\. CODE boxes clustered by shared files", re.MULTILINE)
 STARTABLE_HEAD = "### Startable now"
@@ -418,7 +420,7 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
         "read": False,
         "free": [],
         "live": live_writers,
-        "target": REFILL_TARGET,
+        "floor": CAPACITY_FLOOR,
         "ticked": 0,
         "age": None,
     }
@@ -448,7 +450,7 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
 def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
     """(kind, why) of the writers-now check: ("due", why) when a new round is due, ("refill", "") when writers start from the current survey, ("", "") otherwise.
 
-    The clock (`due`) decides first. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left or REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than REFILL_TARGET live writers and the survey still holds a free cluster. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
+    The clock (`due`) decides first; its message carries the capacity shortfall (`short`) beside it. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left or REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than CAPACITY_FLOOR live writers and the survey still holds a free cluster (open CODE work), inside the clock's window or not. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
     """
     if not clock_facts or clock_facts.get("why") or int(clock_facts.get("open") or 0) <= 0:
         return "", ""
@@ -461,30 +463,43 @@ def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
             return "due", WHY_EXHAUSTED % cap["round"]
         if cap["ticked"] >= REFRESH_TICKS:
             return "due", WHY_TICKED % (cap["ticked"], cap["round"], REFRESH_TICKS)
-    live = cap.get("live")
-    if live is not None and live < REFILL_TARGET and cap["free"]:
+    if short(cap):
         return "refill", ""
     return "", ""
 
 
+def short(cap) -> bool:
+    """True when the roster counts fewer than CAPACITY_FLOOR live writers and the newest survey still holds a free startable cluster. An uncountable roster (live None) or an unread survey is never short."""
+    if not cap or not cap.get("read"):
+        return False
+    live = cap.get("live")
+    return live is not None and live < cap.get("floor", CAPACITY_FLOOR) and bool(cap["free"])
+
+
 def refill_shown(cap) -> list[dict]:
-    """The free clusters a refill names: up to (target - live), in survey order."""
-    return cap["free"][: max(0, cap["target"] - int(cap["live"] or 0))]
+    """The free clusters a refill names: every one, in survey order, up to REFILL_LIST_MAX. The floor triggers the refill and never caps it, so a free cluster beyond the floor is staffed in the same wave."""
+    return cap["free"][:REFILL_LIST_MAX]
 
 
 def refill_fields(cap, me8) -> dict:
-    """The fields of worklist_messages.V_WRITERS_NOW_REFILL, each named cluster as `CL-<id> <sigs>: <head>`."""
+    """The fields of worklist_messages.V_WRITERS_NOW_REFILL and V_WRITERS_NOW_SHORT: the free slots below the floor, and each named cluster as `CL-<id> <sigs>: <head>`, with a closing line counting the free clusters past REFILL_LIST_MAX."""
     shown = refill_shown(cap)
+    live = int(cap["live"] or 0)
+    floor = int(cap.get("floor", CAPACITY_FLOOR))
+    rows = ["  - %s %s: %s" % (cl["id"], " ".join(cl["sigs"]), cl["head"]) for cl in shown]
+    if len(cap["free"]) > len(shown):
+        rows.append(
+            "  - and %d more free cluster(s) in the survey" % (len(cap["free"]) - len(shown))
+        )
     return {
-        "n": len(shown),
-        "live": int(cap["live"] or 0),
-        "target": cap["target"],
+        "n": len(cap["free"]),
+        "live": live,
+        "floor": floor,
+        "slots": max(0, floor - live),
         "round": cap["round"],
         "survey": cap["survey"],
         "free": len(cap["free"]),
-        "rows": "\n".join(
-            "  - %s %s: %s" % (cl["id"], " ".join(cl["sigs"]), cl["head"]) for cl in shown
-        ),
+        "rows": "\n".join(rows),
         "who": me8,
     }
 

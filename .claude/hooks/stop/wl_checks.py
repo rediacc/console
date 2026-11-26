@@ -7175,7 +7175,7 @@ def _stop_store_freshness(ns):
         _lw = ""
     if _lw:
         vadd("lessons-weekly", False, _lw)
-    # ---- THE WRITERS-NOW CADENCE (agent/plans/PLAN-writers-now-cadence.md WN2, operator ruling #ac2de21f): no /writers-now round of this session in the last 60 minutes while the Promoted queue has an open box. effort.json blocks it at `high` and advises at `smart`; it stands down in the landing tree and the merge phase (wl_writersnow.stand_down), and the capacity refill below shares the key, its levels and its stand-down. A read that fails goes to the read-failure note, never to a silent pass.
+    # ---- THE WRITERS-NOW CADENCE (agent/plans/PLAN-writers-now-cadence.md WN2, operator ruling #ac2de21f, halved by the operator request of 2026-11-26): no /writers-now round of this session in the last 30 minutes (wl_writersnow.WINDOW_MIN) while the Promoted queue has an open box. effort.json blocks it at `high` and advises at `smart`; it stands down in the landing tree and the merge phase (wl_writersnow.stand_down), and the capacity refill below shares the key, its levels and its stand-down. A read that fails goes to the read-failure note, never to a silent pass.
     try:
         import wl_writersnow
 
@@ -7214,31 +7214,45 @@ def _stop_store_freshness(ns):
             root=ns["root"],
             live=_wn_live,
         )
-        # THE CAPACITY REFILL (operator ask 2026-11-25): with the clock quiet, the newest survey's unstaffed startable clusters are named while the roster counts fewer than REFILL_TARGET live writers, and a survey at least REFRESH_GAP_MIN minutes old is re-run once it has none left or REFRESH_TICKS of its boxes were ticked (wl_writersnow.assess). Skipped when the clock already fires, stood down or with no open box; a roster that could not be built gives no live-writer count, so it never refills.
-        _wn_kind, _wn_why, _wn_cap = ("due", "", None) if _wn_fires else ("", "", None)
-        if not _wn_fires and _wn_facts and not _wn_facts.get("why") and _wn_facts.get("open"):
+        # THE CAPACITY REFILL (operator asks 2026-11-25 and 2026-11-26): whatever the clock says, the newest survey's unstaffed startable clusters are named while the roster counts fewer than CAPACITY_FLOOR live writers, and a survey at least REFRESH_GAP_MIN minutes old is re-run once it has none left or REFRESH_TICKS of its boxes were ticked (wl_writersnow.assess). A clock-due round below the floor carries the same clusters (wl_writersnow.short). Skipped when stood down or with no open box; a roster that could not be built gives no live-writer count, so it never refills.
+        _wn_cap = None
+        if _wn_facts and not _wn_facts.get("why") and _wn_facts.get("open"):
             _wn_roster = ns.get("_roster")
-            _wn_cap = wl_writersnow.capacity(
-                _wn_rows,
-                ns["session_id"],
-                ns["root"],
-                ns["fold"].items,
-                None
-                if _wn_roster is None or _wn_roster.get("blind")
-                else len(_wn_roster.get("writers") or ()),
-                lambda: wl_writersnow.promoted_done_sigs(ns["root"]),
-            )
-            _wn_kind, _wn_why = wl_writersnow.assess(False, _wn_facts, _wn_cap)
+            # A survey read that fails leaves the clock's own verdict standing: the capacity half adds to the check and never silences it.
+            try:
+                _wn_cap = wl_writersnow.capacity(
+                    _wn_rows,
+                    ns["session_id"],
+                    ns["root"],
+                    ns["fold"].items,
+                    None
+                    if _wn_roster is None or _wn_roster.get("blind")
+                    else len(_wn_roster.get("writers") or ()),
+                    lambda: wl_writersnow.promoted_done_sigs(ns["root"]),
+                )
+            except Exception as exc:
+                note_read_failure("writers-now-due", exc)
+        _wn_kind, _wn_why = wl_writersnow.assess(_wn_fires, _wn_facts, _wn_cap)
     except Exception as exc:
         note_read_failure("writers-now-due", exc)
         _wn_kind = ""
-    if _wn_kind == "due":
+    if _wn_kind == "due" and _wn_why == wl_writersnow.WHY_CLOCK:
         vadd(
             "writers-now-due",
             False,
-            M.V_WRITERS_NOW_REFRESH % wl_writersnow.refresh_fields(_wn_facts, _wn_cap, _wn_why, me8)
-            if _wn_cap
-            else M.V_WRITERS_NOW_DUE % wl_writersnow.due_fields(_wn_facts, me8),
+            M.V_WRITERS_NOW_DUE % wl_writersnow.due_fields(_wn_facts, me8)
+            + (
+                M.V_WRITERS_NOW_SHORT % wl_writersnow.refill_fields(_wn_cap, me8)
+                if wl_writersnow.short(_wn_cap)
+                else ""
+            ),
+        )
+    elif _wn_kind == "due":
+        vadd(
+            "writers-now-due",
+            False,
+            M.V_WRITERS_NOW_REFRESH
+            % wl_writersnow.refresh_fields(_wn_facts, _wn_cap, _wn_why, me8),
         )
     elif _wn_kind == "refill":
         vadd(

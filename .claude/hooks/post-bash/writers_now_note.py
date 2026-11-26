@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """PostToolUse(Bash): name a due /writers-now round inside a long turn, not only at the next stop.
 
-WHY (operator report 2026-11-25: no writers-now rounds were visible at effort high). `writers-now-due` is a Stop-hook check, so it can fire only when a turn ends. Measured on session d778be9d over 2026-11-24/25: rounds started 63 to 107 minutes apart against a 60-minute window, because the lead's turns (landings, merged-tree checks, gate repairs) ran 30 to 90 minutes and the due round waited for the turn to end. This note reads the same `wl_writersnow.due` verdict after every Bash call and, at effort `high`, adds one line of context naming the round as due, at most once per NOTE_EVERY_MIN minutes per session, so the round starts inside the turn.
+WHY (operator report 2026-11-25: no writers-now rounds were visible at effort high). `writers-now-due` is a Stop-hook check, so it can fire only when a turn ends. Measured on session d778be9d over 2026-11-24/25: rounds started 63 to 107 minutes apart against the then 60-minute window (30 minutes since the operator request of 2026-11-26), because the lead's turns (landings, merged-tree checks, gate repairs) ran 30 to 90 minutes and the due round waited for the turn to end. This note reads the same `wl_writersnow.due` verdict after every Bash call and, at effort `high`, adds one line of context naming the round as due, at most once per NOTE_EVERY_MIN minutes per session, so the round starts inside the turn.
 
-The capacity refill rides the same note and the same throttle (operator ask 2026-11-25): with the clock quiet, `wl_writersnow.capacity` and `assess` name the newest survey's unstaffed startable clusters while the roster's estimate counts fewer than REFILL_TARGET live writers, or name a new round as due once that survey has no free cluster left or REFRESH_TICKS of its boxes were ticked.
+The capacity refill rides the same note and the same throttle (operator asks 2026-11-25 and 2026-11-26): whatever the clock says, `wl_writersnow.capacity` and `assess` name every unstaffed startable cluster of the newest survey while the roster's estimate counts fewer than CAPACITY_FLOOR live writers, or name a new round as due once that survey has no free cluster left or REFRESH_TICKS of its boxes were ticked; a clock-due note below the floor names the free slots and those clusters too.
 
 Informational only: the tool call already ran, nothing is refused, and the exit status is 0 whatever happens.
 """
@@ -31,8 +31,8 @@ def _load_syspath():
     return mod
 
 
-# Minutes between two notes for one session: a due round is named again if the turn keeps running without starting it.
-NOTE_EVERY_MIN = 10
+# Minutes between two notes for one session: a due round is named again if the turn keeps running without starting it (was 10, halved with the cadence by the operator request of 2026-11-26).
+NOTE_EVERY_MIN = 5
 
 
 def _stamp_path(me8):
@@ -82,7 +82,22 @@ def note_for(doc, now=None):
         None,
         root=root,
     )
-    if fires:
+    if not facts or facts.get("why") or not facts.get("open"):
+        return ""
+    # A survey or roster read that fails leaves the clock's verdict standing (the Stop segment does the same).
+    try:
+        cap = wl_writersnow.capacity(
+            rows,
+            session,
+            root,
+            _items(doc),
+            _live_writers(doc, session),
+            lambda: wl_writersnow.promoted_done_sigs(root),
+        )
+    except Exception:
+        cap = None
+    kind, why = wl_writersnow.assess(fires, facts, cap)
+    if kind == "due" and why == wl_writersnow.WHY_CLOCK:
         _touch(me8)
         age = facts.get("age")
         since = "no round yet" if age is None else "last round %d min ago" % int(age)
@@ -90,20 +105,9 @@ def note_for(doc, now=None):
             "WRITERS-NOW DUE (%s, %d open Promoted box(es), effort high): start the round now, "
             "inside this turn: `.claude/hooks/stop/worklist.py --writers-now-start %s <survey "
             "path>` and the survey agent (.claude/commands/writers-now.md steps 0 and 1). The Stop "
-            "hook blocks on it at the next stop anyway; starting it here keeps the hourly cadence."
-            % (since, facts["open"], me8)
+            "hook blocks on it at the next stop anyway; starting it here keeps the half-hourly "
+            "cadence.%s" % (since, facts["open"], me8, _short_suffix(wl_writersnow, cap))
         )
-    if not facts or facts.get("why") or not facts.get("open"):
-        return ""
-    cap = wl_writersnow.capacity(
-        rows,
-        session,
-        root,
-        _items(doc),
-        _live_writers(doc, session),
-        lambda: wl_writersnow.promoted_done_sigs(root),
-    )
-    kind, why = wl_writersnow.assess(False, facts, cap)
     if kind == "due":
         _touch(me8)
         return (
@@ -114,21 +118,39 @@ def note_for(doc, now=None):
         )
     if kind == "refill":
         _touch(me8)
-        shown = wl_writersnow.refill_shown(cap)
+        f = wl_writersnow.refill_fields(cap, me8)
         return (
-            "WRITERS-NOW REFILL (%d live writer(s) of %d, effort high): start %d writer(s) now from "
-            "round %s's survey %s, no new survey: %s. Each takes its cluster's section 4 line in a "
-            "lease; the item text carries the cluster's sigs."
+            "WRITERS-NOW REFILL (%d live writer(s) against a floor of %d, %d slot(s) free, effort "
+            "high): start %d writer(s) now from round %s's survey %s, no new survey: %s. Each takes "
+            "its cluster's section 4 line in a lease, every free cluster in one message (presumed "
+            "independent unless the file lists overlap); the item text carries the cluster's sigs."
             % (
-                cap["live"],
-                cap["target"],
-                len(shown),
-                cap["round"],
-                cap["survey"],
-                "; ".join("%s %s" % (cl["id"], " ".join(cl["sigs"])) for cl in shown),
+                f["live"],
+                f["floor"],
+                f["slots"],
+                f["n"],
+                f["round"],
+                f["survey"],
+                _cluster_list(wl_writersnow, cap),
             )
         )
     return ""
+
+
+def _cluster_list(wn, cap):
+    """The free clusters a refill names, `CL-<id> <sigs>` joined by `; `."""
+    return "; ".join("%s %s" % (cl["id"], " ".join(cl["sigs"])) for cl in wn.refill_shown(cap))
+
+
+def _short_suffix(wn, cap):
+    """The shortfall a clock-due note carries below the floor (wl_writersnow.short), else ""."""
+    if not wn.short(cap):
+        return ""
+    f = wn.refill_fields(cap, "")
+    return (
+        " Meanwhile %d slot(s) are free below the floor of %d; start writers now from round %s's "
+        "survey: %s." % (f["slots"], f["floor"], f["round"], _cluster_list(wn, cap))
+    )
 
 
 def _items(doc):
