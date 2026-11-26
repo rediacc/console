@@ -242,16 +242,30 @@ export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
 const LOCAL_FORM_RECOVERY_COMMANDS: ReadonlySet<string> = new Set(['config remote disable']);
 
 /**
+ * Commands that run on this workstation and never read the config store or the account: opening
+ * the remote session for them would renew the config token (and fail on a device whose login is
+ * tied to another address) for nothing. Judged as the local owner with no policy ceiling, whatever
+ * the active config is.
+ */
+export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
+  'tools install',
+  'tools list',
+  'completion',
+  'update',
+]);
+
+/**
  * Which session failures leave a run unjudged: `none` refuses every one, `any` admits every one
  * (SESSION_RECOVERY_COMMANDS), and `closed-server-path` admits only a definitive answer that the
  * server path is closed for good, by `closedServerPath`, the same test that names `--local` in the
- * server-backed refusal.
+ * server-backed refusal. `never-open` (WORKSTATION_ONLY_COMMANDS) does not open the session at all.
  */
-type SessionRecovery = 'none' | 'any' | 'closed-server-path';
+type SessionRecovery = 'none' | 'any' | 'closed-server-path' | 'never-open';
 
 /** The session failures this run may skip judgement on. */
 function sessionRecoveryOf(commandPath: string, actionCommand: Command): SessionRecovery {
   if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return 'any';
+  if (WORKSTATION_ONLY_COMMANDS.has(commandPath)) return 'never-open';
   if (!LOCAL_FORM_RECOVERY_COMMANDS.has(commandPath)) return 'none';
   return (actionCommand.opts() as { local?: unknown }).local === true
     ? 'closed-server-path'
@@ -287,7 +301,7 @@ async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement
   const name = configService.getCurrentName();
   if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);
-  if (config.remote !== undefined) return remoteJudgement(kind, recovery, name, config.remote);
+  if (config.remote !== undefined) return remoteOrOwner(kind, recovery, name, config.remote);
   if (config.policy === undefined) return { principal: owner, policy: null };
   const effective = localPolicyCeiling(config);
   for (const document of [effective.org, effective.team]) {
@@ -296,6 +310,22 @@ async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement
     if (stale.deny.length > 0) throw new ValidationError(staleDenyRefusal(stale.deny));
   }
   return { principal: owner, policy: effective };
+}
+
+/**
+ * A workstation-only command never opens the session (WORKSTATION_ONLY_COMMANDS): no token
+ * renewal and no policy fetch, so it is judged as the local owner with no ceiling.
+ */
+function remoteOrOwner(
+  kind: DecisionPrincipal['kind'],
+  recovery: SessionRecovery,
+  configName: string,
+  remote: RemoteConfig
+): Promise<LocalJudgement | null> {
+  if (recovery === 'never-open') {
+    return Promise.resolve({ principal: { kind, userEmail: '', orgRole: 'owner' }, policy: null });
+  }
+  return remoteJudgement(kind, recovery, configName, remote);
 }
 
 /** The session's principal and policy for a remote config (see `localJudgement`). */

@@ -81,6 +81,7 @@ import {
   SESSION_RECOVERY_COMMANDS,
   setConfirmGrand,
   validateRemotePath,
+  WORKSTATION_ONLY_COMMANDS,
 } from '../command-policy.js';
 import { isAncestryVerificationAvailable, isOverrideLegitimate } from '../process-ancestry.js';
 
@@ -343,6 +344,24 @@ describe('a remote config, judged as the session names its member (D2)', () => {
       ).resolves.toBeUndefined();
     }
   );
+
+  it.each([...WORKSTATION_ONLY_COMMANDS])(
+    'never opens the remote session for the workstation-only command %s',
+    async (commandPath) => {
+      mockIsAgent.mockReturnValue(false);
+      const policyContext = vi.fn(() => Promise.reject(new Error('device login tied elsewhere')));
+      state.adapter = { policyContext };
+      await expect(
+        enforceRootCommand(commandPath, undefined, { opts: () => ({}) } as unknown as Command)
+      ).resolves.toBeUndefined();
+      expect(policyContext).not.toHaveBeenCalled();
+    }
+  );
+
+  it('names only live commands as workstation-only', () => {
+    const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
+    for (const path of WORKSTATION_ONLY_COMMANDS) expect(live).toContain(path);
+  });
 
   it('names only live commands as recovery commands, re-enrollment and subscription login among them', () => {
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
