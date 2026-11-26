@@ -41,13 +41,14 @@ export async function addExistingMachine(
   );
 
   try {
-    const keyscan = scanHostKeys(machineConfig.ip, machineConfig.port ?? DEFAULTS.SSH.PORT);
-    if (keyscan) {
-      await configService.updateMachine(name, { knownHosts: keyscan });
-      outputService.info(t('commands.machine.scanKeys.keysScanned', { name }));
-    }
-  } catch {
-    /* non-fatal */
+    const keyscan = await scanHostKeys(machineConfig.ip, machineConfig.port ?? DEFAULTS.SSH.PORT);
+    await configService.updateMachine(name, { knownHosts: keyscan });
+    outputService.info(t('commands.machine.scanKeys.keysScanned', { name }));
+  } catch (error) {
+    // Non-fatal: the record stands, and `machine scan-keys` can pin the keys later. The reason is printed so the gap is not silent.
+    outputService.warn(
+      `${t('commands.machine.scanKeys.noKeys', { name })}: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
   return machineConfig;
 }

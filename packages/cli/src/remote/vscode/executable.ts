@@ -300,6 +300,48 @@ export function generateRemoteUri(sshHost: string, remotePath: string): string {
   return `vscode-remote://ssh-remote+${sshHost}${encodedPath}`;
 }
 
+/** cmd.exe metacharacters, each escaped with a caret (the set cross-spawn escapes). */
+const CMD_META = /([()\][%!^"`<>&|;, *?])/g;
+
+/**
+ * Quote one argument for a cmd.exe command line that ends in a batch file.
+ *
+ * The argument is first quoted for the CommandLineToArgvW rules (backslashes
+ * doubled before a quote and at the end, inner quotes escaped), then every cmd
+ * metacharacter, the quotes included, is caret-escaped twice: cmd parses the
+ * line once for `/c` and the batch file's `%*` parses it again.
+ */
+export function quoteCmdArg(arg: string): string {
+  let quoted = arg.replace(/(\\*)"/g, '$1$1\\"');
+  quoted = quoted.replace(/(\\*)$/, '$1$1');
+  quoted = `"${quoted}"`;
+  return quoted.replace(CMD_META, '^$1').replace(CMD_META, '^$1');
+}
+
+/**
+ * How to start `command` on Windows without `shell: true`.
+ *
+ * A real executable (`Code.exe`, the VS Code path list) is spawned directly. Anything
+ * else (`code`, `code.cmd`, a .bat wrapper) runs as
+ * `cmd.exe /d /s /c "<command line>"` with windowsVerbatimArguments, so Node
+ * passes the line untouched and each argument keeps its own quoting.
+ */
+export function windowsLaunch(
+  command: string,
+  args: readonly string[],
+  comspec = 'cmd.exe'
+): { command: string; args: string[]; windowsVerbatimArguments: boolean } {
+  if (/\.exe$/i.test(command)) {
+    return { command, args: [...args], windowsVerbatimArguments: false };
+  }
+  const line = [command.replace(CMD_META, '^$1'), ...args.map(quoteCmdArg)].join(' ');
+  return {
+    command: comspec,
+    args: ['/d', '/s', '/c', `"${line}"`],
+    windowsVerbatimArguments: true,
+  };
+}
+
 /**
  * Launches VS Code with a remote folder
  *
@@ -336,14 +378,16 @@ export function launchVSCode(
         stdio: 'ignore',
       });
     } else {
-      // Launch native VS Code (Windows/macOS/Linux). - On Windows, VS Code CLI is a .cmd batch wrapper, spawn needs shell: true.
-      // - When running INSIDE WSL, we set DONT_PROMPT_WSL_INSTALL=1 so the
-      // Linux `code` script doesn't pop its advisory prompt and exit silently when it reads /dev/null on stdin (we use stdio:'ignore').
-      const isWindows = process.platform === 'win32';
-      proc = spawn(vscodeInfo.path, args, {
+      // Launch native VS Code (Windows/macOS/Linux). On Windows the CLI is a .cmd batch wrapper, which goes through cmd.exe explicitly (windowsLaunch) rather than `shell: true`, whose args-with-shell form Node deprecates (DEP0190).
+      // When running INSIDE WSL, DONT_PROMPT_WSL_INSTALL=1 keeps the Linux `code` script from popping its advisory prompt and exiting silently when it reads /dev/null on stdin (stdio:'ignore').
+      const launch =
+        process.platform === 'win32'
+          ? windowsLaunch(vscodeInfo.path, args, process.env.comspec)
+          : { command: vscodeInfo.path, args, windowsVerbatimArguments: false };
+      proc = spawn(launch.command, launch.args, {
         detached: !options?.waitForClose,
         stdio: 'ignore',
-        shell: isWindows,
+        windowsVerbatimArguments: launch.windowsVerbatimArguments,
         env: wslCodeEnv(),
       });
     }

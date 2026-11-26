@@ -86,7 +86,7 @@ vi.mock('../../services/cluster/kvm-provisioner.js', () => ({
 }));
 vi.mock('../../services/renet/machine-bootstrap.js', () => ({
   bootstrapMachine: provision.bootstrap,
-  scanHostKeys: () => '',
+  scanHostKeys: () => Promise.reject(new Error('host-key scan is not exercised here')),
   waitForSSH: () => Promise.resolve(),
 }));
 vi.mock('../../services/config/network-id-discovery.js', () => ({

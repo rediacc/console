@@ -100,13 +100,21 @@ function reportKeyChanges(machineName: string, previous: string, scanned: string
 async function scanSingleMachine(machineName: string): Promise<void> {
   const machine = await configService.getLocalMachine(machineName);
   const previous = machine.knownHosts ?? '';
-  const keyscan = scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
-  if (keyscan) {
-    await configService.updateMachine(machineName, { knownHosts: keyscan });
-    reportKeyChanges(machineName, previous, keyscan);
-  } else {
-    outputService.warn(t('commands.machine.scanKeys.noKeys', { name: machineName }));
+  let keyscan: string;
+  try {
+    keyscan = await scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
+  } catch (error) {
+    outputService.warn(scanFailure(machineName, error));
+    return;
   }
+  await configService.updateMachine(machineName, { knownHosts: keyscan });
+  reportKeyChanges(machineName, previous, keyscan);
+}
+
+/** The "could not scan" line with the scan's own reason appended. */
+function scanFailure(name: string, error: unknown): string {
+  const reason = error instanceof Error ? error.message : String(error);
+  return `${t('commands.machine.scanKeys.noKeys', { name })}: ${reason}`;
 }
 
 async function scanAllMachines(): Promise<void> {
@@ -115,19 +123,17 @@ async function scanAllMachines(): Promise<void> {
   for (const m of machines) {
     try {
       const previous = m.config.knownHosts ?? '';
-      const keyscan = scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
-      if (keyscan) {
-        await configService.updateMachine(m.name, { knownHosts: keyscan });
-        // Stay one line per machine in the bulk case unless a pin was actually replaced, which is worth interrupting the summary for.
-        if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
-          reportKeyChanges(m.name, previous, keyscan);
-        } else {
-          outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
-        }
-        scanned++;
+      const keyscan = await scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
+      await configService.updateMachine(m.name, { knownHosts: keyscan });
+      // Stay one line per machine in the bulk case unless a pin was actually replaced, which is worth interrupting the summary for.
+      if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
+        reportKeyChanges(m.name, previous, keyscan);
+      } else {
+        outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
       }
-    } catch {
-      outputService.warn(t('commands.machine.scanKeys.noKeys', { name: m.name }));
+      scanned++;
+    } catch (error) {
+      outputService.warn(scanFailure(m.name, error));
     }
   }
   outputService.success(

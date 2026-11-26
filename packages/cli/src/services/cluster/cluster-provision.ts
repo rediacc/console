@@ -171,8 +171,14 @@ async function bootstrapMembers(
     const machineName = `${clusterName}-${m.pool}-${m.index}`;
     outputService.info(`Waiting for SSH on ${machineName} (${m.ip})...`);
     await waitForSSH(m.ip, sshPort);
-    const keyscan = scanHostKeys(m.ip, sshPort);
-    if (keyscan) await configService.updateMachine(machineName, { knownHosts: keyscan });
+    try {
+      const keyscan = await scanHostKeys(m.ip, sshPort);
+      await configService.updateMachine(machineName, { knownHosts: keyscan });
+    } catch (error) {
+      outputService.warn(
+        `No host key recorded for ${machineName}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
     outputService.info(`Setting up ${machineName}...`);
     await bootstrapMachine(machineName, { debug });
   }

@@ -220,8 +220,14 @@ export async function createCloudMachine(
   outputService.info(t('commands.machine.provision.sshReady'));
 
   await configService.addMachine(machineName, { ip: ipv4, user: sshUser, port: sshPort });
-  const keyscan = scanHostKeys(ipv4, sshPort);
-  if (keyscan) await configService.updateMachine(machineName, { knownHosts: keyscan });
+  try {
+    const keyscan = await scanHostKeys(ipv4, sshPort);
+    await configService.updateMachine(machineName, { knownHosts: keyscan });
+  } catch (error) {
+    outputService.warn(
+      `${t('commands.machine.scanKeys.noKeys', { name: machineName })}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 
   outputService.info(t('commands.machine.provision.settingUp'));
   const steps = await provisionTailSteps(machineName, options, { ipv4, ipv6 });

@@ -7,8 +7,8 @@
  * (sibling precedent: utils/ssh-keygen.ts).
  */
 
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import ssh2, { type ServerHostKeyAlgorithm } from 'ssh2';
 
 /** One parsed known_hosts entry. */
 export interface HostKeyEntry {
@@ -30,23 +30,169 @@ export interface HostKeyChange {
   newKey: string;
 }
 
+/** Default bound on one host-key scan, per connection. */
+const SCAN_TIMEOUT_MS = 10_000;
+
 /**
- * ssh-keyscan the host, returning its known_hosts lines (empty string on
- * failure).
- *
- * Single source of truth: this was previously duplicated byte-for-byte in
- * commands/machine/register.ts and services/renet/machine-bootstrap.ts.
+ * One connection per host-key family, each restricted to that family's
+ * signature algorithms, so the server shows every key it holds rather than only
+ * the one it prefers. The known_hosts type is read out of the offered key blob
+ * itself: an RSA key signs as rsa-sha2-512 but is recorded as `ssh-rsa`,
+ * exactly as ssh-keyscan records it.
  */
-export function scanHostKeys(ip: string, port: number): string {
-  try {
-    return execFileSync('ssh-keyscan', ['-p', String(port), ip], {
-      encoding: 'utf-8',
-      timeout: 10_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return '';
+const HOST_KEY_FAMILIES: ReadonlyArray<{ label: string; algorithms: ServerHostKeyAlgorithm[] }> = [
+  { label: 'rsa', algorithms: ['rsa-sha2-512', 'rsa-sha2-256', 'ssh-rsa'] },
+  {
+    label: 'ecdsa',
+    algorithms: ['ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521'],
+  },
+  { label: 'ed25519', algorithms: ['ssh-ed25519'] },
+];
+
+/** Why a scan read no host key. */
+type HostKeyScanFailureKind = 'unreachable' | 'timeout' | 'no-algorithm' | 'error';
+
+/** A host-key scan that read no key at all; the message names the host and the cause. */
+export class HostKeyScanError extends Error {
+  constructor(
+    readonly host: string,
+    readonly port: number,
+    readonly kind: HostKeyScanFailureKind,
+    readonly detail: string
+  ) {
+    super(`${kind} (${host}:${port}): ${detail}`);
+    this.name = 'HostKeyScanError';
   }
+}
+
+type FamilyFailure = { ok: false; kind: HostKeyScanFailureKind; detail: string };
+type FamilyResult = { ok: true; type: string; key: string } | FamilyFailure;
+
+const UNREACHABLE_CODES = new Set([
+  'ECONNREFUSED',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ECONNRESET',
+  'EADDRNOTAVAIL',
+]);
+
+function classifyScanError(err: Error & { code?: string; level?: string }): HostKeyScanFailureKind {
+  if (err.code && UNREACHABLE_CODES.has(err.code)) return 'unreachable';
+  if (err.level === 'client-timeout' || err.code === 'ETIMEDOUT') return 'timeout';
+  if (/no matching|host key/i.test(err.message)) return 'no-algorithm';
+  return 'error';
+}
+
+/** Open one handshake offering only `algorithms` as host-key types, capture the key, and hang up before auth. */
+function scanFamily(
+  host: string,
+  port: number,
+  algorithms: ServerHostKeyAlgorithm[],
+  timeoutMs: number
+): Promise<FamilyResult> {
+  return new Promise((resolve) => {
+    const client = new ssh2.Client();
+    let settled = false;
+    let timer: NodeJS.Timeout | undefined;
+    const finish = (result: FamilyResult): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      client.end();
+      resolve(result);
+    };
+    timer = setTimeout(
+      () => finish({ ok: false, kind: 'timeout', detail: `no host key within ${timeoutMs} ms` }),
+      timeoutMs
+    );
+    client.on('error', (err: Error & { code?: string; level?: string }) =>
+      finish({ ok: false, kind: classifyScanError(err), detail: err.message })
+    );
+    client.on('close', () =>
+      finish({
+        ok: false,
+        kind: 'error',
+        detail: 'connection closed before a host key was offered',
+      })
+    );
+    client.on('ready', () =>
+      finish({ ok: false, kind: 'error', detail: 'session opened without a host key check' })
+    );
+    try {
+      client.connect({
+        host,
+        port,
+        username: 'rdc-host-key-scan',
+        readyTimeout: timeoutMs,
+        algorithms: { serverHostKey: algorithms },
+        hostVerifier: (key: Buffer) => {
+          const blob = key.toString('base64');
+          const type = keyBlobAlgorithm(blob);
+          finish(
+            type
+              ? { ok: true, type, key: blob }
+              : { ok: false, kind: 'error', detail: 'offered host key blob could not be decoded' }
+          );
+          // Refusing the host aborts the handshake here, before any authentication is attempted.
+          return false;
+        },
+      });
+    } catch (err) {
+      finish({ ok: false, kind: 'error', detail: (err as Error).message });
+    }
+  });
+}
+
+/** The known_hosts host field ssh-keyscan writes: the bare host on port 22, `[host]:port` otherwise. */
+function knownHostsHost(host: string, port: number): string {
+  return port === 22 ? host : `[${host}]:${port}`;
+}
+
+/**
+ * Read the host's public keys over SSH and return them as known_hosts lines
+ * (`<host> <type> <base64>`), one per key type the host offers.
+ *
+ * Uses the ssh2 library rather than the ssh-keyscan binary: the OpenSSH that
+ * ships with Windows (9.5p2) returns zero keys against Ubuntu's OpenSSH 9.6p1
+ * (`choose_kex: unsupported KEX method sntrup761x25519-sha512@openssh.com`)
+ * while ssh2 negotiates with it, and no binary on PATH is needed.
+ *
+ * Rejects with a HostKeyScanError carrying the cause (unreachable, timeout,
+ * no host-key algorithm accepted, or the underlying error) when no key at all
+ * could be read. A family the host lacks is not an error while another family
+ * answered.
+ */
+export async function scanHostKeys(
+  ip: string,
+  port: number,
+  options: { timeoutMs?: number } = {}
+): Promise<string> {
+  const timeoutMs = options.timeoutMs ?? SCAN_TIMEOUT_MS;
+  const results = await Promise.all(
+    HOST_KEY_FAMILIES.map((f) => scanFamily(ip, port, f.algorithms, timeoutMs))
+  );
+  const hostField = knownHostsHost(ip, port);
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const r of results) {
+    if (!r.ok || seen.has(r.type)) continue;
+    seen.add(r.type);
+    lines.push(`${hostField} ${r.type} ${r.key}`);
+  }
+  if (lines.length > 0) return lines.join('\n');
+
+  const failures = results.filter((r): r is FamilyFailure => !r.ok);
+  const kinds = new Set(failures.map((f) => f.kind));
+  // One shared cause (refused, unreachable, timed out) reads as one reason; mixed causes are listed per family.
+  if (kinds.size === 1) {
+    throw new HostKeyScanError(ip, port, failures[0]!.kind, failures[0]!.detail);
+  }
+  const detail = failures
+    .map((f, i) => `${HOST_KEY_FAMILIES[i]!.label}: ${f.kind}: ${f.detail}`)
+    .join('; ');
+  throw new HostKeyScanError(ip, port, 'error', detail);
 }
 
 /**
