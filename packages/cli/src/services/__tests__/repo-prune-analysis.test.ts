@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   currentRepos: [] as { name: string; config: { repositoryGuid?: string } }[],
   archived: [] as { repositoryGuid: string; deletedAt: string }[],
   others: {} as Record<string, unknown>,
+  inRequest: false,
+  loaded: [] as string[],
 }));
 
 vi.mock('../config/config-resources.js', () => ({

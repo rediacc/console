@@ -13,7 +13,7 @@ vi.mock('../../../utils/platform.js', () => ({
 
 const { installBinaryAtPath } = await import('../install-binary.js');
 
-const binary = { url: 'https://example.invalid/rdc', sha256: 'sum' };
+const binary = { version: '0.0.0-test', url: 'https://example.invalid/rdc', sha256: 'sum' };
 
 describe('installBinaryAtPath swap', () => {
   let dir: string;
