@@ -220,13 +220,13 @@ def _event(cmd, cwd):
 def test_event_writes_parses_once_per_event(tmp_path, monkeypatch):
     """The cache: a guard that asks twice pays once. Without it the count is 2."""
     calls = []
-    real = shellscan.writes
+    real = shellscan.write_records
 
     def counting(cmd, cwd):
         calls.append(cmd)
         return real(cmd, cwd)
 
-    monkeypatch.setattr(shellscan, "writes", counting)
+    monkeypatch.setattr(shellscan, "write_records", counting)
     ev = _event("echo hi > a.txt", tmp_path)
     first = ev.writes()
     second = ev.writes()
@@ -237,13 +237,13 @@ def test_event_writes_parses_once_per_event(tmp_path, monkeypatch):
 def test_a_new_event_reads_the_disk_again(tmp_path, monkeypatch):
     """SILENT CONTROL for the cache: it is per Event, never per command text. `writes` reads the disk (a copy into a directory, a script by path), so two events with the same command must each compute, or a long-lived process would answer from a stale world."""
     calls = []
-    real = shellscan.writes
+    real = shellscan.write_records
 
     def counting(cmd, cwd):
         calls.append(cmd)
         return real(cmd, cwd)
 
-    monkeypatch.setattr(shellscan, "writes", counting)
+    monkeypatch.setattr(shellscan, "write_records", counting)
     cmd = "cp /etc/hostname d"
     assert _event(cmd, tmp_path).writes() == [(str(tmp_path / "d"), "copy")]
     (tmp_path / "d").mkdir()
@@ -276,6 +276,24 @@ def test_event_write_records_walks_once_per_event(tmp_path, monkeypatch):
     assert len(calls) == 1
     shellscan.event_write_records(_event("rm -f a.txt", tmp_path))
     assert len(calls) == 2
+
+
+def test_event_asked_for_pairs_and_records_walks_once(tmp_path, monkeypatch):
+    """One walk serves both views of an Event: `Event.writes` is the pair view of the records the chain's other guards read, so a guard asking for either after the other pays nothing. Without the shared hold the count is 2."""
+    calls = []
+    real = shellscan.write_records
+
+    def counting(cmd, cwd):
+        calls.append(cmd)
+        return real(cmd, cwd)
+
+    monkeypatch.setattr(shellscan, "write_records", counting)
+    ev = _event("echo a > f; echo b >> f", tmp_path)
+    pairs = ev.writes()
+    records = shellscan.event_write_records(ev)
+    assert pairs == list(dict.fromkeys((w.path, w.how) for w in records))
+    assert (str(tmp_path / "f"), "redirect") in pairs
+    assert len(calls) == 1
 
 
 def _run_of(cmd, name):

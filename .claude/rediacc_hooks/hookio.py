@@ -201,13 +201,12 @@ class Event:
         The paths are placed from the payload's `cwd` when it carries one, else from the event's own directory.
         """
         if self._writes is None:
-            cmd = self.field("tool_input", "command")
-            if not cmd:
-                self._writes = []
-            else:
-                from rediacc_hooks import shellscan
+            from rediacc_hooks import shellscan
 
-                self._writes = shellscan.writes(cmd, self.field("cwd") or self.cwd)
+            # The pair view of the records the chain's other guards read: one walk per Event serves both (`shellscan.event_write_records`), each pair once, in walk order, as `shellscan.writes` lists them.
+            self._writes = list(
+                dict.fromkeys((w.path, w.how) for w in shellscan.event_write_records(self))
+            )
         return self._writes
 
     # -- the environment --------------------------------------------------
