@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1578 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1755 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 3 live (session d778be9d): worker:ae9b56c0f01fa2138, worker:aa3b438ddf202ce97, worker:a9c58156f6c15d3cd.
-- Leased items: 7: #0dd9a99d (worker:aa5702fbcd5e6529e, d778be9d), #19f13581 (worker:ae9b56c0f01fa2138, d778be9d), #2c58de20 (worker:aa3b438ddf202ce97, d778be9d), #58a674f6 (worker:ae9b56c0f01fa2138, d778be9d), #6735de22 (worker:ae9b56c0f01fa2138, d778be9d), #769e521b (worker:a9c58156f6c15d3cd, d778be9d), #f1bbab6d (worker:aea50b19c6a60d2b2, d778be9d).
+- Writers: 9 live (session d778be9d): worker:a1102048585221b54, worker:adbe4cf96b0618836, worker:a7cb422696200ddc2, worker:abe03ee5ac6a085af, worker:a6448309a8a269c05, worker:ad721f27488c8cc4b, worker:a64c1dea117bbc215, worker:a218a69951254cc25, worker:adbe11266ee63fb1b.
+- Leased items: 10: #268af0bf (worker:abe03ee5ac6a085af, d778be9d), #38b6ddf6 (worker:adbe11266ee63fb1b, d778be9d), #66f4558b (worker:bxhnqm2th, d778be9d), #709dab4e (worker:a1102048585221b54, d778be9d), #8176c7c5 (worker:ad721f27488c8cc4b, d778be9d), #b00ea071 (worker:a218a69951254cc25, d778be9d), #bea46199 (worker:a64c1dea117bbc215, d778be9d), #c3cefaef (worker:a7cb422696200ddc2, d778be9d), #f09db830 (worker:a6448309a8a269c05, d778be9d), #f3b10573 (worker:adbe4cf96b0618836, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1528 of 1891 boxes done (80%).
+Promoted: 11 of 100 plans done, 1529 of 1891 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -159,7 +159,7 @@ Promoted: 11 of 100 plans done, 1528 of 1891 boxes done (80%).
 | 97 | PLAN-armed-actions.md | 6/6 | done |
 | 98 | PLAN-drain-throughput.md | 6/15 | 9 open |
 | 99 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
-| 100 | PLAN-host-temp-disposal.md | 13/19 | 6 open |
+| 100 | PLAN-host-temp-disposal.md | 14/19 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
