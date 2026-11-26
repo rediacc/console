@@ -16,7 +16,7 @@ vi.mock('cloudflare:workers', () => {
   return { DurableObject: Base, WorkerEntrypoint: Base };
 });
 
-import { REVOKE_GRANT_PATH } from '../org-executor-mcp';
+import { isRevokeGrantPath, REVOKE_GRANT_PATH } from '../org-executor-mcp';
 import { flush, harness, ORG, openStream, T0 } from './helpers/org-executor-harness';
 
 beforeEach(() => {
@@ -58,6 +58,18 @@ describe('OrgExecutor.revokeGrant', () => {
     h.container.app = () => Response.json({ dropped: false });
     await h.executor.pin(ORG, 0, 'light');
     expect(await h.executor.revokeGrant('eu_grant1')).toEqual({ ok: true, dropped: false });
+  });
+
+  it('answers 502 EXECUTOR_FAILED when the container answers 200 with a body that is not JSON', async () => {
+    const h = harness();
+    await h.ready;
+    h.container.app = () => new Response('<html>ok</html>', { status: 200 });
+    await h.executor.pin(ORG, 0, 'light');
+    expect(await h.executor.revokeGrant('eu_grant1')).toEqual({
+      ok: false,
+      code: 'EXECUTOR_FAILED',
+      status: 502,
+    });
   });
 
   it('starts nothing when no container runs: there is no session to drop', async () => {
@@ -130,5 +142,13 @@ describe('OrgExecutor.revokeGrant', () => {
     expect(await (await h.executor.fetch(new Request('https://proxy/v1/command'))).text()).toBe(
       'reached'
     );
+  });
+});
+
+describe('isRevokeGrantPath', () => {
+  it('fails closed on a pathname that does not decode, and passes an ordinary one', () => {
+    expect(isRevokeGrantPath('/v1/mcp/revoke%')).toBe(true);
+    expect(isRevokeGrantPath('/v1/command%')).toBe(true);
+    expect(isRevokeGrantPath('/v1/command')).toBe(false);
   });
 });

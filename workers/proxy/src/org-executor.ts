@@ -386,7 +386,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   /** Whether a running dispatch holds the container awake: the executor counts one and the hold has not passed MAX_DISPATCH_HOLD_MS. */
   private async dispatchHolds(container: Container, now: number): Promise<boolean> {
-    if ((await dispatchesRunning(container)) === 0) {
+    const running = await dispatchesRunning(container);
+    // A count that could not be had keeps an earlier hold alive (a dispatch last seen running may still be), within the same MAX_DISPATCH_HOLD_MS; with no earlier hold it never starts one, so an unreachable container is not pinned awake.
+    if (running === undefined && this.busyHoldSince === undefined) return false;
+    if (running === 0) {
       this.busyHoldSince = undefined;
       return false;
     }

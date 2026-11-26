@@ -2,10 +2,11 @@
  * `/v1/internal/occupancy` (PLAN-rmcp-executor-hardening.md box EH8, D52): the coordinator count answers only a request whose internal credential the ISSUER binding verifies; every other caller gets the bare 404 of an unknown path.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
+import { COORDINATOR_TIMEOUT_MS } from '../org-executor-support';
 import { resetReadyCache } from '../ready';
 
 const GOOD = 'good-credential';
@@ -46,6 +47,12 @@ beforeEach(() => {
   vi.restoreAllMocks();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 });
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+const never = () => new Promise<never>(() => undefined);
 
 describe('/v1/internal/occupancy', () => {
   it('answers the count, only its four integers, to a credential the issuer verifies', async () => {
@@ -111,5 +118,41 @@ describe('/v1/internal/occupancy', () => {
       EXECUTOR_CAPACITY: capacity(() => COUNT, calls),
     });
     expect((await call(lax, { 'x-rediacc-internal': 'forged' })).status).toBe(200);
+  });
+
+  it('answers 404 once a stalled verifyInternal passes COORDINATOR_TIMEOUT_MS, and not before', async () => {
+    vi.useFakeTimers();
+    const calls = { n: 0 };
+    const e = env({
+      ISSUER: issuer(never),
+      EXECUTOR_CAPACITY: capacity(() => COUNT, calls),
+    });
+    let settled: { status: number; text: string } | undefined;
+    const pending = call(e, { 'x-rediacc-internal': GOOD }).then((answer) => {
+      settled = answer;
+    });
+    await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS - 1);
+    expect(settled).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    expect(settled).toEqual({ status: 404, text: 'Not Found' });
+    expect(calls.n).toBe(0);
+  });
+
+  it('answers 503 once a stalled coordinator count passes COORDINATOR_TIMEOUT_MS, and not before', async () => {
+    vi.useFakeTimers();
+    const e = env({
+      ISSUER: issuer(async () => true),
+      EXECUTOR_CAPACITY: capacity(never, { n: 0 }),
+    });
+    let settled: { status: number; text: string } | undefined;
+    const pending = call(e, { 'x-rediacc-internal': GOOD }).then((answer) => {
+      settled = answer;
+    });
+    await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS - 1);
+    expect(settled).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    expect(settled?.status).toBe(503);
   });
 });

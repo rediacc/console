@@ -163,15 +163,13 @@ describe('executor write-back requests against the real allowlist', () => {
     expect(seen).toHaveLength(0);
   });
 
-  /** The method and path of every literal executor-chain request in config-writeback.ts. */
-  function writebackCalls(): { path: string; method: string }[] {
-    const source = readFileSync(
-      new URL('../../../../packages/cli/src/services/serve/config-writeback.ts', import.meta.url)
-        .pathname,
-      'utf8'
-    );
-    // Every `chain.request(<'literal' or `template`>, ...` call: a `${...}` that holds a query string becomes empty, any other becomes a placeholder id. The method is the first `method: '<M>'` before the call's `op` argument, else GET.
-    return [
+  /** The method and path of every literal executor-chain request in `source`, and how many `chain.request(` calls it holds in all (a call whose path is a variable is counted but not scanned). */
+  function scanWritebackCalls(source: string): {
+    calls: { path: string; method: string }[];
+    total: number;
+  } {
+    // Every `chain.request(<'literal' or `template`>, ...` call: the `${query}` interpolation becomes empty, any other `${...}` becomes a placeholder id. The method is the first `method: '<M>'` before the call's `op` argument, else GET.
+    const calls = [
       ...source.matchAll(
         /chain\.request\(\s*(['`])(\/account\/api\/v1\/[^'`]*)\1([\s\S]*?)\bop\b/g
       ),
@@ -181,7 +179,29 @@ describe('executor write-back requests against the real allowlist', () => {
         .replace(/\$\{[^}]*(?:\{[^}]*\}[^}]*)*\}/g, 'cfg-1');
       return { path, method: /method: '(\w+)'/.exec(m[3] as string)?.[1] ?? DEFAULT_METHOD };
     });
+    return { calls, total: [...source.matchAll(/chain\.request\(/g)].length };
   }
+
+  function writebackCalls(): { path: string; method: string }[] {
+    const source = readFileSync(
+      new URL('../../../../packages/cli/src/services/serve/config-writeback.ts', import.meta.url)
+        .pathname,
+      'utf8'
+    );
+    const { calls, total } = scanWritebackCalls(source);
+    // A call the scan cannot read (a variable or a concatenated path) would pass unchecked, so it fails here instead.
+    expect(calls.length, 'every chain.request( call has a literal path the scan reads').toBe(total);
+    return calls;
+  }
+
+  it('the scan counts a variable-path call it cannot read, and reads a literal one', () => {
+    const literal = "chain.request('/account/api/v1/configs', {}, op)";
+    const variable = 'chain.request(path, {}, op)';
+    expect(scanWritebackCalls(literal)).toMatchObject({ total: 1, calls: [{ method: 'GET' }] });
+    const mixed = scanWritebackCalls(`${literal}\n${variable}`);
+    expect(mixed.total).toBe(2);
+    expect(mixed.calls).toHaveLength(1);
+  });
 
   /** A POST or the listing takes no query; every other call is tried bare and with a team. */
   function writebackQueries(call: { path: string; method: string }): string[] {
@@ -223,6 +243,7 @@ describe('executor write-back requests against the real allowlist', () => {
       const response = await forwardAccountEgress(send(path), env, 'org-a');
       expect(response.status, path).toBe(200);
       expect(seen[0]?.headers.get('x-config-token')).toBe('ct-1');
+      expect(seen[0]?.headers.get('authorization'), path).toBeNull();
     }
     for (const [method, path, reason] of [
       ['PUT', '/account/api/v1/configs/cfg-1/policy', 'route-not-allowed'],

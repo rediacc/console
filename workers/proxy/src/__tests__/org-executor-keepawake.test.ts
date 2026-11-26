@@ -87,6 +87,48 @@ describe('keep-awake until the dispatch ends', () => {
     expect(h.container.destroys).toEqual(['idle']);
   });
 
+  it('a count that fails after a dispatch was seen running keeps the hold', async () => {
+    const dispatches: { running: number | 'fail' } = { running: 1 };
+    const h = harness();
+    await h.ready;
+    const stream = openStream();
+    h.container.app = (request) => {
+      if (new URL(request.url).pathname !== BUSY_PATH) return stream.response;
+      return dispatches.running === 'fail'
+        ? new Response('boom', { status: 500 })
+        : Response.json({ busy: dispatches.running });
+    };
+    await h.executor.pin(ORG, 0, 'light');
+    await (await h.executor.fetch(new Request('https://proxy/v1/command'))).body?.cancel();
+    await flush();
+
+    vi.setSystemTime(T0 + IDLE_MS);
+    await h.executor.alarm();
+    expect(h.container.destroys).toEqual([]);
+
+    dispatches.running = 'fail';
+    vi.setSystemTime(T0 + 2 * IDLE_MS);
+    await h.executor.alarm();
+    expect(h.container.destroys).toEqual([]);
+  });
+
+  it('control: a count that fails with no earlier hold lets the container stop at sleepAfter', async () => {
+    const h = harness();
+    await h.ready;
+    const stream = openStream();
+    h.container.app = (request) =>
+      new URL(request.url).pathname === BUSY_PATH
+        ? new Response('boom', { status: 500 })
+        : stream.response;
+    await h.executor.pin(ORG, 0, 'light');
+    await (await h.executor.fetch(new Request('https://proxy/v1/command'))).body?.cancel();
+    await flush();
+
+    vi.setSystemTime(T0 + IDLE_MS);
+    await h.executor.alarm();
+    expect(h.container.destroys).toEqual(['idle']);
+  });
+
   it('a hold past 60 minutes stops the container', async () => {
     const h = await clientGone({ running: 1 });
     const firstHold = T0 + IDLE_MS;

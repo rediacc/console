@@ -11,7 +11,7 @@
  *   3. the body is read to at most `MAX_AI_BODY_BYTES` (413 `body-too-large`) and must be a JSON object naming a string `model` and a `messages` array (400 `invalid-request`);
  *   4. a model absent from the price table is 403 `model-not-allowed` before any reservation (D2);
  *   5. `reserve` on the org's ledger holds the worst case; a refusal is answered with its ledger code (D5), and a ledger that cannot answer is 503 `ledger-unavailable` (fail closed);
- *   6. the forwarded body carries the clamped `max_tokens` and, for a stream, `stream_options.include_usage` forced on, so the final chunk always reports usage;
+ *   6. the forwarded body carries the token limit it named (`max_tokens` or `max_completion_tokens`) clamped in place and, for a stream, `stream_options.include_usage` forced on, so the final chunk always reports usage;
  *   7. the call leaves for the region's AI Gateway OpenAI-compatible endpoint with `cf-aig-authorization` from the Worker secret and `cf-aig-metadata` carrying `org_id`, `user_id`, `conversation_id`, `reservation_id` and `price_version` (D7), and nothing else of the container's headers.
  *
  * The response streams back untouched while its usage is read on the way. When the body closes, errors or is cancelled (the container's abort cancels the upstream fetch too, D6), the reservation is committed once with the usage seen, or in full when none was seen; the ledger's own alarm commits a reservation this Worker never settled. An upstream that never answered, or answered a non-2xx status, consumed nothing, so its reservation is released.
@@ -93,10 +93,10 @@ export interface AiEgressEnv {
   AI_GATEWAY_ACCOUNT_ID?: string;
 }
 
-/** The HTTP status each ledger refusal is answered with. */
 /** The status of a refusal code the map does not name: forbidden, never a pass. */
 const DEFAULT_REFUSAL_STATUS = 403;
 
+/** The HTTP status each ledger refusal is answered with. */
 const REFUSAL_STATUS: Record<CreditRefusalCode, number> = {
   PLAN_NOT_ENTITLED: 403,
   ORG_BLOCKED: 403,

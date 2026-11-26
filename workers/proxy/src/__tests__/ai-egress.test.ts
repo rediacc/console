@@ -384,6 +384,23 @@ describe('AiEgress commit and release', () => {
     expect(calls.releases).toHaveLength(0);
   });
 
+  it('commits in full (usage dropped) when a JSON answer outgrows the usage buffer, and passes it through whole', async () => {
+    const filler = 'x'.repeat(4 * 1024 * 1024 + 1024);
+    const answer = JSON.stringify({
+      choices: [{ message: { content: filler } }],
+      usage: { prompt_tokens: 5, completion_tokens: 6 },
+    });
+    const { egress, calls, settle } = setup({
+      upstream: () => new Response(answer, { headers: { 'content-type': 'application/json' } }),
+    });
+    const response = await egress.fetch(chat(valid()));
+    expect((await response.text()).length).toBe(answer.length);
+    await settle();
+    expect(calls.commits).toHaveLength(1);
+    expect(calls.commits[0]).not.toHaveProperty('usage');
+    expect(calls.releases).toHaveLength(0);
+  });
+
   const sse = (lines: string[]) =>
     new Response(`${lines.join('\n\n')}\n\n`, {
       headers: { 'content-type': 'text/event-stream' },

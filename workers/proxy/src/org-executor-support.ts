@@ -299,16 +299,16 @@ export function isBusyPath(pathname: string): boolean {
 /** The longest the alarm holds a container awake on a dispatch count alone, so a dispatch that never ends cannot pin an instance forever. A literal, like `sleepAfter`. */
 export const MAX_DISPATCH_HOLD_MS = 60 * 60_000;
 
-/** How many dispatches the executor is running, asked of the container. Any failure or stall answers 0, so an unreachable count never keeps a container awake. */
-export async function dispatchesRunning(container: Container): Promise<number> {
+/** How many dispatches the executor is running, asked of the container, or undefined when the count could not be had (an error, a non-2xx answer or a stall). The caller decides what an unknown count means (review 1cf0bd86.2). */
+export async function dispatchesRunning(container: Container): Promise<number | undefined> {
   const abort = new AbortController();
-  const ask = async (): Promise<number> => {
+  const ask = async (): Promise<number | undefined> => {
     const response = await container
       .getTcpPort(EXECUTOR_PORT)
       .fetch(`http://container${BUSY_PATH}`, { signal: abort.signal });
     if (!response.ok) {
       await response.body?.cancel();
-      return 0;
+      return undefined;
     }
     const body = (await response.json()) as { busy?: unknown };
     return typeof body.busy === 'number' && body.busy > 0 ? body.busy : 0;
@@ -318,7 +318,7 @@ export async function dispatchesRunning(container: Container): Promise<number> {
   } catch (error) {
     logStall(error);
     abort.abort();
-    return 0;
+    return undefined;
   }
 }
 
