@@ -119,8 +119,10 @@ class FakeCloudflare:
         self.tokens = [
             {"id": "t-own", "name": "enterprise-%s-backups" % ACME},
             {"id": "t-own-cfg", "name": "enterprise-%s-configs" % ACME},
+            {"id": "t-own-audit", "name": "enterprise-%s-audit" % ACME},
             {"id": "t-other", "name": "enterprise-c1123456789abcdef-backups"},
             {"id": "t-other-cfg", "name": "enterprise-c1123456789abcdef-configs"},
+            {"id": "t-other-audit", "name": "enterprise-c1123456789abcdef-audit"},
             {"id": "t-mgmt", "name": "auto-rotation-management"},
         ]
         self.calls: list[tuple] = []
@@ -549,6 +551,7 @@ def test_token_name_matches_the_minter():
     company = secrets.Company(id=ACME, name="acme", region="eu", cf_account_id=ACCOUNT)
     assert la.backup_token_name(_company()) == secrets.r2_token_name(company)
     assert la.configs_token_name(_company()) == secrets.configs_token_name(company)
+    assert la.audit_token_name(_company()) == secrets.audit_token_name(company)
 
 
 def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypatch):
@@ -724,10 +727,17 @@ def test_revoke_tokens_deletes_only_this_companys_backup_token_across_pages(monk
     rig = Rig(monkeypatch)
     rig.cf.tokens.insert(0, {"id": "t-pad", "name": "unrelated"})
     rig.teardown.revoke_tokens(_company())
-    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-other-cfg", "t-pad"]
+    assert sorted(t["id"] for t in rig.cf.tokens) == [
+        "t-mgmt",
+        "t-other",
+        "t-other-audit",
+        "t-other-cfg",
+        "t-pad",
+    ]
     assert [c[1] for c in rig.cf.calls if c[0] == "DELETE"] == [
         "/user/tokens/t-own",
         "/user/tokens/t-own-cfg",
+        "/user/tokens/t-own-audit",
     ]
 
 
@@ -915,7 +925,12 @@ def test_full_remove_with_delete_data_tears_down_everything(tmp_path, monkeypatc
     assert rig.cf.workers == {"account-eu"}
     assert rig.cf.d1 == {"account-eu": "2222-uuid"}
     assert set(rig.s3.buckets) == {"configs-globex", "audit-globex"}
-    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-other-cfg"]
+    assert sorted(t["id"] for t in rig.cf.tokens) == [
+        "t-mgmt",
+        "t-other",
+        "t-other-audit",
+        "t-other-cfg",
+    ]
     assert [r["id"] for r in rig.bws.rows] == ["id-foreign"]
     assert len(rig.kv) == 1
     assert _state(conn) == "removed"
@@ -1121,25 +1136,51 @@ def test_a_cloudflare_refusal_is_the_type_the_lifecycle_masks():
     assert type(plain.value) is lifecycle.LifecycleError
 
 
-def test_delete_bucket_empties_the_audit_bucket_with_the_shared_pair_and_leaves_another_company(
+def test_delete_bucket_empties_the_audit_bucket_with_the_audit_key_and_leaves_another_company(
     monkeypatch,
 ):
+    """Review a5c0581a.1: the shared pair answers 403 for audit-<name>, so the audit bucket is emptied with the company's audit key."""
     rig = Rig(monkeypatch)
     asked: list[str] = []
+    own = FakeS3(rig.s3.buckets)
+
+    def company_s3(_company, bucket):
+        asked.append(bucket)
+        return own
+
     teardown = la.CloudflareTeardown(
         account_id=ACCOUNT,
         http=rig.cf,
         s3=rig.s3,
-        company_s3=lambda _company, bucket: asked.append(bucket),
+        company_s3=company_s3,
         secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
         lookup_domains=lambda _company: rig.domains,
         lookup_run=rig.kv_run,
         r2_jurisdiction="eu",
     )
     teardown.delete_bucket(_company(), "audit-acme")
-    assert asked == []
+    assert asked == ["audit-acme"]
+    assert [m for m, _p in own.calls if m == "DELETE"] == ["DELETE"]
+    assert not [c for c in rig.s3.calls if c[1].startswith("audit-acme")]
     assert "audit-acme" not in rig.s3.buckets
     assert rig.s3.buckets["audit-globex"] == {"keep": b"y"}
+
+
+def test_audit_bucket_is_read_with_the_audit_key_and_not_the_shared_pair():
+    shared = FakeS3({"audit-acme": {"e1": b"4"}})
+    shared.fail.add(("GET", "audit-acme"))
+    audit = FakeS3({"audit-acme": {"e1": b"4"}})
+    asked: list[str] = []
+
+    def company_s3(_target, bucket):
+        asked.append(bucket)
+        return audit
+
+    exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=shared, company_s3=company_s3)
+    assert exporter.bucket_keys(_company(), "audit-acme") == ["e1"]
+    assert exporter.get_object(_company(), "audit-acme", "e1") == b"4"
+    assert asked == ["audit-acme"] * 2
+    assert shared.calls == []
 
 
 def test_delete_bucket_refuses_another_companys_audit_bucket(monkeypatch):

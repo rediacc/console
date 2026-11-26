@@ -1,8 +1,8 @@
 """Company secrets for an Enterprise company's account Worker (agent/plans/PLAN-enterprise-isolation.md D2).
 
-WHAT A COMPANY GETS. Generated per company: the X25519 pair (a shared one would let one breached Worker open another company's captured request tunnel), `ACCOUNT_JWT_SECRET`, `ACCOUNT_CONFIG_SERVER_KEY` (stored durably, because losing it loses layer 3 of the config store), `ACCOUNT_SERVER_API_KEY` and `ACCOUNT_BACKUP_STORE_KEK`. Minted per company: an IAM user on the shared SES sender, allowed `ses:SendEmail` and `ses:SendRawEmail` only, and an R2 token scoped to object read and write on `backups-<company>`, pushed as R2's S3 pair (the token id and sha256 of its value, as rotation's `r2-keypair` shape does). Shared and handed in by the caller: the Ed25519 PUBLIC key, the Turnstile secret, the region's OTLP credentials, the SES sender, and `ROOT_EMAIL`; the SES region is the region's `sesRegion` from regions.json, the one the IAM user's policy allows. Absent, and refused if offered: the Ed25519 private key (the signer holds it), `FREE_LICENSE_HMAC_KEY` (a company issues no FREE licences), Stripe and every `SELLER_*` (contract billing lives outside). The shared pusher demands the FREE key (`set_account_worker_secrets.REQUIRED_NONEMPTY`), so a company has its own `COMPANY_REQUIRED`.
+WHAT A COMPANY GETS. Generated per company: the X25519 pair (a shared one would let one breached Worker open another company's captured request tunnel), `ACCOUNT_JWT_SECRET`, `ACCOUNT_CONFIG_SERVER_KEY` (stored durably, because losing it loses layer 3 of the config store), `ACCOUNT_SERVER_API_KEY` and `ACCOUNT_BACKUP_STORE_KEK`. Minted per company: an IAM user on the shared SES sender, allowed `ses:SendEmail` and `ses:SendRawEmail` only, and an R2 token scoped to object read and write on `backups-<company>`, pushed as R2's S3 pair (the token id and sha256 of its value, as rotation's `r2-keypair` shape does); two more R2 tokens, scoped the same way to `configs-<company>` and to `audit-<company>`, are kept in the store only (`BUCKET_KEYS`), since the Worker binds those buckets and only the lifecycle verbs reach them over S3. Shared and handed in by the caller: the Ed25519 PUBLIC key, the Turnstile secret, the region's OTLP credentials, the SES sender, and `ROOT_EMAIL`; the SES region is the region's `sesRegion` from regions.json, the one the IAM user's policy allows. Absent, and refused if offered: the Ed25519 private key (the signer holds it), `FREE_LICENSE_HMAC_KEY` (a company issues no FREE licences), Stripe and every `SELLER_*` (contract billing lives outside). The shared pusher demands the FREE key (`set_account_worker_secrets.REQUIRED_NONEMPTY`), so a company has its own `COMPANY_REQUIRED`.
 
-OPAQUE NAMES. A company is known outside its control row by `c<16 hex>`, drawn from the OS's randomness and never derived from the name: a hash of a guessable company name is reversed by a dictionary. Store entries are `<id>_<WORKER KEY>` in the separate enterprise bws project, the Cloudflare token is `enterprise-<id>-backups` and the IAM user `rediacc-ses-<id>`. The bucket and Worker names carry the label, as the Design's Shape fixes; they appear inside the Worker payload and in wrangler's `--name`, never in a store name.
+OPAQUE NAMES. A company is known outside its control row by `c<16 hex>`, drawn from the OS's randomness and never derived from the name: a hash of a guessable company name is reversed by a dictionary. Store entries are `<id>_<WORKER KEY>` in the separate enterprise bws project, the Cloudflare tokens are `enterprise-<id>-backups`, `enterprise-<id>-configs` and `enterprise-<id>-audit`, and the IAM user `rediacc-ses-<id>`. The bucket and Worker names carry the label, as the Design's Shape fixes; they appear inside the Worker payload and in wrangler's `--name`, never in a store name.
 
 NO VALUE IN ARGV, A LOG LINE OR AN EXCEPTION. Values reach wrangler as one JSON document on its STDIN through `set_account_worker_secrets.wrangler_argv`, and wrangler's output is captured, not echoed, since it can name the Worker. The bws write goes through `bws_env.write_secret`, whose request rides stdin. Every refusal names keys and the opaque id only. A seam that raises is re-raised as `SecretsError` carrying the step and the exception's TYPE, because an external error text may quote what it was handed. Every `SecretsError` that translates another exception is raised AFTER the except block has closed, so it carries neither `__cause__` nor `__context__`: `from None` inside the block only hides the original from the printed traceback, and the original stays reachable as `__context__`. The production adapters translate their libraries' own errors the same way.
 
@@ -57,6 +57,9 @@ BACKUP_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCE
 # The key over the company's configs bucket only. Not a Worker secret (the Worker binds that bucket), so it is outside MINTED and the payload; the lifecycle verbs read and empty the bucket with it.
 CONFIGS_PAIR = ("COMPANY_CONFIGS_S3_ACCESS_KEY_ID", "COMPANY_CONFIGS_S3_SECRET_ACCESS_KEY")
 CONFIGS_ENTRY = "COMPANY_CONFIGS_S3_KEYPAIR"
+# The key over the company's audit bucket only, kept the same way as the configs key: the Worker binds the bucket, and the lifecycle verbs read and empty it with this key.
+AUDIT_PAIR = ("COMPANY_AUDIT_S3_ACCESS_KEY_ID", "COMPANY_AUDIT_S3_SECRET_ACCESS_KEY")
+AUDIT_ENTRY = "COMPANY_AUDIT_S3_KEYPAIR"
 BACKUP_ENTRY = "ACCOUNT_BACKUP_S3_KEYPAIR"
 MINTED: tuple[str, ...] = (*SES_PAIR, *BACKUP_PAIR)
 OWNED: tuple[str, ...] = (*GENERATED, *MINTED)
@@ -67,6 +70,7 @@ PAIRS: dict[str, tuple[str, str]] = {
     "AWS_SES_KEYPAIR": SES_PAIR,
     "ACCOUNT_BACKUP_S3_KEYPAIR": BACKUP_PAIR,
     "COMPANY_CONFIGS_S3_KEYPAIR": CONFIGS_PAIR,
+    "COMPANY_AUDIT_S3_KEYPAIR": AUDIT_PAIR,
 }
 SINGLES: tuple[str, ...] = tuple(k for k in GENERATED if k not in X25519_PAIR)
 # The store entry keys: one per unpaired generated secret, one per pair.
@@ -197,6 +201,14 @@ class Company:
     def configs_resource(self) -> str:
         return self._resource(self.configs_bucket)
 
+    @property
+    def audit_bucket(self) -> str:
+        return "audit-%s" % self.name
+
+    @property
+    def audit_resource(self) -> str:
+        return self._resource(self.audit_bucket)
+
 
 def r2_token_name(company: Company) -> str:
     return "enterprise-%s-backups" % company.id
@@ -204,6 +216,10 @@ def r2_token_name(company: Company) -> str:
 
 def configs_token_name(company: Company) -> str:
     return "enterprise-%s-configs" % company.id
+
+
+def audit_token_name(company: Company) -> str:
+    return "enterprise-%s-audit" % company.id
 
 
 def ses_user_name(company: Company) -> str:
@@ -441,32 +457,54 @@ def _unpack_pair(entry: str, raw: str, company_id: str) -> dict[str, str]:
     return {k: held[k] for k in halves}
 
 
-def _mint_configs(
-    company: Company, minter: BucketMinter, keep: Callable[[str, str | dict[str, str]], None]
+@dataclass(frozen=True)
+class BucketKey:
+    """A bucket-only key held in the store and never on the Worker: its label, the token behind it, and the bucket it reaches."""
+
+    label: str
+    token_name: Callable[[Company], str]
+    resource: Callable[[Company], str]
+
+
+# The bucket-only keys outside the Worker payload, in mint order. `enterprise configs-key` and `enterprise audit-key` mint one each for a company onboarded before `enterprise add` minted it.
+BUCKET_KEYS: dict[str, BucketKey] = {
+    CONFIGS_ENTRY: BucketKey("configs", configs_token_name, lambda c: c.configs_resource),
+    AUDIT_ENTRY: BucketKey("audit", audit_token_name, lambda c: c.audit_resource),
+}
+
+
+def _mint_bucket_key(
+    company: Company,
+    entry: str,
+    minter: BucketMinter,
+    keep: Callable[[str, str | dict[str, str]], None],
 ) -> None:
+    spec = BUCKET_KEYS[entry]
     token_id, token_value = _step(
-        "minting the configs token",
+        "minting the %s token" % spec.label,
         minter.r2_bucket_token,
-        configs_token_name(company),
-        company.configs_resource,
+        spec.token_name(company),
+        spec.resource(company),
     )
     secret_key = hashlib.sha256(token_value.encode()).hexdigest()
-    keep(CONFIGS_ENTRY, dict(zip(CONFIGS_PAIR, (token_id, secret_key), strict=True)))
+    keep(entry, dict(zip(PAIRS[entry], (token_id, secret_key), strict=True)))
 
 
-def ensure_configs_key(company: Company, *, store: Store, minter: BucketMinter) -> bool:
-    """Mint the configs-bucket-only key for a company that was onboarded without one; True when minted, False when the store already holds it. Touches nothing else: no other entry, no push, so the deployed Worker keeps its secrets."""
-    name = store_name(company.id, CONFIGS_ENTRY)
+def ensure_bucket_key(company: Company, entry: str, *, store: Store, minter: BucketMinter) -> bool:
+    """Mint one bucket-only key (`BUCKET_KEYS`) for a company onboarded without it; True when minted, False when the store already holds it. Touches nothing else: no other entry, no push, so the deployed Worker keeps its secrets."""
+    if entry not in BUCKET_KEYS:
+        raise SecretsError("%s is not a bucket-only key" % entry)
+    name = store_name(company.id, entry)
     held = _step("reading the store", store.read, [name])
     if held.get(name):
-        _unpack_pair(CONFIGS_ENTRY, held[name], company.id)
+        _unpack_pair(entry, held[name], company.id)
         return False
 
     def keep(_entry: str, value: str | dict[str, str]) -> None:
         raw = json.dumps(value, sort_keys=True) if isinstance(value, dict) else value
         _step("storing %s" % name, store.create, name, raw)
 
-    _mint_configs(company, minter, keep)
+    _mint_bucket_key(company, entry, minter, keep)
     return True
 
 
@@ -540,10 +578,11 @@ def provision(
             "ACCOUNT_BACKUP_S3_KEYPAIR", dict(zip(BACKUP_PAIR, (token_id, secret_key), strict=True))
         )
 
-    if CONFIGS_ENTRY in pairs:
-        reuse(CONFIGS_ENTRY)
-    else:
-        _mint_configs(company, minter, keep)
+    for entry in BUCKET_KEYS:
+        if entry in pairs:
+            reuse(entry)
+        else:
+            _mint_bucket_key(company, entry, minter, keep)
 
     merged = {**values, **base}
     payload = {k: merged[k] for k in PAYLOAD_KEYS}

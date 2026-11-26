@@ -11,12 +11,13 @@
     ./run.sh enterprise remove <company> [--delete-data --confirm <company>] [--export-root <dir>]
         [--lookup-domain <d>]... [--bws-project <id>] [--bench]
     ./run.sh enterprise configs-key <company> --bws-project <id> [--bench]
+    ./run.sh enterprise audit-key <company> --bws-project <id> [--bench]
     ./run.sh enterprise release ...          (box K2, rediacc_ci.release.rings_run)
     ./run.sh enterprise proof <verb> [--bench]
     ./run.sh enterprise control ensure [--bench] [--region <r>]
     ./run.sh enterprise dns ensure [--check]
 
-`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. Neither verb needs the shared R2 S3 pair for a company's own buckets (each is read with the company's own key from the store); the pair is read only for a bucket that is neither of the company's. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
+`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. Neither verb needs the shared R2 S3 pair for a company's own buckets (each is read with the company's own key from the store); the pair is read only for a bucket that is none of the company's three. `configs-key` and `audit-key` mint the configs-only and audit-only keys of a company onboarded before `add` minted them. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
 
 EXIT CODES. 0 done; 1 a refusal or a failed step; 2 usage, or a verb not built yet.
 """
@@ -245,21 +246,31 @@ def _r2(
     return shared, jurisdiction, endpoint
 
 
+# The verb that mints each bucket-only key for a company onboarded before `enterprise add` minted it.
+KEY_VERBS = {secrets.CONFIGS_ENTRY: "configs-key", secrets.AUDIT_ENTRY: "audit-key"}
+
+
 def _company_s3(
     error: type[Exception], store: Any, endpoint: str, seams: LiveSeams
 ) -> Callable[[Any, str], Any]:
-    """The transport for one of a company's buckets, signed with the company's own key for that bucket, read from the enterprise store when first needed: the backups bucket with `ACCOUNT_BACKUP_S3_KEYPAIR`, the configs bucket with `COMPANY_CONFIGS_S3_KEYPAIR` (a key over that bucket only; `enterprise configs-key` mints it for a company onboarded before it existed)."""
+    """The transport for one of a company's three buckets, signed with the company's own key for that bucket, read from the enterprise store when first needed: the backups bucket with `ACCOUNT_BACKUP_S3_KEYPAIR`, the configs bucket with `COMPANY_CONFIGS_S3_KEYPAIR` and the audit bucket with `COMPANY_AUDIT_S3_KEYPAIR` (each a key over that bucket only; `enterprise configs-key` and `enterprise audit-key` mint them for a company onboarded before they existed). A missing key refuses naming its mint command; nothing falls back to the shared pair, which reaches none of these buckets."""
 
     def for_company(company: Any, bucket: str) -> Any:
-        if bucket == company.configs_bucket:
-            entry, halves = secrets.CONFIGS_ENTRY, secrets.CONFIGS_PAIR
-            hint = (
-                "run `./run.sh enterprise configs-key %s --bws-project <id>` (with --bench for a bench company) to mint it"
-                % company.name
-            )
-        else:
-            entry, halves = secrets.BACKUP_ENTRY, secrets.BACKUP_PAIR
-            hint = "the key is minted by `enterprise add`"
+        entries = {
+            company.backups_bucket: secrets.BACKUP_ENTRY,
+            company.configs_bucket: secrets.CONFIGS_ENTRY,
+            company.audit_bucket: secrets.AUDIT_ENTRY,
+        }
+        entry = entries.get(bucket)
+        if entry is None:
+            raise error("company %s: %s is not one of its buckets" % (company.id, bucket))
+        verb = KEY_VERBS.get(entry)
+        hint = (
+            "run `./run.sh enterprise %s %s --bws-project <id>` (with --bench for a bench company) to mint it"
+            % (verb, company.name)
+            if verb
+            else "the key is minted by `enterprise add`"
+        )
         name = secrets.store_name(company.id, entry)
         raw = store.read([name]).get(name)
         if not raw:
@@ -271,7 +282,7 @@ def _company_s3(
             pair = secrets._unpack_pair(entry, raw, company.id)
         except secrets.SecretsError as exc:
             raise error(str(exc)) from None
-        key_id, secret = (pair[k] for k in halves)
+        key_id, secret = (pair[k] for k in secrets.PAIRS[entry])
         return (seams.company_s3 or la.r2_s3)(endpoint, key_id, secret)
 
     return for_company
@@ -487,18 +498,21 @@ def lifecycle_main(
     )
 
 
-def configs_key_main(
+def bucket_key_main(
+    entry: str,
     argv: Sequence[str],
     *,
     context: Callable[..., Any] | None = None,
     minter: secrets.BucketMinter | None = None,
     env: Mapping[str, str] | None = None,
 ) -> int:
-    """`enterprise configs-key`: mint the configs-bucket-only key of a company onboarded before `enterprise add` minted one, and store it. Idempotent: a company whose store already holds the key is left alone. Needs `CF_MANAGEMENT_TOKEN` (profile `enterprise-mint`), and changes nothing on the company's Worker."""
+    """`enterprise configs-key` and `enterprise audit-key`: mint one bucket-only key (`secrets.BUCKET_KEYS`) of a company onboarded before `enterprise add` minted it, and store it. Idempotent: a company whose store already holds the key is left alone. Needs `CF_MANAGEMENT_TOKEN` (profile `enterprise-mint`), and changes nothing on the company's Worker."""
+    verb = KEY_VERBS[entry]
+    label = secrets.BUCKET_KEYS[entry].label
     lifecycle = _module(LIFECYCLE)
     if lifecycle is None:
         return _refuse_not_built("C2", LIFECYCLE)
-    ap = argparse.ArgumentParser(prog="./run.sh enterprise configs-key")
+    ap = argparse.ArgumentParser(prog="./run.sh enterprise %s" % verb)
     ap.add_argument("company")
     ap.add_argument("--bench", action="store_true")
     ap.add_argument("--bws-project", default="")
@@ -531,17 +545,25 @@ def configs_key_main(
             cf_account_id=onboarding.CF_ACCOUNT_ID,
             r2_jurisdiction=onboarding.region_entry(target.region).get("r2Jurisdiction"),
         )
-        minted = secrets.ensure_configs_key(company, store=ctx.store, minter=use)
+        minted = secrets.ensure_bucket_key(company, entry, store=ctx.store, minter=use)
     except (
         lifecycle.LifecycleError,
         secrets.SecretsError,
         onboarding.OnboardingError,
         OSError,
     ) as exc:
-        print("%s: configs-key failed: %s" % (SELF, exc), file=sys.stderr)
+        print("%s: %s failed: %s" % (SELF, verb, exc), file=sys.stderr)
         return 1
-    print("company %s: configs key %s" % (target.id, "minted" if minted else "already stored"))
+    print("company %s: %s key %s" % (target.id, label, "minted" if minted else "already stored"))
     return 0
+
+
+def configs_key_main(argv: Sequence[str], **kw: Any) -> int:
+    return bucket_key_main(secrets.CONFIGS_ENTRY, argv, **kw)
+
+
+def audit_key_main(argv: Sequence[str], **kw: Any) -> int:
+    return bucket_key_main(secrets.AUDIT_ENTRY, argv, **kw)
 
 
 EXPECTED_ERRORS: tuple[type[Exception], ...] = (
@@ -585,6 +607,8 @@ def _dispatch(argv: Sequence[str], *, add: Add | None, context: Callable[..., An
         return lifecycle_main(verb, rest, context=context)
     if verb == "configs-key":
         return configs_key_main(rest, context=context)
+    if verb == "audit-key":
+        return audit_key_main(rest, context=context)
     if verb == "release":
         rings = _module(RINGS_RUN)
         if rings is None:

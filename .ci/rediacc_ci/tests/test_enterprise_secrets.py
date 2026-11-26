@@ -217,6 +217,10 @@ def test_provision_generates_stores_mints_and_pushes():
             es.configs_token_name(company()),
             "com.cloudflare.edge.r2.bucket.%s_eu_configs-acme" % CF_ACCOUNT,
         ),
+        (
+            es.audit_token_name(company()),
+            "com.cloudflare.edge.r2.bucket.%s_eu_audit-acme" % CF_ACCOUNT,
+        ),
     ]
     assert minter.ses_calls == [es.ses_user_name(company())]
     assert len(push.calls) == 1
@@ -367,7 +371,7 @@ def test_each_pair_is_one_store_entry_holding_both_halves():
     _r, store, _m, push = run()
     doc = json.loads(push.calls[0][1])
     for entry, halves in es.PAIRS.items():
-        if entry == es.CONFIGS_ENTRY:
+        if entry in es.BUCKET_KEYS:
             continue
         assert json.loads(store.data[es.store_name(CID, entry)]) == {k: doc[k] for k in halves}
         for half in halves:
@@ -1040,25 +1044,67 @@ def test_provision_over_a_company_with_only_the_backups_key_mints_just_the_confi
     assert es.CONFIGS_ENTRY in report.created
 
 
-def test_ensure_configs_key_mints_once_and_touches_nothing_else():
+def test_the_audit_key_is_stored_but_never_pushed_and_scoped_to_the_audit_bucket():
+    _r, store, minter, push = run()
+    held = json.loads(store.data[es.store_name(CID, es.AUDIT_ENTRY)])
+    assert set(held) == set(es.AUDIT_PAIR)
+    doc = json.loads(push.calls[0][1])
+    assert not set(es.AUDIT_PAIR) & set(doc)
+    resources = dict(minter.r2_calls)
+    assert resources[es.audit_token_name(company())].endswith("_audit-acme")
+    # control: three distinct tokens, one per bucket
+    assert (
+        len(
+            {
+                es.r2_token_name(company()),
+                *(k.token_name(company()) for k in es.BUCKET_KEYS.values()),
+            }
+        )
+        == 3
+    )
+
+
+def test_provision_over_a_company_without_the_audit_key_mints_just_the_audit_key():
     _r, first, _m, _p = run()
-    legacy = {n: v for n, v in first.data.items() if not n.endswith(es.CONFIGS_ENTRY)}
+    legacy = {n: v for n, v in first.data.items() if not n.endswith(es.AUDIT_ENTRY)}
+    report, store, minter, _push = run(store=FakeStore(legacy))
+    assert store.created == [es.store_name(CID, es.AUDIT_ENTRY)]
+    assert [name for name, _r in minter.r2_calls] == [es.audit_token_name(company())]
+    assert es.AUDIT_ENTRY in report.created
+
+
+@pytest.mark.parametrize(
+    ("entry", "token_name", "resource"),
+    [
+        (es.CONFIGS_ENTRY, es.configs_token_name, "configs_resource"),
+        (es.AUDIT_ENTRY, es.audit_token_name, "audit_resource"),
+    ],
+)
+def test_ensure_bucket_key_mints_once_and_touches_nothing_else(entry, token_name, resource):
+    _r, first, _m, _p = run()
+    legacy = {n: v for n, v in first.data.items() if not n.endswith(entry)}
     store, minter = FakeStore(legacy), FakeMinter()
-    assert es.ensure_configs_key(company(), store=store, minter=minter) is True
-    assert store.created == [es.store_name(CID, es.CONFIGS_ENTRY)]
-    assert minter.r2_calls == [(es.configs_token_name(company()), company().configs_resource)]
+    assert es.ensure_bucket_key(company(), entry, store=store, minter=minter) is True
+    assert store.created == [es.store_name(CID, entry)]
+    assert minter.r2_calls == [(token_name(company()), getattr(company(), resource))]
     assert minter.ses_calls == []
     # control: a second run finds the key and mints nothing
     again = FakeMinter()
-    assert es.ensure_configs_key(company(), store=store, minter=again) is False
+    assert es.ensure_bucket_key(company(), entry, store=store, minter=again) is False
     assert again.r2_calls == []
     assert len(store.created) == 1
 
 
-def test_ensure_configs_key_refuses_a_half_pair_without_minting():
-    name = es.store_name(CID, es.CONFIGS_ENTRY)
-    store = FakeStore({name: json.dumps({es.CONFIGS_PAIR[0]: "id-only"})})
+@pytest.mark.parametrize("entry", [es.CONFIGS_ENTRY, es.AUDIT_ENTRY])
+def test_ensure_bucket_key_refuses_a_half_pair_without_minting(entry):
+    name = es.store_name(CID, entry)
+    store = FakeStore({name: json.dumps({es.PAIRS[entry][0]: "id-only"})})
     minter = FakeMinter()
-    with pytest.raises(es.SecretsError, match=es.CONFIGS_ENTRY):
-        es.ensure_configs_key(company(), store=store, minter=minter)
+    with pytest.raises(es.SecretsError, match=entry):
+        es.ensure_bucket_key(company(), entry, store=store, minter=minter)
     assert minter.r2_calls == []
+
+
+def test_ensure_bucket_key_refuses_a_worker_key():
+    with pytest.raises(es.SecretsError, match="not a bucket-only key"):
+        es.ensure_bucket_key(company(), es.BACKUP_ENTRY, store=FakeStore({}), minter=FakeMinter())
