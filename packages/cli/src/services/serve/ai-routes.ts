@@ -43,6 +43,13 @@
  * Anthropic Messages or Rediacc tier profile has none and is refused with
  * `AI_TRANSCRIBE_UNSUPPORTED`; the audio is held only for the one provider call.
  *
+ * `POST /v1/ai/tasks` starts the chat body as a background task (AX6, D5): the same turn on the
+ * conversation's mode and gate, run detached from the request and recorded as an `ai.task` plan-4
+ * run, one task per conversation and two live per user (`AI_TASK_LIMIT` past that). A held command
+ * pauses the task as `needs_approval` until the approval route approves it (a rejection ends it),
+ * and a session whose key expired ends it `failed`. `GET /v1/ai/tasks` lists the caller's tasks,
+ * `GET /v1/ai/tasks/:conversationId` reads one with its events, and `POST .../cancel` stops one.
+ *
  * `POST /v1/ai/test` runs the tool-calling smoke of the resolved profile (D12) and answers its
  * verdict as JSON; nothing is stored.
  */
@@ -72,7 +79,6 @@ import {
   type ProviderModelOptions,
   ProviderProfileError,
 } from '../ai/provider.js';
-import type { TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke } from '../ai/smoke.js';
 import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
 import { outputService } from '../core/output.js';
@@ -96,10 +102,11 @@ import {
   type OpenedChat,
   openGrant,
   refusedSmoke,
+  replyFold,
   type StartedJob,
   type TurnRecord,
   toolRequestId,
-  UNRECORDED,
+  turnRecordOf,
 } from './ai-chat-tools.js';
 import { type ChatRequest, ChatRequestSchema, TestRequestSchema } from './ai-request-schemas.js';
 import {
@@ -109,6 +116,12 @@ import {
   ApprovalRequestSchema,
   ModeRequestSchema,
 } from './ai-route-types.js';
+import {
+  AI_TASK_ROUTES,
+  type PreparedTask,
+  registerTaskRoutes,
+  TASK_RESUME_MESSAGE,
+} from './ai-task-routes.js';
 import { readRecording, transcription } from './ai-transcribe-route.js';
 import { createBusyCounter } from './busy.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
@@ -125,6 +138,7 @@ export const AI_ROUTES = {
   chat: PROXY_ROUTES.aiChat,
   test: PROXY_ROUTES.aiTest,
   transcribe: '/v1/ai/transcribe',
+  ...AI_TASK_ROUTES,
 } as const;
 
 export {
@@ -148,7 +162,6 @@ export function registerAiRoutes(
 ): void {
   const chatBusy = createBusyCounter();
   const judgeTally = createJudgeTally();
-
   /** Authenticate, parse, and open the config of the request's session. */
   async function admit<T>(c: Context, schema: z.ZodType<T>) {
     const principal = await helpers.authenticate(c.req.header('authorization'));
@@ -225,6 +238,7 @@ export function registerAiRoutes(
       if (remember && body.decision === 'approve' && !destructive && !grand) {
         ai.modes.allowExact(principal, body.conversationId, body.command);
       }
+      await tasks.answer(principal, body.conversationId, body.decision === 'approve');
       return c.json(
         {
           conversationId: body.conversationId,
@@ -427,81 +441,64 @@ export function registerAiRoutes(
     },
   });
 
-  /** The text an assistant reply streamed, folded from the turn's events. */
-  function replyFold() {
-    let text = '';
-    return {
-      take(event: AiEvent): void {
-        if (event.type === 'text_delta') text += event.text;
+  /** One turn of a chat or a task: recorded, gated and run, its events handed to `emit`. */
+  async function runTurn(
+    turn: { built: BuiltModel; session: ChatSession; body: ChatRequest; record: TurnRecord },
+    io: {
+      signal: AbortSignal;
+      emit: (event: AiEvent) => void;
+      forward: (line: StreamLine) => void;
+      /** The user message of a turn that resumes after an approval. */
+      resume?: string;
+    }
+  ): Promise<void> {
+    const { built, session, body, record } = turn;
+    const { model, profile } = built;
+    const maxOutputTokens = profile.maxOutputTokens ?? ai.chat?.maxOutputTokens;
+    // Before the model runs: a held call is approvable only in a conversation the store holds.
+    if (!io.resume) await record.opening();
+    const reply = replyFold();
+    const messages = messagesOf(body);
+    if (io.resume) messages.push({ role: 'user', content: io.resume });
+    await runAiTurn({
+      model,
+      tools: chatTools(
+        chatHost(
+          session,
+          body.conversationId,
+          io.forward,
+          chatGate(session, profile, body),
+          body.forensicsTicket
+        )
+      ),
+      messages,
+      ...(maxOutputTokens ? { maxOutputTokens } : {}),
+      abortSignal: io.signal,
+      emit: (event) => {
+        reply.take(event);
+        io.emit(event);
       },
-      text: () => text,
-    };
+      issueApproval: ({ toolCallId, command }) =>
+        ai.approvals.issue(session.handle.principal, body.conversationId, toolCallId, command),
+    });
+    await record.reply(reply.text(), profile.model);
   }
 
   /** Stream one turn as NDJSON; the client leaving aborts the provider stream and the running tools. */
-  function streamChat(
-    c: Context,
-    built: BuiltModel,
-    session: ChatSession,
-    body: ChatRequest,
-    record: TurnRecord
-  ) {
-    const { model, profile } = built;
+  function streamChat(c: Context, turn: Parameters<typeof runTurn>[0]) {
     const abort = new AbortController();
     c.req.raw.signal.addEventListener('abort', () => abort.abort(), { once: true });
-    const maxOutputTokens = profile.maxOutputTokens ?? ai.chat?.maxOutputTokens;
     return streamText(c, async (stream) => {
       stream.onAbort(() => abort.abort());
       const forward = (line: StreamLine) => {
         stream.write(`${JSON.stringify(line)}\n`).catch(() => undefined);
       };
-      // Before the model runs: a held call is approvable only in a conversation the store holds.
-      await record.opening();
-      const reply = replyFold();
-      const gate = chatGate(session, profile, body);
-      await runAiTurn({
-        model,
-        tools: chatTools(
-          chatHost(session, body.conversationId, forward, gate, body.forensicsTicket)
-        ),
-        messages: messagesOf(body),
-        ...(maxOutputTokens ? { maxOutputTokens } : {}),
-        abortSignal: abort.signal,
-        emit: (event) => {
-          reply.take(event);
-          forward({ kind: 'ai', ai: event });
-        },
-        issueApproval: ({ toolCallId, command }) =>
-          ai.approvals.issue(session.handle.principal, body.conversationId, toolCallId, command),
+      await runTurn(turn, {
+        signal: abort.signal,
+        forward,
+        emit: (event) => forward({ kind: 'ai', ai: event }),
       });
-      await record.reply(reply.text(), profile.model);
     });
-  }
-
-  /** How a chat on the caller's own session records its turn; a no-op for one that records none. */
-  function turnRecordOf(
-    principal: SessionPrincipal,
-    config: RdcConfig,
-    body: ChatRequest,
-    configSessionId: string | undefined
-  ): TurnRecord {
-    const recording = ai.chat?.recording;
-    if (!recording || body.grant) return UNRECORDED;
-    const key = recording.keyOf(principal, config, configSessionId);
-    if (typeof key === 'string') {
-      recording.onUnrecorded?.(key, body.conversationId);
-      return UNRECORDED;
-    }
-    const turn: TranscriptTurn = {
-      principal,
-      conversationId: body.conversationId,
-      messages: body.messages,
-      key,
-    };
-    return {
-      opening: () => recording.transcripts.opening(turn),
-      reply: (text, model) => recording.transcripts.reply(turn, text, model),
-    };
   }
 
   /** The model of the profile a request resolves to, or the refusal that answers it. */
@@ -534,12 +531,46 @@ export function registerAiRoutes(
         rediaccOf(principal, body.conversationId)
       );
       if ('refusal' in built) return c.json(built.refusal, built.status);
-      const record = turnRecordOf(principal, config, body, configSessionId);
-      return streamChat(c, built, session, body, record);
+      const record = turnRecordOf(ai.chat?.recording, principal, config, body, configSessionId);
+      return streamChat(c, { built, session, body, record });
     } catch (error) {
       return refusal(c, error);
     }
   });
+
+  /** The turn a task starts from the request body, or the refusal that answers it. */
+  async function prepareTask(c: Context): Promise<PreparedTask | Response> {
+    const { principal, body, config, configSessionId } = await admit(c, ChatRequestSchema);
+    const opened = await openChat(principal, config, body.grant, configSessionId);
+    if ('refusal' in opened) return c.json(opened.refusal, opened.status);
+    const { session } = opened;
+    const built = buildModel(
+      session.sources,
+      body.profile,
+      rediaccOf(principal, body.conversationId)
+    );
+    if ('refusal' in built) return c.json(built.refusal, built.status);
+    const turn = {
+      built,
+      session,
+      body,
+      record: turnRecordOf(ai.chat?.recording, principal, config, body, configSessionId),
+    };
+    return {
+      principal,
+      conversationId: body.conversationId,
+      configSessionId,
+      step: ({ signal, emit, resumed }) =>
+        runTurn(turn, {
+          signal,
+          emit,
+          forward: () => undefined,
+          ...(resumed ? { resume: TASK_RESUME_MESSAGE } : {}),
+        }),
+    };
+  }
+
+  const tasks = registerTaskRoutes(app, { deps, helpers, refusal, prepare: prepareTask });
 
   app.post(AI_ROUTES.transcribe, async (c) => {
     try {

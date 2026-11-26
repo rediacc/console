@@ -783,7 +783,7 @@ describe('the approval token, end to end', () => {
       failApprovalAudit?: boolean;
       /** Reject the audit record of every command path this answers true for. */
       failAudit?: (commandPath: string) => boolean;
-      chat?: Pick<AiChatDeps, 'recording' | 'cancelJob'>;
+      chat?: Pick<AiChatDeps, 'recording' | 'cancelJob' | 'createModel'>;
       executor?: ServeDeps['executor'];
     } = {}
   ): Flow {
@@ -893,6 +893,104 @@ describe('the approval token, end to end', () => {
     const next = await turnEvents(hono);
     expect(next.map((e) => e.type)).toContain('approval_required');
     expect(started()).toBe(1);
+  });
+
+  describe('background tasks', () => {
+    /** A model that proposes the command, then proposes it again once the task resumes, then answers. */
+    const proposingTwice = () =>
+      new MockLanguageModelV4({
+        doStream: [
+          toolCallStep('repo_up', { ref: 'shop:trial' }),
+          toolCallStep('repo_up', { ref: 'shop:trial' }, 'call-2'),
+          textStep('Done.'),
+        ],
+      });
+
+    const startTask = (hono: Hono, conversationId: string, init: RequestInit = {}) =>
+      hono.request(AI_ROUTES.tasks, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${OWNER_TOKEN}` },
+        body: JSON.stringify({ ...CHAT, conversationId }),
+        ...init,
+      });
+
+    const taskOf = async (hono: Hono, conversationId: string) => {
+      const response = await hono.request(`${AI_ROUTES.tasks}/${conversationId}`, {
+        headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+      });
+      return { status: response.status, body: (await response.json()) as Record<string, unknown> };
+    };
+
+    const settle = async (hono: Hono, conversationId: string, state: string) => {
+      await vi.waitFor(async () => {
+        expect((await taskOf(hono, conversationId)).body.state).toBe(state);
+      });
+    };
+
+    const heldOf = async (hono: Hono, conversationId: string) => {
+      const events = ((await taskOf(hono, conversationId)).body.events ?? []) as Record<
+        string,
+        unknown
+      >[];
+      return events.find((e) => e.type === 'approval_required') as {
+        approvalToken: string;
+        toolCallId: string;
+        command: object;
+      };
+    };
+
+    it('keeps running after the client disconnects, pauses on the held command, and runs it only once approved', async () => {
+      const { hono, started } = flow(OPEN, { chat: { createModel: proposingTwice } });
+      const client = new AbortController();
+      const accepted = await startTask(hono, 'task-1', { signal: client.signal });
+      expect(accepted.status).toBe(202);
+      client.abort();
+      await settle(hono, 'task-1', 'needs_approval');
+      expect(started()).toBe(0);
+      const held = await heldOf(hono, 'task-1');
+      const approved = await post(
+        hono,
+        AI_ROUTES.approval,
+        answer(held, { conversationId: 'task-1' })
+      );
+      expect(approved.status).toBe(200);
+      await settle(hono, 'task-1', 'succeeded');
+      expect(started()).toBe(1);
+    });
+
+    it('ends a rejected task cancelled and never runs the held command', async () => {
+      const { hono, started } = flow(OPEN, { chat: { createModel: proposingTwice } });
+      await startTask(hono, 'task-1');
+      await settle(hono, 'task-1', 'needs_approval');
+      const held = await heldOf(hono, 'task-1');
+      await post(
+        hono,
+        AI_ROUTES.approval,
+        answer(held, { conversationId: 'task-1', decision: 'reject' })
+      );
+      await settle(hono, 'task-1', 'cancelled');
+      expect(started()).toBe(0);
+    });
+
+    it('refuses a third live task, and takes one again once a task is cancelled', async () => {
+      const { hono } = flow(OPEN, { chat: { createModel: proposingTwice } });
+      for (const id of ['task-1', 'task-2']) {
+        expect((await startTask(hono, id)).status).toBe(202);
+        await settle(hono, id, 'needs_approval');
+      }
+      const third = await startTask(hono, 'task-3');
+      expect(third.status).toBe(429);
+      expect(await third.json()).toMatchObject({ code: 'AI_TASK_LIMIT' });
+      const cancelled = await post(hono, `${AI_ROUTES.tasks}/task-1/cancel`, {});
+      expect(cancelled.status).toBe(200);
+      expect((await startTask(hono, 'task-3')).status).toBe(202);
+    });
+
+    it('answers 404 for a task that does not exist', async () => {
+      const { hono } = flow(OPEN, { chat: { createModel: proposingTwice } });
+      await startTask(hono, 'task-1');
+      expect((await taskOf(hono, 'task-unknown')).status).toBe(404);
+    });
   });
 
   it('refuses a forged token, and runs nothing', async () => {

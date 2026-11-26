@@ -4,10 +4,16 @@
 
 import { type AiConfigs, type Profile } from '@rediacc/shared/ai';
 import { getCommand } from '@rediacc/shared/cli-contract';
-import { type AiApprovalCommand, type StreamLine } from '@rediacc/shared/cli-contract/wire';
+import {
+  type AiApprovalCommand,
+  type AiEvent,
+  type StreamLine,
+} from '@rediacc/shared/cli-contract/wire';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { listProxyTools } from '@rediacc/shared/mcp/registry';
 import { jsonSchema, type LanguageModel, type ModelMessage, type ToolSet, tool } from 'ai';
 import { ProviderProfileError } from '../ai/provider.js';
+import type { TranscriptTurn } from '../ai/recorder.js';
 import { type SmokeResult } from '../ai/smoke.js';
 import {
   type AiToolContext,
@@ -23,10 +29,13 @@ import {
   AgentSessionRefused,
   AgentSessionUnavailable,
 } from './agent-grant-session.js';
+import type { ChatRequest } from './ai-request-schemas.js';
+import type { AiChatRecording } from './ai-route-types.js';
 import { type BusyCounter } from './busy.js';
 import type { ServeDeps } from './deps.js';
 import { dispatcher, HandedBack } from './mcp-call-dispatch.js';
 import { globRefusal, scopeAdmitsTool } from './mcp-call-scope.js';
+import type { SessionPrincipal } from './sessions.js';
 
 /** Refusal code of the chat route when the request's agent grant cannot be opened. */
 export const AI_GRANT_UNAVAILABLE = 'AI_GRANT_UNAVAILABLE';
@@ -80,6 +89,43 @@ export const UNRECORDED: TurnRecord = {
   opening: () => Promise.resolve(),
   reply: () => Promise.resolve(),
 };
+
+/** How a chat on the caller's own session records its turn; a no-op for one that records none. */
+export function turnRecordOf(
+  recording: AiChatRecording | undefined,
+  principal: SessionPrincipal,
+  config: RdcConfig,
+  body: ChatRequest,
+  configSessionId: string | undefined
+): TurnRecord {
+  if (!recording || body.grant) return UNRECORDED;
+  const key = recording.keyOf(principal, config, configSessionId);
+  if (typeof key === 'string') {
+    recording.onUnrecorded?.(key, body.conversationId);
+    return UNRECORDED;
+  }
+  const turn: TranscriptTurn = {
+    principal,
+    conversationId: body.conversationId,
+    messages: body.messages,
+    key,
+  };
+  return {
+    opening: () => recording.transcripts.opening(turn),
+    reply: (text, model) => recording.transcripts.reply(turn, text, model),
+  };
+}
+
+/** The text an assistant reply streamed, folded from the turn's events. */
+export function replyFold() {
+  let text = '';
+  return {
+    take(event: AiEvent): void {
+      if (event.type === 'text_delta') text += event.text;
+    },
+    text: () => text,
+  };
+}
 
 /** A machine job a tool call started. */
 export interface StartedJob {
