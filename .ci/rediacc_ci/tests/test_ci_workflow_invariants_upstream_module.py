@@ -54,3 +54,13 @@ def test_a_gate_chained_after_an_echo_on_one_line_still_counts() -> None:
         "echo start && true # npm run check:ci-ops-health",
     ):
         assert inv.upstream_gate_steps(_doc(run))["check:ci-ops-health"] == [], run
+
+
+def test_a_separator_inside_a_quoted_echo_is_text_not_a_chain() -> None:
+    """4f789e58.1: `echo "x && npm run <gate>"` only names the gate; the && inside the quotes does not end the echo, so nothing executes. Control: the same gate chained after a closed quote runs."""
+    assert inv._after_echo('echo "x && npm run check:ci-ops-health"') == ""
+    assert inv._after_echo("echo 'a; npm run g'") == ""
+    assert (
+        inv._after_echo('echo "x" && npm run check:ci-ops-health') == "npm run check:ci-ops-health"
+    )
+    assert inv._after_echo("echo 'a; b' ; npm run h") == "npm run h"

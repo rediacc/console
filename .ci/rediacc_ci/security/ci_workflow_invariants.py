@@ -1095,16 +1095,35 @@ def _guard(value: object) -> str:
     return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
 
 
-_CHAIN_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
+def _split_chain(code: str) -> tuple[str, str] | None:
+    """(head, rest) at the first `&&`, `||` or `;` outside single or double quotes, or None. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1)."""
+    quote = ""
+    i = 0
+    while i < len(code):
+        ch = code[i]
+        if quote:
+            if ch == "\\" and quote == '"':
+                i += 2
+                continue
+            if ch == quote:
+                quote = ""
+        elif ch in "'\"":
+            quote = ch
+        elif ch == ";":
+            return code[:i], code[i + 1 :]
+        elif code.startswith(("&&", "||"), i):
+            return code[:i], code[i + 2 :]
+        i += 1
+    return None
 
 
 def _after_echo(code: str) -> str:
-    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` and the rest is judged again (17f9d3d7.2)."""
+    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1)."""
     while code.startswith(("echo ", "printf ")):
-        rest = _CHAIN_RE.split(code, 1)
-        if len(rest) < 2:
+        parts = _split_chain(code)
+        if parts is None:
             return ""
-        code = rest[1].strip()
+        code = parts[1].strip()
     return code
 
 
