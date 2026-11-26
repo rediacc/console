@@ -214,7 +214,47 @@ def test_hosttemp_assess_fifteen_leases_no_subprocess_under_150ms():
             restore()
         _check(got["due"] is False and got["why"] == "nothing ripe")
         _check(got["print"][0].startswith("host-temp: removed tree agent-0"))
+        # The docstring's budget is 150 ms at p95, so the tail is held, not only the median (review 2872d8fe.4).
         _check(statistics.median(times) < 150.0)
+        _check(_p95(times) < 150.0)
+
+
+def _p95(times):
+    """The 95th percentile of `times` (the 19th of 20 cut points)."""
+    return statistics.quantiles(times, n=20, method="inclusive")[18]
+
+
+def test_hosttemp_control_p95_catches_a_slow_tail_the_median_passes():
+    tail = [5.0] * 17 + [400.0] * 3
+    _check(statistics.median(tail) < 150.0)
+    _check(_p95(tail) >= 150.0)
+
+
+def test_hosttemp_a_clock_stepped_back_still_sweeps_a_ripe_lease():
+    """`sweep.last` two hours ahead of now (the clock stepped back): the distance counts either way, so a ripe marker starts a sweep."""
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp)
+        _last(ht, records, NOW + 2 * 60 * 60)
+        popen = _Popen()
+        got = ht.assess(root, {}, now=NOW, popen=popen)
+        _check(got["due"] and got["spawned"] and len(popen.calls) == 1)
+
+
+def test_hosttemp_a_clock_stepped_back_runs_the_hourly_host_sweep():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=0)
+        _last(ht, records, NOW + 2 * 60 * 60)
+        got = ht.assess(root, {}, now=NOW, popen=_Popen())
+        _check(got["due"] and got["why"].startswith("no host sweep for 120 min"))
+
+
+def test_hosttemp_control_a_clock_stepped_back_inside_the_retry_window_waits():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp)
+        _last(ht, records, NOW + 60)
+        popen = _Popen()
+        got = ht.assess(root, {}, now=NOW, popen=popen)
+        _check(not got["due"] and got["why"].startswith("a sweeper started") and not popen.calls)
 
 
 def test_hosttemp_due_sweep_starts_one_detached_sweeper_and_a_second_stop_none():

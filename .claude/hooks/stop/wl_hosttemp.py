@@ -191,14 +191,16 @@ def due(records, now):
     if lock_held(records, now):
         return False, "a sweeper is running"
     last = _last_start(records)
-    # A clock stepped back puts `last` ahead of `now`: the distance either way counts.
-    if abs(now - last) < RETRY_S:
-        return False, "a sweeper started %d s ago" % abs(now - last)
+    # A clock stepped back puts `last` ahead of `now`: the distance either way counts, so a future `last` is mirrored to the same distance in the past for the retry window, the ripeness test and the host-sweep interval alike (review 2872d8fe.2).
+    gap = abs(now - last)
+    if gap < RETRY_S:
+        return False, "a sweeper started %d s ago" % gap
+    since = now - gap
     ripe = ripe_since(records, now)
-    if ripe and ripe > last:
+    if ripe and ripe > since:
         return True, "a finished lease is past its grace"
-    if now - last >= HOST_SWEEP_S:
-        return True, "no host sweep for %d min" % ((now - last) // 60)
+    if gap >= HOST_SWEEP_S:
+        return True, "no host sweep for %d min" % (gap // 60)
     return False, "nothing ripe"
 
 
