@@ -191,6 +191,32 @@ try {
     }).de;
     if (listed.unchanged.join() !== 'r.b' || listed.restamp.length)
       fail('unchanged key not listed');
+
+    // (10) --since: a value committed after <rev> is restamped against <rev> and stays "unchanged" against HEAD; r.b is still stale from above.
+    const revReader = (_d: string, _l: string, rev: string) =>
+      rev === 'OLD' ? { ...headDe, 'r.b': 'Alt B' } : headDe;
+    mute();
+    const headRc = run(
+      ['--prefix', 'r.b', '--lang', 'de', '--restamp', '--write'],
+      root2,
+      revReader
+    );
+    const afterHead = read2();
+    const sinceRc = run(
+      ['--prefix', 'r.b', '--lang', 'de', '--restamp', '--since', 'OLD', '--write'],
+      root2,
+      revReader
+    );
+    const afterSince = read2();
+    const badRc = run(['--prefix', 'r', '--since', 'OLD'], root2, revReader);
+    unmute();
+    if (headRc !== 0 || afterHead['r.b'] !== 'deadbeef') {
+      fail('without --since a value committed after the base was restamped');
+    }
+    if (sinceRc !== 0 || afterSince['r.b'] !== hR['r.b']) {
+      fail('--since did not restamp a value changed after <rev>');
+    }
+    if (badRc !== 2) fail(`--since without --restamp was not rejected (rc ${badRc})`);
   } finally {
     fs.rmSync(root2, { recursive: true, force: true });
   }

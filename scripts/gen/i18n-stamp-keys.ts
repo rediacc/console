@@ -22,8 +22,8 @@
  *
  * --restamp is the one exception (PLAN-legal-wording-consistency D8): an existing entry is
  * rewritten in place, keeping its position, only where it is stale AND the locale value
- * differs from `git show HEAD:<locale file>` (the key was re-translated in this working
- * tree), under the same refusals as a new stamp. A stale key whose locale value equals HEAD
+ * differs from `git show <rev>:<locale file>`, <rev> being HEAD or the --since value (the key
+ * was re-translated after <rev>), under the same refusals as a new stamp. A stale key whose locale value equals HEAD
  * is listed ("unchanged") and left alone, so drift stays visible.
  *
  * WHAT IT REFUSES, per key: a missing or empty locale value; a value byte-identical to
@@ -33,7 +33,7 @@
  * It refuses an empty prefix: there is no whole-catalog mode.
  *
  * Usage:
- *   npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--restamp] [--write]
+ *   npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--restamp [--since <rev>]] [--write]
  *
  * Without --write it lists what would be stamped and writes nothing.
  *
@@ -178,21 +178,32 @@ interface Args {
   langs: string[];
   write: boolean;
   restamp: boolean;
+  /** --restamp only: the revision the comparison base is read from; HEAD by default. */
+  since: string;
 }
 
 export function parseArgs(argv: readonly string[]): Args {
-  const args: Args = { prefixes: [], langs: [], write: false, restamp: false };
+  const args: Args = { prefixes: [], langs: [], write: false, restamp: false, since: 'HEAD' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--write') args.write = true;
     else if (a === '--restamp') args.restamp = true;
-    else if (a === '--prefix' || a === '--lang') {
+    else if (a === '--since') {
+      const v = argv[++i];
+      if (v === undefined || v === '' || v.startsWith('-')) {
+        throw new Error('--since needs a revision');
+      }
+      args.since = v;
+    } else if (a === '--prefix' || a === '--lang') {
       const v = argv[++i];
       if (v === undefined) throw new Error(`${a} needs a value`);
       (a === '--prefix' ? args.prefixes : args.langs).push(v);
     } else throw new Error(`unknown argument: ${a}`);
   }
   validatePrefixes(args.prefixes);
+  if (args.since !== 'HEAD' && !args.restamp) {
+    throw new Error('--since only applies with --restamp');
+  }
   for (const l of args.langs) {
     if (!isSiteLocale(l) || l === DEFAULT_LOCALE) {
       throw new Error(`--lang ${l} is not a non-English site locale (@rediacc/locales)`);
@@ -202,10 +213,10 @@ export function parseArgs(argv: readonly string[]): Args {
   return args;
 }
 
-/** Flattened values of `<lang>.json` as committed at HEAD; {} when the file is new there. */
-export function gitHeadValues(dir: string, lang: string): Record<string, string> {
+/** Flattened values of `<lang>.json` as committed at `rev` (HEAD by default). */
+export function gitHeadValues(dir: string, lang: string, rev = 'HEAD'): Record<string, string> {
   try {
-    const raw = execFileSync('git', ['show', `HEAD:./${lang}.json`], {
+    const raw = execFileSync('git', ['show', `${rev}:./${lang}.json`], {
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
@@ -213,14 +224,16 @@ export function gitHeadValues(dir: string, lang: string): Record<string, string>
     });
     return flattenValues(JSON.parse(raw));
   } catch {
-    throw new Error(`cannot read HEAD:${lang}.json (git show failed); --restamp needs a git tree`);
+    throw new Error(
+      `cannot read ${rev}:${lang}.json (git show failed); --restamp needs a git tree`
+    );
   }
 }
 
 export function run(
   argv: readonly string[],
   dir: string,
-  headReader: (dir: string, lang: string) => Record<string, string> = gitHeadValues
+  headReader: (dir: string, lang: string, rev: string) => Record<string, string> = gitHeadValues
 ): number {
   let args: Args;
   try {
@@ -253,7 +266,7 @@ export function run(
   let headValues: Record<string, Record<string, string>> | undefined;
   if (args.restamp) {
     try {
-      headValues = Object.fromEntries(args.langs.map((l) => [l, headReader(dir, l)]));
+      headValues = Object.fromEntries(args.langs.map((l) => [l, headReader(dir, l, args.since)]));
     } catch (e) {
       process.stderr.write(`i18n-stamp-keys: ${(e as Error).message}\n`);
       return 1;
@@ -291,7 +304,7 @@ export function run(
     if (!args.write) for (const [k] of p.stamp) process.stdout.write(`    + ${k}\n`);
     if (!args.write) for (const [k] of p.restamp) process.stdout.write(`    ~ ${k}\n`);
     for (const k of p.unchanged)
-      process.stdout.write(`    = ${k}: stale, locale value unchanged since HEAD\n`);
+      process.stdout.write(`    = ${k}: stale, locale value unchanged since ${args.since}\n`);
     for (const r of p.refused) process.stdout.write(`    ! ${r.key}: ${r.reason}\n`);
   }
   if (args.write) {
