@@ -36,4 +36,10 @@ describe('isPreviewRun', () => {
     expect(isPreviewRun(DEFAULT, { apply: undefined })).toBe(true);
     expect(isPreviewRun(OPT_IN, { 'dry-run': null })).toBe(false);
   });
+
+  it('a literal false act flag is a preview under default polarity, and not under opt-in (review 20422cfb.1)', () => {
+    expect(isPreviewRun(DEFAULT, { apply: false })).toBe(true);
+    expect(isPreviewRun(OPT_IN, { 'dry-run': false })).toBe(false);
+    expect(isPreviewRun(DEFAULT, { apply: true })).toBe(false);
+  });
 });

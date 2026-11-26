@@ -7,6 +7,7 @@ import {
   incidentClocks,
   mergeRows,
   releaseAt,
+  TIMELINE_KINDS,
   type TimelineRow,
   TimelineRowSchema,
 } from '../index.js';
@@ -105,14 +106,36 @@ function row(id: string, ts: string): TimelineRow {
   };
 }
 
+const byText = (a: string, b: string) => a.localeCompare(b);
+const TS = '2026-11-20T10:00:00.000Z';
+const baseRow = { id: 'a', ts: TS, source: 'store', basis: 'observed' };
+
+/** One valid row of every kind, so a broken schema for any kind fails. */
+const ROW_BY_KIND: Record<string, Record<string, unknown>> = {
+  audit: { type: 'x', actorId: 'u', actorKind: 'human', target: { repo: 'r' } },
+  run: { requestId: 'q', pathKey: 'p', exitCode: 0, tailSealed: true },
+  flow: {
+    repoGuid: 'g',
+    process: 'curl',
+    dstAddress: '1.2.3.4',
+    dstPort: 443,
+    bytesOut: 1,
+    bytesIn: 2,
+  },
+  open: { repoGuid: 'g', process: 'cat', path: '/etc/passwd', sensitive: true },
+  anomaly: { findingId: 'f', detector: 'machine', rule: 'r', score: 0.5 },
+  gap: { machineId: 'm', from: TS, to: TS, reason: 'heartbeat' },
+  incident: { incidentId: 'i', action: 'declared', actorId: 'u' },
+};
+
 describe('timeline rows', () => {
   it('parses every kind and refuses a field the kind does not name', () => {
-    expect(TimelineRowSchema.safeParse(row('a', '2026-11-20T10:00:00.000Z')).success).toBe(true);
-    const bad = {
-      ...row('a', '2026-11-20T10:00:00.000Z'),
-      data: { path: '/x', content: 'secret' },
-    };
-    expect(TimelineRowSchema.safeParse(bad).success).toBe(false);
+    expect(Object.keys(ROW_BY_KIND).sort(byText)).toEqual([...TIMELINE_KINDS].sort(byText));
+    for (const [kind, data] of Object.entries(ROW_BY_KIND)) {
+      expect(TimelineRowSchema.safeParse({ ...baseRow, kind, data }).success, kind).toBe(true);
+      const extra = { ...baseRow, kind, data: { ...data, content: 'secret' } };
+      expect(TimelineRowSchema.safeParse(extra).success, `${kind} + extra field`).toBe(false);
+    }
   });
 
   it('merges sources by time and breaks a tie by id', () => {
@@ -121,6 +144,16 @@ describe('timeline rows', () => {
       [row('a', '2026-11-20T10:00:00.000Z'), row('c', '2026-11-20T11:00:00.000Z')]
     );
     expect(merged.map((r) => r.id)).toEqual(['a', 'b', 'c', 'd']);
-    expect(compareRows(merged[0] as TimelineRow, merged[0] as TimelineRow)).toBe(0);
+  });
+
+  it('compareRows orders by time, then id, and is zero only for the same time and id', () => {
+    const a = row('a', TS);
+    const b = row('b', TS);
+    const later = row('a', '2026-11-20T11:00:00.000Z');
+    expect(compareRows(a, b)).toBeLessThan(0);
+    expect(compareRows(b, a)).toBeGreaterThan(0);
+    expect(compareRows(a, later)).toBeLessThan(0);
+    expect(compareRows(later, a)).toBeGreaterThan(0);
+    expect(compareRows(a, row('a', TS))).toBe(0);
   });
 });
