@@ -4145,6 +4145,7 @@ export const GATES: readonly GateSpec[] = [
       'private/account',
       'private/renet',
       'scripts/__tests__/entry-point.control.ts',
+      'scripts/__tests__/run-control.control.ts',
       'scripts/__tests__/upstream-retry-note.control.ts',
       'scripts/census/guard-fires.py',
       'scripts/gates/check-embed-credits.ts',

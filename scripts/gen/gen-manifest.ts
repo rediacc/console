@@ -487,6 +487,18 @@ function selftest(): number {
     'CONTROL: --allow-drop reaches the binder leg only, and nothing is added without it'
   );
 
+  check(
+    (() => {
+      try {
+        withAllowDrops(bindLeg, ['--gates', '--write', '--allow-drop', '--write']);
+        return false;
+      } catch {
+        return true;
+      }
+    })(),
+    'CONTROL: --allow-drop followed by a flag is refused, never forwarded as a step name (review 6c817142.2)'
+  );
+
   const sLegs = selftestLegs([
     { label: 'a', args: ['scripts/gate-bind.ts', '--dry-run'] },
     { label: 'b', args: ['scripts/gate-bind.ts'] },
@@ -934,9 +946,15 @@ export async function runPool<T>(
  */
 export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
   if (leg.args[0] !== 'scripts/gate-bind.ts') return leg;
-  const drops = argv.flatMap((a, i) =>
-    a === '--allow-drop' && argv[i + 1] !== undefined ? ['--allow-drop', argv[i + 1]] : []
-  );
+  const drops = argv.flatMap((a, i) => {
+    if (a !== '--allow-drop') return [];
+    const step = argv[i + 1];
+    // A following flag is not a step name: forwarding it would hand gate-bind `--write` as the step to drop.
+    if (step === undefined || step.startsWith('--')) {
+      throw new Error('--allow-drop needs a step name, and the next argument is a flag or missing');
+    }
+    return ['--allow-drop', step];
+  });
   return drops.length === 0 ? leg : { ...leg, args: [...leg.args, ...drops] };
 }
 

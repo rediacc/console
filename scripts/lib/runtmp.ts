@@ -142,6 +142,15 @@ export function shared(prefix: string, base?: string): string {
   return dir;
 }
 
+/** A thrown value as text, never throwing itself: `String(Object.create(null))` throws, and the signal exit must still be reached. */
+function describeThrown(err: unknown): string {
+  try {
+    return String(err);
+  } catch {
+    return '(a value with no string form)';
+  }
+}
+
 /**
  * Makes SIGINT, SIGTERM and SIGHUP run `extra` (the caller's own cleanup, such as killing child groups), then exit 130,
  * which runs the exit hook that removes the run dirs. Chained, never replacing: a handler the caller already has stays.
@@ -154,7 +163,7 @@ export function installSignalCleanup(extra?: () => void): void {
       try {
         extra?.();
       } catch (err) {
-        process.stderr.write(`runtmp: the ${sig} cleanup callback threw: ${String(err)}\n`);
+        process.stderr.write(`runtmp: the ${sig} cleanup callback threw: ${describeThrown(err)}\n`);
       }
       process.exit(130);
     });

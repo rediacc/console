@@ -94,6 +94,20 @@ try {
   if (after[1] === baseline[1]) fail('--surface cli did not rewrite the cli manifest');
   if (after[0] !== baseline[0]) fail('--surface cli rewrote the www manifest');
   if (after[2] !== baseline[2]) fail('--surface cli rewrote the account-web manifest');
+  // A requested surface whose English source is missing is an error, not a silent pass.
+  {
+    let threw = false;
+    try {
+      generate(
+        [{ ...configs[0], dir: path.join(root, 'absent-surface') }],
+        [configs[0].name],
+        nextCommit
+      );
+    } catch {
+      threw = true;
+    }
+    if (!threw) fail('--surface with no English source exited clean');
+  }
   // No surface: every stale manifest is rewritten.
   generate(configs, parseSurfaces([], names), nextCommit);
   const all = snapshot();

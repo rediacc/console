@@ -112,6 +112,8 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   'scripts/__tests__/entry-point.control.ts': { args: [] },
   // isEntryPoint's refusal of a module URL (scripts/lib/entry-point.ts): the throw that keeps a gate's main() from being skipped silently.
   'scripts/lib/entry-point-selftest.ts': { args: [] },
+  // foldedControl (scripts/gates/lib/run-control.ts): the rejected-import rc 1, the harness name in it, and a late-settling harness not cut off.
+  'scripts/__tests__/run-control.control.ts': { args: [] },
   // retryUpstream (scripts/lib/upstream.ts) keeps its retry note on stderr, so a --json stdout stays parseable.
   'scripts/__tests__/upstream-retry-note.control.ts': { args: [] },
   // the settings verb (scripts/settings/settings.ts): its controls for range, peer-dirty files, restore-on-failure and unit parsing.

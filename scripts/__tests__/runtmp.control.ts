@@ -24,7 +24,7 @@ function check(ok: boolean, what: string): void {
   if (!ok) bad += 1;
 }
 
-type Mode = 'plain' | 'hooked' | 'throwing' | 'unhooked';
+type Mode = 'plain' | 'hooked' | 'throwing' | 'throwing-opaque' | 'unhooked';
 
 function childMain(mode: Mode, base: string): void {
   // tree-write: safe base is argv[4], which startChild fills with the parent's mkdtempSync under os.tmpdir(), never the tree
@@ -34,6 +34,12 @@ function childMain(mode: Mode, base: string): void {
   if (mode === 'throwing')
     installSignalCleanup(() => {
       throw new Error('cleanup-boom');
+    });
+  if (mode === 'throwing-opaque')
+    installSignalCleanup(() => {
+      // The planted value whose String() conversion throws.
+      const opaque: unknown = Object.create(null);
+      throw opaque;
     });
   process.stdout.write(`${dir}\n`);
   if (mode === 'plain') process.exit(0);
@@ -143,6 +149,13 @@ async function main(): Promise<void> {
       hooked.stderr() === '',
       'CONTROL (error named): a callback-free signal exit writes nothing to stderr'
     );
+
+    // 2c. a thrown value with no string form must not stop the exit: still 130, dir removed
+    const opaque = await startChild('throwing-opaque', base);
+    opaque.child.kill('SIGTERM');
+    await ended(opaque.child);
+    check(opaque.child.exitCode === 130, 'an unprintable thrown value still exits 130');
+    check(!fs.existsSync(opaque.dir), 'an unprintable thrown value still removes the run dir');
 
     // 3. PLANTED DEFECT: SIGTERM with no hook leaves it (the control that makes 2 able to fail)
     const unhooked = await startChild('unhooked', base);

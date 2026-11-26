@@ -254,6 +254,9 @@ export function generate(
     if (hashes) {
       const outputPath = writeHashManifest(config.dir, hashes, config.name, config, resolveCommit);
       results.push({ name: config.name, path: outputPath, keyCount: Object.keys(hashes).length });
+    } else if (surfaces) {
+      // An explicitly requested surface that wrote nothing is a failure, never a silent "up-to-date".
+      throw new Error(`--surface ${config.name} wrote no manifest (its English source is missing)`);
     }
   }
   return results;
@@ -280,7 +283,7 @@ async function main(): Promise<void> {
 
   console.log();
   console.log(
-    `Manifests checked for: ${results.map((r) => path.relative(REPO_ROOT, r.path)).join(', ')}`
+    `Manifests written: ${results.map((r) => path.relative(REPO_ROOT, r.path)).join(', ')}`
   );
   console.log('Hash manifests are now up-to-date.');
   console.log('Commit these files along with your translation changes.');

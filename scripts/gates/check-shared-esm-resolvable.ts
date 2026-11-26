@@ -66,7 +66,7 @@ const SENTINEL = '__ESM_RESOLVABLE_DONE__';
  * Built modules that load only where `cloudflare:workers` resolves: on Workers (wrangler supplies the built-in) or on Node after
  * `installCloudflareWorkersShim()` from dist/mcp-host/node-workers-shim.js. Each is still IMPORTED, in a second child with that
  * shim installed, so a missing extension or import attribute behind it stays red. A module that needs the scheme and is not
- * named here is red, and a named one that loads without the shim is a dead entry and red too. Printed on every run.
+ * named here is red, and a named one that loads without the shim is a dead entry and red too. Printed on a green run, with each reason's `BLOCKER: ` prefix stripped.
  */
 const WORKERS_RUNTIME: Record<string, string> = {
   'mcp-host/handler.js':
@@ -346,7 +346,9 @@ if (result.failures.length > 0) {
   process.exit(1);
 }
 
-const shimRows = Object.keys(WORKERS_RUNTIME).map((m) => `    dist/${m} -- ${WORKERS_RUNTIME[m]}`);
+const shimRows = Object.keys(WORKERS_RUNTIME).map(
+  (m) => `    dist/${m} -- ${WORKERS_RUNTIME[m].replace(/^BLOCKER: /, '')}`
+);
 const summary = `${result.attempted} built modules imported by Node, ${concreteTargets.length} concrete export targets present; 5-arm control fired`;
 console.log(
   `✓ shared is importable as declared (${summary})\n` +

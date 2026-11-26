@@ -2448,7 +2448,7 @@ export interface McpRegistryTool {
 /**
  * The first sentence of a registry description, which is what a table row can carry.
  *
- * A registry description runs to a paragraph (it is the text a client shows beside the tool), and a page table of 96 paragraphs is unreadable. A sentence ends at `. ` followed by an upper-case letter or a backtick, or at the end of the text, so `e.g. foo` and `0.5 s` stay inside one sentence. The full text is in `tools/list`.
+ * A registry description runs to a paragraph (it is the text a client shows beside the tool), and a page table of 96 paragraphs is unreadable. A sentence ends at `.`, `!` or `?` followed by a space and an upper-case letter or a backtick, or at the end of the text, so `e.g. foo` and `0.5 s` stay inside one sentence. The full text is in `tools/list`.
  */
 export function firstSentence(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim();

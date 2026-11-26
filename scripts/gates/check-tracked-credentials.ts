@@ -38,7 +38,7 @@
  * grow" while violating "the set only loses members".
  *
  * The AWS half is meant to contribute no baseline entry. There are no AWS-id fixtures
- * here, so any AKIA/ASIA/AIDA/AROA id is an addition and reds on sight -- which is the
+ * in the tree (the selftest assembles its synthetic ids at run time and never writes them to a tracked file), so any AKIA/ASIA/AIDA/AROA id is an addition and reds on sight -- which is the
  * class the operator actually asked about. An AWS finding is therefore keyed on the VALUE,
  * not the file: `<path>:AWS_KEY_ID:sha256=<12 hex>`, one id per distinct key id. The one
  * operator-ruled exception (a deactivated key id in an append-only store) is pinned to

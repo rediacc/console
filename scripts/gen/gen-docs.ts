@@ -73,9 +73,12 @@ import process from 'node:process';
 // `.ts` SPECIFIERS, so plain `node` (type stripping, Node 24) runs this file as well as tsx does. The pre-commit hook runs `--affected` on every commit in this repository, and `node` starts in about 0.1 s where `npx tsx` takes 0.8 s.
 import {
   byCodePoint,
+  firstSentence,
   GATES_LOCK,
   type InputChange,
   isMechanismCandidate,
+  mcpToolsLocalProvider,
+  mcpToolsProvider,
   namerText,
   PROVIDERS,
   type Provider,
@@ -83,6 +86,7 @@ import {
   providerById,
   providersReading,
   readGatesLock,
+  readMcpRegistryTools,
   type SeamReader,
 } from '../lib/doc-providers.ts';
 import { findRegions, OPEN_RE, rewriteRegions } from '../lib/doc-regions.ts';
@@ -1187,6 +1191,13 @@ function selftest(): number {
   {
     // Control for target discovery in a throwaway repo: an UNTRACKED marker file is a target, a gitignored one is not, and a tracked one still is.
     const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-docs-targets-'));
+    // A hook run exports GIT_DIR/GIT_INDEX_FILE: left in place they would send the fixture's `git init/add` at the CALLER's repository. The control plants a decoy index to prove the fixture ignores them.
+    const decoyIndex = path.join(repo, 'decoy-index');
+    const gitEnv = ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE'];
+    const savedEnv = gitEnv.map((k) => process.env[k]);
+    process.env.GIT_INDEX_FILE = decoyIndex; // the simulated hook environment
+    const hookEnv = { ...process.env };
+    for (const k of gitEnv) delete process.env[k];
     try {
       const run = (...a: string[]): void => {
         execFileSync('git', ['-C', repo, ...a], { stdio: 'ignore' });
@@ -1200,6 +1211,10 @@ function selftest(): number {
       fs.writeFileSync(path.join(repo, 'ignored.md'), marker);
       const seen = targets(repo);
       ck(
+        'planted: GIT_INDEX_FILE from a hook environment never reaches the fixture repository (the decoy index is not created)',
+        hookEnv.GIT_INDEX_FILE === decoyIndex && !fs.existsSync(decoyIndex)
+      );
+      ck(
         'planted: an untracked marker file is discovered as a target, a tracked one still is, a gitignored one is not',
         seen.includes('untracked.md') &&
           seen.includes('tracked.md') &&
@@ -1207,6 +1222,10 @@ function selftest(): number {
         seen
       );
     } finally {
+      gitEnv.forEach((k, i) => {
+        if (savedEnv[i] === undefined) delete process.env[k];
+        else process.env[k] = savedEnv[i];
+      });
       fs.rmSync(repo, { recursive: true, force: true });
     }
   }
@@ -1411,6 +1430,30 @@ function selftest(): number {
     env.length === 1 && env[0]?.why === 'input' && env[0].providers.includes('env-manifest'),
     env
   );
+  // The MCP tool tables: the sentence cut and the remote/local split (review dc9a49b0.3).
+  ck(
+    'firstSentence cuts at a sentence end before an upper-case letter, keeps `e.g. foo` and `0.5 s` whole, and returns a text with no break unchanged',
+    firstSentence('Runs a job. Then waits.') === 'Runs a job.' &&
+      firstSentence('Waits up to 0.5 s, e.g. for a lock. More.') ===
+        'Waits up to 0.5 s, e.g. for a lock.' &&
+      firstSentence('no sentence break here') === 'no sentence break here' &&
+      firstSentence('Is it? Yes.') === 'Is it?',
+    firstSentence('Waits up to 0.5 s, e.g. for a lock. More.')
+  );
+  {
+    const registry = readMcpRegistryTools(ROOT);
+    const remote = mcpToolsProvider.rows(ROOT).map((r) => r.key);
+    const local = mcpToolsLocalProvider.rows(ROOT).map((r) => r.key);
+    ck(
+      'the remote and local MCP tool tables partition the registry: no tool in both, none dropped, local rows are the local surface',
+      remote.length + local.length === registry.length &&
+        !remote.some((k) => local.includes(k)) &&
+        local.length === registry.filter((t) => t.surface === 'local').length &&
+        local.length > 0 &&
+        remote.length > 0,
+      { remote: remote.length, local: local.length, registry: registry.length }
+    );
+  }
   const self = couldAffect(ROOT, ['scripts/lib/doc-providers.ts']);
   ck(
     "the generator's own module could move every provider",

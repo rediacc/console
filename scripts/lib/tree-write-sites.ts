@@ -2144,6 +2144,28 @@ const PLANTS: Plant[] = [
   },
   {
     label:
+      'ADD: a Set that only receives mkdtemp dirs through .add(v) makes its loop write TEMP (review 013da5e0.1)',
+    entry: 'g.ts',
+    files: {
+      'g.ts':
+        "import fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\nconst owned = new Set<string>();\nowned.add(fs.mkdtempSync(path.join(os.tmpdir(), 'o-')));\nfor (const d of owned) fs.rmSync(d, { recursive: true });\n",
+    },
+    want: (st) =>
+      st.filter((x) => x.sink === 'fs.rm').every((x) => x.origin === 'TEMP') &&
+      st.some((x) => x.sink === 'fs.rm'),
+  },
+  {
+    label:
+      'ADD: the same loop over a Set given a repo path through .add(v) stays TREE, so the binding is not a blanket TEMP',
+    entry: 'g.ts',
+    files: {
+      'g.ts':
+        "import fs from 'node:fs';\nconst owned = new Set<string>();\nowned.add(process.cwd());\nfor (const d of owned) fs.rmSync(d, { recursive: true });\n",
+    },
+    want: (st) => st.some((x) => x.sink === 'fs.rm' && x.origin === 'TREE'),
+  },
+  {
+    label:
       'C3 PARAM: a parameter called with the repo root is TREE; the same body called with mkdtemp is TEMP',
     entry: 'g.ts',
     files: {
