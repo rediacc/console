@@ -183,10 +183,15 @@ class TurnFold {
   private offerFor(toolCallId: string, output: unknown): void {
     const { feedback, emit } = this.input;
     if (!feedback || (output as { status?: unknown } | null)?.status !== 'failed') return;
+    const { abortSignal } = this.input;
     this.offers.push(
-      decideFeedbackOffer(feedback.runIdOf(toolCallId), feedback.deps).then((verdict) => {
-        if (verdict.offer) emit(verdict.event);
-      })
+      decideFeedbackOffer(feedback.runIdOf(toolCallId), feedback.deps)
+        .then((verdict) => {
+          // A disconnected client has no stream to read the offer from.
+          if (verdict.offer && !abortSignal?.aborted) emit(verdict.event);
+        })
+        // The decision never throws, but the emit can; an offer is optional, so a failure of either is no offer and never an unhandled rejection or a turn error.
+        .catch(() => undefined)
     );
   }
 
@@ -230,7 +235,8 @@ export async function runAiTurn(input: AiTurnInput): Promise<void> {
       if (input.abortSignal?.aborted) break;
       fold.part(part as StreamPart);
     }
-    await fold.settled();
+    // A disconnected client does not wait for the offers: the turn ends with the stream.
+    if (!input.abortSignal?.aborted) await fold.settled();
   } catch (error) {
     if (!input.abortSignal?.aborted) input.emit(errorEvent(error));
   }
