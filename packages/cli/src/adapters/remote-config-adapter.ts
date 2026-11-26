@@ -598,12 +598,12 @@ export class RemoteConfigAdapter {
       : failure;
   }
 
-  /** Whether this device enrolled the config (the marker beside its token file); false when that cannot be read. */
+  /** Whether this device enrolled the config (the marker beside its token file); true when that cannot be read, so the key-gone wording stands (RemotePasskeySecretMissingError). */
   private async enrolledHere(): Promise<boolean> {
     try {
       return await this.tokenStorage.enrolledHere(this.configName);
     } catch {
-      return false;
+      return true;
     }
   }
 

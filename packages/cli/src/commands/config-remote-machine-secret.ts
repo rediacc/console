@@ -145,10 +145,14 @@ export async function machineSecretCredentials(
   };
 }
 
-/** A wrong machine secret surfaces as a CEK unwrap failure (RemoteStaleSlotError from the adapter): name it. */
+/**
+ * A wrong machine secret surfaces as a CEK unwrap failure: a RemoteStaleSlotError raised with no cause
+ * (`unwrapDeviceCek`). The adapter raises the same class WITH the diagnosed failure as its cause when
+ * the store's key was rotated past this device's, and that one keeps its own message: the secret was right.
+ */
 export async function machineSecretFailure(error: unknown): Promise<unknown> {
   const { RemoteStaleSlotError } = await import('../adapters/remote-config-adapter.js');
-  return error instanceof RemoteStaleSlotError
+  return error instanceof RemoteStaleSlotError && error.cause === undefined
     ? new ValidationError(
         t('commands.config.remote.enable.machineSecretWrong', { env: MACHINE_SECRET_ENV })
       )

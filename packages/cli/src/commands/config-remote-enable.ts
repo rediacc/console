@@ -34,7 +34,7 @@ import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { omitKey } from '../utils/omit-key.js';
 import { askChoice, askConfirm } from '../utils/prompt.js';
-import { preEnableBackupName, writePreEnableBackup } from './config-remote-backup.js';
+import { nextPreEnableBackupName, writePreEnableBackup } from './config-remote-backup.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
 /** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
@@ -520,7 +520,11 @@ export async function finalizeEnable(
   const configPath = configFileStorage.getConfigPath(configName);
   const startedAt = new Date();
   if (!seeded && !opts.force && localContentWouldBeReplaced(local, pulled.config)) {
-    await confirmOverwrite(configName, counts, preEnableBackupName(configPath, startedAt));
+    await confirmOverwrite(
+      configName,
+      counts,
+      await nextPreEnableBackupName(configPath, startedAt)
+    );
   }
 
   // The generic `.bak` the save below writes is last-save-wins, so a second enable would replace the only record of the config as it stood before the first: keep a copy no later save touches.

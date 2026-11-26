@@ -105,8 +105,9 @@ export function parsePolicyRecordField(raw: unknown): PolicyRecord | null {
 }
 
 /**
- * High-water marks of the records a reader has opened, by `policyPointerKey`. `check` refuses a
- * lower version and `raise` records a newer one; the store behind it decides where they persist.
+ * High-water marks of the records a reader has opened, by `policyPointerKey`. `get` reads a mark and
+ * `raise` records a newer one; `openPolicyRecord` refuses a version below the mark. The store behind
+ * it decides where the marks persist.
  */
 export interface PolicyHighWater {
   get(key: string): number | undefined;

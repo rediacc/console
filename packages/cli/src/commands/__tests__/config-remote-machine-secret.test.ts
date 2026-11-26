@@ -130,9 +130,14 @@ import {
   wrapCekForSlot,
 } from '@rediacc/shared/config-crypto';
 import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
+import { RemoteStaleSlotError } from '../../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../../types/index.js';
 import { registerRemoteCommands } from '../config-remote.js';
-import { enableMachineSecret, MACHINE_SECRET_ENV } from '../config-remote-machine-secret.js';
+import {
+  enableMachineSecret,
+  MACHINE_SECRET_ENV,
+  machineSecretFailure,
+} from '../config-remote-machine-secret.js';
 
 const API_URL = 'https://account.example.com';
 const CONFIG_NAME = 'headless-ci';
@@ -416,5 +421,24 @@ describe('the enable command surface', () => {
     expect(source).not.toMatch(/process\.argv/);
     expect(source).toContain('process.env[MACHINE_SECRET_ENV]');
     expect(source).toContain('readStdinValue');
+  });
+});
+
+// Review 1121-1 a5d16e9e.1: only an unwrap failure (no cause) means the secret was wrong.
+describe('machineSecretFailure', () => {
+  it('names a wrong secret for the unwrap failure, which carries no cause', async () => {
+    const failure = await machineSecretFailure(new RemoteStaleSlotError(undefined, CONFIG_NAME));
+    expect((failure as Error).message).toContain(MACHINE_SECRET_ENV);
+    expect(failure).not.toBeInstanceOf(RemoteStaleSlotError);
+  });
+
+  it('keeps the rotated-key error, whose cause is the diagnosed failure, as it was', async () => {
+    const rotated = new RemoteStaleSlotError({ cause: new Error('OperationError') }, CONFIG_NAME);
+    expect(await machineSecretFailure(rotated)).toBe(rotated);
+  });
+
+  it('passes any other error through', async () => {
+    const other = new Error('boom');
+    expect(await machineSecretFailure(other)).toBe(other);
   });
 });

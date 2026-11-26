@@ -37,4 +37,13 @@ describe.skipIf(process.platform === 'win32')('tryOpenBrowser', () => {
 
     expect(count()).toBe(before);
   });
+
+  // Review 1121-1 3916072a.2 and a641cdbb.1: openBrowser reports a failed launch as false and never throws, so a missing launcher cannot break the enroll flow.
+  it('resolves when no launcher is installed', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'rdc-browser-'));
+    process.env.PATH = dir;
+
+    await expect(tryOpenBrowser('https://example.test/')).resolves.toBeUndefined();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  });
 });

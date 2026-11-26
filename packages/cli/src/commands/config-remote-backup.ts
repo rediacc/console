@@ -11,13 +11,35 @@ function utcStamp(now: Date): string {
     .replace(/[-:]/g, '');
 }
 
-/** The name the pre-enable copy is written under (before any same-second counter), for a prompt that names it ahead of the write. */
+/** The name the pre-enable copy is written under before any same-second counter. */
 export function preEnableBackupName(configPath: string, now: Date): string {
   return `${configPath}.pre-enable.${utcStamp(now)}.bak`;
 }
 
 /** The copies of one second collide only when enable runs twice inside it; the counter keeps both. */
 const MAX_SAME_SECOND_COPIES = 100;
+
+/** The nth candidate name of one second: the plain name, then `-1`, `-2`, and so on. */
+function candidateName(configPath: string, now: Date, attempt: number): string {
+  const base = preEnableBackupName(configPath, now).slice(0, -'.bak'.length);
+  return `${base}${attempt === 0 ? '' : `-${attempt}`}.bak`;
+}
+
+/**
+ * The name the next copy will be written under, counter included, for a prompt that names it ahead of
+ * the write: the first candidate no file holds yet.
+ */
+export async function nextPreEnableBackupName(configPath: string, now: Date): Promise<string> {
+  for (let attempt = 0; attempt < MAX_SAME_SECOND_COPIES; attempt++) {
+    const target = candidateName(configPath, now, attempt);
+    try {
+      await fs.access(target);
+    } catch {
+      return target;
+    }
+  }
+  throw new Error(`Too many pre-enable copies of ${configPath} in one second`);
+}
 
 /**
  * Copy the config file as it stands before `config remote enable` rewrites it, to
@@ -30,9 +52,8 @@ export async function writePreEnableBackup(
   configPath: string,
   now: Date = new Date()
 ): Promise<string | null> {
-  const base = preEnableBackupName(configPath, now).slice(0, -'.bak'.length);
   for (let attempt = 0; attempt < MAX_SAME_SECOND_COPIES; attempt++) {
-    const target = `${base}${attempt === 0 ? '' : `-${attempt}`}.bak`;
+    const target = candidateName(configPath, now, attempt);
     const outcome = await copyOnce(configPath, target);
     if (outcome !== 'exists') return outcome;
   }
