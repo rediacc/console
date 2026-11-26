@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T13:26:34.251Z",
+  "generatedAt": "2026-11-26T15:16:23.735Z",
   "legs": [
     {
       "index": 1,
@@ -296,6 +296,7 @@
         "pytest:.ci/rediacc_ci/tests/test_pytest_impact.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_impact_tree.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_slow_ratchet.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_ci_gate_prerequisites.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_ci_job_aggregation.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_commit_identity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_no_app_admin_perm.py",

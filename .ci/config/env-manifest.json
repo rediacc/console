@@ -956,6 +956,7 @@
       "PYTHONSAFEPATH",
       "PYYAML_VERSION",
       "QWEN_TTS_PYTHON_BIN",
+      "REDIACC_BIOME_BIN",
       "REDIACC_TOOLCHAIN_LOADED",
       "REDIACC_TOOLCHAIN_ROOT",
       "RENET_BINARY",
@@ -1259,6 +1260,7 @@
       "GROUP_B_NET_BASE",
       "GROUP_B_WORKER",
       "HOOK_LABEL_DIR",
+      "HOST_TEMP_LOCK_HANDOFF",
       "HTTPS_PORT",
       "HTTP_PORT",
       "K10_SEED_GB",
@@ -2065,7 +2067,8 @@
         "CLOUDFLARE_R2_ENDPOINT"
       ],
       ".ci/rediacc_ci/dev/host_temp.py": [
-        "CLAUDE_CODE_TMPDIR"
+        "CLAUDE_CODE_TMPDIR",
+        "HOST_TEMP_LOCK_HANDOFF"
       ],
       ".ci/rediacc_ci/dev/measure_page_density.py": [
         "XDG_RUNTIME_DIR"

@@ -17,13 +17,24 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import importlib.util
 import os
 import re
 import shutil
 import stat
 import tempfile
+from typing import TYPE_CHECKING
 
-from rediacc_ci.quality import seams
+if TYPE_CHECKING:
+    from types import ModuleType
+
+_SEAMS: ModuleType | None
+try:
+    from rediacc_ci.quality import seams as _seams_pkg
+
+    _SEAMS = _seams_pkg
+except ModuleNotFoundError:  # loaded by file with no .ci on sys.path; _seams() loads it by path
+    _SEAMS = None
 
 __all__ = [
     "SHELL_MKTEMP",
@@ -149,9 +160,24 @@ def shell_mktemp(tag: str) -> str:
 DEEP_TMPDIR = 24
 
 
+def _seams() -> ModuleType:
+    """`rediacc_ci.quality.seams`, imported lazily. runtmp is loaded BY FILE by hook tests that put no `.ci` on sys.path (test_canonical_sys_path_hop freezes path hops), so a module-level package import broke every one of them; seams needs only the standard library, so it loads from its file beside this one when the package is not importable."""
+    if _SEAMS is not None:
+        return _SEAMS
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "quality", "seams.py")
+    spec = importlib.util.spec_from_file_location("_runtmp_seams", path)
+    if spec is None or spec.loader is None:
+        raise ModuleNotFoundError(
+            "rediacc_ci.quality.seams is not importable and %s cannot be loaded" % path
+        )
+    seams = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(seams)
+    return seams
+
+
 def shallow_root() -> str | None:
     """The shallow root a too-deep run is rooted at: the gate seams' system temp base (`quality.seams.system_temp_base`), so a scratch directory made here is one the seams accept as private. That base is /tmp except where /tmp is a tmpfs and a disk base (/var/tmp) exists, which is the base the seams prefer; a different root here made every gate-harness override ignored on such a host. None when no base is usable."""
-    base = seams.system_temp_base()
+    base = _seams().system_temp_base()
     if base is not None:
         return str(base)
     return "/tmp" if os.path.isdir("/tmp") else None

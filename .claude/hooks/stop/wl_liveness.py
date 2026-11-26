@@ -36,6 +36,7 @@ THE LADDER, and why it cannot deadlock (the lesson fixed by operator decision in
 import json
 import os
 import re
+import sys
 import tempfile
 import time
 from typing import Any
@@ -802,7 +803,13 @@ def ladder(fold, session_id, event, state_doc, armed_blocks=True, shell_work=Non
 
                 shell_work = wl_stuckshell.shell_work
             working = set(shell_work(_bg_wids) or ())
-        except Exception:
+        except Exception as exc:
+            # Fail toward the age ladder (no shell counts as working), and say so: a silent empty set would read as "no shell does real work".
+            print(
+                "wl_liveness: shell-work read failed (%s: %s); quiet shells stay on the age ladder"
+                % (type(exc).__name__, exc),
+                file=sys.stderr,
+            )
             working = set()
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
