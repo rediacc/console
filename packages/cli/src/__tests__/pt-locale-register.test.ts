@@ -16,7 +16,7 @@ describe('pt cli locale register', () => {
   const LOCALES = [
     '../i18n/locales/pt/cli.json',
     '../../../shared/src/cli-contract/data/i18n/pt.json',
-  ];
+  ] as const;
   for (const rel of LOCALES) {
     it(`names the user "utilizador" in every string of ${rel.split('/').slice(-3).join('/')}`, () => {
       const text = readFileSync(resolve(import.meta.dirname, rel), 'utf-8');

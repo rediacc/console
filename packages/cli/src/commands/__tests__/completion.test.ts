@@ -215,9 +215,7 @@ describe('rdc completion: shell syntax', () => {
     }
   );
 
-  // The parser checks above are skipped on a host without the shell. This structural
-  // check always runs, so a broken quote or bracket in the zsh, fish or pwsh script
-  // still fails there, though it is no replacement for the parser.
+  // The parser checks above are skipped on a host without the shell. This structural check always runs, so a broken quote or bracket in the zsh, fish or pwsh script still fails there, though it is no replacement for the parser.
   for (const shell of ['zsh', 'fish', 'pwsh']) {
     it(`${shell} script has balanced quotes and brackets (runs without the ${shell} binary)`, () => {
       expect(structuralProblems(shell, readFileSync(writeScript(shell), 'utf-8'))).toEqual([]);
