@@ -421,6 +421,19 @@ def test_a_heading_for_the_lead_carries_the_bullets_under_it() -> None:
     assert len(long["text"]) <= WN.SEED_TEXT_MAX, long
 
 
+def test_a_bullet_that_is_a_seed_under_a_heading_keeps_its_own_seed() -> None:
+    """c08df3b0.1: a bullet carrying `owed=` under a heading for the lead is its own seed, not text folded into the heading's and clipped; the plain bullets before it still ride the heading."""
+    body = (
+        "### Notes for the lead\n- plain defect one\n- TICK x partial owed=C2:live\n- plain two\n"
+    )
+    got = WN.report_seeds([report(body)], ME8, SINCE)
+    texts = [s["text"] for s in got]
+    assert len(got) == 2, got
+    assert "plain defect one" in texts[0], got
+    assert "owed=" not in texts[0], got
+    assert "owed=C2:live" in texts[1], got
+
+
 def test_last_round_keeps_a_pre_compaction_row_of_the_same_session(monkeypatch, tmp_path) -> None:
     WN.append_round(tmp_path, "dddd4444", "/tmp/old.md", NOW)
     rows = WN.read_rounds(tmp_path)

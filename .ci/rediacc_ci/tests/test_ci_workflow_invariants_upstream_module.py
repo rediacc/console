@@ -74,3 +74,25 @@ def test_an_escaped_quote_opens_no_quote_and_a_substitution_runs() -> None:
     assert "check:ci-ops-health" in inv._after_echo('echo "ok && $(npm run check:ci-ops-health)"')
     assert "check:ci-ops-health" in inv._after_echo("echo `npm run check:ci-ops-health`")
     assert inv._after_echo("echo 'ok $(npm run check:ci-ops-health)'") == ""
+
+
+def test_text_beside_a_substitution_is_not_executed() -> None:
+    """e166b8d7.1: `echo "$(date) npm run <gate>"` runs `date`, so the gate named in the same echo stays text. Controls: the substitution body itself runs, and a chain after the echo still runs."""
+    gate = "npm run check:ci-ops-health"
+    assert gate not in inv._after_echo(f'echo "$(date) {gate}"')
+    assert gate not in inv._after_echo(f'echo "`date` {gate}"')
+    assert inv._after_echo('echo "$(date)"') == "date"
+    assert inv._after_echo(f'echo "$(date)" && {gate}') == f"date\n{gate}"
+    assert gate in inv._after_echo(f'echo "$(echo $(date)) x" && {gate}')
+    assert inv.upstream_gate_steps(_doc(f'echo "$(date) {gate}"'))["check:ci-ops-health"] == []
+    assert len(inv.upstream_gate_steps(_doc(f'echo "$({gate})"'))["check:ci-ops-health"]) == 1
+
+
+def test_a_backslash_outside_quotes_escapes_the_next_character() -> None:
+    """6ccb06b9.3: the backslash cases the escape handling in _split_chain must keep. `echo \\"x && g` chains; an escaped separator is text; an escaped quote after a real quote stays inside it; a backslash inside single quotes escapes nothing."""
+    g = "npm run check:ci-ops-health"
+    assert inv._after_echo(f'echo \\"x && {g}') == g
+    assert inv._after_echo(f"echo a \\&& {g}") == ""
+    assert inv._after_echo(f'echo "a \\" && {g}"') == ""
+    assert inv._after_echo(f"echo 'a\\' && {g}") == g
+    assert inv._after_echo(f'echo "a" && echo \\"b && {g}') == g

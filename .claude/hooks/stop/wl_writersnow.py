@@ -397,13 +397,8 @@ def parse_survey(text) -> tuple[list[dict] | None, set[str]]:
 REVIEW_BOX_RE = re.compile(r"\bbox none\b", re.IGNORECASE)
 
 
-def _ident(text) -> str:
-    """Letters and digits only, upper-cased: `CL-W-CI-PY-1` and `CL W CI PY 1` name the same cluster."""
-    return re.sub(r"[^A-Za-z0-9]", "", str(text or "")).upper()
-
-
 def review_staffed(items, session, since) -> list[str]:
-    """The identities, one per item, of this session's items of any state first written at or after `since` (the round's start): a review cluster an item of the round names is staffed or done, never free."""
+    """The text, one string per item, of this session's items of any state first written at or after `since` (the round's start): a review cluster an item of the round names is staffed or done, never free."""
     out = []
     for rec in items or ():
         if not C.owned_by_me(rec.get("owner"), session):
@@ -411,16 +406,35 @@ def review_staffed(items, session, since) -> list[str]:
         first = C.parse_stamp(rec.get("first"))
         if first is None or first < since:
             continue
-        out.append(
-            _ident(" ".join(str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note")))
-        )
+        out.append(" ".join(str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note")))
     return out
 
 
-def _names_cluster(idents, own, all_review) -> bool:
-    """Whether one of `idents` (a per-item identity) names the review cluster identity `own`. An item naming a LONGER review cluster that contains `own` as a prefix of it (`CL-W-CI-PY-1` beside `CL-W-CI`) names only that longer one (review f6904b91.1: a substring test on the joined identities treated `CL-W-CI` as staffed)."""
-    longer = [o for o in all_review if o != own and own in o]
-    return any(own in ident and not any(o in ident for o in longer) for ident in idents)
+def _id_re(raw, extendable=False):
+    """A pattern for the cluster id `raw` in any spelling (`CL-W-CI`, `CL W CI`, `cl_w_ci`): its alphanumeric tokens in order, any run of other characters between them, and no letter or digit on either side. Unless `extendable`, an id continued by a hyphen or underscore and one more token (`CL-W-CI` inside `CL-W-CI-PY-1`) is the start of a longer id and does not match."""
+    tokens = re.findall(r"[A-Za-z0-9]+", str(raw or ""))
+    tail = r"(?![A-Za-z0-9])" + ("" if extendable else r"(?![-_][A-Za-z0-9])")
+    return re.compile(
+        r"(?<![A-Za-z0-9])" + r"[^A-Za-z0-9]+".join(map(re.escape, tokens)) + tail, re.IGNORECASE
+    )
+
+
+def _names_cluster(texts, own, all_review) -> bool:
+    """Whether one of `texts` (the text of one item each) names the review cluster id `own`. An occurrence of `own` that continues into a longer id does not name it: by a hyphen or underscore and another token (`CL-W-CI-PY-1` beside `CL-W-CI`, whether or not the survey lists the longer one, ac243a48.2), or by the spelling of a longer survey cluster id (`CL W CI PY 1`). Another occurrence in the same text still names it (`CL-W-CI and CL-W-CI-PY-1`, ac243a48.3). A longer id is one `own` begins at the start of, with whole tokens only (f6904b91.1)."""
+    own_tokens = re.findall(r"[A-Za-z0-9]+", str(own or ""))
+    if not own_tokens:
+        return False
+    longer = [
+        _id_re(o, extendable=True)
+        for o in all_review
+        if o != own and re.findall(r"[A-Za-z0-9]+", str(o))[: len(own_tokens)] == own_tokens
+    ]
+    pattern = _id_re(own)
+    for text in texts:
+        for hit in pattern.finditer(text):
+            if not any(m.start() == hit.start() for rx in longer for m in rx.finditer(text)):
+                return True
+    return False
 
 
 def _clip_to(text, limit=CLUSTER_HEAD_MAX) -> str:
@@ -492,10 +506,10 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
     # The survey's plan tables list the OPEN boxes of its round (the /writers-now survey sorts every open box), so a table sig ticked now was ticked after the survey was written, which is what WHY_TICKED and REFRESH_TICKS count (review 7d036d68.1).
     facts["ticked"] = len(table & done)
     staffed = review_staffed(items, session, C.parse_stamp(last["at"]))
-    review_ids = [_ident(c["id"]) for c in clusters if c.get("review")]
+    review_ids = [c["id"] for c in clusters if c.get("review")]
     for cl in clusters:
         if cl.get("review"):
-            if not _names_cluster(staffed, _ident(cl["id"]), review_ids):
+            if not _names_cluster(staffed, cl["id"], review_ids):
                 facts["free"].append(cl)
             continue
         left = [s for s in cl["sigs"] if s not in done]
@@ -715,12 +729,12 @@ def report_seeds(reports, session, since) -> list[dict]:
 
 
 def _bullets_after(lines, start) -> tuple[list[str], int]:
-    """The bullet lines that follow a heading at `lines[start - 1]` (one blank line may sit between), and the index after the last one taken; a non-bullet line ends the run and is not consumed."""
+    """The bullet lines that follow a heading at `lines[start - 1]` (one blank line may sit between), and the index after the last one taken; a non-bullet line ends the run and is not consumed, and neither is a bullet REPORT_SEED_RE matches, which is a seed of its own and would be clipped away inside the heading's (c08df3b0.1)."""
     out: list[str] = []
     i = start
     if i < len(lines) and not lines[i].strip():
         i += 1
-    while i < len(lines) and BULLET_RE.match(lines[i]):
+    while i < len(lines) and BULLET_RE.match(lines[i]) and not REPORT_SEED_RE.search(lines[i]):
         out.append(lines[i].strip())
         i += 1
     return (out, i) if out else ([], start)

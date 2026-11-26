@@ -406,6 +406,25 @@ def prefix_cases(tmp):
     facts = cap(tmp, items=(LEASED_B, longer, shorter), text=PREFIX_SURVEY)
     check("control: an item naming the shorter id staffs it", "CL-W-CI" in free_ids(facts), False)
     check("control: and the longer one stays staffed", "CL-W-CI-PY-1" in free_ids(facts), False)
+    # ac243a48.2: the longer id need not be a survey cluster for its hyphen continuation to leave the shorter one free.
+    unlisted = {"id": "4", "state": ">", "owner": ME, "text": "writer CL-W-CI-PY-2", "first": at(1)}
+    facts = cap(tmp, items=(LEASED_B, unlisted), text=PREFIX_SURVEY)
+    check("an unlisted longer id does not staff the shorter", "CL-W-CI" in free_ids(facts), True)
+    # ac243a48.3: one item naming both staffs the shorter one it names.
+    both = {
+        "id": "3",
+        "state": ">",
+        "owner": ME,
+        "text": "writer CL-W-CI-PY-1 and CL-W-CI",
+        "first": at(1),
+    }
+    facts = cap(tmp, items=(LEASED_B, both), text=PREFIX_SURVEY)
+    check("an item naming both ids staffs the shorter", "CL-W-CI" in free_ids(facts), False)
+    check("and the longer", "CL-W-CI-PY-1" in free_ids(facts), False)
+    spaced = {"id": "2", "state": ">", "owner": ME, "text": "writer CL W CI PY 1", "first": at(1)}
+    facts = cap(tmp, items=(LEASED_B, spaced), text=PREFIX_SURVEY)
+    check("a spaced longer survey id leaves the shorter free", "CL-W-CI" in free_ids(facts), True)
+    check("a spaced longer survey id staffs itself", "CL-W-CI-PY-1" in free_ids(facts), False)
 
 
 def main():

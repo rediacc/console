@@ -503,22 +503,51 @@ class Registry:
         if run is None:
             return False
         if not run.startswith("npm run "):
-            return all((self.file_root / rel).is_file() for rel in self.direct_run_files(run))
+            return self.run_resolves(run)
         return '"%s":' % run.split()[2] in read_text(self.package_json)
 
+    def run_resolves(self, run: str) -> bool:
+        """A direct run can start: every path-form script it names is a file, and every `-m` module is `.ci/a/b.py`, the package `.ci/a/b/__init__.py`, or a module outside `.ci` that the interpreter can import (`-m pytest`), judged by its top-level name (17f9d3d7.1)."""
+        if not all((self.file_root / rel).is_file() for rel in self.path_tokens(run)):
+            return False
+        for module in self.direct_run_modules(run):
+            stem = ".ci/" + module.replace(".", "/")
+            if (self.file_root / (stem + ".py")).is_file() or (
+                self.file_root / stem / "__init__.py"
+            ).is_file():
+                continue
+            top = module.split(".")[0]
+            if (self.file_root / ".ci" / top).exists() or (
+                self.file_root / ".ci" / (top + ".py")
+            ).exists():
+                return False
+            try:
+                if importlib.util.find_spec(top) is None:
+                    return False
+            except (ImportError, ValueError):
+                return False
+        return True
+
     @staticmethod
-    def direct_run_files(run: str) -> list[str]:
-        """The repo-relative files a direct run names: a `python3 -m a.b` module (`.ci/a/b.py`) and any path-form script token (`.ci/x/y.py`, `scripts/z.ts`). A bare command word (`tsx`, `bash`) names no file."""
-        found = [
-            ".ci/%s.py" % module.replace(".", "/")
-            for module in re.findall(r"\s-m\s+([A-Za-z_][\w.]*)", run)
-        ]
-        found.extend(
+    def direct_run_modules(run: str) -> list[str]:
+        """The dotted module names of every `-m <module>` in a direct run."""
+        return re.findall(r"\s-m\s+([A-Za-z_][\w.]*)", run)
+
+    @staticmethod
+    def path_tokens(run: str) -> list[str]:
+        """The path-form script tokens of a direct run (`.ci/x/y.py`, `scripts/z.ts`); a bare command word (`tsx`, `bash`) names no file."""
+        return [
             token
             for token in run.split()
             if "/" in token and token.endswith((".py", ".ts", ".sh", ".mjs", ".js"))
-        )
-        return found
+        ]
+
+    @staticmethod
+    def direct_run_files(run: str) -> list[str]:
+        """The repo-relative files a direct run names: a `python3 -m a.b` module (`.ci/a/b.py`) and any path-form script token (`.ci/x/y.py`, `scripts/z.ts`)."""
+        return [
+            ".ci/%s.py" % module.replace(".", "/") for module in Registry.direct_run_modules(run)
+        ] + Registry.path_tokens(run)
 
     def entry_run(self, gate_id: str) -> str | None:
         """The `run:` of THIS id's manifest entry, None when no entry declares the id or its block has no run."""
@@ -2235,6 +2264,29 @@ def selftest() -> int:
             "CONTROL: a module run names its `.ci/<dotted path>.py` file",
             registry.direct_run_files("PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry")
             == [".ci/rediacc_ci/quality/trap_registry.py"],
+        )
+        (files / ".ci" / "ctlpkg").mkdir(parents=True)
+        (files / ".ci" / "ctlpkg" / "__init__.py").write_text("X = 1\n", encoding="utf-8")
+        (files / ".ci" / "ctlmod.py").write_text("X = 1\n", encoding="utf-8")
+        ctl.truthy(
+            "CONTROL: a `-m` module that is a package (`__init__.py`) resolves",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlpkg"),
+        )
+        ctl.truthy(
+            "CONTROL: a `-m` module file under .ci resolves",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlmod"),
+        )
+        ctl.truthy(
+            "CONTROL: a `-m` module outside .ci that imports (`json.tool`) resolves",
+            registry.run_resolves("python3 -m json.tool"),
+        )
+        ctl.falsy(
+            "PLANT: a `-m` module inside a .ci package that is gone does not resolve",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlpkg.gone"),
+        )
+        ctl.falsy(
+            "PLANT: a `-m` module nothing provides does not resolve",
+            registry.run_resolves("python3 -m ctl_no_such_top_level"),
         )
         ctl.truthy(
             "CONTROL: a run that is the entry's last property, with no trailing comma, resolves",

@@ -1095,8 +1095,22 @@ def _guard(value: object) -> str:
     return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
 
 
-def _split_chain(code: str) -> tuple[str, str] | None:
-    """(head, rest) at the first `&&`, `||` or `;` outside single or double quotes, or None. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1). A backslash outside single quotes escapes the next character, so `echo \\"x && npm run <gate>` opens no quote and chains (6ccb06b9.1). A command substitution (`$(` or a backtick) outside single quotes runs, so the line is returned whole as executed: (`""`, code) (6ccb06b9.2)."""
+def _substitution(code: str, i: int) -> tuple[str, int]:
+    """(body, index after it) of the command substitution opening at `code[i]` (a backtick, or `$(` with its matching parenthesis); an unclosed one runs to the end of the line."""
+    if code[i] == "`":
+        end = code.find("`", i + 1)
+        return (code[i + 1 :], len(code)) if end < 0 else (code[i + 1 : end], end + 1)
+    depth = 1
+    j = i + 2
+    while j < len(code) and depth:
+        depth += {"(": 1, ")": -1}.get(code[j], 0)
+        j += 1
+    return (code[i + 2 : j - 1], j) if depth == 0 else (code[i + 2 :], len(code))
+
+
+def _split_chain(code: str) -> tuple[list[str], str | None]:
+    """(substitution bodies, rest) at the first `&&`, `||` or `;` outside single or double quotes; rest is None when the line never chains. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1). A backslash outside single quotes escapes the next character, so `echo \\"x && npm run <gate>` opens no quote and chains (6ccb06b9.1). A command substitution (`$(` or a backtick) outside single quotes runs, so its body is returned as executed and the text around it stays text: `echo "$(date) npm run <gate>"` runs `date` only (6ccb06b9.2, e166b8d7.1)."""
+    subs: list[str] = []
     quote = ""
     i = 0
     while i < len(code):
@@ -1108,31 +1122,33 @@ def _split_chain(code: str) -> tuple[str, str] | None:
             i += 2
             continue
         elif ch == "`" or code.startswith("$(", i):
-            return "", code
+            body, i = _substitution(code, i)
+            subs.append(body)
+            continue
         elif quote == '"':
             if ch == '"':
                 quote = ""
         elif ch in "'\"":
             quote = ch
         elif ch == ";":
-            return code[:i], code[i + 1 :]
+            return subs, code[i + 1 :]
         elif code.startswith(("&&", "||"), i):
-            return code[:i], code[i + 2 :]
+            return subs, code[i + 2 :]
         i += 1
-    return None
+    return subs, None
 
 
 def _after_echo(code: str) -> str:
-    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1). A substitution inside the echo runs, so that line stays executed whole (6ccb06b9.2)."""
+    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1). A substitution inside the echo runs, so its body is kept and the text around it is dropped (6ccb06b9.2, e166b8d7.1)."""
+    kept: list[str] = []
     while code.startswith(("echo ", "printf ")):
-        parts = _split_chain(code)
-        if parts is None:
-            return ""
-        head, rest = parts
-        if head == "" and rest == code:
-            return code
+        subs, rest = _split_chain(code)
+        kept.extend(subs)
+        if rest is None:
+            return "\n".join(kept)
         code = rest.strip()
-    return code
+    kept.append(code)
+    return "\n".join(part for part in kept if part)
 
 
 def _executed_lines(run: str) -> str:

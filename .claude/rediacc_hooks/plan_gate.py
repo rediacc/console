@@ -325,7 +325,7 @@ MERGED_PR_CEILING = 64000
 
 
 def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]:
-    """([(number, plans)], "") for every merged PR of the repository, each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer. The first `gh pr list` asks for MERGED_PR_LIMIT; a list that fills its limit may have cut an older PR off, so the call is repeated with the limit widened MERGED_PR_WIDEN times until gh answers fewer rows than it was asked for (12e42ca1.2: a fixed cap refused every merge once the repository held that many merged PRs). Each call is retried once after a 2 s pause on a transient 5xx."""
+    """([(number, plans)], "") for every merged PR of the repository, each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer, or when the list still fills MERGED_PR_CEILING (an older PR may be cut off, so the answer is refused, not guessed). The first `gh pr list` asks for MERGED_PR_LIMIT; a list that fills its limit may have cut an older PR off, so the call is repeated with the limit widened MERGED_PR_WIDEN times until gh answers fewer rows than it was asked for (12e42ca1.2: a fixed cap refused every merge once the repository held that many merged PRs). Each call is retried once after a 2 s pause on a transient 5xx."""
     import json
     import subprocess
     import time

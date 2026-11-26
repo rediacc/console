@@ -321,7 +321,7 @@ class Seeded:
 
 
 def container_endpoint(endpoint: str) -> str:
-    """`endpoint` with a loopback host (127.0.0.1, localhost or [::1]) renamed to the name the account container reaches the host by; any other host is left alone, and so is an endpoint urllib cannot parse (a bad port or an unbalanced bracket), which the container then rejects as the old plain rename did. Userinfo, port, path and query are kept."""
+    """`endpoint` with a loopback host (127.0.0.1, localhost or [::1]) renamed to the name the account container reaches the host by; any other host is left alone, and so is an endpoint urllib cannot parse (a bad port or an unbalanced bracket), which the container then rejects (the earlier urlsplit-based version raised ValueError on it instead). Userinfo, port, path and query are kept."""
     try:
         parts = urllib.parse.urlsplit(endpoint)
         host, port = parts.hostname, parts.port

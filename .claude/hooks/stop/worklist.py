@@ -264,7 +264,7 @@ def _local_read_landing_record(tree):
         return None, ""
     except OSError as exc:
         return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
-    # The verdict also reads the tree named here (its `.git` and its git dir), so the tree path and its `.git` entry's version join the key: a tree re-pointed within one process is read again (review 1cd88702.4).
+    # The verdict also reads the tree named here through its `.git` entry, so the tree path and that entry's version join the key: a tree re-pointed within one process is read again (review 1cd88702.4). The key carries no state of the git dir behind the entry, so a change made only there inside one process reuses the verdict; the record file's own version in the key is what a landing write changes (76143e8e.2).
     try:
         dot = os.lstat(os.path.join(str(tree), ".git"))
         dot_key = (dot.st_mtime_ns, dot.st_size)
