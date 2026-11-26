@@ -4874,7 +4874,7 @@
   {
     "id": "search-13759",
     "content": "1.11 remote",
-    "body": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --machine-secret <id> | ポータルで作成したこの ID のマシンシークレットでブラウザなしで登録します。シークレット本体は REDIACC_MACHINE_SECRET または stdin から読み取り、コマンドラインからは受け取りません | いいえ | - | | --api-url <url> | アカウントサーバーURL | いいえ | - | | --force | 確認なしでローカルの相違内容をサーバーのコピーで置き換える | いいえ | - | | --config-id <id> | 新しいエントリを作らず、ストア内のこの既存の設定に接続する | いいえ | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable リモートストレージから切断し、設定をローカルに保存 rdc config remote disable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --local | サーバーに接続せず、キャッシュ済みのコピーから、このデバイスでのみリンクを解除 | いいえ | - | | -y, --yes | 確認プロンプトをスキップする | いいえ | - | <a id=\"cli-local-config-remote-status\"></a> #### status リモート接続状態を表示 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh リモートストレージから設定を強制再取得 rdc config remote refresh <a id=\"cli-local-config-remote-versions\"></a> #### versions サーバーに保存されているこの設定の過去のバージョンを一覧表示 rdc config remote versions [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --explain | サーバーに保存されているバージョンから、各バージョンで変更された JSON ポインターを表示 | いいえ | - | <a id=\"cli-local-config-remote-restore\"></a> #### restore この設定の過去のバージョンを最新バージョンとして公開 rdc config remote restore <version> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -y, --yes | 確認プロンプトをスキップする | いいえ | - | <a id=\"cli-local-config-field\"></a>",
+    "body": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --machine-secret <id> | ポータルで作成したこの ID のマシンシークレットでブラウザなしで登録します。シークレット本体は REDIACC_MACHINE_SECRET、パイプ経由の stdin、または非表示のプロンプトから読み取り、コマンドラインからは受け取りません | いいえ | - | | --api-url <url> | アカウントサーバーURL | いいえ | - | | --force | 確認なしでローカルの相違内容をサーバーのコピーで置き換える | いいえ | - | | --config-id <id> | 新しいエントリを作らず、ストア内のこの既存の設定に接続する | いいえ | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable リモートストレージから切断し、設定をローカルに保存 rdc config remote disable [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --local | サーバーに接続せず、キャッシュ済みのコピーから、このデバイスでのみリンクを解除 | いいえ | - | | -y, --yes | 確認プロンプトをスキップする | いいえ | - | <a id=\"cli-local-config-remote-status\"></a> #### status リモート接続状態を表示 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh リモートストレージから設定を強制再取得 rdc config remote refresh <a id=\"cli-local-config-remote-versions\"></a> #### versions サーバーに保存されているこの設定の過去のバージョンを一覧表示 rdc config remote versions [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --explain | サーバーに保存されているバージョンから、各バージョンで変更された JSON ポインターを表示 | いいえ | - | <a id=\"cli-local-config-remote-restore\"></a> #### restore この設定の過去のバージョンを最新バージョンとして公開 rdc config remote restore <version> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -y, --yes | 確認プロンプトをスキップする | いいえ | - | <a id=\"cli-local-config-field\"></a>",
     "excerpt": "リモート設定ストレージ接続を管理 <a id=\"cli-local-config-remote-enable\"></a> #### enable この設定をリモート暗号化ストレージにリンク rdc config remote enable [options] | フラグ | 説明 | 必須 | デフ...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -6986,7 +6986,7 @@
   {
     "id": "search-13935",
     "content": "24.1 up",
-    "body": "VM クラスターをローカルにプロビジョニング rdc ops up [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --force | すべての VM を強制再起動 | いいえ | - | | --parallel | VM を並列で作成 | いいえ | - | | --basic | 最小構成クラスター (ブリッジ + ワーカー1台) | いいえ | - | | --lite | VM プロビジョニングをスキップ (ステータスのみ) | いいえ | - | | --skip-orchestration | クラスターオーケストレーションをスキップ | いいえ | - | | --backend <backend> | 仮想化バックエンド (kvm|qemu、自動検出) | いいえ | - | | --os <name> | VM オペレーティングシステム (例: ubuntu-24.04, debian-12) | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | <a id=\"cli-local-ops-down\"></a>",
+    "body": "VM クラスターをローカルにプロビジョニング rdc ops up [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --force | すべての VM を強制再起動 | いいえ | - | | --parallel | VM を並列で作成 | いいえ | - | | --basic | 最小構成クラスター (ブリッジ + ワーカー1台) | いいえ | - | | --lite | VM プロビジョニングをスキップ (ステータスのみ) | いいえ | - | | --skip-orchestration | クラスターオーケストレーションをスキップ | いいえ | - | | --backend <backend> | 仮想化バックエンド (kvm|qemu|hyperv、自動検出) | いいえ | - | | --os <name> | VM オペレーティングシステム (例: ubuntu-24.04, debian-12) | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | <a id=\"cli-local-ops-down\"></a>",
     "excerpt": "VM クラスターをローカルにプロビジョニング rdc ops up [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --force | すべての VM を強制再起動 | いいえ | -...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -6998,8 +6998,8 @@
   {
     "id": "search-13936",
     "content": "24.2 down",
-    "body": "VM クラスターを破棄 rdc ops down [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu、自動検出) | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | <a id=\"cli-local-ops-status\"></a>",
-    "excerpt": "VM クラスターを破棄 rdc ops down [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu、自...",
+    "body": "VM クラスターを破棄 rdc ops down [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu|hyperv、自動検出) | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | <a id=\"cli-local-ops-status\"></a>",
+    "excerpt": "VM クラスターを破棄 rdc ops down [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu|h...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "242-down",
@@ -7010,7 +7010,7 @@
   {
     "id": "search-13937",
     "content": "24.3 status",
-    "body": "VM クラスターの状態を表示 rdc ops status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu、自動検出) | いいえ | - | <a id=\"cli-local-ops-ssh\"></a>",
+    "body": "VM クラスターの状態を表示 rdc ops status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|qemu|hyperv、自動検出) | いいえ | - | <a id=\"cli-local-ops-ssh\"></a>",
     "excerpt": "VM クラスターの状態を表示 rdc ops status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --backend <backend> | 仮想化バックエンド (kvm|q...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -7022,7 +7022,7 @@
   {
     "id": "search-13938",
     "content": "24.4 ssh",
-    "body": "VM に SSH 接続 rdc ops ssh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --vm-id <id> | 仮想マシン ID | はい | - | | -c, --command <cmd> | インタラクティブシェルの代わりにコマンドを実行する | いいえ | - | | --backend <backend> | 仮想化バックエンド (kvm|qemu、自動検出) | いいえ | - | | --user <user> | VM 接続用の SSH ユーザー名 | いいえ | - | <a id=\"cli-local-ops-setup\"></a>",
+    "body": "VM に SSH 接続 rdc ops ssh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --vm-id <id> | 仮想マシン ID | はい | - | | -c, --command <cmd> | インタラクティブシェルの代わりにコマンドを実行する | いいえ | - | | --backend <backend> | 仮想化バックエンド (kvm|qemu|hyperv、自動検出) | いいえ | - | | --user <user> | VM 接続用の SSH ユーザー名 | いいえ | - | <a id=\"cli-local-ops-setup\"></a>",
     "excerpt": "VM に SSH 接続 rdc ops ssh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --vm-id <id> | 仮想マシン ID | はい | - | | -c, --c...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

@@ -4874,7 +4874,7 @@
   {
     "id": "search-15411",
     "content": "1.11 remote",
-    "body": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --machine-secret <id> | 포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET 또는 stdin에서 읽으며, 명령줄로는 받지 않습니다 | 아니오 | - | | --api-url <url> | 계정 서버 URL | 아니오 | - | | --force | 확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다 | 아니오 | - | | --config-id <id> | 새 항목을 만드는 대신 저장소에 있는 이 기존 설정에 연결합니다 | 아니오 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 원격 스토리지 연결을 끊고 설정을 로컬에 저장합니다 rdc config remote disable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --local | 서버에 연결하지 않고 캐시된 사본으로 이 기기에서만 연결 해제 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | <a id=\"cli-local-config-remote-status\"></a> #### status 원격 연결 상태를 표시합니다 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 원격 스토리지에서 설정을 강제로 다시 가져옵니다 rdc config remote refresh <a id=\"cli-local-config-remote-versions\"></a> #### versions 서버에 보관된 이 구성의 이전 버전 목록 표시 rdc config remote versions [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --explain | 서버에 보관된 버전을 기준으로 각 버전에서 변경된 JSON 포인터 표시 | 아니오 | - | <a id=\"cli-local-config-remote-restore\"></a> #### restore 이 구성의 이전 버전을 최신 버전으로 게시 rdc config remote restore <version> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | <a id=\"cli-local-config-field\"></a>",
+    "body": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --machine-secret <id> | 포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET, 파이프로 들어온 stdin 또는 숨김 입력 프롬프트에서 읽으며, 명령줄로는 받지 않습니다 | 아니오 | - | | --api-url <url> | 계정 서버 URL | 아니오 | - | | --force | 확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다 | 아니오 | - | | --config-id <id> | 새 항목을 만드는 대신 저장소에 있는 이 기존 설정에 연결합니다 | 아니오 | - | <a id=\"cli-local-config-remote-disable\"></a> #### disable 원격 스토리지 연결을 끊고 설정을 로컬에 저장합니다 rdc config remote disable [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --local | 서버에 연결하지 않고 캐시된 사본으로 이 기기에서만 연결 해제 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | <a id=\"cli-local-config-remote-status\"></a> #### status 원격 연결 상태를 표시합니다 rdc config remote status <a id=\"cli-local-config-remote-refresh\"></a> #### refresh 원격 스토리지에서 설정을 강제로 다시 가져옵니다 rdc config remote refresh <a id=\"cli-local-config-remote-versions\"></a> #### versions 서버에 보관된 이 구성의 이전 버전 목록 표시 rdc config remote versions [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --explain | 서버에 보관된 버전을 기준으로 각 버전에서 변경된 JSON 포인터 표시 | 아니오 | - | <a id=\"cli-local-config-remote-restore\"></a> #### restore 이 구성의 이전 버전을 최신 버전으로 게시 rdc config remote restore <version> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | <a id=\"cli-local-config-field\"></a>",
     "excerpt": "원격 설정 스토리지 연결을 관리합니다 <a id=\"cli-local-config-remote-enable\"></a> #### enable 이 설정을 원격 암호화 스토리지에 연결합니다 rdc config remote enable [options] | 플래그 | 설명 |...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
@@ -6986,7 +6986,7 @@
   {
     "id": "search-15587",
     "content": "24.1 up",
-    "body": "로컬에서 VM 클러스터를 프로비저닝합니다 rdc ops up [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --force | 모든 VM 강제 재시작 | 아니오 | - | | --parallel | VM 병렬 생성 | 아니오 | - | | --basic | 최소 클러스터 (브리지 + 워커 1개) | 아니오 | - | | --lite | VM 프로비저닝 건너뜀 (상태 확인만) | 아니오 | - | | --skip-orchestration | 클러스터 오케스트레이션 건너뜀 | 아니오 | - | | --backend <backend> | 가상화 백엔드 (kvm|qemu, 자동 감지) | 아니오 | - | | --os <name> | VM 운영 체제 (예: ubuntu-24.04, debian-13) | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | <a id=\"cli-local-ops-down\"></a>",
+    "body": "로컬에서 VM 클러스터를 프로비저닝합니다 rdc ops up [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --force | 모든 VM 강제 재시작 | 아니오 | - | | --parallel | VM 병렬 생성 | 아니오 | - | | --basic | 최소 클러스터 (브리지 + 워커 1개) | 아니오 | - | | --lite | VM 프로비저닝 건너뜀 (상태 확인만) | 아니오 | - | | --skip-orchestration | 클러스터 오케스트레이션 건너뜀 | 아니오 | - | | --backend <backend> | 가상화 백엔드 (kvm|qemu|hyperv, 자동 감지) | 아니오 | - | | --os <name> | VM 운영 체제 (예: ubuntu-24.04, debian-13) | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | <a id=\"cli-local-ops-down\"></a>",
     "excerpt": "로컬에서 VM 클러스터를 프로비저닝합니다 rdc ops up [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --force | 모든 VM 강제 재시작 | 아니오 | - | |...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
@@ -6998,8 +6998,8 @@
   {
     "id": "search-15588",
     "content": "24.2 down",
-    "body": "VM 클러스터를 삭제합니다 rdc ops down [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu, 자동 감지) | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | <a id=\"cli-local-ops-status\"></a>",
-    "excerpt": "VM 클러스터를 삭제합니다 rdc ops down [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu, 자...",
+    "body": "VM 클러스터를 삭제합니다 rdc ops down [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu|hyperv, 자동 감지) | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | <a id=\"cli-local-ops-status\"></a>",
+    "excerpt": "VM 클러스터를 삭제합니다 rdc ops down [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu|hy...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "242-down",
@@ -7010,7 +7010,7 @@
   {
     "id": "search-15589",
     "content": "24.3 status",
-    "body": "VM 클러스터 상태를 표시합니다 rdc ops status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu, 자동 감지) | 아니오 | - | <a id=\"cli-local-ops-ssh\"></a>",
+    "body": "VM 클러스터 상태를 표시합니다 rdc ops status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qemu|hyperv, 자동 감지) | 아니오 | - | <a id=\"cli-local-ops-ssh\"></a>",
     "excerpt": "VM 클러스터 상태를 표시합니다 rdc ops status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --backend <backend> | 가상화 백엔드 (kvm|qe...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
@@ -7022,7 +7022,7 @@
   {
     "id": "search-15590",
     "content": "24.4 ssh",
-    "body": "VM에 SSH로 접속합니다 rdc ops ssh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --vm-id <id> | 가상 머신 ID | 예 | - | | -c, --command <cmd> | 대화형 셸 대신 명령 실행 | 아니오 | - | | --backend <backend> | 가상화 백엔드 (kvm|qemu, 자동 감지) | 아니오 | - | | --user <user> | VM 연결을 위한 SSH 사용자 이름 | 아니오 | - | <a id=\"cli-local-ops-setup\"></a>",
+    "body": "VM에 SSH로 접속합니다 rdc ops ssh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --vm-id <id> | 가상 머신 ID | 예 | - | | -c, --command <cmd> | 대화형 셸 대신 명령 실행 | 아니오 | - | | --backend <backend> | 가상화 백엔드 (kvm|qemu|hyperv, 자동 감지) | 아니오 | - | | --user <user> | VM 연결을 위한 SSH 사용자 이름 | 아니오 | - | <a id=\"cli-local-ops-setup\"></a>",
     "excerpt": "VM에 SSH로 접속합니다 rdc ops ssh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --vm-id <id> | 가상 머신 ID | 예 | - | | -c, --c...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
