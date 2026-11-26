@@ -82,6 +82,7 @@ async function runReportVerify(
   deps: VerifyDeps
 ): Promise<void> {
   const verdict = await verifyReportFile(deps.client(), file, options.id);
+  if (!verdict.valid) setExitCode(1);
   if (getOutputFormat() === 'json') {
     outputService.print(verdict, 'json');
   } else if (verdict.valid) {
@@ -91,7 +92,6 @@ async function runReportVerify(
   } else {
     outputService.print(invalidReportLine(verdict.reason, verdict.id));
   }
-  if (!verdict.valid) setExitCode(1);
 }
 
 /**
@@ -114,6 +114,8 @@ export async function runForensicsVerify(
   const window =
     options.since === undefined && options.until === undefined ? undefined : parseWindow(options);
   const report = await verifyEvidenceDir(dir, window, trustedKeys(options, deps));
+  // Set before the print, so the JSON envelope of a failed verification says success:false.
+  if (!report.clean) setExitCode(1);
   if (getOutputFormat() === 'json') {
     outputService.print(report, 'json');
   } else {
@@ -127,7 +129,6 @@ export async function runForensicsVerify(
       ].join('\n')
     );
   }
-  if (!report.clean) setExitCode(1);
 }
 
 /** The capture levels of `renet forensics level` (PLAN-forensics-capture D8). */

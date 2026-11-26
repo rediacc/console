@@ -226,6 +226,16 @@ describe('forensics verify', () => {
     });
   });
 
+  it('sets exit 1 BEFORE printing a failed JSON report, so its envelope says success:false', async () => {
+    m.format.current = 'json';
+    await runForensicsVerify({ dir });
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    // The JSON envelope derives `success` from the exit code set when it is written; a code set after the print leaves a success:true envelope on a failed run.
+    expect(m.setExitCode.mock.invocationCallOrder[0]).toBeLessThan(
+      m.print.mock.invocationCallOrder[0] ?? 0
+    );
+  });
+
   it('refuses a malformed --machine-key and an empty directory', async () => {
     await expect(runForensicsVerify({ dir, machineKey: ['machine-1=zz'] })).rejects.toThrow(
       'forensics.badMachineKey'

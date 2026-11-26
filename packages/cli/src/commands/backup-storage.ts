@@ -442,20 +442,20 @@ function registerBackupVerify(backup: Command): void {
             const { repoKey } = await resolveRepoRefLocal(repoRef);
             const verdict = await runStoreVerify(await resolveLineage(repoRef));
             const format = getOutputFormat();
+            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
+            // An empty or unclean verdict fails the run; set before the print so the JSON envelope says success:false.
+            if (verdict.checked === 0 || !clean) setExitCode(1);
             outputService.print(verdict, format === 'table' ? 'json' : format);
             // A lineage with no stored chunks verified nothing: it is not recorded or reported as verified.
             if (verdict.checked === 0) {
               outputService.warn(t('commands.backup.verify.storeEmpty', { name: repoKey }));
               await recordBackupRun(repoKey, { kind: 'verify', status: 'empty' });
-              setExitCode(1);
               return;
             }
-            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
             await recordBackupRun(repoKey, {
               kind: 'verify',
               status: clean ? 'verified' : 'mismatch',
             });
-            if (!clean) setExitCode(1);
             return;
           }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);

@@ -150,12 +150,12 @@ function registerStatus(server: Command): void {
   ).action(async (domain: string, flags: LocatorFlags) => {
     try {
       const result = await serverStatus(liveServerDeps(), { domain, ...flags });
+      if (result.health !== 200) setExitCode(1);
       if (isMachineReadable()) {
         outputService.print(result, 'json');
       } else {
         reportStatus(result, domain);
       }
-      if (result.health !== 200) setExitCode(1);
     } catch (error) {
       handleError(error);
     }

@@ -401,6 +401,6 @@ export async function runRestoreTest(
 
   const result = buildResult(plan, copy, verdict, answer?.verificationState, cleanup);
   const format = getOutputFormat();
-  outputService.print(result, format === 'table' ? 'json' : format);
   if (result.status !== 'proven') setExitCode(1);
+  outputService.print(result, format === 'table' ? 'json' : format);
 }

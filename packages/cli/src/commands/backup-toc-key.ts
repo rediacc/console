@@ -97,9 +97,9 @@ export function registerBackupTocKey(backup: Command): void {
       try {
         const results = await runTocKeySync(repoRef, options);
         const format = getOutputFormat();
+        if (results.some((r) => FAILING.has(r.outcome))) setExitCode(1);
         outputService.print({ results }, format === 'table' ? 'json' : format);
         for (const warning of tocKeyWarnings(results)) outputService.warn(warning);
-        if (results.some((r) => FAILING.has(r.outcome))) setExitCode(1);
       } catch (error) {
         handleError(error);
       }

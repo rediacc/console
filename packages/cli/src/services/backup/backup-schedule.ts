@@ -409,6 +409,9 @@ export function renderBackupScheduleStatus(
     setExitCode(1);
     return rows;
   }
+  // Set before the rows print, so a JSON envelope carrying them says success:false.
+  const code = scheduleStatusExitCode(rows);
+  if (code !== 0) setExitCode(code);
   // One row per destination store of each unit's strategy: the store, its newest snapshot, last verify and clean-up state ride beside the unit's own columns.
   outputService.print(
     expandStatusRows(
@@ -431,8 +434,6 @@ export function renderBackupScheduleStatus(
       `Could not read the backup schedule status of ${unread.length} unit(s) on ${machineName}${unread[0].reason ? `: ${unread[0].reason}` : ''}. This is not a verdict that no timer exists.`
     );
   }
-  const code = scheduleStatusExitCode(rows);
-  if (code !== 0) setExitCode(code);
   return rows;
 }
 

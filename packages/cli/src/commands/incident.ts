@@ -104,12 +104,12 @@ export async function runIncidentExport(
     deps.now()
   );
   const failed = result.verification !== null && !result.verification.clean;
+  if (failed) setExitCode(1);
   if (getOutputFormat() === 'json') {
     outputService.print(result, 'json');
   } else {
     printExport(result);
   }
-  if (failed) setExitCode(1);
 }
 
 function printExport(result: ExportResult): void {
@@ -173,12 +173,12 @@ export async function runIncidentDeclare(
   deps: DeclareDeps = defaultDeclareDeps()
 ): Promise<DeclareResult> {
   const result = await declareIncident(ref, options, deps);
+  if (result.retry !== null) setExitCode(1);
   if (getOutputFormat() === 'json') {
     outputService.print({ ...result, incident: withClocks(result.incident, deps.now()) }, 'json');
   } else {
     printDeclare(result);
   }
-  if (result.retry !== null) setExitCode(1);
   return result;
 }
 
