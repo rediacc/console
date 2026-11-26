@@ -1096,16 +1096,21 @@ def _guard(value: object) -> str:
 
 
 def _split_chain(code: str) -> tuple[str, str] | None:
-    """(head, rest) at the first `&&`, `||` or `;` outside single or double quotes, or None. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1)."""
+    """(head, rest) at the first `&&`, `||` or `;` outside single or double quotes, or None. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1). A backslash outside single quotes escapes the next character, so `echo \\"x && npm run <gate>` opens no quote and chains (6ccb06b9.1). A command substitution (`$(` or a backtick) outside single quotes runs, so the line is returned whole as executed: (`""`, code) (6ccb06b9.2)."""
     quote = ""
     i = 0
     while i < len(code):
         ch = code[i]
-        if quote:
-            if ch == "\\" and quote == '"':
-                i += 2
-                continue
-            if ch == quote:
+        if quote == "'":
+            if ch == "'":
+                quote = ""
+        elif ch == "\\":
+            i += 2
+            continue
+        elif ch == "`" or code.startswith("$(", i):
+            return "", code
+        elif quote == '"':
+            if ch == '"':
                 quote = ""
         elif ch in "'\"":
             quote = ch
@@ -1118,12 +1123,15 @@ def _split_chain(code: str) -> tuple[str, str] | None:
 
 
 def _after_echo(code: str) -> str:
-    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1)."""
+    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1). A substitution inside the echo runs, so that line stays executed whole (6ccb06b9.2)."""
     while code.startswith(("echo ", "printf ")):
         parts = _split_chain(code)
         if parts is None:
             return ""
-        code = parts[1].strip()
+        head, rest = parts
+        if head == "" and rest == code:
+            return code
+        code = rest.strip()
     return code
 
 

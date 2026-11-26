@@ -64,3 +64,13 @@ def test_a_separator_inside_a_quoted_echo_is_text_not_a_chain() -> None:
         inv._after_echo('echo "x" && npm run check:ci-ops-health') == "npm run check:ci-ops-health"
     )
     assert inv._after_echo("echo 'a; b' ; npm run h") == "npm run h"
+
+
+def test_an_escaped_quote_opens_no_quote_and_a_substitution_runs() -> None:
+    """6ccb06b9.1: `echo \\"x && npm run <gate>` chains, because the backslash escapes the quote. 6ccb06b9.2: a `$(...)` or backtick substitution inside the echoed text runs, so the line counts as executed. Control: single quotes keep both as text."""
+    assert (
+        inv._after_echo('echo \\"x && npm run check:ci-ops-health') == "npm run check:ci-ops-health"
+    )
+    assert "check:ci-ops-health" in inv._after_echo('echo "ok && $(npm run check:ci-ops-health)"')
+    assert "check:ci-ops-health" in inv._after_echo("echo `npm run check:ci-ops-health`")
+    assert inv._after_echo("echo 'ok $(npm run check:ci-ops-health)'") == ""
