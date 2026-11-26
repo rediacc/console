@@ -204,6 +204,7 @@ export async function encryptPolicyRecord(
  *
  * @returns the parsed JSON value; the caller validates it with `PolicyDocumentSchema`.
  * @throws PolicyRecordIntegrityError when the blob does not open under `key` and that binding.
+ * @throws the raw error of the key derivation when `key` is a CEK that cannot be derived from (a non-extractable one): a local failure, not a tampered record.
  */
 export async function decryptPolicyRecord(
   record: PolicyRecord,

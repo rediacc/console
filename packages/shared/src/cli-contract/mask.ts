@@ -6,7 +6,7 @@
  * A key is masked when the contract marks the option `sensitive`, or when the contract does
  * not know the key as an option and its name looks sensitive (fail closed). A positional is
  * masked by that name rule alone, since the contract carries no per-positional flag, so one whose
- * name looks innocuous (`ref`) keeps its value. A known non-sensitive option keeps its value. Nested objects and arrays are scanned for sensitive key names.
+ * name looks innocuous (`ref`) keeps its value even when that value is a secret: a known gap in argv redaction, not intended behaviour. A known non-sensitive option keeps its value. Nested objects and arrays are scanned for sensitive key names.
  */
 import { isSensitiveKey } from '../telemetry/utils.js';
 import type { ContractCommand } from './types.js';

@@ -95,6 +95,8 @@ describe('policy document in the config', () => {
     }
     expect(evaluatePolicy(pulled, { ...ctx, commandPath: 'repo up' }).allowed).toBe(true);
     expect(evaluatePolicy(pulled, { ...ctx, commandPath: 'repo delete' }).allowed).toBe(false);
+    // The team-allowed case: only the team's `*` admits it, so a pulled document that lost the team rule denies it (review 395c5213.1).
+    expect(evaluatePolicy(pulled, { ...ctx, commandPath: 'machine query' }).allowed).toBe(true);
   });
 
   it('the schema accepts exactly what the policy engine validates', () => {

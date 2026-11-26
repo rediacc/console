@@ -159,7 +159,7 @@ export function createMcpHandler() {
     const seen = request.clone();
     const response = await transportFor(env).fetch(request);
     const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
-    // `waitUntil` keeps the isolate alive for the counter. A host without it (a bare context) has no isolate to keep, so the counter finishes on its own: awaiting it here would hold the answer until the cloned body is read, and an open stream would never answer. `observeCall` catches its own failures.
+    // `waitUntil` keeps the isolate alive for the counter. A host without it (a bare context) gets no such guarantee: the counter runs un-awaited and is dropped if that host stops work once the response is returned, because awaiting it here would hold the answer until the cloned body is read, and an open stream would never answer. `observeCall` catches its own failures.
     if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
     return response;
   }
