@@ -36,11 +36,13 @@ async function run(args: string[]): Promise<void> {
 
 describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
   const realPlatform = process.platform;
+  let stderrWrite: ReturnType<typeof vi.spyOn>;
+  const echoed = (): string => stderrWrite.mock.calls.map((call) => String(call[0])).join('');
   beforeEach(() => {
     spawn.mockReset();
     spawn.mockImplementation(() => child());
     vi.spyOn(opsExecutorService, 'getRenetPath').mockResolvedValue('renet');
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -58,6 +60,7 @@ describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
       ];
       expect(argv).toEqual(['ops', sub]);
       expect(opts.env.REDIACC_DEBUG).toBe('1');
+      expect(echoed()).toContain('[DEBUG] renet ops');
     }
   );
 
@@ -76,6 +79,7 @@ describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
     ];
     expect(argv).toEqual(['ops', 'host', 'setup']);
     expect(opts.env.REDIACC_DEBUG).toBe('1');
+    expect(echoed()).toContain('[DEBUG] renet ops host setup');
   });
 
   it('ops setup --debug under sudo carries REDIACC_DEBUG through env', async () => {

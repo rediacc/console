@@ -65,6 +65,7 @@ describe('DPAPI backend time limit (finding B3)', () => {
   afterEach(() => {
     if (platform) Object.defineProperty(process, 'platform', platform);
     vi.unstubAllEnvs();
+    stand.stateDir = undefined;
   });
 
   it('gives every powershell spawn a limit sized for a loaded machine', async () => {
