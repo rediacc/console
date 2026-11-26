@@ -33,6 +33,7 @@ import type { Hono } from 'hono';
 import { z } from 'zod';
 import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from '../../commands/mcp/custom-tools.js';
 import { type AiToolResult, requestOf, runAiTool } from '../ai/tools.js';
+import { registerAgentGrantRevokeRoute } from './agent-grant-revoke-route.js';
 import {
   type AgentGrantHandle,
   AgentSessionRefused,
@@ -286,6 +287,8 @@ export function registerMcpCallRoute(
   deps: ServeDeps,
   options: McpCallRouteOptions
 ): void {
+  // A daemon registers only the bearer-authenticated revoke route (box AG-OP1); the call route is container tier.
+  registerAgentGrantRevokeRoute(app, deps);
   const sessions = deps.agentGrants;
   if (deps.mode !== 'container' || !sessions) return;
 

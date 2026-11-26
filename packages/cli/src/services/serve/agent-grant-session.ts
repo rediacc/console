@@ -488,6 +488,13 @@ export class AgentGrantSessions {
     const org = entries.find(
       (item) => (item.teamId ?? null) === null && typeof item.configId === 'string'
     );
+    // A team grant's policy has the org-level record as its ceiling: a store that lists none cannot be judged, so the grant is refused rather than served without the ceiling.
+    if (record.teamId !== null && !org) {
+      this.drop(record.grantId);
+      throw new AgentSessionRefused(
+        'This agent grant is on a team, and the store holds no org-level config whose policy applies to it.'
+      );
+    }
     const orgConfigId = org ? (org.configId as string) : null;
     return this.seat(record, entry.version, key, await this.pull(record, secret, orgConfigId));
   }

@@ -3,6 +3,7 @@
  * secret after a sleep, with the secret never held. The account server is a fake with real ciphertext (agent-grant-harness.ts).
  */
 
+import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { boundEffectivePolicy } from '../../config/policy-record.js';
 import {
@@ -10,8 +11,12 @@ import {
   AgentSessionRefused,
   AgentSessionUnavailable,
 } from '../agent-grant-session.js';
+import { AuthError } from '../auth.js';
 import { routeAgentPrincipals } from '../container-config.js';
-import { SessionError } from '../sessions.js';
+import { serveCrypto } from '../crypto.js';
+import type { ServeDeps } from '../deps.js';
+import { createServeApp } from '../server.js';
+import { SessionError, SessionStore } from '../sessions.js';
 import {
   configOf,
   EXECUTOR_TOKEN,
@@ -471,5 +476,98 @@ describe('routeAgentPrincipals', () => {
     const load = routeAgentPrincipals(userLoader, undefined);
     await expect(load(principalOf('g'))).rejects.toBeInstanceOf(SessionError);
     expect(userLoader).not.toHaveBeenCalled();
+  });
+});
+
+describe('a team grant in a store with no org-level config (review acee0d10.1)', () => {
+  it('refuses the grant and drops its session instead of skipping the org record', async () => {
+    const a = await makeGrant({
+      grantId: 'g_noorg',
+      teamId: 'team-a',
+      configId: 'cfg-a',
+      machine: 'machine-a',
+    });
+    const account = fakeAccount([a]);
+    // The store lists the team's config and no org-level one.
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const response = await account.fetch(input, init);
+      const url = new URL(typeof input === 'string' ? input : (input as Request).url);
+      if (url.pathname.endsWith('/configs') && init?.method === 'GET') {
+        const body = (await response.json()) as { configs: { teamId: string | null }[] };
+        return new Response(
+          JSON.stringify({ ...body, configs: body.configs.filter((c) => c.teamId !== null) }),
+          { status: response.status, headers: { 'content-type': 'application/json' } }
+        );
+      }
+      return response;
+    };
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl,
+    });
+    await expect(sessions.acquire(a.grantId, a.secret)).rejects.toBeInstanceOf(AgentSessionRefused);
+    expect(sessions.has(a.grantId)).toBe(false);
+  });
+});
+
+describe('daemon-mode revoke route (box AG-OP1)', () => {
+  async function daemon(role: 'owner' | 'admin' | 'member' = 'admin', orgId = ORG_ID) {
+    const { a, b, sessions } = await world();
+    const deps = {
+      mode: 'daemon',
+      auth: {
+        verify: (token: string) =>
+          token === 'good'
+            ? Promise.resolve({ orgId, teamId: null, userId: 'u', userEmail: 'u@x', orgRole: role })
+            : Promise.reject(new AuthError('bad token', 401)),
+      } as unknown as ServeDeps['auth'],
+      sessions: new SessionStore(),
+      crypto: serveCrypto,
+      agentGrants: sessions,
+    } as unknown as ServeDeps;
+    const app = createServeApp(deps);
+    const post = (body: unknown, token = 'good') =>
+      app.request(PROXY_ROUTES.mcpRevoke, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    return { a, b, sessions, post };
+  }
+
+  it('drops the named grant for an org admin and leaves the other grant alone', async () => {
+    const { a, b, sessions, post } = await daemon();
+    await sessions.acquire(a.grantId, a.secret);
+    await sessions.acquire(b.grantId, b.secret);
+    const response = await post({ grantId: a.grantId });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ dropped: true });
+    expect(sessions.has(a.grantId)).toBe(false);
+    expect(sessions.has(b.grantId)).toBe(true);
+    await expect(sessions.acquire(a.grantId, a.secret)).rejects.toBeInstanceOf(AgentSessionRefused);
+  });
+
+  it('refuses no bearer, an unknown bearer, a member and another org, each leaving the session held', async () => {
+    const { a, sessions, post } = await daemon();
+    await sessions.acquire(a.grantId, a.secret);
+    expect((await post({ grantId: a.grantId }, '')).status).toBe(401);
+    expect((await post({ grantId: a.grantId }, 'nope')).status).toBe(401);
+    expect(sessions.has(a.grantId)).toBe(true);
+    for (const world of [await daemon('member'), await daemon('owner', 'org-other')]) {
+      await world.sessions.acquire(world.a.grantId, world.a.secret);
+      expect((await world.post({ grantId: world.a.grantId })).status).toBe(403);
+      expect(world.sessions.has(world.a.grantId)).toBe(true);
+    }
+  });
+
+  it('refuses a malformed body', async () => {
+    const { post } = await daemon();
+    expect((await post({ grantId: 'a b' })).status).toBe(400);
+    expect((await post({ grantId: 'g', extra: 1 })).status).toBe(400);
   });
 });
