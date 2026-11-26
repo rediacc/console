@@ -309,11 +309,11 @@ class PyIndex:
         if t is None:
             return frozenset()
         literals: dict[str, object] = {}
-        for n in t.body:
-            if isinstance(n, ast.Assign):
-                targets, value = n.targets, n.value
-            elif isinstance(n, ast.AnnAssign) and n.value is not None:
-                targets, value = [n.target], n.value
+        for st in t.body:
+            if isinstance(st, ast.Assign):
+                targets, value = st.targets, st.value
+            elif isinstance(st, ast.AnnAssign) and st.value is not None:
+                targets, value = [st.target], st.value
             else:
                 continue
             for target in targets:

@@ -287,7 +287,7 @@ def unprinted(rows, cursor, now):
 
 def render(rows, path):
     """One `host-temp:` line per sweep run (the rows of one `ts`), at most MAX_LINES."""
-    runs = {}
+    runs: dict[object, list[str]] = {}
     for row in rows:
         runs.setdefault(row.get("ts"), []).append(str(row["text"]))
     lines = ["host-temp: " + "; ".join(texts) for texts in runs.values()]

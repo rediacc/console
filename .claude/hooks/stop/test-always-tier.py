@@ -179,7 +179,8 @@ def stuck_shell_controls(tree):
     waits.update(live="", leased="")
 
     def drive(rows):
-        said, blocked = [], []
+        said: list[tuple] = []
+        blocked: list = []
         out = S.stop_check(rows, lambda k, b: said.append((k, b)), blocked.append)
         return said, blocked, out
 

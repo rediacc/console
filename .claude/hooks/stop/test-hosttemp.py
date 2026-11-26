@@ -335,7 +335,7 @@ def test_hosttemp_rows_printed_once_per_session():
             "killed 4 processes in agent-a (node x4)",
             ts=NOW - 30,
         )
-        state = {}
+        state: dict = {}
         first = ht.assess(root, state, now=NOW)
         want = "host-temp: removed tree agent-a (2.1 GB); killed 4 processes in agent-a (node x4)"
         _check(first["print"] == [want])
@@ -350,7 +350,8 @@ def test_hosttemp_a_peer_session_prints_the_rows_once_as_well():
     with tempfile.TemporaryDirectory() as tmp:
         ht, root, records = _ht_fixture(tmp, leases=0)
         _last(ht, records, NOW - 60)
-        mine, peer = {}, {}
+        mine: dict = {}
+        peer: dict = {}
         ht.assess(root, mine, now=NOW - 100)
         ht.assess(root, peer, now=NOW - 100)
         _rows(records, "removed temp of agent-b (0.4 GB)", ts=NOW - 30)

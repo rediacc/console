@@ -167,7 +167,7 @@ def leased_shells(items):
     """{worker id: item id} for each in-flight (`>`) item whose lease is fresh (`wl_core.lease_state`), from the `worker:<id>` it names.
 
     An expired, missing or over-cap `until:` names no shell: a lease is a time-boxed claim, and one its worker died holding must stop exempting a hung shell once the box closes (review f4b82bed.4)."""
-    out = {}
+    out: dict[str, str] = {}
     for rec in items or ():
         if rec.get("state") != ">":
             continue
