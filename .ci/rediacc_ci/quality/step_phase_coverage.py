@@ -32,6 +32,7 @@ import os
 import re
 import sys
 import tempfile
+from typing import Any
 
 from rediacc_ci import paths
 from rediacc_ci.controls import plant
@@ -370,7 +371,7 @@ FIX_CMD = (
     "}\n"
 )
 FIX_TS = "type RunScene = 'clone' | 'transfer' | 'start' | 'stop' | 'cutover';\n"
-FIX_PHASES = {
+FIX_PHASES: dict[str, Any] = {
     "scenes": {
         "cow_sync": "clone",
         "checkpoint": "transfer",

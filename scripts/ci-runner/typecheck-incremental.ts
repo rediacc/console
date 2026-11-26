@@ -499,6 +499,7 @@ async function execute(tsc: string, plan: Plan, cwd: string, width: number): Pro
     if (r.code !== 0) return results;
   }
   const queue = plan.steps.filter((s) => s.phase === 'check');
+  // tree-write: safe CACHE_DIR is cacheDirFor(REPO_ROOT) from typecheck-cache-dir.ts, under the home directory, outside every tree
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   const workers = Array.from({ length: Math.max(1, Math.min(width, queue.length)) }, async () => {
     for (let step = queue.shift(); step !== undefined; step = queue.shift()) {

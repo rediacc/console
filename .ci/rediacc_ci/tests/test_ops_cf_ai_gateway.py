@@ -53,10 +53,13 @@ class FakeAccount:
         self.calls.append((method, url, doc))
         if method == "GET":
             return {"success": True, "result": list(self.gateways.values())}
+        # A write always carries its body, in the tool and in this fake.
         if method == "POST":
+            assert doc is not None, method
             self.gateways[doc["id"]] = doc
             return {"success": True, "result": doc}
         if method == "PUT":
+            assert doc is not None, method
             self.gateways[doc["id"]] = {**self.gateways[doc["id"]], **doc}
             return {"success": True, "result": doc}
         return {"success": False, "errors": [{"code": 1, "message": "no fake route"}]}
@@ -90,7 +93,9 @@ def test_missing_gateway_is_created_then_second_run_writes_nothing(monkeypatch, 
     api, fake = make_api(monkeypatch, [])
     assert cf_ai_gateway.run(api, wanted, check=False, out=io.StringIO()) == 0
     assert [c[0] for c in fake.writes()] == ["POST"]
-    assert fake.writes()[0][2]["id"] == "rediacc-eu"
+    first = fake.writes()[0][2]
+    assert first is not None
+    assert first["id"] == "rediacc-eu"
     before = len(fake.writes())
     out = io.StringIO()
     assert cf_ai_gateway.run(api, wanted, check=False, out=out) == 0

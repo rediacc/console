@@ -414,7 +414,8 @@ export type Mutant =
   | 'no-exclude-liveness'
   | 'no-reason-check'
   | 'no-submodule-presence'
-  | 'no-template-leaf-rule';
+  | 'no-template-leaf-rule'
+  | 'no-derive-presence';
 
 export interface CheckOptions {
   mutants?: ReadonlySet<Mutant>;
@@ -599,7 +600,8 @@ export function checkRegistry(
       for (const w of d.writes) {
         if (!present.has(w.repo)) continue;
         claimed.wholeFiles.add(k(w.repo, w.file));
-        if (tree.read(w.repo, w.file) === null)
+        // Tracked, not readable as text: a derive step may write a build output too (detect.wasm, 5.9 MB, binary), which `read` reports as null.
+        if (!m.has('no-derive-presence') && !tree.files(w.repo).includes(w.file))
           add(
             'missing-file',
             where(w.repo, w.file),
@@ -1118,6 +1120,15 @@ interface Plant {
 }
 
 const PLANTS: Plant[] = [
+  {
+    name: 'a derive output absent from the tree',
+    kind: 'missing-file',
+    mark: 'credits.go',
+    mutant: 'no-derive-presence',
+    apply: (_r, f) => {
+      delete f['private/renet']['credits.go'];
+    },
+  },
   {
     name: 'an unclaimed Dockerfile ARG',
     kind: 'unclaimed',

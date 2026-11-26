@@ -150,6 +150,7 @@ def test_missing_go_cannot_run(gate, tmp_path):
         found = shutil.which(tool)
         if found is None:
             gate.log_fail("%s is not on PATH; this case cannot build its PATH" % tool)
+            continue
         os.symlink(found, bindir / tool)
     result = _run(env_extra={"PATH": str(bindir)})
     gate.assert_exit(77, result, "a missing go must refuse, never pass")

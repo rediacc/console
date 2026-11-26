@@ -25,7 +25,7 @@ import stat
 import subprocess
 import sys
 import tempfile
-from typing import Any
+from typing import Any, NoReturn
 
 from rediacc_ci import runtmp
 
@@ -433,7 +433,7 @@ class Harness:
         self._record("pass", message)
         print(self._paint(GREEN, "PASS:", message))
 
-    def log_fail(self, message: str, result: object = None) -> None:
+    def log_fail(self, message: str, result: object = None) -> NoReturn:
         """A control FAILED. Raises; `log_fail` in bash prints and exits 1.
 
         `result`, when given, is the run the failure is about, and its stdout and stderr are appended to the raised message. The ledger records the bare `message`, so a label stays a label.

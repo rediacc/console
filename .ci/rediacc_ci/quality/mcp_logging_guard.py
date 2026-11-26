@@ -48,9 +48,13 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 WORKERS = "workers/"
 MCP = "workers/mcp/"
@@ -263,7 +267,8 @@ def _evaluate_mcp_platform(rel: str, doc: dict) -> list[str]:
         obs = table.get("observability")
         if not isinstance(obs, dict):
             continue
-        logs = obs.get("logs") if isinstance(obs.get("logs"), dict) else {}
+        raw_logs = obs.get("logs")
+        logs: dict = raw_logs if isinstance(raw_logs, dict) else {}
         logs_on = logs.get("enabled", obs.get("enabled")) is True
         if logs_on and logs.get("invocation_logs") is not False:
             findings.append(
@@ -424,9 +429,9 @@ export function grantOf(request: Request): string | undefined {
 """
 
 
-def _fixture(tmp, files: dict[str, str] | None = None):
+def _fixture(tmp, files: Mapping[str, str | None] | None = None):
     root = pathlib.Path(tmp)
-    body = {
+    body: dict[str, str | None] = {
         "workers/mcp/wrangler.template.toml": _MCP_TOML,
         "workers/proxy/wrangler.template.toml": _PROXY_TOML,
         "workers/mcp/src/index.ts": _SOURCE,

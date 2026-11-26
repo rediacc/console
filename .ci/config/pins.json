@@ -1377,7 +1377,16 @@
           "expect": 1
         }
       ],
-      "derive": [],
+      "derive": [
+        {
+          "run": "./build.sh detect_wasm ../account/src/services/forensics-detect/wasm",
+          "cwd": "private/renet",
+          "writes": [
+            { "repo": "private/account", "file": "src/services/forensics-detect/wasm/detect.wasm" },
+            { "repo": "private/account", "file": "src/services/forensics-detect/wasm/detect-wasm.json" }
+          ]
+        }
+      ],
       "literals": [
         {
           "re": "(?<![\\w.])(?:go ?|GO_VERSION=)?(?<value>1\\.\\d+\\.\\d+)(?![\\w.])"
