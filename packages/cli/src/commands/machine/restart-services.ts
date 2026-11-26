@@ -128,13 +128,20 @@ async function resolveRepoNetworkId(
   return { networkId: config.networkId };
 }
 
-/** Print the report of the `daemons-restart` job, as tables or as data, and settle the exit code. */
+/**
+ * Print the report of the `daemons-restart` job, as tables or as data, and settle the exit code:
+ * `jobExitCode` (a failed job's), else 1 when a unit failed. Set before the print, so the JSON
+ * envelope of a failed restart says success:false.
+ */
 function renderRestartReport(
   machineName: string,
   report: ReturnType<typeof parseDaemonUpgradeJson>,
-  format: OutputFormat
+  format: OutputFormat,
+  jobExitCode?: number
 ): void {
   const table = format === 'table';
+  if (jobExitCode !== undefined) setExitCode(jobExitCode);
+  else if (report.failed.length > 0) setExitCode(1);
   if (table) {
     reportDaemonUpgrade({ ran: true, ...report });
     if (report.restarted.length === 0 && report.failed.length === 0 && report.stale.length === 0) {
@@ -146,9 +153,7 @@ function renderRestartReport(
     outputService.print(report, format);
   }
 
-  if (report.failed.length > 0) {
-    setExitCode(1);
-  } else if (table) {
+  if (jobExitCode === undefined && report.failed.length === 0 && table) {
     outputService.success(
       t('commands.machine.restartServices.completed', { machine: machineName })
     );
@@ -208,8 +213,12 @@ function renderRestartFailure(
   format: OutputFormat
 ): void {
   try {
-    renderRestartReport(machineName, parseRestartOutput(result.stdout), format);
-    setExitCode(result.exitCode && result.exitCode > 0 ? result.exitCode : 1);
+    renderRestartReport(
+      machineName,
+      parseRestartOutput(result.stdout),
+      format,
+      result.exitCode && result.exitCode > 0 ? result.exitCode : 1
+    );
   } catch {
     renderLocalExecutionFailure(result, `Restarting the renet daemons on '${machineName}' failed`);
   }

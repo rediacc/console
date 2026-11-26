@@ -59,12 +59,13 @@ function settleConvergeOutcome(
   format: OutputFormat
 ): boolean {
   const report = parseConvergeReport(result.stdout);
+  // A failed pass with a report sets its code before the report prints, so the JSON envelope says success:false.
+  if (report && !result.success) setExitCode(result.exitCode > 0 ? result.exitCode : 1);
   if (report && format === 'table') renderConvergeReport(report, machineName);
   else if (report) outputService.print(report, format);
   if (result.success) return true;
   // Without a report nothing explained the failure yet; with one, its lines named each failed repo.
-  if (report) setExitCode(result.exitCode > 0 ? result.exitCode : 1);
-  else
+  if (!report)
     renderLocalExecutionFailure(
       result,
       t('commands.machine.converge.failed', { machine: machineName })
