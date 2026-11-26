@@ -94,7 +94,10 @@ def probe(argv, watched=None, base=None, environ=None):
 def _remove_fresh(fresh):
     """Remove the probe's own directory even when the command left a read-only subdirectory in it: a failed unlink or rmdir makes the parent writable and retries once. Errors past that are reported on stderr, never swallowed, so a directory left behind is named."""
 
-    def retry(func, path, _exc):
+    def retry(func, path, exc):
+        if path == fresh:
+            # The parent of the probe's own directory is the shared temp root, which the probe does not own: report instead of chmod.
+            raise exc
         parent = os.path.dirname(path)
         os.chmod(parent, stat.S_IRWXU)
         if func is os.rmdir or func is os.unlink:

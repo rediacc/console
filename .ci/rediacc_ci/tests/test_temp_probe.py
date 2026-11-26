@@ -8,6 +8,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci.dev import temp_probe
 
 
@@ -196,3 +198,43 @@ def test_main_usage_names_the_module_invocation(capsys):
 def test_main_usage_error_without_command(capsys):
     assert temp_probe.main([], out=io.StringIO()) == 2
     assert "Usage" in capsys.readouterr().err
+
+
+def _unremovable(tmp_path, how):
+    base = tmp_path / "shared"
+    base.mkdir()
+    fresh = base / "temp-probe-x"
+    fresh.mkdir()
+    if how == "locked-parent":
+        base.chmod(0o500)
+    else:
+        fresh.chmod(0o000)
+    return base, fresh
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+@pytest.mark.parametrize("how", ["locked-parent", "locked-fresh"])
+def test_probe_never_chmods_the_shared_root_when_its_own_dir_cannot_go(tmp_path, capsys, how):
+    """Review 919552d3.1: a failure on the probe's own directory names it on stderr and leaves the shared temp root's mode alone."""
+    base, fresh = _unremovable(tmp_path, how)
+    before = base.stat().st_mode & 0o777
+    try:
+        temp_probe._remove_fresh(str(fresh))
+        assert base.stat().st_mode & 0o777 == before
+        assert str(fresh) in capsys.readouterr().err
+    finally:
+        base.chmod(0o700)
+        fresh.chmod(0o700)
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
+def test_control_a_read_only_child_still_gets_its_parent_made_writable(tmp_path, capsys):
+    """Control for the test above: below the probe's directory the retry still repairs the mode."""
+    fresh = tmp_path / "temp-probe-y"
+    child = fresh / "ro"
+    child.mkdir(parents=True)
+    (child / "f").write_text("")
+    child.chmod(0o500)
+    temp_probe._remove_fresh(str(fresh))
+    assert not fresh.exists()
+    assert capsys.readouterr().err == ""
