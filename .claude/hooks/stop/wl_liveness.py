@@ -711,7 +711,7 @@ def _arm_covers(rec, armed_blocks=True):
     return A.covers(arm, datetime.datetime.now(datetime.UTC), armed_blocks)
 
 
-def ladder(fold, session_id, event, state_doc, armed_blocks=True):
+def ladder(fold, session_id, event, state_doc, armed_blocks=True, shell_work=None):
     """(pings, investigates, resolves, gones, idles, doc_changed).
 
     `gones` is kept apart from `investigates` because a verifiably dead worker needs a different remedy than a merely quiet one; see the gone branch.
@@ -792,6 +792,18 @@ def ladder(fold, session_id, event, state_doc, armed_blocks=True):
             )
 
     pings, investigates, resolves, gones, idles = [], [], [], [], []
+    # A RUNNING SHELL DOING REAL WORK IS NOT A STALL (the wl_bgsweep live-work rule, the sibling of the stuck-shell owned-work guard). An item leased to a shell the harness lists as running, with a descendant process doing real work, stays at the ping rung: quiet output is how a long hash verify looks, and the resolve rung's TaskStop remedy would kill it.
+    _bg_wids = sorted({wid for _k, _l, _a, _s, _g, wid in subjects if wid and wid in now_bg})
+    working = set()
+    if _bg_wids:
+        try:
+            if shell_work is None:
+                import wl_stuckshell
+
+                shell_work = wl_stuckshell.shell_work
+            working = set(shell_work(_bg_wids) or ())
+        except Exception:
+            working = set()
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
@@ -840,6 +852,12 @@ def ladder(fold, session_id, event, state_doc, armed_blocks=True):
                         % (label, wid, quiet)
                     )
                 continue
+        if wid and wid in working:
+            if age >= LADDER_PING_MIN:
+                pings.append(
+                    "%s   (no update for %dm; its shell is doing real work)" % (label, age)
+                )
+            continue
         if age >= LADDER_RESOLVE_MIN:
             if fire_once("resolve"):
                 resolves.append("%s   (no update for %dm)" % (label, age))

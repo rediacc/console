@@ -5,6 +5,7 @@ Every control here is a RED/GREEN PAIR or it is not a control. The one that matt
 something. See agent/plans/PLAN-subagent-idle-detection.md.
 """
 
+import datetime
 import importlib.util
 import json
 import os
@@ -171,6 +172,49 @@ def run():
             L.teammate_state("/x", "sess", "e1")[0],
             "working",
         )
+        print("== 6. a running shell doing real work stays at the ping rung ==")
+        import types
+
+        import wl_core as WC
+
+        until = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60)).strftime(
+            "%Y-%m-%dT%H:%MZ"
+        )
+        old = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=200)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        rec = {
+            "id": "abcd1234",
+            "state": ">",
+            "owner": "sess0000",
+            "line": "- [>] (sess0000) long verify until:%s worker:bshell01" % until,
+            "upd": old,
+        }
+        fold = types.SimpleNamespace(items=[rec])
+        event = {
+            "session_id": "sess0000",
+            "background_tasks": [{"id": "bshell01", "status": "running"}],
+        }
+        orig_tasks = WC.task_statuses
+        WC.task_statuses = lambda *_a, **_k: {}
+        try:
+            res = L.ladder(
+                fold,
+                "sess0000",
+                event,
+                {},
+                armed_blocks=False,
+                shell_work=lambda _ids: {"bshell01": "python3 cf_retire"},
+            )
+            check("a working shell's 200m-quiet item gets no resolve rung", res[2], [])
+            check("it is still named at the ping rung", len(res[0]), 1)
+            # CONTROL: the same item with no live work in its shell reaches the resolve rung, so the assertion above is not vacuous.
+            res = L.ladder(
+                fold, "sess0000", event, {}, armed_blocks=False, shell_work=lambda _ids: {}
+            )
+            check("CONTROL: a shell with no live work reaches the resolve rung", len(res[2]), 1)
+        finally:
+            WC.task_statuses = orig_tasks
     finally:
         L._teammate_meta, L.idle_edge = orig_meta, orig_edge
     print("\npassed=%d failed=%d" % (TALLY["ok"], TALLY["fail"]))
