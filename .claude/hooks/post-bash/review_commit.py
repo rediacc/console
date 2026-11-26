@@ -303,12 +303,21 @@ def fixes_review_lines(cmd, cwd, root, session, verb=None):
         lease = commit_policy.lease_root(top)
         review_root = R.review_root(root)
         branch = R.current_branch(review_root)
-        skipped = [] if lease else _over_cap(repo, before, after)
+        skipped = _over_cap(repo, before, after)
         if skipped:
-            lines.append(
-                "Fixes-Review %s not marked: the range holds more than %d commits, so no trailer was read; mark each by hand: worklist.py --review-mark %s <id> fixed <sha>"
-                % (", ".join(skipped[:8]), FIXES_SCAN_MAX, me)
-            )
+            named = ", ".join(skipped[:8])
+            if len(skipped) > 8:
+                named += " and %d more" % (len(skipped) - 8)
+            if lease:
+                lines.append(
+                    "Fixes-Review %s not read: the range holds more than %d commits, so no trailer was scanned; name each fixed in the report, the lead's landing pick marks it (never --review-mark from a lease)"
+                    % (named, FIXES_SCAN_MAX)
+                )
+            else:
+                lines.append(
+                    "Fixes-Review %s not marked: the range holds more than %d commits, so no trailer was read; mark each by hand: worklist.py --review-mark %s <id> fixed <sha>"
+                    % (named, FIXES_SCAN_MAX, me)
+                )
         for sha in _new_commits(repo, before, after):
             body = R.git_out(repo, "log", "-1", "--format=%B", sha)
             for fid in dict.fromkeys(FIXES_REVIEW_RE.findall(body)):

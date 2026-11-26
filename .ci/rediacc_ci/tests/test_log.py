@@ -437,5 +437,33 @@ def test_ensure_utf8_reconfigures_a_non_utf8_stream():
     assert stream.calls == [{"encoding": "utf-8", "errors": "replace"}]
 
 
+class _NoReconfigure:
+    """A non-UTF-8 stream with no `reconfigure` (a mock, a pipe wrapper) that records every touch."""
+
+    def __init__(self):
+        self.encoding = "cp1252"
+        self.touched = []
+
+    def __setattr__(self, name, value):
+        if name != "touched" and hasattr(self, "touched"):
+            self.touched.append(name)
+        object.__setattr__(self, name, value)
+
+
 def test_ensure_utf8_leaves_non_wrapper_streams_alone():
-    log.ensure_utf8(io.StringIO())
+    stream = _NoReconfigure()
+    log.ensure_utf8(stream)
+    assert stream.touched == []
+    assert stream.encoding == "cp1252"
+    sio = io.StringIO()
+    log.ensure_utf8(sio)
+    assert sio.getvalue() == ""
+
+
+def test_emit_encodes_safely_on_a_caller_owned_non_utf8_stream():
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="ascii", write_through=True)
+    log.Logger(stream=stream, colour=False).step("\u2192 go")
+    assert stream.encoding == "ascii"
+    assert b"go" in raw.getvalue()
+    assert raw.getvalue().endswith(b"\n")

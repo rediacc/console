@@ -121,7 +121,7 @@ def ensure_utf8(stream) -> None:
 def ensure_utf8_std() -> None:
     """`ensure_utf8` on the process's real stdout and stderr, once, at import.
 
-    A deliberate process-wide effect: importing this module makes both streams `errors="replace"`, so an unencodable character prints as `?` instead of raising. Every importer is a CI entry point whose log line is worth more than its traceback.
+    A deliberate process-wide effect: importing this module reconfigures each stream that is not already UTF-8 (and can be reconfigured) to UTF-8 with `errors="replace"`, so an unencodable character prints as a replacement instead of raising. A stream already UTF-8 is left exactly as it was. Every importer is a CI entry point whose log line is worth more than its traceback.
     """
     for stream in (sys.stdout, sys.stderr):
         ensure_utf8(stream)
@@ -202,7 +202,13 @@ class Logger:
         # Only the live `sys.stderr` (which a test or a caller may have replaced since import) is ours to reconfigure; an explicit stream belongs to the caller, whose later writes must keep its encoding.
         if self._stream is None:
             ensure_utf8(self.stream)
-        self.stream.write(self.format(level, message) + "\n")
+        line = self.format(level, message) + "\n"
+        try:
+            self.stream.write(line)
+        except UnicodeEncodeError:
+            # A caller-owned stream keeps its encoding, so encode for it rather than raise.
+            encoding = getattr(self.stream, "encoding", None) or "ascii"
+            self.stream.write(line.encode(encoding, "replace").decode(encoding))
         # A stream without flush(), or a closed one, must not turn a log line into a traceback: the place a logger is called is the place something has already gone wrong.
         with contextlib.suppress(AttributeError, ValueError):
             self.stream.flush()

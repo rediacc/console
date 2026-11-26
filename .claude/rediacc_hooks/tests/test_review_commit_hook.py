@@ -907,6 +907,46 @@ def test_a_range_over_the_scan_cap_is_named_not_silently_skipped(world):
     assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
 
 
+def test_an_over_cap_notice_counts_the_ids_past_the_eighth(world):
+    """e81cd4f8.1: the notice names the first eight ids and says how many more, so none vanishes."""
+    sha = world.commit()
+    world.run_child(sha)
+    world.hook("git status")
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i)
+    ids = ["%s.%d" % (sha[:8], n) for n in range(1, 12)]
+    world.commit(
+        "f.py",
+        body="a = 1\nb = 2\nc = 4\n",
+        msg="fix(x): z\n\n" + "\n".join("Fixes-Review: %s" % i for i in ids),
+    )
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert ids[7] in text, text
+    assert ids[8] not in text, text
+    assert "and 3 more" in text, text
+
+
+def test_an_over_cap_range_in_a_lease_is_named_for_the_report(world):
+    """e81cd4f8.2: inside a lease an over-cap range prints a notice too (no --review-mark from a lease)."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    lease = world.repo / ".claude" / "worktrees" / "l2"
+    world.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
+    env = {"CLAUDE_PROJECT_DIR": str(lease)}
+    world.hook("git status", cwd=lease, extra_env=env)
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i, repo=lease)
+    (lease / "f.py").write_text("a = 1\nb = 2\nc = 4\n", encoding="utf-8")
+    world.git("commit", "-q", "-m", "fix(x): z\n\nFixes-Review: %s" % fid, "--", "f.py", repo=lease)
+    _rc, out, _e, _t = world.hook("git commit -m z -- f.py", cwd=lease, extra_env=env)
+    text = _context(out)
+    assert "Fixes-Review %s not read: the range holds more than 50 commits" % fid in text, text
+    assert "--review-mark" in text, text
+    assert "never" in text, text
+
+
 def test_a_head_that_is_not_a_fast_forward_marks_nothing(world):
     """f8f8c82a.1: a reset followed by a new commit (a HEAD that does not descend from the recorded one) is not a landing, so its trailer is neither marked nor reported."""
     sha = world.commit()
