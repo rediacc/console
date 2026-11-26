@@ -314,7 +314,7 @@ def _human(size):
     return f"{value:.1f} TB"
 
 
-USAGE = "Usage: python3 -m rediacc_ci.dev.temp_probe -- <cmd> [<args>...] | census [--all] [--no-source]\n"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.dev.temp_probe -- <cmd> [<args>...] | census [--all] [--no-source]\n"
 
 
 def _run_census(args, out):
