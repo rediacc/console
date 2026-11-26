@@ -1149,7 +1149,8 @@
       "UPSTREAM_URL",
       "VITEST",
       "VITE_CI_MODE",
-      "VITE_TURNSTILE_SITE_KEY"
+      "VITE_TURNSTILE_SITE_KEY",
+      "comspec"
     ],
     "harness": [
       "ACCOUNT_API_PORT",
@@ -3484,6 +3485,9 @@
       ".ci/rediacc_ci/tests/test_core_dockerx.py": [
         "DOCKER_HOST"
       ],
+      ".ci/rediacc_ci/tests/test_core_dockerx_group.py": [
+        "PATH"
+      ],
       ".ci/rediacc_ci/tests/test_core_env.py": [
         "REDIACC_TEST_ENV_APPLY"
       ],
@@ -3588,6 +3592,9 @@
       ".ci/rediacc_ci/tests/test_dev_worktree_lease.py": [
         "HOME",
         "REDIACC_LEASE_TMP_BASE"
+      ],
+      ".ci/rediacc_ci/tests/test_differential_write_recorded.py": [
+        "REDIACC_CI_REGOLDEN"
       ],
       ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py": [
         "HOME"
@@ -3983,9 +3990,6 @@
         "WORKLIST_BRAVE_MAX_FIRES",
         "WORKLIST_BRAVE_TTL_MIN"
       ],
-      ".claude/hooks/stop/wl_checklist.py": [
-        "WORKLIST_DEAD_HOURS"
-      ],
       ".claude/hooks/stop/wl_checks.py": [
         "WORKLIST_ALWAYS_FULL_MAX",
         "WORKLIST_ARCHIVE_HOURS",
@@ -4140,7 +4144,6 @@
       ],
       ".claude/hooks/stop/wl_report.py": [
         "CLAUDE_CONFIG_DIR",
-        "WORKLIST_DEAD_HOURS",
         "WORKLIST_REPORTS_DIR",
         "WORKLIST_REPORT_INDEX_READ_MAX_BYTES",
         "WORKLIST_REPORT_RELAY_FLOOR",
@@ -4157,7 +4160,8 @@
         "BASHCOV_CALL",
         "RESPROFILE_ROOT",
         "TMPDIR",
-        "WORKLIST_PROFILE"
+        "WORKLIST_PROFILE",
+        "_WL_SITEPROFILE"
       ],
       ".claude/hooks/stop/wl_review.py": [
         "COMMIT_REVIEW_CHILD",
@@ -4183,9 +4187,6 @@
         "WORKLIST_SHAPEDUP_WIDE_CAP",
         "WORKLIST_SHAPE_MAX_FIRES",
         "WORKLIST_SHAPE_TTL_MIN"
-      ],
-      ".claude/hooks/stop/wl_snapshot.py": [
-        "WORKLIST_DEAD_HOURS"
       ],
       ".claude/hooks/stop/wl_stack.py": [
         "TMPDIR"
@@ -4351,6 +4352,7 @@
         "TZ"
       ],
       ".claude/rediacc_hooks/tests/test_hooks_boundary.py": [
+        "TMPDIR",
         "W15_PROBE"
       ],
       ".claude/rediacc_hooks/tests/test_hooks_fixtures.py": [

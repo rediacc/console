@@ -29,6 +29,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_www as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -1161,7 +1162,7 @@ def test_a_fork_head_word_preview_is_refused_before_any_wrangler_call(tmp_path) 
             {
                 "pull_request": {
                     "head": {"repo": {"full_name": "fork/console"}},
-                    "base": {"repo": {"full_name": "rediacc/console"}},
+                    "base": {"repo": {"full_name": GH_REPO}},
                 }
             }
         ),

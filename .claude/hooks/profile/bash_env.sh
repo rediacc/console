@@ -172,8 +172,9 @@ elif [[ $- != *i* ]] && {
             ((__bashcov_p > 1)) || break
             read -r __bashcov_l 2>/dev/null <"/proc/$__bashcov_p/stat" || break
             __bashcov_l=${__bashcov_l##*) }
-            __bashcov_l=($__bashcov_l)
-            __bashcov_p=${__bashcov_l[1]:-0}
+            __bashcov_l=${__bashcov_l#* }
+            __bashcov_p=${__bashcov_l%% *}
+            [[ $__bashcov_p =~ ^[0-9]+$ ]] || __bashcov_p=0
         done
     fi
     ((__bashcov_keep)) || {
