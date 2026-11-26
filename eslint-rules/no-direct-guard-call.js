@@ -71,6 +71,13 @@ function memberName(callee) {
   return undefined;
 }
 
+/** The local a destructuring property binds to `enforce` (`{ enforce }`, `{ enforce: e }`, `{ 'enforce': e }`), undefined for any other property. */
+function enforceBindingOf(prop) {
+  if (prop.type !== 'Property' || prop.value.type !== 'Identifier') return undefined;
+  const key = prop.computed ? undefined : (prop.key.name ?? prop.key.value);
+  return key === 'enforce' ? prop.value.name : undefined;
+}
+
 export const noDirectGuardCall = {
   meta: {
     type: 'problem',
@@ -131,9 +138,8 @@ export const noDirectGuardCall = {
         if (node.id.type !== 'ObjectPattern' || node.init?.type !== 'Identifier') return;
         if (!enforceNamespaces.has(node.init.name)) return;
         for (const prop of node.id.properties) {
-          if (prop.type !== 'Property' || prop.value.type !== 'Identifier') continue;
-          const key = prop.computed ? undefined : (prop.key.name ?? prop.key.value);
-          if (key === 'enforce') enforceLocals.add(prop.value.name);
+          const local = enforceBindingOf(prop);
+          if (local) enforceLocals.add(local);
         }
       },
       CallExpression(node) {

@@ -53,7 +53,9 @@ test.describe
       const result = await runner.executeOnWorker(once('paranoid'));
       // The refusal text names the allowed levels (private/renet i18n key forensics_level.level_invalid), so a misspelled flag or a crashed verb, which also exit non-zero, does not pass here.
       expect(result.code, runner.getCombinedOutput(result)).not.toBe(0);
-      expect(runner.getCombinedOutput(result)).toContain('"paranoid" must be basic, standard or full');
+      expect(runner.getCombinedOutput(result)).toContain(
+        '"paranoid" must be basic, standard or full'
+      );
       expect(await settings()).toEqual(before);
     });
   });
