@@ -2,7 +2,7 @@
 
 CI runs on every push, so a real provider key in a test job spends money on each run; every CI test answers from the scripted provider in packages/shared/src/ai/scripted/ instead.
 
-A job receives a secret through a `secrets.<NAME>` expression, a name in the `secrets:` input of the bws-secrets action, an env key, or a `bws_env exec --profile <p>` whose consumer in .ci/config/secret-supply.json names it. A job receiving an AI provider secret is refused unless it is an operational job: in an `ops-*` workflow and running no test command. The PR review and the watchdog classifier call a model because calling one is their job, not to test anything.
+A job receives a secret through a `secrets.<NAME>` expression, a name in the `secrets:` input of the bws-secrets action, an env key, or a `bws_env exec --profile <p>` whose consumer in .ci/config/secret-supply.json names it. A job receiving an AI provider secret is refused unless it is an operational job: in an `ops-*` or `cd-*` workflow and running no test command. The PR review and the watchdog classifier call a model because calling one is their job, not to test anything; a `cd-*` deploy job only pushes a secret to a Worker (the read-only AI_GATEWAY_LOGS_TOKEN of the nightly credit reconcile), which spends nothing per run (operator ruling ASKED:2026-11-26T07:34Z).
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ def violations(name: str, workflow: dict, consumers: dict[str, set[str]]) -> lis
         ai = sorted(n for n in received_secrets(workflow, job, consumers) if AI_SECRET.search(n))
         if not ai:
             continue
-        operational = name.startswith("ops-") and not runs_tests(job)
+        operational = name.startswith(("ops-", "cd-")) and not runs_tests(job)
         if not operational:
             found.append("%s job %s receives %s" % (name, job_id, ", ".join(ai)))
     return found
@@ -151,6 +151,16 @@ def test_an_ops_job_that_runs_tests_is_not_operational() -> None:
     ]
     workflow["jobs"]["unit"]["steps"][0]["run"] = "node classify.js"
     assert violations("ops-control.yml", workflow, {}) == []
+
+
+def test_a_cd_deploy_job_is_operational_only_while_it_runs_no_tests() -> None:
+    workflow = yaml.safe_load(CONTROL)
+    workflow["jobs"]["unit"]["steps"][0]["run"] = "node push-secrets.js"
+    assert violations("cd-control.yml", workflow, {}) == []
+    workflow["jobs"]["unit"]["steps"][0]["run"] = "npx vitest run"
+    assert violations("cd-control.yml", workflow, {}) == [
+        "cd-control.yml job unit receives ANTHROPIC_API_KEY"
+    ]
 
 
 def test_names_that_only_resemble_a_provider_pass() -> None:
