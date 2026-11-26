@@ -5,10 +5,14 @@ from __future__ import annotations
 import json
 import pathlib
 import subprocess
+from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci.ops import publish_models as pm
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 SECRETS = {
     "MODEL_ED25519_PRIVATE_KEY": "k",
@@ -26,7 +30,7 @@ class FakeRunner:
         self.cwds: list[pathlib.Path | None] = []
         self.fail_on = fail_on
 
-    def __call__(self, argv: list[str], env: dict[str, str], cwd: pathlib.Path | None) -> int:
+    def __call__(self, argv: list[str], env: Mapping[str, str], cwd: pathlib.Path | None) -> int:
         self.calls.append(list(argv))
         self.envs.append(dict(env))
         self.cwds.append(cwd)
@@ -232,7 +236,9 @@ def test_credentials_reach_the_children_under_the_aws_names() -> None:
 
 def test_a_failed_step_stops_the_run_before_the_pointer_uploads() -> None:
     class Failing(FakeRunner):
-        def __call__(self, argv: list[str], env: dict[str, str], cwd: pathlib.Path | None) -> int:
+        def __call__(
+            self, argv: list[str], env: Mapping[str, str], cwd: pathlib.Path | None
+        ) -> int:
             if argv[1:3] == ["s3", "cp"] and "objects/ab12" in argv[4]:
                 self.calls.append(list(argv))
                 return 1

@@ -97,6 +97,7 @@ def _run_program(tmp_path: pathlib.Path) -> dict[str, str]:
     go = shutil.which("go")
     if go is None:
         pytest.fail("the go toolchain is required to drive renet's validators")
+        raise AssertionError  # pytest.fail never returns; narrows `go` for mypy
     mod = (RENET / "go.mod").read_text(encoding="utf-8")
     # The probe module inherits renet's requirement set, so every indirect version resolves as it does in renet itself.
     probe = mod.replace("module github.com/rediacc/renet", "module a1probe", 1)

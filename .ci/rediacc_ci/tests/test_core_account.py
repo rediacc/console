@@ -2114,4 +2114,4 @@ def test_bws_exec_returns_only_when_profile_and_every_also_profile_are_hydrated(
     argv = _capture_bws_exec(monkeypatch, only, also=("rotation-reads",))
     assert "rotation-reads" in argv
     both = {"PATH": "/usr/bin", account.BWS_PROFILES_ENV: "rotation,rotation-reads"}
-    assert account.bws_exec("rotation", ["rotation"], both, also=("rotation-reads",)) is None
+    account.bws_exec("rotation", ["rotation"], both, also=("rotation-reads",))

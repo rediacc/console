@@ -247,7 +247,8 @@ def test_dead_pid_run_dirs_removed_in_each_base_and_live_ones_kept(tmp_path):
     gone.wait()
     live = subprocess.Popen(["sleep", "300"])
     try:
-        dead_dirs, live_dirs = [], []
+        dead_dirs: list[pathlib.Path] = []
+        live_dirs: list[pathlib.Path] = []
         for base in bases:
             base.mkdir()
             for prefix, bucket, pid in (

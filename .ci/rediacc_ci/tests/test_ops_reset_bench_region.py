@@ -103,11 +103,10 @@ def test_an_unknown_or_missing_region_exits_2_before_anything(monkeypatch, argv)
 
 def test_a_missing_wipe_pair_refuses_before_any_wipe(monkeypatch):
     asked: list[tuple] = []
-    real = reset_bench.R2Credentials
     _world(monkeypatch, [], asked)
 
-    class Unbound(real):
-        def __init__(self, region="eu"):
+    class Unbound(reset_bench.R2Credentials):
+        def __init__(self, region: str = "eu") -> None:
             monkeypatch.delenv("BENCH_WIPE_R2_ACCESS_KEY_ID", raising=False)
             monkeypatch.delenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY", raising=False)
             monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://abc.r2.cloudflarestorage.com")

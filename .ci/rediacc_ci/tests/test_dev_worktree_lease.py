@@ -3639,9 +3639,12 @@ def _fail_after_tmpdir(monkeypatch):
 def test_lease_tmpdir_is_removed_when_the_lease_fails(repo, monkeypatch):
     made = []
     real = lease._make_tmpdir
-    monkeypatch.setattr(
-        lease, "_make_tmpdir", lambda lease_id: made.append(real(lease_id)) or made[-1]
-    )
+
+    def recording(lease_id):
+        made.append(real(lease_id))
+        return made[-1]
+
+    monkeypatch.setattr(lease, "_make_tmpdir", recording)
     _fail_after_tmpdir(monkeypatch)
     with pytest.raises(lease.LeaseRefusedError, match="record unwritable"):
         lease.make_lease(repo.root, name="failing")

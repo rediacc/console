@@ -26,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from typing import Any
 
 __all__ = ["census", "main", "prefix_of", "probe", "roots", "snapshot"]
 
@@ -89,7 +90,7 @@ def snapshot(watched, skip=()):
 
 def _children():
     """`{pid: [child pids]}` from /proc."""
-    kids = {}
+    kids: dict[int, list[int]] = {}
     for entry in os.listdir("/proc"):
         if not entry.isdigit():
             continue
@@ -107,7 +108,7 @@ def _tree_strings(root_pid):
     """Command lines, cwds and open-file targets of every descendant of `root_pid` right now."""
     kids = _children()
     todo = list(kids.get(root_pid, []))
-    seen = set()
+    seen: set[str] = set()
     while todo:
         pid = todo.pop()
         todo.extend(kids.get(pid, []))
@@ -273,7 +274,7 @@ def census(watched=None, today_only=True, now=None):
     """`{prefix: {"count", "bytes", "inodes", "paths"}}` over the roots."""
     watched = roots() if watched is None else watched
     stamp = now or _local_date(None)
-    groups = {}
+    groups: dict[str, dict[str, Any]] = {}
     for path, mtime in snapshot(watched).items():
         if today_only and _local_date(mtime / 1e9) != stamp:
             continue
