@@ -53,12 +53,6 @@
       "slow_runs": 1,
       "slow_p50_ms": 20.8
     },
-    "block_agent_cap": {
-      "chain": "pre-agent",
-      "fires": 0,
-      "slow_runs": 58,
-      "slow_p50_ms": 101.4
-    },
     "block_agent_state_shape": {
       "chain": "pre-edit",
       "fires": 0,
