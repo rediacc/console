@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
-import { setExitCode } from '../../services/core/request-context.js';
+import { setExitCode, writeStderr } from '../../services/core/request-context.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
 
@@ -37,7 +37,7 @@ async function setupRenet(options: { debug?: boolean }, useSudo: boolean): Promi
   // renet has no --debug flag: rdc consumes it, echoes the argv and sets REDIACC_DEBUG=1 for the child.
   const args = ['ops', 'host', 'setup'];
   if (options.debug)
-    console.warn(`[DEBUG] ${useSudo ? 'sudo ' : ''}${renetPath} ${args.join(' ')}`);
+    writeStderr(`[DEBUG] ${useSudo ? 'sudo ' : ''}${renetPath} ${args.join(' ')}\n`);
   const debugEnv = options.debug ? { REDIACC_DEBUG: '1' } : undefined;
   // sudo resets the environment, so under sudo the variable rides as `env REDIACC_DEBUG=1 <renet>`.
   const exitCode = useSudo

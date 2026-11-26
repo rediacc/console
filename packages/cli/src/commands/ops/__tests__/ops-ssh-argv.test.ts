@@ -9,7 +9,7 @@ const BASE = [
   'UserKnownHostsFile=/dev/null',
   '-o',
   'LogLevel=ERROR',
-];
+] as const;
 
 // O8: on Windows/Hyper-V `rdc ops ssh --vm-id 11` passed "rdc@127.0.0.1:22211" and ssh failed with
 // "Could not resolve hostname 127.0.0.1:22211".

@@ -3853,7 +3853,7 @@
       "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine hiilib kõigist neist kontrollidest mööda ja rikub kasutuselevõtu vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up <repo-ref>",
       "fileWriteDetected": "Tuvastati faili kirjutamine ({{detected}}). Kasuta selle asemel rdc repo sync:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync kannab failid üle delta kompressiooni, kontrollsummade ja õigete õigustega.",
       "launchFailed": "Terminali käivitamine ebaõnnestus: {{error}}",
-      "externalRefused": "Anti --external, kuid välist terminali ei õnnestunud avada ({{error}}). Midagi ei käivitatud; käivita uuesti ilma --external-ita, et töötada selles terminalis.",
+      "externalRefused": "Anti --external, kuid välist terminali ei õnnestunud avada ({{error}}). Midagi ei käivitatud; käivita uuesti ilma lippu --external, et töötada selles terminalis.",
       "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
       "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
       "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",

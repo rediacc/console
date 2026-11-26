@@ -142,7 +142,7 @@ class OpsExecutorService {
       REDIACC_INFRA: backend,
       ...(options.debug ? { REDIACC_DEBUG: '1' } : {}),
     };
-    if (options.debug) console.warn(`[DEBUG] ${renetPath} ${args.join(' ')}`);
+    if (options.debug) writeStderr(`[DEBUG] ${renetPath} ${args.join(' ')}\n`);
 
     return new Promise<OpsCommandResult>((resolve, reject) => {
       const child = spawn(renetPath, args, {

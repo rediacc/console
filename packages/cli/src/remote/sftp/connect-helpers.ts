@@ -6,6 +6,9 @@ import { lookup } from 'node:dns/promises';
 import { fingerprint, keyBlobAlgorithm, parseKnownHosts } from '../../utils/host-keys.js';
 import type { Ipv6Resolver } from './types.js';
 
+/** Stands in for the machine name in the suggested command when the caller names none. */
+const MACHINE_NAME_PLACEHOLDER = '<machine-name>';
+
 /** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
 export const resolveAaaa: Ipv6Resolver = async (hostname) => {
   try {
@@ -85,6 +88,6 @@ export function buildHostKeyMismatchMessage(params: {
     'local config, and so will a man-in-the-middle. Confirm the fingerprint out',
     'of band before trusting it.',
     '',
-    `If the change is expected: rdc machine scan-keys ${machineName ? machineName : '<machine-name>'}`,
+    `If the change is expected: rdc machine scan-keys ${machineName ? machineName : MACHINE_NAME_PLACEHOLDER}`,
   ].join('\n');
 }

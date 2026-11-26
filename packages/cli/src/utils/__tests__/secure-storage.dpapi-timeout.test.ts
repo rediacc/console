@@ -11,13 +11,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const stand = vi.hoisted(() => ({
   mode: 'ok' as 'ok' | 'timeout' | 'broken',
   timeouts: [] as unknown[],
+  stateDir: undefined as string | undefined,
 }));
 
 vi.mock('@rediacc/shared/paths', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@rediacc/shared/paths')>();
   return {
     ...actual,
-    getRediaccDirs: () => ({ ...actual.getRediaccDirs(), state: process.env.B3_STATE }),
+    getRediaccDirs: () => ({ ...actual.getRediaccDirs(), state: stand.stateDir }),
   };
 });
 
@@ -58,7 +59,7 @@ describe('DPAPI backend time limit (finding B3)', () => {
     stand.mode = 'ok';
     stand.timeouts.length = 0;
     vi.stubEnv('REDIACC_SECRET_STORE', '');
-    vi.stubEnv('B3_STATE', mkdtempSync(join(tmpdir(), 'rdc-b3-')));
+    stand.stateDir = mkdtempSync(join(tmpdir(), 'rdc-b3-'));
     Object.defineProperty(process, 'platform', { value: 'win32' });
   });
   afterEach(() => {

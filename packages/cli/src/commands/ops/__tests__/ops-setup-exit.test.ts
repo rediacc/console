@@ -49,7 +49,7 @@ async function runSetup(): Promise<void> {
   await root.parseAsync(['node', 'rdc', 'ops', 'setup']);
 }
 
-describe('rdc ops setup on Windows follows renet ops host setup', () => {
+describe('ops setup on Windows follows renet ops host setup', () => {
   beforeEach(() => {
     for (const fn of [spawn, success, error, setExitCode, handleError]) fn.mockReset();
     setPlatform('win32');
