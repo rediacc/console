@@ -24,6 +24,7 @@ export const CONSOLE_AUDIT_TYPES = [
   'console.reveal',
   // Emitted by the AI assistant plans, not by the console exec path.
   'console.ai.approval',
+  'console.ai.mode',
   'console.feedback.sent',
   'console.feedback.declined',
   // Forensics investigation (PLAN-forensics-investigation D3, D4).
@@ -153,6 +154,20 @@ const aiApproval = z.strictObject({
   }),
 });
 
+// One mode change of an AI conversation: who (the actor), the command that forced it when the judge did (`pathKey`), the target, and the verification method of the person's step-up.
+const aiMode = z.strictObject({
+  ...envelope,
+  type: z.literal('console.ai.mode'),
+  data: z.strictObject({
+    requestId: requestId.optional(),
+    pathKey: z.string().min(1).max(200).optional(),
+    mode: z.enum(['ask', 'auto', 'skip']),
+    previous: z.enum(['ask', 'auto', 'skip']).optional(),
+    source: z.enum(['user', 'judge']),
+    method: stepUpMethod.nullable(),
+  }),
+});
+
 const feedbackSent = z.strictObject({
   ...envelope,
   type: z.literal('console.feedback.sent'),
@@ -258,6 +273,7 @@ export const ConsoleAuditEventSchema = z.discriminatedUnion('type', [
   stepUp,
   reveal,
   aiApproval,
+  aiMode,
   feedbackSent,
   feedbackDeclined,
   forensicsOpen,

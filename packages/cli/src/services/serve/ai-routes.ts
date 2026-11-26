@@ -54,7 +54,7 @@ import { type LanguageModel } from 'ai';
 import type { Context, Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { z } from 'zod';
-import { auditApproval } from '../ai/approval-audit.js';
+import { auditJudgeVerdict, auditModeChange, auditRefusal } from '../ai/approval-audit.js';
 import type { AiApprovals } from '../ai/approvals.js';
 import { autonomyHold, effectiveMode } from '../ai/autonomy.js';
 import {
@@ -76,7 +76,13 @@ import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorde
 import { runSmoke } from '../ai/smoke.js';
 import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
 import { type AgentGrantHandle } from './agent-grant-session.js';
-import { BadAiRequest, disabledModesFor, judgeApproval } from './ai-approval.js';
+import {
+  BadAiRequest,
+  disabledModesFor,
+  judgeApproval,
+  recordApproval,
+  recordRefusal,
+} from './ai-approval.js';
 import {
   type BuiltModel,
   type ChatSession,
@@ -90,7 +96,6 @@ import {
   refusedSmoke,
   type StartedJob,
   type TurnRecord,
-  toolRequestId,
   UNRECORDED,
 } from './ai-chat-tools.js';
 import { type BusyCounter, createBusyCounter } from './busy.js';
@@ -288,6 +293,7 @@ export function registerAiRoutes(
       const { principal, body, config } = await admit(c, ModeRequestSchema);
       const disabled = disabledModesFor(config, principal);
       if ((disabled as readonly string[]).includes(body.mode)) {
+        await auditRefusal(deps.audit, { principal, destructive: false });
         return c.json(
           {
             error: `The ${body.mode} mode is disabled by your organization's policy (aiModesDisabled).`,
@@ -297,37 +303,25 @@ export function registerAiRoutes(
           403
         );
       }
+      const previous = ai.modes.get(principal, body.conversationId);
       ai.modes.set(principal, body.conversationId, body.mode);
+      if (previous !== body.mode) {
+        await auditModeChange(deps.audit, { principal, destructive: false, mode: body.mode });
+      }
       return c.json({ conversationId: body.conversationId, mode: body.mode });
     } catch (error) {
       return refusal(c, error);
     }
   });
 
-  /** Audit one redeemed answer; an approval whose record cannot be delivered loses its grant. */
-  async function recordApproval(
-    principal: SessionPrincipal,
-    body: ApprovalRequest,
-    judged: { destructive: boolean }
-  ): Promise<void> {
-    try {
-      await auditApproval(deps.audit, {
-        principal,
-        decision: body.decision,
-        destructive: judged.destructive,
-        requestId: toolRequestId(body.conversationId, body.toolCallId),
-      });
-    } catch (error) {
-      ai.approvals.revokeGrant(principal, body.conversationId, body.command);
-      throw error;
-    }
-  }
-
   app.post(AI_ROUTES.approval, async (c) => {
     try {
       const { principal, body, config } = await admit(c, ApprovalRequestSchema);
       const judged = await judgeApproval(body, helpers.requestScopedConfig(config));
-      if ('refusal' in judged) return c.json(judged.refusal, 403);
+      if ('refusal' in judged) {
+        await recordRefusal(deps.audit, principal, body, judged.refusal);
+        return c.json(judged.refusal, 403);
+      }
       const { grand, destructive } = judged;
 
       const { remember, ...answer } = body;
@@ -335,7 +329,7 @@ export function registerAiRoutes(
       if (!verdict.ok) {
         return c.json({ error: verdict.message, code: verdict.code }, verdict.status);
       }
-      await recordApproval(principal, body, judged);
+      await recordApproval(deps.audit, ai.approvals, principal, body, judged);
       if (remember && body.decision === 'approve' && !destructive && !grand) {
         ai.modes.allowExact(principal, body.conversationId, body.command);
       }
@@ -429,6 +423,9 @@ export function registerAiRoutes(
       tally: judgeTally,
       setAskMode: () => ai.modes.set(principal, body.conversationId, 'ask'),
     });
+    const record = { principal, destructive: call.entry.severity === 'destructive' };
+    await auditJudgeVerdict(deps.audit, { ...record, verdict: judgment.verdict.verdict });
+    if (judgment.fallback) await auditModeChange(deps.audit, { ...record, mode: 'ask' });
     return judgment.verdict.verdict === 'allow';
   }
 

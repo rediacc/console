@@ -11,10 +11,13 @@ import {
   mergePolicies,
   PolicyDocumentSchema,
 } from '@rediacc/shared/policy';
+import { auditApproval, auditRefusal } from '../ai/approval-audit.js';
 import { isGrandTarget } from '../ai/autonomy.js';
 import { boundEffectivePolicy } from '../config/policy-record.js';
+import { toolRequestId } from './ai-chat-tools.js';
 import type { ApprovalRequest } from './ai-routes.js';
 import { prepareCommand } from './command-dispatch.js';
+import type { ExecutorAuditEvent } from './deps.js';
 import { clusterSubjectOf, resolveExecutorTarget } from './policy.js';
 import type { SessionPrincipal } from './sessions.js';
 
@@ -89,4 +92,47 @@ export async function judgeApproval(
       destructive,
     },
   };
+}
+
+type AuditSink = ((event: ExecutorAuditEvent) => Promise<void>) | undefined;
+
+/** Audit one redeemed answer; an approval whose record cannot be delivered loses its grant. */
+export async function recordApproval(
+  audit: AuditSink,
+  ledger: {
+    revokeGrant(
+      principal: SessionPrincipal,
+      conversationId: string,
+      command: ApprovalRequest['command']
+    ): void;
+  },
+  principal: SessionPrincipal,
+  body: ApprovalRequest,
+  judged: { destructive: boolean }
+): Promise<void> {
+  try {
+    await auditApproval(audit, {
+      principal,
+      decision: body.decision,
+      destructive: judged.destructive,
+      requestId: toolRequestId(body.conversationId, body.toolCallId),
+    });
+  } catch (error) {
+    ledger.revokeGrant(principal, body.conversationId, body.command);
+    throw error;
+  }
+}
+
+/** Audit the refusal of an approval the executor judged needs a step-up. */
+export function recordRefusal(
+  audit: AuditSink,
+  principal: SessionPrincipal,
+  body: ApprovalRequest,
+  refusal: { destructive?: unknown }
+): Promise<void> {
+  return auditRefusal(audit, {
+    principal,
+    destructive: Boolean(refusal.destructive),
+    requestId: toolRequestId(body.conversationId, body.toolCallId),
+  });
 }

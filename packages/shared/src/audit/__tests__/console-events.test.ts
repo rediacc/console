@@ -39,6 +39,7 @@ const DATA: Record<(typeof CONSOLE_AUDIT_TYPES)[number], Record<string, unknown>
   'console.stepup': { method: 'totp' },
   'console.reveal': { pathKey: 'repo secret list', method: 'password' },
   'console.ai.approval': { pathKey: 'repo up', decision: 'approved' },
+  'console.ai.mode': { mode: 'ask', previous: 'auto', source: 'judge', method: null },
   'console.feedback.sent': { feedbackId: 'f-1' },
   'console.feedback.declined': { runId: 'run-1', pathKey: 'repo up' },
   'console.forensics.open': {

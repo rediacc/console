@@ -928,6 +928,46 @@ describe('the approval token, end to end', () => {
     expect(started()).toBe(1);
   });
 
+  it('records each judge verdict, the fallback to Ask, and the mode changes', async () => {
+    let verdict: 'allow' | 'block' = 'allow';
+    const { hono, store, audited } = flow(OPEN, {
+      judge: () => Promise.resolve({ verdict, reason: 'because' }),
+    });
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'auto');
+    await turnEvents(hono);
+    verdict = 'block';
+    for (let i = 0; i < 3; i += 1) await turnEvents(hono);
+    const paths = audited.map((a) => `${a.commandPath}:${a.success}`);
+    expect(paths.filter((p) => p === 'ai judge:true')).toHaveLength(1);
+    expect(paths.filter((p) => p === 'ai judge:false')).toHaveLength(3);
+    expect(paths.filter((p) => p === 'ai mode ask:true')).toHaveLength(1);
+    await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
+    await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
+    expect(audited.filter((a) => a.commandPath === 'ai mode skip')).toHaveLength(1);
+  });
+
+  it('records the refusal of a destructive approval that names no step-up', async () => {
+    toolOf = { name: 'repo_delete', input: { ref: 'shop:trial' } };
+    const { hono, audited } = flow();
+    const held = await pendingApproval(hono);
+    const refused = await post(hono, AI_ROUTES.approval, answer(held));
+    expect(refused.status).toBe(403);
+    expect(audited).toContainEqual({ commandPath: 'ai refusal', success: false });
+  });
+
+  it('records the refusal of a mode the policy disabled', async () => {
+    const { hono, audited } = flow({
+      version: 1,
+      defaults: { commands: { allow: ['*'] }, aiModesDisabled: ['auto'] },
+    });
+    const refused = await post(hono, AI_ROUTES.mode, {
+      conversationId: CHAT.conversationId,
+      mode: 'auto',
+    });
+    expect(refused.status).toBe(403);
+    expect(audited).toEqual([{ commandPath: 'ai refusal', success: false }]);
+  });
+
   /** The account's conversation store as `POST /console/ai/messages` keeps it: a row per conversation, replays no-ops. */
   function accountStore() {
     const rows = new Map<string, Record<string, unknown>[]>();
