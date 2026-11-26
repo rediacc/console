@@ -625,7 +625,7 @@ def profile_token_path(file_name: str, env: Mapping[str, str] | None = None) -> 
 def read_profile_token(file_name: str, env: dict | None = None) -> str:
     """The token a profile with `token_file` fetches with: that file only, "" when absent.
 
-    NEITHER `BWS_ACCESS_TOKEN` NOR `BWS_ACCESS_TOKEN_FILE` IS CONSULTED. Both name the shared ci-shared credential, and the point of a separate file is that this profile's store is never reached with it. The mode check is the default file's.
+    NEITHER `BWS_ACCESS_TOKEN` NOR `BWS_ACCESS_TOKEN_FILE` IS CONSULTED. Both name the shared ci-shared credential, and the point of a separate file is that this profile's store is never reached with it. The mode check covers the profile file itself and its directory, the same rule as the default file's.
     """
     return _read_token_file(profile_token_path(file_name, os.environ if env is None else env))
 
@@ -1090,26 +1090,36 @@ def hydrate(
     need_req = [s for s in required if not environ.get(s[1])]
     need_opt = [s for s in optional if not environ.get(s[1])]
     resolved: dict[str, str] = {}
-    # One fetch per token source: the default token, and one per distinct `token_file` a wanted profile names. A name goes to the first source that asks for it.
+    # One fetch per token source: the default token, and one per distinct `token_file` a wanted profile names. A name goes to ONE source: required before optional, and a `token_file` source before the default one, whatever order the profiles were named in, because the store a `token_file` profile reads is the one built to hold its names.
     groups: dict[str, tuple[list, list]] = {}
     claimed: set[str] = set()
+    ordered = sorted(wanted, key=lambda n: not table[n].get("token_file"))
+    per_profile = {n: profile_specs(table, [n]) for n in ordered}
     for pname in wanted:
-        pf = str(table[pname].get("token_file") or "")
-        p_req, p_opt = profile_specs(table, [pname])
-        g_req, g_opt = groups.setdefault(pf, ([], []))
-        for spec in p_req:
-            if spec in need_req and spec[1] not in claimed:
-                claimed.add(spec[1])
-                g_req.append(spec)
-        for spec in p_opt:
-            if spec in need_opt and spec[1] not in claimed:
-                claimed.add(spec[1])
-                g_opt.append(spec)
+        groups.setdefault(str(table[pname].get("token_file") or ""), ([], []))
+    for half, need in ((0, need_req), (1, need_opt)):
+        for pname in ordered:
+            g = groups[str(table[pname].get("token_file") or "")][half]
+            for spec in per_profile[pname][half]:
+                if spec in need and spec[1] not in claimed:
+                    claimed.add(spec[1])
+                    g.append(spec)
     for token_file, (g_req, g_opt) in groups.items():
         if not (g_req or g_opt):
             continue
         if token_file:
             token = read_profile_token(token_file, environ)
+            if not token and not g_req:
+                print(
+                    "rediacc_ci.core.bws_env: the token file %s is missing or empty; %d optional name(s) left unset: %s"
+                    % (
+                        profile_token_path(token_file, environ),
+                        len(g_opt),
+                        " ".join(s[1] for s in g_opt),
+                    ),
+                    file=err,
+                )
+                continue
             if not token:
                 raise RefusalError(
                     [

@@ -739,7 +739,7 @@ def bws_exec(
     env: dict[str, str] | None = None,
     also: tuple[str, ...] = (),
 ) -> None:
-    """`account_bws_exec`, `.ci/lib/account.sh:48-56`. Returns only when PROFILE is already hydrated.
+    """`account_bws_exec`, `.ci/lib/account.sh:48-56`. Returns only when PROFILE and every `also` profile are already hydrated.
 
     Otherwise REPLACES this process with `python3 -m rediacc_ci.core.bws_env exec --profile PROFILE -- $CONSOLE_ROOT_DIR/run.sh RUN_SH_ARGS...`, exactly the twin's `exec`, so the profile's secrets reach the re-run through its ENVIRONMENT and never through a file.
     The re-run finds PROFILE in `REDIACC_BWS_PROFILES` and carries on; an absent token or store entry is `bws_env`'s refusal, with no fallback.

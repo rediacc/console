@@ -2084,3 +2084,34 @@ def test_stop_does_not_sigkill_a_member_whose_pid_was_reused(monkeypatch, tmp_pa
         if proc.stdout is not None:
             proc.stdout.close()
         shutil.rmtree(work, ignore_errors=True)
+
+
+def _capture_bws_exec(monkeypatch, env, **kwargs):
+    seen = {}
+
+    def fake_exec(argv, **_kwargs):
+        seen["argv"] = list(argv)
+        raise _LaunchedError
+
+    monkeypatch.setattr(account.proc, "exec_replace", fake_exec)
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", "/tmp/console-root-fixture")
+    with pytest.raises(_LaunchedError):
+        account.bws_exec("rotation", ["rotation", "list"], env, **kwargs)
+    return seen["argv"]
+
+
+def test_bws_exec_binds_every_also_profile_in_the_one_exec(monkeypatch):
+    """Review 8989f955.3: dropping the `also` profiles from the argv would leave rotation-reads unbound."""
+    argv = _capture_bws_exec(monkeypatch, {"PATH": "/usr/bin"}, also=("rotation-reads",))
+    profiles = [argv[i + 1] for i, a in enumerate(argv) if a == "--profile"]
+    assert profiles == ["rotation", "rotation-reads"]
+    assert argv[argv.index("--") + 2 :] == ["rotation", "list"]
+
+
+def test_bws_exec_returns_only_when_profile_and_every_also_profile_are_hydrated(monkeypatch):
+    """Review 8989f955.3: a hydrated PROFILE alone is not enough once `also` names another profile."""
+    only = {"PATH": "/usr/bin", account.BWS_PROFILES_ENV: "rotation"}
+    argv = _capture_bws_exec(monkeypatch, only, also=("rotation-reads",))
+    assert "rotation-reads" in argv
+    both = {"PATH": "/usr/bin", account.BWS_PROFILES_ENV: "rotation,rotation-reads"}
+    assert account.bws_exec("rotation", ["rotation"], both, also=("rotation-reads",)) is None

@@ -309,5 +309,5 @@ Auth: `AWS_OPS_ACCESS_KEY_ID`/`AWS_OPS_SECRET_ACCESS_KEY` for AWS IAM and `CF_GL
 `rediacc_ci.ops.deploy_bench` runs under the `deploy-bench-eu` Bitwarden profile and runs `rotation check --for=bench` as a preflight, so a stale bench credential cannot ship a dead key.
 The check has three outcomes (0 in sync, 1 drift, 2 could not check) and the deploy refuses the secrets push on anything but 0.
 
-`rotation check` reads the observability host's OTLP basicauth user names over plain OpenSSH, with no `rdc` login: `OBS_READER_SSH_KEY_B64` (the base64 of the machine's existing private key), `OBS_READER_SSH_KNOWN_HOSTS` (the pinned known_hosts lines) and `OBS_READER_SSH_TARGET` (`user@host[:port]`), bound by the `rotation` and `deploy-bench-eu` profiles.
+`rotation check` reads the observability host's OTLP basicauth user names over plain OpenSSH, with no `rdc` login: `OBS_READER_SSH_KEY_B64` (the base64 of the machine's existing private key), `OBS_READER_SSH_KNOWN_HOSTS` (the pinned known_hosts lines) and `OBS_READER_SSH_TARGET` (`user@host[:port]`), bound by the `rotation-reads` (which `./run.sh rotation` binds beside `rotation`) and `deploy-bench-eu` profiles.
 An absent value, a host-key mismatch or a refused key is a could-not-check finding that names its cause, never drift and never a skip.
