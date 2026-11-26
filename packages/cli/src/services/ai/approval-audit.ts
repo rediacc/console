@@ -34,8 +34,13 @@ const AI_MODE_AUDIT_PREFIX = 'ai mode';
 /** The most characters of a command path the account's audit schema accepts. */
 const COMMAND_PATH_MAX = 200;
 
-/** A command path key: lowercase words joined by single spaces, never a value or a flag. */
-const COMMAND_PATH_KEY = /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)*$/;
+/**
+ * A command path key: lowercase words (letters and single hyphens) joined by single spaces. That is
+ * the shape of a command path and no more: a digit, flag, `=` or quote is refused, but a shape
+ * cannot tell a command word from a purely alphabetic value, so the caller passes the key of a
+ * command it holds.
+ */
+const COMMAND_PATH_KEY = /^[a-z]+(-[a-z]+)*( [a-z]+(-[a-z]+)*)*$/;
 
 /**
  * The path of a decision about one command: `<path> <pathKey>` when the command is known, so the
@@ -114,7 +119,7 @@ export async function auditJudgeVerdict(
   await audit?.(decisionEvent(AI_JUDGE_AUDIT_PATH, input.verdict === 'allow', input));
 }
 
-/** Record a refusal of an approval (a missing step-up, a disabled mode). */
+/** Record a refusal: an approval without its step-up, or a request for a mode that is disabled. */
 export async function auditRefusal(audit: AuditSink, input: AiDecisionAuditInput): Promise<void> {
   await audit?.(decisionEvent(AI_REFUSAL_AUDIT_PATH, false, input));
 }

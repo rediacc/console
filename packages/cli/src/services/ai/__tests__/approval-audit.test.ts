@@ -4,6 +4,7 @@ import type { SessionPrincipal } from '../../serve/sessions.js';
 import {
   auditApproval,
   auditJudgeVerdict,
+  auditJudgment,
   auditModeChange,
   auditRefusal,
 } from '../approval-audit.js';
@@ -81,8 +82,14 @@ describe('AI decision audit events', () => {
     await auditRefusal(audit, { ...base, pathKey: long });
     await auditRefusal(audit, { ...base, pathKey: 'repo up --password hunter2' });
     await auditRefusal(audit, { ...base, pathKey: 'repo up\nshop' });
+    await auditRefusal(audit, { ...base, pathKey: 'repo up hunter2-secret' });
+    await auditRefusal(audit, { ...base, pathKey: 'repo up -x' });
+    await auditRefusal(audit, { ...base, pathKey: 'repo up--x' });
     await auditRefusal(audit, { ...base, pathKey: ok });
     expect(events.map((e) => e.commandPath)).toEqual([
+      'ai refusal',
+      'ai refusal',
+      'ai refusal',
       'ai refusal',
       'ai refusal',
       'ai refusal',
@@ -111,6 +118,21 @@ describe('AI decision audit events', () => {
     await auditModeChange(audit, { principal, destructive: false, mode: 'skip' });
     expect(events).toMatchObject([{ commandPath: 'ai mode skip', success: true, params: {} }]);
     expect(events[0]).not.toHaveProperty('requestId');
+  });
+
+  it('joins a judge verdict and its fallback mode change by the tool call request id', async () => {
+    const { events, audit } = sink();
+    const call = { entry: { severity: 'destructive' }, command: { pathKey: 'repo up' } };
+    await auditJudgment(audit, {
+      principal,
+      requestId: 'c1:t9',
+      call: call as never,
+      judgment: { verdict: { verdict: 'block' }, fallback: {} },
+    });
+    expect(events.map((e) => [e.commandPath, e.requestId])).toEqual([
+      ['ai judge repo up', 'c1:t9'],
+      ['ai mode ask', 'c1:t9'],
+    ]);
   });
 
   it('does nothing when no sink is configured, and passes a sink failure through', async () => {
