@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T06:27:37.559Z",
+  "generatedAt": "2026-11-26T08:02:58.295Z",
   "legs": [
     {
       "index": 1,
@@ -50,6 +50,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_renet_changed.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_set_image_tags.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_sibling_runs.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_bws_env_token_file.py",
         "pytest:.ci/rediacc_ci/tests/test_core_dockerx.py",
         "pytest:.ci/rediacc_ci/tests/test_core_env.py",
         "pytest:.ci/rediacc_ci/tests/test_core_lease_heavy_lock.py",

@@ -1035,6 +1035,7 @@
       "AWS_SES_ADMIN_KEY_ID",
       "AWS_SES_ADMIN_REGION",
       "AWS_SES_ADMIN_SECRET",
+      "CF_JOB_TOKEN",
       "CF_MANAGEMENT_TOKEN",
       "CI_QUICK_CLONE_DIR",
       "COLUMNS",
@@ -2303,6 +2304,7 @@
       ".ci/rediacc_ci/ops/bench_access.py": [
         "CF_EMAIL",
         "CF_GLOBAL_API_KEY",
+        "CF_JOB_TOKEN",
         "CF_MANAGEMENT_TOKEN",
         "REDIACC_BWS_PROFILES",
         "WSL_DISTRO_NAME"
@@ -2319,6 +2321,7 @@
         "AWS_SES_ADMIN_SECRET",
         "CF_EMAIL",
         "CF_GLOBAL_API_KEY",
+        "CF_JOB_TOKEN",
         "CF_MANAGEMENT_TOKEN"
       ],
       ".ci/rediacc_ci/ops/deploy_bench.py": [
@@ -3447,6 +3450,9 @@
       ],
       ".ci/rediacc_ci/tests/test_core_account.py": [
         "HOME",
+        "PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_core_bws_env_token_file.py": [
         "PATH"
       ],
       ".ci/rediacc_ci/tests/test_core_devbox.py": [

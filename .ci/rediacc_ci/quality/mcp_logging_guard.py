@@ -125,11 +125,8 @@ UNREDACTED_RE = re.compile(r"\bgetUnredacted\b")
 ROUTE_CREDENTIAL_RE = re.compile(
     r"(?:token|secret|bearer|api[_-]?key|password|rmcp_|authorization)", re.IGNORECASE
 )
-# Template placeholders the renderer fills (`rediacc_ci.deploy.*`). A SPLICE stands for whole TOML
-# text the template cannot show, either a line of its own (`  @@ROUTE_ENTRY@@`) or a suffix after a
-# value (`"..."@@EXTRA_VARS@@`); it is dropped before parsing and counted in the success line, and
-# the rendered files of every Worker that commits them are judged in full. A bare VALUE
-# placeholder (`x = @@X@@`) is quoted.
+# Template placeholders the renderer fills (`rediacc_ci.deploy.*`). A SPLICE stands for whole TOML text the template cannot show, either a line of its own (`  @@ROUTE_ENTRY@@`) or a suffix after a value (`"..."@@EXTRA_VARS@@`); it is dropped before parsing and counted in the success line, and the rendered files of every Worker that commits them are judged in full.
+# A bare VALUE placeholder (`x = @@X@@`) is quoted.
 SPLICE_LINE_RE = re.compile(r"^[ \t]*@@\w+@@[ \t]*,?[ \t]*$", re.MULTILINE)
 SPLICE_SUFFIX_RE = re.compile(r"([\"'\]}])@@\w+@@[ \t]*$", re.MULTILINE)
 BARE_PLACEHOLDER_RE = re.compile(r"([=\[,{][ \t]*)@@(\w+)@@(?=[ \t]*(?:[,\]}#]|$))", re.MULTILINE)

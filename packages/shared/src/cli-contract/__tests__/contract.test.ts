@@ -392,8 +392,7 @@ describe('CLI contract', () => {
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
     // 81 -> 82: `repo health` (one repository_health read job, its print a step). 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4). 84 -> 83: `machine prune` was not proxy-capable, so not detachable.
-    // 83 -> 86: LM10 (D57) made seven machine-plane commands of the surface table proxy-capable; `machine prune`, `machine converge` and `config reconcile` run as machine jobs, and the other four are section 24 exceptions above.
-    // 86 -> 87: `forensics level` (FI8), a CONVERTED single-call job of plans-repo.ts.
+    // 83 -> 86: LM10 (D57) made seven machine-plane commands of the surface table proxy-capable; `machine prune`, `machine converge` and `config reconcile` run as machine jobs, and the other four are section 24 exceptions above. 86 -> 87: `forensics level` (FI8), a CONVERTED single-call job of plans-repo.ts.
     expect(detachable).toHaveLength(87);
     expect(getCommand('machine prune')?.proxyCapable).toBe(true);
     expect(getCommand('machine prune')?.detachable).toBe(true);

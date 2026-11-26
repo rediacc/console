@@ -73,6 +73,7 @@
       "vitest.config.mjs",
       "eslint-rules/**/*.js",
       "workers/**/*.ts",
+      "workers/**/*.mjs",
       ".github/actions/**/*.js",
       "packages/**/*.json",
       "packages/**/*.css",

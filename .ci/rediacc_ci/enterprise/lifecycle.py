@@ -383,7 +383,11 @@ def missing_buckets(ctx: Context, name: str) -> list[str]:
 
 
 def export(ctx: Context, name: str, *, accept_missing_buckets: Sequence[str] = ()) -> pathlib.Path:
-    """Dump the D1 database, copy the configs, backups and audit buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr. A bucket named in `accept_missing_buckets` is exported as a recorded gap (`missing_buckets` in the manifest) when it answers 404, and refused when it exists (before any earlier export is touched, and on the kept-export path too), so the flag never hides data. The kept export is returned as it is: its manifest is not rewritten, so an accepted gap is recorded only by an export that runs."""
+    """Dump the D1 database, copy the configs, backups and audit buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished.
+
+    A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr.
+    A bucket named in `accept_missing_buckets` is exported as a recorded gap (`missing_buckets` in the manifest) when it answers 404, and refused when it exists (before any earlier export is touched, and on the kept-export path too), so the flag never hides data.
+    The kept export is returned as it is: its manifest is not rewritten, so an accepted gap is recorded only by an export that runs."""
     _refuse_ci(ctx)
     company = load_company(ctx, name)
     accepted = sorted(set(accept_missing_buckets))

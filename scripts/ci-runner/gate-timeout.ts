@@ -31,6 +31,10 @@ export const GATE_TIMEOUT_MIN_BY_ID: Readonly<Record<string, number>> = {
   'check:ci-test-account-web': 900_000,
   // 131.9 s measured unloaded, 277.0 s under a narrow run, and killed at its 300 s floor in the next narrow run (2026-11-26).
   'build:www': 900_000,
+  // Same shape as check:ci-test-account-web: one vitest worker takes 153.0 s on an idle machine (40.7 s four-wide, 2026-11-26), and its derived 360 s timer killed it under a full ci:quick that day.
+  'check:ci-account-backup': 900_000,
+  // 41 s alone (2026-11-26), but its `core_lease heavy-lock` wait runs inside the timer, so queueing behind the heavy gates of a full ci:quick ran it into its 300 s floor that day.
+  'check:deps': 900_000,
 };
 /** A gate declared `slow` with no measurement anywhere. */
 export const GATE_TIMEOUT_UNMEASURED_SLOW_MS = 1_800_000;
