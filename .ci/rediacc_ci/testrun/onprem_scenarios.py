@@ -93,6 +93,10 @@ class Context:
         """The token whose file the env names (`executor`, `enroll` or `other`)."""
         return self.secret("ONPREM_%s_TOKEN_FILE" % name.upper())
 
+    def remember(self, value: str) -> None:
+        """Scrub `value` from every verdict, as a secret read from a file is."""
+        self._secrets.append(value)
+
     def scrub(self, text: str) -> str:
         for secret in self._secrets:
             if secret:
@@ -148,6 +152,11 @@ class Context:
         self, url: str, headers: dict[str, str] | None = None, insecure_tls: bool = False
     ) -> tuple[int, str]:
         return self.rt.http_get(url, headers, insecure_tls)
+
+    def http_post(
+        self, url: str, body: dict, headers: dict[str, str] | None = None, timeout: float = 60
+    ) -> tuple[int, str]:
+        return self.rt.http_post(url, body, headers, timeout)
 
     def port_answers(self, port: int) -> bool:
         return self.rt.port_answers(port)

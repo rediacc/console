@@ -200,6 +200,28 @@ class Runtime:
             timeout=timeout,
         )
 
+    def http_post(
+        self, url: str, body: dict, headers: dict[str, str] | None = None, timeout: float = 60
+    ) -> tuple[int, str]:
+        """(status, body) of a JSON POST to a loopback URL; a refused connection is (0, ""). The body travels in the request, never on argv."""
+        parts = urllib.parse.urlsplit(url)
+        connection = http.client.HTTPConnection(
+            parts.hostname or "127.0.0.1", parts.port or 80, timeout=timeout
+        )
+        try:
+            connection.request(
+                "POST",
+                parts.path or "/",
+                body=json.dumps(body),
+                headers={"content-type": "application/json", **(headers or {})},
+            )
+            response = connection.getresponse()
+            return response.status, response.read().decode("utf-8", errors="replace")
+        except (OSError, http.client.HTTPException):
+            return 0, ""
+        finally:
+            connection.close()
+
     def http_get(
         self, url: str, headers: dict[str, str] | None = None, insecure_tls: bool = False
     ) -> tuple[int, str]:
@@ -475,6 +497,7 @@ class Stack:
             "ONPREM_OTHER_TOKEN_FILE": str(self.layout.token_file("other")),
             "ONPREM_MACHINE_SECRET_ID": seeded.machine_secret_id,
             "ONPREM_MACHINE_SECRET_FILE": str(self.layout.token_file("machine-secret")),
+            "ONPREM_RECOVERY_CODE_FILE": str(self.layout.token_file("recovery-code")),
             "ONPREM_STATE_FILE": str(self.layout.state_file),
             "ONPREM_MACHINES": opts.machines,
             "ONPREM_MACHINE_NAME": MACHINE_NAME,
@@ -505,6 +528,8 @@ class Stack:
             "PORT": str(opts.account_port),
             "TEST_MODE": "true",
             "DATABASE_PATH": str(self.layout.sqlite),
+            # The single-org fallback of the per-org executor resolver: a revoked agent grant is pushed to this daemon (PLAN-rmcp-agent-grants.md Design 8).
+            "EXECUTOR_URL": "http://127.0.0.1:%d" % opts.daemon_port,
         }
         if opts.entry == "on-premise":
             env["ON_PREMISE_MODE"] = "true"
@@ -533,7 +558,7 @@ class Stack:
                 n
                 for n in env
                 if (n.startswith(("ACCOUNT_", "CONFIG_R2_")) and n != "CONFIG_R2_ENDPOINT")
-                or n in {"ROOT_EMAIL", "PORT", "TEST_MODE", "ON_PREMISE_MODE"}
+                or n in {"ROOT_EMAIL", "PORT", "TEST_MODE", "ON_PREMISE_MODE", "EXECUTOR_URL"}
             ]
             # The port is PUBLISHED on loopback rather than sharing the host network: on Docker Desktop a host-network container binds inside the VM, so the stack's own health check never reached it (measured 2026-11-24, `curl 127.0.0.1:4910` refused while the server answered inside the container). The blob store lives on the host, so the container reaches it as host.docker.internal.
             port = opts.account_port
@@ -588,6 +613,9 @@ class Stack:
             ("machine-secret", str(store["machineSecret"])),
         ):
             self.write_token(name, token)
+        # The owner's recovery code opens the store's CEK for the `grants` suite's seeded grants.
+        if store.get("recoveryCode"):
+            self.write_token("recovery-code", str(store["recoveryCode"]))
         return Seeded(
             executor, enroll, other, str(store["machineSecretId"]), str(store["machineSecret"])
         )

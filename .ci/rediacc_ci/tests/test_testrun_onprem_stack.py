@@ -19,6 +19,7 @@ from rediacc_ci.testrun import onprem_stack as mod
 
 TOKEN_VALUE = "rdc_secret_token_value"
 MACHINE_SECRET = "machine-secret-value-xyz"
+RECOVERY_CODE = "RC1-recovery-code-value"
 
 
 class FakeRuntime(mod.Runtime):
@@ -81,7 +82,11 @@ class FakeRuntime(mod.Runtime):
         return "%s-%s" % (TOKEN_VALUE, name)
 
     def seed_store(self, _port: int, _email: str) -> dict:
-        return {"machineSecretId": "ms-1", "machineSecret": MACHINE_SECRET}
+        return {
+            "machineSecretId": "ms-1",
+            "machineSecret": MACHINE_SECRET,
+            "recoveryCode": RECOVERY_CODE,
+        }
 
     def rustfs_alive(self, port: int) -> bool:
         if self.fail == "rustfs":
@@ -123,6 +128,13 @@ def test_up_writes_an_env_file_naming_every_piece_and_no_secret(layout: mod.Layo
         token_path = pathlib.Path(env["ONPREM_%s_TOKEN_FILE" % key])
         assert token_path.read_text(encoding="utf-8").startswith(TOKEN_VALUE)
         assert stat.S_IMODE(token_path.stat().st_mode) == 0o600
+    # The grants suite opens the store with the owner's recovery code, kept in a 0600 file like the tokens.
+    assert RECOVERY_CODE not in text
+    recovery = pathlib.Path(env["ONPREM_RECOVERY_CODE_FILE"])
+    assert recovery.read_text(encoding="utf-8").strip() == RECOVERY_CODE
+    assert stat.S_IMODE(recovery.stat().st_mode) == 0o600
+    # The account server pushes a revoked agent grant to the stack's daemon.
+    assert rt.groups[0][1]["EXECUTOR_URL"] == "http://127.0.0.1:8480"
 
 
 def test_up_starts_the_pieces_in_order_and_records_them(layout: mod.Layout) -> None:
