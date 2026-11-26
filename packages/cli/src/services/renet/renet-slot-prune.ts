@@ -22,8 +22,8 @@ export function buildSlotPruneStep(opts: {
   const keep = Math.max(1, Math.trunc(opts.keep));
   return [
     `curdir=$(dirname "$(readlink ${currentPath} 2>/dev/null || echo ${installPath})")`,
-    // Unit files and the executables of live processes; a slot named in either stays.
-    `refs=$(cat ${unitDir}/*.service 2>/dev/null || true; ${sudo}sh -c 'for p in /proc/[0-9]*/exe; do readlink "$p" 2>/dev/null || true; done' 2>/dev/null || true)`,
+    // Unit files and the executables of live processes; a slot named in either stays. One `ls -l` prints every `exe -> <binary>` line: a readlink per process forked once per pid, 1.8 s for 670 processes on an idle host and past the 30 s test budget under load.
+    `refs=$(cat ${unitDir}/*.service 2>/dev/null || true; ${sudo}sh -c 'ls -l /proc/[0-9]*/exe 2>/dev/null || true' 2>/dev/null || true)`,
     'kept=0',
     `if [ -f "$curdir/renet" ]; then kept=1; fi`,
     // ls -t lists newest first; current/renet is a symlink and its directory is skipped by name.
