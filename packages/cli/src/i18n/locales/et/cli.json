@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "Anna täpselt üks valikutest --dir <tõendikaust> või --report <fail>.",
     "reportIdUnknown": "Aruande id-d ei saa failinimest \"{{file}}\" lugeda; anna --id <aruande id>.",
     "reportPdfNotCheckable": "\"{{file}}\" on PDF, mille räsi ei saa siin uuesti arvutada; kontrolli JSON-aruannet, millest see tehti, või lohista PDF portaali kontrolllehele.",
+    "reportPdfUnreadable": "Aruande {{id}} PDF saabus kontoserverist vigasena: see ei ole PDF-faili täielik base64. Midagi ei kirjutatud; käivita eksport uuesti.",
     "noSuchReport": "Aruannet \"{{id}}\" pole registris.",
     "reportValid": "Aruanne {{id}} on ehtne: etapp {{stage}}, allkirjastatud võtmega {{keyId}}.",
     "reportInvalid_unreadable": "Aruanne {{id}} ei läbi kontrolli: fail pole loetav JSON.",

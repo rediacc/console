@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "--dir <证据目录> 与 --report <文件> 必须且只能给出一个。",
     "reportIdUnknown": "无法从文件名 \"{{file}}\" 读出报告 ID；请传入 --id <报告 ID>。",
     "reportPdfNotCheckable": "\"{{file}}\" 是 PDF，无法在此重新计算哈希；请验证生成它的 JSON 报告，或把 PDF 拖到门户的验证页面。",
+    "reportPdfUnreadable": "报告 {{id}} 的 PDF 从账户服务器传来时已损坏：它不是一个 PDF 文件的完整 base64。未写入任何内容；请重新运行导出。",
     "noSuchReport": "没有 ID 为 \"{{id}}\" 的报告记录。",
     "reportValid": "报告 {{id}} 真实有效：阶段 {{stage}}，由密钥 {{keyId}} 签名。",
     "reportInvalid_unreadable": "报告 {{id}} 未通过验证：文件不是可读的 JSON。",

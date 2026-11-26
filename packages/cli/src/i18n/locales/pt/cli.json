@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "Informe exatamente um entre --dir <diretório de evidências> e --report <arquivo>.",
     "reportIdUnknown": "O id do relatório não pode ser lido no nome de arquivo \"{{file}}\"; passe --id <id do relatório>.",
     "reportPdfNotCheckable": "\"{{file}}\" é um PDF, que não pode ser re-hasheado aqui; verifique o relatório JSON de que ele foi gerado, ou solte o PDF na página de verificação do portal.",
+    "reportPdfUnreadable": "O PDF do relatório {{id}} chegou danificado do servidor de contas: não é o base64 completo de um arquivo PDF. Nada foi gravado; execute a exportação novamente.",
     "noSuchReport": "Não há nenhum relatório \"{{id}}\" registrado.",
     "reportValid": "O relatório {{id}} é autêntico: etapa {{stage}}, assinado com a chave {{keyId}}.",
     "reportInvalid_unreadable": "O relatório {{id}} não passa na verificação: o arquivo não é um JSON legível.",

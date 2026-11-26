@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "Indicare esattamente uno tra --dir <cartella delle prove> e --report <file>.",
     "reportIdUnknown": "L'id del rapporto non si ricava dal nome del file \"{{file}}\"; passare --id <id del rapporto>.",
     "reportPdfNotCheckable": "\"{{file}}\" è un PDF e qui non si può ricalcolare l'hash; verificare il rapporto JSON da cui deriva, oppure trascinare il PDF nella pagina di verifica del portale.",
+    "reportPdfUnreadable": "Il PDF del rapporto {{id}} è arrivato danneggiato dal server dell'account: non è il base64 completo di un file PDF. Non è stato scritto nulla; rieseguire l'esportazione.",
     "noSuchReport": "Nessun rapporto \"{{id}}\" è registrato.",
     "reportValid": "Il rapporto {{id}} è autentico: fase {{stage}}, firmato con la chiave {{keyId}}.",
     "reportInvalid_unreadable": "Il rapporto {{id}} non supera la verifica: il file non è JSON leggibile.",

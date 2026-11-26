@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "--dir <증거 디렉터리>와 --report <파일> 중 정확히 하나만 지정하세요.",
     "reportIdUnknown": "파일 이름 \"{{file}}\"에서 보고서 ID를 읽을 수 없습니다. --id <보고서 ID>를 지정하세요.",
     "reportPdfNotCheckable": "\"{{file}}\"은(는) PDF라서 여기서 해시를 다시 계산할 수 없습니다. 원본 JSON 보고서를 검증하거나 포털의 검증 페이지에 PDF를 올리세요.",
+    "reportPdfUnreadable": "보고서 {{id}}의 PDF가 계정 서버에서 손상된 상태로 도착했습니다. PDF 파일의 완전한 base64가 아닙니다. 아무것도 기록되지 않았으니 내보내기를 다시 실행하세요.",
     "noSuchReport": "ID \"{{id}}\"인 보고서는 기록에 없습니다.",
     "reportValid": "보고서 {{id}}은(는) 진본입니다: 단계 {{stage}}, 키 {{keyId}}로 서명됨.",
     "reportInvalid_unreadable": "보고서 {{id}}의 검증에 실패했습니다: 파일이 읽을 수 있는 JSON이 아닙니다.",

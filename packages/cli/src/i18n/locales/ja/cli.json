@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "--dir <証拠ディレクトリ> と --report <ファイル> のうち、ちょうど 1 つを指定してください。",
     "reportIdUnknown": "ファイル名 \"{{file}}\" からレポート ID を読み取れません。--id <レポートID> を指定してください。",
     "reportPdfNotCheckable": "\"{{file}}\" は PDF のため、ここではハッシュを再計算できません。元の JSON レポートを検証するか、PDF をポータルの検証ページに置いてください。",
+    "reportPdfUnreadable": "レポート {{id}} の PDF がアカウントサーバーから破損した状態で届きました。PDF ファイルの完全な base64 ではありません。何も書き込まれていないため、エクスポートを再実行してください。",
     "noSuchReport": "ID \"{{id}}\" のレポートは記録にありません。",
     "reportValid": "レポート {{id}} は真正です: ステージ {{stage}}、鍵 {{keyId}} で署名されています。",
     "reportInvalid_unreadable": "レポート {{id}} は検証に失敗しました: ファイルが読める JSON ではありません。",

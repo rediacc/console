@@ -3129,6 +3129,7 @@
     "forensics.reportInvalid_signature": "87232fcd",
     "forensics.reportInvalid_unreadable": "078c4612",
     "forensics.reportPdfNotCheckable": "16542dc7",
+    "forensics.reportPdfUnreadable": "b9440d05",
     "forensics.reportValid": "1c680b5a",
     "forensics.sensitive": "92d79449",
     "forensics.severalOrgs": "ee5009c7",

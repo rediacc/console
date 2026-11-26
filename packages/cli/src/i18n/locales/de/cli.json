@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "Genau eines von --dir <Beweisverzeichnis> oder --report <Datei> angeben.",
     "reportIdUnknown": "Die Berichts-ID lässt sich dem Dateinamen \"{{file}}\" nicht entnehmen; --id <Berichts-ID> angeben.",
     "reportPdfNotCheckable": "\"{{file}}\" ist ein PDF und lässt sich hier nicht neu hashen; den JSON-Bericht prüfen, aus dem es entstand, oder das PDF auf der Prüfseite des Portals ablegen.",
+    "reportPdfUnreadable": "Das PDF des Berichts {{id}} kam beschädigt vom Kontoserver an: Es ist nicht das vollständige Base64 einer PDF-Datei. Es wurde nichts geschrieben; den Export erneut ausführen.",
     "noSuchReport": "Zu \"{{id}}\" liegt kein Bericht vor.",
     "reportValid": "Bericht {{id}} ist echt: Stufe {{stage}}, signiert mit Schlüssel {{keyId}}.",
     "reportInvalid_unreadable": "Bericht {{id}} besteht die Prüfung nicht: Die Datei ist kein lesbares JSON.",

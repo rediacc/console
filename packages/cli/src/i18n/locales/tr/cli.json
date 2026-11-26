@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "--dir <kanıt dizini> ya da --report <dosya> seçeneklerinden tam olarak birini verin.",
     "reportIdUnknown": "Rapor kimliği \"{{file}}\" dosya adından okunamıyor; --id <rapor kimliği> verin.",
     "reportPdfNotCheckable": "\"{{file}}\" bir PDF olduğundan burada yeniden özetlenemez; üretildiği JSON raporu doğrulayın veya PDF'yi portalın doğrulama sayfasına bırakın.",
+    "reportPdfUnreadable": "{{id}} raporunun PDF dosyası hesap sunucusundan bozuk geldi: tam bir PDF dosyasının base64 karşılığı değil. Hiçbir şey yazılmadı; dışa aktarmayı yeniden çalıştırın.",
     "noSuchReport": "\"{{id}}\" kimlikli bir rapor kayıtlı değil.",
     "reportValid": "{{id}} raporu özgündür: {{stage}} aşaması, {{keyId}} anahtarıyla imzalı.",
     "reportInvalid_unreadable": "{{id}} raporu doğrulanmıyor: dosya okunabilir bir JSON değil.",

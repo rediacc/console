@@ -4006,6 +4006,7 @@
     "verifyNeedsOne": "Give exactly one of --dir <evidence directory> or --report <file>.",
     "reportIdUnknown": "The report id cannot be read from the file name \"{{file}}\"; pass --id <report id>.",
     "reportPdfNotCheckable": "\"{{file}}\" is a PDF, which cannot be re-hashed here; verify the JSON report it was made from, or drop the PDF into the portal verify page.",
+    "reportPdfUnreadable": "The PDF of report {{id}} arrived damaged from the account server: it is not the complete base64 of a PDF file. Nothing was written; run the export again.",
     "noSuchReport": "No report \"{{id}}\" is on record.",
     "reportValid": "Report {{id}} is genuine: stage {{stage}}, signed under key {{keyId}}.",
     "reportInvalid_unreadable": "Report {{id}} does not verify: the file is not readable JSON.",

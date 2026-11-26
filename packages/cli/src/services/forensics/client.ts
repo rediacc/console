@@ -213,6 +213,35 @@ function explain(error: unknown): unknown {
   return error;
 }
 
+/** Canonical padded base64, the only form `Buffer#toString('base64')` on the server writes. */
+const STRICT_BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const PDF_MAGIC = '%PDF-';
+/** The end-of-file marker a complete PDF carries within its last 1024 bytes (ISO 32000-1, 7.5.5). */
+const PDF_EOF = '%%EOF';
+const PDF_TAIL_BYTES = 1024;
+
+/**
+ * The PDF bytes of a `/pdf-base64` answer. `Buffer.from(_, 'base64')` skips characters outside
+ * the alphabet and stops at a cut, so a corrupted or truncated body would decode to a short or
+ * wrong file written with exit 0; anything other than canonical base64 of bytes that open with
+ * the PDF header and close with its end-of-file marker is refused instead, as is a missing or
+ * non-string field.
+ */
+export function decodeReportPdf(base64: unknown, reportId: string): Uint8Array {
+  if (typeof base64 === 'string' && base64.length > 0 && STRICT_BASE64.test(base64)) {
+    const bytes = Buffer.from(base64, 'base64');
+    const head = bytes.subarray(0, PDF_MAGIC.length).toString('latin1');
+    const tail = bytes.subarray(-PDF_TAIL_BYTES).toString('latin1');
+    if (head === PDF_MAGIC && tail.includes(PDF_EOF)) {
+      return new Uint8Array(bytes);
+    }
+  }
+  throw new CliExitError(
+    ERROR_CODES.SERVER_ERROR,
+    t('forensics.reportPdfUnreadable', { id: reportId })
+  );
+}
+
 export class ForensicsClient {
   constructor(private readonly fetchFn: ForensicsFetch = accountServerFetch as ForensicsFetch) {}
 
@@ -315,8 +344,8 @@ export class ForensicsClient {
   ): Promise<unknown> {
     const base = `/incidents/${encodeURIComponent(id)}/reports/${encodeURIComponent(reportId)}`;
     if (format !== 'pdf') return this.call<unknown>(`${base}/${format}`);
-    const { base64 } = await this.call<{ base64: string }>(`${base}/pdf-base64`);
-    return new Uint8Array(Buffer.from(base64, 'base64'));
+    const body = await this.call<{ base64?: unknown } | null>(`${base}/pdf-base64`);
+    return decodeReportPdf(body?.base64, reportId);
   }
 
   /** The public record of a report; a 404 is an unknown or malformed id alike. */

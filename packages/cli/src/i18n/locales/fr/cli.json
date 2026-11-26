@@ -4031,6 +4031,7 @@
     "verifyNeedsOne": "Indiquer exactement l'un de --dir <répertoire de preuves> ou --report <fichier>.",
     "reportIdUnknown": "L'id du rapport ne peut pas être lu dans le nom de fichier \"{{file}}\" ; passer --id <id du rapport>.",
     "reportPdfNotCheckable": "\"{{file}}\" est un PDF, qui ne peut pas être re-haché ici ; vérifier le rapport JSON dont il provient, ou déposer le PDF sur la page de vérification du portail.",
+    "reportPdfUnreadable": "Le PDF du rapport {{id}} est arrivé endommagé depuis le serveur de compte : ce n'est pas le base64 complet d'un fichier PDF. Rien n'a été écrit ; relancer l'export.",
     "noSuchReport": "Aucun rapport \"{{id}}\" n'est enregistré.",
     "reportValid": "Le rapport {{id}} est authentique : étape {{stage}}, signé avec la clé {{keyId}}.",
     "reportInvalid_unreadable": "Le rapport {{id}} ne se vérifie pas : le fichier n'est pas du JSON lisible.",
