@@ -59,7 +59,7 @@ export function rsyncInstallDir(options: { pin?: Msys2RsyncPin; toolsDir?: strin
 }
 
 /** The rsync.exe of the pinned tree (whether or not it is installed). */
-export function rsyncInstallPath(options: { pin?: Msys2RsyncPin; toolsDir?: string } = {}): string {
+function rsyncInstallPath(options: { pin?: Msys2RsyncPin; toolsDir?: string } = {}): string {
   return join(rsyncInstallDir(options), 'usr', 'bin', RSYNC_EXE);
 }
 
