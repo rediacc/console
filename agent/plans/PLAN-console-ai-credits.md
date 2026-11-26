@@ -84,10 +84,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: AC1, AC3, PLAN-rmcp-writeback.md#WB5.
   Accept: `(cd workers/proxy && npx vitest run src/__tests__/ai-egress.test.ts src/__tests__/org-executor.test.ts)` rc 0 and `npm run check:ci-proxy-configs` rc 0.
     (ticked) 2026-11-25T20:33:16Z by d778be9d: AC5 landed d80d3d06c0; merged tree proxy 472 tests, tsc rc 0, check:ci-proxy-configs and check:ci-region-consistency rc 0, proxy-config pytest 76 passed. AI_GATEWAY_TOKEN stays unset until AC13. DEPS-WAIVED: CR2 code landed, its open clause is operator-owned
-- [ ] AC6 [writer] Rediacc tier in the loop host: `rediacc-tier.ts` (the `rediacc:standard` and `rediacc:premium` choices and their default models), resolution of those choices in resolve.ts, and `rediacc-provider.ts` registered in provider.ts, mapping each ledger refusal code to an `ai` error event the UI can name.
+- [x] AC6 [writer] Rediacc tier in the loop host: `rediacc-tier.ts` (the `rediacc:standard` and `rediacc:premium` choices and their default models), resolution of those choices in resolve.ts, and `rediacc-provider.ts` registered in provider.ts, mapping each ledger refusal code to an `ai` error event the UI can name.
   Owns: packages/shared/src/ai/rediacc-tier.ts, packages/shared/src/ai/resolve.ts, packages/cli/src/services/ai/rediacc-provider.ts, packages/cli/src/services/ai/provider.ts, packages/cli/src/services/ai/__tests__/rediacc-provider.test.ts
   Depends on: AC1, PLAN-console-ai-providers.md#AP7.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/rediacc-provider.test.ts)` rc 0 and `(cd packages/shared && npx vitest run src/ai)` rc 0.
+    (ticked) 2026-11-26T02:41:23Z by d778be9d: AC6 landed 63920c4b2a; cli tsc rc 0, ai+serve 712 tests. A grant-bound chat bills the caller, since the agent session carries no person user id (#next). DEPS-WAIVED: AC5 landed
 - [ ] AC7 [writer] Reconcile per D8: `ai-reconcile.service.ts` run from the 03:00 branch of `scheduled`, refunds as `reconcile-adjust`, drift and low-balance alerts through `AlertDigestService`, tested on recorded log-page fixtures.
   Owns: private/account/src/services/ai-reconcile.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/ai-reconcile.test.ts
   Depends on: AC4.
