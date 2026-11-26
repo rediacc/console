@@ -3665,7 +3665,11 @@
       "policyDenied": "当前策略不允许“rdc {{command}}”。拒绝它的规则见详细信息。",
       "grandRepoDenied": "“rdc {{command}}”会更改 grand（生产）仓库“{{name}}”，而当前策略不允许更改 grand 仓库。\n\n请改为在分叉上操作：\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "“rdc {{command}}”是集群操作，而当前策略不允许集群操作。",
-      "confirmationRequired": "“rdc {{command}}”是破坏性命令，会更改 grand（生产）仓库“{{name}}”。\n\n请先征得用户确认，然后加上 {{flag}} {{value}} 再次运行同一命令。"
+      "confirmationRequired": "“rdc {{command}}”是破坏性命令，会更改 grand（生产）仓库“{{name}}”。\n\n请先征得用户确认，然后加上 {{flag}} {{value}} 再次运行同一命令。",
+      "confirmTitle": "确认",
+      "confirmDeclined": "用户未确认，因此没有执行任何操作。",
+      "confirmStale": "此确认已与本次调用不符。请重新调用该工具，以便再次请求确认。",
+      "confirmByArgument": "如需继续，请先征得用户同意，然后使用相同参数并将 confirm 设为 \"{{value}}\"，再次调用 {{tool}}。"
     },
     "authRequired": "需要身份验证。运行：rdc subscription login",
     "cluster": {

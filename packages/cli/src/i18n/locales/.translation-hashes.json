@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3294,
-    "sourceCommit": "e92638b7dfa98e6887f5a9a673c6e99445a8f21a"
+    "keyCount": 3298,
+    "sourceCommit": "504925af13712be329813824338192f58efb3e08"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2811,6 +2811,10 @@
     "errors.agent.configEdit": "e1933233",
     "errors.agent.configEditAncestry": "429ec590",
     "errors.agent.confirmationRequired": "d6d7da52",
+    "errors.agent.confirmByArgument": "71d37219",
+    "errors.agent.confirmDeclined": "6a1d81d7",
+    "errors.agent.confirmStale": "e611dfd7",
+    "errors.agent.confirmTitle": "406e9ad8",
     "errors.agent.createGuard": "8d2296bb",
     "errors.agent.createGuardOverride": "0fe4eef3",
     "errors.agent.createGuardOverrideNonLinux": "7579097a",

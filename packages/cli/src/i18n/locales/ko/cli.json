@@ -3665,7 +3665,11 @@
       "policyDenied": "현재 정책은 \"rdc {{command}}\"를 허용하지 않습니다. 거부한 규칙은 세부 정보에 나와 있습니다.",
       "grandRepoDenied": "\"rdc {{command}}\"는 grand(프로덕션) 저장소인 \"{{name}}\"을(를) 변경하지만, 현재 정책은 grand 저장소 변경을 허용하지 않습니다.\n\n대신 포크에서 작업하세요:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\"는 클러스터 작업이며, 현재 정책은 클러스터 작업을 허용하지 않습니다.",
-      "confirmationRequired": "\"rdc {{command}}\"는 파괴적인 명령으로 grand(프로덕션) 저장소인 \"{{name}}\"을(를) 변경합니다.\n\n사용자에게 확인을 받은 뒤 같은 명령을 {{flag}} {{value}}와 함께 다시 실행하세요."
+      "confirmationRequired": "\"rdc {{command}}\"는 파괴적인 명령으로 grand(프로덕션) 저장소인 \"{{name}}\"을(를) 변경합니다.\n\n사용자에게 확인을 받은 뒤 같은 명령을 {{flag}} {{value}}와 함께 다시 실행하세요.",
+      "confirmTitle": "확인",
+      "confirmDeclined": "사용자가 확인하지 않아 아무것도 실행되지 않았습니다.",
+      "confirmStale": "이 확인은 더 이상 호출과 일치하지 않습니다. 다시 확인을 받으려면 도구를 다시 호출하세요.",
+      "confirmByArgument": "계속하려면 사용자에게 확인을 받은 뒤, 같은 인수에 confirm을 \"{{value}}\"(으)로 설정해 {{tool}}을(를) 다시 호출하세요."
     },
     "authRequired": "인증이 필요합니다. 실행: rdc subscription login",
     "cluster": {

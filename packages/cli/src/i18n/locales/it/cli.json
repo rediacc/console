@@ -3665,7 +3665,11 @@
       "policyDenied": "La policy in vigore non consente \"rdc {{command}}\". I dettagli indicano la regola che l'ha rifiutato.",
       "grandRepoDenied": "\"rdc {{command}}\" modificherebbe \"{{name}}\", un repository grand (produzione), e la policy in vigore non consente modifiche ai repository grand.\n\nLavora invece su un fork:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\" è un'operazione di cluster, e la policy in vigore non consente operazioni di cluster.",
-      "confirmationRequired": "\"rdc {{command}}\" è distruttivo e modificherebbe \"{{name}}\", un repository grand (produzione).\n\nChiedi conferma all'utente, poi esegui di nuovo lo stesso comando con {{flag}} {{value}}."
+      "confirmationRequired": "\"rdc {{command}}\" è distruttivo e modificherebbe \"{{name}}\", un repository grand (produzione).\n\nChiedi conferma all'utente, poi esegui di nuovo lo stesso comando con {{flag}} {{value}}.",
+      "confirmTitle": "Conferma",
+      "confirmDeclined": "L'utente non ha confermato, quindi non è stato eseguito nulla.",
+      "confirmStale": "Questa conferma non corrisponde più alla chiamata. Richiama lo strumento per ricevere di nuovo la richiesta.",
+      "confirmByArgument": "Per procedere, chiedi all'utente, poi richiama {{tool}} con gli stessi argomenti e confirm impostato su \"{{value}}\"."
     },
     "authRequired": "Autenticazione richiesta. Esegui: rdc subscription login",
     "cluster": {

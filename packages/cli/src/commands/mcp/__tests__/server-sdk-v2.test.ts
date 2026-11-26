@@ -9,7 +9,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { startMcpServer } from '../server.js';
 import { buildAllTools } from '../tools.js';
 
-vi.mock('../executor.js', () => ({
+vi.mock('../executor.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../executor.js')>()),
   executeRdcCommand: vi.fn().mockResolvedValue({
     success: true,
     command: 'machine status staging --containers',

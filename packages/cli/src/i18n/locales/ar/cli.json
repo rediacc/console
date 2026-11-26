@@ -3665,7 +3665,11 @@
       "policyDenied": "السياسة المعمول بها لا تسمح بالأمر \"rdc {{command}}\". تذكر التفاصيل القاعدة التي رفضته.",
       "grandRepoDenied": "سيغيّر الأمر \"rdc {{command}}\" المستودع \"{{name}}\"، وهو مستودع grand (إنتاج)، والسياسة المعمول بها لا تسمح بتغيير مستودعات grand.\n\nاعمل على نسخة fork بدلًا من ذلك:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "الأمر \"rdc {{command}}\" عملية على مجموعة خوادم (cluster)، والسياسة المعمول بها لا تسمح بعمليات المجموعات.",
-      "confirmationRequired": "الأمر \"rdc {{command}}\" مدمّر وسيغيّر \"{{name}}\"، وهو مستودع grand (إنتاج).\n\nاطلب من المستخدم التأكيد، ثم شغّل الأمر نفسه مرة أخرى مع {{flag}} {{value}}."
+      "confirmationRequired": "الأمر \"rdc {{command}}\" مدمّر وسيغيّر \"{{name}}\"، وهو مستودع grand (إنتاج).\n\nاطلب من المستخدم التأكيد، ثم شغّل الأمر نفسه مرة أخرى مع {{flag}} {{value}}.",
+      "confirmTitle": "تأكيد",
+      "confirmDeclined": "لم يؤكد المستخدم، لذلك لم يُنفَّذ شيء.",
+      "confirmStale": "هذا التأكيد لم يعد يطابق الاستدعاء. استدعِ الأداة مرة أخرى ليُطلب منك التأكيد من جديد.",
+      "confirmByArgument": "للمتابعة، اسأل المستخدم أولًا، ثم استدعِ {{tool}} مرة أخرى بالوسائط نفسها مع ضبط confirm على \"{{value}}\"."
     },
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc subscription login",
     "cluster": {

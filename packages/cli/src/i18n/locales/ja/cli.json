@@ -3665,7 +3665,11 @@
       "policyDenied": "現在のポリシーでは「rdc {{command}}」は許可されていません。拒否したルールは詳細に示されています。",
       "grandRepoDenied": "「rdc {{command}}」は grand（本番）リポジトリ「{{name}}」を変更しますが、現在のポリシーでは grand リポジトリの変更は許可されていません。\n\n代わりにフォークで作業してください:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "「rdc {{command}}」はクラスター操作ですが、現在のポリシーではクラスター操作は許可されていません。",
-      "confirmationRequired": "「rdc {{command}}」は破壊的なコマンドで、grand（本番）リポジトリ「{{name}}」を変更します。\n\nユーザーに確認を求めてから、同じコマンドを {{flag}} {{value}} を付けて再実行してください。"
+      "confirmationRequired": "「rdc {{command}}」は破壊的なコマンドで、grand（本番）リポジトリ「{{name}}」を変更します。\n\nユーザーに確認を求めてから、同じコマンドを {{flag}} {{value}} を付けて再実行してください。",
+      "confirmTitle": "確認",
+      "confirmDeclined": "ユーザーが確認しなかったため、何も実行されませんでした。",
+      "confirmStale": "この確認は呼び出しと一致しなくなりました。もう一度確認を求めるには、ツールを再度呼び出してください。",
+      "confirmByArgument": "続行するには、ユーザーに確認したうえで、同じ引数のまま confirm を \"{{value}}\" にして {{tool}} を再度呼び出してください。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {

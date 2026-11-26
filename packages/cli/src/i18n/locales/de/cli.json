@@ -3665,7 +3665,11 @@
       "policyDenied": "\"rdc {{command}}\" ist nach der geltenden Richtlinie nicht erlaubt. Die Details nennen die Regel, die den Befehl abgelehnt hat.",
       "grandRepoDenied": "\"rdc {{command}}\" würde \"{{name}}\" ändern, ein Grand-Repository (Produktion), und die geltende Richtlinie erlaubt keine Änderungen an Grand-Repositories.\n\nArbeiten Sie stattdessen mit einem Fork:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\" ist eine Cluster-Operation, und die geltende Richtlinie erlaubt keine Cluster-Operationen.",
-      "confirmationRequired": "\"rdc {{command}}\" ist destruktiv und würde \"{{name}}\" ändern, ein Grand-Repository (Produktion).\n\nBitten Sie den Benutzer um Bestätigung und führen Sie denselben Befehl dann erneut mit {{flag}} {{value}} aus."
+      "confirmationRequired": "\"rdc {{command}}\" ist destruktiv und würde \"{{name}}\" ändern, ein Grand-Repository (Produktion).\n\nBitten Sie den Benutzer um Bestätigung und führen Sie denselben Befehl dann erneut mit {{flag}} {{value}} aus.",
+      "confirmTitle": "Bestätigen",
+      "confirmDeclined": "Der Benutzer hat nicht bestätigt, daher wurde nichts ausgeführt.",
+      "confirmStale": "Diese Bestätigung passt nicht mehr zum Aufruf. Rufen Sie das Tool erneut auf, um noch einmal gefragt zu werden.",
+      "confirmByArgument": "Um fortzufahren, fragen Sie den Benutzer und rufen Sie {{tool}} dann mit denselben Argumenten und confirm auf \"{{value}}\" erneut auf."
     },
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc subscription login",
     "cluster": {

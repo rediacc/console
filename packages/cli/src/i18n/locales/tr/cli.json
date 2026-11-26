@@ -3665,7 +3665,11 @@
       "policyDenied": "Geçerli politika \"rdc {{command}}\" komutuna izin vermiyor. Ayrıntılar, komutu reddeden kuralı belirtir.",
       "grandRepoDenied": "\"rdc {{command}}\", bir grand (üretim) deposu olan \"{{name}}\" deposunu değiştirir ve geçerli politika grand depolarında değişikliğe izin vermiyor.\n\nBunun yerine bir fork üzerinde çalışın:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\" bir küme işlemidir ve geçerli politika küme işlemlerine izin vermiyor.",
-      "confirmationRequired": "\"rdc {{command}}\" yıkıcı bir komuttur ve bir grand (üretim) deposu olan \"{{name}}\" deposunu değiştirir.\n\nKullanıcıdan onay isteyin, ardından aynı komutu {{flag}} {{value}} ile yeniden çalıştırın."
+      "confirmationRequired": "\"rdc {{command}}\" yıkıcı bir komuttur ve bir grand (üretim) deposu olan \"{{name}}\" deposunu değiştirir.\n\nKullanıcıdan onay isteyin, ardından aynı komutu {{flag}} {{value}} ile yeniden çalıştırın.",
+      "confirmTitle": "Onayla",
+      "confirmDeclined": "Kullanıcı onay vermedi, bu yüzden hiçbir şey çalıştırılmadı.",
+      "confirmStale": "Bu onay artık çağrıyla eşleşmiyor. Onayın yeniden sorulması için aracı tekrar çağırın.",
+      "confirmByArgument": "Devam etmek için önce kullanıcıya sorun, ardından {{tool}} aracını aynı argümanlarla ve confirm değerini \"{{value}}\" yaparak yeniden çağırın."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {

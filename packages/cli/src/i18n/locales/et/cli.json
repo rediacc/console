@@ -3665,7 +3665,11 @@
       "policyDenied": "Kehtiv poliitika ei luba käsku \"rdc {{command}}\". Üksikasjad nimetavad reegli, mis selle keelas.",
       "grandRepoDenied": "\"rdc {{command}}\" muudaks hoidlat \"{{name}}\", mis on grand-hoidla (toodang), ja kehtiv poliitika ei luba grand-hoidlaid muuta.\n\nTööta selle asemel forgiga:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\" on klastritoiming ja kehtiv poliitika ei luba klastritoiminguid.",
-      "confirmationRequired": "\"rdc {{command}}\" on hävitav käsk ja muudaks hoidlat \"{{name}}\", mis on grand-hoidla (toodang).\n\nKüsi kasutajalt kinnitust ja käivita sama käsk uuesti koos {{flag}} {{value}}."
+      "confirmationRequired": "\"rdc {{command}}\" on hävitav käsk ja muudaks hoidlat \"{{name}}\", mis on grand-hoidla (toodang).\n\nKüsi kasutajalt kinnitust ja käivita sama käsk uuesti koos {{flag}} {{value}}.",
+      "confirmTitle": "Kinnita",
+      "confirmDeclined": "Kasutaja ei kinnitanud, seega midagi ei käivitatud.",
+      "confirmStale": "See kinnitus ei vasta enam päringule. Kutsu tööriist uuesti välja, et kinnitust uuesti küsitaks.",
+      "confirmByArgument": "Jätkamiseks küsi kasutajalt luba ja kutsu siis {{tool}} samade argumentidega uuesti välja, määrates confirm väärtuseks \"{{value}}\"."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {
