@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "Estado",
         "subscriptionToken": "Token",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Extensão Remote-SSH",
+        "sshAgent": "Serviço ssh-agent",
+        "opensshClient": "Cliente OpenSSH"
       },
       "description": "Executar verificações de diagnóstico ao ambiente do CLI: versão do Node.js, disponibilidade do binário renet, validade do ficheiro de configuração, estado das chaves SSH e conectividade de rede. Produz um relatório de saúde estruturado com indicadores de aprovação/falha.",
       "descriptionShort": "Diagnosticar o ambiente do CLI e a integração do renet",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "impossível contactar o servidor de subscrição",
       "title": "Diagnóstico do CLI Rediacc",
       "tofuInstallHint": "Execute: rdc tools install tofu",
-      "rsyncInstallHint": "Instale o rsync com o gerenciador de pacotes do sistema"
+      "rsyncInstallHint": "Instale o rsync com o gerenciador de pacotes do sistema",
+      "installedValue": "instalado",
+      "notDetectedValue": "não detectado",
+      "unknownValue": "desconhecido",
+      "agentRunning": "em execução",
+      "agentStopped": "parado",
+      "agentDisabled": "desativado",
+      "agentMissing": "serviço não encontrado",
+      "rsyncInstallHintWin32": "Execute: rdc tools install rsync (ou no MSYS2: pacman -S rsync)",
+      "vscodeInstallHint": "Instale o VS Code em https://code.visualstudio.com/ para usar rdc vscode",
+      "remoteSshInstallHint": "Instale com: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "Em um PowerShell como administrador: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Adicione o cliente OpenSSH em Configurações do Windows > Recursos opcionais"
     },
     "feedback": {
       "description": "Envie feedback estruturado ou um relatório de bug. O conteúdo é montado apenas com dados higienizados, exibido por inteiro e enviado após a confirmação (ou com --yes), usando o token de API salvo ou uma licença Free instalada.",

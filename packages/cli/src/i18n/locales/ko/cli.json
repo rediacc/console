@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "상태",
         "subscriptionToken": "토큰",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Remote-SSH 확장",
+        "sshAgent": "ssh-agent 서비스",
+        "opensshClient": "OpenSSH 클라이언트"
       },
       "description": "CLI 환경에 대한 진단 검사를 실행합니다: Node.js 버전, renet 바이너리 가용성, 설정 파일 유효성, SSH 키 상태, 네트워크 연결. 통과/실패 지표와 함께 구조화된 상태 보고서를 출력합니다.",
       "descriptionShort": "CLI 환경 및 renet 통합을 진단합니다",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "구독 서버에 연결할 수 없음",
       "title": "Rediacc CLI 진단",
       "tofuInstallHint": "실행: rdc tools install tofu",
-      "rsyncInstallHint": "시스템 패키지 관리자로 rsync를 설치하세요"
+      "rsyncInstallHint": "시스템 패키지 관리자로 rsync를 설치하세요",
+      "installedValue": "설치됨",
+      "notDetectedValue": "감지되지 않음",
+      "unknownValue": "알 수 없음",
+      "agentRunning": "실행 중",
+      "agentStopped": "중지됨",
+      "agentDisabled": "사용 안 함",
+      "agentMissing": "서비스를 찾을 수 없음",
+      "rsyncInstallHintWin32": "다음을 실행하세요: rdc tools install rsync (MSYS2에서는 pacman -S rsync)",
+      "vscodeInstallHint": "rdc vscode를 사용하려면 https://code.visualstudio.com/ 에서 VS Code를 설치하세요",
+      "remoteSshInstallHint": "다음 명령으로 설치하세요: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "관리자 권한 PowerShell에서: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Windows 설정 > 선택적 기능에서 OpenSSH 클라이언트를 추가하세요"
     },
     "feedback": {
       "description": "구조화된 피드백이나 버그 보고서를 제출합니다. 보고서는 민감 정보를 가린 데이터로만 만들어지고, 전체 내용이 표시되며, 확인 후(또는 --yes 사용 시) 저장된 API 토큰이나 설치된 Free 라이선스로 전송됩니다.",

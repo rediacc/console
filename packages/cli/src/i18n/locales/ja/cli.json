@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "ステータス",
         "subscriptionToken": "トークン",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Remote-SSH 拡張機能",
+        "sshAgent": "ssh-agent サービス",
+        "opensshClient": "OpenSSH クライアント"
       },
       "description": "CLI環境とrenet統合を診断",
       "descriptionShort": "CLI環境とrenet統合を診断",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール",
       "tofuInstallHint": "実行: rdc tools install tofu",
-      "rsyncInstallHint": "システムのパッケージマネージャーでrsyncをインストールしてください"
+      "rsyncInstallHint": "システムのパッケージマネージャーでrsyncをインストールしてください",
+      "installedValue": "インストール済み",
+      "notDetectedValue": "未検出",
+      "unknownValue": "不明",
+      "agentRunning": "実行中",
+      "agentStopped": "停止中",
+      "agentDisabled": "無効",
+      "agentMissing": "サービスが見つかりません",
+      "rsyncInstallHintWin32": "次を実行してください: rdc tools install rsync (MSYS2 では pacman -S rsync)",
+      "vscodeInstallHint": "rdc vscode を使うには https://code.visualstudio.com/ から VS Code をインストールしてください",
+      "remoteSshInstallHint": "次のコマンドでインストールできます: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "管理者権限の PowerShell で実行: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Windows の設定 > オプション機能から OpenSSH クライアントを追加してください"
     },
     "feedback": {
       "description": "構造化したフィードバックまたはバグ報告を送信します。内容はマスク済みのデータだけから作られ、全文が表示され、確認後(または --yes 指定時)に、保存済みの API トークンかインストール済みの Free ライセンスで送信されます。",

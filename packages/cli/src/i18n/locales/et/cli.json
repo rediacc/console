@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "Olek",
         "subscriptionToken": "Token",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Remote-SSH-laiendus",
+        "sshAgent": "ssh-agent-teenus",
+        "opensshClient": "OpenSSH-klient"
       },
       "description": "Käivitab diagnostikakontrollid CLI keskkonnas: Node.js versioon, renet-i binaarfaili kättesaadavus, konfiguratsioonifaili kehtivus, SSH-võtme olek ja võrguühenduvus. Väljastab struktureeritud tervisearuande läbitud/ebaõnnestunud näitajatega.",
       "descriptionShort": "Diagnoosib CLI keskkonda ja renet-i integratsiooni",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
       "title": "Rediacc CLI diagnostika",
       "tofuInstallHint": "Käivita: rdc tools install tofu",
-      "rsyncInstallHint": "Paigalda rsync süsteemi paketihalduriga"
+      "rsyncInstallHint": "Paigalda rsync süsteemi paketihalduriga",
+      "installedValue": "paigaldatud",
+      "notDetectedValue": "tuvastamata",
+      "unknownValue": "tundmatu",
+      "agentRunning": "töötab",
+      "agentStopped": "peatatud",
+      "agentDisabled": "keelatud",
+      "agentMissing": "teenust ei leitud",
+      "rsyncInstallHintWin32": "Käivita: rdc tools install rsync (või MSYS2-s: pacman -S rsync)",
+      "vscodeInstallHint": "rdc vscode kasutamiseks paigalda VS Code aadressilt https://code.visualstudio.com/",
+      "remoteSshInstallHint": "Paigalda käsuga: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "Administraatori õigustega PowerShellis: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Lisa OpenSSH-klient Windowsi sätetes valikulistest funktsioonidest"
     },
     "feedback": {
       "description": "Esita struktureeritud tagasiside või veaaruanne. Aruanne koostatakse ainult puhastatud andmetest, kuvatakse täielikult ja saadetakse pärast kinnitamist (või võtmega --yes) salvestatud API-tokeni või paigaldatud Free-litsentsiga.",

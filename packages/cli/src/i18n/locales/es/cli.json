@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "Estado de suscripción",
         "subscriptionToken": "Token de acceso",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Extensión Remote-SSH",
+        "sshAgent": "Servicio ssh-agent",
+        "opensshClient": "Cliente OpenSSH"
       },
       "description": "Diagnosticar el entorno CLI y la integración de renet",
       "descriptionShort": "Diagnosticar el entorno CLI y la integración de renet",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "no se puede conectar al servidor de suscripción",
       "title": "Diagnóstico de Rediacc CLI",
       "tofuInstallHint": "Ejecuta: rdc tools install tofu",
-      "rsyncInstallHint": "Instala rsync con el gestor de paquetes del sistema"
+      "rsyncInstallHint": "Instala rsync con el gestor de paquetes del sistema",
+      "installedValue": "instalado",
+      "notDetectedValue": "no detectado",
+      "unknownValue": "desconocido",
+      "agentRunning": "en ejecución",
+      "agentStopped": "detenido",
+      "agentDisabled": "deshabilitado",
+      "agentMissing": "servicio no encontrado",
+      "rsyncInstallHintWin32": "Ejecute: rdc tools install rsync (o en MSYS2: pacman -S rsync)",
+      "vscodeInstallHint": "Instale VS Code desde https://code.visualstudio.com/ para usar rdc vscode",
+      "remoteSshInstallHint": "Instálela con: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "En una PowerShell con permisos de administrador: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Agregue el cliente OpenSSH en Configuración de Windows > Características opcionales"
     },
     "feedback": {
       "description": "Envía comentarios estructurados o un informe de error. El contenido se genera solo con datos depurados, se muestra completo y se envía tras confirmar (o con --yes) usando el token de API guardado o una licencia Free instalada.",

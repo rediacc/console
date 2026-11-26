@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "Durum",
         "subscriptionToken": "Erişim jetonu",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Remote-SSH eklentisi",
+        "sshAgent": "ssh-agent hizmeti",
+        "opensshClient": "OpenSSH istemcisi"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
       "descriptionShort": "CLI ortamını ve renet entegrasyonunu tanıla",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
       "title": "Rediacc CLI Tanılama",
       "tofuInstallHint": "Çalıştırın: rdc tools install tofu",
-      "rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun"
+      "rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun",
+      "installedValue": "yüklü",
+      "notDetectedValue": "algılanmadı",
+      "unknownValue": "bilinmiyor",
+      "agentRunning": "çalışıyor",
+      "agentStopped": "durduruldu",
+      "agentDisabled": "devre dışı",
+      "agentMissing": "hizmet bulunamadı",
+      "rsyncInstallHintWin32": "Çalıştırın: rdc tools install rsync (veya MSYS2'de: pacman -S rsync)",
+      "vscodeInstallHint": "rdc vscode kullanmak için VS Code'u https://code.visualstudio.com/ adresinden yükleyin",
+      "remoteSshInstallHint": "Şununla yükleyin: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "Yönetici olarak açılmış bir PowerShell'de: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "OpenSSH İstemcisi'ni Windows Ayarları > İsteğe bağlı özellikler bölümünden ekleyin"
     },
     "feedback": {
       "description": "Yapılandırılmış geri bildirim veya hata raporu gönderin. Rapor yalnızca temizlenmiş verilerden oluşturulur, tam olarak gösterilir ve onaydan sonra (ya da --yes ile) kayıtlı API belirteci veya kurulu bir Free lisansla gönderilir.",

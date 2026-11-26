@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getRsyncPath } from '../remote/msys2/paths.js';
-import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { getConfiguredServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   getEmbeddedMetadata,
@@ -26,6 +26,7 @@ import { getInstallMethod, isSEA } from '../utils/platform.js';
 import { getSecureStorage, type SecureStorage } from '../utils/secure-storage.js';
 import { VERSION } from '../version.js';
 import { checkSubscription } from './doctor-subscription.js';
+import { checkWindowsClient, type WindowsClientDeps } from './doctor-windows.js';
 import { toolSourceLabel } from './tools.js';
 
 const UNKNOWN_VERSION = 'unknown';
@@ -79,8 +80,21 @@ function checkToolVersion(
   return { name: t(nameKey), value: version, status: 'ok' };
 }
 
-function checkEnvironment(): CheckSection {
-  const isDev = getInstallMethod() === 'dev';
+export interface EnvironmentCheckDeps {
+  /** Whether this is a source checkout that builds renet; the real install method and tree by default. */
+  isDevTree?: () => boolean;
+  /** The account server the config names, or undefined when none; the real config by default. */
+  accountServer?: () => string | undefined;
+}
+
+/** A development install run inside a checkout that holds renet's source: the only place Go and Docker matter. */
+function defaultIsDevTree(): boolean {
+  return getInstallMethod() === 'dev' && existsSync('private/renet');
+}
+
+export function checkEnvironment(deps: EnvironmentCheckDeps = {}): CheckSection {
+  const isDev = (deps.isDevTree ?? defaultIsDevTree)();
+  const accountServer = (deps.accountServer ?? getConfiguredServerUrl)();
   const checks: CheckResult[] = [
     { name: t('commands.doctor.checks.nodeVersion'), value: process.version, status: 'ok' },
     { name: t('commands.doctor.checks.cliVersion'), value: VERSION, status: 'ok' },
@@ -95,14 +109,9 @@ function checkEnvironment(): CheckSection {
       status: 'ok',
     },
     { name: 'Update channel', value: resolveChannel(), status: 'ok' },
-    (() => {
-      try {
-        return { name: 'Account server', value: getSubscriptionServerUrl(), status: 'ok' as const };
-      } catch {
-        return { name: 'Account server', value: 'not configured', status: 'warn' as const };
-      }
-    })(),
   ];
+  // A local-only config names no account server, so there is nothing to report.
+  if (accountServer) checks.push({ name: 'Account server', value: accountServer, status: 'ok' });
 
   // Go and Docker are only relevant for development (building renet from source)
   if (isDev) {
@@ -133,6 +142,10 @@ export interface ToolsCheckDeps {
   pathLookup?: PathLookupOptions;
   /** Output of `rsync --version`, or null when it does not run. */
   rsyncVersion?: (path: string) => string | null;
+  /** The platform the hints and the client checks follow; the real one by default. */
+  platform?: NodeJS.Platform;
+  /** Probes for the Windows client checks. */
+  windows?: WindowsClientDeps;
 }
 
 /** A local rsync: the MSYS2 one rdc's sync uses on Windows, else the first on PATH. */
@@ -164,24 +177,34 @@ async function checkTofu(resolve: () => Promise<TofuResolution>): Promise<CheckR
   return { name, value: describeTofuFailure(result), status: 'warn', hint };
 }
 
-/** Local tools rdc runs itself: the provisioning engine and rsync. */
-export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
-  const checks: CheckResult[] = [await checkTofu(deps.resolveTofu ?? (() => resolveTofu()))];
-
-  const rsyncName = t('commands.doctor.checks.rsync');
+function checkRsync(deps: ToolsCheckDeps, platform: NodeJS.Platform): CheckResult {
+  const name = t('commands.doctor.checks.rsync');
   const rsyncPath = findRsync(deps.pathLookup);
   if (rsyncPath) {
     const out = (deps.rsyncVersion ?? defaultRsyncVersion)(rsyncPath);
     const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? UNKNOWN_VERSION) : UNKNOWN_VERSION;
-    checks.push({ name: rsyncName, value: version, status: 'ok' });
-  } else {
-    checks.push({
-      name: rsyncName,
-      value: t('commands.doctor.notInstalled'),
-      status: 'warn',
-      hint: t('commands.doctor.rsyncInstallHint'),
-    });
+    return { name, value: version, status: 'ok' };
   }
+  return {
+    name,
+    value: t('commands.doctor.notInstalled'),
+    status: 'warn',
+    hint: t(
+      platform === 'win32'
+        ? 'commands.doctor.rsyncInstallHintWin32'
+        : 'commands.doctor.rsyncInstallHint'
+    ),
+  };
+}
+
+/** Local tools rdc runs itself: the provisioning engine and rsync. */
+export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
+  const platform = deps.platform ?? process.platform;
+  const checks: CheckResult[] = [
+    await checkTofu(deps.resolveTofu ?? (() => resolveTofu())),
+    checkRsync(deps, platform),
+  ];
+  if (platform === 'win32') checks.push(...(await checkWindowsClient(deps.windows)));
   return { title: t('commands.doctor.sections.tools'), checks };
 }
 

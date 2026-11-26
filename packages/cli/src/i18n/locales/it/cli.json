@@ -1258,7 +1258,11 @@
         "subscriptionStatus": "Stato",
         "subscriptionToken": "Token",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "VS Code",
+        "remoteSsh": "Estensione Remote-SSH",
+        "sshAgent": "Servizio ssh-agent",
+        "opensshClient": "Client OpenSSH"
       },
       "description": "Esegue controlli diagnostici sull'ambiente CLI: versione di Node.js, disponibilita del binario renet, validita del file di configurazione, stato delle chiavi SSH e connettivita di rete. Produce un report di salute strutturato con indicatori di successo/errore.",
       "descriptionShort": "Diagnostica l'ambiente CLI e l'integrazione renet",
@@ -1279,7 +1283,19 @@
       "subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
       "title": "Diagnostica CLI Rediacc",
       "tofuInstallHint": "Esegui: rdc tools install tofu",
-      "rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema"
+      "rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema",
+      "installedValue": "installato",
+      "notDetectedValue": "non rilevato",
+      "unknownValue": "sconosciuto",
+      "agentRunning": "in esecuzione",
+      "agentStopped": "arrestato",
+      "agentDisabled": "disabilitato",
+      "agentMissing": "servizio non trovato",
+      "rsyncInstallHintWin32": "Esegui: rdc tools install rsync (o in MSYS2: pacman -S rsync)",
+      "vscodeInstallHint": "Installa VS Code da https://code.visualstudio.com/ per usare rdc vscode",
+      "remoteSshInstallHint": "Installala con: code --install-extension ms-vscode-remote.remote-ssh",
+      "sshAgentEnableHint": "In una PowerShell come amministratore: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
+      "sshClientMissingHint": "Aggiungi il client OpenSSH in Impostazioni di Windows > Funzionalità facoltative"
     },
     "feedback": {
       "description": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la conferma (o con --yes) usando il token API salvato o una licenza Free installata.",
