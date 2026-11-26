@@ -40,7 +40,11 @@ import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
-import { currentRequestContext, exitProcess } from './services/core/request-context.js';
+import {
+  currentExitCode,
+  currentRequestContext,
+  exitProcess,
+} from './services/core/request-context.js';
 import { setBackgroundRequested } from './services/executor/executor-factory.js';
 import {
   assertDetachable,
@@ -421,8 +425,7 @@ export function createCli(): Command {
       const duration = ctx ? Date.now() - ctx.startTime : 0;
 
       // A command that reported failure through setExitCode() returns normally and reaches this hook, so its span takes that exit status rather than an unconditional success (inside a dispatch the code lives on the request, on a laptop on process.exitCode).
-      const requested = currentRequestContext()?.exitCode ?? process.exitCode;
-      const exitCode = Number(requested ?? 0) || 0;
+      const exitCode = currentExitCode() ?? 0;
       telemetryService.endCommand(
         commandName,
         exitCode === 0

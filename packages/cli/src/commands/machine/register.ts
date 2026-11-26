@@ -153,6 +153,14 @@ async function scanAllMachines(format: OutputFormat): Promise<void> {
     }
   }
   const scanned = rows.filter((r) => r.ok).length;
+  // Any machine that failed makes the run fail, after every machine was tried. Recorded before the rows print, so the JSON envelope says success:false and names each failed machine beside the rows.
+  const failed = rows.filter((r) => !r.ok);
+  if (failed.length > 0) {
+    outputService.fail(
+      EXIT_CODES.NETWORK_ERROR,
+      failed.map((r) => scanFailure(r.name, r.error)).join('; ')
+    );
+  }
   if (format === 'table') {
     outputService.success(
       t('commands.machine.scanKeys.completed', { count: scanned, total: machines.length })
@@ -160,8 +168,6 @@ async function scanAllMachines(format: OutputFormat): Promise<void> {
   } else {
     outputService.print(rows, format);
   }
-  // Any machine that failed makes the run fail, after every machine was tried and the rows were printed.
-  if (scanned < machines.length) setExitCode(EXIT_CODES.NETWORK_ERROR);
 }
 
 /** `machine add <name>`, register an existing SSH-reachable machine. */

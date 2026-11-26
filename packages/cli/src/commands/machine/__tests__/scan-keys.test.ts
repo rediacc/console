@@ -37,6 +37,9 @@ vi.mock('../../../services/core/output.js', () => ({
     warn: vi.fn(),
     success: vi.fn(),
     print: (data: unknown) => h.printed.push(data),
+    fail: (code: number) => {
+      h.exitCode = code;
+    },
   },
 }));
 vi.mock('../../../services/core/request-context.js', async (importOriginal) => ({

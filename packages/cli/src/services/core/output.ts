@@ -4,14 +4,25 @@ import { escapeCSVValue } from '@rediacc/shared/utils';
 import chalk from 'chalk';
 import type CliTable3 from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
+import { exitCodeName, isRetryableExitCode } from '../../types/errors.js';
 import type { OutputFormat } from '../../types/index.js';
 import { isMachineReadable } from './output-format.js';
 import {
   createOutputState,
+  currentExitCode,
   currentRequestContext,
   notifyStderr,
   type OutputState,
+  setExitCode,
 } from './request-context.js';
+
+/** One entry of the JSON envelope's `errors[]`: the shape handleError writes, so a parser reads both the same way. */
+interface EnvelopeError {
+  code: string;
+  message: string;
+  retryable: boolean;
+  exitCode: number;
+}
 
 // esbuild statically bundles this literal `require` and wraps cli-table3 (→ string-width → chardet, ~16 ms of module init) in a lazy CJS initializer that only runs the first time a table is actually rendered. A top-level `import` would run it eagerly on every startup, including --version/--help/JSON-output runs that never draw a table.
 declare const require: NodeJS.Require;
@@ -193,6 +204,35 @@ class OutputService {
     state.commandName = name;
     state.startTime = startTime;
     state.warnings = [];
+    state.failure = null;
+  }
+
+  /**
+   * Fail the command without throwing: set the exit code and record what failed, so
+   * a JSON envelope printed afterwards says `success: false` and carries the reason.
+   * For a command that still prints its data (per-machine rows, a verdict) when it
+   * fails; a command with nothing to print throws a CliExitError instead.
+   */
+  fail(exitCode: number, message: string): void {
+    this.state.failure = { exitCode, message };
+    setExitCode(exitCode);
+  }
+
+  /**
+   * The failure the JSON envelope reports, derived from the exit code the command has
+   * set so far: a nonzero code is a failed command, whatever data it prints beside it.
+   * A recorded fail() supplies the message; a bare setExitCode() gets one naming the code.
+   */
+  private envelopeError(): EnvelopeError | null {
+    const exitCode = currentExitCode();
+    if (exitCode === undefined) return null;
+    const state = this.state;
+    const name = exitCodeName(exitCode);
+    const message =
+      state.failure?.exitCode === exitCode
+        ? state.failure.message
+        : `${state.commandName ?? DEFAULTS.TELEMETRY.UNKNOWN} failed with exit code ${exitCode} (${name}).`;
+    return { code: name, message, retryable: isRetryableExitCode(exitCode), exitCode };
   }
 
   getCommandName(): string | null {
@@ -251,11 +291,13 @@ class OutputService {
 
   formatJson<T>(data: T): string {
     const state = this.state;
+    // The envelope agrees with the exit code: a command that set a nonzero one before printing is not a success.
+    const error = this.envelopeError();
     const envelope = {
-      success: true,
+      success: error === null,
       command: state.commandName ?? DEFAULTS.TELEMETRY.UNKNOWN,
       data,
-      errors: null,
+      errors: error === null ? null : [error],
       warnings: state.warnings,
       metrics: {
         duration_ms: this.getDurationMs(),

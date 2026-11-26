@@ -48,6 +48,8 @@ export interface OutputState {
   warnings: string[];
   operationDurationMs: number | null;
   timelineRendered: boolean;
+  /** The failure a command recorded with outputService.fail(): its exit code and what failed. */
+  failure: { exitCode: number; message: string } | null;
 }
 
 export function createOutputState(): OutputState {
@@ -59,6 +61,7 @@ export function createOutputState(): OutputState {
     warnings: [],
     operationDurationMs: null,
     timelineRendered: false,
+    failure: null,
   };
 }
 
@@ -324,6 +327,18 @@ export function setExitCode(code: number): void {
   const context = storage.getStore();
   if (context) context.exitCode = code;
   else process.exitCode = code;
+}
+
+/**
+ * The nonzero exit status the running command has set so far (setExitCode), or
+ * undefined while it would still exit 0. Inside a dispatch only the request's own
+ * code counts: the executor's process.exitCode belongs to no request.
+ */
+export function currentExitCode(): number | undefined {
+  const context = storage.getStore();
+  const raw = context ? context.exitCode : process.exitCode;
+  const code = Number(raw ?? 0);
+  return Number.isInteger(code) && code !== 0 ? code : undefined;
 }
 
 /**
