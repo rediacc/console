@@ -1,10 +1,14 @@
 """`dockerx.group_command` and the two Python re-exec sites that use it, with `sg` present and absent.
 
-Ubuntu 26.04 ships no `sg` and its sudo is sudo-rs, so the absent route must name `sudo -n -u <user> env PATH= HOME=` explicitly.
+Ubuntu 26.04 ships no `sg` and its sudo is sudo-rs, so the absent route must name `sudo -n -u <user> env PATH= HOME=` explicitly, and carry every other value in a 0600 file rather than on the argv (review 8abaf8f4.1).
 """
 
+import os
 import pathlib
 import stat
+import subprocess
+import sys
+import tempfile
 
 import pytest
 
@@ -36,6 +40,19 @@ def _raise_exec(argv: list[str], **_: object) -> None:
     raise _ExecError(argv)
 
 
+@pytest.fixture(autouse=True)
+def _private_tmp(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path:
+    """The environment files land in this test's own directory, not the shared /tmp."""
+    folder = tmp_path / "envfiles"
+    folder.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(folder))
+    return folder
+
+
+def _env_file(argv: list[str]) -> pathlib.Path:
+    return pathlib.Path(argv[-1])
+
+
 def test_sg_present_keeps_sg(tmp_path: pathlib.Path) -> None:
     env = {"PATH": _bin(tmp_path, "sg", "sudo"), "HOME": "/h"}
     assert dockerx.group_command("run it", user="u", env=env) == ["sg", "docker", "-c", "run it"]
@@ -44,7 +61,8 @@ def test_sg_present_keeps_sg(tmp_path: pathlib.Path) -> None:
 def test_sg_absent_uses_sudo_with_path_and_home(tmp_path: pathlib.Path) -> None:
     env = {"PATH": _bin(tmp_path, "sudo"), "HOME": "/h"}
     argv = dockerx.group_command("run it", user="u", env=env, extra_env={"G": "1"})
-    assert argv == [
+    assert argv is not None
+    assert argv[:-1] == [
         "sudo",
         "-n",
         "-u",
@@ -52,15 +70,29 @@ def test_sg_absent_uses_sudo_with_path_and_home(tmp_path: pathlib.Path) -> None:
         "env",
         "PATH=%s" % env["PATH"],
         "HOME=/h",
-        "G=1",
         "bash",
         "-c",
-        "run it",
+        '. "$1"; rm -f -- "$1"; shift\nrun it',
+        "bash",
     ]
+    assert _env_file(argv).read_text() == "export G=1\n"
+
+
+def test_sudo_route_puts_no_inherited_value_on_the_argv(tmp_path: pathlib.Path) -> None:
+    """Review 8abaf8f4.1: any local user reads an argv through /proc/<pid>/cmdline, so a token must travel in the 0600 file, never on the argv."""
+    secret = "rdt_planted_secret_value_8abaf8f4"
+    env = {"PATH": _bin(tmp_path, "sudo"), "HOME": "/h", "REDIACC_TOKEN": secret}
+    argv = dockerx.group_command("run it", user="u", env=env, extra_env={"G": "1"})
+    assert argv is not None
+    assert not any(secret in word for word in argv)
+    assert not any(word.startswith(("REDIACC_TOKEN=", "G=")) for word in argv)
+    carried = _env_file(argv)
+    assert stat.S_IMODE(carried.stat().st_mode) == 0o600
+    assert "export REDIACC_TOKEN=%s\n" % secret in carried.read_text()
 
 
 def test_sudo_route_keeps_the_rest_of_the_environment_as_sg_does(tmp_path: pathlib.Path) -> None:
-    """Review 0ec896a9.1: a token or REDIACC_* setting reaches the re-exec'd run on the sudo route too; an exported function or odd name is not carried."""
+    """Review 0ec896a9.1: a token or REDIACC_* setting reaches the re-exec'd run on the sudo route too; an exported function, an odd name or a bash readonly name is not carried."""
     env = {
         "PATH": _bin(tmp_path, "sudo"),
         "HOME": "/h",
@@ -68,15 +100,67 @@ def test_sudo_route_keeps_the_rest_of_the_environment_as_sg_does(tmp_path: pathl
         "REDIACC_X": "1",
         "BASH_FUNC_f%%": "() { :; }",
         "A-B": "no",
+        "SHELLOPTS": "braceexpand",
     }
     argv = dockerx.group_command("run it", user="u", env=env, extra_env={"G": "1"})
     assert argv is not None
-    carried = argv[argv.index("env") + 1 : argv.index("bash")]
-    assert "SCRIPT_ENTRYPOINT=run.sh" in carried
-    assert "REDIACC_X=1" in carried
-    assert "G=1" in carried
-    assert carried.count("PATH=%s" % env["PATH"]) == 1
-    assert not any(c.startswith(("BASH_FUNC_", "A-B")) for c in carried)
+    lines = _env_file(argv).read_text().splitlines()
+    assert "export SCRIPT_ENTRYPOINT=run.sh" in lines
+    assert "export REDIACC_X=1" in lines
+    assert lines[-1] == "export G=1"
+    assert argv.count("PATH=%s" % env["PATH"]) == 1
+    assert not any(line.startswith(("export PATH=", "export HOME=")) for line in lines)
+    assert not any(
+        line.startswith(("export BASH_FUNC_", "export A-B", "export SHELLOPTS")) for line in lines
+    )
+
+
+def test_child_sees_the_environment_and_removes_the_file(tmp_path: pathlib.Path) -> None:
+    """The bash half of the argv, run for real: the child reads a value with spaces and quotes from the file, the file is gone before `command` runs, and `command` sees no positional parameter."""
+    value = 'it\'s a "token" $HOME `x`'
+    env = {
+        "PATH": _bin(tmp_path, "sudo") + os.pathsep + os.environ["PATH"],
+        "HOME": "/h",
+        "TOK": value,
+    }
+    argv = dockerx.group_command(
+        'printf "%s|%s|%s" "$TOK" "$#" "$G"', user="u", env=env, extra_env={"G": "1"}
+    )
+    assert argv is not None
+    carried = _env_file(argv)
+    done = subprocess.run(
+        argv[argv.index("bash") :],
+        env={"PATH": env["PATH"], "HOME": "/h"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (done.returncode, done.stderr) == (0, "")
+    assert done.stdout == "%s|0|1" % value
+    assert not carried.exists()
+
+
+def test_env_file_is_removed_at_exit_when_the_child_never_ran(tmp_path: pathlib.Path) -> None:
+    """A refused `sudo -n` starts no bash, so the probe's file is removed at interpreter exit instead."""
+    script = (
+        "from rediacc_ci.core import dockerx\n"
+        "argv = dockerx.group_command('x', user='u', env={'PATH': %r, 'HOME': '/h', 'S': 'v'})\n"
+        "print(argv[-1])\n"
+    ) % _bin(tmp_path, "sudo")
+    done = subprocess.run(
+        [sys.executable, "-c", script],
+        env={
+            **os.environ,
+            "TMPDIR": str(tmp_path),
+            "PYTHONPATH": str(pathlib.Path(dockerx.__file__).resolve().parents[2]),
+        },
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    left = pathlib.Path(done.stdout.strip())
+    assert left.parent == tmp_path
+    assert not left.exists()
 
 
 def test_neither_route_is_none(tmp_path: pathlib.Path) -> None:
@@ -110,8 +194,10 @@ def test_machine_reexec_routes(
     assert (argv[0] == "sg") is with_sg
     if not with_sg:
         assert argv[:5] == ["sudo", "-n", "-u", "alice", "env"]
-        assert "REDIACC_DOCKER_GROUP_REEXEC=1" in argv
-    assert "run.sh" in argv[-1]
+        assert "export REDIACC_DOCKER_GROUP_REEXEC=1" in _env_file(argv).read_text().splitlines()
+        assert "run.sh" in argv[-3]
+    else:
+        assert "run.sh" in argv[-1]
 
 
 @pytest.mark.parametrize("with_sg", [True, False])
@@ -138,7 +224,8 @@ def test_local_common_reexec_routes(
         local_common.reexec_with_docker_group(["devbox"])
     argv = caught.value.argv
     assert (argv[0] == "sg") is with_sg
-    assert any(call[0] == argv[0] and call[-1] == "docker version" for call in seen)
+    command = -1 if with_sg else -3
+    assert any(call[0] == argv[0] and call[command].endswith("docker version") for call in seen)
     if not with_sg:
         assert argv[:5] == ["sudo", "-n", "-u", "alice", "env"]
 

@@ -66,12 +66,17 @@ That last line is the one that makes 77 mean something. A gate that returns 77
 for a genuine failure has converted a red into a shrug.
 """
 
+import atexit
+import contextlib
 import json
 import os
+import pwd
 import re
+import shlex
 import shutil
 import socket
 import sys
+import tempfile
 import time
 
 from rediacc_ci import proc
@@ -769,8 +774,42 @@ __all__ = [
 ]
 
 
-# A name `env NAME=value` can carry; an exported bash function (`BASH_FUNC_x%%`) or a name with odd characters cannot.
+# A name `export NAME=value` can carry; an exported bash function (`BASH_FUNC_x%%`) or a name with odd characters cannot.
 _EXPORTABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+
+# Names bash holds readonly (an `export` of one prints "readonly variable" and changes nothing), and `_`, which bash rewrites after every command.
+_BASH_READONLY = frozenset({"BASHOPTS", "BASH_VERSINFO", "EUID", "PPID", "SHELLOPTS", "UID", "_"})
+
+# The child's first act: source the environment file named by $1, remove it whatever the source did, and drop it from the positional parameters, so `command` runs with none.
+_SOURCE_AND_REMOVE = '. "$1"; rm -f -- "$1"; shift\n'
+
+
+def _environment_file(carried: dict[str, str], user: str) -> str:
+    """A 0600 file of `export NAME=value` lines, its path returned; the child that `group_command` builds sources and removes it.
+
+    The file is also removed at interpreter exit (a no-op once the child has removed it), which covers the run where `sudo -n` refused before bash started: the probe in `reexec_with_docker_group` then fails and this process carries on, so nothing else would remove it. A root caller hands the file to `user`, the one other account that must read it.
+    """
+    fd, path = tempfile.mkstemp(prefix="rediacc-group-env-")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.writelines("export %s=%s\n" % (k, shlex.quote(v)) for k, v in carried.items())
+        if os.geteuid() == 0:
+            try:
+                entry = pwd.getpwnam(user)
+            except KeyError:
+                pass
+            else:
+                os.chown(path, entry.pw_uid, entry.pw_gid)
+    except BaseException:
+        os.unlink(path)
+        raise
+    atexit.register(_remove_quietly, path)
+    return path
+
+
+def _remove_quietly(path: str) -> None:
+    with contextlib.suppress(FileNotFoundError):
+        os.unlink(path)
 
 
 def group_command(
@@ -782,7 +821,9 @@ def group_command(
 ) -> list[str] | None:
     """The argv that runs shell `command` with the `docker` group active, or None where neither route exists.
 
-    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... [extra] bash -c <command>`, which starts a fresh login-group set and carries the whole inherited environment across explicitly (names `env` can set; `sg` keeps all of it, and the re-exec'd run must see the same tokens and REDIACC_* settings on either route), with PATH, HOME and `extra_env` (the one-hop guard) set last. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
+    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... bash -c '<source-and-remove>; <command>' bash <file>`, which starts a fresh login-group set. It carries the whole inherited environment across (names `export` can set; `sg` keeps all of it, and the re-exec'd run must see the same tokens and REDIACC_* settings on either route), with `extra_env` (the one-hop guard) written last.
+
+    NO VALUE BUT PATH AND HOME SITS ON THE ARGV (review 8abaf8f4.1): any local user reads an argv through /proc/<pid>/cmdline or ps, and the inherited environment holds tokens. The rest travels in the 0600 file `_environment_file` writes, which the child's bash sources and removes before `command` runs. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
     """
     environ = os.environ if env is None else env
     path = environ.get("PATH")
@@ -794,10 +835,11 @@ def group_command(
         **{
             k: v
             for k, v in environ.items()
-            if _EXPORTABLE_NAME.match(k) and not k.startswith("BASH_FUNC_")
+            if _EXPORTABLE_NAME.match(k)
+            and not k.startswith("BASH_FUNC_")
+            and k not in _BASH_READONLY
+            and k not in ("PATH", "HOME")
         },
-        "PATH": environ.get("PATH", ""),
-        "HOME": environ.get("HOME", ""),
         **(extra_env or {}),
     }
     return [
@@ -806,8 +848,11 @@ def group_command(
         "-u",
         user,
         "env",
-        *["%s=%s" % pair for pair in carried.items()],
+        "PATH=%s" % environ.get("PATH", ""),
+        "HOME=%s" % environ.get("HOME", ""),
         "bash",
         "-c",
-        command,
+        _SOURCE_AND_REMOVE + command,
+        "bash",
+        _environment_file(carried, user),
     ]
