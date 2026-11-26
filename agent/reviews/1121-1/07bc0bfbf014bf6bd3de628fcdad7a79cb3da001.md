@@ -22,4 +22,4 @@ Body-Sig: 8a1fb260e13bba23
 Anchor: in-diff
 Claim: The doc comment says a failure 'leaves the machine as it was' and, in the same sentence block, that a failed record write leaves the pin marker on the slot; the first clause is now false for that failure path, so a reader is told two contradictory things.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | packages/cli/src/services/preview/slot-ops.ts:1 | d778be9d 2026-11-26T14:33:47Z

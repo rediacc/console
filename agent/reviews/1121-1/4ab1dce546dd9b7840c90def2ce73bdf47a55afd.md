@@ -28,4 +28,4 @@ Resolution: open
 Anchor: in-diff
 Claim: The regime name cites 'the NIS Cooperation Group reporting templates of 26 May 2026', but the url and retrievedAt for that regime point at the Directive's OJ page, so the stated retrieval date does not cover the templates the name refers to.
 Class: other
-Resolution: open
+Resolution: not-a-bug | packages/shared/src/incident/report-field-map.json:5 | d778be9d 2026-11-26T14:33:59Z

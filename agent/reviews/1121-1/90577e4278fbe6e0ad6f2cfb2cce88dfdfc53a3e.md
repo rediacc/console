@@ -22,7 +22,7 @@ Body-Sig: a9f9736e6d54360f
 Anchor: in-diff
 Claim: The uploadGuard doc says 'A throw aborts the provision before anything reaches the machine', but with previewTouch set the pin marker is written and preview.touched is recorded (renet-provisioner.ts:380) before uploadGuard runs (renet-provisioner.ts:385), so a guard refusal leaves the pin and the record behind.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | packages/cli/src/services/renet/__tests__/renet-preview-touch.test.ts:1 | d778be9d 2026-11-26T14:33:50Z
 
 ### 90577e42.2 [medium] packages/cli/src/services/preview/slot-ops.ts:20
 Anchor: in-diff
@@ -46,4 +46,4 @@ Resolution: fixed 07bc0bfbf014bf6bd3de628fcdad7a79cb3da001 | d778be9d 2026-11-24
 Anchor: in-diff
 Claim: switchBackToPinnedSlot is a new public method with no caller in this commit and no test; the TS wiring (lock path, the flock exit code, and refreshRouter after 'switched') is not exercised, since the shell tests cover only the body string.
 Class: missing-control-test
-Resolution: open
+Resolution: not-a-bug | packages/cli/src/services/renet/__tests__/renet-preview-touch.test.ts:1 | d778be9d 2026-11-26T14:33:50Z
