@@ -34,7 +34,7 @@ Depolanan bir yapılandırma üç katmanda şifrelenir. SDK katmanı ile kurulu�
 | Veritabanı ve nesne depolama | Hayır | Kuruluş parolası katmanı Worker sırrını, CEK katmanı ise bir yuva sırrını gerektirir |
 | Tam bir sunucu ihlali | Yuva sırrı olmadan hayır | Sunucu katmanları düşer, ancak CEK, passkey PRF çıktısının veya 160 bitlik kurtarma kitinin arkasında kalır ve ikisi de tahmin edilemez |
 | Çıkarılmış bir üyenin cihazı | Önceden çekilmiş olanlar | CEK rotasyonundan sonra sonraki sürümler kapalı kalır |
-| Sızdırılmış bir ajan URL'si | Tek bir yapılandırma, o kullanıcı olarak | Bkz. [Ajanlar ve uzak MCP](#ajanlar-ve-uzak-mcp) |
+| Sızdırılmış bir ajan URL'si | Tek bir yapılandırma, o kullanıcı olarak | Bkz. [Ajanlar ve uzak MCP](#agents-and-remote-mcp) |
 
 Sunucu meta verileri (yapılandırma kimlikleri, ekipler, sürümler, zaman damgaları, blob boyutları) görmeye devam eder ve istekleri reddedebilir, geciktirebilir veya silebilir. Kötü amaçlı portal kodu sunan bir operatör, tarayıcıdaki anahtarları okuyabilir. Her blob kendi deposuna, yapılandırmasına, ekibine ve sürümüne bağlıdır; bu yüzden sunucu bir blob'u fark edilmeden değiştiremez ya da düzenleyemez, CLI de daha önce gördüğünden eski bir sürümü reddeder.
 

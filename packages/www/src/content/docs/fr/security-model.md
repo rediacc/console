@@ -34,7 +34,7 @@ Une configuration stockée est chiffrée en trois couches. La couche du SDK et l
 | La base de données et le stockage d'objets | Non | La couche de la phrase secrète de l'organisation exige le secret du Worker, et la couche CEK un secret d'emplacement |
 | Une compromission complète du serveur | Pas sans secret d'emplacement | Les couches serveur tombent, mais la CEK reste derrière la sortie PRF du passkey ou le kit de récupération de 160 bits, et aucun des deux ne se devine |
 | L'appareil d'un membre retiré | Ce qui a déjà été récupéré | Les versions ultérieures restent fermées après une rotation de la CEK |
-| Une URL d'agent divulguée | Une configuration, en tant que cet utilisateur | Voir [Agents et MCP distant](#agents-et-mcp-distant) |
+| Une URL d'agent divulguée | Une configuration, en tant que cet utilisateur | Voir [Agents et MCP distant](#agents-and-remote-mcp) |
 
 Le serveur voit encore les métadonnées (identifiants de configuration, équipes, versions, horodatages, tailles de blob) et peut refuser, retarder ou supprimer des requêtes. Un opérateur qui sert un code de portail malveillant peut lire les clés dans le navigateur. Chaque blob est lié à son stockage, à sa configuration, à son équipe et à sa version : le serveur ne peut donc pas en échanger ou en modifier un sans être détecté, et la CLI refuse toute version plus ancienne que celle qu'elle a déjà vue.
 

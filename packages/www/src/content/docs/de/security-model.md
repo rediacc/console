@@ -34,7 +34,7 @@ Eine gespeicherte Konfiguration ist dreifach verschlüsselt. Die SDK-Schicht und
 | Datenbank und Objektspeicher | Nein | Die Schicht der Organisations-Passphrase braucht das Worker-Geheimnis, die CEK-Schicht ein Slot-Geheimnis |
 | Eine vollständige Server-Kompromittierung | Nicht ohne Slot-Geheimnis | Die Server-Schichten fallen, aber der CEK bleibt hinter der Passkey-PRF-Ausgabe oder dem 160-Bit-Wiederherstellungs-Kit, und keines von beiden ist erratbar |
 | Das Gerät eines entfernten Mitglieds | Was bereits abgerufen wurde | Spätere Versionen bleiben nach einer CEK-Rotation verschlossen |
-| Eine durchgesickerte Agent-URL | Eine Konfiguration, als dieser Benutzer | Siehe [Agenten und Remote-MCP](#agenten-und-remote-mcp) |
+| Eine durchgesickerte Agent-URL | Eine Konfiguration, als dieser Benutzer | Siehe [Agenten und Remote-MCP](#agents-and-remote-mcp) |
 
 Der Server sieht weiterhin Metadaten (Konfigurations-IDs, Teams, Versionen, Zeitstempel, Blob-Größen) und kann Anfragen ablehnen, verzögern oder löschen. Wer bösartigen Portal-Code ausliefert, kann Schlüssel im Browser auslesen. Jeder Blob ist an Speicher, Konfiguration, Team und Version gebunden, deshalb kann der Server keinen Blob unbemerkt austauschen oder ändern, und die CLI lehnt jede Version ab, die älter ist als eine bereits gesehene.
 

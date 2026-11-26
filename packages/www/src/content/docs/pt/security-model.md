@@ -34,7 +34,7 @@ Uma configuração armazenada é encriptada em três camadas. A camada do SDK e 
 | A base de dados e o armazenamento de objetos | Não | A camada da frase-passe da organização precisa do segredo do Worker, e a camada da CEK de um segredo de slot |
 | Um comprometimento total do servidor | Não sem um segredo de slot | As camadas do servidor caem, mas a CEK continua protegida pela saída PRF da passkey ou pelo kit de recuperação de 160 bits, e nenhum dos dois se adivinha |
 | O dispositivo de um membro removido | O que já foi obtido | As versões posteriores continuam fechadas após uma rotação da CEK |
-| Um URL de agente divulgado | Uma configuração, como esse utilizador | Veja [Agentes e MCP remoto](#agentes-e-mcp-remoto) |
+| Um URL de agente divulgado | Uma configuração, como esse utilizador | Veja [Agentes e MCP remoto](#agents-and-remote-mcp) |
 
 O servidor continua a ver metadados (ids de configuração, equipas, versões, carimbos de data/hora, tamanhos de blob) e pode recusar, atrasar ou apagar pedidos. Um operador que sirva código malicioso do portal pode ler chaves no browser. Cada blob está ligado ao seu armazenamento, configuração, equipa e versão, pelo que o servidor não consegue trocar nem editar um sem ser detetado, e o CLI recusa uma versão mais antiga do que uma que já tenha visto.
 

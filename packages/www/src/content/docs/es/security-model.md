@@ -34,7 +34,7 @@ Una configuración almacenada se cifra en tres capas. La capa del SDK y la de la
 | La base de datos y el almacenamiento de objetos | No | La capa de la frase de contraseña de la organización necesita el secreto del Worker, y la capa de la CEK, un secreto de ranura |
 | Un compromiso total del servidor | No sin un secreto de ranura | Las capas del servidor caen, pero la CEK sigue protegida por la salida PRF del passkey o por el kit de recuperación de 160 bits, y ninguno de los dos se puede adivinar |
 | El dispositivo de un miembro eliminado | Lo que ya descargó | Las versiones posteriores quedan cerradas tras una rotación de la CEK |
-| Una URL de agente filtrada | Una configuración, como ese usuario | Consulta [Agentes y MCP remoto](#agentes-y-mcp-remoto) |
+| Una URL de agente filtrada | Una configuración, como ese usuario | Consulta [Agentes y MCP remoto](#agents-and-remote-mcp) |
 
 El servidor sigue viendo metadatos (ids de configuración, equipos, versiones, marcas de tiempo, tamaños de blob) y puede rechazar, retrasar o borrar solicitudes. Un operador que sirva código malicioso del portal puede leer las claves en el navegador. Cada blob está vinculado a su almacén, configuración, equipo y versión, así que el servidor no puede sustituir ni editar uno sin que se note, y la CLI rechaza cualquier versión anterior a una que ya haya visto.
 

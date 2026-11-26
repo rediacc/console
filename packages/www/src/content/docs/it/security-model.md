@@ -34,7 +34,7 @@ Una configurazione archiviata è cifrata su tre livelli. Il livello SDK e il liv
 | Il database e l'archiviazione a oggetti | No | Il livello della passphrase dell'organizzazione richiede il segreto del Worker, e il livello CEK un segreto di slot |
 | Una compromissione completa del server | Non senza un segreto di slot | Cadono i livelli del server, ma la CEK resta protetta dall'output PRF del passkey o dal kit di recupero a 160 bit, e nessuno dei due è indovinabile |
 | Il dispositivo di un membro rimosso | Ciò che ha già scaricato | Le versioni successive restano chiuse dopo una rotazione della CEK |
-| Un URL di agente trapelato | Una configurazione, come quell'utente | Vedi [Agenti e MCP remoto](#agenti-e-mcp-remoto) |
+| Un URL di agente trapelato | Una configurazione, come quell'utente | Vedi [Agenti e MCP remoto](#agents-and-remote-mcp) |
 
 Il server può ancora vedere i metadati (id di configurazione, team, versioni, timestamp, dimensioni dei blob) e può rifiutare, ritardare o eliminare richieste. Un operatore che serve codice del portale malevolo può leggere le chiavi nel browser. Ogni blob è legato al proprio archivio, alla configurazione, al team e alla versione, quindi il server non può sostituirne o modificarne uno senza che lo si noti, e la CLI rifiuta una versione più vecchia di una già vista.
 
