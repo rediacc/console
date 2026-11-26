@@ -22,10 +22,10 @@ Body-Sig: 28b5728cd209d121
 Anchor: in-diff
 Claim: The doc comment on ensureMsys2RootDirs says it only creates the etc, tmp and dev directories, but the function now also writes etc/fstab and etc/nsswitch.conf, so the comment no longer describes what the function does.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 6bb5656d3c0369b8039fce4f43eb2c891ed2afa2 | d778be9d 2026-11-26T20:53:25Z
 
 ### 9dcf94c3.2 [low] packages/cli/src/services/tools/__tests__/rsync-install.test.ts:242
 Anchor: in-diff
 Claim: The repair test checks that an existing etc/fstab is kept and a missing one is re-created, but no test covers the same keep-or-create behaviour for etc/nsswitch.conf, so a regression in that loop entry would pass.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 6bb5656d3c0369b8039fce4f43eb2c891ed2afa2 | d778be9d 2026-11-26T20:53:26Z
