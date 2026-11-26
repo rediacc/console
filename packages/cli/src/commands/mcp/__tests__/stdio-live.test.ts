@@ -98,7 +98,7 @@ describe.skipIf(!LIVE)('the mcp serve stdio server against a live config', () =>
     const opted = await connect(live, { REDIACC_ALLOW_GRAND_REPO: GRAND as string });
     const admitted = await call(opted, 'repo_up', { ref: GRAND, confirm: GRAND });
     show('repo_up grand with opt-in', admitted);
-    // Admitted means the write ran: any refusal code (not only the missing opt-in) fails the test.
+    // Proves only that the call came back without an error or any refusal code (not just the missing opt-in); it does not read back the write's effect.
     expect(admitted.isError, `${admitted.code ?? '-'}: ${admitted.text}`).toBe(false);
     expect(admitted.code, admitted.text).toBeUndefined();
   }, 600_000);
