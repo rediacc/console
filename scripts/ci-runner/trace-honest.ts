@@ -318,6 +318,38 @@ function runPlain(
   });
 }
 
+/** Runs a gate under its core grant: the grant's environment (the width every gate is told) is the one the child sees. */
+function runGate(
+  cmd: string,
+  cwd: string,
+  timeoutS: number,
+  grant: { env: NodeJS.ProcessEnv }
+): Promise<{ exit: number; tail: string }> {
+  return runPlain(cmd, cwd, timeoutS, grant.env);
+}
+
+/** The options one traced gate runs under: the grant's environment, never the launcher's own. */
+export function traceOptionsFor(
+  id: string,
+  args: { timeoutS: number; maxLogMb: number },
+  grant: { env: NodeJS.ProcessEnv }
+): { timeoutS: number; label: string; env: NodeJS.ProcessEnv; maxLogMb: number } {
+  return { timeoutS: args.timeoutS, label: id, env: grant.env, maxLogMb: args.maxLogMb };
+}
+
+/** Removes a sparse tree and then hands the grant back: a removal that throws must not keep the tokens held, since the next take would wait on them with no deadline. */
+export async function finishSparse(
+  dir: string | undefined,
+  remove: (dir: string) => void,
+  give: () => Promise<void>
+): Promise<void> {
+  try {
+    if (dir !== undefined) remove(dir);
+  } finally {
+    await give();
+  }
+}
+
 /** The finding for a trace the log limit killed: its read set is partial, so it is never a pass and says how to proceed. */
 export function capFindings(
   id: string,
@@ -764,10 +796,10 @@ function count(flag: string, text: string, min: number): number {
 }
 
 /** A finite number of at least `min`, fractions allowed: a NaN or an infinity would arm no timer or one that never fires. */
-function seconds(flag: string, text: string, min: number): number {
+function seconds(flag: string, text: string, min: number, unit = 'seconds'): number {
   const n = Number(text);
   if (text.trim() === '' || !Number.isFinite(n) || n < min)
-    throw new Error(`${flag} takes a number of seconds >= ${min}, got ${text}`);
+    throw new Error(`${flag} takes a number of ${unit} >= ${min}, got ${text}`);
   return n;
 }
 
@@ -804,7 +836,7 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--jobs') a.jobs = count(t, val(), 1);
     else if (t === '--root') a.root = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = seconds(t, val(), 1);
-    else if (t === '--max-log-mb') a.maxLogMb = seconds(t, val(), 1);
+    else if (t === '--max-log-mb') a.maxLogMb = seconds(t, val(), 1, 'MB');
     else if (t === '--selftest') a.selftest = true;
     else if (t === '--list') a.list = true;
     else if (t === '--origin') a.origin = val();
@@ -982,12 +1014,9 @@ async function main(argv: string[]): Promise<number> {
         return;
       }
       const grant = await cores.take(id);
-      const run = await traceCommand(e.run, view.root, {
-        timeoutS: args.timeoutS,
-        label: id,
-        env: grant.env,
-        maxLogMb: args.maxLogMb,
-      }).finally(() => cores.give(grant));
+      const run = await traceCommand(e.run, view.root, traceOptionsFor(id, args, grant)).finally(
+        () => cores.give(grant)
+      );
       const f = run.capped
         ? capFindings(id, run, args.maxLogMb)
         : traceFindings(
@@ -1012,11 +1041,11 @@ async function main(argv: string[]): Promise<number> {
     for (const { id } of top) {
       const e = byId.get(id) as LockEntry;
       const grant = await serialCores.take(id);
-      const real = await runPlain(e.run, view.root, args.timeoutS, grant.env);
+      const real = await runGate(e.run, view.root, args.timeoutS, grant);
       let dir: string | undefined;
       try {
         dir = buildSparse(view, e, leafFilesOf(e));
-        const sparse = await runPlain(e.run, dir, args.timeoutS, grant.env);
+        const sparse = await runGate(e.run, dir, args.timeoutS, grant);
         sparsed++;
         const mutated = verifyLinked(dir);
         if (mutated.length > 0) {
@@ -1063,8 +1092,7 @@ async function main(argv: string[]): Promise<number> {
           fix: 'fix the declared paths or the build output the gate needs',
         });
       } finally {
-        if (dir !== undefined) removeSparse(dir);
-        await serialCores.give(grant);
+        await finishSparse(dir, removeSparse, () => serialCores.give(grant));
       }
     }
   }
@@ -1660,6 +1688,7 @@ async function selftest(): Promise<number> {
   // Temp disposal: real children, a signal mid-build and a SIGKILL.
   await tempDisposalCases(import.meta.filename, 'trace-honest-', check, false);
   await plainGroupCases(check);
+  await grantCases(check);
   await capCases(check);
   const coreFailures = await gateCoresSelftest();
   check(
@@ -1715,6 +1744,74 @@ async function plainGroupCases(check: (ok: boolean, label: string) => void): Pro
   } finally {
     fs.rmSync(aux, { recursive: true, force: true });
   }
+}
+
+/** 2cefaa4d.1/.2, a7298eaa.3, b1bcc098.2: the grant reaches each gate, a failing removal still gives the tokens back, a spawn error unregisters its group, and a bad `--max-log-mb` names MB. */
+async function grantCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  const grant = { cores: 3, env: { ...process.env, TH_GRANT_PROBE: 'width-3' } };
+  const plain = await runGate('printf %s "$TH_GRANT_PROBE"', process.cwd(), 30, grant);
+  const bare = await runPlain('printf %s "${TH_GRANT_PROBE:-none}"', process.cwd(), 30);
+  check(
+    plain.exit === 0 && plain.tail === 'width-3' && bare.tail === 'none',
+    `runGate passes the grant's environment to the gate (saw ${JSON.stringify(plain.tail)}); CONTROL: a run with no grant sees ${JSON.stringify(bare.tail)}`
+  );
+  const opts = traceOptionsFor('g:x', { timeoutS: 5, maxLogMb: 7 }, grant);
+  check(
+    opts.env.TH_GRANT_PROBE === 'width-3' && opts.label === 'g:x' && opts.maxLogMb === 7,
+    `the traced run's options carry the grant's environment, label and log limit (env ${opts.env.TH_GRANT_PROBE})`
+  );
+  let given = 0;
+  let threw = false;
+  try {
+    await finishSparse(
+      '/x',
+      () => {
+        throw new Error('rm failed');
+      },
+      async () => {
+        given++;
+      }
+    );
+  } catch {
+    threw = true;
+  }
+  check(
+    threw && given === 1,
+    `a sparse removal that throws still gives the grant back (threw ${threw}, given ${given})`
+  );
+  let removed = 0;
+  let given2 = 0;
+  await finishSparse(
+    '/x',
+    () => {
+      removed++;
+    },
+    async () => {
+      given2++;
+    }
+  );
+  check(removed === 1 && given2 === 1, 'CONTROL: a clean removal removes once and gives once');
+  const failed = await runPlain('true', '/nonexistent-cwd-for-th-selftest', 30);
+  check(
+    failed.exit === 127 && liveGroupCount() === 0,
+    `a spawn error resolves 127 and leaves no registered group (exit ${failed.exit}, registered ${liveGroupCount()})`
+  );
+  let msg = '';
+  try {
+    parseArgs(['--max-log-mb', '0']);
+  } catch (err) {
+    msg = (err as Error).message;
+  }
+  let msgS = '';
+  try {
+    parseArgs(['--timeout-s', '0']);
+  } catch (err) {
+    msgS = (err as Error).message;
+  }
+  check(
+    msg.includes('MB') && !msg.includes('seconds') && msgS.includes('seconds'),
+    `a bad --max-log-mb names MB, not seconds (${msg}); CONTROL: --timeout-s still says seconds`
+  );
 }
 
 /** D4: a trace the stub pushed past the limit is a `trace-log-cap` finding and never a pass; the free-space wait waits, then refuses. */

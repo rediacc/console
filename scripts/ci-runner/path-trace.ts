@@ -1147,7 +1147,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
   const alive = (g: string): boolean =>
     view.files.some((f) => matchGlob(g, f)) || view.gitlinks.some((f) => matchGlob(g, f));
   /**
-   * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic `:(...)`, a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
+   * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic other than `:(glob)`, which foldGlobMagic models; a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
    */
   /** A `:(glob)` pathspec's pattern (magic already stripped) as the globs it reaches: `<dir>/<*suffix>` one level, `<dir>/**\/<*suffix>` one level plus deep, a literal through the git-default fold; anything else the whole set. A level that names nothing tracked today folds the way foldPathspec folds a dead glob. */
   const foldGlobMagic = (
@@ -1777,7 +1777,14 @@ const CAP_POLL_MS = 5000;
 /** Total bytes of the per-process strace logs (`t.<pid>`) in `dir`. */
 export function traceLogBytes(dir: string): number {
   let total = 0;
-  for (const f of fs.readdirSync(dir)) {
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    // the log dir removed mid-run (a timer or exit callback must not throw): no logs, no bytes
+    return 0;
+  }
+  for (const f of names) {
     if (!/^t\.\d+$/.test(f)) continue;
     try {
       total += fs.statSync(path.join(dir, f)).size;
@@ -3850,6 +3857,15 @@ async function selftest(): Promise<number> {
       JSON.stringify(b3g.lists) === '["c"]',
     `B3: :(glob)c/**/*.txt is the listing of c (no c/*.txt today) plus c/**/*.txt, and :(glob)a/*.txt is a/*.txt alone, never the whole name set (got ${shape(b3g)})`
   );
+  // 3a90511b.2: a content read (`-s`) is not the names context, so a dead one-level glob widens to the tracked cover, never to a listing.
+  const b3gc = pv([
+    ex(7, ['git', 'ls-files', '-s', '--', ':(glob)c/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3gc.kind === 'paths' && b3gc.paths.join(',') === 'c/**' && (b3gc.lists ?? []).length === 0,
+    `B3: ls-files -s -- :(glob)c/*.txt (no c/*.txt today) is the content of c/**, no listing (got ${shape(b3gc)})`
+  );
   const b3gx = pv([
     ex(7, ['git', 'ls-files', '-z', ':(glob)a/**/x/*.txt']),
     open(7, '/r/.git/index'),
@@ -4796,7 +4812,8 @@ async function selftest(): Promise<number> {
   const realRecords = readRecordGlobs(REPO_ROOT);
   const bareAgent = recordCitations(['agent'], realRecords);
   check(
-    bareAgent.every((g) => recordPrefix(g) === 'agent') &&
+    bareAgent.length > 0 &&
+      bareAgent.every((g) => recordPrefix(g) === 'agent') &&
       !bareAgent.includes('agent/reviews/**') &&
       recordCitations(['agent/reviews'], realRecords).includes('agent/reviews/**'),
     `a bare \`agent\` list entry cites only records whose literal prefix is \`agent\` (got ${JSON.stringify(bareAgent)}), and CONTROL: agent/reviews is cited`
@@ -4920,6 +4937,51 @@ export async function logCapCases(check: (ok: boolean, label: string) => void): 
       !under.capped && under.exit === 0,
       `CONTROL: the same stub writing 1000 bytes under the 1 MB limit passes (exit ${under.exit}, capped ${under.capped})`
     );
+    // b1bcc098.3: the log dir removed mid-run reads as no bytes, not a throw inside a timer.
+    check(
+      traceLogBytes(path.join(aux, 'gone')) === 0,
+      'traceLogBytes of a removed log dir is 0, not a throw from the watchdog or exit callback'
+    );
+    fs.writeFileSync(path.join(aux, 't.1'), 'abcd');
+    fs.writeFileSync(path.join(aux, 'other.txt'), 'zzzzzzzz');
+    check(
+      traceLogBytes(aux) === 4,
+      'CONTROL: traceLogBytes counts only the t.<pid> logs of an existing dir'
+    );
+    // a7298eaa.2: --keep-logs puts the logs outside the run dir and leaves them; without it nothing is announced or left.
+    const kept = async (keepLogs: boolean): Promise<string | undefined> => {
+      const lines: string[] = [];
+      const realWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array): boolean => {
+        lines.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        await traceCommand('true', process.cwd(), {
+          straceBin: stub,
+          env: env(10, 0),
+          keepLogs,
+        });
+      } finally {
+        process.stderr.write = realWrite;
+      }
+      return /logs in (\S+)/.exec(lines.join(''))?.[1];
+    };
+    const keptDir = await kept(true);
+    try {
+      check(
+        keptDir !== undefined &&
+          fs.existsSync(keptDir) &&
+          path.relative(runRoot('path-trace-'), keptDir).startsWith('..'),
+        `keepLogs: the logs stay on disk outside the run dir (${keptDir})`
+      );
+    } finally {
+      if (keptDir !== undefined) fs.rmSync(keptDir, { recursive: true, force: true });
+    }
+    check(
+      (await kept(false)) === undefined,
+      'CONTROL: without keepLogs no kept-logs line is written'
+    );
   } finally {
     fs.rmSync(aux, { recursive: true, force: true });
   }
@@ -4940,15 +5002,18 @@ export async function tempDisposalCases(
   const aux = fs.mkdtempSync(path.join(root, 'pt-aux-'));
   try {
     const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
-    const pidFile = path.join(aux, 'stub.pid');
+    const termPid = path.join(aux, 'stub-term.pid');
+    const killPid = path.join(aux, 'stub-kill.pid');
+    const pidFile = path.join(aux, 'stub-watched.pid');
     const script = path.join(aux, 'child.mts');
     fs.writeFileSync(
       script,
       `import { tempProbeChild } from ${JSON.stringify(pathToFileURL(moduleFile).href)};\nawait tempProbeChild(process.argv[2], process.argv[3]);\n`
     );
-    const start = async (mode: string): Promise<ChildProcess> => {
+    // One pid file per case: a stub the earlier SIGKILL case left behind can write its pid late, and must never be read as the death-watch case's stub.
+    const start = async (mode: string, pidPath: string): Promise<ChildProcess> => {
       const child = spawn(process.execPath, [...process.execArgv, script, mode, stub], {
-        env: { ...process.env, TMPDIR: base, STUB_PIDFILE: pidFile },
+        env: { ...process.env, TMPDIR: base, STUB_PIDFILE: pidPath },
         stdio: ['ignore', 'pipe', 'inherit'],
       });
       if (mode === 'noop') return child;
@@ -4967,7 +5032,7 @@ export async function tempDisposalCases(
       });
     // node and tsx keep their own compile and socket caches in TMPDIR; only this tool's run dirs count.
     const left = (): string[] => fs.readdirSync(base).filter((f) => f.startsWith(prefix));
-    const term = await start('trace');
+    const term = await start('trace', termPid);
     const madeByTerm = left().length;
     term.kill('SIGTERM');
     await ended(term);
@@ -4975,7 +5040,7 @@ export async function tempDisposalCases(
       madeByTerm === 1 && left().length === 0,
       `temp: SIGTERM mid-trace leaves no ${prefix}* entry (made ${madeByTerm}, left ${left().length})`
     );
-    const killed = await start('trace');
+    const killed = await start('trace', killPid);
     killed.kill('SIGKILL');
     await ended(killed);
     check(
@@ -4983,9 +5048,7 @@ export async function tempDisposalCases(
       `temp: SIGKILL leaves exactly one ${prefix}* run dir (left ${left().length}), which only a later sweep can remove`
     );
     // D5: SIGKILL runs no handler, so only the spawn's own death watch can end the strace group; the stub must be gone within seconds.
-    // The earlier cases left their stub's pid in the file: remove it, so only this run's stub is read.
-    fs.rmSync(pidFile, { force: true });
-    const watched = stubChild ? await start('trace') : undefined;
+    const watched = stubChild ? await start('trace', pidFile) : undefined;
     let stubPid = 0;
     // The child prints ready before its stub has started: wait, bounded, until the stub's pid is written AND alive.
     for (let i = 0; watched !== undefined && i < 200 && stubPid === 0; i++) {
@@ -4995,12 +5058,20 @@ export async function tempDisposalCases(
     }
     if (watched !== undefined && stubPid === 0) {
       watched.kill('SIGKILL');
+      await ended(watched);
       check(
         false,
         `death watch: the strace stub never came alive within 10 s (pid file ${fs.existsSync(pidFile) ? 'written but dead' : 'absent'})`
       );
     }
     if (watched !== undefined && stubPid !== 0) {
+      const killedStub = fs.existsSync(killPid)
+        ? Number(fs.readFileSync(killPid, 'utf8').trim()) || 0
+        : 0;
+      check(
+        stubPid !== killedStub,
+        `death watch: the pid read is this run's own stub, not the SIGKILL case's (${stubPid} vs ${killedStub || 'none written'})`
+      );
       const aliveBefore = stubPid !== 0 && pidRunning(stubPid);
       watched.kill('SIGKILL');
       await ended(watched);
@@ -5010,7 +5081,7 @@ export async function tempDisposalCases(
         `death watch: a SIGKILLed ${prefix}* run leaves no strace group (stub pid ${stubPid} alive before the kill ${aliveBefore}, gone within 3 s ${goneAfter})`
       );
     }
-    const next = await start('noop');
+    const next = await start('noop', path.join(aux, 'stub-noop.pid'));
     await ended(next);
     check(
       left().length === 0,
