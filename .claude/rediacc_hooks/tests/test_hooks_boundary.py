@@ -8,6 +8,7 @@
 Both are anti-vacuous by count: every stem `guards.stems()` names is compared or held, every chain that has guards finds both verdicts, and a control proves the byte comparison reports a planted divergence.
 """
 
+import importlib
 import importlib.util
 import os
 import shutil
@@ -86,6 +87,22 @@ def fresh_tmp(tmp_path, monkeypatch):
     """
     root = tmp_path / "tmp"
     monkeypatch.setenv("TMPDIR", str(root))
+    # A SEEABLE ROSTER. block_plan_concurrency counts live writers from `<config dir>/projects/<munged root>` and judges nothing ("ALLOWED unchecked") when that directory is absent and no sibling claim is on disk. On a developer machine it exists; in the ci:quick clone under ~/.cache it does not, so the refusal witness chosen in process (which left a claim behind) was allowed by the real run after `reset` emptied the claims (ci:quick 2026-11-26, pre-agent). A project directory of this test's own makes both legs judge the same way everywhere.
+    stop_dir = str(_harness.DISPATCH.parents[2] / "hooks" / "stop")
+    sys.path.insert(0, stop_dir)
+    try:
+        wl_core = importlib.import_module("wl_core")
+        wl_report = importlib.import_module("wl_report")
+
+        fixture_cwd = "/nonexistent-plan-concurrency-fixture"
+        munged = wl_report._munged(
+            wl_core.project_root(wl_core.project_start({"cwd": fixture_cwd}))
+        )
+    finally:
+        sys.path.remove(stop_dir)
+    config = tmp_path / "claude"
+    (config / "projects" / munged).mkdir(parents=True)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config))
 
     def reset():
         shutil.rmtree(root, ignore_errors=True)
