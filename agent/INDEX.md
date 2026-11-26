@@ -507,8 +507,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-console-ai-assistant.md` | approved | 157 | 3 | 14 | 32552 |
-| `agent/plans/PLAN-console-ai-credits.md` | approved | 134 | 5 | 10 | 24928 |
-| `agent/plans/PLAN-console-ai-feedback.md` | approved | 99 | 2 | 7 | 16818 |
+| `agent/plans/PLAN-console-ai-credits.md` | approved | 135 | 4 | 11 | 25121 |
+| `agent/plans/PLAN-console-ai-feedback.md` | approved | 100 | 1 | 8 | 16977 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 100 | 2 | 8 | 16791 |
 | `agent/plans/PLAN-console-ai-providers.md` | approved | 145 | 2 | 13 | 24784 |
 | `agent/plans/PLAN-console-animations.md` | approved | 96 | 2 | 7 | 13692 |
@@ -546,8 +546,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 136 | 4 | 11 | 30283 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 134 | 4 | 11 | 25533 |
-| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 116 | 2 | 11 | 21922 |
-| `agent/plans/PLAN-forensics-investigation.md` | approved | 145 | 3 | 14 | 34041 |
+| `agent/plans/PLAN-forensics-docs-legal.md` | approved | 117 | 1 | 12 | 22075 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 146 | 2 | 15 | 34184 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 124 | 2 | 12 | 24896 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 139 | 4 | 12 | 35479 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
@@ -560,13 +560,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 713 | 15 | 66 | 132657 |
-| `agent/plans/PLAN-host-temp-disposal.md` | approved | 133 | 5 | 14 | 34611 |
+| `agent/plans/PLAN-host-temp-disposal.md` | approved | 135 | 3 | 16 | 34906 |
 | `agent/plans/PLAN-hostinger-to-bench.md` | approved | 113 | 7 | 15 | 25093 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md` | proposed | 57 | 7 | 1 | 11467 |
-| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 76 | 3 | 7 | 11261 |
+| `agent/plans/PLAN-legal-wording-consistency.md` | draft | 77 | 2 | 8 | 11378 |
 | `agent/plans/PLAN-licence-expiry-notices.md` | approved | 69 | 0 | 7 | 16665 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |

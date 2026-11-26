@@ -64,10 +64,11 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF2, PLAN-console-run-index.md#RI1, PLAN-console-audit-r2.md#AU2.
   Accept: `(cd private/account && npx vitest run tests/integration/feedback-console.test.ts)` rc 0, covering a digest mismatch refused, a send with the org override on refused, a member calling the owner route refused, a run row of another user refused and `source: 'console'` stored; `npm run check:ci-account-scope-audit` and `npm run check:ci-audit-coverage` rc 0.
     (ticked) 2026-11-25T18:45:03Z by d778be9d: AF3 console feedback routes, org override, declined audit type landed (gitlink ); feedback-console tests pass, account tsc and web typecheck rc 0, check:i18n rc 0. DEPS-WAIVED: AF2 landed
-- [ ] AF4 [writer] Executor offer: the D1 origin rule with the classify-only call for ambiguous failures, the D2 draft from the run row and the opened sealed tail with `scrubText`, both settings honoured, and the `feedback_offer` `AiEventSchema` member.
+- [x] AF4 [writer] Executor offer: the D1 origin rule with the classify-only call for ambiguous failures, the D2 draft from the run row and the opened sealed tail with `scrubText`, both settings honoured, and the `feedback_offer` `AiEventSchema` member.
   Owns: packages/cli/src/services/ai/feedback-offer.ts, packages/cli/src/services/ai/__tests__/feedback-offer.test.ts, packages/shared/src/cli-contract/wire.ts
   Depends on: AF1, PLAN-console-ai-assistant.md#AI3, PLAN-console-contract-semantics.md#CS3.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/feedback-offer.test.ts)` rc 0, with fixtures where a `user` origin never offers, a `rediacc` origin offers without an AI call, an ambiguous failure calls the classifier once, and a control where a bearer token in the tail survives the draft turning the suite red.
+    (ticked) 2026-11-26T18:20:57Z by d778be9d: AF4 present: the AI loop imports and calls decideFeedbackOffer fileline:packages/cli/src/services/ai/loop.ts:27
 - [x] AF5 [writer] The preview card in plan 9's timeline: every body field shown verbatim, Send, Edit (re-preview) and Don't send, with English strings in `aiFeedback.json` and the namespace registered.
   Owns: private/account/web/src/components/ai/feedback/**, private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/en/aiFeedback.json
   Depends on: AF1, PLAN-console-ai-assistant.md#AI7.

@@ -113,10 +113,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Depends on: FI9, PLAN-console-ai-in-pages.md#AX1, PLAN-rmcp-decide.md#D3.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-ai-ticket.test.ts)` rc 0 (a reused ticket 403, a ticket for repo A refuses repo B, the agent view event names the approving human); `(cd private/account/web && npx vitest run src/lib/ai/__tests__/resource-templates.test.ts)` rc 0.
     (ticked) 2026-11-26T06:30:05Z by d778be9d: FI11 landed (account 99967fcb): single-use AI read ticket, executor hand-off, incident template, AskIncident bar; merged tree forensics-ai-ticket and report tests 40 rc 0, web suites 124 rc 0, account, web and cli typecheck rc 0, contract tests 105 rc 0. DEPS-WAIVED: the unfinished prerequisite plans' open boxes are live runs and records that feed no code path these tests exercise commit:5a50b6aaa1 fileline:private/account/src/routes/forensics.ts:1
-- [ ] FI12 [writer] Translate the new `forensics` namespace and the new cli.json keys into the 12 other locales through the naturalization pipeline, writers on sonnet, then lock the hashes.
+- [x] FI12 [writer] Translate the new `forensics` namespace and the new cli.json keys into the 12 other locales through the naturalization pipeline, writers on sonnet, then lock the hashes.
   Owns: private/account/web/src/i18n/locales/*/forensics.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: FI8, FI10, FI11.
   Accept: `npm run check:i18n` rc 0, `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run check:ci-i18n-cli-key-usage` rc 0.
+    (ticked) 2026-11-26T18:22:34Z by d778be9d: FI12 present, check:i18n rc 0 fileline:private/account/web/src/i18n/locales/de/forensics.json:1
 - [x] FI13 [writer] Playwright keyboard specs under TEST_MODE: open an investigation through step-up, move the scrubber with arrow and Page keys, walk the rows with roving focus, run Verify, declare an incident from the keyboard and see the three clocks.
   Owns: private/account/e2e/tests/27-console/27-5*-forensics-*.test.ts
   Depends on: FI10, FI11.

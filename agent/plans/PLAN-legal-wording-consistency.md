@@ -59,7 +59,8 @@ D8. `i18n-stamp-keys.ts --restamp` rewrites an existing ledger entry only where 
     (ticked) 2026-11-26T17:08:23Z by d778be9d: L3c landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:76ce683f14
 - [x] L5 [writer] `--restamp` per D8 with controls (re-translated stale key restamped, unchanged stale key listed only, placeholder mismatch refused). Accept: `npx tsx scripts/__tests__/i18n-stamp-keys.control.ts` rc 0.
     (ticked) 2026-11-26T15:26:15Z by d778be9d: L5 --restamp landed, npx tsx scripts/__tests__/i18n-stamp-keys.control.ts rc 0 commit:9baa26e9fb
-- [ ] L4 [writer] Stamp the four new-ledger keys, restamp the three existing ones, run `npm run i18n:generate-hashes` and `npm run i18n:naturalize-status` after L3a-c and L5. Accept: `npm run check:i18n`, `npm run check:ci-terms-version` and `npm run check:ci-prose-style` rc 0.
+- [x] L4 [writer] Stamp the four new-ledger keys, restamp the three existing ones, run `npm run i18n:generate-hashes` and `npm run i18n:naturalize-status` after L3a-c and L5. Accept: `npm run check:i18n`, `npm run check:ci-terms-version` and `npm run check:ci-prose-style` rc 0.
+    (ticked) 2026-11-26T17:32:29Z by d778be9d: L4 landed, check:i18n rc 0, naturalize-status fresh commit:b6238aa1a9
 - [ ] L6 [lead] Close 4f4dc043.1 with the L1 sha, f416cc62.1 and f416cc62.3 with the L2 sha, and 75bdcc72.1-.3 and a473201c.2-.3 with the L1b sha and `--test scripts/gates/check-terms-version.ts`. Accept: `npm run check:ci-review-resolutions` rc 0.
 - [ ] LP-bench [live] A fresh bench receipt after L1 and L2: deploy the branch to bench with deploy_bench, check the two new archives and the MCP tables render, then record and tick through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke

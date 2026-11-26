@@ -97,10 +97,11 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: FL5, FL9.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-ledger-growth` rc 0.
     (ticked) 2026-11-25T19:03:14Z by d778be9d: FL10 the FL9 keys in the 12 other locales, stamped, check:i18n rc 0; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
-- [ ] FL11 [writer] Document `rediacc-public-data` in .ci/docs/r2-media-setup.md: bucket, `data.rediacc.com` domain, cache rule, CORS, the `public-data` bws profile, and the `stackexchange/`, `models/` (plan 3) and `fonts/` (plan 6) prefixes with their scripted upload jobs.
+- [x] FL11 [writer] Document `rediacc-public-data` in .ci/docs/r2-media-setup.md: bucket, `data.rediacc.com` domain, cache rule, CORS, the `public-data` bws profile, and the `stackexchange/`, `models/` (plan 3) and `fonts/` (plan 6) prefixes with their scripted upload jobs.
   Owns: .ci/docs/r2-media-setup.md
   Depends on: PLAN-tooling-code-reduction.md#CR2, PLAN-forensics-detection.md, PLAN-forensics-reports.md#FR12.
   Accept: `grep -n "rediacc-public-data" .ci/docs/r2-media-setup.md` prints the new section; `npm run check:ci-prose-style` rc 0.
+    (ticked) 2026-11-26T18:21:58Z by d778be9d: FL11 present: the rediacc-public-data section of the R2 setup doc, landed in 5dc50111a5 commit:5dc50111a5
 - [x] FL12 [writer] The `claim-overstatement` rule per D5 in validate-content-accuracy.js with its reasoned allowlist, and a fixture test where each phrase arm fails and an allowlisted line passes.
   Owns: packages/www/scripts/validate-content-accuracy.js, packages/www/scripts/__tests__/validate-content-accuracy-claims.test.ts
   Depends on: FL5, FL6, FL7.

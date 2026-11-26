@@ -89,10 +89,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: AC1, PLAN-console-ai-providers.md#AP7.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/rediacc-provider.test.ts)` rc 0 and `(cd packages/shared && npx vitest run src/ai)` rc 0.
     (ticked) 2026-11-26T02:41:23Z by d778be9d: AC6 landed 63920c4b2a; cli tsc rc 0, ai+serve 712 tests. A grant-bound chat bills the caller, since the agent session carries no person user id (#next). DEPS-WAIVED: AC5 landed
-- [ ] AC7 [writer] Reconcile per D8: `ai-reconcile.service.ts` run from the 03:00 branch of `scheduled`, refunds as `reconcile-adjust`, drift and low-balance alerts through `AlertDigestService`, tested on recorded log-page fixtures.
+- [x] AC7 [writer] Reconcile per D8: `ai-reconcile.service.ts` run from the 03:00 branch of `scheduled`, refunds as `reconcile-adjust`, drift and low-balance alerts through `AlertDigestService`, tested on recorded log-page fixtures.
   Owns: private/account/src/services/ai-reconcile.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/ai-reconcile.test.ts
   Depends on: AC4.
   Accept: `(cd private/account && npx vitest run tests/integration/ai-reconcile.test.ts)` rc 0, including a fixture with 3 percent drift that queues an alert and a fixture at 1 percent that does not.
+    (ticked) 2026-11-26T18:20:51Z by d778be9d: AC7 present: adjustLot and lapseLot in the credit ledger, the reconcile integration test exists fileline:workers/account/src/credit-ledger.ts:233
 - [x] AC8 [writer] Gateway config per D3: .ci/config/ai-gateway.json and `rediacc_ci.ops.cf_ai_gateway` (upsert and `--check`), with a test against a recorded API fixture and a control where a hand-changed setting makes `--check` exit 1.
   Owns: .ci/config/ai-gateway.json, .ci/rediacc_ci/ops/cf_ai_gateway.py, .ci/rediacc_ci/tests/test_ops_cf_ai_gateway.py
   Depends on: PLAN-tooling-code-reduction.md#CR2.

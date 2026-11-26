@@ -1053,11 +1053,10 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 10,
+      "open": 4,
+      "done": 11,
       "open_sigs": [
         "334ee73a",
-        "474574b2",
         "4a23af14",
         "a31af5bc",
         "ece324eb"
@@ -1067,6 +1066,7 @@
         "0d91fe9e",
         "1f21012f",
         "3b4a2486",
+        "474574b2",
         "83f4cf23",
         "a0292320",
         "ac216241",
@@ -1080,15 +1080,15 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 7,
+      "open": 1,
+      "done": 8,
       "open_sigs": [
-        "4a23af14",
-        "6c3b5aec"
+        "4a23af14"
       ],
       "done_sigs": [
         "138477d9",
         "20cb75e5",
+        "6c3b5aec",
         "8890cd6d",
         "97fdfb9e",
         "987389e1",
@@ -2033,11 +2033,10 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 11,
+      "open": 1,
+      "done": 12,
       "open_sigs": [
-        "c0384c17",
-        "f1d2facd"
+        "c0384c17"
       ],
       "done_sigs": [
         "06d04335",
@@ -2050,6 +2049,7 @@
         "a95c860b",
         "d0224321",
         "d9efbe05",
+        "f1d2facd",
         "f392088c"
       ]
     },
@@ -2058,10 +2058,9 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 14,
+      "open": 2,
+      "done": 15,
       "open_sigs": [
-        "57ff82ed",
         "c0384c17",
         "ed4df7d5"
       ],
@@ -2071,6 +2070,7 @@
         "3785e8de",
         "47e95ef3",
         "542a4370",
+        "57ff82ed",
         "6d90f63b",
         "7b95f43e",
         "7d4c3d3d",
@@ -2403,11 +2403,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 14,
+      "open": 3,
+      "done": 16,
       "open_sigs": [
-        "095996c0",
-        "5a843445",
         "82726446",
         "af353057",
         "dee9542d"
@@ -2415,9 +2413,11 @@
       "done_sigs": [
         "02bd8ddf",
         "047b15bb",
+        "095996c0",
         "141aa55b",
         "1b9b8191",
         "3a59702b",
+        "5a843445",
         "6d8212ea",
         "70c35be7",
         "714a9aba",
@@ -2540,12 +2540,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 7,
+      "open": 2,
+      "done": 8,
       "open_sigs": [
         "2acb7e0a",
-        "4c59d9a7",
-        "ff98bf33"
+        "4c59d9a7"
       ],
       "done_sigs": [
         "30253a2d",
@@ -2554,7 +2553,8 @@
         "57d7c6f4",
         "6b1e40da",
         "8a2435a7",
-        "8da5908f"
+        "8da5908f",
+        "ff98bf33"
       ]
     },
     "agent/plans/PLAN-licence-expiry-notices.md": {
