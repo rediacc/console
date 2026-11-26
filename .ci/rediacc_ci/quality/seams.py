@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import stat
 import sys
 
@@ -30,6 +31,11 @@ RAM_FILESYSTEMS = ("tmpfs", "ramfs")
 PROC_MOUNTS = "/proc/mounts"
 
 
+def _unescape_mount(field: str) -> str:
+    """The mount point `/proc/mounts` wrote with its octal escapes (space \\040, tab \\011, backslash \\134, newline \\012) undone."""
+    return re.sub(r"\\([0-7]{3})", lambda match: chr(int(match.group(1), 8)), field)
+
+
 def _on_ram_filesystem(path: pathlib.Path) -> bool:
     """Whether the longest mount point above `path` is a RAM filesystem; False when the mount table cannot be read."""
     try:
@@ -42,8 +48,7 @@ def _on_ram_filesystem(path: pathlib.Path) -> bool:
     for row in rows:
         if len(row) < 3:
             continue
-        # /proc/mounts escapes a space in a mount point as \040.
-        mount = pathlib.Path(row[1].replace("\\040", " "))
+        mount = pathlib.Path(_unescape_mount(row[1]))
         if path.is_relative_to(mount) and len(mount.parts) > best_length:
             best_length = len(mount.parts)
             ram = row[2] in RAM_FILESYSTEMS

@@ -128,8 +128,25 @@ def test_scratch_root_honours_a_private_mkdtemp_directory(capsys):
 
 def test_scratch_root_ignores_the_temp_base_itself(capsys):
     """The system temp base itself is shared, never a private scratch root."""
-    assert seams.scratch_root("X_ROOT", os.fspath(seams.system_temp_base())) is None
+    base = seams.system_temp_base()
+    assert base is not None
+    assert seams.scratch_root("X_ROOT", os.fspath(base)) is None
     assert "X_ROOT" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("literal", seams.SYSTEM_TEMP_CANDIDATES)
+def test_scratch_root_ignores_every_literal_temp_candidate(literal, capsys):
+    """Whichever candidate the host picks as the base, none of /tmp, /var/tmp or /usr/tmp is a private scratch root, so the /tmp refusal holds on a tmpfs /tmp host too."""
+    assert seams.scratch_root("X_ROOT", literal) is None
+    assert "X_ROOT" in capsys.readouterr().err
+
+
+def test_scratch_root_says_so_when_no_temp_directory_is_usable(monkeypatch, tmp_path, capsys):
+    """CONTROL for the above: with no usable candidate there is no base, and the refusal says so rather than raising a TypeError."""
+    monkeypatch.setattr(seams, "SYSTEM_TEMP_CANDIDATES", (str(tmp_path / "absent"),))
+    assert seams.system_temp_base() is None
+    assert seams.scratch_root("X_ROOT", os.fspath(tmp_path)) is None
+    assert "no system temp directory" in capsys.readouterr().err
 
 
 def test_floor_default_without_override():
@@ -333,3 +350,27 @@ def test_system_temp_base_keeps_tmpfs_tmp_when_nothing_else_is_on_disk(monkeypat
         "tmpfs {0} tmpfs rw 0 0\ntmpfs {1} tmpfs rw 0 0\ntmpfs {2} tmpfs rw 0 0\n",
     )
     assert seams.system_temp_base() == dirs[0]
+
+
+def test_system_temp_base_uses_the_longest_mount_point_not_the_first_or_last(monkeypatch, tmp_path):
+    """A real mount table lists `/` first, and a parent mount may also come after the candidate: only the longest match decides."""
+    dirs = _fake_candidates(monkeypatch, tmp_path, "tmpfs {0} tmpfs rw 0 0\n")
+    root_first = "/dev/sda1 / ext4 rw 0 0\ntmpfs {0} tmpfs rw 0 0\n"
+    (tmp_path / "mounts").write_text(root_first.format(*dirs))
+    assert seams.system_temp_base() == dirs[1]
+    root_last = "tmpfs {0} tmpfs rw 0 0\n/dev/sda1 / ext4 rw 0 0\n"
+    (tmp_path / "mounts").write_text(root_last.format(*dirs))
+    assert seams.system_temp_base() == dirs[1]
+
+
+def test_system_temp_base_reads_a_mount_point_with_a_tab_or_backslash(monkeypatch, tmp_path):
+    """/proc/mounts escapes space, tab and backslash as octal; all of them are undone before the lookup."""
+    dirs = _fake_candidates(monkeypatch, tmp_path, "")
+    odd = tmp_path / "odd\t name\\x"
+    odd.mkdir()
+    odd = odd.resolve()
+    escaped = os.fspath(odd).replace("\\", "\\134").replace("\t", "\\011").replace(" ", "\\040")
+    assert escaped != os.fspath(odd)
+    monkeypatch.setattr(seams, "SYSTEM_TEMP_CANDIDATES", (os.fspath(odd), os.fspath(dirs[1])))
+    (tmp_path / "mounts").write_text("tmpfs %s tmpfs rw 0 0\n" % escaped)
+    assert seams.system_temp_base() == dirs[1]
