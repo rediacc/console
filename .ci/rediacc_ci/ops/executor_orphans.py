@@ -10,6 +10,8 @@ THE OUTPUT CONTRACT. `--json` prints one JSON object per event on stdout with ex
 
 NO FULL ID IS PRINTED. Every org is named by its 8-character prefix.
 
+WHERE THE EVENTS LIVE. A target whose account Worker binds `TELEMETRY` (every bench and stable config) routes every `cli.*` event to Analytics Engine and returns before the D1 insert (`event-log.service.ts`), so D1 holds none of them there. For such a target the same events are read through the Analytics Engine SQL API (the client of `d1_size_report --compare-telemetry`; dataset from the config's `analytics_engine_datasets` entry, columns per `writeTelemetry`: `blob1` type, `blob2` source, `blob4` org, `blob8` the data JSON). An unreachable or refusing SQL API, or a row whose data cannot be parsed, is the coded error `AE_UNREADABLE` (exit 1), never an empty list. A config without the binding (and `onprem`) reads D1 or SQLite as before.
+
 THE ENVIRONMENT of `bench` and `stable` follows `rediacc_ci.ops.executor_orgs`: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` come from CD's Bitwarden step, or a bare local run re-executes itself under `bws_env exec --profile executor-orphans` (`.ci/config/secret-supply.json`). `onprem` needs no credential.
 """
 
@@ -18,14 +20,19 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import pathlib
+import re
 import sqlite3
 import subprocess
 import sys
+import tomllib
+import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.deploy import console_executor as target_mod
-from rediacc_ci.ops import executor_orgs
+from rediacc_ci.ops import d1_size_report, executor_orgs
+from rediacc_ci.ops import observability_volume as ov
 
 SELF = "rediacc_ci.ops.executor_orphans"
 PROFILE = "executor-orphans"
@@ -52,6 +59,18 @@ EVENTS_SQL = (
     "AND type IN ('cli.repo.create', 'cli.repo.fork', 'cli.machine.provision') "
     "AND json_extract(data, '$.commandPath') IS NOT NULL "
     "ORDER BY timestamp, id"
+)
+
+AE_CODE = "AE_UNREADABLE"
+TELEMETRY_BINDING = "TELEMETRY"
+DATASET_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+AE_STAMP_RE = re.compile(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d(\.\d+)?")
+EVENTS_AE_SQL = (
+    "SELECT timestamp AS at, blob1 AS type, blob4 AS org_id, blob8 AS data FROM {dataset} "
+    "WHERE blob2 = 'cli' "
+    "AND blob1 IN ('cli.repo.create', 'cli.repo.fork', 'cli.machine.provision') "
+    "AND blob8 LIKE '%\"commandPath\"%' "
+    "ORDER BY timestamp"
 )
 
 
@@ -116,6 +135,66 @@ def read_d1(worker_dir: pathlib.Path, config: str) -> list[dict]:
     if rows is None:
         raise RefusedError(
             "UNVERIFIED: wrangler d1 execute on %s did not print result rows" % database
+        )
+    return rows
+
+
+def telemetry_dataset(config_path: pathlib.Path) -> str | None:
+    """The Analytics Engine dataset a wrangler config binds as TELEMETRY; None when it binds none."""
+    try:
+        doc = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise RefusedError("%s cannot be read: %s" % (config_path, exc)) from None
+    for entry in doc.get("analytics_engine_datasets") or []:
+        if isinstance(entry, dict) and entry.get("binding") == TELEMETRY_BINDING:
+            name = entry.get("dataset")
+            if not isinstance(name, str) or not DATASET_RE.fullmatch(name):
+                raise RefusedError(
+                    "%s: TELEMETRY dataset %r is not an identifier" % (config_path, name)
+                )
+            return name
+    return None
+
+
+def ae_client() -> typing.Callable[[str, str], list[dict]]:
+    """The Analytics Engine SQL API client (a seam the tests replace)."""
+    return d1_size_report.real_ae_client(ov.cf_headers(os.environ))
+
+
+def read_ae(dataset: str) -> list[dict]:
+    """The rows of `EVENTS_AE_SQL`, shaped like `EVENTS_SQL` rows; AE_UNREADABLE when the SQL API cannot answer."""
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID") or ov.DEFAULT_ACCOUNT_ID
+    try:
+        raw = ae_client()(account, EVENTS_AE_SQL.format(dataset=dataset))
+    except (d1_size_report.RegionError, ov.VolumeError) as exc:
+        raise RefusedError(
+            "%s: Analytics Engine %s cannot be read: %s" % (AE_CODE, dataset, exc)
+        ) from None
+    rows: list[dict] = []
+    for item in raw:
+        try:
+            data = json.loads(item["data"])
+            if not isinstance(data, dict):
+                raise TypeError("data is not an object")
+            at = str(item["at"])
+        except (KeyError, TypeError, ValueError):
+            raise RefusedError(
+                "%s: Analytics Engine %s returned a row whose data cannot be parsed"
+                % (AE_CODE, dataset)
+            ) from None
+        if data.get("commandPath") is None:
+            continue
+        if AE_STAMP_RE.fullmatch(at):
+            at = at.replace(" ", "T") + "Z"
+        rows.append(
+            {
+                "org_id": item.get("org_id"),
+                "type": item.get("type"),
+                "at": at,
+                "machine": data.get("machineName"),
+                "repo": data.get("repoName"),
+                "guid": data.get("guid"),
+            }
         )
     return rows
 
@@ -200,7 +279,8 @@ def read_targets(
     rows: list[dict] = []
     for region in regions:
         _, config = target_mod.resolve_target(root, args.target, region)
-        rows.extend(read_d1(worker_dir, config))
+        dataset = telemetry_dataset(worker_dir / config)
+        rows.extend(read_ae(dataset) if dataset else read_d1(worker_dir, config))
     return rows
 
 

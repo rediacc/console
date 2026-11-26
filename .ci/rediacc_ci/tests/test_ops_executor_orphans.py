@@ -214,6 +214,8 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Pat
     log.write_text("", encoding="utf-8")
     monkeypatch.setenv("PATH", str(bin_dir) + os.pathsep + os.environ["PATH"])
     monkeypatch.setenv("FAKE_LOG", str(log))
+    # The real configs all bind TELEMETRY; this fixture stands for a config that does not, which reads D1.
+    monkeypatch.setattr(mod, "telemetry_dataset", lambda _path: None)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-token-secret-value")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
     row = {
@@ -308,3 +310,86 @@ def test_missing_credentials_with_no_bound_profile_reexecute_under_it(
     argv = ["list", "--target", "stable", "--region", "eu"]
     assert _run(*argv) == 7
     assert seen == [argv]
+
+
+AE_ROW = {
+    "at": "2026-11-20 10:00:00",
+    "type": "cli.repo.create",
+    "org_id": ORG,
+    "data": json.dumps({"machineName": "m1", "repoName": "alpha", **EXECUTOR}),
+}
+AE_OWN_CLI_ROW = {**AE_ROW, "data": json.dumps({"machineName": "m1", "repoName": "own-cli"})}
+
+
+@pytest.fixture
+def ae(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> list[tuple[str, str]]:
+    """Real wrangler configs (they bind TELEMETRY), a faked AE SQL API, and a PATH npx that reports when D1 is touched."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    npx = bin_dir / "npx"
+    npx.write_text("#!/bin/sh\necho D1 TOUCHED >&2\nexit 9\n", encoding="utf-8")
+    npx.chmod(npx.stat().st_mode | stat.S_IXUSR)
+    monkeypatch.setenv("PATH", str(bin_dir) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "cf-token-secret-value")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    calls: list[tuple[str, str]] = []
+
+    def client(account: str, sql: str) -> list[dict]:
+        calls.append((account, sql))
+        return [AE_ROW, AE_OWN_CLI_ROW]
+
+    monkeypatch.setattr(mod, "ae_client", lambda: client)
+    return calls
+
+
+def test_bench_reads_analytics_engine_and_finds_the_orphan(
+    ae: list[tuple[str, str]], capsys: pytest.CaptureFixture
+) -> None:
+    assert _run("list", "--target", "bench", "--json") == 0
+    out = capsys.readouterr()
+    (event,) = [json.loads(line) for line in out.out.splitlines()]
+    assert event == {
+        "org": "org12345",
+        "machine": "m1",
+        "repo": "alpha",
+        "guid": None,
+        "at": "2026-11-20T10:00:00Z",
+        "function": "repository_create",
+    }
+    assert "D1 TOUCHED" not in out.err
+    ((account, sql),) = ae
+    assert account == "acct"
+    assert " FROM telemetry_bench " in sql
+    assert "commandPath" in sql
+    assert ORG not in out.out + out.err
+
+
+def test_stable_reads_every_region_dataset_from_analytics_engine(
+    ae: list[tuple[str, str]],
+) -> None:
+    assert _run("list", "--target", "stable", "--json") == 0
+    assert [sql.split(" FROM ")[1].split(" ")[0] for _, sql in ae] == [
+        "telemetry_asia",
+        "telemetry_eu",
+        "telemetry_us",
+    ]
+
+
+@pytest.mark.usefixtures("ae")
+def test_an_unreachable_sql_api_is_an_error_not_zero_orphans(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    def client(_account: str, _sql: str) -> list[dict]:
+        raise mod.d1_size_report.RegionError("analytics engine unreachable")
+
+    monkeypatch.setattr(mod, "ae_client", lambda: client)
+    assert _run("list", "--target", "bench", "--json") == 1
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert mod.AE_CODE in out.err
+
+
+@pytest.mark.usefixtures("ae")
+def test_an_unparsable_ae_row_is_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(mod, "ae_client", lambda: lambda _a, _s: [{**AE_ROW, "data": "{trunc"}])
+    assert _run("list", "--target", "bench") == 1
