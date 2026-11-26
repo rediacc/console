@@ -5,10 +5,14 @@ Each injected failure (a monkeypatched reader that raises) is paired with a cont
 
 from __future__ import annotations
 
+import builtins
+import sys
 import time
 import types
 from typing import Any
 
+import pytest
+import wl_armed
 import wl_ci
 import wl_lessons
 import wl_liveness
@@ -199,3 +203,91 @@ def test_roster_status_source_control_a_readable_store_names_nothing(wl):
     roster_tests.plant_lease(wl, "st1", roster_tests.W1, lease_age_min=21)
     v = roster_tests.verdict(wl)
     assert "unreadable" not in v["rows"][roster_tests.W1]["status_src"]
+
+
+def test_live_worker_ids_without_a_problems_list_says_so_on_stderr(monkeypatch, capsys):
+    """Review 91ecf84b.1: the Stop hook's own call passes no `problems`; the failure must still be named, on stderr, not dropped."""
+    monkeypatch.setattr(wl_roster, "shell_waiters", _raise)
+    event = {"background_tasks": [{"id": "b1", "status": "running"}]}
+    assert wl_liveness.live_worker_ids(event, [{"id": "b0"}], "/nowhere", "s") == {"b0"}
+    err = capsys.readouterr().err
+    assert "shell waiters" in err, err
+    assert BOOM in err, err
+
+
+def test_live_worker_ids_control_a_clean_read_without_problems_prints_nothing(monkeypatch, capsys):
+    monkeypatch.setattr(wl_roster, "shell_waiters", lambda *_a: ["w1"])
+    monkeypatch.setattr(wl_roster, "load_metas", lambda *_a: {})
+    monkeypatch.setattr(wl_roster, "session_subagents_dir", lambda *_a: None)
+    assert wl_liveness.live_worker_ids({}, [], "/nowhere", "s") == {"w1"}
+    assert capsys.readouterr().err == ""
+
+
+# ---- wl_liveness._arm_covers and the shell-work read -------------------------------------------
+
+ARM_REC = {"arm": {"aid": "0123abcd"}}
+
+
+def test_arm_covers_an_error_inside_covers_propagates(monkeypatch):
+    """Review 775034ca.3: an exception from `covers()` is a defect to surface, not a reason to read the arm as not covering."""
+    monkeypatch.setattr(wl_armed, "covers", _raise)
+    with pytest.raises(RuntimeError, match=BOOM):
+        wl_liveness._arm_covers(ARM_REC)
+
+
+def test_arm_covers_control_a_covering_arm_answers_true(monkeypatch):
+    monkeypatch.setattr(wl_armed, "covers", lambda *_a: True)
+    assert wl_liveness._arm_covers(ARM_REC) is True
+    assert wl_liveness._arm_covers({"arm": {}}) is False
+
+
+def test_arm_covers_a_missing_wl_armed_covers_nothing_but_any_other_failure_propagates(
+    monkeypatch,
+):
+    """Review 775034ca.4: the docstring's "cannot be imported" is exactly a wl_armed that is not installed; a SyntaxError in it is raised."""
+    monkeypatch.setitem(sys.modules, "wl_armed", None)
+    assert wl_liveness._arm_covers(ARM_REC) is False
+    monkeypatch.delitem(sys.modules, "wl_armed")
+    real = builtins.__import__
+
+    def broken(name, *a, **k):
+        if name == "wl_armed":
+            raise SyntaxError("planted syntax error")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", broken)
+    with pytest.raises(SyntaxError):
+        wl_liveness._arm_covers(ARM_REC)
+
+
+def _ladder_fold(wid):
+    stamp = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() + 3600))
+    rec = {
+        "id": "it1",
+        "state": ">",
+        "owner": None,
+        "line": "- [>] quiet item until:%s worker:%s" % (stamp, wid),
+        "worker": wid,
+        "worker_verified": True,
+        "upd": "2020-01-01T00:00:00Z",
+    }
+    return types.SimpleNamespace(items=[rec])
+
+
+def test_ladder_a_failed_shell_work_read_is_said_and_no_shell_counts_as_working(
+    monkeypatch, capsys
+):
+    """Reviews 1a88774b.1 and b64fda50.1: when the shell-work probe raises, the age ladder runs as if no shell does real work AND stderr names the failure; the control (the probe names the shell as working) keeps it off the resolve rung."""
+    monkeypatch.setattr(wl_roster, "known_subagent_ids", lambda *_a: set())
+    monkeypatch.setattr(wl_liveness.C, "task_statuses", lambda *_a, **_k: {})
+    event = {"background_tasks": [{"id": "sh1", "status": "running"}], "cwd": "/nowhere"}
+    fold = _ladder_fold("sh1")
+    got = wl_liveness.ladder(fold, "sess", event, {}, shell_work=_raise)
+    err = capsys.readouterr().err
+    assert "shell-work read failed" in err, err
+    assert BOOM in err, err
+    resolves = got[2]
+    assert resolves, got
+    got = wl_liveness.ladder(fold, "sess", event, {}, shell_work=set)
+    assert capsys.readouterr().err == ""
+    assert not got[2], got

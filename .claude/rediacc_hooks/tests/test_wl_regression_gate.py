@@ -194,6 +194,31 @@ def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):
     assert "check-newgate.sh" in text, "no cached gate run in the marker: %s" % text[:300]
 
 
+def test_86e_prove_cli_records_the_gates_stdout_and_stderr_in_the_persisted_log(wl):
+    """Review 31b8b02f.3: `prove_cli` drives the real run and the log it keeps carries both streams as text, plus the exit trailer; a red exit is recorded as red."""
+    wl.reg_repo()
+    (wl.proj / "package.json").write_text(
+        '{"name":"p","version":"0.0.0","scripts":{"ci":"npm run check:ci-loud",'
+        '"check:ci-loud":"bash .ci/scripts/quality/check-loud.sh"}}\n',
+        encoding="utf-8",
+    )
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    gate = quality / "check-loud.sh"
+    gate.write_text(
+        "#!/bin/bash\necho OUT-SENTINEL-1\necho ERR-SENTINEL-2 >&2\nexit 3\n", encoding="utf-8"
+    )
+    rel = ".ci/scripts/quality/check-loud.sh"
+    lines = wl_reggate.prove_cli(wl.proj)
+    assert any("exit 3 (recorded)" in x for x in lines), lines
+    digest = wl_reggate._hash_file(str(gate))
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) == 3
+    rows = json.loads(wl_reggate._verdict_path(wl.proj).read_text(encoding="utf-8"))
+    log = (wl_reggate._log_dir(wl.proj) / rows[rel]["log"]).read_text(encoding="utf-8")
+    assert "OUT-SENTINEL-1" in log, log
+    assert "ERR-SENTINEL-2" in log, log
+
+
 def test_86b_control_a_gate_with_no_recorded_verdict_is_not_run_by_the_stop_and_does_not_prove(wl):
     """CONTROL for test_86: the same wired, green gate with no `--prove` run leaves the finding open and starts no npm."""
     wl.say("done for now")

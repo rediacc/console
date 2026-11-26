@@ -434,3 +434,38 @@ def test_shell_work_names_the_working_descendant_of_each_asked_shell() -> None:
     assert json.loads(proc.stdout) == {
         "bxhnqm2th": "python3 -m rediacc_ci.housekeeping.cf_retire archive x"
     }
+
+
+LIVE_PATHS_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L, wl_roster as R
+ev = json.loads(sys.stdin.read())
+ids = L.live_worker_ids(ev, [], ev["cwd"], ev["session_id"])
+rows, _metas = R.live_estimate(ev["cwd"], ev["session_id"])
+print(json.dumps({"ids": sorted(ids), "est": sorted(r["id"] for r in rows or [])}))
+"""
+
+
+def live_paths(fix) -> dict:
+    proc = subprocess.run(
+        [sys.executable, "-c", LIVE_PATHS_SNIPPET, str(wlfix.STOP_DIR)],
+        input=fix.event(),
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    return json.loads(proc.stdout)
+
+
+def test_live_worker_ids_and_live_estimate_drop_a_report_captured_waiter(wl):
+    """Review 490fbdbf.2: the two other readers of the roster (`live_worker_ids`, `live_estimate`) stop counting a stuck waiter, as `roster` does; the control with no captured report counts it in both."""
+    waiter(wl)
+    assert W4 in live_paths(wl)["ids"]
+    assert W4 in live_paths(wl)["est"]
+    plant_report(wl, W4, 5, TICK_BODY)
+    got = live_paths(wl)
+    assert W4 not in got["ids"], got
+    assert W4 not in got["est"], got

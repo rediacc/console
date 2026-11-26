@@ -99,6 +99,25 @@ def test_a_hook_process_writes_one_rich_row(tmp_path):
     assert "src" not in rows[0]
 
 
+def test_two_module_objects_in_one_process_write_one_row(tmp_path):
+    """Review 98b1a511.1: `_ARMED` is per module object, so a second copy of wl_resprofile loaded under another name must stand down on the env marker that names this pid; one row, not two."""
+    path = str(REPO / ".claude" / "hooks" / "stop" / "wl_resprofile.py")
+    hook = (
+        "import importlib.util as U\n"
+        "mods = []\n"
+        "for n in ('rp_a', 'rp_b'):\n"
+        "    spec = U.spec_from_file_location(n, %r)\n"
+        "    m = U.module_from_spec(spec); spec.loader.exec_module(m); mods.append(m)\n"
+        "    m.install()\n"
+        "print(len(mods[0]._ARMED), len(mods[1]._ARMED))\n" % path
+    )
+    got = run_py(tmp_path, ["-c", hook], PYTHONPATH=str(PROFILE / "py"))
+    assert got.returncode == 0, got.stderr
+    assert got.stdout.split() == ["1", "0"], got.stdout
+    rows = records(tmp_path)
+    assert len(rows) == 1, rows
+
+
 def test_a_child_of_a_hook_process_records_its_own_row(tmp_path):
     """The claim is the parent's: a child python3 of a hook process writes its own site row."""
     hook = (
@@ -379,6 +398,16 @@ def test_prune_walks_every_repo_folder(tmp_path):
     assert not stray_old.exists()
     assert stray_new.exists()
     assert got == {"tmp": 2, "stale": 1, "days": 2, "errors": 0}
+
+
+def test_a_repo_slug_that_merely_contains_pytest_of_is_not_a_fixture(tmp_path):
+    """Review 30d7d05c.3: `pytest-of-` needs its `-pytest-<n>` tail; a live repo folder named for a path with that text in it survives, the pytest base temp beside it does not."""
+    top = tmp_path / "resprofile"
+    repo = _mk(top / "home-dev-notes-pytest-of-the-week" / _day(0))
+    fixture = _mk(top / "home-dev-work-pytest-of-dev-pytest-4-gw0" / _day(0))
+    R.prune_all(top, keep=top / "home-dev-console")
+    assert repo.exists()
+    assert not fixture.parent.exists()
 
 
 def test_a_keep_folder_with_a_tmp_slug_survives_prune_all(tmp_path):

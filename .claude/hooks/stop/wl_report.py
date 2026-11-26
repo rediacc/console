@@ -1087,11 +1087,19 @@ def handle_subagent_stop(event):
 
         wl_worktrees.mark_finished(root, agent_id, transcript, interim)
     queued = 0
+    tick_error = ""
     if me8:
-        # Each follow-up is swallowed on its own, after the capture: a broken queue must not cost the report, and a broken log must not cost the queue.
-        with contextlib.suppress(Exception):
+        # Each follow-up is swallowed on its own, after the capture: a broken queue must not cost the report, and a broken log must not cost the queue. A queue that fails is NAMED, on stderr and in the stop-log row, so the lost TICK row is findable (review e31b42fa.2).
+        try:
             queued = queue_report_ticks(root, me8, agent_id, final, body)
-    return subagent_resume(root, me8, event, final, queued)
+        except Exception as exc:
+            tick_error = "%s: %s" % (type(exc).__name__, exc)
+            print(
+                "wl_report: the TICK rows of agent %s were not queued (%s)"
+                % (str(agent_id)[:64], tick_error),
+                file=sys.stderr,
+            )
+    return subagent_resume(root, me8, event, final, queued, tick_error)
 
 
 # ---- SubagentStop follow-ups: the pending-tick queue and the API-error resume ----
@@ -1148,7 +1156,7 @@ def self_resumes(root, me8, agent_id):
     return n
 
 
-def subagent_resume(root, me8, event, final, queued=0):
+def subagent_resume(root, me8, event, final, queued=0, tick_error=""):
     """Log this SubagentStop, and return the block reason when the agent stopped on an API error, `stop_hook_active` is false and the hook has resumed it fewer than RESUME_SELF_MAX times; "" otherwise. Never raises."""
     agent_id = str(event.get("agent_id") or "")
     api = looks_api_error(final)
@@ -1169,6 +1177,7 @@ def subagent_resume(root, me8, event, final, queued=0):
                     "api_error": api,
                     "active": active,
                     "ticks": int(queued),
+                    "tick_error": str(tick_error or "")[:300],
                     "resumed": resume,
                 },
             )

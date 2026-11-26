@@ -315,9 +315,12 @@ def live_worker_ids(event, live_bg, cwd, session_id, problems=None):
         metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
         ids |= set(R.shell_waiters(running, metas, None, C.project_start({"cwd": cwd})))
     except Exception as exc:
-        # The shell waiters are missing from `ids`; a caller that passes `problems` can say so.
+        # The shell waiters are missing from `ids`. A caller that passes `problems` collects the failure; one that does not (the Stop hook's own call) gets it on stderr, never silence (review 91ecf84b.1).
+        note = "shell waiters: %s: %s" % (type(exc).__name__, exc)
         if problems is not None:
-            problems.append("shell waiters: %s: %s" % (type(exc).__name__, exc))
+            problems.append(note)
+        else:
+            print("wl_liveness: %s" % note, file=sys.stderr)
     ids.discard("")
     return ids
 
@@ -698,7 +701,7 @@ def _age_min(stamp):
 
 
 def _arm_covers(rec, armed_blocks=True):
-    """True when the item carries an arm (with an `aid`) that covers it right now. `armed_blocks` is whether `armed-action-due` blocks at this stop's effort level: a fired arm covers only then, the same reading the roster takes. A module that cannot be imported covers nothing."""
+    """True when the item carries an arm (with an `aid`) that covers it right now. `armed_blocks` is whether `armed-action-due` blocks at this stop's effort level: a fired arm covers only then, the same reading the roster takes. A wl_armed that is not installed (ModuleNotFoundError on that module) covers nothing; any other import failure is a defect and propagates."""
     arm = rec.get("arm")
     if not isinstance(arm, dict) or not arm.get("aid"):
         return False
@@ -706,7 +709,9 @@ def _arm_covers(rec, armed_blocks=True):
 
     try:
         import wl_armed as A
-    except ImportError:
+    except ModuleNotFoundError as exc:
+        if exc.name != "wl_armed":
+            raise
         return False
     # An error inside covers() is a defect to surface, not a reason to read the arm as not covering (swallowed-failures gate).
     return A.covers(arm, datetime.datetime.now(datetime.UTC), armed_blocks)

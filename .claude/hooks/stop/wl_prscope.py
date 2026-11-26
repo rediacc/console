@@ -275,10 +275,13 @@ def _run_verdict(run):
 def release_verdict(runs_by_workflow, sha):
     """(verdict, detail) of the release at merged `sha`: `green` when every RELEASE_WORKFLOWS run reads success, `red` when any reads red, else `pending`. `runs_by_workflow` maps a workflow name to its main runs, newest first. A run of that workflow created after the merged sha's run (a hotfix on main) supersedes it, so a fixed main reads green again; without a run at `sha` or after it the workflow is pending."""
     verdicts: list[tuple[str, str, dict[str, Any] | None]] = []
+    missing: list[str] = []
     for name, _file in RELEASE_WORKFLOWS:
         runs = [r for r in (runs_by_workflow.get(name) or []) if isinstance(r, dict)]
         at = [r for r in runs if str(r.get("headSha") or "") == sha]
         if not at:
+            # No run at the merged sha: either it has not started yet or this workflow never runs for it (a path filter). The detail says which workflow, so a landing stop that stays here is diagnosable (review 69e02bd5.1).
+            missing.append(name)
             verdicts.append((name, CI_PENDING, None))
             continue
         merged_at = str(at[-1].get("createdAt") or "")
@@ -293,7 +296,11 @@ def release_verdict(runs_by_workflow, sha):
         return CI_RED, detail
     pend = [n for n, v, _r in verdicts if v != CI_GREEN]
     if pend:
-        return CI_PENDING, "still waiting on " + ", ".join(pend)
+        note = "still waiting on " + ", ".join(pend)
+        if missing:
+            note += "; no run at the merged sha yet for " + ", ".join(missing)
+            note += " (a workflow its path filter skips never starts one)"
+        return CI_PENDING, note
     return CI_GREEN, ""
 
 

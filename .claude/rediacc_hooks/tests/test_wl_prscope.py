@@ -433,3 +433,26 @@ def test_a_live_pr_carries_its_one_plan_and_never_takes_a_queued_one(world):
     fields = {f.name for f in dataclasses.fields(prscope.LoopState)}
     assert not {f for f in fields if "batch" in f or "pick" in f or "push" in f}, fields
     assert not hasattr(prscope, "batch_ready")
+
+
+def test_release_verdict_names_a_workflow_with_no_run_at_the_merged_sha():
+    """Review 69e02bd5.1: a workflow with no run at the merged sha reads pending AND says so, so a landing stop that waits on a workflow its path filter skips is diagnosable; the controls (a run at the sha) name no such gap."""
+    prscope = wlfix.import_wl("wl_prscope")
+    ci, cd = (name for name, _wf in prscope.RELEASE_WORKFLOWS)
+    done = {
+        "headSha": "s1",
+        "status": "completed",
+        "conclusion": "success",
+        "createdAt": "2026-11-26T10:00:00Z",
+        "databaseId": 1,
+    }
+    verdict, detail = prscope.release_verdict({ci: [done], cd: []}, "s1")
+    assert verdict == prscope.CI_PENDING
+    assert cd in detail, detail
+    assert "no run at the merged sha" in detail, detail
+    verdict, detail = prscope.release_verdict({ci: [done], cd: [dict(done, databaseId=2)]}, "s1")
+    assert (verdict, detail) == (prscope.CI_GREEN, "")
+    pending = dict(done, status="in_progress", conclusion="")
+    verdict, detail = prscope.release_verdict({ci: [done], cd: [pending]}, "s1")
+    assert verdict == prscope.CI_PENDING
+    assert "no run at the merged sha" not in detail, detail

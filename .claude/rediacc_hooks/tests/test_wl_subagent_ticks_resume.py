@@ -191,6 +191,22 @@ def test_subagent_stop_queues_the_reports_done_tick(tmp_path):
     assert stop_log(proj)[-1]["ticks"] == 1
 
 
+def test_subagent_stop_names_a_queue_that_cannot_be_written(tmp_path):
+    """Review e31b42fa.2: a queue that raises costs the TICK rows but not silently: the stop-log row carries `tick_error` (type and message) and ticks=0, so a later reader can tell a lost tick from none; the control (a writable queue) logs an empty `tick_error`."""
+    proj = tmp_path / "proj"
+    (proj / ".git").mkdir(parents=True)
+    msg = "Done.\n\nTICK PLAN-fx.md#0123abcd done commits=abc1234 landed=all owed=-\n"
+    subagent_stop(proj, tmp_path, msg)
+    assert stop_log(proj)[-1]["tick_error"] == ""
+    blocked = PB.pending_path(proj, ME)
+    blocked.unlink()
+    blocked.mkdir()
+    subagent_stop(proj, tmp_path, msg, agent="a0000000000000bb")
+    row = stop_log(proj)[-1]
+    assert row["ticks"] == 0, row
+    assert "Error" in row["tick_error"], row
+
+
 def test_control_subagent_stop_with_a_partial_tick_queues_nothing(tmp_path):
     proj = tmp_path / "proj"
     (proj / ".git").mkdir(parents=True)

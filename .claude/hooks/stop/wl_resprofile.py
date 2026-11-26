@@ -54,8 +54,8 @@ RECENT_KEEP = 5
 DAYS_KEEP = 30
 # A lease or landing tree records under its own slug, and its script paths are repo-relative to the main checkout when run from there: the `.claude/<trees>/<id>/` prefix is folded away so one script is one shape.
 _WORKTREE_PREFIX = re.compile(r"^(py|sh):\.claude/worktrees/[^/]+/")
-# A slug made from a temporary directory: pytest base temps and anything under /tmp or /var/tmp. Such a directory is gone the moment its run ends, so its records are fixtures and its folder is removed outright.
-_TMP_SLUG = re.compile(r"^(tmp|var-tmp)-|pytest-of-")
+# A slug made from a temporary directory: pytest base temps and anything under /tmp or /var/tmp. Such a directory is gone the moment its run ends, so its records are fixtures and its folder is removed outright. A pytest base temp is `pytest-of-<user>-pytest-<n>`, so the `pytest-of-` alternative needs its `-pytest-<n>` tail: a repo whose path merely contains `pytest-of-` is not a fixture (review 30d7d05c.3).
+_TMP_SLUG = re.compile(r"^(tmp|var-tmp)-|pytest-of-.+?-pytest-\d+")
 # Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
 RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
@@ -556,9 +556,11 @@ def install() -> None:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
         # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two. It names THIS pid: a child inherits the environment, and a marker naming its parent must not stand the child down.
-        if _ARMED:
+        # Idempotent across module objects too: the env marker names THIS pid, so a second copy of this module (loaded under another name) finds it and stands down, while a child process (another pid) is not fooled by its parent's marker.
+        mine = "super:%d" % os.getpid()
+        if _ARMED or os.environ.get("_WL_SITEPROFILE") == mine:
             return
-        os.environ["_WL_SITEPROFILE"] = "super:%d" % os.getpid()
+        os.environ["_WL_SITEPROFILE"] = mine
         _ARMED.append(True)
         for name in ("cpu", "io"):
             v = _psi_some_total(name)

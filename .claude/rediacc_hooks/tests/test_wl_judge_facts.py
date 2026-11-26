@@ -505,6 +505,9 @@ def test_control_a_work_order_with_no_file_or_verb_stands_under_a_status_shaped_
         "List every open item with its state.",
         "Fix nothing. Enumerate the ids under the Remaining section.",
         "Report the open items.",
+        "Please list the open items.",
+        "Now report the open items.",
+        "Fix nothing. Just enumerate the ids under the Remaining section.",
     ],
 )
 def test_an_order_phrased_as_a_status_table_without_the_shape_words_reads_as_stop(order):

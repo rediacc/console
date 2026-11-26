@@ -248,7 +248,7 @@ def gating_deferral(items, session_id, owned_by_me, holds):
 def evaluate(root, scope, session_id, live=False, read_text=None):
     """(state, text, detail) for one stop: `block` while a plan of `scope` has an open box and `live` is False, `advisory` for the same with a background task of this session running, `silent` otherwise.
 
-    `scope` is the PR's plan set, prerequisites first (`LoopState.plans`); () is silent. A plan whose text resolves no open box is skipped, so the named box is the first one the parser can see. Every read failure degrades to silence with a reason in `detail`, never to a block on numbers this could not read.
+    `scope` is the PR's plan set, prerequisites first (`LoopState.plans`); () is silent. A plan whose text resolves no open box is skipped, so the named box is the first one the parser can see. A plan that fails to read is skipped and named, never the cause of a block: when none of the set parses the answer is ADVISORY with the unparsed text (and `detail['reason']`), when some do the text rides at the end of the readable plans' own answer, and SILENT is only ever returned when nothing failed.
     """
     scope = tuple(scope or ())
     detail: dict = {"reason": "", "rows": []}
