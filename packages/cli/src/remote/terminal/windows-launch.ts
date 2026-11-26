@@ -25,11 +25,16 @@ const POWERSHELL_QUOTES = /[‘’‚‛]/;
  * the inline path starts. The text holds no line break, quote, caret or percent
  * sign; `|`, `>`, `&&`, `$` and `()` stay literal because the one argument
  * sits inside double quotes on both cmd.exe and the MSVC argv rules.
+ *
+ * The sandbox gateway points BASH_ENV at the repo's sandbox bashrc, which prints
+ * the "Rediacc sandbox" banner on a tty. The inline path starts one non-interactive
+ * bash (the gateway's `bash -c`); this wrapper would start a second, so the
+ * script's bash runs with BASH_ENV empty and the script restores it first thing.
  */
 export function windowsRemoteBootstrap(remoteCommand: string): string {
-  const script = `rm -f -- "$0"\n${remoteCommand}\n`;
+  const script = `export BASH_ENV=$RDC_BASH_ENV; unset RDC_BASH_ENV; rm -f -- "$0"\n${remoteCommand}\n`;
   const payload = gzipSync(Buffer.from(script, 'utf8')).toString('base64');
-  return `f=$(mktemp)&&echo ${payload}|base64 -d|gzip -dc>$f&&exec bash $f`;
+  return `f=$(mktemp)&&echo ${payload}|base64 -d|gzip -dc>$f&&exec env RDC_BASH_ENV=$BASH_ENV BASH_ENV= bash $f`;
 }
 
 /** The text of a file or argument cmd.exe reads: printable ASCII only, no double quote. */
@@ -49,7 +54,9 @@ export function cmdQuoteArg(arg: string): string {
 
 /**
  * The `.cmd` text of a launch: line 1 runs the command, line 2 deletes the
- * handed-off files and the script itself. Both lines end in CRLF. A path with
+ * handed-off files, and the last line deletes the script with the silent
+ * `(goto) 2>nul & del` idiom (the failing `(goto)` unwinds the batch context, so
+ * cmd does not print "The batch file cannot be found."). Every line ends in CRLF. A path with
  * `%` (cmd expands it even inside quotes) or a non-ASCII character is refused.
  */
 export function cmdLaunchScript(argv: string[], cleanupFiles: string[]): string {
@@ -63,7 +70,8 @@ export function cmdLaunchScript(argv: string[], cleanupFiles: string[]): string 
       throw new Error(`cannot quote a temp file path for cmd.exe: ${JSON.stringify(file)}`);
     return `"${file.replaceAll('/', '\\')}"`;
   });
-  return `${run}\r\n@del /q ${[...files, '"%~f0"'].join(' ')}\r\n`;
+  const deleteFiles = files.length > 0 ? `@del /q ${files.join(' ')}\r\n` : '';
+  return `${run}\r\n${deleteFiles}@(goto) 2>nul & del /q "%~f0"\r\n`;
 }
 
 /**

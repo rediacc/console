@@ -72,7 +72,7 @@ describe('windows external terminal handoff', () => {
     await launchExternalTerminal(conn, 'u@h', 'cd /x\nexport A=1 && exec bash', 't', details);
     const argv = launchTerminal.mock.calls[0][1].argv as string[];
     expect(argv.at(-1)).toMatch(
-      /^f=\$\(mktemp\)&&echo [A-Za-z0-9+/=]+\|base64 -d\|gzip -dc>\$f&&exec bash \$f$/
+      /^f=\$\(mktemp\)&&echo [A-Za-z0-9+/=]+\|base64 -d\|gzip -dc>\$f&&exec env RDC_BASH_ENV=\$BASH_ENV BASH_ENV= bash \$f$/
     );
   });
 

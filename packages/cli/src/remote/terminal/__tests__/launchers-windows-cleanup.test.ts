@@ -5,7 +5,9 @@
  * the handed-off files (and the `.cmd` itself) when ssh ends.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -84,7 +86,7 @@ describe('windowsRemoteBootstrap', () => {
     const remote = windowsRemoteBootstrap(REAL_SCRIPT);
     const payload = /echo ([A-Za-z0-9+/=]+)\|base64 -d/.exec(remote)?.[1] as string;
     expect(gunzipSync(Buffer.from(payload, 'base64')).toString('utf8')).toBe(
-      `rm -f -- "$0"\n${REAL_SCRIPT}\n`
+      `export BASH_ENV=$RDC_BASH_ENV; unset RDC_BASH_ENV; rm -f -- "$0"\n${REAL_SCRIPT}\n`
     );
   });
 
@@ -100,21 +102,41 @@ describe('windowsRemoteBootstrap', () => {
     expect(heredoc).toBe('a $HOME ! && > () ^');
     expect(existsSync(scriptPath)).toBe(false);
   });
+
+  it('reads BASH_ENV once (the gateway bash), so the sandbox banner prints once, and restores it for the script', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rdc-be-'));
+    try {
+      const marker = join(dir, 'count');
+      const benv = join(dir, 'bashrc');
+      writeFileSync(benv, `echo x >> ${marker}\n`);
+      const out = execFileSync(
+        'bash',
+        ['-c', windowsRemoteBootstrap('echo "BE=$BASH_ENV"; echo "RDC=${RDC_BASH_ENV-unset}"')],
+        { env: { ...process.env, BASH_ENV: benv } }
+      ).toString();
+      expect(out).toContain(`BE=${benv}`);
+      expect(out).toContain('RDC=unset');
+      expect(readFileSync(marker, 'utf8')).toBe('x\n');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('cmdLaunchScript', () => {
   const script = cmdLaunchScript(SSH_ARGV, [KEY, KH]);
-  const [line1, line2, rest] = script.split('\r\n');
+  const [line1, line2, line3, rest] = script.split('\r\n');
 
-  it('is two CRLF lines, the first the unbroken ssh command with no caret', () => {
+  it('is three CRLF lines, the first the unbroken ssh command with no caret', () => {
     expect(rest).toBe('');
     expect(line1.startsWith('@ssh -tt -o StrictHostKeyChecking=yes')).toBe(true);
     expect(line1).not.toMatch(/[\r\n^]/);
     expect(line1.endsWith(` ${cmdQuoteArg(SSH_ARGV.at(-1) as string)}`)).toBe(true);
   });
 
-  it('deletes the key, known_hosts and itself on line 2', () => {
-    expect(line2).toBe(`@del /q "${KEY_BS}" "${KH_BS}" "%~f0"`);
+  it('deletes the key and known_hosts, then itself silently as the last line', () => {
+    expect(line2).toBe(`@del /q "${KEY_BS}" "${KH_BS}"`);
+    expect(line3).toBe('@(goto) 2>nul & del /q "%~f0"');
   });
 
   it('doubles percent signs, quotes metacharacters and keeps a trailing backslash literal', () => {
