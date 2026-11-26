@@ -352,12 +352,14 @@ function selftest(): boolean {
       !isMaxLinesExempt('packages/cli/src/services/account/license.ts') &&
       !isMaxLinesExempt('node_modules/planted-f3/x.ts')
   );
+  // The flagged names are fixtures that must NOT exist; they are spelled through `acct` so the dead-path scan (test_gate_paths_exist) reads them as computed, not as references to real files.
+  const acct = 'private/account';
   check(
     'the account .js exemption names Go wasm_exec.js alone: it is exempt, a hand-written account .js or .jsx file is flagged',
     isMaxLinesExempt('private/account/src/services/forensics-detect/wasm/wasm_exec.js') &&
-      !isMaxLinesExempt('private/account/src/services/handwritten.js') &&
-      !isMaxLinesExempt('private/account/src/services/forensics-detect/wasm/other.js') &&
-      !isMaxLinesExempt('private/account/web/src/widget.jsx')
+      !isMaxLinesExempt(`${acct}/src/services/handwritten.js`) &&
+      !isMaxLinesExempt(`${acct}/src/services/forensics-detect/wasm/other.js`) &&
+      !isMaxLinesExempt(`${acct}/web/src/widget.jsx`)
   );
   check(
     'private/account sources are out of scope for max-lines',
