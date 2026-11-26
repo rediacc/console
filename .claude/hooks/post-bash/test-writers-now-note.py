@@ -94,22 +94,22 @@ def run(
 def refill_cases():
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 10)
-        got = run(20, stamp_dir=tmp, survey=survey, items=[LEASED_B])
-        want = "WRITERS-NOW REFILL (2 live writer(s) against a floor of 8, 6 slot(s) free, effort high): start 1 writer(s)"
+        got = run(12, stamp_dir=tmp, survey=survey, items=[LEASED_B])
+        want = "WRITERS-NOW REFILL (2 live writer(s) against a floor of 12, 10 slot(s) free, effort high): start 1 writer(s)"
         check("a free cluster below the floor is named", got.startswith(want), True)
         check("the refill names the free cluster", "CL-A a1a1a1a1" in got, True)
-        check("the refill is held by the same throttle", run(20, stamp_dir=tmp, survey=survey), "")
+        check("the refill is held by the same throttle", run(12, stamp_dir=tmp, survey=survey), "")
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 10)
         check(
             "live writers at the floor stay silent",
-            run(20, stamp_dir=tmp, survey=survey, live=8),
+            run(12, stamp_dir=tmp, survey=survey, live=12),
             "",
         )
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 10)
-        got = run(20, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=7)
-        check("seven live writers, one below the floor, refill", "1 slot(s) free" in got, True)
+        got = run(12, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=11)
+        check("eleven live writers, one below the floor, refill", "1 slot(s) free" in got, True)
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 40)
         got = run(45, stamp_dir=tmp, survey=survey, items=[LEASED_B])
@@ -120,18 +120,18 @@ def refill_cases():
         )
         check(
             "a clock-due note below the floor carries the free cluster",
-            "6 slot(s) are free below the floor of 8" in got and "CL-A a1a1a1a1" in got,
+            "10 slot(s) are free below the floor of 12" in got and "CL-A a1a1a1a1" in got,
             True,
         )
     with tempfile.TemporaryDirectory() as tmp:
         survey = plant_survey(tmp, 40)
-        got = run(45, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=8)
+        got = run(45, stamp_dir=tmp, survey=survey, items=[LEASED_B], live=12)
         check(
             "control: at the floor the clock-due note carries no shortfall", "slot(s)" in got, False
         )
     with tempfile.TemporaryDirectory() as tmp:
-        survey = plant_survey(tmp, 16)
-        got = run(20, stamp_dir=tmp, survey=survey, items=[LEASED_B, OPEN_A])
+        survey = plant_survey(tmp, 10)
+        got = run(12, stamp_dir=tmp, survey=survey, items=[LEASED_B, OPEN_A])
         want = "WRITERS-NOW DUE (the survey of round feedf00d has no unstaffed startable cluster"
         check("an exhausted survey names the next round", got.startswith(want), True)
 
@@ -143,7 +143,7 @@ def main():
         check("a round 75 min old is named", first.startswith(want), True)
         check("the next call within NOTE_EVERY_MIN is held", run(76, stamp_dir=tmp), "")
     with tempfile.TemporaryDirectory() as tmp:
-        check("a round 20 min old is silent", run(20, stamp_dir=tmp), "")
+        check("a round 12 min old is silent", run(12, stamp_dir=tmp), "")
     with tempfile.TemporaryDirectory() as tmp:
         got = run(31, stamp_dir=tmp)
         check(
