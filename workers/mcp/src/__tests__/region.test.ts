@@ -5,6 +5,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import { SqliteKvNamespace } from '../../../../packages/shared/src/mcp-host/sqlite-kv.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
 import { grantRegionOf, hostOfRegion } from '../oauth/region.js';
@@ -83,9 +87,9 @@ describe('a grant presented to the wrong region', () => {
     expect(answer.status).toBe(421);
     expect(await answer.json()).toEqual({
       code: 'REDIACC_WRONG_REGION',
-      message: 'This grant lives in the eu region. Use https://mcp.eu.rediacc.cloud/g/eu_grant_1.',
+      message: `This grant lives in the eu region. Use https://${WK_MCP_EU_HOST}/g/eu_grant_1.`,
       region: 'eu',
-      mcpUrl: 'https://mcp.eu.rediacc.cloud/g/eu_grant_1',
+      mcpUrl: `https://${WK_MCP_EU_HOST}/g/eu_grant_1`,
     });
     expect(us.grantLookups).toEqual([]);
     expect(us.executorCalls).toBe(0);
@@ -105,16 +109,16 @@ describe('a grant presented to the wrong region', () => {
   });
 
   it('answers a bare 401 for an id with no region prefix, and hands a grant of its own region to the lookup', async () => {
-    const eu = await workerOf('eu', 'mcp.eu.rediacc.cloud');
+    const eu = await workerOf('eu', WK_MCP_EU_HOST);
     const bare = await eu.worker.fetch(
-      mcpPost('mcp.eu.rediacc.cloud', 'plain_grant') as never,
+      mcpPost(WK_MCP_EU_HOST, 'plain_grant') as never,
       eu.env as never,
       ctx
     );
     expect(bare.status).toBe(401);
     expect(await bare.text()).toBe('Unauthorized');
     const own = await eu.worker.fetch(
-      mcpPost('mcp.eu.rediacc.cloud', 'eu_grant_1') as never,
+      mcpPost(WK_MCP_EU_HOST, 'eu_grant_1') as never,
       eu.env as never,
       ctx
     );
@@ -130,7 +134,7 @@ describe('a grant presented to the wrong region', () => {
     expect(grantRegionOf('mars_abc')).toBeNull();
     expect(grantRegionOf('eu_')).toBeNull();
     expect(grantRegionOf('_eu')).toBeNull();
-    expect(hostOfRegion('mcp.eu.rediacc.cloud', 'eu', 'us')).toBe('mcp.us.rediacc.cloud');
+    expect(hostOfRegion(WK_MCP_EU_HOST, 'eu', 'us')).toBe('mcp.us.rediacc.cloud');
     expect(hostOfRegion('localhost', 'eu', 'us')).toBeNull();
   });
 });
@@ -139,7 +143,7 @@ describe('the region in the OAuth documents', () => {
   let db: DatabaseSync;
   let env: OAuthEnv;
   let oauth: OAuth;
-  const HOST = 'mcp.eu.rediacc.cloud';
+  const HOST = WK_MCP_EU_HOST;
 
   beforeEach(() => {
     db = new DatabaseSync(':memory:');
@@ -147,7 +151,7 @@ describe('the region in the OAuth documents', () => {
     oauth = createOAuth({
       host: HOST,
       region: 'eu',
-      accountUrl: 'https://eu.rediacc.cloud',
+      accountUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
       authRequestKey: 'k'.repeat(40),
       resolveGrant: () => Promise.resolve(null),
       resolveHost: () => Promise.resolve(['93.184.216.34']),
@@ -167,15 +171,15 @@ describe('the region in the OAuth documents', () => {
   it('names the region host in the protected-resource and authorization-server documents', async () => {
     const resource = await call('/.well-known/oauth-protected-resource/g/eu_grant_1');
     expect(await resource.json()).toMatchObject({
-      resource: 'https://mcp.eu.rediacc.cloud/g/eu_grant_1',
-      authorization_servers: ['https://mcp.eu.rediacc.cloud'],
+      resource: `https://${WK_MCP_EU_HOST}/g/eu_grant_1`,
+      authorization_servers: [`https://${WK_MCP_EU_HOST}`],
     });
     const server = (await (await call('/.well-known/oauth-authorization-server')).json()) as {
       issuer: string;
       token_endpoint: string;
     };
-    expect(server.issuer).toBe('https://mcp.eu.rediacc.cloud');
-    expect(server.token_endpoint).toBe('https://mcp.eu.rediacc.cloud/oauth/token');
+    expect(server.issuer).toBe(`https://${WK_MCP_EU_HOST}`);
+    expect(server.token_endpoint).toBe(`https://${WK_MCP_EU_HOST}/oauth/token`);
   });
 
   it('serves no document for a grant of another region', async () => {
@@ -204,7 +208,7 @@ describe('the region in the OAuth documents', () => {
         scope: 'mcp',
         code_challenge: 'x'.repeat(43),
         code_challenge_method: 'S256',
-        resource: 'https://mcp.eu.rediacc.cloud/g/us_grant_1',
+        resource: `https://${WK_MCP_EU_HOST}/g/us_grant_1`,
       })}`
     );
     expect(authorize.status).toBe(400);
@@ -214,7 +218,7 @@ describe('the region in the OAuth documents', () => {
       method: 'POST',
       headers: {
         'content-type': 'application/x-www-form-urlencoded',
-        origin: 'https://eu.rediacc.cloud',
+        origin: WK_ACCOUNT_DEFAULT_ORIGIN,
       },
       body: new URLSearchParams({
         authRequest: 'none',
@@ -228,7 +232,7 @@ describe('the region in the OAuth documents', () => {
     );
     const verified = await oauth.verifyAccessToken(env)(
       'any-token',
-      'https://mcp.eu.rediacc.cloud/g/us_grant_1'
+      `https://${WK_MCP_EU_HOST}/g/us_grant_1`
     );
     expect(verified.status).toBe('invalid');
   });

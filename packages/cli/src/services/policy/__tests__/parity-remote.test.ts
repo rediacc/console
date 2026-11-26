@@ -12,9 +12,8 @@
  * Only the bindings and the machine are faked: the account server (agent-grant-harness.ts), the
  * Worker's grant lookup, the proxy's Durable Object forward (a direct call of the container app) and
  * the executor seam that would have run the command on a machine. The row's policy rides in the
- * grant's own config (a local-file config's `policy` field, the ceiling), its opt-ins in the grant's
- * `overrides`, and its org role in `authorize` below, because the account's agent-session answer
- * does not carry a role yet (see mcp-call-route.test.ts, `asOwner`).
+ * grant's sealed org policy record (none for a row with no policy), its opt-ins in the grant's
+ * `overrides`, and its org role in the account's agent-session answer.
  *
  * Expectations come from the table rows, written by hand, never from the hosted path. ALLOWED is
  * reported only on positive evidence: the executor seam ran.
@@ -24,17 +23,15 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+} from '@rediacc/shared/config/well-known.generated';
 import { deriveAuthTag, formatAgentBearer } from '@rediacc/shared/config-crypto';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { getMcpTool } from '@rediacc/shared/mcp/registry';
-import {
-  DECISION_CODES,
-  type DecisionContext,
-  mergePolicies,
-  PolicyDocumentSchema,
-} from '@rediacc/shared/policy';
+import { DECISION_CODES, type DecisionContext, PolicyDocumentSchema } from '@rediacc/shared/policy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bindEffectivePolicy } from '../../config/policy-record.js';
 import type { ExecuteOptions } from '../../executor/types.js';
 import {
   EXECUTOR_TOKEN,
@@ -92,8 +89,8 @@ function rowOf(id: string): FixtureRow {
 
 const GRAND_GUID = '11111111-1111-4111-8111-111111111111';
 const FORK_GUID = '22222222-2222-4222-8222-222222222222';
-const HOST = 'mcp.eu.rediacc.cloud';
-const ACCOUNT_ORIGIN = 'https://eu.rediacc.cloud';
+const HOST = WK_MCP_EU_HOST;
+const ACCOUNT_ORIGIN = WK_ACCOUNT_DEFAULT_ORIGIN;
 const SLOW = 60_000;
 
 // The two Workers build apart from this package, so their modules are read where the test needs them, which also keeps this package's test typecheck (tsconfig.test.json, rootDir packages/cli) from claiming files outside it.
@@ -162,16 +159,22 @@ interface Hosted {
 /** The hosted path for one row's grant, from an SDK client down to the container's executor seam. */
 async function hostFor(row: FixtureRow): Promise<Hosted> {
   const grantId = `g_${row.id.replaceAll(/[^A-Za-z0-9]/g, '_')}`.slice(0, 60);
+  const org = row.policy?.org;
   const made = await makeGrant({
     grantId,
     teamId: null,
     configId: `cfg-${grantId}`.slice(0, 60),
     machine: 'm1',
+    orgRole: row.principal.orgRole as FakeGrant['orgRole'],
     overrides: {
       grandRepos: (row.overrides.grandRepos ?? null) as FakeGrant['overrides']['grandRepos'],
       clusterOps: (row.overrides.clusterOps ?? null) as FakeGrant['overrides']['clusterOps'],
     },
+    ...(org === undefined ? {} : { policies: { org: PolicyDocumentSchema.parse(org) } }),
   });
+  // The harness seals an allow-all org record unless a case names one; a row with no policy has no
+  // record at all, so the session loads no policy and `decide` sees the missing-policy default.
+  if (org === undefined) made.policyRecords.clear();
   const account = fakeAccount([made]);
   await account.bump(grantId, configFor(row, made.configId));
   const sessions = new AgentGrantSessions({
@@ -181,21 +184,10 @@ async function hostFor(row: FixtureRow): Promise<Hosted> {
     fetchImpl: account.fetch,
   });
   const executed: ExecuteOptions[] = [];
-  const org = row.policy?.org;
   const grantLoader = routeAgentPrincipals(
     () => Promise.reject(new Error('a grant call never reaches the user loader')),
     sessions
   );
-  // The grant session binds no policy yet (agent-grant-session.ts), so the row's org-tier policy stands in for the record the account will carry: it is bound to the config each call runs against.
-  const grants = {
-    acquire: async (id: string, secret: string) => {
-      const handle = await sessions.acquire(id, secret);
-      if (org !== undefined) {
-        bindEffectivePolicy(handle.config, mergePolicies(PolicyDocumentSchema.parse(org)));
-      }
-      return handle;
-    },
-  } as unknown as AgentGrantSessions;
   const deps: ServeDeps = {
     mode: 'container',
     auth: {
@@ -211,10 +203,8 @@ async function hostFor(row: FixtureRow): Promise<Hosted> {
       },
     },
     loadConfig: grantLoader,
-    agentGrants: grants,
-    // The account's agent-session answer carries no org role yet, so the row's role stands in for it.
-    authorize: (args) =>
-      authorize({ ...args, principal: { ...args.principal, orgRole: row.principal.orgRole } }),
+    agentGrants: sessions,
+    authorize,
     audit: () => Promise.resolve(),
   };
   const app = createServeApp(deps);
