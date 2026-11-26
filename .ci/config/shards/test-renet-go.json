@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-23T23:48:33.821Z",
+  "generatedAt": "2026-11-26T20:55:08.768Z",
   "legs": [
     {
       "index": 1,
@@ -91,6 +91,8 @@
         "github.com/rediacc/renet/pkg/infra/image",
         "github.com/rediacc/renet/pkg/infra/opsconfig",
         "github.com/rediacc/renet/pkg/infra/pkgset",
+        "github.com/rediacc/renet/pkg/infra/qemuimg",
+        "github.com/rediacc/renet/pkg/infra/renetsource",
         "github.com/rediacc/renet/pkg/infra/vm/cloudinit",
         "github.com/rediacc/renet/pkg/infra/vm/imagedl",
         "github.com/rediacc/renet/pkg/infra/vm/qemu",
