@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '05efdb7735270bd1';
+export const CLI_CONTRACT_VERSION = 'e232c23cca84e989';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "05efdb7735270bd1",
+  "version": "e232c23cca84e989",
   "languages": [
     "ar",
     "de",
@@ -10141,11 +10141,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--debug",
@@ -10258,11 +10259,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--user <user>",
@@ -10312,11 +10314,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         }
       ],
       "positionals": [],
@@ -10410,11 +10413,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--os <name>",

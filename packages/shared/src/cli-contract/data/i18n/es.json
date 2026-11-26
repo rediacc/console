@@ -2802,7 +2802,7 @@
   "options.name": "Nombre del recurso",
   "options.newName": "Nuevo nombre del recurso",
   "options.newWindow": "Abrir en nueva ventana de VS Code",
-  "options.opsBackend": "Backend de virtualización (kvm|qemu, detección automática)",
+  "options.opsBackend": "Backend de virtualización (kvm|qemu|hyperv, detección automática)",
   "options.opsBasic": "Clúster mínimo (puente + 1 trabajador)",
   "options.opsForce": "Forzar reinicio de todas las VM",
   "options.opsLite": "Omitir aprovisionamiento de VM (solo estado)",

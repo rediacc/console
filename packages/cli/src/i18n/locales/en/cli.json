@@ -4112,7 +4112,7 @@
     "name": "Resource name",
     "newName": "New resource name",
     "newWindow": "Open in new VS Code window",
-    "opsBackend": "Virtualization backend (kvm|qemu, auto-detected)",
+    "opsBackend": "Virtualization backend (kvm|qemu|hyperv, auto-detected)",
     "opsBasic": "Minimal cluster (bridge + 1 worker)",
     "opsForce": "Force restart all VMs",
     "opsLite": "Skip VM provisioning (status only)",

@@ -2802,7 +2802,7 @@
   "options.name": "Kaynak adı",
   "options.newName": "Yeni kaynak adı",
   "options.newWindow": "Yeni VS Code penceresinde aç",
-  "options.opsBackend": "Sanallaştırma arka ucu (kvm|qemu, otomatik algılanır)",
+  "options.opsBackend": "Sanallaştırma arka ucu (kvm|qemu|hyperv, otomatik algılanır)",
   "options.opsBasic": "Minimal küme (köprü + 1 işçi)",
   "options.opsForce": "Tüm VM'leri zorla yeniden başlat",
   "options.opsLite": "VM hazırlamayı atla (yalnızca durum)",

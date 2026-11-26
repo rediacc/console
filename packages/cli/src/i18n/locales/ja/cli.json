@@ -4187,7 +4187,7 @@
     "name": "リソース名",
     "newName": "新しいリソース名",
     "newWindow": "新しい VS Code ウィンドウで開く",
-    "opsBackend": "仮想化バックエンド (kvm|qemu、自動検出)",
+    "opsBackend": "仮想化バックエンド (kvm|qemu|hyperv、自動検出)",
     "opsBasic": "最小構成クラスター (ブリッジ + ワーカー1台)",
     "opsForce": "すべての VM を強制再起動",
     "opsLite": "VM プロビジョニングをスキップ (ステータスのみ)",

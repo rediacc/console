@@ -5,6 +5,7 @@ import { setExitCode } from '../../services/core/request-context.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
+import { OPS_BACKEND_CHOICES } from './backends.js';
 
 export function registerOpsUpCommand(ops: Command, _program: Command): void {
   ops
@@ -16,7 +17,9 @@ export function registerOpsUpCommand(ops: Command, _program: Command): void {
     .option('--basic', t('options.opsBasic'))
     .option('--lite', t('options.opsLite'))
     .option('--skip-orchestration', t('options.opsSkipOrchestration'))
-    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
+    .addOption(
+      new Option('--backend <backend>', t('options.opsBackend')).choices(OPS_BACKEND_CHOICES)
+    )
     .option('--os <name>', t('options.opsOS'))
     .option('--debug', t('options.debug'))
     .action(

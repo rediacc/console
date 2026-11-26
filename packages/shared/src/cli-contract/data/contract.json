@@ -1,5 +1,5 @@
 {
-  "version": "05efdb7735270bd1",
+  "version": "e232c23cca84e989",
   "languages": [
     "ar",
     "de",
@@ -10133,11 +10133,12 @@
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--debug",
@@ -10250,11 +10251,12 @@
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--user <user>",
@@ -10304,11 +10306,12 @@
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         }
       ],
       "positionals": [],
@@ -10402,11 +10405,12 @@
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--os <name>",

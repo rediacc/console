@@ -11,6 +11,7 @@ import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { assertCommandNotBlank } from '../../utils/command-blank.js';
 import { handleError } from '../../utils/errors.js';
+import { OPS_BACKEND_CHOICES } from './backends.js';
 
 /** One VM of `renet ops status --json`: `ip` is a bare host, `ssh_port` is set for a forwarded sshd. */
 export interface OpsVMInfo {
@@ -108,7 +109,9 @@ export function registerOpsSSHCommand(ops: Command, _program: Command): void {
     .description(t('commands.ops.ssh.description'))
     .requiredOption('--vm-id <id>', t('options.vmId'))
     .option('-c, --command <cmd>', t('options.command'))
-    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
+    .addOption(
+      new Option('--backend <backend>', t('options.opsBackend')).choices(OPS_BACKEND_CHOICES)
+    )
     .option('--user <user>', t('options.opsSSHUser'))
     .action(
       async (options: { vmId: string; command?: string; backend?: string; user?: string }) => {

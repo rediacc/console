@@ -2802,7 +2802,7 @@
   "options.name": "리소스 이름",
   "options.newName": "새 리소스 이름",
   "options.newWindow": "새 VS Code 창에서 열기",
-  "options.opsBackend": "가상화 백엔드 (kvm|qemu, 자동 감지)",
+  "options.opsBackend": "가상화 백엔드 (kvm|qemu|hyperv, 자동 감지)",
   "options.opsBasic": "최소 클러스터 (브리지 + 워커 1개)",
   "options.opsForce": "모든 VM 강제 재시작",
   "options.opsLite": "VM 프로비저닝 건너뜀 (상태 확인만)",

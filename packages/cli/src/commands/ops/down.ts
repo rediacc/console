@@ -5,13 +5,16 @@ import { setExitCode } from '../../services/core/request-context.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
+import { OPS_BACKEND_CHOICES } from './backends.js';
 
 export function registerOpsDownCommand(ops: Command, _program: Command): void {
   ops
     .command('down')
     .summary(t('commands.ops.down.descriptionShort'))
     .description(t('commands.ops.down.description'))
-    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
+    .addOption(
+      new Option('--backend <backend>', t('options.opsBackend')).choices(OPS_BACKEND_CHOICES)
+    )
     .option('--debug', t('options.debug'))
     .action(async (options: { backend?: string; debug?: boolean }) => {
       try {

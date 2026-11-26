@@ -2802,7 +2802,7 @@
   "options.name": "Nome della risorsa",
   "options.newName": "Nuovo nome della risorsa",
   "options.newWindow": "Apri in una nuova finestra di VS Code",
-  "options.opsBackend": "Backend di virtualizzazione (kvm|qemu, rilevato automaticamente)",
+  "options.opsBackend": "Backend di virtualizzazione (kvm|qemu|hyperv, rilevato automaticamente)",
   "options.opsBasic": "Cluster minimale (bridge + 1 worker)",
   "options.opsForce": "Forza il riavvio di tutte le VM",
   "options.opsLite": "Salta il provisioning delle VM (solo stato)",

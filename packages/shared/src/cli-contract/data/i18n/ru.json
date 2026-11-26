@@ -2802,7 +2802,7 @@
   "options.name": "Имя ресурса",
   "options.newName": "Новое имя ресурса",
   "options.newWindow": "Открыть в новом окне VS Code",
-  "options.opsBackend": "Бэкенд виртуализации (kvm|qemu, автоопределение)",
+  "options.opsBackend": "Бэкенд виртуализации (kvm|qemu|hyperv, автоопределение)",
   "options.opsBasic": "Минимальный кластер (мост + 1 рабочий узел)",
   "options.opsForce": "Принудительно перезапустить все VM",
   "options.opsLite": "Пропустить подготовку VM (только статус)",

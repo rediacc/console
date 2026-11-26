@@ -2802,7 +2802,7 @@
   "options.name": "اسم المورد",
   "options.newName": "اسم المورد الجديد",
   "options.newWindow": "الفتح في نافذة VS Code جديدة",
-  "options.opsBackend": "واجهة المحاكاة الافتراضية (kvm|qemu، يتم الكشف عنها تلقائياً)",
+  "options.opsBackend": "واجهة المحاكاة الافتراضية (kvm|qemu|hyperv، يتم الكشف عنها تلقائياً)",
   "options.opsBasic": "مجموعة بسيطة (جسر + عامل واحد)",
   "options.opsForce": "فرض إعادة تشغيل جميع الآلات الافتراضية",
   "options.opsLite": "تخطي توفير VM (الحالة فقط)",

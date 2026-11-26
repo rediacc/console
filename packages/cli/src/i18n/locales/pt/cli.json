@@ -4187,7 +4187,7 @@
     "name": "Nome do recurso",
     "newName": "Novo nome do recurso",
     "newWindow": "Abrir numa nova janela do VS Code",
-    "opsBackend": "Backend de virtualização (kvm|qemu, detetado automaticamente)",
+    "opsBackend": "Backend de virtualização (kvm|qemu|hyperv, detetado automaticamente)",
     "opsBasic": "Cluster mínimo (bridge + 1 worker)",
     "opsForce": "Forçar reinício de todas as VMs",
     "opsLite": "Ignorar provisionamento de VMs (apenas estado)",

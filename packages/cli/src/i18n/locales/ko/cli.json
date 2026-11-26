@@ -4187,7 +4187,7 @@
     "name": "리소스 이름",
     "newName": "새 리소스 이름",
     "newWindow": "새 VS Code 창에서 열기",
-    "opsBackend": "가상화 백엔드 (kvm|qemu, 자동 감지)",
+    "opsBackend": "가상화 백엔드 (kvm|qemu|hyperv, 자동 감지)",
     "opsBasic": "최소 클러스터 (브리지 + 워커 1개)",
     "opsForce": "모든 VM 강제 재시작",
     "opsLite": "VM 프로비저닝 건너뜀 (상태 확인만)",

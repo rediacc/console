@@ -4187,7 +4187,7 @@
     "name": "资源名称",
     "newName": "新资源名称",
     "newWindow": "在新 VS Code 窗口中打开",
-    "opsBackend": "虚拟化后端 (kvm|qemu，自动检测)",
+    "opsBackend": "虚拟化后端 (kvm|qemu|hyperv，自动检测)",
     "opsBasic": "最小集群（网桥 + 1 个工作节点）",
     "opsForce": "强制重启所有 VM",
     "opsLite": "跳过 VM 配置（仅查看状态）",

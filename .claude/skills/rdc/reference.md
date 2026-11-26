@@ -964,7 +964,7 @@ Provision VM cluster locally
 - `--basic`: Minimal cluster (bridge + 1 worker)
 - `--lite`: Skip VM provisioning (status only)
 - `--skip-orchestration`: Skip cluster orchestration
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--os <name>`: VM operating system (e.g., ubuntu-24.04, debian-13)
 - `--debug`: Enable debug output
 
@@ -974,7 +974,7 @@ Destroy VM cluster
 
 **Options:**
 
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--debug`: Enable debug output
 
 ### rdc ops status
@@ -983,7 +983,7 @@ Show VM cluster status
 
 **Options:**
 
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 
 ### rdc ops ssh
 
@@ -993,7 +993,7 @@ SSH into a VM
 
 - `--vm-id <id>`: Virtual machine ID
 - `-c, --command <cmd>`: Execute a command instead of interactive shell
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--user <user>`: SSH username for VM connection
 
 ### rdc ops setup

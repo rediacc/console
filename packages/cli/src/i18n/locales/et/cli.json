@@ -4187,7 +4187,7 @@
     "name": "Ressursi nimi",
     "newName": "Ressursi uus nimi",
     "newWindow": "Ava uues VS Code'i aknas",
-    "opsBackend": "Virtualiseerimise taustarakendus (kvm|qemu, tuvastatakse automaatselt)",
+    "opsBackend": "Virtualiseerimise taustarakendus (kvm|qemu|hyperv, tuvastatakse automaatselt)",
     "opsBasic": "Minimaalne klaster (sild + 1 töötaja)",
     "opsForce": "Sundtaaskäivita kõik virtuaalmasinad",
     "opsLite": "Jäta virtuaalmasinate seadistamine vahele (ainult olek)",
