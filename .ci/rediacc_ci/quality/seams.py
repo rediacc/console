@@ -23,13 +23,47 @@ import sys
 SYSTEM_TEMP_CANDIDATES = ("/tmp", "/var/tmp", "/usr/tmp")
 
 
+#: Filesystem types that live in memory, which a pytest run's scratch must not fill.
+RAM_FILESYSTEMS = ("tmpfs", "ramfs")
+
+#: Where the kernel lists mounts; a module constant so a test can point it at a fixture.
+PROC_MOUNTS = "/proc/mounts"
+
+
+def _on_ram_filesystem(path: pathlib.Path) -> bool:
+    """Whether the longest mount point above `path` is a RAM filesystem; False when the mount table cannot be read."""
+    try:
+        with open(PROC_MOUNTS, encoding="utf-8", errors="replace") as handle:
+            rows = [line.split() for line in handle]
+    except OSError:
+        return False
+    best_length = -1
+    ram = False
+    for row in rows:
+        if len(row) < 3:
+            continue
+        # /proc/mounts escapes a space in a mount point as \040.
+        mount = pathlib.Path(row[1].replace("\\040", " "))
+        if path.is_relative_to(mount) and len(mount.parts) > best_length:
+            best_length = len(mount.parts)
+            ram = row[2] in RAM_FILESYSTEMS
+    return ram
+
+
 def system_temp_base() -> pathlib.Path | None:
-    """The temp base `tempfile` uses when no environment variable names one, resolved; None when none is usable."""
+    """The temp base `tempfile` uses when no environment variable names one, resolved; None when none is usable.
+
+    The first usable candidate wins, except that one on a RAM filesystem (a tmpfs /tmp) yields to the next usable candidate on disk, so a pytest run's scratch stays off memory. When every usable candidate is in memory, or the mount table is unreadable, the first usable one is used.
+    """
+    usable = []
     for candidate in SYSTEM_TEMP_CANDIDATES:
         path = pathlib.Path(candidate)
         if path.is_dir() and os.access(path, os.W_OK | os.X_OK):
-            return path.resolve()
-    return None
+            usable.append(path.resolve())
+    for path in usable:
+        if not _on_ram_filesystem(path):
+            return path
+    return usable[0] if usable else None
 
 
 def _refusal(path: str | pathlib.Path) -> str | None:

@@ -112,8 +112,8 @@ def test_scratch_root_ignores_a_directory_owned_by_another_uid(tmp_path, monkeyp
 
 
 def test_scratch_root_honours_a_private_mkdtemp_directory(capsys):
-    """CONTROL: a 0700 `mkdtemp` directory under /tmp, the shape every fixture has, is honoured, and so are a file and a not-yet-created path inside it."""
-    made = pathlib.Path(tempfile.mkdtemp(dir="/tmp"))
+    """CONTROL: a 0700 `mkdtemp` directory under the system temp base, the shape every fixture has, is honoured, and so are a file and a not-yet-created path inside it."""
+    made = pathlib.Path(tempfile.mkdtemp(dir=seams.system_temp_base()))
     try:
         assert (made.stat().st_mode & 0o777) == 0o700
         assert seams.scratch_root("X_ROOT", os.fspath(made)) == made.resolve()
@@ -127,8 +127,8 @@ def test_scratch_root_honours_a_private_mkdtemp_directory(capsys):
 
 
 def test_scratch_root_ignores_the_temp_base_itself(capsys):
-    """/tmp itself is the shared base, never a private scratch root."""
-    assert seams.scratch_root("X_ROOT", "/tmp") is None
+    """The system temp base itself is shared, never a private scratch root."""
+    assert seams.scratch_root("X_ROOT", os.fspath(seams.system_temp_base())) is None
     assert "X_ROOT" in capsys.readouterr().err
 
 
@@ -291,3 +291,45 @@ def test_trap_registry_process_seam_outside_temp_is_ignored(capsys):
             os.environ["TRAP_CORPUS"] = saved
     assert resolved["TRAP_CORPUS"] == REPO.joinpath(*TR.SEAMS["TRAP_CORPUS"])
     assert "TRAP_CORPUS" in capsys.readouterr().err
+
+
+def _fake_candidates(monkeypatch, tmp_path, mounts_text):
+    """Three real directories standing in for /tmp, /var/tmp and /usr/tmp, and a mounts file naming their filesystems."""
+    names = ("tmp", "vartmp", "usrtmp")
+    dirs = [tmp_path / name for name in names]
+    for directory in dirs:
+        directory.mkdir()
+    mounts = tmp_path / "mounts"
+    mounts.write_text(mounts_text.format(*[d.resolve() for d in dirs]))
+    monkeypatch.setattr(seams, "SYSTEM_TEMP_CANDIDATES", tuple(str(d) for d in dirs))
+    monkeypatch.setattr(seams, "PROC_MOUNTS", str(mounts))
+    return [d.resolve() for d in dirs]
+
+
+def test_system_temp_base_prefers_var_tmp_when_tmp_is_a_tmpfs(monkeypatch, tmp_path):
+    dirs = _fake_candidates(
+        monkeypatch, tmp_path, "tmpfs {0} tmpfs rw 0 0\n/dev/sda1 {1} ext4 rw 0 0\n"
+    )
+    assert seams.system_temp_base() == dirs[1]
+
+
+def test_system_temp_base_keeps_tmp_when_it_is_on_disk(monkeypatch, tmp_path):
+    dirs = _fake_candidates(
+        monkeypatch, tmp_path, "/dev/sda1 {0} ext4 rw 0 0\n/dev/sda1 {1} ext4 rw 0 0\n"
+    )
+    assert seams.system_temp_base() == dirs[0]
+
+
+def test_system_temp_base_keeps_the_old_order_when_mounts_are_unreadable(monkeypatch, tmp_path):
+    dirs = _fake_candidates(monkeypatch, tmp_path, "tmpfs {0} tmpfs rw 0 0\n")
+    monkeypatch.setattr(seams, "PROC_MOUNTS", str(tmp_path / "no-such-mounts"))
+    assert seams.system_temp_base() == dirs[0]
+
+
+def test_system_temp_base_keeps_tmpfs_tmp_when_nothing_else_is_on_disk(monkeypatch, tmp_path):
+    dirs = _fake_candidates(
+        monkeypatch,
+        tmp_path,
+        "tmpfs {0} tmpfs rw 0 0\ntmpfs {1} tmpfs rw 0 0\ntmpfs {2} tmpfs rw 0 0\n",
+    )
+    assert seams.system_temp_base() == dirs[0]
