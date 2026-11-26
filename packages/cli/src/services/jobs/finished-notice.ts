@@ -23,12 +23,8 @@ import { t } from '../../i18n/index.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
 import { formatAge } from './duration.js';
-import {
-  abandonedLine,
-  liveStepRunnerDeps,
-  runTicketSteps,
-  type StepRunnerDeps,
-} from './run-job.js';
+import { abandonedLine, runTicketSteps, type StepRunnerDeps } from './run-job.js';
+import { liveStepRunnerDeps } from './run-job-live.js';
 import { pendingStepNames } from './steps.js';
 import {
   type ExpiredReason,

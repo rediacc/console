@@ -15,13 +15,13 @@ import type { RenetEvent } from '../executor/types.js';
 import {
   createStepObservationCollector,
   emptyStepReport,
-  liveStepRunnerDeps,
   type ObservedJob,
   outstandingSteps,
   runTicketSteps,
   type StepRunnerDeps,
   type StepRunReport,
 } from './run-job.js';
+import { liveStepRunnerDeps } from './run-job-live.js';
 import { dueSteps, getStepDefinition } from './steps.js';
 import { isTerminalTicketState, type Ticket, type TicketStore } from './ticket-store.js';
 

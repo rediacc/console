@@ -19,10 +19,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { hostname } from 'node:os';
 import { t } from '../../i18n/index.js';
-import { shellQuote } from '../../utils/shell-quote.js';
-import { assertJobId } from '../executor/job-client.js';
 import type { RenetEvent } from '../executor/types.js';
 import {
   dueSteps,
@@ -76,7 +73,7 @@ export function configMatches(origin: ConfigIdentity, observer: ConfigIdentity):
 
 // --- the claim seam ----------------------------------------------------------
 
-type ClaimResultKind = 'claimed' | 'reclaimed' | 'already-claimed' | 'done';
+export type ClaimResultKind = 'claimed' | 'reclaimed' | 'already-claimed' | 'done';
 
 export interface ClaimAnswer {
   name: string;
@@ -92,7 +89,7 @@ interface ClaimRequest {
 }
 
 /** `renet job claim` exits with this when the job is not in the spool: the steps it owes can never run. */
-const JOB_NOT_FOUND_EXIT = 16;
+export const JOB_NOT_FOUND_EXIT = 16;
 
 /** Each expiry reason's text, spelled as literal keys so the orphan check sees every one of them. */
 const REASON_TEXT: Record<ExpiredReason, () => string> = {
@@ -124,6 +121,12 @@ export interface StepRunnerDeps {
   observer: ConfigIdentity;
   /** stderr only. */
   warn(line: string): void;
+  /**
+   * Keep the machine's pooled SSH session open until the returned release is called, so claims and the job's own
+   * session share one connection instead of each reopening it (about 3 s apiece). Optional: without it each claim
+   * connects on its own. A hold never replaces a claim.
+   */
+  hold?: (machine: string) => Promise<() => void>;
   /** Handler lookup; the registry by default. */
   resolve?: (name: string) => Promise<StepHandler>;
   now?: () => number;
@@ -306,8 +309,13 @@ export async function runTicketSteps(
   }
 
   const session = openStepSession(store, { ...ticket, jobId, machine }, job, deps, report);
-  if (options.deadline === undefined) await settleAll(session, due);
-  else await settleWithin(session, due, options.deadline, deps.now ?? Date.now, report);
+  const held = holdSession(deps, ticket.via?.kind === 'proxy' ? undefined : machine);
+  try {
+    if (options.deadline === undefined) await settleAll(session, due);
+    else await settleWithin(session, due, options.deadline, deps.now ?? Date.now, report);
+  } finally {
+    (await held)();
+  }
   return report;
 }
 
@@ -461,7 +469,36 @@ function keepsFirstPlan(store: TicketStore, requestId: string): boolean {
   return prior !== undefined && (prior.jobId !== undefined || !prior.acknowledged);
 }
 
+const NO_RELEASE = (): void => undefined;
+
+/**
+ * Start holding the machine's pooled session. Not awaited by the caller, so the connect overlaps the call's own and
+ * shares its pool entry. A failed hold is no hold: the call and each claim connect and report for themselves.
+ */
+function holdSession(deps: StepRunnerDeps, machine: string | undefined): Promise<() => void> {
+  if (!(deps.hold && machine)) return Promise.resolve(NO_RELEASE);
+  return deps.hold(machine).catch(() => NO_RELEASE);
+}
+
+/**
+ * Run a job and its due steps. The machine's SSH session is held from before the start until the steps are settled,
+ * so the claims that follow a finished job reuse it. Only an SSH-reached job holds one: a proxied job's machine is
+ * not ours to connect to.
+ */
 export async function runJob<R>(
+  call: JobCall<R>,
+  steps: PlannedStep[],
+  deps: RunJobDeps
+): Promise<RunJobResult<R>> {
+  const held = holdSession(deps.steps, call.via?.kind === 'proxy' ? undefined : call.machine);
+  try {
+    return await runJobHeld(call, steps, deps);
+  } finally {
+    (await held)();
+  }
+}
+
+async function runJobHeld<R>(
   call: JobCall<R>,
   steps: PlannedStep[],
   deps: RunJobDeps
@@ -522,121 +559,5 @@ export async function runJob<R>(
     jobId: outcome.jobId,
     ticket: requireTicket(store, requestId),
     steps: report,
-  };
-}
-
-// --- the live claim ----------------------------------------------------------
-
-/** The claim command. Step names are validated by the registry pattern before they reach a shell. */
-export function buildJobClaimCommand(params: {
-  remoteRenetPath: string;
-  jobId: string;
-  steps: string[];
-  done?: boolean;
-  origin: ConfigIdentity;
-  host: string;
-  pid: number;
-}): string {
-  for (const name of params.steps) {
-    if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(name)) throw new Error(`Invalid step name: ${name}`);
-  }
-  const origin = JSON.stringify({
-    client: 'rdc',
-    ...(params.origin.configName || params.origin.configId
-      ? {
-          config: {
-            ...(params.origin.configName ? { name: params.origin.configName } : {}),
-            ...(params.origin.configId ? { id: params.origin.configId } : {}),
-          },
-        }
-      : {}),
-  });
-  return [
-    'sudo',
-    shellQuote(params.remoteRenetPath),
-    'job claim',
-    `--id ${assertJobId(params.jobId)}`,
-    `--steps ${params.steps.join(',')}`,
-    params.done ? '--done' : '',
-    `--origin ${shellQuote(origin)}`,
-    `--host ${shellQuote(params.host)}`,
-    `--pid ${Math.trunc(params.pid)}`,
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-/** Parse `renet job claim` JSON: `{ job_id, steps: [{ name, result }] }`. */
-export function parseClaimOutput(stdout: string): ClaimAnswer[] {
-  const start = stdout.indexOf('{');
-  const parsed = JSON.parse(start >= 0 ? stdout.slice(start) : stdout) as {
-    steps?: { name?: unknown; result?: unknown }[];
-  };
-  const kinds: ClaimResultKind[] = ['claimed', 'reclaimed', 'already-claimed', 'done'];
-  return (parsed.steps ?? [])
-    .filter(
-      (s): s is { name: string; result: ClaimResultKind } =>
-        typeof s.name === 'string' && kinds.includes(s.result as ClaimResultKind)
-    )
-    .map((s) => ({ name: s.name, result: s.result }));
-}
-
-/** The real claim: one SSH exec of `renet job claim` per call, on a pooled connection. */
-function liveClaimExec(observer: ConfigIdentity): ClaimExec {
-  return async (request) => {
-    const { connectForJobs } = await import('../executor/job-remote.js');
-    const conn = await connectForJobs(request.machine, 'read-only');
-    try {
-      const sftp = await conn.lease.ensure();
-      const command = buildJobClaimCommand({
-        remoteRenetPath: conn.remoteRenetPath,
-        jobId: request.jobId,
-        steps: request.steps,
-        done: request.done,
-        origin: observer,
-        host: hostname(),
-        pid: process.pid,
-      });
-      let stdout = '';
-      let stderr = '';
-      const exitCode = await sftp.execStreaming(command, {
-        onStdout: (data) => {
-          stdout += data.toString();
-        },
-        onStderr: (data) => {
-          stderr += data.toString();
-        },
-      });
-      if (exitCode === JOB_NOT_FOUND_EXIT) throw new JobGoneError(request.jobId);
-      if (exitCode !== 0) {
-        const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
-        throw new Error(
-          `Failed to claim steps ${request.steps.join(',')} of job ${request.jobId}: ${detail || `renet exited ${exitCode}`}`
-        );
-      }
-      return parseClaimOutput(stdout);
-    } finally {
-      conn.lease.release();
-    }
-  };
-}
-
-/** The live step-runner deps for this process's config. */
-export async function liveStepRunnerDeps(store: TicketStore): Promise<StepRunnerDeps> {
-  const [{ configService }, { writeStderr }] = await Promise.all([
-    import('../config/config-resources.js'),
-    import('../core/request-context.js'),
-  ]);
-  let configId: string | undefined;
-  try {
-    configId = (await configService.getCurrent())?.id;
-  } catch {
-    configId = undefined;
-  }
-  const observer: ConfigIdentity = { configName: store.config, configId };
-  return {
-    claim: liveClaimExec(observer),
-    observer,
-    warn: (line) => writeStderr(`${line}\n`),
   };
 }

@@ -12,12 +12,12 @@
 import { repoNamesByGuid } from '@rediacc/shared/config-schema';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import {
-  liveStepRunnerDeps,
   outstandingSteps,
   runTicketSteps,
   type StepRunnerDeps,
   type StepRunReport,
 } from './run-job.js';
+import { liveStepRunnerDeps } from './run-job-live.js';
 import { dueSteps, resolveStepHandler, type StepHandler } from './steps.js';
 import { isTerminalTicketState, type TicketState, TicketStore } from './ticket-store.js';
 

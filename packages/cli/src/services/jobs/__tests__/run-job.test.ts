@@ -6,16 +6,15 @@ import type { JobStatus } from '../../executor/job-client.js';
 import { runNoticeSteps } from '../finished-notice.js';
 import { type JobWaitDeps, waitForJob } from '../job-wait.js';
 import {
-  buildJobClaimCommand,
   type ClaimExec,
   type ConfigIdentity,
   configMatches,
   type JobCall,
-  parseClaimOutput,
   runJob,
   runTicketSteps,
   type StepRunnerDeps,
 } from '../run-job.js';
+import { buildJobClaimCommand, liveStepRunnerDeps, parseClaimOutput } from '../run-job-live.js';
 import { type PlannedStep, planStep, type StepHandler, toTicketSteps } from '../steps.js';
 import { type Ticket, type TicketState, TicketStore } from '../ticket-store.js';
 
@@ -454,6 +453,142 @@ describe('runJob', () => {
 
       expect(other.ticket.steps[0].params).toMatchObject({ repo: 'guid-other' });
     });
+  });
+});
+
+describe('one pooled session per job', () => {
+  /** A pool stand-in: a session opens when the first lease is taken and closes when the last drops. */
+  function fakePool() {
+    let leases = 0;
+    const pool = { opened: 0 };
+    const acquire = async () => {
+      if (leases === 0) pool.opened += 1;
+      leases += 1;
+      await Promise.resolve();
+      return () => {
+        leases -= 1;
+      };
+    };
+    return { pool, acquire };
+  }
+
+  function finishedCall(acquire: () => Promise<() => void>): JobCall<{ ok: true }> {
+    return {
+      verb: 'machine status',
+      function: 'list-all',
+      machine: 'm1',
+      start: async () => {
+        // The job's own session, taken and dropped inside the call as the executor does.
+        (await acquire())();
+        return {
+          kind: 'finished',
+          jobId: JOB_ID,
+          result: { ok: true },
+          job: { state: 'succeeded', exitCode: 0 },
+        } as const;
+      },
+    };
+  }
+
+  it('opens one session for a read-only job whose step is claimed and marked done', async () => {
+    const { pool, acquire } = fakePool();
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks']);
+    const claim: ClaimExec = async (request) => {
+      const release = await acquire();
+      try {
+        return await machine.claim(request);
+      } finally {
+        release();
+      }
+    };
+    const result = await runJob(finishedCall(acquire), [UP()], {
+      store,
+      steps: { ...stepDeps(claim, h.resolve), hold: async () => acquire() },
+      mintRequestId: () => 'r1',
+    });
+    expect(result.kind).toBe('finished');
+    expect(h.ran).toEqual(['postRepoUpTasks']);
+    expect(pool.opened).toBe(1);
+  });
+
+  it('opens a session per claim without a hold', async () => {
+    const { pool, acquire } = fakePool();
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks']);
+    const claim: ClaimExec = async (request) => {
+      const release = await acquire();
+      try {
+        return await machine.claim(request);
+      } finally {
+        release();
+      }
+    };
+    await runJob(finishedCall(acquire), [UP()], {
+      store,
+      steps: stepDeps(claim, h.resolve),
+      mintRequestId: () => 'r1',
+    });
+    expect(pool.opened).toBe(3);
+  });
+
+  it('still claims and marks done through the machine, as a mutating job must', async () => {
+    const { acquire } = fakePool();
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks']);
+    await runJob(finishedCall(acquire), [UP()], {
+      store,
+      steps: { ...stepDeps(machine.claim, h.resolve), hold: async () => acquire() },
+      mintRequestId: () => 'r1',
+    });
+    expect(machine.calls).toEqual([
+      { steps: ['postRepoUpTasks'], done: undefined },
+      { steps: ['postRepoUpTasks'], done: true },
+    ]);
+  });
+
+  it('holds no session for a proxied job, and survives a failed hold', async () => {
+    const hold = vi.fn(() => Promise.reject<() => void>(new Error('unreachable')));
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks']);
+    const call = finishedCall(async () => () => undefined);
+    await runJob({ ...call, via: { kind: 'proxy', url: 'https://p' } }, [UP()], {
+      store,
+      steps: { ...stepDeps(machine.claim, h.resolve), hold },
+      mintRequestId: () => 'r1',
+    });
+    expect(hold).not.toHaveBeenCalled();
+    const result = await runJob(call, [UP()], {
+      store,
+      steps: { ...stepDeps(machine.claim, h.resolve), hold },
+      mintRequestId: () => 'r3',
+    });
+    expect(hold).toHaveBeenCalled();
+    expect(result.kind).toBe('finished');
+    // The second run finds the step already done on the machine; a failed hold changes nothing about the claim.
+    expect(h.ran).toEqual(['postRepoUpTasks']);
+    expect(machine.calls).toHaveLength(3);
+  });
+
+  it('the live hold takes one lease from the machine pool and drops it on release', async () => {
+    const { machineConnections } = await import('../../machine/machine-connection.js');
+    const release = vi.fn();
+    const acquire = vi
+      .spyOn(machineConnections, 'acquire')
+      .mockResolvedValue({ release } as unknown as Awaited<
+        ReturnType<typeof machineConnections.acquire>
+      >);
+    try {
+      const deps = await liveStepRunnerDeps(store);
+      const drop = await (deps.hold as NonNullable<typeof deps.hold>)('m1');
+      expect(acquire).toHaveBeenCalledTimes(1);
+      expect(acquire).toHaveBeenCalledWith('m1');
+      expect(release).not.toHaveBeenCalled();
+      drop();
+      expect(release).toHaveBeenCalledTimes(1);
+    } finally {
+      acquire.mockRestore();
+    }
   });
 });
 

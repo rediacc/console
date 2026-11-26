@@ -677,7 +677,8 @@ async function resolveStatusMachine(name: string | undefined): Promise<string> {
 /**
  * The sections a `machine status` job asks `list-all` for. The licence detail and the stale-binary probe ride
  * the same job as the rest (its `licenses` and `stale-processes` sections), so a filtered run asks for both next
- * to what it was asked for. Undefined is the full listing.
+ * to what it was asked for. Undefined is the full listing, which renet answers with every section except
+ * `storage-health` (about 10 s); `--storage-health` names it, so the hint printed without the flag stays true.
  */
 function requestedSections(sections: string[]): string[] | undefined {
   return sections.length > 0
