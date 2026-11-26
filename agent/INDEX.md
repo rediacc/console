@@ -546,8 +546,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 133 | 5 | 10 | 25119 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
-| `agent/plans/PLAN-forensics-investigation.md` | approved | 143 | 5 | 12 | 33174 |
-| `agent/plans/PLAN-forensics-reports.md` | approved | 121 | 5 | 9 | 23778 |
+| `agent/plans/PLAN-forensics-investigation.md` | approved | 144 | 4 | 13 | 33674 |
+| `agent/plans/PLAN-forensics-reports.md` | approved | 122 | 4 | 10 | 24285 |
 | `agent/plans/PLAN-forensics-shipping.md` | approved | 137 | 6 | 10 | 34978 |
 | `agent/plans/PLAN-free-license.md` | approved | 127 | 1 | 12 | 31803 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
@@ -581,7 +581,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
-| `agent/plans/PLAN-preview-signer.md` | approved | 341 | 18 | 19 | 70914 |
+| `agent/plans/PLAN-preview-signer.md` | approved | 342 | 17 | 20 | 71433 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 227 | 3 | 25 | 45968 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |

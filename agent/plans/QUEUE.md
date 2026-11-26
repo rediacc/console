@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 99 plans done, 1487 of 1872 boxes done (79%).
+Promoted: 11 of 99 plans done, 1490 of 1872 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -118,7 +118,7 @@ Promoted: 11 of 99 plans done, 1487 of 1872 boxes done (79%).
 | 56 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
 | 57 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
 | 58 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
-| 59 | PLAN-preview-signer.md | 19/37 | 18 open |
+| 59 | PLAN-preview-signer.md | 20/37 | 17 open |
 | 60 | PLAN-weekly-lessons.md | 6/8 | 2 open |
 | 61 | PLAN-tooling-speed.md | 6/8 | 2 open |
 | 62 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |
@@ -150,9 +150,9 @@ Promoted: 11 of 99 plans done, 1487 of 1872 boxes done (79%).
 | 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
 | 89 | PLAN-forensics-shipping.md | 10/16 | 6 open |
 | 90 | PLAN-forensics-detection.md | 10/15 | 5 open |
-| 91 | PLAN-forensics-investigation.md | 12/17 | 5 open |
+| 91 | PLAN-forensics-investigation.md | 13/17 | 4 open |
 | 92 | PLAN-forensics-alerts-notices.md | 9/15 | 6 open |
-| 93 | PLAN-forensics-reports.md | 9/14 | 5 open |
+| 93 | PLAN-forensics-reports.md | 10/14 | 4 open |
 | 94 | PLAN-forensics-docs-legal.md | 7/13 | 6 open |
 | 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 96 | PLAN-writers-now-cadence.md | 5/5 | done |

@@ -106,3 +106,6 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-credits.md","sig":"474574b2","clause":"all","state":"live-owed","ref":"released #ea9d4733","at":"2026-11-26T04:16:17Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-assistant.md","sig":"3e3d0041","clause":"all","state":"live-owed","ref":"released #6e586887","at":"2026-11-26T04:16:23Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-feedback.md","sig":"6c3b5aec","clause":"all","state":"live-owed","ref":"released #6e586887","at":"2026-11-26T04:16:24Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-forensics-reports.md","sig":"28cde5ec","clause":"all","state":"live-owed","ref":"released #a3e53611","at":"2026-11-26T06:19:08Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"457c03cd","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
