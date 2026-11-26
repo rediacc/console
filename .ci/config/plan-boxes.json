@@ -3742,8 +3742,8 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 14,
+      "open": 12,
+      "done": 15,
       "open_sigs": [
         "24b8bfd7",
         "4056d10b",
@@ -3756,8 +3756,7 @@
         "becb4a6e",
         "d07a6d4d",
         "d16411f2",
-        "e772f5b7",
-        "f8d74808"
+        "e772f5b7"
       ],
       "done_sigs": [
         "06d21c3a",
@@ -3773,7 +3772,8 @@
         "b548738a",
         "bc51238f",
         "cf0e7c25",
-        "e7c4e207"
+        "e7c4e207",
+        "f8d74808"
       ]
     },
     "agent/plans/PLAN-rmcp-writeback.md": {
