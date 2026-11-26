@@ -201,7 +201,7 @@ export class BackgroundTasks {
   /** Drop the owner's oldest finished tasks beyond {@link MAX_FINISHED_PER_USER}; a live task is never dropped. */
   private pruneFinished(owner: string): void {
     const finished = [...this.tasks.values()].filter(
-      (t) => t.owner === owner && !LIVE.includes(t.state)
+      (t) => t.owner === owner && !LIVE.has(t.state)
     );
     for (const task of finished.slice(0, Math.max(0, finished.length - MAX_FINISHED_PER_USER))) {
       this.tasks.delete(task.taskId);
