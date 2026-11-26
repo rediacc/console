@@ -4983,13 +4983,24 @@ export async function tempDisposalCases(
       `temp: SIGKILL leaves exactly one ${prefix}* run dir (left ${left().length}), which only a later sweep can remove`
     );
     // D5: SIGKILL runs no handler, so only the spawn's own death watch can end the strace group; the stub must be gone within seconds.
+    // The earlier cases left their stub's pid in the file: remove it, so only this run's stub is read.
+    fs.rmSync(pidFile, { force: true });
     const watched = stubChild ? await start('trace') : undefined;
     let stubPid = 0;
-    for (let i = 0; watched !== undefined && i < 40 && stubPid === 0; i++) {
-      if (fs.existsSync(pidFile)) stubPid = Number(fs.readFileSync(pidFile, 'utf8').trim()) || 0;
+    // The child prints ready before its stub has started: wait, bounded, until the stub's pid is written AND alive.
+    for (let i = 0; watched !== undefined && i < 200 && stubPid === 0; i++) {
+      const pid = fs.existsSync(pidFile) ? Number(fs.readFileSync(pidFile, 'utf8').trim()) || 0 : 0;
+      if (pid !== 0 && pidRunning(pid)) stubPid = pid;
       else await new Promise((r) => setTimeout(r, 50));
     }
-    if (watched !== undefined) {
+    if (watched !== undefined && stubPid === 0) {
+      watched.kill('SIGKILL');
+      check(
+        false,
+        `death watch: the strace stub never came alive within 10 s (pid file ${fs.existsSync(pidFile) ? 'written but dead' : 'absent'})`
+      );
+    }
+    if (watched !== undefined && stubPid !== 0) {
       const aliveBefore = stubPid !== 0 && pidRunning(stubPid);
       watched.kill('SIGKILL');
       await ended(watched);
