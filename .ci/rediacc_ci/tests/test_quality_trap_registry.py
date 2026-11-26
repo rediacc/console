@@ -514,3 +514,20 @@ def test_a_module_outside_ci_resolves_by_its_top_level_name_only(tmp_path: pathl
     reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
     assert reg.run_resolves("python3 -m json.nosuch")
     assert not reg.run_resolves("python3 -m ctl_no_such_top_level")
+
+
+def test_importability_is_asked_of_the_running_interpreter_not_the_named_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """747c7fe6.3 (e81cd4f8.3): the run names an interpreter that does not exist, yet a module the running interpreter's `find_spec` reports resolves, and the question put to it is the top-level name. An implementation that asked the named interpreter would fail here."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    asked: list[str] = []
+
+    def fake_find_spec(name: str) -> object | None:
+        asked.append(name)
+        return object() if name == "only_the_running_interpreter_knows" else None
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    assert reg.run_resolves("/nonexistent/python3 -m only_the_running_interpreter_knows.sub")
+    assert asked == ["only_the_running_interpreter_knows"]
+    assert not reg.run_resolves("/nonexistent/python3 -m unknown_to_both")
