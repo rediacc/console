@@ -303,6 +303,34 @@ class PyIndex:
             yield n
             stack.extend(ast.iter_child_nodes(n))
 
+    def _absolute_constants(self, mod: str) -> frozenset[str]:
+        """Module-level names bound exactly once, to a string literal that is an absolute path (`PROC_MOUNTS = "/proc/mounts"`)."""
+        t = self.tree(mod)
+        values: dict[str, list[object]] = {}
+        for n in t.body if t else []:
+            if isinstance(n, ast.Assign):
+                targets, value = n.targets, n.value
+            elif isinstance(n, ast.AnnAssign) and n.value is not None:
+                targets, value = [n.target], n.value
+            else:
+                continue
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    lit = value.value if isinstance(value, ast.Constant) else None
+                    values.setdefault(target.id, []).append(lit)
+        return frozenset(
+            name
+            for name, seen in values.items()
+            if len(seen) == 1 and isinstance(seen[0], str) and seen[0].startswith("/")
+        )
+
+    def _outside_repo(self, mod: str, call: ast.Call) -> bool:
+        """Whether `open(...)`'s path is an absolute literal, directly or through a module constant: `/proc/mounts` is a host file, never one a sparse checkout can omit."""
+        arg = call.args[0] if call.args else None
+        if isinstance(arg, ast.Constant):
+            return isinstance(arg.value, str) and arg.value.startswith("/")
+        return isinstance(arg, ast.Name) and arg.id in self._absolute_constants(mod)
+
     def _sinks_in(self, mod: str, nodes, seen: set[tuple[str, str]]) -> list[tuple[int, str]]:
         hits: list[tuple[int, str]] = []
         defs = self._defs(mod)
@@ -312,7 +340,8 @@ class PyIndex:
                 continue
             f = n.func
             if isinstance(f, ast.Name) and f.id in READ_NAMES and f.id not in defs:
-                hits.append((n.lineno, "%s()" % f.id))
+                if not self._outside_repo(mod, n):
+                    hits.append((n.lineno, "%s()" % f.id))
             elif isinstance(f, ast.Attribute) and f.attr in READ_ATTRS:
                 hits.append((n.lineno, ".%s()" % f.attr))
             # follow a call into the function it names, here or in another rediacc_ci module
@@ -574,6 +603,18 @@ FIXTURE = {
     ".ci/rediacc_ci/factory.py": (
         "def arm(n):\n    return lambda: open(n).read()\nARMS = {'a': arm('x')}\nOUT = '/dev/stdout'\n"
     ),
+    ".ci/rediacc_ci/hostfile.py": (
+        'MOUNTS = "/proc/mounts"\n'
+        "def ram():\n    with open(MOUNTS) as h:\n        return h.read()\n"
+        "RAM = ram()\nDIRECT = open('/proc/self/status').read()\n"
+    ),
+    ".ci/rediacc_ci/relconst.py": (
+        'REL = ".ci/config/fixture.env"\n'
+        "def load():\n    return open(REL).read()\nVALUES = load()\n"
+    ),
+    ".ci/rediacc_ci/rebound.py": (
+        'P = "/proc/mounts"\nP = ".ci/config/fixture.env"\nX = open(P).read()\n'
+    ),
     ".ci/rediacc_ci/probe.py": (
         "import pathlib\nHERE = pathlib.Path('.ci/config/fixture.env').exists()\n"
     ),
@@ -703,6 +744,19 @@ def selftest() -> int:
         check(
             "CONTROL: an existence probe is not a read (a missing file returns False, it does not raise)",
             not ix.import_time_reads("rediacc_ci.probe"),
+        )
+        check(
+            "an open() of an absolute path, literal or through a module constant, is a host read, not an import-time repo read",
+            not ix.import_time_reads("rediacc_ci.hostfile"),
+            repr(ix.import_time_reads("rediacc_ci.hostfile")),
+        )
+        check(
+            "CONTROL: the same open() through a RELATIVE module constant is still an import-time read",
+            bool(ix.import_time_reads("rediacc_ci.relconst")),
+        )
+        check(
+            "CONTROL: a constant bound twice is not trusted as absolute, so its read still counts",
+            bool(ix.import_time_reads("rediacc_ci.rebound")),
         )
         check(
             "CONTROL: an absolute literal (/dev/stdout) is never a repo data path",
