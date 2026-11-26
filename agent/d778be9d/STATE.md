@@ -1,29 +1,34 @@
-## SESSION d778be9d 2026-11-25T20:01:45Z
+## SESSION d778be9d 2026-11-26T04:17:07Z
 
-# STATE d778be9d (2026-11-25 ~20:15Z, effort high; round 55b1e9c0 r16; context near compaction)
+# STATE d778be9d (2026-11-26 ~04:40Z, effort high, away mode; context epoch 5 near compaction)
 
 ## Big pieces
-- Production release of the account orgRole change ordered ASKED:2026-11-25T16:35Z (#58a674f6), BLOCKED_BY #19f13581. When ci:quick is green: vm:check --changed, push 1121-1, RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then real; record rollback ids and D1 bookmarks.
-- Operator rulings 19:46-19:55Z: OAuth library plus reuse guard (#15f35349 closed); offline remote configs fail closed, local configs unaffected (#94002ac1 closed); agent policy = per-pointer read keys (own team + org), agent judged as its person, clean break: boxes AG-P1..AG-P4 in PLAN-rmcp-agent-grants.md (#66b84b8f closed); bench VM key re-authorized by the session (#41c0320a).
-- Migrations through 0115; 0116 held by CL-FD8.
+- Production release of the account orgRole change ordered ASKED:2026-11-25T16:35Z (#58a674f6): waits on ci:quick. The repair agent ae9b56c0f01fa2138 is running `npm run ci -- --narrow` on the fully committed tree (repair batch 9caa1159c9..c7cd881222), then ci:quick; then vm:check --changed, push 1121-1, RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then real; record rollback ids and D1 bookmarks.
+- Landings are HELD until ci:quick reports, so its run sees a still tree.
 
 ## Delegated
-- ae9b56c0f01fa2138 #19f13581 #58a674f6 #6735de22: ci:quick repair in the main checkout (left: workers/mcp index.test.ts:68 useAwait, cli-examples, proxy-wrangler-dev-e2e, pytest, then npm run ci -- --narrow). Accept: each checkpoint's gates rc 0; the lead commits each batch.
-- AG-P1 landed and ticked; next start AG-P2 (account), AG-P3 (web), AG-P4 (container) as file-disjoint writers.
-- Bench VM l1vm key fixed (ops_health machines green); hostinger and VM live runners can start.
-- abae5d2c6bc7855a4 #aca61058: CL-FD8 FD8 de22b940, migration 0116. Accept: account tsc, web, drizzle-kit check, its tests.
-- af352e49182288e72 #d506ae41: CL-AC8 AC8 ac216241, .ci/config/ai-gateway.json and cf_ai_gateway.py. Accept: its pytest, ruff.
-- a76be58fa72bd9744 #0e601fda: CL-SD5 SD5 97a9c407, private/account/e2e and ci.yml. Accept: e2e typecheck, check:ci-workflows.
+- ae9b56c0f01fa2138 #19f13581 #58a674f6 #6735de22: narrow run then ci:quick in the main checkout; reds with file:line. Accept: ci:quick rc 0.
+- a9c8f478b60a05d3f #03dcaaf5 #bfc6dfbb: CL-AGD daemon grant sessions, account revoke transport, grants.py (lease). Accept: cli serve tests, account tests, pytest, max-lines.
+
+## Held lease trees (after ci:quick: ./run.sh worktree land <id> --run --me d778be9d; check; tick; gc)
+- agent-ab9d36734b36bcdda: AI14 page (remember, maxOutputTokens, review fixes); 4 en keys need 12 locales; remainder #65af148a.
+- agent-ae59b734ac6646243: FN12 alert intake; tick ce78dbac.
+- agent-a279f9097ecd5e9b5: AC7 adjustLot/lapseLot, AI_GATEWAY_LOGS_TOKEN; remainder #34d9689a.
+- agent-a8b9710471e4ed4c5: FR8 reports panel and verify page; remainder #d0f10669.
+- agent-a79daff5c989738d8: AI12 complete (run check:ci-audit-coverage, tick 3e3d0041); AF4 loop call; AF4 host wiring #987bc6de.
 
 ## Owed ticks
-- Partial, code landed: FN4 5bbcdbfd (cron call, mailer: #13551691), D8 c1822dd6 (Node account run), D4 26e29ac5, NH8. Live halves owed per worklist.py --box-audit d778be9d --live-owed (20 boxes); runners wait for vm:check on the repaired tree and the bench VM key.
-- Follow-ups: #ed89514f sweep revocations not pushed, #70d386ea MCP OAuth bindings (RW-D2), #092e3a01 stale policy in warm sessions, #9ba47ecb, #1172ddf6, #8452db6d, #a5ec6262, #adc57785, #d193963a, #a1112dc6, #a2ddffc3.
+- Partial: FN4, D8, D4, NH8, RW-D2 (bench), R1 (hostinger), LM-OP1/R-OP1 (VM), AG-OP1, AF4, AI14, AI12.
+- Operator: #f6bab748 enterprise audit-key for onboarded companies; #34d9689a AI_GATEWAY_LOGS_TOKEN bws entry.
 
 ## Armed
 - #0f42f15e 2026-12-01 asia key delete.
 
+## Overnight
+- Ticked since 22:00Z: AG-P2..P4, FI7, FI10, AU3, DO12, AC6, AC9, AC10, AC11, AI3, AI15, RW-D1, RW-D3, RW-KV, FN5, FN6, FN7, AX8; review fixes a686c6fa.1, 242048ca.1, a1dd3baa.1, 3eb5a81f.1, a5c0581a.1, 408734d6.1.
+- Decided: #ed92f294 default executed as plan box AI16 (adopt the C37 chat stack).
+
 ## Next action
-0. Round 363f0207 survey r17 (agent a864742c414c003e7, item #cb25fb9d): when it returns, staff AG-P2, AG-P3, AG-P4 and the startable clusters (target 6); FD8 writer abae5d2c6bc7855a4 still running; repair agent ae9b56c0f01fa2138 left with check:ci-pytest, then npm run ci -- --narrow.
-1. Land each report: ./run.sh worktree land <id> --run --me d778be9d (hashes.json conflict: python3 .ci/cache/merge-hashes.py <repo>, then rerun land); rebuild packages/shared and npm ci where deps change; check every touched package; tick with landed shas; refill from survey r16 (REFILL names clusters) and start AG-P2..AG-P4 after AG-P1 lands.
-2. Commit each repair checkpoint; when ci:quick is green, run the release chain.
-3. Next round through the /writers-now skill when the hook calls it.
+1. On ci:quick rc 0: vm:check --changed, push, release dry run, release; record rollback and D1 bookmark.
+2. Land the five held trees, check each on the merged tree, tick with landed shas, translate the AI14 keys.
+3. Next writers-now round when the hook calls it; refill from survey r21 (/tmp/writers-now/1121-1-20261126T0342Z-r21.md).
