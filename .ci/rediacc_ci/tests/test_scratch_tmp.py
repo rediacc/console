@@ -2,6 +2,9 @@
 
 import os
 import shutil
+import signal
+import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 
@@ -66,16 +69,82 @@ def test_a_tmpdir_outside_the_base_is_replaced_then_restored(monkeypatch) -> Non
         assert config.option.basetemp == os.path.join(scratch, "basetemp")
         config.teardown()
         assert os.environ["TMPDIR"] == str(outside), "TMPDIR must be put back at teardown"
+        assert not os.path.exists(scratch), (
+            "the run's scratch directory must be removed at teardown"
+        )
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
 
 
 @pytest.mark.usefixtures("umask_back")
-def test_a_tmpdir_already_inside_the_base_is_left_alone(monkeypatch, tmp_path) -> None:
+def test_a_tmpdir_already_inside_the_base_is_replaced_and_restored(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     monkeypatch.setattr(tempfile, "tempdir", None)
     config = _Config()
     scratch_tmp.install(config)
-    assert os.environ["TMPDIR"] == str(tmp_path)
-    assert config.option.basetemp is None
-    config.teardown()
+    scratch = os.environ["TMPDIR"]
+    try:
+        assert scratch != str(tmp_path)
+        assert seams.inside_temp(scratch)
+        assert config.option.basetemp == os.path.join(scratch, "basetemp")
+        config.teardown()
+        assert os.environ["TMPDIR"] == str(tmp_path)
+        assert not os.path.exists(scratch)
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
+_CHILD = """
+import sys, time
+from types import SimpleNamespace
+from rediacc_ci.tests import scratch_tmp
+
+class Config:
+    option = SimpleNamespace(basetemp=None)
+    def add_cleanup(self, func):
+        pass
+
+scratch_tmp.install(Config())
+import os
+print(os.environ["TMPDIR"], flush=True)
+time.sleep(600)
+"""
+
+
+@pytest.mark.usefixtures("umask_back")
+def test_a_killed_runs_scratch_is_removed_by_the_next_install(monkeypatch) -> None:
+    base = seams.system_temp_base()
+    if base is None:
+        pytest.skip("no system temp base on this host")
+    outside = paths.repo_root()
+    monkeypatch.setenv("TMPDIR", str(outside))
+    monkeypatch.setattr(tempfile, "tempdir", None)
+    child_env = {**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)}
+    child = subprocess.Popen(
+        [sys.executable, "-c", _CHILD],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=child_env,
+    )
+    orphan = ""
+    try:
+        assert child.stdout is not None
+        orphan = child.stdout.readline().strip()
+        assert os.path.isdir(orphan), "the child's scratch directory must exist before the kill"
+        child.send_signal(signal.SIGKILL)
+    finally:
+        child.kill()
+        child.wait()
+        if child.stdout is not None:
+            child.stdout.close()
+    config = _Config()
+    scratch_tmp.install(config)
+    scratch = os.environ["TMPDIR"]
+    try:
+        assert not os.path.exists(orphan), (
+            "the next run's install must remove the killed run's scratch"
+        )
+    finally:
+        config.teardown()
+        shutil.rmtree(scratch, ignore_errors=True)
+        shutil.rmtree(orphan, ignore_errors=True)
