@@ -44,18 +44,23 @@ const TREE_UNLISTED_COMMANDS = new Set(['shortcuts']);
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-// Product hosts the tracked deploy config defines: each region's account domain (regions.json) and each MCP Worker's custom domain (workers/mcp/wrangler.*.toml routes).
-function productHosts() {
+// Product hosts the tracked deploy config defines: each region's account domain (regions.json) and each MCP Worker's custom domain (workers/mcp/wrangler.*.toml routes). Every host found there is accepted in docs and blog prose, so a config change that adds a domain also whitelists it for content. An empty result for either source throws, because a changed JSON shape or pattern would otherwise drop hosts silently.
+export function productHosts(repoRoot = REPO_ROOT) {
   const hosts = [];
-  const regions = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'regions.json'), 'utf8')).regions;
+  const regions = JSON.parse(fs.readFileSync(path.join(repoRoot, 'regions.json'), 'utf8')).regions;
   for (const region of regions) hosts.push(region.domain);
-  const mcpDir = path.join(REPO_ROOT, 'workers/mcp');
+  if (hosts.length === 0 || hosts.some((h) => typeof h !== 'string' || !h)) {
+    throw new Error('regions.json yields no usable region domains');
+  }
+  const mcpHosts = [];
+  const mcpDir = path.join(repoRoot, 'workers/mcp');
   for (const name of fs.readdirSync(mcpDir)) {
     if (!/^wrangler\..+\.toml$/.test(name)) continue;
     const toml = fs.readFileSync(path.join(mcpDir, name), 'utf8');
-    for (const m of toml.matchAll(/pattern\s*=\s*"([a-z0-9.-]+)"/g)) hosts.push(m[1]);
+    for (const m of toml.matchAll(/pattern\s*=\s*"([a-z0-9.-]+)"/g)) mcpHosts.push(m[1]);
   }
-  return hosts;
+  if (mcpHosts.length === 0) throw new Error('workers/mcp/wrangler.*.toml yield no route patterns');
+  return [...hosts, ...mcpHosts];
 }
 
 // Valid rediacc hosts: the site, the releases host, and the product hosts above.
@@ -248,12 +253,12 @@ function validateUrls(urls, errors) {
 // Rule 4: claim-overstatement (docs, blog, translation JSON)
 // ---------------------------------------------------------------------------
 
-// Phrase arms. `forensic trail` and `forensic-grade` are refused outright; `hash-chained` is refused only within one sentence of `audit log` that names neither `per org` nor `day file`, because the server log is chained per org and day (PLAN-console-audit-r2 D5) and the workstation log is chained per file.
+// Phrase arms. `forensic trail` and `forensic-grade` are refused outright; `hash-chained` is refused only within one sentence of `audit log` that names neither a per-org-and-day nor a day-file scope, because the server log is chained per org and day (PLAN-console-audit-r2 D5) and the workstation log is chained per file.
 const FORENSIC_TRAIL_RE = /forensic[ -]trail/i;
 const FORENSIC_GRADE_RE = /forensic[ -]grade/i;
 const HASH_CHAINED_RE = /hash-chained/i;
 const AUDIT_LOG_RE = /audit[ -]log/i;
-const CHAIN_SCOPE_RE = /per org|day file/i;
+const CHAIN_SCOPE_RE = /chained per org|per org and (?:per )?day|chained per file|day file/i;
 
 // Each entry exempts one line (file suffix plus a substring of the line) and states why the claim holds there. An entry without a reason exempts nothing.
 export const CLAIM_OVERSTATEMENT_ALLOWLIST = [
@@ -290,9 +295,13 @@ export const CLAIM_OVERSTATEMENT_ALLOWLIST = [
   },
 ];
 
-function isClaimAllowlisted(file, line, allowlist) {
+// An allowlist entry exempts only the hash-chained arm, and only when a line the sentence spans carries the substring; the forensic arms are never exempted.
+function isClaimAllowlisted(file, lines, allowlist) {
   return allowlist.some(
-    (entry) => entry.reason && file.endsWith(entry.file) && line.includes(entry.includes)
+    (entry) =>
+      entry.reason &&
+      file.endsWith(entry.file) &&
+      lines.some((line) => line.includes(entry.includes))
   );
 }
 
@@ -310,16 +319,47 @@ function overstatementArms(sentence) {
   return arms;
 }
 
+// Sentences are cut from each run of non-blank lines joined by single spaces, so a sentence wrapped across physical lines is still one sentence. A hit reports the line the sentence starts on.
+function* sentencesWithLines(lines) {
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].trim() === '') {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < lines.length && lines[i].trim() !== '') i++;
+    const block = lines.slice(start, i);
+    const starts = [];
+    let text = '';
+    for (const line of block) {
+      starts.push(text.length);
+      text += `${line} `;
+    }
+    const lineAt = (offset) => {
+      let n = 0;
+      while (n + 1 < starts.length && starts[n + 1] <= offset) n++;
+      return n;
+    };
+    let from = 0;
+    for (const piece of text.split(/(?<=[.!?])\s+/)) {
+      const at = text.indexOf(piece, from);
+      from = at + piece.length;
+      const first = lineAt(at + (piece.length - piece.trimStart().length));
+      const last = lineAt(Math.max(at, from - 1));
+      yield { sentence: piece, line: start + first + 1, spanned: block.slice(first, last + 1) };
+    }
+  }
+}
+
 export function findClaimOverstatements(content, file, allowlist = CLAIM_OVERSTATEMENT_ALLOWLIST) {
   const found = [];
   const lines = content.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (isClaimAllowlisted(file, line, allowlist)) continue;
-    for (const sentence of line.split(/(?<=[.!?])\s+/)) {
-      for (const arm of overstatementArms(sentence)) {
-        found.push({ file, line: i + 1, arm, text: sentence.trim().slice(0, 160) });
-      }
+  for (const { sentence, line, spanned } of sentencesWithLines(lines)) {
+    const allowed = isClaimAllowlisted(file, spanned, allowlist);
+    for (const arm of overstatementArms(sentence)) {
+      if (allowed && arm === 'hash-chained audit log') continue;
+      found.push({ file, line, arm, text: sentence.trim().slice(0, 160) });
     }
   }
   return found;
@@ -532,13 +572,10 @@ Rules (--strict only — otherwise warnings):
   process.exit(printSummary(errors, warnings));
 }
 
-function invokedDirectly() {
-  if (!process.argv[1]) return false;
-  try {
-    return fs.realpathSync(fileURLToPath(import.meta.url)) === fs.realpathSync(process.argv[1]);
-  } catch {
-    return false;
-  }
+// Compares real paths so a symlinked start still runs main(). A path that cannot be resolved throws, so the process exits non-zero instead of passing without checking anything.
+export function invokedDirectly(argv1 = process.argv[1], metaUrl = import.meta.url) {
+  if (!argv1) return false;
+  return fs.realpathSync(fileURLToPath(metaUrl)) === fs.realpathSync(argv1);
 }
 
 if (invokedDirectly()) {
