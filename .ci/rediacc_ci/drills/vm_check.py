@@ -4885,16 +4885,16 @@ def leased_main(argv: Sequence[str], **kwargs: Any) -> int:
     grant = slot.env if slot is not None else {}
     with stack:
         # The suites and drills this run starts inherit the grant, so a pytest wrapper under them does not lease the pool a second time.
-        saved = {key: os.environ.get(key) for key in grant}
+        before = dict(os.environ)
         os.environ.update(grant)
         try:
             return main(argv, **kwargs)
         finally:
-            for key, previous in saved.items():
-                if previous is None:
-                    os.environ.pop(key, None)
+            for key in grant:
+                if key in before:
+                    os.environ[key] = before[key]
                 else:
-                    os.environ[key] = previous
+                    os.environ.pop(key, None)
 
 
 if __name__ == "__main__":

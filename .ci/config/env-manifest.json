@@ -387,6 +387,7 @@
       "CI_PROFILE_RUN",
       "CI_RUNNER_BASE",
       "CI_RUNNER_CACHE",
+      "CI_RUNNER_CORES",
       "CI_RUNNER_IMAGE",
       "CI_RUNNER_MANIFEST",
       "CI_RUN_ID",
@@ -831,6 +832,7 @@
       "REDIACC_CI_ROOT",
       "REDIACC_GUARD_DIFF_FULL",
       "REDIACC_KEY_USAGE_PROBE",
+      "REDIACC_LEASE_TMP_BASE",
       "REDIACC_MCP_JOB_WAIT_INTERVAL_MS",
       "REDIACC_PROC_BACKEND",
       "REDIACC_PROXY_HEARTBEAT_MS",
@@ -1138,6 +1140,8 @@
       "REDIACC_VIA_DAEMON",
       "REDIACC_VSCODE_PATH",
       "REDIACC_YES",
+      "REPORT_ED25519_PRIVATE_KEY",
+      "REPORT_ED25519_PUBLIC_KEY",
       "TF_PLUGIN_CACHE_DIR",
       "UPSTREAM_API_KEY",
       "UPSTREAM_PUBLIC_KEY",
@@ -1188,6 +1192,7 @@
       "CLAUDE_AGENT_TYPE",
       "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
       "CLAUDE_CODE_SESSION_ID",
+      "CLAUDE_CODE_TMPDIR",
       "CLAUDE_CONFIG_DIR",
       "CLAUDE_PID",
       "CLAUDE_PROJECT_DIR",
@@ -2059,6 +2064,9 @@
       ".ci/rediacc_ci/deploy/write_release_sentinel.py": [
         "CLOUDFLARE_R2_ENDPOINT"
       ],
+      ".ci/rediacc_ci/dev/host_temp.py": [
+        "CLAUDE_CODE_TMPDIR"
+      ],
       ".ci/rediacc_ci/dev/measure_page_density.py": [
         "XDG_RUNTIME_DIR"
       ],
@@ -2066,7 +2074,8 @@
         "WORKTREE_TODAY"
       ],
       ".ci/rediacc_ci/dev/worktree_lease.py": [
-        "GOCACHE"
+        "GOCACHE",
+        "REDIACC_LEASE_TMP_BASE"
       ],
       ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
         "RUNNER_TEMP",
@@ -3142,6 +3151,8 @@
         "ACCOUNT_X25519_PRIVATE_KEY",
         "ACCOUNT_X25519_PUBLIC_KEY",
         "E2E_PORT",
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
         "ROOT_EMAIL"
       ],
       ".ci/rediacc_ci/testrun/e2e.py": [
@@ -3178,6 +3189,8 @@
         "GITHUB_ACTIONS",
         "GITHUB_ENV",
         "GITHUB_OUTPUT",
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
         "RUNNER_TEMP"
       ],
       ".ci/rediacc_ci/testrun/start_backup_plane.py": [
@@ -3566,6 +3579,10 @@
       ".ci/rediacc_ci/tests/test_dev_worktree_land_run.py": [
         "PATH"
       ],
+      ".ci/rediacc_ci/tests/test_dev_worktree_lease.py": [
+        "HOME",
+        "REDIACC_LEASE_TMP_BASE"
+      ],
       ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py": [
         "HOME"
       ],
@@ -3826,6 +3843,10 @@
       ],
       ".ci/rediacc_ci/tests/test_testrun_start_backup_plane.py": [
         "RENET_BINARY_PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_vm_check_core_lease.py": [
+        "CI_CORE_LEASE_HELD",
+        "CI_RUNNER_CORES"
       ],
       ".ci/rediacc_ci/tests/wkloader.py": [
         "PATH"

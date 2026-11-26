@@ -96,7 +96,7 @@ def test_marker_written_by_the_subagent_stop_handler():
     with tempfile.TemporaryDirectory() as tmp:
         root, records = _fixture(tmp)
         keys = ("CLAUDE_PROJECT_DIR", "WORKLIST_REPORTS_DIR")
-        saved = {k: os.environ.get(k) for k in keys}
+        before = dict(os.environ)
         os.environ["CLAUDE_PROJECT_DIR"] = str(root)
         os.environ["WORKLIST_REPORTS_DIR"] = str(pathlib.Path(tmp) / "reports")
         real = report.armed_monitors
@@ -113,11 +113,11 @@ def test_marker_written_by_the_subagent_stop_handler():
             _check(not _marker(records).exists())
         finally:
             report.armed_monitors = real
-            for key, value in saved.items():
-                if value is None:
-                    os.environ.pop(key, None)
+            for key in keys:
+                if key in before:
+                    os.environ[key] = before[key]
                 else:
-                    os.environ[key] = value
+                    os.environ.pop(key, None)
 
 
 if __name__ == "__main__":
