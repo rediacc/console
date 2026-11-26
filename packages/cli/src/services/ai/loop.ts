@@ -24,6 +24,7 @@ import {
   streamText,
   type ToolSet,
 } from 'ai';
+import { rediaccErrorEvent } from './rediacc-provider.js';
 import { approvalResultOf, stopOnApproval, toolResultEventOf } from './tools.js';
 import { UI_TOOL_NAMES, uiEventOf, uiTools } from './ui-tools.js';
 import { TOOL_OUTPUT_RULE } from './untrusted.js';
@@ -63,6 +64,8 @@ export interface AiTurnInput {
 }
 
 function errorEvent(error: unknown): AiEvent {
+  const refusal = rediaccErrorEvent(error);
+  if (refusal) return refusal;
   if (APICallError.isInstance(error)) {
     return {
       type: 'error',

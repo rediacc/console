@@ -34,6 +34,7 @@ import {
 } from '../../ai/approvals.js';
 import { AiConversationStore } from '../../ai/autonomy.js';
 import { DEFAULT_MAX_OUTPUT_TOKENS, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
+import { createProviderModel, type ProviderModelOptions } from '../../ai/provider.js';
 import { AiTranscripts, createAiRecorder } from '../../ai/recorder.js';
 import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
 import {
@@ -627,6 +628,45 @@ describe('POST /v1/ai/chat', () => {
     const refused = await chat(hono, { ...CHAT, grant: { grantId: 'g2', secret: 'secret' } });
     expect(refused.status).toBe(403);
     expect(await refused.json()).toMatchObject({ code: AI_GRANT_UNAVAILABLE });
+  });
+});
+
+describe('POST /v1/ai/chat on a Rediacc tier profile', () => {
+  const TIER_CHAT = { ...CHAT, profile: 'rediacc:standard' };
+
+  it('builds the model with the caller and the conversation as the billing ids', async () => {
+    const seen: (ProviderModelOptions | undefined)[] = [];
+    const mock = new MockLanguageModelV4({ doStream: [textStep('hi')] });
+    const chatDeps: AiChatDeps = {
+      createModel: (_profile, options) => {
+        seen.push(options);
+        return mock;
+      },
+    };
+    const response = await chat(app(fleetConfig(), { chat: chatDeps }), TIER_CHAT);
+    await response.text();
+    expect(response.status).toBe(200);
+    expect(seen).toEqual([{ rediacc: { userId: 'user-owner', conversationId: 'conv-1' } }]);
+  });
+
+  it('surfaces a ledger refusal as an error event with its AI_CREDITS code', async () => {
+    const gateway: typeof globalThis.fetch = () =>
+      Promise.resolve(
+        Response.json(
+          { error: { code: 'INSUFFICIENT_CREDITS' }, code: 'INSUFFICIENT_CREDITS' },
+          { status: 402 }
+        )
+      );
+    const chatDeps: AiChatDeps = {
+      createModel: (profile, options) =>
+        createProviderModel(profile, { ...options, fetch: gateway }),
+    };
+    const response = await chat(app(fleetConfig(), { chat: chatDeps }), TIER_CHAT);
+    const events = aiEvents(await lines(response));
+    expect(events.find((e) => e.type === 'error')).toMatchObject({
+      type: 'error',
+      code: 'AI_CREDITS_INSUFFICIENT_CREDITS',
+    });
   });
 });
 

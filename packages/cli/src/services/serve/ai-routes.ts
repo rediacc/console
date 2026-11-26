@@ -40,7 +40,7 @@
  * verdict as JSON; nothing is stored.
  */
 
-import { type AiConfigs, type Profile, resolveProfile } from '@rediacc/shared/ai';
+import { type AiConfigs, isRediaccProfile, type Profile, resolveProfile } from '@rediacc/shared/ai';
 import { isPreviewRun, isStepUpMethod, STEP_UP_METHODS } from '@rediacc/shared/auth';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import {
@@ -75,7 +75,11 @@ import {
   runJudge,
 } from '../ai/judge.js';
 import { runAiTurn } from '../ai/loop.js';
-import { createProviderModel, ProviderProfileError } from '../ai/provider.js';
+import {
+  createProviderModel,
+  type ProviderModelOptions,
+  ProviderProfileError,
+} from '../ai/provider.js';
 import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke, type SmokeResult } from '../ai/smoke.js';
 import {
@@ -180,7 +184,7 @@ export type AiApprovalVerdict =
 /** The chat host's own seams; every one has a production default. */
 export interface AiChatDeps {
   /** The AI SDK model of a profile; `createProviderModel` when absent. Tests pass a mock model. */
-  createModel?: (profile: Profile) => LanguageModel;
+  createModel?: (profile: Profile, options?: ProviderModelOptions) => LanguageModel;
   /**
    * The profile sources of a request, team over shared (D3). Absent: the session's own config is the
    * only source. The container tier lends the second config when it loads both.
@@ -692,18 +696,28 @@ export function registerAiRoutes(
     return (await ai.chat?.aiConfigs?.(principal, config, configSessionId)) ?? { team: config.ai };
   }
 
-  const modelOf = (profile: Profile): LanguageModel =>
-    (ai.chat?.createModel ?? createProviderModel)(profile);
+  /** The ids a Rediacc tier call is billed under: the authenticated person and the chat's conversation. */
+  const rediaccOf = (
+    principal: SessionPrincipal,
+    conversationId: string
+  ): ProviderModelOptions => ({
+    rediacc: { userId: principal.userId, conversationId },
+  });
+
+  const modelOf = (profile: Profile, options: ProviderModelOptions): LanguageModel =>
+    (ai.chat?.createModel ?? createProviderModel)(profile, options);
 
   /** The Auto-mode judge: the seam when given, else the profile's judge model. */
-  const judgeOf = (profile: Profile) => (input: JudgeInput) => {
+  const judgeOf = (profile: Profile, options: ProviderModelOptions) => (input: JudgeInput) => {
     if (ai.chat?.judge) return ai.chat.judge(profile, input);
     const createModel = ai.chat?.createModel;
-    return runJudge(
-      profile,
-      input,
-      createModel ? { model: createModel({ ...profile, model: judgeModelOf(profile) }) } : {}
-    );
+    const judgeProfile = { ...profile, model: judgeModelOf(profile) };
+    if (createModel) return runJudge(profile, input, { model: createModel(judgeProfile, options) });
+    // A Rediacc tier profile carries no key and needs the ids; runJudge cannot supply them.
+    if (isRediaccProfile(profile)) {
+      return runJudge(profile, input, { model: createProviderModel(judgeProfile, options) });
+    }
+    return runJudge(profile, input);
   };
 
   /** The Auto-mode judge's verdict on one call the policy allowed; true for an allow. */
@@ -726,7 +740,7 @@ export function registerAiRoutes(
     const judgment = await judgeInAutoMode({
       conversationId: `${principal.orgId}\u0000${principal.userId}\u0000${body.conversationId}`,
       input,
-      judge: judgeOf(profile),
+      judge: judgeOf(profile, rediaccOf(principal, body.conversationId)),
       tally: judgeTally,
       setAskMode: () => ai.modes.set(principal, body.conversationId, 'ask'),
     });
@@ -888,14 +902,15 @@ export function registerAiRoutes(
   /** The model of the profile a request resolves to, or the refusal that answers it. */
   function buildModel(
     sources: AiConfigs,
-    name: string | undefined
+    name: string | undefined,
+    options: ProviderModelOptions
   ): BuiltModel | { refusal: { error: string; code: string }; status: 404 | 422 } {
     const resolved = resolveProfile(sources, name);
     if (!resolved.ok) {
       return { status: 404, refusal: { error: resolved.message, code: AI_PROFILE_UNRESOLVED } };
     }
     try {
-      return { model: modelOf(resolved.profile), profile: resolved.profile };
+      return { model: modelOf(resolved.profile, options), profile: resolved.profile };
     } catch (error) {
       if (!(error instanceof ProviderProfileError)) throw error;
       return { status: 422, refusal: { error: error.message, code: AI_PROFILE_UNRESOLVED } };
@@ -908,7 +923,11 @@ export function registerAiRoutes(
       const opened = await openChat(principal, config, body.grant, configSessionId);
       if ('refusal' in opened) return c.json(opened.refusal, opened.status);
       const { session } = opened;
-      const built = buildModel(session.sources, body.profile);
+      const built = buildModel(
+        session.sources,
+        body.profile,
+        rediaccOf(principal, body.conversationId)
+      );
       if ('refusal' in built) return c.json(built.refusal, built.status);
       const record = turnRecordOf(principal, config, body, configSessionId);
       return streamChat(c, built, session, body, record);
@@ -926,7 +945,11 @@ export function registerAiRoutes(
         return c.json({ error: resolved.message, code: AI_PROFILE_UNRESOLVED }, 404);
       }
       try {
-        return c.json(await runSmoke(modelOf(resolved.profile), { abortSignal: c.req.raw.signal }));
+        return c.json(
+          await runSmoke(modelOf(resolved.profile, rediaccOf(principal, 'smoke-test')), {
+            abortSignal: c.req.raw.signal,
+          })
+        );
       } catch (error) {
         if (!(error instanceof ProviderProfileError)) throw error;
         return c.json(refusedSmoke(error));
