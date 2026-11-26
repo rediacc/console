@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "REDIACC_TOFU 변수",
         "rdc": "rdc가 설치함",
-        "path": "시스템 PATH"
+        "path": "시스템 PATH",
+        "notInstalled": "설치되지 않음"
       },
       "errors": {
         "unknownTool": "알 수 없는 도구 \"{{tool}}\"입니다. 사용 가능한 도구: {{available}}",

@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "REDIACC_TOFU değişkeni",
         "rdc": "rdc tarafından kuruldu",
-        "path": "sistem PATH'i"
+        "path": "sistem PATH'i",
+        "notInstalled": "yüklü değil"
       },
       "errors": {
         "unknownTool": "Bilinmeyen araç \"{{tool}}\". Kullanılabilir araçlar: {{available}}",

@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "REDIACC_TOFU 变量",
         "rdc": "由 rdc 安装",
-        "path": "系统 PATH"
+        "path": "系统 PATH",
+        "notInstalled": "未安装"
       },
       "errors": {
         "unknownTool": "未知工具“{{tool}}”。可用工具：{{available}}",

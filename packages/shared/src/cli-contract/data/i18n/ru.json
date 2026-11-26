@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "Показать установленные инструменты, их версии и источники",
   "commands.tools.list.empty": "Ни OpenTofu, ни Terraform не найдены. Установите OpenTofu командой: rdc tools install tofu",
   "commands.tools.sources.env": "переменная REDIACC_TOFU",
+  "commands.tools.sources.notInstalled": "не установлен",
   "commands.tools.sources.path": "системный PATH",
   "commands.tools.sources.rdc": "установлен rdc",
   "commands.update.autoApplied": "Обновлено до v{{version}} (было v{{from}}). Изменения вступят в силу при следующем запуске.",

@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "переменная REDIACC_TOFU",
         "rdc": "установлен rdc",
-        "path": "системный PATH"
+        "path": "системный PATH",
+        "notInstalled": "не установлен"
       },
       "errors": {
         "unknownTool": "Неизвестный инструмент «{{tool}}». Доступные инструменты: {{available}}",

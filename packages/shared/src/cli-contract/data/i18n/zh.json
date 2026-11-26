@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "显示已安装的工具、版本和来源",
   "commands.tools.list.empty": "未找到 OpenTofu 或 Terraform。请用以下命令安装 OpenTofu：rdc tools install tofu",
   "commands.tools.sources.env": "REDIACC_TOFU 变量",
+  "commands.tools.sources.notInstalled": "未安装",
   "commands.tools.sources.path": "系统 PATH",
   "commands.tools.sources.rdc": "由 rdc 安装",
   "commands.update.autoApplied": "已更新到 v{{version}}（之前为 v{{from}}）。更改将在下次运行时生效。",

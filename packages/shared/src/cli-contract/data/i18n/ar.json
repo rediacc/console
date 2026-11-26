@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "عرض الأدوات المثبّتة وإصداراتها ومصادرها",
   "commands.tools.list.empty": "لم يُعثر على OpenTofu أو Terraform. ثبّت OpenTofu بالأمر: rdc tools install tofu",
   "commands.tools.sources.env": "المتغير REDIACC_TOFU",
+  "commands.tools.sources.notInstalled": "غير مثبّت",
   "commands.tools.sources.path": "مسار PATH للنظام",
   "commands.tools.sources.rdc": "مثبّت بواسطة rdc",
   "commands.update.autoApplied": "تم التحديث إلى v{{version}} (كان v{{from}}). ستصبح التغييرات سارية عند التشغيل التالي.",

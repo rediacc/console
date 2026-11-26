@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "المتغير REDIACC_TOFU",
         "rdc": "مثبّت بواسطة rdc",
-        "path": "مسار PATH للنظام"
+        "path": "مسار PATH للنظام",
+        "notInstalled": "غير مثبّت"
       },
       "errors": {
         "unknownTool": "أداة غير معروفة \"{{tool}}\". الأدوات المتاحة: {{available}}",

@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "REDIACC_TOFU 変数",
         "rdc": "rdcがインストール",
-        "path": "システムのPATH"
+        "path": "システムのPATH",
+        "notInstalled": "未インストール"
       },
       "errors": {
         "unknownTool": "不明なツール「{{tool}}」です。利用可能なツール: {{available}}",

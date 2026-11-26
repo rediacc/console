@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "설치된 도구와 버전, 출처 표시",
   "commands.tools.list.empty": "OpenTofu나 Terraform을 찾지 못했습니다. 다음 명령으로 OpenTofu를 설치하세요: rdc tools install tofu",
   "commands.tools.sources.env": "REDIACC_TOFU 변수",
+  "commands.tools.sources.notInstalled": "설치되지 않음",
   "commands.tools.sources.path": "시스템 PATH",
   "commands.tools.sources.rdc": "rdc가 설치함",
   "commands.update.autoApplied": "v{{version}}으로 업데이트되었습니다 (이전: v{{from}}). 변경 사항은 다음 실행 시 적용됩니다.",

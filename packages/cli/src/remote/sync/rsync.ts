@@ -77,7 +77,14 @@ function stderrTail(text: string, maxLines = 5): string {
   return text.trim().split(/\r?\n/).slice(-maxLines).join('\n').trim();
 }
 
-const RSYNC_PROBE_TIMEOUT_MS = 5000;
+/** The first run of an extracted MSYS2 binary on Windows can take seconds under load, so the probe gets headroom. */
+const RSYNC_PROBE_TIMEOUT_MS = 15_000;
+const RSYNC_BANNER = /^\s*rsync\s+version\s+\d/m;
+
+/** rsync prints its banner before it exits; the MSYS2 build exits non-zero after it when its root lacks directories, yet carries a transfer. */
+function printedBanner(stdout: unknown): boolean {
+  return RSYNC_BANNER.test(String(stdout ?? ''));
+}
 
 function probeFailureStatus(failure: NodeJS.ErrnoException & { killed?: boolean }): string {
   if (failure.killed) return `timed out after ${RSYNC_PROBE_TIMEOUT_MS / 1000}s`;
@@ -109,8 +116,8 @@ export function rsyncUnusableReason(): Promise<string | undefined> {
           timeout: RSYNC_PROBE_TIMEOUT_MS,
           env: { ...process.env, ...getMsys2Environment() },
         },
-        (err, _stdout, stderr) => {
-          if (!err) {
+        (err, stdout, stderr) => {
+          if (!err || (!(err as { killed?: boolean }).killed && printedBanner(stdout))) {
             resolve(undefined);
             return;
           }

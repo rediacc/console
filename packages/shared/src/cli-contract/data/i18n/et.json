@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "Näita paigaldatud tööriistu, nende versioone ja allikaid",
   "commands.tools.list.empty": "OpenTofut ega Terraformi ei leitud. Paigalda OpenTofu käsuga: rdc tools install tofu",
   "commands.tools.sources.env": "muutuja REDIACC_TOFU",
+  "commands.tools.sources.notInstalled": "pole paigaldatud",
   "commands.tools.sources.path": "süsteemi PATH",
   "commands.tools.sources.rdc": "paigaldas rdc",
   "commands.update.autoApplied": "Uuendatud versioonile v{{version}} (oli v{{from}}). Muudatused jõustuvad järgmisel käivitusel.",

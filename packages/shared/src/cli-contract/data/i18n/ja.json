@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "インストール済みツールとバージョン、入手元を表示",
   "commands.tools.list.empty": "OpenTofuもTerraformも見つかりません。次のコマンドでOpenTofuをインストールしてください: rdc tools install tofu",
   "commands.tools.sources.env": "REDIACC_TOFU 変数",
+  "commands.tools.sources.notInstalled": "未インストール",
   "commands.tools.sources.path": "システムのPATH",
   "commands.tools.sources.rdc": "rdcがインストール",
   "commands.update.autoApplied": "v{{version}} に更新しました（以前は v{{from}}）。変更は次回の実行時に反映されます。",

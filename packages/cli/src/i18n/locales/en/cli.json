@@ -3456,7 +3456,8 @@
       "sources": {
         "env": "REDIACC_TOFU variable",
         "rdc": "installed by rdc",
-        "path": "system PATH"
+        "path": "system PATH",
+        "notInstalled": "not installed"
       },
       "errors": {
         "unknownTool": "Unknown tool \"{{tool}}\". Available tools: {{available}}",

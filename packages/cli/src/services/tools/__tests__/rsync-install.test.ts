@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { zstdCompressSync } from 'node:zlib';
@@ -12,6 +12,7 @@ import {
   msys2PackageUrl,
   rsyncInstallDir,
   rsyncPinKey,
+  rsyncStatus,
 } from '../rsync.js';
 import { readTarEntries, TarError } from '../tar.js';
 import { buildTar, paxPathRecord } from './tar-fixture.js';
@@ -148,6 +149,9 @@ describe('installRsync', () => {
       [
         'msys2-rsync',
         `msys2-rsync/${key}`,
+        `msys2-rsync/${key}/dev`,
+        `msys2-rsync/${key}/etc`,
+        `msys2-rsync/${key}/tmp`,
         `msys2-rsync/${key}/usr`,
         `msys2-rsync/${key}/usr/bin`,
         `msys2-rsync/${key}/usr/bin/msys-2.0.dll`,
@@ -206,6 +210,19 @@ describe('installRsync', () => {
     expect(fetched).toHaveLength(pin.packages.length * 2);
   });
 
+  it('creates the MSYS2 root directories etc, tmp and dev beside usr, and repairs a tree installed without them', async () => {
+    const toolsDir = await tempDir();
+    const { pin, download } = fixture();
+    await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    const dir = rsyncInstallDir({ pin, toolsDir });
+    for (const d of ['etc', 'tmp', 'dev'])
+      expect((await stat(join(dir, d))).isDirectory()).toBe(true);
+    await rm(join(dir, 'tmp'), { recursive: true });
+    const again = await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(again.alreadyInstalled).toBe(true);
+    expect((await stat(join(dir, 'tmp'))).isDirectory()).toBe(true);
+  });
+
   it('refuses anywhere but Windows, naming the system package manager, and downloads nothing', async () => {
     const toolsDir = await tempDir();
     const { pin, download, fetched } = fixture();
@@ -216,5 +233,23 @@ describe('installRsync', () => {
     }
     expect(fetched).toEqual([]);
     expect(await tree(toolsDir)).toEqual([]);
+  });
+});
+
+describe('rsyncStatus', () => {
+  it('reports the pinned version, and the path once the tree is installed', async () => {
+    const toolsDir = await tempDir();
+    const { pin, download } = fixture();
+    expect(rsyncStatus({ pin, toolsDir })).toEqual({
+      pinned: '3.5.2-2',
+      installed: false,
+      path: null,
+    });
+    const result = await installRsync({}, { pin, toolsDir, platform: 'win32', download });
+    expect(rsyncStatus({ pin, toolsDir })).toEqual({
+      pinned: '3.5.2-2',
+      installed: true,
+      path: result.path,
+    });
   });
 });

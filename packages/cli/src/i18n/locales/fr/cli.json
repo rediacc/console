@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "variable REDIACC_TOFU",
         "rdc": "installé par rdc",
-        "path": "PATH du système"
+        "path": "PATH du système",
+        "notInstalled": "non installé"
       },
       "errors": {
         "unknownTool": "Outil inconnu « {{tool}} ». Outils disponibles : {{available}}",

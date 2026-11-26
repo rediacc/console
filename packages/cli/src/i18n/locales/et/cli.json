@@ -3457,7 +3457,8 @@
       "sources": {
         "env": "muutuja REDIACC_TOFU",
         "rdc": "paigaldas rdc",
-        "path": "süsteemi PATH"
+        "path": "süsteemi PATH",
+        "notInstalled": "pole paigaldatud"
       },
       "errors": {
         "unknownTool": "Tundmatu tööriist „{{tool}}“. Saadaolevad tööriistad: {{available}}",

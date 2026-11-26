@@ -11,7 +11,9 @@ const fake = vi.hoisted(() => ({
   stdout: [] as string[],
   stderr: [] as string[],
   code: 0 as number | null,
-  probe: undefined as undefined | { code: number | string; killed?: boolean; stderr: string },
+  probe: undefined as
+    | undefined
+    | { code: number | string; killed?: boolean; stderr: string; stdout?: string },
   probeCalls: 0,
 }));
 
@@ -42,7 +44,11 @@ vi.mock('node:child_process', async (importOriginal) => ({
       cb(null, 'rsync  version 3.2.7', '');
       return;
     }
-    cb(Object.assign(new Error('Command failed'), fake.probe), '', fake.probe.stderr);
+    cb(
+      Object.assign(new Error('Command failed'), fake.probe),
+      fake.probe.stdout ?? '',
+      fake.probe.stderr
+    );
   },
 }));
 vi.mock('../../utils/platform.js', () => ({
@@ -134,6 +140,28 @@ describe('rsyncUnusableReason', () => {
     expect(reason).toContain('DLL not found');
     await rsyncUnusableReason();
     expect(fake.probeCalls).toBe(1);
+  });
+
+  it('accepts an rsync that prints its version banner but exits non-zero (MSYS2 root without etc/tmp/dev)', async () => {
+    fake.probe = {
+      code: 4294967295,
+      stderr: '',
+      stdout: 'rsync  version 3.5.2  protocol version 33\n',
+    };
+    expect(await rsyncUnusableReason()).toBeUndefined();
+  });
+
+  it('still rejects a non-zero exit without the banner, and a timeout even with one', async () => {
+    fake.probe = { code: 4294967295, stderr: 'boom\n', stdout: 'something else\n' };
+    expect(await rsyncUnusableReason()).toContain('exit code');
+    resetRsyncProbe();
+    fake.probe = {
+      code: 'ETIMEDOUT',
+      killed: true,
+      stderr: '',
+      stdout: 'rsync  version 3.5.2\n',
+    };
+    expect(await rsyncUnusableReason()).toContain('timed out after 15s');
   });
 
   it('reports a probe that hung', async () => {

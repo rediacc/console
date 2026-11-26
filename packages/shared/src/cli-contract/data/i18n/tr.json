@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "Kurulu araçları, sürümlerini ve kaynaklarını göster",
   "commands.tools.list.empty": "OpenTofu veya Terraform bulunamadı. OpenTofu'yu şu komutla kurun: rdc tools install tofu",
   "commands.tools.sources.env": "REDIACC_TOFU değişkeni",
+  "commands.tools.sources.notInstalled": "yüklü değil",
   "commands.tools.sources.path": "sistem PATH'i",
   "commands.tools.sources.rdc": "rdc tarafından kuruldu",
   "commands.update.autoApplied": "v{{version}} sürümüne güncellendi (önceki: v{{from}}). Değişiklikler bir sonraki çalıştırmada geçerli olacak.",

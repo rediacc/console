@@ -27,6 +27,8 @@ export interface Msys2RsyncPin {
 /** The files without which the installed tree cannot run rsync. */
 const RSYNC_EXE = 'rsync.exe';
 const RUNTIME_DLL = 'msys-2.0.dll';
+/** Directories the MSYS2 runtime expects beside `usr` in its root; the extracted tree has none, and rsync then exits non-zero after printing its banner. */
+const MSYS2_ROOT_DIRS = ['etc', 'tmp', 'dev'] as const;
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
 /** The archive URL of one pinned package, in the repository's `<name>-<version>-x86_64.pkg.tar.zst` naming. */
@@ -61,6 +63,11 @@ export function rsyncInstallDir(options: { pin?: Msys2RsyncPin; toolsDir?: strin
 /** The rsync.exe of the pinned tree (whether or not it is installed). */
 function rsyncInstallPath(options: { pin?: Msys2RsyncPin; toolsDir?: string } = {}): string {
   return join(rsyncInstallDir(options), 'usr', 'bin', RSYNC_EXE);
+}
+
+/** Create the MSYS2 root directories (etc, tmp, dev) under an installed tree; idempotent, so a tree installed before they were created is repaired too. */
+async function ensureMsys2RootDirs(root: string): Promise<void> {
+  for (const dir of MSYS2_ROOT_DIRS) await fs.mkdir(join(root, dir), { recursive: true });
 }
 
 /** The pinned rdc-managed rsync.exe when it and its runtime DLL are on disk, else null. */
@@ -176,6 +183,7 @@ async function placeTree(
   for (const [file, data] of files) {
     await fs.writeFile(join(binDir, file), data, { mode: 0o755 });
   }
+  await ensureMsys2RootDirs(join(staging, 'root'));
   await fs.mkdir(dirname(finalDir), { recursive: true });
   await fs.rm(finalDir, { recursive: true, force: true });
   await fs.rename(join(staging, 'root'), finalDir);
@@ -208,6 +216,7 @@ export async function installRsync(
   const finalPath = join(finalDir, 'usr', 'bin', RSYNC_EXE);
 
   if (!options.force && findInstalledRsync({ pin, toolsDir })) {
+    await ensureMsys2RootDirs(finalDir);
     const files = (await fs.readdir(join(finalDir, 'usr', 'bin'))).sort(byName);
     return { tool: 'rsync', version, path: finalPath, alreadyInstalled: true, files };
   }
@@ -227,4 +236,22 @@ export async function installRsync(
   } finally {
     await fs.rm(staging, { recursive: true, force: true });
   }
+}
+
+export interface RsyncStatus {
+  /** The pinned rsync version. */
+  pinned: string;
+  installed: boolean;
+  /** The installed rsync.exe, or null when the pinned tree is absent. */
+  path: string | null;
+}
+
+/** The pinned MSYS2 rsync version and whether (and where) its tree is installed, for `rdc tools list`. */
+export function rsyncStatus(options: { pin?: Msys2RsyncPin; toolsDir?: string } = {}): RsyncStatus {
+  const path = findInstalledRsync(options);
+  return {
+    pinned: rsyncPackage(options.pin ?? MSYS2_RSYNC_PIN).version,
+    installed: path !== null,
+    path,
+  };
 }

@@ -2649,6 +2649,7 @@
   "commands.tools.list.descriptionShort": "Mostra gli strumenti installati, le versioni e la provenienza",
   "commands.tools.list.empty": "Nessun OpenTofu o Terraform trovato. Installa OpenTofu con: rdc tools install tofu",
   "commands.tools.sources.env": "variabile REDIACC_TOFU",
+  "commands.tools.sources.notInstalled": "non installato",
   "commands.tools.sources.path": "PATH di sistema",
   "commands.tools.sources.rdc": "installato da rdc",
   "commands.update.autoApplied": "Aggiornato a v{{version}} (era v{{from}}). Le modifiche saranno attive al prossimo avvio.",
