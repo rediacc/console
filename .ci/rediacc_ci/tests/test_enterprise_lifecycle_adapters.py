@@ -112,6 +112,8 @@ class FakeCloudflare:
         self.queues: dict[str, dict[str, str | None]] = {
             "q-main": {"name": "backup-replicate-acme", "consumer": "account-acme"},
             "q-dlq": {"name": "backup-replicate-acme-dlq", "consumer": None},
+            "q-forensics": {"name": "forensics-compact-acme", "consumer": "account-acme"},
+            "q-forensics-eu": {"name": "forensics-compact-eu", "consumer": "account-eu"},
             "q-eu": {"name": "backup-replicate-eu", "consumer": "account-eu"},
         }
         self.tokens = [
@@ -294,6 +296,8 @@ class Rig:
             {
                 "configs-acme": {"a/one": b"1", "two & three": b"22"},
                 "backups-acme": {"snap": b"333"},
+                "audit-acme": {"e1": b"4444"},
+                "audit-globex": {"keep": b"y"},
                 "configs-globex": {"keep": b"x"},
             }
         )
@@ -524,6 +528,7 @@ def test_export_through_the_adapter_writes_dump_objects_and_a_0600_secrets_file(
     assert (target / lifecycle.DUMP).read_text() == "-- dump\n"
     keys = sorted((o["bucket"], o["key"]) for o in manifest["objects"])
     assert keys == [
+        ("audit-acme", "e1"),
         ("backups-acme", "snap"),
         ("configs-acme", "a/one"),
         ("configs-acme", "two & three"),
@@ -653,15 +658,17 @@ def test_undeploy_detaches_the_queue_consumer_before_the_account_worker_and_drop
     assert consumer < worker
     assert base + "/queues/q-main" in deletes[worker:]
     assert base + "/queues/q-dlq" in deletes[worker:]
+    assert base + "/queues/q-forensics" in deletes[worker:]
+    assert base + "/queues/q-forensics/consumers/c-q-forensics" in deletes[:worker]
     assert rig.cf.workers == {"account-eu"}
-    assert sorted(rig.cf.queues) == ["q-eu"]
+    assert sorted(rig.cf.queues) == ["q-eu", "q-forensics-eu"]
     assert rig.cf.queues["q-eu"]["consumer"] == "account-eu"
 
 
 def test_undeploy_without_the_company_queues_still_deletes_the_worker(monkeypatch):
     """Control: no company queue means no queue call, and the Worker delete is the same single call."""
     rig = Rig(monkeypatch)
-    rig.cf.queues = {k: v for k, v in rig.cf.queues.items() if k == "q-eu"}
+    rig.cf.queues = {k: v for k, v in rig.cf.queues.items() if k in ("q-eu", "q-forensics-eu")}
     rig.teardown.undeploy(_company())
     deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
     assert not any("/queues/" in d for d in deletes)
@@ -673,7 +680,7 @@ def test_a_rerun_after_the_worker_went_still_drops_the_leftover_queues(monkeypat
     rig.cf.workers.discard("account-acme")
     rig.cf.queues["q-main"]["consumer"] = None
     rig.teardown.undeploy(_company())
-    assert sorted(rig.cf.queues) == ["q-eu"]
+    assert sorted(rig.cf.queues) == ["q-eu", "q-forensics-eu"]
     assert "undeploy account worker" in rig.teardown.done
 
 
@@ -907,7 +914,7 @@ def test_full_remove_with_delete_data_tears_down_everything(tmp_path, monkeypatc
     assert result.data_deleted
     assert rig.cf.workers == {"account-eu"}
     assert rig.cf.d1 == {"account-eu": "2222-uuid"}
-    assert set(rig.s3.buckets) == {"configs-globex"}
+    assert set(rig.s3.buckets) == {"configs-globex", "audit-globex"}
     assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-other-cfg"]
     assert [r["id"] for r in rig.bws.rows] == ["id-foreign"]
     assert len(rig.kv) == 1
@@ -1112,3 +1119,31 @@ def test_a_cloudflare_refusal_is_the_type_the_lifecycle_masks():
     with pytest.raises(lifecycle.LifecycleError) as plain:
         la._ok(["not", "an", "object"], "x")
     assert type(plain.value) is lifecycle.LifecycleError
+
+
+def test_delete_bucket_empties_the_audit_bucket_with_the_shared_pair_and_leaves_another_company(
+    monkeypatch,
+):
+    rig = Rig(monkeypatch)
+    asked: list[str] = []
+    teardown = la.CloudflareTeardown(
+        account_id=ACCOUNT,
+        http=rig.cf,
+        s3=rig.s3,
+        company_s3=lambda _company, bucket: asked.append(bucket),
+        secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
+        lookup_domains=lambda _company: rig.domains,
+        lookup_run=rig.kv_run,
+        r2_jurisdiction="eu",
+    )
+    teardown.delete_bucket(_company(), "audit-acme")
+    assert asked == []
+    assert "audit-acme" not in rig.s3.buckets
+    assert rig.s3.buckets["audit-globex"] == {"keep": b"y"}
+
+
+def test_delete_bucket_refuses_another_companys_audit_bucket(monkeypatch):
+    rig = Rig(monkeypatch)
+    with pytest.raises(lifecycle.LifecycleError, match="not a bucket of company"):
+        rig.teardown.delete_bucket(_company(), "audit-globex")
+    assert rig.s3.buckets["audit-globex"] == {"keep": b"y"}

@@ -155,8 +155,8 @@ def _object_path(bucket: str, key: str) -> str:
 def _bucket_s3(
     shared: S3, company_s3: Callable[[Target, str], S3] | None, company: Target, bucket: str
 ) -> S3:
-    """The transport for one bucket: each of a company's two buckets is reached with the company's own key for that bucket (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket with the shared pair."""
-    if company_s3 is not None and bucket in company.buckets:
+    """The transport for one bucket: the configs and backups buckets are reached with the company's own key for that bucket (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket, the audit bucket included, with the shared pair."""
+    if company_s3 is not None and bucket in (company.configs_bucket, company.backups_bucket):
         return company_s3(company, bucket)
     return shared
 
@@ -402,8 +402,12 @@ class CloudflareTeardown:
         return None if ids else GONE
 
     def _company_queues(self, company: Target) -> list[dict[str, Any]]:
-        """The company's backup queue and its dead-letter queue as `{queue_id, consumers}`, matched by exact name."""
-        names = {"backup-replicate-%s" % company.name, "backup-replicate-%s-dlq" % company.name}
+        """The company's backup queue, its dead-letter queue and its forensics compaction queue as `{queue_id, consumers}`, matched by exact name."""
+        names = {
+            "backup-replicate-%s" % company.name,
+            "backup-replicate-%s-dlq" % company.name,
+            "forensics-compact-%s" % company.name,
+        }
         what = "the queue listing"
         found: list[dict[str, Any]] = []
         page, pages = 1, 1

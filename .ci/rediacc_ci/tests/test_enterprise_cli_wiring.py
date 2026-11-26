@@ -338,10 +338,10 @@ def test_export_without_a_credential_refuses_naming_it(rig, missing, capsys):
 
 
 def test_export_does_not_need_the_shared_r2_pair(rig):
-    # Both company buckets are read with the company's own keys, so the shared pair (scoped to releases and configs-bench) is not required.
+    # The configs and backups buckets are read with the company's own keys, so the shared pair (scoped to releases and configs-bench) is reached only for the audit bucket.
     env = {k: v for k, v in CF_ENV.items() if "R2" not in k}
     assert _export(rig, env) == 0
-    assert rig.s3_calls == []
+    assert [p.split("?")[0] for _m, p in rig.s3_calls] == ["audit-acme"]
 
 
 def test_remove_without_a_bws_project_refuses_naming_the_flag(rig, capsys):
