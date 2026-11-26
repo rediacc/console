@@ -7930,3 +7930,4 @@
 {"ev":"add","id":"36ce5087","at":"2026-11-26T13:13:17Z","by":"d778be9d","s":" ","o":"d778be9d","t":"(d778be9d) writers-now r32 survey /tmp/writers-now/1121-1-20261126T1312Z-r32.md (46 seeds)","h":"02f93d58","br":"1121-1","ns":1795698797670449627}
 {"ev":"lease","id":"36ce5087","at":"2026-11-26T13:13:18Z","by":"d778be9d","until":"2026-11-26T15:13Z","worker":"ac5ef696f7507120f","note":"","worker_verified":false,"h":"02f93d58","br":"1121-1","ns":1795698798886913704}
 {"ev":"lease","id":"66f4558b","at":"2026-11-26T13:14:34Z","by":"d778be9d","until":"2026-11-26T15:14Z","worker":"a43686e70e1d4151e","note":"","worker_verified":true,"h":"02f93d58","br":"1121-1","ns":1795698874354586101}
+{"ev":"lease","id":"66f4558b","at":"2026-11-26T13:15:08Z","by":"d778be9d","until":"2026-11-26T15:15Z","worker":"bxhnqm2th","note":"","worker_verified":true,"h":"02f93d58","br":"1121-1","ns":1795698908835070593}
