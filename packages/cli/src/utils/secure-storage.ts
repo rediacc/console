@@ -53,13 +53,17 @@ export interface SecureStorage {
  * This device has no usable place for its secrets, and the file backend was not chosen. The message names what is missing and the opt-in (`REDIACC_SECRET_STORE=file`); `details` carries the native tool's own error line when it gave one. Thrown by `getSecureStorage()` before anything is stored, so a caller's `handleError` reports it with its code and guidance.
  */
 export class SecureStorageUnavailableError extends CliExitError {
-  constructor(message: string, detail?: string) {
+  /** The probe ran out of time: the store may work, the machine was too slow to prove it. */
+  readonly timedOut: boolean;
+
+  constructor(message: string, detail?: string, timedOut = false) {
     super(ERROR_CODES.PRECONDITION_MISMATCH, message, {
       details: detail === undefined ? undefined : [detail],
       retryable: false,
       guidance: message,
     });
     this.name = 'SecureStorageUnavailableError';
+    this.timedOut = timedOut;
   }
 }
 
@@ -73,7 +77,9 @@ class ToolFailure extends Error {
     tool: string,
     /** The tool itself could not be started (not installed, or not on PATH). */
     readonly missing: boolean,
-    readonly detail: string | undefined
+    readonly detail: string | undefined,
+    /** The tool was killed at its time limit (`ETIMEDOUT`). */
+    readonly timedOut = false
   ) {
     super(detail === undefined ? `${tool} failed` : `${tool}: ${detail}`);
     this.name = 'ToolFailure';
@@ -89,7 +95,7 @@ function toolFailure(tool: string, error: unknown): ToolFailure {
           .map((text) => text.trim())
           .find((text) => text.length > 0)
       : undefined;
-  return new ToolFailure(tool, code === 'ENOENT', line);
+  return new ToolFailure(tool, code === 'ENOENT', line, code === 'ETIMEDOUT');
 }
 
 /** stdout as text; the tool's stderr never reaches the terminal. */
@@ -367,6 +373,9 @@ class KeychainStorage extends Backend {
 // - `$ErrorActionPreference='Stop'` turns any failure into a non-zero exit. The marker makes the answer unmistakable either way: output without it is a failure, whatever the exit code.
 // - `-Command` runs a string, which no execution policy governs (a policy governs script files), so none is passed.
 
+/** One powershell spawn takes about 1.7 s on an idle Windows VM and far longer under load; the round trip makes two or three. */
+export const DPAPI_TIMEOUT_MS = 20_000;
+
 const DPAPI_MARKER = 'rdc-dpapi:';
 const DPAPI_ANSWER = /^rdc-dpapi:([A-Za-z0-9+/]*={0,2})$/;
 
@@ -387,7 +396,7 @@ function dpapi(method: 'Protect' | 'Unprotect', bytes: Buffer): Buffer {
     printed = execFileSync(
       'powershell.exe',
       ['-NonInteractive', '-NoProfile', '-Command', dpapiScript(method)],
-      fed(bytes.toString('base64'))
+      { ...fed(bytes.toString('base64')), timeout: DPAPI_TIMEOUT_MS }
     );
   } catch (error) {
     throw toolFailure('powershell', error);
@@ -531,6 +540,8 @@ interface NativeStore {
   missing: () => string;
   /** The tool ran and a key did not come back. */
   unusable: () => string;
+  /** The tool did not answer in time; only a backend with a time limit has one. */
+  timedOut?: () => string;
 }
 
 function nativeStoreFor(platform: NodeJS.Platform): NativeStore | undefined {
@@ -556,6 +567,11 @@ function nativeStoreFor(platform: NodeJS.Platform): NativeStore | undefined {
         backend: new DpapiStorage(),
         missing: () => t('commands.config.remote.secretStore.toolMissing', NATIVE_NAMES.win32),
         unusable: () => t('commands.config.remote.secretStore.storeUnusable', NATIVE_NAMES.win32),
+        timedOut: () =>
+          t('commands.config.remote.secretStore.storeTimedOut', {
+            ...NATIVE_NAMES.win32,
+            seconds: DPAPI_TIMEOUT_MS / 1000,
+          }),
       };
     default:
       return undefined;
@@ -575,14 +591,17 @@ const NATIVE_NAMES = {
  *
  * The CLI does NOT run `keyctl link @u @s` to cure that itself. The link lands in the session keyring the caller's whole session shares and outlives the CLI, and it hands every process of that session possession of every key in `@u`; a service manager that gave a unit a private session keyring chose that isolation. The refusal names the command, and running it stays the operator's decision.
  */
-function proveRoundTrip(backend: Backend): { missing: boolean; detail?: string } | null {
+function proveRoundTrip(
+  backend: Backend
+): { missing: boolean; detail?: string; timedOut?: boolean } | null {
   const key = `rdc:probe:${process.pid}-${randomBytes(6).toString('hex')}`;
   const value = randomBytes(24).toString('base64');
   try {
     backend.write(key, value);
     return backend.read(key) === value ? null : { missing: false };
   } catch (error) {
-    if (error instanceof ToolFailure) return { missing: error.missing, detail: error.detail };
+    if (error instanceof ToolFailure)
+      return { missing: error.missing, detail: error.detail, timedOut: error.timedOut };
     throw error;
   } finally {
     try {
@@ -615,6 +634,9 @@ function proveNative(native: NativeStore): Backend {
   if (preferred) return preferred;
   const failure = proveRoundTrip(native.backend);
   if (failure) {
+    if (failure.timedOut && native.timedOut) {
+      throw new SecureStorageUnavailableError(native.timedOut(), failure.detail, true);
+    }
     throw new SecureStorageUnavailableError(
       failure.missing ? native.missing() : native.unusable(),
       failure.detail

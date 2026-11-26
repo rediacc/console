@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { SecureStorage } from '../../utils/secure-storage.js';
+import { type SecureStorage, SecureStorageUnavailableError } from '../../utils/secure-storage.js';
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -79,5 +79,49 @@ describe('doctor secret-store check', () => {
     expect(section.checks.at(-1)).toEqual({ name: 'Secret store', value: 'keyctl', status: 'ok' });
     const failing = await checkConfiguration({ getStorage: () => memoryStorage('keyctl', true) });
     expect(failing.checks.at(-1)?.status).toBe('fail');
+  });
+
+  it('shows each platform its own hint, never the Linux keyctl one on Windows', async () => {
+    const lossy = () => memoryStorage('dpapi', true);
+    const win = await checkSecretStore({ getStorage: lossy, platform: 'win32' });
+    expect(win.hint).toContain('powershell');
+    expect(win.hint).not.toContain('keyctl');
+    expect(win.hint).not.toContain('keyutils');
+    const mac = await checkSecretStore({ getStorage: lossy, platform: 'darwin' });
+    expect(mac.hint).toContain('Keychain');
+    expect(mac.hint).not.toContain('keyctl');
+    const linux = await checkSecretStore({ getStorage: lossy, platform: 'linux' });
+    expect(linux.hint).toContain('keyctl link @u @s');
+  });
+
+  it('carries the own error text of the probe in the Windows hint', async () => {
+    const result = await checkSecretStore({
+      platform: 'win32',
+      getStorage: () => {
+        throw new SecureStorageUnavailableError(
+          'could not be stored and read back',
+          'Add-Type : access denied'
+        );
+      },
+    });
+    expect(result.status).toBe('fail');
+    expect(result.hint).toContain('Add-Type : access denied');
+    expect(result.hint).not.toContain('keyctl');
+  });
+
+  it('warns, naming the timeout, when the probe ran out of time', async () => {
+    const result = await checkSecretStore({
+      platform: 'win32',
+      getStorage: () => {
+        throw new SecureStorageUnavailableError(
+          'powershell did not answer within 20 seconds',
+          undefined,
+          true
+        );
+      },
+    });
+    expect(result.status).toBe('warn');
+    expect(result.value).toContain('within 20 seconds');
+    expect(result.hint).toContain('timed out');
   });
 });

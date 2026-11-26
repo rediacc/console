@@ -809,6 +809,7 @@
   "commands.config.remote.secretStore.invalidChoice": "REDIACC_SECRET_STORE 被设置为 \"{{value}}\"，这不是一个机密存储。唯一可用的值是 \"file\"；不设置则使用本系统的原生存储。",
   "commands.config.remote.secretStore.keyctlMissing": "此设备没有地方保存其配置存储密钥： 未安装 `keyctl`，因此无法使用内核密钥环。 未保存任何内容。 请安装 keyutils 软件包，或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
   "commands.config.remote.secretStore.keyringUnusable": "此设备没有地方保存其配置存储密钥： 用 `keyctl` 写入内核用户密钥环的测试密钥无法保存并读回。 未保存任何内容。 未链接用户密钥环的会话密钥环（服务、容器、CI 作业）就是这样；`keyctl link @u @s` 可为当前会话建立链接。 或者设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
+  "commands.config.remote.secretStore.storeTimedOut": "无法确认此设备能保存其配置存储密钥：`{{tool}}` 在 {{seconds}} 秒内没有响应，因此未对 {{store}} 完成测试。未保存任何内容。负载很高的机器会出现这种情况；请在机器空闲时重新运行该命令，或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
   "commands.config.remote.secretStore.storeUnusable": "此设备没有地方保存其配置存储密钥： 用 `{{tool}}` 写入 {{store}} 的测试密钥无法保存并读回。 未保存任何内容。 请解锁或修复 {{store}}， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
   "commands.config.remote.secretStore.toolMissing": "此设备没有地方保存其配置存储密钥： 无法运行 `{{tool}}`，因此无法使用 {{store}}。 未保存任何内容。 请将 `{{tool}}` 重新加入 PATH， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
   "commands.config.remote.secretStore.unsupportedPlatform": "此设备没有地方保存其配置存储密钥： {{platform}} 上没有受支持的原生机密存储。 未保存任何内容。 请设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",

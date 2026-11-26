@@ -24,7 +24,11 @@ import { findOnPath, type PathLookupOptions } from '../services/tools/path-looku
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
-import { getSecureStorage, type SecureStorage } from '../utils/secure-storage.js';
+import {
+  getSecureStorage,
+  type SecureStorage,
+  SecureStorageUnavailableError,
+} from '../utils/secure-storage.js';
 import { VERSION } from '../version.js';
 import { checkSubscription } from './doctor-subscription.js';
 import { checkWindowsClient, type WindowsClientDeps } from './doctor-windows.js';
@@ -46,13 +50,23 @@ export interface CheckSection {
   checks: CheckResult[];
 }
 
-function runCommand(cmd: string, args: string[]): { ok: boolean; output: string } {
+/** A version probe is one quick spawn. */
+const PROBE_TIMEOUT_MS = 10_000;
+/** `renet ops host check` runs several host probes (libvirt, KVM, ssh); a loaded Windows VM needs far more than a version probe. */
+export const OPS_CHECK_TIMEOUT_MS = 60_000;
+
+function runCommand(
+  cmd: string,
+  args: string[],
+  timeout = PROBE_TIMEOUT_MS
+): { ok: boolean; output: string; timedOut?: boolean } {
   try {
-    const result = spawnSync(cmd, args, { encoding: 'utf-8', timeout: 10_000 });
+    const result = spawnSync(cmd, args, { encoding: 'utf-8', timeout });
     if (result.status === 0) {
       return { ok: true, output: result.stdout.trim() };
     }
-    return { ok: false, output: (result.stderr || result.stdout).trim() };
+    const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT';
+    return { ok: false, output: (result.stderr || result.stdout).trim(), timedOut };
   } catch {
     return { ok: false, output: '' };
   }
@@ -354,13 +368,52 @@ function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
 export interface SecretStoreCheckDeps {
   /** The storage selection; defaults to the generic `getSecureStorage()`, which honours REDIACC_SECRET_STORE. */
   getStorage?: () => SecureStorage;
+  /** The platform whose hint is shown; defaults to `process.platform`. */
+  platform?: NodeJS.Platform;
 }
 
-const SECRET_STORE_HINT =
-  'Linux: install keyutils (keyctl) and run `keyctl link @u @s` if the session keyring is private; or set REDIACC_SECRET_STORE=file';
+const FILE_STORE_HINT = 'or set REDIACC_SECRET_STORE=file';
+
+/** The remedy of the platform the check ran on, never another platform's. `detail` is the probe's own error line. */
+export function secretStoreHint(
+  platform: NodeJS.Platform = process.platform,
+  detail?: string
+): string {
+  switch (platform) {
+    case 'win32':
+      return `Windows: the DPAPI probe through \`powershell\` failed${detail ? ` (${detail})` : ''}; check that powershell.exe runs for this user, ${FILE_STORE_HINT}`;
+    case 'darwin':
+      return `macOS: unlock or repair the login Keychain (the \`security\` tool); ${FILE_STORE_HINT}`;
+    case 'linux':
+      return `Linux: install keyutils (keyctl) and run \`keyctl link @u @s\` if the session keyring is private; ${FILE_STORE_HINT}`;
+    default:
+      return `Set REDIACC_SECRET_STORE=file`;
+  }
+}
+
+/** The row for a backend that could not be selected or proven: a timeout is a warning, anything else a failure. */
+function secretStoreFailure(name: string, error: unknown, platform: NodeJS.Platform): CheckResult {
+  const detail = error instanceof Error ? error.message : String(error);
+  const unavailable = error instanceof SecureStorageUnavailableError ? error : undefined;
+  if (unavailable?.timedOut) {
+    return {
+      name,
+      value: detail,
+      status: 'warn',
+      hint: 'The probe timed out, which a loaded machine causes: run rdc doctor again when it is idle',
+    };
+  }
+  return {
+    name,
+    value: detail,
+    status: 'fail',
+    hint: secretStoreHint(platform, unavailable?.details?.[0]),
+  };
+}
 
 /** Store, read back and remove a throwaway key through the active backend: the calls a real secret takes. */
 export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise<CheckResult> {
+  const platform = deps.platform ?? process.platform;
   const name = 'Secret store';
   const choice = process.env.REDIACC_SECRET_STORE;
   try {
@@ -375,7 +428,7 @@ export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise
           name,
           value: `${storage.type}: a stored secret did not read back`,
           status: 'fail',
-          hint: SECRET_STORE_HINT,
+          hint: secretStoreHint(platform),
         };
       }
     } finally {
@@ -397,8 +450,7 @@ export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise
       status: 'ok',
     };
   } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    return { name, value: detail, status: 'fail', hint: SECRET_STORE_HINT };
+    return secretStoreFailure(name, error, platform);
   }
 }
 
@@ -430,7 +482,7 @@ export function dropDuplicateClientRows<T extends { name: string }>(
   return platform === 'win32' ? checks.filter((check) => check.name !== 'ssh') : checks;
 }
 
-async function checkVirtualization(
+export async function checkVirtualization(
   platform: NodeJS.Platform = process.platform
 ): Promise<CheckSection> {
   const checks: CheckResult[] = [];
@@ -445,7 +497,16 @@ async function checkVirtualization(
     return { title: t('commands.doctor.sections.virtualization'), checks };
   }
 
-  const result = runCommand(renetPath, ['ops', 'host', 'check', '--json']);
+  const result = runCommand(renetPath, ['ops', 'host', 'check', '--json'], OPS_CHECK_TIMEOUT_MS);
+  if (!result.ok && result.timedOut) {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: `check timed out after ${OPS_CHECK_TIMEOUT_MS / 1000}s`,
+      status: 'warn',
+      hint: 'The machine may be under load: run rdc doctor again when it is idle, or run renet ops host check directly',
+    });
+    return { title: t('commands.doctor.sections.virtualization'), checks };
+  }
   if (!result.ok) {
     checks.push({
       name: t('commands.doctor.checks.opsPrereqs'),
