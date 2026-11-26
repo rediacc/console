@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: fr
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Aperçu
@@ -174,6 +174,7 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `feedback_list` | non | Lister les rapports de retour visibles pour cette machine : id, empreinte courte, statut et dates. |
 | `feedback_report` | non | Construire un rapport à partir de la dernière commande en échec (--last), d'une commande enregistrée (--command <n>) ou d'un simple message, afficher exactement ce qui serait envoyé, puis l'envoyer après confirmation. |
 | `feedback_show` | non | Afficher un rapport de retour par son id (ou un préfixe unique), avec son statut, son nombre d'occurrences et ses dates. |
+| `incident_status` | non | Lister les incidents de l'organisation, ou en afficher un avec son périmètre, sa fenêtre, ses étapes par machine et les horloges des échéances d'alerte précoce, de notification et de rapport final. |
 | `job_cancel` | oui | Annuler une tâche détachée en cours d'exécution. |
 | `job_dismiss` | oui | Abandonner localement des tickets de tâche : leurs étapes dues sont abandonnées et le ticket n'apparaît plus. |
 | `job_gc` | oui | Supprimer les tâches terminées et leurs journaux. |
@@ -212,6 +213,7 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `repo_diff` | non | Diff au niveau des fichiers, façon git, entre deux dépôts forkés en copy-on-write. |
 | `repo_down` | oui | Arrêter les conteneurs Docker d'un dépôt (exécute Rediaccfile down). |
 | `repo_exec` | oui | Exécuter une commande dans un conteneur d'un dépôt. |
+| `repo_flows` | non | Lister les flux réseau enregistrés pour un dépôt sur une fenêtre de temps : heure, processus, destination, octets sortants et entrants, ainsi que l'ASN et le pays de la destination quand ils sont connus. |
 | `repo_fork` | oui | Créer un fork CoW quasi instantané d'un dépôt avec un NOUVEAU GUID et un nouveau networkId (copie entièrement indépendante). |
 | `repo_gc` | oui | Ramasse-miettes par accessibilité : supprimer les objets de commit immuables d'une machine qu'aucune branche ni HEAD n'atteint. |
 | `repo_health` | non | Exécuter les vérifications health() du Rediaccfile d'un dépôt et sortir avec 0 (ok), 1 (avertissement) ou 2 (erreur). |
@@ -220,6 +222,7 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `repo_logs` | non | Afficher les journaux applicatifs des conteneurs d'un dépôt. |
 | `repo_merge` | oui | Fusionner, en respectant le cycle de vie, un commit ou fork source dans un fork de travail cible. |
 | `repo_migrate` | oui | Déplacer un dépôt vers une autre machine avec un arrêt minimal : copie en deux phases (synchronisation en masse à chaud, puis arrêt bref, synchronisation du delta et démarrage sur la destination) avec bascule DNS. |
+| `repo_opens` | non | Lister les ouvertures de fichiers enregistrées pour un dépôt sur une fenêtre de temps : heure, processus et chemin, les chemins sensibles étant signalés. |
 | `repo_pull` | oui | Récupérer un dépôt depuis une autre machine. |
 | `repo_push` | oui | Envoyer la sauvegarde d'un dépôt vers le stockage ou directement vers une autre machine. |
 | `repo_replicate` | non | Provisionner des réplicas en lecture d'un dépôt. |

@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: it
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Panoramica
@@ -174,6 +174,7 @@ Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamen
 | `feedback_list` | no | Elenca i report di feedback visibili a questa macchina: id, impronta breve, stato e date. |
 | `feedback_report` | no | Crea un report dall'ultimo comando fallito (--last), da un comando registrato (--command <n>) o solo da un messaggio, mostra esattamente cosa verrebbe inviato e lo invia dopo la conferma. |
 | `feedback_show` | no | Mostra un report di feedback tramite il suo id (o un prefisso univoco), con stato, numero di occorrenze e date. |
+| `incident_status` | no | Elenca gli incidenti dell'organizzazione oppure ne mostra uno con il suo ambito, la finestra, i passaggi per macchina e gli orologi delle scadenze di preallarme, notifica e report finale. |
 | `job_cancel` | sì | Annulla un job scollegato in esecuzione. |
 | `job_dismiss` | sì | Abbandona in locale i ticket dei job: i passaggi dovuti vengono scartati e il ticket non compare più. |
 | `job_gc` | sì | Rimuove i job terminati e i relativi log. |
@@ -212,6 +213,7 @@ Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamen
 | `repo_diff` | no | Diff a livello di file in stile git tra due repository fork copy-on-write. |
 | `repo_down` | sì | Arresta i container Docker di un repository (esegue Rediaccfile down). |
 | `repo_exec` | sì | Esegue un comando all'interno di un container di un repository. |
+| `repo_flows` | no | Elenca i flussi di rete registrati per un repository in una finestra temporale: ora, processo, destinazione, byte in uscita e in entrata, più ASN e paese della destinazione quando noti. |
 | `repo_fork` | sì | Crea un fork CoW quasi istantaneo di un repository con un NUOVO GUID e networkId (copia completamente indipendente). |
 | `repo_gc` | sì | Garbage collection per raggiungibilità: elimina da una macchina gli oggetti commit immutabili che nessun branch o HEAD raggiunge. |
 | `repo_health` | no | Esegue i controlli health() del Rediaccfile di un repository e termina con 0 (ok), 1 (avviso) o 2 (errore). |
@@ -220,6 +222,7 @@ Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamen
 | `repo_logs` | no | Mostra i log applicativi dei container di un repository. |
 | `repo_merge` | sì | Unisce, in modo sicuro per il ciclo di vita, un commit o fork di origine in un fork di lavoro di destinazione. |
 | `repo_migrate` | sì | Sposta un repository su un'altra macchina con un'interruzione minima: copia in due fasi (sincronizzazione massiva a caldo, poi un breve arresto, sincronizzazione del delta e avvio sulla destinazione) con passaggio del DNS. |
+| `repo_opens` | no | Elenca le aperture di file registrate per un repository in una finestra temporale: ora, processo e percorso, con i percorsi sensibili contrassegnati. |
 | `repo_pull` | sì | Scarica un repository da un'altra macchina. |
 | `repo_push` | sì | Invia il backup di un repository all'archiviazione o direttamente a un'altra macchina. |
 | `repo_replicate` | no | Esegue il provisioning di repliche in lettura di un repository. |

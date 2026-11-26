@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: tr
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Genel Bakış
@@ -174,6 +174,7 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `feedback_list` | hayır | Bu makinenin görebildiği geri bildirim raporlarını listeler: kimlik, kısa parmak izi, durum ve tarihler. |
 | `feedback_report` | hayır | Son başarısız komuttan (--last), kayıtlı bir komuttan (--command <n>) veya yalnızca bir mesajdan rapor oluşturur, tam olarak nelerin gönderileceğini yazdırır ve onaydan sonra gönderir. |
 | `feedback_show` | hayır | Bir geri bildirim raporunu kimliğiyle (veya benzersiz bir önekiyle) durumu, görülme sayısı ve tarihleriyle gösterir. |
+| `incident_status` | hayır | Kuruluşun olaylarını listeler veya birini kapsamı, zaman aralığı, makine adımları ile erken uyarı, bildirim ve nihai rapor süre saatleriyle birlikte gösterir. |
 | `job_cancel` | evet | Çalışan bir ayrık işi iptal eder. |
 | `job_dismiss` | evet | İş biletlerinden yerelde vazgeçer: bekleyen adımları bırakılır ve bilet artık görünmez. |
 | `job_gc` | evet | Biten işleri ve günlüklerini kaldırır. |
@@ -212,6 +213,7 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `repo_diff` | hayır | İki copy-on-write çatallanmış depo arasında git tarzı dosya düzeyinde fark. |
 | `repo_down` | evet | Bir deponun Docker konteynerlerini durdurur (Rediaccfile down çalıştırır). |
 | `repo_exec` | evet | Bir depo konteynerinin içinde komut çalıştırır. |
+| `repo_flows` | hayır | Bir depo için zaman aralığında kaydedilen ağ akışlarını listeler: zaman, süreç, hedef, giden ve gelen bayt ile biliniyorsa hedefin ASN'si ve ülkesi. |
 | `repo_fork` | evet | Bir deponun YENİ bir GUID ve networkId'ye sahip, neredeyse anlık bir CoW çatalını oluşturur (tamamen bağımsız kopya). |
 | `repo_gc` | evet | Erişilebilirliğe dayalı çöp toplama: bir makinede hiçbir dal/HEAD'in erişmediği değişmez commit nesnelerini siler. |
 | `repo_health` | hayır | Bir deponun Rediaccfile health() denetimlerini çalıştırır ve 0 (tamam), 1 (uyarı) veya 2 (hata) koduyla çıkar. |
@@ -220,6 +222,7 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `repo_logs` | hayır | Bir deponun konteynerlerinden uygulama günlüklerini gösterir. |
 | `repo_merge` | evet | Bir kaynak commit'i/çatalı, yaşam döngüsünü bozmadan hedef çalışma çatalına birleştirir. |
 | `repo_migrate` | evet | Bir depoyu en az kesintiyle başka bir makineye taşır: iki aşamalı kopya (çalışırken toplu eşitleme, ardından kısa durdurma, fark eşitlemesi ve hedefte başlatma) ve DNS geçişi. |
+| `repo_opens` | hayır | Bir depo için zaman aralığında kaydedilen dosya açmalarını listeler: zaman, süreç ve yol; hassas yollar işaretlenir. |
 | `repo_pull` | evet | Bir depoyu başka bir makineden çeker. |
 | `repo_push` | evet | Bir deponun yedeğini depolamaya veya doğrudan başka bir makineye gönderir. |
 | `repo_replicate` | hayır | Bir deponun salt okunur kopyalarını sağlar. |

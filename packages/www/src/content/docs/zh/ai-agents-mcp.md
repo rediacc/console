@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: zh
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## 概述
@@ -174,6 +174,7 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `feedback_list` | 否 | 列出此机器可见的反馈报告：ID、简短指纹、状态和日期。 |
 | `feedback_report` | 否 | 根据最近一次失败的命令（--last）、已记录的命令（--command <n>）或仅一条消息生成报告，原样输出将要发送的内容，确认后发送。 |
 | `feedback_show` | 否 | 按 ID（或唯一前缀）显示一份反馈报告，包括状态、出现次数和日期。 |
+| `incident_status` | 否 | 列出组织的事件，或显示其中一个事件的范围、时间窗口、各机器上的步骤，以及早期预警、通知和最终报告的期限时钟。 |
 | `job_cancel` | 是 | 取消一个正在运行的分离作业。 |
 | `job_dismiss` | 是 | 在本地放弃作业票据：其待办步骤被丢弃，该票据不再显示。 |
 | `job_gc` | 是 | 删除已完成的作业及其日志。 |
@@ -212,6 +213,7 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `repo_diff` | 否 | 在两个写时复制的分叉仓库之间，输出 git 风格的文件级差异。 |
 | `repo_down` | 是 | 停止仓库的 Docker 容器（运行 Rediaccfile 的 down）。 |
 | `repo_exec` | 是 | 在仓库容器内运行命令。 |
+| `repo_flows` | 否 | 列出某个仓库在指定时间窗口内记录的网络流：时间、进程、目的地、出站和入站字节数，以及已知时目的地的 ASN 和国家或地区。 |
 | `repo_fork` | 是 | 为仓库创建一个近乎瞬时的 CoW 分叉，使用全新的 GUID 和 networkId（完全独立的副本）。 |
 | `repo_gc` | 是 | 基于可达性的垃圾回收：删除机器上任何分支/HEAD 都无法到达的不可变提交对象。 |
 | `repo_health` | 否 | 运行仓库 Rediaccfile 的 health() 检查，并以 0（正常）、1（警告）或 2（错误）退出。 |
@@ -220,6 +222,7 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `repo_logs` | 否 | 显示仓库容器的应用日志。 |
 | `repo_merge` | 是 | 以不破坏生命周期的方式，将源提交/分叉合并到目标工作分叉。 |
 | `repo_migrate` | 是 | 以最短停机时间将仓库迁移到另一台机器：分两阶段复制（运行中批量同步，然后短暂停止、增量同步并在目标端启动），并完成 DNS 切换。 |
+| `repo_opens` | 否 | 列出某个仓库在指定时间窗口内记录的文件打开记录：时间、进程和路径，敏感路径会被标出。 |
 | `repo_pull` | 是 | 从另一台机器拉取仓库。 |
 | `repo_push` | 是 | 将仓库备份推送到存储，或直接推送到另一台机器。 |
 | `repo_replicate` | 否 | 为仓库供应只读副本。 |

@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: et
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Ülevaade
@@ -174,6 +174,7 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `feedback_list` | ei | Loetleb sellele masinale nähtavad tagasisideraportid: id, lühike sõrmejälg, olek ja kuupäevad. |
 | `feedback_report` | ei | Koostab raporti viimasest ebaõnnestunud käsust (--last), salvestatud käsust (--command <n>) või ainult sõnumist, prindib täpselt selle, mis saadetaks, ja saadab pärast kinnitust. |
 | `feedback_show` | ei | Näitab ühte tagasisideraportit selle id järgi (või kordumatu eesliite järgi), koos oleku, esinemiste arvu ja kuupäevadega. |
+| `incident_status` | ei | Loetleb organisatsiooni intsidendid või näitab ühte koos selle ulatuse, ajaakna, masinasammude ning varajase hoiatuse, teavitamise ja lõpparuande tähtaegade kelladega. |
 | `job_cancel` | jah | Tühistab käimasoleva eraldiseisva töö. |
 | `job_dismiss` | jah | Loobub tööde piletitest kohapeal: nende ootel sammud jäetakse ära ja pilet ei ilmu enam. |
 | `job_gc` | jah | Eemaldab lõppenud tööd ja nende logid. |
@@ -212,6 +213,7 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `repo_diff` | ei | Git'i stiilis failitaseme diff kahe copy-on-write fork-repositooriumi vahel. |
 | `repo_down` | jah | Peatab repositooriumi Dockeri konteinerid (käivitab Rediaccfile down). |
 | `repo_exec` | jah | Käivitab käsu repositooriumi konteineris. |
+| `repo_flows` | ei | Loetleb repositooriumi kohta ajaaknas salvestatud võrguvood: aeg, protsess, sihtkoht, väljuvad ja sissetulevad baidid ning sihtkoha ASN ja riik, kui need on teada. |
 | `repo_fork` | jah | Loob repositooriumist peaaegu hetkelise CoW fork'i UUE GUID-i ja networkId-ga (täiesti sõltumatu koopia). |
 | `repo_gc` | jah | Ulatuvuspõhine prügikoristus: kustutab masinas muutumatud commit-objektid, milleni ükski haru/HEAD ei ulatu. |
 | `repo_health` | ei | Käivitab repositooriumi Rediaccfile health() kontrollid ja lõpetab koodiga 0 (korras), 1 (hoiatus) või 2 (viga). |
@@ -220,6 +222,7 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `repo_logs` | ei | Näitab repositooriumi konteinerite rakenduse logisid. |
 | `repo_merge` | jah | Ühendab elutsükli suhtes ohutult lähte-commit'i või -fork'i sihttöö-fork'i. |
 | `repo_migrate` | jah | Viib repositooriumi minimaalse seisakuga teise masinasse: kaheetapiline kopeerimine (hulgisünkroonimine töö ajal, seejärel lühike peatus, deltasünkroonimine ja käivitamine sihtkohas) koos DNS-i ümberlülitusega. |
+| `repo_opens` | ei | Loetleb repositooriumi kohta ajaaknas salvestatud failiavamised: aeg, protsess ja tee, tundlikud teed märgitud. |
 | `repo_pull` | jah | Tõmbab repositooriumi teisest masinast. |
 | `repo_push` | jah | Saadab repositooriumi varukoopia hoidlasse või otse teise masinasse. |
 | `repo_replicate` | ei | Loob repositooriumist lugemisreplikad. |

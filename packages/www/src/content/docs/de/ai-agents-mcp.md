@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: de
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Überblick
@@ -174,6 +174,7 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `feedback_list` | nein | Die für diese Maschine sichtbaren Feedback-Berichte auflisten: ID, kurzer Fingerabdruck, Status und Daten. |
 | `feedback_report` | nein | Einen Bericht aus dem neuesten fehlgeschlagenen Befehl (--last), einem aufgezeichneten Befehl (--command <n>) oder nur aus einer Nachricht erstellen, genau anzeigen, was gesendet würde, und nach Bestätigung senden. |
 | `feedback_show` | nein | Einen Feedback-Bericht anhand seiner ID (oder eines eindeutigen Präfixes) mit Status, Anzahl der Vorkommen und Daten anzeigen. |
+| `incident_status` | nein | Die Vorfälle der Organisation auflisten oder einen einzelnen mit Umfang, Zeitfenster, Maschinenschritten und den Fristuhren für Frühwarnung, Meldung und Abschlussbericht anzeigen. |
 | `job_cancel` | ja | Einen laufenden losgelösten Job abbrechen. |
 | `job_dismiss` | ja | Job-Tickets lokal aufgeben: Die offenen Schritte entfallen, und das Ticket erscheint nicht mehr. |
 | `job_gc` | ja | Abgeschlossene Jobs und ihre Logs entfernen. |
@@ -212,6 +213,7 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `repo_diff` | nein | Datei-Diff im Git-Stil zwischen zwei Copy-on-Write-Fork-Repositories. |
 | `repo_down` | ja | Die Docker-Container eines Repositorys stoppen (führt Rediaccfile down aus). |
 | `repo_exec` | ja | Einen Befehl in einem Repository-Container ausführen. |
+| `repo_flows` | nein | Die für ein Repository in einem Zeitfenster aufgezeichneten Netzwerkflüsse auflisten: Zeit, Prozess, Ziel, ausgehende und eingehende Bytes sowie ASN und Land des Ziels, sofern bekannt. |
 | `repo_fork` | ja | Einen nahezu sofortigen CoW-Fork eines Repositorys mit NEUER GUID und networkId erstellen (vollständig unabhängige Kopie). |
 | `repo_gc` | ja | Garbage-Collection nach Erreichbarkeit: unveränderliche Commit-Objekte auf einer Maschine löschen, die kein Branch/HEAD erreicht. |
 | `repo_health` | nein | Die health()-Prüfungen des Rediaccfile eines Repositorys ausführen und mit 0 (ok), 1 (Warnung) oder 2 (Fehler) beenden. |
@@ -220,6 +222,7 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `repo_logs` | nein | Anwendungslogs aus den Containern eines Repositorys anzeigen. |
 | `repo_merge` | ja | Einen Quell-Commit oder -Fork lebenszyklussicher in einen Ziel-Arbeits-Fork mergen. |
 | `repo_migrate` | ja | Ein Repository mit minimaler Ausfallzeit auf eine andere Maschine verschieben: zweiphasige Kopie (Massensynchronisation im Betrieb, dann kurzer Stopp, Delta-Sync und Start am Ziel) mit DNS-Umschaltung. |
+| `repo_opens` | nein | Die für ein Repository in einem Zeitfenster aufgezeichneten Dateiöffnungen auflisten: Zeit, Prozess und Pfad, sensible Pfade markiert. |
 | `repo_pull` | ja | Ein Repository von einer anderen Maschine holen. |
 | `repo_push` | ja | Ein Repository-Backup in den Speicher oder direkt auf eine andere Maschine übertragen. |
 | `repo_replicate` | nein | Lese-Replikate eines Repositorys bereitstellen. |

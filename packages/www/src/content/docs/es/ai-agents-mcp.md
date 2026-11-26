@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: es
-sourceHash: "844e1461f5149322"
-sourceCommit: "504925af13712be329813824338192f58efb3e08"
+sourceHash: "ece2cec7cd2f4bc9"
+sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 ---
 
 ## Descripción general
@@ -174,6 +174,7 @@ Cada grant admite 60 llamadas por minuto y 5 llamadas en curso a la vez. Una lla
 | `feedback_list` | no | Lista los informes de comentarios visibles para esta máquina: id, huella corta, estado y fechas. |
 | `feedback_report` | no | Crea un informe a partir del último comando fallido (--last), de un comando registrado (--command <n>) o solo de un mensaje, muestra exactamente lo que se enviaría y lo envía tras la confirmación. |
 | `feedback_show` | no | Muestra un informe de comentarios por su id (o un prefijo único), con su estado, número de apariciones y fechas. |
+| `incident_status` | no | Lista los incidentes de la organización o muestra uno con su alcance, ventana, pasos por máquina y los relojes de los plazos de alerta temprana, notificación e informe final. |
 | `job_cancel` | sí | Cancela un trabajo desacoplado en ejecución. |
 | `job_dismiss` | sí | Abandona tickets de trabajo en local: se descartan sus pasos pendientes y el ticket deja de aparecer. |
 | `job_gc` | sí | Elimina los trabajos terminados y sus registros. |
@@ -212,6 +213,7 @@ Cada grant admite 60 llamadas por minuto y 5 llamadas en curso a la vez. Una lla
 | `repo_diff` | no | Diff a nivel de archivo al estilo git entre dos repositorios fork con copy-on-write. |
 | `repo_down` | sí | Detiene los contenedores Docker de un repositorio (ejecuta Rediaccfile down). |
 | `repo_exec` | sí | Ejecuta un comando dentro de un contenedor de un repositorio. |
+| `repo_flows` | no | Lista los flujos de red registrados para un repositorio en una ventana de tiempo: hora, proceso, destino, bytes salientes y entrantes, y el ASN y el país del destino cuando se conocen. |
 | `repo_fork` | sí | Crea un fork CoW casi instantáneo de un repositorio con un GUID y un networkId NUEVOS (copia totalmente independiente). |
 | `repo_gc` | sí | Recolección de basura por alcanzabilidad: elimina los objetos de commit inmutables de una máquina a los que no llega ninguna rama ni HEAD. |
 | `repo_health` | no | Ejecuta las comprobaciones health() del Rediaccfile de un repositorio y termina con 0 (correcto), 1 (aviso) o 2 (error). |
@@ -220,6 +222,7 @@ Cada grant admite 60 llamadas por minuto y 5 llamadas en curso a la vez. Una lla
 | `repo_logs` | no | Muestra los registros de la aplicación de los contenedores de un repositorio. |
 | `repo_merge` | sí | Fusiona, de forma segura para el ciclo de vida, un commit o fork de origen en un fork de trabajo de destino. |
 | `repo_migrate` | sí | Mueve un repositorio a otra máquina con un tiempo de inactividad mínimo: copia en dos fases (sincronización masiva en marcha y, después, una parada breve, sincronización del delta e inicio en el destino) con cambio de DNS. |
+| `repo_opens` | no | Lista las aperturas de archivos registradas para un repositorio en una ventana de tiempo: hora, proceso y ruta, con las rutas sensibles marcadas. |
 | `repo_pull` | sí | Descarga un repositorio desde otra máquina. |
 | `repo_push` | sí | Envía una copia de seguridad de un repositorio al almacenamiento o directamente a otra máquina. |
 | `repo_replicate` | no | Aprovisiona réplicas de lectura de un repositorio. |
