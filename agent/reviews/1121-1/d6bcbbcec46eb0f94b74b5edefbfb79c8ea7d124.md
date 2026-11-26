@@ -34,4 +34,4 @@ Resolution: fixed 39f2a137f4c26d3b9970e251ba57603a377bdae5 | d778be9d 2026-11-26
 Anchor: in-diff
 Claim: The docstring says the corpus is 'tracked and untracked .py under the two test trees', but the pattern '.claude/*.py' matches every .py under .claude, because git pathspec '*' crosses '/'. The scope in the code is wider than the docstring says. The extra files are filtered by is_fanout_driver, so no result changes.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py:387 docstring now says git pathspec star crosses slash so every .py under .claude is scanned, matching the code | d778be9d 2026-11-26T19:26:17Z

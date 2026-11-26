@@ -22,10 +22,10 @@ Body-Sig: 44b5802ebe31ddde
 Anchor: in-diff
 Claim: direct_run_files maps every `python3 -m a.b` to `.ci/a/b.py`, so a direct gate running a package (`-m a.b` resolving to `a/b/__init__.py`) or a non-.ci module (`-m pytest`) is judged unresolvable by gate_resolves; no selftest control covers either case.
 Class: other
-Resolution: open
+Resolution: fixed 747c7fe62f9ab72c408045cc16da32efd5225bcb | d778be9d 2026-11-26T19:27:59Z
 
 ### 17f9d3d7.2 [medium] .ci/rediacc_ci/security/ci_workflow_invariants.py:1103
 Anchor: in-diff
 Claim: _executed_lines drops every line starting with `echo ` or `printf `, so a step like `echo start && npm run check:ci-ops-health` (which really runs the gate) stops being found by upstream_gate_steps and the invariant reports a missing gate step; no test covers an echo-prefixed line that also executes a gate.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 4f789e5858d73ffbd12cefed8f5418628296798b | d778be9d 2026-11-26T19:14:40Z

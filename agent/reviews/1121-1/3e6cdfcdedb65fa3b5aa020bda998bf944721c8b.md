@@ -22,10 +22,10 @@ Body-Sig: 45112eaddb7c9d46
 Anchor: in-diff
 Claim: reset_bench skips the audit wipe with no error when the bench toml has no AUDIT_BUCKET binding (`if r2.audit_bucket:`), so the run prints 'bench has been reset' while audit objects remain; the module docstring says the wipe deletes the audit bucket, and bench_names says callers that need the bucket refuse it by name, which this caller does not do.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 8bd9d81586b5651e4f5617a0e6c232e991dd81a8 | d778be9d 2026-11-26T19:20:42Z
 
 ### 3e6cdfcd.2 [medium] .ci/rediacc_ci/ops/reset_bench.py:453
 Anchor: in-diff
 Claim: No test fails if the audit wipe call `_wipe_r2(r2.audit())` is removed or never reached: the region test's fake `_wipe_r2` only records ('wipe_r2',) and no test asserts the audit bucket is emptied, though the commit says reset_bench empties it.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 8bd9d81586b5651e4f5617a0e6c232e991dd81a8 | d778be9d 2026-11-26T19:20:42Z
