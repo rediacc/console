@@ -8,6 +8,7 @@
 
 ## Delegated
 - ae9b56c0f01fa2138 #19f13581 #58a674f6 #6735de22: narrow run then ci:quick in the main checkout; reds with file:line. Accept: ci:quick rc 0.
+- acaf40745a4a2b97c #33da8c9d CL-FI8 FI8; a2188e7ca2c05e885 #2ed225e0 CL-RWOP; ab10adaa43ce0b3db #7b942978 CL-AI13; a96ffc187e626d08f #a4372d79 CL-DO18 (all leases, land after ci:quick).
 - a9c8f478b60a05d3f #03dcaaf5 #bfc6dfbb: CL-AGD daemon grant sessions, account revoke transport, grants.py (lease). Accept: cli serve tests, account tests, pytest, max-lines.
 
 ## Held lease trees (after ci:quick: ./run.sh worktree land <id> --run --me d778be9d; check; tick; gc)
