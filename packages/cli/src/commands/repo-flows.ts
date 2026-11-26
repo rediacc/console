@@ -8,7 +8,7 @@ import { parseWindow } from '../services/forensics/window.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 
 interface WindowOptions {
   since?: string;

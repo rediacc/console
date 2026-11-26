@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { commandExists, getPlatform } from '../utils/platform.js';
-import { decodeSSHKey } from './keyManager.js';
+import { decodeSSHKey } from '../utils/sshKeyText.js';
 
 /**
  * Default timeout for SSH agent operations in milliseconds (10 seconds)

@@ -52,7 +52,7 @@ import {
   PreconditionValidationError,
   ValidationError,
 } from '../utils/errors.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 import { readStdinValue } from '../utils/stdin.js';
 
 function emit(draft: AuditEventDraft): void {

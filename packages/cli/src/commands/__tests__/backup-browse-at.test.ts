@@ -31,8 +31,8 @@ const mockResolveRepoRef = vi.hoisted(() => vi.fn());
 const mockResolveRepoRefLocal = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: mockResolveRepoRef,
-  resolveRepoRefLocal: mockResolveRepoRefLocal,
 }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: mockResolveRepoRefLocal }));
 
 vi.mock('../../services/backup/backup-runs-state.js', () => ({
   recordBackupRun: vi.fn(),

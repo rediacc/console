@@ -68,7 +68,7 @@ vi.mock('../../utils/errors.js', () => {
     },
   };
 });
-vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRefLocal: mockResolveRef }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: mockResolveRef }));
 vi.mock('../../utils/command-policy.js', () => ({
   CMD: { BACKUP_PURGE: 'backup purge' },
   enforceResolvedTarget: mockPolicy,

@@ -2,8 +2,9 @@ import { type ChildProcess, type StdioOptions, spawn } from 'node:child_process'
 import { DEFAULTS } from '@rediacc/shared/config';
 import { writeStderr } from '../../services/core/request-context.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
+import { decodeSSHKey } from '../utils/sshKeyText.js';
 import { addKeyToAgent, isSSHAgentAvailable, startSSHAgent, stopSSHAgent } from './agent.js';
-import { createTempSSHKeyFile, decodeSSHKey, removeTempSSHKeyFile } from './keyManager.js';
+import { createTempSSHKeyFile, removeTempSSHKeyFile } from './keyManager.js';
 import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
 
 /**

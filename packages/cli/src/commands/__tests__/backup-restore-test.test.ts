@@ -70,6 +70,8 @@ vi.mock('../../utils/repo-executor.js', () => ({
 }));
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: vi.fn().mockResolvedValue({ repoKey: 'shop', machineName: 'm1' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: vi.fn().mockResolvedValue({ repoKey: 'shop' }),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({

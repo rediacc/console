@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeSSHKey } from '../keyManager.js';
+import { decodeSSHKey } from '../sshKeyText.js';
 
 describe('decodeSSHKey normalization', () => {
   const VALID_BODY = [

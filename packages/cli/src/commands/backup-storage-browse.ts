@@ -12,7 +12,7 @@ import { outputService } from '../services/core/output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 import { isLiveMountListing, parseBrowseResult } from './backup-storage-parser.js';
 
 /** The renet `backup browse-at` and `restore-path` verbs exit 18 when the snapshot's listing cannot serve the request. Propagated verbatim, like the quota refusal's 16. */

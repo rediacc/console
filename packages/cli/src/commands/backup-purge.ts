@@ -18,7 +18,7 @@ import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 import type { BackupManifestsResponse } from './backup-storage.js';
 import { lineageOf } from './backup-storage-browse.js';
 

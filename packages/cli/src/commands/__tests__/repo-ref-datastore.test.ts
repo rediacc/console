@@ -49,6 +49,8 @@ vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
   resolveRepoTarget: () => Promise.resolve({ machineName: 'm1' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
 }));

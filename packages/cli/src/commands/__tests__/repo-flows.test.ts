@@ -18,7 +18,7 @@ vi.mock('../../utils/errors.js', () => ({
     throw error;
   },
 }));
-vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRefLocal: vi.fn() }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: vi.fn() }));
 vi.mock('../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: vi.fn() }));
 

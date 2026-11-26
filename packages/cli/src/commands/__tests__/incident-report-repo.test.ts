@@ -9,7 +9,7 @@ vi.mock('../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
     vars ? `${key} ${JSON.stringify(vars)}` : key,
 }));
-vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRefLocal: m.resolveRepoRefLocal }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: m.resolveRepoRefLocal }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: { getRepository: m.getRepository },
 }));

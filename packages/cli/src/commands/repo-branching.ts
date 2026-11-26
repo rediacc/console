@@ -13,7 +13,8 @@ import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
-import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { handleForkAction } from './repo-fork.js';
 
 function tryParse<T>(s: string): T | undefined {

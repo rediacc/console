@@ -5,8 +5,8 @@
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { decodeSSHKey } from '../ssh/keyManager.js';
 import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platform.js';
+import { decodeSSHKey } from '../utils/sshKeyText.js';
 
 /**
  * Normalizes a path for SSH config usage

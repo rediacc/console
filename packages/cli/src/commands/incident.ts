@@ -145,8 +145,8 @@ function printExport(result: ExportResult): void {
 
 /** The repository GUID the account store keys evidence by, and the name its forks take. */
 export async function configRepo(ref: string): Promise<DeclareRepo> {
-  // Loaded here: repo-target's executor chain is heavy, and only the declare path needs it.
-  const { resolveRepoRefLocal } = await import('../utils/repo-target.js');
+  // Loaded here because only the declare path needs it. repo-ref-local, not repo-target: incident reaches no machine itself (its fork and level switch are child rdc processes), and repo-target imports the executor.
+  const { resolveRepoRefLocal } = await import('../utils/repo-ref-local.js');
   const { configService } = await import('../services/config/config-resources.js');
   const { name, repoKey } = await resolveRepoRefLocal(ref);
   const repo = await configService.getRepository(repoKey);

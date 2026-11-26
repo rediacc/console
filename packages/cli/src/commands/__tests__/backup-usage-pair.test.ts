@@ -28,6 +28,8 @@ vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch:
 vi.mock('../../utils/repo-executor.js', () => ({ executeRepoFunction: vi.fn() }));
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: vi.fn(),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: vi.fn().mockResolvedValue({ repoKey: 'shop', name: 'shop' }),
 }));
 vi.mock('../../services/backup/backup-runs-state.js', () => ({ recordBackupRun: vi.fn() }));
