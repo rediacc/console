@@ -11,7 +11,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.housekeeping import cf_leftovers as cfl
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN, PUBLIC_DATA_BUCKET
 
 ROOT = paths.repo_root()
 TOKEN = "tok-SECRET-123"
@@ -581,10 +581,10 @@ def test_buckets_of_both_jurisdictions_are_listed_and_configured_ones_not():
 
 def test_a_leftover_names_its_id_references_and_bindings():
     found = run_extra(
-        buckets=[("rediacc-public-data", "default")],
-        bindings={CONFIGURED: [{"type": "r2_bucket", "bucket_name": "rediacc-public-data"}]},
+        buckets=[(PUBLIC_DATA_BUCKET, "default")],
+        bindings={CONFIGURED: [{"type": "r2_bucket", "bucket_name": PUBLIC_DATA_BUCKET}]},
     )
-    detail = rows(found)[("bucket", "rediacc-public-data")]
+    detail = rows(found)[("bucket", PUBLIC_DATA_BUCKET)]
     assert "referenced: .ci/config/" in detail
     assert "bound: r2 binding of %s" % CONFIGURED in detail
 

@@ -206,11 +206,11 @@
     },
     "R2_PUBLIC_DATA_ACCESS_KEY_ID": {
       "kind": "no-github-twin",
-      "reason": "The bucket-scoped rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data` for the one-off archive upload and verification from hostinger. No workflow uploads public data."
+      "reason": "The bucket-scoped public-data bucket upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data` for the one-off archive upload and verification from hostinger. No workflow uploads public data."
     },
     "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": {
       "kind": "no-github-twin",
-      "reason": "The secret half of the rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data`. No workflow uploads public data."
+      "reason": "The secret half of the public-data bucket upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data`. No workflow uploads public data."
     },
     "RELEASE_GPG_REVOCATION_CERT": {
       "kind": "no-github-twin",

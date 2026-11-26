@@ -38,6 +38,7 @@ from rediacc_ci.deploy import r2_promote
 from rediacc_ci.housekeeping import cf_leftovers as cfl
 from rediacc_ci.ops import backup_d1, cf_auth
 from rediacc_ci.ops import r2_bucket_copy as rbc
+from rediacc_ci.well_known import PUBLIC_DATA_BUCKET
 
 PLAN_NAME = "PLAN-product-domain-rename.md"
 TERMS_PATH = ".ci/config/retired-terms.json"
@@ -45,7 +46,7 @@ RECORD_DIR = ".ci/state/cf-retire"
 REGIONS = ("eu", "us", "asia")
 OLD_PREFIXES = ("edge-rediacc-", "rediacc-")
 # Operator ruling ASKED:2026-11-13T10:07Z: the public data bucket stays.
-KEEP_NAMES = frozenset({"rediacc-public-data"})
+KEEP_NAMES = frozenset({PUBLIC_DATA_BUCKET})
 KEEP_RE = re.compile(r"(?:^|-)proof-loss(?:-|$)")
 ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 STEPS = ("unbind", "worker", "container", "queue", "d1", "r2", "pages")
