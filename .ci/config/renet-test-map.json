@@ -278,6 +278,7 @@
         "pkg/infra/image",
         "pkg/infra/mesh",
         "pkg/infra/opsconfig",
+        "pkg/infra/renetsource",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
@@ -922,6 +923,7 @@
         "pkg/infra/image",
         "pkg/infra/mesh",
         "pkg/infra/opsconfig",
+        "pkg/infra/renetsource",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
@@ -982,6 +984,7 @@
         "pkg/infra/opsconfig",
         "pkg/infra/pkgset",
         "pkg/infra/qemuimg",
+        "pkg/infra/renetsource",
         "pkg/infra/worker"
       ],
       "dependents": [

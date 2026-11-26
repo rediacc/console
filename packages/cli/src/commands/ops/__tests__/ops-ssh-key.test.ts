@@ -15,7 +15,7 @@ vi.mock('../../../services/executor/ops-executor.js', () => ({
 const { registerOpsSSHCommand } = await import('../ssh.js');
 
 // 8d87920a.1: the action handler passes the renet staging key to ssh only when the file exists.
-describe('rdc ops ssh staging key', () => {
+describe('the staging key of ops ssh', () => {
   let dataDir: string;
   let savedDataDir: string | undefined;
 
