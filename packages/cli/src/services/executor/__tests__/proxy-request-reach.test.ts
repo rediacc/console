@@ -30,6 +30,13 @@ describe('fetchMayHaveReached', () => {
     'DEPTH_ZERO_SELF_SIGNED_CERT',
     'ERR_TLS_CERT_ALTNAME_INVALID',
     'ERR_SSL_WRONG_VERSION_NUMBER',
+    'ERR_SSL_UNKNOWN_PROTOCOL',
+    'ERR_SSL_UNSUPPORTED_PROTOCOL',
+    'ERR_SSL_NO_PROTOCOLS_AVAILABLE',
+    'ERR_SSL_WRONG_SSL_VERSION',
+    'ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE',
+    'ERR_SSL_TLSV1_ALERT_HANDSHAKE_FAILURE',
+    'ERR_SSL_TLSV1_ALERT_PROTOCOL_VERSION',
   ])('%s never reached the executor', (code) => {
     expect(fetchMayHaveReached(fetchFailed(coded(code)), false)).toBe(false);
   });
@@ -41,6 +48,8 @@ describe('fetchMayHaveReached', () => {
     'UND_ERR_HEADERS_TIMEOUT',
     'ERR_SSL_BAD_RECORD_MAC',
     'ERR_SSL_DECRYPTION_FAILED_OR_BAD_RECORD_MAC',
+    'ERR_SSL_TLSV1_ALERT_DECRYPT_ERROR',
+    'ERR_SSL_SSLV3_ALERT_BAD_RECORD_MAC',
   ])('%s may have reached it', (code) => {
     expect(fetchMayHaveReached(fetchFailed(coded(code)), false)).toBe(true);
   });

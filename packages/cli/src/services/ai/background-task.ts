@@ -129,7 +129,8 @@ export class BackgroundTasks {
     };
     this.tasks.set(input.taskId, task);
     this.advance(task, false);
-    // The cap is for what stays finished: the new task is live here, so finish() prunes again once it ends.
+    // The cap is for what stays finished: the new task is usually live here, so finish() prunes again once it ends. One
+    // whose session is already gone ends before this line (finish() sets the state synchronously), and this prune counts it.
     this.pruneFinished(input.owner);
     return { ok: true, task: viewOf(task) };
   }
