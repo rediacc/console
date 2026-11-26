@@ -390,6 +390,21 @@ def test_an_unreachable_sql_api_is_an_error_not_zero_orphans(
 
 
 @pytest.mark.usefixtures("ae")
-def test_an_unparsable_ae_row_is_an_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(mod, "ae_client", lambda: lambda _a, _s: [{**AE_ROW, "data": "{trunc"}])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {**AE_ROW, "data": "{trunc"},
+        {**AE_ROW, "data": "[1]"},
+        {k: v for k, v in AE_ROW.items() if k != "at"},
+    ],
+    ids=["truncated-json", "not-an-object", "missing-at"],
+)
+def test_an_unparsable_ae_row_is_an_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture, bad: dict
+) -> None:
+    monkeypatch.setattr(mod, "ae_client", lambda: lambda _a, _s: [bad])
     assert _run("list", "--target", "bench") == 1
+    err = capsys.readouterr().err
+    assert mod.AE_CODE in err
+    assert "cannot be parsed" in err
+    assert "cannot be read" not in err
