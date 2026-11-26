@@ -682,6 +682,17 @@ def test_a_dry_run_failure_with_whitespace_only_stderr_shows_stdout() -> None:
         account_e2e.install_system_deps("chromium", ".", failing)
 
 
+def _real_report_pair() -> tuple[str, str]:
+    done = subprocess.run(
+        ["node", "-e", account_e2e.ED25519_PROGRAM],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    pair = json.loads(done.stdout)
+    return pair["private"], pair["public"]
+
+
 def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> None:
     """6325a494.1: the e2e users never accept the Terms, so the backend gets TERMS_GATE=false beside TEST_MODE=true."""
     seen: dict[str, typing.Any] = {}
@@ -689,15 +700,20 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
     class StopHereError(Exception):
         pass
 
-    def fake_popen(*_args: typing.Any, **kwargs: typing.Any) -> typing.NoReturn:
+    caller_priv, caller_pub = _real_report_pair()
+    real_popen = account_e2e.subprocess.Popen
+
+    def fake_popen(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        if args[0][0] == "node":
+            return real_popen(*args, **kwargs)
         seen.update(kwargs["env"])
         raise StopHereError
 
     monkeypatch.setattr(account_e2e.subprocess, "Popen", fake_popen)
     monkeypatch.setenv("ACCOUNT_X25519_PRIVATE_KEY", "xpriv")
     monkeypatch.setenv("ACCOUNT_X25519_PUBLIC_KEY", "xpub")
-    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "rpriv")
-    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "rpub")
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", caller_priv)
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", caller_pub)
     monkeypatch.setenv("TERMS_GATE", "true")
     run = account_e2e.Run.__new__(account_e2e.Run)
     run.api_port = "3001"
@@ -708,8 +724,8 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
     assert seen["TEST_MODE"] == "true"
     assert seen["TERMS_GATE"] == "false"
     assert (seen["REPORT_ED25519_PRIVATE_KEY"], seen["REPORT_ED25519_PUBLIC_KEY"]) == (
-        "rpriv",
-        "rpub",
+        caller_priv,
+        caller_pub,
     )
 
 
@@ -735,6 +751,20 @@ def test_backend_env_carries_a_report_signing_pair_that_verifies(monkeypatch) ->
         check=False,
     )
     assert done.returncode == 0, done.stderr
-    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "rpriv")
-    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "rpub")
-    assert run.report_pair() == ("rpriv", "rpub")
+    caller = _real_report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", caller[0])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", caller[1])
+    assert run.report_pair() == caller
+
+
+def test_a_mismatched_caller_report_pair_is_refused(monkeypatch) -> None:
+    """d7ff84ce.2: a REPORT_ED25519_* pair whose halves are from different keys is refused, as the ACCOUNT_ED25519 pair is."""
+    first, second = _real_report_pair(), _real_report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", first[0])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", second[1])
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    with pytest.raises(account_e2e.RefusedError, match="not one pair"):
+        run.report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "not-a-key")
+    with pytest.raises(account_e2e.RefusedError, match="could not derive"):
+        run.report_pair()

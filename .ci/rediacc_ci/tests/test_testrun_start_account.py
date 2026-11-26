@@ -971,3 +971,43 @@ def test_the_server_holds_a_report_signing_pair_that_verifies(
     )
     assert done.returncode == 0, done.stderr
     assert sa.server_keys()["reportPriv"] != keys["reportPriv"]
+
+
+def _clear_signing_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in (
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_a_caller_report_pair_is_passed_on_as_given(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The caller's REPORT_ED25519_* pair (real node, a matching pair) replaces the minted one, whitespace stripped."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"] + "\n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", pair["edPub"])
+    keys = sa.server_keys()
+    assert (keys["reportPriv"], keys["reportPub"]) == (pair["edPriv"], pair["edPub"])
+    assert keys["reportPriv"] != sa.generate_keys()["reportPriv"]
+
+
+def test_a_mismatched_caller_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_signing_env(monkeypatch)
+    first, second = sa.generate_keys(), sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", first["edPriv"])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", second["edPub"])
+    with pytest.raises(
+        sa.LegError, match="REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY"
+    ):
+        sa.server_keys()
+
+
+def test_half_a_caller_report_pair_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"])
+    keys = sa.server_keys()
+    assert keys["reportPriv"] != pair["edPriv"]

@@ -53,7 +53,7 @@ console.log(JSON.stringify({
 """
 DERIVE_PUBLIC_PROGRAM = """
 const crypto = require("crypto");
-const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25519_PRIVATE_KEY, "base64"), format: "der", type: "pkcs8" });
+const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.SIGNING_PRIVATE_KEY, "base64"), format: "der", type: "pkcs8" });
 process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
@@ -148,15 +148,21 @@ def server_keys() -> dict[str, str]:
     report_private = os.environ.get("REPORT_ED25519_PRIVATE_KEY", "").strip()
     report_public = os.environ.get("REPORT_ED25519_PUBLIC_KEY", "").strip()
     if report_private and report_public:
+        if derived_public_key("REPORT_ED25519_PRIVATE_KEY") != report_public:
+            raise LegError(
+                "REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY are not one pair: the server's reports would not verify under the published key",
+                show_log=False,
+            )
         keys = {**keys, "reportPriv": report_private, "reportPub": report_public}
     return keys
 
 
-def derived_public_key() -> str:
-    """The SPKI base64 public half of ACCOUNT_ED25519_PRIVATE_KEY (PKCS8 base64), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
+def derived_public_key(var: str = "ACCOUNT_ED25519_PRIVATE_KEY") -> str:
+    """The SPKI base64 public half of the PKCS8 base64 private key in environment variable `var` (ACCOUNT_ED25519_PRIVATE_KEY by default), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
     try:
         done = subprocess.run(
             ["node", "-e", DERIVE_PUBLIC_PROGRAM],
+            env={**os.environ, "SIGNING_PRIVATE_KEY": os.environ.get(var, "").strip()},
             capture_output=True,
             text=True,
             check=False,
@@ -168,7 +174,7 @@ def derived_public_key() -> str:
         ) from exc
     if done.returncode != 0:
         raise LegError(
-            f"node could not derive the public half of ACCOUNT_ED25519_PRIVATE_KEY: {done.stderr.strip()}",
+            f"node could not derive the public half of {var}: {done.stderr.strip()}",
             show_log=False,
         )
     return done.stdout.strip()

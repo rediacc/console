@@ -49,6 +49,11 @@ console.log(JSON.stringify({
     public: publicKey.export({type:'spki',format:'der'}).toString('base64')
 }));
 """
+DERIVE_REPORT_PUBLIC_PROGRAM = """
+const crypto = require('crypto');
+const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.REPORT_ED25519_PRIVATE_KEY, 'base64'), format: 'der', type: 'pkcs8' });
+process.stdout.write(crypto.createPublicKey(priv).export({ type: 'spki', format: 'der' }).toString('base64'));
+"""
 X25519_PROGRAM = """
 const crypto = require('crypto');
 const { privateKey, publicKey } = crypto.generateKeyPairSync('x25519');
@@ -371,11 +376,31 @@ class Run:
         pair = json.loads(done.stdout)
         return pair["private"], pair["public"]
 
+    def check_report_pair(self, private: str, public: str) -> None:
+        """Refuse a caller's REPORT_ED25519_* pair whose halves do not match: reports signed by the server would not verify under the published key."""
+        done = subprocess.run(
+            ["node", "-e", DERIVE_REPORT_PUBLIC_PROGRAM],
+            env={**os.environ, "REPORT_ED25519_PRIVATE_KEY": private},
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
+        )
+        if done.returncode != 0:
+            raise RefusedError(
+                f"node could not derive the public half of REPORT_ED25519_PRIVATE_KEY: {done.stderr.strip()}"
+            )
+        if done.stdout.strip() != public:
+            raise RefusedError(
+                "REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY are not one pair: reports would not verify under the published key"
+            )
+
     def report_pair(self) -> tuple[str, str]:
         """The incident-report signing pair (`REPORT_ED25519_*`, PKCS8 and SPKI base64): the caller's when both names are set, else a throwaway minted per start-up, so TEST_MODE report generation does not stop at REPORT_KEY_NOT_CONFIGURED. The private half goes to the backend's environment only."""
         private = os.environ.get("REPORT_ED25519_PRIVATE_KEY") or ""
         public = os.environ.get("REPORT_ED25519_PUBLIC_KEY") or ""
         if private and public:
+            self.check_report_pair(private, public)
             return private, public
         done = subprocess.run(
             ["node", "-e", ED25519_PROGRAM],
