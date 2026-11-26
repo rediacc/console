@@ -1,7 +1,8 @@
 /**
  * `repo create` rolls the registration back only on a definitive failure (review 9a8dc910.2): a timeout or lost
  * connection on the dispatch keeps the entry, a refused start removes it. Both create forms (--machine and
- * --datastore) are driven through their catch; reverting either to a direct rollback fails the timeout test.
+ * --datastore) are driven through their catch; reverting either to a direct rollback fails the timeout test. A
+ * dispatch refused at connect never reached the executor, so it is a refused start too (review 9a8dc910.1).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -65,6 +66,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   handleError: vi.fn(),
 }));
 
+import { fetchWithTimeout } from '../../services/executor/proxy-client-support.js';
 import { setCommandJobDeps } from '../../services/jobs/command-job.js';
 import { TicketStore } from '../../services/jobs/ticket-store.js';
 import { ERROR_CODES } from '../../types/errors.js';
@@ -122,4 +124,28 @@ describe.each(forms)('repo create %s', (_label, run) => {
     expect(addRepository).toHaveBeenCalledTimes(1);
     expect(removeRepository).toHaveBeenCalledTimes(1);
   });
+
+  it('removes the registration when the dispatch was refused at connect, so nothing started (9a8dc910.1)', async () => {
+    execute.mockRejectedValue(await proxyFailure('ECONNREFUSED'));
+    await run();
+    expect(addRepository).toHaveBeenCalledTimes(1);
+    expect(removeRepository).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the registration when the dispatch dropped after the request may have been delivered (control)', async () => {
+    execute.mockRejectedValue(await proxyFailure('ECONNRESET'));
+    await run();
+    expect(addRepository).toHaveBeenCalledTimes(1);
+    expect(removeRepository).not.toHaveBeenCalled();
+  });
 });
+
+/** The NETWORK_ERROR the proxy client's fetchWithTimeout raises for an undici failure with `code` on its cause. */
+function proxyFailure(code: string): Promise<unknown> {
+  const cause = Object.assign(new Error(`connect ${code}`), { code });
+  const failing = (() =>
+    Promise.reject(new TypeError('fetch failed', { cause }))) as unknown as typeof fetch;
+  return fetchWithTimeout(failing, 1000, 'http://executor.test:8080/command', {}).catch(
+    (e: unknown) => e
+  );
+}

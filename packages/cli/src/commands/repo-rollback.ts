@@ -1,15 +1,19 @@
 /**
  * WB6 (agent/plans/PLAN-rmcp-writeback.md Design 6): a command that registered a repo before its job rolls the
  * registration back only on a definitive failure. A timeout or a lost connection on the dispatch leaves the job's
- * state unknown (it may be running on the host), so the entry stays and the job's own failure step settles it.
+ * state unknown (it may be running on the host), so the entry stays and the job's own failure step settles it. A
+ * request that provably never reached the executor (connection refused, a name that did not resolve, a failed TLS
+ * handshake) started nothing, so it is a refused start and rolls back (review 9a8dc910.1).
  */
 
+import { ProxyRequestError } from '../services/executor/proxy-client-support.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
 
-/** True when the dispatch failed in a way that cannot say whether the job started: a timeout or an unreachable host. */
+/** True when the dispatch failed in a way that cannot say whether the job started: a timeout or a connection lost after the request may have been delivered. */
 export function jobStateUnknown(error: unknown): boolean {
-  return error instanceof CliExitError && error.code === ERROR_CODES.NETWORK_ERROR;
+  if (!(error instanceof CliExitError) || error.code !== ERROR_CODES.NETWORK_ERROR) return false;
+  return !(error instanceof ProxyRequestError && !error.mayHaveReached);
 }
 
 /** Run `rollback` for a start that was definitively refused; an unknown outcome keeps the registration. Returns whether it ran. */

@@ -33,7 +33,6 @@ import {
   type ServerInfo,
   type StreamLine,
   StreamLineSchema,
-  VersionMismatchSchema,
 } from '@rediacc/shared/cli-contract/wire';
 import { cekHandoffEncrypt, exportAesKey, fromBase64 } from '@rediacc/shared/config-crypto';
 import { VERSION } from '../../version.js';
@@ -46,10 +45,11 @@ import {
   describeProxyFailure,
   ExecutorSessionUnknownError,
   fetchWithTimeout,
+  noteStartFailure,
   ProxyStreamTruncatedError,
-  ProxyVersionMismatchError,
   proxyRequestTimeoutMs,
   throwIfSessionUnknown,
+  throwVersionMismatch,
   toArrayBuffer,
 } from './proxy-client-support.js';
 import {
@@ -86,6 +86,8 @@ interface ClientStreamState extends StreamState {
   unorderedSeen: number;
   /** Ordinal-less events of the current attempt still to skip because an earlier attempt rendered them. */
   unorderedSkip: number;
+  /** Whether any start attempt got an answer or may have delivered its POST, so a later refusal cannot say the job never started. */
+  reached: boolean;
 }
 
 export type { ProxyClientOptions, ReattachTarget } from './proxy-client-options.js';
@@ -243,6 +245,7 @@ export class ProxyClient {
       highestLine: 0,
       unorderedSeen: 0,
       unorderedSkip: 0,
+      reached: false,
     };
     try {
       await this.startCommand(request, onEvent, state, reattach?.machine, sessionId);
@@ -310,9 +313,11 @@ export class ProxyClient {
         sessionId ? { [CONFIG_SESSION_HEADER]: sessionId } : {}
       );
     } catch (error) {
+      const failure = noteStartFailure(error, state);
       if (retriable) return 'retry';
-      throw error;
+      throw failure;
     }
+    state.reached = true;
     const body = await this.commandBody(response);
     // A retried attempt replays from the start: what an earlier attempt rendered without an ordinal is skipped.
     state.unorderedSkip = state.unorderedSeen;
@@ -329,7 +334,7 @@ export class ProxyClient {
 
   /** The command response's body, or the refusal it carried. */
   private async commandBody(response: Response): Promise<ReadableStream<Uint8Array>> {
-    if (response.status === 409) await this.throwVersionMismatch(response);
+    if (response.status === 409) await throwVersionMismatch(response, this.contractVersion);
     if (response.status === 404) await throwIfSessionUnknown(response);
     if (!response.ok) throw new Error(await describeProxyFailure(response));
     if (!response.body) throw new ProxyStreamTruncatedError(0);
@@ -664,17 +669,5 @@ export class ProxyClient {
       [CLI_VERSION_HEADER]: VERSION,
       [CONTRACT_VERSION_HEADER]: this.contractVersion,
     };
-  }
-
-  private async throwVersionMismatch(response: Response): Promise<never> {
-    const body = VersionMismatchSchema.safeParse(await response.json().catch(() => ({})));
-    if (body.success) {
-      throw new ProxyVersionMismatchError(
-        body.data.clientContractVersion,
-        body.data.executorContractVersion,
-        body.data.executorCliVersion
-      );
-    }
-    throw new ProxyVersionMismatchError(this.contractVersion, 'unknown', 'unknown');
   }
 }

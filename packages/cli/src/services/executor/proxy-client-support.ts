@@ -1,12 +1,14 @@
 /**
- * The pure parts of the `--proxy` client: its three error classes (version
- * mismatch, truncated stream, unknown session) and the small helpers that hold
+ * The pure parts of the `--proxy` client: its error classes (version mismatch
+ * and the 409 reader that raises it, truncated stream, unknown session, a failed
+ * request) and the small helpers that hold
  * no client state (request timeout and fetchWithTimeout, the session-unknown
- * check, host and failure text for a wrapped network error, the Web Crypto
- * buffer view, page delivery).
+ * check, host and failure text for a wrapped network error and whether that
+ * request can have reached the executor, the Web Crypto buffer view, page
+ * delivery).
  */
 
-import type { JobPollResponse } from '@rediacc/shared/cli-contract/wire';
+import { type JobPollResponse, VersionMismatchSchema } from '@rediacc/shared/cli-contract/wire';
 import { t } from '../../i18n/index.js';
 import { ERROR_CODES } from '../../types/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
@@ -26,6 +28,22 @@ export class ProxyVersionMismatchError extends Error {
     );
     this.name = 'ProxyVersionMismatchError';
   }
+}
+
+/** A 409 from the executor: the versions its body names, or this client's against "unknown" when the body says nothing readable. */
+export async function throwVersionMismatch(
+  response: Response,
+  clientContractVersion: string
+): Promise<never> {
+  const body = VersionMismatchSchema.safeParse(await response.json().catch(() => ({})));
+  if (body.success) {
+    throw new ProxyVersionMismatchError(
+      body.data.clientContractVersion,
+      body.data.executorContractVersion,
+      body.data.executorCliVersion
+    );
+  }
+  throw new ProxyVersionMismatchError(clientContractVersion, 'unknown', 'unknown');
 }
 
 /** Raised when the executor closes the stream without a terminal result line. */
@@ -100,7 +118,76 @@ export class ExecutorSessionUnknownError extends Error {
   }
 }
 
-/** `fetchImpl(url, init)` with a deadline; a timeout or a network failure becomes a retryable NETWORK_ERROR naming the host. */
+/**
+ * Failure codes that end a request before any byte of it reaches the executor: the name did not resolve, nothing
+ * accepted the connection, no route led to the host, or the TLS handshake failed. undici reports each on the fetch
+ * error's `cause` (an AggregateError per resolved address carries one per address).
+ */
+const CONNECT_PHASE_CODES = new Set([
+  'ECONNREFUSED',
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'EAI_NONAME',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'EADDRNOTAVAIL',
+  'UND_ERR_CONNECT_TIMEOUT',
+]);
+
+/** A TLS failure: undici's handshake codes (`ERR_TLS_*`, `ERR_SSL_*`) and OpenSSL's certificate verdicts (`CERT_HAS_EXPIRED`, `SELF_SIGNED_CERT_IN_CHAIN`, ...). */
+const TLS_CODE = /^(ERR_TLS_|ERR_SSL_)|CERT/;
+
+function isConnectPhaseCode(code: unknown): boolean {
+  return typeof code === 'string' && (CONNECT_PHASE_CODES.has(code) || TLS_CODE.test(code));
+}
+
+/**
+ * Whether a failed fetch can have delivered the request: false only when undici's cause names a connect-phase failure
+ * (for an AggregateError, every address failed that way), true for anything else: a reset, a socket closed
+ * mid-request, a deadline hit while waiting for the headers, or a failure with no code to read.
+ */
+export function fetchMayHaveReached(error: unknown, timedOut: boolean): boolean {
+  if (timedOut) return true;
+  const cause = error instanceof Error ? error.cause : undefined;
+  if (!(cause instanceof Error)) return true;
+  if (cause instanceof AggregateError && cause.errors.length > 0) {
+    return !cause.errors.every((each) => isConnectPhaseCode((each as { code?: unknown }).code));
+  }
+  return !isConnectPhaseCode((cause as { code?: unknown }).code);
+}
+
+/**
+ * The NETWORK_ERROR a failed proxy request raises. `mayHaveReached` is false only when the request provably never
+ * reached the executor, so nothing it asked for can have started and a caller that registered state ahead of a job
+ * (repo create, repo fork) may roll it back; true leaves the job's state unknown.
+ */
+export class ProxyRequestError extends CliExitError {
+  readonly mayHaveReached: boolean;
+
+  constructor(message: string, mayHaveReached: boolean, cause: unknown) {
+    super(ERROR_CODES.NETWORK_ERROR, message, { retryable: true });
+    this.mayHaveReached = mayHaveReached;
+    this.cause = cause;
+  }
+}
+
+/** The same failure marked as possibly delivered: a last attempt that never connected does not undo an earlier attempt that may have. */
+export function asMayHaveReached(error: unknown): unknown {
+  if (!(error instanceof ProxyRequestError) || error.mayHaveReached) return error;
+  return new ProxyRequestError(error.message, true, error.cause);
+}
+
+/**
+ * Note a failed command-start POST on `reach` and return the error to raise when no retry is left. Once any attempt
+ * may have delivered its POST, a last attempt that never connected says nothing about the job the earlier one may
+ * have started, so the failure is raised as possibly delivered.
+ */
+export function noteStartFailure(error: unknown, reach: { reached: boolean }): unknown {
+  if (error instanceof ProxyRequestError && error.mayHaveReached) reach.reached = true;
+  return reach.reached ? asMayHaveReached(error) : error;
+}
+
+/** `fetchImpl(url, init)` with a deadline; a timeout or a network failure becomes a retryable {@link ProxyRequestError} naming the host and saying whether the request can have reached the executor. */
 export async function fetchWithTimeout(
   fetchImpl: typeof fetch,
   timeoutMs: number,
@@ -120,9 +207,7 @@ export async function fetchWithTimeout(
     const message = timedOut
       ? t('errors.proxy.timeout', { host, seconds: Math.ceil(timeoutMs / 1000) })
       : t('errors.proxy.unreachable', { host, reason: describeFetchFailure(error) });
-    const failure = new CliExitError(ERROR_CODES.NETWORK_ERROR, message, { retryable: true });
-    failure.cause = error;
-    throw failure;
+    throw new ProxyRequestError(message, fetchMayHaveReached(error, timedOut), error);
   } finally {
     clearTimeout(timer);
   }
