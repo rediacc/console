@@ -82,7 +82,12 @@ async function workerFor(
   };
   const kept: Promise<unknown>[] = [];
   const waitUntil = vi.fn((p: Promise<unknown>) => void kept.push(p));
-  const ctx = (options.ctx === 'bare' ? {} : { waitUntil }) as HostExecutionContext;
+  const passThroughOnException = (): void => undefined;
+  // The bare host is the one shape the type forbids (no `waitUntil`), which is exactly the case under test.
+  const ctx: HostExecutionContext =
+    options.ctx === 'bare'
+      ? ({ passThroughOnException } as unknown as HostExecutionContext)
+      : { waitUntil, passThroughOnException };
   const post = (tool: string, bearer = bearerFor(grantId)): Promise<Response> =>
     worker.fetch(
       new Request(`https://${HOST}/g/${grantId}`, {
