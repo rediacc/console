@@ -87,6 +87,15 @@ describe('the root hook judges a local command before its action', () => {
     expect(m.reached).not.toHaveBeenCalled();
   });
 
+  it('judges `repo prune` in the hook: an agent naming a grand is refused, an opt-in lets it on', async () => {
+    await run(['repo', 'prune', 'shop']);
+    expect(decisionCode()).toBe('AGENT_OPT_IN_MISSING');
+    out = '';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'shop';
+    await run(['repo', 'prune', 'shop']);
+    expect(decisionCode()).not.toBe('AGENT_OPT_IN_MISSING');
+  });
+
   it('control: the same command on a fork reaches the action', async () => {
     vi.mocked(configService.getRepository).mockResolvedValue({
       repositoryGuid: 'f-1',

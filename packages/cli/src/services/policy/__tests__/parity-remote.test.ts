@@ -30,7 +30,12 @@ import {
 import { deriveAuthTag, formatAgentBearer } from '@rediacc/shared/config-crypto';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { getMcpTool } from '@rediacc/shared/mcp/registry';
-import { DECISION_CODES, type DecisionContext, PolicyDocumentSchema } from '@rediacc/shared/policy';
+import {
+  DECISION_CODES,
+  type DecisionContext,
+  ORG_ROLES,
+  PolicyDocumentSchema,
+} from '@rediacc/shared/policy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '../../executor/types.js';
 import {
@@ -161,20 +166,23 @@ interface Hosted {
 async function hostFor(row: FixtureRow): Promise<Hosted> {
   const grantId = `g_${row.id.replaceAll(/[^A-Za-z0-9]/g, '_')}`.slice(0, 60);
   const org = row.policy?.org;
+  const orgRole = ORG_ROLES.find((role) => role === row.principal.orgRole);
+  if (orgRole === undefined) throw new Error(`row ${row.id} names an unknown org role`);
   const made = await makeGrant({
     grantId,
     teamId: null,
     configId: `cfg-${grantId}`.slice(0, 60),
     machine: 'm1',
-    orgRole: row.principal.orgRole as FakeGrant['orgRole'],
+    orgRole,
     overrides: {
       grandRepos: (row.overrides.grandRepos ?? null) as FakeGrant['overrides']['grandRepos'],
       clusterOps: (row.overrides.clusterOps ?? null) as FakeGrant['overrides']['clusterOps'],
     },
     ...(org === undefined ? {} : { policies: { org: PolicyDocumentSchema.parse(org) } }),
   });
-  // The harness seals an allow-all org record unless a case names one; a row with no policy has no
-  // record at all, so the session loads no policy and `decide` sees the missing-policy default.
+  // The harness seals an allow-all org record unless a case names one; a row with no org tier (no
+  // policy, or a policy naming no org document) has no record at all, so the session loads no policy
+  // and `decide` sees the missing-policy default.
   if (org === undefined) made.policyRecords.clear();
   const account = fakeAccount([made]);
   await account.bump(grantId, configFor(row, made.configId));
@@ -254,7 +262,28 @@ async function hostFor(row: FixtureRow): Promise<Hosted> {
   return { client, executed, close: () => client.close() };
 }
 
-/** The code one hosted `tools/call` answered: the decision code of a refusal, ALLOWED only when the executor seam ran and the tool did not fail, anything else an UNEXPECTED_FAILURE that matches no row. */
+/**
+ * The code one hosted `tools/call` answered: the decision code of a refusal, ALLOWED only when
+ * the executor seam ran (whatever the command then did on the machine), anything else an
+ * UNEXPECTED_FAILURE that matches no row. A decision of ALLOWED with no executor run is no
+ * evidence that the command reached the machine, so it is not accepted.
+ */
+function codeOfRemote(
+  structured: { message?: string; decisionCode?: string },
+  executorRan: boolean,
+  content: unknown
+): Expectation {
+  const decision = structured.decisionCode;
+  const named = decision !== undefined && (DECISION_CODES as readonly string[]).includes(decision);
+  if (named && (decision !== 'ALLOWED' || executorRan)) {
+    return { verdict: verdictOfCode(decision), code: decision };
+  }
+  // The executor seam ran: policy let the command through, whatever the command then did on the machine (a delete's config write-back is refused by the executor, which is not policy).
+  if (executorRan) return { verdict: 'allow', code: 'ALLOWED' };
+  const message = structured.message ?? JSON.stringify(content).slice(0, 1200);
+  return { verdict: 'error', code: `UNEXPECTED_FAILURE: ${message}` };
+}
+
 async function viaRemote(row: FixtureRow): Promise<Expectation> {
   const hosted = await hostFor(row);
   try {
@@ -267,14 +296,7 @@ async function viaRemote(row: FixtureRow): Promise<Expectation> {
       message?: string;
       decisionCode?: string;
     };
-    const decision = structured.decisionCode;
-    if (decision !== undefined && (DECISION_CODES as readonly string[]).includes(decision)) {
-      return { verdict: verdictOfCode(decision), code: decision };
-    }
-    // The executor seam ran: policy let the command through, whatever the command then did on the machine (a delete's config write-back is refused by the executor, which is not policy).
-    if (hosted.executed.length > 0) return { verdict: 'allow', code: 'ALLOWED' };
-    const message = structured.message ?? JSON.stringify(result.content).slice(0, 1200);
-    return { verdict: 'error', code: `UNEXPECTED_FAILURE: ${message}` };
+    return codeOfRemote(structured, hosted.executed.length > 0, result.content);
   } finally {
     await hosted.close();
   }
@@ -296,6 +318,22 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+});
+
+describe('codeOfRemote', () => {
+  it('does not accept a decision of ALLOWED when the executor seam never ran', () => {
+    const got = codeOfRemote({ decisionCode: 'ALLOWED' }, false, []);
+    expect(got.verdict).toBe('error');
+    expect(got.code).toMatch(/^UNEXPECTED_FAILURE/);
+  });
+
+  it('control: ALLOWED with the executor run, and a refusal without it, keep their codes', () => {
+    expect(codeOfRemote({ decisionCode: 'ALLOWED' }, true, [])).toEqual({
+      verdict: 'allow',
+      code: 'ALLOWED',
+    });
+    expect(codeOfRemote({ decisionCode: 'POLICY_DENIED' }, false, []).code).toBe('POLICY_DENIED');
+  });
 });
 
 describe('hosted-remote case file', () => {
