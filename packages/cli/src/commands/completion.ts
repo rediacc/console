@@ -36,6 +36,7 @@ import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { writeStdout } from '../services/core/request-context.js';
 import { ValidationError } from '../types/errors.js';
 import { handleError } from '../utils/errors.js';
+import { parseJsonText } from '../utils/json-text.js';
 import { renderModelScript } from './completion-scripts.js';
 
 export const COMPLETE_COMMAND = '__complete';
@@ -221,7 +222,7 @@ function readConfigFile(file: string): Record<string, unknown> {
   }
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = parseJsonText(text);
   } catch {
     // The parser's message may quote the file's text, which can hold tokens: name only the file.
     throw new ValidationError(

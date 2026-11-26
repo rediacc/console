@@ -23,6 +23,7 @@ import {
   currentCommandName,
 } from '../services/core/config-write-errors.js';
 import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
+import { parseJsonText } from '../utils/json-text.js';
 import {
   decryptConfigFields,
   encryptConfigFields,
@@ -294,7 +295,7 @@ export class ConfigFileStorage {
     content: string,
     name: string
   ): Promise<{ config: RdcConfig; migrated: boolean }> {
-    const raw = JSON.parse(content) as unknown;
+    const raw = parseJsonText(content) as unknown;
     const migration = await runMigrations(raw, this.migrationContext());
     // Hydrate encrypted leaves with type-valid stubs so the strict parse of the at-rest form succeeds without prompting for the master password. Sensitive values are decrypted lazily (loadDecrypted / update), never at load.
     const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
@@ -609,7 +610,7 @@ export class ConfigFileStorage {
     try {
       const stat = await fs.stat(backupPath);
       const content = await fs.readFile(backupPath, 'utf-8');
-      const config = JSON.parse(content) as RdcConfig;
+      const config = parseJsonText(content) as RdcConfig;
       return {
         path: backupPath,
         version: config.version,

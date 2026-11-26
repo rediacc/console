@@ -53,6 +53,7 @@ import { writeStdout } from '../../services/core/request-context.js';
 import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
 import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
+import { parseJsonText } from '../../utils/json-text.js';
 
 const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;
 const MAX_RETRIES = 3;
@@ -228,7 +229,7 @@ function assignAtPointer(root: unknown, pointer: string, value: unknown): void {
 
 function loadKnowledgeFile(path: string): Record<string, unknown> {
   const text = readFileSync(path, 'utf8');
-  const raw: unknown = JSON.parse(text);
+  const raw: unknown = parseJsonText(text);
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new ValidationError(`--current-secrets must be a JSON object: ${path}`);
   }
@@ -281,7 +282,7 @@ async function handleApplyMode(
   const stripped = stripComments(text);
   let edited: unknown;
   try {
-    edited = JSON.parse(stripped);
+    edited = parseJsonText(stripped);
   } catch (err) {
     throw new ValidationError(`Invalid JSON in ${applyPath}: ${(err as Error).message}`);
   }
@@ -372,7 +373,7 @@ function parseTmpFile(
   const text = readFileSync(tmpFile, 'utf8');
   const stripped = stripComments(text);
   try {
-    return { edited: JSON.parse(stripped) };
+    return { edited: parseJsonText(stripped) };
   } catch (err) {
     const errs = [`JSON parse error: ${(err as Error).message}`];
     const banner = `// ─── ${errs.length} ERROR(S) on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;

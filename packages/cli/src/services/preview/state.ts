@@ -6,6 +6,7 @@
  * Every write here touches `preview` alone, so the `account` section stays byte-identical, and
  * removing the block puts the real server, key and token back in force by construction.
  */
+
 import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -21,6 +22,7 @@ import {
 import { getConfigDir } from '@rediacc/shared/paths';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
+import { parseJsonText } from '../../utils/json-text.js';
 import { previewTokenFile } from '../account/account-pointer.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { updateConfigAtPointer } from '../config/synced-write.js';
@@ -48,7 +50,7 @@ export function readPreviewOverlay(
   configDir = getConfigDir()
 ): PreviewOverlay | undefined {
   try {
-    const parsed = JSON.parse(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
+    const parsed = parseJsonText(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
       preview?: unknown;
     };
     if (parsed.preview === undefined) return undefined;
@@ -68,7 +70,7 @@ export function readRealAccountServer(
   configDir = getConfigDir()
 ): string {
   try {
-    const parsed = JSON.parse(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
+    const parsed = parseJsonText(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
       account?: { accountServer?: unknown };
     };
     const server = parsed.account?.accountServer;
@@ -87,7 +89,7 @@ export function readRealReleasesBase(
   configDir = getConfigDir()
 ): string {
   try {
-    const parsed = JSON.parse(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
+    const parsed = parseJsonText(readFileSync(join(configDir, `${configName}.json`), 'utf8')) as {
       account?: { releasesUrl?: unknown };
     };
     const url = parsed.account?.releasesUrl;

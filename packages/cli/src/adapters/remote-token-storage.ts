@@ -16,6 +16,7 @@ import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { readLocalMachineId } from '../services/account/client-machine-id.js';
 import { rdcCommand } from '../services/config/config-name.js';
+import { parseJsonText } from '../utils/json-text.js';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
 
@@ -143,7 +144,7 @@ export class RemoteTokenStorage {
   async enrolledHere(configName: string): Promise<boolean> {
     try {
       const raw = await fs.readFile(this.getMarkerPath(configName), 'utf-8');
-      const marker = JSON.parse(raw) as Partial<EnrollmentMarker> | null;
+      const marker = parseJsonText(raw) as Partial<EnrollmentMarker> | null;
       return typeof marker?.deviceId === 'string' && marker.deviceId === (await this.identify());
     } catch {
       return false;
@@ -172,7 +173,7 @@ export class RemoteTokenStorage {
     const path = this.getPath(configName);
     try {
       const raw = await fs.readFile(path, 'utf-8');
-      return JSON.parse(raw) as TokenData;
+      return parseJsonText(raw) as TokenData;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return null;

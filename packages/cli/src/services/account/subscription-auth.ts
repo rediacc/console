@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from '
 import { dirname, join } from 'node:path';
 import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
+import { parseJsonText } from '../../utils/json-text.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { readAccountPointer } from './account-pointer.js';
 
@@ -67,7 +68,7 @@ function loadStoredSubscriptionToken(): StoredSubscriptionToken | null {
   if (!existsSync(tokenFile)) return null;
 
   try {
-    const parsed = JSON.parse(readFileSync(tokenFile, 'utf-8')) as StoredSubscriptionToken;
+    const parsed = parseJsonText(readFileSync(tokenFile, 'utf-8')) as StoredSubscriptionToken;
     return {
       ...parsed,
       serverUrl: normalizeServerUrl(parsed.serverUrl),

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PREVIEW_NAME_PATTERN } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
+import { parseJsonText } from '../../utils/json-text.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 
 /**
@@ -86,7 +87,7 @@ export function readAccountPointer(
 ): AccountPointer {
   try {
     const raw = readFileSync(join(configDir, `${configName}.json`), 'utf8');
-    const parsed = JSON.parse(raw) as {
+    const parsed = parseJsonText(raw) as {
       account?: AccountPointer;
       remote?: { apiUrl?: string };
       preview?: RawPreview;
