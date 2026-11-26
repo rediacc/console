@@ -17,11 +17,9 @@ vi.mock('cloudflare:workers', () => ({
   },
 }));
 
-const {
-  CreditLedgerCore,
-  DEFAULT_LIMITS,
-  RESERVATION_TTL_MS,
-} = await import('../credit-ledger.js');
+const { CreditLedgerCore, DEFAULT_LIMITS, RESERVATION_TTL_MS } = await import(
+  '../credit-ledger.js'
+);
 
 /**
  * The ledger decisions of agent/plans/PLAN-console-ai-credits.md D4 to D6 and D9, run over a real
@@ -50,14 +48,23 @@ function ledger(limits = DEFAULT_LIMITS) {
   return core;
 }
 
-function request(id: string, over: Partial<{ conversationId: string; bodyBytes: number; maxTokens: number; model: string }> = {}) {
+function request(
+  id: string,
+  over: Partial<{
+    conversationId: string;
+    bodyBytes: number;
+    maxTokens: number;
+    model: string;
+  }> = {}
+) {
   return {
     reservationId: id,
     userId: 'u1',
-    conversationId: over.conversationId ?? 'c1',
-    model: over.model ?? MODEL,
-    bodyBytes: over.bodyBytes ?? 3000,
-    maxTokens: over.maxTokens ?? 1000,
+    conversationId: 'c1',
+    model: MODEL,
+    bodyBytes: 3000,
+    maxTokens: 1000,
+    ...over,
   };
 }
 
@@ -71,7 +78,10 @@ describe('reserve refusals', () => {
   it('refuses an org whose plan is not entitled', () => {
     const core = funded();
     core.setEntitled(false);
-    expect(core.reserve(request('r1'), NOW, false)).toEqual({ ok: false, code: 'PLAN_NOT_ENTITLED' });
+    expect(core.reserve(request('r1'), NOW, false)).toEqual({
+      ok: false,
+      code: 'PLAN_NOT_ENTITLED',
+    });
   });
 
   it('refuses a blocked org and a globally paused tier', () => {
@@ -113,7 +123,9 @@ describe('reserve refusals', () => {
 
   it('refuses past the conversation token cap', () => {
     const core = funded(100_000, { ...DEFAULT_LIMITS, conversationTokenCap: 1500 });
-    expect(core.reserve(request('r1', { maxTokens: 1000, bodyBytes: 300 }), NOW, false).ok).toBe(true);
+    expect(core.reserve(request('r1', { maxTokens: 1000, bodyBytes: 300 }), NOW, false).ok).toBe(
+      true
+    );
     expect(core.release('r1')).toBe(true);
     expect(core.reserve(request('r2', { maxTokens: 1000, bodyBytes: 3000 }), NOW, false)).toEqual({
       ok: false,
@@ -147,7 +159,11 @@ describe('commit', () => {
     const done = core.commit('r1', { promptTokens: 100, completionTokens: 10 }, NOW);
     expect(done.ok && done.charged).toBeLessThan(reserved.credits);
     expect(done.ok && done.balance).toBe(10_000 - (done.ok ? done.charged : 0));
-    expect(done.ok && done.history).toMatchObject({ kind: 'commit', reservationId: 'r1', inputTokens: 100 });
+    expect(done.ok && done.history).toMatchObject({
+      kind: 'commit',
+      reservationId: 'r1',
+      inputTokens: 100,
+    });
   });
 
   it('commits a reservation without usage in full, and only once', () => {
@@ -160,8 +176,18 @@ describe('commit', () => {
 
   it('consumes the lot that expires first, and never drives a balance below zero', () => {
     const core = ledger();
-    core.grant({ id: 'late', credits: 50, expiresAt: '2028-01-01T00:00:00.000Z', paymentReference: 'p2' });
-    core.grant({ id: 'soon', credits: 50, expiresAt: '2027-01-01T00:00:00.000Z', paymentReference: 'p1' });
+    core.grant({
+      id: 'late',
+      credits: 50,
+      expiresAt: '2028-01-01T00:00:00.000Z',
+      paymentReference: 'p2',
+    });
+    core.grant({
+      id: 'soon',
+      credits: 50,
+      expiresAt: '2027-01-01T00:00:00.000Z',
+      paymentReference: 'p1',
+    });
     expect(core.reserve(request('r1', { bodyBytes: 3, maxTokens: 1 }), NOW, false).ok).toBe(true);
     const first = core.commit('r1', { promptTokens: 1_000_000, completionTokens: 100_000 }, NOW);
     expect(first.ok && first.history.lotId).toBe('soon');
@@ -171,8 +197,16 @@ describe('commit', () => {
 
   it('counts an expired lot as no balance', () => {
     const core = ledger();
-    core.grant({ id: 'old', credits: 10_000, expiresAt: '2026-11-01T00:00:00.000Z', paymentReference: 'p' });
-    expect(core.reserve(request('r1'), NOW, false)).toEqual({ ok: false, code: 'INSUFFICIENT_CREDITS' });
+    core.grant({
+      id: 'old',
+      credits: 10_000,
+      expiresAt: '2026-11-01T00:00:00.000Z',
+      paymentReference: 'p',
+    });
+    expect(core.reserve(request('r1'), NOW, false)).toEqual({
+      ok: false,
+      code: 'INSUFFICIENT_CREDITS',
+    });
   });
 });
 
@@ -195,12 +229,16 @@ describe('concurrent reservations', () => {
     expect(one.ok).toBe(true);
     if (!one.ok) return;
     core.release('probe');
-    const attempts = Array.from({ length: 50 }, (_, i) => core.reserve(request(`r${i}`, { conversationId: `c${i}` }), NOW, false));
+    const attempts = Array.from({ length: 50 }, (_, i) =>
+      core.reserve(request(`r${i}`, { conversationId: `c${i}` }), NOW, false)
+    );
     const granted = attempts.filter((a) => a.ok).length;
     expect(granted).toBe(Math.floor(100 / one.credits));
     expect(granted).toBeLessThan(50);
     expect(core.balance(new Date(NOW).toISOString())).toBe(100 - granted * one.credits);
-    expect(attempts.filter((a) => !a.ok).every((a) => !a.ok && a.code === 'INSUFFICIENT_CREDITS')).toBe(true);
+    expect(
+      attempts.filter((a) => !a.ok).every((a) => !a.ok && a.code === 'INSUFFICIENT_CREDITS')
+    ).toBe(true);
   });
 });
 

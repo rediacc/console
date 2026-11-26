@@ -227,12 +227,18 @@
     // version peering `@cloudflare/workers-types@^5`. account and mta-sts install from
     // their lockfiles untouched.
     "workers/account": {
+      // BLOCKER: this worker's package.json declares no vitest, so knip's vitest plugin is off for it and its tests (workers/account/vitest.config.mjs) read as unused files
+      "entry": [
+        "src/**/__tests__/**/*.test.ts"
+      ],
       "project": [
         "src/**/*.ts"
       ],
       "ignoreDependencies": [
         // BLOCKER: same as workers/www below -- wrangler is invoked as `npx wrangler ...` from .ci/scripts/deploy/*.sh with this directory as the working directory, never from a package.json script, so knip has no call site to trace
-        "wrangler"
+        "wrangler",
+        // BLOCKER: the tests import vitest from the root install; adding it to this worker's package.json would need a lockfile rewrite for a dev tool the root already pins
+        "vitest"
       ]
     },
     "workers/mta-sts": {

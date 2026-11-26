@@ -22,15 +22,15 @@ import {
  */
 
 /** Concurrent streams, conversation token cap and loop depth defaults of D5. */
-export const DEFAULT_MAX_STREAMS = 3;
-export const DEFAULT_CONVERSATION_TOKEN_CAP = 200_000;
-export const DEFAULT_LOOP_DEPTH = 40;
+const DEFAULT_MAX_STREAMS = 3;
+const DEFAULT_CONVERSATION_TOKEN_CAP = 200_000;
+const DEFAULT_LOOP_DEPTH = 40;
 /** 20 USD of credit per org per UTC day; D5 names the cap without a number. */
-export const DEFAULT_DAILY_CREDIT_CAP = 20_000;
+const DEFAULT_DAILY_CREDIT_CAP = 20_000;
 /** A reservation uncommitted after this long is committed in full by the alarm (D6). */
 export const RESERVATION_TTL_MS = 10 * 60 * 1000;
 /** How long a read of the global pause (D10) is trusted. */
-export const PAUSE_CACHE_MS = 30 * 1000;
+const PAUSE_CACHE_MS = 30 * 1000;
 
 export interface LedgerLimits {
   maxStreams: number;
@@ -51,7 +51,7 @@ export interface LedgerSql {
   exec(query: string, ...bindings: unknown[]): { toArray(): Record<string, unknown>[] };
 }
 
-export type RefusalCode =
+type RefusalCode =
   | 'PLAN_NOT_ENTITLED'
   | 'ORG_BLOCKED'
   | 'GLOBAL_PAUSED'
@@ -113,7 +113,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, credits INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, tokens INTEGER NOT NULL, calls INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
-];
+] as const;
 
 function num(value: unknown): number {
   return typeof value === 'number' ? value : Number(value ?? 0);
@@ -150,8 +150,10 @@ export class CreditLedgerCore {
   /** Credits of unexpired lots, before open reservations. */
   private lotCredits(nowIso: string): number {
     return num(
-      this.one('SELECT COALESCE(SUM(credits_remaining), 0) AS c FROM lots WHERE expires_at > ?', nowIso)
-        ?.c
+      this.one(
+        'SELECT COALESCE(SUM(credits_remaining), 0) AS c FROM lots WHERE expires_at > ?',
+        nowIso
+      )?.c
     );
   }
 
@@ -167,7 +169,9 @@ export class CreditLedgerCore {
   /** Adds a lot; a repeated id changes nothing, so a retried grant never doubles. */
   grant(lot: GrantLot): void {
     if (!Number.isInteger(lot.credits) || lot.credits < 1) {
-      throw new RangeError(`a lot grants a whole number of credits of at least 1, got ${lot.credits}`);
+      throw new RangeError(
+        `a lot grants a whole number of credits of at least 1, got ${lot.credits}`
+      );
     }
     this.sql.exec(
       'INSERT OR IGNORE INTO lots (id, credits_granted, credits_remaining, expires_at, payment_reference) VALUES (?, ?, ?, ?, ?)',
@@ -184,7 +188,10 @@ export class CreditLedgerCore {
    * unknown or expired, or when open reservations hold part of the balance it would take.
    */
   refundLot(lotId: string, nowIso: string): number | null {
-    const lot = this.one('SELECT credits_remaining AS r, expires_at AS e FROM lots WHERE id = ?', lotId);
+    const lot = this.one(
+      'SELECT credits_remaining AS r, expires_at AS e FROM lots WHERE id = ?',
+      lotId
+    );
     if (!lot || String(lot.e) <= nowIso) return null;
     const unused = num(lot.r);
     if (this.balance(nowIso) < unused) return null;
@@ -216,7 +223,9 @@ export class CreditLedgerCore {
     }
     const open = num(this.one('SELECT COUNT(*) AS c FROM reservations')?.c);
     if (open >= this.limits.maxStreams) return { ok: false, code: 'TOO_MANY_STREAMS' };
-    const today = num(this.one('SELECT credits FROM daily WHERE day = ?', nowIso.slice(0, 10))?.credits);
+    const today = num(
+      this.one('SELECT credits FROM daily WHERE day = ?', nowIso.slice(0, 10))?.credits
+    );
     if (today + this.reservedCredits() + credits > this.limits.dailyCreditCap) {
       return { ok: false, code: 'DAILY_CAP' };
     }
@@ -249,10 +258,16 @@ export class CreditLedgerCore {
 
   /** Frees a reservation without charging, for a call that never reached the provider. */
   release(reservationId: string): boolean {
-    const found = this.one('SELECT id, conversation_id AS c FROM reservations WHERE id = ?', reservationId);
+    const found = this.one(
+      'SELECT id, conversation_id AS c FROM reservations WHERE id = ?',
+      reservationId
+    );
     if (!found) return false;
     this.sql.exec('DELETE FROM reservations WHERE id = ?', reservationId);
-    this.sql.exec('UPDATE conversations SET calls = MAX(calls - 1, 0) WHERE id = ?', String(found.c));
+    this.sql.exec(
+      'UPDATE conversations SET calls = MAX(calls - 1, 0) WHERE id = ?',
+      String(found.c)
+    );
     return true;
   }
 
@@ -283,7 +298,11 @@ export class CreditLedgerCore {
     for (const lot of lots) {
       if (left <= 0) break;
       const take = Math.min(left, num(lot.r));
-      this.sql.exec('UPDATE lots SET credits_remaining = credits_remaining - ? WHERE id = ?', take, String(lot.id));
+      this.sql.exec(
+        'UPDATE lots SET credits_remaining = credits_remaining - ? WHERE id = ?',
+        take,
+        String(lot.id)
+      );
       firstLot ??= String(lot.id);
       left -= take;
     }
@@ -297,7 +316,11 @@ export class CreditLedgerCore {
       charged,
       charged
     );
-    this.sql.exec('UPDATE conversations SET tokens = tokens + ? WHERE id = ?', convTokens, String(res.conversation_id));
+    this.sql.exec(
+      'UPDATE conversations SET tokens = tokens + ? WHERE id = ?',
+      convTokens,
+      String(res.conversation_id)
+    );
     return {
       ok: true,
       charged,
@@ -357,10 +380,13 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
 
   /** The global pause (D10), read from D1 with a 30 second cache. A failed read refuses: the ledger is the hard stop. */
   private async paused(nowMs: number): Promise<boolean> {
-    if (this.pauseCache && nowMs - this.pauseCache.at < PAUSE_CACHE_MS) return this.pauseCache.paused;
+    if (this.pauseCache && nowMs - this.pauseCache.at < PAUSE_CACHE_MS)
+      return this.pauseCache.paused;
     let paused = true;
     try {
-      const row = await this.env.DB.prepare('SELECT paused_at AS p FROM ai_credit_control WHERE id = 1').first<{
+      const row = await this.env.DB.prepare(
+        'SELECT paused_at AS p FROM ai_credit_control WHERE id = 1'
+      ).first<{
         p: string | null;
       }>();
       paused = row?.p != null;
@@ -395,7 +421,9 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
           )
           .run();
       } catch (error) {
-        console.error(`[credit-ledger] history row for ${row.reservationId} not written: ${String(error)}`);
+        console.error(
+          `[credit-ledger] history row for ${row.reservationId} not written: ${String(error)}`
+        );
       }
     }
   }
@@ -451,7 +479,7 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
 }
 
 /** The stub of one org's ledger. An EU region keeps the object inside the EU jurisdiction, as its D1 is. */
-export function creditLedgerStub(env: CreditLedgerEnv, orgId: string): DurableObjectStub<CreditLedger> {
+function creditLedgerStub(env: CreditLedgerEnv, orgId: string): DurableObjectStub<CreditLedger> {
   const namespace = env.CREDIT_LEDGER;
   if (!namespace) throw new Error('CREDIT_LEDGER is not bound on this Worker');
   const scoped = env.REGION === 'eu' ? namespace.jurisdiction('eu') : namespace;
