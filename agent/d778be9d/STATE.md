@@ -1,27 +1,22 @@
-## SESSION d778be9d 2026-11-26T10:05:36Z
+## SESSION d778be9d 2026-11-26T13:37:16Z
 
 ## Big pieces
-- Edge release (ASKED:2026-11-25T16:35Z, #58a674f6) waits on ci:quick. Left: plan-bindings (closes when bench box R2 0e4aa275 of PLAN-multi-region-bench ticks, item #5f4130cf) and ops-health (pushed-head CI). Then: resume repair agent ae9b56c0f01fa2138 for ci:quick, vm:check --changed, push 1121-1, release:local --channel edge --branch-release --dry-run then real; record rollback ids and D1 bookmarks.
-- Cloudflare inventory (#957e0e50), operator rulings 09:24-10:10Z: remove all proof-* companies; delete rediacc-configs-eu and rediacc-www-media; archive then delete edge-rediacc-configs-eu; finish rename L10 then delete rediacc-backups-eu; ci:quick fails on objects past deadline; every delete path dry-run by default with coded refusals. Findings agent/d778be9d/cf-inventory-findings.md; PLAN-cf-inventory.md still to write.
-- rotation-admin bws project (read only) holds AWS_OPS pair, CF global pair, parked IAM admin pair; ./run.sh rotation reads it via ~/.config/rediacc/bws-rotation-token.
+- Edge release (ASKED:2026-11-25T16:35Z, #58a674f6): bench R2 ticked, plan-bindings green. Full ci:quick over tree 7b8eccbd was red on 25 gates (many fixed during the run). Repair wave: python-types/pytest/test-cli/format/shell-format (writer adbe4cf96b0618836), gate-tree-writes/vacuity/guard-mutations/command-planes/checkout-cone/budgets/docs-thumb/search-index (a1102048585221b54), credentials (landed; secret-supply needs `./run.sh rotation rotate cf-r2-bench-wipe` then empty PENDING_FIRST_ROTATE in private/account/tests/integration/rotation-bitwarden-names.test.ts; ops-health clears when an ingested run is green). Plan-record gates green (committed). Then rerun ci:quick, vm:check --changed, push 1121-1, release:local --channel edge --branch-release --dry-run then real.
+- Old buckets (#66f4558b): configs-eu and edge-configs-eu archives verified; rediacc-www-media --to-bucket sha256 verify running (pid 701269, shell bxhnqm2th); runner a43686e70e1d4151e then runs plan, delete --write, listing.
+- Hostinger: ssh muhammed@srv1107114.hstgr.cloud works passwordless via ~/.ssh/config and the rdc-persisted key ~/.ssh/rediacc_keys/_hostinger. The executor reaches hostinger only over IPv6.
+- writers-now: 30-min cadence, floor 8 (landed). Round 33 recorded (survey /tmp/writers-now/1121-1-20261126T1326Z-r33.md, 51 seeds), survey agent not yet spawned.
 
 ## Delegated
-- proof companies all removed (#957e0e50 closed). R2 blocked (#5f4130cf): needs org members+configs on bench-us/asia and a machine their proxies reach (not hostinger); this holds plan-bindings and the release.
-- a128598c89722c0fa: rename L10 on backups-eu, report the L11 delete command.
-- a532f657e09fcdc3f #66f4558b: fix cf_retire listing defects, then the bucket retire.
-- a5f14d5b05f02223a #f7128272: Cloudflare token hardening plan from official docs.
-- a421dc18487b54878: CL-BW (FR9).
-
-## Owed ticks
-- Box audit live-owed: `worklist.py --box-audit d778be9d --live-owed` (N2 2df4a7f5, AI13, DO18/DO19, AF4, AI14, AC7, FN12, RW-D2, R1, LM-OP1/R-OP1, AG-OP-L1).
-- AI16 b5180148 now complete (lint:unused rc 0): tick it. AI10 c9e75130 owed (real Whisper hash).
-- Mint cf-r2-bench-wipe and rebind reset-bench-eu (#e5cbbdb0); 4 scoped CF tokens, operator IAM users (#cf7b9860).
-- CL-A lease held (#f5f6a1df), land after the release. Host temp plan: 2 open questions.
+- adbe4cf96b0618836 #f3b10573, a1102048585221b54 #709dab4e: ci:quick repairs.
+- a43686e70e1d4151e #66f4558b: bucket retire.
 
 ## Armed
 - #0f42f15e 2026-12-01 asia key delete.
 
+## Owed ticks
+- `worklist.py --box-audit d778be9d --live-owed`. AI10 c9e75130 waits on the [?] media upload #d83cd21c (DEFAULT uploads). L0 needs a fresh sampled ci:quick (#08169aa4). HT2/HT3 partial. W3 curator. FL11 partial.
+
 ## Next action
-1. Land each report as it arrives (land, verify on the merged tree, mark findings, tick, gc).
-2. After R2 ticks: ci:quick, then the release chain.
-3. Tick AI16; mint the wipe-only key and scoped tokens; write PLAN-cf-inventory.md; writers-now when due.
+1. Land each repair writer, rerun ci:quick; mint cf-r2-bench-wipe for secret-supply.
+2. Spawn the round-33 survey and staff its clusters.
+3. On green: vm:check --changed, push, release dry run, release, record rollback ids.
