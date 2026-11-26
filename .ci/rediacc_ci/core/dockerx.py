@@ -775,7 +775,7 @@ __all__ = [
 
 
 # A name `export NAME=value` can carry; an exported bash function (`BASH_FUNC_x%%`) or a name with odd characters cannot.
-_EXPORTABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+_EXPORTABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 
 # Names bash holds readonly (an `export` of one prints "readonly variable" and changes nothing), and `_`, which bash rewrites after every command.
 _BASH_READONLY = frozenset({"BASHOPTS", "BASH_VERSINFO", "EUID", "PPID", "SHELLOPTS", "UID", "_"})
@@ -791,7 +791,8 @@ def _environment_file(carried: dict[str, str], user: str) -> str:
     """
     fd, path = tempfile.mkstemp(prefix="rediacc-group-env-")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        # surrogateescape writes back the exact bytes of a value that was not valid UTF-8, where strict encoding would raise.
+        with os.fdopen(fd, "w", encoding="utf-8", errors="surrogateescape") as handle:
             handle.writelines("export %s=%s\n" % (k, shlex.quote(v)) for k, v in carried.items())
         if os.geteuid() == 0:
             try:
@@ -821,7 +822,7 @@ def group_command(
 ) -> list[str] | None:
     """The argv that runs shell `command` with the `docker` group active, or None where neither route exists.
 
-    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... bash -c '<source-and-remove>; <command>' bash <file>`, which starts a fresh login-group set. It carries the whole inherited environment across (names `export` can set; `sg` keeps all of it, and the re-exec'd run must see the same tokens and REDIACC_* settings on either route), with `extra_env` (the one-hop guard) written last.
+    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... bash -c '<source-and-remove>\n<command>' bash <file>`, which starts a fresh login-group set. It carries the whole inherited environment across (names `export` can set; `sg` keeps all of it, and the re-exec'd run must see the same tokens and REDIACC_* settings on either route), with `extra_env` (the one-hop guard) written last. A name bash reads at startup (`BASH_ENV`) is exported only after the child has started, so it no longer runs a file in that child; that is deliberate, since the sudo route would otherwise run a caller-chosen file as `user`.
 
     NO VALUE BUT PATH AND HOME SITS ON THE ARGV (review 8abaf8f4.1): any local user reads an argv through /proc/<pid>/cmdline or ps, and the inherited environment holds tokens. The rest travels in the 0600 file `_environment_file` writes, which the child's bash sources and removes before `command` runs. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
     """

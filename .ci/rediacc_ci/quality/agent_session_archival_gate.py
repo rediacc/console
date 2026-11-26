@@ -496,8 +496,8 @@ def _s2(root: pathlib.Path, now: float) -> list[ASA.Finding]:
     )
 
 
-def _tracked_texts(root: pathlib.Path) -> dict[str, str]:
-    """Every tracked file outside agent/reviews/ that reads as text (no NUL byte), whatever its extension, so a ledger (.jsonl), shell or toml file citing a due directory holds the prune too (per-commit review fb629e93.2)."""
+def _tracked_texts(root: pathlib.Path, unreadable: list[str] | None = None) -> dict[str, str]:
+    """Every tracked file outside agent/reviews/ that reads as text (no NUL byte in its first 8 KB), whatever its extension, so a ledger (.jsonl), shell or toml file citing a due directory holds the prune too (per-commit review fb629e93.2). A file that cannot be read is appended to `unreadable`, since a citer in it would go unseen (review ac8e280b.1)."""
     texts = {}
     for rel in gitx.ls_files(root=root, existing=True):
         if rel.startswith(ASA.REVIEWS_DIR + "/"):
@@ -505,6 +505,9 @@ def _tracked_texts(root: pathlib.Path) -> dict[str, str]:
         try:
             raw = (root / rel).read_bytes()
         except OSError:
+            # A directory or dangling symlink among the tracked paths (a submodule, a link) holds no text; only a real file that will not open may hide a citer.
+            if unreadable is not None and (root / rel).is_file():
+                unreadable.append(rel)
             continue
         if b"\0" in raw[:8192]:
             continue
@@ -525,9 +528,18 @@ def prune_reviews(root: pathlib.Path, *, write: bool) -> int:
         print("✓ no agent/reviews/<branch>/ directory is past its retention")
         return 0
     names = [d.branch for d in due]
-    citers = ASA.citers_of(_tracked_texts(root), names)
+    unreadable: list[str] = []
+    citers = ASA.citers_of(_tracked_texts(root, unreadable), names)
     for d in due:
         print("due: %s/%s/" % (ASA.REVIEWS_DIR, d.branch))
+    if unreadable:
+        print(
+            "✗ refusing to prune: these tracked files cannot be read, so a citation in them would go unseen:",
+            file=sys.stderr,
+        )
+        for rel in sorted(unreadable):
+            print("  %s" % rel, file=sys.stderr)
+        return 1
     if citers:
         print(
             "✗ refusing to prune: these tracked files cite a due review directory:", file=sys.stderr

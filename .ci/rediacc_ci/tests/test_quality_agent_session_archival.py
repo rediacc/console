@@ -372,3 +372,24 @@ def test_prune_does_not_report_a_directory_that_would_not_delete(monkeypatch, tm
     out = capsys.readouterr()
     assert "could not delete agent/reviews/0101-9/" in out.err
     assert "deleted" not in out.out
+
+
+def test_prune_refuses_when_a_tracked_file_cannot_be_read(monkeypatch, tmp_path, capsys):
+    """An unreadable file may hold a citer, so it holds the prune and is named (review ac8e280b.1)."""
+    gate = _prune_setup(monkeypatch, tmp_path, {"agent/reviews/0101-9/clean.jsonl": b"{}\n"})
+    (tmp_path / "locked.txt").write_text("agent/reviews/0101-9/\n", encoding="utf-8")
+    (tmp_path / "dir-or-link").mkdir()
+    monkeypatch.setattr(gate.gitx, "ls_files", lambda *_a, **_k: ["locked.txt", "dir-or-link"])
+    real = pathlib.Path.read_bytes
+
+    def refuse(self):
+        if self.name == "locked.txt":
+            raise PermissionError(13, "denied")
+        return real(self)
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", refuse)
+    assert gate.prune_reviews(tmp_path, write=True) == 1
+    assert (tmp_path / "agent/reviews/0101-9").exists()
+    err = capsys.readouterr().err
+    assert "locked.txt" in err
+    assert "dir-or-link" not in err

@@ -182,6 +182,20 @@ def _probe_findings(registry: "mod.Registry") -> list[str]:
     return found
 
 
+def test_entry_run_reads_a_run_that_is_the_last_property_without_a_comma(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 53515727.2: a manifest entry whose `run` carries no trailing comma still resolves, so its gate pointer is not dangling."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    reg.manifest.write_text(
+        "export const ENTRIES = [\n  {\n    id: 'check:a',\n    run: 'echo a'\n  },\n"
+        "  {\n    id: 'check:b',\n    run: 'echo b',\n  },\n];\n",
+        encoding="utf-8",
+    )
+    assert reg.entry_run("check:a") == "echo a"
+    assert reg.entry_run("check:b") == "echo b"
+
+
 def test_a_clean_registration_passes_the_probe_assertion(tmp_path: pathlib.Path) -> None:
     reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
     assert _probe_findings(reg) == []

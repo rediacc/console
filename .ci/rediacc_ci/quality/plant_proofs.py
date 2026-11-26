@@ -908,7 +908,9 @@ def python_delegate_state(root):
         registered = any(
             isinstance(e, dict)
             and e.get("id") == PYTHON_DELEGATE_ID
-            and PYTHON_DELEGATE_MODULE in str(e.get("run", ""))
+            and re.search(
+                r"-m\s+%s(?![\w.])" % re.escape(PYTHON_DELEGATE_MODULE), str(e.get("run", ""))
+            )
             for e in entries
         )
     return exists, registered

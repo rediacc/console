@@ -219,3 +219,17 @@ def test_the_family_is_the_four_loop_files() -> None:
         ".claude/commands/landing.md",
     )
     assert pd.THRESHOLD == 25
+
+
+def test_the_selftest_unpacking_survives_a_wider_family() -> None:
+    """Review e1ecd8e0.2: the module-level unpacking names the first four files and swallows the rest, so widening FAMILY cannot stop the import."""
+    line = next(
+        ln
+        for ln in pathlib.Path(pd.__file__).read_text(encoding="utf-8").splitlines()
+        if ln.startswith("CLAUDE_MD, FIX_LAUNCHER")
+    )
+    scope: dict = {"FAMILY": tuple("f%d.md" % i for i in range(7))}
+    exec(compile(line, "<unpack>", "exec"), scope)
+    assert scope["FIX_MERGE"] == "f3.md"
+    assert scope["_BEYOND_FIXTURES"] == ["f4.md", "f5.md", "f6.md"]
+    assert list(pd.FAMILY[4:]) == pd._BEYOND_FIXTURES

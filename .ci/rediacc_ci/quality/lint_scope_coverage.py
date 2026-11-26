@@ -172,7 +172,7 @@ def lint_roots(scripts, name):
                     if skip:
                         skip = False
                     elif t.startswith("-"):
-                        # `--max-diagnostics 50` hands the flag its value as the NEXT token; that value is not a path root (`--flag=value` is one token and never reaches here).
+                        # `--max-diagnostics 50` hands the flag its value as the NEXT token; that value is not a path root (`--flag=value` is one token that enters this branch too, and `skip` stays False because it is not in VALUED_FLAGS).
                         skip = t in VALUED_FLAGS
                     else:
                         found.append(t)

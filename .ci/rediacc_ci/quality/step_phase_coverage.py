@@ -154,6 +154,7 @@ def calls_in(src: str, names: set[str], aliases: set[str], consts: dict[str, str
     sites: list[int] = [m.end() for m in _RECEIVER_CALL_RE.finditer(masked) if m.group(1) in names]
     if aliases:
         alt = "|".join(sorted(re.escape(a) for a in aliases))
+        # The optional receiver is deliberate: an alias bound as a struct field (`mark: timer.Record`) is called as `d.mark(`, and a receiver's type is not knowable from the text. An unrelated method that shares an alias name and takes a string is therefore read as a call (an R1 or R4 finding the author clears by renaming one side), which a missed emitter would not give.
         for m in re.finditer(r"(?<![\w])(?:\w+\.)?(?:" + alt + r")\s*\(\s*", masked):
             # A declaration `func mark(` or a method `func (r *R) mark(` is not a call.
             before = masked[max(0, m.start() - 80) : m.start()]

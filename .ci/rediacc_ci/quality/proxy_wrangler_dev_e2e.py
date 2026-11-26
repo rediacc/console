@@ -102,7 +102,6 @@ SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
 # The org the fake account routes the caller to; the stub issuer is asked to issue for exactly this org.
 CALLER_ORG = "org-wrangler-dev-e2e"
 READY_PATH = "/v1/ready"
-# An authenticated executor route that needs no job and no machine: the executor verifies the bearer first, then answers 400 for the missing `machine` query, so a 400 (never a 401) proves the caller was authenticated through the Worker's egress.
 # The poll route of a proxied machine job; the held `/events` route it replaced was removed with the detached-jobs work (PLAN-detached-jobs J2), and an unknown route answers a bare 404.
 AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/poll"
 AUTH_OK_STATUS = 400
@@ -184,8 +183,8 @@ def dev_config_findings(dev: dict, deploy: dict) -> list[str]:
         )
     elif dev.get("name") != DEV_WORKER_NAME:
         out.append(
-            "%s is named %r but the gate cleans up containers named %s*; change one to match the other"
-            % (DEV_CONFIG, dev.get("name"), CONTAINER_PREFIX)
+            "%s is named %r but must be named %r, since the gate cleans up containers named %s*"
+            % (DEV_CONFIG, dev.get("name"), DEV_WORKER_NAME, CONTAINER_PREFIX)
         )
     out.extend(
         "%s `%s` is %r but %s has %r; copy the deployed value, or this gate proves a different Worker"
@@ -868,9 +867,16 @@ def selftest() -> bool:
         % CI_TIMEOUT_MAX_MIN,
         READY_TIMEOUT_S + REQUEST_TIMEOUT_S + SETUP_MARGIN_S <= CI_TIMEOUT_MAX_MIN * 60,
     )
+    ci_yml = (paths.repo_root() / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     check(
-        "the job display carries the caller's prefix, as Actions shows it",
-        CI_JOB_DISPLAY.startswith(CI_CALLER_DISPLAY + " / "),
+        "the caller prefix is the name of the ci.yml job that calls the lane's workflow",
+        re.search(
+            r"^    name: %s\n(?:(?!^  \S).*\n)*?    uses: \./%s$"
+            % (re.escape(CI_CALLER_DISPLAY), re.escape(CI_WORKFLOW)),
+            ci_yml,
+            re.MULTILINE,
+        )
+        is not None,
     )
     for label, broken in (
         (
