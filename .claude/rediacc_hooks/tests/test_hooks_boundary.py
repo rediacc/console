@@ -18,7 +18,7 @@ import types
 
 import pytest
 
-from rediacc_hooks import dispatch, guards
+from rediacc_hooks import dispatch, guards, syspath
 from rediacc_hooks.guards import _harness
 from rediacc_hooks.tests import hookcases
 
@@ -84,15 +84,16 @@ FIXTURE_CWD = "/nonexistent-plan-concurrency-fixture"
 
 def roster_name():
     """The munged project-directory name every guard run reads its roster from. The payload's `cwd` does not pick it: `wl_core.project_start` takes CLAUDE_PROJECT_DIR, then the hook file's own repo, and only then the event's cwd (wl_core.py `project_start`, rungs 1 to 3), so one name serves every payload, whatever its cwd (review b7812212.1, not a bug). The stop-hook modules this imports are dropped from `sys.modules` again, so a later test imports its own (review b7812212.2)."""
-    stop_dir = str(_harness.DISPATCH.parents[1] / "hooks" / "stop")
+    stop_dir = str(syspath.STOP_DIR)
     seen = set(sys.modules)
-    sys.path.insert(0, stop_dir)
+    added = syspath.on_sys_path(stop_dir)
     try:
         wl_core = importlib.import_module("wl_core")
         wl_report = importlib.import_module("wl_report")
         return wl_report._munged(wl_core.project_root(wl_core.project_start({"cwd": FIXTURE_CWD})))
     finally:
-        sys.path.remove(stop_dir)
+        if added:
+            sys.path.remove(stop_dir)
         for name in set(sys.modules) - seen:
             origin = getattr(sys.modules[name], "__file__", None) or ""
             if origin.startswith(stop_dir):
