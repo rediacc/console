@@ -14,6 +14,7 @@ import pytest
 from rediacc_ci.testrun import onprem_scenarios as scenarios
 from rediacc_ci.testrun import onprem_stack, onprem_suites
 from rediacc_ci.testrun.onprem_suites import config_edit
+from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 EXECUTOR = "tok-executor-value"
@@ -128,7 +129,7 @@ def test_an_edit_that_is_admitted_for_an_agent_fails_the_suite(
 def test_a_refusal_that_names_a_hosted_only_page_fails(
     store: FakeStore, home: pathlib.Path, name: str
 ) -> None:
-    store.refusal_text = REFUSAL + "\nSee https://rediacc.cloud/account/config-edit"
+    store.refusal_text = REFUSAL + "\nSee https://%s/account/config-edit" % PRODUCT_DOMAIN
     verdict = _run(_ctx(store, home), name)
     assert verdict["ok"] is False
     assert "hosted-only page" in verdict["detail"]

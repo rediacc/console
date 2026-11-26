@@ -16,6 +16,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.controls import fixture_git_env
 from rediacc_ci.quality import mcp_logging_guard as gate
+from rediacc_ci.well_known import MCP_US_HOST
 
 ROOT = pathlib.Path(paths.repo_root())
 
@@ -91,8 +92,8 @@ PLANTS = {
     "W2": ("workers/mcp/wrangler.eu.toml", "invocation_logs = false", "invocation_logs = true"),
     "W3": (
         "workers/mcp/wrangler.us.toml",
-        'pattern = "mcp.us.rediacc.cloud"',
-        'pattern = "mcp.us.rediacc.cloud/*?token=*"',
+        'pattern = "%s"' % MCP_US_HOST,
+        'pattern = "%s/*?token=*"' % MCP_US_HOST,
     ),
     "S1": ("workers/mcp/src/index.ts", "export default {", "void getUnredacted;\nexport default {"),
     "S2": (

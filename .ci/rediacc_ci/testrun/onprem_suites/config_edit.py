@@ -13,6 +13,7 @@ import tempfile
 from typing import TYPE_CHECKING
 
 from rediacc_ci.testrun.onprem_suites import Result, failed, passed, scenario
+from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import subprocess
@@ -24,7 +25,7 @@ OLD_VAR = "REDIACC_ALLOW_CONFIG_EDIT"
 AGENT_ENV = {"CLAUDECODE": "1", OLD_VAR: "*"}
 ROTATE_POINTER = "/credentials/ssh/privateKey"
 # A refusal that sends the reader to the hosted portal is wrong on an on-premise stack.
-HOSTED_ONLY_MARKS = ("rediacc.cloud", "/account/")
+HOSTED_ONLY_MARKS = (PRODUCT_DOMAIN, "/account/")
 APPLY_FILE = "config-edit-probe.jsonc"
 
 

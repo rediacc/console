@@ -12,6 +12,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_mcp as dm
+from rediacc_ci.well_known import MCP_EU_HOST, MCP_US_HOST
 
 REPO = pathlib.Path(paths.repo_root())
 VERSION = "0b6c8f2e-1111-4222-8333-944445555666"
@@ -75,14 +76,14 @@ class FakeWrangler:
         if verb == "secret" and argv[4] == "list":
             return dm.Result(0, json.dumps([{"name": n} for n in self.secrets]), "")
         if verb == "secret" and argv[4] == "bulk":
-            return dm.Result(0, stdin if self.echo_stdin else "Success!", "")
+            return dm.Result(0, (stdin or "") if self.echo_stdin else "Success!", "")
         if verb == "rollback":
             return dm.Result(0, "rolled", "")
         return dm.Result(99, "", "unexpected %s" % verb)
 
 
 def answers(
-    *, oauth: int = 200, issuer: str | None = "https://mcp.eu.rediacc.cloud", grant: int = 401
+    *, oauth: int = 200, issuer: str | None = "https://" + MCP_EU_HOST, grant: int = 401
 ) -> dm.Fetcher:
     def fetch(url: str, _method: str) -> tuple[int, str]:
         if url.endswith(dm.SMOKE_PATH_OAUTH):
@@ -197,7 +198,7 @@ def test_deploy_pushes_missing_secrets_on_stdin_only(repo: pathlib.Path, tmp_pat
     assert result["smoke_rc"] == 0
     bulk = [(argv, stdin) for argv, stdin in fake.calls if argv[3:5] == ["secret", "bulk"]]
     assert len(bulk) == 1
-    document = json.loads(bulk[0][1])
+    document = json.loads(bulk[0][1] or "")
     assert sorted(document) == ["AUTH_REQUEST_KEY", "CONFIRM_KEY"]
     values = list(document.values())
     assert all(len(v) >= 40 for v in values)
@@ -224,7 +225,7 @@ def test_one_missing_secret_pushes_only_that_one(repo: pathlib.Path) -> None:
     fake = FakeWrangler(live=[PREVIOUS, VERSION], secrets=["AUTH_REQUEST_KEY"])
     drive(repo, fake)
     bulk = [stdin for argv, stdin in fake.calls if argv[3:5] == ["secret", "bulk"]]
-    assert [sorted(json.loads(s)) for s in bulk] == [["CONFIRM_KEY"]]
+    assert [sorted(json.loads(s or "")) for s in bulk] == [["CONFIRM_KEY"]]
 
 
 def test_first_deploy_has_no_rollback(repo: pathlib.Path) -> None:
@@ -264,7 +265,7 @@ def test_smoke_names_each_failure() -> None:
     target = dm.targets(dm.load_regions(REPO))["eu"]
     assert dm.smoke_once(target, answers()) is None
     assert "answered 503" in (dm.smoke_once(target, answers(oauth=503)) or "")
-    assert "issuer" in (dm.smoke_once(target, answers(issuer="https://mcp.us.rediacc.cloud")) or "")
+    assert "issuer" in (dm.smoke_once(target, answers(issuer="https://" + MCP_US_HOST)) or "")
     assert "not 401" in (dm.smoke_once(target, answers(grant=200)) or "")
 
 

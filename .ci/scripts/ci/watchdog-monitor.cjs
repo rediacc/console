@@ -37,7 +37,11 @@
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
-const { WK_CF_API_BASE, WK_GH_ORIGIN } = require('../../../scripts/ci/well-known.cjs');
+const {
+  WK_ANTHROPIC_API_BASE,
+  WK_CF_API_BASE,
+  WK_GH_ORIGIN,
+} = require('../../../scripts/ci/well-known.cjs');
 
 // A downloaded release binary that will not execute is normally a truncated or stale CDN download (transient). It is a corrupt build only when no platform's install validation survives it. The classifier prompt says as much, but a prompt is advice; this signature + cross-job check is the enforcement.
 const BINARY_EXEC_FAILURE_RE =
@@ -1386,7 +1390,7 @@ const monitor = async ({ github, context, core }) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch(`${WK_ANTHROPIC_API_BASE}/messages`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
