@@ -36,6 +36,11 @@
  * the account's approval route answers only in a conversation whose row they created, and the
  * reply is posted once the turn ends. A grant-bound chat belongs to no user and is not recorded.
  *
+ * `POST /v1/ai/transcribe?profile=<name>` takes one recording the account relays unread (AI10, D12)
+ * and answers `{ text }` from the resolved profile's OpenAI-compatible transcription endpoint. An
+ * Anthropic Messages or Rediacc tier profile has none and is refused with
+ * `AI_TRANSCRIBE_UNSUPPORTED`; the audio is held only for the one provider call.
+ *
  * `POST /v1/ai/test` runs the tool-calling smoke of the resolved profile (D12) and answers its
  * verdict as JSON; nothing is stored.
  */
@@ -75,6 +80,15 @@ import {
 import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke } from '../ai/smoke.js';
 import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
+import {
+  AI_TRANSCRIBE_FAILED,
+  AI_TRANSCRIBE_UNSUPPORTED,
+  MAX_TRANSCRIBE_BYTES,
+  supportsTranscription,
+  TRANSCRIBE_AUDIO_TYPES,
+  TranscriptionFailed,
+  transcribeAudio,
+} from '../ai/transcribe.js';
 import { ForensicsTicket } from '../forensics/client.js';
 import { type AgentGrantHandle } from './agent-grant-session.js';
 import {
@@ -120,7 +134,55 @@ export const AI_ROUTES = {
   approval: '/v1/ai/approval',
   chat: PROXY_ROUTES.aiChat,
   test: PROXY_ROUTES.aiTest,
+  transcribe: '/v1/ai/transcribe',
 } as const;
+
+/** A `?profile=` of the transcription route, as the chat body's `profile` is checked. */
+const TranscribeProfileSchema = z.string().min(1).max(128);
+
+function audioTypeOf(header: string | undefined) {
+  const type = (header ?? '').split(';')[0]?.trim().toLowerCase() ?? '';
+  return TRANSCRIBE_AUDIO_TYPES.find((known) => known === type);
+}
+
+interface Recording {
+  type: (typeof TRANSCRIBE_AUDIO_TYPES)[number];
+  profile: string | undefined;
+  audio: Uint8Array<ArrayBuffer>;
+}
+
+/** The answer to a profile the transcription guard refused or a provider refusal; anything else is rethrown. */
+function transcriptionRefusal(error: unknown): { body: Record<string, string>; status: 422 | 502 } {
+  if (error instanceof ProviderProfileError) {
+    return { status: 422, body: { error: error.message, code: AI_PROFILE_UNRESOLVED } };
+  }
+  if (!(error instanceof TranscriptionFailed)) throw error;
+  return { status: 502, body: { error: error.message, code: AI_TRANSCRIBE_FAILED } };
+}
+
+/** The recording of a transcription request, or the refusal of a malformed one. */
+async function readRecording(
+  c: Context
+): Promise<Recording | { refusal: { error: string; code?: string }; status: 413 | 415 }> {
+  const type = audioTypeOf(c.req.header('content-type'));
+  if (!type) {
+    return {
+      status: 415,
+      refusal: {
+        error: `Transcription takes ${TRANSCRIBE_AUDIO_TYPES.join(', ')}`,
+        code: AI_TRANSCRIBE_UNSUPPORTED,
+      },
+    };
+  }
+  const raw = c.req.query('profile');
+  const name = raw === undefined ? undefined : TranscribeProfileSchema.safeParse(raw);
+  if (name && !name.success) throw new BadAiRequest('Malformed AI request: profile: invalid');
+  const audio = new Uint8Array(await c.req.arrayBuffer());
+  if (audio.byteLength === 0 || audio.byteLength > MAX_TRANSCRIBE_BYTES) {
+    return { status: 413, refusal: { error: `A recording is 1 to ${MAX_TRANSCRIBE_BYTES} bytes` } };
+  }
+  return { type, profile: name?.data, audio };
+}
 
 const AI_MODES = ['ask', 'auto', 'skip'] as const;
 export type AiMode = (typeof AI_MODES)[number];
@@ -204,6 +266,8 @@ export interface AiChatDeps {
   recording?: AiChatRecording;
   /** `renet job cancel` of one job, run inside the turn's config scope; `cancelOnMachine` when absent. */
   cancelJob?: (machine: string, jobId: string) => Promise<unknown>;
+  /** The fetch provider transcription goes out through, behind the profile guard; `fetch` when absent. */
+  transcribeFetch?: typeof globalThis.fetch;
 }
 
 /** Where a chat's turns are recorded, and the session key each is sealed under. */
@@ -591,6 +655,53 @@ export function registerAiRoutes(
       if ('refusal' in built) return c.json(built.refusal, built.status);
       const record = turnRecordOf(principal, config, body, configSessionId);
       return streamChat(c, built, session, body, record);
+    } catch (error) {
+      return refusal(c, error);
+    }
+  });
+
+  /** The provider's transcript of one recording, or the refusal that answers it. */
+  async function transcription(
+    profile: Profile,
+    recording: Recording,
+    signal: AbortSignal
+  ): Promise<{ body: Record<string, string>; status: 200 | 422 | 502 }> {
+    if (!supportsTranscription(profile)) {
+      return {
+        status: 422,
+        body: {
+          error: 'This profile has no transcription endpoint; pick an OpenAI-compatible profile.',
+          code: AI_TRANSCRIBE_UNSUPPORTED,
+        },
+      };
+    }
+    try {
+      const fetch = ai.chat?.transcribeFetch;
+      const text = await transcribeAudio(profile, recording.audio, recording.type, {
+        ...(fetch ? { fetch } : {}),
+        signal,
+      });
+      return { status: 200, body: { text } };
+    } catch (error) {
+      return transcriptionRefusal(error);
+    }
+  }
+
+  app.post(AI_ROUTES.transcribe, async (c) => {
+    try {
+      const principal = await helpers.authenticate(c.req.header('authorization'));
+      const recording = await readRecording(c);
+      if ('refusal' in recording) return c.json(recording.refusal, recording.status);
+      const configSessionId = helpers.configSession(c.req.header('x-config-session'));
+      if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
+      const config = await deps.loadConfig(principal, configSessionId);
+      const sources = await profileSources(principal, config, configSessionId);
+      const resolved = resolveProfile(sources, recording.profile);
+      if (!resolved.ok) {
+        return c.json({ error: resolved.message, code: AI_PROFILE_UNRESOLVED }, 404);
+      }
+      const answer = await transcription(resolved.profile, recording, c.req.raw.signal);
+      return c.json(answer.body, answer.status, { 'Cache-Control': 'no-store' });
     } catch (error) {
       return refusal(c, error);
     }

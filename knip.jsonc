@@ -207,9 +207,7 @@
         // BLOCKER: ui components import { Slot } from the radix-ui meta-package; this pins the underlying Slot implementation the meta resolves — no direct import ever appears
         "@radix-ui/react-slot",
         // BLOCKER: code imports react-router-dom (a thin re-export of react-router); both are declared so syncpack sameRange holds the pair to one version
-        "react-router",
-        // BLOCKER: the local Whisper-base microphone engine of D12 (operator ruling C38), added by AI1 for the open box AI10 (c9e75130), which imports it lazily in a worker
-        "@huggingface/transformers"
+        "react-router"
       ]
     },
     // workers/www is a real package with its own package.json, lockfile and
