@@ -4986,20 +4986,19 @@ def _stop_roster(ns):
     )
     if _stuck_problems:
         note_read_failure("stuck-shell", RuntimeError("; ".join(_stuck_problems)))
-    # A stuck waiter whose shell does real work, or that an in-flight item is leased to, is owned work: reported once, age-free, never a TaskStop order (the wl_bgsweep live-work rule). Only a shell that just waits blocks.
-    _stuck_live = wl_stuckshell.render_live(_stuck)
-    if _stuck_live:
-        outq_add(
-            worklist, session_id, state_doc, "stuck-shell-live", _stuck_live, 1, refresh_min=24 * 60
-        )
-    _stuck = wl_stuckshell.blocking(_stuck)
-    if _stuck:
-        vadd(
+    # A stuck waiter whose shell does real work, or that an in-flight item holds a fresh lease on, is owned work: reported once, age-free, never a TaskStop order (the wl_bgsweep live-work rule). A shell that only waits blocks unless a fresh lease names it; an expired lease exempts nothing.
+    wl_stuckshell.stop_check(
+        _stuck,
+        advise=lambda key, body: outq_add(
+            worklist, session_id, state_doc, key, body, 1, refresh_min=24 * 60
+        ),
+        block=lambda rows: vadd(
             "stuck-shell",
             True,
             M.V_STUCK_SHELL
-            % (len(_stuck), wl_stuckshell.STUCK_SHELL_MIN, wl_stuckshell.render(_stuck), me8),
-        )
+            % (len(rows), wl_stuckshell.STUCK_SHELL_MIN, wl_stuckshell.render(rows), me8),
+        ),
+    )
 
     # The armed actions are judged here, before any check that stands down for them: a lease an arm covers is listed armed rather than blocking, with this stop's latch already applied.
     _armed = armed_world(ns)

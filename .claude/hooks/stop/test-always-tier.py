@@ -166,6 +166,70 @@ def always_keys(tree):
     return out
 
 
+def stuck_shell_controls(tree):
+    """Controls for the stuck-shell check's two outputs (wl_stuckshell.stop_check) and its lease bound (review f4b82bed.3 and .4). Returns the failures."""
+    import datetime
+
+    import wl_stuckshell as S
+
+    fails = []
+    owned = {"shell": "bshell01", "reason": "runtime", "report": "", "age_min": 200.0}
+    owned.update(live="python3 cf_retire", leased="")
+    waits = {"shell": "bshell02", "reason": "runtime", "report": "", "age_min": 200.0}
+    waits.update(live="", leased="")
+
+    def drive(rows):
+        said, blocked = [], []
+        out = S.stop_check(rows, lambda k, b: said.append((k, b)), blocked.append)
+        return said, blocked, out
+
+    # f4b82bed.3: the owned row reaches the advisory queue with its body, and only the waiting row blocks.
+    said, blocked, out = drive([("agent1", owned), ("agent2", waits)])
+    keys = [k for k, _b in said]
+    if keys != ["stuck-shell-live"]:
+        fails.append("stop_check advised %r, wanted exactly ['stuck-shell-live']" % keys)
+    elif "agent agent1 waiting on shell bshell01: working: python3 cf_retire" not in said[0][1]:
+        fails.append("the stuck-shell-live body does not name the working shell: %r" % said[0][1])
+    elif "no TaskStop order" not in said[0][1] or "TaskStop bshell01" in said[0][1]:
+        fails.append("the stuck-shell-live body orders a TaskStop: %r" % said[0][1])
+    if blocked != [[("agent2", waits)]] or out != [("agent2", waits)]:
+        fails.append("stop_check blocked %r, wanted only agent2" % blocked)
+    elif "TaskStop bshell02" not in S.render(blocked[0]):
+        fails.append("the blocking row's render names no TaskStop for bshell02")
+    # CONTROL: with no owned row nothing is advised, so the assertion above can fail.
+    said, blocked, _out = drive([("agent2", waits)])
+    if said or len(blocked) != 1:
+        fails.append("CONTROL: a waiting-only set advised %r / blocked %r" % (said, blocked))
+
+    # The Stop hook routes its stuck rows through stop_check, so the advisory cannot be dropped from wl_checks without this failing.
+    called = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "wl_stuckshell"
+    }
+    if "stop_check" not in called:
+        fails.append(
+            "wl_checks.py no longer routes the stuck rows through wl_stuckshell.stop_check"
+        )
+
+    # f4b82bed.4: an expired lease names no shell; CONTROL: a fresh one does.
+    now = datetime.datetime.now(datetime.UTC)
+
+    def item(minutes):
+        until = (now + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%MZ")
+        line = "- [>] (sess0000) long verify until:%s worker:bshell01" % until
+        return {"id": "abcd1234", "state": ">", "line": line}
+
+    if S.leased_shells([item(-30)]):
+        fails.append("an expired lease still exempts its shell: %r" % S.leased_shells([item(-30)]))
+    if S.leased_shells([item(60)]) != {"bshell01": "abcd1234"}:
+        fails.append("CONTROL: a fresh lease no longer exempts its shell")
+    return fails
+
+
 def main():
     sys.path.insert(0, str(HERE))
     # The module under test, imported here so the hop above has run.
@@ -239,6 +303,9 @@ def main():
     )
     if "armed-action-due" in ALWAYS_KEYS:
         fails.append("armed-action-due is pinned always; Design 5 keeps it out of the FLOOR")
+
+    # 8. The stuck-shell check's advisory and lease bound (wl_stuckshell).
+    fails.extend(stuck_shell_controls(tree))
 
     for f in fails:
         print("FAIL: %s" % f)

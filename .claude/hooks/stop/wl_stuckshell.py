@@ -10,7 +10,7 @@ STUCK means the agent waits on a shell (the `wl_roster.armed_waiters` shape: not
 A stuck agent is not live: `wl_roster.shell_waiters` drops it, so the roster, `wl_liveness.live_worker_ids` and the writer estimate stop counting it, and the `stuck-shell` check names the agent, the shell and the two moves.
 
 LIVE WORK IS NEVER A TaskStop ORDER (2026-11-26), the wl_bgsweep rule (ca5331e3e4) applied here. Shell bxhnqm2th ran `cf_retire archive rediacc-www-media --to-bucket media`, a 3-hour sha256 verify of 8,422 objects, past the bound, and this check ordered `TaskStop bxhnqm2th` on every stop although the lead's item was leased to that very shell (`worker:bxhnqm2th`). Each stuck row now carries `live` (the command of the first descendant of the shell doing real work, per `wl_bgsweep.live_command`: not a sleep, a poll probe, a shell layer or the wake timer) and `leased` (the id of an in-flight item whose lease names `worker:<shell>`).
-A row with either is OWNED work: `blocking` drops it, and `render_live` reports it once, age-free, under the `stuck-shell-live` advisory with no TaskStop. A shell that only waits still blocks. The roster's liveness is unchanged: a stuck agent stays not-live, since the work belongs to the shell, which the event lists running.
+A row with either is OWNED work: `blocking` drops it, and `render_live` reports it once, age-free, under the `stuck-shell-live` advisory with no TaskStop. A shell that only waits blocks unless a FRESH lease names it: a lease past its `until:` (or with none, or one beyond the 120-minute cap) exempts nothing, so a lease a dead worker never released stops covering its shell once it expires. The roster's liveness is unchanged: a stuck agent stays not-live, since the work belongs to the shell, which the event lists running.
 
 A launch record with no readable timestamp answers nothing for (a) or (b), since a report captured before the launch belongs to an earlier turn, and a report store that cannot be read answers nothing for (a); neither makes an agent stuck. Like wl_roster this module reads no environment variable: every threshold is a literal, so no knob can keep a stuck agent live.
 """
@@ -164,12 +164,19 @@ def shell_work(shell_ids, table_with_age=None, anchor_table=None, stdout_task=No
 
 
 def leased_shells(items):
-    """{worker id: item id} for each in-flight (`>`) item, from the `worker:<id>` its lease names."""
+    """{worker id: item id} for each in-flight (`>`) item whose lease is fresh (`wl_core.lease_state`), from the `worker:<id>` it names.
+
+    An expired, missing or over-cap `until:` names no shell: a lease is a time-boxed claim, and one its worker died holding must stop exempting a hung shell once the box closes (review f4b82bed.4)."""
     out = {}
     for rec in items or ():
         if rec.get("state") != ">":
             continue
-        wm = C.WORKER.search(rec.get("line") or "")
+        line = rec.get("line") or ""
+        if "until:" not in line and rec.get("until"):
+            line += " until:%s" % rec["until"]
+        if C.lease_state(line) != "fresh":
+            continue
+        wm = C.WORKER.search(line)
         wid = rec.get("worker") or (wm.group(1) if wm else "")
         if wid:
             out.setdefault(str(wid), str(rec.get("id") or ""))
@@ -207,6 +214,19 @@ def is_owned(row):
 def blocking(rows):
     """The rows that still order a TaskStop: the shell only waits and no item is leased to it."""
     return [(aid, row) for aid, row in rows if not is_owned(row)]
+
+
+def stop_check(rows, advise, block):
+    """The `stuck-shell` check's two outputs for one stop's `rows` (`stop_rows`): `advise("stuck-shell-live", body)` once when any row is owned, and `block(rows)` with the rows that still order a TaskStop when any remain. Returns those blocking rows.
+
+    wl_checks binds `advise` to its once-only advisory queue and `block` to its `vadd`, so the advisory path is driven by a test rather than only by the absence of the blocking text (review f4b82bed.3)."""
+    live = render_live(rows)
+    if live:
+        advise("stuck-shell-live", live)
+    stuck = blocking(rows)
+    if stuck:
+        block(stuck)
+    return stuck
 
 
 def render_live(rows):
