@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T08:02:58.295Z",
+  "generatedAt": "2026-11-26T10:57:01.863Z",
   "legs": [
     {
       "index": 1,
@@ -264,6 +264,7 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_control_db.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py",
+        "pytest:.ci/rediacc_ci/tests/test_host_temp.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_apt_retry.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
@@ -511,6 +512,7 @@
         "pytest:.ci/rediacc_ci/tests/test_security_shfmt.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_build_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_port.py",
+        "pytest:.ci/rediacc_ci/tests/test_temp_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_install_methods.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_onprem_image.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_unit.py",
@@ -864,6 +866,7 @@
         "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_account.py",
+        "pytest:.ci/rediacc_ci/tests/test_vm_check_core_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_vm_check_list_evidence.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_called_permissions.py",
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
