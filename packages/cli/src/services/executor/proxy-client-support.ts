@@ -134,8 +134,13 @@ const CONNECT_PHASE_CODES = new Set([
   'UND_ERR_CONNECT_TIMEOUT',
 ]);
 
-/** A TLS failure: undici's handshake codes (`ERR_TLS_*`, `ERR_SSL_*`) and OpenSSL's certificate verdicts (`CERT_HAS_EXPIRED`, `SELF_SIGNED_CERT_IN_CHAIN`, ...). */
-const TLS_CODE = /^(ERR_TLS_|ERR_SSL_)|CERT/;
+/**
+ * A TLS failure that ends the handshake: undici's `ERR_TLS_*`, OpenSSL's certificate verdicts (`CERT_HAS_EXPIRED`,
+ * `SELF_SIGNED_CERT_IN_CHAIN`, ...) and the `ERR_SSL_*` records a handshake raises. Other `ERR_SSL_*` codes (bad record
+ * MAC, decryption failed, alerts) can hit an established keep-alive connection mid-request, so they stay unknown.
+ */
+const TLS_CODE =
+  /^ERR_TLS_|CERT|^ERR_SSL_(WRONG_VERSION_NUMBER|UNKNOWN_PROTOCOL|UNSUPPORTED_PROTOCOL|NO_PROTOCOLS_AVAILABLE|WRONG_SSL_VERSION|(SSLV3|TLSV1)_ALERT_HANDSHAKE_FAILURE|TLSV1_ALERT_PROTOCOL_VERSION)$/;
 
 function isConnectPhaseCode(code: unknown): boolean {
   return typeof code === 'string' && (CONNECT_PHASE_CODES.has(code) || TLS_CODE.test(code));

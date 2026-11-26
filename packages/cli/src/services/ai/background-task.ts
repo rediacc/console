@@ -129,7 +129,7 @@ export class BackgroundTasks {
     };
     this.tasks.set(input.taskId, task);
     this.advance(task, false);
-    // Once the new task is in: a task that ends at once is finished already, and the cap is for what stays.
+    // The cap is for what stays finished: the new task is live here, so finish() prunes again once it ends.
     this.pruneFinished(input.owner);
     return { ok: true, task: viewOf(task) };
   }
@@ -152,7 +152,7 @@ export class BackgroundTasks {
   }
 
   /** The user approved the held command: the task runs its next step. False when it was not waiting, or `toolCallId` is another call's. */
-  approve(owner: string, taskId: string, toolCallId?: string): boolean {
+  approve(owner: string, taskId: string, toolCallId: string): boolean {
     const task = this.owned(owner, taskId);
     if (task?.state !== 'needs_approval' || !this.holds(task, toolCallId)) return false;
     task.state = 'running';
@@ -161,7 +161,7 @@ export class BackgroundTasks {
   }
 
   /** The user rejected the held command: the task ends `cancelled` without running it. */
-  async reject(owner: string, taskId: string, toolCallId?: string): Promise<boolean> {
+  async reject(owner: string, taskId: string, toolCallId: string): Promise<boolean> {
     const task = this.owned(owner, taskId);
     if (task?.state !== 'needs_approval' || !this.holds(task, toolCallId)) return false;
     await this.finish(task, 'cancelled');
@@ -193,17 +193,23 @@ export class BackgroundTasks {
     }
   }
 
-  /** True when no call is named or the task is paused on the named one. */
-  private holds(task: Task, toolCallId: string | undefined): boolean {
-    return toolCallId === undefined || task.held?.toolCallId === toolCallId;
+  /** True when the task is paused on the named call. */
+  private holds(task: Task, toolCallId: string): boolean {
+    return task.held?.toolCallId === toolCallId;
   }
 
   /** Drop the owner's oldest finished tasks beyond {@link MAX_FINISHED_PER_USER}; a live task is never dropped. */
-  private pruneFinished(owner: string): void {
+  private pruneFinished(owner: string, keep?: string): void {
     const finished = [...this.tasks.values()].filter(
-      (t) => t.owner === owner && !LIVE.has(t.state)
+      (t) => t.owner === owner && !LIVE.has(t.state) && t.taskId !== keep
     );
-    for (const task of finished.slice(0, Math.max(0, finished.length - MAX_FINISHED_PER_USER))) {
+    for (const task of finished.slice(
+      0,
+      Math.max(
+        0,
+        finished.length - (keep === undefined ? MAX_FINISHED_PER_USER : MAX_FINISHED_PER_USER - 1)
+      )
+    )) {
       this.tasks.delete(task.taskId);
     }
   }
@@ -263,6 +269,7 @@ export class BackgroundTasks {
     await task.run
       .end({ state, ...(reason ? { errorCode: 'AI_TASK_FAILED' } : {}) })
       .catch(() => undefined);
+    this.pruneFinished(task.owner, task.taskId);
   }
 }
 

@@ -10,7 +10,11 @@ import { ProxyRequestError } from '../services/executor/proxy-client-support.js'
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
 
-/** True when the dispatch failed in a way that cannot say whether the job started: a timeout or a connection lost after the request may have been delivered. */
+/**
+ * True when the dispatch failed in a way that cannot say whether the job started: a timeout, a connection lost after
+ * the request may have been delivered, or any other NETWORK_ERROR not marked as never reaching the executor (an
+ * SSH-mapped, forensics or teardown failure). Only a ProxyRequestError with `mayHaveReached` false is definitive.
+ */
 export function jobStateUnknown(error: unknown): boolean {
   if (!(error instanceof CliExitError) || error.code !== ERROR_CODES.NETWORK_ERROR) return false;
   return !(error instanceof ProxyRequestError && !error.mayHaveReached);

@@ -29,16 +29,21 @@ describe('fetchMayHaveReached', () => {
     'CERT_HAS_EXPIRED',
     'DEPTH_ZERO_SELF_SIGNED_CERT',
     'ERR_TLS_CERT_ALTNAME_INVALID',
+    'ERR_SSL_WRONG_VERSION_NUMBER',
   ])('%s never reached the executor', (code) => {
     expect(fetchMayHaveReached(fetchFailed(coded(code)), false)).toBe(false);
   });
 
-  it.each(['ECONNRESET', 'UND_ERR_SOCKET', 'EPIPE', 'UND_ERR_HEADERS_TIMEOUT'])(
-    '%s may have reached it',
-    (code) => {
-      expect(fetchMayHaveReached(fetchFailed(coded(code)), false)).toBe(true);
-    }
-  );
+  it.each([
+    'ECONNRESET',
+    'UND_ERR_SOCKET',
+    'EPIPE',
+    'UND_ERR_HEADERS_TIMEOUT',
+    'ERR_SSL_BAD_RECORD_MAC',
+    'ERR_SSL_DECRYPTION_FAILED_OR_BAD_RECORD_MAC',
+  ])('%s may have reached it', (code) => {
+    expect(fetchMayHaveReached(fetchFailed(coded(code)), false)).toBe(true);
+  });
 
   it('a timeout may have reached it, whatever the cause says', () => {
     expect(fetchMayHaveReached(fetchFailed(coded('ECONNREFUSED')), true)).toBe(true);

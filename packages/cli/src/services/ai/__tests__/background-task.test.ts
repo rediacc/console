@@ -103,7 +103,8 @@ describe('background tasks', () => {
     expect(ids).toContain('live');
     expect(ids).toContain('last');
     expect(ids).not.toContain('t0');
-    expect(ids.filter((id) => id.startsWith('t'))).toHaveLength(MAX_FINISHED_PER_USER);
+    // The owner's whole finished set, 'last' included, is at the cap (the live task is the one extra).
+    expect(ids).toHaveLength(MAX_FINISHED_PER_USER + 1);
     // Control: another user's finished tasks are untouched.
     h.start('bob1', done, 'org\u0000bob');
     await h.tasks.settled('bob1');
@@ -152,9 +153,9 @@ describe('background tasks', () => {
     expect(h.ran).toEqual([]);
     expect(h.ended).toEqual([]);
     // Control: another user's approval does nothing, and only the owner's approval resumes the task.
-    expect(h.tasks.approve('org\u0000mallory', 't1')).toBe(false);
+    expect(h.tasks.approve('org\u0000mallory', 't1', 'call-1')).toBe(false);
     expect(h.ran).toEqual([]);
-    expect(h.tasks.approve('org\u0000alice', 't1')).toBe(true);
+    expect(h.tasks.approve('org\u0000alice', 't1', 'call-1')).toBe(true);
     await h.tasks.settled('t1');
     expect(h.ran).toEqual(['repo down']);
     expect(h.tasks.get('org\u0000alice', 't1')?.state).toBe('succeeded');
@@ -164,10 +165,10 @@ describe('background tasks', () => {
     const h = harness();
     h.start('t1');
     await h.tasks.settled('t1');
-    expect(await h.tasks.reject('org\u0000alice', 't1')).toBe(true);
+    expect(await h.tasks.reject('org\u0000alice', 't1', 'call-1')).toBe(true);
     expect(h.ran).toEqual([]);
     expect(h.ended).toEqual([{ state: 'cancelled' }]);
-    expect(h.tasks.approve('org\u0000alice', 't1')).toBe(false);
+    expect(h.tasks.approve('org\u0000alice', 't1', 'call-1')).toBe(false);
   });
 
   it('refuses a third task, counting a paused one, and frees the slot when one ends', async () => {
@@ -198,7 +199,7 @@ describe('background tasks', () => {
       state: 'failed',
       reason: SESSION_EXPIRED_REASON,
     });
-    expect(h.tasks.approve('org\u0000alice', 't1')).toBe(false);
+    expect(h.tasks.approve('org\u0000alice', 't1', 'call-1')).toBe(false);
     expect(h.ran).toEqual([]);
     expect(h.ended).toEqual([{ state: 'failed', errorCode: 'AI_TASK_FAILED' }]);
   });
