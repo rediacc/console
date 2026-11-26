@@ -9,6 +9,7 @@ import type { AddressInfo } from 'node:net';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
@@ -230,7 +231,7 @@ describe('egress-unreachable report', () => {
         string,
         RequestInit,
       ];
-      expect(url).toBe('http://account.internal/executor/v1/egress-unreachable');
+      expect(url).toBe(`http://${WK_ACCOUNT_EGRESS_HOST}/executor/v1/egress-unreachable`);
       expect(url).toBe(EGRESS_REPORT_URL);
       expect(init.method).toBe('POST');
       expect(JSON.parse(String(init.body))).toEqual({ host: '192.0.2.10', port: 2222 });
