@@ -953,7 +953,7 @@ describe('the approval token, end to end', () => {
     for (const path of ['ai judge repo up', 'ai mode ask']) {
       const ids = requestIds.get(path) ?? [];
       expect(ids.length).toBeGreaterThan(0);
-      expect(ids.every((id) => /^.+:.+$/.test(id ?? ''))).toBe(true);
+      expect(ids.every((id) => id === `${CHAT.conversationId}:call-1`)).toBe(true);
     }
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
