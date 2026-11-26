@@ -168,12 +168,12 @@ export async function pinnedMachineKeys(
     });
     return machineKeyMap(manifest.machineKeys);
   } catch (error) {
-    const code = error instanceof CliExitError ? error.code : ERROR_CODES.NETWORK_ERROR;
     const reason = error instanceof Error ? error.message : String(error);
-    throw new CliExitError(
-      code,
-      t('forensics.trustedKeysUnavailable', { id: incidentId, reason })
-    );
+    const message = t('forensics.trustedKeysUnavailable', { id: incidentId, reason });
+    if (error instanceof CliExitError && error.code === ERROR_CODES.AUTH_REQUIRED) {
+      throw new CliExitError(ERROR_CODES.AUTH_REQUIRED, message);
+    }
+    throw new CliExitError(ERROR_CODES.NETWORK_ERROR, message);
   }
 }
 

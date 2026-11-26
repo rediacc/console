@@ -64,6 +64,8 @@ export const NAMED_ERROR_ORIGINS: Record<string, ErrorOrigin> = {
   ACCESS_FILE_CHANGED: 'environment',
   TIMEOUT: 'environment',
   EXECUTION_ERROR: 'environment',
+  POLICY_DENIED: 'user',
+  EXECUTOR_FAILED: 'environment',
 };
 
 function lookup(code: string | undefined): ErrorOrigin | undefined {

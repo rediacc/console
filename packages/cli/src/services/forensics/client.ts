@@ -133,10 +133,10 @@ export class ForensicsClient {
     if (exact) return exact;
     const matches = id.length > 0 ? all.filter((i) => i.id.startsWith(id)) : [];
     if (matches.length === 1 && matches[0]) return matches[0];
-    throw new CliExitError(
-      matches.length > 1 ? ERROR_CODES.AMBIGUOUS : ERROR_CODES.NOT_FOUND,
-      t(matches.length > 1 ? 'forensics.ambiguousIncident' : 'forensics.noSuchIncident', { id })
-    );
+    if (matches.length > 1) {
+      throw new CliExitError(ERROR_CODES.AMBIGUOUS, t('forensics.ambiguousIncident', { id }));
+    }
+    throw new CliExitError(ERROR_CODES.NOT_FOUND, t('forensics.noSuchIncident', { id }));
   }
 
   async openInvestigation(scope: Scope): Promise<string> {

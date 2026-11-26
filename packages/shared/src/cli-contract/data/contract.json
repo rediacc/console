@@ -1,5 +1,5 @@
 {
-  "version": "911132e7f843fa15",
+  "version": "cb803a8ac3c6ef0d",
   "languages": [
     "ar",
     "de",
@@ -18674,6 +18674,10 @@
       "origin": "environment"
     },
     {
+      "code": "EXECUTOR_FAILED",
+      "origin": "environment"
+    },
+    {
       "code": "EXECUTOR_SESSION_UNKNOWN",
       "origin": "environment"
     },
@@ -18723,6 +18727,10 @@
     },
     {
       "code": "PERMISSION_DENIED",
+      "origin": "user"
+    },
+    {
+      "code": "POLICY_DENIED",
       "origin": "user"
     },
     {
