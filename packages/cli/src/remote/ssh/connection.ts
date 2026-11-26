@@ -123,8 +123,9 @@ export function buildSSHOptions(options: {
     ...SSH_KEEPALIVE_OPTIONS
   );
 
+  // IdentitiesOnly keeps ssh to the given key: a user's agent full of other keys would otherwise be offered first and can exhaust the server's MaxAuthTries.
   if (convertedKeyFilePath) {
-    opts.push('-i', convertedKeyFilePath);
+    opts.push('-i', convertedKeyFilePath, '-o', 'IdentitiesOnly=yes');
   }
 
   return opts;

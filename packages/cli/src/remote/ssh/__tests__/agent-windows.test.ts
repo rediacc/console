@@ -1,96 +1,134 @@
 /**
- * Win32-OpenSSH's agent is a service on \\.\pipe\openssh-ssh-agent, not a process `ssh-agent -s` can start.
- * Measured on a stock Windows 11 VM: the spawn exited 255 (error 1058, service Disabled) or hung for 10 s,
- * and cost a warning on every term/vscode command.
+ * rdc never adds its keys to the Win32-OpenSSH agent service.
+ *
+ * That agent persists every added key DPAPI-encrypted under HKCU\Software\OpenSSH\Agent\Keys, and the key
+ * survives a service stop, Disabled and a reboot: measured on a Windows 11 VM, the key rdc had added was
+ * still in the registry with the agent stopped. On win32 rdc passes the key file to ssh with -i and
+ * IdentitiesOnly, whatever the service state; Linux and macOS keep their private agent, which dies with
+ * the command.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+type Platform = 'windows' | 'linux' | 'macos';
 
 const h = vi.hoisted(() => ({
-  platform: 'windows' as 'windows' | 'linux',
-  scQuery: '' as string | Error,
+  platform: 'windows' as Platform,
   spawn: vi.fn(),
   execFile: vi.fn(),
 }));
 
 vi.mock('node:child_process', () => ({ spawn: h.spawn, execFile: h.execFile }));
-vi.mock('../../utils/platform.js', () => ({
+vi.mock('../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/platform.js')>()),
   getPlatform: () => h.platform,
   commandExists: async () => true,
 }));
 
-import {
-  isSSHAgentAvailable,
-  isWindowsSSHAgentServiceRunning,
-  startSSHAgent,
-  WINDOWS_SSH_AGENT_PIPE,
-} from '../agent.js';
+import { addKeyToAgent, isSSHAgentAvailable, startSSHAgent } from '../agent.js';
+import { SSHConnection } from '../connection.js';
 
+const KEY =
+  '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----\n';
+const KNOWN_HOSTS = 'example.test ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExample';
 const RUNNING =
   '\nSERVICE_NAME: ssh-agent\n        TYPE               : 10  WIN32_OWN_PROCESS\n        STATE              : 4  RUNNING\n';
-const STOPPED =
-  '\nSERVICE_NAME: ssh-agent\n        TYPE               : 10  WIN32_OWN_PROCESS\n        STATE              : 1  STOPPED\n';
+
+/** A child process that prints `stdout` and exits 0 on the next tick. */
+function fakeChild(stdout = ''): EventEmitter & {
+  stdout: PassThrough;
+  stderr: PassThrough;
+  kill: () => void;
+} {
+  const child = Object.assign(new EventEmitter(), {
+    stdout: new PassThrough(),
+    stderr: new PassThrough(),
+    kill: () => undefined,
+  });
+  setImmediate(() => {
+    if (stdout) child.stdout.emit('data', Buffer.from(stdout));
+    child.emit('close', 0);
+  });
+  return child;
+}
+
+function spawnedCommands(): string[] {
+  return h.spawn.mock.calls.map((call) => String(call[0]));
+}
+
+let kill: ReturnType<typeof vi.spyOn>;
+let stderr: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   h.platform = 'windows';
   h.spawn.mockReset();
+  h.spawn.mockImplementation((cmd: string) =>
+    fakeChild(
+      cmd === 'ssh-agent'
+        ? 'SSH_AUTH_SOCK=/tmp/ssh-rdc/agent.1; export SSH_AUTH_SOCK;\nSSH_AGENT_PID=4242; export SSH_AGENT_PID;\n'
+        : ''
+    )
+  );
+  // A running service, the case that leaked: the answer must not matter.
   h.execFile.mockReset();
-  h.execFile.mockImplementation((_cmd, _args, _opts, cb) => {
-    if (h.scQuery instanceof Error) cb(h.scQuery, '');
-    else cb(null, h.scQuery);
+  h.execFile.mockImplementation((_cmd, _args, _opts, cb) => cb(null, RUNNING));
+  kill = vi.spyOn(process, 'kill').mockImplementation(() => true);
+  stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+});
+
+afterEach(() => {
+  kill.mockRestore();
+  stderr.mockRestore();
+});
+
+describe('win32 with the ssh-agent service running', () => {
+  it('reports no agent and never spawns ssh-agent or ssh-add', async () => {
+    await expect(isSSHAgentAvailable()).resolves.toBe(false);
+    await expect(startSSHAgent()).rejects.toThrow(/registry/);
+    await expect(addKeyToAgent(KEY, '\\\\.\\pipe\\openssh-ssh-agent')).rejects.toThrow(/registry/);
+    expect(spawnedCommands()).not.toContain('ssh-add');
+    expect(spawnedCommands()).not.toContain('ssh-agent');
+  });
+
+  it('SSHConnection uses the key file with -i and IdentitiesOnly, with no agent socket', async () => {
+    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { port: 22 });
+    try {
+      const result = await conn.setup();
+      expect(result.connectionMethod).toBe('file-based');
+      expect(conn.agentSocketPath).toBeUndefined();
+      expect(result.keyFilePath).toBeTruthy();
+      const iAt = result.sshOptions.indexOf('-i');
+      expect(iAt).toBeGreaterThan(-1);
+      expect(result.sshOptions[iAt + 1]).toBe(result.keyFilePath!.replaceAll('\\', '/'));
+      expect(result.sshOptions.join(' ')).toContain('-o IdentitiesOnly=yes');
+      expect(spawnedCommands()).toEqual([]);
+      // No "agent setup failed" warning: the file path is the design, not a fallback.
+      expect(stderr).not.toHaveBeenCalled();
+    } finally {
+      await conn.cleanup();
+    }
   });
 });
 
-describe('ssh-agent on win32', () => {
-  it('never spawns `ssh-agent -s`, whatever the service state', async () => {
-    for (const state of [RUNNING, STOPPED, new Error('1060')]) {
-      h.scQuery = state;
-      await startSSHAgent().catch(() => undefined);
-      await isSSHAgentAvailable();
-    }
-    expect(h.spawn).not.toHaveBeenCalled();
-  });
-
-  it('a RUNNING service gives the named pipe and no pid to kill', async () => {
-    h.scQuery = RUNNING;
-    await expect(startSSHAgent()).resolves.toEqual({
-      socketPath: WINDOWS_SSH_AGENT_PIPE,
-      agentPid: '',
-    });
-    expect(WINDOWS_SSH_AGENT_PIPE).toBe('\\\\.\\pipe\\openssh-ssh-agent');
+describe.each(['linux', 'macos'] as const)('%s keeps its private agent', (platform) => {
+  it('spawns `ssh-agent -s`, adds the key with ssh-add and passes no key file', async () => {
+    h.platform = platform;
     await expect(isSSHAgentAvailable()).resolves.toBe(true);
-  });
-
-  it('a stopped, disabled or missing service is unavailable at once, with no warning', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    for (const state of [STOPPED, new Error('The specified service does not exist')]) {
-      h.scQuery = state;
-      await expect(isWindowsSSHAgentServiceRunning()).resolves.toBe(false);
-      await expect(isSSHAgentAvailable()).resolves.toBe(false);
+    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { port: 22 });
+    try {
+      const result = await conn.setup();
+      expect(result.connectionMethod).toBe('ssh-agent');
+      expect(conn.agentSocketPath).toBe('/tmp/ssh-rdc/agent.1');
+      expect(result.sshOptions).not.toContain('-i');
+      expect(h.spawn.mock.calls[0].slice(0, 2)).toEqual(['ssh-agent', ['-s']]);
+      expect(spawnedCommands()).toEqual(['ssh-agent', 'ssh-add']);
+      expect(h.spawn.mock.calls[1][2].env.SSH_AUTH_SOCK).toBe('/tmp/ssh-rdc/agent.1');
+      expect(h.execFile).not.toHaveBeenCalled();
+    } finally {
+      await conn.cleanup();
     }
-    expect(warn).not.toHaveBeenCalled();
-    expect(err).not.toHaveBeenCalled();
-    warn.mockRestore();
-    err.mockRestore();
-  });
-
-  it('the probe is bounded by a short timeout', async () => {
-    h.scQuery = RUNNING;
-    await isWindowsSSHAgentServiceRunning();
-    expect(h.execFile.mock.calls[0][2].timeout).toBeLessThanOrEqual(5000);
-  });
-});
-
-describe('ssh-agent off win32', () => {
-  it('still spawns `ssh-agent -s` and never probes the service', async () => {
-    h.platform = 'linux';
-    h.spawn.mockImplementation(() => {
-      throw new Error('spawned');
-    });
-    await expect(startSSHAgent()).rejects.toThrow('spawned');
-    expect(h.spawn.mock.calls[0].slice(0, 2)).toEqual(['ssh-agent', ['-s']]);
-    expect(h.execFile).not.toHaveBeenCalled();
-    await expect(isSSHAgentAvailable()).resolves.toBe(true);
-    expect(h.execFile).not.toHaveBeenCalled();
+    // The private agent dies with the command.
+    expect(kill).toHaveBeenCalledWith(4242);
   });
 });

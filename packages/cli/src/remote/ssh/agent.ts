@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,43 +12,22 @@ import { decodeSSHKey } from '../utils/sshKeyText.js';
  */
 const SSH_AGENT_TIMEOUT_MS = 10000;
 
-/** Named pipe of the Win32-OpenSSH agent service. */
-export const WINDOWS_SSH_AGENT_PIPE = '\\\\.\\pipe\\openssh-ssh-agent';
-
-/** Upper bound for the Windows service probe; `sc.exe query` answers in milliseconds. */
-const WINDOWS_AGENT_PROBE_TIMEOUT_MS = 3000;
+/**
+ * Why rdc never uses an ssh-agent on win32. The Win32-OpenSSH agent service persists every added key
+ * DPAPI-encrypted under HKCU\Software\OpenSSH\Agent\Keys, and the key survives a service stop, Disabled
+ * and a reboot (measured on a Windows 11 VM), so each team and repo key rdc added would stay in the user's
+ * agent for good; `ssh-agent -s` does not run there either. Win32 passes the key file to ssh with -i and
+ * IdentitiesOnly instead, which every caller supports.
+ */
+const WINDOWS_AGENT_REFUSAL =
+  'rdc does not use the Windows ssh-agent service: it keeps every added key in the registry';
 
 /**
  * SSH agent result containing socket path and agent PID.
- * agentPid is empty when the agent is not ours to stop (the Windows service).
  */
 export interface SSHAgentResult {
   socketPath: string;
   agentPid: string;
-}
-
-/**
- * Whether the Win32-OpenSSH agent service is RUNNING.
- * The service is Disabled by default, so a stopped or missing service is the normal answer, not an error.
- */
-export function isWindowsSSHAgentServiceRunning(
-  timeoutMs = WINDOWS_AGENT_PROBE_TIMEOUT_MS
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    execFile(
-      'sc.exe',
-      ['query', 'ssh-agent'],
-      { timeout: timeoutMs, windowsHide: true },
-      (err, stdout) => {
-        if (err) {
-          debugLog(`ssh-agent service probe failed: ${err.message}`);
-          resolve(false);
-          return;
-        }
-        resolve(/STATE\s*:\s*\d+\s+RUNNING/i.test(String(stdout)));
-      }
-    );
-  });
 }
 
 /**
@@ -58,16 +37,9 @@ export function isWindowsSSHAgentServiceRunning(
  * @returns Promise resolving to agent socket path and PID
  * @throws Error if SSH agent cannot be started or times out
  */
-export async function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<SSHAgentResult> {
-  const platform = getPlatform();
-
-  if (platform === 'windows') {
-    // Win32-OpenSSH's agent is a service on a named pipe: `ssh-agent -s` never works there
-    // (error 1058 when the service is disabled, a hang otherwise). Use the service or nothing.
-    if (!(await isWindowsSSHAgentServiceRunning())) {
-      throw new Error('ssh-agent service is not running');
-    }
-    return { socketPath: WINDOWS_SSH_AGENT_PIPE, agentPid: '' };
+export function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<SSHAgentResult> {
+  if (getPlatform() === 'windows') {
+    return Promise.reject(new Error(WINDOWS_AGENT_REFUSAL));
   }
 
   return new Promise((resolve, reject) => {
@@ -148,6 +120,10 @@ export async function addKeyToAgent(
   socketPath: string,
   timeoutMs = SSH_AGENT_TIMEOUT_MS
 ): Promise<void> {
+  if (getPlatform() === 'windows') {
+    throw new Error(WINDOWS_AGENT_REFUSAL);
+  }
+
   // Create a temporary file for the key
   const tempDir = join(tmpdir(), 'rediacc-ssh');
   if (!existsSync(tempDir)) {
@@ -258,11 +234,10 @@ export async function stopSSHAgent(agentPid: string, gracePeriodMs = 1000): Prom
  *
  * @returns True if ssh-agent is available
  */
-export async function isSSHAgentAvailable(): Promise<boolean> {
-  if (!(await commandExists('ssh-agent'))) return false;
-  if (getPlatform() === 'windows' && !(await isWindowsSSHAgentServiceRunning())) {
-    debugLog('ssh-agent service is not running, using file-based keys');
-    return false;
+export function isSSHAgentAvailable(): Promise<boolean> {
+  if (getPlatform() === 'windows') {
+    debugLog('win32: file-based keys, since the ssh-agent service would persist them');
+    return Promise.resolve(false);
   }
-  return true;
+  return commandExists('ssh-agent');
 }
