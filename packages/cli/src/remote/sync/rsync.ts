@@ -1,5 +1,6 @@
 import { execFile, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { t } from '../../i18n/index.js';
 import { writeStdout } from '../../services/core/request-context.js';
 import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js';
 import type { SyncProgress, SyncResult } from '../types/index.js';
@@ -31,9 +32,8 @@ export async function getRsyncCommand(): Promise<string> {
     if (rsyncPath !== 'rsync' && existsSync(rsyncPath)) {
       return rsyncPath;
     }
-    throw new Error(
-      'rsync not found. Please install MSYS2 with rsync package or use the desktop app.'
-    );
+    // The leading "rsync not found" is matched by isRsyncNotFoundError to fall back to SFTP; keep it verbatim.
+    throw new Error(`rsync not found. ${t('commands.doctor.rsyncInstallHintWin32')}`);
   }
 
   if (await commandExists('rsync')) {
