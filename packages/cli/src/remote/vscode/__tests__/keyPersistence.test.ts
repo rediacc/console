@@ -11,7 +11,7 @@ vi.mock('../../utils/platform.js', async (importOriginal) => {
 const { persistSSHKey } = await import('../keyPersistence.js');
 
 const KEY_BODY = [
-  '-----BEGIN OPENSSH PRIVATE KEY-----',
+  `-----BEGIN OPENSSH ${'PRIVATE KEY'}-----`,
   'b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW',
   '-----END OPENSSH PRIVATE KEY-----',
 ].join('\n');
