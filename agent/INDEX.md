@@ -542,7 +542,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 132 | 8 | 7 | 29196 |
+| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 134 | 6 | 9 | 29766 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 132 | 6 | 9 | 24596 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 112 | 6 | 7 | 20748 |
