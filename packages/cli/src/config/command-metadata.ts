@@ -259,10 +259,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
-  // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin.
+  // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin. Destructive because --replace overwrites the key already installed on the machine, and the previous key is not kept; idempotent because the same key installed twice leaves the same state.
   'backup toc-key sync': {
     mcpSurface: PROXY,
-    mcp: { destructive: false, idempotent: true, timeout: 'write' },
+    mcp: { destructive: true, idempotent: true, timeout: 'write' },
   },
   'backup verify': {
     mcpSurface: PROXY,
@@ -714,9 +714,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   'config prune': {
     mcpSurface: PROXY,
-    // ★ SPEC-MANDATED: spec/03 §5 grants mcp(write, idempotent) and withholds only --purge-archived (which drops EVERY archived record regardless of grace). I had excluded the whole leaf by inference; the spec is narrower and better, prune is a safe, idempotent cleanup, and only its nuclear option is agent-inappropriate.
+    // Idempotent: a second run finds nothing left to remove. Destructive, because a run deletes expired certificates, archives and dangling refs from the config file and none of that is recoverable by the tool. Only --purge-archived is withheld from agents: it drops EVERY archived record regardless of grace (spec/03 section 5.1).
     mcp: {
-      destructive: false,
+      destructive: true,
       idempotent: true,
       timeout: 'write',
       excludeOptions: ['purge-archived'],

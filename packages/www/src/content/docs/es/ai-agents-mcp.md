@@ -157,14 +157,14 @@ Cada grant admite 60 llamadas por minuto y 5 llamadas en curso a la vez. Una lla
 | `backup_status` | no | Muestra el estado de las copias de seguridad y del temporizador en una máquina remota. |
 | `backup_strategy_list` | no | Lista todas las estrategias de copia de seguridad. |
 | `backup_strategy_show` | no | Muestra los detalles de una estrategia de copia de seguridad. |
-| `backup_toc-key_sync` | no | Instala en su máquina la clave de listado del repositorio, o reemplaza una distinta. |
+| `backup_toc-key_sync` | sí | Instala en su máquina la clave de listado del repositorio, o reemplaza una distinta. |
 | `backup_undelete` | no | Cancela el borrado diferido de una instantánea antes de que surta efecto. |
 | `backup_usage` | no | Muestra la cuota de almacenamiento de copias de seguridad, los bytes almacenados y el uso por repositorio. |
 | `backup_verify` | no | Verifica el ancla de copia de seguridad de un repositorio frente al almacén de fragmentos. |
 | `cluster_snapshot_list` | no | Lista las instantáneas de grupo del clúster. |
 | `cluster_status` | no | Lista todos los clústeres o, con el nombre de un clúster, muestra su configuración completa. |
 | `config_access_list` | no | Lista las claves de acceso de la configuración. |
-| `config_prune` | no | Elimina lo que sobra del archivo de configuración local ~/.config/rediacc/<config>.json. |
+| `config_prune` | sí | Elimina lo que sobra del archivo de configuración local `~/.config/rediacc/<config>.json`. |
 | `config_reconcile` | no | Reconstruye el depósito de estado local a partir del estado real de las máquinas (renet list all). |
 | `config_show` | no | Muestra los detalles de la configuración actual. |
 | `credits` | no | Muestra el saldo de créditos restante de esta cuenta. |
@@ -172,7 +172,7 @@ Cada grant admite 60 llamadas por minuto y 5 llamadas en curso a la vez. Una lla
 | `datastore_snapshot_list` | no | Lista las instantáneas de un datastore. |
 | `datastore_status` | no | Muestra un datastore: su backend, conexión, uso, repositorios e instantáneas. |
 | `feedback_list` | no | Lista los informes de comentarios visibles para esta máquina: id, huella corta, estado y fechas. |
-| `feedback_report` | no | Crea un informe a partir del último comando fallido (--last), de un comando registrado (--command <n>) o solo de un mensaje, muestra exactamente lo que se enviaría y lo envía tras la confirmación. |
+| `feedback_report` | no | Crea un informe a partir del último comando fallido (--last), de un comando registrado (`--command <n>`) o solo de un mensaje, muestra exactamente lo que se enviaría y lo envía tras la confirmación. |
 | `feedback_show` | no | Muestra un informe de comentarios por su id (o un prefijo único), con su estado, número de apariciones y fechas. |
 | `incident_status` | no | Lista los incidentes de la organización o muestra uno con su alcance, ventana, pasos por máquina y los relojes de los plazos de alerta temprana, notificación e informe final. |
 | `job_cancel` | sí | Cancela un trabajo desacoplado en ejecución. |

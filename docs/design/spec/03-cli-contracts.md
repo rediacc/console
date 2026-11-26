@@ -573,7 +573,7 @@ bucket is restored but marked stale, and the first derived-machine verification 
 - Flags (today's): `--dry-run`, `--certs-only`, `--archives-only`, `--refs-only`,
 `--purge-archived`, `--grace-days <n>`.
 - Idempotency: convergent.
-- Gate: A. MCP: mcp(write, idempotent; excludeOptions: purge-archived).
+- Gate: A. MCP: mcp(write, destructive, idempotent; excludeOptions: purge-archived). Destructive because a run deletes expired certificates, archives and dangling refs from the config file (amended 2026-11-26).
 
 #### `config edit` (NEW)
 - Help: `Open the active config in your editor, with locking and validation.`
@@ -1200,6 +1200,11 @@ worked example); no strategy configured → 5 pointing at `backup strategy set`.
 - Help: `Cancel a running backup.`
 - Idempotency: nothing running = no-op 0.
 - Gate: A. MCP: mcp(write, idempotent).
+
+#### `backup toc-key sync`
+- Help: `Install the backup table-of-contents public key on a machine.`
+- Idempotency: the same key installed twice leaves the same state.
+- Gate: A. MCP: mcp(write, destructive, idempotent). Destructive because `--replace` overwrites the key already installed and the previous key is not kept (amended 2026-11-26).
 
 #### `backup list [artifact-ref] --machine <m> | --storage <s>`
 - Help: `List backup artifacts on a machine or storage.`

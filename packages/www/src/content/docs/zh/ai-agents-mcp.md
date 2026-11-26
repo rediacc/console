@@ -157,14 +157,14 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `backup_status` | 否 | 显示远程机器上的备份状态和定时器状态。 |
 | `backup_strategy_list` | 否 | 列出所有备份策略。 |
 | `backup_strategy_show` | 否 | 显示备份策略的详细信息。 |
-| `backup_toc-key_sync` | 否 | 将仓库的列表密钥安装到其所在机器上，或替换为不同的密钥。 |
+| `backup_toc-key_sync` | 是 | 将仓库的列表密钥安装到其所在机器上，或替换为不同的密钥。 |
 | `backup_undelete` | 否 | 在延迟删除快照生效之前取消删除。 |
 | `backup_usage` | 否 | 显示备份存储配额、已存储字节数以及每个仓库的用量。 |
 | `backup_verify` | 否 | 对照数据块存储，验证仓库的备份锚点。 |
 | `cluster_snapshot_list` | 否 | 列出集群的分组快照。 |
 | `cluster_status` | 否 | 列出所有集群；传入集群名称则显示该集群的完整配置。 |
 | `config_access_list` | 否 | 列出配置的访问密钥。 |
-| `config_prune` | 否 | 清理本地配置文件 ~/.config/rediacc/<config>.json 中的冗余内容。 |
+| `config_prune` | 是 | 清理本地配置文件 `~/.config/rediacc/<config>.json` 中的冗余内容。 |
 | `config_reconcile` | 否 | 根据机器的实际状态重建本地状态存储（renet list all）。 |
 | `config_show` | 否 | 显示当前配置的详细信息。 |
 | `credits` | 否 | 显示此账户剩余的额度余额。 |
@@ -172,7 +172,7 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 | `datastore_snapshot_list` | 否 | 列出数据存储的快照。 |
 | `datastore_status` | 否 | 显示一个数据存储：后端、挂载情况、用量、仓库和快照。 |
 | `feedback_list` | 否 | 列出此机器可见的反馈报告：ID、简短指纹、状态和日期。 |
-| `feedback_report` | 否 | 根据最近一次失败的命令（--last）、已记录的命令（--command <n>）或仅一条消息生成报告，原样输出将要发送的内容，确认后发送。 |
+| `feedback_report` | 否 | 根据最近一次失败的命令（--last）、已记录的命令（`--command <n>`）或仅一条消息生成报告，原样输出将要发送的内容，确认后发送。 |
 | `feedback_show` | 否 | 按 ID（或唯一前缀）显示一份反馈报告，包括状态、出现次数和日期。 |
 | `incident_status` | 否 | 列出组织的事件，或显示其中一个事件的范围、时间窗口、各机器上的步骤，以及早期预警、通知和最终报告的期限时钟。 |
 | `job_cancel` | 是 | 取消一个正在运行的分离作业。 |

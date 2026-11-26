@@ -158,14 +158,14 @@ Scans: the tools in `packages/shared/src/mcp/tools.generated.json` a remote MCP 
 | `backup_status` | no | Show backup status and timer state on a remote machine. |
 | `backup_strategy_list` | no | List all backup strategies |
 | `backup_strategy_show` | no | Show backup strategy details |
-| `backup_toc-key_sync` | no | Install the repository's listing key on its machine, or replace a different one |
+| `backup_toc-key_sync` | yes | Install the repository's listing key on its machine, or replace a different one |
 | `backup_undelete` | no | Cancel a delayed snapshot delete before it takes effect |
 | `backup_usage` | no | Show backup storage quota, stored bytes, and per-repo usage |
 | `backup_verify` | no | Verify a repository's backup anchor against the chunk store. |
 | `cluster_snapshot_list` | no | List the cluster's group snapshots. |
 | `cluster_status` | no | List all clusters, or pass a cluster name to show that cluster's full config. |
 | `config_access_list` | no | List the config's access keys |
-| `config_prune` | no | Remove dead weight from the local config file at ~/.config/rediacc/&lt;config&gt;.json. |
+| `config_prune` | yes | Remove dead weight from the local config file at ~/.config/rediacc/&lt;config&gt;.json. |
 | `config_reconcile` | no | Rebuild the local state bucket from machine truth (renet list all). |
 | `config_show` | no | Show current config details |
 | `credits` | no | Show the remaining credit balance for this account. |

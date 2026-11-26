@@ -157,14 +157,14 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `backup_status` | hayır | Uzak bir makinedeki yedekleme durumunu ve zamanlayıcı durumunu gösterir. |
 | `backup_strategy_list` | hayır | Tüm yedekleme stratejilerini listeler. |
 | `backup_strategy_show` | hayır | Bir yedekleme stratejisinin ayrıntılarını gösterir. |
-| `backup_toc-key_sync` | hayır | Deponun listeleme anahtarını makinesine kurar veya farklı olanı değiştirir. |
+| `backup_toc-key_sync` | evet | Deponun listeleme anahtarını makinesine kurar veya farklı olanı değiştirir. |
 | `backup_undelete` | hayır | Gecikmeli bir anlık görüntü silme işlemini yürürlüğe girmeden önce iptal eder. |
 | `backup_usage` | hayır | Yedekleme depolama kotasını, saklanan baytları ve depo başına kullanımı gösterir. |
 | `backup_verify` | hayır | Bir deponun yedekleme çapasını parça deposuna karşı doğrular. |
 | `cluster_snapshot_list` | hayır | Kümenin grup anlık görüntülerini listeler. |
 | `cluster_status` | hayır | Tüm kümeleri listeler veya bir küme adı verilirse o kümenin tam yapılandırmasını gösterir. |
 | `config_access_list` | hayır | Yapılandırmanın erişim anahtarlarını listeler. |
-| `config_prune` | hayır | Yerel yapılandırma dosyasındaki ~/.config/rediacc/<config>.json gereksiz yükü temizler. |
+| `config_prune` | evet | Yerel yapılandırma dosyasındaki `~/.config/rediacc/<config>.json` gereksiz yükü temizler. |
 | `config_reconcile` | hayır | Yerel durum kovasını makinelerin gerçek durumundan yeniden oluşturur (renet list all). |
 | `config_show` | hayır | Geçerli yapılandırmanın ayrıntılarını gösterir. |
 | `credits` | hayır | Bu hesabın kalan kredi bakiyesini gösterir. |
@@ -172,7 +172,7 @@ Her grant dakikada 60 çağrıya ve aynı anda 5 devam eden çağrıya izin veri
 | `datastore_snapshot_list` | hayır | Bir veri deposunun anlık görüntülerini listeler. |
 | `datastore_status` | hayır | Bir veri deposunu gösterir: arka ucu, bağlantısı, kullanımı, depoları ve anlık görüntüleri. |
 | `feedback_list` | hayır | Bu makinenin görebildiği geri bildirim raporlarını listeler: kimlik, kısa parmak izi, durum ve tarihler. |
-| `feedback_report` | hayır | Son başarısız komuttan (--last), kayıtlı bir komuttan (--command <n>) veya yalnızca bir mesajdan rapor oluşturur, tam olarak nelerin gönderileceğini yazdırır ve onaydan sonra gönderir. |
+| `feedback_report` | hayır | Son başarısız komuttan (--last), kayıtlı bir komuttan (`--command <n>`) veya yalnızca bir mesajdan rapor oluşturur, tam olarak nelerin gönderileceğini yazdırır ve onaydan sonra gönderir. |
 | `feedback_show` | hayır | Bir geri bildirim raporunu kimliğiyle (veya benzersiz bir önekiyle) durumu, görülme sayısı ve tarihleriyle gösterir. |
 | `incident_status` | hayır | Kuruluşun olaylarını listeler veya birini kapsamı, zaman aralığı, makine adımları ile erken uyarı, bildirim ve nihai rapor süre saatleriyle birlikte gösterir. |
 | `job_cancel` | evet | Çalışan bir ayrık işi iptal eder. |

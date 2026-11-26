@@ -9,6 +9,8 @@
  *   1. The English page carries exactly one `gen-docs: mcp-tools` region and one `gen-docs: mcp-tools-local` region, and the tool names in their tables equal the registry's remote tools (every surface except `local`) and local-only tools, in registry order. A row renamed, dropped, added or moved is a finding naming the tool.
  *   2. Each locale page carries the same two tables with TRANSLATED descriptions, between `<!-- >>> translated-table: mcp-tools -->` and `<!-- <<< translated-table -->` (and the same for `mcp-tools-local`). They cannot be gen-docs regions, because gen-docs would overwrite the translations with English. Names and order are compared, never prose. A locale still waiting for its translation is exempt BY NAME in `PENDING_TABLE_TRANSLATION` below, printed on every run, and the exemption reds the moment that locale gains its tables, so the list can only shrink.
  *   3. Outside those tables, a backticked tool-shaped name (snake_case whose first segment is a registry tool family or a retired one) that the registry does not serve is a STALE MENTION. Today's stale mentions are frozen in `STALE_MENTION_BASELINE`; a new one fails, and a baselined one that has gone fails too until its entry is deleted, so the baseline only drains.
+ *   4. Per translated page (both tables), the Destructive cells of the tools the registry marks `destructiveHint: true` use exactly one value, the cells of the others use exactly one value, and the two values differ (a locale that translated "yes" two ways, or one word for both, is a finding).
+ *   5. A raw `<word>` in a translated table row outside a code span is a finding: in a rendered page it is read as an HTML tag and vanishes.
  *
  * BLIND SPOT, stated so the green is not read as more than it is: a stale name written WITHOUT backticks, or in a family neither the registry nor `RETIRED_FAMILIES` knows, is not seen. Prose about a tool that still exists but behaves differently is not seen either.
  *
@@ -93,21 +95,31 @@ export const STALE_MENTION_BASELINE: Readonly<Record<string, readonly string[]>>
 export interface RegistryTools {
   remote: string[];
   local: string[];
+  /** Names of the tools whose annotations carry `destructiveHint: true`. */
+  destructive: ReadonlySet<string>;
 }
 
 /** The registry's tool names split remote/local, in file order. Throws on a malformed or empty registry. */
 export function parseRegistry(text: string): RegistryTools {
-  const doc = JSON.parse(text) as { tools?: { name?: unknown; surface?: unknown }[] };
+  const doc = JSON.parse(text) as {
+    tools?: {
+      name?: unknown;
+      surface?: unknown;
+      annotations?: { destructiveHint?: unknown };
+    }[];
+  };
   const tools = doc.tools ?? [];
   if (!Array.isArray(tools) || tools.length === 0) {
     throw new Error(`${REGISTRY} lists no tools`);
   }
-  const out: RegistryTools = { remote: [], local: [] };
+  const destructive = new Set<string>();
+  const out: RegistryTools = { remote: [], local: [], destructive };
   for (const [i, t] of tools.entries()) {
     if (typeof t.name !== 'string' || typeof t.surface !== 'string') {
       throw new Error(`${REGISTRY} tools[${i}] has no string name or surface`);
     }
     (t.surface === 'local' ? out.local : out.remote).push(t.name);
+    if (t.annotations?.destructiveHint === true) destructive.add(t.name);
   }
   return out;
 }
@@ -126,6 +138,57 @@ export function tableNames(lines: readonly string[]): string[] {
   return names;
 }
 
+/** The second cell of each tool row (the Destructive column), by tool name, in order. */
+export function destructiveCells(lines: readonly string[]): { name: string; cell: string }[] {
+  const out: { name: string; cell: string }[] = [];
+  for (const l of lines) {
+    const m = /^\|\s*`([^`]+)`\s*\|([^|]*)\|/.exec(l);
+    if (m?.[1]) out.push({ name: m[1], cell: (m[2] ?? '').trim() });
+  }
+  return out;
+}
+
+/** D6 check 1: one Destructive word per `destructiveHint` group, and the two words differ. */
+export function destructiveWordFindings(
+  rows: readonly { name: string; cell: string }[],
+  destructive: ReadonlySet<string>
+): string[] {
+  const out: string[] = [];
+  const yes = new Set(rows.filter((r) => destructive.has(r.name)).map((r) => r.cell));
+  const no = new Set(rows.filter((r) => !destructive.has(r.name)).map((r) => r.cell));
+  if (yes.size > 1)
+    out.push(
+      `Destructive cells of destructive tools use ${yes.size} different words (${[...yes].map((w) => `"${w}"`).join(', ')}); use one`
+    );
+  if (no.size > 1)
+    out.push(
+      `Destructive cells of non-destructive tools use ${no.size} different words (${[...no].map((w) => `"${w}"`).join(', ')}); use one`
+    );
+  if (yes.size === 1 && no.size === 1 && [...yes][0] === [...no][0])
+    out.push(
+      `Destructive cells use the same word "${[...yes][0]}" for destructive and non-destructive tools; the two groups must differ`
+    );
+  const wrong = rows
+    .filter((r) => destructive.has(r.name) && no.has(r.cell) && !yes.has(r.cell))
+    .map((r) => r.name);
+  if (wrong.length > 0)
+    out.push(
+      `destructive tool(s) carry the non-destructive word: ${wrong.map((n) => `\`${n}\``).join(', ')}`
+    );
+  return out;
+}
+
+/** D6 check 2: a raw `<word>` outside a code span on a table row, as the line numbers (0-based offsets into `lines`) and the tag. */
+export function rawAngleFindings(lines: readonly string[]): { at: number; tag: string }[] {
+  const out: { at: number; tag: string }[] = [];
+  for (const [i, l] of lines.entries()) {
+    if (!l.startsWith('|')) continue;
+    const bare = l.replace(/`[^`]*`/g, '');
+    for (const m of bare.matchAll(/<[A-Za-z][\w-]*>/g)) out.push({ at: i, tag: m[0] });
+  }
+  return out;
+}
+
 export interface Span {
   table: string;
   /** 0-based line index of the opening marker. */
@@ -142,9 +205,16 @@ export function tableSpans(text: string, source: boolean): { spans: Span[]; erro
   if (source) {
     const found = findRegions(text);
     if ('errors' in found)
-      return { spans: [], errors: found.errors.map((e) => `line ${e.line}: ${e.message}`) };
+      return {
+        spans: [],
+        errors: found.errors.map((e) => `line ${e.line}: ${e.message}`),
+      };
     return {
-      spans: found.regions.map((r) => ({ table: r.provider, open: r.open, close: r.close })),
+      spans: found.regions.map((r) => ({
+        table: r.provider,
+        open: r.open,
+        close: r.close,
+      })),
       errors: [],
     };
   }
@@ -301,6 +371,23 @@ export function audit(
                 : 'Fix: give the translated table the English rows, same names, same order.')
           );
         }
+        if (!source) {
+          const body = lines.slice(span.open + 1, span.close);
+          for (const r of rawAngleFindings(body)) {
+            findings.push(
+              `${file}:${span.open + 2 + r.at}: ${table} table: raw ${r.tag} outside a code span is read as an HTML tag. Fix: put it in a code span.`
+            );
+          }
+        }
+      }
+    }
+
+    if (!source && ours.length > 0) {
+      const rows = ours.flatMap((sp) => destructiveCells(lines.slice(sp.open + 1, sp.close)));
+      for (const d of destructiveWordFindings(rows, reg.destructive)) {
+        findings.push(
+          `${file}: translated tables: ${d}. Fix: use the word the page uses for its other destructive tools.`
+        );
       }
     }
 
@@ -336,7 +423,11 @@ export function audit(
 /* ----------------------------------------------------------------- selftest */
 
 function selftestCases(): ControlCase[] {
-  const reg: RegistryTools = { remote: ['job_list', 'repo_up'], local: ['config_list'] };
+  const reg: RegistryTools = {
+    remote: ['job_list', 'repo_up'],
+    local: ['config_list'],
+    destructive: new Set(['repo_up']),
+  };
   const regionPage = (remote: string[], local: string[], extra = ''): string =>
     [
       '# MCP',
@@ -352,15 +443,20 @@ function selftestCases(): ControlCase[] {
       ...local.map((n) => `| \`${n}\` | no | x |`),
       '<!-- <<< gen-docs -->',
     ].join('\n');
-  const translatedPage = (remote: string[], local: string[]): string =>
+  const translatedPage = (
+    remote: string[],
+    local: string[],
+    word: (n: string) => string = (n) => (reg.destructive.has(n) ? 'ja' : 'nein'),
+    desc = 'y'
+  ): string =>
     [
       '<!-- >>> translated-table: mcp-tools -->',
       '| Werkzeug | Destruktiv | Beschreibung |',
       '|---|---|---|',
-      ...remote.map((n) => `| \`${n}\` | nein | y |`),
+      ...remote.map((n) => `| \`${n}\` | ${word(n)} | ${desc} |`),
       '<!-- <<< translated-table -->',
       '<!-- >>> translated-table: mcp-tools-local -->',
-      ...local.map((n) => `| \`${n}\` | nein | y |`),
+      ...local.map((n) => `| \`${n}\` | ${word(n)} | ${desc} |`),
       '<!-- <<< translated-table -->',
     ].join('\n');
   const clean = regionPage(reg.remote, reg.local);
@@ -378,7 +474,10 @@ function selftestCases(): ControlCase[] {
   const swapped = run([{ lang: 'en', text: regionPage(['repo_up', 'job_list'], reg.local) }]);
   const noRegion = run([{ lang: 'en', text: '# MCP\n| `job_list` | x |' }]);
   const stale = run([
-    { lang: 'en', text: regionPage(reg.remote, reg.local, 'Use `job_query` or `term_exec`.') },
+    {
+      lang: 'en',
+      text: regionPage(reg.remote, reg.local, 'Use `job_query` or `term_exec`.'),
+    },
   ]);
   const notTool = run([
     {
@@ -391,15 +490,43 @@ function selftestCases(): ControlCase[] {
     },
   ]);
   const baselined = run(
-    [{ lang: 'en', text: regionPage(reg.remote, reg.local, 'Old `repo_secret_set`.') }],
+    [
+      {
+        lang: 'en',
+        text: regionPage(reg.remote, reg.local, 'Old `repo_secret_set`.'),
+      },
+    ],
     [],
     { repo_secret_set: ['en'] }
   );
-  const drained = run([{ lang: 'en', text: clean }], [], { repo_secret_set: ['en'] });
+  const drained = run([{ lang: 'en', text: clean }], [], {
+    repo_secret_set: ['en'],
+  });
   const locOk = run([
     { lang: 'en', text: clean },
     { lang: 'de', text: translatedPage(reg.remote, reg.local) },
   ]);
+  const withDe = (text: string): Audit =>
+    run([
+      { lang: 'en', text: clean },
+      { lang: 'de', text },
+    ]);
+  const wordSplit = withDe(
+    translatedPage(reg.remote, reg.local, (n) => (n === 'repo_up' ? 'ja' : 'nein')).replace(
+      '| `config_list` | nein',
+      '| `config_list` | nö'
+    )
+  );
+  const wordSame = withDe(translatedPage(reg.remote, reg.local, () => 'nein'));
+  const wordWrongRow = withDe(
+    translatedPage(reg.remote, reg.local, (n) => (n === 'job_list' ? 'ja' : 'nein'))
+  );
+  const rawTag = withDe(
+    translatedPage(reg.remote, reg.local, undefined, 'Datei ~/x/<config>.json')
+  );
+  const spanTag = withDe(
+    translatedPage(reg.remote, reg.local, undefined, 'Datei `~/x/<config>.json`')
+  );
   const locBad = run([
     { lang: 'en', text: clean },
     { lang: 'de', text: translatedPage(['job_list'], reg.local) },
@@ -440,7 +567,10 @@ function selftestCases(): ControlCase[] {
       name: 'planted: a renamed row fires, naming both names',
       ok: has(renamed, 'missing `job_list`') && has(renamed, 'extra `job_lisst`'),
     },
-    { name: 'planted: a dropped row fires', ok: has(dropped, 'missing `job_list`') },
+    {
+      name: 'planted: a dropped row fires',
+      ok: has(dropped, 'missing `job_list`'),
+    },
     {
       name: 'planted: two swapped rows fire as an order difference',
       ok: has(swapped, 'order differs at row 1'),
@@ -471,6 +601,35 @@ function selftestCases(): ControlCase[] {
       name: 'control: a locale with matching translated tables gives no finding',
       ok: n(locOk) === 0 && locOk.translated.includes('de'),
       detail: locOk.findings.join('; '),
+    },
+    {
+      name: 'control: destructive and non-destructive words that each agree and differ give no finding',
+      ok: n(locOk) === 0,
+      detail: locOk.findings.join('; '),
+    },
+    {
+      name: 'planted: two words for the non-destructive group fire',
+      ok: has(wordSplit, 'non-destructive tools use 2 different words'),
+    },
+    {
+      name: 'planted: one word for both groups fires',
+      ok: has(wordSame, 'the two groups must differ'),
+    },
+    {
+      name: 'planted: the wrong tool flagged destructive (one shared word) fires',
+      ok:
+        has(wordWrongRow, 'destructive tool(s) carry the non-destructive word: `job_list`') ||
+        has(wordWrongRow, 'different words'),
+      detail: wordWrongRow.findings.join('; '),
+    },
+    {
+      name: 'planted: a raw <config> outside a code span fires',
+      ok: has(rawTag, 'raw <config> outside a code span'),
+    },
+    {
+      name: 'control: the same <config> inside a code span gives no finding',
+      ok: n(spanTag) === 0,
+      detail: spanTag.findings.join('; '),
     },
     {
       name: 'planted: a locale translated table missing a row fires',

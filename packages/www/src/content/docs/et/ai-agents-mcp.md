@@ -157,14 +157,14 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `backup_status` | ei | Näitab kaugmasina varunduse olekut ja taimeri seisundit. |
 | `backup_strategy_list` | ei | Loetleb kõik varundusstrateegiad. |
 | `backup_strategy_show` | ei | Näitab varundusstrateegia üksikasju. |
-| `backup_toc-key_sync` | ei | Paigaldab repositooriumi loendivõtme selle masinasse või asendab erineva. |
+| `backup_toc-key_sync` | jah | Paigaldab repositooriumi loendivõtme selle masinasse või asendab erineva. |
 | `backup_undelete` | ei | Tühistab edasilükatud hetktõmmise kustutamise enne, kui see jõustub. |
 | `backup_usage` | ei | Näitab varunduse salvestuskvooti, salvestatud baite ja kasutust repositooriumi kaupa. |
 | `backup_verify` | ei | Kontrollib repositooriumi varundusankrut tükihoidla suhtes. |
 | `cluster_snapshot_list` | ei | Loetleb klastri rühmahetktõmmised. |
 | `cluster_status` | ei | Loetleb kõik klastrid või klastri nime andmisel näitab selle klastri täielikku konfiguratsiooni. |
 | `config_access_list` | ei | Loetleb konfiguratsiooni juurdepääsuvõtmed. |
-| `config_prune` | ei | Eemaldab kohalikust konfiguratsioonifailist ~/.config/rediacc/<config>.json üleliigse. |
+| `config_prune` | jah | Eemaldab kohalikust konfiguratsioonifailist `~/.config/rediacc/<config>.json` üleliigse. |
 | `config_reconcile` | ei | Ehitab kohaliku olekuhoidla uuesti masinate tegelikust seisust (renet list all). |
 | `config_show` | ei | Näitab aktiivse konfiguratsiooni üksikasju. |
 | `credits` | ei | Näitab selle konto allesjäänud krediidisaldot. |
@@ -172,7 +172,7 @@ Iga grant lubab 60 kutset minutis ja 5 samaaegset kutset. Kutse, mis ületab kum
 | `datastore_snapshot_list` | ei | Loetleb andmehoidla hetktõmmised. |
 | `datastore_status` | ei | Näitab ühte andmehoidlat: selle taustaprogrammi, ühendust, kasutust, repositooriume ja hetktõmmiseid. |
 | `feedback_list` | ei | Loetleb sellele masinale nähtavad tagasisideraportid: id, lühike sõrmejälg, olek ja kuupäevad. |
-| `feedback_report` | ei | Koostab raporti viimasest ebaõnnestunud käsust (--last), salvestatud käsust (--command <n>) või ainult sõnumist, prindib täpselt selle, mis saadetaks, ja saadab pärast kinnitust. |
+| `feedback_report` | ei | Koostab raporti viimasest ebaõnnestunud käsust (--last), salvestatud käsust (`--command <n>`) või ainult sõnumist, prindib täpselt selle, mis saadetaks, ja saadab pärast kinnitust. |
 | `feedback_show` | ei | Näitab ühte tagasisideraportit selle id järgi (või kordumatu eesliite järgi), koos oleku, esinemiste arvu ja kuupäevadega. |
 | `incident_status` | ei | Loetleb organisatsiooni intsidendid või näitab ühte koos selle ulatuse, ajaakna, masinasammude ning varajase hoiatuse, teavitamise ja lõpparuande tähtaegade kelladega. |
 | `job_cancel` | jah | Tühistab käimasoleva eraldiseisva töö. |

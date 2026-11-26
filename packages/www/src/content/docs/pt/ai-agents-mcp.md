@@ -157,14 +157,14 @@ Cada grant permite 60 chamadas por minuto e 5 chamadas em simultâneo. Uma chama
 | `backup_status` | não | Mostra o status dos backups e do temporizador em uma máquina remota. |
 | `backup_strategy_list` | não | Lista todas as estratégias de backup. |
 | `backup_strategy_show` | não | Mostra os detalhes de uma estratégia de backup. |
-| `backup_toc-key_sync` | não | Instala a chave de listagem do repositório na máquina dele, ou substitui uma diferente. |
+| `backup_toc-key_sync` | sim | Instala a chave de listagem do repositório na máquina dele, ou substitui uma diferente. |
 | `backup_undelete` | não | Cancela a exclusão adiada de um snapshot antes que ela entre em vigor. |
 | `backup_usage` | não | Mostra a cota de armazenamento de backup, os bytes armazenados e o uso por repositório. |
 | `backup_verify` | não | Verifica a âncora de backup de um repositório em relação ao armazenamento de chunks. |
 | `cluster_snapshot_list` | não | Lista os snapshots de grupo do cluster. |
 | `cluster_status` | não | Lista todos os clusters ou, com o nome de um cluster, mostra a configuração completa dele. |
 | `config_access_list` | não | Lista as chaves de acesso da configuração. |
-| `config_prune` | não | Remove o que sobra do arquivo de configuração local ~/.config/rediacc/<config>.json. |
+| `config_prune` | sim | Remove o que sobra do arquivo de configuração local `~/.config/rediacc/<config>.json`. |
 | `config_reconcile` | não | Reconstrói o repositório de estado local a partir do estado real das máquinas (renet list all). |
 | `config_show` | não | Mostra os detalhes da configuração atual. |
 | `credits` | não | Mostra o saldo de créditos restante desta conta. |
@@ -172,7 +172,7 @@ Cada grant permite 60 chamadas por minuto e 5 chamadas em simultâneo. Uma chama
 | `datastore_snapshot_list` | não | Lista os snapshots de um datastore. |
 | `datastore_status` | não | Mostra um datastore: backend, anexo, uso, repositórios e snapshots. |
 | `feedback_list` | não | Lista os relatórios de feedback visíveis para esta máquina: id, impressão digital curta, status e datas. |
-| `feedback_report` | não | Monta um relatório a partir do último comando com falha (--last), de um comando registrado (--command <n>) ou apenas de uma mensagem, mostra exatamente o que seria enviado e envia após a confirmação. |
+| `feedback_report` | não | Monta um relatório a partir do último comando com falha (--last), de um comando registrado (`--command <n>`) ou apenas de uma mensagem, mostra exatamente o que seria enviado e envia após a confirmação. |
 | `feedback_show` | não | Mostra um relatório de feedback pelo id (ou por um prefixo único), com status, número de ocorrências e datas. |
 | `incident_status` | não | Lista os incidentes da organização ou mostra um com seu escopo, janela, etapas por máquina e os relógios dos prazos de alerta antecipado, notificação e relatório final. |
 | `job_cancel` | sim | Cancela um job desanexado em execução. |

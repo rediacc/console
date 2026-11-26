@@ -1,5 +1,5 @@
 {
-  "version": "7009c1b0b7253bca",
+  "version": "a40777136b75bc62",
   "languages": [
     "ar",
     "de",
@@ -2486,7 +2486,7 @@
         }
       ],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
@@ -5007,7 +5007,7 @@
       ],
       "positionals": [],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,

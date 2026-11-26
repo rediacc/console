@@ -157,14 +157,14 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `backup_status` | non | Afficher l'état des sauvegardes et du minuteur sur une machine distante. |
 | `backup_strategy_list` | non | Lister toutes les stratégies de sauvegarde. |
 | `backup_strategy_show` | non | Afficher le détail d'une stratégie de sauvegarde. |
-| `backup_toc-key_sync` | non | Installer la clé de listage du dépôt sur sa machine, ou en remplacer une différente. |
+| `backup_toc-key_sync` | oui | Installer la clé de listage du dépôt sur sa machine, ou en remplacer une différente. |
 | `backup_undelete` | non | Annuler la suppression différée d'un instantané avant qu'elle ne prenne effet. |
 | `backup_usage` | non | Afficher le quota de stockage des sauvegardes, les octets stockés et l'usage par dépôt. |
 | `backup_verify` | non | Vérifier l'ancre de sauvegarde d'un dépôt par rapport au magasin de chunks. |
 | `cluster_snapshot_list` | non | Lister les instantanés de groupe du cluster. |
 | `cluster_status` | non | Lister tous les clusters, ou afficher la configuration complète d'un cluster à partir de son nom. |
 | `config_access_list` | non | Lister les clés d'accès de la configuration. |
-| `config_prune` | non | Retirer le superflu du fichier de configuration local ~/.config/rediacc/<config>.json. |
+| `config_prune` | oui | Retirer le superflu du fichier de configuration local `~/.config/rediacc/<config>.json`. |
 | `config_reconcile` | non | Reconstruire le registre d'état local à partir de l'état réel des machines (renet list all). |
 | `config_show` | non | Afficher le détail de la configuration actuelle. |
 | `credits` | non | Afficher le solde de crédits restant de ce compte. |
@@ -172,7 +172,7 @@ Chaque grant autorise 60 appels par minute et 5 appels simultanés. Un appel au-
 | `datastore_snapshot_list` | non | Lister les instantanés d'un datastore. |
 | `datastore_status` | non | Afficher un datastore : son backend, son rattachement, son usage, ses dépôts et ses instantanés. |
 | `feedback_list` | non | Lister les rapports de retour visibles pour cette machine : id, empreinte courte, statut et dates. |
-| `feedback_report` | non | Construire un rapport à partir de la dernière commande en échec (--last), d'une commande enregistrée (--command <n>) ou d'un simple message, afficher exactement ce qui serait envoyé, puis l'envoyer après confirmation. |
+| `feedback_report` | non | Construire un rapport à partir de la dernière commande en échec (--last), d'une commande enregistrée (`--command <n>`) ou d'un simple message, afficher exactement ce qui serait envoyé, puis l'envoyer après confirmation. |
 | `feedback_show` | non | Afficher un rapport de retour par son id (ou un préfixe unique), avec son statut, son nombre d'occurrences et ses dates. |
 | `incident_status` | non | Lister les incidents de l'organisation, ou en afficher un avec son périmètre, sa fenêtre, ses étapes par machine et les horloges des échéances d'alerte précoce, de notification et de rapport final. |
 | `job_cancel` | oui | Annuler une tâche détachée en cours d'exécution. |

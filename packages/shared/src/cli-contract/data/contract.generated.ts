@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '7009c1b0b7253bca';
+export const CLI_CONTRACT_VERSION = 'a40777136b75bc62';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "7009c1b0b7253bca",
+  "version": "a40777136b75bc62",
   "languages": [
     "ar",
     "de",
@@ -2494,7 +2494,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
@@ -5015,7 +5015,7 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "positionals": [],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,

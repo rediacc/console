@@ -157,14 +157,14 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `backup_status` | nein | Backup-Status und Timer-Zustand auf einer Remote-Maschine anzeigen. |
 | `backup_strategy_list` | nein | Alle Backup-Strategien auflisten. |
 | `backup_strategy_show` | nein | Details einer Backup-Strategie anzeigen. |
-| `backup_toc-key_sync` | nein | Den Listing-Schlüssel des Repositorys auf dessen Maschine installieren oder einen abweichenden ersetzen. |
+| `backup_toc-key_sync` | ja | Den Listing-Schlüssel des Repositorys auf dessen Maschine installieren oder einen abweichenden ersetzen. |
 | `backup_undelete` | nein | Das verzögerte Löschen eines Snapshots abbrechen, bevor es wirksam wird. |
 | `backup_usage` | nein | Backup-Speicherkontingent, gespeicherte Bytes und Nutzung pro Repository anzeigen. |
 | `backup_verify` | nein | Den Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren. |
 | `cluster_snapshot_list` | nein | Die Gruppen-Snapshots des Clusters auflisten. |
 | `cluster_status` | nein | Alle Cluster auflisten oder mit einem Clusternamen die vollständige Konfiguration dieses Clusters anzeigen. |
 | `config_access_list` | nein | Die Zugriffsschlüssel der Konfiguration auflisten. |
-| `config_prune` | nein | Ballast aus der lokalen Konfigurationsdatei ~/.config/rediacc/<config>.json entfernen. |
+| `config_prune` | ja | Ballast aus der lokalen Konfigurationsdatei `~/.config/rediacc/<config>.json` entfernen. |
 | `config_reconcile` | nein | Den lokalen Zustandsspeicher anhand des tatsächlichen Maschinenzustands neu aufbauen (renet list all). |
 | `config_show` | nein | Details der aktuellen Konfiguration anzeigen. |
 | `credits` | nein | Das verbleibende Guthaben dieses Kontos anzeigen. |
@@ -172,7 +172,7 @@ Jeder Grant erlaubt 60 Aufrufe pro Minute und 5 gleichzeitig laufende Aufrufe. E
 | `datastore_snapshot_list` | nein | Die Snapshots eines Datastores auflisten. |
 | `datastore_status` | nein | Einen Datastore anzeigen: Backend, Anbindung, Nutzung, Repositories und Snapshots. |
 | `feedback_list` | nein | Die für diese Maschine sichtbaren Feedback-Berichte auflisten: ID, kurzer Fingerabdruck, Status und Daten. |
-| `feedback_report` | nein | Einen Bericht aus dem neuesten fehlgeschlagenen Befehl (--last), einem aufgezeichneten Befehl (--command <n>) oder nur aus einer Nachricht erstellen, genau anzeigen, was gesendet würde, und nach Bestätigung senden. |
+| `feedback_report` | nein | Einen Bericht aus dem neuesten fehlgeschlagenen Befehl (--last), einem aufgezeichneten Befehl (`--command <n>`) oder nur aus einer Nachricht erstellen, genau anzeigen, was gesendet würde, und nach Bestätigung senden. |
 | `feedback_show` | nein | Einen Feedback-Bericht anhand seiner ID (oder eines eindeutigen Präfixes) mit Status, Anzahl der Vorkommen und Daten anzeigen. |
 | `incident_status` | nein | Die Vorfälle der Organisation auflisten oder einen einzelnen mit Umfang, Zeitfenster, Maschinenschritten und den Fristuhren für Frühwarnung, Meldung und Abschlussbericht anzeigen. |
 | `job_cancel` | ja | Einen laufenden losgelösten Job abbrechen. |
