@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "Account server URL",
   "commands.config.remote.enable.optionConfigId": "Attach to this existing config of the store instead of creating a new entry",
   "commands.config.remote.enable.optionForce": "Replace differing local content with the server copy without confirmation",
-  "commands.config.remote.enable.optionMachineSecret": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line",
+  "commands.config.remote.enable.optionMachineSecret": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET, piped stdin or a hidden terminal prompt, never the command line",
   "commands.config.remote.enable.overwriteAborted": "Enable aborted: local config \"{{config}}\" has content that differs from the server copy. Re-run with --force to replace it, or confirm in an interactive terminal.",
   "commands.config.remote.enable.overwriteConfirm": "Local config \"{{config}}\" has {{machines}} machine(s) and {{repos}} repository(ies) that will be replaced by the server copy (the previous file is kept at {{backupPath}}). Continue?",
   "commands.config.remote.enable.pairingCode": "Pairing code (type it on the page when asked):  {{code}}",

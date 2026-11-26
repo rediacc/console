@@ -2097,7 +2097,7 @@ Link this config to remote encrypted storage
 
 **Options:**
 
-- `--machine-secret <id>`: Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line
+- `--machine-secret <id>`: Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET, piped stdin or a hidden terminal prompt, never the command line
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
 - `--config-id <id>`: Attach to this existing config of the store instead of creating a new entry

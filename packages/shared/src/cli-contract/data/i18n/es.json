@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "URL del servidor de cuenta",
   "commands.config.remote.enable.optionConfigId": "Vincular a esta configuración existente del almacén en lugar de crear una entrada nueva",
   "commands.config.remote.enable.optionForce": "Reemplazar el contenido local diferente con la copia del servidor sin confirmación",
-  "commands.config.remote.enable.optionMachineSecret": "Registrar sin navegador con el secreto de máquina de este id, creado en el portal; el secreto llega por REDIACC_MACHINE_SECRET o stdin, nunca por la línea de comandos",
+  "commands.config.remote.enable.optionMachineSecret": "Registrar sin navegador con el secreto de máquina de este id, creado en el portal; el secreto llega por REDIACC_MACHINE_SECRET, por stdin canalizado o por un aviso oculto, nunca por la línea de comandos",
   "commands.config.remote.enable.overwriteAborted": "Activación abortada: la configuración local \"{{config}}\" tiene contenido que difiere de la copia del servidor. Vuelve a ejecutar con --force para reemplazarla, o confirma en una terminal interactiva.",
   "commands.config.remote.enable.overwriteConfirm": "La configuración local \"{{config}}\" tiene {{machines}} máquina(s) y {{repos}} repositorio(s) que serán reemplazados por la copia del servidor (el archivo anterior se conserva en {{backupPath}}). ¿Continuar?",
   "commands.config.remote.enable.pairingCode": "Código de emparejamiento (escríbelo en la página cuando te lo pida):  {{code}}",

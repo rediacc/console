@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "Account-Server-URL",
   "commands.config.remote.enable.optionConfigId": "An diese bestehende Config des Speichers anhängen, statt einen neuen Eintrag anzulegen",
   "commands.config.remote.enable.optionForce": "Abweichenden lokalen Inhalt ohne Bestätigung durch die Serverkopie ersetzen",
-  "commands.config.remote.enable.optionMachineSecret": "Headless mit dem im Portal erzeugten Maschinengeheimnis dieser ID anmelden (kein Browser); das Geheimnis selbst kommt aus REDIACC_MACHINE_SECRET oder stdin, nie von der Kommandozeile",
+  "commands.config.remote.enable.optionMachineSecret": "Headless mit dem im Portal erzeugten Maschinengeheimnis dieser ID anmelden (kein Browser); das Geheimnis selbst kommt aus REDIACC_MACHINE_SECRET, per Pipe aus stdin oder aus einer verdeckten Eingabeaufforderung, nie von der Kommandozeile",
   "commands.config.remote.enable.overwriteAborted": "Aktivierung abgebrochen: Die lokale Konfiguration \"{{config}}\" enthält Inhalte, die von der Serverkopie abweichen. Führen Sie den Befehl mit --force erneut aus, um sie zu ersetzen, oder bestätigen Sie in einem interaktiven Terminal.",
   "commands.config.remote.enable.overwriteConfirm": "Die lokale Konfiguration \"{{config}}\" enthält {{machines}} Maschine(n) und {{repos}} Repository/Repositories, die durch die Serverkopie ersetzt werden (die bisherige Datei bleibt unter {{backupPath}} erhalten). Fortfahren?",
   "commands.config.remote.enable.pairingCode": "Kopplungscode (auf der Seite eingeben, sobald danach gefragt wird):  {{code}}",

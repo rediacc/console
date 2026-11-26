@@ -977,7 +977,7 @@
           "relayRefused": "Der Kontoserver hat die Übergabe abgelehnt (HTTP {{status}}): {{error}}",
           "seeded": "Speicher war leer; die lokale Konfiguration wurde als Version 1 gepusht.",
           "success": "Remote-Konfiguration aktiviert. Konfiguration \"{{name}}\" wird jetzt mit {{apiUrl}} synchronisiert.",
-          "optionMachineSecret": "Headless mit dem im Portal erzeugten Maschinengeheimnis dieser ID anmelden (kein Browser); das Geheimnis selbst kommt aus REDIACC_MACHINE_SECRET oder stdin, nie von der Kommandozeile",
+          "optionMachineSecret": "Headless mit dem im Portal erzeugten Maschinengeheimnis dieser ID anmelden (kein Browser); das Geheimnis selbst kommt aus REDIACC_MACHINE_SECRET, per Pipe aus stdin oder aus einer verdeckten Eingabeaufforderung, nie von der Kommandozeile",
           "machineSecretPrompt": "Maschinengeheimnis:",
           "machineSecretEmpty": "Kein Maschinengeheimnis angegeben: Setzen Sie {{env}} oder übergeben Sie das Geheimnis über stdin.",
           "machineSecretInvalid": "Das Maschinengeheimnis ist ungültig: {{error}}",

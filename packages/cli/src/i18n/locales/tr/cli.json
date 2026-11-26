@@ -977,7 +977,7 @@
           "relayRefused": "Hesap sunucusu aktarımı reddetti (HTTP {{status}}): {{error}}",
           "seeded": "Depo boştu; yerel yapılandırma 1. sürüm olarak gönderildi.",
           "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor.",
-          "optionMachineSecret": "Portalda oluşturulan bu kimliğe ait makine sırrıyla tarayıcısız kayıt ol; sırrın kendisi REDIACC_MACHINE_SECRET veya stdin üzerinden gelir, asla komut satırından gelmez",
+          "optionMachineSecret": "Portalda oluşturulan bu kimliğe ait makine sırrıyla tarayıcısız kayıt ol; sırrın kendisi REDIACC_MACHINE_SECRET, borulanmış stdin veya gizli bir istem üzerinden gelir, asla komut satırından gelmez",
           "machineSecretPrompt": "Makine sırrı:",
           "machineSecretEmpty": "Makine sırrı verilmedi: {{env}} değişkenini ayarlayın veya sırrı stdin üzerinden aktarın.",
           "machineSecretInvalid": "Makine sırrı geçersiz: {{error}}",

@@ -977,7 +977,7 @@
           "relayRefused": "계정 서버가 전달을 거부했습니다 (HTTP {{status}}): {{error}}",
           "seeded": "저장소가 비어 있어 로컬 설정을 버전 1로 푸시했습니다.",
           "success": "원격 설정이 활성화되었습니다. 설정 \"{{name}}\"이 이제 {{apiUrl}}에 동기화됩니다.",
-          "optionMachineSecret": "포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET 또는 stdin에서 읽으며, 명령줄로는 받지 않습니다",
+          "optionMachineSecret": "포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET, 파이프로 들어온 stdin 또는 숨김 입력 프롬프트에서 읽으며, 명령줄로는 받지 않습니다",
           "machineSecretPrompt": "머신 시크릿:",
           "machineSecretEmpty": "머신 시크릿이 없습니다. {{env}}를 설정하거나 stdin으로 시크릿을 전달하세요.",
           "machineSecretInvalid": "머신 시크릿이 올바르지 않습니다: {{error}}",

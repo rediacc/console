@@ -977,7 +977,7 @@
           "relayRefused": "Le serveur de comptes a refusé la transmission (HTTP {{status}}) : {{error}}",
           "seeded": "Le stockage était vide ; la configuration locale a été poussée en tant que version 1.",
           "success": "Configuration distante activée. La configuration \"{{name}}\" est maintenant synchronisée avec {{apiUrl}}.",
-          "optionMachineSecret": "S'inscrire sans navigateur avec le secret machine de cet identifiant, créé dans le portail ; le secret lui-même vient de REDIACC_MACHINE_SECRET ou de stdin, jamais de la ligne de commande",
+          "optionMachineSecret": "S'inscrire sans navigateur avec le secret machine de cet identifiant, créé dans le portail ; le secret lui-même vient de REDIACC_MACHINE_SECRET, de stdin en tube ou d'une invite masquée, jamais de la ligne de commande",
           "machineSecretPrompt": "Secret machine :",
           "machineSecretEmpty": "Aucun secret machine fourni : définissez {{env}} ou transmettez le secret sur stdin.",
           "machineSecretInvalid": "Le secret machine n'est pas valide : {{error}}",

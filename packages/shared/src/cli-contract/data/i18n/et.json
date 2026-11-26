@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "Kontosserveri URL",
   "commands.config.remote.enable.optionConfigId": "Ühenda selle hoidla olemasoleva konfiguratsiooniga uue kirje loomise asemel",
   "commands.config.remote.enable.optionForce": "Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta",
-  "commands.config.remote.enable.optionMachineSecret": "Registreeri ilma brauserita portaalis loodud selle ID-ga masinasaladusega; saladus ise tuleb muutujast REDIACC_MACHINE_SECRET või stdin-ist, mitte kunagi käsurealt",
+  "commands.config.remote.enable.optionMachineSecret": "Registreeri ilma brauserita portaalis loodud selle ID-ga masinasaladusega; saladus ise tuleb muutujast REDIACC_MACHINE_SECRET, torustatud stdin-ist või peidetud sisestuskupast, mitte kunagi käsurealt",
   "commands.config.remote.enable.overwriteAborted": "Aktiveerimine katkestati: kohalik konfiguratsioon \"{{config}}\" sisaldab serveri koopiast erinevat sisu. Käivita uuesti lipuga --force, et see asendada, või kinnita interaktiivses terminalis.",
   "commands.config.remote.enable.overwriteConfirm": "Kohalikus konfiguratsioonis \"{{config}}\" on {{machines}} masin(at) ja {{repos}} hoidla(t), mis asendatakse serveri koopiaga (eelmine fail säilib asukohas {{backupPath}}). Kas jätkata?",
   "commands.config.remote.enable.pairingCode": "Sidumiskood (sisesta see lehel, kui seda küsitakse):  {{code}}",

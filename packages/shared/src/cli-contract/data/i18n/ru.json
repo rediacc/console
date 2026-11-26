@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "URL сервера аккаунта",
   "commands.config.remote.enable.optionConfigId": "Подключиться к этой существующей конфигурации хранилища вместо создания новой записи",
   "commands.config.remote.enable.optionForce": "Заменить отличающееся локальное содержимое копией с сервера без подтверждения",
-  "commands.config.remote.enable.optionMachineSecret": "Подключить машину без браузера по машинному секрету с этим id, созданному в портале; сам секрет берётся из REDIACC_MACHINE_SECRET или stdin, но никогда из командной строки",
+  "commands.config.remote.enable.optionMachineSecret": "Подключить машину без браузера по машинному секрету с этим id, созданному в портале; сам секрет берётся из REDIACC_MACHINE_SECRET, из stdin через канал или из скрытого запроса в терминале, но никогда из командной строки",
   "commands.config.remote.enable.overwriteAborted": "Включение отменено: локальная конфигурация \"{{config}}\" содержит данные, отличающиеся от копии на сервере. Повторите с --force, чтобы заменить её, либо подтвердите в интерактивном терминале.",
   "commands.config.remote.enable.overwriteConfirm": "Локальная конфигурация \"{{config}}\" содержит {{machines}} машину(ы) и {{repos}} репозиторий(ев), которые будут заменены копией с сервера (предыдущий файл сохранён в {{backupPath}}). Продолжить?",
   "commands.config.remote.enable.pairingCode": "Код сопряжения (введите его на странице, когда она попросит):  {{code}}",

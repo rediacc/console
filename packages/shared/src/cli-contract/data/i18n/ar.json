@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "عنوان URL لخادم الحساب",
   "commands.config.remote.enable.optionConfigId": "أرفِق بهذه الإعدادات الموجودة في المخزن بدلاً من إنشاء إدخال جديد",
   "commands.config.remote.enable.optionForce": "استبدال المحتوى المحلي المختلف بنسخة الخادم دون تأكيد",
-  "commands.config.remote.enable.optionMachineSecret": "التسجيل دون متصفح باستخدام سرّ الجهاز ذي هذا المعرّف المُنشأ في البوابة؛ يأتي السرّ نفسه من REDIACC_MACHINE_SECRET أو من stdin، ولا يأتي أبدًا من سطر الأوامر",
+  "commands.config.remote.enable.optionMachineSecret": "التسجيل دون متصفح باستخدام سرّ الجهاز ذي هذا المعرّف المُنشأ في البوابة؛ يأتي السرّ نفسه من REDIACC_MACHINE_SECRET أو من stdin عبر الأنبوب أو من موجّه إدخال مخفي، ولا يأتي أبدًا من سطر الأوامر",
   "commands.config.remote.enable.overwriteAborted": "تم إلغاء التفعيل: تحتوي الإعدادات المحلية \"{{config}}\" على محتوى يختلف عن نسخة الخادم. أعد التشغيل مع --force لاستبدالها، أو أكّد في طرفية تفاعلية.",
   "commands.config.remote.enable.overwriteConfirm": "تحتوي الإعدادات المحلية \"{{config}}\" على {{machines}} جهاز/أجهزة و{{repos}} مستودع/مستودعات سيتم استبدالها بنسخة الخادم (يتم الاحتفاظ بالملف السابق في {{backupPath}}). هل تريد المتابعة؟",
   "commands.config.remote.enable.pairingCode": "رمز الإقران (اكتبه في الصفحة عندما تطلبه):  {{code}}",

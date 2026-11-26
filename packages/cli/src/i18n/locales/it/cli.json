@@ -977,7 +977,7 @@
           "relayRefused": "Il server degli account ha rifiutato il passaggio (HTTP {{status}}): {{error}}",
           "seeded": "Lo storage era vuoto; la configurazione locale è stata inviata come versione 1.",
           "success": "Configurazione remota abilitata. La configurazione \"{{name}}\" è ora sincronizzata con {{apiUrl}}.",
-          "optionMachineSecret": "Registra senza browser con il segreto macchina di questo id, creato nel portale; il segreto arriva da REDIACC_MACHINE_SECRET o da stdin, mai dalla riga di comando",
+          "optionMachineSecret": "Registra senza browser con il segreto macchina di questo id, creato nel portale; il segreto arriva da REDIACC_MACHINE_SECRET, da stdin in pipe o da un prompt nascosto, mai dalla riga di comando",
           "machineSecretPrompt": "Segreto macchina:",
           "machineSecretEmpty": "Nessun segreto macchina fornito: imposta {{env}} oppure passa il segreto su stdin.",
           "machineSecretInvalid": "Il segreto macchina non è valido: {{error}}",

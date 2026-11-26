@@ -977,7 +977,7 @@
           "relayRefused": "アカウントサーバーが受け渡しを拒否しました (HTTP {{status}}): {{error}}",
           "seeded": "ストアが空だったため、ローカル設定をバージョン1としてプッシュしました。",
           "success": "リモート設定を有効化しました。設定 \"{{name}}\" は {{apiUrl}} と同期されています。",
-          "optionMachineSecret": "ポータルで作成したこの ID のマシンシークレットでブラウザなしで登録します。シークレット本体は REDIACC_MACHINE_SECRET または stdin から読み取り、コマンドラインからは受け取りません",
+          "optionMachineSecret": "ポータルで作成したこの ID のマシンシークレットでブラウザなしで登録します。シークレット本体は REDIACC_MACHINE_SECRET、パイプ経由の stdin、または非表示のプロンプトから読み取り、コマンドラインからは受け取りません",
           "machineSecretPrompt": "マシンシークレット:",
           "machineSecretEmpty": "マシンシークレットが指定されていません。{{env}} を設定するか、stdin でシークレットを渡してください。",
           "machineSecretInvalid": "マシンシークレットが無効です: {{error}}",

@@ -977,7 +977,7 @@
           "relayRefused": "账户服务器拒绝了交接（HTTP {{status}}）：{{error}}",
           "seeded": "存储为空；本地配置已作为版本 1 推送。",
           "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。",
-          "optionMachineSecret": "使用在门户中创建的此 ID 的机器密钥进行无浏览器注册；密钥本身从 REDIACC_MACHINE_SECRET 或 stdin 读取，绝不从命令行传入",
+          "optionMachineSecret": "使用在门户中创建的此 ID 的机器密钥进行无浏览器注册；密钥本身从 REDIACC_MACHINE_SECRET、管道传入的 stdin 或隐藏的终端提示读取，绝不从命令行传入",
           "machineSecretPrompt": "机器密钥：",
           "machineSecretEmpty": "未提供机器密钥：请设置 {{env}}，或通过 stdin 传入密钥。",
           "machineSecretInvalid": "机器密钥无效：{{error}}",

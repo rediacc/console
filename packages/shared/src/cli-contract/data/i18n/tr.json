@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "Hesap sunucusu URL'si",
   "commands.config.remote.enable.optionConfigId": "Yeni kayıt oluşturmak yerine depodaki bu mevcut yapılandırmaya bağlan",
   "commands.config.remote.enable.optionForce": "Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir",
-  "commands.config.remote.enable.optionMachineSecret": "Portalda oluşturulan bu kimliğe ait makine sırrıyla tarayıcısız kayıt ol; sırrın kendisi REDIACC_MACHINE_SECRET veya stdin üzerinden gelir, asla komut satırından gelmez",
+  "commands.config.remote.enable.optionMachineSecret": "Portalda oluşturulan bu kimliğe ait makine sırrıyla tarayıcısız kayıt ol; sırrın kendisi REDIACC_MACHINE_SECRET, borulanmış stdin veya gizli bir istem üzerinden gelir, asla komut satırından gelmez",
   "commands.config.remote.enable.overwriteAborted": "Etkinleştirme iptal edildi: Yerel yapılandırma \"{{config}}\", sunucu kopyasından farklı içerik barındırıyor. Değiştirmek için --force ile yeniden çalıştırın veya etkileşimli bir terminalde onaylayın.",
   "commands.config.remote.enable.overwriteConfirm": "Yerel yapılandırma \"{{config}}\", sunucu kopyasıyla değiştirilecek {{machines}} makine ve {{repos}} depo içeriyor (önceki dosya {{backupPath}} konumunda saklanır). Devam edilsin mi?",
   "commands.config.remote.enable.pairingCode": "Eşleştirme kodu (sayfa istediğinde yazın):  {{code}}",

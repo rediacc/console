@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "账户服务器URL",
   "commands.config.remote.enable.optionConfigId": "连接到存储中已有的这份配置，而不是新建条目",
   "commands.config.remote.enable.optionForce": "无需确认，直接用服务器副本替换不同的本地内容",
-  "commands.config.remote.enable.optionMachineSecret": "使用在门户中创建的此 ID 的机器密钥进行无浏览器注册；密钥本身从 REDIACC_MACHINE_SECRET 或 stdin 读取，绝不从命令行传入",
+  "commands.config.remote.enable.optionMachineSecret": "使用在门户中创建的此 ID 的机器密钥进行无浏览器注册；密钥本身从 REDIACC_MACHINE_SECRET、管道传入的 stdin 或隐藏的终端提示读取，绝不从命令行传入",
   "commands.config.remote.enable.overwriteAborted": "已中止启用：本地配置 \"{{config}}\" 的内容与服务器副本不同。使用 --force 重新运行以替换它，或在交互式终端中确认。",
   "commands.config.remote.enable.overwriteConfirm": "本地配置 \"{{config}}\" 包含 {{machines}} 台机器和 {{repos}} 个仓库，将被服务器副本替换（旧文件保留在 {{backupPath}}）。是否继续？",
   "commands.config.remote.enable.pairingCode": "配对码（页面要求时请输入）：  {{code}}",

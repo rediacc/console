@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "URL du serveur de compte",
   "commands.config.remote.enable.optionConfigId": "Rattacher à cette configuration existante du stockage au lieu de créer une nouvelle entrée",
   "commands.config.remote.enable.optionForce": "Remplacer le contenu local différent par la copie du serveur sans confirmation",
-  "commands.config.remote.enable.optionMachineSecret": "S'inscrire sans navigateur avec le secret machine de cet identifiant, créé dans le portail ; le secret lui-même vient de REDIACC_MACHINE_SECRET ou de stdin, jamais de la ligne de commande",
+  "commands.config.remote.enable.optionMachineSecret": "S'inscrire sans navigateur avec le secret machine de cet identifiant, créé dans le portail ; le secret lui-même vient de REDIACC_MACHINE_SECRET, de stdin en tube ou d'une invite masquée, jamais de la ligne de commande",
   "commands.config.remote.enable.overwriteAborted": "Activation annulée : la configuration locale \"{{config}}\" contient un contenu différent de la copie du serveur. Relancez avec --force pour la remplacer, ou confirmez dans un terminal interactif.",
   "commands.config.remote.enable.overwriteConfirm": "La configuration locale \"{{config}}\" contient {{machines}} machine(s) et {{repos}} dépôt(s) qui seront remplacés par la copie du serveur (l'ancien fichier est conservé sous {{backupPath}}). Continuer ?",
   "commands.config.remote.enable.pairingCode": "Code d'appairage (saisissez-le sur la page quand elle le demande) :  {{code}}",

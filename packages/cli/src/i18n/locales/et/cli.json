@@ -977,7 +977,7 @@
           "relayRefused": "Kontoserver keeldus üleandmisest (HTTP {{status}}): {{error}}",
           "seeded": "Hoidla oli tühi; kohalik konfiguratsioon lükati üles versioonina 1.",
           "success": "Kaugkonfiguratsioon lubatud. Konfiguratsioon \"{{name}}\" on nüüd sünkroonitud kohaga {{apiUrl}}.",
-          "optionMachineSecret": "Registreeri ilma brauserita portaalis loodud selle ID-ga masinasaladusega; saladus ise tuleb muutujast REDIACC_MACHINE_SECRET või stdin-ist, mitte kunagi käsurealt",
+          "optionMachineSecret": "Registreeri ilma brauserita portaalis loodud selle ID-ga masinasaladusega; saladus ise tuleb muutujast REDIACC_MACHINE_SECRET, torustatud stdin-ist või peidetud sisestuskupast, mitte kunagi käsurealt",
           "machineSecretPrompt": "Masinasaladus:",
           "machineSecretEmpty": "Masinasaladust ei antud: määra {{env}} või suuna saladus stdin-i kaudu.",
           "machineSecretInvalid": "Masinasaladus ei kehti: {{error}}",

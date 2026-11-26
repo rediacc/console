@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'e232c23cca84e989';
+export const CLI_CONTRACT_VERSION = 'd2ba170a3b3fec50';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "e232c23cca84e989",
+  "version": "d2ba170a3b3fec50",
   "languages": [
     "ar",
     "de",
@@ -5225,7 +5225,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.config.remote.enable.optionMachineSecret",
-          "label": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET or stdin, never the command line"
+          "label": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET, piped stdin or a hidden terminal prompt, never the command line"
         },
         {
           "flags": "--api-url <url>",

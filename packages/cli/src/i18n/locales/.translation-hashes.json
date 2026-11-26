@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 3347,
-    "sourceCommit": "b9599d1a01a1b60ef4692d855d8d3e06e25017c2"
+    "sourceCommit": "9aea9303807987189351d3da1cd51faffc1a7f64"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -759,7 +759,7 @@
     "commands.config.remote.enable.optionApiUrl": "a3435115",
     "commands.config.remote.enable.optionConfigId": "4f321636",
     "commands.config.remote.enable.optionForce": "6c3cebd2",
-    "commands.config.remote.enable.optionMachineSecret": "f49de7bf",
+    "commands.config.remote.enable.optionMachineSecret": "2083ee50",
     "commands.config.remote.enable.overwriteAborted": "abfd52db",
     "commands.config.remote.enable.overwriteConfirm": "b6ed5a1d",
     "commands.config.remote.enable.pairingCode": "4cb170d2",

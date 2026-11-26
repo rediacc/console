@@ -751,7 +751,7 @@
   "commands.config.remote.enable.optionApiUrl": "계정 서버 URL",
   "commands.config.remote.enable.optionConfigId": "새 항목을 만드는 대신 저장소에 있는 이 기존 설정에 연결합니다",
   "commands.config.remote.enable.optionForce": "확인 없이 다른 로컬 내용을 서버 사본으로 교체합니다",
-  "commands.config.remote.enable.optionMachineSecret": "포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET 또는 stdin에서 읽으며, 명령줄로는 받지 않습니다",
+  "commands.config.remote.enable.optionMachineSecret": "포털에서 만든 이 ID의 머신 시크릿으로 브라우저 없이 등록합니다. 시크릿 자체는 REDIACC_MACHINE_SECRET, 파이프로 들어온 stdin 또는 숨김 입력 프롬프트에서 읽으며, 명령줄로는 받지 않습니다",
   "commands.config.remote.enable.overwriteAborted": "활성화가 중단되었습니다: 로컬 설정 \"{{config}}\"에 서버 사본과 다른 내용이 있습니다. 교체하려면 --force로 다시 실행하거나 대화형 터미널에서 확인하세요.",
   "commands.config.remote.enable.overwriteConfirm": "로컬 설정 \"{{config}}\"에는 서버 사본으로 교체될 {{machines}}개의 머신과 {{repos}}개의 저장소가 있습니다 (이전 파일은 {{backupPath}}에 보관됩니다). 계속하시겠습니까?",
   "commands.config.remote.enable.pairingCode": "페어링 코드 (페이지에서 요청하면 입력하세요):  {{code}}",
