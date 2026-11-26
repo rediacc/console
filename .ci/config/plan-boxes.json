@@ -2038,10 +2038,9 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 13,
+      "open": 3,
+      "done": 14,
       "open_sigs": [
-        "542a4370",
         "57ff82ed",
         "c0384c17",
         "ed4df7d5"
@@ -2051,6 +2050,7 @@
         "3180c467",
         "3785e8de",
         "47e95ef3",
+        "542a4370",
         "6d90f63b",
         "7b95f43e",
         "7d4c3d3d",
@@ -2067,12 +2067,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 11,
+      "open": 2,
+      "done": 12,
       "open_sigs": [
         "824e14dc",
-        "c0384c17",
-        "fe023d7c"
+        "c0384c17"
       ],
       "done_sigs": [
         "07a5fd57",
@@ -2085,7 +2084,8 @@
         "9ec8970a",
         "b2021366",
         "df3b30c6",
-        "f61bfc21"
+        "f61bfc21",
+        "fe023d7c"
       ]
     },
     "agent/plans/PLAN-forensics-shipping.md": {

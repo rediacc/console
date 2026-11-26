@@ -108,10 +108,11 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Owns: none -- Cloudflare secrets, bws entries and public-bucket objects only, no tracked file
   Depends on: FR5, FR6.
   Accept: `npx wrangler secret list` for each account Worker shows both names, and `curl -sI https://data.rediacc.com/fonts/<file>` answers 200 for each pinned file, quoted in the tick.
-- [ ] FR13 [writer] Playwright spec under TEST_MODE: fill the inputs, generate an early warning, download the JSON, drop it on the verify page and see it valid, then edit one byte and see it invalid, all from the keyboard.
+- [x] FR13 [writer] Playwright spec under TEST_MODE: fill the inputs, generate an early warning, download the JSON, drop it on the verify page and see it valid, then edit one byte and see it invalid, all from the keyboard.
   Owns: private/account/e2e/tests/27-console/27-6*-forensics-reports.test.ts
   Depends on: FR8.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-60-forensics-reports.test.ts --project=chromium)` rc 0.
+    (ticked) 2026-11-26T11:56:53Z by d778be9d: FR13 spec 27-60-forensics-reports passes live against a local TEST_MODE account server (chromium, 1 passed rc 0), report generation signing with the TEST_MODE report keys; web vitest 112 passed, check:i18n rc 0 commit:cb4565c16e plan:agent/plans/PLAN-forensics-reports.md
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), declare an incident on a bench repo with captured flows, generate the early-warning and notification stages, scan the PDF's QR to the bench verify route, and verify the JSON with `./rdc.sh --config eu-bench forensics verify --report <file>`; cli-bench runs as additional verification.
   Accept: live-proof bench account-smoke
 

@@ -117,10 +117,11 @@ D9. **UI.** `Investigate.tsx` under `/console/investigate/:kind/:ref`: scrubber 
   Owns: private/account/web/src/i18n/locales/*/forensics.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: FI8, FI10, FI11.
   Accept: `npm run check:i18n` rc 0, `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run check:ci-i18n-cli-key-usage` rc 0.
-- [ ] FI13 [writer] Playwright keyboard specs under TEST_MODE: open an investigation through step-up, move the scrubber with arrow and Page keys, walk the rows with roving focus, run Verify, declare an incident from the keyboard and see the three clocks.
+- [x] FI13 [writer] Playwright keyboard specs under TEST_MODE: open an investigation through step-up, move the scrubber with arrow and Page keys, walk the rows with roving focus, run Verify, declare an incident from the keyboard and see the three clocks.
   Owns: private/account/e2e/tests/27-console/27-5*-forensics-*.test.ts
   Depends on: FI10, FI11.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-50-forensics-timeline.test.ts --project=chromium)` rc 0.
+    (ticked) 2026-11-26T11:56:52Z by d778be9d: FI13 spec 27-50-forensics-timeline passes live against a local TEST_MODE account server (chromium, 1 passed rc 0) after the fixture activates the paid subscription and the page shares one in-flight open under StrictMode; web vitest 112 passed, tsc rc 0 commit:cb4565c16e plan:agent/plans/PLAN-forensics-investigation.md
 - [x] FI14 [writer] The `forensics_level` renet function: registry entry and builder wrapping `renet forensics level <guid> basic|standard|full`, a tier map entry with `repoParam` and tier PROFESSIONAL, the regenerated renet contract, the CLI builder in renet-command.ts, and an e2e case.
   Owns: private/renet/pkg/functions/commands/forensics.go, private/renet/pkg/functions/commands/forensics_test.go, private/renet/pkg/functions/commands/registry.go, private/renet/pkg/license/tiermap.go, packages/shared/src/renet-contract/data/**, packages/cli/src/services/executor/renet-command.ts, packages/e2e-tests/tests/33-forensics-level.test.ts
   Depends on: PLAN-forensics-capture.md#FC7.
