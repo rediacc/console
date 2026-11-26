@@ -69,6 +69,9 @@ SEED_TEXT_MAX = 240
 REPORT_SEED_RE = re.compile(
     r"\bowed=(?!-)|\boutside\s+(?:\w+\s+)?owns\b|\bfor\s+the\s+lead\b", re.IGNORECASE
 )
+# A matched line that is a markdown heading or ends with a colon (a trailing `**` allowed) introduces a list; BULLET_RE is one item of it.
+REPORT_HEAD_RE = re.compile(r"^\s*#{1,6}\s|:\s*(?:\*\*|__)?\s*$")
+BULLET_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\S")
 OPEN_FINDING = "open"
 # An item a worker holds (`[>]`) is in flight, not missed work; `[ ]` and `[?]` are the open states a seed comes from.
 SEED_ITEM_STATES = (" ", "?")
@@ -688,19 +691,39 @@ def report_seeds(reports, session, since) -> list[dict]:
             )
             continue
         n = 0
-        for line in str(body).splitlines():
-            if n >= REPORT_LINES_MAX:
-                break
-            if REPORT_SEED_RE.search(line):
-                out.append(
-                    {
-                        "kind": "report",
-                        "ref": "%s (%s)" % (entry.get("agent") or "agent", entry.get("id")),
-                        "text": _clip(line),
-                    }
-                )
-                n += 1
+        lines = str(body).splitlines()
+        i = 0
+        while i < len(lines) and n < REPORT_LINES_MAX:
+            line = lines[i]
+            i += 1
+            if not REPORT_SEED_RE.search(line):
+                continue
+            text = line
+            if REPORT_HEAD_RE.search(line):
+                # A heading ("Two defects for the lead") or a line ending in a colon owns the bullets under it: they are the content, so they ride the same seed (bounded by SEED_TEXT_MAX through _clip).
+                bullets, i = _bullets_after(lines, i)
+                text = " ".join([line.strip(), *bullets])
+            out.append(
+                {
+                    "kind": "report",
+                    "ref": "%s (%s)" % (entry.get("agent") or "agent", entry.get("id")),
+                    "text": _clip(text),
+                }
+            )
+            n += 1
     return out
+
+
+def _bullets_after(lines, start) -> tuple[list[str], int]:
+    """The bullet lines that follow a heading at `lines[start - 1]` (one blank line may sit between), and the index after the last one taken; a non-bullet line ends the run and is not consumed."""
+    out: list[str] = []
+    i = start
+    if i < len(lines) and not lines[i].strip():
+        i += 1
+    while i < len(lines) and BULLET_RE.match(lines[i]):
+        out.append(lines[i].strip())
+        i += 1
+    return (out, i) if out else ([], start)
 
 
 def collect_seeds(items, review_records, reports, session, since) -> list[dict]:

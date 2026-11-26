@@ -450,6 +450,9 @@ def test_release_verdict_names_a_workflow_with_no_run_at_the_merged_sha():
     assert verdict == prscope.CI_PENDING
     assert cd in detail, detail
     assert "no run at the merged sha" in detail, detail
+    # Review c4b38c55.2: a missing run may only be late, so the detail never claims it will never come.
+    assert "not started yet" in detail, detail
+    assert "never starts" not in detail, detail
     verdict, detail = prscope.release_verdict({ci: [done], cd: [dict(done, databaseId=2)]}, "s1")
     assert (verdict, detail) == (prscope.CI_GREEN, "")
     pending = dict(done, status="in_progress", conclusion="")

@@ -397,6 +397,30 @@ def test_a_bare_owed_word_in_report_prose_is_not_a_seed() -> None:
     assert len(WN.report_seeds([report("TICK x partial owed=C2:live")], ME8, SINCE)) == 1
 
 
+def test_a_heading_for_the_lead_carries_the_bullets_under_it() -> None:
+    """The bullets under "Two defects for the lead" are the defects, so the seed keeps them; a plain line keeps only itself, and the text stays within SEED_TEXT_MAX."""
+    body = (
+        "## Report\n### Two defects for the lead\n\n- the refill misses a cluster\n"
+        "- the clock fires twice\n\nNext paragraph\n- not under the heading\n"
+    )
+    got = WN.report_seeds([report(body)], ME8, SINCE)
+    assert len(got) == 1, got
+    assert "the refill misses a cluster" in got[0]["text"], got
+    assert "the clock fires twice" in got[0]["text"], got
+    assert "not under the heading" not in got[0]["text"], got
+    colon = WN.report_seeds(
+        [report("**Process notes for the lead:**\n1. one\n2. two\nprose")], ME8, SINCE
+    )
+    assert len(colon) == 1, colon
+    assert "1. one" in colon[0]["text"], colon
+    assert "2. two" in colon[0]["text"], colon
+    plain = WN.report_seeds([report("Defect for the lead here\n- stray bullet")], ME8, SINCE)
+    assert [s["text"] for s in plain] == ["Defect for the lead here"], plain
+    long_body = "Notes for the lead:\n" + "\n".join("- " + "x" * 80 for _ in range(10))
+    (long,) = WN.report_seeds([report(long_body)], ME8, SINCE)
+    assert len(long["text"]) <= WN.SEED_TEXT_MAX, long
+
+
 def test_last_round_keeps_a_pre_compaction_row_of_the_same_session(monkeypatch, tmp_path) -> None:
     WN.append_round(tmp_path, "dddd4444", "/tmp/old.md", NOW)
     rows = WN.read_rounds(tmp_path)

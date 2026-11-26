@@ -1369,7 +1369,7 @@ _ORDER_FILE = re.compile(
 )
 
 
-# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading". The verb opens a sentence (after at most a softener such as "please" or "now", review bc4ca9e5.1) and its noun follows within the same clause (no comma, semicolon, "and" or "then" between), so an order that finishes work and then lists items is a work order and does not match (review 7e85a025.2).
+# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading". The verb opens a sentence (after any run of softeners, "please", "kindly", "now", "just", "first" or "also", reviews bc4ca9e5.1 and c4b38c55.1) and its noun follows within the same clause (no comma, semicolon, "and" or "then" between), so an order that finishes work and then lists items is a work order and does not match (review 7e85a025.2).
 _STATUS_ORDER_RE = re.compile(
     r"(?i)(?:^|(?<=[.!?]\s))\s*(?:(?:please|kindly|now|just|first|also)\s+)*"
     r"(?:list|enumerate|restate|report|name)\b"

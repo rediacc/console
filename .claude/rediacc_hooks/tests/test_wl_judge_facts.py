@@ -507,6 +507,7 @@ def test_control_a_work_order_with_no_file_or_verb_stands_under_a_status_shaped_
         "Report the open items.",
         "Please list the open items.",
         "Now report the open items.",
+        "Please now just list the open items.",  # several softeners (review c4b38c55.1)
         "Fix nothing. Just enumerate the ids under the Remaining section.",
     ],
 )

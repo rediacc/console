@@ -299,7 +299,7 @@ def release_verdict(runs_by_workflow, sha):
         note = "still waiting on " + ", ".join(pend)
         if missing:
             note += "; no run at the merged sha yet for " + ", ".join(missing)
-            note += " (a workflow its path filter skips never starts one)"
+            note += " (it has not started yet, or its path filter skips this sha and never will)"
         return CI_PENDING, note
     return CI_GREEN, ""
 
