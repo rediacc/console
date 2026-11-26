@@ -22,4 +22,4 @@ Body-Sig: 13a20b219c3689a5
 Anchor: in-diff
 Claim: beforeEach replaces HTMLFormElement.prototype.submit and afterEach never restores it (it only unstubs globals and clears mocks), so the stub stays active for every later test in the file.
 Class: seam-not-restored
-Resolution: open
+Resolution: not-a-bug | web/src/pages/__tests__/mcp-authorize.test.tsx:142 afterEach restores HTMLFormElement.prototype.submit to nativeSubmit and asserts it | d778be9d 2026-11-26T17:56:53Z

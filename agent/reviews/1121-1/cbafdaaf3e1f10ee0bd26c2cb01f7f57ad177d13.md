@@ -28,4 +28,4 @@ Resolution: open
 Anchor: in-diff
 Claim: test_handover_names_an_unreadable_lease leaves handover.UNREADABLE['lease-1'] set (the module-level dict written by lease_landed) and nothing resets it, so a later test in the same process that injects a None state for 'lease-1' would receive a stale 'could not be read' reason.
 Class: seam-not-restored
-Resolution: open
+Resolution: fixed 5fb22d3cdf4c2a96a8735a632ce1f1c0f05958e2 | d778be9d 2026-11-26T17:58:05Z

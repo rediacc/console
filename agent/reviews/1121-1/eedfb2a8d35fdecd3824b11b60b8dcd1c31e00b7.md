@@ -28,4 +28,4 @@ Resolution: fixed 8773a702badaf3e5366217e786277ef19e8793e8 | d778be9d 2026-11-24
 Anchor: in-diff
 Claim: A preview-namespace row that is active with expiresAt NULL (non-expiring) is given a 7-day end date by extendPreviewSubscriptions, which shortens its validity despite the doc saying it never shortens one; the mint path always sets expiresAt, so this only arises from rows created outside it.
 Class: other
-Resolution: open
+Resolution: fixed 320c0dbdb0d5ee8b9c2caf00009e8d2ca4cffe8f | d778be9d 2026-11-26T17:58:33Z
