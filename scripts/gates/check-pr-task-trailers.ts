@@ -135,7 +135,7 @@ export const judge = (
       out.push({ sha: c.sha, subject, problem: 'untagged' });
       continue;
     }
-    // A trailer naming no epic (a mistyped or wrong id) is repaired by an attribution entry, since history is never rewritten.
+    // An attribution entry repairs the whole commit, since history is never rewritten: a trailer naming no epic (a mistyped or wrong id) is covered, and so is one that mixes known and unknown ids (the known id already places the commit in its epic).
     if (attributed.has(c.sha)) continue;
     for (const id of ids) {
       if (!known.includes(id)) out.push({ sha: c.sha, subject, problem: 'unknown-epic', id });
@@ -411,6 +411,15 @@ const selftestBody = (): number => {
     'an attributed commit with an unknown-epic trailer is not a verdict',
     judge([{ sha: S5, message: 'feat: wrong id\n\nPR-TASK: fff000' }], known, wrongId.attributed)
       .length === 0
+  );
+  const mixedMsg = 'feat: mixed\n\nPR-TASK: abc123\nPR-TASK: fff000';
+  check(
+    'a mixed known and unknown trailer is a verdict without an attribution',
+    judge([{ sha: S5, message: mixedMsg }], known).length === 1
+  );
+  check(
+    'a mixed trailer is repaired as a whole by its attribution',
+    judge([{ sha: S5, message: mixedMsg }], known, wrongId.attributed).length === 0
   );
   check(
     'CONTROL: the same unknown-epic commit without an attribution IS caught',
