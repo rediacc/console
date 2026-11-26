@@ -501,7 +501,8 @@ async function takeSlot(
 
 /** `args` without its `confirm` entry. */
 function withoutConfirm(args: Record<string, unknown>): Record<string, unknown> {
-  const { confirm: _dropped, ...rest } = args;
+  const rest = { ...args };
+  delete rest.confirm;
   return rest;
 }
 

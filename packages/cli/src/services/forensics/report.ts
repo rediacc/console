@@ -17,6 +17,8 @@ const REPORT_STAGES = ['early-warning', 'notification', 'final'] as const;
 type ReportStageName = (typeof REPORT_STAGES)[number];
 
 const REPORT_FORMATS = ['pdf', 'json', 'stix'] as const;
+/** The format an export writes when `--format` is not given. */
+const DEFAULT_REPORT_FORMAT: (typeof REPORT_FORMATS)[number] = 'json';
 type ReportFormatName = (typeof REPORT_FORMATS)[number];
 
 const FILE_SUFFIX: Record<ReportFormatName, string> = {
@@ -63,7 +65,7 @@ function parseReportOptions(options: ExportReportOptions): {
       t('incident.badStage', { stage: options.stage, stages: REPORT_STAGES.join(', ') })
     );
   }
-  const format = options.format ?? 'json';
+  const format = options.format ?? DEFAULT_REPORT_FORMAT;
   if (!isFormat(format)) {
     throw invalid(t('incident.badFormat', { format, formats: REPORT_FORMATS.join(', ') }));
   }
