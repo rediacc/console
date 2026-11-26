@@ -164,7 +164,7 @@ Workerは、PKCE（S256のみ）に対応したOAuth 2.1認可サーバーです
 | `cluster_snapshot_list` | いいえ | クラスタのグループスナップショットを一覧表示します。 |
 | `cluster_status` | いいえ | すべてのクラスタを一覧表示します。クラスタ名を指定すると、そのクラスタの設定全体を表示します。 |
 | `config_access_list` | いいえ | 設定のアクセスキーを一覧表示します。 |
-| `config_prune` | いいえ | ローカルの設定ファイル ~/.config/rediacc/<config>.json から不要な項目を取り除きます。 |
+| `config_prune` | いいえ | ローカルの設定ファイル `~/.config/rediacc/<config>.json` から不要な項目を取り除きます。 |
 | `config_reconcile` | いいえ | マシンの実際の状態からローカルの状態バケットを再構築します(renet list all)。 |
 | `config_show` | いいえ | 現在の設定の詳細を表示します。 |
 | `credits` | いいえ | このアカウントの残りクレジット残高を表示します。 |

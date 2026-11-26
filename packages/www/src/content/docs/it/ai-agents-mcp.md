@@ -164,7 +164,7 @@ Ogni grant consente 60 chiamate al minuto e 5 chiamate in corso contemporaneamen
 | `cluster_snapshot_list` | no | Elenca gli snapshot di gruppo del cluster. |
 | `cluster_status` | no | Elenca tutti i cluster oppure, passando il nome di un cluster, mostra la sua configurazione completa. |
 | `config_access_list` | no | Elenca le chiavi di accesso della configurazione. |
-| `config_prune` | no | Rimuove il superfluo dal file di configurazione locale ~/.config/rediacc/<config>.json. |
+| `config_prune` | no | Rimuove il superfluo dal file di configurazione locale `~/.config/rediacc/<config>.json`. |
 | `config_reconcile` | no | Ricostruisce il contenitore di stato locale a partire dallo stato reale delle macchine (renet list all). |
 | `config_show` | no | Mostra i dettagli della configurazione corrente. |
 | `credits` | no | Mostra il saldo dei crediti residuo di questo account. |

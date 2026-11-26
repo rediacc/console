@@ -164,7 +164,7 @@ sourceCommit: "948dc510c78b93b73ea5b1b7b379cdb93141486e"
 | `cluster_snapshot_list` | لا | يعرض قائمة اللقطات الجماعية للعنقود. |
 | `cluster_status` | لا | يعرض قائمة كل العناقيد، أو يعرض الإعداد الكامل لعنقود عند تمرير اسمه. |
 | `config_access_list` | لا | يعرض قائمة مفاتيح الوصول الخاصة بالإعداد. |
-| `config_prune` | لا | يزيل الزوائد من ملف الإعداد المحلي ~/.config/rediacc/<config>.json. |
+| `config_prune` | لا | يزيل الزوائد من ملف الإعداد المحلي `~/.config/rediacc/<config>.json`. |
 | `config_reconcile` | لا | يعيد بناء مخزن الحالة المحلي من الحالة الفعلية للأجهزة (renet list all). |
 | `config_show` | لا | يعرض تفاصيل الإعداد الحالي. |
 | `credits` | لا | يعرض رصيد الأرصدة المتبقي لهذا الحساب. |

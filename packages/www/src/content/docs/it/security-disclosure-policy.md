@@ -67,7 +67,7 @@ Gli obiettivi sono traguardi, non garanzie: una segnalazione che richiede più t
 
 ## Divulgazione coordinata
 
-Di norma i dettagli vengono pubblicati insieme alla correzione, entro 90 giorni dalla segnalazione. Chi desidera una pubblicazione anticipata o posticipata indica la data nella segnalazione, e le due parti concordano una data. Una vulnerabilità già sfruttata in the wild viene trattata come un incidente, come descritto nella [pagina sulla risposta agli incidenti](/it/docs/security-incident-response).
+Di norma i dettagli vengono pubblicati insieme alla correzione, entro 90 giorni dalla segnalazione. Chi desidera una pubblicazione anticipata o posticipata indica la data nella segnalazione, e le due parti concordano una data. Una vulnerabilità già sfruttata attivamente viene trattata come un incidente, come descritto nella [pagina sulla risposta agli incidenti](/it/docs/security-incident-response).
 
 ## Riconoscimento
 
