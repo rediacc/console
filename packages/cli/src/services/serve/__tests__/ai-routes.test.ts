@@ -26,6 +26,7 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
+import { WK_ANTHROPIC_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import {
   AI_APPROVAL_COMMAND_MISMATCH,
   AI_APPROVAL_UNKNOWN,
@@ -400,7 +401,7 @@ function textStep(text: string) {
 function profileOf(model: string): Profile {
   return {
     format: 'anthropic-messages',
-    baseURL: 'https://api.anthropic.com',
+    baseURL: WK_ANTHROPIC_API_BASE,
     key: 'sk-test',
     authScheme: 'x-api-key',
     model,

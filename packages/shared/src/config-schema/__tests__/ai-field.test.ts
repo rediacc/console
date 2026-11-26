@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { WK_ANTHROPIC_API_BASE } from '../../config/well-known.generated.js';
 import {
   blindPointer,
   deriveFieldCommitmentKey,
@@ -33,7 +34,7 @@ const AI = {
   providers: {
     anthropic: {
       format: 'anthropic-messages' as const,
-      baseURL: 'https://api.anthropic.com',
+      baseURL: WK_ANTHROPIC_API_BASE,
       key: KEY,
       authScheme: 'x-api-key' as const,
       model: 'claude-sonnet-4-5',

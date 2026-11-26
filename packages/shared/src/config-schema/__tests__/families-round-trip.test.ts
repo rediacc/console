@@ -26,6 +26,7 @@ import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_ANTHROPIC_API_BASE,
   WK_PREVIEW_SAMPLE_ORIGIN,
 } from '../../config/well-known.generated.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
@@ -139,7 +140,7 @@ function allFamiliesConfig(): RdcConfig {
       providers: {
         main: {
           format: 'anthropic-messages',
-          baseURL: 'https://api.anthropic.com',
+          baseURL: WK_ANTHROPIC_API_BASE,
           key: 'sk-ant-fixture',
           authScheme: 'x-api-key',
           model: 'claude-sonnet-4-5',
