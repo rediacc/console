@@ -23,19 +23,23 @@ import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { shared as runRoot } from '../lib/runtmp.js';
 import { GateCores, gateCoresSelftest } from './gate-cores.js';
 import { CARRY_EXEMPT_REL, exemptIdsOf, GLOBAL_INPUTS, matchGlob } from './input-hash.js';
 import { openLease, type RunnerLease } from './lease-client.js';
 import {
   attribute,
+  installEntrySignals,
   LOCK_REL,
   type LockEntry,
   needsClosure,
   REPO_ROOT,
   type RepoView,
   repoView,
+  tempDisposalCases,
   traceCommand,
   traceRefusal,
+  trackLiveGroup,
   uncoveredBuildOutput,
 } from './path-trace.js';
 import { leafClosure, resolvePushBase } from './quick-select.js';
@@ -278,6 +282,7 @@ function runPlain(
     });
     child.stdout.on('data', (d) => chunks.push(String(d)));
     child.stderr.on('data', (d) => chunks.push(String(d)));
+    const untrack = trackLiveGroup(child.pid);
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -289,6 +294,7 @@ function runPlain(
     }, timeoutS * 1000);
     child.on('exit', (code, signal) => {
       clearTimeout(timer);
+      untrack();
       resolve({
         exit: timedOut ? 124 : (code ?? (signal ? 128 : 1)),
         tail: chunks.join('').split('\n').slice(-12).join('\n'),
@@ -354,7 +360,7 @@ export function buildSparse(
   entry: LockEntry,
   leafFiles: ReadonlySet<string>
 ): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sparse-'));
+  const dir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'sparse-'));
   try {
     return fillSparse(dir, view, entry, leafFiles);
   } catch (err) {
@@ -1206,7 +1212,7 @@ async function selftest(): Promise<number> {
     'a network connection is a finding'
   );
   {
-    const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-place-'));
+    const pdir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'place-'));
     try {
       const pview: RepoView = {
         root: '/nowhere',
@@ -1281,7 +1287,7 @@ async function selftest(): Promise<number> {
     console.log(`  FAIL  this host cannot trace, so the fixture half cannot run: ${refusal}`);
     return 1;
   }
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-self-'));
+  const dir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'self-'));
   try {
     const files: Record<string, string> = {
       'a.txt': 'a',
@@ -1440,8 +1446,7 @@ async function selftest(): Promise<number> {
       full.status === 0 && full.err.includes('selected (rotation 1/7)'),
       `CONTROL: a non-empty rotation bucket still lists and exits 0 (rc=${full.status})`
     );
-    const tmpSparse = (): number =>
-      fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith('trace-honest-sparse-')).length;
+    const tmpSparse = (): number => fs.readdirSync(runRoot('trace-honest-')).length;
     const sparseBefore = tmpSparse();
     let threw = false;
     try {
@@ -1465,7 +1470,7 @@ async function selftest(): Promise<number> {
       threw && tmpSparse() === sparseBefore,
       `a sparse build that throws after mkdtemp removes its directory (threw ${threw}, leaked ${tmpSparse() - sparseBefore})`
     );
-    const sdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sym-'));
+    const sdir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'sym-'));
     try {
       const real = path.join(sdir, 'real.txt');
       fs.writeFileSync(real, 'one');
@@ -1566,6 +1571,8 @@ async function selftest(): Promise<number> {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+  // Temp disposal: real children, a signal mid-build and a SIGKILL.
+  await tempDisposalCases(import.meta.filename, 'trace-honest-', check);
   const coreFailures = await gateCoresSelftest();
   check(
     coreFailures.length === 0,
@@ -1575,7 +1582,27 @@ async function selftest(): Promise<number> {
   return bad === 0 ? 0 : 1;
 }
 
+/** The child side of `tempDisposalCases`: builds one real sparse tree in the run dir, installs the entry hook, then idles (mode `noop` only touches the run dir and exits). */
+export function tempProbeChild(mode: string): void {
+  installEntrySignals();
+  if (mode === 'noop') {
+    runRoot('trace-honest-');
+    return;
+  }
+  const empty = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'probe-root-'));
+  fs.writeFileSync(path.join(empty, 'a.txt'), 'x');
+  buildSparse(
+    { ...repoView(REPO_ROOT), root: empty, files: ['a.txt'] },
+    { id: 'g:probe', run: 'true', gate: true, paths: ['a.txt'], pathsOrigin: 'traced', leaves: [] },
+    new Set<string>()
+  );
+  console.log('ready');
+  setInterval(() => undefined, 1000);
+}
+
 if (isEntryPoint(import.meta.filename)) {
+  // A SIGTERM or SIGINT kills the traced groups and exits 130, which removes the run dir with every sparse tree and trace log under it.
+  installEntrySignals();
   main(process.argv.slice(2))
     .then(
       (code) => {

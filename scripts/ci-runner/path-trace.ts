@@ -29,13 +29,15 @@
  *   tsx scripts/ci-runner/path-trace.ts --selftest
  *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem)
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { installSignalCleanup, removeTree, shared as runRoot } from '../lib/runtmp.js';
 import {
   CARRY_EXEMPT_REL,
   exemptRowsOf,
@@ -1727,7 +1729,16 @@ export function traceRefusal(opts: { noSeccomp?: boolean } = {}): string | undef
 /** Process groups of traces still running. Each runs detached (so a timeout can kill its whole tree), which also means a stopped path-trace would orphan them; the signal handler in main kills them first. */
 const LIVE_GROUPS = new Set<number>();
 
-function killLiveGroups(): void {
+/** Registers a detached group for the signal handler's kill; the returned function unregisters it. */
+export function trackLiveGroup(pid: number | undefined): () => void {
+  if (pid === undefined) return () => undefined;
+  LIVE_GROUPS.add(pid);
+  return () => {
+    LIVE_GROUPS.delete(pid);
+  };
+}
+
+export function killLiveGroups(): void {
   for (const pid of LIVE_GROUPS) {
     try {
       process.kill(-pid, 'SIGKILL');
@@ -1811,7 +1822,31 @@ export async function traceCommand(
     straceBin?: string;
   } = {}
 ): Promise<TraceRun> {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-'));
+  // Logs a caller asked to keep live outside the run dir, which the exit hook removes.
+  const dir = opts.keepLogs
+    ? fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-kept-'))
+    : fs.mkdtempSync(path.join(runRoot('path-trace-'), 't-'));
+  try {
+    return await traceIn(dir, cmd, cwd, opts);
+  } finally {
+    // A parser that throws, or a strace that cannot start, still removes the logs.
+    if (!opts.keepLogs) removeTree(dir);
+  }
+}
+
+async function traceIn(
+  dir: string,
+  cmd: string,
+  cwd: string,
+  opts: {
+    env?: NodeJS.ProcessEnv;
+    keepLogs?: boolean;
+    label?: string;
+    timeoutS?: number;
+    noSeccomp?: boolean;
+    straceBin?: string;
+  }
+): Promise<TraceRun> {
   const started = Date.now();
   const outFile = path.join(dir, 'output.txt');
   const outFd = fs.openSync(outFile, 'w');
@@ -1858,8 +1893,7 @@ export async function traceCommand(
   const straceNotes = errLines.filter((l) => l.startsWith('strace: '));
   const preamble = errLines.filter((l) => !l.startsWith('strace: '));
   const output = [...preamble, fs.readFileSync(outFile, 'utf8')].join('\n');
-  if (!opts.keepLogs) fs.rmSync(dir, { recursive: true, force: true });
-  else process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
+  if (opts.keepLogs) process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
   return {
     exit,
     access,
@@ -2911,7 +2945,7 @@ async function selftest(): Promise<number> {
     'an exec seen before the first chdir keeps the start cwd, not the post-chdir one'
   );
   // The -ff log directory is read in NUMERIC pid order with the pid from the file name (4936a0f3.2): t.10 sorts before t.9 as text, and its relative read must still land in its parent's cwd.
-  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-logs-'));
+  const logDir = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'logs-'));
   try {
     fs.writeFileSync(
       path.join(logDir, 't.9'),
@@ -3088,7 +3122,7 @@ async function selftest(): Promise<number> {
   );
   {
     // A symlinked root: a relative --git-common-dir stays under the real root, where strace reports its reads (d1c98d2e.2).
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+    const tmp = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'link-'));
     try {
       const realDir = path.join(tmp, 'real');
       fs.mkdirSync(path.join(realDir, '.ci', 'policy'), { recursive: true });
@@ -4134,7 +4168,7 @@ async function selftest(): Promise<number> {
     'an END marker with no BEGIN is refused'
   );
   // THE LEDGER STAMP IS THE TRACE'S START, not the apply time (35e89088.2).
-  const wroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-stamp-'));
+  const wroot = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'stamp-'));
   try {
     for (const rel of [MANIFEST_REL, LOCK_REL]) {
       fs.mkdirSync(path.dirname(path.join(wroot, rel)), { recursive: true });
@@ -4163,7 +4197,7 @@ async function selftest(): Promise<number> {
     fs.rmSync(wroot, { recursive: true, force: true });
   }
   // A RED RUN OVER A TRACED ENTRY changes nothing; the same verdict from a green run strips it (7a9a97ba.1).
-  const rroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-red-'));
+  const rroot = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'red-'));
   try {
     const traced = manifestWithPaths(manifest, 'g:b', ['a/one.txt']);
     const seed = (): void => {
@@ -4416,7 +4450,7 @@ async function selftest(): Promise<number> {
   );
 
   // A --root reached through a symlink is the realpath strace reports (ffa5756e.6).
-  const linkBase = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+  const linkBase = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'link-'));
   try {
     const here = path.resolve(import.meta.dirname, '..', '..');
     fs.symlinkSync(here, path.join(linkBase, 'link'));
@@ -4431,7 +4465,7 @@ async function selftest(): Promise<number> {
   // One real trace, when this host can trace.
   const refusal = traceRefusal();
   if (refusal === undefined) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-self-'));
+    const dir = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'self-'));
     fs.mkdirSync(path.join(dir, 'in'));
     for (const f of ['in/a.txt', 'in/b.txt', 'in/c.txt', 'in/d.txt', 'other.txt'])
       fs.writeFileSync(path.join(dir, f), f);
@@ -4477,7 +4511,7 @@ async function selftest(): Promise<number> {
       `strace's own lines are kept apart from the gate's stdout and stderr (output ${JSON.stringify(sep.outputTail)}, notes ${JSON.stringify(sep.straceNotes)})`
     );
     // W2.5 accept fixture: `python3 -m` from the root, reading two tracked files, gives those two plus lists ['', '.ci']: the root and .ci are sys.path entries Python lists and probes, not content.
-    const py = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-py-'));
+    const py = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'py-'));
     const pyFiles: Record<string, string> = {
       '.ci/tool.py': "open('conf/x.txt').read()\n",
       '.ci/other.py': 'pass\n',
@@ -4513,7 +4547,7 @@ async function selftest(): Promise<number> {
       pyView.records?.length === 1 && pyView.records[0]?.prefix === 'agent/reviews',
       'repoView carries the root record set (review 502ce0ee.3: a dropped records field would leave every hand-built view green)'
     );
-    const noPol = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-nopol-'));
+    const noPol = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'nopol-'));
     let noPolThrew = false;
     try {
       readRecordGlobs(noPol);
@@ -4565,7 +4599,7 @@ async function selftest(): Promise<number> {
       logV.kind === 'whole-tree' && logV.reason.includes('git log -1'),
       `B5 CONTROL real: git log -1 (implicit HEAD) stays history (got ${shape(logV)})`
     );
-    const fx = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-fx-'));
+    const fx = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'fx-'));
     const fxRun = await traceCommand(
       `git init -q ${fx} && git -C ${fx} read-tree --empty && git -C ${fx} ls-files -s >/dev/null && git ls-files -z >/dev/null && cat conf/x.txt >/dev/null`,
       pyView.root
@@ -4578,7 +4612,7 @@ async function selftest(): Promise<number> {
         JSON.stringify(fxV.names) === '["**"]' &&
         [...(fxRun.access.gitReaders?.keys() ?? [])].some(
           (p) =>
-            p.startsWith(fs.realpathSync(os.tmpdir())) &&
+            p.startsWith(fs.realpathSync(runRoot('path-trace-'))) &&
             p.endsWith('/index') &&
             !p.startsWith(pyView.root)
         ),
@@ -4695,17 +4729,124 @@ async function selftest(): Promise<number> {
     `a bare \`agent\` list entry cites only records whose literal prefix is \`agent\` (got ${JSON.stringify(bareAgent)}), and CONTROL: agent/reviews is cited`
   );
 
+  // Temp disposal: real children, a signal mid-trace and a SIGKILL.
+  await tempDisposalCases(import.meta.filename, 'path-trace-', check);
+  const before = fs.readdirSync(runRoot('path-trace-')).length;
+  let threw = false;
+  try {
+    // An env whose enumeration throws fails traceCommand after its log dir and files exist.
+    const boom = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new Error('planted');
+        },
+      }
+    ) as NodeJS.ProcessEnv;
+    await traceCommand('true', process.cwd(), { env: boom });
+  } catch {
+    threw = true;
+  }
+  check(
+    threw && fs.readdirSync(runRoot('path-trace-')).length === before,
+    `temp: a throw inside traceCommand leaves no log dir (threw ${threw}, leaked ${fs.readdirSync(runRoot('path-trace-')).length - before})`
+  );
+
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);
   return bad === 0 ? 0 : 1;
 }
 
-if (isEntryPoint(import.meta.filename)) {
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
-    process.on(sig, () => {
-      killLiveGroups();
-      process.exit(130);
-    });
+// ---------------------------------------------------------------------------
+// temp disposal: the entry points' signal hook, and the real-child cases both tools' selftests run
+// ---------------------------------------------------------------------------
+
+/** What each entry point installs: SIGINT, SIGTERM and SIGHUP kill the traced groups, then exit 130, which removes this run's temp (runtmp's exit hook). */
+export function installEntrySignals(): void {
+  installSignalCleanup(killLiveGroups);
+}
+
+/** The child side of `tempDisposalCases`: makes this tool's real temp, installs the entry hook, then idles (mode `noop` only touches the run dir and exits). */
+export async function tempProbeChild(mode: string, stub: string): Promise<void> {
+  installEntrySignals();
+  if (mode === 'noop') {
+    runRoot('path-trace-');
+    return;
   }
+  // The log dir exists synchronously; the stub strace then idles, so the trace is mid-run when the signal lands.
+  void traceCommand('true', process.cwd(), { straceBin: stub });
+  console.log('ready');
+  setInterval(() => undefined, 1000);
+}
+
+/**
+ * Drives `<module>.tempProbeChild` as a real child in a fresh TMPDIR: SIGTERM mid-trace leaves nothing, SIGKILL leaves exactly the one run dir (the premise), and the next run's sweep removes it. Reports one verdict per case through `check`.
+ */
+export async function tempDisposalCases(
+  moduleFile: string,
+  prefix: string,
+  check: (ok: boolean, label: string) => void
+): Promise<void> {
+  const root = fs.existsSync('/tmp') ? '/tmp' : os.tmpdir();
+  const base = fs.mkdtempSync(path.join(root, 'pt-'));
+  const aux = fs.mkdtempSync(path.join(root, 'pt-aux-'));
+  try {
+    const stub = path.join(aux, 'strace-stub.sh');
+    fs.writeFileSync(stub, '#!/bin/sh\nexec sleep 15\n', { mode: 0o755 });
+    const script = path.join(aux, 'child.mts');
+    fs.writeFileSync(
+      script,
+      `import { tempProbeChild } from ${JSON.stringify(pathToFileURL(moduleFile).href)};\nawait tempProbeChild(process.argv[2], process.argv[3]);\n`
+    );
+    const start = async (mode: string): Promise<ChildProcess> => {
+      const child = spawn(process.execPath, [...process.execArgv, script, mode, stub], {
+        env: { ...process.env, TMPDIR: base },
+        stdio: ['ignore', 'pipe', 'inherit'],
+      });
+      if (mode === 'noop') return child;
+      await new Promise<void>((resolve, reject) => {
+        child.stdout?.on('data', (d: Buffer) => {
+          if (String(d).includes('ready')) resolve();
+        });
+        child.on('exit', () => reject(new Error('probe child exited before it was ready')));
+      });
+      return child;
+    };
+    const ended = (child: ChildProcess): Promise<void> =>
+      new Promise((resolve) => {
+        if (child.exitCode !== null || child.signalCode !== null) resolve();
+        else child.on('exit', () => resolve());
+      });
+    // node and tsx keep their own compile and socket caches in TMPDIR; only this tool's run dirs count.
+    const left = (): string[] => fs.readdirSync(base).filter((f) => f.startsWith(prefix));
+    const term = await start('trace');
+    const madeByTerm = left().length;
+    term.kill('SIGTERM');
+    await ended(term);
+    check(
+      madeByTerm === 1 && left().length === 0,
+      `temp: SIGTERM mid-trace leaves no ${prefix}* entry (made ${madeByTerm}, left ${left().length})`
+    );
+    const killed = await start('trace');
+    killed.kill('SIGKILL');
+    await ended(killed);
+    check(
+      left().length === 1 && left()[0].startsWith(prefix),
+      `temp: SIGKILL leaves exactly one ${prefix}* run dir (left ${left().length}), which only a later sweep can remove`
+    );
+    const next = await start('noop');
+    await ended(next);
+    check(
+      left().length === 0,
+      `temp: the next run's sweep removes the SIGKILLed ${prefix}* run dir (left ${left().length})`
+    );
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+}
+
+if (isEntryPoint(import.meta.filename)) {
+  installEntrySignals();
   main(process.argv.slice(2)).then(
     (code) => {
       process.exitCode = code;
