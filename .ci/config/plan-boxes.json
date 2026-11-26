@@ -1005,14 +1005,13 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 9,
+      "open": 7,
+      "done": 10,
       "open_sigs": [
         "3e3d0041",
         "4a23af14",
         "62309d70",
         "ab8e1842",
-        "b5180148",
         "c308f2d8",
         "c9e75130",
         "e85200b3"
@@ -1024,6 +1023,7 @@
         "436b5f1b",
         "6ea5827d",
         "aa4f5836",
+        "b5180148",
         "b6d1d9ec",
         "c28073e0",
         "ce5d6b97"
@@ -2067,11 +2067,10 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 10,
+      "open": 3,
+      "done": 11,
       "open_sigs": [
         "824e14dc",
-        "8b4a457d",
         "c0384c17",
         "fe023d7c"
       ],
@@ -2082,6 +2081,7 @@
         "2d7c07ae",
         "3e5b6553",
         "5f8525bd",
+        "8b4a457d",
         "9ec8970a",
         "b2021366",
         "df3b30c6",
@@ -2383,30 +2383,31 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 0,
+      "open": 12,
+      "done": 7,
       "open_sigs": [
         "02bd8ddf",
-        "047b15bb",
         "095996c0",
-        "141aa55b",
-        "1b9b8191",
         "3a59702b",
         "5a843445",
-        "6d8212ea",
-        "70c35be7",
         "714a9aba",
         "76ab309a",
-        "7beffdd0",
         "82726446",
         "a7c45a52",
-        "ac42fa87",
         "af353057",
         "dbed164d",
         "dee9542d",
         "f01d3a26"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "047b15bb",
+        "141aa55b",
+        "1b9b8191",
+        "6d8212ea",
+        "70c35be7",
+        "7beffdd0",
+        "ac42fa87"
+      ]
     },
     "agent/plans/PLAN-hostinger-to-bench.md": {
       "status": "approved",
