@@ -1024,12 +1024,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 13,
+      "open": 3,
+      "done": 14,
       "open_sigs": [
         "4a23af14",
         "62309d70",
-        "ab8e1842",
         "e85200b3"
       ],
       "done_sigs": [
@@ -1040,6 +1039,7 @@
         "436b5f1b",
         "6ea5827d",
         "aa4f5836",
+        "ab8e1842",
         "b5180148",
         "b6d1d9ec",
         "c28073e0",
@@ -4038,20 +4038,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-signer-bench-stop-binding-reattach.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 3,
-      "open_sigs": [],
-      "done_sigs": [
-        "46c3de93",
-        "89d70106",
-        "b86ddfc4"
-      ]
-    },
     "agent/plans/PLAN-silent-failure-sweep.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -6390,6 +6376,20 @@
         "ce1f9881",
         "fdd7c9d0",
         "fe8a544f"
+      ]
+    },
+    "agent/plans/_done/PLAN-signer-bench-stop-binding-reattach.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-26",
+      "open": 0,
+      "done": 3,
+      "open_sigs": [],
+      "done_sigs": [
+        "46c3de93",
+        "89d70106",
+        "b86ddfc4"
       ]
     },
     "agent/plans/_done/PLAN-split-cli-files-over-512-line-budget.md": {

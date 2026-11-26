@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 1849 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1859 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 1 live (session d778be9d): worker:a0fa2155968bf15e2.
-- Leased items: 4: #66f4558b (worker:bxhnqm2th, d778be9d), #9bca88f2 (worker:a5239db41bcfabcc5, d778be9d), #a7b593b3 (worker:aa9a1910fd0ef32d1, d778be9d), #d9562f2f (worker:a0fa2155968bf15e2, d778be9d).
+- Writers: 7 live (session d778be9d): worker:a0fa2155968bf15e2, worker:abcc56f1df4a900f1, worker:a88a99d09ac6dd93e, worker:a73d3649e7f334f20, worker:a1c9ec1bc60043e8e, worker:ac9645dd842c8f6f5, worker:a435b6dd48f7675e2.
+- Leased items: 8: #3455cedc (worker:ac9645dd842c8f6f5, d778be9d), #585cb80e (worker:a88a99d09ac6dd93e, d778be9d), #66f4558b (worker:bxhnqm2th, d778be9d), #8380db9e (worker:a73d3649e7f334f20, d778be9d), #c8916180 (worker:abcc56f1df4a900f1, d778be9d), #d0dbea86 (worker:a435b6dd48f7675e2, d778be9d), #d51a22ac (worker:a1c9ec1bc60043e8e, d778be9d), #d9562f2f (worker:a0fa2155968bf15e2, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1530 of 1891 boxes done (80%).
+Promoted: 10 of 99 plans done, 1528 of 1888 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -103,63 +103,62 @@ Promoted: 11 of 100 plans done, 1530 of 1891 boxes done (80%).
 | 41 | PLAN-enterprise-tenants.md | 32/47 | 15 open |
 | 42 | PLAN-licence-expiry-notices.md | 7/7 | done |
 | 43 | PLAN-onprem-relicence-inbox.md | 11/13 | 2 open |
-| 44 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
-| 45 | PLAN-d1-eu-jurisdiction.md | 5/22 | 17 open |
-| 46 | PLAN-hostinger-to-bench.md | 15/22 | 7 open |
-| 47 | PLAN-multi-region-bench.md | 17/23 | 6 open |
-| 48 | PLAN-root-api-token.md | 13/15 | 2 open |
-| 49 | PLAN-site-entry-points.md | 8/11 | 3 open |
-| 50 | PLAN-root-grants.md | 11/19 | 8 open |
-| 51 | PLAN-push-decoupling.md | 20/23 | 3 open |
-| 52 | PLAN-stop-hook-store-status.md | 6/9 | 3 open |
-| 53 | PLAN-rdc-feedback.md | 18/21 | 3 open |
-| 54 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
-| 55 | PLAN-email-sender-separation.md | 12/18 | 6 open |
-| 56 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
-| 57 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
-| 58 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
-| 59 | PLAN-preview-signer.md | 24/37 | 13 open |
-| 60 | PLAN-weekly-lessons.md | 6/8 | 2 open |
-| 61 | PLAN-tooling-speed.md | 6/8 | 2 open |
-| 62 | PLAN-tooling-code-reduction.md | 6/11 | 5 open |
-| 63 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
-| 64 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
-| 65 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
-| 66 | PLAN-console-confirm-stepup.md | 10/11 | 1 open |
-| 67 | PLAN-console-audit-r2.md | 11/13 | 2 open |
-| 68 | PLAN-console-run-index.md | 13/15 | 2 open |
-| 69 | PLAN-console-command-line.md | 14/16 | 2 open |
-| 70 | PLAN-console-ia.md | 8/10 | 2 open |
-| 71 | PLAN-console-animations.md | 7/9 | 2 open |
-| 72 | PLAN-rmcp-policy-record.md | 17/26 | 9 open |
-| 73 | PLAN-rmcp-decide.md | 5/9 | 4 open |
-| 74 | PLAN-rmcp-writeback.md | 13/17 | 4 open |
-| 75 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
-| 76 | PLAN-rmcp-agent-grants.md | 15/19 | 4 open |
-| 77 | PLAN-console-ai-providers.md | 13/15 | 2 open |
-| 78 | PLAN-console-ai-assistant.md | 13/17 | 4 open |
-| 79 | PLAN-console-ai-credits.md | 10/15 | 5 open |
-| 80 | PLAN-console-ai-feedback.md | 7/9 | 2 open |
-| 81 | PLAN-console-ai-in-pages.md | 7/10 | 3 open |
-| 82 | PLAN-rmcp-config-edit-removal.md | 0/9 | 9 open |
-| 83 | PLAN-rmcp-local-mcp.md | 9/13 | 4 open |
-| 84 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
-| 85 | PLAN-rmcp-remote-worker.md | 17/27 | 10 open |
-| 86 | PLAN-rmcp-docs.md | 9/20 | 11 open |
-| 87 | PLAN-stripe-disable.md | 6/8 | 2 open |
-| 88 | PLAN-forensics-capture.md | 9/13 | 4 open |
-| 89 | PLAN-forensics-shipping.md | 12/16 | 4 open |
-| 90 | PLAN-forensics-detection.md | 11/15 | 4 open |
-| 91 | PLAN-forensics-investigation.md | 14/17 | 3 open |
-| 92 | PLAN-forensics-alerts-notices.md | 11/15 | 4 open |
-| 93 | PLAN-forensics-reports.md | 12/14 | 2 open |
-| 94 | PLAN-forensics-docs-legal.md | 11/13 | 2 open |
-| 95 | PLAN-unlimited-writers.md | 4/5 | 1 open |
-| 96 | PLAN-writers-now-cadence.md | 5/5 | done |
-| 97 | PLAN-armed-actions.md | 6/6 | done |
-| 98 | PLAN-drain-throughput.md | 6/15 | 9 open |
-| 99 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
-| 100 | PLAN-host-temp-disposal.md | 14/19 | 5 open |
+| 44 | PLAN-d1-eu-jurisdiction.md | 5/22 | 17 open |
+| 45 | PLAN-hostinger-to-bench.md | 15/22 | 7 open |
+| 46 | PLAN-multi-region-bench.md | 17/23 | 6 open |
+| 47 | PLAN-root-api-token.md | 13/15 | 2 open |
+| 48 | PLAN-site-entry-points.md | 8/11 | 3 open |
+| 49 | PLAN-root-grants.md | 11/19 | 8 open |
+| 50 | PLAN-push-decoupling.md | 20/23 | 3 open |
+| 51 | PLAN-stop-hook-store-status.md | 6/9 | 3 open |
+| 52 | PLAN-rdc-feedback.md | 18/21 | 3 open |
+| 53 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
+| 54 | PLAN-email-sender-separation.md | 12/18 | 6 open |
+| 55 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
+| 56 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
+| 57 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
+| 58 | PLAN-preview-signer.md | 24/37 | 13 open |
+| 59 | PLAN-weekly-lessons.md | 6/8 | 2 open |
+| 60 | PLAN-tooling-speed.md | 6/8 | 2 open |
+| 61 | PLAN-tooling-code-reduction.md | 6/11 | 5 open |
+| 62 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
+| 63 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
+| 64 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
+| 65 | PLAN-console-confirm-stepup.md | 10/11 | 1 open |
+| 66 | PLAN-console-audit-r2.md | 11/13 | 2 open |
+| 67 | PLAN-console-run-index.md | 13/15 | 2 open |
+| 68 | PLAN-console-command-line.md | 14/16 | 2 open |
+| 69 | PLAN-console-ia.md | 8/10 | 2 open |
+| 70 | PLAN-console-animations.md | 7/9 | 2 open |
+| 71 | PLAN-rmcp-policy-record.md | 17/26 | 9 open |
+| 72 | PLAN-rmcp-decide.md | 5/9 | 4 open |
+| 73 | PLAN-rmcp-writeback.md | 13/17 | 4 open |
+| 74 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
+| 75 | PLAN-rmcp-agent-grants.md | 15/19 | 4 open |
+| 76 | PLAN-console-ai-providers.md | 13/15 | 2 open |
+| 77 | PLAN-console-ai-assistant.md | 14/17 | 3 open |
+| 78 | PLAN-console-ai-credits.md | 10/15 | 5 open |
+| 79 | PLAN-console-ai-feedback.md | 7/9 | 2 open |
+| 80 | PLAN-console-ai-in-pages.md | 7/10 | 3 open |
+| 81 | PLAN-rmcp-config-edit-removal.md | 0/9 | 9 open |
+| 82 | PLAN-rmcp-local-mcp.md | 9/13 | 4 open |
+| 83 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
+| 84 | PLAN-rmcp-remote-worker.md | 17/27 | 10 open |
+| 85 | PLAN-rmcp-docs.md | 9/20 | 11 open |
+| 86 | PLAN-stripe-disable.md | 6/8 | 2 open |
+| 87 | PLAN-forensics-capture.md | 9/13 | 4 open |
+| 88 | PLAN-forensics-shipping.md | 12/16 | 4 open |
+| 89 | PLAN-forensics-detection.md | 11/15 | 4 open |
+| 90 | PLAN-forensics-investigation.md | 14/17 | 3 open |
+| 91 | PLAN-forensics-alerts-notices.md | 11/15 | 4 open |
+| 92 | PLAN-forensics-reports.md | 12/14 | 2 open |
+| 93 | PLAN-forensics-docs-legal.md | 11/13 | 2 open |
+| 94 | PLAN-unlimited-writers.md | 4/5 | 1 open |
+| 95 | PLAN-writers-now-cadence.md | 5/5 | done |
+| 96 | PLAN-armed-actions.md | 6/6 | done |
+| 97 | PLAN-drain-throughput.md | 6/15 | 9 open |
+| 98 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
+| 99 | PLAN-host-temp-disposal.md | 14/19 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -205,63 +204,62 @@ Promoted: 11 of 100 plans done, 1530 of 1891 boxes done (80%).
 41. agent/plans/PLAN-enterprise-tenants.md -- operator 2026-11-12: "employ a parallel agent to complete the gaps in agent/plans/PLAN-enterprise-isolation.md ASAP"; rulings ASKED 2026-11-12T11:3xZ
 42. agent/plans/PLAN-licence-expiry-notices.md -- operator 2026-11-12: "do we have any mechanism to notify sales team and the client for delegation cert exprie dates"; sales inbox sales@rediacc.com, "new plan, start now"
 43. agent/plans/PLAN-onprem-relicence-inbox.md -- operator rulings ASKED:2026-11-12T16:30Z, 16:56Z, 19:34Z ("C + banner for all box members"): SSH inbox relicence, strict freshness, boot quarantine; R1-R11 and D1 landed, L1 and LP-hostinger open; P1
-44. agent/plans/PLAN-signer-bench-stop-binding-reattach.md -- finding 2026-11-12 proof signer --bench: a signer stop by delete breaks the caller binding and leaves bench signing down; triage PLAN+SUBAGENT on #ffca9706; P1
-45. agent/plans/PLAN-d1-eu-jurisdiction.md -- operator rulings 2026-11-13 ("Migrate now (Recommended)" ASKED:2026-11-13T07:11Z; "we should also have eu jurisdiction for all bench objects"; window "NOW"): the production eu account D1 reports jurisdiction None, so EU residency rests on a best-effort hint; bench rehearses first; epic #5eb69cff; P0
-46. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
-47. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
-48. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
-49. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
-50. agent/plans/PLAN-root-grants.md -- operator /ask 2026-11-17 ("Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."; "Rediacc, registered"; "Yes: ops tool + ops-health check"): the root email gets user panels, console, admin and partner/sales in every region through one names-to-ids reconcile
-51. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
-52. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
-53. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
-54. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
-55. agent/plans/PLAN-email-sender-separation.md -- operator 2026-11-19 /ask answers: customer and contact mail from contact@ with Reply-To and [Contact], system mail from alerts@ with [System], urgent alerts instant and the rest in a daily digest, shared mailboxes contact@rediacc.com and alerts@rediacc.io on the hostinger docker-mailserver with Sieve copy lists and loopback-only ManageSieve.
-56. agent/plans/PLAN-pr-loop-single-source.md -- operator 2026-11-20 request (#a70fd30e): one file per PR-loop rule, /pr-babysit a launcher over the agent file, scope-mirrors per-clause canonical with ref pointers, and the check:ci-prose-duplication drift gate; starts after PR #605 merges
-57. agent/plans/PLAN-two-track-merge-dev.md -- operator 2026-11-20 /ask approval (#688f35df, #527aa5b2): PR freeze guard, plan-implementation fact cache and core priority, prose-style cache, account-server traced inputs, signed CI receipts from one devcontainer image; dev track deferred; inline after PR #605 merges
-58. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
-59. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
-60. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
-61. agent/plans/PLAN-tooling-speed.md -- operator /ask 2026-11-22 (#bc8eb843): two tooling plans, speed first; Stop hook reads once, run_stop registry, profiler fixes, in-process lifecycle members, watchdog repeat-failure rule, wrangler-dev-e2e CI lane
-62. agent/plans/PLAN-tooling-code-reduction.md -- operator /ask 2026-11-22 (#bc8eb843): migration scaffolding removal, one declaration per gate (first), one env registry, gate tables, hook write analyser and rule tables, guard fire ledger and retirement report; replaces PLAN-deletion-budget.md
-63. agent/plans/PLAN-stop-hook-retro-20261123.md -- standing procedure PLAN-stop-hook-continuity.md P3.1 (band late, session ace763dd): landing-stack blocks while promote refuses, hooks of the onto base during a rebase, STATE.md voiding push receipts, commit-ref reachability, landing-cut leases
-64. agent/plans/PLAN-silent-failure-sweep.md -- operator /ask 2026-11-23 ("One plan this branch but start in parallel immediately"): quality scripts refuse unknown flags through one parser, and Stop hook reads name their failure; SF1-SF3 writers started at once
-65. agent/plans/PLAN-console-contract-semantics.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: summaries, severity, preview polarity, error origin, content-hash version, lazy contract, MCP reveal drop
-66. agent/plans/PLAN-console-confirm-stepup.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: severity dialogs, typed name, server step-up at /console/exec, passkey elevation, org minimum, console reveal
-67. agent/plans/PLAN-console-audit-r2.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: R2 audit with nightly compaction and hash chain, paid visibility, admin show-from date, per-plan retention
-68. agent/plans/PLAN-console-run-index.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: server run index, keep-awake, block-stream panel, status-bar pills, server history
-69. agent/plans/PLAN-console-command-line.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: own core in packages/shared, plain command box, recipes, rdc completion, keyboard and IME tests
-70. agent/plans/PLAN-console-ia.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: Variant A labels, runs-where badges and grouping, landing
-71. agent/plans/PLAN-console-animations.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: step-driven animations, reduced motion, dead animate-in classes
-72. agent/plans/PLAN-rmcp-policy-record.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-decide.md (Depends-On), 2026-11-23
-73. agent/plans/PLAN-rmcp-decide.md -- pulled in as an unfinished prerequisite of PLAN-console-ai-providers.md (Depends-On), 2026-11-23
-74. agent/plans/PLAN-rmcp-writeback.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-agent-grants.md (Depends-On), 2026-11-23
-75. agent/plans/PLAN-rmcp-executor-hardening.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-agent-grants.md (Depends-On), 2026-11-23
-76. agent/plans/PLAN-rmcp-agent-grants.md -- pulled in as an unfinished prerequisite of PLAN-console-ai-providers.md (Depends-On), 2026-11-23
-77. agent/plans/PLAN-console-ai-providers.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: BYO provider profiles in the encrypted config, loop host in the executor; waits on PLAN-rmcp-decide.md and PLAN-rmcp-agent-grants.md
-78. agent/plans/PLAN-console-ai-assistant.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: action timeline, simple view, Ask/Auto/Skip with judge, chips, branching, microphone
-79. agent/plans/PLAN-console-ai-credits.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: enterprise credits on Workers AI and Unified Billing, per-org ledger, every guard
-80. agent/plans/PLAN-console-ai-feedback.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: feedback offers on Rediacc-origin failures, per-user and owner settings
-81. agent/plans/PLAN-console-ai-in-pages.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: Ask-about-this bars, inline suggestions, background tasks
-82. agent/plans/PLAN-rmcp-config-edit-removal.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
-83. agent/plans/PLAN-rmcp-local-mcp.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
-84. agent/plans/PLAN-rmcp-orphan-recovery.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
-85. agent/plans/PLAN-rmcp-remote-worker.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
-86. agent/plans/PLAN-rmcp-docs.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
-87. agent/plans/PLAN-stripe-disable.md -- operator /ask 2026-11-23 (#0831560e): one server-enforced BILLING_STRIPE flag, default off, disables checkout, portal, plan switching, webhook and admin Stripe pages on deploy
-88. agent/plans/PLAN-forensics-capture.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: renet eBPF flow and file-open capture, three levels and spike trigger, collector and signed sectioned spool
-89. agent/plans/PLAN-forensics-shipping.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: licence-minted create-only log shipping, locked evidence bucket, compaction, quotas, FIFO past the 7-day lock, paid-only claim
-90. agent/plans/PLAN-forensics-detection.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: Go-native offline detectors on machine and server (WASM), SIMD dispatch, signed model bundles on data.rediacc.com
-91. agent/plans/PLAN-forensics-investigation.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: incident timeline, Verify evidence, Declare incident with deadline clocks, step-up access, Ask AI, rdc incident/forensics verbs
-92. agent/plans/PLAN-forensics-alerts-notices.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: anomaly notices with offline delivery, Rediacc security-incident notices, security contact, security.txt, CRA intake
-93. agent/plans/PLAN-forensics-reports.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: staged signed incident reports as PDF, JSON and STIX with QR verify and the regulatory field map
-94. agent/plans/PLAN-forensics-docs-legal.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: forensics docs and the corrected legal and marketing wording, last step of the program
-95. agent/plans/PLAN-unlimited-writers.md -- operator ruling #3ca908ee 2026-11-23: remove the writer cap, the lease tree cap and every refusal and doc line built on them, at every effort level
-96. agent/plans/PLAN-writers-now-cadence.md -- operator ruling #ac2de21f 2026-11-23: hourly /writers-now enforced at effort high, self-review seeds before each repeat round, stuck shell-waiting agents caught
-97. agent/plans/PLAN-armed-actions.md -- operator order 2026-11-24 (agent/ace763dd/order-armed-actions.md): a held item carries its trigger and prepared brief, armed-action-due starts it when the trigger fires, and the survey arms every blocked box
-98. agent/plans/PLAN-drain-throughput.md -- operator 2026-11-25 (#ff417210): speedup plan from the drain consult; P1 load-reducing; measure the 3-minute writer stalls, cheaper lease verification, reviews and landing inside the loop, live runners every round; re-measure after the WSL2 to Linux move
-99. agent/plans/PLAN-native-host-rdc-feedback.md -- operator 2026-11-25: restore rdc feedback and native-host fixes; libsecret with keyring fallback, VS Code, disk temp, credsStore removal
-100. agent/plans/PLAN-host-temp-disposal.md -- operator rulings ASKED:2026-11-26T09:17Z and 09:19Z (request relayed by session developer-09, #0dd9a99d): grace 30 minutes, temp on disk with every leak fixed at its source, hooks-only sweep that deletes after grace and reports what it removed; P1 for SSD wear (755 GB written in 18 h) and /tmp inode exhaustion.
+44. agent/plans/PLAN-d1-eu-jurisdiction.md -- operator rulings 2026-11-13 ("Migrate now (Recommended)" ASKED:2026-11-13T07:11Z; "we should also have eu jurisdiction for all bench objects"; window "NOW"): the production eu account D1 reports jurisdiction None, so EU residency rests on a best-effort hint; bench rehearses first; epic #5eb69cff; P0
+45. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
+46. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
+47. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
+48. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
+49. agent/plans/PLAN-root-grants.md -- operator /ask 2026-11-17 ("Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."; "Rediacc, registered"; "Yes: ops tool + ops-health check"): the root email gets user panels, console, admin and partner/sales in every region through one names-to-ids reconcile
+50. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
+51. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
+52. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
+53. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
+54. agent/plans/PLAN-email-sender-separation.md -- operator 2026-11-19 /ask answers: customer and contact mail from contact@ with Reply-To and [Contact], system mail from alerts@ with [System], urgent alerts instant and the rest in a daily digest, shared mailboxes contact@rediacc.com and alerts@rediacc.io on the hostinger docker-mailserver with Sieve copy lists and loopback-only ManageSieve.
+55. agent/plans/PLAN-pr-loop-single-source.md -- operator 2026-11-20 request (#a70fd30e): one file per PR-loop rule, /pr-babysit a launcher over the agent file, scope-mirrors per-clause canonical with ref pointers, and the check:ci-prose-duplication drift gate; starts after PR #605 merges
+56. agent/plans/PLAN-two-track-merge-dev.md -- operator 2026-11-20 /ask approval (#688f35df, #527aa5b2): PR freeze guard, plan-implementation fact cache and core priority, prose-style cache, account-server traced inputs, signed CI receipts from one devcontainer image; dev track deferred; inline after PR #605 merges
+57. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
+58. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
+59. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
+60. agent/plans/PLAN-tooling-speed.md -- operator /ask 2026-11-22 (#bc8eb843): two tooling plans, speed first; Stop hook reads once, run_stop registry, profiler fixes, in-process lifecycle members, watchdog repeat-failure rule, wrangler-dev-e2e CI lane
+61. agent/plans/PLAN-tooling-code-reduction.md -- operator /ask 2026-11-22 (#bc8eb843): migration scaffolding removal, one declaration per gate (first), one env registry, gate tables, hook write analyser and rule tables, guard fire ledger and retirement report; replaces PLAN-deletion-budget.md
+62. agent/plans/PLAN-stop-hook-retro-20261123.md -- standing procedure PLAN-stop-hook-continuity.md P3.1 (band late, session ace763dd): landing-stack blocks while promote refuses, hooks of the onto base during a rebase, STATE.md voiding push receipts, commit-ref reachability, landing-cut leases
+63. agent/plans/PLAN-silent-failure-sweep.md -- operator /ask 2026-11-23 ("One plan this branch but start in parallel immediately"): quality scripts refuse unknown flags through one parser, and Stop hook reads name their failure; SF1-SF3 writers started at once
+64. agent/plans/PLAN-console-contract-semantics.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: summaries, severity, preview polarity, error origin, content-hash version, lazy contract, MCP reveal drop
+65. agent/plans/PLAN-console-confirm-stepup.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: severity dialogs, typed name, server step-up at /console/exec, passkey elevation, org minimum, console reveal
+66. agent/plans/PLAN-console-audit-r2.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: R2 audit with nightly compaction and hash chain, paid visibility, admin show-from date, per-plan retention
+67. agent/plans/PLAN-console-run-index.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: server run index, keep-awake, block-stream panel, status-bar pills, server history
+68. agent/plans/PLAN-console-command-line.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: own core in packages/shared, plain command box, recipes, rdc completion, keyboard and IME tests
+69. agent/plans/PLAN-console-ia.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: Variant A labels, runs-where badges and grouping, landing
+70. agent/plans/PLAN-console-animations.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: step-driven animations, reduced motion, dead animate-in classes
+71. agent/plans/PLAN-rmcp-policy-record.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-decide.md (Depends-On), 2026-11-23
+72. agent/plans/PLAN-rmcp-decide.md -- pulled in as an unfinished prerequisite of PLAN-console-ai-providers.md (Depends-On), 2026-11-23
+73. agent/plans/PLAN-rmcp-writeback.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-agent-grants.md (Depends-On), 2026-11-23
+74. agent/plans/PLAN-rmcp-executor-hardening.md -- pulled in as an unfinished prerequisite of PLAN-rmcp-agent-grants.md (Depends-On), 2026-11-23
+75. agent/plans/PLAN-rmcp-agent-grants.md -- pulled in as an unfinished prerequisite of PLAN-console-ai-providers.md (Depends-On), 2026-11-23
+76. agent/plans/PLAN-console-ai-providers.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: BYO provider profiles in the encrypted config, loop host in the executor; waits on PLAN-rmcp-decide.md and PLAN-rmcp-agent-grants.md
+77. agent/plans/PLAN-console-ai-assistant.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: action timeline, simple view, Ask/Auto/Skip with judge, chips, branching, microphone
+78. agent/plans/PLAN-console-ai-credits.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: enterprise credits on Workers AI and Unified Billing, per-org ledger, every guard
+79. agent/plans/PLAN-console-ai-feedback.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: feedback offers on Rediacc-origin failures, per-user and owner settings
+80. agent/plans/PLAN-console-ai-in-pages.md -- operator /ask 2026-11-23 (#b785e9ff), program agent/programs/console-rework: Ask-about-this bars, inline suggestions, background tasks
+81. agent/plans/PLAN-rmcp-config-edit-removal.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+82. agent/plans/PLAN-rmcp-local-mcp.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+83. agent/plans/PLAN-rmcp-orphan-recovery.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+84. agent/plans/PLAN-rmcp-remote-worker.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+85. agent/plans/PLAN-rmcp-docs.md -- operator /ask 2026-11-23: promote the whole rmcp program (supersedes D51)
+86. agent/plans/PLAN-stripe-disable.md -- operator /ask 2026-11-23 (#0831560e): one server-enforced BILLING_STRIPE flag, default off, disables checkout, portal, plan switching, webhook and admin Stripe pages on deploy
+87. agent/plans/PLAN-forensics-capture.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: renet eBPF flow and file-open capture, three levels and spike trigger, collector and signed sectioned spool
+88. agent/plans/PLAN-forensics-shipping.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: licence-minted create-only log shipping, locked evidence bucket, compaction, quotas, FIFO past the 7-day lock, paid-only claim
+89. agent/plans/PLAN-forensics-detection.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: Go-native offline detectors on machine and server (WASM), SIMD dispatch, signed model bundles on data.rediacc.com
+90. agent/plans/PLAN-forensics-investigation.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: incident timeline, Verify evidence, Declare incident with deadline clocks, step-up access, Ask AI, rdc incident/forensics verbs
+91. agent/plans/PLAN-forensics-alerts-notices.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: anomaly notices with offline delivery, Rediacc security-incident notices, security contact, security.txt, CRA intake
+92. agent/plans/PLAN-forensics-reports.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: staged signed incident reports as PDF, JSON and STIX with QR verify and the regulatory field map
+93. agent/plans/PLAN-forensics-docs-legal.md -- operator /ask 2026-11-23 (#772cfd55), program agent/programs/breach-forensics: forensics docs and the corrected legal and marketing wording, last step of the program
+94. agent/plans/PLAN-unlimited-writers.md -- operator ruling #3ca908ee 2026-11-23: remove the writer cap, the lease tree cap and every refusal and doc line built on them, at every effort level
+95. agent/plans/PLAN-writers-now-cadence.md -- operator ruling #ac2de21f 2026-11-23: hourly /writers-now enforced at effort high, self-review seeds before each repeat round, stuck shell-waiting agents caught
+96. agent/plans/PLAN-armed-actions.md -- operator order 2026-11-24 (agent/ace763dd/order-armed-actions.md): a held item carries its trigger and prepared brief, armed-action-due starts it when the trigger fires, and the survey arms every blocked box
+97. agent/plans/PLAN-drain-throughput.md -- operator 2026-11-25 (#ff417210): speedup plan from the drain consult; P1 load-reducing; measure the 3-minute writer stalls, cheaper lease verification, reviews and landing inside the loop, live runners every round; re-measure after the WSL2 to Linux move
+98. agent/plans/PLAN-native-host-rdc-feedback.md -- operator 2026-11-25: restore rdc feedback and native-host fixes; libsecret with keyring fallback, VS Code, disk temp, credsStore removal
+99. agent/plans/PLAN-host-temp-disposal.md -- operator rulings ASKED:2026-11-26T09:17Z and 09:19Z (request relayed by session developer-09, #0dd9a99d): grace 30 minutes, temp on disk with every leak fixed at its source, hooks-only sweep that deletes after grace and reports what it removed; P1 for SSD wear (755 GB written in 18 h) and /tmp inode exhaustion.
 
 ## Generated
 

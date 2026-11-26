@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 156 | 4 | 13 | 32412 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 157 | 3 | 14 | 32552 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 134 | 5 | 10 | 24928 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 99 | 2 | 7 | 16818 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 99 | 3 | 7 | 16669 |
@@ -633,7 +633,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
-| `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
 | `agent/plans/PLAN-silent-failure-sweep.md` | approved | 219 | 1 | 9 | 28737 |
 | `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 188 | 2 | 10 | 39819 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 160 | 3 | 8 | 22890 |
@@ -747,6 +746,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-secret-namespace-migration.md` | done | 1780 | 0 | 34 | 198853 |
 | `agent/plans/_done/PLAN-settings-set-verb.md` | done | 70 | 0 | 4 | 11551 |
 | `agent/plans/_done/PLAN-shell-sandbox-readonly-view.md` | done | 124 | 0 | 7 | 20505 |
+| `agent/plans/_done/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
 | `agent/plans/_done/PLAN-split-cli-files-over-512-line-budget.md` | done | 39 | 0 | 7 | 5738 |
 | `agent/plans/_done/PLAN-ssh-key-source-ranges.md` | done | 144 | 0 | 11 | 32535 |
 | `agent/plans/_done/PLAN-stop-hook-effort-tuning.md` | done | 41 | 0 | 7 | 8930 |

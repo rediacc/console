@@ -116,10 +116,11 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Depends on: AI1, AI5, AI6.
   Accept: `(cd private/account/web && npx vitest run src/lib/ai/speech)` and `(cd packages/cli && npx vitest run src/services/ai/__tests__/transcribe.test.ts)` rc 0; a test proves the model is not fetched before the user confirms, and a hash mismatch refuses the model.
     (ticked) 2026-11-26T15:42:59Z by d778be9d: AI10: code landed 57061f6e26, the 8 pinned model files served from media.rediacc.com with matching sha256 (private/account/web/src/lib/ai/speech/whisper-model.ts:3) commit:57061f6e26
-- [ ] AI11 [writer] Translate `aiTimeline`, `aiChat`, `aiSimple` and `aiSpeech` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
+- [x] AI11 [writer] Translate `aiTimeline`, `aiChat`, `aiSimple` and `aiSpeech` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiTimeline.json, private/account/web/src/i18n/locales/*/aiChat.json, private/account/web/src/i18n/locales/*/aiSimple.json, private/account/web/src/i18n/locales/*/aiSpeech.json
   Depends on: AI7, AI8, AI9, AI10.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
+    (ticked) 2026-11-26T16:25:56Z by d778be9d: AI11 locales complete, check:i18n and check:ci-i18n-account-key-usage rc 0 commit:dbe863aaf9
 - [x] AI12 [writer] Audit every AI approval, rejection, judge verdict and refusal as plan 3's `console.ai.approval` with `actor.kind: 'agent'` and the approving human, and each mode change as a new `console.ai.mode` type (who, command, target, verification method), never recording a secret parameter.
   Owns: packages/cli/src/services/ai/approval-audit.ts, packages/cli/src/services/ai/__tests__/approval-audit.test.ts, packages/shared/src/audit/console-events.ts (the console.ai.mode type only)
   Depends on: AI3, AI4, PLAN-console-audit-r2.md#AU1, PLAN-console-audit-r2.md#AU5.
