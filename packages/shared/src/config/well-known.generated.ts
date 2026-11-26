@@ -60,3 +60,4 @@ export const WK_OPENAI_API_BASE = 'https://api.openai.com/v1';
 export const WK_ANTHROPIC_API_BASE = 'https://api.anthropic.com/v1';
 export const WK_PREVIEW_SAMPLE_ORIGIN = 'https://pv-amber-river-stone.rediacc.workers.dev';
 export const WK_CLAUDE_HAIKU_MODEL = 'claude-haiku-5-5';
+export const WK_MODEL_ED25519_PUBLIC_KEY = 'svx7r1RfnJOcJjRxdrJu5eDfX6jZE5PnaasSHjZUuBw=';

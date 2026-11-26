@@ -36,6 +36,10 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
+    "MODEL_ED25519_PRIVATE_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The detector model signing key (private/renet/cmd/modelsign), read only through the `model-signing` profile of secret-supply.json by an operator or the future bundle upload job. No workflow requests it and no GitHub secret of that name exists."
+    },
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": {
       "kind": "no-github-twin",
       "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."

@@ -233,9 +233,8 @@ def local_go_version() -> str:
 
 def rebuild(renet: str, out_dir: str, model_key: str) -> None:
     env = dict(os.environ)
-    env.pop("MODEL_ED25519_PUBLIC_KEY", None)
-    if model_key:
-        env["MODEL_ED25519_PUBLIC_KEY"] = model_key
+    # Always set, empty included: build.sh reads an empty value as keyless and an unset one as the well-known key.
+    env["MODEL_ED25519_PUBLIC_KEY"] = model_key
     # GOTOOLCHAIN=local: a go.mod `toolchain` line must not fetch another Go behind the pin check above.
     env["GOTOOLCHAIN"] = "local"
     proc = subprocess.run(
