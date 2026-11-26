@@ -5,7 +5,11 @@
  * a binary only when both agree, so a tampered bucket object or a stale channel is caught before anything
  * runs.
  */
-import { type PreviewBuild, PreviewBuildSchema } from '@rediacc/shared/config-schema';
+import {
+  PREVIEW_NAME_PATTERN,
+  type PreviewBuild,
+  PreviewBuildSchema,
+} from '@rediacc/shared/config-schema';
 import { t } from '../../i18n/index.js';
 import type { UpdateManifest } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -64,29 +68,57 @@ export function selectPreviewBinary(
   return { version: build.version, sha256: expected, url: entry.url };
 }
 
+/** A `pr-<n>` channel, the one a pull-request run stages its builds under today. */
+const PR_CHANNEL = /^pr-[1-9][0-9]*$/;
+
+/** Whether `channel` is a preview channel: `pr-<n>`, or `name` itself when that is a preview name. */
+function isPreviewChannel(channel: string, name: string): boolean {
+  return PR_CHANNEL.test(channel) || (channel === name && PREVIEW_NAME_PATTERN.test(name));
+}
+
+/** The directory each binary URL of `manifest` sits in, sorted, without repeats. */
+function binaryDirs(manifest: UpdateManifest): string[] {
+  const dirs = new Set<string>();
+  for (const entry of Object.values(manifest.binaries)) {
+    if (!entry) continue;
+    const slash = entry.url.lastIndexOf('/');
+    dirs.add(slash < 0 ? entry.url : entry.url.slice(0, slash));
+  }
+  return [...dirs].sort((a, b) => a.localeCompare(b));
+}
+
 /**
  * The R2 manifest URL of the channel a preview's binaries are staged under. A pull-request run stages its
  * builds to the non-secret `pr-<n>` channel, never to the word name (PLAN-preview-signer N2), so the name
  * cannot be turned into a channel. The preview host serves the staged manifest at `/cli/manifest.json`,
  * whose binary URLs name that channel; the route is the directory those URLs share. The result is read
  * from R2 again, so D6's second origin (the R2 manifest against `previewBuild`) stays a different origin
- * from the preview server. A URL outside the release origin, or binaries spread over two directories, is
- * refused before anything is fetched.
+ * from the preview server.
+ *
+ * The directory must be exactly `<releases origin>/cli/<channel>`, where the channel is one path segment
+ * naming a preview channel: `pr-<n>`, or the preview's own name once N2 stages under it. A host can
+ * therefore never route the install to `edge`, `stable` or any other non-preview channel, and a dot
+ * segment, a query or a deeper path never matches. A manifest with no binary, binaries spread over two
+ * directories, and a directory that is no preview channel are each refused with their own message,
+ * before anything is fetched.
  */
 export function previewChannelManifestUrl(
   hostManifest: UpdateManifest,
   releasesOrigin: string,
   name: string
 ): string {
-  const dirs = new Set<string>();
-  for (const entry of Object.values(hostManifest.binaries)) {
-    if (!entry) continue;
-    const slash = entry.url.lastIndexOf('/');
-    dirs.add(slash < 0 ? entry.url : entry.url.slice(0, slash));
+  const dirs = binaryDirs(hostManifest);
+  const [dir] = dirs;
+  if (dir === undefined) {
+    throw new ValidationError(t('errors.preview.channelEmpty', { name }));
   }
-  const [dir] = [...dirs];
-  if (dirs.size !== 1 || dir === undefined || !dir.startsWith(`${releasesOrigin}/cli/`)) {
-    throw new ValidationError(t('errors.preview.noChannel', { name, url: dir ?? '' }));
+  if (dirs.length > 1) {
+    throw new ValidationError(t('errors.preview.channelSplit', { name, dirs: dirs.join(', ') }));
+  }
+  const prefix = `${releasesOrigin}/cli/`;
+  const channel = dir.startsWith(prefix) ? dir.slice(prefix.length) : '';
+  if (!isPreviewChannel(channel, name)) {
+    throw new ValidationError(t('errors.preview.noChannel', { name, url: dir }));
   }
   return `${dir}/manifest.json`;
 }

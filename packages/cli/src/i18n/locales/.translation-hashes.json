@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3320,
-    "sourceCommit": "4606b6bbce5a34c3994cc357e6c72d82d39ffce9"
+    "keyCount": 3323,
+    "sourceCommit": "34e306abda2f90b2c7a44ee309794abe5f5831f4"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2970,6 +2970,8 @@
     "errors.precondition.next.summary": "63f74cac",
     "errors.preview.alreadyActive": "cf2b473d",
     "errors.preview.badBuild": "018814d0",
+    "errors.preview.channelEmpty": "469bbdfe",
+    "errors.preview.channelSplit": "7bb483ee",
     "errors.preview.formatChangeDeclined": "a9688706",
     "errors.preview.hashMismatch": "629d893f",
     "errors.preview.invalidName": "4833f10a",
@@ -2978,7 +2980,7 @@
     "errors.preview.machineUnnamed": "0a4dfbdd",
     "errors.preview.noBinary": "fd312457",
     "errors.preview.noBuild": "e7bc68f6",
-    "errors.preview.noChannel": "d59f7790",
+    "errors.preview.noChannel": "64f9538e",
     "errors.preview.notSea": "55f303fa",
     "errors.preview.serversPending": "d64a216a",
     "errors.preview.unsupportedPlatform": "c6f10da9",
