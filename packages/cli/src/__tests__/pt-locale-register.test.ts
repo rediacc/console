@@ -13,9 +13,15 @@ describe('pt cli locale register', () => {
     expect(BRAZILIAN_USER.test('O utilizador não confirmou')).toBe(false);
   });
 
-  it('names the user "utilizador" in every string', () => {
-    const text = readFileSync(resolve(import.meta.dirname, '../i18n/locales/pt/cli.json'), 'utf-8');
-    const hits = text.split('\n').filter((line) => BRAZILIAN_USER.test(line));
-    expect(hits.map((line) => line.trim().slice(0, 60))).toEqual([]);
-  });
+  const LOCALES = [
+    '../i18n/locales/pt/cli.json',
+    '../../../shared/src/cli-contract/data/i18n/pt.json',
+  ];
+  for (const rel of LOCALES) {
+    it(`names the user "utilizador" in every string of ${rel.split('/').slice(-3).join('/')}`, () => {
+      const text = readFileSync(resolve(import.meta.dirname, rel), 'utf-8');
+      const hits = text.split('\n').filter((line) => BRAZILIAN_USER.test(line));
+      expect(hits.map((line) => line.trim().slice(0, 60))).toEqual([]);
+    });
+  }
 });

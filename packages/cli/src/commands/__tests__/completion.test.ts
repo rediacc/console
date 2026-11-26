@@ -29,13 +29,25 @@ function hasBinary(name: string): boolean {
   return spawnSync('sh', ['-c', `command -v ${name}`], { stdio: 'ignore' }).status === 0;
 }
 
+/** The line without its comment: a `#` at a word start counts only outside single and double quotes. */
+function stripComment(line: string): string {
+  // Quoted strings and plain characters are consumed in order, so a `#` inside quotes never matches the comment alternative.
+  const token = /"[^"]*"|'[^']*'|(?:^|(?<=\s))(#.*$)|[\s\S]/gy;
+  let kept = '';
+  for (const match of line.matchAll(token)) {
+    if (match[1] !== undefined) break;
+    kept += match[0];
+  }
+  return kept;
+}
+
 /** Quotes and brackets balance in a generated script; `[]` when they do. A text check, no replacement for the shell's own parser. */
 function structuralProblems(shell: string, script: string): string[] {
   const problems: string[] = [];
   const code = script
     .split('\n')
-    // Whole-line comments and trailing ones (a `#` that opens a word), whose text may hold an apostrophe.
-    .map((line) => line.replace(/(^|\s)#.*$/, ''))
+    // Whole-line comments and trailing ones (a `#` that opens a word outside any quotes), whose text may hold an apostrophe.
+    .map(stripComment)
     // zsh `case` arms (`pattern)`) carry an unmatched closing parenthesis by design.
     .map((line) =>
       shell === 'zsh' ? line.replace(/^\s*(?:[^()'"]|"[^"]*"|'[^']*')*\)/, '') : line
@@ -209,7 +221,12 @@ describe('rdc completion: shell syntax', () => {
 
     it('ignores an apostrophe in a trailing comment but still counts a real stray quote', () => {
       expect(structuralProblems('fish', "echo 'a' # don't\n")).toEqual([]);
-      expect(structuralProblems('fish', "echo 'a # don't\n")).toEqual(['single quotes']);
+      expect(structuralProblems('fish', "echo 'a' 'b # c\n")).toEqual(['single quotes']);
+    });
+
+    it('keeps a # inside a quoted string, so a stray quote after it is still counted', () => {
+      expect(structuralProblems('fish', 'echo "a # x" \'oops\n')).toEqual(['single quotes']);
+      expect(structuralProblems('fish', 'echo "a # x" \'ok\'\n')).toEqual([]);
     });
   });
 
