@@ -26,7 +26,7 @@ vi.mock('../../services/core/request-context.js', async (orig) => ({
   setExitCode: () => undefined,
 }));
 
-import { executeSyncWithSftpFallback } from '../repo-sync.js';
+import { executeSyncWithSftpFallback, handleDryRunWithSftpFallback } from '../repo-sync.js';
 import { handleDryRun } from '../repo-sync-helpers.js';
 
 const sftpOk = () =>
@@ -144,5 +144,46 @@ describe('sshKeyDiagnostic', () => {
     );
     expect(good).toContain(`header="-----BEGIN OPENSSH ${'PRIVATE KEY'}-----"`);
     expect(good).not.toContain(secret.slice(0, 40));
+  });
+
+  it('a first line that merely looks like armour but is no PEM label prints nothing of it (0a702173.1)', async () => {
+    const { sshKeyDiagnostic } = await import('../repo-sync-display.js');
+    const looksLike = `-----BEGIN ${'AAAA BBBB 1234 CCCC'}-----`;
+    expect(sshKeyDiagnostic(`${looksLike}\nbody`)).toContain('header="<not a PEM header>"');
+    expect(sshKeyDiagnostic(`${looksLike}\nbody`)).not.toContain('AAAA');
+  });
+});
+
+describe('status when rsync is unusable (4f037bc9.1)', () => {
+  const rsyncOptions = { sshOptions: '', source: 'h:/b/', destination: '/a/', mirror: true };
+  const sftpDry = () => Promise.resolve({ filesTransferred: 0, bytesTransferred: 0 });
+
+  it('says local-only files are not listed instead of leaving the SFTP result to read as in sync', async () => {
+    m.unusable = 'broken';
+    await handleDryRunWithSftpFallback(rsyncOptions, sftpDry, true);
+    expect(m.err.join('')).toContain('not listed');
+  });
+
+  it('control: a plain dry run over SFTP adds no local-only note', async () => {
+    m.unusable = 'broken';
+    await handleDryRunWithSftpFallback({ ...rsyncOptions, mirror: false }, sftpDry);
+    expect(m.err.join('')).not.toContain('not listed');
+  });
+});
+
+describe('mirror with rsync unusable (4f037bc9.3)', () => {
+  it('does not announce an SFTP transfer it then refuses', async () => {
+    m.unusable = 'broken';
+    await expect(
+      executeSyncWithSftpFallback({ ...base, mirror: true }, 'upload', sftpOk)
+    ).rejects.toThrow(/mirror/i);
+    expect(m.err.join('')).toContain('broken');
+    expect(m.err.join('')).not.toContain('Using SFTP');
+  });
+
+  it('control: a non-mirror run still announces the SFTP transfer', async () => {
+    m.unusable = 'broken';
+    await executeSyncWithSftpFallback(base, 'upload', sftpOk);
+    expect(m.err.join('')).toContain('Using SFTP');
   });
 });

@@ -3276,12 +3276,14 @@
       "skippedMore": "{{names}} ja veel {{count}}",
       "deleted": "Kustutatud faile: {{count}}",
       "rsyncUnusable": "rsync on paigaldatud, aga ei käivitu ({{reason}}). Edastus käib SFTP kaudu (ilma delta-sünkroonita).",
+      "rsyncUnusableNoFallback": "rsync on paigaldatud, aga ei käivitu ({{reason}}).",
       "skippedNonRegular": "Hoiatus: sümboolseid linke ja erifaile ei edastatud, kokku: {{count}} (privilegeeritud sünkroonimine edastab ainult tavafaile): {{names}}",
       "status": {
         "description": "Kohalike ja kaugfailide proovijooks (näitab, mida kantaks üle, ilma tegelikult üle kandmata)",
         "descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)",
         "localOnly": "Ainult kohalikus, kaugpoolel puudub: {{count}}",
-        "localOnlyMore": "  ... ja veel {{count}}"
+        "localOnlyMore": "  ... ja veel {{count}}",
+        "localOnlyNeedsRsync": "Ainult kohalikus olevaid faile ei loetleta: see võrdlus vajab rsync'i."
       },
       "totalSize": "Kogumaht: {{size}}",
       "upload": {

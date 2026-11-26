@@ -316,6 +316,8 @@ export function buildRsyncArgs(
     args.push('--dry-run', '--itemize-changes');
   } else {
     args.push('--verbose', '--inplace', '--no-whole-file', '--progress');
+    // Itemized, so a deletion (`*deleting`) is told apart from a transferred file named `deleting ...` (4f037bc9.2).
+    if (options.mirror) args.push('--itemize-changes');
   }
 
   if (options.mkpath) args.push('--mkpath');
@@ -422,7 +424,7 @@ export async function executeRsync(
     let stderrText = '';
     // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
     const stdoutSkips = createSkipLineScan();
-    // Remote (or, on a download, local) files a --mirror run removed: rsync prints each as "deleting <name>".
+    // Remote (or, on a download, local) files a --mirror run removed: the itemized run prints each as "*deleting   <name>".
     const deletions = createDeleteCounter();
     const countState = newRsyncCountState();
     const bytesState = newRsyncBytesState();
@@ -430,7 +432,7 @@ export async function executeRsync(
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
       stdoutSkips.push(output);
-      deletions.push(output);
+      if (options.mirror) deletions.push(output);
       options.onStdout?.(output);
 
       // Parse progress from rsync output

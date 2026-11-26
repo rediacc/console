@@ -2598,6 +2598,7 @@
       "skippedMore": "{{names}}, and {{count}} more",
       "deleted": "Files deleted: {{count}}",
       "rsyncUnusable": "rsync is installed but cannot run ({{reason}}). Using SFTP transfer (no delta sync).",
+      "rsyncUnusableNoFallback": "rsync is installed but cannot run ({{reason}}).",
       "upload": {
         "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
         "descriptionShort": "Upload files to a repository via rsync",
@@ -2618,7 +2619,8 @@
         "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
         "descriptionShort": "Compare local and remote files (dry-run)",
         "localOnly": "Only in local, not in remote: {{count}}",
-        "localOnlyMore": "  ... and {{count}} more"
+        "localOnlyMore": "  ... and {{count}} more",
+        "localOnlyNeedsRsync": "Files only the local side holds are not listed: that comparison needs rsync."
       }
     },
     "subscription": {

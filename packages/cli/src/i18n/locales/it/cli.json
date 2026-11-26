@@ -3276,12 +3276,14 @@
       "skippedMore": "{{names}} e altri {{count}}",
       "deleted": "File eliminati: {{count}}",
       "rsyncUnusable": "rsync è installato ma non si avvia ({{reason}}). Il trasferimento passa da SFTP (senza sincronizzazione delta).",
+      "rsyncUnusableNoFallback": "rsync è installato ma non si avvia ({{reason}}).",
       "skippedNonRegular": "Avviso: collegamenti simbolici e file speciali non trasferiti, totale: {{count}} (una sincronizzazione con privilegi trasferisce solo file regolari): {{names}}",
       "status": {
         "description": "Confronto dry-run di file locali e remoti (mostra cosa verrebbe trasferito senza trasferire effettivamente)",
         "descriptionShort": "Confronta file locali e remoti (dry-run)",
         "localOnly": "Solo in locale, non sul remoto: {{count}}",
-        "localOnlyMore": "  ... e altri {{count}}"
+        "localOnlyMore": "  ... e altri {{count}}",
+        "localOnlyNeedsRsync": "I file presenti solo in locale non sono elencati: questo confronto richiede rsync."
       },
       "totalSize": "Dimensione totale: {{size}}",
       "upload": {

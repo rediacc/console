@@ -205,7 +205,7 @@ function buildSshOptions(knownHostsPath: string, port: number, keyFilePath: stri
   return `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${port} -i "${keyFilePath}"`;
 }
 
-async function handleDryRunWithSftpFallback(
+export async function handleDryRunWithSftpFallback(
   rsyncOptions: RsyncExecutorOptions,
   sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>,
   localOnly = false
@@ -213,6 +213,7 @@ async function handleDryRunWithSftpFallback(
   try {
     if (await warnIfRsyncUnusable()) {
       displaySftpDryRunResult(await sftpTransfer());
+      noteLocalOnlyUnavailable(localOnly);
       return;
     }
     await handleDryRun(rsyncOptions, { localOnly });
@@ -220,15 +221,25 @@ async function handleDryRunWithSftpFallback(
     if (!isRsyncNotFoundError(err)) throw err;
     const result = await sftpTransfer();
     displaySftpDryRunResult(result);
+    noteLocalOnlyUnavailable(localOnly);
   }
 }
 
 /** True (after warning on stderr with the reason) when rsync is installed but cannot start, so the transfer takes the SFTP path. */
-async function warnIfRsyncUnusable(): Promise<boolean> {
+async function warnIfRsyncUnusable(sftpFallback = true): Promise<boolean> {
   const reason = await rsyncUnusableReason();
   if (reason === undefined) return false;
-  writeStderr(`${t('commands.sync.rsyncUnusable', { reason })}\n`);
+  // A run that refuses instead of falling back must not announce an SFTP transfer (4f037bc9.3).
+  const key = sftpFallback
+    ? 'commands.sync.rsyncUnusable'
+    : 'commands.sync.rsyncUnusableNoFallback';
+  writeStderr(`${t(key, { reason })}\n`);
   return true;
+}
+
+/** The SFTP dry run has no local-only comparison, so `status` says so rather than reporting a clean sync (4f037bc9.1). */
+function noteLocalOnlyUnavailable(localOnly: boolean): void {
+  if (localOnly) writeStderr(`${t('commands.sync.status.localOnlyNeedsRsync')}\n`);
 }
 
 export async function executeSyncWithSftpFallback(
@@ -259,7 +270,7 @@ export async function executeSyncWithSftpFallback(
   };
   try {
     await beforeRsync?.();
-    if (await warnIfRsyncUnusable()) return await runSftp();
+    if (await warnIfRsyncUnusable(rsyncOptions.mirror !== true)) return await runSftp();
     return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;

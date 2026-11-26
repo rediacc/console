@@ -1,9 +1,10 @@
 /**
- * Counts the deletions of a `--mirror` run from rsync's stdout. A verbose run prints each as `deleting <name>`, and an
- * `--itemize-changes` run as `*deleting   <name>`. The stream arrives in chunks and progress lines end in `\r`, so a line
+ * Counts the deletions of a `--mirror` run from rsync's stdout. A mirror run is itemized (`--itemize-changes`), which prints each as
+ * `*deleting   <name>` and every transferred file as `<flags> <name>`; the bare `deleting <name>` of a plain verbose run is not
+ * counted, since a transferred file whose name starts `deleting ` prints identically. The stream arrives in chunks and progress lines end in `\r`, so a line
  * split across chunks is joined before it is read.
  */
-const DELETE_LINE = /^\*?deleting\s/;
+const DELETE_LINE = /^\*deleting\s/;
 
 /** The longest unterminated tail kept; a deletion line is a path and a short prefix. */
 const DELETE_SCAN_MAX_LINE = 8192;

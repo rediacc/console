@@ -3276,12 +3276,14 @@
       "skippedMore": "{{names}}，以及另外 {{count}} 个",
       "deleted": "已删除文件:{{count}}",
       "rsyncUnusable": "rsync 已安装但无法运行({{reason}})。改用 SFTP 传输(无增量同步)。",
+      "rsyncUnusableNoFallback": "rsync 已安装但无法运行({{reason}})。",
       "skippedNonRegular": "警告：符号链接和特殊文件未传输，共计：{{count}}（特权同步仅传输常规文件）：{{names}}",
       "status": {
         "description": "检查同步状态并比较本地/远程文件",
         "descriptionShort": "比较本地和远程文件（模拟运行）",
         "localOnly": "仅存在于本地、远程没有:{{count}}",
-        "localOnlyMore": "  ……另有 {{count}} 个"
+        "localOnlyMore": "  ……另有 {{count}} 个",
+        "localOnlyNeedsRsync": "仅存在于本地的文件不会列出:该比较需要 rsync。"
       },
       "totalSize": "总大小：{{size}}",
       "upload": {

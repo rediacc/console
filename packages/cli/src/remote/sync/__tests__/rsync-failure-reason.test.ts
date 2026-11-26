@@ -98,13 +98,22 @@ describe('executeRsync failure detail', () => {
 });
 
 describe('executeRsync deleted count', () => {
-  it('counts verbose and itemized deletion lines, also when a line is split across chunks', async () => {
+  const runMirror = () =>
+    executeRsync({ sshOptions: '', source: '/src/', destination: 'h:/dst/', mirror: true });
+
+  it('counts itemized deletion lines of a mirror run, also when a line is split across chunks', async () => {
     fake.stdout = [
-      'sending incremental file list\ndeleting old/a.txt\ndele',
-      'ting b.txt\r*deleting   c.txt\n',
-      'real.txt\n',
+      'sending incremental file list\n*deleting   old/a.txt\n*dele',
+      'ting   b.txt\r*deleting   c.txt\n',
+      '>f+++++++++ real.txt\n',
     ];
-    expect((await run()).deleted).toBe(3);
+    expect((await runMirror()).deleted).toBe(3);
+  });
+
+  it('a non-mirror run never reports deletions, even for a file named "deleting ..." (4f037bc9.2)', async () => {
+    fake.stdout = ['sending incremental file list\ndeleting notes.txt\n'];
+    expect((await run()).deleted).toBe(0);
+    expect((await runMirror()).deleted).toBe(0);
   });
 
   it('control: a run that removes nothing counts zero', async () => {

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3341,
-    "sourceCommit": "3ef28be1238988dd4e62df6f8015e7f8c4a0396b"
+    "keyCount": 3343,
+    "sourceCommit": "53cfa4068aff507eeb6c154fc2b803684d0fb565"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2608,12 +2608,14 @@
     "commands.sync.noChanges": "8c1766ae",
     "commands.sync.previewingChanges": "c7cd3581",
     "commands.sync.rsyncUnusable": "c32f74a5",
+    "commands.sync.rsyncUnusableNoFallback": "43651f4a",
     "commands.sync.skippedMore": "2c0d8ab9",
     "commands.sync.skippedNonRegular": "c3a5688d",
     "commands.sync.status.description": "f1abf2c0",
     "commands.sync.status.descriptionShort": "93df0e9b",
     "commands.sync.status.localOnly": "909cd2bf",
     "commands.sync.status.localOnlyMore": "bb300dbf",
+    "commands.sync.status.localOnlyNeedsRsync": "0c696760",
     "commands.sync.totalSize": "69fc6d1f",
     "commands.sync.upload.completed": "8a132129",
     "commands.sync.upload.description": "d9a19fff",

@@ -58,7 +58,9 @@ export function displaySyncResult(
 export function sshKeyDiagnostic(privateKey: string): string {
   const first = privateKey.trimStart().split('\n', 1)[0] ?? '';
   // Only a PEM armour line is printed: a key with no newline (the malformed case this diagnostic exists for) would otherwise print in full (8b24deb8.2).
-  const header = /^-----BEGIN [A-Z0-9 ]{1,40}-----\r?$/.test(first)
+  const header = /^-----BEGIN (?:(?:OPENSSH|RSA|EC|DSA|ENCRYPTED) )?PRIVATE KEY-----\r?$/.test(
+    first
+  )
     ? first.trimEnd()
     : '<not a PEM header>';
   const digest = createHash('sha256').update(privateKey).digest('hex').slice(0, 12);

@@ -3276,12 +3276,14 @@
       "skippedMore": "{{names}} 외 {{count}}개",
       "deleted": "삭제된 파일: {{count}}",
       "rsyncUnusable": "rsync가 설치되어 있지만 실행되지 않습니다 ({{reason}}). SFTP로 전송합니다(델타 동기화 없음).",
+      "rsyncUnusableNoFallback": "rsync가 설치되어 있지만 실행되지 않습니다 ({{reason}}).",
       "skippedNonRegular": "경고: 심볼릭 링크와 특수 파일은 전송되지 않았습니다(총 {{count}}건). 권한 상승 동기화는 일반 파일만 전송합니다: {{names}}",
       "status": {
         "description": "로컬 및 원격 파일의 드라이 런 비교 (실제 전송 없이 전송될 항목 표시)",
         "descriptionShort": "로컬 및 원격 파일 비교 (드라이 런)",
         "localOnly": "로컬에만 있고 원격에는 없음: {{count}}",
-        "localOnlyMore": "  ... 외 {{count}}개"
+        "localOnlyMore": "  ... 외 {{count}}개",
+        "localOnlyNeedsRsync": "로컬에만 있는 파일은 나열되지 않습니다. 이 비교에는 rsync가 필요합니다."
       },
       "totalSize": "전체 크기: {{size}}",
       "upload": {
