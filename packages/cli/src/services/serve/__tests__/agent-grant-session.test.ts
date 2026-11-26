@@ -513,6 +513,44 @@ describe('a team grant in a store with no org-level config (review acee0d10.1)',
   });
 });
 
+describe('a team grant whose store loses its org-level config after the session opened (review 7688d8bb.1)', () => {
+  it('refuses the next request even though the document is cached at the same version', async () => {
+    const a = await makeGrant({
+      grantId: 'g_orglost',
+      teamId: 'team-a',
+      configId: 'cfg-a',
+      machine: 'machine-a',
+    });
+    const account = fakeAccount([a]);
+    const listing: { orgListed: boolean } = { orgListed: true };
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const response = await account.fetch(input, init);
+      const url = new URL(typeof input === 'string' ? input : (input as Request).url);
+      if (listing.orgListed || !url.pathname.endsWith('/configs') || init?.method !== 'GET')
+        return response;
+      const body = (await response.json()) as { configs: { teamId: string | null }[] };
+      return new Response(
+        JSON.stringify({ ...body, configs: body.configs.filter((c) => c.teamId !== null) }),
+        { status: response.status, headers: { 'content-type': 'application/json' } }
+      );
+    };
+    const sessions = new AgentGrantSessions({
+      accountUrl: 'https://account.test',
+      executorToken: EXECUTOR_TOKEN,
+      orgId: ORG_ID,
+      fetchImpl,
+    });
+    // Control: with the org-level config listed, the grant opens and a second request is served from the cache.
+    await sessions.acquire(a.grantId, a.secret);
+    await sessions.acquire(a.grantId, a.secret);
+    expect(sessions.has(a.grantId)).toBe(true);
+
+    listing.orgListed = false;
+    await expect(sessions.acquire(a.grantId, a.secret)).rejects.toBeInstanceOf(AgentSessionRefused);
+    expect(sessions.has(a.grantId)).toBe(false);
+  });
+});
+
 describe('daemon-mode revoke route (box AG-OP1)', () => {
   async function daemon(role: 'owner' | 'admin' | 'member' = 'admin', orgId = ORG_ID) {
     const { a, b, sessions } = await world();

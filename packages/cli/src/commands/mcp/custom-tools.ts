@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { type McpSurface, READ_TIMEOUT } from '../../config/command-metadata.js';
 import { isTerminalState, type JobStatus } from '../../services/executor/job-client.js';
+import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from '../../services/serve/job-wait-limits.js';
 import type { ToolDef } from './tool-factory.js';
 
 /** The views run `machine status` and job_wait runs `job status`, both proxy-capable; the registry generator checks this against the contract like any other tool. */
@@ -59,10 +60,7 @@ const MACHINE_STATUS_VIEWS: ToolDef[] = [
   },
 ];
 
-/** One job_wait call blocks at most this long (Design 5), well inside a client's 60 s tool budget. */
-export const JOB_WAIT_CEILING_MS = 50_000;
-/** The pause between two `job status` reads, and the `nextPollSeconds` a call that hits the ceiling returns. */
-export const JOB_WAIT_INTERVAL_MS = 5_000;
+export { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS };
 
 /** Whether a `job status` envelope's data names a finished job. */
 function jobFinished(data: unknown): boolean {

@@ -482,19 +482,19 @@ export class AgentGrantSessions {
       this.drop(record.grantId);
       throw new AgentSessionRefused();
     }
-    const key = documentKey(record.grantId, entry.version);
-    const cached = record.documents.get(key);
-    if (cached) return this.seat(record, entry.version, key, cached);
     const org = entries.find(
       (item) => (item.teamId ?? null) === null && typeof item.configId === 'string'
     );
-    // A team grant's policy has the org-level record as its ceiling: a store that lists none cannot be judged, so the grant is refused rather than served without the ceiling.
+    // A team grant's policy has the org-level record as its ceiling: a store that lists none cannot be judged, so the grant is refused rather than served without the ceiling. This holds for a cached document too: the listing is checked on every request.
     if (record.teamId !== null && !org) {
       this.drop(record.grantId);
       throw new AgentSessionRefused(
         'This agent grant is on a team, and the store holds no org-level config whose policy applies to it.'
       );
     }
+    const key = documentKey(record.grantId, entry.version);
+    const cached = record.documents.get(key);
+    if (cached) return this.seat(record, entry.version, key, cached);
     const orgConfigId = org ? (org.configId as string) : null;
     return this.seat(record, entry.version, key, await this.pull(record, secret, orgConfigId));
   }

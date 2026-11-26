@@ -94,9 +94,10 @@ export function resolvePinnedOrgId(
  * The org this executor serves, so that it can be pinned to it and open agent grant
  * sessions (agent/plans/PLAN-rmcp-agent-grants.md Design 8). A container reads its pin from
  * the environment. A daemon asks the account server whose its own token is (a `self`
- * introspection): the account answers only for tokens of that one org, so the token's org is
- * the org of the store the daemon enrolled in and the only org it can ever serve. A daemon
- * whose own token the account server will not report refuses to boot, naming why.
+ * introspection) and serves that org. Nothing here compares it with the org of the store the
+ * daemon enrolled in (the config on disk names no org), so REDIACC_TOKEN must be a token of that
+ * same org: a token of another org pins the daemon to that org while it still runs the enrolled
+ * config. A daemon whose own token the account server will not report refuses to boot, naming why.
  */
 export async function resolveExecutorOrgId(
   mode: 'daemon' | 'container',

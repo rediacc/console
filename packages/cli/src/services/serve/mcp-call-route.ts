@@ -34,7 +34,6 @@ import { getMcpTool, type McpToolEntry } from '@rediacc/shared/mcp/registry';
 import { omitKey } from '@rediacc/shared/utils/omit-key';
 import type { Hono } from 'hono';
 import { z } from 'zod';
-import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from '../../commands/mcp/custom-tools.js';
 import { type AiToolResult, requestOf, runAiTool } from '../ai/tools.js';
 import { registerAgentGrantRevokeRoute } from './agent-grant-revoke-route.js';
 import {
@@ -46,6 +45,7 @@ import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import type { BusyCounter } from './busy.js';
 import type { DispatchOutcome } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
+import { JOB_WAIT_CEILING_MS, JOB_WAIT_INTERVAL_MS } from './job-wait-limits.js';
 import { dispatcher, HandedBack, WindowPassed } from './mcp-call-dispatch.js';
 import {
   type Envelope,
