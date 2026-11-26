@@ -217,6 +217,14 @@ def test_an_empty_labels_file_does_not_kill_the_reader():
     assert gate.declared_labels("- name: alpha\n") == ["alpha"]
 
 
+def test_the_default_scan_roots_include_scripts_where_the_issue_reporter_lives():
+    """Review 797034e3.1: the default roots are pinned, so a revert to `.github .ci` fails here and not only in the live sweep."""
+    roots = gate.split_dirs(gate.DEFAULT_SCAN_DIRS)
+    assert roots == [".github", ".ci", "scripts"]
+    root = pathlib.Path(__file__).resolve().parents[3]
+    assert all((root / spec).is_dir() for spec in roots)
+
+
 def test_every_pattern_has_a_sample_and_the_sample_fires(tmp_path):
     """A pattern with no planted sample is a pattern nothing proves can fire."""
     sample = tmp_path / "sample.txt"

@@ -436,6 +436,12 @@ def _tokens(text: str) -> list[str]:
     return out
 
 
+def _in_comment(text: str, pos: int) -> bool:
+    """Whether the line holding `pos` is a comment line (`#`, `//` or a block-comment `*`) before it."""
+    start = text.rfind("\n", 0, pos) + 1
+    return text[start:pos].lstrip().startswith(("#", "//", "* ", "/*"))
+
+
 def _call_files(root: pathlib.Path) -> list[pathlib.Path]:
     files = [root / rel for rel in CALL_SOURCES if (root / rel).is_file()]
     for pattern in CALL_GLOBS:
@@ -468,7 +474,9 @@ def registered_calls(root: pathlib.Path) -> list[tuple[str, str, list[str]]]:
         rel = str(path.relative_to(root))
         for m in ENTRY_CALL_RE.finditer(text):
             args = _tokens(m.group(2))
-            # Only an argument list that carries a flag is a call; prose that names an entry point ("check_x.py holds in place.") carries none.
+            # Only an argument list that carries a flag is a call; prose that names an entry point ("check_x.py holds in place.") carries none. A comment line is prose whatever dash token ends it ("# see check_x.py for details -h"), so it is never judged (per-commit review 8dee6a3b.1).
+            if _in_comment(text, m.start()):
+                continue
             if any(a.startswith("-") for a in args):
                 line = text.count("\n", 0, m.start()) + 1
                 calls.append(("%s:%d" % (rel, line), m.group(1), args))

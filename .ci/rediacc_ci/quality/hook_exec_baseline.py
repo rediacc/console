@@ -276,6 +276,16 @@ def _load_hookreport():
     return wl_hookreport
 
 
+def _leaks_path(load) -> bool:
+    """Whether calling `load()` leaves `sys.path` different from how it found it (restored afterwards, so a leak cannot reach the checks that follow)."""
+    before = list(sys.path)
+    try:
+        load()
+        return sys.path != before
+    finally:
+        sys.path[:] = before
+
+
 def budget_findings(baseline, root):
     """The two-way budgets of `baseline["budgets"]` measured at `root`. A missing block is a refusal."""
     budgets = baseline.get("budgets")
@@ -568,15 +578,19 @@ def selftest():
     )
 
     try:
+        # The leak check comes BEFORE the first load, so a leak from that first call is not baked into the snapshot it is judged against.
+        leaked = _leaks_path(_load_hookreport)
         hookreport = _load_hookreport()
     except RefusalError as exc:
         check("CONTROL: the budget reader is importable (%s)" % exc, False)
         return not check.ok
-    saved_path = list(sys.path)
-    _load_hookreport()
     check(
-        "ANTI-SILENCER: loading the budget reader leaves sys.path as it was",
-        sys.path == saved_path,
+        "ANTI-SILENCER: loading the budget reader leaves sys.path as it was, cold or warm",
+        not leaked and not _leaks_path(_load_hookreport),
+    )
+    check(
+        "PLANT: a loader that leaves a directory on sys.path is seen as leaking",
+        _leaks_path(lambda: sys.path.append("/nonexistent-leak")),
     )
     held = {"slack": 0.2, "max": {"block_x": 100}}
     budgets = {t: dict(held) for t in hookreport.TABLES}

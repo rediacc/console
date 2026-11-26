@@ -304,10 +304,12 @@ class PyIndex:
             stack.extend(ast.iter_child_nodes(n))
 
     def _absolute_constants(self, mod: str) -> frozenset[str]:
-        """Module-level names bound exactly once, to a string literal that is an absolute path (`PROC_MOUNTS = "/proc/mounts"`)."""
+        """Module-level names bound exactly once in the whole module, to a string literal that is an absolute path (`PROC_MOUNTS = "/proc/mounts"`). A second binding anywhere (inside an if/try/with/for, by tuple unpacking, by a `global` rebind in a function, an import or a def) withdraws the trust."""
         t = self.tree(mod)
-        values: dict[str, list[object]] = {}
-        for n in t.body if t else []:
+        if t is None:
+            return frozenset()
+        literals: dict[str, object] = {}
+        for n in t.body:
             if isinstance(n, ast.Assign):
                 targets, value = n.targets, n.value
             elif isinstance(n, ast.AnnAssign) and n.value is not None:
@@ -316,12 +318,27 @@ class PyIndex:
                 continue
             for target in targets:
                 if isinstance(target, ast.Name):
-                    lit = value.value if isinstance(value, ast.Constant) else None
-                    values.setdefault(target.id, []).append(lit)
+                    literals[target.id] = value.value if isinstance(value, ast.Constant) else None
+        bindings: dict[str, int] = {}
+        for n in ast.walk(t):
+            if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+                names = [n.id]
+            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                names = [n.name]
+            elif isinstance(n, ast.arg):
+                names = [n.arg]
+            elif isinstance(n, (ast.Import, ast.ImportFrom)):
+                names = [(a.asname or a.name).split(".")[0] for a in n.names]
+            elif isinstance(n, (ast.Global, ast.Nonlocal)):
+                names = list(n.names)
+            else:
+                continue
+            for name in names:
+                bindings[name] = bindings.get(name, 0) + 1
         return frozenset(
             name
-            for name, seen in values.items()
-            if len(seen) == 1 and isinstance(seen[0], str) and seen[0].startswith("/")
+            for name, lit in literals.items()
+            if bindings.get(name) == 1 and isinstance(lit, str) and lit.startswith("/")
         )
 
     def _outside_repo(self, mod: str, call: ast.Call) -> bool:
@@ -615,6 +632,17 @@ FIXTURE = {
     ".ci/rediacc_ci/rebound.py": (
         'P = "/proc/mounts"\nP = ".ci/config/fixture.env"\nX = open(P).read()\n'
     ),
+    ".ci/rediacc_ci/rebound_if.py": (
+        'import os\nP = "/proc/mounts"\nif os.environ.get("X"):\n    P = ".ci/config/fixture.env"\n'
+        "X = open(P).read()\n"
+    ),
+    ".ci/rediacc_ci/rebound_unpack.py": (
+        'P = "/proc/mounts"\nP, Q = ".ci/config/fixture.env", 1\nX = open(P).read()\n'
+    ),
+    ".ci/rediacc_ci/rebound_global.py": (
+        'P = "/proc/mounts"\ndef swap():\n    global P\n    P = ".ci/config/fixture.env"\n'
+        "X = open(P).read()\n"
+    ),
     ".ci/rediacc_ci/probe.py": (
         "import pathlib\nHERE = pathlib.Path('.ci/config/fixture.env').exists()\n"
     ),
@@ -758,6 +786,16 @@ def selftest() -> int:
             "CONTROL: a constant bound twice is not trusted as absolute, so its read still counts",
             bool(ix.import_time_reads("rediacc_ci.rebound")),
         )
+        for name, how in (
+            ("rebound_if", "under an if"),
+            ("rebound_unpack", "by tuple unpacking"),
+            ("rebound_global", "by a global rebind in a function"),
+        ):
+            check(
+                "CONTROL: a constant rebound %s is not trusted as absolute, so its read still counts"
+                % how,
+                bool(ix.import_time_reads("rediacc_ci." + name)),
+            )
         check(
             "CONTROL: an absolute literal (/dev/stdout) is never a repo data path",
             ix.data_paths("rediacc_ci.factory") == [],

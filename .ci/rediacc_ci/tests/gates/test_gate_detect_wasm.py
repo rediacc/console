@@ -19,6 +19,7 @@ import shutil
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.quality import detect_wasm
 from rediacc_ci.tests.gates import harness
 
 MODULE = "rediacc_ci.quality.detect_wasm"
@@ -258,3 +259,31 @@ def test_stale_inputs_digest_is_caught(gate, tmp_path):
         result.combined, "changed without a rebuild (R2)", "R2 names the stale inputs"
     )
     gate.log_pass("stale digest caught")
+
+
+def test_r2_message_names_the_whole_digest_closure_not_a_fixed_package_list():
+    """aa77bf75.2: the digest covers the dependency closure and embed targets, so the message must not list a shorter set."""
+    manifest = {"renet_inputs_sha256": "0" * 64, "go_version": "go1.0"}
+    (finding,) = detect_wasm.provenance_findings(manifest, "1" * 64, "go1.0")
+    assert "pkg/detect, pkg/models" not in finding
+    assert "go:embed" in finding
+    assert "./build.sh detect_wasm_inputs" in finding
+
+
+def test_rebuild_passes_the_model_key_through_even_when_empty(monkeypatch, tmp_path):
+    """ff065c8b.1: an empty key is a keyless build (build.sh reads empty as keyless, unset as the well-known key), so rebuild() always sets the variable."""
+    seen: list[dict[str, str]] = []
+
+    def fake_run(_argv, **kwargs):
+        seen.append(kwargs["env"])
+        for name in (detect_wasm.WASM, detect_wasm.EXEC, detect_wasm.MANIFEST):
+            (tmp_path / name).write_bytes(b"x")
+        return type("P", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setenv("MODEL_ED25519_PUBLIC_KEY", "ambient-key")
+    monkeypatch.setattr(detect_wasm.subprocess, "run", fake_run)
+    detect_wasm.rebuild("renet", str(tmp_path), "")
+    detect_wasm.rebuild("renet", str(tmp_path), "recorded-key")
+    assert seen[0]["MODEL_ED25519_PUBLIC_KEY"] == ""
+    assert seen[1]["MODEL_ED25519_PUBLIC_KEY"] == "recorded-key"
+    assert all(env["GOTOOLCHAIN"] == "local" for env in seen)

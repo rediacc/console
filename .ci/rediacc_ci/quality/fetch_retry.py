@@ -39,7 +39,7 @@ MIN_FILES = 10
 # A fetch INVOCATION: the command at the start of a segment, not the word anywhere. `ca-certificates curl \` in an apt package list is not a fetch, and that false positive is live in `.ci/docker/web/Dockerfile` -- a crude `grep -c curl` reports it as an unretried download. `RUN` counts as a command position: run_blocks keeps the instruction word, so the very first command in a
 # block sits after "RUN " rather than at the start of the string. The first cut omitted it and its own SANITY control failed -- which is what a sanity control is for, since every negative control below passes against a matcher that matches nothing.
 FETCH = re.compile(
-    r"(?:^|RUN\s+|[|;&]|&&|\|\||\$\(|`|\bthen\s+|\bdo\s+)\s*(curl|wget)\s+(?=-|https?://)"
+    r"(?:^|RUN\s+|[|;&]|&&|\|\||\$\(|`|\bthen\s+|\bdo\s+)\s*(curl|wget)\s+(?=-|https?://|[\"'$])"
 )
 
 # Any of these means a second attempt exists.
@@ -149,6 +149,13 @@ def selftest():
     check(
         "CONTROL: a piped installer still needs a retry",
         len(offences_in("RUN curl -fsSL https://example.com/install.sh | bash")) == 1,
+    )
+    check(
+        "PLANT: a fetch whose first argument is a variable or a quoted URL is judged too",
+        len(offences_in('RUN curl "$URL" -o /tmp/x')) == 1
+        and len(offences_in("RUN curl $URL -o /tmp/x")) == 1
+        and len(offences_in("RUN wget '$URL'")) == 1
+        and len(offences_in('RUN curl --retry 3 "$URL" -o /tmp/x')) == 0,
     )
     check("CONTROL: a file with no fetch yields nothing", len(offences_in("RUN echo hi")) == 0)
     # THE VACUITY CONTROL. This gate shipped reading shell scripts with a Dockerfile `RUN` parser: 25 blocks for the Dockerfile, ZERO for any .sh, so it printed "551 file(s) scanned" while every shell script in its corpus contributed nothing -- and three real offences sat inside that corpus while it reported clean.

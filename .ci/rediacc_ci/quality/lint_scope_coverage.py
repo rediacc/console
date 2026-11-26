@@ -130,6 +130,28 @@ def unreached(root, paths):
     return unreached(root, paths[:mid]) + unreached(root, paths[mid:])
 
 
+# `biome lint` options that take their value as the next token, so the value is not a path root.
+VALUED_FLAGS = frozenset(
+    {
+        "--max-diagnostics",
+        "--diagnostic-level",
+        "--config-path",
+        "--stdin-file-path",
+        "--only",
+        "--skip",
+        "--reporter",
+        "--log-level",
+        "--log-kind",
+        "--log-prefix-name",
+        "--since",
+        "--threads",
+        "--colors",
+        "--files-max-size",
+        "--error-on-warnings-limit",
+    }
+)
+
+
 def lint_roots(scripts, name):
     """The path arguments of every `biome lint` call in script `name`.
 
@@ -145,7 +167,15 @@ def lint_roots(scripts, name):
         for i in range(len(tokens) - 1):
             if tokens[i] == "biome" and tokens[i + 1] == "lint":
                 calls += 1
-                found.extend(t for t in tokens[i + 2 :] if not t.startswith("-"))
+                skip = False
+                for t in tokens[i + 2 :]:
+                    if skip:
+                        skip = False
+                    elif t.startswith("-"):
+                        # `--max-diagnostics 50` hands the flag its value as the NEXT token; that value is not a path root (`--flag=value` is one token and never reaches here).
+                        skip = t in VALUED_FLAGS
+                    else:
+                        found.append(t)
                 break
     if calls == 0:
         return None
@@ -206,6 +236,17 @@ def selftest(root):
     check("a narrowed command parses to its roots", lint_roots(scripts, "lint") == ["packages/cli"])
     check("a whole-tree command parses to the root `.`", lint_roots(scripts, "ok") == ["."])
     check("a non-biome command parses to None", lint_roots({"lint": "eslint ."}, "lint") is None)
+    valued = {
+        "a": "biome lint --max-diagnostics 50 .",
+        "b": "biome lint --diagnostic-level warn packages/cli --error-on-warnings",
+        "c": "biome lint --max-diagnostics=50 .",
+    }
+    check(
+        "PLANT: a flag's separate value is not a path root (`--max-diagnostics 50 .` is `.`)",
+        lint_roots(valued, "a") == ["."] and lint_roots(valued, "b") == ["packages/cli"],
+        "%r %r" % (lint_roots(valued, "a"), lint_roots(valued, "b")),
+    )
+    check("CONTROL: the `--flag=value` form is unchanged", lint_roots(valued, "c") == ["."])
     return bad
 
 

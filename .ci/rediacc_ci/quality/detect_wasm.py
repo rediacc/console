@@ -120,7 +120,7 @@ def provenance_findings(manifest: dict, inputs: str, go_pin: str) -> list[str]:
     out: list[str] = []
     if manifest["renet_inputs_sha256"] != inputs:
         out.append(
-            "%s records renet_inputs_sha256 %s but the detector inputs of %s now hash to %s: a file the detector build reads (pkg/detect, pkg/models, cmd/detectwasm, go.mod, go.sum) changed without a rebuild (R2). %s"
+            "%s records renet_inputs_sha256 %s but the detector inputs of %s now hash to %s: a file the detector build reads (every module package ./cmd/detectwasm depends on, their go:embed targets, go.mod and go.sum; the exact set is `./build.sh detect_wasm_inputs`) changed without a rebuild (R2). %s"
             % (MANIFEST, manifest["renet_inputs_sha256"], RENET_REL, inputs, REBUILD_HINT)
         )
     if manifest["go_version"] != go_pin:

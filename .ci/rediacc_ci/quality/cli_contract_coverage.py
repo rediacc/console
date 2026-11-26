@@ -153,8 +153,13 @@ def command_findings(command: dict, bundles: dict[str, dict]) -> list[str]:
         if not isinstance(preview, dict):
             out.append("%s: preview is %r, not an object" % (key, preview))
         else:
-            longs = {o.get("long") for o in command.get("options") or [] if isinstance(o, dict)}
-            if preview.get("flag") not in longs:
+            longs = {
+                o["long"]
+                for o in command.get("options") or []
+                if isinstance(o, dict) and isinstance(o.get("long"), str)
+            }
+            flag = preview.get("flag")
+            if not isinstance(flag, str) or flag not in longs:
                 out.append(
                     "%s: preview flag %r names no option of the command (options: %s). Fix: correct "
                     "the preview table in packages/cli/src/config/command-safety.ts"
@@ -202,20 +207,21 @@ def supported_languages(root: pathlib.Path) -> list[str]:
     path = root / LANGUAGES_REL
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         raise CannotRunError("%s cannot be read: %s" % (path, exc)) from None
     match = _SUPPORTED_RE.search(text)
-    found = re.findall(r"'([a-z]{2,3})'", match.group(1)) if match else []
+    # A tagged locale ('zh-CN', 'pt-BR') is one entry, so the pattern takes a region subtag after the language.
+    found = re.findall(r"'([A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*)'", match.group(1)) if match else []
     if not found:
         raise CannotRunError("%s names no SUPPORTED_LANGUAGES" % path)
     return found
 
 
-def evaluate(data_dir: pathlib.Path, supported: list[str] | None = None) -> tuple[list[str], dict]:
+def evaluate(data_dir: pathlib.Path, supported: list[str]) -> tuple[list[str], dict]:
     """`(findings, shape)` for the contract under `data_dir`. `supported` is the shipped locale set the contract's `languages` must equal. Raises CannotRunError when there is nothing to judge."""
     contract = load_contract(data_dir)
     bundles, findings = load_bundles(data_dir, contract["languages"])
-    if supported is not None and sorted(contract["languages"]) != sorted(supported):
+    if sorted(contract["languages"]) != sorted(supported):
         missing = sorted(set(supported) - set(contract["languages"]))
         extra = sorted(set(contract["languages"]) - set(supported))
         findings.append(
@@ -231,8 +237,9 @@ def evaluate(data_dir: pathlib.Path, supported: list[str] | None = None) -> tupl
             findings.append("commands: an entry is not an object (%r)" % (command,))
             continue
         findings.extend(command_findings(command, bundles))
-        if command.get("severity") in severities:
-            severities[command["severity"]] += 1
+        severity = command.get("severity")
+        if isinstance(severity, str) and severity in severities:
+            severities[severity] += 1
         if isinstance(command.get("preview"), dict):
             previews += 1
         summary_key = command.get("summaryKey")

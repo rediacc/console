@@ -52,6 +52,19 @@ def test_a_missing_generated_file_is_not_equal(tmp_path: pathlib.Path) -> None:
     assert cc._files_equal(tmp_path / "a", tmp_path / "gone") is False
 
 
+def test_a_missing_side_names_the_path_on_stderr(tmp_path: pathlib.Path, capsys) -> None:
+    """A vanished generated artefact is reported on stderr with its path, not only as a bare stale line (per-commit review b6917624.2)."""
+    committed = tmp_path / "committed"
+    generated = tmp_path / "generated"
+    committed.mkdir()
+    generated.mkdir()
+    (committed / "contract.json").write_text("x\n", encoding="utf-8")
+    assert "contract.json" in cc.stale_entries(committed, generated)
+    err = capsys.readouterr().err
+    assert str(generated / "contract.json") in err
+    assert "No such file or directory" in err
+
+
 def test_glob_or_literal_both_directions(tmp_path: pathlib.Path) -> None:
     """Bash has no nullglob here, so an empty match yields the PATTERN.
 

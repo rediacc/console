@@ -113,7 +113,9 @@ def _files_equal(left: pathlib.Path, right: pathlib.Path) -> bool:
     """Plain `diff -q`, for every artefact. A missing or unreadable side is never equal: a vanished artefact must not read as up-to-date."""
     try:
         return left.read_bytes() == right.read_bytes()
-    except OSError:
+    except OSError as exc:
+        # A bare "stale" line would not say WHICH side was unreadable; the old bash `grep` printed it (per-commit review b6917624.2).
+        print("diff: %s: %s" % (exc.filename or "?", exc.strerror or exc), file=sys.stderr)
         return False
 
 
@@ -206,7 +208,7 @@ def _write_tree(base: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     return base
 
 
-# The smallest tree that is a valid contract: two top-level artefacts and one locale. Every plant below is this dict with exactly one entry changed, which is what makes each control name a single cause.
+# The smallest tree that is a valid contract: three top-level artefacts and two locales. Every plant below is this dict with exactly one entry changed, which is what makes each control name a single cause.
 _GOLDEN = {
     "contract.generated.ts": "export const CLI_CONTRACT_VERSION = '0123456789abcdef';\nexport const X = 1;\n",
     "contract.json": '{\n  "version": "0123456789abcdef",\n  "commands": ["repo"]\n}\n',

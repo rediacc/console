@@ -131,6 +131,17 @@ def test_prose_naming_an_entry_point_is_not_a_call(tmp_path):
     assert mod.registered_calls(root) == []
 
 
+def test_a_comment_line_naming_an_entry_point_with_a_dash_token_is_not_a_call(tmp_path):
+    """8dee6a3b.1: prose ending in a dash token ("for details -h") is not an argument list, while the same text on a code line is still judged."""
+    root = tree(tmp_path, {"check_x": SHARED})
+    (root / "scripts" / "ci-runner").mkdir(parents=True)
+    manifest = root / "scripts" / "ci-runner" / "manifest.ts"
+    manifest.write_text("// see .ci/scripts/quality/check_x.py for details -h\n", encoding="utf-8")
+    assert mod.registered_calls(root) == []
+    manifest.write_text("run('.ci/scripts/quality/check_x.py --update')\n", encoding="utf-8")
+    assert [c[1:] for c in mod.registered_calls(root)] == [("check_x", ["--update"])]
+
+
 def test_fewer_entry_points_than_the_floor_is_refused(tmp_path, capsys):
     root = tree(tmp_path, {"check_x": SHARED})
     assert mod.run(root, own={}, floor=2) == 1

@@ -496,6 +496,22 @@ def _s2(root: pathlib.Path, now: float) -> list[ASA.Finding]:
     )
 
 
+def _tracked_texts(root: pathlib.Path) -> dict[str, str]:
+    """Every tracked file outside agent/reviews/ that reads as text (no NUL byte), whatever its extension, so a ledger (.jsonl), shell or toml file citing a due directory holds the prune too (per-commit review fb629e93.2)."""
+    texts = {}
+    for rel in gitx.ls_files(root=root, existing=True):
+        if rel.startswith(ASA.REVIEWS_DIR + "/"):
+            continue
+        try:
+            raw = (root / rel).read_bytes()
+        except OSError:
+            continue
+        if b"\0" in raw[:8192]:
+            continue
+        texts[rel] = raw.decode("utf-8", errors="replace")
+    return texts
+
+
 def prune_reviews(root: pathlib.Path, *, write: bool) -> int:
     """List, and with `write` delete from the worktree, the review directories S2 names. Refuses while something outside cites one."""
     dirs = _review_dirs(root)
@@ -509,17 +525,7 @@ def prune_reviews(root: pathlib.Path, *, write: bool) -> int:
         print("✓ no agent/reviews/<branch>/ directory is past its retention")
         return 0
     names = [d.branch for d in due]
-    texts = {}
-    for rel in gitx.ls_files(root=root, existing=True):
-        if rel.startswith(ASA.REVIEWS_DIR + "/") or not rel.endswith(
-            (".md", ".py", ".json", ".ts", ".yml", ".yaml", ".txt")
-        ):
-            continue
-        try:
-            texts[rel] = (root / rel).read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-    citers = ASA.citers_of(texts, names)
+    citers = ASA.citers_of(_tracked_texts(root), names)
     for d in due:
         print("due: %s/%s/" % (ASA.REVIEWS_DIR, d.branch))
     if citers:
@@ -533,10 +539,19 @@ def prune_reviews(root: pathlib.Path, *, write: bool) -> int:
         print("(report only; pass --write to delete them from the worktree)")
         return 0
     rels = []
+    left = []
     for name in names:
         target = root / ASA.REVIEWS_DIR / name
         shutil.rmtree(target, ignore_errors=True)
-        rels.append("%s/%s/" % (ASA.REVIEWS_DIR, name))
+        # ignore_errors hides a directory that would not go (permissions, a symlink); the survivor is named, never counted as deleted (per-commit review fb629e93.1).
+        if target.exists() or target.is_symlink():
+            left.append(name)
+        else:
+            rels.append("%s/%s/" % (ASA.REVIEWS_DIR, name))
+    for name in left:
+        print("✗ could not delete %s/%s/" % (ASA.REVIEWS_DIR, name), file=sys.stderr)
+    if left:
+        return 1
     print("deleted %d director(ies) from the worktree; record it with:" % len(rels))
     print("  git commit -F <msg> -- %s" % " ".join(rels))
     return 0

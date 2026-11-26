@@ -298,10 +298,11 @@ def referrers(root: pathlib.Path, file: str, line: int) -> tuple[list[str], str 
         try:
             other = ast.parse((root / rel).read_text(encoding="utf-8"))
         except (OSError, SyntaxError, UnicodeDecodeError):
-            # A file this gate cannot read may still call the function: when its text names it, it counts as a referrer, so an unlisted one makes the site UNRESOLVED instead of vanishing.
+            # A file this gate cannot read may still call the function: when its text names it, it counts as a referrer, so an unlisted one makes the site UNRESOLVED instead of vanishing. A file that cannot be read AT ALL (a dangling link, a permission error) cannot be judged either way, so it counts as one too (per-commit review 47fc6711.1 and .3).
             try:
                 text = (root / rel).read_text(encoding="utf-8", errors="replace")
             except OSError:
+                out.append(rel)
                 continue
             if re.search(r"\b%s\b" % re.escape(fn), text):
                 out.append(rel)

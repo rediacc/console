@@ -9,12 +9,14 @@ ZERO INPUTS IS 77. An empty root has no contract; the gate must say it cannot ru
 NO `xdist_group`. Every case is a short-lived subprocess over the real tree (read only) or over its own tmp_path copy.
 """
 
+import inspect
 import json
 import pathlib
 import shutil
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.quality import cli_contract_coverage as ccc
 from rediacc_ci.tests.gates import harness
 
 MODULE = "rediacc_ci.quality.cli_contract_coverage"
@@ -239,3 +241,54 @@ def test_contract_dropping_a_shipped_language_is_caught(gate, tmp_path):
     gate.assert_exit(1, result, "a dropped language must exit 1")
     gate.assert_contains(result.combined, "missing ['ko']", "names the dropped language")
     gate.log_pass("the dropped language is a finding")
+
+
+def test_unhashable_severity_is_a_finding_not_a_traceback(gate, tmp_path):
+    """b2ffbf55.2: a list or object severity must not die in the severity tally."""
+    _plant_case(
+        gate,
+        tmp_path,
+        "an unhashable severity",
+        _mutate_command(lambda c, _: c.__setitem__("severity", ["none"])),
+        "severity is ['none']",
+    )
+
+
+def test_unhashable_preview_flag_is_a_finding_not_a_traceback(gate, tmp_path):
+    """b2ffbf55.3: a list or object preview flag must not die in the option lookup."""
+    _plant_case(
+        gate,
+        tmp_path,
+        "an unhashable preview flag",
+        _mutate_command(lambda c, _: c["preview"].__setitem__("flag", ["dry-run"])),
+        "preview flag ['dry-run'] names no option",
+    )
+
+
+def test_non_utf8_types_file_cannot_run(gate, tmp_path):
+    """db0d7c52.2: undecodable bytes in the locale source are CANNOT RUN (77), never an uncaught UnicodeDecodeError."""
+    gate.log_test("a non-UTF-8 types.ts exits 77")
+    _require_subject(gate)
+    root = _copy_root(tmp_path)
+    (root / LANGUAGES_REL).write_bytes(b"export const SUPPORTED_LANGUAGES = ['en', '\xff\xfe'];\n")
+    result = _run(root=root)
+    gate.assert_exit(77, result, "an unreadable locale source must exit 77")
+    gate.assert_contains(result.combined, "CANNOT RUN", "says it could not run")
+    gate.log_pass("non-UTF-8 types.ts exits 77")
+
+
+def test_tagged_locale_is_one_supported_language(tmp_path):
+    """db0d7c52.1: 'zh-CN' and 'pt-BR' stay in the shipped set instead of being dropped by the regex."""
+    types = tmp_path / ccc.LANGUAGES_REL
+    types.parent.mkdir(parents=True)
+    types.write_text(
+        "export const SUPPORTED_LANGUAGES = ['en', 'zh-CN', 'pt-BR', 'fil'] as const;\n",
+        encoding="utf-8",
+    )
+    assert ccc.supported_languages(tmp_path) == ["en", "zh-CN", "pt-BR", "fil"]
+
+
+def test_evaluate_has_no_skip_default_for_the_shipped_locale_set():
+    """db0d7c52.3: `supported` is required, so no caller can silently skip the languages check."""
+    param = inspect.signature(ccc.evaluate).parameters["supported"]
+    assert param.default is inspect.Parameter.empty

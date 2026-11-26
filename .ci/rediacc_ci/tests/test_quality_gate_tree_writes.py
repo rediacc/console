@@ -354,6 +354,32 @@ def _referrer_tree(tmp_path: pathlib.Path) -> None:
         target.write_text(body, encoding="utf-8")
 
 
+def test_referrers_count_an_undecodable_file_and_an_unreadable_one(tmp_path):
+    """Reviews 47fc6711.1/.2/.3: a file with undecodable bytes that names the function is a referrer, a file that cannot be read at all is one too (it cannot be cleared), and a decodable one that never names it is not."""
+    _referrer_tree(tmp_path)
+    (tmp_path / "binary.py").write_bytes(b"\xff\xfe put(3)\n")
+    (tmp_path / "binary_quiet.py").write_bytes(b"\xff\xfe nothing here\n")
+    (tmp_path / "dangling.py").symlink_to(tmp_path / "no-such-target.py")
+    files, _fn = gate.referrers(tmp_path, "pkg/lib.py", 2)
+    assert "binary.py" in files
+    assert "binary_quiet.py" not in files
+    assert "dangling.py" in files
+
+
+def test_a_stale_pragma_message_names_the_pragma_kind():
+    """Review 47fc6711.4: the STALE text carries the kind of the pragma it judges, `safe` or `callers`."""
+    temp = py.Site("f.py", 3, "open", "x", "TEMP", [])
+    reason = "a reason that is long enough"
+    assert gate.classify(temp, [set()], ("safe", "", reason)) == (
+        "STALE",
+        "a `safe` pragma on a site the scanner resolves as TEMP",
+    )
+    assert gate.classify(temp, [set()], ("callers", "a.py", reason)) == (
+        "STALE",
+        "a `callers` pragma on a site the scanner resolves as TEMP",
+    )
+
+
 def test_referrers_count_an_unparseable_file_a_dotted_import_and_a_star_import(tmp_path):
     """Reviews 8a37ddf8.1 and .2: each of the three shapes is a referrer; the file that never names the function is not."""
     _referrer_tree(tmp_path)

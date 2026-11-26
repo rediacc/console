@@ -229,7 +229,12 @@ def _resolve_rel(value: ast.expr, rels: dict[str, str], roots: set[str]) -> str 
     return "/".join([p for p in (head, *tail) if p])
 
 
-def local_real_paths(fn: ast.AST, roots: set[str], real: set[str]) -> set[str]:
+def local_real_paths(
+    fn: ast.AST,
+    roots: set[str],
+    real: set[str],
+    rels: dict[str, str] | None = None,
+) -> set[str]:
     """Real-path names bound inside ONE function, in statement order.
 
     The shape this exists for, and the one the gate missed for a week:
@@ -239,20 +244,40 @@ def local_real_paths(fn: ast.AST, roots: set[str], real: set[str]) -> set[str]:
         live.write_text(...)            # plants into the real tree
 
     Seeded from the module's own names so a module-level `ROOT` works the same way, and it never leaves this function (see `_own_nodes`).
+
+    A caller passing `rels` (the module's name -> repo-relative path map) gets it extended in place with every local name whose path is statically known, so a never-read local probe on a TRACKED path is reclassified like a module constant (per-commit review 995b8bac.1).
     """
     local_roots = set(roots)
     local_real = set(real)
+    local_rels = rels if rels is not None else {}
     for node in _own_nodes(fn):
         if not isinstance(node, ast.Assign):
             continue
         src = ast.unparse(node.value)
         if TMP_HINT_RE.search(src):
+            # A rebind onto a tmp tree withdraws any static path the name had (`subject = GATE`, then `subject = tmp_path / "mutant.py"`).
+            for name in _targets(node):
+                local_rels.pop(name, None)
             continue
         names = _targets(node)
         if ROOT_CALL_RE.match(src):
             local_roots.update(names)
         if _classify_assign(node, local_roots, local_real):
             local_real.update(names)
+            rel = _resolve_rel(node.value, local_rels, local_roots)
+            for name in names:
+                if rel is not None:
+                    local_rels[name] = rel
+                else:
+                    local_rels.pop(name, None)
+        elif ROOT_CALL_RE.match(src):
+            parts = _from_root_parts(node.value)
+            for name in names:
+                local_rels[name] = "/".join(parts) if parts else ""
+        else:
+            # A rebind to something that is not a real path (`subject = tmp_path / "mutant.py"` after `subject = GATE`) withdraws the static path: the name may now point into a tmp tree, so it keeps only the name-level verdict it had before.
+            for name in names:
+                local_rels.pop(name, None)
     return local_real
 
 
@@ -341,7 +366,8 @@ def scan(
             for node in ast.walk(tree):
                 if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     continue
-                local = local_real_paths(node, roots, real)
+                local_rels = dict(rels)
+                local = local_real_paths(node, roots, real, local_rels)
                 fresh = local - real
                 if not fresh:
                     continue
@@ -349,7 +375,12 @@ def scan(
                 if not found:
                     continue
                 name, attr, _line = found[0]
-                hit = (path.name, name, attr, _kind(node, name, None, tracked, own_scope=True))
+                hit = (
+                    path.name,
+                    name,
+                    attr,
+                    _kind(node, name, local_rels.get(name), tracked, own_scope=True),
+                )
                 break
         if hit is not None:
             findings.append(hit)
@@ -498,6 +529,24 @@ def controls() -> None:
         got = {f[0]: f for f in scan([named], {".claude/rediacc_hooks/__plant.py"})}
         if got["test_tracked_probe.py"][3] != "tracked":
             _fail("a never-read probe on a git-TRACKED path must reclassify as a clobber")
+
+        # 7b. The same never-read probe bound as a function LOCAL (`probe = root / "<tracked path>"`) is just as much a clobber when the path is tracked: the module-constant control above must not be the only one.
+        local_named = _fixture(
+            d,
+            "test_tracked_local_probe.py",
+            "from rediacc_ci import paths\n"
+            "def test_x():\n"
+            "    root = paths.repo_root()\n"
+            '    probe = root / ".claude/rediacc_hooks/__plant.py"\n'
+            '    probe.write_text("x", encoding="utf-8")\n'
+            "    probe.unlink(missing_ok=True)\n",
+        )
+        got = {f[0]: f for f in scan([local_named])}
+        if got["test_tracked_local_probe.py"][3] != "stray":
+            _fail("an untracked local probe should be a stray when it is not tracked")
+        got = {f[0]: f for f in scan([local_named], {".claude/rediacc_hooks/__plant.py"})}
+        if got["test_tracked_local_probe.py"][3] != "tracked":
+            _fail("a never-read LOCAL probe on a TRACKED path must reclassify as a clobber")
 
         # 8. A FIFTH shape: `shutil.copy2(mutated, X)` plants by COPYING a doctored file ONTO the real path, not by calling a write method on it. `X` is an argument, not a receiver, so the attribute-call scan above cannot see it -- `reads_existing()` already knew to check `COPY_FUNCS` for a
         #    SOURCE argument; this is the same functions checked as a DESTINATION.
