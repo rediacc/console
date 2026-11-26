@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 99 plans done, 1535 of 1888 boxes done (81%).
+Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -156,7 +156,7 @@ Promoted: 10 of 99 plans done, 1535 of 1888 boxes done (81%).
 | 94 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 95 | PLAN-writers-now-cadence.md | 5/5 | done |
 | 96 | PLAN-armed-actions.md | 6/6 | done |
-| 97 | PLAN-drain-throughput.md | 6/15 | 9 open |
+| 97 | PLAN-drain-throughput.md | 7/15 | 8 open |
 | 98 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
 | 99 | PLAN-host-temp-disposal.md | 16/19 | 3 open |
 <!-- queue:progress:end -->

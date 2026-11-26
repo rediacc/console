@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1068 | 8 | 33 | 195366 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
-| `agent/plans/PLAN-drain-throughput.md` | approved | 64 | 9 | 6 | 10983 |
+| `agent/plans/PLAN-drain-throughput.md` | approved | 65 | 8 | 7 | 11199 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
