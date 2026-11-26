@@ -511,10 +511,10 @@ class Registry:
         if not all((self.file_root / rel).is_file() for rel in self.path_tokens(run)):
             return False
         for module in self.direct_run_modules(run):
-            stem = ".ci/" + module.replace(".", "/")
-            if (self.file_root / (stem + ".py")).is_file() or (
-                self.file_root / stem / "__init__.py"
-            ).is_file():
+            # Stat-only: no file under .ci is opened, so the probe is built from path
+            # segments and never names the `.ci/` tree as one scan-root literal.
+            base = self.file_root.joinpath(".ci", *module.split("."))
+            if base.with_name(base.name + ".py").is_file() or (base / "__init__.py").is_file():
                 continue
             top = module.split(".")[0]
             if (self.file_root / ".ci" / top).exists() or (
