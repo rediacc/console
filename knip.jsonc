@@ -220,7 +220,8 @@
     // Declaring the workspace is the fix; suppressing the specifier would have hidden a
     // structural gap rather than closed it.
     // Entry points need no `entry` here: the wrangler plugin supplies `src/index.ts` from
-    // wrangler.toml's `main`, and the vitest plugin supplies the tests.
+    // wrangler.toml's `main`, and the vitest plugin supplies the tests. workers/account is the
+    // one exception: its vitest plugin is off, so it declares its test `entry` itself (below).
     // Its three siblings are declared below, on the same terms. They were held back on the
     // belief that none could `npm install`; probing each one separately showed that was
     // true of workers/proxy ALONE, which had no lockfile and so resolved wrangler to a

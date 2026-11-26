@@ -59,6 +59,11 @@ export default async ({ sourceRuleTester, runCases }) => {
           code: "import * as limits from '../utils/limits.js';\nexport const f = (a) => limits.enforce(a);\n",
           filename: COMMAND_FILE,
         },
+        // A computed variable member and another name destructured from the namespace are not enforce().
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nconst { DecisionError: D } = enforcement;\nexport const f = (a, enforce) => [D, enforcement[enforce](a)];\n",
+          filename: COMMAND_FILE,
+        },
         // A relative `./enforce.js` outside services/policy/ is some other module.
         {
           code: "import { enforce } from './enforce.js';\nexport const f = (a) => enforce(a);\n",
@@ -104,6 +109,17 @@ export default async ({ sourceRuleTester, runCases }) => {
         // A namespace import of the enforcement module, called as a member.
         {
           code: "import * as enforcement from '../services/policy/enforce.js';\nexport const f = (a) => enforcement.enforce(a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
+        // A computed string member and a destructured binding of the namespace are the same call.
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nexport const f = (a) => enforcement['enforce'](a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nconst { enforce: run } = enforcement;\nexport const f = (a) => run(a);\n",
           filename: COMMAND_FILE,
           errors: [{ messageId: 'directEnforce' }],
         },

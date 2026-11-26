@@ -64,6 +64,13 @@ function calleeName(callee) {
   return undefined;
 }
 
+/** The property a member callee names: `ns.enforce` or `ns['enforce']`, never a computed variable. */
+function memberName(callee) {
+  if (!callee.computed && callee.property.type === 'Identifier') return callee.property.name;
+  if (callee.computed && callee.property.type === 'Literal') return callee.property.value;
+  return undefined;
+}
+
 export const noDirectGuardCall = {
   meta: {
     type: 'problem',
@@ -119,6 +126,16 @@ export const noDirectGuardCall = {
           }
         }
       },
+      VariableDeclarator(node) {
+        // `const { enforce } = ns` on a namespace import of the enforcement module binds a local enforce.
+        if (node.id.type !== 'ObjectPattern' || node.init?.type !== 'Identifier') return;
+        if (!enforceNamespaces.has(node.init.name)) return;
+        for (const prop of node.id.properties) {
+          if (prop.type !== 'Property' || prop.value.type !== 'Identifier') continue;
+          const key = prop.computed ? undefined : (prop.key.name ?? prop.key.value);
+          if (key === 'enforce') enforceLocals.add(prop.value.name);
+        }
+      },
       CallExpression(node) {
         const name = calleeName(node.callee);
         if (EVALUATORS.has(name) && !allowEvaluate) {
@@ -130,7 +147,7 @@ export const noDirectGuardCall = {
           node.callee.type === 'MemberExpression' &&
           node.callee.object.type === 'Identifier' &&
           enforceNamespaces.has(node.callee.object.name) &&
-          name === 'enforce';
+          memberName(node.callee) === 'enforce';
         if (viaName || viaNamespace) context.report({ node, messageId: 'directEnforce' });
       },
     };

@@ -165,7 +165,7 @@ export const crossLanguageConsistency = {
       shapeMismatch:
         'Key "{{key}}" is a plural group in one of {{source}} and {{language}} and a plain string in the other. See docs/i18n/CONVENTIONS.md.',
       missingPluralForm:
-        'Flat plural "{{stem}}" in {{language}} has no "{{key}}", and Intl.PluralRules selects "{{category}}" there (i18next would fall back to the bare key). Add the form. See docs/i18n/CONVENTIONS.md.',
+        'Flat plural "{{stem}}" in {{language}} has no "{{key}}", and Intl.PluralRules selects "{{category}}" there. Add the form (the bare key stands in for "one" only). See docs/i18n/CONVENTIONS.md.',
       unknownPluralLocale:
         'Locale directory "{{language}}" has no Intl.PluralRules data, so its flat plural forms cannot be checked. Name the directory by a BCP 47 tag the runtime knows. See docs/i18n/CONVENTIONS.md.',
     },
