@@ -379,7 +379,8 @@ def _end(child: subprocess.Popen, sig: int) -> None:
     child.stdout.close()
 
 
-def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
+def _sweep_removes_a_killed_typescript_dir(tmp_path: pathlib.Path) -> None:
+    """SIGKILL a TypeScript run, then require the Python sweep to be what removes its dir."""
     child = _ts_child(tmp_path, tmp_path, "unhooked")
     dead = _ts_run_dir(child)
     _end(child, signal.SIGKILL)
@@ -388,11 +389,18 @@ def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) 
     assert not dead.exists()
 
 
-def test_planted_defect_a_disabled_sweep_leaves_the_typescript_dir(tmp_path: pathlib.Path) -> None:
-    child = _ts_child(tmp_path, tmp_path, "unhooked")
-    dead = _ts_run_dir(child)
-    _end(child, signal.SIGKILL)
-    assert dead.is_dir()  # nothing swept it: the control above could fail
+def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
+    _sweep_removes_a_killed_typescript_dir(tmp_path)
+
+
+def test_planted_defect_a_disabled_sweep_fails_the_sweep_check(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 1380b03b.1: the same check, with the sweep disabled, must fail, and the SIGKILLed dir must stay behind."""
+    monkeypatch.setattr(runtmp, "sweep_dead", lambda *_a, **_k: [])
+    with pytest.raises(AssertionError):
+        _sweep_removes_a_killed_typescript_dir(tmp_path)
+    assert [p for p in tmp_path.iterdir() if p.name.startswith("runtmp-ts-")]
 
 
 def test_a_sigterm_typescript_child_with_the_hook_leaves_nothing(tmp_path: pathlib.Path) -> None:

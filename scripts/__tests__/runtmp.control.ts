@@ -24,23 +24,34 @@ function check(ok: boolean, what: string): void {
   if (!ok) bad += 1;
 }
 
-type Mode = 'plain' | 'hooked' | 'unhooked';
+type Mode = 'plain' | 'hooked' | 'throwing' | 'unhooked';
 
 function childMain(mode: Mode, base: string): void {
   const dir = runDir('rtctl-', base);
   fs.writeFileSync(path.join(dir, 'f'), 'x');
   if (mode === 'hooked') installSignalCleanup();
+  if (mode === 'throwing')
+    installSignalCleanup(() => {
+      throw new Error('cleanup-boom');
+    });
   process.stdout.write(`${dir}\n`);
   if (mode === 'plain') process.exit(0);
   setInterval(() => undefined, 1000);
 }
 
-async function startChild(mode: Mode, base: string): Promise<{ child: ChildProcess; dir: string }> {
+async function startChild(
+  mode: Mode,
+  base: string
+): Promise<{ child: ChildProcess; dir: string; stderr: () => string }> {
   const child = spawn(
     process.execPath,
     [...process.execArgv, import.meta.filename, 'child', mode, base],
-    { stdio: ['ignore', 'pipe', 'inherit'] }
+    { stdio: ['ignore', 'pipe', 'pipe'] }
   );
+  let err = '';
+  child.stderr?.on('data', (d: Buffer) => {
+    err += d.toString();
+  });
   const dir = await new Promise<string>((resolve, reject) => {
     let buf = '';
     child.stdout?.on('data', (d: Buffer) => {
@@ -49,7 +60,7 @@ async function startChild(mode: Mode, base: string): Promise<{ child: ChildProce
     });
     child.on('exit', () => reject(new Error(`child (${mode}) exited before reporting its dir`)));
   });
-  return { child, dir };
+  return { child, dir, stderr: () => err };
 }
 
 function ended(child: ChildProcess): Promise<void> {
@@ -110,6 +121,21 @@ async function main(): Promise<void> {
     hooked.child.kill('SIGTERM');
     await ended(hooked.child);
     check(!fs.existsSync(hooked.dir), 'SIGTERM with installSignalCleanup removes the run dir');
+
+    // 2b. a throwing extra still exits 130 with the dir removed, and the error is named on stderr
+    const throwing = await startChild('throwing', base);
+    throwing.child.kill('SIGTERM');
+    await ended(throwing.child);
+    check(!fs.existsSync(throwing.dir), 'a throwing cleanup callback still removes the run dir');
+    check(throwing.child.exitCode === 130, 'a throwing cleanup callback still exits 130');
+    check(
+      throwing.stderr().includes('cleanup-boom'),
+      'a throwing cleanup callback is named on stderr'
+    );
+    check(
+      hooked.stderr() === '',
+      'CONTROL (error named): a callback-free signal exit writes nothing to stderr'
+    );
 
     // 3. PLANTED DEFECT: SIGTERM with no hook leaves it (the control that makes 2 able to fail)
     const unhooked = await startChild('unhooked', base);

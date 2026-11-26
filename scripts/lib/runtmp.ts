@@ -138,6 +138,7 @@ export function shared(prefix: string, base?: string): string {
 /**
  * Makes SIGINT, SIGTERM and SIGHUP run `extra` (the caller's own cleanup, such as killing child groups), then exit 130,
  * which runs the exit hook that removes the run dirs. Chained, never replacing: a handler the caller already has stays.
+ * An `extra` that throws is named on stderr before the exit, so a failed cleanup leaves a trace.
  */
 export function installSignalCleanup(extra?: () => void): void {
   hookExit();
@@ -145,9 +146,10 @@ export function installSignalCleanup(extra?: () => void): void {
     process.on(sig, () => {
       try {
         extra?.();
-      } finally {
-        process.exit(130);
+      } catch (err) {
+        process.stderr.write(`runtmp: the ${sig} cleanup callback threw: ${String(err)}\n`);
       }
+      process.exit(130);
     });
   }
 }
