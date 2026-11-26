@@ -253,3 +253,38 @@ describe('refund', () => {
     expect(core.refundLot('lot1', '2030-01-01T00:00:00.000Z')).toBeNull();
   });
 });
+
+describe('reconcile adjustments', () => {
+  const nowIso = new Date(NOW).toISOString();
+  const AFTER_EXPIRY = '2028-01-01T00:00:00.000Z';
+
+  it('adjustLot adds credit back to an unexpired lot and reports the amount applied', () => {
+    const core = funded(1_000);
+    expect(core.adjustLot('lot1', 250, nowIso)).toBe(250);
+    expect(core.balance(nowIso)).toBe(1_250);
+  });
+
+  it('adjustLot applies nothing to an unknown or expired lot or to a bad amount', () => {
+    const core = funded(1_000);
+    expect(core.adjustLot('nope', 5, nowIso)).toBe(0);
+    expect(core.adjustLot('lot1', 5, AFTER_EXPIRY)).toBe(0);
+    expect(core.adjustLot('lot1', 0, nowIso)).toBe(0);
+    expect(core.adjustLot('lot1', -3, nowIso)).toBe(0);
+    expect(core.adjustLot('lot1', 1.5, nowIso)).toBe(0);
+    expect(core.balance(nowIso)).toBe(1_000);
+  });
+
+  it('lapseLot zeroes an expired lot, returns what it held, and finds nothing the second time', () => {
+    const core = funded(1_000);
+    expect(core.lapseLot('lot1', AFTER_EXPIRY)).toBe(1_000);
+    expect(core.lapseLot('lot1', AFTER_EXPIRY)).toBe(0);
+    expect(core.balance(nowIso)).toBe(0);
+  });
+
+  it('lapseLot leaves an unexpired or unknown lot alone', () => {
+    const core = funded(1_000);
+    expect(core.lapseLot('lot1', nowIso)).toBe(0);
+    expect(core.lapseLot('nope', AFTER_EXPIRY)).toBe(0);
+    expect(core.balance(nowIso)).toBe(1_000);
+  });
+});

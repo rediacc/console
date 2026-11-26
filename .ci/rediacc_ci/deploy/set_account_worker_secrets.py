@@ -212,6 +212,7 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_JWT_SECRET", "jwt", "ACCOUNT_JWT_SECRET"),
     ("FREE_LICENSE_HMAC_KEY", "free_license_hmac", "FREE_LICENSE_HMAC_KEY"),
     ("ACCOUNT_AE_READ_TOKEN", "ae_read_token", "ACCOUNT_AE_READ_TOKEN"),
+    ("AI_GATEWAY_LOGS_TOKEN", "ai_gateway_logs", "AI_GATEWAY_LOGS_TOKEN"),
     ("CLOUDFLARE_ACCOUNT_ID", "cf_account_id", "CLOUDFLARE_ACCOUNT_ID"),
     ("ACCOUNT_CONFIG_SERVER_KEY", "config_server_key", ""),
     ("ACCOUNT_BACKUP_STORE_KEK", "backup_store_kek", ""),
@@ -355,6 +356,8 @@ def read_env() -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY", ""),
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN", ""),
+        # The logs-read token of the nightly AI credit reconcile (PLAN-console-ai-credits D8); optional, the reconcile skips while it is empty.
+        "AI_GATEWAY_LOGS_TOKEN": os.environ.get("AI_GATEWAY_LOGS_TOKEN", ""),
         # The account whose Analytics Engine datasets the SQL API reads (PLAN-d1-scaling A2).
         "CLOUDFLARE_ACCOUNT_ID": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),

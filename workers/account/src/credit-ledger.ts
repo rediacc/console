@@ -199,6 +199,40 @@ export class CreditLedgerCore {
     return unused;
   }
 
+  /**
+   * Adds `credits` back to an unexpired lot (the reconcile's correction toward the gateway's real
+   * cost) and returns the credits applied: 0 for an unknown or expired lot or a non-positive or
+   * fractional amount, which the reconcile reads as definitive. The amount is not keyed, so the
+   * caller owns once-only delivery; a repeated call adds again.
+   */
+  adjustLot(lotId: string, credits: number, nowIso: string): number {
+    if (!Number.isInteger(credits) || credits < 1) return 0;
+    const lot = this.one('SELECT expires_at AS e FROM lots WHERE id = ?', lotId);
+    if (!lot || String(lot.e) <= nowIso) return 0;
+    this.sql.exec(
+      'UPDATE lots SET credits_remaining = credits_remaining + ? WHERE id = ?',
+      credits,
+      lotId
+    );
+    return credits;
+  }
+
+  /**
+   * Zeroes the unused credits of a lapsed (expired) lot and returns what it held. Idempotent: a
+   * second call finds nothing and returns 0, and an unknown lot or one still unexpired returns 0
+   * and changes nothing.
+   */
+  lapseLot(lotId: string, nowIso: string): number {
+    const lot = this.one(
+      'SELECT credits_remaining AS r, expires_at AS e FROM lots WHERE id = ?',
+      lotId
+    );
+    if (!lot || String(lot.e) > nowIso) return 0;
+    const held = num(lot.r);
+    if (held > 0) this.sql.exec('UPDATE lots SET credits_remaining = 0 WHERE id = ?', lotId);
+    return held;
+  }
+
   reserve(req: ReserveRequest, nowMs: number, globalPaused: boolean): ReserveAnswer {
     const nowIso = new Date(nowMs).toISOString();
     if (!this.flag('entitled')) return { ok: false, code: 'PLAN_NOT_ENTITLED' };
@@ -454,6 +488,14 @@ export class CreditLedger extends DurableObject<CreditLedgerEnv> {
 
   refundLot(lotId: string): number | null {
     return this.core.refundLot(lotId, new Date().toISOString());
+  }
+
+  adjustLot(lotId: string, credits: number): number {
+    return this.core.adjustLot(lotId, credits, new Date().toISOString());
+  }
+
+  lapseLot(lotId: string): number {
+    return this.core.lapseLot(lotId, new Date().toISOString());
   }
 
   setEntitled(on: boolean): void {
