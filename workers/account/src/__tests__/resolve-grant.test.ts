@@ -26,7 +26,7 @@ vi.mock('../../../../private/account/src/entry/cloudflare.js', () => ({
   default: { resolveAgentGrant },
 }));
 
-const { GrantResolver } = await import('../index.js');
+const { ExecutorIssuer, GrantResolver } = await import('../index.js');
 
 describe('GrantResolver.resolveGrant', () => {
   beforeEach(() => resolveAgentGrant.mockReset());
@@ -44,5 +44,27 @@ describe('GrantResolver.resolveGrant', () => {
     resolveAgentGrant.mockResolvedValue(null);
     const issuer = new GrantResolver({} as never, { DB: {} } as never);
     expect(await issuer.resolveGrant('eu_nope', 'tag')).toBeNull();
+  });
+});
+
+const rpcMethods = (cls: { prototype: object }) =>
+  Object.getOwnPropertyNames(cls.prototype)
+    .filter((name) => name !== 'constructor')
+    .sort();
+
+describe('entrypoint surfaces', () => {
+  it('ExecutorIssuer exposes no resolveGrant', () => {
+    expect(rpcMethods(ExecutorIssuer)).not.toContain('resolveGrant');
+    expect(rpcMethods(ExecutorIssuer)).toEqual([
+      'issue',
+      'probe',
+      'relocate',
+      'route',
+      'verifyInternal',
+    ]);
+  });
+
+  it('GrantResolver exposes only resolveGrant', () => {
+    expect(rpcMethods(GrantResolver)).toEqual(['resolveGrant']);
   });
 });
