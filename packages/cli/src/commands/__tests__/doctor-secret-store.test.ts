@@ -9,7 +9,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 
-import { checkConfiguration, checkSecretStore } from '../doctor.js';
+import { checkConfiguration } from '../doctor.js';
+import { checkSecretStore } from '../doctor-secret-store.js';
 
 function memoryStorage(type: string, lossy = false): SecureStorage {
   const map = new Map<string, string>();
