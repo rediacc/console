@@ -253,7 +253,7 @@ def load_json(path: Any) -> Any:
 
 
 def cache_load(path: Any) -> dict | None:
-    """The JSON object at `path`, or None when it is absent, unreadable, corrupt, not an object or not owned by this user (the sidecars sit under a shared /tmp, where another local user could plant an answer). No freshness judgement."""
+    """The JSON object at `path`, or None when it is absent, unreadable, corrupt, not an object or, where the platform has os.getuid, not owned by this user (the sidecars sit under a shared /tmp, where another local user could plant an answer; off POSIX there is no owner to compare, so the check is skipped). No freshness judgement."""
     try:
         # os.getuid is absent off POSIX; there is no owner to compare against, so the check is skipped rather than raising AttributeError.
         getuid = getattr(os, "getuid", None)

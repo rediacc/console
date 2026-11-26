@@ -776,3 +776,15 @@ def test_guard_dirt_is_still_named_first(tmp_path):
     assert rc == 2, err
     assert "would start over uncommitted tracked work" in err
     assert STANDDOWN_MARK not in err
+
+
+def test_operation_in_progress_is_empty_when_git_errors_or_times_out(tmp_path, monkeypatch):
+    """e96e54fc.2: the documented fail-open choice, pinned. A git that cannot answer (rc != 0, or an empty git dir) is "" even over a repository that IS mid-operation, never a guess. Control: the real git names the halt."""
+    repo = tmp_path / "r"
+    base_repo(repo)
+    (repo / ".git" / "MERGE_HEAD").write_text("x\n", encoding="utf-8")
+    assert G.operation_in_progress(repo) == "merge"
+    monkeypatch.setattr(G, "run_git", lambda *_a, **_k: (124, "", "timed out"))
+    assert G.operation_in_progress(repo) == ""
+    monkeypatch.setattr(G, "run_git", lambda *_a, **_k: (0, "", ""))
+    assert G.operation_in_progress(repo) == ""

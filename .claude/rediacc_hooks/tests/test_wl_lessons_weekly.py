@@ -436,3 +436,24 @@ def test_state_a_future_dated_or_impossible_plan_name_does_not_silence_the_check
     # control: a real plan three days old still stands the check down beside them
     _plan(tmp_path, "20261120", _rows())
     assert h.weekly_state(str(tmp_path), TODAY)[0] == "none"
+
+
+def test_the_block_text_counts_days_from_the_real_plan_beside_a_future_or_impossible_one(tmp_path):
+    """06db238d.1: the `days` figure of both the work and the dispatch text comes from newest_lessons_plan(root, today), which skips a future-dated or impossible plan, so a plan dated after today never reads as "-N days old". Control: with only the real plan the text is the same."""
+    h = _h()
+    _plant(tmp_path, _rows())
+    wl = str(tmp_path / "wl")
+    _plan(tmp_path, "20261115", _rows())  # 8 days before TODAY, open boxes: the work text
+    control = h.weekly_block(str(tmp_path), wl, "deadbeef-1", TODAY)
+    assert "8 days old" in control, control
+    _plan(tmp_path, "20271231", _rows())  # dated after TODAY
+    _plan(tmp_path, "20261340", _rows())  # no such date
+    text = h.weekly_block(str(tmp_path), str(tmp_path / "wl2"), "deadbeef-1", TODAY)
+    assert "8 days old" in text, text
+    assert "PLAN-lessons-20261115.md" in text, text
+    assert re.findall(r"is (-?\d+) days old", text) == ["8"], text
+    # the dispatch text: every box of the real plan ticked, so the old-plan reason names its age
+    _plan(tmp_path, "20261115", _rows(), ticked=True)
+    text = h.weekly_block(str(tmp_path), str(tmp_path / "wl3"), "deadbeef-1", TODAY)
+    assert "8 days" in text, text
+    assert "20271231" not in text, text

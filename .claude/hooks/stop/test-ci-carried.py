@@ -240,6 +240,15 @@ check("carried-only: the advisory names the job", "Quality / Branch" in note, Tr
 check("carried-only: the advisory is ONE line", note.count("\n"), 0)
 check("carried-only: the next step's finding is not lent to this step", "P-R9" in note, False)
 
+# b74a99a2.7: a carried-only final head is advisory, so the long-red ledger records it with no red (the wall-ask and outage clocks never start on it).
+_L = importlib.import_module("wl_longred")
+_rows = _L.read_rows(det["_base"], 599)
+check(
+    "carried-only: the ledger round holds no red",
+    [r for x in _rows for r in x.get("reds") or []],
+    [],
+)
+
 # CACHED per tip: the second stop on the same tip reads the verdict from the steps cache, with no job or log read.
 st2, _d2, f2 = trouble([BRANCH], CARRY_OK, {}, {}, base=det["_base"])
 check("carried-only, second stop: still `carried` from the cache", st2, "carried")

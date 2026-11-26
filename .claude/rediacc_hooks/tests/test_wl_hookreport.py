@@ -386,3 +386,60 @@ def test_a_failed_rollup_fold_says_why_on_stderr_and_a_clean_one_is_quiet(monkey
     monkeypatch.setattr(wl_resprofile, "fold", lambda: {"ok": 1})
     assert wl_ressample.fold_rollup() is True
     assert capsys.readouterr().err == ""
+
+
+def _arm_failing_live_unlink(monkeypatch, live, archive_fails):
+    real_unlink = pathlib.Path.unlink
+
+    def unlink(self, *a, **k):
+        if self == live or (archive_fails and self.name.startswith("chains-")):
+            raise PermissionError("planted")
+        return real_unlink(self, *a, **k)
+
+    monkeypatch.setattr(pathlib.Path, "unlink", unlink)
+
+
+def test_a_failed_live_unlink_undoes_the_link_and_a_failed_undo_is_still_a_report_error(
+    tree, monkeypatch
+):
+    """19df54c9.4 and 9e34e7c2.2: both names would hold the rows (read twice), so the link is undone; an undo that fails too raises ReportError, never a raw OSError."""
+    root, rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+    with monkeypatch.context() as m:
+        _arm_failing_live_unlink(m, live, archive_fails=False)
+        with pytest.raises(H.ReportError, match="cannot remove"):
+            H.rotate(root, max_bytes=10, now=NOW)
+    assert list(live.parent.glob(H.ARCHIVE_GLOB)) == []
+    assert len(H.read_ledger(root)) == len(rows)
+    with monkeypatch.context() as m:
+        _arm_failing_live_unlink(m, live, archive_fails=True)
+        with pytest.raises(H.ReportError, match="cannot undo the link"):
+            H.rotate(root, max_bytes=10, now=NOW)
+
+
+def test_rotation_falls_back_to_a_rename_without_hard_links_and_survives_a_vanished_live(
+    tree, monkeypatch
+):
+    """19df54c9.6 and 19df54c9.1: os.link unsupported (OSError) rolls by rename; a live ledger gone after the size check is a no-op."""
+    root, rows, _trap = tree
+    live = root.joinpath(*H.LEDGER_REL)
+
+    def nolink(*_a):
+        raise OSError("no hard links")
+
+    with monkeypatch.context() as m:
+        m.setattr(os, "link", nolink)
+        archive, _deleted = H.rotate(root, max_bytes=10, now=NOW)
+    assert archive is not None
+    assert archive.exists()
+    assert not live.exists()
+    assert len(H.read_ledger(root)) == len(rows)
+
+    def gone(*_a):
+        raise FileNotFoundError("rolled by a peer")
+
+    live.write_text("x" * 50, encoding="utf-8")
+    with monkeypatch.context() as m:
+        m.setattr(os, "link", gone)
+        archive, _deleted = H.rotate(root, max_bytes=10, now=NOW + datetime.timedelta(seconds=5))
+    assert archive is None

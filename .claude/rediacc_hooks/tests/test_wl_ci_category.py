@@ -109,3 +109,55 @@ def test_control_a_read_category_is_never_pending(monkeypatch, tmp_path):
     assert not real[0].get("category_pending")
     wl_ci.ci_longred(tmp_path, dict(INFO), TIP, real)
     assert len(L.read_rows(tmp_path, 5)) == 1
+
+
+# ---- a transient read failure holds the round back too (c64cf479.1) ----
+
+
+class _Failing:
+    """A fetcher whose job read fails, or whose job read answers while the log read fails."""
+
+    def __init__(self, job_ok):
+        self.job_ok = job_ok
+
+    def json(self, _path):
+        return ({"status": "completed"}, "") if self.job_ok else (None, "http 502")
+
+
+def _split_failing(monkeypatch, job_ok):
+    monkeypatch.setattr(wl_ci, "carried_at", lambda _r, _t: ({"g": ["k"]}, ""))
+    diag = _diag(lambda _t: CLASSIFIED)
+    if job_ok:
+        diag.job_log = lambda _f, _k, **_kw: (None, "log unavailable")
+    real, _carried = wl_ci.ci_carry_split(
+        "/nowhere",
+        {},
+        TIP,
+        [{"name": "E2E", "job": "11"}],
+        {},
+        diag=diag,
+        fetch=_Failing(job_ok),
+    )
+    return real
+
+
+@pytest.mark.parametrize("job_ok", [False, True], ids=["job-read-failed", "log-read-failed"])
+def test_a_transient_read_failure_holds_the_round_back(monkeypatch, tmp_path, job_ok):
+    real = _split_failing(monkeypatch, job_ok)
+    assert real[0]["category_pending"] is True
+    wl_ci.ci_longred(tmp_path, dict(INFO), TIP, real)
+    assert L.read_rows(tmp_path, 5) == [], "a failed read was recorded as `unknown` for good"
+
+
+# ---- a stubbed loader never inherits an earlier failure text (91ecf84b.2) ----
+
+
+def test_a_stubbed_loader_returning_none_does_not_inherit_a_stale_failure(monkeypatch):
+    stale = "RuntimeError: from an earlier call"
+    monkeypatch.setattr(wl_ci, "_load_diagnose", lambda: None)
+    wl_ci._DIAGNOSE_ERROR[0] = stale
+    cause = wl_ci.ci_cancel_cause("/nowhere", {}, {"run": "1", "cancelled": []})
+    assert stale not in cause["detail"]
+    wl_ci._DIAGNOSE_ERROR[0] = stale
+    real, _carried = wl_ci.ci_carry_split("/nowhere", {}, TIP, [{"name": "E2E", "job": "11"}], {})
+    assert stale not in real[0]["carry"]["why"]

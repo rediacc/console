@@ -2290,3 +2290,31 @@ def test_a_generator_run_from_outside_the_repository_writes_the_main_checkouts_o
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout)[0] == ["scripts/data/doc-registry.md"]
+
+
+def test_a_coverer_less_row_is_not_pingable_and_an_armed_one_is_not_either():
+    """11e2a380.1: a None or empty coverer (an item no live agent covers) and an `armed:` coverer are skipped by the status ping, the test the supervised and verified sets apply. Control: a real coverer is pingable."""
+    covered = [
+        ("i1", "w-none", None),
+        ("i2", "w-empty", ""),
+        ("i3", "w-armed", R.ARMED_COVERER + "a1"),
+        ("i4", "w-real", "agent-cov"),
+    ]
+    assert R._pingable_workers(covered) == {"w-real"}
+
+
+@pytest.mark.parametrize("last", ["end_turn", "text", "tool_use"])
+@pytest.mark.parametrize("quiet_s", [0, 1, 5, 400, 3600])
+def test_the_full_proof_and_the_cache_recheck_share_one_durable_predicate(wl, last, quiet_s):
+    """6c13743a.1: `_finished_verdict` answers True durably exactly when `_durable_finished` does, for each last-record shape and quiet time, so a cached finish cannot disagree with the full proof."""
+    mk_sub(wl, W1, "general-purpose", 0, last=last)
+    jsonl = subagents_dir(wl) / ("agent-%s.jsonl" % W1)
+    mtime = jsonl.stat().st_mtime
+    now = mtime + quiet_s
+    rec = R.last_record(jsonl)
+    durable = R._durable_finished(rec, mtime, now)
+    verdict, is_durable = R._finished_verdict(jsonl, now)
+    if durable:
+        assert (verdict, is_durable) == (True, True)
+    else:
+        assert verdict is False

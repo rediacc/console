@@ -241,3 +241,19 @@ def test_a_bad_dead_hours_value_falls_back_to_a_day(store, monkeypatch, value):
 def test_a_good_dead_hours_value_is_read(monkeypatch):
     monkeypatch.setenv("WORKLIST_DEAD_HOURS", "6.5")
     assert S.dead_hours() == 6.5
+
+
+def test_an_unreadable_stamp_dir_is_named_not_raised(store, monkeypatch):
+    """0bddf781.1: a PermissionError from the stamp's stat (an unsearchable stamp directory) is named as snapshot-stamp, never escapes housekeeping. Control: a readable stamp runs clean."""
+    stamp = store.tmp / "stamp"
+    real_stat = pathlib.Path.stat
+
+    def stat(self, *a, **k):
+        if self == stamp:
+            raise PermissionError("planted")
+        return real_stat(self, *a, **k)
+
+    with monkeypatch.context() as m:
+        m.setattr(pathlib.Path, "stat", stat)
+        assert set(hk(store, stamp, 1000.0)) == {"snapshot-stamp"}
+    assert hk(store, stamp, 1000.0) == {}

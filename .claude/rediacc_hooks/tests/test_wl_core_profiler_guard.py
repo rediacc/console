@@ -21,6 +21,8 @@ stub.install = install
 sys.modules["wl_resprofile"] = stub
 if sys.argv[2] == "closed":
     sys.stderr.close()
+if sys.argv[2] == "none":
+    sys.stderr = None
 import wl_core
 sys.stdout.write("imported")
 """
@@ -47,3 +49,11 @@ def test_a_closed_stderr_cannot_change_the_exit_code():
     got = run("closed")
     assert got.returncode == 0
     assert got.stdout == "imported"
+
+
+def test_a_missing_stderr_cannot_change_the_exit_code():
+    """9649ce27.1: sys.stderr is None when fd 2 was invalid at startup, so the write raises AttributeError; the guard suppresses that too. Control: the open mode names the line."""
+    got = run("none")
+    assert got.returncode == 0, got.stderr
+    assert got.stdout == "imported"
+    assert "resprofile profiler not armed" in run("open").stderr

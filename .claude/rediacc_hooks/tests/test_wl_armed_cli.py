@@ -429,3 +429,48 @@ def test_disarm_of_an_item_with_no_live_arm_is_refused(wl):
     """190c8ade.4: `--disarm` on an unarmed item refuses and writes nothing; the control is the armed disarm in test_a_second_live_arm_is_refused_until_disarmed."""
     rid = add(wl)
     refused(wl, "carries no live arm to disarm", "--disarm", ME, rid, "--why", "replanned")
+
+
+def test_lease_arm_fails_closed_when_the_git_dirs_do_not_resolve(wl):
+    """190c8ade.2: a hold cannot be ruled out without the git dirs, so --lease refuses instead of arming past it. Control: the same arm without --lease is accepted."""
+    rid = add(wl)
+    git_dir = wl.proj / ".git"
+    moved = wl.proj / ".git-moved"
+    git_dir.rename(moved)
+    try:
+        refused(
+            wl,
+            "git dirs do not resolve",
+            "--arm",
+            ME,
+            rid,
+            "--when",
+            "PUSHED:head",
+            "--run-cmd",
+            "x",
+            "--lease",
+            "L1",
+        )
+    finally:
+        moved.rename(git_dir)
+
+
+def test_arm_from_survey_refuses_a_draft_outside_the_survey_dir_and_the_repo(wl):
+    """190c8ade.3: a survey row cannot make the verb copy an arbitrary file into a committed brief. Control: a draft beside the survey is accepted."""
+    survey = wl.base / "survey.md"
+    d1 = wl.base / "draft1.md"
+    d1.write_text("start AA3 now\n", encoding="utf-8")
+    survey.write_text(SURVEY % (soon(), d1, "/etc/hostname"), encoding="utf-8")
+    refused(wl, "outside the survey's directory and the repo", "--arm-from-survey", ME, str(survey))
+    survey.write_text(SURVEY % (soon(), d1, d1), encoding="utf-8")
+    assert wl.cli("--arm-from-survey", ME, str(survey)).rc == 0
+
+
+def test_expires_with_an_unparseable_not_before_is_a_refusal_not_a_crash(wl):
+    """a4873334.2: the NOT-BEFORE maximum drops an instant that does not parse; the verb answers with a refusal, never a traceback."""
+    rid = add(wl)
+    got = wl.cli(
+        "--arm", ME, rid, "--when", "NOT-BEFORE:not-a-time", "--run-cmd", "x", "--expires", "+2"
+    )
+    assert got.rc != 0
+    assert "Traceback" not in got.err

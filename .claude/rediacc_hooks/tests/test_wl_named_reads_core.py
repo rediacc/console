@@ -145,6 +145,39 @@ def test_an_unloadable_validator_is_named_not_read_as_no_record(world, monkeypat
     assert "sf4-injected" in problem
 
 
+def test_the_memo_key_holds_the_tree_so_a_second_tree_is_validated_on_its_own(world, monkeypatch):
+    """7f32cb0e.3: read_landing_record validates against its tree, so one record read from two trees of the repository is two memo entries, not one served to both."""
+    dev, landing, rec = world
+    rec.write_text(json.dumps({"path": str(landing), "branch": PR}), encoding="utf-8")
+    policy = C._commit_policy()
+    calls = []
+    real = policy.read_landing_record
+
+    def counted(root):
+        calls.append(root)
+        return real(root)
+
+    monkeypatch.setattr(policy, "read_landing_record", counted)
+    C.read_landing_record(dev)
+    C.read_landing_record(landing)
+    assert len(calls) == 2
+
+
+def test_any_exception_from_the_validator_load_is_named_not_raised(world, monkeypatch):
+    """5f716ec0.2: the guard is Exception wide, so a RuntimeError in commit_policy becomes a named problem and the routing callers read no record."""
+    dev, landing, rec = world
+    rec.write_text(json.dumps({"path": str(landing), "branch": PR}), encoding="utf-8")
+
+    def broken():
+        raise RuntimeError("bug-in-commit-policy")
+
+    monkeypatch.setattr(C, "_commit_policy", broken)
+    record, problem = C.read_landing_record(dev)
+    assert record is None
+    assert "RuntimeError: bug-in-commit-policy" in problem
+    assert C.landing_record(dev) is None
+
+
 # ---- wl_store.session_liveness -------------------------------------------------
 
 

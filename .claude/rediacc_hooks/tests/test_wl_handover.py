@@ -123,6 +123,17 @@ def test_the_fold_drops_an_unknown_kind_an_orphan_answer_and_a_bad_answer():
     assert got["aaaa0005"]["answer"] == ""
 
 
+def test_a_falsy_non_string_answer_validates_and_stores_the_same_text():
+    """0484f259.1: the fold validates the text it stores, so a None, 0 or False answer is dropped (it validates as "") and never persists as "None". Control: a closing answer stores as written."""
+    for falsy in (None, 0, False):
+        got = H.fold(
+            None, events=[opened("aaaa0006"), dict(answered("aaaa0006", "done"), answer=falsy)]
+        )
+        assert got["aaaa0006"]["answer"] == "", falsy
+    got = H.fold(None, events=[opened("aaaa0006"), answered("aaaa0006", "done")])
+    assert got["aaaa0006"]["answer"] == "done"
+
+
 def test_valid_answers():
     for good in ("keep", "change", "undo", "done", "lease:fix-ci-1", "lease:a.b_c-9"):
         assert H.valid_answer(good), good

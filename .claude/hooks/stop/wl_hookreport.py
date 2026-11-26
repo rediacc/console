@@ -179,7 +179,13 @@ def rotate(root=CHECKOUT, max_bytes=ROTATE_BYTES, keep_days=ROTATE_KEEP_DAYS, no
                 pass
             except OSError as exc:
                 # Both names would hold the same rows and every row would read twice: undo the link.
-                archive.unlink()
+                try:
+                    archive.unlink()
+                except OSError as undo_exc:
+                    raise ReportError(
+                        "cannot remove %s after archiving (%s) and cannot undo the link %s (%s)"
+                        % (live, exc, archive, undo_exc)
+                    ) from undo_exc
                 raise ReportError("cannot remove %s after archiving (%s)" % (live, exc)) from exc
     cutoff = stamp.timestamp() - keep_days * 86400
     deleted = []
