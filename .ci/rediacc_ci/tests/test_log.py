@@ -393,3 +393,19 @@ def test_bash_is_available_at_all():
     """ANTI-VACUITY for the harness: a missing bash makes every case throw, but a future refactor that caught the exception would make them all pass."""
     proc = subprocess.run(["bash", "-c", "echo alive"], capture_output=True, text=True, check=True)
     assert proc.stdout.strip() == "alive"
+
+
+def test_glyph_is_written_as_utf8_to_a_cp1252_stream():
+    """On Windows the console is cp1252, which has no arrow. The logger makes the stream UTF-8 first."""
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict", newline="\n")
+    log.Logger(stream=stream, colour=False).step("go")
+    stream.flush()
+    assert raw.getvalue() == "→ go\n".encode()
+
+
+def test_ensure_utf8_leaves_utf8_and_non_wrapper_streams_alone():
+    utf8 = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+    log.ensure_utf8(utf8)
+    assert utf8.encoding == "utf-8"
+    log.ensure_utf8(io.StringIO())
