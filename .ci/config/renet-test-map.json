@@ -981,6 +981,7 @@
         "pkg/infra/image",
         "pkg/infra/opsconfig",
         "pkg/infra/pkgset",
+        "pkg/infra/qemuimg",
         "pkg/infra/worker"
       ],
       "dependents": [
