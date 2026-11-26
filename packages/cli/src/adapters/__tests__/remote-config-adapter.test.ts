@@ -422,14 +422,14 @@ describe('RemoteConfigAdapter', () => {
       expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
     });
 
-    it('says this device has not enrolled the config when it never did (a config copied here)', async () => {
+    it('says the config is not enrolled on this device when it never was (a config copied here)', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
       secureStorage.get.mockResolvedValue(null);
       tokenStorage.enrolledHere.mockResolvedValue(false);
 
       const err = await adapter.pull().catch((e: unknown) => e);
       expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
-      expect((err as Error).message).toContain('has not enrolled this config');
+      expect((err as Error).message).toContain('is not enrolled for config storage on this device');
       expect((err as Error).message).not.toContain('no longer holds');
       expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
     });
