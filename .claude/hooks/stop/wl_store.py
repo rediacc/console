@@ -2688,9 +2688,11 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
             try:
                 base = root if root is not None else C.project_root(C.project_start())
                 cited_box.append(plan_cited_item_ids(pathlib.Path(base)))
-            except (OSError, ValueError, TypeError) as exc:
+            except Exception as exc:
+                # Any failure, not only I/O and parse errors: an exception escaping here would leave cleanup_dead_sessions instead of failing closed (review 59c0e156.1).
                 sys.stderr.write(
-                    "worklist: dead-session archive skipped, plan citation scan failed: %s\n" % exc
+                    "worklist: dead-session archive skipped, plan citation scan failed: %s: %s\n"
+                    % (type(exc).__name__, exc)
                 )
                 cited_box.append(None)
         return cited_box[0] is None or item_id in cited_box[0]

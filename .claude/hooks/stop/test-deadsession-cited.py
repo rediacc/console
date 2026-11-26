@@ -149,6 +149,25 @@ try:
         ([], [], False),
     )
 
+    # Any exception fails closed, not only OSError/ValueError/TypeError (59c0e156.1): a RuntimeError from the plan listing must not escape cleanup_dead_sessions.
+    root4, worklist4, projects4, ids4 = make_world(cite=True)
+    roots.append(root4)
+    _, fold4 = states(worklist4)
+
+    def odd_files(*_args, **_kwargs):
+        raise RuntimeError("plan listing broke oddly")
+
+    S.agent_plan_files = odd_files
+    try:
+        got4 = S.cleanup_dead_sessions(worklist4, fold4, SID, str(projects4), root=root4)
+    except Exception as exc:
+        got4 = "raised %s" % type(exc).__name__
+    finally:
+        S.agent_plan_files = real_files
+    after4, _ = states(worklist4)
+    check("odd failure: the scan fails closed instead of raising", got4, ([], [], False))
+    check("odd failure: the uncited CLI item is spared", after4.get(ids4["free"]), "x")
+
     check(
         "citation regex: a longer hex run is not an 8-char citation",
         S.PLAN_ITEM_CITE_RE.findall("#d969cb29 #0123456789abcdef x#d969cb30 (#936e6c58)"),
