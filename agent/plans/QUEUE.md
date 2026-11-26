@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 100 plans done, 1524 of 1891 boxes done (80%).
+Promoted: 11 of 100 plans done, 1526 of 1891 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -159,7 +159,7 @@ Promoted: 11 of 100 plans done, 1524 of 1891 boxes done (80%).
 | 97 | PLAN-armed-actions.md | 6/6 | done |
 | 98 | PLAN-drain-throughput.md | 6/15 | 9 open |
 | 99 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
-| 100 | PLAN-host-temp-disposal.md | 10/19 | 9 open |
+| 100 | PLAN-host-temp-disposal.md | 12/19 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

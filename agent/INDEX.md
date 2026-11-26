@@ -560,7 +560,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 713 | 15 | 66 | 132657 |
-| `agent/plans/PLAN-host-temp-disposal.md` | approved | 129 | 9 | 10 | 32938 |
+| `agent/plans/PLAN-host-temp-disposal.md` | approved | 131 | 7 | 12 | 33549 |
 | `agent/plans/PLAN-hostinger-to-bench.md` | approved | 113 | 7 | 15 | 25093 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
