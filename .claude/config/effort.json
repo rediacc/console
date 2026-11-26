@@ -465,6 +465,9 @@
     "ops-health-unreadable": {
       "advise": "smart"
     },
+    "host-temp": {
+      "advise": "quiet"
+    },
     "scheduled-unreadable": {
       "advise": "smart"
     },

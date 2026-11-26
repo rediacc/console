@@ -6391,6 +6391,43 @@ def _stop_ops_health(ns):
     ns.update(R.exports(locals(), ("exc",)))
 
 
+def _stop_host_temp(ns):
+    """Segment "host-temp" of run_stop (wl_stopregistry.REGISTRY): starts the detached sweep of finished leases when one is due and prints, once per session, what the last sweeps removed."""
+    if "exc" in ns:
+        exc = ns["exc"]
+    root = ns["root"]
+    session_id = ns["session_id"]
+    state_doc = ns["state_doc"]
+    worklist = ns["worklist"]
+    # ---- HOST TEMP (agent/plans/PLAN-host-temp-disposal.md D7, Design 6). SubagentStop marks a finished lease; this stop does the cheap inline check (no git, no du, no subprocess but the one sweeper start) and starts ONE detached `host_temp sweep` when a marker is past its 30-minute grace. The sweeper kills the lease's leftover processes, deletes its temp and lets gc remove the tree; its rows print here at the next stop of every session, once. Advisory only, shown at every effort level.
+    try:
+        import wl_hosttemp
+
+        _ht = wl_hosttemp.assess(root, state_doc)
+        if _ht["print"]:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "host-temp",
+                "\n".join(_ht["print"]),
+                1,
+                sticky=True,
+            )
+    except Exception as exc:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "host-temp",
+            "THIS IS A HOOK BUG: the host-temp check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
+    ns.update(R.exports(locals(), ("exc",)))
+
+
 def _stop_pr_review(ns):
     """Segment "pr-review" of run_stop (wl_stopregistry.REGISTRY): the lines are the ones that sat inline, reading the earlier segments' locals from `ns` and leaving the ones later segments read."""
     if "cidetail" in ns:
@@ -8847,6 +8884,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     _stop_handover(ns)
     R.begin("ops-health")
     _stop_ops_health(ns)
+    R.begin("host-temp")
+    _stop_host_temp(ns)
     R.begin("pr-review")
     _stop_pr_review(ns)
     R.begin("pr-finish")

@@ -55,6 +55,7 @@ REGISTRY = (
     Segment("sched-fresh", "advisory"),
     Segment("handover", "rotating"),
     Segment("ops-health", "rotating"),
+    Segment("host-temp", "advisory"),
     Segment("pr-review", "rotating"),
     Segment("pr-finish", "always"),
     Segment("landing-stack", "rotating"),

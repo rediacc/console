@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import fcntl
 import hashlib
 import json
 import os
@@ -22,6 +23,7 @@ import signal
 import subprocess
 import sys
 import time
+import uuid
 from collections import Counter
 from collections.abc import Callable
 from typing import Any, NamedTuple
@@ -36,6 +38,11 @@ RECORD_DIR = "rediacc-worktrees"
 MARKER_SUFFIX = ".finished"
 SWEEPS = "sweeps.jsonl"
 LOCK_NAME = "sweep.lock"
+GUARD_NAME = "sweep.guard"
+#: A lock older than this is a hung sweeper's and is taken over, whatever its pid says.
+LOCK_STALE_S = 3600
+#: The handoff token rides from the Stop hook to the sweeper in this variable; the sweeper releases only the lock that carries it.
+LOCK_HANDOFF_ENV = "HOST_TEMP_LOCK_HANDOFF"
 
 #: Every `runDir` / `run_dir` / `shared` prefix a tool of this tree stamps, so the host sweep can remove a SIGKILLed run's directory in each base.
 PREFIXES = (
@@ -333,8 +340,9 @@ def finished_problem(
     if transcript:
         try:
             quiet = now - os.stat(transcript).st_mtime
-        except OSError:
-            quiet = grace
+        except OSError as exc:
+            # An unreadable fact counts as busy (default_busy's rule): a transcript that cannot be stat'ed proves nothing about the agent's quiet time (review f2b58581.1).
+            return "transcript unreadable (%s)" % (exc.strerror or exc)
         if quiet < grace:
             return "transcript written %d s ago" % quiet
         meta = _read_json(pathlib.Path(transcript).with_suffix(".meta.json"))
@@ -461,25 +469,85 @@ def _record_rows(common: pathlib.Path, lines: list[str], now: float) -> None:
         return
 
 
-def _lock(common: pathlib.Path) -> int | None:
-    """O_EXCL lock with dead-pid takeover; the fd, or None when another sweeper holds it."""
-    path = common / RECORD_DIR / LOCK_NAME
-    path.parent.mkdir(parents=True, exist_ok=True)
-    for _ in range(2):
-        try:
-            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        except FileExistsError:
+def lock_body(pid: int, token: str = "", now: float | None = None) -> dict[str, Any]:
+    """The lock record: the holder's pid and start time (so a reused pid is not taken for it) and the handoff token. The Stop hook's `wl_hosttemp` writes the same shape."""
+    body: dict[str, Any] = {
+        "pid": pid,
+        "start": start_time(pid),
+        "at": time.time() if now is None else now,
+    }
+    if token:
+        body["token"] = token
+    return body
+
+
+def lock_is_stale(path: pathlib.Path, now: float | None = None) -> bool:
+    """A lock whose recorded process is gone (dead, a zombie, or a reused pid) is stale; so is one older than LOCK_STALE_S, or one that cannot be parsed. Raises OSError when the lock vanished."""
+    age = (time.time() if now is None else now) - path.stat().st_mtime
+    try:
+        rec = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return True
+    if not isinstance(rec, dict) or not isinstance(rec.get("pid"), int):
+        return True
+    start = start_time(rec["pid"])
+    if start < 0 or (
+        isinstance(rec.get("start"), int) and rec["start"] >= 0 and start != rec["start"]
+    ):
+        return True
+    return age >= LOCK_STALE_S
+
+
+@contextlib.contextmanager
+def _guard(records: pathlib.Path):
+    """The flock on `sweep.guard`, so two stale takeovers run in turn instead of both deleting one fresh lock."""
+    records.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(records / GUARD_NAME), os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)
+
+
+def take_lock(common: pathlib.Path, token: str = "", now: float | None = None) -> bool:
+    """O_EXCL lock with dead-pid takeover, under the guard flock. True when this process now holds it."""
+    records = common / RECORD_DIR
+    path = records / LOCK_NAME
+    with _guard(records):
+        for _ in range(2):
             try:
-                pid = int(path.read_text(encoding="utf-8").strip() or "0")
-            except (OSError, ValueError):
-                pid = 0
-            if pid and runtmp._alive(pid):
-                return None
-            path.unlink(missing_ok=True)
-            continue
-        os.write(fd, str(os.getpid()).encode())
-        return fd
-    return None
+                fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            except FileExistsError:
+                try:
+                    stale = lock_is_stale(path, now)
+                except OSError:
+                    continue
+                if not stale:
+                    return False
+                path.unlink(missing_ok=True)
+                continue
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(lock_body(os.getpid(), token, now), fh)
+            return True
+    return False
+
+
+def release_lock(common: pathlib.Path, token: str) -> bool:
+    """Remove the lock only while it carries `token`: a lock another sweeper took since is left alone. True when removed."""
+    records = common / RECORD_DIR
+    path = records / LOCK_NAME
+    if not token:
+        return False
+    with _guard(records):
+        try:
+            rec = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        if not isinstance(rec, dict) or rec.get("token") != token:
+            return False
+        path.unlink(missing_ok=True)
+    return True
 
 
 def sweep(
@@ -492,15 +560,17 @@ def sweep(
     bases: list[str] | None = None,
     home: str | None = None,
     lock_held: bool = True,
+    token: str = "",
     term_wait: float = TERM_WAIT_S,
 ) -> list[str]:
     """One sweep of every finished lease plus the host-level dead-run sweep. Returns the printed rows and appends them to sweeps.jsonl."""
     root = pathlib.Path(root)
     common = root / ".git"
     now = time.time() if now is None else now
-    fd = None if lock_held else _lock(common)
-    if not lock_held and fd is None:
-        return []
+    if not lock_held:
+        token = token or uuid.uuid4().hex
+        if not take_lock(common, token):
+            return []
     try:
         busy = busy or default_busy(root)
         gc = gc or default_gc
@@ -536,9 +606,9 @@ def sweep(
         _record_rows(common, rows, now)
         return rows
     finally:
-        if fd is not None:
-            os.close(fd)
-            (common / RECORD_DIR / LOCK_NAME).unlink(missing_ok=True)
+        # A sweeper the Stop hook started (`--lock-held`) releases the lock the hook took for it; the token proves it is still that lock.
+        if token:
+            release_lock(common, token)
 
 
 # ---- defaults wired to the real tree ---------------------------------------
@@ -654,7 +724,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     root = main_checkout(args.root)
     if args.verb == "sweep":
-        for row in sweep(root, lock_held=args.lock_held):
+        token = os.environ.get(LOCK_HANDOFF_ENV, "") if args.lock_held else ""
+        if args.lock_held:
+            # Started detached by the Stop hook: yield the CPU to every session's interactive work.
+            with contextlib.suppress(OSError):
+                os.nice(19)
+        for row in sweep(root, lock_held=args.lock_held, token=token):
             print("host-temp: " + row)
     elif args.verb == "reclaim":
         for row in reclaim_legacy(default_bases(), write=args.write):

@@ -23,6 +23,7 @@ LIVE WORK IS NEVER A KILL ORDER (2026-11-26). An orphan or a finished agent's sh
 EXEMPT BY COMMAND SHAPE (`LONG_WORK`): the session's wake timer (`wl_wake.py`, split out of the declared set by the hook, so it used to be reported as an orphan once 20 minutes old), `ci-trace --wait`, `wl_prreview --wait`, `wl_wait.py`, renders and test runs. None of those is a shell loop, so they never classify as a wait loop; the list keeps them out of `finished-agent`, and the wake timer out of every kind.
 
 NOTIFICATION, NOT ACTION. No code here calls `os.kill`/`terminate()` against a discovered process. `worklist.py --reap` is the existing "retire a roster entry" verb and it only ever mutates bookkeeping; a future, separate `--reap-pid` verb is where a kill step would plug in, requiring an explicit operator invocation and a fresh re-resolution of the anchor at the moment of the kill (a TOCTOU guard, since the pid could have been reaped and reused between notify and act).
+A FINISHED LEASE IS THE ONE EXCEPTION (operator ruling 2026-11-26, agent/plans/PLAN-host-temp-disposal.md D8): the detached `host_temp sweep` the Stop segment `host-temp` (wl_hosttemp) starts kills a lease's leftover processes 30 minutes after its agent finished; this module still kills nothing, and `sweep()` lists live-work shells too, so its rows are never kill targets (`is_kill_order` decides that).
 """
 
 import os

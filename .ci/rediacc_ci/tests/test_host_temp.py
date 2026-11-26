@@ -71,7 +71,7 @@ class Fix:
 
         return run
 
-    def sweep(self, *, busy=lambda _id: "", gc=None, scan=ht.scan_procs, now=NOW):
+    def sweep(self, *, busy=lambda _id: "", gc=None, scan=ht.scan_procs, now=NOW, token=""):
         return ht.sweep(
             self.root,
             now=now,
@@ -80,6 +80,20 @@ class Fix:
             scan=scan,
             bases=[],
             home=str(self.home),
+            token=token,
+            term_wait=2.0,
+        )
+
+    def sweep_locked(self):
+        """A manual sweep (no `--lock-held`): it must take the lock itself."""
+        return ht.sweep(
+            self.root,
+            now=NOW,
+            busy=lambda _id: "",
+            gc=self.gc(),
+            bases=[],
+            home=str(self.home),
+            lock_held=False,
             term_wait=2.0,
         )
 
@@ -158,6 +172,55 @@ def test_recent_transcript_write_does_nothing(fx):
     os.utime(fx.transcript, (NOW - 60, NOW - 60))
     assert fx.sweep() == []
     assert fx.tmpdir.exists()
+
+
+def test_unreadable_transcript_counts_as_busy(fx):
+    """Review f2b58581.1: a transcript whose stat fails proves nothing about the agent's quiet time, so the lease is not swept."""
+    body = json.loads((fx.records / (LEASE + ht.MARKER_SUFFIX)).read_text())
+    body["transcript"] = str(fx.transcript / "not-a-dir")
+    (fx.records / (LEASE + ht.MARKER_SUFFIX)).write_text(json.dumps(body))
+    proc = fx.sleeper(fx.tree)
+    assert ht.finished_problem(fx.common, LEASE, NOW).startswith("transcript unreadable")
+    assert fx.sweep() == []
+    assert _alive(proc)
+    assert fx.tmpdir.exists()
+    assert fx.tree.exists()
+
+
+def test_lock_is_exclusive_while_its_holder_lives(fx):
+    assert ht.take_lock(fx.common, "t1")
+    assert not ht.take_lock(fx.common, "t2")
+    assert fx.sweep_locked() == []
+    assert fx.tmpdir.exists()
+
+
+def test_lock_of_a_dead_holder_is_taken_over(fx):
+    dead = subprocess.Popen(["true"])
+    dead.wait()
+    lock = fx.records / ht.LOCK_NAME
+    lock.write_text(json.dumps({"pid": dead.pid, "start": 1, "token": "old"}))
+    assert ht.take_lock(fx.common, "new")
+    assert json.loads(lock.read_text())["token"] == "new"
+
+
+def test_lock_released_only_with_its_own_token(fx):
+    assert ht.take_lock(fx.common, "mine")
+    assert not ht.release_lock(fx.common, "other")
+    assert (fx.records / ht.LOCK_NAME).exists()
+    assert ht.release_lock(fx.common, "mine")
+    assert not (fx.records / ht.LOCK_NAME).exists()
+
+
+def test_a_handed_over_sweep_releases_the_lock_it_was_given(fx):
+    assert ht.take_lock(fx.common, "handoff")
+    fx.sweep(token="handoff")
+    assert not (fx.records / ht.LOCK_NAME).exists()
+
+
+def test_control_a_sweep_without_the_token_leaves_the_lock(fx):
+    assert ht.take_lock(fx.common, "handoff")
+    fx.sweep()
+    assert (fx.records / ht.LOCK_NAME).exists()
 
 
 def test_unlanded_commit_keeps_the_tree_and_removes_the_temp(fx):
@@ -279,6 +342,6 @@ def test_prefix_registry_covers_every_run_dir_prefix_in_the_tree():
         if path.name == pathlib.Path(__file__).name:
             continue
         found.update(shape.findall(path.read_text(encoding="utf-8", errors="replace")))
-    # Prefixes the runtmp unit tests make for themselves, never in a shared base.
-    found -= {"runtmp-ctl-", "runtmp-other-", "x-"}
+    # Prefixes the runtmp unit tests make for themselves, never in a shared base, and the `run_dir('elite-')` source text test_temp_probe.py plants in its fixture repositories.
+    found -= {"runtmp-ctl-", "runtmp-other-", "x-", "elite-"}
     assert sorted(found - set(ht.PREFIXES)) == []

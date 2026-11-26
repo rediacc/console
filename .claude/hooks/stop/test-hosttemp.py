@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Controls for the host-temp finished marker (agent/plans/PLAN-host-temp-disposal.md HT11, D6).
+"""Controls for the host-temp finished marker and the Stop segment `host-temp` (agent/plans/PLAN-host-temp-disposal.md HT11, HT13, D6, D7).
 
     python3 .claude/hooks/stop/test-hosttemp.py
     PYTHONPATH=.claude/hooks/stop python3 -m pytest -q .claude/hooks/stop/test-hosttemp.py -k marker
@@ -12,11 +12,14 @@ import importlib
 import json
 import os
 import pathlib
+import statistics
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = pathlib.Path(__file__).resolve().parent
+REPO = HERE.parents[2]
 AGENT = "a0123456789abcdef"
 
 
@@ -118,6 +121,232 @@ def test_marker_written_by_the_subagent_stop_handler():
                     os.environ[key] = before[key]
                 else:
                     os.environ.pop(key, None)
+
+
+# ---- the Stop segment `host-temp` (HT13) -------------------------------------
+
+NOW = 2_000_000.0
+
+
+class _Popen:
+    """A stand-in for subprocess.Popen that records each start; `pid` is this test's own pid, so the handed-over lock names a live process."""
+
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, argv, **kw):
+        self.calls.append((argv, kw))
+        return type("P", (), {"pid": os.getpid()})()
+
+
+def _forbid_subprocess():
+    """Make every subprocess entry point raise; returns the restore callable."""
+    names = ("Popen", "run", "call", "check_call", "check_output")
+    saved = {n: getattr(subprocess, n) for n in names}
+    saved_system = os.system
+
+    def boom(*_a, **_k):
+        raise AssertionError("assess made a subprocess call")
+
+    for name in names:
+        setattr(subprocess, name, boom)
+    os.system = boom
+
+    def restore():
+        for name, fn in saved.items():
+            setattr(subprocess, name, fn)
+        os.system = saved_system
+
+    return restore
+
+
+def _ht_fixture(tmp, leases=1, finished_ago=31 * 60, quiet_ago=None, sweeper=True):
+    """A main checkout (a plain `.git` directory, as the hook reads it) with `leases` lease records and markers."""
+    ht = _mod("wl_hosttemp")
+    root = pathlib.Path(tmp) / "main"
+    records = root / ".git" / ht.RECORD_DIR
+    records.mkdir(parents=True)
+    if sweeper:
+        (root / ht.SWEEPER_REL).parent.mkdir(parents=True)
+        (root / ht.SWEEPER_REL).write_text("")
+    quiet_ago = finished_ago if quiet_ago is None else quiet_ago
+    for i in range(leases):
+        lease = "agent-%016x" % i
+        transcript = pathlib.Path(tmp) / ("%s.jsonl" % lease)
+        transcript.write_text("{}\n")
+        os.utime(transcript, (NOW - quiet_ago, NOW - quiet_ago))
+        (records / (lease + ".json")).write_text(json.dumps({"id": lease}))
+        body = {
+            "agent": lease[6:],
+            "finished_at": NOW - finished_ago,
+            "transcript": str(transcript),
+        }
+        (records / (lease + ht.MARKER_SUFFIX)).write_text(json.dumps(body))
+    return ht, root, records
+
+
+def _rows(records, *texts, ts=NOW):
+    path = records / "sweeps.jsonl"
+    seq = len(path.read_text().splitlines()) if path.exists() else 0
+    with open(path, "a") as fh:
+        for text in texts:
+            seq += 1
+            fh.write(json.dumps({"seq": seq, "ts": ts, "text": text}) + "\n")
+
+
+def _last(ht, records, at):
+    (records / ht.LAST_NAME).write_text(json.dumps({"at": at}))
+
+
+def test_hosttemp_assess_fifteen_leases_no_subprocess_under_150ms():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=15, finished_ago=10 * 60)
+        _last(ht, records, NOW - 20 * 60)
+        _rows(records, *["removed tree agent-%d (1.0 GB)" % i for i in range(40)], ts=NOW - 30)
+        restore = _forbid_subprocess()
+        times = []
+        try:
+            for _ in range(20):
+                t0 = time.perf_counter()
+                got = ht.assess(root, {}, now=NOW, popen=_Popen())
+                times.append((time.perf_counter() - t0) * 1000.0)
+        finally:
+            restore()
+        _check(got["due"] is False and got["why"] == "nothing ripe")
+        _check(got["print"][0].startswith("host-temp: removed tree agent-0"))
+        _check(statistics.median(times) < 150.0)
+
+
+def test_hosttemp_due_sweep_starts_one_detached_sweeper_and_a_second_stop_none():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=15)
+        popen = _Popen()
+        restore = _forbid_subprocess()
+        try:
+            first = ht.assess(root, {}, now=NOW, popen=popen)
+            second = ht.assess(root, {}, now=NOW + 1, popen=popen)
+        finally:
+            restore()
+        _check(first["due"] and first["spawned"])
+        _check(len(popen.calls) == 1)
+        argv, kw = popen.calls[0]
+        _check(
+            argv[-5:] == ["rediacc_ci.dev.host_temp", "--root", str(root), "sweep", "--lock-held"]
+        )
+        _check(kw.get("start_new_session") is True and kw.get("cwd") == str(root))
+        lock = json.loads((records / ht.LOCK_NAME).read_text())
+        _check(lock["pid"] == os.getpid() and lock["token"] == kw["env"][ht.LOCK_HANDOFF_ENV])
+        _check(not second["spawned"] and second["why"] == "a sweeper is running")
+
+
+def test_hosttemp_control_a_dead_sweeper_lock_is_taken_over_after_the_retry_window():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp)
+        dead = subprocess.Popen(["true"])
+        dead.wait()
+        lock = {"pid": dead.pid, "start": 1, "token": "x"}
+        (records / ht.LOCK_NAME).write_text(json.dumps(lock))
+        _last(ht, records, NOW - ht.RETRY_S - 1)
+        popen = _Popen()
+        got = ht.assess(root, {}, now=NOW, popen=popen)
+        _check(got["spawned"] and len(popen.calls) == 1)
+        (records / ht.LOCK_NAME).unlink()
+        recent = ht.assess(root, {}, now=NOW + 1, popen=popen)
+        _check(not recent["spawned"] and recent["why"].startswith("a sweeper started"))
+
+
+def test_hosttemp_nothing_ripe_starts_nothing():
+    for finished_ago, quiet_ago in ((29 * 60, None), (31 * 60, 10 * 60)):
+        with tempfile.TemporaryDirectory() as tmp:
+            ht, root, records = _ht_fixture(tmp, finished_ago=finished_ago, quiet_ago=quiet_ago)
+            _last(ht, records, NOW - 20 * 60)
+            popen = _Popen()
+            got = ht.assess(root, {}, now=NOW, popen=popen)
+            _check(not got["due"] and popen.calls == [])
+
+
+def test_hosttemp_unreadable_transcript_never_ripens_a_marker():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, _root, records = _ht_fixture(tmp)
+        _check(ht.ripe_since(records, NOW) > 0.0)
+        marker = next(records.glob("*" + ht.MARKER_SUFFIX))
+        body = json.loads(marker.read_text())
+        body["transcript"] = body["transcript"] + "/not-a-dir"
+        marker.write_text(json.dumps(body))
+        _check(ht.ripe_since(records, NOW) == 0.0)
+
+
+def test_hosttemp_sandbox_without_the_sweeper_module_starts_nothing():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, sweeper=False)
+        popen = _Popen()
+        got = ht.assess(root, {}, now=NOW, popen=popen)
+        _check(got["due"] and not got["spawned"] and popen.calls == [])
+        _check(not (records / ht.LOCK_NAME).exists())
+
+
+def test_hosttemp_rows_printed_once_per_session():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=0)
+        _last(ht, records, NOW - 60)
+        _rows(
+            records,
+            "removed tree agent-a (2.1 GB)",
+            "killed 4 processes in agent-a (node x4)",
+            ts=NOW - 30,
+        )
+        state = {}
+        first = ht.assess(root, state, now=NOW)
+        want = "host-temp: removed tree agent-a (2.1 GB); killed 4 processes in agent-a (node x4)"
+        _check(first["print"] == [want])
+        _check(ht.assess(root, state, now=NOW + 5)["print"] == [])
+        _rows(records, "swept 3 dead run dirs (/tmp)", ts=NOW + 10)
+        again = ht.assess(root, state, now=NOW + 20)
+        _check(again["print"] == ["host-temp: swept 3 dead run dirs (/tmp)"])
+        _check(ht.assess(root, state, now=NOW + 30)["print"] == [])
+
+
+def test_hosttemp_a_peer_session_prints_the_rows_once_as_well():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=0)
+        _last(ht, records, NOW - 60)
+        mine, peer = {}, {}
+        ht.assess(root, mine, now=NOW - 100)
+        ht.assess(root, peer, now=NOW - 100)
+        _rows(records, "removed temp of agent-b (0.4 GB)", ts=NOW - 30)
+        want = ["host-temp: removed temp of agent-b (0.4 GB)"]
+        _check(ht.assess(root, mine, now=NOW)["print"] == want)
+        _check(ht.assess(root, peer, now=NOW)["print"] == want)
+        _check(ht.assess(root, mine, now=NOW + 1)["print"] == [])
+        _check(ht.assess(root, peer, now=NOW + 1)["print"] == [])
+
+
+def test_hosttemp_a_new_session_skips_rows_older_than_its_window():
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp, leases=0)
+        _last(ht, records, NOW - 60)
+        _rows(records, "removed tree agent-old (1.0 GB)", ts=NOW - ht.NEW_SESSION_WINDOW_S - 60)
+        _rows(records, "removed tree agent-new (1.0 GB)", ts=NOW - 60)
+        got = ht.assess(root, {}, now=NOW)
+        _check(got["print"] == ["host-temp: removed tree agent-new (1.0 GB)"])
+
+
+def test_hosttemp_lock_agrees_with_the_sweeper_module():
+    """The hook and rediacc_ci.dev.host_temp share one lock file and one record shape."""
+    if str(REPO / ".ci") not in sys.path:
+        sys.path.insert(0, str(REPO / ".ci"))
+    host_temp = importlib.import_module("rediacc_ci.dev.host_temp")
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, root, records = _ht_fixture(tmp)
+        popen = _Popen()
+        _check(ht.assess(root, {}, now=time.time(), popen=popen)["spawned"])
+        token = popen.calls[0][1]["env"][ht.LOCK_HANDOFF_ENV]
+        _check(not host_temp.take_lock(root / ".git", "other"))
+        _check(not host_temp.release_lock(root / ".git", "other"))
+        _check(host_temp.release_lock(root / ".git", token))
+        _check(not (records / ht.LOCK_NAME).exists())
+        _check(host_temp.take_lock(root / ".git", "manual"))
+        _check(ht.lock_held(records, time.time()))
 
 
 if __name__ == "__main__":
