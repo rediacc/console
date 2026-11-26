@@ -3,7 +3,7 @@
     python3 -m rediacc_ci.dev.temp_probe -- <cmd> [<args>...]
     python3 -m rediacc_ci.dev.temp_probe census [--all] [--no-source]
 
-PROBE. `<cmd>` runs with TMPDIR set to a fresh 0700 directory. Before and after, the probe lists this uid's top-level entries in /tmp, /var/tmp/r<uid> and `$CLAUDE_CODE_TMPDIR`. It exits 1 when anything survives in the fresh directory, or when an entry appeared in a root outside it, which means the command ignored TMPDIR. Otherwise it exits with the command's own status (0 on a clean run). Every source fix of the host-temp plan cites rc 1 on the parent commit and rc 0 after the fix.
+PROBE. `<cmd>` runs with TMPDIR set to a fresh 0700 directory. Before and after, the probe lists this uid's top-level entries in /tmp, /var/tmp/r<uid> and `$CLAUDE_CODE_TMPDIR`. It exits 1 when something other than a `TOOL_CACHES` entry survives in the fresh directory, or when an entry the command owns (OWNER FILTER) appeared in a root outside it, which means the command ignored TMPDIR. Otherwise it exits with the command's own status (0 on a clean run). Every source fix of the host-temp plan cites rc 1 on the parent commit and rc 0 after the fix.
 
 A command that fails by itself and leaks nothing returns its own non-zero status, never a masked 0.
 
@@ -26,7 +26,6 @@ import subprocess
 import sys
 import tempfile
 import threading
-import time
 
 __all__ = ["census", "main", "prefix_of", "probe", "roots", "snapshot"]
 
@@ -144,9 +143,21 @@ class _TreeWatch(threading.Thread):
 
     def owns(self, path):
         """True when a sampled string is `path`, sits under it, or names it."""
+        named = re.compile(r"(?<![\w./-])" + re.escape(path) + r"(?![\w.-])")
         return any(
-            text == path or text.startswith(path + "/") or path in text for text in self.seen
+            text == path or text.startswith(path + "/") or named.search(text) for text in self.seen
         )
+
+
+def _kernel_now(directory):
+    """The file clock's present value: the mtime of a marker created now, so it is as coarse as the mtimes it is compared with (a `time_ns()` start would sit ahead of an entry made in the same tick)."""
+    marker = os.path.join(directory, ".start")
+    with open(marker, "w"):
+        pass
+    try:
+        return os.lstat(marker).st_mtime_ns
+    finally:
+        os.remove(marker)
 
 
 def probe(argv, watched=None, base=None, environ=None):
@@ -158,7 +169,7 @@ def probe(argv, watched=None, base=None, environ=None):
         before = snapshot(watched, skip=[fresh])
         env = dict(os.environ if environ is None else environ)
         env["TMPDIR"] = fresh
-        started = time.time_ns()
+        started = _kernel_now(fresh)
         watch = _TreeWatch(argv)
         watch.start()
         try:

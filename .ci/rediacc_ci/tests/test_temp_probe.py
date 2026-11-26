@@ -7,6 +7,7 @@ import io
 import os
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -227,6 +228,49 @@ def test_probe_never_chmods_the_shared_root_when_its_own_dir_cannot_go(tmp_path,
         fresh.chmod(0o700)
 
 
+def _failing_rmtree(path_to_fail):
+    """A stand-in for shutil.rmtree whose one failing path goes through the retry callback, so the test needs no directory modes (root ignores them)."""
+
+    def fake(_target, onexc=None):
+        onexc(os.rmdir, path_to_fail, PermissionError(13, "denied", path_to_fail))
+
+    return fake
+
+
+def _record_chmod(monkeypatch):
+    calls = []
+    real = os.chmod
+
+    def record(path, mode, *args, **kwargs):
+        calls.append(str(path))
+        return real(path, mode, *args, **kwargs)
+
+    monkeypatch.setattr(temp_probe.os, "chmod", record)
+    return calls
+
+
+def test_own_dir_failure_never_chmods_its_parent_even_as_root(tmp_path, monkeypatch, capsys):
+    """Review caaab6db.1: the guard is exercised without relying on directory modes, so a root run fails when it is removed."""
+    fresh = tmp_path / "temp-probe-z"
+    fresh.mkdir()
+    calls = _record_chmod(monkeypatch)
+    monkeypatch.setattr(temp_probe.shutil, "rmtree", _failing_rmtree(str(fresh)))
+    temp_probe._remove_fresh(str(fresh))
+    assert calls == []
+    assert str(fresh) in capsys.readouterr().err
+
+
+def test_control_a_failure_below_its_dir_chmods_the_parent_even_as_root(tmp_path, monkeypatch):
+    fresh = tmp_path / "temp-probe-w"
+    child = fresh / "ro"
+    child.mkdir(parents=True)
+    calls = _record_chmod(monkeypatch)
+    monkeypatch.setattr(temp_probe.shutil, "rmtree", _failing_rmtree(str(child)))
+    temp_probe._remove_fresh(str(fresh))
+    assert calls == [str(fresh)]
+    assert not child.exists()
+
+
 @pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory modes")
 def test_control_a_read_only_child_still_gets_its_parent_made_writable(tmp_path, capsys):
     """Control for the test above: below the probe's directory the retry still repairs the mode."""
@@ -279,3 +323,53 @@ def test_tool_cache_outside_tmpdir_is_ignored(tmp_path):
     status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
     assert status == 0
     assert any(temp_probe.TOOL_CACHE in line for line in lines)
+
+
+def _unnamed_write(root, name, hold=0):
+    """Code that creates `root/name` with a current mtime, building the path at run time so no argv string equals it."""
+    return (
+        f"import os,time;p=os.path.join({str(root)!r},'-'.join({name.split('-')!r}));"
+        f"f=open(p,'w');time.sleep({hold});f.close()"
+    )
+
+
+def test_fresh_unnamed_entry_is_not_ours_and_does_not_fail(tmp_path):
+    """Review 855b58fe.4 and .5: not backdated, so only the owner filter classes it; a fast write to a path absent from argv and not held open is the documented miss."""
+    root, base = _dirs(tmp_path)
+    code = _unnamed_write(root, "fast-write-1")
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 0
+    assert any(temp_probe.NOT_OURS in line and "fast-write-1" in line for line in lines)
+
+
+def test_control_entry_held_open_by_the_command_fails(tmp_path):
+    """Review 855b58fe.4: the owner filter and the fail-on-owned branch can fail; the same write held open across samples is owned."""
+    root, base = _dirs(tmp_path)
+    code = _unnamed_write(root, "held-open-1", hold=0.3)
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 1
+    assert any(temp_probe.IGNORED in line and "held-open-1" in line for line in lines)
+
+
+def test_owner_match_is_by_whole_path_not_substring(tmp_path):
+    """Review 855b58fe.2: naming /root/abc does not make the unrelated /root/a ours."""
+    root, base = _dirs(tmp_path)
+    named = root / "abc"
+    code = (
+        f"import os;r={str(root)!r};open(os.path.join(r,'a'),'w').close();"
+        f"open({str(named)!r},'w').close()"
+    )
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 1
+    assert any(temp_probe.IGNORED in line and line.endswith("/abc") for line in lines)
+    assert any(temp_probe.NOT_OURS in line and line.endswith("/a") for line in lines)
+
+
+def test_start_compare_uses_the_file_clock_not_time_ns(tmp_path, monkeypatch):
+    """Review 855b58fe.3: a time_ns() start ahead of the coarse mtime must not class a command's own entry as foreign."""
+    root, base = _dirs(tmp_path)
+    monkeypatch.setattr(time, "time_ns", lambda: 2**62)
+    code = f"open({str(root / 'stray-8')!r},'w').close()"
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 1
+    assert any(temp_probe.IGNORED in line and "stray-8" in line for line in lines)
