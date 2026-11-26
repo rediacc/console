@@ -1239,7 +1239,7 @@
         },
         {
           "id": "check:ci-env-registry",
-          "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from the python_reads section of .ci/config/env-manifest.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py and python_env_registry.py read that section for env names, and no file under this record is read."
+          "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from the python_reads section of .ci/config/env-manifest.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py and python_env_registry.py (modules whose checks check:ci-env-registry now holds) read that section for env names, and no file under this record is read."
         }
       ]
     },
