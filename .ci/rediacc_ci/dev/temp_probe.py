@@ -7,7 +7,7 @@ PROBE. `<cmd>` runs with TMPDIR set to a fresh 0700 directory. Before and after,
 
 A command that fails by itself and leaks nothing returns its own non-zero status, never a masked 0.
 
-CAVEAT. A second process of the same uid that writes to a shared root while the command runs shows up as a new entry, so the probe is read on a quiet root. The fresh directory is the probe's own and is removed after the report; nothing else is ever deleted.
+CAVEAT. A second process of the same uid that writes to a shared root while the command runs shows up as a new entry, so the probe is read on a quiet root. The fresh directory is the probe's own and is removed after the report, read-only subdirectories the command left included; a directory that still cannot be removed is named on stderr. Nothing else is ever deleted.
 
 CENSUS. Groups the entries of the roots by name prefix with count, size and inodes, and maps each prefix to the files naming it with `git grep`. By default only entries modified today are counted; `--all` counts every entry. Read-only.
 """
@@ -19,6 +19,7 @@ import os
 import pathlib
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -87,7 +88,25 @@ def probe(argv, watched=None, base=None, environ=None):
             return 1, lines
         return status, [f"temp_probe: clean (command rc {status})"]
     finally:
-        shutil.rmtree(fresh, ignore_errors=True)
+        _remove_fresh(fresh)
+
+
+def _remove_fresh(fresh):
+    """Remove the probe's own directory even when the command left a read-only subdirectory in it: a failed unlink or rmdir makes the parent writable and retries once. Errors past that are reported on stderr, never swallowed, so a directory left behind is named."""
+
+    def retry(func, path, _exc):
+        parent = os.path.dirname(path)
+        os.chmod(parent, stat.S_IRWXU)
+        if func is os.rmdir or func is os.unlink:
+            func(path)
+        elif os.path.isdir(path) and not os.path.islink(path):
+            os.chmod(path, stat.S_IRWXU)
+            shutil.rmtree(path, onexc=retry)
+
+    try:
+        shutil.rmtree(fresh, onexc=retry)
+    except OSError as err:
+        sys.stderr.write(f"temp_probe: cannot remove {fresh}: {err}\n")
 
 
 def prefix_of(name):
@@ -179,6 +198,9 @@ def _human(size):
     return f"{value:.1f} TB"
 
 
+USAGE = "Usage: python3 -m rediacc_ci.dev.temp_probe -- <cmd> [<args>...] | census [--all] [--no-source]\n"
+
+
 def _run_census(args, out):
     groups = census(today_only="--all" not in args)
     rows = sorted(groups.items(), key=lambda item: -item[1]["bytes"])
@@ -199,14 +221,10 @@ def main(argv=None, out=None):
     if argv and argv[0] == "--":
         argv = argv[1:]
     elif argv:
-        sys.stderr.write(
-            "Usage: temp_probe.py -- <cmd> [<args>...] | census [--all] [--no-source]\n"
-        )
+        sys.stderr.write(USAGE)
         return 2
     if not argv:
-        sys.stderr.write(
-            "Usage: temp_probe.py -- <cmd> [<args>...] | census [--all] [--no-source]\n"
-        )
+        sys.stderr.write(USAGE)
         return 2
     status, lines = probe(argv)
     for line in lines:

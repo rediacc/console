@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import io
 import os
+import subprocess
 import sys
 
 from rediacc_ci.dev import temp_probe
@@ -105,8 +106,91 @@ def test_census_today_only_skips_old_entries(tmp_path):
     os.utime(old, (1, 1))
     assert temp_probe.census(watched=[root], today_only=True) == {}
     assert "elite-" in temp_probe.census(watched=[root], today_only=False)
-    tomorrow = temp_probe._local_date(None) + datetime.timedelta(days=1)
-    assert temp_probe.census(watched=[root], today_only=True, now=tomorrow) == {}
+
+
+def test_census_now_selects_the_counted_date(tmp_path):
+    """Review 6a8068dc.2: an entry dated 2001-06-15 is counted with `now` on that date and skipped the day after, so `now` really selects."""
+    root = tmp_path / "root"
+    root.mkdir()
+    dated = root / "elite-a1"
+    dated.mkdir()
+    noon = datetime.datetime(2001, 6, 15, 12, 0).astimezone().timestamp()
+    os.utime(dated, (noon, noon))
+    day = temp_probe._local_date(noon)
+    assert "elite-" in temp_probe.census(watched=[root], today_only=True, now=day)
+    assert (
+        temp_probe.census(watched=[root], today_only=True, now=day + datetime.timedelta(days=1))
+        == {}
+    )
+
+
+def _git_repo(path, files):
+    path.mkdir()
+    for name, text in files.items():
+        (path / name).write_text(text, encoding="utf-8")
+    env = {**os.environ, "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"}
+    subprocess.run(["git", "init", "-q"], cwd=path, check=True, env=env)
+    subprocess.run(["git", "add", "--", *files], cwd=path, check=True, env=env)
+    return path
+
+
+def test_source_of_names_the_files_carrying_the_prefix(tmp_path):
+    """Review 6a8068dc.1: the prefix maps to the tracked files naming it, at most three, and to `-` when none does."""
+    repo = _git_repo(
+        tmp_path / "repo",
+        {
+            "a.py": "run_dir('elite-')\n",
+            "b.py": "x = 'elite-'\n",
+            "c.py": "'elite-'\n",
+            "d.py": "'elite-'\n",
+            "e.py": "nothing\n",
+        },
+    )
+    assert temp_probe.source_of("elite-", cwd=repo) == "a.py, b.py, c.py"
+    assert temp_probe.source_of("inbox-", cwd=repo) == "-"
+
+
+def test_census_cli_prints_rows_and_sources(tmp_path, monkeypatch):
+    """The census branch of `main`: the header, one row per prefix ordered by size, the source column from `source_of`, and `-` under `--no-source`."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "elite-a1").mkdir()
+    (root / "elite-a1" / "f").write_text("x" * 9000)
+    (root / "inbox-c3").mkdir()
+    repo = _git_repo(tmp_path / "repo", {"maker.py": "run_dir('elite-')\n"})
+    monkeypatch.setattr(temp_probe, "roots", lambda _environ=None: [root])
+    monkeypatch.chdir(repo)
+    out = io.StringIO()
+    assert temp_probe.main(["census", "--all"], out=out) == 0
+    lines = out.getvalue().splitlines()
+    assert lines[0].split() == ["prefix", "count", "size", "inodes", "source"]
+    assert lines[1].split()[0] == "elite-"
+    assert lines[1].endswith("maker.py")
+    assert lines[2].split()[0] == "inbox-"
+    assert lines[2].endswith("-")
+    out = io.StringIO()
+    assert temp_probe.main(["census", "--all", "--no-source"], out=out) == 0
+    assert out.getvalue().splitlines()[1].endswith("  -")
+
+
+def test_probe_removes_a_read_only_subdirectory_it_left(tmp_path):
+    """Review 6a8068dc.3: a command that leaves a read-only subdirectory with a file in it still leaves no fresh directory behind."""
+    root, base = _dirs(tmp_path)
+    code = (
+        "import os;d=os.path.join(os.environ['TMPDIR'],'ro');os.mkdir(d);"
+        "open(os.path.join(d,'f'),'w').close();os.chmod(d,0o500)"
+    )
+    status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
+    assert status == 1
+    assert any("ro" in line for line in lines)
+    assert os.listdir(base) == []
+
+
+def test_main_usage_names_the_module_invocation(capsys):
+    """Review 6a8068dc.4: the usage line names the documented `python3 -m rediacc_ci.dev.temp_probe` form."""
+    assert temp_probe.main(["bogus"], out=io.StringIO()) == 2
+    err = capsys.readouterr().err
+    assert "python3 -m rediacc_ci.dev.temp_probe -- <cmd>" in err
 
 
 def test_main_usage_error_without_command(capsys):
