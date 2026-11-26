@@ -454,17 +454,13 @@ describe('RenetProvisionerService', () => {
   });
 
   it('updates current to the newly activated slot for mixed-version installs', async () => {
-    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
     const remoteInstallPathNext = '/usr/lib/rediacc/renet/0.6.1/renet';
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPathNext);
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPathNext
+    );
 
     expect(command).toContain('/usr/lib/rediacc/renet/current/renet');
     expect(command).toContain('/usr/lib/rediacc/renet/0.6.1/renet');
@@ -577,17 +573,18 @@ describe('RenetProvisionerService', () => {
     expect(result.error).toContain("missing 'flock'");
   });
 
-  it('builds a lock command that is safe for POSIX sh', async () => {
+  it('keeps the install command off the provisioner class, so tests drive the one production builder', async () => {
     const { renetProvisioner } = await import('../renet/renet-provisioner.js');
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+    expect('buildLockedInstallCommand' in renetProvisioner).toBe(false);
+  });
+
+  it('builds a lock command that is safe for POSIX sh', async () => {
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPath
+    );
 
     expect(command).toContain("flock -w 120 -E 75 '/tmp/.rdc-renet-provision.lock' sh -c");
     expect(command).toContain("'set -eu;");
@@ -597,16 +594,12 @@ describe('RenetProvisionerService', () => {
 
   it('gives a lock timeout its own exit status and marker', async () => {
     // Without `-E`, flock's timeout exits 1, which the install body can also produce: a machine busy with someone else's provision was reported as "Unexpected provisioning result: (empty output)" and read as a broken install rather than as contention.
-    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPath
+    );
 
     expect(command).toContain('-E 75');
     expect(command).toContain('[ "$rc" = 75 ] && echo FLOCK_TIMEOUT >&2');

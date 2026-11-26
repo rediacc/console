@@ -50,7 +50,6 @@ import type {
   ProvisionResult,
 } from './renet-provisioner-types.js';
 import {
-  buildLockedInstallCommand,
   buildStagingPath,
   installWithRemoteLock,
   REMOTE_CURRENT_DIR,
@@ -577,14 +576,6 @@ class RenetProvisionerService {
     this.archByHost.clear();
     this.localHashMemo.clear();
     this.embeddedHashMemo.clear();
-  }
-
-  private buildLockedInstallCommand(
-    stagingPath: string,
-    localHash: string,
-    remoteInstallPath: string
-  ): string {
-    return buildLockedInstallCommand(stagingPath, localHash, remoteInstallPath);
   }
 }
 
