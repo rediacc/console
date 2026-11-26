@@ -110,6 +110,8 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.deploy.deploy_record", "aws"),
     # PLAN-product-domain-rename W1 (865c2f7f23): the R2 inventory and cross-bucket copy run `aws s3api` through `awscli` from the module; the coverage scan found it without a row.
     ("rediacc_ci.ops.r2_bucket_copy", "aws"),
+    # The detector model bundle upload (5dc50111a5) reads and writes R2 through `awscli.AWS` from the module (publish_models.py:87, :111); the coverage scan found it without a row.
+    ("rediacc_ci.ops.publish_models", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
