@@ -62,6 +62,7 @@ SELFTEST_CONTROLS = (
     "planted: a perturbed row makes the rewrite differ",
     "but the SET diff names all 88 dropped rows",
     "a count floor of 300 PASSES",
+    "planted: an untracked marker file is discovered as a target",
 )
 
 

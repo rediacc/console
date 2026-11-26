@@ -852,6 +852,7 @@ function readStdin(): string {
 /** A glob-looking argument that is really a path: on disk, or tracked (a bracketed route like `[slug].astro`). */
 function isLiteralPath(p: string): boolean {
   if (fs.existsSync(path.join(ROOT, p))) return true;
+  // Tracked-only on purpose: an untracked path already answers through the existsSync above.
   return execFileSync('git', ['ls-files', '-z', '--', `:(literal)${p}`], { cwd: ROOT }).length > 0;
 }
 
@@ -1183,6 +1184,30 @@ function selftest(): number {
     }),
     targets(ROOT)
   );
+  {
+    // Control for target discovery in a throwaway repo: an UNTRACKED marker file is a target, a gitignored one is not, and a tracked one still is.
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-docs-targets-'));
+    try {
+      const run = (...a: string[]): void => {
+        execFileSync('git', ['-C', repo, ...a], { stdio: 'ignore' });
+      };
+      run('init', '-q');
+      const marker = '<!-- >>> gen-docs: fixture -->\n<!-- <<< gen-docs: fixture -->\n';
+      fs.writeFileSync(path.join(repo, '.gitignore'), 'ignored.md\n');
+      fs.writeFileSync(path.join(repo, 'tracked.md'), marker);
+      run('add', '.gitignore', 'tracked.md');
+      fs.writeFileSync(path.join(repo, 'untracked.md'), marker);
+      fs.writeFileSync(path.join(repo, 'ignored.md'), marker);
+      const seen = targets(repo);
+      ck(
+        'planted: an untracked marker file is discovered as a target, a tracked one still is, a gitignored one is not',
+        seen.includes('untracked.md') && seen.includes('tracked.md') && !seen.includes('ignored.md'),
+        seen
+      );
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  }
 
   // --- the gate catalogue's source is a FILE now, so prove it refuses a broken one ---
   const refuses = (label: string, body: string | null): void => {
@@ -1220,6 +1245,7 @@ function selftest(): number {
     ...P,
     rows: (root) => {
       fs.readFileSync(path.join(root, 'package.json'), 'utf-8');
+      // Tracked-only on purpose: a planted undeclared listing for the trace control, not an input read.
       execFileSync('git', ['-C', root, 'ls-files', '-z', '--', '.ci/config'], {
         encoding: 'utf-8',
       });
@@ -1294,10 +1320,12 @@ function selftest(): number {
   );
 
   // --- `--could-affect`, the spawn guard's question (PLAN-experience-feedback P4), controls first ---
-  const www = execFileSync('git', ['ls-files', '-z', 'packages/www/src/**'], {
-    cwd: ROOT,
-    maxBuffer: 256 * 1024 * 1024,
-  })
+  // `--cached --others --exclude-standard`: an unstaged www page may carry a region, so the control's population includes it (same listing as listSubjects and expandGlobs).
+  const www = execFileSync(
+    'git',
+    ['ls-files', '-z', '--cached', '--others', '--exclude-standard', 'packages/www/src/**'],
+    { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 }
+  )
     .toString('utf-8')
     .split('\0')
     .filter((f) => f !== '');
