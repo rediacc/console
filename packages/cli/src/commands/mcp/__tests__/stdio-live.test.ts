@@ -98,6 +98,8 @@ describe.skipIf(!LIVE)('the mcp serve stdio server against a live config', () =>
     const opted = await connect(live, { REDIACC_ALLOW_GRAND_REPO: GRAND as string });
     const admitted = await call(opted, 'repo_up', { ref: GRAND, confirm: GRAND });
     show('repo_up grand with opt-in', admitted);
-    expect(admitted.code, admitted.text).not.toBe('AGENT_OPT_IN_MISSING');
+    // Admitted means the write ran: any refusal code (not only the missing opt-in) fails the test.
+    expect(admitted.isError, `${admitted.code ?? '-'}: ${admitted.text}`).toBe(false);
+    expect(admitted.code, admitted.text).toBeUndefined();
   }, 600_000);
 });
