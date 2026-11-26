@@ -1586,12 +1586,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 6,
+      "open": 8,
+      "done": 7,
       "open_sigs": [
         "0805d1f2",
         "2bf44646",
-        "363b4e26",
         "4e57d026",
         "8b2cf989",
         "b0732c24",
@@ -1600,6 +1599,7 @@
         "baecbd27"
       ],
       "done_sigs": [
+        "363b4e26",
         "6d3167e4",
         "923b43f0",
         "b79d5112",
@@ -4754,6 +4754,35 @@
         "ad1c71d8",
         "ed246dd2"
       ]
+    },
+    "agent/plans/PLAN-windows-lane.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 18,
+      "done": 0,
+      "open_sigs": [
+        "0a49e9b9",
+        "2915d4b3",
+        "536d8285",
+        "57cb6469",
+        "5a5e15e4",
+        "5e071621",
+        "60229177",
+        "66361777",
+        "6bc4a2c8",
+        "78f178f9",
+        "908ede8d",
+        "a481fb76",
+        "b8c43694",
+        "bf0ff643",
+        "d72e361e",
+        "e4b90633",
+        "f6c60cc4",
+        "fc3a2b59"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",

@@ -671,7 +671,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 145 | 5 | 15 | 27643 |
 | `agent/plans/PLAN-weekly-lessons.md` | approved | 69 | 2 | 6 | 9255 |
-| `agent/plans/PLAN-windows-lane.md` | draft | 132 | 18 | 0 | 30285 |
+| `agent/plans/PLAN-windows-lane.md` | draft | 132 | 18 | 0 | 30635 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |
