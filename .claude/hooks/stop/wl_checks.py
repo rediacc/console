@@ -7394,6 +7394,11 @@ def _stop_ci_waiting(ns):
         _bg_find = []
     if getattr(_bg_find, "unread", ""):
         note_read_failure("bg-sweep", RuntimeError(_bg_find.unread))
+    # Live work (a shell whose descendant does real work, wl_bgsweep.LIVE_WORK) is never a kill order: it rides the advisory queue once, age-free, and only the kill orders below block.
+    _bg_live = wl_bgsweep.live_work_report(_bg_find)
+    if _bg_live:
+        outq_add(worklist, session_id, state_doc, "bg-live-work", _bg_live, 1, refresh_min=24 * 60)
+    _bg_find = [_f for _f in _bg_find if wl_bgsweep.is_kill_order(_f)]
     if _bg_find:
         _bg_rows = [
             M.V_BG_ORPHAN_ROW

@@ -345,6 +345,9 @@
       "block": "smart",
       "advise": "smart"
     },
+    "bg-live-work": {
+      "advise": "low"
+    },
     "ci-report": {
       "advise": "low"
     },
