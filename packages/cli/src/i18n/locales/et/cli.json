@@ -3497,7 +3497,7 @@
       "serverUpgrade": "Juhib alamkäske ja kutsuja kohalikku paigaldusjärjendit (ning valikuga --local-image kutsuja Dockerit); kaugtäitja tegutseks enda omadest. Käivita see ilma valikuta --proxy."
     },
     "incident": {
-      "description": "Loeb organisatsiooni intsidenti. Intsidendid deklareeritakse veebikonsoolis; need käsud loevad kirjet, selle tähtaja kellasid ja tõendite ajaakent. Nõuab õigust forensics:read, mille CLI sisselogimine annab omanikele ja administraatoritele pärast brauseris antud kõrgendatud kinnitust, ning tasulist plaani.",
+      "description": "Deklareerib organisatsiooni intsidendi, loeb ja sulgeb selle: konto kirje koos tähtaja kelladega, hoidla kohtuekspertiisi fork ja Full-jäädvustus ning tõendite ajaaken. Lugemine nõuab õigust forensics:read, deklareerimine ja sulgemine õigust incident:manage; CLI sisselogimine annab mõlemad omanikele ja administraatoritele pärast brauseris antud kõrgendatud kinnitust, tasulise plaani korral.",
       "descriptionShort": "Loe intsidenti ja ekspordi selle tõendite ajaaken",
       "idArgument": "Intsidendi ID või selle eesliide, mida ükski teine intsident ei jaga",
       "status": {
@@ -3505,19 +3505,36 @@
         "descriptionShort": "Loetle intsidendid või näita ühte koos tähtaja kelladega"
       },
       "export": {
-        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid, toorahela manifesti ja selles loetletud toorfailid manifesti võtmete all. Auditi päevafailide ahel ja allkirjastatud kohtuekspertiisi partiiahelad kontrollitakse samal ajal serveri kinnitatud masinavõtmetega ning aruanne kirjutatakse faili verification.json. Lõpeb koodiga 1, kui tõendites on lünk või muudatus. Sama kataloogi kontrolli kordab käsk rdc forensics verify.",
+        "description": "Kirjutab intsidendi ajaakna kataloogi: intsidendi kirje koos kelladega, ühendatud ajajoone, väljuvate baitide koondid, toorahela manifesti ja selles loetletud toorfailid manifesti võtmete all. Kui manifest loetleb auditi päevafaili või kohtuekspertiisi päisefaili, kontrollitakse auditi päevafailide ahelat ja allkirjastatud kohtuekspertiisi partiiahelaid samal ajal serveri kinnitatud masinavõtmetega ning aruanne kirjutatakse faili verification.json. Lõpeb koodiga 1, kui tõendites on lünk või muudatus. Sama kontrolli kataloogi kohta kordab käsk rdc forensics verify.",
         "descriptionShort": "Ekspordi ja kontrolli intsidendi ajajoon ja tõendid",
         "outOption": "Kataloog, kuhu kirjutada (vaikimisi: incident-<id>)"
+      },
+      "declare": {
+        "description": "Deklareerib hoidla kohta intsidendi. Esmalt tekib konto kirje: intsident oma ajaaknaga, ajaakna hoidmine ja R2 lukustusreeglid, mis käivitavad varajase hoiatuse, teavituse ja lõpparuande kellad. Seejärel tehakse hoidlast kohtuekspertiisi hetktõmmisena fork (repo fork <ref> --tag incident-<id>), selle jäädvustustase lülitatakse tasemele full ja iga sammu tulemus märgitakse intsidendile. Ebaõnnestunud samm jätab kirje ja selle hoidmise paika, lõpeb koodiga 1 ja nimetab käsu --resume, mis käivitab ebaõnnestunud sammud uuesti.",
+        "descriptionShort": "Deklareeri intsident: kirje, kohtuekspertiisi fork ja täisjäädvustus",
+        "awareAtOption": "Hetk, mil organisatsioon sai teada, ISO 8601 ajahetkena; mitte hilisem kui deklareerimine (vaikimisi: praegu)",
+        "resumeOption": "Käivitab selle deklareeritud intsidendi masinasammud uuesti, ainult need, mille viimane tulemus pole ok"
+      },
+      "close": {
+        "description": "Sulgeb intsidendi. Midagi ei vabastata kohe: hoidmine ja R2 lukustusreeglid lõpevad 30 päeva pärast sulgemist.",
+        "descriptionShort": "Sulge intsident; selle hoidmine lõpeb 30 päeva hiljem"
       }
     },
     "forensics": {
-      "description": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb, kasutades tõenditest väljaspool asuvaid masinavõtmeid.",
+      "description": "Kontrollib kohtuekspertiisi tõendeid sellel tööjaamal, kasutades tõenditest väljastpoolt võetud masinavõtmeid, ning määrab hoidla jäädvustustaseme.",
       "descriptionShort": "Kontrolli kohtuekspertiisi tõendeid",
       "verify": {
         "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse ainult kataloogist väljaspool asuvate võtmetega: valiku --machine-key kirjega või muidu võtmega, mille kontoserver kinnitas intsidendi jaoks, mille nime kannab käsuga rdc incident export loodud kataloog. Kataloogi raw-manifest.json failis olevat võtit ei usaldata kunagi ja masin, millel pole välist võtit, ei läbi kontrolli.",
         "descriptionShort": "Kontrolli tõendite kataloogi auditi ja kohtuekspertiisi räsiahelaid",
         "dirOption": "Kontrollitav tõendite kataloog",
-        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, kasutatakse kontoserveri kinnitatud võtme asemel (korratav)"
+        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, kasutatakse kontoserveri kinnitatud võtme asemel (korratav)",
+        "sinceOption": "Ajaakna algus: ISO 8601 ajahetk või ajavahemik praegusest tagasi, näiteks 90m, 24h või 7d (vaikimisi: kataloogi esimene päev)",
+        "untilOption": "Ajaakna lõpp samades vormides (vaikimisi: kataloogi viimane päev)"
+      },
+      "level": {
+        "description": "Määrab hoidla kohtuekspertiisi jäädvustustaseme selle masinas oleva funktsiooni forensics_level kaudu: basic, standard või full. Koguja piirab taseme plaani sisuga.",
+        "descriptionShort": "Määra hoidla kohtuekspertiisi jäädvustustase",
+        "levelArgument": "Jäädvustustase: basic, standard või full"
       }
     }
   },
@@ -3994,7 +4011,11 @@
     "verifyGap": "lünk  {{ref}}: {{reason}}",
     "verifyEdit": "muudatus {{ref}}: {{reason}}",
     "verifyClean": "Lünki ega muudatust ei leitud.",
-    "verifyFailed": "Tõendid ei läbi kontrolli: vaata ülal olevaid lünki ja muudatusi."
+    "verifyFailed": "Tõendid ei läbi kontrolli: vaata ülal olevaid lünki ja muudatusi.",
+    "badLevel": "\"{{level}}\" ei ole jäädvustustase; lubatud on {{levels}}.",
+    "levelStarting": "Hoidla {{repository}} jäädvustustaset määratakse tasemele {{level}} masinas {{machine}}...",
+    "levelCompleted": "Hoidla {{repository}} jäädvustustase määrati tasemele {{level}}.",
+    "levelFailed": "Hoidla {{repository}} jäädvustustaset ei õnnestunud määrata."
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",
@@ -4062,7 +4083,16 @@
     "rawTooLarge": "Toorahela materjal ületab manifesti piiri ja seda ei loetleta.",
     "rawListed": "Alla laaditi {{count}} toorfaili; ükski neist pole auditi päevafail ega kohtuekspertiisi päisefail, mida kontrollib käsk rdc forensics verify.",
     "rawVerified": "Toortõendid alla laaditud ja kontrollitud: {{count}} ahelafaili, lünki ega muudatusi pole.",
-    "rawNotVerified": "Allalaaditud tõendid ei läbi kontrolli: {{gaps}} lünka ja {{edits}} muudatust, loetletud eespool ja failis verification.json."
+    "rawNotVerified": "Allalaaditud tõendid ei läbi kontrolli: {{gaps}} lünka ja {{edits}} muudatust, loetletud eespool ja failis verification.json.",
+    "declared": "Intsident {{id}} deklareeritud perioodiks {{from}} kuni {{to}}.",
+    "stepOk": "Samm {{name}}: õnnestus",
+    "stepSkipped": "Samm {{name}}: juba õnnestunud, vahele jäetud",
+    "stepFailed": "Samm {{name}}: ebaõnnestus {{detail}}",
+    "retry": "Intsidendi kirje ja selle hoidmine jäävad paika. Ebaõnnestunud sammud käivitab uuesti: {{command}}",
+    "closed": "Intsident {{id}} suletud. Hoidmine ja lukustusreeglid lõpevad ajal {{at}}.",
+    "resumeScope": "Intsident {{id}} hõlmab ulatust {{scope}}, mitte hoidlat {{name}}.",
+    "resumeClosed": "Intsident {{id}} on suletud; selle samme uuesti ei käivitata.",
+    "resumeWindow": "--resume säilitab ajaakna ja teadlikkuse hetke, millega intsident deklareeriti; --since, --until ja --aware-at jäetakse ära."
   },
   "options": {
     "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",

@@ -63,6 +63,27 @@ export interface IncidentRecord {
   releaseAt: string | null;
 }
 
+/** POST /console/incidents: the scope, the window and an optional earlier awareness instant. */
+export interface DeclareRequest {
+  scopeKind: ScopeKind;
+  scopeRef: string;
+  windowFrom: string;
+  windowTo: string;
+  awareAt?: string;
+}
+
+/** The machine steps of D4, reported by the caller that ran them. */
+export type MachineStepName = 'fork' | 'level';
+
+/** POST /console/incidents/:id/steps: a machine step's outcome. */
+export interface StepReport {
+  name: MachineStepName;
+  outcome: 'ok' | 'failed';
+  detail?: string;
+  /** The fork the step made, sent with a successful `fork` step. */
+  forkRef?: string;
+}
+
 export interface Aggregates {
   bytesOutPerMinute: { minute: string; bytesOut: number }[];
   topDestinations: Record<string, unknown>[];
@@ -137,6 +158,29 @@ export class ForensicsClient {
       throw new CliExitError(ERROR_CODES.AMBIGUOUS, t('forensics.ambiguousIncident', { id }));
     }
     throw new CliExitError(ERROR_CODES.NOT_FOUND, t('forensics.noSuchIncident', { id }));
+  }
+
+  /**
+   * Declare an incident (`incident:manage`, after a step-up): the account record, its eviction
+   * hold and lock rules, before any machine step runs.
+   */
+  declareIncident(input: DeclareRequest): Promise<IncidentRecord> {
+    return this.call<IncidentRecord>('/incidents', { method: 'POST', body: input });
+  }
+
+  /** Report one machine step's outcome; the server marks the incident contained once both are ok. */
+  recordStep(id: string, step: StepReport): Promise<IncidentRecord> {
+    return this.call<IncidentRecord>(`/incidents/${encodeURIComponent(id)}/steps`, {
+      method: 'POST',
+      body: step,
+    });
+  }
+
+  /** Close an incident (after a step-up); the hold and the lock rules end 30 days later. */
+  closeIncident(id: string): Promise<IncidentRecord> {
+    return this.call<IncidentRecord>(`/incidents/${encodeURIComponent(id)}/close`, {
+      method: 'POST',
+    });
   }
 
   async openInvestigation(scope: Scope): Promise<string> {

@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'f67247b74c8a49e2';
+export const CLI_CONTRACT_VERSION = '6b7b7c840168d9bf';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "f67247b74c8a49e2",
+  "version": "6b7b7c840168d9bf",
   "languages": [
     "ar",
     "de",
@@ -6755,6 +6755,49 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "forensics",
+        "level"
+      ],
+      "pathKey": "forensics level",
+      "domain": "forensics",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.forensics.level.description",
+      "label": "Set the forensic capture level of a repository through the forensics_level function on its machine: basic, standard or full. The collector caps the level at what the plan includes.",
+      "summaryKey": "commands.forensics.level.descriptionShort",
+      "summary": "Set a repository's forensic capture level",
+      "severity": "caution",
+      "options": [],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "name": "level",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.forensics.level.levelArgument",
+          "label": "Capture level: basic, standard or full"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "forensics",
         "verify"
       ],
       "pathKey": "forensics verify",
@@ -6786,8 +6829,8 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.repo.rowsSinceOption",
-          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+          "descriptionKey": "commands.forensics.verify.sinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)"
         },
         {
           "flags": "--until <when>",
@@ -6797,8 +6840,8 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.repo.rowsUntilOption",
-          "label": "End of the window, in the same forms (default: now)"
+          "descriptionKey": "commands.forensics.verify.untilOption",
+          "label": "End of the window, in the same forms (default: the last day in the directory)"
         },
         {
           "flags": "--machine-key <machine=hex>",
@@ -6814,7 +6857,10 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "positionals": [],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -6828,6 +6874,125 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "incident",
+        "close"
+      ],
+      "pathKey": "incident close",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.close.description",
+      "label": "Close an incident. Nothing is released at once: the eviction hold and the R2 lock rules end 30 days after the close.",
+      "summaryKey": "commands.incident.close.descriptionShort",
+      "summary": "Close an incident; its hold ends 30 days later",
+      "severity": "caution",
+      "options": [],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "declare"
+      ],
+      "pathKey": "incident declare",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.declare.description",
+      "label": "Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.",
+      "summaryKey": "commands.incident.declare.descriptionShort",
+      "summary": "Declare an incident: record, forensic fork and full capture",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        },
+        {
+          "flags": "--aware-at <when>",
+          "long": "aware-at",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.declare.awareAtOption",
+          "label": "When the organization became aware, as an ISO 8601 instant; never later than the declaration (default: now)"
+        },
+        {
+          "flags": "--resume <id>",
+          "long": "resume",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.declare.resumeOption",
+          "label": "Run the machine steps of this declared incident again, only those whose last outcome is not ok"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "incident",
         "export"
       ],
       "pathKey": "incident export",
@@ -6835,7 +7000,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.incident.export.description",
-      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
       "summaryKey": "commands.incident.export.descriptionShort",
       "summary": "Export and verify an incident's timeline and evidence",
       "severity": "none",
@@ -6863,7 +7028,10 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -6900,7 +7068,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -12684,7 +12852,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
@@ -13730,7 +13898,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "mcpExcludeReason": "Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.",
+      "mcpExcludeReason": "Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

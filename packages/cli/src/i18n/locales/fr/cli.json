@@ -3497,7 +3497,7 @@
       "serverUpgrade": "Pilote des commandes filles et le registre d'installation local de l'appelant (et, avec --local-image, le Docker de l'appelant) ; un exécuteur distant agirait depuis le sien. Lancez-la sans --proxy."
     },
     "incident": {
-      "description": "Lit un incident de l'organisation. Les incidents sont déclarés dans la console web ; ces commandes lisent l'enregistrement, ses compteurs d'échéances et sa fenêtre de preuves. Nécessite le scope forensics:read, que la connexion CLI accorde aux propriétaires et aux admins après une approbation renforcée dans le navigateur, ainsi qu'un forfait payant.",
+      "description": "Déclare, lit et clôt un incident de l'organisation : l'enregistrement du compte avec ses compteurs d'échéances, le fork forensique et la capture de niveau full du dépôt, ainsi que la fenêtre de preuves. Les lectures nécessitent le scope forensics:read, la déclaration et la clôture le scope incident:manage ; la connexion CLI accorde les deux aux propriétaires et aux admins après une approbation renforcée dans le navigateur, avec un forfait payant.",
       "descriptionShort": "Lire un incident et exporter sa fenêtre de preuves",
       "idArgument": "Identifiant de l'incident, ou un préfixe qu'aucun autre incident ne partage",
       "status": {
@@ -3505,19 +3505,36 @@
         "descriptionShort": "Lister les incidents ou en affiche un avec ses compteurs d'échéances"
       },
       "export": {
-        "description": "Écrit la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses compteurs, la chronologie fusionnée, les agrégats d'octets sortants, le manifeste de la chaîne brute et les fichiers bruts qu'il liste, sous leurs clés de manifeste. La chaîne des fichiers journaliers d'audit et les chaînes signées de lots forensiques sont vérifiées au passage avec les clés de machine épinglées par le serveur, et le rapport est écrit dans verification.json. Se termine avec le code 1 si les preuves montrent un trou ou une modification. La vérification sur le même répertoire se refait avec rdc forensics verify.",
+        "description": "Écrit la fenêtre de l'incident dans un répertoire : l'enregistrement de l'incident avec ses compteurs, la chronologie fusionnée, les agrégats d'octets sortants, le manifeste de la chaîne brute et les fichiers bruts qu'il liste, sous leurs clés de manifeste. Lorsque le manifeste liste un fichier journalier d'audit ou un fichier d'en-têtes forensiques, la chaîne des fichiers journaliers d'audit et les chaînes signées de lots forensiques sont vérifiées au passage avec les clés de machine épinglées par le serveur, et le rapport est écrit dans verification.json. Se termine avec le code 1 si les preuves montrent un trou ou une modification. La même vérification sur le répertoire se refait avec rdc forensics verify.",
         "descriptionShort": "Exporter et vérifier la chronologie et les preuves d'un incident",
         "outOption": "Répertoire où écrire (par défaut : incident-<id>)"
+      },
+      "declare": {
+        "description": "Déclare un incident sur un dépôt. L'enregistrement du compte est créé en premier : l'incident avec sa fenêtre, une rétention sur cette fenêtre et les règles de verrouillage R2, qui déclenchent les compteurs de l'alerte précoce, de la notification et du rapport final. Le dépôt est ensuite forké en instantané forensique (repo fork <ref> --tag incident-<id>) et son niveau de capture passe à full, puis le résultat de chaque étape est consigné sur l'incident. Une étape en échec laisse l'enregistrement et sa rétention en place, se termine avec le code 1 et indique la commande --resume qui relance les étapes en échec.",
+        "descriptionShort": "Déclarer un incident : enregistrement, fork forensique et capture complète",
+        "awareAtOption": "Moment où l'organisation a pris connaissance de l'incident, sous forme d'instant ISO 8601, jamais postérieur à la déclaration (par défaut : maintenant)",
+        "resumeOption": "Relance les étapes machine de cet incident déjà déclaré, uniquement celles dont le dernier résultat n'est pas ok"
+      },
+      "close": {
+        "description": "Clôt un incident. Rien n'est levé immédiatement : la rétention et les règles de verrouillage R2 prennent fin 30 jours après la clôture.",
+        "descriptionShort": "Clore un incident ; sa rétention prend fin 30 jours plus tard"
       }
     },
     "forensics": {
-      "description": "Vérifie les preuves forensiques sur ce poste de travail avec la même vérification que celle de la console web, à partir de clés de machine extérieures aux preuves.",
+      "description": "Vérifie les preuves forensiques sur ce poste de travail, avec des clés de machine prises en dehors des preuves, et définit le niveau de capture d'un dépôt.",
       "descriptionShort": "Vérifier les preuves forensiques",
       "verify": {
         "description": "Recalcule la chaîne de hachages des fichiers journaliers d'audit et les chaînes signées de lots forensiques d'un répertoire de preuves, puis affiche chaque trou et chaque modification trouvés. Le répertoire contient les fichiers bruts sous leurs clés de manifeste (audit/<org>/days/<day>.ndjson.gz et f/<subscription>/<machine>/days/<day>/...). Se termine avec le code 1 dès qu'un trou ou une modification est trouvé. Les signatures de lots ne se vérifient qu'avec des clés extérieures au répertoire : une entrée --machine-key ou, à défaut, la clé que le serveur de comptes a épinglée pour l'incident que nomme un répertoire issu de rdc incident export. Une clé écrite dans le raw-manifest.json du répertoire n'est jamais approuvée, et une machine sans clé extérieure échoue.",
         "descriptionShort": "Vérifier les chaînes de hachages d'audit et forensiques d'un répertoire de preuves",
         "dirOption": "Répertoire de preuves à vérifier",
-        "machineKeyOption": "Clé publique du spool de la machine sous la forme <machine>=<64 hex characters>, utilisée à la place de la clé épinglée par le serveur de comptes (répétable)"
+        "machineKeyOption": "Clé publique du spool de la machine sous la forme <machine>=<64 hex characters>, utilisée à la place de la clé épinglée par le serveur de comptes (répétable)",
+        "sinceOption": "Début de la fenêtre : un instant ISO 8601 ou une durée écoulée comme 90m, 24h ou 7d (par défaut : le premier jour du répertoire)",
+        "untilOption": "Fin de la fenêtre, sous les mêmes formes (par défaut : le dernier jour du répertoire)"
+      },
+      "level": {
+        "description": "Définit le niveau de capture forensique d'un dépôt via la fonction forensics_level de sa machine : basic, standard ou full. Le collecteur plafonne le niveau à ce que le forfait inclut.",
+        "descriptionShort": "Définir le niveau de capture forensique d'un dépôt",
+        "levelArgument": "Niveau de capture : basic, standard ou full"
       }
     }
   },
@@ -3994,7 +4011,11 @@
     "verifyGap": "trou  {{ref}} : {{reason}}",
     "verifyEdit": "modification {{ref}} : {{reason}}",
     "verifyClean": "Aucun trou ni aucune modification trouvé.",
-    "verifyFailed": "Les preuves ne passent pas la vérification : voir les trous et modifications ci-dessus."
+    "verifyFailed": "Les preuves ne passent pas la vérification : voir les trous et modifications ci-dessus.",
+    "badLevel": "\"{{level}}\" n'est pas un niveau de capture ; valeurs possibles : {{levels}}.",
+    "levelStarting": "Définition du niveau de capture de {{repository}} sur {{level}} sur {{machine}}...",
+    "levelCompleted": "Niveau de capture de {{repository}} défini sur {{level}}.",
+    "levelFailed": "Impossible de définir le niveau de capture de {{repository}}."
   },
   "help": {
     "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Une réf de dépôt (repo[:tag]) dérive sa propre machine, -m n'est donc pas nécessaire\n    • La sortie JSON est automatique : toutes les commandes renvoient { success, data, errors, metrics }\n    • Analysez toujours le JSON complet, n'utilisez jamais tail/head/grep sur une sortie JSON\n    • Utilisez les options de filtre (ex : --repositories, --containers) pour réduire la taille de la réponse\n\n",
@@ -4062,7 +4083,16 @@
     "rawTooLarge": "Le matériel brut de la chaîne dépasse la limite du manifeste et n'est pas listé.",
     "rawListed": "{{count}} fichier(s) brut(s) téléchargé(s) ; aucun n'est un fichier journalier d'audit ni un fichier d'en-têtes forensiques pour rdc forensics verify.",
     "rawVerified": "Preuves brutes téléchargées et vérifiées : {{count}} fichier(s) de chaîne, aucun trou et aucune modification.",
-    "rawNotVerified": "Les preuves téléchargées ne se vérifient pas : {{gaps}} trou(s) et {{edits}} modification(s), listés ci-dessus et dans verification.json."
+    "rawNotVerified": "Les preuves téléchargées ne se vérifient pas : {{gaps}} trou(s) et {{edits}} modification(s), listés ci-dessus et dans verification.json.",
+    "declared": "Incident {{id}} déclaré pour la fenêtre du {{from}} au {{to}}.",
+    "stepOk": "Étape {{name}} : ok",
+    "stepSkipped": "Étape {{name}} : déjà ok, ignorée",
+    "stepFailed": "Étape {{name}} : échec {{detail}}",
+    "retry": "L'enregistrement de l'incident et sa rétention restent en place. Les étapes en échec se relancent avec : {{command}}",
+    "closed": "Incident {{id}} clôturé. La rétention et les règles de verrouillage prennent fin le {{at}}.",
+    "resumeScope": "L'incident {{id}} couvre {{scope}}, et non le dépôt {{name}}.",
+    "resumeClosed": "L'incident {{id}} est clôturé ; ses étapes ne se relancent plus.",
+    "resumeWindow": "--resume conserve la fenêtre et la date de prise de connaissance de la déclaration initiale ; --since, --until et --aware-at sont à retirer."
   },
   "options": {
     "acceptTerms": "Accepter les Conditions d'utilisation pour une licence gratuite sans demander (ou définir RDC_ACCEPT_TERMS=1)",

@@ -127,6 +127,8 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo list',
   'repo policy get',
   'repo policy set',
+  // PLAN-forensics-investigation FI8: one forensics_level job.
+  'forensics level',
   // One first job each, then a tail step that starts the further jobs, because a fork's licence needs the id the fork mints.
   'repo replicate',
   'repo replicate refresh',

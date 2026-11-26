@@ -3497,7 +3497,7 @@
       "serverUpgrade": "Dirige comandos hijos y el registro de instalación local de quien llama (y con --local-image, el Docker de quien llama); un ejecutor remoto actuaría desde el suyo. Ejecútalo sin --proxy."
     },
     "incident": {
-      "description": "Lee un incidente de la organización. Los incidentes se declaran en la consola web; estos verbos leen el registro, sus relojes de plazos y su ventana de evidencias. Requiere el ámbito forensics:read, que un inicio de sesión de la CLI incluye para propietarios y administradores tras una aprobación elevada en el navegador, y un plan de pago.",
+      "description": "Declara, lee y cierra un incidente de la organización: el registro de la cuenta con sus relojes de plazos, el fork forense y la captura Full del repositorio, y la ventana de evidencias. Las lecturas requieren el ámbito forensics:read y declarar y cerrar requieren incident:manage; un inicio de sesión de la CLI incluye ambos para propietarios y administradores tras una aprobación elevada en el navegador, con un plan de pago.",
       "descriptionShort": "Leer un incidente y exportar su ventana de evidencias",
       "idArgument": "ID del incidente, o un prefijo suyo que ningún otro incidente comparta",
       "status": {
@@ -3505,19 +3505,36 @@
         "descriptionShort": "Listar incidentes o mostrar uno con sus relojes de plazo"
       },
       "export": {
-        "description": "Escribe la ventana del incidente en un directorio: el registro del incidente con sus relojes, la línea de tiempo combinada, los agregados de bytes salientes, el manifiesto de la cadena en bruto y los archivos en bruto que lista, bajo las claves del manifiesto. Por el camino se verifican la cadena de archivos diarios de auditoría y las cadenas firmadas de lotes forenses con las claves de máquina que fijó el servidor, y el informe se escribe en verification.json. Termina con código 1 si las evidencias muestran un hueco o una edición. La comprobación sobre el mismo directorio se repite con rdc forensics verify.",
+        "description": "Escribe la ventana del incidente en un directorio: el registro del incidente con sus relojes, la línea de tiempo combinada, los agregados de bytes salientes, el manifiesto de la cadena en bruto y los archivos en bruto que lista, bajo las claves del manifiesto. Cuando el manifiesto lista un archivo diario de auditoría o un archivo de cabeceras forenses, por el camino se verifican la cadena de archivos diarios de auditoría y las cadenas firmadas de lotes forenses con las claves de máquina que fijó el servidor, y el informe se escribe en verification.json. Termina con código 1 si las evidencias muestran un hueco o una edición. La misma comprobación sobre el directorio se repite con rdc forensics verify.",
         "descriptionShort": "Exportar y verificar la línea de tiempo y las evidencias de un incidente",
         "outOption": "Directorio donde escribir (por defecto: incident-<id>)"
+      },
+      "declare": {
+        "description": "Declara un incidente sobre un repositorio. Primero se crea el registro de la cuenta: el incidente con su ventana, una retención sobre la ventana y las reglas de bloqueo de R2, que ponen en marcha los relojes de alerta temprana, notificación e informe final. Después se hace un fork del repositorio como instantánea forense (repo fork <ref> --tag incident-<id>), su nivel de captura pasa a full y el resultado de cada paso se anota en el incidente. Si un paso falla, el registro y su retención se mantienen, el comando termina con código 1 e indica el comando --resume que vuelve a ejecutar los pasos fallidos.",
+        "descriptionShort": "Declarar un incidente: registro, fork forense y captura completa",
+        "awareAtOption": "Momento en que la organización tuvo conocimiento, como instante ISO 8601; nunca posterior a la declaración (por defecto: ahora)",
+        "resumeOption": "Vuelve a ejecutar los pasos por máquina de este incidente ya declarado, solo aquellos cuyo último resultado no es ok"
+      },
+      "close": {
+        "description": "Cierra un incidente. Nada se libera de inmediato: la retención y las reglas de bloqueo de R2 terminan 30 días después del cierre.",
+        "descriptionShort": "Cerrar un incidente; su retención termina 30 días después"
       }
     },
     "forensics": {
-      "description": "Comprueba las evidencias forenses en esta estación de trabajo con la misma verificación que ejecuta la consola web, usando claves de máquina ajenas a las evidencias.",
+      "description": "Verifica las evidencias forenses en esta estación de trabajo, con claves de máquina tomadas de fuera de las evidencias, y fija el nivel de captura de un repositorio.",
       "descriptionShort": "Verificar evidencias forenses",
       "verify": {
         "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes solo se verifican con claves ajenas al directorio: una entrada --machine-key o, si no la hay, la clave que el servidor de cuentas fijó para el incidente que indica un directorio de rdc incident export. Una clave escrita en el raw-manifest.json del directorio nunca se considera de confianza, y una máquina sin clave externa falla.",
         "descriptionShort": "Verificar las cadenas de hashes de auditoría y forenses de un directorio de evidencias",
         "dirOption": "Directorio de evidencias que se va a verificar",
-        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters>, se usa en lugar de la clave que fijó el servidor de cuentas (repetible)"
+        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters>, se usa en lugar de la clave que fijó el servidor de cuentas (repetible)",
+        "sinceOption": "Inicio de la ventana: un instante ISO 8601 o un lapso hacia atrás desde ahora, como 90m, 24h o 7d (por defecto: el primer día del directorio)",
+        "untilOption": "Fin de la ventana, en las mismas formas (por defecto: el último día del directorio)"
+      },
+      "level": {
+        "description": "Fija el nivel de captura forense de un repositorio mediante la función forensics_level de su máquina: basic, standard o full. El recolector limita el nivel a lo que incluye el plan.",
+        "descriptionShort": "Fijar el nivel de captura forense de un repositorio",
+        "levelArgument": "Nivel de captura: basic, standard o full"
       }
     }
   },
@@ -3994,7 +4011,11 @@
     "verifyGap": "hueco  {{ref}}: {{reason}}",
     "verifyEdit": "edición {{ref}}: {{reason}}",
     "verifyClean": "No se encontró ningún hueco ni edición.",
-    "verifyFailed": "Las evidencias no superan la verificación: consulta los huecos y ediciones de arriba."
+    "verifyFailed": "Las evidencias no superan la verificación: consulta los huecos y ediciones de arriba.",
+    "badLevel": "\"{{level}}\" no es un nivel de captura; valores admitidos: {{levels}}.",
+    "levelStarting": "Fijando el nivel de captura de {{repository}} en {{level}} en {{machine}}...",
+    "levelCompleted": "Nivel de captura de {{repository}} fijado en {{level}}.",
+    "levelFailed": "No se pudo fijar el nivel de captura de {{repository}}."
   },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Solo forks: cree un fork antes de realizar cambios en cualquier repositorio\n    • Los repositorios grand (no fork) son de solo lectura para los agentes\n    • Flujo de trabajo: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Una referencia de repositorio (repo[:tag]) deriva su propia máquina, por lo que -m no es necesario\n    • La salida JSON es automática: todos los comandos devuelven { success, data, errors, metrics }\n    • Analice siempre el JSON completo, nunca use tail/head/grep sobre la salida JSON\n    • Use flags de filtro (p. ej., --repositories, --containers) para reducir el tamaño de la respuesta\n\n",
@@ -4062,7 +4083,16 @@
     "rawTooLarge": "El material en bruto de la cadena supera el límite del manifiesto y no se lista.",
     "rawListed": "{{count}} archivo(s) en bruto descargado(s); ninguno es un archivo diario de auditoría ni un archivo de cabeceras forenses para rdc forensics verify.",
     "rawVerified": "Evidencias en bruto descargadas y verificadas: {{count}} archivo(s) de cadena, sin huecos ni ediciones.",
-    "rawNotVerified": "Las evidencias descargadas no se verifican: {{gaps}} hueco(s) y {{edits}} edición(es), listados arriba y en verification.json."
+    "rawNotVerified": "Las evidencias descargadas no se verifican: {{gaps}} hueco(s) y {{edits}} edición(es), listados arriba y en verification.json.",
+    "declared": "Incidente {{id}} declarado para el periodo de {{from}} a {{to}}.",
+    "stepOk": "Paso {{name}}: correcto",
+    "stepSkipped": "Paso {{name}}: ya correcto, omitido",
+    "stepFailed": "Paso {{name}}: falló {{detail}}",
+    "retry": "El registro del incidente y su retención se mantienen. Los pasos fallidos se repiten con: {{command}}",
+    "closed": "Incidente {{id}} cerrado. La retención y las reglas de bloqueo terminan el {{at}}.",
+    "resumeScope": "El incidente {{id}} abarca {{scope}}, no el repositorio {{name}}.",
+    "resumeClosed": "El incidente {{id}} está cerrado; sus pasos no se vuelven a ejecutar.",
+    "resumeWindow": "--resume conserva la ventana y el momento de conocimiento con los que se declaró el incidente; se omiten --since, --until y --aware-at."
   },
   "options": {
     "acceptTerms": "Aceptar los Términos del Servicio para una licencia gratuita sin preguntar (o definir RDC_ACCEPT_TERMS=1)",

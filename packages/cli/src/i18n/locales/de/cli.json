@@ -3497,7 +3497,7 @@
       "serverUpgrade": "Steuert Kindbefehle und das lokale Installationsprotokoll des Aufrufers an (und mit --local-image das Docker des Aufrufers); ein entfernter Executor würde von seinem eigenen aus handeln. Ohne --proxy ausführen."
     },
     "incident": {
-      "description": "Liest einen Vorfall der Organisation. Vorfälle werden in der Web-Konsole erklärt; diese Befehle lesen den Eintrag, seine Fristenuhren und sein Beweisfenster. Erfordert den Scope forensics:read, den ein CLI-Login für Owner und Admins nach einer erhöhten Browser-Freigabe trägt, sowie einen kostenpflichtigen Tarif.",
+      "description": "Erklärt, liest und schließt einen Vorfall der Organisation: den Account-Eintrag mit seinen Fristenuhren, den forensischen Fork und die Full-Erfassung des Repositorys sowie das Beweisfenster. Lesen erfordert den Scope forensics:read, Erklären und Schließen den Scope incident:manage; ein CLI-Login trägt beide für Owner und Admins nach einer erhöhten Browser-Freigabe, mit einem kostenpflichtigen Tarif.",
       "descriptionShort": "Einen Vorfall lesen und sein Beweisfenster exportieren",
       "idArgument": "Vorfalls-ID oder ein Präfix davon, das kein anderer Vorfall teilt",
       "status": {
@@ -3505,19 +3505,36 @@
         "descriptionShort": "Vorfälle auflisten oder einen mit seinen Fristenuhren zeigen"
       },
       "export": {
-        "description": "Schreibt das Zeitfenster des Vorfalls in ein Verzeichnis: den Vorfallseintrag mit seinen Fristenuhren, die zusammengeführte Zeitleiste, die Aggregate der ausgehenden Bytes, das Manifest der Rohkette und die darin aufgeführten Rohdateien unter ihren Manifest-Schlüsseln. Die Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten werden dabei mit den vom Server hinterlegten Maschinenschlüsseln geprüft; der Bericht landet in verification.json. Endet mit Exit-Code 1, wenn die Beweise eine Lücke oder Änderung zeigen. Die Prüfung über dasselbe Verzeichnis wiederholt rdc forensics verify.",
+        "description": "Schreibt das Zeitfenster des Vorfalls in ein Verzeichnis: den Vorfallseintrag mit seinen Fristenuhren, die zusammengeführte Zeitleiste, die Aggregate der ausgehenden Bytes, das Manifest der Rohkette und die darin aufgeführten Rohdateien unter ihren Manifest-Schlüsseln. Führt das Manifest eine Audit-Tagesdatei oder eine Forensik-Headers-Datei auf, werden die Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten dabei mit den vom Server hinterlegten Maschinenschlüsseln geprüft; der Bericht landet in verification.json. Endet mit Exit-Code 1, wenn die Beweise eine Lücke oder Änderung zeigen. Dieselbe Prüfung über das Verzeichnis wiederholt rdc forensics verify.",
         "descriptionShort": "Zeitleiste und Beweise eines Vorfalls exportieren und prüfen",
         "outOption": "Zielverzeichnis (Standard: incident-<id>)"
+      },
+      "declare": {
+        "description": "Erklärt einen Vorfall für ein Repository. Zuerst entsteht der Account-Eintrag: der Vorfall mit seinem Zeitfenster, ein Hold über das Fenster und die R2-Sperrregeln, die die Uhren für Frühwarnung, Meldung und Abschlussbericht starten. Danach wird das Repository als forensischer Snapshot geforkt (repo fork <ref> --tag incident-<id>), seine Erfassungsstufe auf full gestellt und das Ergebnis jedes Schritts am Vorfall vermerkt. Schlägt ein Schritt fehl, bleiben Eintrag und Hold bestehen, der Befehl endet mit Exit-Code 1 und nennt den Befehl mit --resume, der die fehlgeschlagenen Schritte erneut ausführt.",
+        "descriptionShort": "Vorfall erklären: Eintrag, forensischer Fork und volle Erfassung",
+        "awareAtOption": "Zeitpunkt, an dem die Organisation Kenntnis erlangte, als ISO-8601-Zeitpunkt; nie nach der Erklärung (Standard: jetzt)",
+        "resumeOption": "Führt die Maschinenschritte dieses erklärten Vorfalls erneut aus, nur jene, deren letztes Ergebnis nicht ok ist"
+      },
+      "close": {
+        "description": "Schließt einen Vorfall. Nichts wird sofort freigegeben: Hold und R2-Sperrregeln enden 30 Tage nach dem Schließen.",
+        "descriptionShort": "Vorfall schließen; sein Hold endet 30 Tage später"
       }
     },
     "forensics": {
-      "description": "Forensische Beweise auf diesem Arbeitsplatz mit derselben Prüfung kontrollieren, die die Web-Konsole ausführt, und zwar mit Maschinenschlüsseln von außerhalb der Beweise.",
+      "description": "Prüft forensische Beweise auf dieser Workstation mit Maschinenschlüsseln von außerhalb der Beweise und stellt die Erfassungsstufe eines Repositorys ein.",
       "descriptionShort": "Forensische Beweise prüfen",
       "verify": {
         "description": "Berechnet die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses neu und gibt jede gefundene Lücke und Änderung aus. Das Verzeichnis enthält die Rohdateien unter ihren Manifest-Schlüsseln (audit/<org>/days/<day>.ndjson.gz und f/<subscription>/<machine>/days/<day>/...). Endet mit Exit-Code 1, sobald eine Lücke oder Änderung vorliegt. Batch-Signaturen werden nur mit Schlüsseln von außerhalb des Verzeichnisses geprüft: mit einem Eintrag für --machine-key, sonst mit dem Schlüssel, den der Kontoserver für den Vorfall hinterlegt hat, den ein per rdc incident export geschriebenes Verzeichnis nennt. Ein Schlüssel in der raw-manifest.json des Verzeichnisses gilt nie als vertrauenswürdig, und eine Maschine ohne externen Schlüssel fällt durch.",
         "descriptionShort": "Audit- und Forensik-Hash-Ketten eines Beweisverzeichnisses prüfen",
         "dirOption": "Zu prüfendes Beweisverzeichnis",
-        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters>, wird anstelle des vom Kontoserver hinterlegten Schlüssels verwendet (wiederholbar)"
+        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters>, wird anstelle des vom Kontoserver hinterlegten Schlüssels verwendet (wiederholbar)",
+        "sinceOption": "Beginn des Zeitfensters: ein ISO-8601-Zeitpunkt oder eine Spanne ab jetzt zurück wie 90m, 24h oder 7d (Standard: der erste Tag im Verzeichnis)",
+        "untilOption": "Ende des Zeitfensters, in denselben Formen (Standard: der letzte Tag im Verzeichnis)"
+      },
+      "level": {
+        "description": "Stellt die forensische Erfassungsstufe eines Repositorys über die Funktion forensics_level auf dessen Maschine ein: basic, standard oder full. Der Collector begrenzt die Stufe auf das, was der Tarif enthält.",
+        "descriptionShort": "Forensische Erfassungsstufe eines Repositorys einstellen",
+        "levelArgument": "Erfassungsstufe: basic, standard oder full"
       }
     }
   },
@@ -3994,7 +4011,11 @@
     "verifyGap": "Lücke  {{ref}}: {{reason}}",
     "verifyEdit": "Änderung {{ref}}: {{reason}}",
     "verifyClean": "Keine Lücke und keine Änderung gefunden.",
-    "verifyFailed": "Die Beweise bestehen die Prüfung nicht: siehe die Lücken und Änderungen oben."
+    "verifyFailed": "Die Beweise bestehen die Prüfung nicht: siehe die Lücken und Änderungen oben.",
+    "badLevel": "\"{{level}}\" ist keine Erfassungsstufe; erlaubt sind {{levels}}.",
+    "levelStarting": "Erfassungsstufe von {{repository}} wird auf {{level}} gesetzt auf {{machine}}...",
+    "levelCompleted": "Erfassungsstufe von {{repository}} auf {{level}} gesetzt.",
+    "levelFailed": "Die Erfassungsstufe von {{repository}} konnte nicht gesetzt werden."
   },
   "help": {
     "agentMode": "\n  Agenten-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Eine Repository-Referenz (repo[:tag]) leitet ihre eigene Maschine ab, -m ist daher nicht nötig\n    • JSON-Ausgabe erfolgt automatisch: Alle Befehle liefern { success, data, errors, metrics }\n    • Parsen Sie immer das vollständige JSON, verwenden Sie niemals tail/head/grep auf JSON-Ausgaben\n    • Verwenden Sie Filter-Flags (z.B. --repositories, --containers), um die Antwortgröße zu reduzieren\n\n",
@@ -4062,7 +4083,16 @@
     "rawTooLarge": "Das Rohmaterial der Kette überschreitet das Manifest-Limit und ist nicht aufgeführt.",
     "rawListed": "{{count}} Rohdatei(en) heruntergeladen; keine davon ist eine Audit-Tagesdatei oder eine Forensik-Headers-Datei für rdc forensics verify.",
     "rawVerified": "Rohbeweise heruntergeladen und geprüft: {{count}} Kettendatei(en), keine Lücke und keine Änderung.",
-    "rawNotVerified": "Die heruntergeladenen Beweise bestehen die Prüfung nicht: {{gaps}} Lücke(n) und {{edits}} Änderung(en), oben und in verification.json aufgeführt."
+    "rawNotVerified": "Die heruntergeladenen Beweise bestehen die Prüfung nicht: {{gaps}} Lücke(n) und {{edits}} Änderung(en), oben und in verification.json aufgeführt.",
+    "declared": "Vorfall {{id}} erklärt für den Zeitraum {{from}} bis {{to}}.",
+    "stepOk": "Schritt {{name}}: erfolgreich",
+    "stepSkipped": "Schritt {{name}}: bereits erfolgreich, übersprungen",
+    "stepFailed": "Schritt {{name}}: fehlgeschlagen {{detail}}",
+    "retry": "Vorfallseintrag und Hold bleiben bestehen. Die fehlgeschlagenen Schritte lassen sich erneut ausführen mit: {{command}}",
+    "closed": "Vorfall {{id}} geschlossen. Hold und Sperrregeln enden am {{at}}.",
+    "resumeScope": "Vorfall {{id}} betrifft {{scope}}, nicht das Repository {{name}}.",
+    "resumeClosed": "Vorfall {{id}} ist geschlossen; seine Schritte laufen nicht erneut.",
+    "resumeWindow": "--resume behält Zeitfenster und Kenntniszeitpunkt bei, mit denen der Vorfall erklärt wurde; --since, --until und --aware-at entfallen."
   },
   "options": {
     "acceptTerms": "Nutzungsbedingungen für eine kostenlose Lizenz ohne Rückfrage akzeptieren (oder RDC_ACCEPT_TERMS=1 setzen)",

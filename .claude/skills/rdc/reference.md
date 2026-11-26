@@ -1306,7 +1306,7 @@ List the network flows recorded for a repository in a time window: time, process
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
 
-> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
 
 ### rdc repo opens <ref>
 
@@ -1317,7 +1317,7 @@ List the file opens recorded for a repository in a time window: time, process an
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
 
-> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
 
 ### rdc repo commit <ref>
 
@@ -2297,17 +2297,36 @@ Show one feedback report by its id (or a unique prefix of it), with its status, 
 
 List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.
 
-> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+> MCP excluded: Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.
+
+### rdc incident declare <ref>
+
+Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+- `--aware-at <when>`: When the organization became aware, as an ISO 8601 instant; never later than the declaration (default: now)
+- `--resume <id>`: Run the machine steps of this declared incident again, only those whose last outcome is not ok
+
+> MCP excluded: Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
+
+### rdc incident close <id>
+
+Close an incident. Nothing is released at once: the eviction hold and the R2 lock rules end 30 days after the close.
+
+> MCP excluded: Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
 
 ### rdc incident export <id>
 
-Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.
 
 **Options:**
 
 - `--out <dir>`: Directory to write (default: incident-<id>)
 
-> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+> MCP tool
 
 ### rdc forensics verify
 
@@ -2316,11 +2335,17 @@ Recompute the audit day-file hash chain and the signed forensics batch chains of
 **Options:**
 
 - `--dir <path>`: Evidence directory to verify
-- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
-- `--until <when>`: End of the window, in the same forms (default: now)
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)
+- `--until <when>`: End of the window, in the same forms (default: the last day in the directory)
 - `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)
 
-> MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
+> MCP tool
+
+### rdc forensics level <ref> <level>
+
+Set the forensic capture level of a repository through the forensics_level function on its machine: basic, standard or full. The collector caps the level at what the plan includes.
+
+> MCP excluded: Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
 
 ### rdc version
 

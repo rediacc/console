@@ -170,11 +170,26 @@ export async function pinnedMachineKeys(
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     const message = t('forensics.trustedKeysUnavailable', { id: incidentId, reason });
-    if (error instanceof CliExitError && error.code === ERROR_CODES.AUTH_REQUIRED) {
-      throw new CliExitError(ERROR_CODES.AUTH_REQUIRED, message);
-    }
-    throw new CliExitError(ERROR_CODES.NETWORK_ERROR, message);
+    throw keysUnavailable(error, message);
   }
+}
+
+/**
+ * A refusal the CLI already classified (a step-up, no permission, no such incident, an ambiguous
+ * prefix) keeps its code; only an unclassified failure of the read is a network error. Each code
+ * is a literal, as error-origins.test.ts requires of every CliExitError.
+ */
+function keysUnavailable(error: unknown, message: string): CliExitError {
+  const code = error instanceof CliExitError ? error.code : undefined;
+  if (code === ERROR_CODES.AUTH_REQUIRED)
+    return new CliExitError(ERROR_CODES.AUTH_REQUIRED, message);
+  if (code === ERROR_CODES.PERMISSION_DENIED) {
+    return new CliExitError(ERROR_CODES.PERMISSION_DENIED, message);
+  }
+  if (code === ERROR_CODES.NOT_FOUND) return new CliExitError(ERROR_CODES.NOT_FOUND, message);
+  if (code === ERROR_CODES.AMBIGUOUS) return new CliExitError(ERROR_CODES.AMBIGUOUS, message);
+  if (code === ERROR_CODES.SERVER_ERROR) return new CliExitError(ERROR_CODES.SERVER_ERROR, message);
+  return new CliExitError(ERROR_CODES.NETWORK_ERROR, message);
 }
 
 /** Write the incident's window to `directory`, download the raw files and verify both chains over them. */

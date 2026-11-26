@@ -4,12 +4,22 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { ForensicsClient } from '../services/forensics/client.js';
 import {
+  type DeclareDeps,
+  type DeclareOptions,
+  type DeclareRepo,
+  type DeclareResult,
+  declareIncident,
+} from '../services/forensics/declare.js';
+import {
   type ExportResult,
   exportIncident,
   incidentDetailLines,
   incidentListLines,
   withClocks,
 } from '../services/forensics/incident.js';
+import { childMachineSteps } from '../services/forensics/machine-steps.js';
+import { ERROR_CODES } from '../types/errors.js';
+import { CliExitError } from '../utils/cli-exit-error.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 export interface IncidentDeps {
@@ -92,6 +102,75 @@ function printExport(result: ExportResult): void {
   }
 }
 
+/** The repository GUID the account store keys evidence by, and the name its forks take. */
+async function configRepo(ref: string): Promise<DeclareRepo> {
+  const { resolveRepoRefLocal } = await import('../utils/repo-target.js');
+  const { configService } = await import('../services/config/config-resources.js');
+  const { name, repoKey } = await resolveRepoRefLocal(ref);
+  const repo = await configService.getRepository(repoKey);
+  if (!repo?.repositoryGuid) {
+    throw new CliExitError(ERROR_CODES.NOT_FOUND, t('forensics.noRepoGuid', { name }));
+  }
+  return { guid: repo.repositoryGuid, name };
+}
+
+const defaultDeclareDeps = (): DeclareDeps => ({
+  client: new ForensicsClient(),
+  repo: configRepo,
+  steps: childMachineSteps,
+  now: () => new Date(),
+});
+
+/**
+ * `rdc incident declare <ref>`: the account record first, then the forensic fork and the switch
+ * to Full capture, each step reported. A failed step exits 1 and names the `--resume` command.
+ */
+export async function runIncidentDeclare(
+  ref: string,
+  options: DeclareOptions,
+  deps: DeclareDeps = defaultDeclareDeps()
+): Promise<DeclareResult> {
+  const result = await declareIncident(ref, options, deps);
+  if (getOutputFormat() === 'json') {
+    outputService.print({ ...result, incident: withClocks(result.incident, deps.now()) }, 'json');
+  } else {
+    printDeclare(result);
+  }
+  if (result.retry !== null) setExitCode(1);
+  return result;
+}
+
+function printDeclare(result: DeclareResult): void {
+  outputService.success(
+    t('incident.declared', {
+      id: result.incident.id,
+      from: result.incident.windowFrom,
+      to: result.incident.windowTo,
+    })
+  );
+  for (const step of result.steps) {
+    const values = { name: step.name, detail: step.detail ?? '' };
+    if (step.outcome === 'ok') outputService.info(t('incident.stepOk', values));
+    else if (step.outcome === 'skipped') outputService.info(t('incident.stepSkipped', values));
+    else outputService.warn(t('incident.stepFailed', values).trimEnd());
+  }
+  if (result.retry !== null) outputService.warn(t('incident.retry', { command: result.retry }));
+}
+
+/** `rdc incident close <id>`: close the incident; its hold and lock rules end 30 days later. */
+export async function runIncidentClose(
+  id: string,
+  deps: IncidentDeps = defaultDeps()
+): Promise<void> {
+  const incident = await deps.client.findIncident(id);
+  const closed = withClocks(await deps.client.closeIncident(incident.id), deps.now());
+  if (getOutputFormat() === 'json') {
+    outputService.print(closed, 'json');
+    return;
+  }
+  outputService.success(t('incident.closed', { id: closed.id, at: closed.releaseAt ?? '' }));
+}
+
 export function registerIncidentCommand(program: Command): void {
   const incident = program
     .command('incident')
@@ -106,6 +185,36 @@ export function registerIncidentCommand(program: Command): void {
     .action(async (id: string | undefined) => {
       try {
         await runIncidentStatus(id);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  incident
+    .command('declare')
+    .summary(t('commands.incident.declare.descriptionShort'))
+    .description(t('commands.incident.declare.description'))
+    .argument('<ref>', t('options.repoRef'))
+    .option('--since <when>', t('commands.repo.rowsSinceOption'))
+    .option('--until <when>', t('commands.repo.rowsUntilOption'))
+    .option('--aware-at <when>', t('commands.incident.declare.awareAtOption'))
+    .option('--resume <id>', t('commands.incident.declare.resumeOption'))
+    .action(async (ref: string, options: DeclareOptions) => {
+      try {
+        await runIncidentDeclare(ref, options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  incident
+    .command('close')
+    .summary(t('commands.incident.close.descriptionShort'))
+    .description(t('commands.incident.close.description'))
+    .argument('<id>', t('commands.incident.idArgument'))
+    .action(async (id: string) => {
+      try {
+        await runIncidentClose(id);
       } catch (error) {
         handleError(error);
       }

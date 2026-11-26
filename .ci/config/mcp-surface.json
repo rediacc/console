@@ -32,6 +32,18 @@
       "basis": "caller-disk",
       "reason": "Lists the config files on the caller's own disk; a session holds exactly one granted config."
     },
+    "forensics verify": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Verifies the hash chains of an evidence directory on the caller's own disk."
+    },
+    "incident export": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Writes the incident's evidence directory to the caller's own disk."
+    },
     "machine infra cert status": {
       "plane": "config",
       "verdict": "local",

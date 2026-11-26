@@ -61,8 +61,11 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   legal: { plane: 'other' },
   feedback: { plane: 'other' },
   // The forensics reads are account-server HTTPS (the investigation API); `forensics verify` reads a local evidence directory.
+  // `incident declare` writes the account record and runs its machine steps as child `rdc` commands, so it imports no machine-plane service.
   incident: { plane: 'other' },
   forensics: { plane: 'other' },
+  // The `forensics_level` renet function on the repository's machine.
+  'forensics level': { plane: 'machine' },
   version: { plane: 'other' },
   // Prints a shell completion script built from the generated contract; reads no config and reaches no machine.
   completion: { plane: 'other' },

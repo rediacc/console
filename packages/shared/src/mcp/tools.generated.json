@@ -1262,6 +1262,76 @@
       "attachWindow": false
     },
     {
+      "name": "forensics_verify",
+      "command": "forensics verify",
+      "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory (an rdc incident export directory) and list every gap and edit. Batch signatures verify only under machine keys from outside the directory: machine-key entries, else the keys the account server pinned for the incident the directory names. Exits 1 on any gap or edit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string",
+            "description": "Evidence directory to verify"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: the last day in the directory)"
+          },
+          "machine_key": {
+            "type": "string",
+            "description": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
+          }
+        },
+        "required": ["dir"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Verifies the hash chains of an evidence directory on the caller's own disk.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "incident_export",
+      "command": "incident export",
+      "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident id, or a prefix of it that no other incident shares"
+          },
+          "out": {
+            "type": "string",
+            "description": "Directory to write (default: incident-<id>)"
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Writes the incident's evidence directory to the caller's own disk.",
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
       "name": "job_cancel",
       "command": "job cancel",
       "description": "Cancel a running detached job",

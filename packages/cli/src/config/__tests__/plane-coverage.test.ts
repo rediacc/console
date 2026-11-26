@@ -163,8 +163,9 @@ describe('command plane coverage', () => {
     // 231 -> 230, other 49 -> 48: `config remote master-password change` is deleted with the password key slot (PLAN-rmcp-policy-record K4, D39).
     // 230 -> 231, other 48 -> 49: `completion` prints a shell script built from the contract and reaches no machine (PLAN-console-command-line CL12).
     // 231 -> 236, other 49 -> 54: `incident status|export`, `forensics verify`, `repo flows` and `repo opens` read the account server's forensics API or a local evidence directory (PLAN-forensics-investigation FI7).
-    expect(COMMANDS.length).toBe(236);
-    expect(counts).toEqual({ config: 58, machine: 124, other: 54 });
+    // 236 -> 239, machine 124 -> 125, other 54 -> 56: `forensics level` runs the forensics_level renet function on the machine; `incident declare|close` write the account record, and declare runs its machine steps as child rdc commands (PLAN-forensics-investigation FI8).
+    expect(COMMANDS.length).toBe(239);
+    expect(counts).toEqual({ config: 58, machine: 125, other: 56 });
   });
 
   it('records the interactive commands', () => {
@@ -225,7 +226,8 @@ describe('command plane coverage', () => {
     // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
     // 112 -> 116: `server status|upgrade|backup|licence` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local (the caller's install record and keys).
     // 116 -> 118: `repo admin orphan list|delete` are machine-plane and non-interactive (delete confirms only without --yes).
-    expect(machineNonInteractive.length).toBe(118);
+    // 118 -> 119: `forensics level` runs the forensics_level renet function on the repository's machine (PLAN-forensics-investigation FI8).
+    expect(machineNonInteractive.length).toBe(119);
   });
 
   it('plane and interactive entries all point at real commands', () => {

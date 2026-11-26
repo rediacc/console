@@ -3483,7 +3483,7 @@
       }
     },
     "incident": {
-      "description": "Read an incident of the organization. Incidents are declared in the web console; these verbs read the record, its deadline clocks and its evidence window. Needs the forensics:read scope, which a CLI login carries for owners and admins after an elevated browser approval, on a paid plan.",
+      "description": "Declare, read and close an incident of the organization: the account record with its deadline clocks, the forensic fork and Full capture of the repository, and the evidence window. The reads need the forensics:read scope and declare and close need incident:manage; a CLI login carries both for owners and admins after an elevated browser approval, on a paid plan.",
       "descriptionShort": "Read an incident and export its evidence window",
       "idArgument": "Incident id, or a prefix of it that no other incident shares",
       "status": {
@@ -3491,19 +3491,36 @@
         "descriptionShort": "List incidents or show one with its deadline clocks"
       },
       "export": {
-        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. The audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
+        "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify.",
         "descriptionShort": "Export and verify an incident's timeline and evidence",
         "outOption": "Directory to write (default: incident-<id>)"
+      },
+      "declare": {
+        "description": "Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.",
+        "descriptionShort": "Declare an incident: record, forensic fork and full capture",
+        "awareAtOption": "When the organization became aware, as an ISO 8601 instant; never later than the declaration (default: now)",
+        "resumeOption": "Run the machine steps of this declared incident again, only those whose last outcome is not ok"
+      },
+      "close": {
+        "description": "Close an incident. Nothing is released at once: the eviction hold and the R2 lock rules end 30 days after the close.",
+        "descriptionShort": "Close an incident; its hold ends 30 days later"
       }
     },
     "forensics": {
-      "description": "Check forensic evidence on this workstation with the same verification the web console runs, under machine keys taken from outside the evidence.",
+      "description": "Verify forensic evidence on this workstation, under machine keys taken from outside the evidence, and set the capture level of a repository.",
       "descriptionShort": "Verify forensic evidence",
       "verify": {
         "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.",
         "descriptionShort": "Verify audit and forensics hash chains of an evidence directory",
         "dirOption": "Evidence directory to verify",
-        "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
+        "machineKeyOption": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)",
+        "sinceOption": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)",
+        "untilOption": "End of the window, in the same forms (default: the last day in the directory)"
+      },
+      "level": {
+        "description": "Set the forensic capture level of a repository through the forensics_level function on its machine: basic, standard or full. The collector caps the level at what the plan includes.",
+        "descriptionShort": "Set a repository's forensic capture level",
+        "levelArgument": "Capture level: basic, standard or full"
       }
     },
     "legal": {
@@ -3969,7 +3986,11 @@
     "verifyGap": "gap  {{ref}}: {{reason}}",
     "verifyEdit": "edit {{ref}}: {{reason}}",
     "verifyClean": "No gap and no edit found.",
-    "verifyFailed": "Evidence does not verify: see the gaps and edits above."
+    "verifyFailed": "Evidence does not verify: see the gaps and edits above.",
+    "badLevel": "\"{{level}}\" is not a capture level; use one of {{levels}}.",
+    "levelStarting": "Setting the capture level of {{repository}} to {{level}} on {{machine}}...",
+    "levelCompleted": "Capture level of {{repository}} set to {{level}}.",
+    "levelFailed": "Could not set the capture level of {{repository}}."
   },
   "incident": {
     "none": "No incidents.",
@@ -3987,7 +4008,16 @@
     "rawTooLarge": "The raw chain material is over the manifest limit and is not listed.",
     "rawListed": "{{count}} raw file(s) downloaded; none is an audit day file or a forensics headers file for rdc forensics verify.",
     "rawVerified": "Raw evidence downloaded and verified: {{count}} chain file(s), no gap and no edit.",
-    "rawNotVerified": "The downloaded evidence does not verify: {{gaps}} gap(s) and {{edits}} edit(s), listed above and in verification.json."
+    "rawNotVerified": "The downloaded evidence does not verify: {{gaps}} gap(s) and {{edits}} edit(s), listed above and in verification.json.",
+    "declared": "Incident {{id}} declared over {{from}} to {{to}}.",
+    "stepOk": "Step {{name}}: ok",
+    "stepSkipped": "Step {{name}}: already ok, skipped",
+    "stepFailed": "Step {{name}}: failed {{detail}}",
+    "retry": "The incident record and its hold stay in place. Run the failed steps again with: {{command}}",
+    "closed": "Incident {{id}} closed. The hold and the lock rules end at {{at}}.",
+    "resumeScope": "Incident {{id}} covers {{scope}}, not the repository {{name}}.",
+    "resumeClosed": "Incident {{id}} is closed; its steps do not run again.",
+    "resumeWindow": "--resume keeps the window and awareness the incident was declared with; drop --since, --until and --aware-at."
   },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",

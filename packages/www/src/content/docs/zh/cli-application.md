@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "96d35cb6e876a721"
+sourceHash: "115ae7bd37db2d33"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2667,6 +2667,32 @@ rdc incident export <id> [options]
 | `--out <dir>` | {{t:cli.commands.incident.export.outOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-incident-declare"></a>
+### 8.3 declare
+
+{{t:cli.commands.incident.declare.description}}
+
+```bash
+rdc incident declare <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--since <when>` | {{t:cli.commands.repo.rowsSinceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--until <when>` | {{t:cli.commands.repo.rowsUntilOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--aware-at <when>` | {{t:cli.commands.incident.declare.awareAtOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--resume <id>` | {{t:cli.commands.incident.declare.resumeOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-incident-close"></a>
+### 8.4 close
+
+{{t:cli.commands.incident.close.description}}
+
+```bash
+rdc incident close <id>
+```
+
 ---
 
 <a id="cli-local-group-forensics"></a>
@@ -2686,10 +2712,19 @@ rdc forensics verify [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--dir <path>` | {{t:cli.commands.forensics.verify.dirOption}} | {{t:cli.docs.optionLabels.yes}} | - |
-| `--since <when>` | {{t:cli.commands.repo.rowsSinceOption}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--until <when>` | {{t:cli.commands.repo.rowsUntilOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--since <when>` | {{t:cli.commands.forensics.verify.sinceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--until <when>` | {{t:cli.commands.forensics.verify.untilOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--machine-key <machine=hex>` | {{t:cli.commands.forensics.verify.machineKeyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
+
+<a id="cli-local-forensics-level"></a>
+### 9.2 level
+
+{{t:cli.commands.forensics.level.description}}
+
+```bash
+rdc forensics level <ref> <level>
+```
 
 ---
 

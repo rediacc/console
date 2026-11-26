@@ -5962,6 +5962,59 @@
           "subcommands": []
         },
         {
+          "name": "declare",
+          "descriptionKey": "commands.incident.declare.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--aware-at <when>",
+              "descriptionKey": "commands.incident.declare.awareAtOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--resume <id>",
+              "descriptionKey": "commands.incident.declare.resumeOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "close",
+          "descriptionKey": "commands.incident.close.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "export",
           "descriptionKey": "commands.incident.export.description",
           "options": [
@@ -6002,13 +6055,13 @@
             },
             {
               "flags": "--since <when>",
-              "descriptionKey": "commands.repo.rowsSinceOption",
+              "descriptionKey": "commands.forensics.verify.sinceOption",
               "mandatory": false,
               "defaultValue": null
             },
             {
               "flags": "--until <when>",
-              "descriptionKey": "commands.repo.rowsUntilOption",
+              "descriptionKey": "commands.forensics.verify.untilOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -6020,6 +6073,26 @@
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "level",
+          "descriptionKey": "commands.forensics.level.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "level",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         }
       ]

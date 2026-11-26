@@ -337,6 +337,14 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     box: 'J16',
     steps: ['advanceHeadCommit'],
   },
+  'forensics level': {
+    form: 'single',
+    fn: 'forensics_level',
+    lock: 'read',
+    timeout: '10m',
+    box: 'J16',
+    note: "overlap.go classifies forensics_level by its default rule (read): the level file it writes under /etc/rediacc/forensics touches none of the repository's data",
+  },
   'repo policy get': {
     form: 'single',
     fn: 'repository_policy_get',

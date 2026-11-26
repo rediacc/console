@@ -182,6 +182,38 @@ describe('forensics verify', () => {
     );
   });
 
+  it('refuses an export.json or incident.json holding JSON null as a bad manifest, not a TypeError', async () => {
+    writeFileSync(join(dir, 'export.json'), 'null');
+    await expect(runForensicsVerify({ dir }, { client: noServer })).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: /forensics.badManifest/,
+    });
+    rmSync(join(dir, 'export.json'));
+    writeFileSync(join(dir, 'incident.json'), '[1]');
+    await expect(runForensicsVerify({ dir }, { client: noServer })).rejects.toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: /forensics.badManifest/,
+    });
+  });
+
+  it('never opens export.json when every machine has a --machine-key', async () => {
+    writeFileSync(join(dir, 'export.json'), '{not json');
+    await runForensicsVerify({ dir, machineKey: key() }, { client: noServer });
+    expect(m.setExitCode).not.toHaveBeenCalled();
+    expect(printed()).toContain('forensics.verifyClean');
+  });
+
+  it('keeps a classified refusal of the pinned-key read instead of calling it a network error', async () => {
+    writeFileSync(join(dir, 'export.json'), JSON.stringify({ incident: 'inc-gone' }));
+    await expect(
+      runForensicsVerify({ dir }, { client: () => server('ab'.repeat(32)) })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND', message: /forensics.trustedKeysUnavailable/ });
+    const offline = new ForensicsClient(() => Promise.reject(new Error('offline')));
+    await expect(runForensicsVerify({ dir }, { client: () => offline })).rejects.toMatchObject({
+      code: 'NETWORK_ERROR',
+    });
+  });
+
   it('prints the stamped report as JSON', async () => {
     m.format.current = 'json';
     await runForensicsVerify({ dir, machineKey: key() });

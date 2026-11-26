@@ -301,4 +301,16 @@ describe('incident export', () => {
     expect(existsSync(join(out, auditKey('2026-11-01')))).toBe(false);
     expect(existsSync(join(out, '..', 'escape.ndjson.gz'))).toBe(false);
   });
+
+  it('refuses a raw file whose decoded bytes fall short of the length the server stated', async () => {
+    const short = new ForensicsClient(((path: string) =>
+      Promise.resolve(
+        path.includes('/raw/file?')
+          ? { key: 'k', bytes: 10, data: Buffer.from('abc').toString('base64') }
+          : {}
+      )) as unknown as ForensicsFetch);
+    await expect(
+      short.rawFile('inv-1', { from: NOW.toISOString(), to: NOW.toISOString() }, 'k')
+    ).rejects.toMatchObject({ code: 'SERVER_ERROR', message: /forensics.rawFileTruncated/ });
+  });
 });

@@ -770,26 +770,52 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
-  // Forensics reads (FI7): excluded until FI8 opts them in beside the three writes.
+  // Forensics (PLAN-forensics-investigation D7): the two reads of the caller's disk are local tools, the account reads wait for FI11's ticket, the three writes stay out.
   'incident status': {
     mcpExcludeReason:
-      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
   },
   'incident export': {
-    mcpExcludeReason:
-      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Writes the incident's evidence directory to the caller's own disk.",
+    },
+    mcp: { destructive: false, idempotent: true, timeout: 'write' },
   },
   'forensics verify': {
-    mcpExcludeReason:
-      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Verifies the hash chains of an evidence directory on the caller's own disk.",
+    },
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read',
+      descriptionOverride:
+        'Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory (an rdc incident export directory) and list every gap and edit. Batch signatures verify only under machine keys from outside the directory: machine-key entries, else the keys the account server pinned for the incident the directory names. Exits 1 on any gap or edit.',
+    },
   },
   'repo flows': {
     mcpExcludeReason:
-      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
   },
   'repo opens': {
     mcpExcludeReason:
-      'Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.',
+      'Account read of the forensics investigation: an MCP tool runs on the hosted executor, whose token carries no forensics:read, so it opts in once PLAN-forensics-investigation FI11 hands the executor the single-use read ticket.',
+  },
+  'incident declare': {
+    mcpExcludeReason:
+      'Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
+  },
+  'incident close': {
+    mcpExcludeReason:
+      'Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
+  },
+  'forensics level': {
+    mcpExcludeReason:
+      'Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
   },
 
   'cluster rehearse': {

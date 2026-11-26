@@ -3497,7 +3497,7 @@
       "serverUpgrade": "驱动子命令和调用方本地的安装记录 (使用 --local-image 时还有调用方的 Docker)；远程执行端会从它自己的环境执行。请不要加 --proxy 运行。"
     },
     "incident": {
-      "description": "查看组织的某起事件。事件在网页控制台中声明，这些命令读取事件记录、各项期限倒计时和证据时间窗口。需要 forensics:read 权限范围，所有者和管理员通过 CLI 登录并在浏览器中完成提权批准后即可获得该权限。需要付费套餐。",
+      "description": "声明、查看并关闭组织的某起事件：包含各项期限倒计时的账户记录、仓库的取证分支和 Full 完整捕获，以及证据时间窗口。读取需要 forensics:read 权限范围，声明和关闭需要 incident:manage；所有者和管理员通过 CLI 登录并在浏览器中完成提权批准后即可同时获得二者，需要付费套餐。",
       "descriptionShort": "查看事件并导出其证据时间窗口",
       "idArgument": "事件 ID，或不与其他事件重复的 ID 前缀",
       "status": {
@@ -3505,19 +3505,36 @@
         "descriptionShort": "列出事件，或显示某起事件及其期限倒计时"
       },
       "export": {
-        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总、原始链清单，以及清单中列出的原始文件（以清单键命名）。导出过程中，会用服务器固定的机器密钥校验审计日文件链和已签名的取证批次链，并将报告写入 verification.json。证据存在空缺或改动时以退出码 1 结束。rdc forensics verify 可对同一目录重复这次校验。",
+        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总、原始链清单，以及清单中列出的原始文件（以清单键命名）。当清单列出审计日文件或取证头文件时，导出过程中会用服务器固定的机器密钥校验审计日文件链和已签名的取证批次链，并将报告写入 verification.json。证据存在空缺或改动时以退出码 1 结束。可通过 rdc forensics verify 对该目录重复同一校验。",
         "descriptionShort": "导出并校验事件的时间线和证据",
         "outOption": "写入的目录（默认：incident-<id>）"
+      },
+      "declare": {
+        "description": "为仓库声明一起事件。先写入账户记录：事件及其时间窗口、覆盖该窗口的清除保留，以及 R2 锁定规则，这些会启动早期预警、通报和最终报告的倒计时。随后将仓库派生为取证快照（repo fork <ref> --tag incident-<id>），并把捕获级别切换为 full，每一步的结果都记录在事件上。某一步失败时，记录及其保留仍然有效，命令以退出码 1 结束，并给出可重新执行失败步骤的 --resume 命令。",
+        "descriptionShort": "声明事件：记录、取证分支和 full 捕获",
+        "awareAtOption": "组织获知事件的时间，使用 ISO 8601 时间点；不得晚于声明时间（默认：当前时间）",
+        "resumeOption": "重新执行这起已声明事件的机器步骤，仅限上次结果不是 ok 的步骤"
+      },
+      "close": {
+        "description": "关闭事件。不会立即解除任何限制：清除保留和 R2 锁定规则在关闭 30 天后结束。",
+        "descriptionShort": "关闭事件；其保留在 30 天后结束"
       }
     },
     "forensics": {
-      "description": "在本工作站上校验取证证据，使用与网页控制台相同的验证方式，并采用取自证据之外的机器密钥。",
+      "description": "在本工作站上校验取证证据，使用取自证据之外的机器密钥，并设置仓库的捕获级别。",
       "descriptionShort": "校验取证证据",
       "verify": {
         "description": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。批次签名只用目录之外的密钥校验：优先用 --machine-key 条目，否则用账户服务器为该事件固定的密钥，该事件由 rdc incident export 导出的目录指明。目录中 raw-manifest.json 写入的密钥永远不被信任，没有外部密钥的机器会校验失败。",
         "descriptionShort": "校验证据目录的审计和取证哈希链",
         "dirOption": "要校验的证据目录",
-        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>，用于替代账户服务器固定的密钥（可重复指定）"
+        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>，用于替代账户服务器固定的密钥（可重复指定）",
+        "sinceOption": "时间窗口起点：ISO 8601 时间点，或从现在向前推的时长，如 90m、24h 或 7d（默认：目录中的第一天）",
+        "untilOption": "时间窗口终点，格式相同（默认：目录中的最后一天）"
+      },
+      "level": {
+        "description": "通过仓库所在机器上的 forensics_level 函数设置仓库的取证捕获级别：basic、standard 或 full。采集器会把级别限制在套餐所含范围内。",
+        "descriptionShort": "设置仓库的取证捕获级别",
+        "levelArgument": "捕获级别：basic、standard 或 full"
       }
     }
   },
@@ -3994,7 +4011,11 @@
     "verifyGap": "空缺  {{ref}}：{{reason}}",
     "verifyEdit": "改动 {{ref}}：{{reason}}",
     "verifyClean": "未发现空缺或改动。",
-    "verifyFailed": "证据未通过校验，请查看上方列出的空缺和改动。"
+    "verifyFailed": "证据未通过校验，请查看上方列出的空缺和改动。",
+    "badLevel": "\"{{level}}\" 不是有效的捕获级别，可选值：{{levels}}。",
+    "levelStarting": "正在 {{machine}} 上将 {{repository}} 的捕获级别设置为 {{level}}...",
+    "levelCompleted": "{{repository}} 的捕获级别已设置为 {{level}}。",
+    "levelFailed": "无法设置 {{repository}} 的捕获级别。"
   },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",
@@ -4062,7 +4083,16 @@
     "rawTooLarge": "原始链数据超出清单上限，未被列出。",
     "rawListed": "已下载 {{count}} 个原始文件；其中没有可供 rdc forensics verify 使用的审计日文件或取证头文件。",
     "rawVerified": "原始证据已下载并校验：{{count}} 个链文件，无空缺，无改动。",
-    "rawNotVerified": "已下载的证据未通过校验：{{gaps}} 处空缺，{{edits}} 处改动，详见上方及 verification.json。"
+    "rawNotVerified": "已下载的证据未通过校验：{{gaps}} 处空缺，{{edits}} 处改动，详见上方及 verification.json。",
+    "declared": "事件 {{id}} 已声明，时间窗口为 {{from}} 至 {{to}}。",
+    "stepOk": "步骤 {{name}}：ok",
+    "stepSkipped": "步骤 {{name}}：已是 ok，已跳过",
+    "stepFailed": "步骤 {{name}}：失败 {{detail}}",
+    "retry": "事件记录及其保留仍然有效。可用以下命令重新执行失败的步骤：{{command}}",
+    "closed": "事件 {{id}} 已关闭。保留和锁定规则结束于 {{at}}。",
+    "resumeScope": "事件 {{id}} 的范围是 {{scope}}，而不是仓库 {{name}}。",
+    "resumeClosed": "事件 {{id}} 已关闭，其步骤不会再次执行。",
+    "resumeWindow": "--resume 沿用事件声明时的时间窗口和获知时间；应去掉 --since、--until 和 --aware-at。"
   },
   "options": {
     "acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",

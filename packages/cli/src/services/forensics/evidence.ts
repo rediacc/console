@@ -238,13 +238,17 @@ export function machineKeyMap(
 
 function readIncidentField(file: string, field: 'incident' | 'id'): string | undefined {
   if (!existsSync(file)) return undefined;
-  let parsed: Record<string, unknown>;
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    parsed = JSON.parse(readFileSync(file, 'utf8')) as unknown;
   } catch {
     throw invalid(t('forensics.badManifest', { file }));
   }
-  const value = parsed[field];
+  // `null`, an array or a scalar parses but holds no field: the same refusal as a file that is not JSON.
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw invalid(t('forensics.badManifest', { file }));
+  }
+  const value = (parsed as Record<string, unknown>)[field];
   return typeof value === 'string' && value !== '' ? value : undefined;
 }
 
